@@ -3081,6 +3081,7 @@
       "item.dungeontrain.random_potion",
       "item.dungeontrain.random_good_potion",
       "item.dungeontrain.random_bad_potion",
+      "item.dungeontrain.disposable_camera",
       "gui.dungeontrain.options.book_author_chat",
       "gui.dungeontrain.options.update_notice_chat",
       "gui.dungeontrain.options.update_notice_chat.tip",

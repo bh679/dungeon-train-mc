@@ -4062,6 +4062,7 @@
   "item.dungeontrain.random_potion": "Случайное зелье",
   "item.dungeontrain.random_good_potion": "Случайное хорошее зелье",
   "item.dungeontrain.random_bad_potion": "Случайное плохое зелье",
+  "item.dungeontrain.disposable_camera": "Одноразовая камера",
   "gui.dungeontrain.options.book_author_chat": "Автор книги в чате",
   "gui.dungeontrain.options.book_author_chat.tip": "Выводит в чат имя автора каждый раз, когда сгорает книга — «Книга X сгорает». Книги, которые вы прочли, выбросили или обронили при смерти, сгораются, и это единственный случай, где упоминается их автор. По умолчанию выключено.",
   "gui.dungeontrain.options.update_notice_chat": "Чат о новой версии",

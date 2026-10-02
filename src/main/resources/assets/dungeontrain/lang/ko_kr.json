@@ -3970,6 +3970,7 @@
   "item.dungeontrain.random_potion": "무작위 물약",
   "item.dungeontrain.random_good_potion": "무작위 좋은 물약",
   "item.dungeontrain.random_bad_potion": "무작위 나쁜 물약",
+  "item.dungeontrain.disposable_camera": "일회용 카메라",
   "gui.dungeontrain.options.book_author_chat": "책 지은이 채팅 표시",
   "gui.dungeontrain.options.book_author_chat.tip": "Dungeon Train의 책이 탈 때마다 지은이의 이름을 담은 채팅 한 줄을 남깁니다 — \"X 님의 책이 타오릅니다\". 읽은 책도, 버린 책도, 죽으며 떨어뜨린 책도 모두 불타지만, 쓴 사람의 이름이 남는 곳은 여기뿐입니다. 기본값은 꺼짐.",
   "gui.dungeontrain.options.update_notice_chat": "새 버전 채팅 알림",

@@ -4016,6 +4016,7 @@
   "item.dungeontrain.random_potion": "Willekeurig drankje",
   "item.dungeontrain.random_good_potion": "Willekeurig goed drankje",
   "item.dungeontrain.random_bad_potion": "Willekeurig slecht drankje",
+  "item.dungeontrain.disposable_camera": "Wegwerpcamera",
   "gui.dungeontrain.options.book_author_chat": "Boekauteur in de chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Zet elke keer dat een Dungeon Train-boek verbrandt een chatregel met de naam van de auteur neer — \"Het boek van X verbrandt\". De boeken die je leest, weggooit of bij je dood laat vallen vatten allemaal vlam, en dit is de enige plek waar hun schrijver wordt genoemd. Standaard uit.",
   "gui.dungeontrain.options.update_notice_chat": "Chat bij nieuwe versie",

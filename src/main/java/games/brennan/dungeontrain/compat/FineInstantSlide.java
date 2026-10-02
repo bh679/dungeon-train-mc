@@ -1,9 +1,7 @@
 package games.brennan.dungeontrain.compat;
 
 import net.minecraft.core.component.DataComponentType;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -14,9 +12,9 @@ import net.minecraft.world.item.Items;
  * resolution.
  *
  * <p>Not an item of DT's own: Exposure reads a film's photo size from the stack's
- * {@code exposure:film_frame_size} component, so this is the add-on's slide carrying that component and
- * a DT name. Players never hold one: it is what a {@link DisposableCamera} comes loaded with. Both
- * mods are named by id — nothing here links against them.</p>
+ * {@code exposure:film_frame_size} component, so this is the add-on's slide carrying that component.
+ * Players never hold one: it is what a {@link DisposableCamera} comes loaded with. Both mods are
+ * named by id — nothing here links against them.</p>
  */
 public final class FineInstantSlide {
 
@@ -27,7 +25,6 @@ public final class FineInstantSlide {
         ResourceLocation.fromNamespaceAndPath("exposure_polaroid", "instant_color_slide");
     static final ResourceLocation FRAME_SIZE_COMPONENT =
         ResourceLocation.fromNamespaceAndPath("exposure", "film_frame_size");
-    static final String NAME_KEY = "item.dungeontrain.fine_instant_color_slide";
 
     private FineInstantSlide() {}
 
@@ -41,7 +38,6 @@ public final class FineInstantSlide {
         }
         ItemStack stack = new ItemStack(item);
         stack.set((DataComponentType<Integer>) frameSize, FRAME_SIZE);
-        stack.set(DataComponents.ITEM_NAME, Component.translatable(NAME_KEY));
         return stack;
     }
 }

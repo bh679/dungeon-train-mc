@@ -1868,7 +1868,6 @@
   "item.dungeontrain.random_potion": "Random Potion",
   "item.dungeontrain.random_good_potion": "Random Good Potion",
   "item.dungeontrain.random_bad_potion": "Random Bad Potion",
-  "item.dungeontrain.fine_instant_color_slide": "Fine Instant Color Slide",
   "item.dungeontrain.disposable_camera": "Disposable Camera",
   "gui.dungeontrain.prefab_tab.variants": "Block Variants",
   "gui.dungeontrain.prefab_tab.loot": "Containers / Loot",
