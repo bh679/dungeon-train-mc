@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.photo.WornPhotographItem;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -73,6 +74,15 @@ public final class ModItems {
     public static final DeferredItem<Item> RANDOM_PLAYERPHOTO = ITEMS.register(
         "random_playerphoto",
         () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
+     * What {@link #RANDOM_PLAYERPHOTO} becomes: Exposure's photograph, on paper that wears as the
+     * photo's views run out ({@link games.brennan.dungeontrain.compat.photo.WornPhotographItem}).
+     */
+    public static final DeferredItem<Item> FOUND_PHOTOGRAPH = ITEMS.register(
+        "found_photograph",
+        () -> new WornPhotographItem(new Item.Properties().stacksTo(1))
     );
 
     /**

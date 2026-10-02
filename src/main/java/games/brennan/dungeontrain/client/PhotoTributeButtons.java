@@ -25,8 +25,9 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
  * Adds two buttons under a found player photo while it is open in Exposure's viewer:
- * the Tribute cost beside an emerald — pay it to keep the photo travelling — and {@code X} to close,
- * which lets the photo burn. Each button is only as wide as what is drawn on it.
+ * how many views it has left, the Tribute cost beside an emerald — pay it to keep the photo
+ * travelling — and {@code X} to close. Either way the photo burns afterwards. Each button is only
+ * as wide as what is drawn on it.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoTributeButtons {
@@ -65,11 +66,19 @@ public final class PhotoTributeButtons {
         int emeralds = player.getInventory().countItem(Items.EMERALD);
         boolean canAfford = emeralds >= cost;
         Component closeLabel = Component.translatable("gui.dungeontrain.photo_tribute.close");
+        int viewsLeft = SharedPhotos.viewsLeft(photo);
+        Component viewsLabel = Component.literal(viewsLeft + "/" + SharedPhotos.VIEWS_MAX);
+        int viewsWidth = font.width(viewsLabel) + 2 * PADDING;
         int tributeWidth = TributeButton.widthFor(font, cost);
         int closeWidth = font.width(CLOSE_MARK) + 2 * PADDING;
-        int left = (screen.width - tributeWidth - GAP - closeWidth) / 2;
+        int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - closeWidth) / 2;
         int y = screen.height - HEIGHT - BOTTOM_MARGIN;
 
+        Button views = Button.builder(viewsLabel, button -> { })
+            .bounds(left, y, viewsWidth, HEIGHT)
+            .tooltip(Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.views_left", viewsLeft)))
+            .createNarration(message -> Component.translatable("gui.dungeontrain.photo_tribute.views_left", viewsLeft)).build();
+        left += viewsWidth + GAP;
         TributeButton tribute = new TributeButton(left, y, tributeWidth, cost, canAfford, button -> {
             DungeonTrainNet.sendToServer(new PhotoTributePacket());
             screen.onClose();
@@ -80,10 +89,11 @@ public final class PhotoTributeButtons {
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
             .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT)
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
+        event.addListener(views);
         event.addListener(tribute);
         event.addListener(close);
         shownOn = screen;
-        shown = List.of(tribute, close);
+        shown = List.of(views, tribute, close);
     }
 
     /** Exposure's viewer draws only the photo, never its widgets, so the buttons are drawn here. */

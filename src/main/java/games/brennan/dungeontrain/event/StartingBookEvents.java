@@ -621,10 +621,19 @@ public final class StartingBookEvents {
      * dropped any other way.</p>
      */
     public static void dropAndBurn(ServerPlayer player, ItemStack stack) {
+        dropAndBurn(player, stack, FlameVariant.DEFAULT);
+    }
+
+    /** {@link #dropAndBurn}, in the green flames a thumbs-up book burns with — a photo that was paid Tribute. */
+    public static void dropAndBurnApproved(ServerPlayer player, ItemStack stack) {
+        dropAndBurn(player, stack, FlameVariant.APPROVED);
+    }
+
+    private static void dropAndBurn(ServerPlayer player, ItemStack stack, FlameVariant variant) {
         if (stack == null || stack.isEmpty()) return;
         ItemEntity dropped = dropFromPlayer(player, stack);
         if (BURN_ENTITIES.containsKey(dropped.getUUID())) return;
-        igniteItem(dropped, FlameVariant.DEFAULT);
+        igniteItem(dropped, variant);
         // Books are announced where their burn is detected; a photograph only ever burns through here.
         if (!stack.has(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT)
                 && dropped.level() instanceof net.minecraft.server.level.ServerLevel level) {

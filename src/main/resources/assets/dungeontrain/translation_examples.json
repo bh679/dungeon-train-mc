@@ -790,6 +790,16 @@
       ]
     }
   },
+  "gui.dungeontrain.photo_tribute.views_left": {
+    "1": {
+      "label": "how many more views the photo has before it is gone",
+      "examples": [
+        "10",
+        "3",
+        "1"
+      ]
+    }
+  },
   "gui.dungeontrain.photo_tribute.have": {
     "1": {
       "label": "how many emeralds the player is carrying",
