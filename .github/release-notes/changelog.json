@@ -21883,9 +21883,9 @@
       "highlights": [],
       "pr": 1744,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "end-band-spill-hardening",
@@ -21901,9 +21901,9 @@
       "highlights": [],
       "pr": 1745,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "editor-menus-survive-test-mode",
@@ -21918,9 +21918,9 @@
       "highlights": [],
       "pr": 1747,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "carriage-group-variants-loot",
@@ -21936,9 +21936,9 @@
       "highlights": [],
       "pr": 1748,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "main-menu-tidy-up",
@@ -21952,9 +21952,9 @@
       "highlights": [],
       "pr": 1749,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "see-what-others-are-doing",
@@ -21970,9 +21970,9 @@
       "highlights": [],
       "pr": 1754,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "hide-biome-mod-creative-tabs",
@@ -21987,9 +21987,9 @@
       "summary": "The creative inventory now keeps to the vanilla and Dungeon Train tabs, and the mod block tabs and their search entries can be switched back on from Options, Dungeon Train, Editor.",
       "highlights": [],
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "bookshelves-four-per-emerald",
@@ -22005,9 +22005,9 @@
       "highlights": [],
       "pr": 1758,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "own-library-dimension-odds",
@@ -22024,9 +22024,9 @@
       "highlights": [],
       "pr": 1757,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "longer-carriages",
@@ -22042,9 +22042,9 @@
       "highlights": [],
       "pr": 1755,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "narrative-tab-side-shortcut",
@@ -22059,9 +22059,9 @@
       "summary": "The creative inventory's left edge now has a shortcut to the Dungeon Train narrative tab.",
       "highlights": [],
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "villager-stock-sell-prices",
