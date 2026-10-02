@@ -22184,6 +22184,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "milestone-advancements-passenger-log",
+      "version": "0.1112.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "The rarest advancements make the passenger log",
+      "summary": "When someone earns one of the train's rarest advancements on a clean run, the passenger log hears about it.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
