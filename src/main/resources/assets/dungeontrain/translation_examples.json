@@ -760,6 +760,16 @@
       ]
     }
   },
+  "item.dungeontrain.shared_photo.by": {
+    "1": {
+      "label": "the player who took the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
   "chat.dungeontrain.book_suspended.duplicate": {
     "1": {
       "label": "how long the pause still has to run",
