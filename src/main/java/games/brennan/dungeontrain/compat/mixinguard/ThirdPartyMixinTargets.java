@@ -50,7 +50,7 @@ public final class ThirdPartyMixinTargets {
     private static final String BE = "org.betterx.betterend.world.";
     private static final String DIRECTIONS = "[Lnet/minecraft/core/Direction;";
     private static final String END_VANILLA =
-            "BetterEnd End bands stamp vanilla End instead (the BetterEnd End would lay out differently each boot)";
+            "BetterEnd End bands stamp vanilla End (the BetterEnd End would lay out differently each boot)";
 
     private static final String TENANEA = BE + "features.trees.TenaneaFeature";
     private static final String LUCERNIA = BE + "features.trees.LucerniaFeature";
