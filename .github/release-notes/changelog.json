@@ -21975,8 +21975,25 @@
       "released_at": null
     },
     {
-      "id": "longer-carriages",
+      "id": "hide-biome-mod-creative-tabs",
       "version": "0.1100.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Tidier creative inventory",
+      "summary": "The creative inventory now keeps to the vanilla and Dungeon Train tabs, and the mod block tabs and their search entries can be switched back on from Options, Dungeon Train, Editor.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "longer-carriages",
+      "version": "0.1101.0",
       "type": "feat",
       "tags": [
         "feature",
