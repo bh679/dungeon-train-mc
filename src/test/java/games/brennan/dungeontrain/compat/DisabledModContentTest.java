@@ -86,6 +86,22 @@ final class DisabledModContentTest {
     }
 
     @Test
+    @DisplayName("Exposure's camera, film and lightroom are hidden; the instant camera and photographs are kept")
+    void exposureFilmWorkflowHidden() {
+        for (String hidden : new String[] {"camera", "black_and_white_film", "color_film",
+                "high_sensitivity_black_and_white_film", "high_sensitivity_color_film",
+                "developed_black_and_white_film", "developed_color_film", "lightroom", "chromatic_sheet"}) {
+            assertTrue(DisabledModContent.isDisabledItem(id("exposure:" + hidden), false), hidden);
+        }
+        assertFalse(DisabledModContent.isDisabledItem(id("exposure:photograph"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("exposure:album"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("exposure:photograph_frame"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("exposure:camera_stand"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("exposure_polaroid:instant_camera"), false));
+        assertFalse(DisabledModContent.isDisabledItem(id("exposure_polaroid:instant_color_slide"), false));
+    }
+
+    @Test
     @DisplayName("mob gear swaps to iron, or diamond for diamond variants; non-gear is removed")
     void mobGearReplacement() {
         assertEquals("iron_helmet", DisabledModMobGear.vanillaReplacementId("cincinnasite_helmet", "helmet"));
