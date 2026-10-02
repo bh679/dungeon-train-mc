@@ -18,6 +18,10 @@
   "enchant": 2,
   "ender": 1,
   "enemies": 8,
+  "enemies_group": {
+    "weight": 1,
+    "optIn": true
+  },
   "featurefancy": {
     "weight": 1,
     "builder": {
@@ -26,6 +30,10 @@
     }
   },
   "fire": 4,
+  "icefeature": {
+    "weight": 1,
+    "name": "ice"
+  },
   "maze": 4,
   "mild_1": {
     "weight": 1,
@@ -121,20 +129,16 @@
       "BETA",
       "ALPHA",
       "INFDEV",
-      "CLASSIC",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ]
   },
   "vase": 1,
   "very_dangerouds_1": 1,
-  "icefeature": {
-    "weight": 1,
-    "name": "ice"
-  },
   "zombieroom3": {
     "weight": 1,
     "name": "zombiesplit"

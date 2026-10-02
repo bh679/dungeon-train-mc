@@ -1,8 +1,9 @@
 {
   "schemaVersion": 1,
   "sizes": {
+    "cargocontents": "full",
     "default_full": "full",
-    "portal": "half",
-    "cargocontents": "full"
+    "enemies_group": "full",
+    "portal": "half"
   }
 }
