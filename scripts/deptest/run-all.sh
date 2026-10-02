@@ -31,3 +31,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "M - missing VanillaBackport (Platform present)"   dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc pf
 # Big Lost City is required with a `[x,)` floor; N is the only case without `blc`.
 "$HERE/run-case.sh" "N - missing Big Lost City"                        dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch vb pf
+# What Are They Up To + CoroUtil are modpack companions (on by default), needed on client AND
+# server. O = a server that runs the pack's set; P = WATUT without its library.
+"$HERE/run-case.sh" "O - modpack companions WATUT + CoroUtil"          dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dbd pv lctf sp blc vb pf watut coro
+"$HERE/run-case.sh" "P - WATUT without CoroUtil"                       dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf watut
