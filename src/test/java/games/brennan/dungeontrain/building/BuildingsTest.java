@@ -88,6 +88,23 @@ final class BuildingsTest {
         assertEquals("lt", LostCityReferences.displayName(rl("big_lost_city", "lt")));
     }
 
+    @Test
+    @DisplayName("the editor's height gate drops to the Buildings layer only while Buildings is stamped")
+    void plotHeightGate() {
+        int buildings = games.brennan.dungeontrain.editor.EditorLayout.BUILDINGS_PLOT_Y;
+        int usual = games.brennan.dungeontrain.editor.EditorLayout.PLOT_Y;
+        // Standing in a building plot, on its floor and a few blocks under it.
+        assertEquals(true, games.brennan.dungeontrain.editor.EditorLayout.isAtPlotHeight(buildings, true));
+        assertEquals(true, games.brennan.dungeontrain.editor.EditorLayout.isAtPlotHeight(buildings - 5, true));
+        assertEquals(false, games.brennan.dungeontrain.editor.EditorLayout.isAtPlotHeight(buildings - 6, true));
+        // Any other category: the same height is ordinary world, as it always was.
+        assertEquals(false, games.brennan.dungeontrain.editor.EditorLayout.isAtPlotHeight(buildings, false));
+        assertEquals(false, games.brennan.dungeontrain.editor.EditorLayout.isAtPlotHeight(buildings));
+        assertEquals(true, games.brennan.dungeontrain.editor.EditorLayout.isAtPlotHeight(usual, false));
+        // The tallest building still fits under the editor world's ceiling, label headroom included.
+        assertEquals(true, buildings + Buildings.MAX_SIZE.getY() + 2 < 320);
+    }
+
     private static ResourceLocation rl(String ns, String path) {
         return ResourceLocation.fromNamespaceAndPath(ns, path);
     }
