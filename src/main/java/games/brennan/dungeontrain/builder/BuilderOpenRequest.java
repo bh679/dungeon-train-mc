@@ -122,7 +122,7 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
             case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM.id();
             case PART -> BuilderNewOptions.SubType.PARTS.id();
             case PORTAL_ROOM -> PORTAL_ROOM_SUB_TYPE;
-            case CHUNK_FRAME -> null;
+            case CHUNK_FRAME, BUILDING, LOST_CITY -> null;
             // A track build records no sub type — see subType(), and BuilderWorldSetup's track arm,
             // which sets the field itself.
             case TRACK -> "";
@@ -151,7 +151,7 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
             case CARRIAGE, CARRIAGE_GROUP -> BuilderNewOptions.SubType.WHOLE_CARRIAGE;
             case CONTENTS -> BuilderNewOptions.SubType.CARRIAGE_ROOM;
             case PART -> BuilderNewOptions.SubType.PARTS;
-            case TRACK, PORTAL_ROOM, CHUNK_FRAME -> null;
+            case TRACK, PORTAL_ROOM, CHUNK_FRAME, BUILDING, LOST_CITY -> null;
         };
     }
 
@@ -210,6 +210,8 @@ public record BuilderOpenRequest(BuilderPhotoPaths.Kind kind, String id, Carriag
             case PORTAL_ROOM -> BlockVariantPlot.trackKey(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> games.brennan.dungeontrain.editor.ChunkFramePlot.KEY_PREFIX + id;
             case CARRIAGE_GROUP -> BlockVariantPlot.wholeKey(games.brennan.dungeontrain.train.WholeKind.GROUP, id);
+            // No variant sidecar: a building is placed as its blocks, by worldgen.
+            case BUILDING, LOST_CITY -> null;
         };
     }
 

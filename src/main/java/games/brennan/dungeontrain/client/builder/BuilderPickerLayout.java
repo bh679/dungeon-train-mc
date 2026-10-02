@@ -25,7 +25,7 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
 
     /** One tile per row — a vertical list — so the preview column can be the wide one. */
     static final int COLUMNS = 1;
-    static final int ROWS = games.brennan.dungeontrain.builder.BuilderMode.values().length;
+    static final int ROWS = games.brennan.dungeontrain.builder.BuilderMode.NAV_ORDER.size();
     static final int TILE_GAP = 6;
     static final int COLUMN_GAP = 8;
     static final int ROW_GAP = 4;
@@ -46,7 +46,11 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
      * @param bottomY      first Y the body may NOT occupy (the bottom margin)
      */
     static BuilderPickerLayout of(int screenWidth, int screenHeight, int topY, int bottomY) {
-        int minBodyH = ROWS * (MIN_TILE_WIDTH * 9 / 16) + TILE_GAP + ROW_GAP + GO_H;
+        // Two tiers (NavTiles): the primary tiles at 16:9, the rest short, so the floor counts them apart.
+        long primaries = games.brennan.dungeontrain.builder.BuilderMode.NAV_ORDER.stream()
+                .filter(games.brennan.dungeontrain.builder.BuilderMode::primary).count();
+        int minBodyH = (int) (primaries * (MIN_TILE_WIDTH * 9 / 16) + (ROWS - primaries) * NavTiles.MIN_SMALL_H)
+                + NavTiles.GAP * ROWS + ROW_GAP + GO_H;
         int bodyW = Math.max(COLUMNS * MIN_TILE_WIDTH + TILE_GAP + COLUMN_GAP + MIN_TILE_WIDTH,
                 Math.min(screenWidth - 2 * SIDE_MARGIN, MAX_BODY_WIDTH));
         int bodyH = Math.max(bottomY - topY, minBodyH);
@@ -71,24 +75,16 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
     }
 
     /**
-     * Four 16:9 tiles, two per row, as large as the column allows and centred in it — the Nav
-     * tab's arithmetic, with a floor so a tiny viewport still gets a tile you can click.
+     * One tile per mode in {@link games.brennan.dungeontrain.builder.BuilderMode#NAV_ORDER}: big tiles for
+     * the two primary modes, short ones for the advanced rest — the Nav tab's arithmetic ({@link NavTiles}).
      */
     static List<Rect> tiles(Rect area) {
         // Tiles always span the column: the art is cover-cropped, so a tile shorter than 16:9 shows
         // a wider slice of its picture rather than a squashed one, and the caption has the width.
-        int tileW = Math.max(1, (area.w() - TILE_GAP * (COLUMNS - 1)) / COLUMNS);
-        int maxTileH = Math.max(1, (area.h() - TILE_GAP * (ROWS - 1)) / ROWS);
-        int tileH = Math.max(1, Math.min(tileW * 9 / 16, maxTileH));
-
-        int gridW = COLUMNS * tileW + TILE_GAP * (COLUMNS - 1);
-        int gridH = ROWS * tileH + TILE_GAP * (ROWS - 1);
-        int x0 = area.x() + Math.max(0, (area.w() - gridW) / 2);
-        int y0 = area.y() + Math.max(0, (area.h() - gridH) / 2);
-        List<Rect> out = new ArrayList<>(COLUMNS * ROWS);
-        for (int i = 0; i < COLUMNS * ROWS; i++) {
-            out.add(new Rect(x0 + (i % COLUMNS) * (tileW + TILE_GAP), y0 + (i / COLUMNS) * (tileH + TILE_GAP),
-                    tileW, tileH));
+        // Two tiers, in nav order — see NavTiles.
+        List<Rect> out = new ArrayList<>();
+        for (NavTiles.Cell c : NavTiles.layout(area.x(), area.y(), area.w(), area.h())) {
+            out.add(new Rect(c.x(), c.y(), c.w(), c.h()));
         }
         return List.copyOf(out);
     }
