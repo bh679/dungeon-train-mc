@@ -3970,6 +3970,7 @@
   "item.dungeontrain.random_potion": "ランダムなポーション",
   "item.dungeontrain.random_good_potion": "ランダムな良いポーション",
   "item.dungeontrain.random_bad_potion": "ランダムな悪いポーション",
+  "item.dungeontrain.disposable_camera": "使い捨てカメラ",
   "gui.dungeontrain.options.book_author_chat": "本の著者をチャットに表示",
   "gui.dungeontrain.options.book_author_chat.tip": "Dungeon Train の本が燃えるたびに、著者の名前を記したチャット行を表示します — 「X の本が燃える」。読んだ本も、捨てた本も、死んで落とした本もみな燃えますが、書き手の名が残るのはここだけです。既定ではオフ。",
   "gui.dungeontrain.options.update_notice_chat": "新バージョンのチャット通知",

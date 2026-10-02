@@ -110,6 +110,23 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Exposure — third-party, REQUIRED. The camera, film and photographs; its items and photo data have
+# to exist on both sides. Named by registry id only, so a floor is enough.
+[[dependencies.${mod_id}]]
+    modId="exposure"
+    type="required"
+    versionRange="[${exposure_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Exposure: Polaroid — third-party, REQUIRED. The instant camera add-on; it needs Exposure itself.
+[[dependencies.${mod_id}]]
+    modId="exposure_polaroid"
+    type="required"
+    versionRange="[${exposurepolaroid_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Second-lap overworld mods — third-party, REQUIRED. On odd laps the overworld gap before the
 # Nether band is William Wythers' Overhauled Overworld and the gap after it is Biomes O' Plenty
 # (worldgen/SecondLapOverworld). Floors only; their libraries (Cristel Lib, TerraBlender,
