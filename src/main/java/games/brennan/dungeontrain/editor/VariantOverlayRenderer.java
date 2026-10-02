@@ -368,6 +368,11 @@ public final class VariantOverlayRenderer {
                     sidecar::statesAt);
                 continue;
             }
+            // Out of every carriage plot: the parts menu is only ever closed by update(), which runs
+            // in one — so a player who left while it was open (a teleport to another category, a walk
+            // off the end) kept it active client-side, and the floating type menus ignore every
+            // click while a parts menu is active.
+            PartPositionMenuController.forget(player);
 
             // Contents plot — icon HUD for the contents' own variant
             // sidecar, anchored to the interior origin (one block in from
@@ -971,9 +976,6 @@ public final class VariantOverlayRenderer {
         // In the key as well as the packet, or closing / reopening the Welcome panel would be
         // deduped away and the panel would not react until something else changed the snapshot.
         keyBuf.append("help:").append(helpPanelDismissed).append('|');
-        // The WHOLE category's type-level setting rides with the menus; in the key so an edit re-pushes.
-        int wholeGroupEvery = games.brennan.dungeontrain.train.WholeGroupSettings.every();
-        keyBuf.append("every:").append(wholeGroupEvery).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
@@ -1005,7 +1007,7 @@ public final class VariantOverlayRenderer {
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
         DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
-            menus, EditorStageSelection.effective(), helpPanelDismissed, wholeGroupEvery));
+            menus, EditorStageSelection.effective(), helpPanelDismissed));
     }
 
     /**

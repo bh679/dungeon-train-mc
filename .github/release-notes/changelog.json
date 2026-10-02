@@ -22027,6 +22027,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "longer-carriages",
+      "version": "0.1103.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Longer carriages",
+      "summary": "Some carriages on the train are now much longer.",
+      "highlights": [],
+      "pr": 1755,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

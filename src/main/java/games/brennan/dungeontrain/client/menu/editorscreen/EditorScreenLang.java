@@ -22,8 +22,6 @@ public final class EditorScreenLang {
     public static final String TAB_ALL = PREFIX + "tab.all";
     public static final String TAB_WHOLE = PREFIX + "tab.whole";
     /** The Settings page's "Whole group every N" stepper — shares the number-entry title's key. */
-    public static final String WHOLE_EVERY = "gui.dungeontrain.number_input.whole_every";
-    public static final String WHOLE_EVERY_OFF = PREFIX + "settings.whole_every_off";
     public static final String TAB_CARRIAGES = PREFIX + "tab.carriages";
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
@@ -184,6 +182,16 @@ public final class EditorScreenLang {
 
     public static final String SHEET_PATH = PREFIX + "sheet.path";
     public static final String SHEET_SIZE = PREFIX + "sheet.size";
+    public static final String SHEET_SHELL_SIZE = PREFIX + "sheet.shell_size";
+    public static final String LAYOUT_HEADING = PREFIX + "layout.heading";
+    public static final String LAYOUT_ROOMS = PREFIX + "layout.rooms";
+    public static final String LAYOUT_HALVES = PREFIX + "layout.halves";
+    public static final String LAYOUT_GROUP = PREFIX + "layout.group";
+    public static final String SHEET_SHELL_SIZE_TIP = PREFIX + "sheet.shell_size.tip";
+    public static final String SHEET_SHELL_WINS = PREFIX + "sheet.shell_wins";
+    public static final String SHEET_SHELL_WINS_OFF = PREFIX + "sheet.shell_wins.off";
+    public static final String SHEET_SHELL_WINS_ON = PREFIX + "sheet.shell_wins.on";
+    public static final String SHEET_SHELL_WINS_TIP = PREFIX + "sheet.shell_wins.tip";
     public static final String SHEET_BLOCKS = PREFIX + "sheet.blocks";
     public static final String SHEET_ENTITIES = PREFIX + "sheet.entities";
     public static final String SHEET_CONTAINERS = PREFIX + "sheet.containers";

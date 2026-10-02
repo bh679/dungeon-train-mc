@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 2,
+  "excluded": [
+    "cargocontents"
+  ],
+  "included": [
+    "enemies_group",
+    "things"
+  ]
+}

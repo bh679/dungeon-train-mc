@@ -101,12 +101,14 @@ public final class TemplateSidecars {
         if (kind == null || id == null || id.isEmpty()) return out;
         switch (kind) {
             case CARRIAGE -> {
+                // Beside the template, in its pool's folder (ShellPool).
+                String at = games.brennan.dungeontrain.train.ShellPool.path(id);
                 out.add(new Sidecar("variants", CarriageVariantBlocks.SUBDIR,
-                        id + CarriageVariantBlocks.EXT));
+                        at + CarriageVariantBlocks.EXT));
                 out.add(new Sidecar("parts", CarriageVariantPartsStore.SUBDIR,
-                        id + CarriageVariantPartsStore.EXT));
+                        at + CarriageVariantPartsStore.EXT));
                 out.add(new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR,
-                        id + ContentsAllowStore.EXT));
+                        at + ContentsAllowStore.EXT));
             }
             case CONTENTS -> out.add(new Sidecar("variants", CarriageContentsVariantBlocks.SUBDIR,
                     id + CarriageContentsVariantBlocks.EXT));
@@ -470,9 +472,9 @@ public final class TemplateSidecars {
             // whose sub kind this install cannot resolve. Skipped, not an error.
             if (sidecar == null || !entry.getValue().isJsonPrimitive()) continue;
             try {
-                Path dir = UserContentPaths.activeSubDir(sidecar.subdir());
-                Files.createDirectories(dir);
-                Files.writeString(dir.resolve(sidecar.basename()), entry.getValue().getAsString(),
+                Path file = UserContentPaths.activeSubDir(sidecar.subdir()).resolve(sidecar.basename());
+                Files.createDirectories(file.getParent());
+                Files.writeString(file, entry.getValue().getAsString(),
                         StandardCharsets.UTF_8);
             } catch (Exception e) {
                 LOGGER.warn("[DungeonTrain] Template sidecars: could not write the {} sidecar for "

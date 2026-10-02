@@ -146,6 +146,43 @@ final class EditorRosterPacketTest {
     }
 
     @Test
+    @DisplayName("a carriage template's size rides with its entry; other rows carry none")
+    void shellSizeRoundTrip() {
+        EditorTypeMenusPacket.Variant half = new EditorTypeMenusPacket.Variant(
+            "halfy", 5, "CARRIAGES", "halfy", "halfy", true, false);
+        EditorTypeMenusPacket.Variant contents = new EditorTypeMenusPacket.Variant(
+            "fire", 2, "CONTENTS", "fire", "fire", false, false);
+        EditorRosterPacket decoded = roundTrip(new EditorRosterPacket(List.of(
+            new EditorRosterPacket.Group("carriages", "Carriages", "",
+                List.of(new EditorRosterPacket.Entry(half, 1).withShellSize("half"))),
+            new EditorRosterPacket.Group("contents", "Contents", "",
+                List.of(new EditorRosterPacket.Entry(contents, 1)))), ""));
+        assertEquals("half", decoded.groups().get(0).entries().get(0).shellSize());
+        assertEquals(EditorRosterPacket.Entry.NO_SHELL_SIZE, decoded.groups().get(1).entries().get(0).shellSize());
+    }
+
+    @Test
+    @DisplayName("a carriage template's 'carriage blocks win' switch round-trips; other rows carry none")
+    void shellWinsRoundTrip() {
+        EditorTypeMenusPacket.Variant cargo = new EditorTypeMenusPacket.Variant(
+            "cargo", 5, "CARRIAGES", "cargo", "cargo", true, false);
+        EditorTypeMenusPacket.Variant standard = new EditorTypeMenusPacket.Variant(
+            "standard", 5, "CARRIAGES", "standard", "standard", true, false);
+        EditorTypeMenusPacket.Variant contents = new EditorTypeMenusPacket.Variant(
+            "fire", 2, "CONTENTS", "fire", "fire", false, false);
+        EditorRosterPacket decoded = roundTrip(new EditorRosterPacket(List.of(
+            new EditorRosterPacket.Group("carriages", "Carriages", "", List.of(
+                new EditorRosterPacket.Entry(cargo, 1).withShellWins(true).withShellSize("full"),
+                new EditorRosterPacket.Entry(standard, 1).withShellWins(false))),
+            new EditorRosterPacket.Group("contents", "Contents", "",
+                List.of(new EditorRosterPacket.Entry(contents, 1)))), ""));
+        assertEquals(EditorRosterPacket.Entry.SHELL_WINS_ON, decoded.groups().get(0).entries().get(0).shellWins());
+        assertEquals("full", decoded.groups().get(0).entries().get(0).shellSize());
+        assertEquals(EditorRosterPacket.Entry.SHELL_WINS_OFF, decoded.groups().get(0).entries().get(1).shellWins());
+        assertEquals(EditorRosterPacket.Entry.NO_SHELL_WINS, decoded.groups().get(1).entries().get(0).shellWins());
+    }
+
+    @Test
     @DisplayName("an empty roster is buffer-symmetric and normalises a null stamped category")
     void empty() {
         EditorRosterPacket decoded = roundTrip(new EditorRosterPacket(List.of(), null, null));
