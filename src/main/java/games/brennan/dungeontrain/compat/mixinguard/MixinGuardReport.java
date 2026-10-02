@@ -5,8 +5,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Which guarded third-party mixins {@code ThirdPartyMixinPlugin} skipped this boot because their
- * targets had changed. Written once during mixin bootstrap, read by the features that fall back.
+ * Which guarded third-party mixins are off this boot: {@code ThirdPartyMixinPlugin} skipped them because
+ * their targets had changed, or applied them and found a hook that did not take hold. Written during
+ * mixin bootstrap and as target classes load, read by the features that fall back.
  */
 public final class MixinGuardReport {
 

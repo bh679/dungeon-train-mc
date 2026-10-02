@@ -98,6 +98,27 @@ final class ThirdPartyMixinTargetsTest {
                 "BetterEndDirectionsPerThreadMixin", "BetterEndHorizontalPerThreadMixin")), end);
     }
 
+    @Test
+    void everyCheckedClassBelongsToAGuardedLibrary() {
+        for (String mixin : ThirdPartyMixinTargets.guardedMixins()) {
+            for (String owner : ThirdPartyMixinTargets.forMixin(mixin).allChecked().keySet()) {
+                assertNotNull(ThirdPartyMixinTargets.libraryOf(owner),
+                        mixin + " checks " + owner + ", which libraryOf cannot place — the WARN could not name it");
+            }
+        }
+    }
+
+    @Test
+    void aMissIsBlamedOnTheLibraryThatOwnsTheClass() {
+        // BetterEnd mixins hook these two, but they are BCLib's: a BCLib update is what would move them.
+        assertEquals("bclib", ThirdPartyMixinTargets.libraryOf("org.betterx.bclib.util.StructureErode"));
+        assertEquals("bclib", ThirdPartyMixinTargets.libraryOf("org.betterx.bclib.util.MHelper"));
+        assertEquals("betterend", ThirdPartyMixinTargets.libraryOf("org.betterx.betterend.world.features.WallScatterFeature"));
+        assertEquals("wover", ThirdPartyMixinTargets.libraryOf("org.betterx.wover.generator.api.biomesource.WoverBiomePicker"));
+        assertEquals("terrablender", ThirdPartyMixinTargets.libraryOf("terrablender.api.SurfaceRuleManager"));
+        assertEquals(null, ThirdPartyMixinTargets.libraryOf("net.minecraft.core.Registry"));
+    }
+
     private static Set<String> annotatedTargets(ClassNode node) {
         Set<String> targets = new TreeSet<>();
         List<AnnotationNode> annotations = new ArrayList<>();

@@ -158,6 +158,9 @@ public final class DebugCommand {
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
+            // /dungeontrain debug mixin-guards — the guarded WorldWeaver/BCLib/BetterEnd/TerraBlender mixins
+            // that are off this boot and what each falls back to. Also logged at INFO for RCON runs.
+            .then(Commands.literal("mixin-guards").executes(ctx -> MixinGuardsDebug.report(ctx.getSource())))
             // /dungeontrain debug trade-values dump — every registered item with its name, Trade
             // Everything's current value and where it comes from, to <server dir>/trade-values-catalog.json.
             // Copied verbatim to the relay page's catalog.json (brennan.games/dungeontrain/items/).
