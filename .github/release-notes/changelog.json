@@ -22099,8 +22099,25 @@
       "released_at": null
     },
     {
-      "id": "book-copies-not-votable",
+      "id": "ride-snapshot-fov-guard",
       "version": "0.1107.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Ride photos stay properly framed",
+      "summary": "Ride photos keep their normal framing while you're zoomed in.",
+      "highlights": [],
+      "pr": 1763,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "book-copies-not-votable",
+      "version": "0.1108.0",
       "type": "fix",
       "tags": [
         "fix",
