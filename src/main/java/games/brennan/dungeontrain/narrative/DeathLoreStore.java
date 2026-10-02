@@ -272,20 +272,29 @@ public final class DeathLoreStore {
     private static String n(DeathLoreEntry e) { return e == null ? "" : e.narration(); }
 
     private static String sub(String template, Context ctx) {
+        return substitute(template, ctx, NarrativeContentLocale.current());
+    }
+
+    /**
+     * {@code template} with its {@code {placeholders}} filled from {@code ctx}, the figures spelled in
+     * {@code locale}'s words and wrapped in the death screen's white-figure sentinels — what the
+     * server sends, for any locale. Public for the translation editor's death-screen preview.
+     */
+    public static String substitute(String template, Context ctx, String locale) {
         if (template == null) return "";
         if (template.indexOf('{') < 0) return template;
         return template
-                .replace("{carriage}", num(ctx.carriage()))
-                .replace("{friends}", num(ctx.friends()))
-                .replace("{books}", num(ctx.books()))
-                .replace("{mobs}", num(ctx.mobs()))
-                .replace("{met}", num(ctx.met()))
-                .replace("{slain}", num(ctx.slain()))
-                .replace("{loot}", num(ctx.loot()))
-                .replace("{hearts}", num(ctx.hearts()))
-                .replace("{deaths}", num(ctx.deaths()))
-                .replace("{deaths_nth}", ord(ctx.deaths()))
-                .replace("{carriage_nth}", ord(ctx.carriage()))
+                .replace("{carriage}", num(ctx.carriage(), locale))
+                .replace("{friends}", num(ctx.friends(), locale))
+                .replace("{books}", num(ctx.books(), locale))
+                .replace("{mobs}", num(ctx.mobs(), locale))
+                .replace("{met}", num(ctx.met(), locale))
+                .replace("{slain}", num(ctx.slain(), locale))
+                .replace("{loot}", num(ctx.loot(), locale))
+                .replace("{hearts}", num(ctx.hearts(), locale))
+                .replace("{deaths}", num(ctx.deaths(), locale))
+                .replace("{deaths_nth}", ord(ctx.deaths(), locale))
+                .replace("{carriage_nth}", ord(ctx.carriage(), locale))
                 .replace("{distance}", "" + String.format(Locale.ROOT, "%,.0f", ctx.distance()) + "");
     }
 
@@ -310,8 +319,8 @@ public final class DeathLoreStore {
      * parses to colour the figure white, keeping the markers out of the
      * narration templates themselves.
      */
-    private static String num(long v) {
-        return "" + words(v) + "";
+    private static String num(long v, String locale) {
+        return "" + words(v, locale) + "";
     }
 
     /**
@@ -325,15 +334,22 @@ public final class DeathLoreStore {
      * made here — the sentence knows its noun and this method cannot.</p>
      */
     static String ord(long v) {
+        return ord(v, NarrativeContentLocale.current());
+    }
+
+    private static String ord(long v, String locale) {
         return "" + LocaleOrdinalWords.forLocale(
-                NarrativeContentLocale.current(), v, LocaleOrdinalWords.Gender.MASCULINE) + "";
+                locale, v, LocaleOrdinalWords.Gender.MASCULINE) + "";
     }
 
     static String words(long n) {
         // Match the figure's language to the prose language the pool was loaded in:
         // NarrativeContentLocale drives which locale's death_lore templates are active,
         // so Chinese prose must carry Chinese numerals rather than English words.
-        String loc = NarrativeContentLocale.current();
+        return words(n, NarrativeContentLocale.current());
+    }
+
+    private static String words(long n, String loc) {
         if (loc.startsWith("zh")) {
             // Traditional variants (Taiwan/Hong Kong) use 萬 rather than Simplified 万.
             boolean traditional = loc.startsWith("zh_tw") || loc.startsWith("zh_hk");
@@ -354,14 +370,14 @@ public final class DeathLoreStore {
         }
         if (n < 1000) {
             long h = n / 100, r = n % 100;
-            return r == 0 ? ONES[(int) h] + " hundred" : ONES[(int) h] + " hundred and " + words(r);
+            return r == 0 ? ONES[(int) h] + " hundred" : ONES[(int) h] + " hundred and " + words(r, loc);
         }
         if (n < 1_000_000) {
             long k = n / 1000, r = n % 1000;
-            return r == 0 ? words(k) + " thousand" : words(k) + " thousand " + words(r);
+            return r == 0 ? words(k, loc) + " thousand" : words(k, loc) + " thousand " + words(r, loc);
         }
         long m = n / 1_000_000, r = n % 1_000_000;
-        return r == 0 ? words(m) + " million" : words(m) + " million " + words(r);
+        return r == 0 ? words(m, loc) + " million" : words(m, loc) + " million " + words(r, loc);
     }
 
     // ---- Number → Chinese words (Simplified) — used when the content locale is Chinese ----

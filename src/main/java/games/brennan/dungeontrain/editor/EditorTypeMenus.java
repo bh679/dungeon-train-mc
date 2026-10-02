@@ -13,7 +13,9 @@ import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import games.brennan.dungeontrain.train.CarriageContents;
+import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageContentsRegistry;
+import games.brennan.dungeontrain.train.ContentsSize;
 import games.brennan.dungeontrain.train.CarriageContentsWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -124,22 +126,56 @@ public final class EditorTypeMenus {
             activeId, categoryBar, typeStrip));
     }
 
+    /**
+     * The Contents menus. Room, Half and Full are separate template types — one tab each, like the
+     * part kinds under Carriages — but they share the plot origin, so only the resident size is
+     * standing and only its menu is shown. Its tab strip reaches the other two; entering one of
+     * their templates switches the resident size ({@link CarriageContentsEditor#ensureResident}).
+     */
     private static List<EditorTypeMenusPacket.Menu> contentsMenus(CarriageDims dims) {
         List<CarriageContents> topLevel = topLevelContents();
-        if (topLevel.isEmpty()) return Collections.emptyList();
-        CarriageContents first = topLevel.get(0);
-        BlockPos firstOrigin = CarriageContentsEditor.plotOrigin(first, dims);
+        ContentsSize resident = ContentsResidentSize.current();
+        List<CarriageContents> shown = new ArrayList<>();
+        for (CarriageContents c : topLevel) {
+            if (CarriageContentsPlacer.sizeOf(c) == resident) shown.add(c);
+        }
+        BlockPos firstOrigin = shown.isEmpty()
+            ? new BlockPos(0, EditorLayout.PLOT_Y, EditorLayout.CONTENTS_FIRST_Z)
+            : CarriageContentsEditor.plotOrigin(shown.get(0), dims);
         if (firstOrigin == null) return Collections.emptyList();
-        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
+        CarriageDims box = resident.boxOrRoom(dims, games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize());
+        Vec3i footprint = new Vec3i(box.length(), box.height(), box.width());
         BlockPos anchor = anchorForXRow(firstOrigin, footprint);
-        String cat = EditorCategory.CONTENTS.name();
-        List<EditorTypeMenusPacket.Variant> rows = contentsRows(topLevel);
-        List<EditorTypeMenusPacket.CategoryButton> categoryBar = buildCategoryBar();
-        List<EditorTypeMenusPacket.TypeTab> typeStrip = List.of(
-            new EditorTypeMenusPacket.TypeTab("Contents", cat, first.id(), first.id()));
+        List<EditorTypeMenusPacket.Variant> rows = contentsRows(shown);
         return List.of(new EditorTypeMenusPacket.Menu(
-            anchor, "Contents", rows, false,
-            EditorCategory.CONTENTS.id(), categoryBar, typeStrip));
+            anchor, contentsTypeName(resident), rows, false,
+            EditorCategory.CONTENTS.id(), buildCategoryBar(), buildContentsTypeStrip(topLevel)));
+    }
+
+    /** The type label a contents size goes by in the Contents menus. */
+    static String contentsTypeName(ContentsSize size) {
+        return switch (size) {
+            case ROOM -> "Room";
+            case HALF -> "Half";
+            case FULL -> "Full";
+        };
+    }
+
+    /**
+     * One tab per contents size. A tab jumps to its size's first template; a size with none yet
+     * jumps to {@code size.<key>}, which {@code editor contents enter} reads as "show this size".
+     */
+    private static List<EditorTypeMenusPacket.TypeTab> buildContentsTypeStrip(List<CarriageContents> topLevel) {
+        String cat = EditorCategory.CONTENTS.name();
+        List<EditorTypeMenusPacket.TypeTab> strip = new ArrayList<>();
+        for (ContentsSize size : ContentsSize.values()) {
+            String target = CarriageContentsEditor.SIZE_TOKEN_PREFIX + size.key();
+            for (CarriageContents c : topLevel) {
+                if (CarriageContentsPlacer.sizeOf(c) == size) { target = c.id(); break; }
+            }
+            strip.add(new EditorTypeMenusPacket.TypeTab(contentsTypeName(size), cat, target, target));
+        }
+        return strip;
     }
 
     private static List<EditorTypeMenusPacket.Menu> trackMenus(CarriageDims dims) {
@@ -226,6 +262,10 @@ public final class EditorTypeMenus {
         // are filtered out of the top-level list here — same rule the CONTENTS menu follows.
         List<String> names = TrackVariantGroupStore.topLevelNames(kind);
         if (names.isEmpty()) return;
+        // Tunnel rows are laid out by group — list them in plot order, anchored at the first plot.
+        if (games.brennan.dungeontrain.tunnel.TunnelPlotOrder.isTunnel(kind)) {
+            names = games.brennan.dungeontrain.tunnel.TunnelPlotOrder.sortBySlot(kind, names);
+        }
         BlockPos firstOrigin = TrackSidePlots.plotOrigin(kind, names.get(0), dims);
         Vec3i footprint = TrackSidePlots.footprint(kind, names.get(0), dims);
         BlockPos anchor = anchorForZRow(firstOrigin, footprint);
@@ -325,7 +365,8 @@ public final class EditorTypeMenus {
                 subVariantsFor(kind, name, cat, modelId), stageId == null ? "" : stageId)
                 .withDisplayName(TrackVariantWeights.nameFor(kind, name))
                 .withBuilder(builderUuid(TemplateBuilderLookup.track(kind, name)),
-                    builderName(TemplateBuilderLookup.track(kind, name))));
+                    builderName(TemplateBuilderLookup.track(kind, name)))
+                .withGroups(TrackVariantWeights.groupsFor(kind, name)));
         }
         return rows;
     }

@@ -156,30 +156,43 @@ public final class ChunkFramePlacer {
         Vec3i size = frame.size();
         BlockPos.MutableBlockPos local = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
-        for (int y = 0; y < size.getY(); y++) {
-            for (int z = 0; z < size.getZ(); z++) {
-                for (int x = 0; x < size.getX(); x++) {
-                    BlockState state = frame.at(x, y, z);
-                    CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
-                    if (variants.statesAt(local.set(x, y, z)) != null) {
-                        VariantState roll = variants.resolve(local.immutable(), seed, rollIndex);
-                        if (roll == null || roll.isMob()) continue;
-                        state = CarriageVariantBlocks.isEmptyPlaceholder(roll.state()) ? null : roll.state();
-                        blockEntity = roll.blockEntityNbt();
+        // A grown column stays inside the room: the frame's outer layer is the skybox skin, and a
+        // column through it would open the lock.
+        java.util.function.Predicate<BlockPos> within = games.brennan.dungeontrain.editor.GrowthPass
+            .inside(roomOrigin, size.getX() - 2, size.getY() - 2, size.getZ() - 2)
+            .and(p -> !mask.covers(p));
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+            for (int y = 0; y < size.getY(); y++) {
+                for (int z = 0; z < size.getZ(); z++) {
+                    for (int x = 0; x < size.getX(); x++) {
+                        BlockState state = frame.at(x, y, z);
+                        CompoundTag blockEntity = frame.blockEntityAt(x, y, z);
+                        VariantState roll = null;
+                        if (variants.statesAt(local.set(x, y, z)) != null) {
+                            roll = variants.resolve(local.immutable(), seed, rollIndex);
+                            if (roll == null || roll.isMob()) continue;
+                            state = CarriageVariantBlocks.isEmptyPlaceholder(roll.state()) ? null : roll.state();
+                            blockEntity = roll.blockEntityNbt();
+                        }
+                        if (state == null || state.isAir()) continue;
+                        // Stage placeholders become the stage's real blocks, as in every other stamp.
+                        state = games.brennan.dungeontrain.train.StagePlacementScope.resolve(state);
+                        cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
+                            roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
+                            roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
+                        if (mask.covers(cursor)) continue;
+                        BlockState current = level.getBlockState(cursor);
+                        if (current != state) {
+                            if (current.hasBlockEntity()) level.removeBlockEntity(cursor);
+                            level.setBlock(cursor, state, Block.UPDATE_ALL);
+                            applyBlockEntity(level, cursor, blockEntity);
+                            changed++;
+                        }
+                        if (roll != null) {
+                            games.brennan.dungeontrain.editor.GrowthPass.note(level, cursor.immutable(), roll, state,
+                                local.immutable(), seed, rollIndex, within);
+                        }
                     }
-                    if (state == null || state.isAir()) continue;
-                    // Stage placeholders become the stage's real blocks, as in every other stamp.
-                    state = games.brennan.dungeontrain.train.StagePlacementScope.resolve(state);
-                    cursor.set(roomOrigin.getX() + ChunkFrame.OFFSET.getX() + x,
-                        roomOrigin.getY() + ChunkFrame.OFFSET.getY() + y,
-                        roomOrigin.getZ() + ChunkFrame.OFFSET.getZ() + z);
-                    if (mask.covers(cursor)) continue;
-                    BlockState current = level.getBlockState(cursor);
-                    if (current == state) continue;
-                    if (current.hasBlockEntity()) level.removeBlockEntity(cursor);
-                    level.setBlock(cursor, state, Block.UPDATE_ALL);
-                    applyBlockEntity(level, cursor, blockEntity);
-                    changed++;
                 }
             }
         }

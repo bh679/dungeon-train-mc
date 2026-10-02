@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin;
 
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.worldgen.density.NetherBandFloodednessDensityFunction;
 import games.brennan.dungeontrain.worldgen.density.NetherBandHooks;
 import games.brennan.dungeontrain.worldgen.density.NetherBandTerrainDensityFunction;
 import games.brennan.dungeontrain.worldgen.density.TrackErosionDensityFunction;
@@ -42,14 +43,18 @@ public abstract class RandomStateMixin {
             // getBaseHeight for structures) and initialDensityWithoutJaggedness (NoiseChunk derives
             // the preliminary surface level the surface-rule gate keys off — must track the new top
             // or the mountain paints as bare rock).
+            // Only finalDensity carves the CavernNoise caverns; the preliminary surface stays at the top.
             DensityFunction finalDensity =
-                    new NetherBandTerrainDensityFunction(router.finalDensity());
+                    new NetherBandTerrainDensityFunction(router.finalDensity(), true);
             DensityFunction initialDensityWithoutJaggedness =
-                    new NetherBandTerrainDensityFunction(router.initialDensityWithoutJaggedness());
+                    new NetherBandTerrainDensityFunction(router.initialDensityWithoutJaggedness(), false);
+            // Keep the mountains' interior dry so the caverns (and the rails through them) never flood.
+            DensityFunction floodedness =
+                    new NetherBandFloodednessDensityFunction(router.fluidLevelFloodednessNoise());
 
             NoiseRouter raised = new NoiseRouter(
                     router.barrierNoise(),
-                    router.fluidLevelFloodednessNoise(),
+                    floodedness,
                     router.fluidLevelSpreadNoise(),
                     router.lavaNoise(),
                     router.temperature(),

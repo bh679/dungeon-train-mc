@@ -82,6 +82,22 @@ final class PortalTestSaveCheckScreenTest {
             PortalTestSaveCheckScreen.forTemplate("carriages", "pen").testCommand());
         assertEquals("dungeontrain editor test contents library",
             PortalTestSaveCheckScreen.forTemplate("contents", "library").testCommand());
+        assertEquals("dungeontrain editor test tracks pillar_top mossy",
+            PortalTestSaveCheckScreen.forTrack("pillar_top", "mossy").testCommand());
+    }
+
+    @Test
+    @DisplayName("A piece of the line checks the Tracks scan's <modelId>.<name> row, not its bare name")
+    void forTrack_checksCompoundKey() {
+        PortalTestSaveCheckScreen check = PortalTestSaveCheckScreen.forTrack("tunnel_portal", "mossy");
+        assertEquals("tunnel_portal.mossy", check.checkedKey());
+        EditorDirtyCheck.DirtyEntry portal = new EditorDirtyCheck.DirtyEntry(
+            "tracks", "tunnel_portal.mossy", "tunnel / portal / mossy", true, false);
+        EditorDirtyCheck.DirtyEntry section = new EditorDirtyCheck.DirtyEntry(
+            "tracks", "tunnel_section.mossy", "tunnel / section / mossy", true, false);
+        assertTrue(PortalTestSaveCheckScreen.isDirty(List.of(portal), "tracks", check.checkedKey()));
+        // The same name on another kind is another template.
+        assertFalse(PortalTestSaveCheckScreen.isDirty(List.of(section), "tracks", check.checkedKey()));
     }
 
     @Test

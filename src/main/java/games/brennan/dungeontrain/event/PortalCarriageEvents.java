@@ -438,7 +438,7 @@ public final class PortalCarriageEvents {
     /**
      * True when {@code (x, y, z)} is anywhere a portal pair owns — either corridor, the room between
      * them, any copy of that room currently standing, and the clearance a
-     * {@link games.brennan.dungeontrain.portal.PortalRoomMode#BEDROCKLESS} room swept around itself.
+     * {@link games.brennan.dungeontrain.portal.PortalRoomMode#VOID} room swept around itself.
      *
      * <p>Read by {@code PortalRoomSpawnGuard} to keep the dark from filling a portal room with
      * skeletons. The structures live here because this is what stamps and moves them, so the query
@@ -1455,7 +1455,7 @@ public final class PortalCarriageEvents {
      * structure in the way — and a fog reaching past the built edge would be describing a room the
      * player could walk out of.</p>
      *
-     * <p><b>The test is against the padded region, not the structure.</b> A Bedrockless room's fog
+     * <p><b>The test is against the padded region, not the structure.</b> A Void room's fog
      * reaches into the clearance it swept, and a player who steps off the structure into that void is
      * precisely who the fog is for — the ramp thickens it the further out they get. Testing the bare
      * {@link #structureBox} instead sent {@code none()} at the room's own wall, taking the fog away
@@ -1468,7 +1468,7 @@ public final class PortalCarriageEvents {
                                    Set<UUID> fogged) {
         if (!structure.settings().fogs()) return;
 
-        // Bedrockless reaches past its own copies — there are none — into the clearance it swept, so
+        // Void reaches past its own copies — there are none — into the clearance it swept, so
         // that mining out through the room's shell does not leave the fog behind while the player is
         // still standing in the void it was hiding. Every other mode pads by nothing and the bounds
         // stay what was stamped.
@@ -1519,7 +1519,7 @@ public final class PortalCarriageEvents {
      * hears about the room is {@link #structureBox}, the same generous box the fog uses, so the
      * region is cached before the player walks in and the crossfade has somewhere to start. What the
      * packet describes is the room's own stamped extent, because that is where the lift stops: the
-     * corridors back to the train are not daylit, and neither is the void a bedrockless room swept.</p>
+     * corridors back to the train are not daylit, and neither is the emptiness a Void room swept.</p>
      */
     private static void sendSkyFor(List<ServerPlayer> players, CarriageDims dims,
                                    PortalCarriageLayout layout, PortalStructure structure,
@@ -2451,7 +2451,7 @@ public final class PortalCarriageEvents {
 
         // Not on top of another pair. Lanes keep neighbouring pairs apart, but a pair the train left
         // behind long ago keeps standing in its lane, and one in the same lane can be relocated right
-        // onto it: the two rooms merge, a Bedrockless room shows the old one's bedrock where its void
+        // onto it: the two rooms merge, a Void room shows the old one's bedrock where its void
         // should be, and the old pair — still claiming the space — pulls the player out as stranded.
         if (!clearOverlapping(level, dims, pairKey, planned)) {
             return existing;
@@ -2535,7 +2535,7 @@ public final class PortalCarriageEvents {
      * wants a twin it is stamped afresh with the same room. A live or occupied pair is never touched;
      * the caller waits instead, which is also what stops two live pairs evicting each other in turn.</p>
      *
-     * <p>Both sides are measured with {@link PortalCarriageBuilder#claimOf}, which counts a Bedrockless
+     * <p>Both sides are measured with {@link PortalCarriageBuilder#claimOf}, which counts a Void
      * room's swept void as its own — something standing in it is what the player would see.</p>
      */
     private static boolean clearOverlapping(ServerLevel level, CarriageDims dims, int pairKey,
@@ -2704,7 +2704,6 @@ public final class PortalCarriageEvents {
         // Half the room's overhang either side of the corridor, plus a block; never less than the
         // slack the built-in room was tuned with.
         int slackZ = Math.max(POCKET_ROOM_SLACK, (room.getZ() - dims.width()) / 2 + 1);
-        int slackY = Math.max(POCKET_ROOM_SLACK, room.getY() - dims.height() + 1);
 
         int minX = Math.min(origin.getX() - 1, structure.tiledMinX(dims, layout) - 1);
         int maxX = Math.max(origin.getX() + span + 1, structure.tiledMaxX(dims, layout) + 2);
@@ -2721,9 +2720,11 @@ public final class PortalCarriageEvents {
         // entry door stands one corridor below the other. Everything this box drives (the fog, the
         // train audio, "is this player in the structure") then stopped at the lane and left the rest
         // of the room outside it.
-        // slackY already reaches past the room's own ceiling, so only the FLOOR term moves here.
+        // The ceiling is the room's own, counted up from its floor — counted up from the lane, a
+        // sunken room's box reached the train deck overhead (see structureCeilingY).
         int minY = Math.min(origin.getY(), roomOrigin.getY()) - 1;
-        int maxY = origin.getY() + dims.height() + slackY;
+        int maxY = PortalRoomLayout.structureCeilingY(origin.getY(), roomOrigin.getY(), room.getY(),
+            dims.height(), POCKET_ROOM_SLACK);
         if (corridors != null) {
             minX = Math.min(minX, corridors.minX() - 1);
             maxX = Math.max(maxX, corridors.maxX() + 2);

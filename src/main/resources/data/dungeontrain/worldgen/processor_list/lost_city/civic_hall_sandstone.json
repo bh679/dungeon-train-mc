@@ -1,0 +1,77 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:stone_bricks",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:sandstone"
+        },
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:chiseled_sandstone"
+        },
+        {
+          "from": "minecraft:cobblestone",
+          "to": "minecraft:smooth_red_sandstone"
+        },
+        {
+          "from": "minecraft:chiseled_stone_bricks",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:smooth_sandstone",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:calcite",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:smooth_sandstone"
+        },
+        {
+          "from": "minecraft:chiseled_sandstone",
+          "to": "minecraft:chiseled_sandstone"
+        },
+        {
+          "from": "minecraft:quartz_pillar",
+          "to": "minecraft:chiseled_sandstone"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:chiseled_sandstone"
+        },
+        {
+          "from": "minecraft:chiseled_stone_bricks",
+          "to": "minecraft:chiseled_sandstone"
+        }
+      ]
+    }
+  ]
+}

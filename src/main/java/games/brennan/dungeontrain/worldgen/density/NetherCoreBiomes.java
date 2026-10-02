@@ -29,7 +29,9 @@ import terrablender.api.Regions;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Picks the real-Nether biome for a Dungeon-Train Nether-<b>core</b> column the exact way the Nether
@@ -70,9 +72,12 @@ public final class NetherCoreBiomes {
     private final Holder<Biome> fallback;        // minecraft:nether_wastes
     private final BetterNetherCoreBiomes<Holder<Biome>> betterNether; // nullable — no BetterNether biomes
     private final BetterNetherCoreBiomes<BiomeSource> bopRegions;     // nullable — no BoP Nether regions
+    private final long seed;                     // world seed — the split-seam dither (WorldGenCycle#netherLookAt)
 
     private NetherCoreBiomes(BiomeSource netherBiomeSource, Climate.Sampler netherSampler, Holder<Biome> fallback,
-                             BetterNetherCoreBiomes<Holder<Biome>> betterNether, BetterNetherCoreBiomes<BiomeSource> bopRegions) {
+                             BetterNetherCoreBiomes<Holder<Biome>> betterNether, BetterNetherCoreBiomes<BiomeSource> bopRegions,
+                             long seed) {
+        this.seed = seed;
         this.netherBiomeSource = netherBiomeSource;
         this.netherSampler = netherSampler;
         this.fallback = fallback;
@@ -86,21 +91,42 @@ public final class NetherCoreBiomes {
      * ({@link games.brennan.dungeontrain.worldgen.WorldGenCycle#netherLookAt}):
      * <ul>
      *   <li>{@code BETTER} — BetterNether biomes ({@link BetterNetherCoreBiomes});</li>
-     *   <li>{@code BOP} — the vanilla + Biomes O' Plenty mix: each {@link BetterNetherCoreBiomes#CELL_BLOCKS}
-     *       cell takes one TerraBlender Nether region (vanilla's, or one of BoP's), and that region's
+     *   <li>{@code BOP} — Biomes O' Plenty's Nether: each {@link BetterNetherCoreBiomes#CELL_BLOCKS}
+     *       cell takes one of BoP's TerraBlender Nether regions, and that region's
      *       climate table is sampled like the vanilla Nether — the way a BoP world blends its Nether;</li>
      *   <li>anything else — vanilla.</li>
      * </ul>
      * A look whose biomes are not registered falls back to vanilla.
      */
     public Holder<Biome> biomeAt(int worldX, int worldZ, CycleLayout.Style style) {
+        return biomeAt(worldX, worldZ, style, null);
+    }
+
+    /**
+     * {@link #biomeAt(int, int, CycleLayout.Style)} with the climate sample — the costly, quart-resolution
+     * part — memoised in {@code memo} (nullable), for callers asking many columns of one chunk. The
+     * per-column region/cell pick is not memoised, so the answer is identical to the unmemoised call.
+     */
+    public Holder<Biome> biomeAt(int worldX, int worldZ, CycleLayout.Style style, SampleMemo memo) {
         if (style == CycleLayout.Style.BETTER && betterNether != null) {
             return betterNether.biomeAt(worldX, worldZ);
         }
         if (style == CycleLayout.Style.BOP && bopRegions != null) {
-            return sample(bopRegions.biomeAt(worldX, worldZ), worldX, worldZ);
+            return sample(bopRegions.biomeAt(worldX, worldZ), worldX, worldZ, memo);
         }
-        return vanillaBiomeAt(worldX, worldZ);
+        return sample(netherBiomeSource, worldX, worldZ, memo);
+    }
+
+    /** Climate samples by (source, quart X, quart Z) — one per decoration pass; not thread-safe. */
+    public static final class SampleMemo {
+        private record Key(BiomeSource source, int quartX, int quartZ) {}
+
+        private final Map<Key, Holder<Biome>> samples = new HashMap<>();
+    }
+
+    /** World seed — pass to {@code WorldGenCycle#netherLookAt(int, int, long)} for a column's look. */
+    public long seed() {
+        return seed;
     }
 
     /** True when BoP Nether regions were found at server start (the BoP passes will use them). */
@@ -113,16 +139,18 @@ public final class NetherCoreBiomes {
         return betterNether != null;
     }
 
-    private Holder<Biome> vanillaBiomeAt(int worldX, int worldZ) {
-        return sample(netherBiomeSource, worldX, worldZ);
+    private Holder<Biome> sample(BiomeSource source, int worldX, int worldZ, SampleMemo memo) {
+        if (source == null || netherSampler == null) return fallback;
+        int quartX = QuartPos.fromBlock(worldX + SAMPLE_OFFSET_X);
+        int quartZ = QuartPos.fromBlock(worldZ);
+        if (memo == null) return sampleQuart(source, quartX, quartZ);
+        return memo.samples.computeIfAbsent(new SampleMemo.Key(source, quartX, quartZ),
+                k -> sampleQuart(source, quartX, quartZ));
     }
 
-    private Holder<Biome> sample(BiomeSource source, int worldX, int worldZ) {
-        if (source == null || netherSampler == null) return fallback;
+    private Holder<Biome> sampleQuart(BiomeSource source, int quartX, int quartZ) {
         try {
-            return source.getNoiseBiome(
-                    QuartPos.fromBlock(worldX + SAMPLE_OFFSET_X), SAMPLE_QUART_Y, QuartPos.fromBlock(worldZ),
-                    netherSampler);
+            return source.getNoiseBiome(quartX, SAMPLE_QUART_Y, quartZ, netherSampler);
         } catch (Throwable t) {
             SAMPLE_ERRORS.error(LOGGER,
                     "[DungeonTrain] Nether core biome sample failed; baking nether_wastes fallback instead", t);
@@ -141,20 +169,21 @@ public final class NetherCoreBiomes {
      */
     public static NetherCoreBiomes resolve(MinecraftServer server, Holder<Biome> fallback) {
         BetterNetherCoreBiomes<Holder<Biome>> betterNether = resolveBetterNether(server);
+        long seed = server.getWorldData().worldGenOptions().seed();
         try {
             ServerLevel nether = server.getLevel(Level.NETHER);
             if (nether == null) {
                 // debug: legitimately fires during the overworld's own Load (Nether not yet
                 // created) before the Nether-Load republish upgrades the snapshot.
                 LOGGER.debug("[DungeonTrain] No Nether dimension — vanilla Nether core stays single-biome (nether_wastes)");
-                return new NetherCoreBiomes(null, null, fallback, betterNether, null);
+                return new NetherCoreBiomes(null, null, fallback, betterNether, null, seed);
             }
             Climate.Sampler sampler = nether.getChunkSource().randomState().sampler();
             BiomeSource vanilla = vanillaNetherSource(server, nether);
-            return new NetherCoreBiomes(vanilla, sampler, fallback, betterNether, resolveBopRegions(server, vanilla));
+            return new NetherCoreBiomes(vanilla, sampler, fallback, betterNether, resolveBopRegions(server), seed);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to capture Nether biome source; vanilla core stays single-biome", t);
-            return new NetherCoreBiomes(null, null, fallback, betterNether, null);
+            return new NetherCoreBiomes(null, null, fallback, betterNether, null, seed);
         }
     }
 
@@ -162,18 +191,17 @@ public final class NetherCoreBiomes {
     public static final String BOP_NAMESPACE = "biomesoplenty";
 
     /**
-     * The regions a BoP Nether pass cycles through: vanilla's own Nether ({@code vanilla}) plus one
-     * climate table per Biomes O' Plenty TerraBlender Nether region. Each region keeps only vanilla and
+     * The regions a BoP Nether pass cycles through: one climate table per Biomes O' Plenty TerraBlender
+     * Nether region — not vanilla's own region, so a BoP pass is all BoP. Each region keeps only vanilla and
      * BoP biomes, so another mod's Nether biome never leaks into the band. Regions sorted by name for a
      * stable seeded order. {@code null} (BoP passes stay vanilla) when BoP registers no Nether region.
      */
-    private static BetterNetherCoreBiomes<BiomeSource> resolveBopRegions(MinecraftServer server, BiomeSource vanilla) {
+    private static BetterNetherCoreBiomes<BiomeSource> resolveBopRegions(MinecraftServer server) {
         try {
             Registry<Biome> registry = server.registryAccess().registryOrThrow(Registries.BIOME);
             List<Region> regions = new ArrayList<>(Regions.get(RegionType.NETHER));
             regions.sort(Comparator.comparing(r -> r.getName().toString()));
             List<BiomeSource> sources = new ArrayList<>();
-            sources.add(vanilla);
             for (Region region : regions) {
                 if (!BOP_NAMESPACE.equals(region.getName().getNamespace())) continue;
                 List<Pair<Climate.ParameterPoint, Holder<Biome>>> points = new ArrayList<>();
@@ -186,12 +214,12 @@ public final class NetherCoreBiomes {
                 });
                 if (!points.isEmpty()) sources.add(MultiNoiseBiomeSource.createFromList(new Climate.ParameterList<>(points)));
             }
-            if (sources.size() < 2) {
+            if (sources.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] No Biomes O' Plenty Nether regions registered — BoP Nether bands stay vanilla");
                 return null;
             }
             long seed = server.getWorldData().worldGenOptions().seed() ^ 0x426F_504E_6574_6865L;
-            LOGGER.debug("[DungeonTrain] BoP Nether bands blend {} regions (vanilla + {} BoP)", sources.size(), sources.size() - 1);
+            LOGGER.debug("[DungeonTrain] BoP Nether bands blend {} BoP regions", sources.size());
             return BetterNetherCoreBiomes.of(sources, seed);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to collect BoP Nether regions; BoP Nether bands stay vanilla", t);

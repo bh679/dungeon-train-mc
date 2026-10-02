@@ -416,9 +416,9 @@ public final class PortalChunkTerrain {
                 Sample sample = sampleTerrain(server, source, seed, pairKey, roll);
                 if (sample == null) {
                     FAILED.put(pairKey, java.util.Objects.toString(roomName, ""));
-                    LOGGER.warn("[DungeonTrain] Chunk dimension pair {} ('{}', {}) found no ground in "
-                        + "{} site(s); the room stamps as its plain template", pairKey, roomName, source,
-                        SITE_ATTEMPTS);
+                    // Why is logged where it is known — by sampleTerrain or the source it resolved.
+                    LOGGER.warn("[DungeonTrain] Chunk dimension pair {} ('{}', {}) has no sample; the "
+                        + "room stamps as its plain template", pairKey, roomName, source);
                     return;
                 }
                 if (READY.size() >= MAX_CACHE) READY.clear();
@@ -561,31 +561,48 @@ public final class PortalChunkTerrain {
         // a portal carriage used to wait ten seconds for its room.
         Sample best = null;
         int tried = 0;
-        SitePlan plan = SitePlan.of(level, source, noiseGenerator.getBiomeSource(), random.sampler());
-        for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
-            // A re-roll walks on past every site the earlier rolls could have tried.
-            ChunkPos site = plan.site(worldSeed, pairKey, roll * SITE_ATTEMPTS + attempt);
-            // Free, and it saves generating a chunk to find out: DT's own bands void whole stretches
-            // of the overworld, and a sample that lands in one comes back empty however long it is
-            // generated for. Asked before the work rather than after it — this used to be most of
-            // what a candidate cost. The stretch test is free too, and is what keeps the plain
-            // overworld room plain: a site in a band, a legacy era or a modded stretch would wear
-            // that look under the train wherever the room turned up.
-            //
-            // The stretch test still applies to a stand-in preset: an editor world has no bands to
-            // void a site, but its configured cycle still says where WWOO and BoP grow, and a WWOO
-            // or BoP room sampled outside its stretch comes back vanilla.
-            if ((!resolved.fallback() && voidedByBand(level, site)) || !plan.accepts(site)) continue;
-            tried++;
-            Sample candidate = groundAt(level, noiseGenerator, random, site, source, minY, maxY);
-            if (candidate == null) continue;
-            if (candidate.probes() >= PROBES_REQUIRED) {
-                best = candidate;
-                break;
+        int turnedAway = 0;
+        // The plain room's scattered sites first, exactly as they always were, so a pair that found
+        // ground keeps it; then, only if none of them could be used, its sites inside the vanilla
+        // gaps (SitePlan#retry).
+        for (SitePlan plan = SitePlan.of(level, source, noiseGenerator.getBiomeSource(), random.sampler());
+             plan != null && best == null; plan = plan.retry()) {
+            for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
+                // A re-roll walks on past every site the earlier rolls could have tried.
+                ChunkPos site = plan.site(worldSeed, pairKey, roll * SITE_ATTEMPTS + attempt);
+                // Free, and it saves generating a chunk to find out: DT's own bands void whole stretches
+                // of the overworld, and a sample that lands in one comes back empty however long it is
+                // generated for. Asked before the work rather than after it — this used to be most of
+                // what a candidate cost. The stretch test is free too, and is what keeps the plain
+                // overworld room plain: a site in a band, a legacy era or a modded stretch would wear
+                // that look under the train wherever the room turned up.
+                //
+                // The stretch test still applies to a stand-in preset: an editor world has no bands to
+                // void a site, but its configured cycle still says where WWOO and BoP grow, and a WWOO
+                // or BoP room sampled outside its stretch comes back vanilla.
+                if ((!resolved.fallback() && voidedByBand(level, site)) || !plan.accepts(site)) {
+                    turnedAway++;
+                    continue;
+                }
+                tried++;
+                Sample candidate = groundAt(level, noiseGenerator, random, site, source, minY, maxY);
+                if (candidate == null) continue;
+                if (candidate.probes() >= PROBES_REQUIRED) {
+                    best = candidate;
+                    break;
+                }
+                if (best == null || candidate.probes() > best.probes()) best = candidate;
             }
-            if (best == null || candidate.probes() > best.probes()) best = candidate;
         }
-        if (best == null) return null;
+        if (best == null) {
+            // How many sites were generated and found wanting, against how many were never generated
+            // because they sat in a band or outside the room's stretch — the two failures look alike
+            // in play and have nothing in common.
+            LOGGER.warn("[DungeonTrain] Chunk dimension pair {} ({}) found no ground: {} site(s) generated "
+                + "without anywhere to stand, {} turned away as voided or outside its stretch",
+                pairKey, source, tried, turnedAway);
+            return null;
+        }
         LOGGER.debug("[DungeonTrain] Chunk dimension pair {} ({}) took {} generated site(s); site x={} z={}",
             pairKey, source, tried, best.pos().getMinBlockX(), best.pos().getMinBlockZ());
 
@@ -874,6 +891,25 @@ public final class PortalChunkTerrain {
             return new ChunkPos(chunkX, scattered.z);
         }
 
+        /**
+         * The pass to try once every site of this one has been turned away or come back empty, or
+         * {@code null} when there is none.
+         *
+         * <p>Only the plain room has one. Its sites are scattered across the whole reach, and since
+         * most of that reach is bands and modded stretches, only a few percent of them are vanilla
+         * overworld — a third of pairs used to run out of sites without generating a single chunk,
+         * and Test the Carriage, which always samples the same pair, failed every time in an unlucky
+         * world. The retry picks sites inside the vanilla gaps, as a modded room does inside its own
+         * stretch. A second pass rather than a replacement, so no pair that found ground moves.</p>
+         */
+        SitePlan retry() {
+            if (stretch != SecondLapOverworld.Stretch.VANILLA || !ranges.isEmpty() || cycle == null) {
+                return null;
+            }
+            List<int[]> gaps = StretchSites.chunkRanges(cycle, stretch, (long) SAMPLE_SPREAD * SIZE);
+            return gaps.isEmpty() ? null : new SitePlan(cycle, stretch, gaps);
+        }
+
         boolean accepts(ChunkPos site) {
             if (biomeNamespace != null && !biomeNamespace.equals(biomeNamespaceAt(biomes, sampler, site))) {
                 return false;
@@ -925,10 +961,29 @@ public final class PortalChunkTerrain {
      * showing. For {@code /dungeontrain debug portal-sites}. {@code null} when every attempt failed.
      */
     public static ChunkPos firstAcceptedSite(ServerLevel level, Source source, long worldSeed, int pairKey) {
-        SitePlan plan = SitePlan.of(level, source);
-        for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
-            ChunkPos site = plan.site(worldSeed, pairKey, attempt);
-            if (!voidedByBand(level, site) && plan.accepts(site)) return site;
+        return firstFreeSite(SitePlan.of(level, source), worldSeed, pairKey, 0, true,
+            site -> voidedByBand(level, site));
+    }
+
+    /**
+     * The plain overworld room's first site that passes the stretch test in {@code cycle}, by site
+     * alone — {@link #sampleTerrain}'s walk without the generation, and without the band voids a live
+     * world adds. {@code retry} false walks only the scattered pass. {@code null} when every attempt
+     * failed. Pure, for tests.
+     */
+    public static ChunkPos plainOverworldSite(WorldGenCycle cycle, long worldSeed, int pairKey, int roll,
+                                              boolean retry) {
+        return firstFreeSite(new SitePlan(cycle, SecondLapOverworld.Stretch.VANILLA, List.of()),
+            worldSeed, pairKey, roll, retry, site -> false);
+    }
+
+    private static ChunkPos firstFreeSite(SitePlan first, long worldSeed, int pairKey, int roll,
+                                          boolean retry, java.util.function.Predicate<ChunkPos> voided) {
+        for (SitePlan plan = first; plan != null; plan = retry ? plan.retry() : null) {
+            for (int attempt = 0; attempt < SITE_ATTEMPTS; attempt++) {
+                ChunkPos site = plan.site(worldSeed, pairKey, roll * SITE_ATTEMPTS + attempt);
+                if (!voided.test(site) && plan.accepts(site)) return site;
+            }
         }
         return null;
     }

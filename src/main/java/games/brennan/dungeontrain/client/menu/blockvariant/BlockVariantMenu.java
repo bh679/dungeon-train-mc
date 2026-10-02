@@ -72,6 +72,19 @@ public final class BlockVariantMenu {
         ENTRY_ROT_DIRS,
         ENTRY_HALF_MODE,
         ENTRY_ACTIVE_MODE,
+        /** The four fence / wall / pane connect-mode segments, in {@code VariantConnect.Mode} order. */
+        ENTRY_CONNECT_DEFAULT,
+        ENTRY_CONNECT_AUTO,
+        ENTRY_CONNECT_LOCK,
+        /** The four locked-arm toggles of a Lock row, in N / E / S / W order. */
+        ENTRY_ARM_NORTH,
+        ENTRY_ARM_EAST,
+        ENTRY_ARM_SOUTH,
+        ENTRY_ARM_WEST,
+        /** The row's Grow pill (column-forming blocks) — opens the Grow popup for that row. */
+        ENTRY_GROWTH,
+        /** A button in the Grow popup; {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        GROWTH_OPTION,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         ROT_DIR_OPTION,
@@ -102,6 +115,12 @@ public final class BlockVariantMenu {
     private static int lockId = 0;
     private static VariantCopyRoll copyRoll = VariantCopyRoll.DEFAULT;
     private static boolean copySettingsSupported;
+    /** Whether this plot's spawn path honours the fence / wall connect mode — gates the row pill. */
+    private static boolean connectSupported;
+    /** Whether this plot's spawn path grows columns — gates the row's Grow pill. */
+    private static boolean growthSupported;
+    /** -1 = closed; otherwise the row whose Grow popup is open. */
+    private static int growthPopupRow = -1;
     private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
     private static games.brennan.dungeontrain.editor.VariantSpan spanMode =
         games.brennan.dungeontrain.editor.VariantSpan.NONE;
@@ -162,6 +181,23 @@ public final class BlockVariantMenu {
 
     /** True when this plot's template repeats at all — only then are the two copy cells drawn. */
     public static boolean copySettingsSupported() { return copySettingsSupported; }
+    public static boolean connectSupported() { return connectSupported; }
+    public static boolean growthSupported() { return growthSupported; }
+
+    /** The row whose Grow popup is open, or -1 — also -1 once that row is gone. */
+    public static int growthPopupRow() {
+        return growthPopupRow >= 0 && growthPopupRow < entries.size() ? growthPopupRow : -1;
+    }
+    public static void toggleGrowthPopup(int row) { growthPopupRow = growthPopupRow == row ? -1 : row; }
+    public static void closeGrowthPopup() { growthPopupRow = -1; }
+
+    /** The connect-mode segment kinds, indexed by {@code VariantConnect.Mode} ordinal. */
+    public static final CellKind[] CONNECT_SEGMENTS = {
+        CellKind.ENTRY_CONNECT_DEFAULT, CellKind.ENTRY_CONNECT_AUTO, CellKind.ENTRY_CONNECT_LOCK};
+
+    /** The locked-arm toggle kinds, index-aligned with {@code VariantConnect.ARM_BITS} (N, E, S, W). */
+    public static final CellKind[] ARM_SEGMENTS = {
+        CellKind.ENTRY_ARM_NORTH, CellKind.ENTRY_ARM_EAST, CellKind.ENTRY_ARM_SOUTH, CellKind.ENTRY_ARM_WEST};
 
     /** Which tiles of a repeating room this cell applies in. */
     public static VariantCopyScope copyScope() { return copyScope; }
@@ -271,6 +307,9 @@ public final class BlockVariantMenu {
             lockId = 0;
             copyRoll = VariantCopyRoll.DEFAULT;
             copySettingsSupported = false;
+            connectSupported = false;
+            growthSupported = false;
+            growthPopupRow = -1;
             copyScope = VariantCopyScope.BOTH;
             screen = Screen.ROOT;
             removeMode = false;
@@ -293,6 +332,8 @@ public final class BlockVariantMenu {
         lockId = packet.lockId();
         copyRoll = VariantCopyRoll.fromOrdinal(packet.copyRoll());
         copySettingsSupported = packet.copySettingsSupported();
+        connectSupported = packet.connectSupported();
+        growthSupported = packet.growthSupported();
         copyScope = VariantCopyScope.fromOrdinal(packet.copyScope());
         spanMode = games.brennan.dungeontrain.editor.VariantSpan.fromByte(packet.spanMode());
         anchorPos = packet.anchorPos();
@@ -305,6 +346,7 @@ public final class BlockVariantMenu {
             searchBuffer = "";
             rotPopupRowIndex = -1;
             spanPopupOpen = false;
+            growthPopupRow = -1;
             // Drop the parse cache so old cells' states don't accumulate
             // (cache is cheap to rebuild — at most ~32 entries per cell).
             PARSED_STATE_CACHE.clear();

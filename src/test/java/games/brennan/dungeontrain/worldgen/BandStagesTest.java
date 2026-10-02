@@ -72,6 +72,28 @@ class BandStagesTest {
     }
 
     @Test
+    void upsideDownWithReassemblyHasNoTrailingFade() {
+        CycleLayout layout = defaultLayout();
+        List<BandStages.Stage> s = stagesOf(layout, layout.firstIndexOf(CycleLayout.Type.UPSIDE_DOWN));
+        assertEquals(List.of("Entry fade", "Core", "Reassembly", "Exit gap"),
+            s.stream().map(BandStages.Stage::name).toList());
+        assertEquals(List.of(600L, 2500L, 3000L, 600L), s.stream().map(BandStages.Stage::length).toList());
+    }
+
+    @Test
+    void upsideDownWithoutReassemblyKeepsTrailingFade() {
+        List<LegacySpan> eras = new ArrayList<>();
+        for (LegacyBandKind k : LegacyBandKind.values()) eras.add(new LegacySpan(k, 3000, 480, 6000));
+        CycleLayout layout = CycleLayout.parse("ow:1000, upside_down:2500:0, ow:1000", FADES,
+            eras.toArray(new LegacySpan[0]), t -> true, w -> {});
+        List<BandStages.Stage> s = stagesOf(layout, 1);
+        assertEquals(List.of("Entry fade", "Core", "Trailing fade", "Exit gap"),
+            s.stream().map(BandStages.Stage::name).toList());
+        assertEquals(List.of(600L, 2500L, 600L, 600L), s.stream().map(BandStages.Stage::length).toList());
+        assertEquals(layout.length(1), s.stream().mapToLong(BandStages.Stage::length).sum());
+    }
+
+    @Test
     void locateReportsIndexAndFraction() {
         List<BandStages.Stage> s = List.of(new BandStages.Stage("A", 100), new BandStages.Stage("B", 200));
         BandStages.Position p = BandStages.locate(s, 150);

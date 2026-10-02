@@ -63,9 +63,30 @@ final class LostCityTemplatePreloadTest {
     }
 
     @Test
+    @DisplayName("eviction waits while a player is near the run or in the WWOO stretch, and is free between")
+    void quietAt() {
+        assertFalse(LostCityTemplatePreload.quietAt(C, x(coreStart() + 2000L, 0)));                       // in the run
+        assertFalse(LostCityTemplatePreload.quietAt(C, x(LAYOUT.start(WWOO_SLOT) + 100L, 0)));            // WWOO foretaste
+        int bopSlot = WWOO_SLOT + 4;
+        assertTrue(LostCityTemplatePreload.quietAt(C, x(LAYOUT.start(bopSlot) + LAYOUT.length(bopSlot) / 2, 0)));
+    }
+
+    @Test
+    @DisplayName("the quiet count climbs only over consecutive quiet scans, so eviction needs EVICT_AFTER_SCANS in a row")
+    void hysteresis() {
+        int q = 0;
+        for (int i = 0; i < LostCityTemplatePreload.EVICT_AFTER_SCANS - 1; i++) q = LostCityTemplatePreload.nextQuietScans(q, true);
+        assertTrue(q < LostCityTemplatePreload.EVICT_AFTER_SCANS);
+        q = LostCityTemplatePreload.nextQuietScans(q, false);
+        assertEquals(0, q);
+        for (int i = 0; i < LostCityTemplatePreload.EVICT_AFTER_SCANS; i++) q = LostCityTemplatePreload.nextQuietScans(q, true);
+        assertEquals(LostCityTemplatePreload.EVICT_AFTER_SCANS, q);
+    }
+
+    @Test
     @DisplayName("without a Lost City era nothing ever triggers")
     void noCities() {
-        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=4000, ", ""));
+        CycleLayout without = layout(CycleLayout.DEFAULT_ORDER.replace("legacy:wwoo:lost_city=3000, ", ""));
         WorldGenCycle c = cycle(without);
         for (long u = 0; u < without.period(); u += 500) {
             assertFalse(nearLostCity(c, (int) (START + u), LOOKAHEAD_BLOCKS), "u=" + u);

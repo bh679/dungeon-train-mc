@@ -118,12 +118,14 @@ public final class EffortlessBuildingVariantBreaks {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] Variant save after Effortless Building break failed for {}: {}",
                 plot.key(), e.toString());
-            player.displayClientMessage(Component.literal("Variant save failed: " + e.getMessage())
+            player.displayClientMessage(Component.translatable(
+                    "chat.dungeontrain.editor_bar.common.variant_save_failed", String.valueOf(e.getMessage()))
                 .withStyle(ChatFormatting.YELLOW), true);
             return;
         }
         DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());
-        player.displayClientMessage(Component.literal("- removed variants from " + removed + " cells")
+        player.displayClientMessage(Component.translatable(
+                "chat.dungeontrain.editor_bar.variant_edit.removed_variants_from_cells", removed)
             .withStyle(ChatFormatting.GOLD), true);
     }
 

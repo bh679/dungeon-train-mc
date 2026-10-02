@@ -1,0 +1,69 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:black_concrete"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:deepslate_tiles"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:polished_deepslate"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:deepslate_bricks"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:polished_basalt"
+        },
+        {
+          "from": "minecraft:andesite",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:tuff",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:polished_andesite",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:polished_tuff",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:tuff_bricks",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:tuff"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:gray_concrete"
+        },
+        {
+          "from": "minecraft:light_gray_concrete",
+          "to": "minecraft:tuff"
+        }
+      ]
+    }
+  ]
+}

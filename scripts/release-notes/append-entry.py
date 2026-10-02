@@ -26,7 +26,13 @@ loot, books, advancements, ui, balance, internal), or --no-topical-tags to state
 the type-derived tag applies. `--tag-guide` prints the question to answer for
 each tag. The Versions page filters release notes by these.
 
+Addresses: if the change fixes or improves a player-reported issue the in-game
+bug report offers (lag, train_vanished), pass --addresses for each. A player who
+reports that issue on an older version is then told this release addresses it.
+Leave it off when the change does not target one of those issues.
+
 Optional:
+  --addresses ISSUE Player-reported issue this fixes (repeatable): lag, train_vanished.
   --version X.Y.Z   Override the computed version (rarely needed).
 
 Paths honour CHANGELOG_FILE / GRADLE_PROPERTIES_FILE env overrides.
@@ -69,6 +75,16 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         "--no-topical-tags",
         action="store_true",
         help="Explicitly state that no topical tag applies (only the type-derived tag).",
+    )
+    p.add_argument(
+        "--addresses",
+        action="append",
+        default=[],
+        dest="addresses",
+        choices=changelog_io.VALID_ISSUES,
+        metavar="ISSUE",
+        help="A player-reported issue this change fixes (repeatable). One of: "
+        + ", ".join(changelog_io.VALID_ISSUES) + ".",
     )
     p.add_argument("--pr", type=int, default=None, help="PR number (optional).")
     p.add_argument(
@@ -138,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
         date=changelog_io.utc_today(),
         highlights=args.highlights,
         pr=args.pr,
+        addresses=args.addresses,
         tags=args.tags,
     )
     try:

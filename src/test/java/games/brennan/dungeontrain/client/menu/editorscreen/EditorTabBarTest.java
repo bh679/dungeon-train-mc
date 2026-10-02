@@ -40,6 +40,20 @@ final class EditorTabBarTest {
     }
 
     @Test
+    @DisplayName("the Groups tab sits after Nav, and only when the screen shows it (Tracks)")
+    void groupsTabSitsAfterNavOnlyWhenShown() {
+        List<EditorTabBar.Tab> t = EditorTabBar.layout(new Rect(6, 4, 640 - 12, 16), s -> s.length() * 6,
+            EditorScreenPage::name, true);
+        assertEquals(7, t.size());
+        assertEquals(EditorScreenPage.NAV, t.get(3).page());
+        assertEquals(EditorScreenPage.GROUPS, t.get(4).page());
+        assertEquals(EditorScreenPage.SETTINGS, t.get(5).page());
+        for (EditorTabBar.Tab tab : tabs(640)) {
+            assertTrue(tab.page() != EditorScreenPage.GROUPS, "Groups is hidden by default");
+        }
+    }
+
+    @Test
     @DisplayName("tabs never overlap, even on a narrow strip")
     void noOverlap() {
         for (int width : new int[] {427, 480, 640, 1920}) {

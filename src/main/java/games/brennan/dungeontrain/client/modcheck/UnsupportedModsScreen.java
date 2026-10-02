@@ -151,8 +151,10 @@ public final class UnsupportedModsScreen extends Screen {
 
     /**
      * Rename the unsupported mods' jars to {@code .jar.disabled} and quit, so the next launch is a
-     * live run. If nothing could be disabled from here (a dev classpath, mods nested in another jar),
-     * stay open and say so rather than quitting for nothing.
+     * live run. If nothing could be disabled from here (a dev classpath, mods nested in another jar,
+     * or — the usual case on Windows — jars the running game holds open), stay open and say so
+     * rather than quitting for nothing. Nothing is ever deferred past exit or handed to another
+     * process.
      */
     private void quitAndDisable() {
         ModDisabler.Outcome outcome = ModDisabler.disable(mods.stream().map(UnsupportedMod::modId).toList());

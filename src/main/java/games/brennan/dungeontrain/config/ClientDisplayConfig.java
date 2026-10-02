@@ -226,6 +226,8 @@ public final class ClientDisplayConfig {
     /** Whether shader-world changes render both worlds and blend, or cut. See {@link #isShaderCrossfadeEnabled()}. */
     public static final ModConfigSpec.BooleanValue SHADER_CROSSFADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
+    /** Whether BetterX's title-screen popups and version check are skipped. See {@link #isBetterXStartupScreensSuppressed()}. */
+    public static final ModConfigSpec.BooleanValue BETTERX_SUPPRESS_STARTUP_SCREENS;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
     public static final ModConfigSpec.BooleanValue CREATIVE_SHIFT_CLICK_TO_HOTBAR;
     /**
@@ -272,6 +274,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
     /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
+    /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
+    public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -376,6 +380,7 @@ public final class ClientDisplayConfig {
         SHADER_CROSSING_LIFT = pair.getLeft().shaderCrossingLift;
         SHADER_CROSSFADE = pair.getLeft().shaderCrossfade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
+        BETTERX_SUPPRESS_STARTUP_SCREENS = pair.getLeft().betterXSuppressStartupScreens;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
@@ -391,6 +396,7 @@ public final class ClientDisplayConfig {
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
+        LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
@@ -550,6 +556,12 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue scribbleColorPickerVisible = b
                 .comment("Show the Scribble mod's 16-swatch colour picker on the book-writing screen. Off by default: Dungeon Train keeps the book screen close to vanilla, and the picker is the one part of Scribble that changes what a book LOOKS like rather than how it is edited. No in-game control by design — flip this by hand to get the swatches back. Has no effect unless the Scribble mod is installed.")
                 .define("colorPickerVisible", false);
+        b.pop();
+
+        b.push("betterX");
+        ModConfigSpec.BooleanValue betterXSuppressStartupScreens = b
+                .comment("Skip the BetterX (BetterNether / BetterEnd: New Dawn) popups at the title screen - the \"Welcome to BetterX\" screen on first launch and the \"updates available\" screen - along with the online version check that feeds the second one. Dungeon Train pins its BetterX versions, so those screens only offer updates the pack does not use. Set false to get BetterX's own screens and version check back. Takes effect on the next launch.")
+                .define("suppressStartupScreens", true);
         b.pop();
 
         b.push("cinematic");
@@ -742,6 +754,11 @@ public final class ClientDisplayConfig {
                          "announced, never the small automatic patch releases. Checks update.json on GitHub",
                          "every 10 minutes while you are in a world; nothing about you is sent. On by default.")
                 .define("updateNoticeChat", true);
+        ModConfigSpec.BooleanValue lowMemoryNoticeChat = b
+                .comment("Once per game session, show a notice on the title screen and one chat line when Minecraft",
+                         "has been given less than 5 GB of memory on a computer with 8 GB or more, suggesting you",
+                         "allocate 6 GB or more in your launcher. Nothing is sent anywhere. On by default.")
+                .define("lowMemoryNoticeChat", true);
         b.pop();
 
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
@@ -752,7 +769,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
@@ -761,6 +778,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
+                lowMemoryNoticeChat,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
@@ -1165,6 +1183,16 @@ public final class ClientDisplayConfig {
         UPDATE_NOTICE_CHAT.save();
     }
 
+    public static boolean isLowMemoryNoticeChatEnabled() {
+        return isLoaded() && LOW_MEMORY_NOTICE_CHAT.get();
+    }
+
+    public static void setLowMemoryNoticeChat(boolean value) {
+        if (!isLoaded()) return;
+        LOW_MEMORY_NOTICE_CHAT.set(value);
+        LOW_MEMORY_NOTICE_CHAT.save();
+    }
+
     /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
     public static int getRideSnapshotMinFps() {
         return isLoaded() ? RIDE_SNAPSHOT_MIN_FPS.get() : 30;
@@ -1546,6 +1574,16 @@ public final class ClientDisplayConfig {
         return isLoaded() ? PORTAL_TWIN_SEAL_CULLING.get() : DEFAULT_PORTAL_TWIN_SEAL_CULLING;
     }
 
+    /**
+     * Whether WorldWeaver's title-screen popups (welcome / updates) and the online version check
+     * behind them are skipped. Read by {@code WoverStartupScreensMixin}, which runs before any world
+     * exists, so this is a per-install choice rather than a per-world one. {@code true} before the
+     * config loads, matching the default.
+     */
+    public static boolean isBetterXStartupScreensSuppressed() {
+        return !isLoaded() || BETTERX_SUPPRESS_STARTUP_SCREENS.get();
+    }
+
     /** Persist the editor plot lighting preference. Idempotent — skips the TOML write when unchanged. */
     public static void setEditorPlotLighting(boolean on) {
         if (!isLoaded()) return;
@@ -1767,6 +1805,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue shaderCrossingLift,
             ModConfigSpec.BooleanValue shaderCrossfade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
+            ModConfigSpec.BooleanValue betterXSuppressStartupScreens,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
@@ -1785,6 +1824,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
             ModConfigSpec.BooleanValue updateNoticeChat,
+            ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,

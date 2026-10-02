@@ -347,6 +347,7 @@ public final class NetherMobSpawner {
                 // `continue`, not `return`: the scan runs upward, so a blocked low pocket is no
                 // reason to give up on the legal ones above it.
                 if (blockedSpawnSite(dims, bedrockY, air)) continue;
+                if (level.getBiome(air).is(Biomes.DEEP_DARK)) continue;   // the deep dark spawns nothing
                 if (hasRoomFor(level, EntityType.GHAST, air)) {
                     spawn(level, EntityType.GHAST, air, rng);
                     return;
@@ -362,6 +363,8 @@ public final class NetherMobSpawner {
             if (blockedSpawnSite(dims, bedrockY, feet)) continue;
             if (!level.getBlockState(feet.below()).blocksMotion()) continue;
             if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
+            // The band's deep-dark caverns (fall side) spawn nothing naturally — wardens come from shriekers.
+            if (level.getBiome(feet).is(Biomes.DEEP_DARK)) continue;
             EntityType<?> betterNether = betterNetherGroundMob(biome, rng);
             EntityType<?> type = betterNether != null ? betterNether : roster[rng.nextInt(roster.length)];
             spawn(level, type, feet, rng);
@@ -378,8 +381,8 @@ public final class NetherMobSpawner {
      * room in a basement world sits wholly below {@code bedrockY}, so the depth test alone covers
      * it; a Compatible Terrain world has no basement at all, its rooms are cut into rock well above
      * the floor, and there only {@link PortalCarriageEvents#isInsidePortalStructure} fires. That
-     * query is the broad one — room, corridors, every tiled copy, and the Bedrockless void
-     * clearance — so a mob can't arrive just outside the wall either.</p>
+     * query is the broad one — room, corridors, every tiled copy, and the swept
+     * Void clearance — so a mob can't arrive just outside the wall either.</p>
      *
      * <p>Probed at the column centre, the position {@link #spawn} hands to {@link Mob#moveTo},
      * so the test matches where the mob actually lands.</p>

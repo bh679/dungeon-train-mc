@@ -15,17 +15,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * {@link SecondLapOverworld#lookAt}: the overworld-looking part of a band transition wears the look of
  * the modded overworld stretch it borders ({@link WorldGenCycle#bleedingOverworldStyleAt}); the
- * upside-down's only for the last ~28% of its Reassembly (u = 4133).
+ * upside-down's only for the last ~28% of its Reassembly (u = 3533).
  *
  * <p>Base layout (u = blocks past the anchor, run 0), fades as {@code FADES}:</p>
  * <pre>
  *   ow           [0, 1000)
- *   upside_down  [1000, 5300)   mirror [1000, 2700), Reassembly [2700, 4700), exit gap [4700, 5300)
- *   ow:wwoo      [5300, 8300)
- *   nether       [8300, 12364)  entry side [8300, 8832), core [8832, 11832), exit side [11832, 12364)
- *   ow:bop       [12364, 15364)
- *   end          [15364, 19844) entry erosion [15364, 15484), exit erosion [19724, 19844)
- *   ow           [19844, 20844)
+ *   upside_down  [1000, 4700)   mirror [1000, 2100) (entry fade + core, no trailing fade before a Reassembly),
+ *                               Reassembly [2100, 4100), exit gap [4100, 4700)
+ *   ow:wwoo      [4700, 7700)
+ *   nether       [7700, 11764)  entry side [7700, 8232), core [8232, 11232), exit side [11232, 11764)
+ *   ow:bop       [11764, 14764)
+ *   end          [14764, 19244) entry erosion [14764, 14884), exit erosion [19124, 19244)
+ *   ow           [19244, 20244)
  * </pre>
  */
 final class BandTransitionLookTest {
@@ -63,34 +64,34 @@ final class BandTransitionLookTest {
     @Test
     @DisplayName("the layout lands where the javadoc says — the modded stretches themselves")
     void layoutSanity() {
-        assertEquals(Stretch.VANILLA, own(5299));
-        assertEquals(Stretch.WWOO, own(5300));
-        assertEquals(Stretch.WWOO, own(8299));
-        assertEquals(Stretch.VANILLA, own(8300));
-        assertEquals(Stretch.BOP, own(12364));
-        assertEquals(Stretch.BOP, own(15363));
-        assertEquals(Stretch.VANILLA, own(15364));
+        assertEquals(Stretch.VANILLA, own(4699));
+        assertEquals(Stretch.WWOO, own(4700));
+        assertEquals(Stretch.WWOO, own(7699));
+        assertEquals(Stretch.VANILLA, own(7700));
+        assertEquals(Stretch.BOP, own(11764));
+        assertEquals(Stretch.BOP, own(14763));
+        assertEquals(Stretch.VANILLA, own(14764));
     }
 
     @Test
     @DisplayName("upside-down: the last ~28% of the Reassembly and the exit gap wear WWOO; the mirror does not")
     void upsideDownExit() {
         assertEquals(Stretch.VANILLA, look(1000));
-        assertEquals(Stretch.VANILLA, look(2699));
-        assertEquals(Stretch.VANILLA, look(2700)); // most of the Reassembly stays vanilla
-        assertEquals(Stretch.VANILLA, look(4132));
-        assertEquals(Stretch.WWOO, look(4133));
-        assertEquals(Stretch.WWOO, look(4700));
-        assertEquals(Stretch.WWOO, look(5299));
-        assertEquals(Stretch.VANILLA, own(2700)); // the stretch itself is unchanged
+        assertEquals(Stretch.VANILLA, look(2099));
+        assertEquals(Stretch.VANILLA, look(2100)); // most of the Reassembly stays vanilla
+        assertEquals(Stretch.VANILLA, look(3532));
+        assertEquals(Stretch.WWOO, look(3533));
+        assertEquals(Stretch.WWOO, look(4100));
+        assertEquals(Stretch.WWOO, look(4699));
+        assertEquals(Stretch.VANILLA, own(2100)); // the stretch itself is unchanged
     }
 
     @Test
     @DisplayName("upside-down: the WWOO start is a fraction of that Reassembly's own length, not a fixed X")
     void upsideDownStartFollowsReassemblyLength() {
-        // Same band, Reassembly 3000 instead of 2000: mirror [1000, 2700), Reassembly [2700, 5700).
+        // Same band, Reassembly 3000 instead of 2000: mirror [1000, 2100), Reassembly [2100, 5100).
         WorldGenCycle longer = cycle("ow:1000, upside_down:500:3000, ow:wwoo:3000, ow:1000");
-        long start = 2700L + Math.round(3000 * WorldGenCycle.UD_BLEED_REASSEMBLY_FRACTION);
+        long start = 2100L + Math.round(3000 * WorldGenCycle.UD_BLEED_REASSEMBLY_FRACTION);
         assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(longer, (int) (START + start - 1)));
         assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(longer, (int) (START + start)));
     }
@@ -98,23 +99,23 @@ final class BandTransitionLookTest {
     @Test
     @DisplayName("Nether: the entry side wears WWOO, the exit side BoP, the core neither")
     void netherSides() {
-        assertEquals(Stretch.WWOO, look(8300));
-        assertEquals(Stretch.WWOO, look(8831));
-        assertEquals(Stretch.VANILLA, look(8832));
-        assertEquals(Stretch.VANILLA, look(11831));
-        assertEquals(Stretch.BOP, look(11832));
-        assertEquals(Stretch.BOP, look(12363));
+        assertEquals(Stretch.WWOO, look(7700));
+        assertEquals(Stretch.WWOO, look(8231));
+        assertEquals(Stretch.VANILLA, look(8232));
+        assertEquals(Stretch.VANILLA, look(11231));
+        assertEquals(Stretch.BOP, look(11232));
+        assertEquals(Stretch.BOP, look(11763));
     }
 
     @Test
     @DisplayName("End: the entry erosion wears BoP; the void, core and a vanilla-bordered exit do not")
     void endSides() {
-        assertEquals(Stretch.BOP, look(15364));
-        assertEquals(Stretch.BOP, look(15483));
-        assertEquals(Stretch.VANILLA, look(15484));
-        assertEquals(Stretch.VANILLA, look(17000));
-        assertEquals(Stretch.VANILLA, look(19724));
-        assertEquals(Stretch.VANILLA, look(19843));
+        assertEquals(Stretch.BOP, look(14764));
+        assertEquals(Stretch.BOP, look(14883));
+        assertEquals(Stretch.VANILLA, look(14884));
+        assertEquals(Stretch.VANILLA, look(16400));
+        assertEquals(Stretch.VANILLA, look(19124));
+        assertEquals(Stretch.VANILLA, look(19243));
     }
 
     @Test
@@ -133,12 +134,12 @@ final class BandTransitionLookTest {
     @DisplayName("a stretched run doubles every transition with its stretch")
     void stretchedRun() {
         long p = C.period();
-        assertEquals(20_844L, p);
+        assertEquals(20_244L, p);
         long run1 = START + CycleLayout.runStart(1, p);
-        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (4132L << 1))));
-        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (4133L << 1))));
-        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (8831L << 1))));
-        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (8832L << 1))));
-        assertEquals(Stretch.BOP, SecondLapOverworld.lookAt(C, (int) (run1 + (11832L << 1))));
+        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (3532L << 1))));
+        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (3533L << 1))));
+        assertEquals(Stretch.WWOO, SecondLapOverworld.lookAt(C, (int) (run1 + (8231L << 1))));
+        assertEquals(Stretch.VANILLA, SecondLapOverworld.lookAt(C, (int) (run1 + (8232L << 1))));
+        assertEquals(Stretch.BOP, SecondLapOverworld.lookAt(C, (int) (run1 + (11232L << 1))));
     }
 }

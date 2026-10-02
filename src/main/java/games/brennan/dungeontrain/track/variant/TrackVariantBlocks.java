@@ -427,6 +427,19 @@ public final class TrackVariantBlocks {
         return entries.get(localPos);
     }
 
+    /**
+     * True when any candidate at {@code localPos} has growth on — the cheap gate the hot worldgen
+     * paths check before re-rolling a cell for {@link games.brennan.dungeontrain.editor.GrowthPass}.
+     */
+    public boolean growsAt(BlockPos localPos) {
+        List<VariantState> states = entries.get(localPos);
+        if (states == null) return false;
+        for (VariantState s : states) {
+            if (!s.growth().isDefault()) return true;
+        }
+        return false;
+    }
+
     public synchronized void put(BlockPos localPos, List<VariantState> states) {
         if (states == null || states.size() < MIN_STATES_PER_ENTRY) {
             throw new IllegalArgumentException(

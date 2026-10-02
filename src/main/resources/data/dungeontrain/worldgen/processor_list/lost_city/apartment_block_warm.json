@@ -1,0 +1,75 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:structure_block"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_swap",
+      "swaps": [
+        {
+          "from": "minecraft:bricks",
+          "to": "minecraft:terracotta"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:brown_terracotta"
+        },
+        {
+          "from": "minecraft:terracotta",
+          "to": "minecraft:orange_terracotta"
+        },
+        {
+          "from": "minecraft:brown_terracotta",
+          "to": "minecraft:red_terracotta"
+        },
+        {
+          "from": "minecraft:packed_mud",
+          "to": "minecraft:packed_mud"
+        },
+        {
+          "from": "minecraft:mossy_stone_bricks",
+          "to": "minecraft:mud_bricks"
+        },
+        {
+          "from": "minecraft:cracked_stone_bricks",
+          "to": "minecraft:terracotta"
+        },
+        {
+          "from": "minecraft:light_gray_terracotta",
+          "to": "minecraft:orange_terracotta"
+        },
+        {
+          "from": "minecraft:smooth_stone",
+          "to": "minecraft:terracotta"
+        },
+        {
+          "from": "minecraft:cut_sandstone",
+          "to": "minecraft:cut_sandstone"
+        },
+        {
+          "from": "minecraft:mud_bricks",
+          "to": "minecraft:orange_terracotta"
+        },
+        {
+          "from": "minecraft:polished_diorite",
+          "to": "minecraft:terracotta"
+        },
+        {
+          "from": "minecraft:white_terracotta",
+          "to": "minecraft:cut_sandstone"
+        }
+      ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_facade",
+      "pilaster_every": 6,
+      "min_layer": 2,
+      "ledge": "minecraft:smooth_stone_slab"
+    }
+  ]
+}

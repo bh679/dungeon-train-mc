@@ -43,8 +43,34 @@ public record BlockVariantSyncPacket(
     byte copyRoll,
     boolean copySettingsSupported,
     byte copyScope,
-    byte spanMode
+    byte spanMode,
+    boolean connectSupported,
+    boolean growthSupported
 ) implements CustomPacketPayload {
+
+    /**
+     * Pre-growth shape: the plot does not grow columns at spawn, so the menu hides
+     * the Grow pill (see {@code BlockVariantPlot#supportsGrowth}).
+     */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                  byte copyRoll, boolean copySettingsSupported, byte copyScope,
+                                  byte spanMode, boolean connectSupported) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, false);
+    }
+
+    /**
+     * Pre-connect-mode shape: the plot does not apply the fence / wall connect mode at spawn,
+     * so the menu hides the pill (see {@code BlockVariantPlot#supportsConnectMode}).
+     */
+    public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
+                                  int lockId, Vec3 anchorPos, Vec3 anchorRight, Vec3 anchorUp,
+                                  byte copyRoll, boolean copySettingsSupported, byte copyScope,
+                                  byte spanMode) {
+        this(variantId, localPos, entries, lockId, anchorPos, anchorRight, anchorUp,
+            copyRoll, copySettingsSupported, copyScope, spanMode, false);
+    }
 
     /** Pre-span shape: {@code spanMode} defaults to {@code VariantSpan.NONE} (auto). */
     public BlockVariantSyncPacket(String variantId, @Nullable BlockPos localPos, List<Entry> entries,
@@ -109,7 +135,33 @@ public record BlockVariantSyncPacket(
     public record Entry(String stateString, @Nullable String beNbt, int weight,
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
-                        int groupRef, boolean groupRefLive, byte activeMode) {
+                        int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
+                        int growth) {
+
+        /**
+         * Backward-compat constructor for call sites that don't carry column growth
+         * (defaults to off, {@code VariantGrowth.NONE.toInt()}).
+         */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode, byte connectMode) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, connectMode,
+                games.brennan.dungeontrain.editor.VariantGrowth.NONE.toInt());
+        }
+
+        /**
+         * Backward-compat constructor for call sites that don't carry the fence / wall
+         * connect mode (defaults to {@code VariantConnect.Mode.DEFAULT}, ordinal 0).
+         */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, (byte) 0);
+        }
 
         /** Wire default for {@link #activeMode}: {@code VariantActive.Mode.INACTIVE}. */
         public static final byte ACTIVE_MODE_DEFAULT = (byte) 2;
@@ -204,6 +256,10 @@ public record BlockVariantSyncPacket(
         buf.writeByte(copyScope);
         // The cell-wide multi-space span (door / bed / tall-plant cells), as an ordinal.
         buf.writeByte(spanMode);
+        // Whether this plot's spawn path honours the per-row connect mode.
+        buf.writeBoolean(connectSupported);
+        // Whether this plot's spawn path grows columns from the per-row growth.
+        buf.writeBoolean(growthSupported);
         writeVec3(buf, anchorPos);
         writeVec3(buf, anchorRight);
         writeVec3(buf, anchorUp);
@@ -228,6 +284,8 @@ public record BlockVariantSyncPacket(
             buf.writeVarInt(e.groupRef());
             buf.writeBoolean(e.groupRefLive());
             buf.writeByte(e.activeMode());
+            buf.writeByte(e.connectMode());
+            buf.writeVarInt(e.growth());
         }
     }
 
@@ -245,6 +303,8 @@ public record BlockVariantSyncPacket(
         boolean copySettingsSupported = buf.readBoolean();
         byte copyScope = buf.readByte();
         byte spanMode = buf.readByte();
+        boolean connectSupported = buf.readBoolean();
+        boolean growthSupported = buf.readBoolean();
         Vec3 anchor = readVec3(buf);
         Vec3 right = readVec3(buf);
         Vec3 up = readVec3(buf);
@@ -267,11 +327,14 @@ public record BlockVariantSyncPacket(
             int groupRef = buf.readVarInt();
             boolean groupRefLive = buf.readBoolean();
             byte activeMode = buf.readByte();
+            byte connectMode = buf.readByte();
+            int growth = buf.readVarInt();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
-                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode));
+                linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive,
+                activeMode, connectMode, growth));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
-            copyRoll, copySettingsSupported, copyScope, spanMode);
+            copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported);
     }
 
     @Override

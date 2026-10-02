@@ -1,8 +1,11 @@
 package games.brennan.dungeontrain.tunnel;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.template.GateContext;
+import games.brennan.dungeontrain.template.TemplateGroup;
 import games.brennan.dungeontrain.track.TrackGenerator;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.worldgen.NetherFade;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
@@ -145,6 +148,12 @@ public final class TunnelGenerator {
         boolean prevX_qualified = isColumnUndergroundWorldgen(level, chunkMinX - 1, tg, ext);
         boolean nextX_qualified = isColumnUndergroundWorldgen(level, chunkMaxX + 1, tg, ext);
 
+        // One template group per tunnel, entrance to exit — see TunnelRunGroups. Only stamped
+        // corridors draw templates, so the legacy-paint case never rolls or records a group.
+        TemplateGroup[] groupAt = canStampSection
+            ? resolveGroups(serverLevel, chunkX, qualified, prevX_qualified, nextX_qualified)
+            : new TemplateGroup[16];
+
         int stampLen = TunnelPlacer.LENGTH;
         int lastStampEndX = Integer.MIN_VALUE;  // exclusive lower bound for next non-exit stamp
         int stamped = 0;
@@ -163,6 +172,7 @@ public final class TunnelGenerator {
         for (int dx = 0; dx < 16; dx++) {
             if (!qualified[dx]) continue;
             int worldX = chunkMinX + dx;
+            TemplateGroup group = groupAt[dx];
 
             boolean prevQualified = (dx > 0) ? qualified[dx - 1] : prevX_qualified;
             boolean nextQualified = (dx < 15) ? qualified[dx + 1] : nextX_qualified;
@@ -189,7 +199,7 @@ public final class TunnelGenerator {
             // Exit first — exit portals overlap & overwrite prior section
             // stamps in the same run, so they bypass the lastStampEndX gate.
             if (isExit && canStampSection) {
-                int placed = tryPlaceExitPortal(level, serverLevel, tg, worldX, stampOriginZ, chunkMaxX);
+                int placed = tryPlaceExitPortal(level, serverLevel, tg, worldX, stampOriginZ, chunkMaxX, group);
                 if (placed >= 0) {
                     portals++;
                     lastStampEndX = Math.max(lastStampEndX, placed);
@@ -201,7 +211,7 @@ public final class TunnelGenerator {
 
             if (canStampSection) {
                 if (isEntrance) {
-                    int placed = tryPlaceEntrancePortal(level, serverLevel, tg, worldX, stampOriginZ, chunkMinX);
+                    int placed = tryPlaceEntrancePortal(level, serverLevel, tg, worldX, stampOriginZ, chunkMinX, group);
                     if (placed >= 0) {
                         portals++;
                         lastStampEndX = placed;
@@ -209,7 +219,7 @@ public final class TunnelGenerator {
                     }
                 }
                 BlockPos origin = new BlockPos(worldX, tg.floorY(), stampOriginZ);
-                if (TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, origin)) {
+                if (TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, origin, group)) {
                     stamped++;
                     lastStampEndX = worldX + stampLen - 1;
                     continue;
@@ -229,6 +239,24 @@ public final class TunnelGenerator {
     }
 
     /**
+     * The template group each of this chunk's 16 columns builds from (null = unqualified column or
+     * no group filter), resolved against the dimension's {@link TunnelGroupData} so the whole
+     * tunnel — entrance, sections and exit — shares one group across chunks.
+     */
+    private static TemplateGroup[] resolveGroups(ServerLevel serverLevel, int chunkX, boolean[] qualified,
+                                                 boolean prevQualified, boolean nextQualified) {
+        long seed = serverLevel.getSeed();
+        ServerLevel overworld = serverLevel.getServer().overworld();
+        // A tunnel that starts in the Nether crossfade is Stone — the only group the fade blends from —
+        // so it carries that look out of either side instead of switching at the fade's edge.
+        return TunnelRunGroups.resolve(TunnelGroupData.get(serverLevel), chunkX,
+            TunnelRunGroups.runs(qualified, prevQualified, nextQualified),
+            (key, worldX) -> NetherFade.intersectsCrossfade(overworld, worldX, worldX)
+                ? TunnelPlacer.FADE_BASE_GROUP
+                : TunnelGroupRoll.roll(seed, key, GateContext.atWorldX(serverLevel, worldX)));
+    }
+
+    /**
      * Try placing an entrance portal anchored at {@code worldX} (the run's
      * first qualified column), retrying with up to
      * {@link #MAX_PORTAL_EXTENSIONS} backward 10-col tunnel-section
@@ -244,7 +272,7 @@ public final class TunnelGenerator {
      * extended position and the original boundary.</p>
      */
     private static int tryPlaceEntrancePortal(WorldGenLevel level, ServerLevel serverLevel,
-            TunnelGeometry tg, int worldX, int stampOriginZ, int chunkMinX) {
+            TunnelGeometry tg, int worldX, int stampOriginZ, int chunkMinX, TemplateGroup group) {
         int currentBoundary = worldX;
         int extensions = 0;
         while (!airAboveOk(level, tg, currentBoundary, false)) {
@@ -262,12 +290,12 @@ public final class TunnelGenerator {
         for (int e = 1; e < extensions; e++) {
             int sectionOriginX = worldX - TunnelPlacer.LENGTH * e;
             BlockPos sectionOrigin = new BlockPos(sectionOriginX, tg.floorY(), stampOriginZ);
-            if (!TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, sectionOrigin)) {
+            if (!TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, sectionOrigin, group)) {
                 return -1;
             }
         }
         BlockPos portalOrigin = new BlockPos(currentBoundary, tg.floorY(), stampOriginZ);
-        if (!TunnelPlacer.placePortalAtWorldgen(level, serverLevel, portalOrigin, false)) {
+        if (!TunnelPlacer.placePortalAtWorldgen(level, serverLevel, portalOrigin, false, group)) {
             return -1;
         }
         // For extensions > 0 the portal stamp doesn't reach the original
@@ -275,7 +303,7 @@ public final class TunnelGenerator {
         // run has continuous tunnel from the portal forward.
         if (extensions > 0) {
             BlockPos origSection = new BlockPos(worldX, tg.floorY(), stampOriginZ);
-            TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, origSection);
+            TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, origSection, group);
         }
         return worldX + TunnelPlacer.LENGTH - 1;
     }
@@ -294,7 +322,7 @@ public final class TunnelGenerator {
      * the pyramid lands) on success, or {@code -1} on failure.</p>
      */
     private static int tryPlaceExitPortal(WorldGenLevel level, ServerLevel serverLevel,
-            TunnelGeometry tg, int worldX, int stampOriginZ, int chunkMaxX) {
+            TunnelGeometry tg, int worldX, int stampOriginZ, int chunkMaxX, TemplateGroup group) {
         int currentBoundary = worldX;
         int extensions = 0;
         while (!airAboveOk(level, tg, currentBoundary, true)) {
@@ -312,14 +340,14 @@ public final class TunnelGenerator {
         for (int e = 1; e < extensions; e++) {
             int sectionOriginX = worldX + TunnelPlacer.LENGTH * e - (TunnelPlacer.LENGTH - 1);
             BlockPos sectionOrigin = new BlockPos(sectionOriginX, tg.floorY(), stampOriginZ);
-            if (!TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, sectionOrigin)) {
+            if (!TunnelPlacer.placeSectionAtWorldgen(level, serverLevel, sectionOrigin, group)) {
                 return -1;
             }
         }
         // Exit portal: mirrorX=true puts pyramid at originX + 9, so origin
         // = currentBoundary - 9 lands the pyramid AT currentBoundary.
         BlockPos portalOrigin = new BlockPos(currentBoundary - (TunnelPlacer.LENGTH - 1), tg.floorY(), stampOriginZ);
-        if (!TunnelPlacer.placePortalAtWorldgen(level, serverLevel, portalOrigin, true)) {
+        if (!TunnelPlacer.placePortalAtWorldgen(level, serverLevel, portalOrigin, true, group)) {
             return -1;
         }
         return currentBoundary;

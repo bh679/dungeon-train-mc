@@ -1,0 +1,22 @@
+{
+  "_comment": "Words that turn an \"Other\" bug report into a train_vanished report (the vanishing / derailing / duplicating train family). Matched case-insensitively as plain substrings of the comment. Add words freely; no code change needed.",
+  "train_vanished": [
+    "derail",
+    "duplicat",
+    "duplciat",
+    "dupe",
+    "two trains",
+    "2 trains",
+    "second train",
+    "another train",
+    "extra train",
+    "double train",
+    "vanish",
+    "disappear",
+    "train gone",
+    "train is gone",
+    "train was gone",
+    "lost the train",
+    "lost my train"
+  ]
+}

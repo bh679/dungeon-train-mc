@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.InertiaSnapshot;
 import games.brennan.dungeontrain.ship.KinematicDriver;
 import games.brennan.dungeontrain.track.TrackGeometry;
+import games.brennan.dungeontrain.util.ThrottledLog;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
@@ -15,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +47,7 @@ public final class TrainTransformProvider implements KinematicDriver {
     // COM drift; mutation-driven drift (explosions, mining, portal mirroring)
     // is still real and is corrected by CarriagePivotPin, so these probes —
     // and its [pinCorrected] line — remain the live regression signal.
-    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger("games.brennan.dungeontrain.jitter");
+    private static final Logger JITTER_LOGGER = LoggerFactory.getLogger(games.brennan.dungeontrain.util.DtLogging.JITTER);
 
     // SableKinematicTicker fires nextTransform every server tick (20 Hz),
     // so each call represents 1/20 s of game time. canonicalPos must advance
@@ -58,7 +60,15 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
     private static final int JITTER_DEBUG_PERIOD = 20;
     private static final double JITTER_COMDELTA_LOG_STEP = 0.1;
     private static final double JITTER_TRIPWIRE_MULTIPLIER = 2.0;
-    private static final int JITTER_TRIPWIRE_COOLDOWN_TICKS = 10;
+    // Per carriage. Was 10 (up to 2 WARN/s per carriage in player logs); the deltas that trip it
+    // during the cooldown are counted into the next line's suppressed= field instead of lost.
+    private static final int JITTER_TRIPWIRE_COOLDOWN_TICKS = 200;
+    // Per train, on top of the per-carriage cooldown. A lagging server's tick catch-up makes every
+    // carriage take the same doubled step at once, which was one WARN per carriage; now the first
+    // carriage of the burst logs the full line and the rest fold into the next line's trainTrips=.
+    private static final long JITTER_TRIPWIRE_TRAIN_WINDOW_MS = 2_000L;
+    // One small entry per train seen this session (trains are few); never pruned.
+    private static final Map<UUID, ThrottledLog> TRIPWIRE_BY_TRAIN = new ConcurrentHashMap<>();
     // Sub-mm threshold for "the pivot moved" events so we don't log every
     // floating-point round-off. Real COM recalc would produce far larger
     // deltas; on Sable per-carriage we expect this to never fire.
@@ -86,6 +96,14 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
      * bootstrap eager-fill and the client's first packet-processing pass, short
      * enough to read as a natural standstill start. Tunable. See
      * {@link #beginLoadGrace} and {@link #MOTION_HOLD_UNTIL}.</p>
+     *
+     * <p>The same race hits every mid-ride full sync — an appended group
+     * (whose first MOVE is guaranteed: {@code lastNetworkedPose} starts at the
+     * origin), a group entering tracking range, a reload from holding. A hold
+     * can't cover those without breaking lockstep, so it is closed at the
+     * network layer instead by
+     * {@code mixin.SubLevelTrackingOrderedSnapshotMixin}; this grace stays as
+     * belt and braces for the join burst.</p>
      */
     private static final long WORLD_LOAD_MOTION_GRACE_TICKS = 20L;
 
@@ -232,6 +250,12 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
      */
     private long frozenTicksAtSpawn = 0L;
 
+    // Set by {@link #setTargetVelocity} (any thread) when the velocity changes; consumed by the
+    // next {@link #nextTransform}, which re-bases the anchor onto the current canonical position
+    // before the formula prices the elapsed ticks at the new speed. See
+    // {@link #shouldRebaseOnVelocityChange}.
+    private volatile boolean rebaseAnchorPending = false;
+
     // One-shot sub-block world-X nudge applied the instant spawnWorldPos is
     // captured on the first kinematic tick (see nextTransform). Lets the
     // bootstrap eager-fill inject a fractional inter-group gap that integer
@@ -274,6 +298,7 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
     private long lastNextTransformGameTick = -1L;
     private double lastLoggedComDeltaX = Double.NaN;
     private int tripwireCooldown;
+    private int tripwireSuppressed;
     private double lastPivotX = Double.NaN;
     private double lastPivotY = Double.NaN;
     private double lastPivotZ = Double.NaN;
@@ -371,7 +396,27 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
      * reference and never mutates it in place.
      */
     public void setTargetVelocity(Vector3dc v) {
+        Vector3dc previous = this.targetVelocity;
         this.targetVelocity = new Vector3d(v);
+        // The position formula multiplies the CURRENT velocity by every tick since the anchor, so
+        // a new velocity would re-price the whole distance travelled so far and teleport the
+        // carriage (a `/dungeontrain speed 0` snapped the train back to its spawn X; `speed 2`
+        // snapped it forward by 2 × the ticks elapsed, up to ~1000 blocks). Arm a re-base so the
+        // next tick moves the anchor onto the current position first and the new speed applies
+        // from here. See the [rebase.velocity] block in nextTransform.
+        if (shouldRebaseOnVelocityChange(previous, v)) {
+            rebaseAnchorPending = true;
+        }
+    }
+
+    /**
+     * Pure core of the velocity-change re-base: {@code true} iff the velocity actually changes.
+     * A first assignment ({@code previous == null}) never re-bases — the anchor is captured on the
+     * first tick anyway — and a same-value write (the settings screen re-applying the current
+     * speed) leaves the anchor alone.
+     */
+    static boolean shouldRebaseOnVelocityChange(Vector3dc previous, Vector3dc next) {
+        return previous != null && next != null && !previous.equals(next);
     }
 
     public BlockPos getShipyardOrigin() {
@@ -1000,6 +1045,22 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         double prevCanonX = canonicalPos.x;
         double prevCanonY = canonicalPos.y;
         double prevCanonZ = canonicalPos.z;
+        // A velocity change re-bases the anchor onto where the carriage is NOW, so the new speed
+        // prices only the ticks from here on and the pose is continuous across the change. Same
+        // three writes as the resume-after-cull re-anchor below, and for the same reason the
+        // frozen baseline moves with the anchor. World-space riders (untagged mobs, Sable
+        // Pathfinder walkers) stay on their floor instead of being left in mid-air.
+        if (rebaseAnchorPending) {
+            rebaseAnchorPending = false;
+            if (JITTER_LOGGER.isDebugEnabled()) {
+                JITTER_LOGGER.debug("[rebase.velocity] pIdx={} trainId={} anchor {} -> {} velocityX={}",
+                    pIdx, trainId, fmt(spawnWorldPos), fmt(canonicalPos),
+                    String.format("%.3f", targetVelocity.x()));
+            }
+            spawnWorldPos.set(canonicalPos);
+            spawnGameTick = currentGameTick;
+            frozenTicksAtSpawn = TrainMotionFreeze.frozenTicks(trainId);
+        }
         // Hold a freshly-(re)loaded carriage at its spawn position until this
         // dimension's world-load grace window expires, then advance smoothly
         // (elapsed steps 0 → 0 → 1, no jump). A no-op for every carriage
@@ -1048,14 +1109,17 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         // for TRUE anomalies: a large delta with NO tick gap is still a real
         // regression and still fires.
         if (shouldReanchor(lastNextTransformGameTick, currentGameTick)) {
-            // Rare (only after a cull→reload), so this is unconditional and INFO: it is the proof
-            // that a reloaded carriage rejoined its siblings by extrapolation and not from wherever
-            // Sable put the body back. deltaBlocks is how far the body moved in that one frame.
-            JITTER_LOGGER.info(
-                "[reanchor] pIdx={} trainId={} gapTicks={} from={} to={} deltaBlocks={}",
-                pIdx, trainId, currentGameTick - lastNextTransformGameTick,
-                fmt(spawnWorldPos), fmt(canonicalPos),
-                String.format("%.3f", input.currentPosition().distance(canonicalPos)));
+            // Proof that a reloaded carriage rejoined its siblings by extrapolation and not from
+            // wherever Sable put the body back; deltaBlocks is how far the body moved in that one
+            // frame. DEBUG (dev only): a reload re-anchors every carriage at once, which was one
+            // INFO line per carriage in player logs. Players' logs keep the count as [mspt] reanchors=.
+            if (JITTER_LOGGER.isDebugEnabled()) {
+                JITTER_LOGGER.debug(
+                    "[reanchor] pIdx={} trainId={} gapTicks={} from={} to={} deltaBlocks={}",
+                    pIdx, trainId, currentGameTick - lastNextTransformGameTick,
+                    fmt(spawnWorldPos), fmt(canonicalPos),
+                    String.format("%.3f", input.currentPosition().distance(canonicalPos)));
+            }
             games.brennan.dungeontrain.ship.sable.PhysicsStepTimer.countReanchor();
             spawnWorldPos.set(canonicalPos);
             spawnGameTick = currentGameTick;
@@ -1100,7 +1164,7 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
 
         String src = Math.abs(rawComDeltaX) < PIVOT_MOVE_EPSILON ? "ours" : "VS";
 
-        if (prevEffectivePos != null && tripwireCooldown == 0) {
+        if (prevEffectivePos != null) {
             double dx = effPos.x() - prevEffectivePos.x;
             double dy = effPos.y() - prevEffectivePos.y;
             double dz = effPos.z() - prevEffectivePos.z;
@@ -1110,11 +1174,22 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
                     + targetVelocity.y * targetVelocity.y
                     + targetVelocity.z * targetVelocity.z
             ) * PHYSICS_DT * JITTER_TRIPWIRE_MULTIPLIER;
-            if (deltaLen > expectedMax) {
-                JITTER_LOGGER.warn(
-                    "[tripwire] pIdx={} physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={} src={}",
-                    pIdx, physicsTickCounter, deltaLen, expectedMax, fmt(canonicalPos), fmt(pivot),
-                    fmt(lockedPositionInModel), fmt(effPos), fmt(prevEffectivePos), src);
+            if (deltaLen > expectedMax && tripwireCooldown > 0) {
+                tripwireSuppressed++;
+            } else if (deltaLen > expectedMax) {
+                // A carriage folded into its train's burst still starts its own cooldown, and its trip
+                // is counted once — in trainTrips=, not also in its suppressed=.
+                long trainTrips = TRIPWIRE_BY_TRAIN
+                    .computeIfAbsent(trainId, id -> new ThrottledLog(JITTER_TRIPWIRE_TRAIN_WINDOW_MS))
+                    .record().orElse(0L);
+                if (trainTrips > 0) {
+                    JITTER_LOGGER.warn(
+                        "[tripwire] pIdx={} physicsTick={} deltaLen={} expectedMax={} canonicalPos={} pivotNow={} pivotLocked={} effPos={} prevEffPos={} src={} suppressed={} trainTrips={}",
+                        pIdx, physicsTickCounter, deltaLen, expectedMax, fmt(canonicalPos), fmt(pivot),
+                        fmt(lockedPositionInModel), fmt(effPos), fmt(prevEffectivePos), src, tripwireSuppressed,
+                        trainTrips);
+                    tripwireSuppressed = 0;
+                }
                 tripwireCooldown = JITTER_TRIPWIRE_COOLDOWN_TICKS;
             }
         }
@@ -1132,7 +1207,7 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
             if (Math.abs(pdx) > PIVOT_MOVE_EPSILON
                 || Math.abs(pdy) > PIVOT_MOVE_EPSILON
                 || Math.abs(pdz) > PIVOT_MOVE_EPSILON) {
-                JITTER_LOGGER.trace(
+                if (JITTER_LOGGER.isTraceEnabled()) JITTER_LOGGER.trace(
                     "[pivotMoved] pIdx={} physicsTick={} pivotNow={} delta=({}, {}, {}) src={} lastMutationTick={} msSinceMutation={} mutationDriven={}",
                     pIdx, physicsTickCounter, fmt(pivot),
                     String.format("%.6f", pdx),
@@ -1147,7 +1222,8 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
 
         boolean comDeltaChanged = Double.isNaN(lastLoggedComDeltaX)
             || Math.abs(rawComDeltaX - lastLoggedComDeltaX) > JITTER_COMDELTA_LOG_STEP;
-        if (physicsTickCounter % JITTER_DEBUG_PERIOD == 0 || comDeltaChanged) {
+        if ((physicsTickCounter % JITTER_DEBUG_PERIOD == 0 || comDeltaChanged)
+                && JITTER_LOGGER.isTraceEnabled()) {
             JITTER_LOGGER.trace(
                 "[physics] pIdx={} physicsTick={} src={} canonicalPos={} pivotNow={} pivotLocked={} rawComDeltaX={} effPos={} voxelA_world={} lastMutationTick={} msSinceMutation={}",
                 pIdx, physicsTickCounter, src,

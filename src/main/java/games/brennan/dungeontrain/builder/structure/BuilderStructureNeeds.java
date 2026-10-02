@@ -384,7 +384,7 @@ public final class BuilderStructureNeeds {
     /**
      * <b>The tiling, and the bedrock.</b>
      *
-     * <p>A room's mode is the coarsest thing about it and the least visible: a Bedrock Lock room and
+     * <p>A room's mode is the coarsest thing about it and the least visible: a Bedrock room and
      * a Repeating room are stamped identically here and behave nothing alike in a run. Declaring the
      * boundary the mode implies is the only way that difference is on screen at all.</p>
      *
@@ -404,7 +404,7 @@ public final class BuilderStructureNeeds {
         BlockPos origin = BuilderWorldLayout.portalRoomOrigin(size);
 
         if (!roomMode.tiles()) {
-            // Bedrockless is the mode whose boundary is *nothing at all* for a clearance either side.
+            // Void is the mode whose boundary is *nothing at all* for a clearance either side.
             // Declaring anything for it would contradict the one thing it says about itself.
             if (!roomMode.clearsSurroundings()) {
                 out.add(new BuilderStructure.Placement(

@@ -54,7 +54,8 @@ public record EditorRosterRequestPacket() implements CustomPacketPayload {
             java.util.List<EditorRosterPacket.StageEntry> stages =
                 EditorRoster.stages(player.serverLevel().getServer().overworld());
             DungeonTrainNet.sendTo(player, new EditorRosterPacket(groups, stamped,
-                new EditorRosterPacket.TrainSize(dims.length(), dims.width(), dims.height()), stages));
+                new EditorRosterPacket.TrainSize(dims.length(), dims.width(), dims.height()), stages,
+                games.brennan.dungeontrain.tunnel.TunnelGroupEditing.snapshot()));
         });
     }
 }

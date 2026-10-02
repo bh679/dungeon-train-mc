@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.GrowthPass;
+import games.brennan.dungeontrain.editor.ConnectPass;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
@@ -30,20 +32,27 @@ public final class WholeOverlay {
         WholeVariantBlocks sidecar = WholeVariantBlocks.loadFor(kind, id, footprint);
         if (sidecar.isEmpty()) return;
         String plotKey = BlockVariantPlot.wholeKey(kind, id);
-        for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
-            VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
-            int lockId = sidecar.lockIdAt(e.localPos());
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
-                    seed, carriageIndex, v -> RotationApplier.apply(
-                        StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
-                        e.localPos(), seed, carriageIndex, lockId))) {
-                BlockPos world = origin.offset(w.localPos());
-                if (w.isAir()) {
-                    SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
-                    continue;
+        java.util.function.Predicate<BlockPos> within =
+            GrowthPass.inside(origin, footprint.getX(), footprint.getY(), footprint.getZ());
+        try (ConnectPass.Scope ignored = ConnectPass.open();
+             GrowthPass.Scope grown = GrowthPass.open()) {
+            for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
+                VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
+                int lockId = sidecar.lockIdAt(e.localPos());
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(e.states(), sidecar.spanAt(e.localPos()), picked, e.localPos(),
+                        seed, carriageIndex, v -> RotationApplier.apply(
+                            StagePlacementScope.resolve(v.state()), v.rotation(), v.half(), v.active(),
+                            e.localPos(), seed, carriageIndex, lockId))) {
+                    BlockPos world = origin.offset(w.localPos());
+                    if (w.isAir()) {
+                        SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
+                        continue;
+                    }
+                    ContainerContentsPlacement.place(level, world, w.state(), w.entry().blockEntityNbt(),
+                        plotKey, w.localPos(), seed, carriageIndex, w.entry().linkedLootPrefabId());
+                    ConnectPass.note(level, world, w.entry().connect(), w.state());
+                    GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);
                 }
-                ContainerContentsPlacement.place(level, world, w.state(), w.entry().blockEntityNbt(),
-                    plotKey, w.localPos(), seed, carriageIndex, w.entry().linkedLootPrefabId());
             }
         }
     }

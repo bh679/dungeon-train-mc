@@ -103,7 +103,17 @@ public final class TemplateLootPrefabs {
     }
 
     static String collect(BuilderPhotoPaths.Kind kind, String subKind, String id, Library library) {
-        String plotKey = TemplateSidecars.plotKeyFor(kind, subKind, id);
+        return collectFor(TemplateSidecars.plotKeyFor(kind, subKind, id), id, library);
+    }
+
+    /** As {@link #collect}, for whole room {@code id} — see {@link TemplateSidecars#collectWholeRoomReport}. */
+    public static String collectWholeRoom(String id) {
+        if (id == null || id.isEmpty()) return "";
+        return collectFor(TemplateSidecars.wholeRoomPlotKey(id), id, STORE);
+    }
+
+    /** The prefabs the containers store under {@code plotKey} links to; {@code id} names it in logs. */
+    static String collectFor(String plotKey, String id, Library library) {
         if (plotKey == null) return "";
         SortedSet<String> linked;
         try {

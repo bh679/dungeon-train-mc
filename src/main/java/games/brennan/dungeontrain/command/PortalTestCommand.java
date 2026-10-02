@@ -441,9 +441,10 @@ public final class PortalTestCommand {
      *
      * <p><b>They stay where they were.</b> The trip lands them in the doorway, but an author looking
      * at a chest wants the chest re-rolled under their nose, not a walk back to it. So where they
-     * stood is put back afterwards — provided it is still inside the stamped box and the new roll
-     * left it open. A spot the reseed filled (a wall variant, a bookcase where there was floor)
-     * would suffocate them, and they are left in the doorway instead.</p>
+     * stood is put back afterwards — provided it is within two chunks of the stamped box (see
+     * {@link #keepsPlaceOnReseed}) and the new roll left it open. A spot the reseed filled (a wall
+     * variant, a bookcase where there was floor) would suffocate them, and they are left in the
+     * doorway instead.</p>
      */
     /**
      * @param focus re-roll only the template under test (Shift): see {@link Focus}. Without it a
@@ -491,13 +492,28 @@ public final class PortalTestCommand {
         if (fresh == null) return result;
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         BoundingBox box = PortalCarriageBuilder.footprintOf(overworld, fresh.structure(), dims);
-        if (!box.isInside(BlockPos.containing(stood))) return result;
+        if (!keepsPlaceOnReseed(box, BlockPos.containing(stood))) return result;
         // The player's own box, moved to where they stood, against what the reseed just wrote.
         if (!overworld.noCollision(player, player.getBoundingBox().move(stood.subtract(player.position())))) {
             return result;
         }
         player.teleportTo(overworld, stood.x, stood.y, stood.z, yaw, pitch);
         return result;
+    }
+
+    /**
+     * How far outside a test copy a reseed still leaves the author where they stood: two chunks. An
+     * author looking at the copy from beside it, above it or through a gap in its wall is still
+     * looking at it, and wants the new roll in front of them rather than a trip to the doorway.
+     */
+    static final int RESEED_KEEP_MARGIN = 2 * 16;
+
+    /**
+     * Whether a reseed puts the author back where they stood rather than at the copy's arrival spot.
+     * The re-stamp lands on the same origin, so the old box and the new one are the same box.
+     */
+    static boolean keepsPlaceOnReseed(BoundingBox box, BlockPos stood) {
+        return box.inflatedBy(RESEED_KEEP_MARGIN).isInside(stood);
     }
 
     /** {@code portal test reseed on|off} — flip the world switch and tell the client what it now holds. */

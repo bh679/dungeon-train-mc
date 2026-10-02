@@ -57,6 +57,8 @@ public record BuilderSavePacket() implements CustomPacketPayload {
                         .withStyle(ChatFormatting.GREEN));
                 // Snapshots were re-baselined by the save, so the client's green Save can clear.
                 DungeonTrainNet.sendTo(player, BuilderDirtyPacket.state(0));
+                // Saved: the X editor's Blocks page cells merge, one per block.
+                games.brennan.dungeontrain.editor.TemplateBlockGroupsController.onSaved(player);
                 // And the build's name may have just changed under it — a Save-as renames first —
                 // so the client's idea of what Save points at, and whether that is a built-in, is
                 // stale until told. Left alone, the next Save re-asked for a name it already has.

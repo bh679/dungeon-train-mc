@@ -1,0 +1,78 @@
+{
+  "name": "dungeontrain:lost_city/hospital",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hospital",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hospital_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hospital",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hospital_taller"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hospital",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hospital_longer"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hospital",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hospital_grey"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hospital",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hospital_cream"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hospital",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hospital_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hospital",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hospital_collapsed"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/hospital",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/hospital_dry"
+      }
+    }
+  ]
+}

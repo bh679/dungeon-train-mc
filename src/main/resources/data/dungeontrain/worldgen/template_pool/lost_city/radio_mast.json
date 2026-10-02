@@ -1,0 +1,51 @@
+{
+  "name": "dungeontrain:lost_city/radio_mast",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 3,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/radio_mast",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/radio_mast_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/radio_mast",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/radio_mast_taller"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/radio_mast",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/radio_mast_shorter"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/radio_mast",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/radio_mast_rusted"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/radio_mast",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/radio_mast_dark"
+      }
+    }
+  ]
+}

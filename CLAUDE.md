@@ -100,6 +100,11 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
 6. Bump version in `gradle.properties` per the versioning rule
+7. **Leaderboard resets are never yours to propose.** Retiring a leaderboard era (`-f leaderboard_reset=true`
+   on `release.yml`, the relay's `POST …/leaderboard/era/retire`, or `scripts/retire-leaderboard-era.js`)
+   happens **only when Brennan brings it up himself**. Do not set the flag, do not suggest it at merge or
+   release time, and do not ask whether a release should reset the boards — not even for a balancing
+   release. If he has not mentioned it, the answer is no.
 
 ---
 
@@ -113,7 +118,22 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 ./gradlew runServer       # Launch dev dedicated server
 ./gradlew test            # Run JUnit tests (if present)
 ./gradlew --stop          # Stop the gradle daemon if dev client hangs
+./gradlew pullTradeValues # Refresh data/dungeontrain/trade_values.json from the relay (see below)
 ```
+
+### Community item trade values
+
+What each item trades for (Trade Everything, sixteenths of an emerald) is tuned by the community
+at https://brennan.games/dungeontrain/items/ — members suggest, Brennan approves. Nothing pushes
+from there: `./gradlew pullTradeValues` copies the relay's `GET /items/export` into
+`src/main/resources/data/dungeontrain/trade_values.json` (committed; `compat/TradeValueTable`
+registers it as TE's first value provider, ahead of `TradeEverythingBridge`'s hand-tuned
+constants). It is never part of `build` — CI and the cascade build offline — so run it by hand,
+review the diff, commit. To refresh the page's item list, run
+`/dungeontrain debug trade-values dump` in a dev client and copy `run/trade-values-catalog.json`
+to the relay's `public/dungeontrain/items/catalog.json`. For the icons, `./gradlew runClient
+-PtradeValueIcons` renders every item at the title screen to `run/trade-values-icons/` and quits
+(`client/TradeValueIconDump`); copy that folder to `public/dungeontrain/items/icons/`.
 
 ### In-Game Manual Testing
 
@@ -225,6 +245,11 @@ dev-only changes, minor cosmetic fixes. When in doubt, ask the user.
    gh workflow run release.yml -f tag=v<version> \
      -f changelog="$(python3 scripts/release-notes/render-unreleased.py)"
    ```
+   **Leaderboard reset — only on Brennan's explicit say-so.** `-f leaderboard_reset=true` (optionally
+   `-f leaderboard_era_label="…"`, default `v<version>`) retires the current one-life leaderboard era on
+   the relay and opens `v<version>`; retired boards stay readable and circulate as Ancient Records books.
+   Never add it on your own, never suggest it, and never ask whether a release should reset the boards
+   (see Gate 3 step 7). Use it only when he asks for a reset in his own words.
 5. Watch the run:
    ```bash
    gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId --jq '.[0].databaseId')
@@ -269,7 +294,7 @@ returns sporadic 500s and silently rejects files, so the cascade is kept out of 
 version lists therefore differ by design. Both bundle that release's
 DT file + Sable + the pinned sibling and companion mods. Core entries are
 **Dungeon Train + Sable** (DT jarJars DiscordPresence + EdibleBackpacks + KeepTrim + DungeonBackup +
-SableFenceTrapdoorFix + joml-primitives);
+SableFenceTrapdoorFix + LostCityTerrainFit + joml-primitives);
 the sibling mods **AIN/AIS/PMOB/ECP/TE are un-bundled required downloads**, declared `<slug>(required)` so the
 CurseForge/Modrinth apps auto-install them and each sibling's own page gets the download credit. The third-party
 **Fast Paintings + Moonlight** (`fast-paintings(required)`, `selene(required)`) are hard deps on the same
@@ -283,11 +308,11 @@ End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `En
 read `worldgen/density/VanillaEndBiomes`. DT's presets give the End WorldWeaver's `wover:end_biome_source` — the
 vanilla `minecraft:the_end` source yields no BetterEnd biomes (TerraBlender's patch wins `getNoiseBiome`) — and
 `data/wover/config/biome_config.json` keeps BoP out of the End (`EndPresetBiomeSourceTest` pins both). **William Wythers' Overhauled
-Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. Lap 1 of every cycle is
+Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. **VanillaBackport** (+ its **Platform** library, `vanillabackport(required)` / `platform(required)`, needed on client AND server) is a hard dep too: its sulfur caves join the caves on the way out of every Nether pass (deep dark 50 / sulfur 30 / lush+dripstone 20 — `worldgen/NetherBandBiomes#pickCavePost`). Its overworld biomes (Pale Garden, underground Sulfur Caves) are kept to the vanilla overworld stretches — spheres/chuncks/stacks included — by `density/OverworldStretchBiomes` (non-vanilla stretches pick from `vanillaTableWithoutBackport`, keys in `worldgen/BackportBiomes`), and `mixin/terrablender/RegionsMixin` drops its TerraBlender region so the BoP stretch's region layout is unchanged; its sulfur/cinnabar rock reaches DT's `dungeontrain:overworld*` settings through VanillaBackport's own `NoiseGeneratorSettings` constructor injection (`event/VanillaBackportSurfaceRuleCheck` warns at server start if it stops). Lap 1 of every cycle is
 overworld → Nether → WWOO → one End band (1200 vanilla, then 2000 BoP — two back-to-back `end:` slots join into one
 band with a single void fade, each piece its own pass/look) → upside-down; Lap 2 is BoP → BetterNether → Lost City (its
 own `legacy:wwoo:` run — an order may hold several; it wears WWOO decoration, and its buildings start on the Nether's exit
-mountains via `CycleLayout#legacyLeadIn`; the track is flattened only where it would cut a mountain — `density/UpsideDownTrackFlatten#mountainGate`, also in the upside-down band; its buildings fade in from the foot of the Nether's fall, half the grid there rising to full 2900 blocks on, none on the range (`LostCityStructures#density`, `#fallFoot`; a 2.8% sprinkling also lands in Lap 1's WWOO stretch), start in every overworld biome, oceans included, seated on the footprint's 30th-percentile floor (`worldgen/LostCitySeating#seat`, from `StructureBasementMixin`); they generate with vanilla adaptation off (`StructureTerrainAdaptationMixin`) and a fill-only beard instead (`BeardifierMixin`), and yield their natural pad and air to WWOO's terrain and water, which climb over and flood them — `worldgen/LostCityGroundProcessor`, attached by `SinglePoolElementMixin`) → BetterEnd. From the second cycle on, Lap 1's Nether takes the Biomes O'
+mountains via `CycleLayout#legacyLeadIn`; the track is flattened only where it would cut a mountain — `density/UpsideDownTrackFlatten#mountainGate`, also in the upside-down band; its buildings fade in from the foot of the Nether's fall, 15% of the grid there rising to full 2900 blocks on, none on the range (`LostCityStructures#density`, `#fallFoot`; a 2.4% sprinkling also lands in Lap 1's WWOO stretch), start in every overworld biome, oceans included, seated on the footprint's 30th-percentile floor, with vanilla adaptation off and a fill-only beard instead, yielding their natural pad and air to WWOO's terrain and water, which climb over and flood them — all of that fit lives in the jarJar'd sibling **Lost City Terrain Fit** (`bh679/lostcityterrainfit-mc`; its seat inject runs ahead of `StructureBasementMixin`'s, and DT vetoes its `lostcityterrainfit:all_biome/*` copies — `LostCityStructures#isTerrainFitCopy`)) **Two kinds of building stand there:** Big Lost City's, placed exactly as shipped (the mod is All Rights Reserved, so no DT processor is ever attached to one of its templates — `LostCityStructuresTest#noDtPoolNamesBigLostCity` pins it), and **DT's own** (`dungeontrain:lost_city/<name>`: office tower, apartment block, hotel, hospital, civic hall, shopping strip, railway station, petrol station, radio mast, water tower, overpass, cooling tower, silos, a leaning tower, a fallen block and a snapped tower), generated by `scripts/lost-city/build-templates.py` from recipes in `scripts/lost-city/lostcity/archetypes/` and rolled per placement into designs — `lost_city_stretch` (taller/shorter/wider/podium/setback), `lost_city_swap` (recolour/decay), `lost_city_bite`, `lost_city_facade`, `lost_city_truncate` — by the processor lists `scripts/lost-city/generate-variants.py` emits; CI runs both with `--check`, and `LostCityTemplatesTest` asserts the stretch finds the manifest's floor/bay periods. See `scripts/lost-city/README.md`) → BetterEnd. From the second cycle on, Lap 1's Nether takes the Biomes O'
 Plenty look (`nether:vanilla>bop` in the order — a vanilla + BoP TerraBlender region mix in
 `density/NetherCoreBiomes`; the BoP End is sampled from `worldgen/BopEnd`) (`worldgen/SecondLapOverworld`;
 `/dungeontrain debug overworld-laps` / `nether-passes` list each lap's stretches and biomes). WWOO is confined at feature placement plus vanilla
@@ -308,7 +333,7 @@ loads (Advancement Plaques needs Iceberg).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix):** jarJar'd inside the DT jar
+- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix; also Stream Detect, DPI Bypass Detect, Pigman Villagers, Lost City Terrain Fit — CF project 1717775):** jarJar'd inside the DT jar
   (so Modrinth + manual installs have them built in) AND declared `<slug>(required)` on **CurseForge
   only** + shipped as CurseForge modpack Includes (`curseforge_only: true` in `modpack.config.json`,
   which keeps them out of the `.mrpack`). When the CF app installs the top-level copy, NeoForge's

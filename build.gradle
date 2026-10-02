@@ -134,6 +134,12 @@ neoForge {
         client {
             client()
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
             // Local-relay testing seam: point the dev client at a locally-run dp-relay instead of the
             // branch-routed dev/live cap, e.g.
             //   ./gradlew runClient -PrelayBaseUrl=http://127.0.0.1:3005/<CAP>
@@ -182,6 +188,19 @@ neoForge {
             }
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
+            }
+            // Item-icon dump for the relay's item-values page: ./gradlew runClient -PtradeValueIcons
+            // renders every item to run/trade-values-icons/<ns>/<path>.png at the title screen and
+            // quits (client/TradeValueIconDump).
+            if (project.hasProperty('tradeValueIcons')) {
+                systemProperty 'dungeontrain.tradeValueIcons', 'true'
+                systemProperty 'dungeontrain.tradeValueIcons.quit', 'true'
+            }
+            // Collider-batch A/B seam: ./gradlew runServer -PcolliderBatch=false boots with
+            // ColliderBatch off, so the bootstrap spawn (which runs before any command can reach the
+            // server) can be measured on Sable's per-block path. See ship/sable/ColliderBatch.
+            if (project.hasProperty('colliderBatch')) {
+                systemProperty 'dungeontrain.colliderBatch', project.property('colliderBatch').toString()
             }
             // Versions-page seam: ./gradlew runClient -PmockInstalledVersion=0.800.0 makes the page
             // (and its boot prompt) treat that as the installed version, so the behind state can be
@@ -257,6 +276,12 @@ neoForge {
                 gameDirectory = file(project.property('serverDir').toString())
             }
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
             // Same local-relay seam as the client above. The SERVER is what fetches the community
             // book + narrative pools (SharedBookRefreshEvents ticks server-side), so verifying that
             // half against a local dp-relay needs it here too — and a dedicated server needs no GUI,
@@ -293,6 +318,11 @@ neoForge {
             if (project.hasProperty('perfTest')) {
                 systemProperty 'dungeontrain.perfTest', 'true'
             }
+            // Collider-batch A/B seam (see the client run above): boots ColliderBatch off so the
+            // bootstrap spawn can be measured on Sable's per-block path.
+            if (project.hasProperty('colliderBatch')) {
+                systemProperty 'dungeontrain.colliderBatch', project.property('colliderBatch').toString()
+            }
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
@@ -301,6 +331,12 @@ neoForge {
         gameTestServer {
             type = 'gameTestServer'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Jitter-namespace DEBUG is on by default in dev (DtLogging: not FMLEnvironment.production);
+            // -PjitterDebug=false logs like a player: jitter capped at INFO ([mspt] kept) and the dev
+            // traingen trace (DevTraceDefaults) left off.
+            if (project.hasProperty('jitterDebug')) {
+                systemProperty 'dungeontrain.jitterDebug', project.property('jitterDebug').toString()
+            }
         }
 
         data {
@@ -519,7 +555,7 @@ dependencies {
     // DH is an optional companion (opt-in in the modpack, `optional` in neoforge.mods.toml) and
     // is not in the dev client; it ships the API classes inside its own jar, so at runtime they
     // are either DH's or absent. The only DT class that names them
-    // (client/DistantHorizonsUpsideDown) is reached behind a ModList check, so nothing tries to
+    // (client/DistantHorizonsSuppression) is reached behind a ModList check, so nothing tries to
     // link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
     // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
     compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
@@ -534,7 +570,11 @@ dependencies {
 
     // Sable Pathfinder — third-party mob pathing across Sable sub-levels (see gradle.properties).
     // Nothing compiles against it; on the dev classpath so runClient/runServer behave like players.
-    implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
+    // A/B seam: ./gradlew runServer -PnoSablePathfinder boots without it, matching a player who
+    // never installed it (mods.toml marks it optional), so its per-node cost can be measured.
+    if (!project.hasProperty('noSablePathfinder')) {
+        implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
+    }
 
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
@@ -558,9 +598,23 @@ dependencies {
     implementation "maven.modrinth:worldweaver-neoforge:${worldweaver_version}"
     implementation "maven.modrinth:wunderlib-neoforge:${wunderlib_version}"
 
+    // VanillaBackport + Platform — REQUIRED third-party deps (see gradle.properties). DT names its biomes and
+    // blocks only by registry id, so nothing compiles against these jars.
+    implementation "maven.modrinth:vanillabackport:${vanillabackport_version}"
+    implementation "maven.modrinth:platform:${platform_version}"
+
     // Big Lost City — REQUIRED third-party dep (see gradle.properties). Structures only; on the dev
     // classpath so runClient/runServer generate the Lost City era's cities.
     implementation "maven.modrinth:big-lost-city:${biglostcity_version}"
+
+    // Lost City Terrain Fit — sibling mod (same author) that seats Big Lost City's buildings in the
+    // world's terrain (footprint-floor seating, no-carve + fill-only beard, ground/water through the
+    // ruins). Extracted from DT; DT keeps the era placement on top (LostCityStructures). Fetched via the
+    // shared bh679 Ivy repo (flat asset lostcityterrainfit-neoforge-<v>.jar). HYBRID like Pigman Villagers
+    // above: jarJar'd, and a required CurseForge sibling (listing 1717775) — NeoForge's JarSelector drops
+    // the nested copy when the CF app installs a top-level one. See gradle.properties.
+    implementation "bh679:lostcityterrainfit:${lostcityterrainfit_version}"
+    jarJar(group: 'bh679', name: 'lostcityterrainfit', version: lostcityterrainfit_version)
 
     // Unit tests — JUnit 5 Jupiter (pure-logic only).
     testImplementation platform('org.junit:junit-bom:5.10.2')
@@ -813,6 +867,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
+        lostcityterrainfit_version       : lostcityterrainfit_version,
+        lostcityterrainfit_min_version   : lostcityterrainfit_min_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,
@@ -845,6 +901,9 @@ tasks.register('generateModMetadata', ProcessResources) {
         bclib_min_version                 : bclib_min_version,
         worldweaver_min_version           : worldweaver_min_version,
         wunderlib_min_version             : wunderlib_min_version,
+        // VanillaBackport + Platform — floors only.
+        vanillabackport_min_version       : vanillabackport_min_version,
+        platform_min_version              : platform_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties
@@ -941,6 +1000,10 @@ neoForge.ideSyncTask tasks.named('generateModRoster')
 
 // The baked Free Play whitelist: modpack + siblings + dependencies generated, the rest curated.
 apply from: 'gradle/approved-mods.gradle'
+
+// `./gradlew pullTradeValues` — refresh the bundled community-approved Trade Everything item
+// values from the relay's item-values page. By hand only; never part of build.
+apply from: 'gradle/trade-values.gradle'
 
 // Fingerprint every shipped template the way the relay hashes an upload, so the relay can tell an
 // unmodified copy of a stock template from a build (see tools/BundledFingerprints and the relay's

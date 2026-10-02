@@ -51,6 +51,17 @@ public final class LegacyBiomes {
 
     private LegacyBiomes() {}
 
+    /**
+     * True where a legacy band's old generator owns this chunk (the same per-chunk roll as the override, mix
+     * zone included). VanillaBackport's biomes stay out of these chunks, as they do out of every non-vanilla
+     * stretch ({@code OverworldStretchBiomes#pick}).
+     */
+    public static boolean isLegacyChunk(int blockX, int blockZ) {
+        Context c = current;
+        if (c == null) return false;
+        return LegacyBands.kindOfChunk(c.seed(), WorldGenCycle.fromConfig(), blockX >> 4, blockZ >> 4) != null;
+    }
+
     /** Resolve and publish this world's mapping; clears it for a world without a train. */
     public static void publish(ServerLevel overworld) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
@@ -83,12 +94,35 @@ public final class LegacyBiomes {
     }
 
     /**
+     * Identity token of the published mapping ({@code null} while none is) — a memo keyed on it
+     * ({@code density.ColumnBiomePlan}) misses on every {@link #publish} / {@link #clear}, since each
+     * publish builds a new context (and captures the seed the chunk classification reads).
+     */
+    public static Object token() {
+        return current;
+    }
+
+    /**
      * The forced biome for the quart at block {@code (blockX, blockZ)} of {@code source}, or {@code null}
      * to keep the vanilla pick (not the overworld source, not a legacy chunk, or no mapping).
      */
     public static Holder<Biome> override(Object source, int blockX, int blockZ) {
         Context c = current;
         if (c == null || !isOverworld(source, c)) return null;
+        return overrideOnOverworld(c, blockX, blockZ);
+    }
+
+    /**
+     * {@link #override} for a caller that has already established the source is the overworld's (the
+     * memoised column path of the biome-source hook — its gate and {@link #isOverworld} read the same
+     * source object, {@code generator.getBiomeSource()}, or its mark). {@code null} without a mapping.
+     */
+    public static Holder<Biome> overrideOnOverworld(int blockX, int blockZ) {
+        Context c = current;
+        return c == null ? null : overrideOnOverworld(c, blockX, blockZ);
+    }
+
+    private static Holder<Biome> overrideOnOverworld(Context c, int blockX, int blockZ) {
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         // Mix zone: a legacy-era pick keeps the ordinary overworld biome, so sky and fog never change chunk
         // to chunk (vanilla reads both from the biome). Only the blocks are the old era's.

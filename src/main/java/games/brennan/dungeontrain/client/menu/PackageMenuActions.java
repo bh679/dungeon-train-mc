@@ -41,7 +41,7 @@ public final class PackageMenuActions {
         openFolder(target, "package '" + packageName + "' folder");
     }
 
-    private static void openFolder(Path path, String label) {
+    public static void openFolder(Path path, String label) {
         try {
             Files.createDirectories(path);
         } catch (Exception e) {

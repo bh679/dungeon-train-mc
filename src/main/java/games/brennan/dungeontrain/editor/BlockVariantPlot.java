@@ -144,6 +144,28 @@ public interface BlockVariantPlot {
     }
 
     /**
+     * True when this plot's spawn path honours the per-row fence / wall
+     * {@link VariantState#connect()} mode ({@link ConnectPass}) — carriage,
+     * whole-carriage, contents and part plots. False elsewhere (tracks, portal
+     * rooms, chunk frames), where the menu hides the toggle rather than let the
+     * editor preview promise arms the spawned world would not give.
+     */
+    default boolean supportsConnectMode() {
+        return false;
+    }
+
+    /**
+     * True when this plot's spawn path grows the per-row {@link VariantState#growth()}
+     * columns ({@link GrowthPass}). Every template's placer does — carriages, contents,
+     * parts, wholes, tunnels, track tiles, pillars, stairs, portal rooms, their floor and
+     * roof planes, and chunk frames — so the menu offers Grow everywhere. Each placer bounds
+     * the column to its own piece (a track tile only has its bed and rail rows).
+     */
+    default boolean supportsGrowth() {
+        return true;
+    }
+
+    /**
      * How the cell at {@code localPos} rolls across a repeating room's copies.
      * Always {@link VariantCopyRoll#DEFAULT} — follow the room — where
      * {@link #supportsCopySettings} is false.
@@ -484,6 +506,7 @@ public interface BlockVariantPlot {
 
     /** Wraps a {@link CarriageVariantBlocks} sidecar. */
     final class CarriagePlot implements BlockVariantPlot {
+        @Override public boolean supportsConnectMode() { return true; }
         private final CarriageVariant variant;
         private final BlockPos origin;
         private final Vec3i footprint;
@@ -552,6 +575,7 @@ public interface BlockVariantPlot {
     /** Wraps a {@link CarriageContentsVariantBlocks} sidecar. */
     /** A whole room or group plot — one {@link WholeVariantBlocks} sidecar over the whole build. */
     final class WholePlot implements BlockVariantPlot {
+        @Override public boolean supportsConnectMode() { return true; }
         private final games.brennan.dungeontrain.train.WholeKind kind;
         private final String id;
         private final BlockPos origin;
@@ -611,6 +635,7 @@ public interface BlockVariantPlot {
     }
 
     final class ContentsPlot implements BlockVariantPlot {
+        @Override public boolean supportsConnectMode() { return true; }
         private final CarriageContents contents;
         private final BlockPos origin;
         private final Vec3i footprint;
@@ -669,6 +694,7 @@ public interface BlockVariantPlot {
 
     /** Wraps a {@link CarriagePartVariantBlocks} sidecar. */
     final class PartPlot implements BlockVariantPlot {
+        @Override public boolean supportsConnectMode() { return true; }
         private final CarriagePartKind kind;
         private final String name;
         private final BlockPos origin;

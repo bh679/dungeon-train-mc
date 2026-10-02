@@ -1,0 +1,69 @@
+{
+  "name": "dungeontrain:lost_city/silos",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/silos",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/silos_shipped"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/silos",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/silos_five"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/silos",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/silos_three"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/silos",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/silos_rusted"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/silos",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/silos_dark"
+      }
+    },
+    {
+      "weight": 2,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/silos",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/silos_bitten"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "dungeontrain:lost_city/silos",
+        "projection": "rigid",
+        "processors": "dungeontrain:lost_city/silos_dry"
+      }
+    }
+  ]
+}

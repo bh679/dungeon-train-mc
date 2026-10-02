@@ -34,6 +34,7 @@ import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.train.TrainMembership;
+import games.brennan.dungeontrain.util.DtLogging;
 import games.brennan.dungeontrain.worldgen.feature.ModFeatures;
 import games.brennan.dungeontrain.worldgen.structure.ModStructureTypes;
 import java.util.List;
@@ -115,6 +116,16 @@ public class DungeonTrain {
      */
     private static final String RELAY_SURVEY_RESULTS_BASE_URL =
             "https://brennan.games/api/dp-relay/425a859527bbab2b6defc48e483abd3b32b277c448e11ddf";
+    /**
+     * Build-submissions channel capability. Every Train Editor build submitted for review from a
+     * RELEASE ({@code main}) build posts an announcement (with the client's rendering of it) here, so
+     * submissions are visible the moment they arrive; dev/test builds fall through to the build's
+     * default cap (the dev channel). Non-secret + revocable like the others; the real channel webhook
+     * lives only on the relay (its {@code BUILDS_WEBHOOK_URL}, mapped to this cap in the relay's
+     * {@code .env} / {@code CAPS} registry, never in the jar).
+     */
+    private static final String RELAY_BUILDS_BASE_URL =
+            "https://brennan.games/api/dp-relay/aaca6153252ea44856c8243b99fc382327afd6cb3853550e";
 
     /**
      * Discord guild (server) ids used to build the survey copy's jump-link back to the threaded
@@ -217,6 +228,24 @@ public class DungeonTrain {
     }
 
     /**
+     * Where a build-submission announcement should post. On a RELEASE ({@code main}) build it routes
+     * to the dedicated build-submissions cap; on a dev/test build it returns {@code null} so the
+     * announcement falls through to the build's default cap (the dev channel) — testing a submit
+     * never pings the community.
+     */
+    public static String buildSubmitWebhookOverride() {
+        return buildSubmitWebhookOverrideForBranch(VersionInfo.BRANCH);
+    }
+
+    /**
+     * Pure branch-&gt;build-submissions-destination mapping (package-private for unit testing). Only
+     * a {@code main} build routes to the dedicated cap; every other branch returns {@code null}.
+     */
+    static String buildSubmitWebhookOverrideForBranch(String branch) {
+        return "main".equals(branch) ? RELAY_BUILDS_BASE_URL + "/hook" : null;
+    }
+
+    /**
      * Guild id for the survey copy's jump-link on this build: the live community server on a
      * {@code main} build, the dev server otherwise — matching the channel the threaded original was
      * posted into. {@code ""} (the unset default) → the copy posts without a link.
@@ -268,6 +297,7 @@ public class DungeonTrain {
         ModStructureTypes.register(modBus);
         ModMobEffects.register(modBus);
         ModSounds.register(modBus);
+        games.brennan.dungeontrain.registry.ModStructureProcessors.register(modBus);
         ModMenuTypes.register(modBus);
         // Strips BetterNether/BetterEnd/BoP gear and ores from all loot (see compat.DisabledModContent).
         games.brennan.dungeontrain.compat.StripDisabledItemsLootModifier.register(modBus);
@@ -344,20 +374,21 @@ public class DungeonTrain {
         // 1.21.1 rejects register(this) on classes with no @SubscribeEvent
         // methods, so calling it here would crash mod construction.
 
-        // Keeps the `games.brennan.dungeontrain.jitter` namespace at DEBUG
-        // so the [baseline] capture line (spawn), [tripwire] WARN (large
-        // physics-tick deltas — should never fire in normal play), and the
-        // stuck-player diagnostics ([stuck.pIdx], [stuck.window],
-        // [stuck.frozen], [panic.canonicalPos]) added by
-        // plans/linear-marinating-yao.md stay visible without Forge-wide
-        // DEBUG.
+        // Caps the `games.brennan.dungeontrain.jitter` namespace. FML's root
+        // logger is at `all` and debug.log takes DEBUG, so without a cap every
+        // per-event probe (and TRACE too) is written synchronously on the
+        // server thread for every player — a 2026-09 lag report stalled 6 s
+        // inside that appender. DEBUG in dev (runClient/runServer), INFO for
+        // players; -Ddungeontrain.jitterDebug=true|false overrides (see
+        // DtLogging). INFO still keeps [baseline], [capture-lag], [tripwire]
+        // and [panic.canonicalPos]; the [mspt]-style window summaries lag
+        // reports rely on log on the uncapped DtLogging.PERF logger instead.
         //
         // The chatty per-tick probes ([physics], [pivotMoved], [pIdx],
-        // [windowManager], [client]) log at TRACE — set
-        // `-Dforge.logging.console.level=trace` or bump this line to
+        // [windowManager], [client]) log at TRACE — bump this line to
         // {@link Level#TRACE} to re-enable them when diagnosing a
         // regression of the train-hop fix.
-        Configurator.setLevel("games.brennan.dungeontrain.jitter", Level.DEBUG);
+        Configurator.setLevel(DtLogging.JITTER, DtLogging.jitterDebugEnabled() ? Level.DEBUG : Level.INFO);
 
         // [gen.timing] chunk-gen attribution profiler (see GenProfiler): default ON for dev builds so a
         // dev ride profiles with no command, OFF in prod (the per-quart biome timer is a diagnostic-only
@@ -526,6 +557,9 @@ public class DungeonTrain {
             @Override public boolean surveyResultsCopyEnabled() { return true; }
             @Override public String surveyResultsWebhookUrl() { return surveyResultsWebhookOverride(); }
             @Override public String surveyResultsLinkGuildId() { return linkGuildIdForBranch(VersionInfo.BRANCH); }
+            // Stamp the DT version on genuine survey answers (bug / feedback / improvement) and their
+            // results copy as the embed footer — Discord's smallest text. Notices stay unstamped.
+            @Override public String surveyEmbedFooter() { return "DT " + VersionInfo.VERSION; }
         });
 
         // One-line dev-vs-live routing signal at startup: states which Discord channel this build

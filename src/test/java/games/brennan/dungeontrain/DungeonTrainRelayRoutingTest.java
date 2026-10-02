@@ -57,6 +57,21 @@ class DungeonTrainRelayRoutingTest {
     }
 
     @Test
+    void buildSubmitAnnouncementRoutesToBuildsCapOnlyOnMain() {
+        // A build submitted for review announces itself in the dedicated build-submissions channel
+        // ONLY on a main build; every other branch returns null → the dev channel, so testing a
+        // submit never pings the community.
+        String main = DungeonTrain.buildSubmitWebhookOverrideForBranch("main");
+        assertNotNull(main, "main must route the announcement to the builds cap");
+        assertTrue(main.endsWith("/hook"), "builds cap must target the relay /hook, was: " + main);
+        assertNotEquals(DungeonTrain.manifestWebhookOverrideForBranch("main"), main,
+                "the builds cap is its own channel, not the public death feed");
+        assertNull(DungeonTrain.buildSubmitWebhookOverrideForBranch("dev/some-feature"));
+        assertNull(DungeonTrain.buildSubmitWebhookOverrideForBranch("claude/worktree-slug"));
+        assertNull(DungeonTrain.buildSubmitWebhookOverrideForBranch("?"));
+    }
+
+    @Test
     void surveyLinkGuildIdSplitsMainVsDev() {
         // The jump-link guild id matches the channel the original posted into: live server on main,
         // dev server otherwise (so the link resolves in the right server).

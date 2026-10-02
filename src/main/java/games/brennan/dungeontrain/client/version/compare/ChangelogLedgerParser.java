@@ -59,7 +59,8 @@ public final class ChangelogLedgerParser {
                 orEmpty(string(o, "summary")),
                 strings(o.get("highlights")),
                 tags(o.get("tags")),
-                releasedIn.get()));
+                releasedIn.get(),
+                Set.copyOf(strings(o.get("addresses")))));
     }
 
     private static Set<ChangelogTag> tags(JsonElement el) {

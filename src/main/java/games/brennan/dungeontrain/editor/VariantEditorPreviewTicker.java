@@ -128,9 +128,20 @@ public final class VariantEditorPreviewTicker {
             }
 
             BlockState toShow = computePreviewState(picked, previewTick);
+            // Fence / wall / pane connect mode: show the arms spawn will give it (ConnectPass),
+            // resolved up front so the equality check below stays quiet once set. Auto is written
+            // with the cascade so adjacent fences join back, as they do at spawn; Lock's arms are the
+            // stored state's own, which the no-cascade path below holds exactly.
+            boolean connects = plot.supportsConnectMode() && VariantConnect.canConnect(toShow);
+            if (connects) {
+                toShow = VariantConnect.resolve(toShow, picked.connect(), level, worldPos);
+            }
+            boolean joins = connects && picked.connect() == VariantConnect.Mode.AUTO;
             BlockState existing = level.getBlockState(worldPos);
             if (!existing.equals(toShow)) {
-                if (VariantLiquids.isLiquid(toShow)) {
+                if (joins) {
+                    SilentBlockOps.setBlockSilent(level, worldPos, toShow);
+                } else if (VariantLiquids.isLiquid(toShow)) {
                     // Liquids go in section-local, which is the whole reason a previewed source
                     // sits still: a section write never reaches LevelChunk.setBlockState, so
                     // LiquidBlock.onPlace never runs and no fluid tick is ever scheduled. That

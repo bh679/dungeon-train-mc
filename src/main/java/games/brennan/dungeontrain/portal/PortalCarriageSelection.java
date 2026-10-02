@@ -215,7 +215,9 @@ public final class PortalCarriageSelection {
      *
      * <p>The gate is measured in group ordinals from the origin and applies to both directions of
      * travel, since {@link games.brennan.dungeontrain.difficulty.DifficultyProgression#positionTier}
-     * likewise reads the distance behind the origin as a magnitude.</p>
+     * likewise reads the distance behind the origin as a magnitude. Each side draws outward from its
+     * own gate, and its gap rule looks back toward that gate, so a train riding backwards meets the
+     * same rate and spacing as one riding forwards.</p>
      *
      * @param firstEligibleGroup groups nearer the origin than this hold no portal; {@code 0} for no
      *                           gate, which reproduces the ungated draw exactly
@@ -261,13 +263,21 @@ public final class PortalCarriageSelection {
         // Deliberately looking at raw HITS rather than at whether those groups were themselves
         // chosen — that would recurse back down the train with no floor, and this has to answer
         // from the group's own ordinal alone, the same on every reload and for every reader.
+        //
+        // "Behind" means toward the draw's origin. Gated, each side of the track draws outward from
+        // its own gate, so behind the origin that is the +1 direction. Looking -1 there ran straight
+        // past the draw's origin, the break below fired on the first step, and the gap rule never
+        // ran: a train riding backwards met the unthinned draw, half as dense again and clumped.
+        // Ungated (gate 0) the draw is one unbroken line through the origin and keeps looking -1
+        // straight through it, as before.
+        long toward = gate > 0 && drawIndex < 0 ? 1 : -1;
         for (long back = 1; back < MIN_GROUP_GAP; back++) {
+            long neighbour = drawIndex + toward * back;
             // Nothing to be too close to on the far side of the gate: the groups there hold no
             // portal, so letting their raw hits suppress the first eligible ones would push the
-            // first portal back past the gate for no reason. Ungated (gate 0) the draw is one
-            // unbroken line through the origin and keeps looking straight through it, as before.
-            if (gate > 0 && drawIndex - back < 0) break;
-            if (drewHit(worldSeed, drawIndex - back, rate.every())) return false;
+            // first portal back past the gate for no reason.
+            if (gate > 0 && (toward < 0 ? neighbour < 0 : neighbour > 0)) break;
+            if (drewHit(worldSeed, neighbour, rate.every())) return false;
         }
         return true;
     }

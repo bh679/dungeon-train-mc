@@ -141,7 +141,7 @@ public final class PortalCarriageBuilder {
     /** Solid fill behind the twin's dummy door. */
     private static final BlockState PLUG = Blocks.DEEPSLATE.defaultBlockState();
     /**
-     * {@link PortalRoomMode#BEDROCK_LOCK}'s unbreakable rock: the skin one block outside the room
+     * {@link PortalRoomMode#BEDROCK}'s unbreakable rock: the skin one block outside the room
      * box and outside each corridor, and the plug behind each twin's outer door — see
      * {@link PortalRoomMode#sealsCorridors}.
      */
@@ -998,10 +998,10 @@ public final class PortalCarriageBuilder {
         // as it was asked for. It does not follow that the corridors repair whatever a mode wrote at
         // a door plane — they are stamped over their own volume only, and never over the room's end
         // column one block inside it, which is why nothing may write there in the first place; see
-        // PortalCorridorMask#facedBy. Bedrock Lock wraps the room here and its two corridors once
+        // PortalCorridorMask#facedBy. Bedrock wraps the room here and its two corridors once
         // they are down, which is the other half of the same shell; the endless modes settle its own
         // side walls, which for Endless Open means taking them away so there is somewhere to walk
-        // out to. Bedrockless writes nothing around the room at all and sweeps the space instead.
+        // out to. Void writes nothing around the room at all and sweeps the space instead.
         // A generated room fills the box the template just laid before anything is wrapped around
         // it: the skin is written one column outside the room, so the two never touch, but the order
         // keeps "what the room turned out to be" true for the mode branch below.
@@ -1326,7 +1326,7 @@ public final class PortalCarriageBuilder {
 
     /**
      * Wrap one corridor and its plug in bedrock, and cap the room end it stands against — the half of
-     * {@link PortalRoomMode#BEDROCK_LOCK}'s shell that is not the room box, laid once the corridor is
+     * {@link PortalRoomMode#BEDROCK}'s shell that is not the room box, laid once the corridor is
      * standing.
      *
      * <p>The room's skin covers the room's four long faces; this covers what hangs off the other two.
@@ -1474,7 +1474,7 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * The box a {@link PortalRoomMode#BEDROCKLESS} room's emptiness fills: the room grown by
+     * The box a {@link PortalRoomMode#VOID} room's emptiness fills: the room grown by
      * {@link PortalRoomLayout#VOID_CLEARANCE} on both horizontal axes, never smaller than the
      * structure standing in it.
      *
@@ -1494,7 +1494,7 @@ public final class PortalCarriageBuilder {
      * all. What it does have is a <b>floor</b>: the sweep starts at the structure's own floor row and
      * leaves everything below it, one row shallower than {@link #footprintOf}. Two reasons, and the
      * second is the one that matters. It gives the emptiness something to stand on, so walking out of
-     * a Bedrockless room is a one-block step down rather than a fall. And in a Compatible Terrain
+     * a Void room is a one-block step down rather than a fall. And in a Compatible Terrain
      * world — no basement, {@link PortalTwinLanes#FLOOR_MARGIN} putting the lowest lane two rows off
      * the build floor — the row {@code footprintOf} reaches is inside the world's <i>own</i> bedrock
      * layer, and sweeping a hundred-block disc of it would open the bottom of the world.</p>
@@ -1521,8 +1521,8 @@ public final class PortalCarriageBuilder {
      * its {@link #footprintOf footprint}, and for a room that {@link PortalRoomMode#clearsSurroundings
      * clears its surroundings} the swept void around it as well.
      *
-     * <p>A Bedrockless room's void is part of what the player sees, so another pair standing in it
-     * is visible damage — an old Bedrock Lock room left in there reads as bedrock where the void
+     * <p>A Void room's void is part of what the player sees, so another pair standing in it
+     * is visible damage — an old Bedrock room left in there reads as bedrock where the void
      * should be. That is why the void counts here even though {@link #footprintOf} deliberately
      * leaves it out (see {@link #clearVoidAround} for why the erase and the tiler must not see it).</p>
      */
@@ -1562,7 +1562,7 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * {@code halo} minus {@code footprint}, as up to four disjoint slabs — everything a Bedrockless
+     * {@code halo} minus {@code footprint}, as up to four disjoint slabs — everything a Void
      * room clears, and nothing the structure owns.
      *
      * <p><b>Slabs rather than one box and a mask.</b> The corridors, their doors, the seal rings and
@@ -1607,7 +1607,7 @@ public final class PortalCarriageBuilder {
     }
 
     /**
-     * Empty the space around a {@link PortalRoomMode#BEDROCKLESS} room — its answer to
+     * Empty the space around a {@link PortalRoomMode#VOID} room — its answer to
      * {@link #bedrockSkin}.
      *
      * <p><b>Usually free.</b> Twins stand in the basement under the world's bedrock, which generation
@@ -1654,7 +1654,7 @@ public final class PortalCarriageBuilder {
 
     /**
      * Every block a structure currently occupies: both corridors, both plugs, the room between them,
-     * every standing copy of that room, and the block of margin their closed faces and Bedrock Lock's
+     * every standing copy of that room, and the block of margin their closed faces and Bedrock's
      * skin sit in.
      *
      * <p><b>One definition, read by both sides.</b> {@link #eraseTwin} sweeps exactly this, and
@@ -1697,7 +1697,7 @@ public final class PortalCarriageBuilder {
             maxZ = Math.max(maxZ, corridors.maxZ() + 1);
         }
 
-        // One row below the floor as well as one past the top: Bedrock Lock skins both.
+        // One row below the floor as well as one past the top: Bedrock skins both.
         //
         // Measured from the ROOM's own floor, not the corridor lane's. They are the same row only
         // when the door sits at the room's floor; a door-height offset drops the room's floor below
@@ -1728,7 +1728,7 @@ public final class PortalCarriageBuilder {
      * or visible through it if it is ever forced open.
      *
      * <p>{@code fill} is the caller's, because "not reachable" is a stronger claim for some rooms
-     * than others: a {@link PortalRoomMode#BEDROCK_LOCK} room plugs with {@link #LOCK}, which is the
+     * than others: a {@link PortalRoomMode#BEDROCK} room plugs with {@link #LOCK}, which is the
      * end cap of the shell {@link #bedrockSkinCorridor} runs down the corridor's sides, every other
      * mode with ordinary {@link #PLUG} rock.</p>
      */
@@ -1888,8 +1888,8 @@ public final class PortalCarriageBuilder {
         if (interior.getX() <= 0 || interior.getY() <= 0 || interior.getZ() <= 0) return;
         BlockPos interiorOrigin = roomOrigin.offset(1, 1, 1);
 
-        // What this room is allowed to draw. Absent sidecar = everything, which is what a furnished
-        // room did before authors could steer it.
+        // What this room is allowed to draw. Absent sidecar = every template at its own default (on,
+        // bar new opt-in ones), which is what a furnished room did before authors could steer it.
         CarriageContentsAllowList allow = PortalRoomContentsAllowStore.getOrEmpty(roomName);
         // An all-excluded list means an empty room, not the built-in default. CarriageContentsRegistry
         // .pick would fall back to DEFAULT here — right for a carriage, which must never spawn
@@ -1977,84 +1977,94 @@ public final class PortalCarriageBuilder {
         // what a cell's VariantCopyScope is asked about, and the one thing about this stamp the
         // scope can distinguish.
         boolean baseTile = PortalRoomTiling.Tile.BASE.equals(tile);
-        for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
-            BlockPos local = entry.localPos();
-            BlockPos world = roomOrigin.offset(local);
-            if (mask.covers(world)) continue;
-            // Scoped out of this tile: leave the cell completely alone, so what the room's own
-            // template stamped there stands. Skipped BEFORE the roll, the eviction and the write —
-            // "does not apply here" has to mean untouched, not cleared and then not refilled.
-            if (!sidecar.copyScopeAt(local).appliesTo(baseTile)) continue;
+        java.util.function.Predicate<BlockPos> within = games.brennan.dungeontrain.editor.GrowthPass
+            .inside(roomOrigin, size.getX(), size.getY(), size.getZ()).and(pos -> !mask.covers(pos));
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+            for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
+                BlockPos local = entry.localPos();
+                BlockPos world = roomOrigin.offset(local);
+                if (mask.covers(world)) continue;
+                // Scoped out of this tile: leave the cell completely alone, so what the room's own
+                // template stamped there stands. Skipped BEFORE the roll, the eviction and the write —
+                // "does not apply here" has to mean untouched, not cleared and then not refilled.
+                if (!sidecar.copyScopeAt(local).appliesTo(baseTile)) continue;
 
-            // Which index this cell rolls at: the room's own (follow it), the base tile's (one
-            // roll every copy shares, whatever the room does), or the base tile's mixed with this
-            // copy's place on the grid (a fresh roll per copy, whatever the room does).
-            int cellIndex = switch (sidecar.copyRollAt(local)) {
-                case DEFAULT -> variantIndex;
-                case EXACT -> exactIndex;
-                case VARY -> perCopyIndex(exactIndex, tile);
-            };
-            VariantState picked = sidecar.resolve(local, worldSeed, cellIndex);
-            if (picked == null) continue;
-            if (picked.isMob()) {
-                // The cell itself still has to go: a mob entry carries an empty-placeholder sentinel as
-                // its state so every block applier blanks it without a special case.
-                //
-                // No-cascade: this cell really does become air, and an UPDATE_ALL air write breaks
-                // whatever was standing on it with drops — see the eviction note further down. An
-                // authored block left unsupported here simply stays put, which is the right trade for
-                // a room the author built.
-                SilentBlockOps.setBlockSilentNoCascade(level, world, Blocks.AIR.defaultBlockState(), null);
-                if (PortalRoomMobs.spawn(level, world, picked, pairKey, tile, worldSeed, live)) {
-                    live++;
-                }
-                continue;
-            }
-            if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())
-                    || games.brennan.dungeontrain.editor.MultiBlockFootprint.cellFootprint(entry.states()) != null) {
-                // A two-space cell (door / bed / tall plant) writes both of its spaces; an empty
-                // pick clears them. Same no-cascade + eviction rules as the single write below.
-                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(local), picked, local,
-                        worldSeed, cellIndex, VariantState::state)) {
-                    BlockPos wWorld = roomOrigin.offset(w.localPos());
-                    if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
-                    if (w.isAir()) {
-                        // No-cascade, for the same reason as the mob branch above.
-                        SilentBlockOps.setBlockSilentNoCascade(level, wWorld, Blocks.AIR.defaultBlockState(), null);
-                        continue;
+                // Which index this cell rolls at: the room's own (follow it), the base tile's (one
+                // roll every copy shares, whatever the room does), or the base tile's mixed with this
+                // copy's place on the grid (a fresh roll per copy, whatever the room does).
+                int cellIndex = switch (sidecar.copyRollAt(local)) {
+                    case DEFAULT -> variantIndex;
+                    case EXACT -> exactIndex;
+                    case VARY -> perCopyIndex(exactIndex, tile);
+                };
+                VariantState picked = sidecar.resolve(local, worldSeed, cellIndex);
+                if (picked == null) continue;
+                if (picked.isMob()) {
+                    // The cell itself still has to go: a mob entry carries an empty-placeholder sentinel as
+                    // its state so every block applier blanks it without a special case.
+                    //
+                    // No-cascade: this cell really does become air, and an UPDATE_ALL air write breaks
+                    // whatever was standing on it with drops — see the eviction note further down. An
+                    // authored block left unsupported here simply stays put, which is the right trade for
+                    // a room the author built.
+                    SilentBlockOps.setBlockSilentNoCascade(level, world, Blocks.AIR.defaultBlockState(), null);
+                    if (PortalRoomMobs.spawn(level, world, picked, pairKey, tile, worldSeed, live)) {
+                        live++;
                     }
-                    SilentBlockOps.evictBlockEntity(level.getChunkAt(wWorld), wWorld);
-                    ContainerContentsPlacement.place(level, wWorld,
-                        games.brennan.dungeontrain.train.StagePlacementScope.resolve(w.state()), w.entry().blockEntityNbt(),
-                        plotKey, w.localPos(), worldSeed, cellIndex, /*diffIndex*/ pairKey,
-                        w.entry().linkedLootPrefabId());
+                    continue;
                 }
-                continue;
+                if (CarriageVariantBlocks.isEmptyPlaceholder(picked.state())
+                        || games.brennan.dungeontrain.editor.MultiBlockFootprint.cellFootprint(entry.states()) != null) {
+                    // A two-space cell (door / bed / tall plant) writes both of its spaces; an empty
+                    // pick clears them. Same no-cascade + eviction rules as the single write below.
+                    for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(local), picked, local,
+                            worldSeed, cellIndex, VariantState::state)) {
+                        BlockPos wWorld = roomOrigin.offset(w.localPos());
+                        if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
+                        if (w.isAir()) {
+                            // No-cascade, for the same reason as the mob branch above.
+                            SilentBlockOps.setBlockSilentNoCascade(level, wWorld, Blocks.AIR.defaultBlockState(), null);
+                            continue;
+                        }
+                        SilentBlockOps.evictBlockEntity(level.getChunkAt(wWorld), wWorld);
+                        BlockState placedState = games.brennan.dungeontrain.train.StagePlacementScope.resolve(w.state());
+                        ContainerContentsPlacement.place(level, wWorld,
+                            placedState, w.entry().blockEntityNbt(),
+                            plotKey, w.localPos(), worldSeed, cellIndex, /*diffIndex*/ pairKey,
+                            w.entry().linkedLootPrefabId());
+                        games.brennan.dungeontrain.editor.GrowthPass.note(level, wWorld, w.entry(), placedState,
+                            w.localPos(), worldSeed, cellIndex, within);
+                    }
+                    continue;
+                }
+                // The contents pass may have put a filled chest in this cell a moment ago. Writing over a
+                // live block entity runs its onRemove and sprays the loot across the floor — the same
+                // hazard PortalClear and PortalRoomTiler.stampTile were both written for. Evict first.
+                //
+                // The eviction, and NOT a clear to air. This used to call PortalClear.clearCell, which
+                // writes AIR with UPDATE_ALL; markAndNotifyBlock strips UPDATE_SUPPRESS_DROPS out of the
+                // cascade subflags, so every block standing on a cell — and this walks the whole floor —
+                // went through Block.updateOrDestroy -> destroyBlock(dropBlock = true) and BROKE, dropping
+                // as an item. singlepillar's eight pressure plates did exactly that on every stamp: knocked
+                // off by their own floor cells, then put back by their own entries further down the sidecar,
+                // so the room ended up holding the plates AND eight plate items. Never letting the cell
+                // become air is the fix; the write below replaces it in one step.
+                //
+                // evictBlockEntity rather than leaving it to setBlockSilent's removeBlockEntity: this one
+                // promotes a PENDING block entity to live before dropping it, which is the whole point of
+                // the eviction here — a freshly stamped chest's NBT has not been promoted yet.
+                SilentBlockOps.evictBlockEntity(level.getChunkAt(world), world);
+                // The same index the block was picked at, so a flagged chest's contents vary with the
+                // block rather than the block changing over identical loot. Still the pair-and-copy
+                // frame, never the difficulty one — pairKey stays that, see the javadoc above.
+                BlockState placedState = games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state());
+                ContainerContentsPlacement.place(level, world,
+                    placedState, picked.blockEntityNbt(),
+                    plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,
+                    picked.linkedLootPrefabId());
+                games.brennan.dungeontrain.editor.GrowthPass.note(level, world, picked, placedState,
+                    local, worldSeed, cellIndex, within);
             }
-            // The contents pass may have put a filled chest in this cell a moment ago. Writing over a
-            // live block entity runs its onRemove and sprays the loot across the floor — the same
-            // hazard PortalClear and PortalRoomTiler.stampTile were both written for. Evict first.
-            //
-            // The eviction, and NOT a clear to air. This used to call PortalClear.clearCell, which
-            // writes AIR with UPDATE_ALL; markAndNotifyBlock strips UPDATE_SUPPRESS_DROPS out of the
-            // cascade subflags, so every block standing on a cell — and this walks the whole floor —
-            // went through Block.updateOrDestroy -> destroyBlock(dropBlock = true) and BROKE, dropping
-            // as an item. singlepillar's eight pressure plates did exactly that on every stamp: knocked
-            // off by their own floor cells, then put back by their own entries further down the sidecar,
-            // so the room ended up holding the plates AND eight plate items. Never letting the cell
-            // become air is the fix; the write below replaces it in one step.
-            //
-            // evictBlockEntity rather than leaving it to setBlockSilent's removeBlockEntity: this one
-            // promotes a PENDING block entity to live before dropping it, which is the whole point of
-            // the eviction here — a freshly stamped chest's NBT has not been promoted yet.
-            SilentBlockOps.evictBlockEntity(level.getChunkAt(world), world);
-            // The same index the block was picked at, so a flagged chest's contents vary with the
-            // block rather than the block changing over identical loot. Still the pair-and-copy
-            // frame, never the difficulty one — pairKey stays that, see the javadoc above.
-            ContainerContentsPlacement.place(level, world,
-                games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state()), picked.blockEntityNbt(),
-                plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,
-                picked.linkedLootPrefabId());
         }
     }
 
