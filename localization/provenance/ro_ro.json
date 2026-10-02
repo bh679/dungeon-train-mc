@@ -3099,6 +3099,8 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0286249762f7c943"},
   "gui.dungeontrain.editor_menu.editor.menu_distance": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a72b34e51d508c9e"},
   "gui.dungeontrain.editor_menu.editor.plot_lighting": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "465aadae390fcc39"},
+  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ef6c67c1b6cdf88a"},
+  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "85dc034fa7303a06"},
   "gui.dungeontrain.editor_menu.editor.observers": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "46a26d55341849f2"},
   "gui.dungeontrain.editor_menu.editor.mobs": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "083013f5d5aad0f3"},
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "1cd5a6687bb76e39"},

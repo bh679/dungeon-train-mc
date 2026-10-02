@@ -107,18 +107,25 @@ final class DisabledModContentTest {
     }
 
     @Test
-    @DisplayName("the biome mods' own creative tabs are hidden; vanilla and DT tabs are kept")
+    @DisplayName("the biome mods' own creative tabs are recognised; vanilla and DT tabs are not")
     void creativeTabs() {
         List<String> hidden = List.of(
             "betternether:blocks_tab", "betternether:items_tab", "betternether:nature_tab",
             "betterend:blocks_tab", "betterend:items_tab", "betterend:nature_tab",
             "biomesoplenty:main", "vanillabackport:vanilla_backport");
         for (String tab : hidden) {
-            assertTrue(DisabledModContent.isHiddenCreativeTab(id(tab)), tab);
+            assertTrue(DisabledModContent.isBiomeModCreativeTab(id(tab)), tab);
         }
-        assertFalse(DisabledModContent.isHiddenCreativeTab(id("minecraft:building_blocks")));
-        assertFalse(DisabledModContent.isHiddenCreativeTab(id("minecraft:search")));
-        assertFalse(DisabledModContent.isHiddenCreativeTab(id("dungeontrain:prefab_variants")));
-        assertFalse(DisabledModContent.isHiddenCreativeTab(null));
+        assertFalse(DisabledModContent.isBiomeModCreativeTab(id("minecraft:building_blocks")));
+        assertFalse(DisabledModContent.isBiomeModCreativeTab(id("minecraft:search")));
+        assertFalse(DisabledModContent.isBiomeModCreativeTab(id("dungeontrain:prefab_variants")));
+        assertFalse(DisabledModContent.isBiomeModCreativeTab(null));
+    }
+
+    @Test
+    @DisplayName("those tabs and their search entries ship hidden")
+    void creativeSettingsDefaultOff() {
+        assertFalse(games.brennan.dungeontrain.config.ClientDisplayConfig.DEFAULT_CREATIVE_MOD_BLOCK_TABS);
+        assertFalse(games.brennan.dungeontrain.config.ClientDisplayConfig.DEFAULT_CREATIVE_MOD_BLOCKS_IN_SEARCH);
     }
 }

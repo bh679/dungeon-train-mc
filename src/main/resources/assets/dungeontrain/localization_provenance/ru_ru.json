@@ -1785,6 +1785,8 @@
       "gui.dungeontrain.editor_menu.editor.menus_auto",
       "gui.dungeontrain.editor_menu.editor.menu_distance",
       "gui.dungeontrain.editor_menu.editor.plot_lighting",
+      "gui.dungeontrain.editor_menu.editor.mod_block_tabs",
+      "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search",
       "gui.dungeontrain.editor_menu.editor.observers",
       "gui.dungeontrain.editor_menu.editor.mobs",
       "gui.dungeontrain.editor_menu.editor.mobs_blocks",

@@ -30,7 +30,7 @@ public final class DisabledModContent {
     /** Mods whose gear and ores are disabled. BoP ships none today — it is covered for future updates. */
     static final Set<String> NAMESPACES = Set.of("betternether", "betterend", "biomesoplenty");
 
-    /** Mods whose own creative tabs are hidden: the ones above, plus VanillaBackport — its gear is kept. */
+    /** Mods whose own creative tabs are hidden by default: the ones above, plus VanillaBackport — its gear is kept. */
     private static final Set<String> HIDDEN_TAB_NAMESPACES =
         Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport");
 
@@ -62,9 +62,9 @@ public final class DisabledModContent {
     }
 
     /** A biome mod's own creative tab ({@code betternether:blocks_tab}, {@code biomesoplenty:main},
-     *  {@code vanillabackport:vanilla_backport}, …) — hidden so the creative inventory stays on DT's and
-     *  vanilla's tabs; the blocks remain in the search tab. */
-    public static boolean isHiddenCreativeTab(ResourceLocation tabId) {
+     *  {@code vanillabackport:vanilla_backport}, …). Hidden, and kept out of the creative search, unless
+     *  the client's two creative settings say otherwise — see {@link DisabledModCreativeTabs}. */
+    public static boolean isBiomeModCreativeTab(ResourceLocation tabId) {
         return tabId != null && HIDDEN_TAB_NAMESPACES.contains(tabId.getNamespace());
     }
 
