@@ -2487,8 +2487,6 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": "Tự động",
   "gui.dungeontrain.editor_menu.editor.menu_distance": "Khoảng cách menu: %s",
   "gui.dungeontrain.editor_menu.editor.plot_lighting": "Ánh sáng lô  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": "Thẻ khối mod  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": "Khối mod trong tìm kiếm  [%s]",
   "gui.dungeontrain.editor_menu.editor.observers": "Khối quan sát",
   "gui.dungeontrain.editor_menu.editor.mobs": "Quái",
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": "Khối",

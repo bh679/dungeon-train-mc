@@ -5853,24 +5853,6 @@
       ]
     }
   },
-  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": {
-    "1": {
-      "label": "ON or OFF, already translated",
-      "examples": [
-        "ON",
-        "OFF"
-      ]
-    }
-  },
-  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": {
-    "1": {
-      "label": "ON or OFF, already translated",
-      "examples": [
-        "ON",
-        "OFF"
-      ]
-    }
-  },
   "gui.dungeontrain.editor_menu.editor.weight_n": {
     "1": {
       "label": "the template's current spawn weight",

@@ -2528,8 +2528,6 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": "Auto",
   "gui.dungeontrain.editor_menu.editor.menu_distance": "Menu-afstand: %s",
   "gui.dungeontrain.editor_menu.editor.plot_lighting": "Perceellicht  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": "Mod-bloktabbladen  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": "Mod-blokken in zoeken  [%s]",
   "gui.dungeontrain.editor_menu.editor.observers": "Observers",
   "gui.dungeontrain.editor_menu.editor.mobs": "Mobs",
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": "Blokken",

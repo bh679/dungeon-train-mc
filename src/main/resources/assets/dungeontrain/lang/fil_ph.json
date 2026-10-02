@@ -2487,8 +2487,6 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": "Auto",
   "gui.dungeontrain.editor_menu.editor.menu_distance": "Layo ng Menu: %s",
   "gui.dungeontrain.editor_menu.editor.plot_lighting": "Ilaw ng Plot  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": "Mga Tab ng Mod Block  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": "Mga Mod Block sa Paghahanap  [%s]",
   "gui.dungeontrain.editor_menu.editor.observers": "Mga Observer",
   "gui.dungeontrain.editor_menu.editor.mobs": "Mga Mob",
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": "Bloke",

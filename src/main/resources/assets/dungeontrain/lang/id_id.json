@@ -2487,8 +2487,6 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": "Otomatis",
   "gui.dungeontrain.editor_menu.editor.menu_distance": "Jarak Menu: %s",
   "gui.dungeontrain.editor_menu.editor.plot_lighting": "Cahaya Petak  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": "Tab Blok Mod  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": "Blok Mod di Pencarian  [%s]",
   "gui.dungeontrain.editor_menu.editor.observers": "Observer",
   "gui.dungeontrain.editor_menu.editor.mobs": "Mob",
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": "Blok",

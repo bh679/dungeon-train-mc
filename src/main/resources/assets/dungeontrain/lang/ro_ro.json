@@ -3114,8 +3114,6 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": "Auto",
   "gui.dungeontrain.editor_menu.editor.menu_distance": "Distanța meniului: %s",
   "gui.dungeontrain.editor_menu.editor.plot_lighting": "Iluminare parcelă  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": "File cu blocuri din moduri  [%s]",
-  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": "Blocuri din moduri în căutare  [%s]",
   "gui.dungeontrain.editor_menu.editor.observers": "Observatori",
   "gui.dungeontrain.editor_menu.editor.mobs": "Mobi",
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": "Blocuri",
