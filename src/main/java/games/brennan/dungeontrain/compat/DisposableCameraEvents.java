@@ -14,12 +14,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickAction;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.ItemStackedOnOtherEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
@@ -158,13 +155,6 @@ public final class DisposableCameraEvents {
     public static void onItemStackedOn(ItemStackedOnOtherEvent event) {
         if (event.getClickAction() == ClickAction.SECONDARY && DisposableCamera.is(event.getStackedOnItem())) {
             event.setCanceled(true);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(DisposableCamera.create(), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
     }
 
