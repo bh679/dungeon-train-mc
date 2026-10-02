@@ -17,24 +17,46 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from lostcity import variantdoc  # noqa: E402
 from lostcity.archetypes import ALL  # noqa: E402
 from lostcity.check import validate  # noqa: E402
 from lostcity.nbt_out import to_bytes  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "src/main/resources/data/dungeontrain/structure/lost_city"
+AUTHORED = Path(__file__).resolve().parent / "authored-variants.json"
+VARIANTS = ".variants.json"
+
+
+def variants_for(cells, spec, authored: frozenset[str]) -> tuple[bytes | None, list[str]]:
+    """The building's variants document to write (None: hand-kept or nothing to vary), and what is wrong with it."""
+    if spec.name in authored:
+        kept = OUT / (spec.name + VARIANTS)
+        if not kept.exists():
+            return None, [f"{spec.name}: listed in {AUTHORED.name} but has no {kept.name}"]
+        return None, variantdoc.validate(variantdoc.loads(kept.read_bytes()), cells, spec)
+    doc = variantdoc.seed(cells, spec)
+    if not doc:
+        return None, []
+    data = variantdoc.dumps(doc)
+    return data, variantdoc.validate(variantdoc.loads(data), cells, spec)
 
 
 def render_all(only: set[str] | None) -> dict[str, bytes]:
     files: dict[str, bytes] = {}
     manifest: dict[str, dict] = {}
     errors: list[str] = []
+    authored = frozenset(json.loads(AUTHORED.read_text()))
     for archetype in ALL:
         if only and archetype.spec.name not in only:
             continue
         cells = archetype.render()
         errors += validate(cells, archetype.spec)
         files[archetype.spec.name + ".nbt"] = to_bytes(cells, archetype.spec.size)
+        document, problems = variants_for(cells, archetype.spec, authored)
+        errors += problems
+        if document is not None:
+            files[archetype.spec.name + VARIANTS] = document
         manifest[archetype.spec.name] = archetype.spec.manifest()
     if errors:
         raise SystemExit("\n".join(errors))

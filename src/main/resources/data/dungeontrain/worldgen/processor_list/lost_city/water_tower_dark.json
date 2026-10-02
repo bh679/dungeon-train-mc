@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/water_tower",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
@@ -32,6 +37,11 @@
           "to": "minecraft:polished_basalt"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/water_tower",
+      "phase": "roll"
     }
   ]
 }

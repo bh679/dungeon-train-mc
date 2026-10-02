@@ -57,7 +57,8 @@ class LostCityPlacementMemoTest {
             "dungeontrain:lost_city_bite", LostCityBiteProcessor.CODEC,
             "dungeontrain:lost_city_facade", LostCityFacadeProcessor.CODEC,
             "dungeontrain:lost_city_swap", LostCitySwapProcessor.CODEC,
-            "dungeontrain:lost_city_truncate", LostCityTruncateProcessor.CODEC);
+            "dungeontrain:lost_city_truncate", LostCityTruncateProcessor.CODEC,
+            "dungeontrain:lost_city_variants", LostCityVariantsProcessor.CODEC);
     private static final List<String> MEMOISED = List.of("lost_city_stretch", "lost_city_bite", "lost_city_facade");
 
     /** Offsets off the chunk grid, so every piece straddles chunk borders. */
@@ -97,7 +98,7 @@ class LostCityPlacementMemoTest {
     }
 
     /** The template a list dresses: the longest template name its own name starts with. */
-    private static String templateOf(String list) {
+    static String templateOf(String list) {
         try (Stream<Path> s = Files.list(LostCityTemplatesTest.DIR)) {
             return s.map(p -> p.getFileName().toString()).filter(n -> n.endsWith(".nbt")).map(n -> n.replace(".nbt", ""))
                     .filter(n -> list.startsWith(n + "_")).max((a, b) -> a.length() - b.length())
@@ -107,7 +108,7 @@ class LostCityPlacementMemoTest {
         }
     }
 
-    private static List<StructureTemplate.StructureBlockInfo> load(String name) {
+    static List<StructureTemplate.StructureBlockInfo> load(String name) {
         try {
             return LostCityTemplatesTest.blocks(NbtIo.readCompressed(LostCityTemplatesTest.DIR.resolve(name + ".nbt"), NbtAccounter.unlimitedHeap()));
         } catch (IOException ex) {
@@ -115,7 +116,7 @@ class LostCityPlacementMemoTest {
         }
     }
 
-    private static List<StructureProcessor> processors(JsonObject root) {
+    static List<StructureProcessor> processors(JsonObject root) {
         List<StructureProcessor> out = new ArrayList<>();
         for (JsonElement el : root.getAsJsonArray("processors")) {
             JsonObject p = el.getAsJsonObject();

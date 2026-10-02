@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/snapped_tower",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
@@ -56,6 +61,11 @@
           "to": "minecraft:cyan_stained_glass"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/snapped_tower",
+      "phase": "roll"
     }
   ]
 }

@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/leaning_tower",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
@@ -108,6 +113,11 @@
           "to": "minecraft:brown_concrete"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/leaning_tower",
+      "phase": "roll"
     }
   ]
 }

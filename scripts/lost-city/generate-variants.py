@@ -19,6 +19,12 @@ from lostcity.datagen import SET_PATH, render  # noqa: E402
 from lostcity.variants import designs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
+TEMPLATES = ROOT / "src/main/resources/data/dungeontrain/structure/lost_city"
+
+
+def with_variants() -> frozenset[str]:
+    """Buildings with a variants document beside their template (build-templates.py writes them)."""
+    return frozenset(a.spec.name for a in ALL if (TEMPLATES / (a.spec.name + ".variants.json")).exists())
 
 
 def main() -> int:
@@ -26,7 +32,7 @@ def main() -> int:
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     existing = json.loads((ROOT / SET_PATH).read_text())
-    files = render(ALL, designs(), existing)
+    files = render(ALL, designs(), existing, with_variants())
     if args.check:
         drifted = [p for p, data in files.items() if not (ROOT / p).exists() or (ROOT / p).read_bytes() != data]
         if drifted:

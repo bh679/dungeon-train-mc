@@ -79,7 +79,8 @@ final class ModStructureProcessorsTest {
     @DisplayName("every DT processor type is registered under its dungeontrain id")
     void everyEntryResolves() {
         for (String name : List.of("lost_city_swap", "lost_city_truncate", "lost_city_bite",
-                                   "lost_city_stretch", "lost_city_facade", "painting_transform")) {
+                                   "lost_city_stretch", "lost_city_facade", "lost_city_variants",
+                                   "painting_transform")) {
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("dungeontrain", name);
             assertTrue(BuiltInRegistries.STRUCTURE_PROCESSOR.containsKey(id), "missing " + id);
         }

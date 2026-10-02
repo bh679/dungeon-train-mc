@@ -9,6 +9,16 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/hospital",
+      "phase": "mark"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/hospital",
+      "phase": "roll"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_bite",
       "bites_min": 2,
       "bites_max": 3,

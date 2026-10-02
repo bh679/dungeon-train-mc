@@ -7,6 +7,16 @@
           "Name": "minecraft:structure_block"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/petrol_station",
+      "phase": "mark"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/petrol_station",
+      "phase": "roll"
     }
   ]
 }

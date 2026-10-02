@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/apartment_block",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_stretch",
       "min_floors": 4,
       "max_floors": 4,
@@ -73,6 +78,11 @@
           "to": "minecraft:tuff"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/apartment_block",
+      "phase": "roll"
     }
   ]
 }

@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/hotel",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_stretch",
       "min_floors": -4,
       "max_floors": -2,
@@ -61,6 +66,11 @@
           "to": "minecraft:light_gray_concrete_powder"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/hotel",
+      "phase": "roll"
     }
   ]
 }

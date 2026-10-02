@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/hospital",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
@@ -64,6 +69,11 @@
           "to": "minecraft:deepslate_tiles"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/hospital",
+      "phase": "roll"
     }
   ]
 }

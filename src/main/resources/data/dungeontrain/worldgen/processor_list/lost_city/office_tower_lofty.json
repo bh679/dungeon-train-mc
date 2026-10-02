@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/office_tower",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_stretch",
       "min_floors": 0,
       "max_floors": 0,
@@ -86,6 +91,11 @@
           "to": "minecraft:black_stained_glass"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/office_tower",
+      "phase": "roll"
     },
     {
       "processor_type": "dungeontrain:lost_city_facade",

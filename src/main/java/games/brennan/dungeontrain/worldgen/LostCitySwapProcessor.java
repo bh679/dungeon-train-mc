@@ -111,6 +111,18 @@ public final class LostCitySwapProcessor extends StructureProcessor {
         return null;
     }
 
+    /**
+     * {@code state} as this processor leaves it at world position {@code pos}: itself when no rule rolls,
+     * {@code null} when a rule removes it. For blocks that reach the piece after the per-block pass —
+     * {@link LostCityVariantsProcessor}'s picks — so a dry design stays dry and a recolour stays whole.
+     */
+    @Nullable
+    public BlockState swapped(BlockState state, BlockPos origin, BlockPos pos) {
+        Swap swap = pick(state, origin, pos);
+        if (swap == null) return state;
+        return swap.to() == Blocks.AIR ? null : carry(state, swap.to());
+    }
+
     @Override
     @Nullable
     public StructureTemplate.StructureBlockInfo processBlock(LevelReader world, BlockPos offset, BlockPos pivot,
@@ -118,6 +130,8 @@ public final class LostCitySwapProcessor extends StructureProcessor {
                                                               StructureTemplate.StructureBlockInfo target,
                                                               StructurePlaceSettings settings) {
         if (target == null || original.pos().getY() == 0) return target;
+        // A variant cell is rolled later from its own pool, and the pick is swapped then (#swapped).
+        if (LostCityVariantsProcessor.isMarked(target)) return target;
         Swap swap = pick(target.state(), offset, target.pos());
         if (swap == null) return target;
         if (swap.to() == Blocks.AIR) return null;

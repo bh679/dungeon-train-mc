@@ -2,6 +2,7 @@
 """Unit tests for the Lost City generator: python3 scripts/lost-city/test_lostcity.py"""
 
 import gzip
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -11,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "portal"))
 
 from nbt import get, read  # noqa: E402
 
-from lostcity import blocks  # noqa: E402
+from lostcity import blocks, variantdoc  # noqa: E402
 from lostcity.archetypes import ALL  # noqa: E402
 from lostcity.canvas import Canvas  # noqa: E402
 from lostcity.check import validate  # noqa: E402
@@ -142,6 +143,62 @@ class DatagenTest(unittest.TestCase):
         for path, data in files.items():
             if "/processor_list/" in path and b"lost_city_stretch" in data and b"lost_city_bite" in data:
                 self.assertLess(data.index(b"lost_city_stretch"), data.index(b"lost_city_bite"), path)
+
+    def test_variant_phases_only_for_buildings_with_a_document(self):
+        files = render(ALL, designs(), {"structures": [], "placement": {}}, frozenset({"office_tower"}))
+        for path, data in files.items():
+            if "/processor_list/" not in path:
+                continue
+            kinds = [p["processor_type"] + "/" + p.get("phase", "") for p in json.loads(data)["processors"]]
+            phases = [k for k in kinds if k.startswith("dungeontrain:lost_city_variants/")]
+            if "/office_tower_" not in path:
+                self.assertEqual(phases, [], path)
+                continue
+            self.assertEqual(phases, ["dungeontrain:lost_city_variants/mark", "dungeontrain:lost_city_variants/roll"], path)
+            self.assertEqual(kinds.index(phases[0]), 1, f"{path}: mark must come straight after block_ignore")
+            roll = kinds.index(phases[1])
+            self.assertFalse(set(kinds[:roll]) & {"dungeontrain:lost_city_bite/", "dungeontrain:lost_city_facade/",
+                                                  "dungeontrain:lost_city_truncate/"}, path)
+            self.assertFalse(set(kinds[roll + 1:]) & {"dungeontrain:lost_city_stretch/", "dungeontrain:lost_city_swap/"}, path)
+
+
+class VariantDocTest(unittest.TestCase):
+    def test_every_archetype_seeds_a_valid_document(self):
+        for archetype in ALL:
+            cells = archetype.render()
+            doc = variantdoc.seed(cells, archetype.spec)
+            self.assertTrue(doc, f"{archetype.spec.name} has nothing to vary")
+            self.assertLessEqual(len(doc), variantdoc.CAP)
+            data = variantdoc.dumps(doc)
+            self.assertEqual(data, variantdoc.dumps(variantdoc.seed(cells, archetype.spec)), "not deterministic")
+            self.assertEqual([], variantdoc.validate(variantdoc.loads(data), cells, archetype.spec))
+            self.assertNotIn(b"dungeontrain:stage_", data)
+
+    def test_pools_keep_the_cells_own_block_first(self):
+        archetype = ALL[0]
+        cells = archetype.render()
+        for pos, cell in variantdoc.seed(cells, archetype.spec).items():
+            self.assertEqual(cell.entries[0].state, variantdoc.state_string(cells[pos]), pos)
+            self.assertGreaterEqual(len(cell.entries), variantdoc.MIN_STATES)
+
+    def test_the_cap_is_shared_across_rules(self):
+        archetype = ALL[0]
+        doc = variantdoc.seed(archetype.render(), archetype.spec, cap=40)
+        self.assertEqual(len(doc), 40)
+        self.assertGreater(len({cell.entries[0].state.split("[")[0] for cell in doc.values()}), 4)
+
+    def test_validate_rejects_what_worldgen_cannot_place(self):
+        spec = ArchetypeSpec("t", (3, 3, 3), None, None, None, margin=0, seed=1)
+        cells = {(1, 1, 1): blocks.COBWEB, (1, 0, 1): blocks.block("grass_block")}
+        bad = {
+            (1, 0, 1): ["minecraft:stone", "minecraft:dirt"],
+            (2, 2, 2): ["minecraft:stone", "minecraft:dirt"],
+            (1, 1, 1): ["dungeontrain:stage_stone", {"entity": "minecraft:zombie"}],
+        }
+        errors = "\n".join(variantdoc.validate(bad, cells, spec))
+        for expected in ("pad layer", "not a cell of the template", "stage placeholder", "mob entry"):
+            self.assertIn(expected, errors)
+        self.assertTrue(any("fewer than" in e for e in variantdoc.validate({(1, 1, 1): ["minecraft:stone"]}, cells, spec)))
 
 
 if __name__ == "__main__":

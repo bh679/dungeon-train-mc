@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.worldgen.LostCityFacadeProcessor;
 import games.brennan.dungeontrain.worldgen.LostCityStretchProcessor;
 import games.brennan.dungeontrain.worldgen.LostCitySwapProcessor;
 import games.brennan.dungeontrain.worldgen.LostCityTruncateProcessor;
+import games.brennan.dungeontrain.worldgen.LostCityVariantsProcessor;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureProcessorType;
 import net.neoforged.bus.api.IEventBus;
@@ -30,6 +31,7 @@ public final class ModStructureProcessors {
         PROCESSORS.register("lost_city_bite", () -> LostCityBiteProcessor.TYPE);
         PROCESSORS.register("lost_city_stretch", () -> LostCityStretchProcessor.TYPE);
         PROCESSORS.register("lost_city_facade", () -> LostCityFacadeProcessor.TYPE);
+        PROCESSORS.register("lost_city_variants", () -> LostCityVariantsProcessor.TYPE);
         PROCESSORS.register("painting_transform", () -> PaintingTransformProcessor.TYPE);
     }
 

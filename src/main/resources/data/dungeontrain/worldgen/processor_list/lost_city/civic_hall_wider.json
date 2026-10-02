@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/civic_hall",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_stretch",
       "min_floors": 2,
       "max_floors": 2,
@@ -16,6 +21,11 @@
       "period_max": 5,
       "min_similarity": 0.45,
       "axis": "x"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/civic_hall",
+      "phase": "roll"
     }
   ]
 }

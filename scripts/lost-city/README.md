@@ -15,16 +15,42 @@ that names a `big_lost_city:` template. Keep it that way.
 ## Files
 
 ```
-build-templates.py       writes data/dungeontrain/structure/lost_city/<name>.nbt + manifest.json  (--check)
+build-templates.py       writes data/dungeontrain/structure/lost_city/<name>.nbt, <name>.variants.json + manifest.json  (--check)
 generate-variants.py     writes processor_list/, template_pool/, structure/ JSON + structure_set entries (--check)
 test_lostcity.py         unit tests (stdlib)
+authored-variants.json   buildings whose variants document is hand-kept
 lostcity/archetypes/     one module per building — the designs
 lostcity/variants.py     the per-building looks rolled at placement
+lostcity/variantdoc.py   the per-building block-variant pools rolled at placement
 lostcity/{blocks,canvas,shapes,floors,pad,weather,nbt_out,check,datagen,spec}.py
 ```
 
-Run both scripts after editing a recipe; CI runs both with `--check` and the unit tests, and the
+Run both scripts after editing a recipe, `build-templates.py` first — `generate-variants.py` reads which
+buildings have a variants document from disk. CI runs both with `--check` and the unit tests, and the
 Java `LostCityTemplatesTest` re-reads the committed files.
+
+## Block variants
+
+A cell of a building can hold a pool instead of one block. `<name>.variants.json`, beside the template,
+is a DT variants document — the schema the editor's block-variant menu writes for carriages and tunnels —
+and the `dungeontrain:lost_city_variants` processor rolls it per placement
+(`worldgen/LostCityVariantsProcessor`, documents loaded by `worldgen/LostCityVariantDocs`). The setting
+`lostCityBlockVariants` (common config, default on) turns the roll off; a building with no document is
+never affected.
+
+- **Seeded by the generator.** `variantdoc.RULES` names a block and what may stand in its place; only
+  small self-supporting details vary (props, plants, lamps, vine ends), up to `variantdoc.CAP` cells a
+  building, shared out across the rules.
+- **Kept by hand.** List the building in `authored-variants.json`; the generator then leaves its document
+  alone and only validates it. Cells are `"x,y,z"` in template coordinates, above the pad, on a cell the
+  template has. Stage placeholders, mob entries and connect modes are refused — nothing at worldgen can
+  resolve them.
+- **In a processor list** the processor appears twice: `"phase": "mark"` first, `"phase": "roll"` after the
+  stretches and swaps and before bite, facade and truncate. A floor or bay a stretch adds rolls on its own;
+  cells in a lock group pick together across the whole building. A pick goes through the design's swaps, so
+  a recolour and the dry look cover it. Growth entries (`"growth": "down 1-4"`) hang their column into free
+  space of the piece.
+- **Not applied:** the `containers` role and loot-prefab links (an entry's own `nbt` is carried).
 
 ## Conventions the processors rely on
 

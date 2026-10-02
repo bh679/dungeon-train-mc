@@ -9,6 +9,16 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/silos",
+      "phase": "mark"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/silos",
+      "phase": "roll"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_bite",
       "bites_min": 1,
       "bites_max": 2,

@@ -258,6 +258,13 @@ public final class DungeonTrainCommonConfig {
     public static final boolean DEFAULT_DISTANT_LOD_LITE_DECORATION = true;
 
     /**
+     * Block variants on DT's own Lost City buildings: a building with a variants document rolls its
+     * variant cells per placement ({@code worldgen/LostCityVariantsProcessor}). false = every building
+     * generates exactly as its template (the original behaviour). Default true.
+     */
+    public static final boolean DEFAULT_LOST_CITY_BLOCK_VARIANTS = true;
+
+    /**
      * Chuncks band — a fourth looping phase, appended after the upside-down band's trailing overworld
      * gap. Along +X it is mostly void, sprinkled with occasional real overworld chunks: some vertically
      * complete, some a top-down slice (natural surface kept, flat cut-off bottom — a floating island of
@@ -595,6 +602,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue UPSIDE_DOWN_MAX_CEILING_HEIGHT;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_MIRROR_PRECOMPUTE;
     public static final ModConfigSpec.BooleanValue DISTANT_LOD_LITE_DECORATION;
+    public static final ModConfigSpec.BooleanValue LOST_CITY_BLOCK_VARIANTS;
     public static final ModConfigSpec.BooleanValue NETHER_FOLIAGE_STRIP_PRECOMPUTE;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_TRACK_FLATTEN;
     public static final ModConfigSpec.BooleanValue CHUNCKS_ENABLED;
@@ -672,6 +680,7 @@ public final class DungeonTrainCommonConfig {
         UPSIDE_DOWN_MAX_CEILING_HEIGHT = pair.getLeft().upsideDownMaxCeilingHeight;
         UPSIDE_DOWN_MIRROR_PRECOMPUTE = pair.getLeft().upsideDownMirrorPrecompute;
         DISTANT_LOD_LITE_DECORATION = pair.getLeft().distantLodLiteDecoration;
+        LOST_CITY_BLOCK_VARIANTS = pair.getLeft().lostCityBlockVariants;
         NETHER_FOLIAGE_STRIP_PRECOMPUTE = pair.getLeft().netherFoliageStripPrecompute;
         UPSIDE_DOWN_TRACK_FLATTEN = pair.getLeft().upsideDownTrackFlatten;
         CHUNCKS_ENABLED = pair.getLeft().chuncksEnabled;
@@ -992,6 +1001,13 @@ public final class DungeonTrainCommonConfig {
                         "features are seeded identically so they stand where the real chunk's will. Real chunks are",
                         "never affected. false = full decoration on every thread (original behaviour). Default true.")
                 .define("distantLodLiteDecoration", DEFAULT_DISTANT_LOD_LITE_DECORATION);
+        ModConfigSpec.BooleanValue lostCityBlockVariants = b
+                .comment("Block variants on Dungeon Train's own Lost City buildings. true = a building with a variants",
+                        "document (data/<namespace>/structure/lost_city/<name>.variants.json) rolls each of its variant",
+                        "cells when it generates, so two copies of one building differ. Buildings with no document, and",
+                        "Big Lost City's buildings, are never affected. false = every building generates exactly as its",
+                        "template (original behaviour). Only chunks generated after a change are affected. Default true.")
+                .define("lostCityBlockVariants", DEFAULT_LOST_CITY_BLOCK_VARIANTS);
         ModConfigSpec.BooleanValue netherFoliageStripPrecompute = b
                 .comment("Scan the Nether transition band's foliage strip (which overworld leaves/logs/flowers to clear",
                         "off the netherrack crossfade + Nether core) on the worldgen worker thread (SPAWN step) and only",
@@ -1192,6 +1208,7 @@ public final class DungeonTrainCommonConfig {
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
                 upsideDownBedrockRoof, upsideDownCloudY, upsideDownExitNoiseSkipEpsilon,
                 upsideDownMaxCeilingHeight, upsideDownMirrorPrecompute, distantLodLiteDecoration,
+                lostCityBlockVariants,
                 netherFoliageStripPrecompute, upsideDownTrackFlatten,
                 chuncksEnabled, chuncksHoldBlocks, chuncksFadeBlocks, chuncksLeadGapBlocks,
                 chuncksKeepDensity, chuncksSliceRatio,
@@ -1673,6 +1690,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? DISTANT_LOD_LITE_DECORATION.get() : DEFAULT_DISTANT_LOD_LITE_DECORATION;
     }
 
+    /** Whether DT's own Lost City buildings roll their block-variant documents; falls back pre-load. */
+    public static boolean isLostCityBlockVariants() {
+        return isLoaded() ? LOST_CITY_BLOCK_VARIANTS.get() : DEFAULT_LOST_CITY_BLOCK_VARIANTS;
+    }
+
     /** Whether the Nether-band foliage strip is scanned off-thread at SPAWN; falls back to the default pre-load. */
     public static boolean isNetherFoliageStripPrecompute() {
         return isLoaded() ? NETHER_FOLIAGE_STRIP_PRECOMPUTE.get() : DEFAULT_NETHER_FOLIAGE_STRIP_PRECOMPUTE;
@@ -1858,6 +1880,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue upsideDownMaxCeilingHeight,
                           ModConfigSpec.BooleanValue upsideDownMirrorPrecompute,
                           ModConfigSpec.BooleanValue distantLodLiteDecoration,
+                          ModConfigSpec.BooleanValue lostCityBlockVariants,
                           ModConfigSpec.BooleanValue netherFoliageStripPrecompute,
                           ModConfigSpec.BooleanValue upsideDownTrackFlatten,
                           ModConfigSpec.BooleanValue chuncksEnabled,

@@ -9,6 +9,16 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/hospital",
+      "phase": "mark"
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/hospital",
+      "phase": "roll"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_truncate",
       "min_fraction": 0.4,
       "max_fraction": 0.7,

@@ -9,6 +9,11 @@
       ]
     },
     {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/civic_hall",
+      "phase": "mark"
+    },
+    {
       "processor_type": "dungeontrain:lost_city_swap",
       "swaps": [
         {
@@ -72,6 +77,11 @@
           "to": "minecraft:chiseled_sandstone"
         }
       ]
+    },
+    {
+      "processor_type": "dungeontrain:lost_city_variants",
+      "template": "dungeontrain:lost_city/civic_hall",
+      "phase": "roll"
     }
   ]
 }
