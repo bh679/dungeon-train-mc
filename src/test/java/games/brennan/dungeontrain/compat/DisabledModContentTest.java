@@ -102,6 +102,15 @@ final class DisabledModContentTest {
     }
 
     @Test
+    @DisplayName("the reloadable instant camera is hidden; the disposable camera on the same item is kept")
+    void plainInstantCameraHidden() {
+        assertTrue(DisabledModContent.isPlainInstantCamera(id("exposure_polaroid:instant_camera"), false));
+        assertFalse(DisabledModContent.isPlainInstantCamera(id("exposure_polaroid:instant_camera"), true));
+        assertFalse(DisabledModContent.isPlainInstantCamera(id("exposure_polaroid:instant_color_slide"), false));
+        assertFalse(DisabledModContent.isPlainInstantCamera(null, false));
+    }
+
+    @Test
     @DisplayName("mob gear swaps to iron, or diamond for diamond variants; non-gear is removed")
     void mobGearReplacement() {
         assertEquals("iron_helmet", DisabledModMobGear.vanillaReplacementId("cincinnasite_helmet", "helmet"));

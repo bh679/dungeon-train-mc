@@ -65,6 +65,8 @@ public final class DisabledModContent {
         "exposure:lightroom",
         "exposure:chromatic_sheet");
 
+    static final String INSTANT_CAMERA = "exposure_polaroid:instant_camera";
+
     private DisabledModContent() {}
 
     /** A disabled mod's ore placed feature — vetoed at decoration time. */
@@ -81,7 +83,22 @@ public final class DisabledModContent {
     }
 
     public static boolean isDisabledItem(ItemStack stack) {
-        return !stack.isEmpty() && isDisabledItem(stack.getItem());
+        if (stack.isEmpty()) {
+            return false;
+        }
+        ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
+        if (isPlainInstantCamera(id, DisposableCamera.hasMarker(stack, DisposableCamera.NBT_CAMERA))) {
+            return true;
+        }
+        return isDisabledItem(stack.getItem());
+    }
+
+    /**
+     * Polaroid's reloadable instant camera is hidden; the {@link DisposableCamera} is the same item
+     * carrying DT's marker, so this one rule has to look at the stack rather than the item.
+     */
+    static boolean isPlainInstantCamera(ResourceLocation id, boolean disposable) {
+        return id != null && INSTANT_CAMERA.equals(id.toString()) && !disposable;
     }
 
     /** Id-level rule, split out so it is testable without a bootstrapped registry. */
