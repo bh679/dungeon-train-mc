@@ -54,15 +54,21 @@ public final class PortalRoomLibrary {
      * <p>Returns the number of books actually placed. An empty catalogue places nothing and leaves
      * every shelf as the template authored it, which is exactly what a room whose author could not be
      * resolved should look like.</p>
+     *
+     * @param ownShelves true when the catalogue is the reader's own writing — the lectern then
+     *                   carries a tip rather than the note about an unknown author
      */
     public static int stock(ServerLevel level, BlockPos origin, Vec3i size,
-                            List<SharedBookPool.PoolBook> catalogue, int pairKey, String authorName) {
+                            List<SharedBookPool.PoolBook> catalogue, int pairKey, String authorName,
+                            boolean ownShelves) {
         if (level == null || origin == null || size == null || catalogue == null || catalogue.isEmpty()) {
             return 0;
         }
         // The note that says what the room is, before any shelf does. Placed even when the catalogue
         // is short — a room with two books on its shelves is exactly the room the note explains.
-        dressLecterns(level, origin, size, () -> PortalLibraryTribute.buildStack(authorName, pairKey));
+        dressLecterns(level, origin, size, () -> ownShelves
+            ? PortalLibraryTribute.buildOwnStack(authorName, pairKey)
+            : PortalLibraryTribute.buildStack(authorName, pairKey));
         List<BlockPos> shelves = shelvesIn(level, origin, size);
         if (shelves.isEmpty()) return 0;
 

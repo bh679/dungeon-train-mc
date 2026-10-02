@@ -58,7 +58,43 @@ public final class PortalLibraryTribute {
         "These shelves were filled from a single hand, and then abandoned to whoever came next."
     );
 
+    /**
+     * What the note says instead when the shelves are the reader's OWN. There is nothing to be
+     * uncertain about in that room — they know who wrote these — so the lectern uses the space for
+     * the one thing they cannot work out from the shelves: that writing another book is what makes
+     * a room like this likelier to turn up again ({@code PortalOwnShelves}).
+     */
+    private static final List<String> OWN_TIPS = List.of(
+        "Write another book and this room will find you again.",
+        "Want to come back? Sign a new book.",
+        "Every book you write leads back here.",
+        "The library favours those who keep writing.",
+        "A new book opens this door sooner.",
+        "Come back soon — write something first."
+    );
+
     private PortalLibraryTribute() {}
+
+    /** How many tips an own-books library can offer. */
+    public static int ownTipCount() {
+        return OWN_TIPS.size();
+    }
+
+    /** The note for a library of the reader's own books: one tip, signed with their name. */
+    public static ItemStack buildOwnStack(String author, long seed) {
+        return BookFactory.buildPlainBook(TITLE, CURATOR, List.of(ownPageFor(author, seed)));
+    }
+
+    /** The own-books page: one tip, a blank line, and the reader's name under a bullet. */
+    static String ownPageFor(String author, long seed) {
+        String name = author == null || author.isBlank() ? "an unknown hand" : author;
+        return ownTipFor(seed) + "\n\n* " + name;
+    }
+
+    /** The tip {@code seed} selects — seeded for the same reason {@link #variantFor} is. */
+    static String ownTipFor(long seed) {
+        return OWN_TIPS.get((int) Math.floorMod(mix(seed), OWN_TIPS.size()));
+    }
 
     /** How many ways the note can be written — twenty. */
     public static int variantCount() {
