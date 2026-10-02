@@ -21869,6 +21869,23 @@
       "released": true,
       "released_in": "v0.1093.0",
       "released_at": "2026-10-01T17:53:18Z"
+    },
+    {
+      "id": "leaving-world-no-crash",
+      "version": "0.1094.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Leaving a world",
+      "summary": "Leaving a world no longer crashes the game now and then.",
+      "highlights": [],
+      "pr": 1744,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
