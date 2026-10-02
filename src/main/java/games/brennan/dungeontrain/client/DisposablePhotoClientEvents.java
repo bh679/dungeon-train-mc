@@ -40,10 +40,5 @@ public final class DisposablePhotoClientEvents {
             return;
         }
         DungeonTrainNet.sendToServer(new PhotographViewClosedPacket());
-        if (found) {
-            // Next tick: the viewer is still mid-close here, and would replace a screen opened now.
-            Minecraft minecraft = Minecraft.getInstance();
-            minecraft.tell(() -> minecraft.setScreen(new PhotoTributeScreen()));
-        }
     }
 }

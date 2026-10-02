@@ -82,6 +82,9 @@ public final class SharedPhotos {
     /** Frame extra-data key naming who last paid Tribute, on a photographer's own returning photo. */
     public static final String SHARED_TRIBUTED_BY_KEY = "dt_shared_photo_tributed_by";
 
+    /** Diamonds one Tribute costs. */
+    public static final int TRIBUTE_COST = 1;
+
     static final String SUBMIT_PATH = "/photos/submit";
     static final String VIEW_PATH = "/photos/view";
     static final String TRIBUTE_PATH = "/photos/tribute";
@@ -271,7 +274,7 @@ public final class SharedPhotos {
         int photoId = heldSharedId(player);
         if (photoId == 0) return;
         if (!player.getAbilities().instabuild
-                && player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.DIAMOND), 1, player.inventoryMenu.getCraftSlots()) < 1) {
+                && player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.DIAMOND), TRIBUTE_COST, player.inventoryMenu.getCraftSlots()) < TRIBUTE_COST) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.photo_tribute.no_diamond").withStyle(ChatFormatting.GRAY));
             return;
         }

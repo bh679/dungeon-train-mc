@@ -790,6 +790,16 @@
       ]
     }
   },
+  "gui.dungeontrain.photo_tribute.have": {
+    "1": {
+      "label": "how many diamonds the player is carrying",
+      "examples": [
+        "0",
+        "1",
+        "12"
+      ]
+    }
+  },
   "chat.dungeontrain.photo_burns_author": {
     "1": {
       "label": "the player who took the photo",
