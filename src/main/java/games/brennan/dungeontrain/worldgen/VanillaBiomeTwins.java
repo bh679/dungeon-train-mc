@@ -16,7 +16,6 @@ import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.MobSpawnSettings;
 import org.slf4j.Logger;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -42,14 +41,8 @@ import java.util.function.DoubleSupplier;
 public final class VanillaBiomeTwins {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    /**
-     * Copy-on-write snapshots: readers (every tinted block on every chunk-mesh thread, every snow/ice
-     * check on worldgen workers) take one volatile read and never lock; {@link #build} / {@link #clear}
-     * publish a fresh unmodifiable map under {@link #WRITE_LOCK}.
-     */
-    private static volatile Map<Biome, Biome> twins = Map.of();
-    private static volatile Map<Biome, MobSpawnSettings> spawns = Map.of();
-    private static final Object WRITE_LOCK = new Object();
+    /** Lock-free for readers (every tinted block, every snow/ice check); written only by {@link #build} / {@link #clear}. */
+    private static final TwinTable<Biome, Biome, MobSpawnSettings> TABLE = new TwinTable<>();
     /** The client camera's world X, set by the client at init — {@code null} on a dedicated server. */
     private static volatile DoubleSupplier cameraX;
     /** Client-side "this world has the train" gate; the server reads {@link NetherBandContext} instead. */
@@ -59,7 +52,7 @@ public final class VanillaBiomeTwins {
 
     /** The vanilla twin to answer for {@code live} at world {@code x}, or {@code null} to let it answer itself. */
     public static Biome twinFor(Biome live, double x) {
-        Biome twin = twins.get(live);
+        Biome twin = TABLE.twin(live);
         if (twin == null) return null;
         return outsideWwoo(x) ? twin : null;
     }
@@ -73,7 +66,7 @@ public final class VanillaBiomeTwins {
     /** The mob spawns a twinned biome offers at world {@code x}, or {@code null} to keep the live ones. */
     public static MobSpawnSettings spawnsFor(Biome live, double x) {
         if (twinFor(live, x) == null) return null;
-        return spawns.get(live);
+        return TABLE.spawns(live);
     }
 
     /** The spawn list {@code live} answers with at world {@code x}: the twin's outside the WWOO stretch, else its own. */
@@ -105,7 +98,7 @@ public final class VanillaBiomeTwins {
     }
 
     public static int count() {
-        return twins.size();
+        return TABLE.size();
     }
 
     /** Add this side's twins to the table (server at start, client at login). */
@@ -115,11 +108,7 @@ public final class VanillaBiomeTwins {
             Map<Biome, Biome> newTwins = new IdentityHashMap<>();
             Map<Biome, MobSpawnSettings> newSpawns = new IdentityHashMap<>();
             collect(live, newTwins, newSpawns);
-            synchronized (WRITE_LOCK) {
-                // Spawns first: a reader that sees a new twin must also find its spawns.
-                spawns = merged(spawns, newSpawns);
-                twins = merged(twins, newTwins);
-            }
+            TABLE.publish(newTwins, newSpawns);
             if (LOGGER.isDebugEnabled()) {
                 Registry<Biome> reg = live.registryOrThrow(Registries.BIOME);
                 LOGGER.debug("[DungeonTrain] Vanilla biome twins ({}): {}", side,
@@ -133,17 +122,7 @@ public final class VanillaBiomeTwins {
     }
 
     public static void clear() {
-        synchronized (WRITE_LOCK) {
-            twins = Map.of();
-            spawns = Map.of();
-        }
-    }
-
-    /** A new unmodifiable identity map: {@code base} plus {@code added} — never mutates either. */
-    private static <V> Map<Biome, V> merged(Map<Biome, V> base, Map<Biome, V> added) {
-        Map<Biome, V> copy = new IdentityHashMap<>(base);
-        copy.putAll(added);
-        return Collections.unmodifiableMap(copy);
+        TABLE.clear();
     }
 
     private static void collect(RegistryAccess live, Map<Biome, Biome> twins, Map<Biome, MobSpawnSettings> spawns) {
