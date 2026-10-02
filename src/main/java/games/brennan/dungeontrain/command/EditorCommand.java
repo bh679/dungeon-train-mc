@@ -449,8 +449,7 @@ public final class EditorCommand {
                         .suggests(TRACK_VARIANT_NAME_SUGGESTIONS)
                         .then(trackMirrorAxisNode("x"))
                         .then(trackMirrorAxisNode("y"))
-                        .then(trackMirrorAxisNode("z"))
-                        .then(trackMirrorAxisNode("v")))))
+                        .then(trackMirrorAxisNode("z")))))
             .then(Commands.literal("new")
                 .then(Commands.argument("kind", StringArgumentType.word())
                     .suggests(TRACK_KIND_SUGGESTIONS)
@@ -576,7 +575,10 @@ public final class EditorCommand {
                 .then(mirrorAxisNode("x"))
                 .then(mirrorAxisNode("y"))
                 .then(mirrorAxisNode("z"))
-                .then(mirrorAxisNode("v"))
+                // "apply" is the X-menu's Mirror → Apply cell; "rebuild" is its older name,
+                // kept for scripts and the chat hint that points at it.
+                .then(Commands.literal("apply")
+                    .executes(ctx -> runMirrorRebuild(ctx.getSource())))
                 .then(Commands.literal("rebuild")
                     .executes(ctx -> runMirrorRebuild(ctx.getSource()))))
             .then(attachTrackVariantNodes(Commands.literal("tracks")
@@ -1216,8 +1218,8 @@ public final class EditorCommand {
 
     /**
      * Re-mirror the plot the player is standing in from its authored master
-     * octant — {@code /dungeontrain editor mirror rebuild}, also the X-menu's
-     * Mirror → Rebuild row.
+     * octant — {@code /dungeontrain editor mirror apply} (alias {@code rebuild}),
+     * the X-menu's Mirror → Apply cell.
      *
      * <p>This used to happen implicitly inside every editor {@code save()},
      * which made saving destructive: deliberate asymmetry (and anything placed
@@ -1274,13 +1276,9 @@ public final class EditorCommand {
                 StringArgumentType.getString(ctx, "kind"), StringArgumentType.getString(ctx, "name"), axis, false)));
     }
 
-    /** Apply one {@code x|y|z} axis (or the {@code v} variant-mirror flag) to a track sidecar, preserving the rest. */
+    /** Apply one {@code x|y|z} axis to a track sidecar, preserving the rest. */
     private static void applyMirrorAxis(games.brennan.dungeontrain.track.variant.TrackVariantBlocks cfg,
                                         String axis, boolean on) {
-        if (axis.equals("v")) {
-            cfg.setMirrorVariants(on);
-            return;
-        }
         boolean x = cfg.mirrorX(), y = cfg.mirrorY(), z = cfg.mirrorZ();
         switch (axis) {
             case "x" -> x = on;
@@ -1352,21 +1350,17 @@ public final class EditorCommand {
                 .withStyle(ChatFormatting.RED));
             return 0;
         }
-        if (axis.equals("v")) {
-            plot.setMirrorVariants(on);
-        } else {
-            boolean x = plot.mirrorX(), y = plot.mirrorY(), z = plot.mirrorZ();
-            switch (axis) {
-                case "x" -> x = on;
-                case "y" -> y = on;
-                case "z" -> z = on;
-                default -> { return 0; }
-            }
-            plot.setMirrorAxes(x, y, z);
+        boolean x = plot.mirrorX(), y = plot.mirrorY(), z = plot.mirrorZ();
+        switch (axis) {
+            case "x" -> x = on;
+            case "y" -> y = on;
+            case "z" -> z = on;
+            default -> { return 0; }
         }
+        plot.setMirrorAxes(x, y, z);
         try {
             plot.save();
-            // The builder's pause menu lights its X/Y/Z/V cells from the bounds packet, so push a
+            // The builder's pause menu lights its X/Y/Z cells from the bounds packet, so push a
             // fresh one — otherwise the cell you just toggled keeps showing the old state until
             // something else happens to resend it.
             games.brennan.dungeontrain.net.BuilderBoundsPacket.sendTo(player, player.serverLevel());

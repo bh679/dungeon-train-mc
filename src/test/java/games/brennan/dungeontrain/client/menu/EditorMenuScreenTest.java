@@ -150,6 +150,30 @@ final class EditorMenuScreenTest {
         assertEquals("dungeontrain editor contents flip maze rooms on", rooms.cmdToTurnOn());
     }
 
+    // ---- Mirror quad (X / Y / Z toggles + Apply) ----
+
+    @Test
+    @DisplayName("Mirror row is X | Y | Z | Apply, and Apply re-mirrors the whole plot")
+    void mirror_quad_axesAndApply() {
+        List<CommandMenuEntry> rows = EditorMenuScreen.mirrorRows(true, false, true);
+        assertEquals(2, rows.size(), "a Label and the quad — no separate Rebuild row");
+        assertInstanceOf(CommandMenuEntry.Label.class, rows.get(0));
+        CommandMenuEntry.Quad quad = assertInstanceOf(CommandMenuEntry.Quad.class, rows.get(1));
+
+        CommandMenuEntry.Toggle x = assertInstanceOf(CommandMenuEntry.Toggle.class, quad.e1());
+        assertEquals("X", x.label());
+        assertTrue(x.state());
+        assertEquals("dungeontrain editor mirror x on", x.cmdToTurnOn());
+        assertEquals("dungeontrain editor mirror x off", x.cmdToTurnOff());
+        assertFalse(assertInstanceOf(CommandMenuEntry.Toggle.class, quad.e2()).state(), "Y off");
+        assertTrue(assertInstanceOf(CommandMenuEntry.Toggle.class, quad.e3()).state(), "Z on");
+
+        // The fourth cell is an action, not a setting: variant mirroring has no off switch.
+        CommandMenuEntry.Run apply = assertInstanceOf(CommandMenuEntry.Run.class, quad.e4());
+        assertEquals("Apply", apply.label());
+        assertEquals("dungeontrain editor mirror apply", apply.command());
+    }
+
     // ---- New (latent same-bug, would have broken on first track-side click) ----
 
     @Test
@@ -493,7 +517,9 @@ final class EditorMenuScreenTest {
     void settings_tab_holdsEditorPreferences() {
         List<String> labels = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.SETTINGS));
         assertTrue(labels.contains("Editor Menus"), "Settings labels were " + labels);
-        assertTrue(labels.containsAll(List.of("Mirror", "X", "Y", "Z", "V", "Rebuild")));
+        assertTrue(labels.containsAll(List.of("Mirror", "X", "Y", "Z", "Apply")), "Settings labels were " + labels);
+        assertFalse(labels.contains("V"), "variant mirroring is no longer a choice");
+        assertFalse(labels.contains("Rebuild"), "Apply replaced the separate Rebuild row");
         assertTrue(labels.contains("Stages"));
         assertFalse(labels.contains("Save"));
     }

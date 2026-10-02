@@ -509,16 +509,6 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Append a {@code Mirror} header label followed by a {@code [X | Y | Z | V]} toggle row, wired
-     * to the position-resolved {@code editor mirror <axis> on|off} command (resolves whichever plot
-     * the player stands in). X/Y/Z mirror structural blocks across an axis; the {@code V} toggle
-     * additionally mirrors the per-cell variant pools (opt-in — off by default). Toggle state (and
-     * the green on-tint) is the server-pushed {@link EditorStatusHudOverlay} mirror flags.
-     *
-     * <p>The trailing {@code Rebuild} row runs {@code editor mirror rebuild}, which re-mirrors the
-     * plot from its master octant on demand — saving no longer does that implicitly.</p>
-     */
-    /**
      * The "Editor Menus" row — {@code Editor Menus | Auto | On | Off}, the active mode carrying
      * the accent tint. Stay-open cells so the player can watch the world-space panels appear and
      * disappear behind the menu while they pick.
@@ -605,20 +595,38 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     private static void addMirrorToggles(List<CommandMenuEntry> out) {
+        out.addAll(mirrorRows(EditorStatusHudOverlay.mirrorX(), EditorStatusHudOverlay.mirrorY(),
+            EditorStatusHudOverlay.mirrorZ()));
+    }
+
+    /**
+     * The {@code Mirror} header label followed by an {@code [X | Y | Z | Apply]} row. X/Y/Z are
+     * toggles wired to the position-resolved {@code editor mirror <axis> on|off} command (resolves
+     * whichever plot the player stands in); structural blocks and per-cell variant pools both
+     * mirror across an enabled axis.
+     *
+     * <p>{@code Apply} runs {@code editor mirror apply}, which re-mirrors every block in the plot
+     * from its master octant. Saving doesn't do that implicitly, and live mirroring can't reach
+     * edits made before an axis went on, clipboard pastes or {@code /fill} — so this is the
+     * (deliberate) way to force it.</p>
+     *
+     * <p>Extracted from {@link #addMirrorToggles} so the unit test can pin the row without a
+     * client.</p>
+     */
+    public static List<CommandMenuEntry> mirrorRows(boolean mirrorX, boolean mirrorY, boolean mirrorZ) {
+        List<CommandMenuEntry> out = new ArrayList<>();
         out.add(new CommandMenuEntry.Label(MenuLang.t("editor.mirror")));
         // showStateText=false → state shown by the green (on) / grey (off) tint only.
-        CommandMenuEntry x = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_x"), EditorStatusHudOverlay.mirrorX(),
+        CommandMenuEntry x = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_x"), mirrorX,
             "dungeontrain editor mirror x on", "dungeontrain editor mirror x off", false);
-        CommandMenuEntry y = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_y"), EditorStatusHudOverlay.mirrorY(),
+        CommandMenuEntry y = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_y"), mirrorY,
             "dungeontrain editor mirror y on", "dungeontrain editor mirror y off", false);
-        CommandMenuEntry z = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_z"), EditorStatusHudOverlay.mirrorZ(),
+        CommandMenuEntry z = new CommandMenuEntry.Toggle(MenuLang.t("common.axis_z"), mirrorZ,
             "dungeontrain editor mirror z on", "dungeontrain editor mirror z off", false);
-        CommandMenuEntry v = new CommandMenuEntry.Toggle(MenuLang.t("editor.mirror_variants"), EditorStatusHudOverlay.mirrorVariants(),
-            "dungeontrain editor mirror v on", "dungeontrain editor mirror v off", false);
-        out.add(new CommandMenuEntry.Quad(x, y, z, v, 0.25, 0.50, 0.75));
-        // Explicit re-mirror. Saving no longer rebuilds the far half from the master octant, so
-        // this is the (deliberate) way to force it.
-        out.add(new CommandMenuEntry.Run(MenuLang.t("editor.mirror_rebuild"), "dungeontrain editor mirror rebuild"));
+        CommandMenuEntry apply = new CommandMenuEntry.Run(MenuLang.t("editor.mirror_apply"),
+            "dungeontrain editor mirror apply");
+        out.add(new CommandMenuEntry.Quad(x, y, z, apply, 0.25, 0.50, 0.75));
+        return out;
     }
 
     /**

@@ -297,7 +297,7 @@ public final class VariantClipboardItem extends Item {
         }
 
         // Mirror the pasted variant pool (+ reflected base block) to the
-        // symmetric cells when the plot's "V" toggle is on — parity with the
+        // symmetric cells when the plot has a mirror axis on — parity with the
         // shift-click add and break paths, which otherwise leaves a paste
         // looking like a plain mirrored block on the far side.
         EditorVariantMirror.mirrorEditLive(serverLevel, plot, localPos, states);

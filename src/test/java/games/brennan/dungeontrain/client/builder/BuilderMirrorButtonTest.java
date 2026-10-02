@@ -23,7 +23,6 @@ final class BuilderMirrorButtonTest {
     void commandFollowsTheCurrentState() {
         assertEquals("dungeontrain editor mirror z on", BuilderMirrorButton.commandFor("z", true));
         assertEquals("dungeontrain editor mirror z off", BuilderMirrorButton.commandFor("z", false));
-        assertEquals("dungeontrain editor mirror v on", BuilderMirrorButton.commandFor("v", true));
     }
 
     @Test
@@ -40,14 +39,5 @@ final class BuilderMirrorButtonTest {
         assertFalse(after.isOn("z"));
 
         assertEquals(before, after.with("x", false), "flipping back restores the original");
-    }
-
-    @Test
-    @DisplayName("V starts on, so the first click on it turns it off")
-    void variantAxisStartsOn() {
-        BuilderMirrorFlags flags = BuilderMirrorFlags.DEFAULT;
-        boolean next = !flags.isOn("v");
-        assertFalse(next);
-        assertEquals("dungeontrain editor mirror v off", BuilderMirrorButton.commandFor("v", next));
     }
 }

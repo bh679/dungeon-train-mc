@@ -520,8 +520,8 @@ public final class VariantBlockInteractions {
     }
 
     /**
-     * Mirror a just-recorded variant edit to the symmetric cells when the plot's
-     * "V" toggle is on. Re-resolves the {@link BlockVariantPlot} and recomputes
+     * Mirror a just-recorded variant edit to the symmetric cells when the plot
+     * has a mirror axis on. Re-resolves the {@link BlockVariantPlot} and recomputes
      * {@code local} from its origin — the exact frame {@link VariantBlockBreakHandler}
      * uses — so the image cells line up regardless of which branch recorded the edit.
      */

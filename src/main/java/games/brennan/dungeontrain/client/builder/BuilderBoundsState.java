@@ -37,7 +37,7 @@ public final class BuilderBoundsState {
     private static volatile String modeId = "";
     /** What this build saves as; empty means an unnamed draft with nothing on disk yet. */
     private static volatile String buildName = "";
-    /** Packed mirror flags for this build — what lights the X/Y/Z/V cells in the pause menu. */
+    /** Packed mirror flags for this build — what lights the X/Y/Z cells in the pause menu. */
     private static volatile BuilderMirrorFlags mirror = BuilderMirrorFlags.NONE;
 
     /** What the build is and what it's for — everything the info panel reads. */

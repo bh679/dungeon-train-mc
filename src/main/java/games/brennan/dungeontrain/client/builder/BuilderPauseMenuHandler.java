@@ -105,8 +105,7 @@ public final class BuilderPauseMenuHandler {
     private static final Component CLEAR_PROMPT = Component.translatable("gui.dungeontrain.builder.confirm.clear");
     private static final Component DELETE_PROMPT = Component.translatable("gui.dungeontrain.builder.confirm.delete");
 
-    /** X, Y, Z are always shown; V (variant mirroring) only while Shift is held. */
-    private static final String[] MIRROR_AXES = {"x", "y", "z", "v"};
+    private static final String[] MIRROR_AXES = {"x", "y", "z"};
 
     private BuilderPauseMenuHandler() {}
 
@@ -226,7 +225,7 @@ public final class BuilderPauseMenuHandler {
         for (GuiEventListener listener : event.getScreen().children()) {
             if (listener instanceof PauseMenuActionButton action) {
                 // Every Shift-swapped widget on the screen follows the same rule: Exit Game, and
-                // the two mirror rows (3 axes without Shift, 4 with).
+                // the mirror row (built once per Shift state, so it never disappears).
                 action.visible = shift == action.visibleWhenShift();
                 if (QUIT_GAME.equals(action.getMessage())) {
                     quitGame = action;
@@ -353,20 +352,16 @@ public final class BuilderPauseMenuHandler {
     }
 
     /**
-     * The mirror axes: X Y Z normally, X Y Z V while Shift is held.
+     * The mirror axes: X Y Z. Variant pools mirror along with the blocks whenever an axis is on,
+     * so there is no fourth cell to choose it.
      *
-     * <p>V is the odd one out — variant mirroring is on by default in a builder world (set on the
-     * carriage sidecar at stamp time), so it's a thing you turn <em>off</em> occasionally rather
-     * than a thing you reach for. Keeping it behind Shift leaves three evenly-sized cells for the
-     * axes people actually toggle.</p>
-     *
-     * <p>Both rows are built up front and swapped by visibility rather than resized in place:
-     * three cells and four cells divide the panel differently, and {@code PauseMenuActionButton}
-     * already carries exactly this Shift flag for the Exit Game button.</p>
+     * <p>The row is built twice, once per Shift state: every {@code PauseMenuActionButton} on this
+     * screen is shown only while Shift matches its flag (see {@link #onScreenRenderPre}), and the
+     * axes should stay put whether or not Shift is held.</p>
      */
     private static void addMirrorRow(ScreenEvent.Init.Post event, int x, int y, int width, int height) {
-        addMirrorCells(event, x, y, width, height, 3, /*visibleWhenShift*/ false);
-        addMirrorCells(event, x, y, width, height, 4, /*visibleWhenShift*/ true);
+        addMirrorCells(event, x, y, width, height, MIRROR_AXES.length, /*visibleWhenShift*/ false);
+        addMirrorCells(event, x, y, width, height, MIRROR_AXES.length, /*visibleWhenShift*/ true);
     }
 
     /**

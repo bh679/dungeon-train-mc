@@ -144,7 +144,7 @@ final class BuilderPauseMenuLayoutTest {
     }
 
     @Test
-    @DisplayName("Adding V narrows the other cells rather than pushing them off the panel")
+    @DisplayName("A fourth cell narrows the others rather than pushing them off the panel")
     void fourCellsAreNarrowerThanThree() {
         int panel = BuilderPauseMenuLayout.panelWidth(SLOT_W);
         assertTrue(BuilderPauseMenuLayout.mirrorCellWidth(panel, 4)

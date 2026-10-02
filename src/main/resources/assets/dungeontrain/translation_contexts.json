@@ -9047,7 +9047,7 @@
   "screen",
   "world"
  ],
- "gui.dungeontrain.editor_menu.editor.mirror_variants": [
+ "gui.dungeontrain.editor_menu.editor.mirror_apply": [
   "button",
   "screen",
   "world"
@@ -9058,11 +9058,6 @@
   "world"
  ],
  "gui.dungeontrain.editor_menu.editor.weight_n": [
-  "button",
-  "screen",
-  "world"
- ],
- "gui.dungeontrain.editor_menu.editor.mirror_rebuild": [
   "button",
   "screen",
   "world"

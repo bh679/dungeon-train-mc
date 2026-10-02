@@ -67,7 +67,7 @@ public final class VariantBlockBreakHandler {
             return;
         }
 
-        // Mirror the removal to the symmetric cells when the "V" toggle is on.
+        // Mirror the removal to the symmetric cells when a mirror axis is on.
         EditorVariantMirror.mirrorEditLive(level, plot, local, null);
 
         DungeonTrainNet.sendTo(player, VariantHoverPacket.empty());

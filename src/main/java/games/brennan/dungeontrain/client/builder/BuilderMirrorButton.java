@@ -10,8 +10,8 @@ import net.neoforged.api.distmarker.OnlyIn;
 import java.util.Locale;
 
 /**
- * One mirror-axis cell in the builder pause menu's tools column — {@code X}, {@code Y},
- * {@code Z}, or the Shift-revealed {@code V}.
+ * One mirror-axis cell in the builder pause menu's tools column — {@code X}, {@code Y} or
+ * {@code Z}.
  *
  * <p>Unlike every other button on that panel, this one does <b>not</b> close the menu. Mirroring
  * is a set of toggles you reach for two or three at a time, and

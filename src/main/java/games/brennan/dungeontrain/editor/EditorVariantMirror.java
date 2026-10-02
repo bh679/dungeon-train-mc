@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Variant-pool mirroring — the editor "V" toggle. Where {@link EditorMirror}
+ * Variant-pool mirroring. Where {@link EditorMirror}
  * reflects <em>structural</em> blocks, this reflects the per-cell variant
  * candidate pools stored in the four {@link BlockVariantPlot} sidecars, so an
  * author who builds one octant gets the symmetric half's variant pools for
@@ -24,14 +24,14 @@ import java.util.List;
  *       (called from {@link VariantBlockInteractions} and
  *       {@link VariantBlockBreakHandler}); and</li>
  *   <li>{@link #rebuildFromMaster} — an on-demand rebuild run from
- *       {@link EditorMirrorRebuild} (the {@code editor mirror rebuild} command)
+ *       {@link EditorMirrorRebuild} (the {@code editor mirror apply} command)
  *       that makes the far half's pools an exact reflection of the authored
  *       low-octant master, regardless of edit history.</li>
  * </ul>
  *
- * <p>Both are gated on {@code plot.mirrorVariants() && (mirrorX|Y|Z)} — with the
- * "V" toggle off (the default) nothing here runs and variant cells keep their
- * historical single-marker behavior (e.g. the tunnel section chest).</p>
+ * <p>Both run whenever the plot has a mirror axis on. Variant mirroring used to
+ * be a separate opt-in (the "V" toggle); it now always follows the axes, and
+ * the stored {@code mirrorVariants} flag is no longer consulted.</p>
  *
  * <p>A reflected cell's in-world base block is stamped via {@link SilentBlockOps}
  * (the first pool entry, mirrored) because a variant shift-click suppresses
@@ -49,12 +49,12 @@ public final class EditorVariantMirror {
      * cells. {@code updatedOrNull} is the new candidate pool (an add / edit) —
      * image cells receive the axis-reflected pool and their base block; pass
      * {@code null} for a removal (image cells' pools are dropped and their
-     * blocks cleared to air). No-op unless the plot opts into variant mirroring.
+     * blocks cleared to air). No-op unless the plot has a mirror axis on.
      */
     public static void mirrorEditLive(ServerLevel level, BlockVariantPlot plot, BlockPos localEdited,
                                       @Nullable List<VariantState> updatedOrNull) {
         boolean mx = plot.mirrorX(), my = plot.mirrorY(), mz = plot.mirrorZ();
-        if (!plot.mirrorVariants() || (!mx && !my && !mz)) return;
+        if (!mx && !my && !mz) return;
         if (!plot.inBounds(localEdited)) return;
 
         BlockPos origin = plot.origin();
@@ -94,12 +94,12 @@ public final class EditorVariantMirror {
      * <em>before</em> the structural {@link EditorMirror#rebuildFromMaster}: it
      * writes (or clears) the far cells' pools + base blocks, after which the
      * caller recomputes its marker set so the structural pass skips the
-     * freshly-mirrored variant cells. No-op unless the plot opts into variant
-     * mirroring.
+     * freshly-mirrored variant cells. No-op unless the plot has a mirror axis
+     * on.
      */
     public static void rebuildFromMaster(ServerLevel level, BlockVariantPlot plot) {
         boolean mx = plot.mirrorX(), my = plot.mirrorY(), mz = plot.mirrorZ();
-        if (!plot.mirrorVariants() || (!mx && !my && !mz)) return;
+        if (!mx && !my && !mz) return;
 
         BlockPos origin = plot.origin();
         Vec3i f = plot.footprint();
