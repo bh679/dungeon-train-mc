@@ -158,6 +158,17 @@ public final class DebugCommand {
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
+            // /dungeontrain debug lost-city-templates [status|reset|reach|legacy] — the Big Lost City template
+            // cache: pre-loads, evictions and cold lookups by thread kind. `legacy` = the pre-change rule
+            // (player's own X, no demand signal) for a same-seed A/B against `reach` (default).
+            .then(Commands.literal("lost-city-templates")
+                .executes(ctx -> LostCityTemplatesDebug.status(ctx.getSource()))
+                .then(Commands.literal("status").executes(ctx -> LostCityTemplatesDebug.status(ctx.getSource())))
+                .then(Commands.literal("reset").executes(ctx -> LostCityTemplatesDebug.reset(ctx.getSource())))
+                .then(Commands.literal("reach").executes(ctx -> LostCityTemplatesDebug.setMode(ctx.getSource(),
+                    games.brennan.dungeontrain.worldgen.LostCityTemplatePreload.Mode.REACH)))
+                .then(Commands.literal("legacy").executes(ctx -> LostCityTemplatesDebug.setMode(ctx.getSource(),
+                    games.brennan.dungeontrain.worldgen.LostCityTemplatePreload.Mode.LEGACY))))
             // /dungeontrain debug trade-values dump — every registered item with its name, Trade
             // Everything's current value and where it comes from, to <server dir>/trade-values-catalog.json.
             // Copied verbatim to the relay page's catalog.json (brennan.games/dungeontrain/items/).
