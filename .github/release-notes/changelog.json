@@ -21921,6 +21921,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-group-variants-loot",
+      "version": "0.1097.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Carriage group builds keep their variants and loot",
+      "summary": "Carriage group builds made in the Train Builder now keep their block variants and chest loot when saved and shared.",
+      "highlights": [],
+      "pr": 1748,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
