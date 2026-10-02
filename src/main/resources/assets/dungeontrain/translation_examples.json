@@ -760,6 +760,36 @@
       ]
     }
   },
+  "chat.dungeontrain.familiar_photo.tributed.1": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_photo.tributed.2": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_photo.tributed.3": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
   "chat.dungeontrain.photo_burns_author": {
     "1": {
       "label": "the player who took the photo",

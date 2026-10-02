@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.DisposableCamera;
+import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PhotographViewClosedPacket;
 import io.github.mortuusars.exposure.client.gui.screen.PhotographScreen;
@@ -32,10 +33,17 @@ public final class DisposablePhotoClientEvents {
         if (!(event.getScreen() instanceof PhotographScreen)) return;
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null) return;
-        if (!DisposableCamera.holdsBurnAfterViewing(player.getMainHandItem())
+        boolean found = SharedPhotos.sharedId(player.getMainHandItem()) > 0
+            || SharedPhotos.sharedId(player.getOffhandItem()) > 0;
+        if (!found && !DisposableCamera.holdsBurnAfterViewing(player.getMainHandItem())
             && !DisposableCamera.holdsBurnAfterViewing(player.getOffhandItem())) {
             return;
         }
         DungeonTrainNet.sendToServer(new PhotographViewClosedPacket());
+        if (found) {
+            // Next tick: the viewer is still mid-close here, and would replace a screen opened now.
+            Minecraft minecraft = Minecraft.getInstance();
+            minecraft.tell(() -> minecraft.setScreen(new PhotoTributeScreen()));
+        }
     }
 }

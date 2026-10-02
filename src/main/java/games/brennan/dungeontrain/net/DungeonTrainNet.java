@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "109";
+    public static final String PROTOCOL_VERSION = "110";
 
     private DungeonTrainNet() {}
 
@@ -152,6 +152,7 @@ public final class DungeonTrainNet {
 
         // Disposable-camera photographs: client ScreenEvent.Closing on Exposure's photograph view → server burn.
         registrar.playToServer(PhotographViewClosedPacket.TYPE, PhotographViewClosedPacket.STREAM_CODEC, PhotographViewClosedPacket::handle);
+        registrar.playToServer(PhotoTributePacket.TYPE, PhotoTributePacket.STREAM_CODEC, PhotoTributePacket::handle);
 
         // Book-read telemetry: client measures a book read (open→close, per-page timing) and sends it on
         // close; server consent-gates + enriches narrative fields + reports to the relay's Books explorer.

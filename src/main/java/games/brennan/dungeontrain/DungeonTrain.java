@@ -421,6 +421,7 @@ public class DungeonTrain {
         // is refused and pauses their uploads, and the writer is told in chat (see
         // SharedBookSubmitResponses). Registration only — no network, no game state.
         games.brennan.dungeontrain.net.relay.SharedBookSubmitResponses.register();
+        games.brennan.dungeontrain.compat.photo.SharedPhotos.registerResponses();
 
         // Point the bundled Discord Presence at Dungeon Train's central relay feed: every DT install
         // reports joins / deaths / advancements / chat to one community Discord via the relay at
