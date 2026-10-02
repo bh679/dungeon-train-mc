@@ -4,7 +4,6 @@ import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelReader;
@@ -117,7 +116,7 @@ final class SectionLocalStampProcessor extends StructureProcessor {
     }
 
     private static boolean isPainting(BlockState state) {
-        return PaintingTransformProcessor.PAINTING_BLOCK.equals(BuiltInRegistries.BLOCK.getKey(state.getBlock()));
+        return PaintingTransformProcessor.isPaintingBlock(state);
     }
 
     @Override

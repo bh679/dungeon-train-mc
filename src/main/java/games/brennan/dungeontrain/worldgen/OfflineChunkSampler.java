@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.worldgen;
 
+import games.brennan.dungeontrain.mixin.NoiseBasedChunkGeneratorInvoker;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
 import net.minecraft.core.QuartPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
@@ -7,14 +10,21 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.GenerationChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.util.Mth;
 import net.minecraft.util.StaticCache2D;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkGenerator;
+import net.minecraft.world.level.chunk.ChunkSource;
+import net.minecraft.world.level.chunk.LevelChunkSection;
+import net.minecraft.world.level.chunk.LightChunk;
 import net.minecraft.world.level.chunk.ProtoChunk;
 import net.minecraft.world.level.chunk.UpgradeData;
 import net.minecraft.world.level.chunk.status.ChunkPyramid;
@@ -28,11 +38,17 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseChunk;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.WorldGenerationContext;
 import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.lighting.LevelLightEngine;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 
 /**
  * World generation into a chunk that belongs to nobody — a dimension's real generator run over a
@@ -89,6 +105,29 @@ public final class OfflineChunkSampler {
     }
 
     /**
+     * The biome at {@code pos} as the sample knows it — from the region's own chunks (the sample and its
+     * ring), else from the level's biome source — <b>never</b> by loading a chunk of the live level. For
+     * mod code that asks the region's chunk source during decoration ({@code WoverBiomePickerSampleMixin}).
+     * {@code null} only if neither can answer.
+     */
+    public static Holder<Biome> biomeInSample(WorldGenLevel level, BlockPos pos) {
+        try {
+            return level.getBiome(pos);                   // inside the region: the sample's own biomes
+        } catch (RuntimeException outsideTheRegion) {
+            // fall through to the source
+        }
+        try {
+            ServerLevel server = level.getLevel();
+            ChunkGenerator generator = server.getChunkSource().getGenerator();
+            return generator.getBiomeSource().getNoiseBiome(QuartPos.fromBlock(pos.getX()),
+                QuartPos.fromBlock(pos.getY()), QuartPos.fromBlock(pos.getZ()),
+                server.getChunkSource().randomState().sampler());
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
+    /**
      * Run the biome decoration pass over a sample. The one way consumers should decorate: while it runs,
      * {@code ChunkGeneratorDecorationMixin} vetoes DT's own features — the track bed lays a corridor in
      * every DT dimension, and the band features (End islands, Nether transition and structures, stacks)
@@ -115,12 +154,13 @@ public final class OfflineChunkSampler {
      */
     public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk,
                                 boolean vanillaOnly, String alsoNamespace) {
+        Boolean was = SAMPLING.get();
         SAMPLING.set(Boolean.TRUE);
         VanillaOnlySample.set(vanillaOnly, alsoNamespace);
         try {
             generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
         } finally {
-            SAMPLING.set(Boolean.FALSE);
+            SAMPLING.set(was);                // restored, not reset: a sample can run inside a display chunk's own decoration
             VanillaOnlySample.set(false);
         }
     }
@@ -168,6 +208,7 @@ public final class OfflineChunkSampler {
                                          RandomState random, ChunkPos pos) {
         Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
         ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
+        // The End's biome sources ask the end_islands erosion once per quart: EndIslandDensityFunctionMixin memoises it.
         chunk.fillBiomesFromNoise(generator.getBiomeSource(), random.sampler());
         chunk.setPersistedStatus(ChunkStatus.SURFACE);
         return chunk;
@@ -177,12 +218,51 @@ public final class OfflineChunkSampler {
      * Pour the generator's terrain into {@code chunk} and run the surface rules over it — the ground,
      * before carvers or decoration. Returns the filled chunk, or {@code null} if the generator handed
      * back something other than a {@link ProtoChunk}. Blocks the calling thread for the fill; never
-     * call it from {@code Util.backgroundExecutor()}.
+     * call it from {@code Util.backgroundExecutor()} — use {@link #fillGroundInline} there.
      */
     public static ProtoChunk fillGround(ServerLevel level, NoiseBasedChunkGenerator generator,
                                         RandomState random, ProtoChunk chunk, Workspace workspace) {
         ChunkAccess filled =
             generator.fillFromNoise(Blender.empty(), random, workspace.structures(), chunk).join();
+        return finishGround(level, generator, random, filled);
+    }
+
+    /**
+     * {@link #fillGround} with the noise fill run <b>on the calling thread</b> — for a sample generated
+     * from inside a worldgen worker, which must never wait on {@code Util.backgroundExecutor()} (it is on
+     * it). Calls {@code doFill} directly, doing what {@code fillFromNoise} does around it: clamp the noise
+     * settings to the chunk, work out the cell range, and hold the sections it will write.
+     */
+    public static ProtoChunk fillGroundInline(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                              RandomState random, ProtoChunk chunk, Workspace workspace) {
+        NoiseSettings noise = generator.generatorSettings().value().noiseSettings()
+            .clampToHeightAccessor(chunk.getHeightAccessorForGeneration());
+        int minY = noise.minY();
+        int cellMinY = Mth.floorDiv(minY, noise.getCellHeight());
+        int cells = Mth.floorDiv(noise.height(), noise.getCellHeight());
+        ChunkAccess filled = chunk;
+        if (cells > 0) {
+            int top = chunk.getSectionIndex(cells * noise.getCellHeight() - 1 + minY);
+            int bottom = chunk.getSectionIndex(minY);
+            List<LevelChunkSection> held = new ArrayList<>();
+            for (int i = top; i >= bottom; i--) {
+                LevelChunkSection section = chunk.getSection(i);
+                section.acquire();
+                held.add(section);
+            }
+            try {
+                filled = ((NoiseBasedChunkGeneratorInvoker) generator)
+                    .dungeontrain$doFill(Blender.empty(), workspace.structures(), random, chunk, cellMinY, cells);
+            } finally {
+                held.forEach(LevelChunkSection::release);
+            }
+        }
+        return finishGround(level, generator, random, filled);
+    }
+
+    /** The surface rules and heightmaps over a noise-filled chunk — the tail both fills share. */
+    private static ProtoChunk finishGround(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                           RandomState random, ChunkAccess filled) {
         if (!(filled instanceof ProtoChunk ground)) return null;
         Heightmap.primeHeightmaps(ground, EnumSet.of(
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
@@ -264,17 +344,32 @@ public final class OfflineChunkSampler {
     /** A workspace over {@code chunk} and the ring of throwaway neighbours around it. */
     public static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
                                          RandomState random, ProtoChunk chunk) {
+        return workspaceFor(level, generator, random, chunk, pos -> null);
+    }
+
+    /**
+     * {@link #workspaceFor(ServerLevel, NoiseBasedChunkGenerator, RandomState, ProtoChunk)} with real
+     * neighbours: {@code ring} answers a chunk to stand at a neighbouring position (or {@code null} for a
+     * blank one). What features write into a supplied neighbour stays in it for the caller to read back —
+     * the End band's feature spill ({@link EndBandSpill}) — where a blank one is thrown away.
+     */
+    public static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                         RandomState random, ProtoChunk chunk,
+                                         Function<ChunkPos, ProtoChunk> ring) {
         WorldGenRegion region = regionAround(level, chunk,
-            ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES));
+            ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES), ring);
         return new Workspace(region, level.structureManager().forWorldGenRegion(region));
     }
 
     /**
-     * A region centred on {@code chunk}, ringed by blank chunks out to the step's own radius. The
-     * neighbours only catch what a feature at the middle chunk's edge writes past it, and are thrown
-     * away; sampling their biomes too cost more than generating the middle chunk.
+     * A region centred on {@code chunk}, ringed out to the step's own radius by whatever {@code ring}
+     * supplies, else blank chunks. Blank neighbours only catch what a feature at the middle chunk's edge
+     * writes past it, and are thrown away; sampling their biomes too cost more than generating the middle
+     * chunk. (Vanilla's FEATURES step refuses writes beyond one chunk from the centre, so only the eight
+     * immediate neighbours ever receive anything.)
      */
-    private static WorldGenRegion regionAround(ServerLevel level, ProtoChunk chunk, ChunkStep step) {
+    private static WorldGenRegion regionAround(ServerLevel level, ProtoChunk chunk, ChunkStep step,
+                                               Function<ChunkPos, ProtoChunk> ring) {
         ChunkPos centre = chunk.getPos();
         int radius = Math.max(1, step.accumulatedDependencies().getRadius());
         Registry<Biome> biomeRegistry = level.registryAccess().registryOrThrow(Registries.BIOME);
@@ -282,12 +377,77 @@ public final class OfflineChunkSampler {
             centre.x, centre.z, radius, (x, z) -> {
                 ChunkPos pos = new ChunkPos(x, z);
                 if (pos.equals(centre)) return new SampleHolder(pos, chunk);
+                ProtoChunk supplied = ring.apply(pos);
+                if (supplied != null) return new SampleHolder(pos, supplied);
                 ProtoChunk blank = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomeRegistry, null);
                 blank.setPersistedStatus(ChunkStatus.SURFACE);
                 return new SampleHolder(pos, blank);
             });
-        return new WorldGenRegion(level, cache, step, chunk);
+        return new SampleRegion(level, cache, step, chunk);
     }
+
+    /**
+     * The region a sample is generated in: a {@link WorldGenRegion} whose chunk source is the region
+     * itself, never the live level's. Vanilla's returns {@code level.getChunkSource()}, and mod code that
+     * asks it for a chunk ({@code WoverBiomePicker.getBiomeAt}) loads and generates a real chunk of the
+     * live level and joins the future — a stray chunk 16 000 blocks out from a sampler thread, and a
+     * deadlock from a worldgen worker (which is where the End-band terrain is generated). Here a chunk of
+     * the region is answered from the region; anything else is {@code null}, logged once, and the feature
+     * asking for it fails on its own (the sample keeps its terrain, per {@link #decorate}'s callers).
+     */
+    private static final class SampleRegion extends WorldGenRegion {
+
+        private final ChunkSource guard = new ChunkSource() {
+            @Override
+            public ChunkAccess getChunk(int x, int z, ChunkStatus status, boolean load) {
+                if (hasChunk(x, z)) return SampleRegion.this.getChunk(x, z, ChunkStatus.EMPTY, false);
+                if (STRAY_CHUNK_ASKS.getAndIncrement() == 0) {
+                    LOGGER.warn("[DungeonTrain] a feature asked an offline sample's region for a chunk outside it ({}, {}); answering nothing rather than loading the live level", x, z);
+                }
+                return null;
+            }
+
+            @Override
+            public void tick(BooleanSupplier hasTimeLeft, boolean tickChunks) {}
+
+            @Override
+            public String gatherStats() {
+                return "offline sample";
+            }
+
+            @Override
+            public int getLoadedChunksCount() {
+                return 0;
+            }
+
+            @Override
+            public LevelLightEngine getLightEngine() {
+                return SampleRegion.this.getLightEngine();
+            }
+
+            @Override
+            public BlockGetter getLevel() {
+                return SampleRegion.this;
+            }
+
+            @Override
+            public LightChunk getChunkForLighting(int x, int z) {
+                return hasChunk(x, z) ? SampleRegion.this.getChunk(x, z, ChunkStatus.EMPTY, false) : null;
+            }
+        };
+
+        SampleRegion(ServerLevel level, StaticCache2D<GenerationChunkHolder> cache, ChunkStep step, ChunkAccess centre) {
+            super(level, cache, step, centre);
+        }
+
+        @Override
+        public ChunkSource getChunkSource() {
+            return guard;
+        }
+    }
+
+    private static final java.util.concurrent.atomic.AtomicInteger STRAY_CHUNK_ASKS = new java.util.concurrent.atomic.AtomicInteger();
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
 
     /**
      * The least a {@link WorldGenRegion} will accept as a chunk holder: one chunk, always present, never

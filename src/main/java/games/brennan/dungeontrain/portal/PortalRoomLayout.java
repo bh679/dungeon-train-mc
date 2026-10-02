@@ -362,6 +362,22 @@ public final class PortalRoomLayout {
     }
 
     /**
+     * Top of a pair structure's box: the room's own ceiling plus a block, and never below the lane's
+     * carriage height plus {@code minSlack}.
+     *
+     * <p><b>Measured from the room's floor, not the lane.</b> A room with a door-height offset stands
+     * its floor far below the corridor lane, and its height counted up from the lane instead reached
+     * clean through the basement to the train deck overhead — the 80-tall terrarium's box topped out
+     * at y 92 over a deck at 79. A rider back on the deck then still read as in the room, and the
+     * train that freezes for its room occupants never thawed. With no offset the floor <i>is</i> the
+     * lane, and this is exactly the height the box always had.</p>
+     */
+    public static int structureCeilingY(int laneY, int roomFloorY, int roomHeight,
+                                        int carriageHeight, int minSlack) {
+        return Math.max(laneY + carriageHeight + minSlack, roomFloorY + roomHeight + 1);
+    }
+
+    /**
      * How far the <b>exit</b> corridor stands off the entry corridor's line in {@code Z}, in blocks —
      * the whole of what makes a room's two doorways independent.
      *

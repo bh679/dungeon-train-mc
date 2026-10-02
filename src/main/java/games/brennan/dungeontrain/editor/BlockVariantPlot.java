@@ -155,6 +155,17 @@ public interface BlockVariantPlot {
     }
 
     /**
+     * True when this plot's spawn path grows the per-row {@link VariantState#growth()}
+     * columns ({@link GrowthPass}). Every template's placer does — carriages, contents,
+     * parts, wholes, tunnels, track tiles, pillars, stairs, portal rooms, their floor and
+     * roof planes, and chunk frames — so the menu offers Grow everywhere. Each placer bounds
+     * the column to its own piece (a track tile only has its bed and rail rows).
+     */
+    default boolean supportsGrowth() {
+        return true;
+    }
+
+    /**
      * How the cell at {@code localPos} rolls across a repeating room's copies.
      * Always {@link VariantCopyRoll#DEFAULT} — follow the room — where
      * {@link #supportsCopySettings} is false.

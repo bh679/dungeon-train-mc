@@ -88,6 +88,27 @@ def parse_semver(value: str) -> tuple[int, ...] | None:
         return None
 
 
+def parse_version(value: str) -> tuple[int, ...] | None:
+    """Parse a dotted numeric version of ANY length (``1.3.3``, ``1.1.7.10``) into a tuple, or None.
+
+    Floors aren't only sibling semver: third-party mods such as VanillaBackport use four parts. The
+    ``+build`` suffix is stripped. Compare with :func:`version_lt`, which pads the shorter tuple.
+    """
+    if not isinstance(value, str):
+        return None
+    parts = semver_of(value).split(".")
+    try:
+        return tuple(int(p) for p in parts) if parts and all(parts) else None
+    except ValueError:
+        return None
+
+
+def version_lt(a: tuple[int, ...], b: tuple[int, ...]) -> bool:
+    """``a < b`` with the shorter version padded by zeros (``1.1.7`` == ``1.1.7.0``)."""
+    width = max(len(a), len(b))
+    return a + (0,) * (width - len(a)) < b + (0,) * (width - len(b))
+
+
 def check_modpack_lag(gradle_props: dict[str, str], config: dict) -> list[str]:
     """Return WARNINGS where the modpacks pin a sibling older than DT builds against.
 
@@ -162,16 +183,16 @@ def check_sibling_floors(gradle_props: dict[str, str], config: dict) -> list[str
             )
             continue
 
-        floor = parse_semver(floor_raw)
-        pinned = parse_semver(pinned_raw)
+        floor = parse_version(floor_raw)
+        pinned = parse_version(pinned_raw)
         if floor is None or pinned is None:
             errors.append(
                 f"{name}: cannot compare versions — {prop_key}={floor_raw!r}, modpack "
-                f"version={pinned_raw!r}; both must be strict X.Y.Z."
+                f"version={pinned_raw!r}; both must be dotted numbers (X.Y.Z or longer)."
             )
             continue
 
-        if pinned < floor:
+        if version_lt(pinned, floor):
             errors.append(
                 f"{name}: the modpack pins {pinned_raw} but DT requires at least {floor_raw} "
                 f"({prop_key}). The pack would install a sibling too old for the mod and fail "

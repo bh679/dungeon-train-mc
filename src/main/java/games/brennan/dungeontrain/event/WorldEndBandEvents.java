@@ -2,29 +2,28 @@ package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.EndBandConfig;
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.EndBandJobQueue;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
+import games.brennan.dungeontrain.worldgen.EndBandSpill;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.PendingChunkSweep;
+import games.brennan.dungeontrain.worldgen.PrefetchDirection;
 import games.brennan.dungeontrain.worldgen.SunlitChunks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.EntityBlock;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -35,11 +34,15 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Writes the BetterEnd End-band passes ({@link EndBandStyle}) in: a chunk in one of those passes
@@ -50,14 +53,25 @@ import java.util.Set;
  *   <li><b>Queue</b> — a new band chunk is flagged {@link ModDataAttachments#END_BAND_PENDING} and its
  *       sample requested; a chunk that reloads still flagged asks again.</li>
  *   <li><b>Prefetch</b> — every {@link #PREFETCH_INTERVAL_TICKS} ticks, the strip of band chunks just past
- *       each player's view distance (in the train's +X direction) is requested before it exists. Finished
+ *       each player's view distance, on the side they are heading ({@link PrefetchDirection}: +X with the
+ *       train, −X walking the reversed cycle behind spawn), is requested before it exists. Finished
  *       samples for chunks that aren't loaded yet wait in a small {@link #STASH}, and are written the
  *       moment their chunk generates — so at speed the terrain is there on arrival, not popped in.</li>
+ *   <li><b>Sweep</b> — on the same beat, every loaded chunk within a player's view that is still pending
+ *       is re-checked ({@link PendingChunkSweep}): its stashed sample is written, or its sample asked for
+ *       again. A chunk only asks when it loads, so without this one that lost its request while staying
+ *       loaded (a job dropped before any player was near, a sample stashed mid-load) stayed void.</li>
  *   <li><b>Apply</b> — raw section writes (the Sable-safe path the other bands use), only into cells that
  *       are <b>still air</b> (nothing a player built is overwritten), clear of the track and the train's
  *       airspace ({@link SphereCarveGeometry}), and thinned across the band's fade edges
  *       ({@link EndBandStyle#keepSampledBlock}). Block entities arrive with their NBT. The chunk is then
  *       re-lit and resent ({@link SunlitChunks}).</li>
+ *   <li><b>Spill</b> ({@code endBandFeatureSpill}) — a sample also carries what its features wrote past
+ *       its edges ({@link EndBandSpill}). Each neighbour's share is written the moment that neighbour is
+ *       loaded with its own terrain in, else held in {@link #SPILL_WAITING} until it is (written right
+ *       after its own sample, or on its next load). Adds pass the same gate as the sample; a carve only
+ *       clears the exact ground block it dug through. Not persisted: spill for a chunk that never comes
+ *       back before a restart is simply lost, like the prefetch stash.</li>
  * </ul>
  *
  * <p>Only loaded chunks are ever written ({@code getChunkNow}); nothing here loads or generates a chunk,
@@ -102,6 +116,25 @@ public final class WorldEndBandEvents {
     /** Stashed samples whose chunk has now loaded — written at the start of the next tick. */
     private static final Map<Long, EndBandSampler.Result> DUE = new LinkedHashMap<>();
 
+    /** Each player's world X at the last prefetch, for {@link PrefetchDirection}. Server thread only. */
+    private static final Map<UUID, Double> LAST_PREFETCH_X = new HashMap<>();
+    /** Neighbour chunks a held spill may wait for before the oldest is dropped. */
+    private static final int SPILL_WAITING_CAP = 512;
+
+    /** Feature spill for band chunks that don't have their own terrain yet (or aren't loaded), by chunk key. */
+    private static final Map<Long, List<EndBandSpill>> SPILL_WAITING = new LinkedHashMap<>(64, 0.75f, false) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<Long, List<EndBandSpill>> eldest) {
+            return size() > SPILL_WAITING_CAP;
+        }
+    };
+
+    /** Held spill whose (already-terrained) chunk has just reloaded — written at the start of the next tick. */
+    private static final Map<Long, List<EndBandSpill>> DUE_SPILL = new LinkedHashMap<>();
+
+    /** Spill produced by samples written in worldgen ({@link EndBandInlineTerrain}), handed over from the worker threads. */
+    private static final ConcurrentLinkedQueue<Map<Long, EndBandSpill>> INLINE_SPILL = new ConcurrentLinkedQueue<>();
+
     private static int tickCounter;
 
     private WorldEndBandEvents() {}
@@ -112,18 +145,22 @@ public final class WorldEndBandEvents {
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         ChunkAccess chunk = event.getChunk();
         ChunkPos pos = chunk.getPos();
-        long pass;
-        if (event.isNewChunk()) {
-            pass = betterEndPass(level, pos);
-            if (pass < 0L) return;
+        EndBandLoadDecision.Action action = EndBandLoadDecision.decide(event.isNewChunk(),
+                chunk.getData(ModDataAttachments.END_BAND_PENDING), EndBandConfig.terrainInWorldgen());
+        if (action == EndBandLoadDecision.Action.NONE) {
+            // Terrain already in (written in worldgen, or before it unloaded); only spill that arrived
+            // while it was away may be owed.
+            List<EndBandSpill> owed = SPILL_WAITING.remove(pos.toLong());
+            if (owed != null) DUE_SPILL.put(pos.toLong(), owed);
+            return;
+        }
+        long pass = betterEndPass(level, pos);
+        if (pass < 0L) return;
+        if (action == EndBandLoadDecision.Action.FLAG_AND_REQUEST) {
             chunk.setData(ModDataAttachments.END_BAND_PENDING, Boolean.TRUE);
             chunk.setUnsaved(true);
-        } else {
-            // A chunk that unloaded before its terrain arrived: ask again.
-            if (!chunk.getData(ModDataAttachments.END_BAND_PENDING)) return;
-            pass = betterEndPass(level, pos);
-            if (pass < 0L) return;
         }
+        // Else: a chunk that unloaded before its terrain arrived (or whose worldgen write failed): ask again.
         EndBandSampler.Result early = STASH.remove(pos.toLong());
         if (early != null) {
             // Prefetched: written on the next tick (never mid-load — a block-entity write here would
@@ -138,12 +175,27 @@ public final class WorldEndBandEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         ServerLevel level = event.getServer().overworld();
         if (level == null) return;
-        if (++tickCounter % PREFETCH_INTERVAL_TICKS == 0) prefetch(level);
+        if (++tickCounter % PREFETCH_INTERVAL_TICKS == 0) {
+            // In worldgen mode a chunk arrives with its terrain, so there is nothing to fetch ahead; the
+            // sweep still repairs old saves' pending chunks and any worldgen write that failed.
+            if (!EndBandConfig.terrainInWorldgen()) prefetch(level);
+            sweepPending(level);
+        }
+        drainInlineSpill(level);
         if (!DUE.isEmpty()) {
             // Prefetched terrain for chunks that arrived last tick: all of it, so none is seen bare.
             long t0 = GenProfiler.t0();
             for (EndBandSampler.Result r : DUE.values()) deliver(level, r);
             DUE.clear();
+            GenProfiler.add(GenProfiler.Bucket.END_BAND_APPLY, t0);
+        }
+        if (!DUE_SPILL.isEmpty()) {
+            long t0 = GenProfiler.t0();
+            DUE_SPILL.forEach((key, spills) -> {
+                LevelChunk chunk = level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key));
+                if (chunk != null) writeSpills(level, chunk, spills);
+            });
+            DUE_SPILL.clear();
             GenProfiler.add(GenProfiler.Bucket.END_BAND_APPLY, t0);
         }
         EndBandJobQueue.Players players = snapshotPlayers(level);
@@ -209,16 +261,33 @@ public final class WorldEndBandEvents {
         STASH.clear();
         DUE.clear();
         FINISHED.clear();
+        LAST_PREFETCH_X.clear();
+        SPILL_WAITING.clear();
+        DUE_SPILL.clear();
+        INLINE_SPILL.clear();
         tickCounter = 0;
+    }
+
+    /** A worldgen-time sample's spill for its neighbours; delivered on the next server tick. Any thread. */
+    static void offerSpill(Map<Long, EndBandSpill> spill) {
+        INLINE_SPILL.add(spill);
+    }
+
+    private static void drainInlineSpill(ServerLevel level) {
+        Map<Long, EndBandSpill> spill;
+        while ((spill = INLINE_SPILL.poll()) != null) {
+            spill.forEach((key, s) -> deliverSpill(level, key, s));
+        }
     }
 
     /**
      * The sampled (BetterEnd / BoP) End pass that owns any band column of {@code pos}, else {@code -1}.
      * Columns follow {@link WorldGenCycle#endSourcePassAt}: one pass per chunk everywhere except across the
      * seam of a joined End band, where vanilla and sampled columns interleave — there the sampled side's
-     * pass is the one to fetch, and {@link #fill} writes only the columns it owns.
+     * pass is the one to fetch, and {@link EndBandTerrainWriter} writes only the columns it owns.
+     * Any thread (reads only per-world data and memoised band layout).
      */
-    private static long betterEndPass(ServerLevel level, ChunkPos pos) {
+    static long betterEndPass(ServerLevel level, ChunkPos pos) {
         if (DisintegrationBand.startX(level) == DisintegrationBand.OFF) return -1L;
         WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);   // mix zone: the chunk's picked band
         int minX = pos.getMinBlockX();
@@ -234,14 +303,24 @@ public final class WorldEndBandEvents {
         return -1L;
     }
 
-    /** Request the not-yet-generated band chunks just beyond each player's view, ahead in +X. */
+    /** Request the not-yet-generated band chunks just beyond each player's view, on the side they are heading. */
     private static void prefetch(ServerLevel level) {
+        long anchorX = DisintegrationBand.startX(level);
+        if (anchorX == DisintegrationBand.OFF) {
+            LAST_PREFETCH_X.clear();
+            return;
+        }
         int view = level.getServer().getPlayerList().getViewDistance();
         int bedY = -1;
+        Map<UUID, Double> seen = new HashMap<>();
         for (ServerPlayer player : level.players()) {
+            double x = player.getX();
+            Double last = LAST_PREFETCH_X.get(player.getUUID());
+            seen.put(player.getUUID(), x);
+            int dir = PrefetchDirection.pick(last == null ? Double.NaN : x - last, x < anchorX);
             ChunkPos at = player.chunkPosition();
             for (int ahead = 0; ahead < PREFETCH_DEPTH_CHUNKS; ahead++) {
-                int cx = at.x + view + PREFETCH_LEAD_CHUNKS + ahead;
+                int cx = at.x + dir * (view + PREFETCH_LEAD_CHUNKS + ahead);
                 for (int cz = at.z - view; cz <= at.z + view; cz++) {
                     ChunkPos pos = new ChunkPos(cx, cz);
                     if (STASH.containsKey(pos.toLong())) continue;
@@ -256,56 +335,121 @@ public final class WorldEndBandEvents {
                 }
             }
         }
+        LAST_PREFETCH_X.clear();                           // players who left drop out
+        LAST_PREFETCH_X.putAll(seen);
     }
 
-    /** Write one finished sample into its chunk and clear the chunk's pending flag. */
+    /**
+     * Re-check every loaded chunk within a player's view that is still pending ({@link PendingChunkSweep}):
+     * write its stashed sample next tick, or ask for it again ({@link EndBandSampler#request} ignores a
+     * chunk already in flight). Reads only chunks already loaded ({@code getChunkNow}).
+     */
+    private static void sweepPending(ServerLevel level) {
+        if (DisintegrationBand.startX(level) == DisintegrationBand.OFF) return;
+        int view = level.getServer().getPlayerList().getViewDistance();
+        int bedY = -1;
+        Set<Long> visited = new HashSet<>();
+        for (ServerPlayer player : level.players()) {
+            ChunkPos at = player.chunkPosition();
+            for (int cx = at.x - view; cx <= at.x + view; cx++) {
+                for (int cz = at.z - view; cz <= at.z + view; cz++) {
+                    long key = ChunkPos.asLong(cx, cz);
+                    if (!visited.add(key)) continue;
+                    LevelChunk chunk = level.getChunkSource().getChunkNow(cx, cz);
+                    if (chunk == null) continue;
+                    PendingChunkSweep.Action action = PendingChunkSweep.decide(
+                            chunk.getData(ModDataAttachments.END_BAND_PENDING),
+                            STASH.containsKey(key), DUE.containsKey(key));
+                    if (action == PendingChunkSweep.Action.WRITE_STASHED) {
+                        DUE.put(key, STASH.remove(key));
+                    } else if (action == PendingChunkSweep.Action.REQUEST) {
+                        ChunkPos pos = chunk.getPos();
+                        long pass = betterEndPass(level, pos);
+                        if (pass < 0L) continue;
+                        if (bedY == -1) bedY = SphereCarveGeometry.of(level).bedY();
+                        EndBandSampler.request(level, pos, pass, bedY);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Write one finished sample into its chunk and clear the chunk's pending flag; then any spill the
+     * neighbours left waiting for this chunk, and this sample's own spill out to its neighbours.
+     */
     private static void apply(ServerLevel level, LevelChunk chunk, EndBandSampler.Result r) {
         boolean changed = fill(level, chunk, r);
         chunk.setData(ModDataAttachments.END_BAND_PENDING, Boolean.FALSE);
         chunk.setUnsaved(true);
-        if (changed) {
-            Heightmap.primeHeightmaps(chunk, FULL_HEIGHTMAPS);
-            SunlitChunks.sunlight(level, chunk);           // raw writes skipped the light engine; resends
+        List<EndBandSpill> owed = SPILL_WAITING.remove(chunk.getPos().toLong());
+        if (owed != null) {
+            for (EndBandSpill spill : owed) changed |= writeSpill(level, chunk, spill);
         }
+        if (changed) relight(level, chunk);
+        r.spill().forEach((key, spill) -> deliverSpill(level, key, spill));
+    }
+
+    private static void relight(ServerLevel level, LevelChunk chunk) {
+        Heightmap.primeHeightmaps(chunk, FULL_HEIGHTMAPS);
+        SunlitChunks.sunlight(level, chunk);               // raw writes skipped the light engine; resends
+    }
+
+    /**
+     * Hand a neighbour its spill: written now if that chunk is loaded with its own terrain already in,
+     * held otherwise ({@link #SPILL_WAITING}) — a chunk that isn't a sampled band chunk gets nothing.
+     */
+    private static void deliverSpill(ServerLevel level, long key, EndBandSpill spill) {
+        ChunkPos pos = new ChunkPos(ChunkPos.getX(key), ChunkPos.getZ(key));
+        if (betterEndPass(level, pos) < 0L) return;
+        LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
+        if (chunk != null && !chunk.getData(ModDataAttachments.END_BAND_PENDING)) {
+            if (writeSpill(level, chunk, spill)) relight(level, chunk);
+            return;
+        }
+        SPILL_WAITING.computeIfAbsent(key, k -> new ArrayList<>()).add(spill);
+    }
+
+    private static void writeSpills(ServerLevel level, LevelChunk chunk, List<EndBandSpill> spills) {
+        boolean changed = false;
+        for (EndBandSpill spill : spills) changed |= writeSpill(level, chunk, spill);
+        if (changed) relight(level, chunk);
     }
 
     private static boolean fill(ServerLevel level, LevelChunk chunk, EndBandSampler.Result r) {
-        ChunkPos pos = r.pos();
+        return EndBandTerrainWriter.write(level, chunk, r, EndBandTerrainWriter.liveSink(level, chunk));
+    }
+
+    /**
+     * Write one neighbour's spill into {@code chunk}: adds through the same gate as the chunk's own sample,
+     * carves only where the cell still holds the ground block they dug through ({@link EndBandSpill#shouldWrite}).
+     */
+    private static boolean writeSpill(ServerLevel level, LevelChunk chunk, EndBandSpill spill) {
+        ChunkPos pos = chunk.getPos();
         SphereCarveGeometry geo = SphereCarveGeometry.of(level);
-        WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);    // mix zone: the chunk's picked band
+        WorldGenCycle cycle = MixBand.cycleAt(level, pos.x, pos.z);
         long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
-        int yStart = Math.max(r.minY(), chunk.getMinBuildHeight());
-        int yEnd = Math.min(r.minY() + r.height(), chunk.getMaxBuildHeight());
+        int yStart = chunk.getMinBuildHeight(), yEnd = chunk.getMaxBuildHeight();
+        long[] at = spill.positions();
+        EndBandTerrainWriter.Sink sink = EndBandTerrainWriter.liveSink(level, chunk);
         boolean changed = false;
-        for (int dx = 0; dx < 16; dx++) {
-            int worldX = pos.getMinBlockX() + dx;
+        for (int i = 0; i < at.length; i++) {
+            int worldX = BlockPos.getX(at[i]), y = BlockPos.getY(at[i]), worldZ = BlockPos.getZ(at[i]);
+            if (y < yStart || y >= yEnd || (worldX >> 4) != pos.x || (worldZ >> 4) != pos.z) continue;
             double ramp = cycle.endIslandRamp(worldX);
-            if (ramp <= 0.0) continue;
-            for (int dz = 0; dz < 16; dz++) {
-                int worldZ = pos.getMinBlockZ() + dz;
-                // across a joined End band's seam the stamped vanilla look owns some columns
-                if (!EndBandSampler.appliesTo(level.getServer(), cycle.endSourceLookAt(worldX, worldZ, seed))) continue;
-                boolean laneZ = geo.laneZ(worldZ), airZ = geo.airZ(worldZ);
-                for (int y = yStart; y < yEnd; y++) {
-                    BlockState ns = r.stateAt(dx, y, dz);
-                    if (ns.isAir() || geo.reserved(y, laneZ, airZ)) continue;
-                    if (!EndBandStyle.keepSampledBlock(ramp, Disintegration.coherentNoise(seed, worldX, y, worldZ))) continue;
-                    LevelChunkSection section = chunk.getSection(chunk.getSectionIndex(y));
-                    if (!section.getBlockState(dx, y & 15, dz).isAir()) continue;   // never over a build
-                    section.setBlockState(dx, y & 15, dz, ns, false);
-                    if (ns.hasBlockEntity()) placeBlockEntity(level, new BlockPos(worldX, y, worldZ), ns, r);
-                    changed = true;
-                }
+            if (ramp <= 0.0 || !EndBandTerrainWriter.sampledOwns(level, cycle, seed, worldX, worldZ)) continue;
+            int dx = worldX & 15, dz = worldZ & 15;
+            BlockState after = spill.after()[i];
+            if (after.isAir()) {
+                BlockState current = sink.get(dx, y, dz);
+                if (!EndBandSpill.shouldWrite(current, spill.before()[i], after) || current.hasBlockEntity()) continue;
+                sink.set(dx, y, dz, after);
+                changed = true;
+            } else {
+                changed |= EndBandTerrainWriter.place(pos, geo, seed, ramp, geo.laneZ(worldZ), geo.airZ(worldZ),
+                        dx, y, dz, after, spill.blockEntities(), sink);
             }
         }
         return changed;
-    }
-
-    private static void placeBlockEntity(ServerLevel level, BlockPos at, BlockState state, EndBandSampler.Result r) {
-        CompoundTag nbt = r.blockEntities().get(at.asLong());
-        BlockEntity be = nbt != null
-                ? BlockEntity.loadStatic(at, state, nbt, level.registryAccess())
-                : (state.getBlock() instanceof EntityBlock eb ? eb.newBlockEntity(at, state) : null);
-        if (be != null) level.setBlockEntity(be);
     }
 }

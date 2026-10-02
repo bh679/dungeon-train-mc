@@ -52,6 +52,12 @@
           "items": {"type": "string", "minLength": 1},
           "description": "Optional player-facing bullet points."
         },
+        "addresses": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "enum": ["lag", "train_vanished"]},
+          "description": "Optional player-reported issues this entry fixes or improves. The in-game bug-report response uses it to tell a player reporting that issue that a newer release addresses it."
+        },
         "pr": {
           "type": "integer",
           "minimum": 1,

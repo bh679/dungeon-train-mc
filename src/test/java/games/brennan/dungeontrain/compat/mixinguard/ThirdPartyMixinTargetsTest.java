@@ -92,7 +92,8 @@ final class ThirdPartyMixinTargetsTest {
             if (ThirdPartyMixinTargets.isEndDeterminism(mixin)) end.add(mixin.substring(mixin.lastIndexOf('.') + 1));
         }
         assertEquals(new TreeSet<>(List.of(
-                "WoverBiomePickerOrderMixin", "WoverPossibleBiomesOrderMixin", "WoverPossibleBiomesCompatOrderMixin",
+                "WoverBiomePickerOrderMixin", "WoverBiomePickerSampleMixin", "WoverPossibleBiomesOrderMixin",
+                "WoverPossibleBiomesCompatOrderMixin",
                 "BetterEndStaticShuffleMixin", "BetterEndWallScatterShuffleMixin", "BetterEndDirPerThreadMixin",
                 "BetterEndDirectionsPerThreadMixin", "BetterEndHorizontalPerThreadMixin")), end);
     }

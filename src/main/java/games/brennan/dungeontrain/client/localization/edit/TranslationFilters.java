@@ -87,7 +87,8 @@ public final class TranslationFilters {
         "gui.dungeontrain.prefab_tab.",
         "gui.dungeontrain.number_input.",
         "gui.dungeontrain.scribble.",
-        "gui.dungeontrain.custom_content.");
+        "gui.dungeontrain.custom_content.",
+        "chat.dungeontrain.editor_bar.");
 
     /**
      * Whether {@code key} is one of the build editor's strings — see {@link #EDITOR_KEY_PREFIXES}.

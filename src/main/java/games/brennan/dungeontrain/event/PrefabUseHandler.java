@@ -117,18 +117,18 @@ public final class PrefabUseHandler {
         ItemStack stack, String prefabId
     ) {
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Block-variant prefab requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.prefab.block_variant_requires_op"), ChatFormatting.RED);
             return;
         }
         Optional<List<VariantState>> loaded = BlockVariantPrefabStore.load(prefabId);
         if (loaded.isEmpty()) {
-            actionBar(player, "Unknown prefab '" + prefabId + "'", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.prefab.unknown_prefab", prefabId), ChatFormatting.RED);
             return;
         }
         List<VariantState> states = loaded.get();
         if (states.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-            actionBar(player, "Prefab has fewer than "
-                + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " states",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.prefab.too_few_states",
+                    CarriageVariantBlocks.MIN_STATES_PER_ENTRY),
                 ChatFormatting.RED);
             return;
         }
@@ -137,7 +137,7 @@ public final class PrefabUseHandler {
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) {
-            actionBar(player, "Stand inside an editor plot to paste", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.prefab.stand_in_plot_to_paste"), ChatFormatting.YELLOW);
             return;
         }
 
@@ -147,7 +147,7 @@ public final class PrefabUseHandler {
         }
         BlockPos localPos = placePos.subtract(plot.origin());
         if (!plot.inBounds(localPos)) {
-            actionBar(player, "Target is outside the plot's footprint", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.outside_footprint"), ChatFormatting.YELLOW);
             return;
         }
 
@@ -178,13 +178,13 @@ public final class PrefabUseHandler {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] BlockVariantPrefab paste save failed for {}: {}",
                 plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(),
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()),
                 ChatFormatting.RED);
             return;
         }
 
-        actionBar(player, "Pasted prefab '" + prefabId + "' at "
-            + localPos.getX() + "," + localPos.getY() + "," + localPos.getZ(),
+        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.prefab.pasted_prefab_at", prefabId,
+                localPos.getX(), localPos.getY(), localPos.getZ()),
             ChatFormatting.GREEN);
 
         if (!player.getAbilities().instabuild) {
@@ -212,7 +212,7 @@ public final class PrefabUseHandler {
         Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(prefabId);
         if (loaded.isEmpty()) {
             if (player instanceof ServerPlayer sp) {
-                actionBar(sp, "Unknown loot prefab '" + prefabId + "'", ChatFormatting.RED);
+                actionBar(sp, Component.translatable("chat.dungeontrain.editor_bar.common.unknown_loot_prefab", prefabId), ChatFormatting.RED);
             }
             return;
         }
@@ -268,7 +268,9 @@ public final class PrefabUseHandler {
 
         if (player instanceof ServerPlayer sp) {
             actionBar(sp,
-                "Placed loot prefab '" + prefabId + "'" + (linkedInEditor ? " (linked)" : ""),
+                Component.translatable(linkedInEditor
+                    ? "chat.dungeontrain.editor_bar.prefab.placed_loot_prefab_linked"
+                    : "chat.dungeontrain.editor_bar.prefab.placed_loot_prefab", prefabId),
                 ChatFormatting.GREEN);
         }
     }
@@ -317,7 +319,7 @@ public final class PrefabUseHandler {
         Optional<LootPrefabStore.Data> loaded = LootPrefabStore.load(prefabId);
         if (loaded.isEmpty()) {
             if (placer instanceof ServerPlayer sp) {
-                actionBar(sp, "Unknown loot prefab '" + prefabId + "'", ChatFormatting.RED);
+                actionBar(sp, Component.translatable("chat.dungeontrain.editor_bar.common.unknown_loot_prefab", prefabId), ChatFormatting.RED);
             }
             LOGGER.info("[DungeonTrain] PrefabUseHandler(entity): prefab '{}' missing for {} at {}",
                 prefabId, entity.getType().getDescriptionId(), entity.blockPosition());
@@ -358,7 +360,9 @@ public final class PrefabUseHandler {
                 }
             }
             actionBar(sp,
-                "Placed loot prefab '" + prefabId + "'" + (linkedInEditor ? " (linked)" : ""),
+                Component.translatable(linkedInEditor
+                    ? "chat.dungeontrain.editor_bar.prefab.placed_loot_prefab_linked"
+                    : "chat.dungeontrain.editor_bar.prefab.placed_loot_prefab", prefabId),
                 ChatFormatting.GREEN);
             LOGGER.info("[DungeonTrain] PrefabUseHandler(entity): equipped {} from prefab '{}' at world={} linked={}",
                 entity.getType().getDescriptionId(), prefabId, entity.blockPosition(), linkedInEditor);
@@ -481,7 +485,7 @@ public final class PrefabUseHandler {
         }
     }
 
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 }

@@ -2,9 +2,11 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.mixin.StructureTemplateManagerAccessor;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.LostCityStructures;
+import games.brennan.dungeontrain.worldgen.LostCityTemplateIds;
 import games.brennan.dungeontrain.worldgen.LostCityTemplatePreload;
 import games.brennan.dungeontrain.worldgen.LostCityWwooCensus;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -28,16 +30,22 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Loads Big Lost City's structure templates on a background thread once a player nears the Lost City run
+ * Loads the Big Lost City templates a city can place ({@link LostCityTemplateIds#placeable}: 42 of the mod's 75,
+ * ~7.5 MB compressed / ~90 MB raw 1.20.1 NBT) on a background thread once a player nears the Lost City run
  * ({@link LostCityTemplatePreload#nearLostCity}), so worldgen finds them already in
- * {@link StructureTemplateManager}'s cache instead of loading and datafixing ~19 MB of 1.20.1 NBT the moment
- * the first city generates.
+ * {@link StructureTemplateManager}'s cache instead of loading and datafixing them the moment the first city
+ * generates.
  *
  * <p>The cache is a {@code ConcurrentHashMap.computeIfAbsent} that worldgen threads already share, so a
  * chunk needing a template this thread is mid-way through just waits for that one template. A dedicated
  * thread rather than {@code Util.backgroundExecutor()}: work that can meet worldgen must not queue behind it
- * (see {@code PortalChunkTerrain}). Runs once per server session; {@code /reload} empties the cache, so it
- * re-arms then.</p>
+ * (see {@code PortalChunkTerrain}).</p>
+ *
+ * <p>The cache holds a template until a datapack reload, so once every player has been
+ * {@link LostCityTemplatePreload#quietAt quiet} for {@link LostCityTemplatePreload#EVICT_AFTER_SCANS} scans in a
+ * row, the {@code big_lost_city} entries are removed and the pre-load re-arms for the next approach. Removal only
+ * drops the cache entry: a worldgen thread mid-placement keeps its template, and a later lookup reloads it.
+ * Server stop and {@code /reload} also re-arm it.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LostCityTemplatePreloadEvents {
@@ -49,6 +57,10 @@ public final class LostCityTemplatePreloadEvents {
     private static final int SCAN_PERIOD_TICKS = 20;
 
     private static final AtomicBoolean STARTED = new AtomicBoolean();
+    /** Set while the pre-load task runs; eviction waits for it rather than racing it. */
+    private static final AtomicBoolean RUNNING = new AtomicBoolean();
+    /** Consecutive scans with every player {@link LostCityTemplatePreload#quietAt quiet}; server thread only. */
+    private static int quietScans;
     /** Bumped on server stop / reload so a pre-load for the old cache stops early. */
     private static final AtomicInteger EPOCH = new AtomicInteger();
     private static volatile ExecutorService executor;
@@ -57,7 +69,6 @@ public final class LostCityTemplatePreloadEvents {
 
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
-        if (STARTED.get()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!Level.OVERWORLD.equals(level.dimension())) return;
         if (level.getGameTime() % SCAN_PERIOD_TICKS != 0) return;
@@ -66,30 +77,65 @@ public final class LostCityTemplatePreloadEvents {
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         if (!cycle.hasLayout()) return;
         if (!DungeonTrainWorldData.get(level).startsWithTrain()) return;
-        for (ServerPlayer player : players) {
-            if (LostCityTemplatePreload.nearLostCity(cycle, player.getBlockX(), LostCityTemplatePreload.LOOKAHEAD_BLOCKS)) {
-                start(level, player.getBlockX());
-                return;
+        if (!STARTED.get()) {
+            for (ServerPlayer player : players) {
+                if (LostCityTemplatePreload.nearLostCity(cycle, player.getBlockX(), LostCityTemplatePreload.LOOKAHEAD_BLOCKS)) {
+                    start(level, player.getBlockX());
+                    break;
+                }
             }
         }
+        scanForEviction(level, cycle, players);
+    }
+
+    private static void scanForEviction(ServerLevel level, WorldGenCycle cycle, List<ServerPlayer> players) {
+        boolean allQuiet = !RUNNING.get();
+        for (int i = 0; allQuiet && i < players.size(); i++) {
+            allQuiet = LostCityTemplatePreload.quietAt(cycle, players.get(i).getBlockX());
+        }
+        quietScans = LostCityTemplatePreload.nextQuietScans(quietScans, allQuiet);
+        if (quietScans < LostCityTemplatePreload.EVICT_AFTER_SCANS) return;
+        quietScans = 0;
+        evict(level.getServer().getStructureManager());
+    }
+
+    /** Drops every {@code big_lost_city} template from the cache and re-arms the pre-load. */
+    private static void evict(StructureTemplateManager templates) {
+        List<ResourceLocation> cached;
+        try {
+            cached = ((StructureTemplateManagerAccessor) templates).dungeontrain$structureRepository().keySet().stream()
+                    .filter(id -> LostCityStructures.NAMESPACE.equals(id.getNamespace()))
+                    .toList();
+        } catch (Throwable t) {
+            FAILURES.error(LOGGER, "[DungeonTrain] Lost City template eviction: failed to read the template cache", t);
+            return;
+        }
+        STARTED.set(false);
+        if (cached.isEmpty()) return;
+        cached.forEach(templates::remove);
+        LOGGER.info("[DungeonTrain] Lost City templates evicted: {} (no player near the run); pre-load re-armed", cached.size());
     }
 
     private static void start(ServerLevel level, int triggerX) {
         if (!STARTED.compareAndSet(false, true)) return;
         StructureTemplateManager templates = level.getServer().getStructureManager();
-        List<ResourceLocation> ids;
-        try {
-            ids = templates.listTemplates()
-                    .filter(id -> LostCityStructures.NAMESPACE.equals(id.getNamespace()))
-                    .toList();
-        } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] Lost City template pre-load: failed to list templates", t);
-            return;
-        }
+        List<ResourceLocation> ids = LostCityTemplateIds.placeable(level.registryAccess());
         if (ids.isEmpty()) return;
         int epoch = EPOCH.get();
         LOGGER.info("[DungeonTrain] Lost City template pre-load: {} templates, triggered at x={}", ids.size(), triggerX);
-        executor().execute(() -> preload(templates, ids, epoch));
+        RUNNING.set(true);
+        try {
+            executor().execute(() -> {
+                try {
+                    preload(templates, ids, epoch);
+                } finally {
+                    RUNNING.set(false);
+                }
+            });
+        } catch (RuntimeException e) {
+            RUNNING.set(false);
+            LOGGER.error("[DungeonTrain] Lost City template pre-load: failed to schedule", e);
+        }
     }
 
     private static void preload(StructureTemplateManager templates, List<ResourceLocation> ids, int epoch) {
@@ -140,6 +186,7 @@ public final class LostCityTemplatePreloadEvents {
     private static void reset() {
         EPOCH.incrementAndGet();
         STARTED.set(false);
+        quietScans = 0;
     }
 
     private static ExecutorService executor() {

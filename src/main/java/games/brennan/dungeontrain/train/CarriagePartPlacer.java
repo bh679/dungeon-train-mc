@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
@@ -207,7 +208,15 @@ public final class CarriagePartPlacer {
         if (sidecar.isEmpty()) return;
 
         BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
-        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+        // Parts may be mirrored, so bound the column by the part's world box from both corners.
+        BlockPos cornerA = transformLocal(stampOrigin, BlockPos.ZERO, p.mirror(), partSize);
+        BlockPos cornerB = transformLocal(stampOrigin,
+            new BlockPos(partSize.getX() - 1, partSize.getY() - 1, partSize.getZ() - 1), p.mirror(), partSize);
+        net.minecraft.world.level.levelgen.structure.BoundingBox partBox =
+            net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(cornerA, cornerB);
+        java.util.function.Predicate<BlockPos> within = partBox::isInside;
+        try (ConnectPass.Scope ignored = ConnectPass.open();
+             GrowthPass.Scope grown = GrowthPass.open()) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(entry.localPos());
@@ -236,6 +245,7 @@ public final class CarriagePartPlacer {
                         "part:" + kind.id() + ":" + name, w.localPos(), seed, carriageIndex,
                         w.entry().linkedLootPrefabId());
                     ConnectPass.note(level, world, w.entry().connect(), toPlace);
+                    GrowthPass.note(level, world, w.entry(), toPlace, w.localPos(), seed, carriageIndex, within);
                 }
             }
         }

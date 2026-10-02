@@ -78,6 +78,11 @@ public final class ThirdPartyMixinTargets {
                 "org.betterx.wover.biome.api.data.BiomeData", List.of(
                     field("biomeKey", "Lnet/minecraft/resources/ResourceKey;"))),
             END_VANILLA, true)),
+        Map.entry(MIXIN_PACKAGE + "wover.WoverBiomePickerSampleMixin", new Spec("wover",
+            Map.of("org.betterx.wover.generator.api.biomesource.WoverBiomePicker", List.of(
+                method("getBiomeAt", "(Lnet/minecraft/world/level/WorldGenLevel;Lnet/minecraft/core/BlockPos;)"
+                        + "Lnet/minecraft/core/Holder;"))),
+            Map.of(), END_VANILLA, true)),
         Map.entry(MIXIN_PACKAGE + "wover.WoverPossibleBiomesOrderMixin", new Spec("wover",
             Map.of("org.betterx.wover.generator.api.biomesource.WoverBiomeSource", List.of(
                 method("collectPossibleBiomes", "()Ljava/util/stream/Stream;"))),
@@ -95,8 +100,11 @@ public final class ThirdPartyMixinTargets {
         // ── BCLib ────────────────────────────────────────────────────────────────────────────────
         Map.entry(MIXIN_PACKAGE + "bclib.BclibFixPromptMixin", new Spec("bclib",
             Map.of("org.betterx.bclib.api.v2.datafixer.DataFixerAPI", List.of(
-                method("showBackupWarning", "(Ljava/lang/String;Ljava/util/function/BiConsumer;)V"))),
-            Map.of(), "BCLib's world-patch backup prompt shows when opening an older world", false)),
+                method("fixData", "(Ljava/io/File;Ljava/lang/String;ZLjava/util/function/Consumer;"
+                        + "Lnet/minecraft/world/level/storage/LevelStorageSource$LevelStorageAccess;)Z"),
+                invokes("fixData", "org/betterx/bclib/api/v2/datafixer/DataFixerAPI", "showBackupWarning",
+                        "(Ljava/lang/String;Ljava/util/function/BiConsumer;)V"))),
+            Map.of(), "BCLib's world-patch backup prompt shows when opening an older Dungeon Train world", false)),
 
         // ── BetterEnd ────────────────────────────────────────────────────────────────────────────
         Map.entry(MIXIN_PACKAGE + "betterend.BetterEndChorusCosmeticMixin", new Spec("betterend",
@@ -129,6 +137,12 @@ public final class ThirdPartyMixinTargets {
             Map.of(), END_VANILLA, true)),
 
         // ── TerraBlender ─────────────────────────────────────────────────────────────────────────
+        Map.entry(MIXIN_PACKAGE + "terrablender.RegionsMixin", new Spec("terrablender",
+            Map.of("terrablender.api.Regions", List.of(
+                method("register", "(Lnet/minecraft/resources/ResourceLocation;Lterrablender/api/Region;)V"),
+                method("register", "(Lnet/minecraft/resources/ResourceLocation;ILterrablender/api/Region;)V"))),
+            Map.of(), "TerraBlender regions DT keeps to the vanilla overworld stretches blend into every stretch",
+            false)),
         Map.entry(MIXIN_PACKAGE + "terrablender.SurfaceRuleManagerMixin", new Spec("terrablender",
             Map.of("terrablender.api.SurfaceRuleManager", List.of(
                 staticField("surfaceRules", "Ljava/util/Map;"),

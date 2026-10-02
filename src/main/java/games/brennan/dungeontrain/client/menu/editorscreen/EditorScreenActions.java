@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
+import games.brennan.dungeontrain.client.builder.BuildRenderCapture;
 import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
 import games.brennan.dungeontrain.client.menu.EditorHistoryState;
 import games.brennan.dungeontrain.client.menu.EditorMenuScreen;
@@ -203,7 +204,8 @@ public final class EditorScreenActions {
         Runnable action = published
             ? () -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), false))
             : () -> BuilderSubmitNoteScreen.open(entry.relayId(), Component.literal(entry.buildName()),
-                note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note)));
+                note -> DungeonTrainNet.sendToServer(new BuilderProfileActionPacket(entry.relayId(), true, note,
+                    BuildRenderCapture.png(entry))));
         return new Icon(published ? "withdraw" : "submit", label,
             new CommandMenuEntry.ClientAction(label, action), null);
     }
@@ -684,6 +686,12 @@ public final class EditorScreenActions {
         if (stripCategory == PlotCategory.PARTS) {
             return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.PARTS, stripModelId, current));
+        }
+        if (stripCategory == PlotCategory.CONTENTS) {
+            // A contents strip is one size (Room / Half / Full); its model id is the size key, so
+            // the picker offers a blank of that size.
+            return new CommandMenuEntry.DrillIn(MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.CONTENTS, stripModelId, current));
         }
         String modelId = switch (stripCategory) {
             case TRACKS, PORTALS -> stripModelId;

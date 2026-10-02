@@ -4,8 +4,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
+import games.brennan.dungeontrain.narrative.KillerBunnyNames;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.Rabbit;
@@ -31,6 +33,13 @@ import org.slf4j.Logger;
  * <p>Ordering is safe: this event fires after {@code finalizeSpawn} (natural
  * spawns and {@code CarriageContentsPlacer.spawnVariantMob} alike), so the
  * vanilla biome variant roll can't overwrite EVIL afterwards.</p>
+ *
+ * <p><strong>Naming.</strong> A fresh Killer Bunny then rolls
+ * {@link DungeonTrainConfig#getKillerBunnyNameChance()}: a win names it from
+ * {@link KillerBunnyNames} (the Monty Python pool), replacing any Adventure Item
+ * Names fantasy name so the pool is what named Killer Bunnies lean toward. On a
+ * miss the rabbit is left alone — an AIN name stays, and an unnamed one keeps
+ * the "The Killer Bunny" name vanilla's {@code setVariant(EVIL)} gives it.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class KillerBunnyEvents {
@@ -42,8 +51,6 @@ public final class KillerBunnyEvents {
      * lose. Persists across saves, so a rabbit never gets a second roll.
      */
     public static final String ROLLED_TAG = "dungeontrain_killer_bunny_rolled";
-
-    private static final String KILLER_BUNNY_NAME_KEY = "entity.minecraft.killer_bunny";
 
     private KillerBunnyEvents() {}
 
@@ -73,10 +80,20 @@ public final class KillerBunnyEvents {
         if (!shouldTurnKiller(roll, chance, peaceful, noHostiles)) return;
 
         rabbit.setVariant(Rabbit.Variant.EVIL);
-        // Vanilla only names an unnamed rabbit; force it so an AIN fantasy name can't hide the joke.
-        rabbit.setCustomName(Component.translatable(KILLER_BUNNY_NAME_KEY));
-        LOGGER.debug("[DungeonTrain] Killer Bunny spawned at {} in {}",
-                rabbit.blockPosition(), serverLevel.dimension().location());
+        RandomSource rng = rabbit.getRandom();
+        if (shouldName(rng.nextFloat(), DungeonTrainConfig.getKillerBunnyNameChance())) {
+            rabbit.setCustomName(Component.literal(KillerBunnyNames.pick(rng)));
+        }
+        LOGGER.debug("[DungeonTrain] Killer Bunny spawned at {} in {} named {}",
+                rabbit.blockPosition(), serverLevel.dimension().location(), rabbit.getCustomName());
+    }
+
+    /**
+     * Pure roll: a Killer Bunny gets a Monty Python name when {@code roll < chance}.
+     * Package-visible for unit tests.
+     */
+    static boolean shouldName(float roll, double chance) {
+        return roll < chance;
     }
 
     /**

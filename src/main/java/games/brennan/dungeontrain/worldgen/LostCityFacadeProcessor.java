@@ -132,7 +132,10 @@ public final class LostCityFacadeProcessor extends StructureProcessor {
                                                                          List<StructureTemplate.StructureBlockInfo> originals,
                                                                          List<StructureTemplate.StructureBlockInfo> processed,
                                                                          StructurePlaceSettings settings) {
-        List<StructureTemplate.StructureBlockInfo> added = dress(offset, processed);
+        // the added blocks never carry NBT, so the memoised list is safe to share across a piece's chunk calls
+        List<StructureTemplate.StructureBlockInfo> added = LostCityPlacementMemo.get(
+                new LostCityPlacementMemo.Key(this, offset.asLong(), LostCityPlacementMemo.fingerprint(processed, true)),
+                () -> List.copyOf(dress(offset, processed)));
         if (added.isEmpty()) return processed;
         List<StructureTemplate.StructureBlockInfo> out = new ArrayList<>(processed.size() + added.size());
         out.addAll(processed);

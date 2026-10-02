@@ -62,10 +62,11 @@ import org.slf4j.Logger;
  * needs you to be standing in a plot).</p>
  *
  * <p>The Abandon-run reshuffle is gated to singleplayer <em>run</em> worlds (integrated server
- * present) — multiplayer keeps the vanilla "Disconnect" button, and with it loses the My Builds
- * row, since both hang off the slot this handler takes over. The Train Builder and Train Editor
- * worlds keep vanilla Save and Quit too: there is no run in either to abandon (see
- * {@link #layoutEditorWorld}). If the Save-and-Quit button can't be located
+ * present). Multiplayer keeps the vanilla "Disconnect" button as the un-Shifted face of that slot
+ * and gets the same Exit | Quit pair behind Shift (see {@link #layoutMultiplayer}); it has no My
+ * Builds row, since that hangs off the slot this handler takes over. The Train Builder and Train
+ * Editor worlds keep vanilla Save and Quit too: there is no run in either to abandon (see
+ * {@link #layoutEditorWorld}). If the slot's vanilla button can't be located
  * (a third-party mod rewrote the menu) the menu is left untouched, mirroring
  * {@link TitleScreenLayoutHandler}'s defensive stance.</p>
  */
@@ -76,6 +77,8 @@ public final class PauseMenuLayoutHandler {
 
     /** Vanilla singleplayer "Save and Quit to Title" button. */
     private static final Component RETURN_TO_MENU_KEY = Component.translatable("menu.returnToMenu");
+    /** Vanilla multiplayer "Disconnect" button — the same slot, on a remote server. */
+    private static final Component DISCONNECT_KEY = Component.translatable("menu.disconnect");
 
     private static final Component ABANDON_LABEL = Component.translatable("gui.dungeontrain.abandon_run");
     private static final Component EXIT_LABEL = Component.translatable("gui.dungeontrain.exit_to_title");
@@ -115,6 +118,9 @@ public final class PauseMenuLayoutHandler {
         }
 
         if (!Minecraft.getInstance().hasSingleplayerServer()) {
+            if (pauseScreen.showsPauseMenu()) {
+                layoutMultiplayer(event);
+            }
             return;
         }
         // Train Builder worlds keep vanilla's Save-and-Quit slot untouched: there is no run to
@@ -189,6 +195,25 @@ public final class PauseMenuLayoutHandler {
         }
         addShiftExitPair(event, slotX, slotY, slotW, slotH);
         returnToMenu.visible = !Screen.hasShiftDown();
+    }
+
+    /**
+     * Multiplayer layout: vanilla <b>Disconnect</b> keeps its slot and stays the un-Shifted face of
+     * it — there is no run to abandon from the client, and Disconnect (back to the server list) is
+     * what you want by default — with the same Exit | Quit pair swapped in while Shift is held (see
+     * {@link #onScreenRenderPre}). Exit to Title goes straight to the title screen rather than the
+     * server list; Quit Game leaves the server and closes Minecraft.
+     */
+    private static void layoutMultiplayer(ScreenEvent.Init.Post event) {
+        Button disconnect = findButton(event, DISCONNECT_KEY);
+        if (disconnect == null) {
+            LOGGER.warn("PauseMenuLayout: could not locate Disconnect button ({}); leaving menu untouched.",
+                    DISCONNECT_KEY.getString());
+            return;
+        }
+        addShiftExitPair(event, disconnect.getX(), disconnect.getY(),
+                disconnect.getWidth(), disconnect.getHeight());
+        disconnect.visible = !Screen.hasShiftDown();
     }
 
     /** Shift-revealed pair, splitting the slot: Exit to Title (grey) | Quit Game (dark grey). */
@@ -269,17 +294,30 @@ public final class PauseMenuLayoutHandler {
         if (!(event.getScreen() instanceof PauseScreen screen)) {
             return;
         }
-        boolean editorWorld = EditorWorldLayout.isEditorWorld(Minecraft.getInstance().level);
+        Component vanillaFace = vanillaSlotFace();
         for (GuiEventListener listener : screen.children()) {
             if (listener instanceof PauseMenuActionButton button) {
                 applyShiftVisibility(button);
-            } else if (editorWorld && listener instanceof Button button
-                    && RETURN_TO_MENU_KEY.equals(button.getMessage())) {
-                // In the editor world vanilla Save and Quit is the un-Shifted face of the exit
-                // slot, so it follows the same swap as the pair it shares the slot with.
+            } else if (vanillaFace != null && listener instanceof Button button
+                    && vanillaFace.equals(button.getMessage())) {
+                // Where a vanilla button is the un-Shifted face of the exit slot it follows the
+                // same swap as the pair it shares the slot with.
                 button.visible = !Screen.hasShiftDown();
             }
         }
+    }
+
+    /**
+     * The vanilla button that fronts the exit slot when Shift is not held: Save and Quit in the
+     * Train Editor world, Disconnect on a remote server, and none elsewhere (the red Abandon button
+     * fronts it, and that is a {@link PauseMenuActionButton} with its own Shift flag).
+     */
+    private static Component vanillaSlotFace() {
+        Minecraft mc = Minecraft.getInstance();
+        if (!mc.hasSingleplayerServer()) {
+            return DISCONNECT_KEY;
+        }
+        return EditorWorldLayout.isEditorWorld(mc.level) ? RETURN_TO_MENU_KEY : null;
     }
 
     private static void applyShiftVisibility(PauseMenuActionButton... buttons) {

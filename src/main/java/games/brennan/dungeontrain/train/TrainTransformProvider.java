@@ -250,6 +250,12 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
      */
     private long frozenTicksAtSpawn = 0L;
 
+    // Set by {@link #setTargetVelocity} (any thread) when the velocity changes; consumed by the
+    // next {@link #nextTransform}, which re-bases the anchor onto the current canonical position
+    // before the formula prices the elapsed ticks at the new speed. See
+    // {@link #shouldRebaseOnVelocityChange}.
+    private volatile boolean rebaseAnchorPending = false;
+
     // One-shot sub-block world-X nudge applied the instant spawnWorldPos is
     // captured on the first kinematic tick (see nextTransform). Lets the
     // bootstrap eager-fill inject a fractional inter-group gap that integer
@@ -390,7 +396,27 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
      * reference and never mutates it in place.
      */
     public void setTargetVelocity(Vector3dc v) {
+        Vector3dc previous = this.targetVelocity;
         this.targetVelocity = new Vector3d(v);
+        // The position formula multiplies the CURRENT velocity by every tick since the anchor, so
+        // a new velocity would re-price the whole distance travelled so far and teleport the
+        // carriage (a `/dungeontrain speed 0` snapped the train back to its spawn X; `speed 2`
+        // snapped it forward by 2 × the ticks elapsed, up to ~1000 blocks). Arm a re-base so the
+        // next tick moves the anchor onto the current position first and the new speed applies
+        // from here. See the [rebase.velocity] block in nextTransform.
+        if (shouldRebaseOnVelocityChange(previous, v)) {
+            rebaseAnchorPending = true;
+        }
+    }
+
+    /**
+     * Pure core of the velocity-change re-base: {@code true} iff the velocity actually changes.
+     * A first assignment ({@code previous == null}) never re-bases — the anchor is captured on the
+     * first tick anyway — and a same-value write (the settings screen re-applying the current
+     * speed) leaves the anchor alone.
+     */
+    static boolean shouldRebaseOnVelocityChange(Vector3dc previous, Vector3dc next) {
+        return previous != null && next != null && !previous.equals(next);
     }
 
     public BlockPos getShipyardOrigin() {
@@ -1019,6 +1045,22 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         double prevCanonX = canonicalPos.x;
         double prevCanonY = canonicalPos.y;
         double prevCanonZ = canonicalPos.z;
+        // A velocity change re-bases the anchor onto where the carriage is NOW, so the new speed
+        // prices only the ticks from here on and the pose is continuous across the change. Same
+        // three writes as the resume-after-cull re-anchor below, and for the same reason the
+        // frozen baseline moves with the anchor. World-space riders (untagged mobs, Sable
+        // Pathfinder walkers) stay on their floor instead of being left in mid-air.
+        if (rebaseAnchorPending) {
+            rebaseAnchorPending = false;
+            if (JITTER_LOGGER.isDebugEnabled()) {
+                JITTER_LOGGER.debug("[rebase.velocity] pIdx={} trainId={} anchor {} -> {} velocityX={}",
+                    pIdx, trainId, fmt(spawnWorldPos), fmt(canonicalPos),
+                    String.format("%.3f", targetVelocity.x()));
+            }
+            spawnWorldPos.set(canonicalPos);
+            spawnGameTick = currentGameTick;
+            frozenTicksAtSpawn = TrainMotionFreeze.frozenTicks(trainId);
+        }
         // Hold a freshly-(re)loaded carriage at its spawn position until this
         // dimension's world-load grace window expires, then advance smoothly
         // (elapsed steps 0 → 0 → 1, no jump). A no-op for every carriage

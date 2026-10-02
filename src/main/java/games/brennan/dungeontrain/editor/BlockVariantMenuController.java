@@ -33,7 +33,6 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -144,7 +143,7 @@ public final class BlockVariantMenuController {
             return;
         }
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Block variant menu requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.requires_op"), ChatFormatting.RED);
             return;
         }
 
@@ -153,7 +152,7 @@ public final class BlockVariantMenuController {
 
         HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
         if (!(hit instanceof BlockHitResult bhit) || bhit.getType() == HitResult.Type.MISS) {
-            actionBar(player, "Look at a block to open the menu", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.look_at_block_to_open"), ChatFormatting.YELLOW);
             return;
         }
         BlockPos worldPos = bhit.getBlockPos();
@@ -162,7 +161,7 @@ public final class BlockVariantMenuController {
         // filling, and in a Train Builder world you stand on the platform beside the build.
         BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, worldPos, dims);
         if (plot == null) {
-            actionBar(player, "That block isn't in a block-variant editor plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.not_in_variant_plot"), ChatFormatting.YELLOW);
             return;
         }
         BlockPos localPos = worldPos.subtract(plot.origin());
@@ -170,7 +169,7 @@ public final class BlockVariantMenuController {
         // adjacent to the part still opens the menu — clamp to in-bounds
         // so we look up an actual cell, not the cage itself.
         if (!plot.inBoundsTolerant(localPos)) {
-            actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.block_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
         // Either space of a door / bed / tall-plant cell opens that cell's menu, but the panel
@@ -224,7 +223,7 @@ public final class BlockVariantMenuController {
     public static void openForCopies(ServerPlayer player, String roomName,
                                      games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane plane) {
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Block variant menu requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.requires_op"), ChatFormatting.RED);
             return;
         }
         ServerLevel level = player.serverLevel();
@@ -232,7 +231,7 @@ public final class BlockVariantMenuController {
 
         BlockVariantPlot room = BlockVariantPlot.resolveAt(player, dims);
         if (room == null) {
-            actionBar(player, "Stand in the dimensional carriage's plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.stand_in_dimensional_plot"), ChatFormatting.YELLOW);
             return;
         }
         games.brennan.dungeontrain.portal.PortalRoomCopiesPlot plot =
@@ -360,13 +359,14 @@ public final class BlockVariantMenuController {
                 s.difficulty().min(), s.difficulty().max(),
                 s.groupRef(), refLive,
                 (byte) s.active().mode().ordinal(),
-                (byte) s.connect().ordinal()));
+                (byte) s.connect().ordinal(),
+                s.growth().toInt()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
             (byte) plot.spanAt(localPos).toByte(),
-            plot.supportsConnectMode());
+            plot.supportsConnectMode(), plot.supportsGrowth());
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -459,37 +459,36 @@ public final class BlockVariantMenuController {
                     int refGroup = VariantClipboardItem.decodeLockId(
                         VariantClipboardItem.readClipboardTag(held));
                     if (refGroup <= 0) {
-                        actionBar(player, "That clipboard was copied from an unlocked cell — lock the source cell first",
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.clipboard_unlocked_source"),
                             ChatFormatting.YELLOW);
                         return;
                     }
                     int cellLock = plot.lockIdAt(localPos);
                     if (refGroup == cellLock) {
-                        actionBar(player, "A cell cannot reference its own group (" + refGroup + ")",
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.cannot_reference_own_group", refGroup),
                             ChatFormatting.YELLOW);
                         return;
                     }
                     List<VariantState> targetStates =
                         plot.groupRefs().statesForLockId(refGroup);
                     if (targetStates == null || targetStates.isEmpty()) {
-                        actionBar(player, "No cell in this template uses lock-id " + refGroup,
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.no_cell_uses_lock_id", refGroup),
                             ChatFormatting.YELLOW);
                         return;
                     }
                     if (cellLock > 0 && VariantGroupRefs.reaches(plot.groupRefs(), refGroup, cellLock)) {
-                        actionBar(player, "Group " + refGroup + " already leads back to group " + cellLock
-                            + " — that would loop", ChatFormatting.YELLOW);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.group_would_loop", refGroup, cellLock), ChatFormatting.YELLOW);
                         return;
                     }
                     for (VariantState existing : mutated) {
                         if (existing.groupRef() == refGroup) {
-                            actionBar(player, "This cell already references group " + refGroup,
+                            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.cell_already_references_group", refGroup),
                                 ChatFormatting.YELLOW);
                             return;
                         }
                     }
                     if (mutated.size() >= MAX_ENTRIES) {
-                        actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                         return;
                     }
                     // A reference is a second opinion, not a first one: the
@@ -504,7 +503,7 @@ public final class BlockVariantMenuController {
                     // fallback if the reference is later cleared — the pick
                     // path always follows the reference instead.
                     mutated.add(VariantState.ofGroupRef(refGroup, targetStates.get(0).state()));
-                    actionBar(player, "Added reference to group " + refGroup, ChatFormatting.GREEN);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.added_group_reference", refGroup), ChatFormatting.GREEN);
                     dirty = true;
                     break;
                 }
@@ -516,13 +515,13 @@ public final class BlockVariantMenuController {
                 if (held.getItem() instanceof net.minecraft.world.item.SpawnEggItem egg) {
                     net.minecraft.world.entity.EntityType<?> type = egg.getType(held);
                     if (type == null) {
-                        actionBar(player, "Spawn egg has no entity type", ChatFormatting.YELLOW);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_type"), ChatFormatting.YELLOW);
                         return;
                     }
                     net.minecraft.resources.ResourceLocation eid =
                         net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(type);
                     if (eid == null) {
-                        actionBar(player, "Cannot resolve entity id for spawn egg", ChatFormatting.YELLOW);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.spawn_egg_no_id"), ChatFormatting.YELLOW);
                         return;
                     }
                     CompoundTag mobNbt = null;
@@ -546,13 +545,13 @@ public final class BlockVariantMenuController {
                     VariantState mobVariant = VariantState.ofMob(
                         eid, mobNbt, 1, games.brennan.dungeontrain.editor.VariantRotation.NONE);
                     if (mutated.size() >= MAX_ENTRIES) {
-                        actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                         return;
                     }
                     for (VariantState existing : mutated) {
                         if (existing.isMob() && existing.entityId().equals(eid)
                             && Objects.equals(existing.blockEntityNbt(), mobNbt)) {
-                            actionBar(player, "Mob variant already in this cell", ChatFormatting.YELLOW);
+                            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.mob_variant_already_in_cell"), ChatFormatting.YELLOW);
                             return;
                         }
                     }
@@ -591,13 +590,13 @@ public final class BlockVariantMenuController {
                             standId, null, 1, games.brennan.dungeontrain.editor.VariantRotation.NONE)
                         .withLinkedLootPrefabId(standPrefabId);
                     if (mutated.size() >= MAX_ENTRIES) {
-                        actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                         return;
                     }
                     for (VariantState existing : mutated) {
                         if (existing.isMob() && standId.equals(existing.entityId())
                             && Objects.equals(existing.linkedLootPrefabId(), standPrefabId)) {
-                            actionBar(player, "Armor stand variant already in this cell", ChatFormatting.YELLOW);
+                            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.armor_stand_variant_already_in_cell"), ChatFormatting.YELLOW);
                             return;
                         }
                     }
@@ -625,7 +624,7 @@ public final class BlockVariantMenuController {
                     capturedState = bucketSource;
                     itemBeNbt = null;
                 } else if (!(held.getItem() instanceof BlockItem blockItem)) {
-                    actionBar(player, "Hold a block, bucket, spawn egg, or empty hand to add a variant",
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.hold_to_add_variant"),
                         ChatFormatting.YELLOW);
                     return;
                 } else {
@@ -657,7 +656,7 @@ public final class BlockVariantMenuController {
                 VariantState newVariant = new VariantState(
                     oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId);
                 if (mutated.size() >= MAX_ENTRIES) {
-                    actionBar(player, "Variant cell full (max " + MAX_ENTRIES + ")", ChatFormatting.YELLOW);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
                 }
                 for (VariantState existing : mutated) {
@@ -675,7 +674,7 @@ public final class BlockVariantMenuController {
                         && Objects.equals(existing.blockEntityNbt(), newVariant.blockEntityNbt())
                         && Objects.equals(existing.linkedLootPrefabId(), newVariant.linkedLootPrefabId())
                         && Objects.equals(existing.entityId(), newVariant.entityId())) {
-                        actionBar(player, "Variant already in this cell", ChatFormatting.YELLOW);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_already_in_cell"), ChatFormatting.YELLOW);
                         return;
                     }
                 }
@@ -805,6 +804,22 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
+            case SET_GROWTH -> {
+                // delta = VariantGrowth.toInt(); the canonical constructor clamps the range.
+                if (wasEmpty) return;
+                if (!plot.supportsGrowth()) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !GrowthShapes.canGrow(entry.state())) return;
+                VariantGrowth next = VariantGrowth.fromInt(packet.delta());
+                if (!GrowthShapes.growsBothWays(entry.state())) {
+                    next = next.withDir(GrowthShapes.effectiveDir(entry.state(), next.dir()));
+                }
+                mutated.set(idx, entry.withGrowth(next.isDefault() ? VariantGrowth.NONE : next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
             case BUMP_DIFF_MIN -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
@@ -882,7 +897,7 @@ public final class BlockVariantMenuController {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] BlockVariantMenu save failed for {}: {}",
                 plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
             // Fall through — still re-sync so the client reflects committed state.
         }
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
@@ -956,7 +971,7 @@ public final class BlockVariantMenuController {
      */
     private static void cycleLockId(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         if (plot.statesAt(localPos) == null) {
-            actionBar(player, "Add at least one variant before locking", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.add_variant_before_locking"), ChatFormatting.YELLOW);
             return;
         }
         int current = plot.lockIdAt(localPos);
@@ -967,7 +982,7 @@ public final class BlockVariantMenuController {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] BlockVariantMenu lock save failed for {}: {}",
                 plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
         }
         // Refresh the all-faces lock-id overlay immediately so the player
         // sees the badge appear/disappear without waiting for the next
@@ -997,12 +1012,12 @@ public final class BlockVariantMenuController {
      */
     private static void cycleCopyRoll(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         if (!plot.supportsCopySettings()) {
-            actionBar(player, "Only a dimensional carriage room has copies to roll across",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_roll_needs_dimensional_room"),
                 ChatFormatting.YELLOW);
             return;
         }
         if (plot.statesAt(localPos) == null) {
-            actionBar(player, "Add at least one variant first", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.add_variant_first"), ChatFormatting.YELLOW);
             return;
         }
         VariantCopyRoll next = plot.copyRollAt(localPos).next();
@@ -1018,12 +1033,12 @@ public final class BlockVariantMenuController {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] BlockVariantMenu copy-roll save failed for {}: {}",
                 plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
         }
         actionBar(player, switch (next) {
-            case DEFAULT -> "Cell rolls the way the room does";
-            case EXACT -> "Cell holds one roll across every copy";
-            case VARY -> "Cell rolls again in every copy";
+            case DEFAULT -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_roll_default");
+            case EXACT -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_roll_exact");
+            case VARY -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_roll_vary");
         }, ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
     }
@@ -1041,12 +1056,12 @@ public final class BlockVariantMenuController {
      */
     private static void cycleCopyScope(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos) {
         if (!plot.supportsCopySettings()) {
-            actionBar(player, "Only a dimensional carriage room has copies to scope a cell to",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_scope_needs_dimensional_room"),
                 ChatFormatting.YELLOW);
             return;
         }
         if (plot.statesAt(localPos) == null) {
-            actionBar(player, "Add at least one variant first", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.add_variant_first"), ChatFormatting.YELLOW);
             return;
         }
         VariantCopyScope next = plot.copyScopeAt(localPos).next();
@@ -1056,12 +1071,12 @@ public final class BlockVariantMenuController {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] BlockVariantMenu copy-scope save failed for {}: {}",
                 plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
         }
         actionBar(player, switch (next) {
-            case BOTH -> "Cell applies in the room and in every copy";
-            case COPIES -> "Cell applies in the copies only";
-            case NOT_COPIES -> "Cell applies in this room only, not its copies";
+            case BOTH -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_scope_both");
+            case COPIES -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_scope_copies");
+            case NOT_COPIES -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_scope_not_copies");
         }, ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
     }
@@ -1075,7 +1090,7 @@ public final class BlockVariantMenuController {
     private static void setSpan(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos, int packed) {
         List<VariantState> states = plot.statesAt(localPos);
         if (states == null || MultiBlockFootprint.cellFootprint(states) == null) {
-            actionBar(player, "Span only applies to a cell holding a door, bed or tall plant",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_needs_multiblock"),
                 ChatFormatting.YELLOW);
             return;
         }
@@ -1087,31 +1102,29 @@ public final class BlockVariantMenuController {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] BlockVariantMenu span save failed for {}: {}",
                 plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
         }
-        actionBar(player, "Span: " + describe(next), ChatFormatting.AQUA);
+        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span", describe(next)), ChatFormatting.AQUA);
         resyncSameFace(player, plot, localPos);
     }
 
     /** Action-bar wording for a span — only the sections that apply. */
-    private static String describe(VariantSpan s) {
-        String count = switch (s.count()) {
-            case ONE -> "1 space";
-            case TWO -> "both spaces";
-            case RANDOM -> "1 or both spaces (random)";
+    private static Component describe(VariantSpan s) {
+        Component count = switch (s.count()) {
+            case ONE -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_count_one");
+            case TWO -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_count_two");
+            case RANDOM -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_count_random");
         };
-        StringBuilder out = new StringBuilder(count);
-        if (s.usesPosition()) {
-            out.append(", position ").append(switch (s.position()) {
-                case FIRST -> "1";
-                case SECOND -> "2";
-                case RANDOM -> "random";
-            });
-        }
-        if (s.usesFill()) {
-            out.append(s.fill() == VariantSpan.Fill.SAME ? ", same block" : ", second re-rolled");
-        }
-        return out.toString();
+        Component position = !s.usesPosition() ? Component.empty() : switch (s.position()) {
+            case FIRST -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_position_first");
+            case SECOND -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_position_second");
+            case RANDOM -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_position_random");
+        };
+        Component fill = !s.usesFill() ? Component.empty()
+            : s.fill() == VariantSpan.Fill.SAME
+                ? Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_fill_same")
+                : Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_fill_random");
+        return Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_description", count, position, fill);
     }
 
     /**
@@ -1179,7 +1192,7 @@ public final class BlockVariantMenuController {
         String prefabId = picked.linkedLootPrefabId();
         if (prefabId == null) return;
         if (LootPrefabStore.load(prefabId).isEmpty()) {
-            actionBar(player, "Loot template '" + prefabId + "' is missing — cannot open",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.loot_template_missing", prefabId),
                 ChatFormatting.YELLOW);
             return;
         }
@@ -1196,7 +1209,7 @@ public final class BlockVariantMenuController {
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] OpenLinkedContainer link save failed for {}: {}",
                     plot.key(), e.toString());
-                actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
                 return;
             }
         }
@@ -1222,11 +1235,11 @@ public final class BlockVariantMenuController {
         if (clip == null) return;
         boolean placed = player.getInventory().add(clip.stack());
         if (!placed) player.drop(clip.stack(), false);
-        actionBar(player, "Copied " + clip.summary(), ChatFormatting.GREEN);
+        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copied", clip.summary()), ChatFormatting.GREEN);
     }
 
     /** A freshly-built clipboard item plus the action-bar summary describing what it captured. */
-    private record Clipboard(ItemStack stack, String summary) {}
+    private record Clipboard(ItemStack stack, Component summary) {}
 
     /**
      * Middle-click shortcut for {@link #handleCopy}: resolve the plot + cell
@@ -1240,7 +1253,7 @@ public final class BlockVariantMenuController {
      */
     public static void copyAtCrosshair(ServerPlayer player) {
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Block variant copy requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copy_requires_op"), ChatFormatting.RED);
             return;
         }
         ServerLevel level = player.serverLevel();
@@ -1248,19 +1261,19 @@ public final class BlockVariantMenuController {
 
         HitResult hit = player.pick(TOGGLE_REACH, 1.0f, false);
         if (!(hit instanceof BlockHitResult bhit) || bhit.getType() == HitResult.Type.MISS) {
-            actionBar(player, "Look at a block to copy its variants", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.look_at_block_to_copy"), ChatFormatting.YELLOW);
             return;
         }
         // From the targeted block, as the menu itself now resolves — copying a cell you can see but
         // are not standing in is the same gesture.
         BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, bhit.getBlockPos(), dims);
         if (plot == null) {
-            actionBar(player, "That block isn't in a block-variant editor plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.not_in_variant_plot"), ChatFormatting.YELLOW);
             return;
         }
         BlockPos localPos = bhit.getBlockPos().subtract(plot.origin());
         if (!plot.inBounds(localPos)) {
-            actionBar(player, "Block is outside the editor plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.block_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
         // Copying from a door's top half copies the door's cell, as the menu opens on it.
@@ -1287,8 +1300,7 @@ public final class BlockVariantMenuController {
                                                            BlockPos localPos) {
         List<VariantState> current = plot.statesAt(localPos);
         if (current == null || current.size() < CarriageVariantBlocks.MIN_STATES_PER_ENTRY) {
-            actionBar(player, "Nothing to copy — cell needs at least "
-                + CarriageVariantBlocks.MIN_STATES_PER_ENTRY + " variants",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.nothing_to_copy", CarriageVariantBlocks.MIN_STATES_PER_ENTRY),
                 ChatFormatting.YELLOW);
             return null;
         }
@@ -1304,12 +1316,35 @@ public final class BlockVariantMenuController {
         CompoundTag tag = VariantClipboardItem.withSpan(VariantClipboardItem.encodeStates(current, lockId,
             poolCaptured ? pool : null, roll, scope), plot.spanAt(localPos));
         VariantClipboardItem.writeClipboardTag(stack, tag);
-        String lockSuffix = lockId > 0 ? " (lock-id " + lockId + ")" : "";
-        String poolSuffix = poolCaptured ? " +pool(" + pool.size() + ")" : "";
-        String rollSuffix = roll.isDefault() ? "" : " +" + roll.displayName().toLowerCase(Locale.ROOT);
-        String scopeSuffix = scope.isDefault() ? "" : " +" + scope.displayName().toLowerCase(Locale.ROOT);
-        return new Clipboard(stack, current.size() + " variants" + lockSuffix + poolSuffix
-            + rollSuffix + scopeSuffix);
+        Component lockSuffix = lockId > 0
+            ? Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", lockId)
+            : Component.empty();
+        Component poolSuffix = poolCaptured
+            ? Component.translatable("chat.dungeontrain.editor_bar.clipboard.pool_suffix", pool.size())
+            : Component.empty();
+        Component rollSuffix = roll.isDefault() ? Component.empty()
+            : Component.translatable("chat.dungeontrain.editor_bar.clipboard.roll_suffix", rollName(roll));
+        Component scopeSuffix = scope.isDefault() ? Component.empty()
+            : Component.translatable("chat.dungeontrain.editor_bar.clipboard.scope_suffix", scopeName(scope));
+        return new Clipboard(stack, Component.translatable("chat.dungeontrain.editor_bar.clipboard.summary", current.size(), lockSuffix, poolSuffix, rollSuffix, scopeSuffix));
+    }
+
+    /** Translatable label for a non-default copy roll (the enum's displayName() is English-only). */
+    private static Component rollName(VariantCopyRoll roll) {
+        return switch (roll) {
+            case DEFAULT -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.roll.default");
+            case EXACT -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.roll.exact");
+            case VARY -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.roll.vary");
+        };
+    }
+
+    /** Translatable label for a copy scope (the enum's displayName() is English-only). */
+    private static Component scopeName(VariantCopyScope scope) {
+        return switch (scope) {
+            case BOTH -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.scope.both");
+            case COPIES -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.scope.copies");
+            case NOT_COPIES -> Component.translatable("chat.dungeontrain.editor_bar.variant_menu.scope.not_copies");
+        };
     }
 
     /**
@@ -1333,7 +1368,7 @@ public final class BlockVariantMenuController {
         int existing = findInHotbar(inv, clip.stack());
         if (existing >= 0) {
             selectSlot(player, inv, existing);
-            actionBar(player, "Switched to clipboard — " + clip.summary(), ChatFormatting.GREEN);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.switched_to_clipboard", clip.summary()), ChatFormatting.GREEN);
             return;
         }
 
@@ -1345,7 +1380,7 @@ public final class BlockVariantMenuController {
             player.drop(displaced, false);
         }
         player.inventoryMenu.broadcastChanges();
-        actionBar(player, "Copied " + clip.summary(), ChatFormatting.GREEN);
+        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copied", clip.summary()), ChatFormatting.GREEN);
     }
 
     /**
@@ -1396,7 +1431,7 @@ public final class BlockVariantMenuController {
             // base.
             VariantState standBase = captureArmorStandBaseVariant(level, worldPos);
             if (standBase == null) {
-                actionBar(player, "Place a base block or armor stand first (target is air)",
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.place_base_first"),
                     ChatFormatting.YELLOW);
                 return false;
             }
@@ -1469,7 +1504,7 @@ public final class BlockVariantMenuController {
             return replaceWithClipboard(player, plot, localPos, rows, idx, held);
         }
         if (old.isMob() || old.isGroupRef()) {
-            actionBar(player, "Shift-click only replaces block rows — remove the mob or group row instead",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.replace_only_block_rows"),
                 ChatFormatting.YELLOW);
             return null;
         }
@@ -1496,22 +1531,22 @@ public final class BlockVariantMenuController {
                 }
             }
         } else {
-            actionBar(player, "Hold a block, bucket, or empty hand to replace a variant", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.hold_to_replace_variant"), ChatFormatting.YELLOW);
             return null;
         }
         VariantState replacement = old.withState(newState, newBeNbt).withLinkedLootPrefabId(linkedPrefabId);
         if (sameCandidate(old, replacement)) {
-            actionBar(player, "That row is already this block", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.row_already_this_block"), ChatFormatting.YELLOW);
             return null;
         }
         for (int i = 0; i < rows.size(); i++) {
             VariantState other = rows.get(i);
             if (i != idx && !other.isGroupRef() && sameCandidate(other, replacement)) {
-                actionBar(player, "Variant already in this cell", ChatFormatting.YELLOW);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_already_in_cell"), ChatFormatting.YELLOW);
                 return null;
             }
         }
-        actionBar(player, "Replaced " + blockName(old.state()) + " with " + blockName(newState),
+        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.replaced_block", blockName(old.state()), blockName(newState)),
             ChatFormatting.GREEN);
         return replacement;
     }
@@ -1528,49 +1563,48 @@ public final class BlockVariantMenuController {
                                                      List<VariantState> rows, int idx, ItemStack held) {
         VariantState old = rows.get(idx);
         if (old.isMob()) {
-            actionBar(player, "Shift-click cannot replace a mob row — remove it instead", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.cannot_replace_mob_row"), ChatFormatting.YELLOW);
             return null;
         }
         int refGroup = VariantClipboardItem.decodeLockId(VariantClipboardItem.readClipboardTag(held));
         if (refGroup <= 0) {
-            actionBar(player, "That clipboard was copied from an unlocked cell — lock the source cell first",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.clipboard_unlocked_source"),
                 ChatFormatting.YELLOW);
             return null;
         }
         int cellLock = plot.lockIdAt(localPos);
         if (refGroup == cellLock) {
-            actionBar(player, "A cell cannot reference its own group (" + refGroup + ")", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.cannot_reference_own_group", refGroup), ChatFormatting.YELLOW);
             return null;
         }
         List<VariantState> targetStates = plot.groupRefs().statesForLockId(refGroup);
         if (targetStates == null || targetStates.isEmpty()) {
-            actionBar(player, "No cell in this template uses lock-id " + refGroup, ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.no_cell_uses_lock_id", refGroup), ChatFormatting.YELLOW);
             return null;
         }
         if (cellLock > 0 && VariantGroupRefs.reaches(plot.groupRefs(), refGroup, cellLock)) {
-            actionBar(player, "Group " + refGroup + " already leads back to group " + cellLock
-                + " — that would loop", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.group_would_loop", refGroup, cellLock), ChatFormatting.YELLOW);
             return null;
         }
         if (old.isGroupRef() && old.groupRef() == refGroup) {
-            actionBar(player, "That row already references group " + refGroup, ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.row_already_references_group", refGroup), ChatFormatting.YELLOW);
             return null;
         }
         for (int i = 0; i < rows.size(); i++) {
             if (i != idx && rows.get(i).groupRef() == refGroup) {
-                actionBar(player, "This cell already references group " + refGroup, ChatFormatting.YELLOW);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.cell_already_references_group", refGroup), ChatFormatting.YELLOW);
                 return null;
             }
         }
         VariantState replacement = VariantState.ofGroupRef(refGroup, targetStates.get(0).state())
             .withWeight(old.weight());
-        actionBar(player, "Replaced " + rowName(old) + " with reference to group " + refGroup,
+        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.replaced_with_group_reference", rowName(old), refGroup),
             ChatFormatting.GREEN);
         return replacement;
     }
 
-    private static String rowName(VariantState row) {
-        return row.isGroupRef() ? "group " + row.groupRef() : blockName(row.state());
+    private static Component rowName(VariantState row) {
+        return row.isGroupRef() ? Component.translatable("chat.dungeontrain.editor_bar.variant_menu.group_row", row.groupRef()) : blockName(row.state());
     }
 
     /** The dedup key {@code ADD} uses: state, block-entity payload, loot link and entity id. */
@@ -1581,13 +1615,13 @@ public final class BlockVariantMenuController {
             && Objects.equals(a.entityId(), b.entityId());
     }
 
-    private static String blockName(BlockState state) {
+    private static Component blockName(BlockState state) {
         return CarriageVariantBlocks.isEmptyPlaceholder(state)
-            ? "empty"
-            : state.getBlock().getName().getString();
+            ? Component.translatable("chat.dungeontrain.editor_bar.variant_menu.empty_block")
+            : state.getBlock().getName();
     }
 
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 }
