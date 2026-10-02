@@ -22186,8 +22186,25 @@
       "released_at": null
     },
     {
-      "id": "buildings-editor-tab",
+      "id": "betterend-sdf-per-thread",
       "version": "0.1112.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Giant mushrooms and layered rock keep their shape",
+      "summary": "Giant glowing mushrooms and bands of coloured rock now come out whole and the same every time, however many places the world is being built at once.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "buildings-editor-tab",
+      "version": "0.1113.0",
       "type": "feat",
       "tags": [
         "feature",
