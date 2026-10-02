@@ -22184,6 +22184,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "buildings-editor-tab",
+      "version": "0.1112.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "world",
+        "ui"
+      ],
+      "title": "Build the buildings",
+      "summary": "The Train Editor has a new Buildings tab, where you can change the buildings the world places or add your own and share them.",
+      "highlights": [],
+      "pr": 1769,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
