@@ -21904,6 +21904,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-menus-survive-test-mode",
+      "version": "0.1096.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor Menus setting stays put",
+      "summary": "The editor's Editor Menus setting now stays as you left it when you test a carriage.",
+      "highlights": [],
+      "pr": 1747,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
