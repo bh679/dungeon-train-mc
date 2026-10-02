@@ -25,8 +25,8 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
  * Adds two buttons under a found player photo while it is open in Exposure's viewer:
- * {@code 1 ◆} — pay a diamond to keep the photo travelling — and {@code X} to close. Each button
- * is only as wide as what is drawn on it.
+ * the Tribute cost beside an emerald — pay it to keep the photo travelling — and {@code X} to close,
+ * which lets the photo burn. Each button is only as wide as what is drawn on it.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoTributeButtons {
@@ -46,8 +46,10 @@ public final class PhotoTributeButtons {
 
     private PhotoTributeButtons() {}
 
-    private static boolean holdsFoundPhoto(LocalPlayer player) {
-        return SharedPhotos.sharedId(player.getMainHandItem()) > 0 || SharedPhotos.sharedId(player.getOffhandItem()) > 0;
+    /** The found photo the player is holding, or an empty stack. */
+    private static ItemStack heldFoundPhoto(LocalPlayer player) {
+        if (SharedPhotos.sharedId(player.getMainHandItem()) > 0) return player.getMainHandItem();
+        return SharedPhotos.sharedId(player.getOffhandItem()) > 0 ? player.getOffhandItem() : ItemStack.EMPTY;
     }
 
     @SubscribeEvent
@@ -55,24 +57,26 @@ public final class PhotoTributeButtons {
         if (!(event.getScreen() instanceof PhotographScreen screen)) return;
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        if (player == null || !holdsFoundPhoto(player)) return;
+        ItemStack photo = player == null ? ItemStack.EMPTY : heldFoundPhoto(player);
+        if (photo.isEmpty()) return;
 
         Font font = minecraft.font;
-        int diamonds = player.getInventory().countItem(Items.DIAMOND);
-        boolean canAfford = diamonds >= SharedPhotos.TRIBUTE_COST;
+        int cost = SharedPhotos.tributeCost(photo);
+        int emeralds = player.getInventory().countItem(Items.EMERALD);
+        boolean canAfford = emeralds >= cost;
         Component closeLabel = Component.translatable("gui.dungeontrain.photo_tribute.close");
-        int tributeWidth = TributeButton.widthFor(font);
+        int tributeWidth = TributeButton.widthFor(font, cost);
         int closeWidth = font.width(CLOSE_MARK) + 2 * PADDING;
         int left = (screen.width - tributeWidth - GAP - closeWidth) / 2;
         int y = screen.height - HEIGHT - BOTTOM_MARGIN;
 
-        TributeButton tribute = new TributeButton(left, y, tributeWidth, canAfford, button -> {
+        TributeButton tribute = new TributeButton(left, y, tributeWidth, cost, canAfford, button -> {
             DungeonTrainNet.sendToServer(new PhotoTributePacket());
             screen.onClose();
         });
         tribute.active = canAfford;
         tribute.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.offer")
-            .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have", diamonds))));
+            .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have", emeralds))));
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
             .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT)
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
@@ -98,22 +102,23 @@ public final class PhotoTributeButtons {
         shown = List.of();
     }
 
-    /** {@code <cost> <diamond>}: the cost is blue when the player carries enough diamonds, red when not. */
+    /** {@code <cost> <emerald>}: the cost is blue when the player carries enough emeralds, red when not. */
     private static final class TributeButton extends Button {
 
         private static final Component LABEL = Component.translatable("gui.dungeontrain.photo_tribute.tribute");
-        private static final String COST = String.valueOf(SharedPhotos.TRIBUTE_COST);
-        private static final ItemStack ICON = new ItemStack(Items.DIAMOND);
+        private static final ItemStack ICON = new ItemStack(Items.EMERALD);
 
+        private final String cost;
         private final boolean canAfford;
 
-        TributeButton(int x, int y, int width, boolean canAfford, OnPress onPress) {
+        TributeButton(int x, int y, int width, int cost, boolean canAfford, OnPress onPress) {
             super(x, y, width, HEIGHT, Component.empty(), onPress, DEFAULT_NARRATION);
+            this.cost = String.valueOf(cost);
             this.canAfford = canAfford;
         }
 
-        static int widthFor(Font font) {
-            return PADDING + font.width(COST) + 2 + ICON_SIZE + PADDING / 2;
+        static int widthFor(Font font, int cost) {
+            return PADDING + font.width(String.valueOf(cost)) + 2 + ICON_SIZE + PADDING / 2;
         }
 
         @Override
@@ -122,14 +127,14 @@ public final class PhotoTributeButtons {
             Font font = Minecraft.getInstance().font;
             int textY = getY() + (height - font.lineHeight) / 2 + 1;
             int x = getX() + PADDING;
-            graphics.drawString(font, COST, x, textY, canAfford ? CAN_AFFORD_COLOUR : CANNOT_AFFORD_COLOUR);
-            x += font.width(COST) + 2;
+            graphics.drawString(font, cost, x, textY, canAfford ? CAN_AFFORD_COLOUR : CANNOT_AFFORD_COLOUR);
+            x += font.width(cost) + 2;
             graphics.renderItem(ICON, x, getY() + (height - ICON_SIZE) / 2);
         }
 
         @Override
         protected MutableComponent createNarrationMessage() {
-            return Component.translatable("gui.narrate.button", Component.empty().append(LABEL).append(" " + COST));
+            return Component.translatable("gui.narrate.button", Component.empty().append(LABEL).append(" " + cost));
         }
     }
 }

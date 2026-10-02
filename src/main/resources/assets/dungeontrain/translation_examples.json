@@ -792,7 +792,7 @@
   },
   "gui.dungeontrain.photo_tribute.have": {
     "1": {
-      "label": "how many diamonds the player is carrying",
+      "label": "how many emeralds the player is carrying",
       "examples": [
         "0",
         "1",

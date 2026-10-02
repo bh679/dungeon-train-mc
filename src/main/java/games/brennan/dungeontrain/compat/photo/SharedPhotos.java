@@ -7,6 +7,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.event.SharedBookGate;
+import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
@@ -63,7 +64,7 @@ import java.util.stream.Stream;
  * {@code dungeontrain:random_playerphoto}.
  *
  * <p>On the relay a photo lives by attention: every open uses one of its views, and a player can
- * pay Tribute — one diamond — to refill them. This class reports the opens, takes the diamond, and
+ * pay Tribute — emeralds — to refill them. This class reports the opens, takes the emeralds, and
  * sends a photo back when the relay says a tributed photo had already been removed.</p>
  *
  * <p>All image work is off the server thread: encoding runs while the print animation plays,
@@ -82,8 +83,11 @@ public final class SharedPhotos {
     /** Frame extra-data key naming who last paid Tribute, on a photographer's own returning photo. */
     public static final String SHARED_TRIBUTED_BY_KEY = "dt_shared_photo_tributed_by";
 
-    /** Diamonds one Tribute costs. */
-    public static final int TRIBUTE_COST = 1;
+    /** Frame extra-data key carrying how many times a found photo has been tributed, as far as this copy knows. */
+    public static final String SHARED_TRIBUTES_KEY = "dt_shared_photo_tributes";
+
+    /** Emeralds the first Tribute to a photo costs; each Tribute it has had adds one. */
+    public static final int TRIBUTE_BASE_COST = 1;
 
     static final String SUBMIT_PATH = "/photos/submit";
     static final String VIEW_PATH = "/photos/view";
@@ -116,7 +120,7 @@ public final class SharedPhotos {
     }
 
     /** One photo from the relay, decoded. {@code tributedBy} is set on a photographer's own tributed photo. */
-    private record PoolPhoto(int id, String author, String tributedBy, PhotoPngCodec.Decoded image) {}
+    private record PoolPhoto(int id, String author, String tributedBy, int tributes, PhotoPngCodec.Decoded image) {}
 
     /** Server thread only. */
     private static List<PendingUpload> pendingUploads = List.of();
@@ -125,6 +129,8 @@ public final class SharedPhotos {
     private static final List<Integer> spent = new ArrayList<>();
     /** Found photos a player has already been greeted for, by relay id. Server thread only. */
     private static final Map<UUID, Set<Integer>> greeted = new HashMap<>();
+    /** The photo a player paid Tribute to and has not closed yet — that close keeps it. Server thread only. */
+    private static final Map<UUID, Integer> justTributed = new HashMap<>();
     private static final AtomicBoolean fetchInFlight = new AtomicBoolean();
     private static int ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
 
@@ -244,9 +250,15 @@ public final class SharedPhotos {
         return frame == null ? 0 : frame.extraData().getInt(SHARED_ID_KEY);
     }
 
-    private static int heldSharedId(ServerPlayer player) {
-        return Stream.of(InteractionHand.values()).mapToInt(hand -> sharedId(player.getItemInHand(hand)))
-                .filter(id -> id > 0).findFirst().orElse(0);
+    /** Emeralds a Tribute to this found photo costs: one more for every Tribute it has already had. */
+    public static int tributeCost(ItemStack stack) {
+        Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        return TRIBUTE_BASE_COST + (frame == null ? 0 : Math.max(0, frame.extraData().getInt(SHARED_TRIBUTES_KEY)));
+    }
+
+    /** The hand holding a found photo, if either does. */
+    private static Optional<InteractionHand> heldSharedHand(ServerPlayer player) {
+        return Stream.of(InteractionHand.values()).filter(hand -> sharedId(player.getItemInHand(hand)) > 0).findFirst();
     }
 
     private static JsonObject action(ServerPlayer player, int photoId) {
@@ -259,24 +271,43 @@ public final class SharedPhotos {
 
     /**
      * The player closed the photo viewer. If they were looking at a found photo, tell the relay it
-     * was opened. Returns whether a found photo was in hand.
+     * was opened; unless they have just paid Tribute to it, the photo then drops and burns.
+     * Returns whether a found photo was in hand.
      */
     public static boolean reportView(ServerPlayer player) {
-        int photoId = heldSharedId(player);
-        if (photoId == 0) return false;
+        Optional<InteractionHand> hand = heldSharedHand(player);
+        if (hand.isEmpty()) return false;
+        ItemStack held = player.getItemInHand(hand.get());
+        int photoId = sharedId(held);
         markSpent(photoId);
         RelayOutbox.get().enqueue(VIEW_PATH, action(player, photoId).toString());
+        Integer tributed = justTributed.remove(player.getUUID());
+        if (tributed == null || tributed != photoId) {
+            player.setItemInHand(hand.get(), ItemStack.EMPTY);
+            StartingBookEvents.dropAndBurn(player, held);
+        }
         return true;
     }
 
-    /** The player chose Tribute for the found photo in hand: one diamond, and the relay is told. */
+    /**
+     * The player chose Tribute for the found photo in hand: the emeralds are taken, the relay is
+     * told, and this copy remembers one more Tribute so its next one costs more. The photo is kept.
+     */
     public static void payTribute(ServerPlayer player) {
-        int photoId = heldSharedId(player);
-        if (photoId == 0) return;
-        if (player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.DIAMOND), TRIBUTE_COST, player.inventoryMenu.getCraftSlots()) < TRIBUTE_COST) {
-            player.sendSystemMessage(Component.translatable("chat.dungeontrain.photo_tribute.no_diamond").withStyle(ChatFormatting.GRAY));
+        Optional<InteractionHand> hand = heldSharedHand(player);
+        if (hand.isEmpty()) return;
+        ItemStack held = player.getItemInHand(hand.get());
+        int photoId = sharedId(held);
+        int cost = tributeCost(held);
+        if (player.getInventory().countItem(Items.EMERALD) < cost) {
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.photo_tribute.cannot_afford").withStyle(ChatFormatting.GRAY));
             return;
         }
+        player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.EMERALD), cost, player.inventoryMenu.getCraftSlots());
+        Frame frame = held.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        held.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable()
+                .updateExtraData(tag -> tag.putInt(SHARED_TRIBUTES_KEY, tag.getInt(SHARED_TRIBUTES_KEY) + 1)).toImmutable());
+        justTributed.put(player.getUUID(), photoId);
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
@@ -350,6 +381,7 @@ public final class SharedPhotos {
         pendingUploads = List.of();
         pool = List.of();
         greeted.clear();
+        justTributed.clear();
         synchronized (spent) { spent.clear(); }
         ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
     }
@@ -394,7 +426,8 @@ public final class SharedPhotos {
                         .timeout(REQUEST_TIMEOUT).GET().build();
                 HttpResponse<byte[]> bytes = HTTP.send(image, HttpResponse.BodyHandlers.ofByteArray());
                 if (bytes.statusCode() != 200) continue;
-                fetched.add(new PoolPhoto(id, author, tributedBy, PhotoPngCodec.decode(bytes.body())));
+                int tributes = row.has("tributes") ? row.get("tributes").getAsInt() : 0;
+                fetched.add(new PoolPhoto(id, author, tributedBy, tributes, PhotoPngCodec.decode(bytes.body())));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -464,6 +497,7 @@ public final class SharedPhotos {
                     .updateExtraData(tag -> {
                         tag.putInt(SHARED_ID_KEY, photo.id());
                         tag.putString(SHARED_AUTHOR_KEY, photo.author());
+                        tag.putInt(SHARED_TRIBUTES_KEY, photo.tributes());
                         if (!photo.tributedBy().isBlank()) tag.putString(SHARED_TRIBUTED_BY_KEY, photo.tributedBy());
                     })
                     .toImmutable();

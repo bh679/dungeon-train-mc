@@ -146,7 +146,7 @@ public final class DisposableCameraEvents {
      * viewed from — the photo itself, or each such photo in a stack of photographs.
      */
     public static void handlePhotographViewClosed(ServerPlayer player) {
-        // A found photo does not burn; closing it only counts as one of its views.
+        // A found photo counts the view, then burns too unless Tribute was just paid to it.
         if (SharedPhotos.reportView(player)) return;
         for (InteractionHand hand : InteractionHand.values()) {
             ItemStack held = player.getItemInHand(hand);
