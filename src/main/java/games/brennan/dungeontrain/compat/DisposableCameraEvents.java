@@ -4,8 +4,11 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.neoforge.api.event.ModifyFrameExtraDataEvent;
+import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import io.github.mortuusars.exposure.world.entity.CameraOperator;
+import io.github.mortuusars.exposure.world.item.PhotographItem;
 import io.github.mortuusars.exposure.world.item.StackedPhotographsItem;
+import io.github.mortuusars.exposure.world.level.storage.ExposureIdentifier;
 import io.github.mortuusars.exposure.world.item.camera.CameraItem;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -19,6 +22,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.ItemStackedOnOtherEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Behaviour of the {@link DisposableCamera}: one shot, the viewfinder closes so the print can be
@@ -44,6 +51,13 @@ public final class DisposableCameraEvents {
 
     /** Cooldown restarted when the viewfinder closes, so the whole print animation plays in hand. */
     static final int PRINT_TICKS = 40;
+
+    /**
+     * Player → the photo their disposable camera is about to print. Only bridges the ticks between
+     * the shot and the print; if it is lost (a relog mid-print) the photo just stays where Polaroid
+     * put it.
+     */
+    private static final Map<UUID, ExposureIdentifier> PENDING_PRINTS = new ConcurrentHashMap<>();
 
     private DisposableCameraEvents() {}
 
@@ -71,8 +85,9 @@ public final class DisposableCameraEvents {
 
     private static void tickCamera(ServerPlayer player, Inventory inventory, int slot, ItemStack camera) {
         CameraItem item = (CameraItem) camera.getItem();
-        boolean framePending = camera.get(Exposure.DataComponents.PHOTOGRAPH_FRAME) != null;
-        if (framePending) {
+        Frame pending = camera.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        if (pending != null) {
+            PENDING_PRINTS.put(player.getUUID(), pending.identifier());
             if (!DisposableCamera.isShot(camera)) {
                 DisposableCamera.markShot(camera);
             }
@@ -84,10 +99,46 @@ public final class DisposableCameraEvents {
             return;
         }
         if (DisposableCamera.isShot(camera)) {
-            // The frame has left the camera: Polaroid printed the photograph this tick.
-            inventory.setItem(slot, ItemStack.EMPTY);
+            // The frame has left the camera: Polaroid printed the photograph this tick. The photo
+            // takes the camera's place in the inventory as the camera drops.
+            ExposureIdentifier printed = PENDING_PRINTS.remove(player.getUUID());
+            ItemStack photograph = printed == null ? ItemStack.EMPTY : takePrintedPhotograph(inventory, printed);
+            inventory.setItem(slot, photograph);
             StartingBookEvents.dropAndBurn(player, camera);
         }
+    }
+
+    /**
+     * Takes the photograph Polaroid just printed back out of the inventory — it lands in the first
+     * free slot, or on top of a stack of photographs — so it can be put where the camera was. Empty
+     * if it isn't there (the inventory was full and it was dropped).
+     */
+    private static ItemStack takePrintedPhotograph(Inventory inventory, ExposureIdentifier printed) {
+        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
+            ItemStack stack = inventory.getItem(slot);
+            if (isPhotographOf(stack, printed)) {
+                inventory.setItem(slot, ItemStack.EMPTY);
+                return stack;
+            }
+            if (stack.getItem() instanceof StackedPhotographsItem stacked
+                    && stacked.getPhotographs(stack).size() > 0
+                    && isPhotographOf(stacked.getPhotographs(stack).getItemUnsafe(0), printed)) {
+                ItemStack photograph = stacked.removeTopPhotograph(stack).getItemStack();
+                if (stacked.getPhotographs(stack).size() == 1) {
+                    inventory.setItem(slot, stacked.removeTopPhotograph(stack).getItemStack());
+                }
+                return photograph;
+            }
+        }
+        return ItemStack.EMPTY;
+    }
+
+    private static boolean isPhotographOf(ItemStack stack, ExposureIdentifier identifier) {
+        if (!(stack.getItem() instanceof PhotographItem)) {
+            return false;
+        }
+        Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        return frame != null && identifier.equals(frame.identifier());
     }
 
     private static void closeViewfinder(ServerPlayer player, CameraItem item, ItemStack camera) {
