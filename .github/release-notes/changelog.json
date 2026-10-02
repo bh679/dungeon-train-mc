@@ -22166,6 +22166,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "feedback-header-freshness",
+      "version": "0.1111.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "internal"
+      ],
+      "title": "Feedback says a little more",
+      "summary": "Feedback you send now carries a little more about your game, so it is easier to act on.",
+      "highlights": [],
+      "pr": 1767,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

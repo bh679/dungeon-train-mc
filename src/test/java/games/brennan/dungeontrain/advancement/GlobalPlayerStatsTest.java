@@ -110,4 +110,38 @@ class GlobalPlayerStatsTest {
         assertEquals(24_000L, after.editorTicks());
         assertEquals(96_000L, after.buildingTicks());
     }
+
+    @Test
+    @DisplayName("a file from before games were counted starts them from its deaths")
+    void gamesSeedFromDeaths() {
+        GlobalPlayerStats.Data data = parse(LEGACY);
+        assertEquals(40L, data.totalDeaths());
+        assertEquals(40L, data.totalGames());
+    }
+
+    @Test
+    @DisplayName("a Free Play death is a game but not a death, and both survive a save")
+    void gamesCountApartFromDeaths() {
+        GlobalPlayerStats.Data before = GlobalPlayerStats.Data.EMPTY
+                .plusDeaths(1L).plusGames(1L)   // an ordinary death
+                .plusGames(1L);                  // a Free Play death
+        assertEquals(1L, before.totalDeaths());
+        assertEquals(2L, before.totalGames());
+
+        JsonElement json = GlobalPlayerStats.Data.CODEC.encodeStart(JsonOps.INSTANCE, before)
+                .result().orElseThrow();
+        GlobalPlayerStats.Data after = parse(json.toString());
+        assertEquals(1L, after.totalDeaths());
+        assertEquals(2L, after.totalGames());
+    }
+
+    @Test
+    @DisplayName("both lives counters stay at the top level, where an older jar looks for deaths")
+    void livesStayFlatOnDisk() {
+        JsonObject json = GlobalPlayerStats.Data.CODEC
+                .encodeStart(JsonOps.INSTANCE, GlobalPlayerStats.Data.EMPTY.plusDeaths(3L).plusGames(5L))
+                .result().orElseThrow().getAsJsonObject();
+        assertEquals(3L, json.get("totalDeaths").getAsLong());
+        assertEquals(5L, json.get("totalGames").getAsLong());
+    }
 }
