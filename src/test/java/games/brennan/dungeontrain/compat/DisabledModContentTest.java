@@ -110,9 +110,9 @@ final class DisabledModContentTest {
     @DisplayName("the biome mods' own creative tabs are hidden; vanilla and DT tabs are kept")
     void creativeTabs() {
         List<String> hidden = List.of(
-            "betternether:blocks", "betternether:items", "betternether:nature",
-            "betterend:blocks", "betterend:items", "betterend:nature",
-            "biomesoplenty:main");
+            "betternether:blocks_tab", "betternether:items_tab", "betternether:nature_tab",
+            "betterend:blocks_tab", "betterend:items_tab", "betterend:nature_tab",
+            "biomesoplenty:main", "vanillabackport:vanilla_backport");
         for (String tab : hidden) {
             assertTrue(DisabledModContent.isHiddenCreativeTab(id(tab)), tab);
         }

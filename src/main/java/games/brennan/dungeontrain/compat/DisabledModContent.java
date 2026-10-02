@@ -30,6 +30,10 @@ public final class DisabledModContent {
     /** Mods whose gear and ores are disabled. BoP ships none today — it is covered for future updates. */
     static final Set<String> NAMESPACES = Set.of("betternether", "betterend", "biomesoplenty");
 
+    /** Mods whose own creative tabs are hidden: the ones above, plus VanillaBackport — its gear is kept. */
+    private static final Set<String> HIDDEN_TAB_NAMESPACES =
+        Set.of("betternether", "betterend", "biomesoplenty", "vanillabackport");
+
     /** Ore blocks and ore placed features: {@code cincinnasite_ore}, {@code nether_ruby_large_ore}, … */
     private static final Pattern ORE = Pattern.compile("(?:^|.*_)ore$");
 
@@ -57,10 +61,11 @@ public final class DisabledModContent {
             && ORE.matcher(placedFeature.getPath()).matches();
     }
 
-    /** A disabled mod's own creative tab ({@code betternether:blocks}, {@code biomesoplenty:main}, …) — hidden
-     *  so the creative inventory stays on DT's and vanilla's tabs; the blocks remain in the search tab. */
+    /** A biome mod's own creative tab ({@code betternether:blocks_tab}, {@code biomesoplenty:main},
+     *  {@code vanillabackport:vanilla_backport}, …) — hidden so the creative inventory stays on DT's and
+     *  vanilla's tabs; the blocks remain in the search tab. */
     public static boolean isHiddenCreativeTab(ResourceLocation tabId) {
-        return tabId != null && NAMESPACES.contains(tabId.getNamespace());
+        return tabId != null && HIDDEN_TAB_NAMESPACES.contains(tabId.getNamespace());
     }
 
     /** True for a disabled mod's armour, weapon, tool, tool part, gear smithing template, metal or ore item. */
