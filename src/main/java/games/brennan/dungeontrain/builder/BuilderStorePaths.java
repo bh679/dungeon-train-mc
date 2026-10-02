@@ -33,14 +33,44 @@ public final class BuilderStorePaths {
 
     private BuilderStorePaths() {}
 
+    /**
+     * The most parked carriages a build can have a working copy for — what {@code reset} sweeps.
+     * Generous on purpose: it bounds a cleanup loop, not what a mode may park.
+     */
+    public static final int MAX_VOLUMES = 8;
+
     /** This build's block-variant sidecar. The file need not exist — an absent one reads as empty. */
     public static Path variantsFile(ServerLevel level) {
-        return dir(level).resolve(VARIANTS_FILE);
+        return variantsFile(level, 0);
+    }
+
+    /**
+     * The block-variant sidecar of parked carriage {@code volume}.
+     *
+     * <p>One per carriage because each carriage's cells are relative to its own corner: a run saved
+     * as a carriage group would otherwise file the same cell of every carriage under one key. The
+     * first keeps the original filename, so a world made before groups carried sidecars reads as it
+     * always did.</p>
+     */
+    public static Path variantsFile(ServerLevel level, int volume) {
+        return dir(level).resolve(volumeName(VARIANTS_FILE, volume));
     }
 
     /** This build's container-contents store. The file need not exist — an absent one reads as empty. */
     public static Path contentsFile(ServerLevel level) {
-        return dir(level).resolve(CONTENTS_FILE);
+        return contentsFile(level, 0);
+    }
+
+    /** The container-contents store of parked carriage {@code volume} — see {@link #variantsFile(ServerLevel, int)}. */
+    public static Path contentsFile(ServerLevel level, int volume) {
+        return dir(level).resolve(volumeName(CONTENTS_FILE, volume));
+    }
+
+    /** {@code build.variants.json} for the first carriage, {@code build.2.variants.json} for the third. */
+    static String volumeName(String file, int volume) {
+        if (volume <= 0) return file;
+        int dot = file.indexOf('.');
+        return file.substring(0, dot) + "." + volume + file.substring(dot);
     }
 
     private static Path dir(ServerLevel level) {

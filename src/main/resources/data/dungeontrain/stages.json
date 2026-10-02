@@ -1085,7 +1085,7 @@
   },
   "wood_oak": {
     "name": "wood_oak",
-    "minLevel": 132,
+    "minLevel": 131,
     "maxLevel": 160,
     "phases": [
       "OVERWORLD",

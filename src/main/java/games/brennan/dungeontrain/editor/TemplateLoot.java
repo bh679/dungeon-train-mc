@@ -341,7 +341,8 @@ public final class TemplateLoot {
                 }
                 case PORTAL_ROOM -> TrackVariantBlocks.loadFor(TrackKind.PORTAL_ROOM, id, null).entries();
                 case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameVariants.loadFor(id).entries();
-                case CARRIAGE_GROUP -> List.of();
+                case CARRIAGE_GROUP -> WholeVariantBlocks.loadFor(
+                        games.brennan.dungeontrain.train.WholeKind.GROUP, id, null).entries();
             };
         } catch (RuntimeException e) {
             // A malformed sidecar costs the Loot row its variants, not the sheet.

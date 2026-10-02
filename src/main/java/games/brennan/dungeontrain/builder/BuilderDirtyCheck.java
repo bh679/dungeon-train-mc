@@ -88,7 +88,7 @@ public final class BuilderDirtyCheck {
             // A variant-pool edit is unsaved work the block compare skips by design — the Z menu
             // writes this build's own document, but only Save carries it onto a template.
             if (EditorPlotSnapshots.sidecarEdited(key)
-                    || isDirty(baseline, size, variantCellPositions(level, size),
+                    || isDirty(baseline, size, variantCellPositions(level, i, size),
                         local -> level.getBlockState(origin.offset(local)))) {
                 dirty.add(i);
             }
@@ -176,9 +176,9 @@ public final class BuilderDirtyCheck {
     }
 
     /** Local positions of this build's variant cells — the ones the preview ticker animates. */
-    private static Set<BlockPos> variantCellPositions(ServerLevel level, Vec3i size) {
+    private static Set<BlockPos> variantCellPositions(ServerLevel level, int volume, Vec3i size) {
         Set<BlockPos> out = new HashSet<>();
-        for (CarriageVariantBlocks.Entry e : BuilderVariantStore.loadFor(level, size).entries()) {
+        for (CarriageVariantBlocks.Entry e : BuilderVariantStore.loadFor(level, volume, size).entries()) {
             out.add(e.localPos());
         }
         return out;
