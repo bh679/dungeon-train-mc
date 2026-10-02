@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.blockvariant;
 
+import games.brennan.dungeontrain.editor.GrowthShapes;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.editor.RedstoneToggle;
 import games.brennan.dungeontrain.editor.VariantConnect;
@@ -104,6 +105,31 @@ public final class BlockVariantMenuRaycast {
 
         // Span option strip (above the panel) — modal like the OPTIONS popup: an option is a pick,
         // anywhere else in the panel closes it (secondary -2), outside both does nothing.
+        // Grow popup — the same modal rules as the Span strip below.
+        int growthRow = BlockVariantMenu.growthPopupRow();
+        BlockState growthState = growthRow >= 0
+            ? BlockVariantMenu.parseState(entries.get(growthRow).stateString()) : null;
+        if (growthState != null) {
+            java.util.List<GrowthPopupLayout.Row> rows = GrowthPopupLayout.rows(
+                games.brennan.dungeontrain.editor.VariantGrowth.fromInt(entries.get(growthRow).growth()),
+                growthState, panelW, halfH);
+            for (GrowthPopupLayout.Row row : rows) {
+                if (hitY < row.bottom() || hitY > row.top()) continue;
+                double rel = hitX - row.buttonsLeft();
+                if (rel < 0 || rel > GrowthPopupLayout.BUTTONS_WIDTH) continue;
+                int opt = Math.min(row.buttons().length - 1, (int) Math.floor(rel / row.buttonWidth()));
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.GROWTH_OPTION, growthRow,
+                    GrowthPopupLayout.encode(row.section(), opt));
+            }
+            double[] r = GrowthPopupLayout.rect(rows);
+            if (hitX >= r[0] && hitX <= r[1] && hitY >= r[2] && hitY <= r[3]) {
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.GROWTH_OPTION, growthRow, -1);
+            }
+            if (hitX >= -halfW && hitX <= halfW && hitY >= -halfH && hitY <= halfH) {
+                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.GROWTH_OPTION, growthRow, -2);
+            }
+            return BlockVariantMenu.Hit.NONE;
+        }
         if (BlockVariantMenu.spanPopupOpen()) {
             java.util.List<SpanPopupLayout.Row> rows = SpanPopupLayout.rows(panelW, halfH);
             for (SpanPopupLayout.Row row : rows) {
@@ -203,10 +229,14 @@ public final class BlockVariantMenuRaycast {
             && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
         double armsCellR = connectCellL;
         double armsCellL = showArms ? armsCellR - BlockVariantMenuRenderer.ARMS_CELL_WIDTH : armsCellR;
+        boolean growable = parsed != null && concrete && BlockVariantMenu.growthSupported()
+            && GrowthShapes.canGrow(parsed);
+        double growthCellR = armsCellL;
+        double growthCellL = growable ? growthCellR - BlockVariantMenuRenderer.GROWTH_CELL_WIDTH : growthCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they
         // occupy the space the rotation/half cells leave free on a mob row.
         boolean showDiff = entry.isMob();
-        double diffMaxCellR = armsCellL;
+        double diffMaxCellR = growthCellL;
         double diffMaxCellL = showDiff ? diffMaxCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMaxCellR;
         double diffMinCellR = diffMaxCellL;
         double diffMinCellL = showDiff ? diffMinCellR - BlockVariantMenuRenderer.DIFF_CELL_WIDTH : diffMinCellR;
@@ -238,6 +268,9 @@ public final class BlockVariantMenuRaycast {
             int seg = BlockVariantMenuRenderer.segmentAt(hitX, armsCellL, armsCellR,
                 BlockVariantMenu.ARM_SEGMENTS.length);
             return new BlockVariantMenu.Hit(BlockVariantMenu.ARM_SEGMENTS[seg], idx);
+        }
+        if (growable && hitX >= growthCellL && hitX <= growthCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_GROWTH, idx);
         }
         if (showDiff && hitX >= diffMinCellL && hitX <= diffMinCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_DIFF_MIN, idx);

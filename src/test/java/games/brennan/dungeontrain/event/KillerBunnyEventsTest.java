@@ -51,6 +51,28 @@ final class KillerBunnyEventsTest {
     }
 
     @Test
+    @DisplayName("name roll under the chance → Monty Python name; at or above → left alone")
+    void nameRoll() {
+        assertTrue(KillerBunnyEvents.shouldName(0.05f, 0.10));
+        assertFalse(KillerBunnyEvents.shouldName(0.10f, 0.10));
+        assertFalse(KillerBunnyEvents.shouldName(0.5f, 0.10));
+    }
+
+    @Test
+    @DisplayName("name chance 0 never names; 1 always names")
+    void nameChanceBounds() {
+        assertFalse(KillerBunnyEvents.shouldName(0.0f, 0.0));
+        assertTrue(KillerBunnyEvents.shouldName(0.9999f, 1.0));
+    }
+
+    @Test
+    @DisplayName("shipped name chance is one in ten — above AIN's 5% passive roll")
+    void defaultNameChance() {
+        assertEquals(0.10, DungeonTrainConfig.DEFAULT_KILLER_BUNNY_NAME_CHANCE, 1e-12);
+        assertTrue(DungeonTrainConfig.DEFAULT_KILLER_BUNNY_NAME_CHANCE > 0.05);
+    }
+
+    @Test
     @DisplayName("shipped default is one rabbit in 250")
     void defaultChance() {
         assertEquals(1.0 / 250.0, DungeonTrainConfig.DEFAULT_KILLER_BUNNY_CHANCE, 1e-12);

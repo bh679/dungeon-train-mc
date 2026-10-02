@@ -69,6 +69,13 @@ public final class DungeonTrainConfig {
     public static final double DEFAULT_KILLER_BUNNY_CHANCE = 1.0 / 250.0;
     public static final double MIN_KILLER_BUNNY_CHANCE = 0.0;
     public static final double MAX_KILLER_BUNNY_CHANCE = 1.0;
+    /**
+     * One Killer Bunny in ten carries a Monty Python name — double AIN's 5% passive-mob naming roll,
+     * so a named Killer Bunny leans toward the Rabbit of Caerbannog. See {@code KillerBunnyNames}.
+     */
+    public static final double DEFAULT_KILLER_BUNNY_NAME_CHANCE = 0.10;
+    public static final double MIN_KILLER_BUNNY_NAME_CHANCE = 0.0;
+    public static final double MAX_KILLER_BUNNY_NAME_CHANCE = 1.0;
     public static final int MIN_PROGRESSION_LEVEL_DELAY = 0;
     public static final int MAX_PROGRESSION_LEVEL_DELAY = 100;
     public static final int DEFAULT_PROGRESSION_LEVEL_DELAY = 1;
@@ -127,6 +134,9 @@ public final class DungeonTrainConfig {
 
     /** Default for POSTing per-join world-info telemetry (world/train seeds + regen inputs + mods) to the relay. */
     public static final boolean DEFAULT_WORLD_INFO_TO_RELAY = true;
+
+    /** Default for letting retired leaderboard eras (past versions, past years) roll as loot books. */
+    public static final boolean DEFAULT_RETIRED_LEADERBOARD_BOOKS = true;
 
     /** Default master for the community "share books" contribution half (uploading signed books). */
     public static final boolean DEFAULT_SHARE_BOOKS_ENABLED = true;
@@ -255,6 +265,21 @@ public final class DungeonTrainConfig {
     /** Default master for portal rooms whose template asks to stand under a sky of its own. */
     public static final boolean DEFAULT_PORTAL_ROOM_DAYLIGHT = true;
 
+    /**
+     * How heavily "a library of the rider's own books" weighs in the dimensional-carriage lottery,
+     * against what the authored weights alone would give it — see
+     * {@link games.brennan.dungeontrain.portal.PortalOwnShelves}.
+     *
+     * <p>Two values because the answer depends on the run: below 1 ordinarily, so a player who has
+     * written nothing lately is not handed their own shelves over and over, and well above 1 once
+     * they have signed a book this run, when finding it on a shelf is the reward. 1 on both is the
+     * lottery exactly as authored.</p>
+     */
+    public static final double DEFAULT_OWN_LIBRARY_CHANCE_SCALE = 0.5;
+    public static final double DEFAULT_OWN_LIBRARY_CHANCE_WRITTEN_SCALE = 3.0;
+    public static final double MIN_OWN_LIBRARY_CHANCE_SCALE = 0.0;
+    public static final double MAX_OWN_LIBRARY_CHANCE_SCALE = 10.0;
+
     /** Default master for serving approved player-written narrative series back on narrative lecterns. */
     public static final boolean DEFAULT_DISCOVER_NARRATIVES_ENABLED = true;
 
@@ -338,6 +363,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue ECHO_ENCOUNTER_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_JOIN_REPORT_TO_DISCORD;
     public static final ModConfigSpec.BooleanValue WORLD_INFO_TO_RELAY;
+    public static final ModConfigSpec.BooleanValue RETIRED_LEADERBOARD_BOOKS;
     public static final ModConfigSpec.BooleanValue SHARE_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DISCOVER_SHARED_BOOKS_ENABLED;
     public static final ModConfigSpec.BooleanValue DEATH_NOTES_ENABLED;
@@ -347,12 +373,15 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
     public static final ModConfigSpec.IntValue PORTAL_ROOM_AUTHOR_MIN_BOOKS;
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_DAYLIGHT;
+    public static final ModConfigSpec.DoubleValue OWN_LIBRARY_CHANCE_SCALE;
+    public static final ModConfigSpec.DoubleValue OWN_LIBRARY_CHANCE_WRITTEN_SCALE;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGE_LEASING_ENABLED;
     public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_ROOM_CHANCE;
     public static final ModConfigSpec.DoubleValue KILLER_BUNNY_CHANCE;
+    public static final ModConfigSpec.DoubleValue KILLER_BUNNY_NAME_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
     public static final ModConfigSpec.IntValue SHARED_CARRIAGE_MAX_ENTITIES;
     public static final ModConfigSpec.BooleanValue DISCOVER_NARRATIVES_ENABLED;
@@ -402,6 +431,7 @@ public final class DungeonTrainConfig {
         ECHO_ENCOUNTER_TO_DISCORD = pair.getLeft().echoEncounterToDiscord;
         WORLD_JOIN_REPORT_TO_DISCORD = pair.getLeft().worldJoinReportToDiscord;
         WORLD_INFO_TO_RELAY = pair.getLeft().worldInfoToRelay;
+        RETIRED_LEADERBOARD_BOOKS = pair.getLeft().retiredLeaderboardBooks;
         SHARE_BOOKS_ENABLED = pair.getLeft().shareBooksEnabled;
         DISCOVER_SHARED_BOOKS_ENABLED = pair.getLeft().discoverSharedBooksEnabled;
         DEATH_NOTES_ENABLED = pair.getLeft().deathNotesEnabled;
@@ -411,12 +441,15 @@ public final class DungeonTrainConfig {
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
         PORTAL_ROOM_AUTHOR_MIN_BOOKS = pair.getLeft().portalRoomAuthorMinBooks;
         PORTAL_ROOM_DAYLIGHT = pair.getLeft().portalRoomDaylight;
+        OWN_LIBRARY_CHANCE_SCALE = pair.getLeft().ownLibraryChanceScale;
+        OWN_LIBRARY_CHANCE_WRITTEN_SCALE = pair.getLeft().ownLibraryChanceWrittenScale;
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
         SHARED_CARRIAGE_LEASING_ENABLED = pair.getLeft().sharedCarriageLeasingEnabled;
         BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_ROOM_CHANCE = pair.getLeft().sharedRoomChance;
         KILLER_BUNNY_CHANCE = pair.getLeft().killerBunnyChance;
+        KILLER_BUNNY_NAME_CHANCE = pair.getLeft().killerBunnyNameChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
         SHARED_CARRIAGE_MAX_ENTITIES = pair.getLeft().sharedCarriageMaxEntities;
         DISCOVER_NARRATIVES_ENABLED = pair.getLeft().discoverNarrativesEnabled;
@@ -480,6 +513,13 @@ public final class DungeonTrainConfig {
                         "spawns; never on Peaceful or during the opening no-hostiles stretch. Default 1/250 (0.004). 0 disables it.")
                 .defineInRange("killerBunnyChance", DEFAULT_KILLER_BUNNY_CHANCE,
                         MIN_KILLER_BUNNY_CHANCE, MAX_KILLER_BUNNY_CHANCE);
+        ModConfigSpec.DoubleValue killerBunnyNameChance = b
+                .comment("The probability a Killer Bunny spawns carrying a name from Monty Python and the Holy Grail (Rabbit of",
+                        "Caerbannog, Tim's Pet, Run Away, ...). Rolled once when the rabbit turns killer. On a miss the rabbit",
+                        "keeps whatever name Adventure Item Names already gave it, or vanilla's plain 'The Killer Bunny'.",
+                        "Default 0.1, twice AIN's passive-mob naming rate. 0 never names it, 1 always does.")
+                .defineInRange("killerBunnyNameChance", DEFAULT_KILLER_BUNNY_NAME_CHANCE,
+                        MIN_KILLER_BUNNY_NAME_CHANCE, MAX_KILLER_BUNNY_NAME_CHANCE);
         ModConfigSpec.IntValue progressionLevelDelay = b
                 .comment("Delay difficulty progression by this many levels (tiers). The effective Diff-Level driving mob gear, potion effects, villager trade caps, and the boarding HUD becomes max(0, rawTier - this), where rawTier = floor(abs(travelled) / carriagesPerTier). Default 1 = the whole difficulty curve arrives one level later. 0 = no delay (original curve).")
                 .defineInRange("progressionLevelDelay", DEFAULT_PROGRESSION_LEVEL_DELAY, MIN_PROGRESSION_LEVEL_DELAY, MAX_PROGRESSION_LEVEL_DELAY);
@@ -614,6 +654,21 @@ public final class DungeonTrainConfig {
                         "lighting hook it installs — worth trying first if another lighting mod misbehaves.",
                         "Default true.")
                 .define("portalRoomDaylight", DEFAULT_PORTAL_ROOM_DAYLIGHT);
+        ModConfigSpec.DoubleValue ownLibraryChanceScale = b
+                .comment("How often a dimensional carriage turns out to be a library of the rider's OWN books, against what",
+                        "the room weights alone would give. Applies while the rider has NOT written a book this run. 0.5",
+                        "halves that outcome's weight in the lottery and every other dimension takes up the difference in",
+                        "proportion; 1 leaves the lottery exactly as authored; 0 means never. Default 0.5.")
+                .defineInRange("ownLibraryChanceScale", DEFAULT_OWN_LIBRARY_CHANCE_SCALE,
+                        MIN_OWN_LIBRARY_CHANCE_SCALE, MAX_OWN_LIBRARY_CHANCE_SCALE);
+        ModConfigSpec.DoubleValue ownLibraryChanceWrittenScale = b
+                .comment("The same weight once the rider HAS written a book this run — finding it on a shelf is the reward.",
+                        "3 triples the own-books library's weight in the lottery, at the cost of every other dimension in",
+                        "proportion. It lasts until they walk into a library of their own books, then drops back to",
+                        "ownLibraryChanceScale until they write another. A carriage rolled while this applied keeps its",
+                        "room. Default 3.")
+                .defineInRange("ownLibraryChanceWrittenScale", DEFAULT_OWN_LIBRARY_CHANCE_WRITTEN_SCALE,
+                        MIN_OWN_LIBRARY_CHANCE_SCALE, MAX_OWN_LIBRARY_CHANCE_SCALE);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
                 .comment("Serve approved player-written narrative series back on narrative lecterns. When true, a lectern",
                         "may (weighted + tapered like shared-book loot, at LETTER granularity) lock to a player's narrative",
@@ -740,6 +795,14 @@ public final class DungeonTrainConfig {
                         "records); carries no chat, location, or personal data beyond the Minecraft UUID + name",
                         "already sent to Discord. Independent of worldJoinReportToDiscord.")
                 .define("worldInfoToRelay", DEFAULT_WORLD_INFO_TO_RELAY);
+        ModConfigSpec.BooleanValue retiredLeaderboardBooks = b
+                .comment("Let The Tallyman's loot books also be about RETIRED leaderboards: the one-life boards",
+                        "of past game versions (each balancing release retires the current one) and of past",
+                        "years. Retired boards are kept forever on the relay; this only decides whether they",
+                        "circulate as books here. About one loot book in forty is an Ancient Records book when",
+                        "on, and the Stat Room shelves one Ancient Records book per retired era beside the",
+                        "current boards.")
+                .define("retiredLeaderboardBooks", DEFAULT_RETIRED_LEADERBOARD_BOOKS);
         ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord = b
                 .comment("Post a short embed to Discord each time a player's difficulty tier increases — i.e. they",
                         "have advanced far enough through carriages to reach the next Difficulty Level. Fires once per",
@@ -779,15 +842,16 @@ public final class DungeonTrainConfig {
                 firstLevelNoHostiles, firstLevelNoHostilesCarriages, firstLevelEasyMobs, firstLevelEasyMobsCarriages,
                 firstLevelStarterLoot, randomBookFromBookshelfOneIn, deathReportToDiscord,
                 freePlayNoticeToDiscord, devMessageConsentToDiscord, echoEncounterToDiscord, worldJoinReportToDiscord,
-                worldInfoToRelay, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
+                worldInfoToRelay, retiredLeaderboardBooks, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
                 loveNotesEnabled, lettersEnabled,
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
+                ownLibraryChanceScale, ownLibraryChanceWrittenScale,
                 discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, spawnSearchSyncGen, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
                 sharedCarriagePoolChance,
                 sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled, sharedRoomChance,
-                killerBunnyChance);
+                killerBunnyChance, killerBunnyNameChance);
     }
 
     /**
@@ -828,6 +892,12 @@ public final class DungeonTrainConfig {
     public static double getKillerBunnyChance() {
         double v = isLoaded() ? KILLER_BUNNY_CHANCE.get() : DEFAULT_KILLER_BUNNY_CHANCE;
         return Math.max(MIN_KILLER_BUNNY_CHANCE, Math.min(MAX_KILLER_BUNNY_CHANCE, v));
+    }
+
+    /** Probability a Killer Bunny carries a Monty Python name — see {@code KillerBunnyEvents}. */
+    public static double getKillerBunnyNameChance() {
+        double v = isLoaded() ? KILLER_BUNNY_NAME_CHANCE.get() : DEFAULT_KILLER_BUNNY_NAME_CHANCE;
+        return Math.max(MIN_KILLER_BUNNY_NAME_CHANCE, Math.min(MAX_KILLER_BUNNY_NAME_CHANCE, v));
     }
 
     /** Probability a shared-carriage slot leases a build by any author from the relay pool. */
@@ -1021,6 +1091,11 @@ public final class DungeonTrainConfig {
         return isLoaded() ? WORLD_INFO_TO_RELAY.get() : DEFAULT_WORLD_INFO_TO_RELAY;
     }
 
+    /** Whether retired leaderboard eras (past versions, past years) may roll as loot books. */
+    public static boolean isRetiredLeaderboardBooks() {
+        return isLoaded() ? RETIRED_LEADERBOARD_BOOKS.get() : DEFAULT_RETIRED_LEADERBOARD_BOOKS;
+    }
+
     /** Master for the community shared-books CONTRIBUTION half (upload + burn on sign). */
     public static boolean isShareBooksEnabled() {
         return isLoaded() ? SHARE_BOOKS_ENABLED.get() : DEFAULT_SHARE_BOOKS_ENABLED;
@@ -1067,6 +1142,18 @@ public final class DungeonTrainConfig {
     /** Whether portal rooms that ask for a sky get one; falls back to the hardcoded default pre-load. */
     public static boolean isPortalRoomDaylight() {
         return isLoaded() ? PORTAL_ROOM_DAYLIGHT.get() : DEFAULT_PORTAL_ROOM_DAYLIGHT;
+    }
+
+    /**
+     * The own-books library's weight in the dimension lottery, for a rider who has or has not
+     * written a book this run — see {@link #DEFAULT_OWN_LIBRARY_CHANCE_SCALE}.
+     */
+    public static double getOwnLibraryChanceScale(boolean wroteThisRun) {
+        double fallback = wroteThisRun
+            ? DEFAULT_OWN_LIBRARY_CHANCE_WRITTEN_SCALE : DEFAULT_OWN_LIBRARY_CHANCE_SCALE;
+        double v = !isLoaded() ? fallback
+            : wroteThisRun ? OWN_LIBRARY_CHANCE_WRITTEN_SCALE.get() : OWN_LIBRARY_CHANCE_SCALE.get();
+        return Math.max(MIN_OWN_LIBRARY_CHANCE_SCALE, Math.min(MAX_OWN_LIBRARY_CHANCE_SCALE, v));
     }
 
     /**
@@ -1297,6 +1384,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.BooleanValue echoEncounterToDiscord,
             ModConfigSpec.BooleanValue worldJoinReportToDiscord,
             ModConfigSpec.BooleanValue worldInfoToRelay,
+            ModConfigSpec.BooleanValue retiredLeaderboardBooks,
             ModConfigSpec.BooleanValue shareBooksEnabled,
             ModConfigSpec.BooleanValue discoverSharedBooksEnabled,
             ModConfigSpec.BooleanValue deathNotesEnabled,
@@ -1306,6 +1394,8 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue sharedBookRepeatGroups,
             ModConfigSpec.IntValue portalRoomAuthorMinBooks,
             ModConfigSpec.BooleanValue portalRoomDaylight,
+            ModConfigSpec.DoubleValue ownLibraryChanceScale,
+            ModConfigSpec.DoubleValue ownLibraryChanceWrittenScale,
             ModConfigSpec.BooleanValue discoverNarrativesEnabled,
             ModConfigSpec.DoubleValue narrativeDiscoveryRampThreshold,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
@@ -1320,6 +1410,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue sharedCarriageMaxEntities,
             ModConfigSpec.BooleanValue builderProfileEnabled,
             ModConfigSpec.DoubleValue sharedRoomChance,
-            ModConfigSpec.DoubleValue killerBunnyChance
+            ModConfigSpec.DoubleValue killerBunnyChance,
+            ModConfigSpec.DoubleValue killerBunnyNameChance
     ) {}
 }

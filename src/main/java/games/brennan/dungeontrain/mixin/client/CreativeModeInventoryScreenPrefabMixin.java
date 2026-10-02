@@ -10,12 +10,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Adds two LEFT-side tabs to the creative inventory, styled as vanilla
+ * Adds three LEFT-side tabs to the creative inventory, styled as vanilla
  * creative tabs. Each is a shortcut: clicking calls vanilla's private
  * {@code selectTab} via {@link CreativeModeInventoryScreenAccessor},
  * switching the inventory into one of our registered
  * {@link net.minecraft.world.item.CreativeModeTab}s
- * ({@link ModCreativeTabs#STAGE_BLOCKS} / {@link ModCreativeTabs#PREFAB_LOOT}).
+ * ({@link ModCreativeTabs#STAGE_BLOCKS} / {@link ModCreativeTabs#PREFAB_LOOT} /
+ * {@link ModCreativeTabs#NARRATIVE}).
  * Block Variants stays reachable through vanilla's paged tab row.
  *
  * <p>Vanilla then owns all rendering (items grid, title, scrollbar, tooltips,
@@ -39,5 +40,7 @@ public abstract class CreativeModeInventoryScreenPrefabMixin extends AbstractCon
             x, this.topPos, 0, ModCreativeTabs.STAGE_BLOCKS.get()));
         this.addRenderableWidget(new PrefabSideTabButton(
             x, this.topPos + PrefabSideTabButton.PITCH, 1, ModCreativeTabs.PREFAB_LOOT.get()));
+        this.addRenderableWidget(new PrefabSideTabButton(
+            x, this.topPos + 2 * PrefabSideTabButton.PITCH, 2, ModCreativeTabs.NARRATIVE.get()));
     }
 }

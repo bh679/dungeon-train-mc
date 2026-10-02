@@ -44,19 +44,11 @@ import java.util.List;
  * dismissed panel back up.</p>
  */
 public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
-                                    boolean helpPanelDismissed, int wholeGroupEvery) implements CustomPacketPayload {
-
-    /** {@link #wholeGroupEvery()} when the setting is not shown — every category but WHOLE. */
-    public static final int NO_WHOLE_GROUP_EVERY = -1;
+                                    boolean helpPanelDismissed) implements CustomPacketPayload {
 
     /** Convenience: no dismissal — keeps pre-close-button call sites compiling unchanged. */
     public EditorTypeMenusPacket(List<Menu> menus, String selectedStageId) {
-        this(menus, selectedStageId, false, NO_WHOLE_GROUP_EVERY);
-    }
-
-    /** Convenience: no type-level setting — every category but WHOLE. */
-    public EditorTypeMenusPacket(List<Menu> menus, String selectedStageId, boolean helpPanelDismissed) {
-        this(menus, selectedStageId, helpPanelDismissed, NO_WHOLE_GROUP_EVERY);
+        this(menus, selectedStageId, false);
     }
 
     public EditorTypeMenusPacket {
@@ -367,7 +359,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         );
 
     public static EditorTypeMenusPacket empty() {
-        return new EditorTypeMenusPacket(Collections.emptyList(), "", false, NO_WHOLE_GROUP_EVERY);
+        return new EditorTypeMenusPacket(Collections.emptyList(), "", false);
     }
 
     public boolean isEmpty() {
@@ -381,9 +373,6 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
         // Same reason as selectedStageId: written before the "no menus" early-return so the empty()
         // snapshot stays buffer-symmetric.
         buf.writeBoolean(helpPanelDismissed);
-        // The WHOLE category's one type-level setting ("whole group every N"); -1 elsewhere. Before
-        // the menu count for the same buffer-symmetry reason as the two above.
-        buf.writeVarInt(wholeGroupEvery);
         buf.writeVarInt(menus.size());
         for (Menu m : menus) {
             buf.writeBlockPos(m.worldPos());
@@ -472,10 +461,9 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
     public static EditorTypeMenusPacket decode(FriendlyByteBuf buf) {
         String selectedStageId = buf.readUtf(64);
         boolean helpPanelDismissed = buf.readBoolean();
-        int wholeGroupEvery = buf.readVarInt();
         int n = buf.readVarInt();
         if (n <= 0) {
-            return new EditorTypeMenusPacket(Collections.emptyList(), selectedStageId, helpPanelDismissed, wholeGroupEvery);
+            return new EditorTypeMenusPacket(Collections.emptyList(), selectedStageId, helpPanelDismissed);
         }
         List<Menu> out = new ArrayList<>(n);
         for (int i = 0; i < n; i++) {
@@ -509,7 +497,7 @@ public record EditorTypeMenusPacket(List<Menu> menus, String selectedStageId,
             out.add(new Menu(pos, typeName, variants, isCompanion,
                 activeCategoryId, categoryBar, typeStrip, isPackageMenu, isStagesMenu));
         }
-        return new EditorTypeMenusPacket(out, selectedStageId, helpPanelDismissed, wholeGroupEvery);
+        return new EditorTypeMenusPacket(out, selectedStageId, helpPanelDismissed);
     }
 
     @Override

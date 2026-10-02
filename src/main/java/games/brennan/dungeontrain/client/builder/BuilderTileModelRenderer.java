@@ -74,10 +74,26 @@ final class BuilderTileModelRenderer {
      */
     static void render(GuiGraphics g, BuilderTileMesh mesh, int x, int y, int width, int height,
                        float yaw, float fill) {
+        render(g, mesh, x, y, width, height, yaw, fill, true);
+    }
+
+    /**
+     * As {@link #render(GuiGraphics, BuilderTileMesh, int, int, int, int, float, float)} without the
+     * scissor. The scissor is set in <em>window</em> coordinates, so it is wrong for a target of
+     * another size — an offscreen capture ({@code BuildRenderCapture}) owns its whole target and
+     * needs no clipping.
+     */
+    static void renderUnclipped(GuiGraphics g, BuilderTileMesh mesh, int x, int y, int width, int height,
+                                float yaw, float fill) {
+        render(g, mesh, x, y, width, height, yaw, fill, false);
+    }
+
+    private static void render(GuiGraphics g, BuilderTileMesh mesh, int x, int y, int width, int height,
+                               float yaw, float fill, boolean clip) {
         // Everything queued so far must land before the 3D pass, or it would be flushed on top of
         // the model afterwards.
         g.flush();
-        g.enableScissor(x, y, x + width, y + height);
+        if (clip) g.enableScissor(x, y, x + width, y + height);
 
         PoseStack pose = g.pose();
         pose.pushPose();
@@ -95,7 +111,7 @@ final class BuilderTileModelRenderer {
 
         // Scissored, so this is the tile's depth and not the screen's. See the class note.
         RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
-        g.disableScissor();
+        if (clip) g.disableScissor();
     }
 
     /**

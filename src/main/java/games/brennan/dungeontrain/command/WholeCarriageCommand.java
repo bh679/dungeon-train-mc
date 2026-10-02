@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageGroup;
 import games.brennan.dungeontrain.train.CarriageGroupRegistry;
+import games.brennan.dungeontrain.train.FullCarriageSettings;
 import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.train.WholeGroupSettings;
@@ -31,6 +32,8 @@ import java.io.IOException;
  *   whole group force &lt;n&gt;|off    session-only: exactly every Nth group, seed ignored (testing)
  *   whole room list              rooms with tier, weight and whether they fit this world's dims
  *   whole group list             groups with tier, weight and carriage count
+ *   whole full every &lt;n&gt;|off     persist N for Full carriages (one group-long shell)
+ *   whole full force &lt;n&gt;|off     session-only: exactly every Nth group is Full (testing)
  * </pre>
  */
 public final class WholeCarriageCommand {
@@ -46,40 +49,54 @@ public final class WholeCarriageCommand {
                 .then(Commands.literal("list").executes(ctx -> runRoomList(ctx.getSource()))))
             .then(Commands.literal("group")
                 .then(Commands.literal("list").executes(ctx -> runGroupList(ctx.getSource())))
-                .then(Commands.literal("every")
-                    .then(Commands.literal("off").executes(ctx -> runEvery(ctx.getSource(), WholeGroupSettings.OFF)))
-                    .then(Commands.argument("n", IntegerArgumentType.integer(1, WholeGroupSettings.MAX_EVERY))
-                        .executes(ctx -> runEvery(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n")))))
                 .then(Commands.literal("force")
                     .then(Commands.literal("off").executes(ctx -> runForce(ctx.getSource(), WholeGroupSettings.OFF)))
                     .then(Commands.argument("n", IntegerArgumentType.integer(1, WholeGroupSettings.MAX_EVERY))
-                        .executes(ctx -> runForce(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n"))))));
+                        .executes(ctx -> runForce(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n"))))))
+            .then(Commands.literal("full")
+                .then(Commands.literal("every")
+                    .then(Commands.literal("off").executes(ctx -> runFullEvery(ctx.getSource(), FullCarriageSettings.OFF)))
+                    .then(Commands.argument("n", IntegerArgumentType.integer(1, FullCarriageSettings.MAX_EVERY))
+                        .executes(ctx -> runFullEvery(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n")))))
+                .then(Commands.literal("force")
+                    .then(Commands.literal("off").executes(ctx -> runFullForce(ctx.getSource(), FullCarriageSettings.OFF)))
+                    .then(Commands.argument("n", IntegerArgumentType.integer(1, FullCarriageSettings.MAX_EVERY))
+                        .executes(ctx -> runFullForce(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n"))))));
+    }
+
+    private static int runFullEvery(CommandSourceStack source, int n) {
+        try {
+            int stored = FullCarriageSettings.set(n);
+            source.sendSuccess(() -> Component.literal("Full carriage every=" + stored + (stored == 0 ? " (off)" : ""))
+                .withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (IOException e) {
+            source.sendFailure(Component.literal("Could not save Full-carriage settings: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int runFullForce(CommandSourceStack source, int n) {
+        FullCarriageSettings.force(n);
+        source.sendSuccess(() -> Component.literal("Full carriage forced cadence=" + n
+            + (n == 0 ? " (off — seeded lottery)" : " (session only)")).withStyle(ChatFormatting.YELLOW), true);
+        return 1;
     }
 
     private static int runStatus(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal(String.format(
-            "Whole: group every=%d forced=%d rooms=%d groups=%d",
-            WholeGroupSettings.every(), WholeGroupSettings.forced(),
-            WholeCarriageRegistry.ids().size(), CarriageGroupRegistry.ids().size())), false);
+            "Whole: group weight=%d forced=%d rooms=%d groups=%d  full every=%d forced=%d",
+            games.brennan.dungeontrain.train.CarriageWeights.current().weightFor(
+                games.brennan.dungeontrain.train.WholeGroupSelection.VARIANT_ID), WholeGroupSettings.forced(),
+            WholeCarriageRegistry.ids().size(), CarriageGroupRegistry.ids().size(),
+            FullCarriageSettings.every(), FullCarriageSettings.forced())), false);
         return 1;
-    }
-
-    private static int runEvery(CommandSourceStack source, int n) {
-        try {
-            int stored = WholeGroupSettings.set(n);
-            source.sendSuccess(() -> Component.literal("Whole group every=" + stored + (stored == 0 ? " (off)" : ""))
-                .withStyle(ChatFormatting.GREEN), true);
-            return 1;
-        } catch (IOException e) {
-            source.sendFailure(Component.literal("Could not save whole-group settings: " + e.getMessage()));
-            return 0;
-        }
     }
 
     private static int runForce(CommandSourceStack source, int n) {
         WholeGroupSettings.force(n);
         source.sendSuccess(() -> Component.literal("Whole group forced cadence=" + n
-            + (n == 0 ? " (off — seeded lottery)" : " (session only)")).withStyle(ChatFormatting.YELLOW), true);
+            + (n == 0 ? " (off — the Whole Group template's weight decides)" : " (session only)")).withStyle(ChatFormatting.YELLOW), true);
         return 1;
     }
 

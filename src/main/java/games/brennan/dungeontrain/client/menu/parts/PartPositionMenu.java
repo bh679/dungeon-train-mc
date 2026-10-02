@@ -111,6 +111,23 @@ public final class PartPositionMenu {
     public static String searchBuffer() { return searchBuffer; }
     public static Hit hovered() { return hovered; }
 
+    /**
+     * True while the crosshair is on one of this menu's cells — the only time the other world-space
+     * panels must leave a click to it.
+     *
+     * <p>They used to stand down whenever this menu was merely {@link #isActive() open}. An open menu
+     * the player is not pointing at has no claim on the click, and one left open in a plot they had
+     * since left silenced every other panel until it was closed.</p>
+     */
+    public static boolean claimsPointer() {
+        return claimsPointer(active, hovered);
+    }
+
+    /** The rule behind {@link #claimsPointer()}, pure for tests. */
+    static boolean claimsPointer(boolean active, Hit hovered) {
+        return active && hovered != null && hovered.kind() != CellKind.NONE;
+    }
+
     public static void setHovered(Hit h) {
         hovered = h == null ? Hit.NONE : h;
     }

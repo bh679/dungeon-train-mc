@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.portal;
 
 import games.brennan.dungeontrain.narrative.LeaderboardCategory;
+import games.brennan.dungeontrain.narrative.LeaderboardPool;
 import games.brennan.dungeontrain.narrative.RunStatSubject;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -94,6 +96,40 @@ class PortalRoomStatShelvesTest {
             assertTrue(keys.add(PortalRoomStatShelves.statKey(s)), "duplicate key for " + s);
         }
         assertEquals(PortalRoomStatShelves.FULL_SET, keys.size());
+        for (String era : List.of("v0.0", "y2025", "lives", "stat")) {
+            assertTrue(keys.add(PortalRoomStatShelves.eraKey(era)), "era key collides: " + era);
+        }
+    }
+
+    @Test
+    @DisplayName("One Ancient Records volume per retired era that has a board on hand, never one per board")
+    void missingErasIsOnePerEra() {
+        List<LeaderboardPool.BoardKey> retired = List.of(
+            new LeaderboardPool.BoardKey(LeaderboardCategory.DISTANCE_RUN, "v0.0"),
+            new LeaderboardPool.BoardKey(LeaderboardCategory.PLAYTIME_RUN, "v0.0"),
+            new LeaderboardPool.BoardKey(LeaderboardCategory.CHESTS_RUN, "y2025"));
+        assertEquals(List.of("v0.0", "y2025"), PortalRoomStatShelves.missingEras(Set.of(), retired));
+        assertEquals(List.of("y2025"),
+            PortalRoomStatShelves.missingEras(Set.of(PortalRoomStatShelves.eraKey("v0.0")), retired));
+        assertTrue(PortalRoomStatShelves.missingEras(Set.of(), List.of()).isEmpty(), "no retired boards: nothing wanted");
+
+        // The volume's subject is one of that era's boards, and the same one for the same room.
+        LeaderboardCategory pick = PortalRoomStatShelves.eraSubject("v0.0", retired, PAIR);
+        assertTrue(pick == LeaderboardCategory.DISTANCE_RUN || pick == LeaderboardCategory.PLAYTIME_RUN);
+        assertEquals(pick, PortalRoomStatShelves.eraSubject("v0.0", retired, PAIR));
+        assertEquals(LeaderboardCategory.CHESTS_RUN, PortalRoomStatShelves.eraSubject("y2025", retired, PAIR));
+        assertNull(PortalRoomStatShelves.eraSubject("v0.5", retired, PAIR));
+    }
+
+    @Test
+    @DisplayName("Era volumes are extras: they neither complete a room early nor hold it open")
+    void eraVolumesDoNotCountTowardTheSet() {
+        Set<String> nearly = new HashSet<>();
+        for (int i = 0; i < PortalRoomStatShelves.FULL_SET - 1; i++) nearly.add("k" + i);
+        nearly.add(PortalRoomStatShelves.eraKey("v0.0"));
+        assertFalse(PortalRoomStatShelves.isComplete(nearly), "an era book must not stand in for a board");
+        nearly.add("k" + (PortalRoomStatShelves.FULL_SET - 1));
+        assertTrue(PortalRoomStatShelves.isComplete(nearly));
     }
 
     @Test

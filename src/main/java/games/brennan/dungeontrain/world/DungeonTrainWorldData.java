@@ -63,6 +63,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_JOIN_REPORT_POSTED = "joinReportPosted";
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
+    private static final String TAG_OWN_SHELF_PAIRS = "ownShelfPairs";
     private static final String TAG_BUILDER_MODE = "builderMode";
     private static final String TAG_BUILDER_VARIANT = "builderVariant";
     private static final String TAG_BUILDER_STAGE = "builderStage";
@@ -87,6 +88,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
     private static final String TAG_EDITOR_STAMPED_CATEGORY = "editorStampedCategory";
+    private static final String TAG_EDITOR_CONTENTS_SIZE = "editorContentsSize";
 
     private int trainY;
     private boolean startsWithTrain;
@@ -108,6 +110,11 @@ public final class DungeonTrainWorldData extends SavedData {
      * erase every category on the next entry instead of just the last one.
      */
     private String editorStampedCategory = "";
+    /**
+     * Which contents size ({@code ContentsSize} key) the Contents category has stamped — only one
+     * size's plots stand at a time. Empty means Room, which is every world saved before sizes.
+     */
+    private String editorContentsSize = "";
     /**
      * Where each portal-room plot was last stamped, by room name: {@code [x, y, z, sx, sy, sz]}.
      *
@@ -337,6 +344,14 @@ public final class DungeonTrainWorldData extends SavedData {
             new games.brennan.dungeontrain.train.UsedCarriageIds();
 
     /**
+     * Dimensional-carriage pairs whose room was rolled with the own-books library weighted up —
+     * the rider had written a book that run. Kept because nothing else about that roll survives a
+     * restart (the run counter and the standing structures are both in memory), and a pair that
+     * re-rolled without it could come back as a different room. Serialized as a flat int array.
+     */
+    private final java.util.Set<Integer> ownShelfPairs = new java.util.LinkedHashSet<>();
+
+    /**
      * What a Train Builder world has uploaded to the relay — one record per saved template. Empty in
      * every ordinary world. Its credentials cannot be re-derived, which is why they are saved rather
      * than held in memory; see {@link games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds}.
@@ -483,6 +498,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_PLOTS_STAMPED)) {
             data.editorPlotsStamped = tag.getBoolean(TAG_EDITOR_PLOTS_STAMPED);
         }
+        if (tag.contains(TAG_EDITOR_CONTENTS_SIZE)) {
+            data.editorContentsSize = tag.getString(TAG_EDITOR_CONTENTS_SIZE);
+        }
         if (tag.contains(TAG_EDITOR_STAMPED_CATEGORY)) {
             data.editorStampedCategory = tag.getString(TAG_EDITOR_STAMPED_CATEGORY);
         }
@@ -513,6 +531,8 @@ public final class DungeonTrainWorldData extends SavedData {
         // getIntArray returns an empty array for an absent key, so worlds saved before shared carriages
         // simply start having placed nothing.
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
+        // Empty for an absent key too, so a world saved before this was tracked has boosted nothing.
+        for (int pairKey : tag.getIntArray(TAG_OWN_SHELF_PAIRS)) data.ownShelfPairs.add(pairKey);
         // Absent in every world that has never uploaded a build, which is every non-builder world.
         data.builderRelayBuilds.loadFrom(
                 tag.getList(TAG_BUILDER_RELAY_BUILDS, net.minecraft.nbt.Tag.TAG_COMPOUND));
@@ -623,11 +643,16 @@ public final class DungeonTrainWorldData extends SavedData {
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putBoolean(TAG_EDITOR_PLOTS_STAMPED, editorPlotsStamped);
         tag.putString(TAG_EDITOR_STAMPED_CATEGORY, editorStampedCategory);
+        tag.putString(TAG_EDITOR_CONTENTS_SIZE, editorContentsSize);
         tag.putInt(TAG_DIFFICULTY_TRAVELLED_OFFSET, difficultyTravelledOffset);
         tag.putString(TAG_CUSTOM_CONTENT_CHOICE, customContentChoice.nbtId());
         tag.putBoolean(TAG_PORTAL_RATE_TUNED, portalRateTuned);
         tag.putBoolean(TAG_KEEP_INVENTORY_USED, keepInventoryUsed);
         tag.putIntArray(TAG_USED_CARRIAGE_IDS, usedCarriageIds.toIntArray());
+        if (!ownShelfPairs.isEmpty()) {
+            tag.putIntArray(TAG_OWN_SHELF_PAIRS,
+                ownShelfPairs.stream().mapToInt(Integer::intValue).toArray());
+        }
         if (!builderRelayBuilds.isEmpty()) {
             tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
         }
@@ -947,6 +972,18 @@ public final class DungeonTrainWorldData extends SavedData {
         return editorStampedCategory;
     }
 
+    /** The contents size whose plots are stamped ({@code ""} = room) — see {@code ContentsResidentSize}. */
+    public String editorContentsSize() {
+        return editorContentsSize;
+    }
+
+    public void setEditorContentsSize(String key) {
+        String next = key == null ? "" : key;
+        if (next.equals(editorContentsSize)) return;
+        editorContentsSize = next;
+        setDirty();
+    }
+
     /** Record which category's plots stand in the sky ({@code ""} for none). */
     public void setEditorStampedCategory(String id) {
         String next = id == null ? "" : id;
@@ -1171,6 +1208,16 @@ public final class DungeonTrainWorldData extends SavedData {
         if (!usedCarriageIds.add(id)) return false;
         setDirty();
         return true;
+    }
+
+    /** Whether {@code pairKey}'s room was rolled with the own-books library weighted up. */
+    public boolean isOwnShelfPair(int pairKey) {
+        return ownShelfPairs.contains(pairKey);
+    }
+
+    /** Remember that {@code pairKey}'s room was rolled with the own-books library weighted up. */
+    public void markOwnShelfPair(int pairKey) {
+        if (ownShelfPairs.add(pairKey)) setDirty();
     }
 
     /** Relay ids this world has already placed, newest first and capped at {@code limit}. */

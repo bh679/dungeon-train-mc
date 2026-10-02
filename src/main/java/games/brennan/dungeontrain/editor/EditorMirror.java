@@ -216,7 +216,9 @@ public final class EditorMirror {
      * <p>A lock-group reference ({@code groupRef}) is an id, not a geometry, so
      * it carries across a reflection untouched. It has to be passed explicitly:
      * the shorter {@link VariantState} constructor defaults it to 0, which
-     * would quietly turn a referencing entry back into a literal one.</p>
+     * would quietly turn a referencing entry back into a literal one. The same
+     * goes for {@code connect} and {@code growth}; a vertical flip also turns an
+     * up-growing column into a down-growing one.</p>
      */
     public static VariantState reflectVariant(VariantState v, boolean flipX, boolean flipY, boolean flipZ) {
         if (v.isMob()) return v;
@@ -226,7 +228,8 @@ public final class EditorMirror {
             v.blockEntityNbt(), v.weight(),
             reflectRotation(v.rotation(), flipX, flipY, flipZ),
             v.linkedLootPrefabId(), v.entityId(),
-            reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active());
+            reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active(), v.connect(),
+            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth());
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */

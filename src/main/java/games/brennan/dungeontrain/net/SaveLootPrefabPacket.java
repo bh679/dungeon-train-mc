@@ -68,11 +68,11 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
             Player p = ctx.player();
             if (!(p instanceof ServerPlayer player)) return;
             if (!player.hasPermissions(2)) {
-                actionBar(player, "Save requires OP", ChatFormatting.RED);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_requires_op"), ChatFormatting.RED);
                 return;
             }
             if (!LootPrefabStore.isValidName(packet.name())) {
-                actionBar(player, "Invalid name '" + packet.name() + "' (a-z, 0-9, _, 1-32 chars)",
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.invalid_prefab_name", packet.name()),
                     ChatFormatting.RED);
                 return;
             }
@@ -80,13 +80,13 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
             CarriageDims dims = DungeonTrainWorldData.get(level).dims();
             BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
             if (plot == null) {
-                actionBar(player, "Not in an editor plot", ChatFormatting.YELLOW);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.not_in_plot"), ChatFormatting.YELLOW);
                 return;
             }
             ContainerContentsStore store = ContainerContentsStore.loadFor(plot.key());
             ContainerContentsPool pool = store.poolAt(packet.localPos());
             if (pool.isEmpty()) {
-                actionBar(player, "No loot at this container", ChatFormatting.YELLOW);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.prefab.no_loot_at_container"), ChatFormatting.YELLOW);
                 return;
             }
             BlockPos worldPos = plot.origin().offset(packet.localPos());
@@ -119,7 +119,8 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
                         plot.key(), linkErr.toString());
                 }
                 actionBar(player,
-                    (isNew ? "Saved loot '" : "Overwrote loot '") + packet.name() + "' (linked)" + suffix,
+                    Component.translatable(isNew ? "chat.dungeontrain.editor_bar.prefab.saved_loot" : "chat.dungeontrain.editor_bar.prefab.overwrote_loot",
+                        packet.name(), suffix),
                     ChatFormatting.GREEN);
                 broadcastSync();
                 // Propagate to all linked containers across all editor plots
@@ -129,7 +130,7 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
                 ContainerContentsMenuController.resyncIfOpen(player, plot.key(), packet.localPos());
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] SaveLootPrefab failed: {}", e.toString());
-                actionBar(player, "Save failed: " + e.getClass().getSimpleName(),
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()),
                     ChatFormatting.RED);
             }
         });
@@ -148,8 +149,8 @@ public record SaveLootPrefabPacket(BlockPos localPos, String name) implements Cu
         }
     }
 
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 
     private static void broadcastSync() {

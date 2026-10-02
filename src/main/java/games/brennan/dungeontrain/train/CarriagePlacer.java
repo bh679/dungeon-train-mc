@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
@@ -13,6 +14,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
+import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.template.GateContext;
@@ -122,8 +124,11 @@ public final class CarriagePlacer {
      * no NBT," so subsequent spawns short-circuit straight to the
      * hardcoded floor fallback without re-attempting the extraction.</p>
      */
-    private static final Map<CarriageDims, Optional<StructureTemplate>> HALF_FLATBED_CACHE
+    private static final Map<HalfFlatbedKey, Optional<StructureTemplate>> HALF_FLATBED_CACHE
         = new ConcurrentHashMap<>();
+
+    /** A half-flatbed template is cut per flatbed (the built-in or a variant) and per dims. */
+    private record HalfFlatbedKey(String flatbedId, CarriageDims dims) {}
 
     /**
      * Lazy-init holder for the {@link BlockState} templates. Keeping
@@ -513,7 +518,8 @@ public final class CarriagePlacer {
             }
             spawnShellAndPartsVariantMobs(level, origin, variant, dims, seed, carriageIndex, anchor);
             if (contents != null) {
-                CarriageContentsPlacer.placeAt(level, origin, contents, dims, contentsSeed, carriageIndex);
+                CarriageContentsPlacer.placeAt(level, origin, contents, dims, contentsSeed, carriageIndex,
+                    ShellWinsMask.forShell(level, origin, variant, contents, dims));
             }
         }));
     }
@@ -891,10 +897,13 @@ public final class CarriagePlacer {
             if (spawnEntities) {
                 CarriageContentsPlacer.discardEntitiesAt(level, origin, dims);
             }
+            // "Carriage blocks win": read what the shell has standing before any contents block lands.
+            PortalCorridorMask keep = placeBlocks
+                ? ShellWinsMask.forShell(level, origin, variant, contents, dims) : PortalCorridorMask.NONE;
             if (placeBlocks && spawnEntities) {
-                CarriageContentsPlacer.placeAt(level, origin, contents, dims, config.seed(), carriageIndex);
+                CarriageContentsPlacer.placeAt(level, origin, contents, dims, config.seed(), carriageIndex, keep);
             } else if (placeBlocks) {
-                CarriageContentsPlacer.placeBlocksOnly(level, origin, contents, dims, config.seed(), carriageIndex);
+                CarriageContentsPlacer.placeBlocksOnly(level, origin, contents, dims, config.seed(), carriageIndex, keep);
             } else if (spawnEntities) {
                 CarriageContentsPlacer.placeEntitiesOnly(level, origin, contents, dims, config.seed(), carriageIndex);
             }
@@ -910,9 +919,10 @@ public final class CarriagePlacer {
      * The box {@code variant} actually occupies — which is <b>not</b> always the world's carriage
      * dims.
      *
-     * <p>The {@code portal} corridor is the exception: it runs past its slot into the cart between a
-     * portal's pair, so its template, its editor plot, its sidecar bounds and its mirror axis are
-     * all measured over {@link PortalCorridorSize#corridorDims} instead. Every question of the form
+     * <p>It is the box of the shell's {@link #sizeOf size}. The {@code portal} corridor (HALF) runs
+     * past its slot into the cart between a portal's pair, and a FULL shell spans its whole group,
+     * so their template, editor plot, sidecar bounds and mirror axis are all measured over that
+     * longer box instead. Every question of the form
      * "how big is this variant's box" has to come through here, because the pieces disagreeing is
      * not a visible mistake — it is a template silently rejected on size, a mirror reflecting around
      * the wrong axis, and a sidecar entry dropped for being out of bounds.</p>
@@ -926,9 +936,26 @@ public final class CarriagePlacer {
      * already-lengthened figure would apply the growth twice.</p>
      */
     public static CarriageDims variantDims(CarriageVariant variant, CarriageDims dims) {
-        return variant.equals(PortalCarriageBuilder.portalVariant(PortalCorridorKind.LONG))
-            ? PortalCorridorSize.corridorDims(dims, PortalCorridorKind.LONG)
-            : dims;
+        return sizeOf(variant).boxOrRoom(dims, games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize());
+    }
+
+    /**
+     * The {@link ContentsSize} a shell is built at, and so the only size of contents it may take.
+     * Declared once when the shell is made ({@code templates/sizes.json}): {@code portal} is
+     * {@link ContentsSize#HALF}, a group-long carriage {@link ContentsSize#FULL}, everything else a
+     * one-carriage {@link ContentsSize#ROOM}.
+     */
+    /** {@link #sizeOf(CarriageVariant)} by id — Room for an id with no variant. */
+    public static ContentsSize sizeOfId(String id) {
+        return CarriageVariantRegistry.find(id).map(CarriagePlacer::sizeOf).orElse(ContentsSize.ROOM);
+    }
+
+    public static ContentsSize sizeOf(CarriageVariant variant) {
+        // A template's pool is its size (ShellPool). One in the Room folder may still carry a size
+        // declaration: the portal corridors, and a Group carriage made before the pools existed.
+        ShellPool pool = ShellPool.poolOf(variant.id());
+        if (pool != ShellPool.ROOM) return pool.size();
+        return games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.sizeOf(variant.id());
     }
 
     private static void applyVariantBlocks(
@@ -955,9 +982,13 @@ public final class CarriagePlacer {
         ServerLevel level, BlockPos origin, CarriageVariant variant,
         CarriageDims dims, long seed, int carriageIndex
     ) {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
+        CarriageDims sidecarDims = variantDims(variant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
-        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+        java.util.function.Predicate<BlockPos> within = GrowthPass.inside(origin,
+            sidecarDims.length(), sidecarDims.height(), sidecarDims.width());
+        try (ConnectPass.Scope ignored = ConnectPass.open();
+             GrowthPass.Scope grown = GrowthPass.open()) {
             for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(e.localPos());
@@ -975,6 +1006,7 @@ public final class CarriagePlacer {
                             "carriage:" + variant.id(), w.localPos(), seed, carriageIndex,
                             w.entry().linkedLootPrefabId());
                         ConnectPass.note(level, world, w.entry().connect(), w.state());
+                        GrowthPass.note(level, world, w.entry(), w.state(), w.localPos(), seed, carriageIndex, within);
                     }
                 }
             }
@@ -1161,10 +1193,16 @@ public final class CarriagePlacer {
      * {@link #legacyHalfFlatbedFloor} without re-attempting extraction.
      */
     private static Optional<StructureTemplate> getOrBuildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims) {
-        Optional<StructureTemplate> cached = HALF_FLATBED_CACHE.get(dims);
+        return getOrBuildHalfFlatbedTemplate(level, dims, FLATBED_VARIANT);
+    }
+
+    private static Optional<StructureTemplate> getOrBuildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims,
+                                                                             CarriageVariant flatbed) {
+        HalfFlatbedKey key = new HalfFlatbedKey(flatbed.id(), dims);
+        Optional<StructureTemplate> cached = HALF_FLATBED_CACHE.get(key);
         if (cached != null) return cached;
-        Optional<StructureTemplate> built = buildHalfFlatbedTemplate(level, dims);
-        HALF_FLATBED_CACHE.put(dims, built);
+        Optional<StructureTemplate> built = buildHalfFlatbedTemplate(level, dims, flatbed);
+        HALF_FLATBED_CACHE.put(key, built);
         return built;
     }
 
@@ -1178,8 +1216,9 @@ public final class CarriagePlacer {
      * {@code "entities"} lists carry over unchanged — orphaned palette
      * entries don't hurt placement.
      */
-    private static Optional<StructureTemplate> buildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims) {
-        Optional<StructureTemplate> source = CarriageTemplateStore.get(level, FLATBED_VARIANT, dims);
+    private static Optional<StructureTemplate> buildHalfFlatbedTemplate(ServerLevel level, CarriageDims dims,
+                                                                        CarriageVariant flatbed) {
+        Optional<StructureTemplate> source = CarriageTemplateStore.get(level, flatbed, dims);
         if (source.isEmpty()) {
             LOGGER.debug("[DungeonTrain] No FLATBED NBT for dims {}x{}x{} — half-flatbed pads will use hardcoded floor fallback.",
                 dims.length(), dims.height(), dims.width());
@@ -1241,8 +1280,17 @@ public final class CarriagePlacer {
      *     {@code Shipyards.assemble()} alongside the enclosed carriages.
      */
     public static Set<BlockPos> placeHalfFlatbedPad(ServerLevel level, BlockPos origin, HalfPadSide side, CarriageDims dims) {
+        return placeHalfFlatbedPad(level, origin, side, dims, FLATBED_VARIANT);
+    }
+
+    /**
+     * As above, cut from {@code flatbed} — the built-in or a flatbed variant ({@link FlatbedPadSelection}).
+     * A group's two pads are cut from the same one.
+     */
+    public static Set<BlockPos> placeHalfFlatbedPad(ServerLevel level, BlockPos origin, HalfPadSide side, CarriageDims dims,
+                                                    CarriageVariant flatbed) {
         int padLen = halfPadLen(dims);
-        Optional<StructureTemplate> halfTemplate = getOrBuildHalfFlatbedTemplate(level, dims);
+        Optional<StructureTemplate> halfTemplate = getOrBuildHalfFlatbedTemplate(level, dims, flatbed);
         if (halfTemplate.isPresent()) {
             StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
             BlockPos stampOrigin;
@@ -1534,6 +1582,10 @@ public final class CarriagePlacer {
         List<CarriageVariant> out = new ArrayList<>(variants.size());
         for (CarriageVariant v : variants) {
             if (games.brennan.dungeontrain.portal.PortalCarriageBuilder.isPortalVariant(v)) continue;
+            // A Full shell is a whole group long; only FullCarriageSelection places one, over a run.
+            if (sizeOf(v) == ContentsSize.FULL) continue;
+            // A Half shell runs past its slot; only HalfCarriageSelection places one, as a pair.
+            if (sizeOf(v) == ContentsSize.HALF) continue;
             out.add(v);
         }
         return out;
@@ -1556,6 +1608,8 @@ public final class CarriagePlacer {
      * {@code isAnyFlatbed} for caller-API stability.
      */
     static boolean isAnyFlatbed(CarriageVariant v) {
+        // A flatbed variant (the flatbed pool) is as much a flatbed as the built-in: pads only.
+        if (ShellPool.poolOf(v.id()) == ShellPool.FLATBED) return true;
         if (!(v instanceof CarriageVariant.Builtin b)) return false;
         return b.type() == CarriageType.FLATBED;
     }

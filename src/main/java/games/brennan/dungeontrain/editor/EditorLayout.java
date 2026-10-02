@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.ContentsSize;
 
 /**
  * Shared layout constants for every editor (carriage, contents, parts,
@@ -29,7 +30,8 @@ import games.brennan.dungeontrain.train.CarriageDims;
  *   <li>CARRIAGES: {@code Z=0..MAX_WIDTH-1} carriage row, then from {@link #PARTS_FIRST_Z} the parts
  *       grid — FLOOR / WALLS / ROOF / DOORS rows</li>
  *   <li>CONTENTS: {@code Z=CONTENTS_FIRST_Z} row, each group's members stacked along {@code +Z}
- *       below their parent by {@link #SUB_VARIANT_GAP}</li>
+ *       below their parent by {@link #SUB_VARIANT_GAP} — for the resident {@link ContentsSize}
+ *       only; Room, Half and Full share the origin like categories do ({@link ContentsResidentSize})</li>
  *   <li>TRACKS / PORTALS: from {@code Z=TRACKS_FIRST_Z}, one X column per kind, named variants
  *       stacked along {@code +Z} (see {@link TrackSidePlots})</li>
  * </ul></p>
@@ -112,6 +114,18 @@ public final class EditorLayout {
      */
     public static boolean isAtPlotHeight(int y) {
         return y >= PLOT_Y - PLOT_HEIGHT_MARGIN;
+    }
+
+    /**
+     * X starts for a row of plots laid end to end, each {@link #GAP} after the one before: plot
+     * {@code i} starts at {@code [i]}, and {@code [lengths.length]} is where the next plot would go.
+     * For a row whose plots are each their own length, rather than spaced for the widest.
+     */
+    public static int[] rowStarts(int firstX, int[] lengths) {
+        int[] starts = new int[lengths.length + 1];
+        starts[0] = firstX;
+        for (int i = 0; i < lengths.length; i++) starts[i + 1] = starts[i] + lengths[i] + GAP;
+        return starts;
     }
 
     private EditorLayout() {}

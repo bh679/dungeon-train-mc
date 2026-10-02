@@ -100,6 +100,11 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 4. Squash-merge after explicit user approval of the changelog notes + diff
 5. Delete feature branch
 6. Bump version in `gradle.properties` per the versioning rule
+7. **Leaderboard resets are never yours to propose.** Retiring a leaderboard era (`-f leaderboard_reset=true`
+   on `release.yml`, the relay's `POST …/leaderboard/era/retire`, or `scripts/retire-leaderboard-era.js`)
+   happens **only when Brennan brings it up himself**. Do not set the flag, do not suggest it at merge or
+   release time, and do not ask whether a release should reset the boards — not even for a balancing
+   release. If he has not mentioned it, the answer is no.
 
 ---
 
@@ -240,6 +245,11 @@ dev-only changes, minor cosmetic fixes. When in doubt, ask the user.
    gh workflow run release.yml -f tag=v<version> \
      -f changelog="$(python3 scripts/release-notes/render-unreleased.py)"
    ```
+   **Leaderboard reset — only on Brennan's explicit say-so.** `-f leaderboard_reset=true` (optionally
+   `-f leaderboard_era_label="…"`, default `v<version>`) retires the current one-life leaderboard era on
+   the relay and opens `v<version>`; retired boards stay readable and circulate as Ancient Records books.
+   Never add it on your own, never suggest it, and never ask whether a release should reset the boards
+   (see Gate 3 step 7). Use it only when he asks for a reset in his own words.
 5. Watch the run:
    ```bash
    gh run watch $(gh run list --workflow=release.yml --limit 1 --json databaseId --jq '.[0].databaseId')
@@ -298,7 +308,7 @@ End-islands band copies real BetterEnd End chunks (`worldgen/EndBandStyle` + `En
 read `worldgen/density/VanillaEndBiomes`. DT's presets give the End WorldWeaver's `wover:end_biome_source` — the
 vanilla `minecraft:the_end` source yields no BetterEnd biomes (TerraBlender's patch wins `getNoiseBiome`) — and
 `data/wover/config/biome_config.json` keeps BoP out of the End (`EndPresetBiomeSourceTest` pins both). **William Wythers' Overhauled
-Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. Lap 1 of every cycle is
+Overworld** (+ Cristel Lib) and **Biomes O' Plenty** (+ TerraBlender, GlitchCore) are hard deps too. **VanillaBackport** (+ its **Platform** library, `vanillabackport(required)` / `platform(required)`, needed on client AND server) is a hard dep too: its sulfur caves join the caves on the way out of every Nether pass (deep dark 50 / sulfur 30 / lush+dripstone 20 — `worldgen/NetherBandBiomes#pickCavePost`). Its overworld biomes (Pale Garden, underground Sulfur Caves) are kept to the vanilla overworld stretches — spheres/chuncks/stacks included — by `density/OverworldStretchBiomes` (non-vanilla stretches pick from `vanillaTableWithoutBackport`, keys in `worldgen/BackportBiomes`), and `mixin/terrablender/RegionsMixin` drops its TerraBlender region so the BoP stretch's region layout is unchanged; its sulfur/cinnabar rock reaches DT's `dungeontrain:overworld*` settings through VanillaBackport's own `NoiseGeneratorSettings` constructor injection (`event/VanillaBackportSurfaceRuleCheck` warns at server start if it stops). **Exposure** and its add-on **Exposure: Polaroid** (`exposure(required)` / `exposure-polaroid(required)`, same slugs on both platforms; Polaroid needs Exposure, so they travel together) are hard deps too: players get the instant camera, and Exposure's original camera, film and lightroom are hidden (`compat/DisabledModContent#HIDDEN_ITEMS` — recipes, loot, creative tabs). `compat/ExposureLootSuppressor` drops the `exposure:chests/*` tables it would otherwise add to vanilla chests. Lap 1 of every cycle is
 overworld → Nether → WWOO → one End band (1200 vanilla, then 2000 BoP — two back-to-back `end:` slots join into one
 band with a single void fade, each piece its own pass/look) → upside-down; Lap 2 is BoP → BetterNether → Lost City (its
 own `legacy:wwoo:` run — an order may hold several; it wears WWOO decoration, and its buildings start on the Nether's exit
@@ -323,7 +333,7 @@ loads (Advancement Plaques needs Iceberg).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix):** jarJar'd inside the DT jar
+- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix; also Stream Detect, DPI Bypass Detect, Pigman Villagers, Lost City Terrain Fit — CF project 1717775):** jarJar'd inside the DT jar
   (so Modrinth + manual installs have them built in) AND declared `<slug>(required)` on **CurseForge
   only** + shipped as CurseForge modpack Includes (`curseforge_only: true` in `modpack.config.json`,
   which keeps them out of the `.mrpack`). When the CF app installs the top-level copy, NeoForge's

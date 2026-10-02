@@ -19,8 +19,10 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.SurveyTag;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.discord.WorldJoinReport;
+import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.logging.SableAabbLogFilter;
 import games.brennan.dungeontrain.registry.ModBlocks;
@@ -116,6 +118,16 @@ public class DungeonTrain {
      */
     private static final String RELAY_SURVEY_RESULTS_BASE_URL =
             "https://brennan.games/api/dp-relay/425a859527bbab2b6defc48e483abd3b32b277c448e11ddf";
+    /**
+     * Build-submissions channel capability. Every Train Editor build submitted for review from a
+     * RELEASE ({@code main}) build posts an announcement (with the client's rendering of it) here, so
+     * submissions are visible the moment they arrive; dev/test builds fall through to the build's
+     * default cap (the dev channel). Non-secret + revocable like the others; the real channel webhook
+     * lives only on the relay (its {@code BUILDS_WEBHOOK_URL}, mapped to this cap in the relay's
+     * {@code .env} / {@code CAPS} registry, never in the jar).
+     */
+    private static final String RELAY_BUILDS_BASE_URL =
+            "https://brennan.games/api/dp-relay/aaca6153252ea44856c8243b99fc382327afd6cb3853550e";
 
     /**
      * Discord guild (server) ids used to build the survey copy's jump-link back to the threaded
@@ -215,6 +227,24 @@ public class DungeonTrain {
      */
     static String surveyResultsWebhookOverrideForBranch(String branch) {
         return "main".equals(branch) ? RELAY_SURVEY_RESULTS_BASE_URL + "/hook" : null;
+    }
+
+    /**
+     * Where a build-submission announcement should post. On a RELEASE ({@code main}) build it routes
+     * to the dedicated build-submissions cap; on a dev/test build it returns {@code null} so the
+     * announcement falls through to the build's default cap (the dev channel) — testing a submit
+     * never pings the community.
+     */
+    public static String buildSubmitWebhookOverride() {
+        return buildSubmitWebhookOverrideForBranch(VersionInfo.BRANCH);
+    }
+
+    /**
+     * Pure branch-&gt;build-submissions-destination mapping (package-private for unit testing). Only
+     * a {@code main} build routes to the dedicated cap; every other branch returns {@code null}.
+     */
+    static String buildSubmitWebhookOverrideForBranch(String branch) {
+        return "main".equals(branch) ? RELAY_BUILDS_BASE_URL + "/hook" : null;
     }
 
     /**
@@ -501,6 +531,9 @@ public class DungeonTrain {
                 // cards) as a no-throw side effect on every join, then return the once-per-world Discord
                 // suffix. WorldInfoReporter reports per join (no one-shot); the relay dedupes identical records.
                 WorldInfoReporter.report(playerId, playerName);
+                // Learn the newest release now, so a feedback answer later in the session can say
+                // whether this build is current (see SurveyTag).
+                LatestReleaseCache.refreshIfStale();
                 return WorldJoinReport.suffixFor(playerId, playerName);
             }
             // Append a Dungeon-Train game-state line below each advancement announcement (its own line,
@@ -529,6 +562,16 @@ public class DungeonTrain {
             @Override public boolean surveyResultsCopyEnabled() { return true; }
             @Override public String surveyResultsWebhookUrl() { return surveyResultsWebhookOverride(); }
             @Override public String surveyResultsLinkGuildId() { return linkGuildIdForBranch(VersionInfo.BRANCH); }
+            // Stamp the DT version on genuine survey answers (bug / feedback / improvement) and their
+            // results copy as the embed footer — Discord's smallest text. Notices stay unstamped.
+            @Override public String surveyEmbedFooter() { return "DT " + VersionInfo.VERSION; }
+            // The per-player form DP actually calls: the same version, led by a dot for how current
+            // that build is, then who is answering — their language, how modded the game is and how
+            // many games they have played. Server thread, behind DP's network-consent gate.
+            @Override public String surveyEmbedFooter(UUID playerId, String clientLanguage) {
+                LatestReleaseCache.refreshIfStale();
+                return SurveyTag.forPlayer(playerId, clientLanguage);
+            }
         });
 
         // One-line dev-vs-live routing signal at startup: states which Discord channel this build

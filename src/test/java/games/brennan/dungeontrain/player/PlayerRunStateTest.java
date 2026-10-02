@@ -39,6 +39,51 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class PlayerRunStateTest {
 
     @Test
+    @DisplayName("Own-shelf boost: writing a book earns it, arriving in an own-books library spends it")
+    void ownShelfBoostIsEarnedAndSpent() {
+        PlayerRunState state = new PlayerRunState();
+        assertFalse(state.ownShelfBoostPending(), "nothing written yet");
+
+        state.incrementBooksWritten();
+        assertTrue(state.ownShelfBoostPending());
+
+        state.visitOwnShelves(12);
+        assertFalse(state.ownShelfBoostPending(), "the visit spends it");
+
+        state.incrementBooksWritten();
+        assertTrue(state.ownShelfBoostPending(), "another book earns it back");
+    }
+
+    @Test
+    @DisplayName("Own-shelf boost: a book signed inside the library is not spent by that same library")
+    void ownShelfBoostSurvivesTheRoomItWasWrittenIn() {
+        PlayerRunState state = new PlayerRunState();
+        state.visitOwnShelves(12);
+
+        state.incrementBooksWritten();
+        state.visitOwnShelves(12);
+        assertTrue(state.ownShelfBoostPending(), "still standing in pair 12 — one visit, not two");
+
+        state.visitOwnShelves(-30);
+        assertFalse(state.ownShelfBoostPending(), "a different library is a new visit");
+    }
+
+    @Test
+    @DisplayName("Own-shelf boost: a new run starts without it, and with no library remembered")
+    void ownShelfBoostResetsWithTheRun() {
+        PlayerRunState state = new PlayerRunState();
+        state.visitOwnShelves(12);
+        state.incrementBooksWritten();
+
+        state.resetDeathStats();
+        assertFalse(state.ownShelfBoostPending());
+
+        state.incrementBooksWritten();
+        state.visitOwnShelves(12);
+        assertFalse(state.ownShelfBoostPending(), "pair 12 counts as a fresh visit after the reset");
+    }
+
+    @Test
     @DisplayName("Default state: travelledCarriageIndex is 0")
     void defaultTravelledIsZero() {
         PlayerRunState state = new PlayerRunState();

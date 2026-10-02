@@ -1784,7 +1784,8 @@ public final class PortalCarriageEvents {
         // right, whichever corridor noticed the drift.
         PortalStructure built = structure != null && pinned
             ? structure
-            : ensureStructure(level, dims, pairKey, structureAnchorX, originY, originZ, groupSize);
+            : ensureStructure(level, players, dims, pairKey, structureAnchorX, originY, originZ,
+                groupSize);
         if (built == null) {
             // No twin — a world too shallow to hold one. With only half a pair there is no opposite
             // corridor for a puppet to stand in.
@@ -2326,11 +2327,41 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * Whether {@code pairKey} rolls its room with the own-books library weighted up — see
+     * {@link games.brennan.dungeontrain.portal.PortalOwnShelves}.
+     *
+     * <p>True when the rider nearest the carriage has written a book this run and not yet walked
+     * into a library of their own since, and — because that
+     * flag is in memory only and {@link #STRUCTURES} does not outlive the session — for any pair
+     * that was stamped that way before. Without the second half a restart would re-roll a standing
+     * library as whatever the un-boosted lottery says, under a player who logged out inside it.</p>
+     */
+    private static boolean ownShelfBoostFor(ServerLevel level, List<ServerPlayer> players,
+                                            int pairKey, double originX, double originZ) {
+        if (DungeonTrainWorldData.get(level).isOwnShelfPair(pairKey)) return true;
+        ServerPlayer nearest = null;
+        double best = Double.MAX_VALUE;
+        for (ServerPlayer player : players) {
+            double dx = player.getX() - originX;
+            double dz = player.getZ() - originZ;
+            double distanceSq = dx * dx + dz * dz;
+            if (distanceSq < best) {
+                best = distanceSq;
+                nearest = player;
+            }
+        }
+        return nearest != null && nearest.getData(
+            games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get())
+            .ownShelfBoostPending();
+    }
+
+    /**
      * The twin for this carriage, stamping it if there is none yet or the carriage has rolled out of
      * the chunk columns the old one sits in — which is the condition the crossing's seamlessness
      * depends on, so it is also exactly when a fresh one is worth the block writes.
      */
-    private static PortalStructure ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
+    private static PortalStructure ensureStructure(ServerLevel level, List<ServerPlayer> players,
+                                                   CarriageDims dims, int pairKey,
                                                    double originX, double originY, double originZ,
                                                    int groupSize) {
         PortalStructure existing = STRUCTURES.get(pairKey);
@@ -2357,10 +2388,16 @@ public final class PortalCarriageEvents {
         // keeps the room and the mode it was built with and only moves them.
         // A pair evicted by another one's stamp keeps the room it rolled, the same as a relocation.
         PortalStructure evicted = existing == null ? EVICTED.get(pairKey) : null;
+        // The one input to the roll that is not the seed, the key or the gate: whether the rider it
+        // is being rolled for has written a book this run, which makes a library of their own books
+        // a likelier answer. Asked only for a pair that is actually rolling.
+        boolean ownShelfBoost = existing == null && evicted == null
+            && ownShelfBoostFor(level, players, pairKey, originX, originZ);
         PortalStructure planned = existing != null ? existing.movedTo(wanted)
             : evicted != null ? evicted.movedTo(wanted)
             : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey, region,
-                GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()));
+                GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()),
+                ownShelfBoost);
 
         // A pair whose room could not be planned yet — a chunk dimension still sampling its terrain
         // is the only thing that answers null. It keeps whatever it had (nothing, the first time
@@ -2509,6 +2546,8 @@ public final class PortalCarriageEvents {
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
         STRUCTURES.put(pairKey, planned);
         EVICTED.remove(pairKey);
+        // Only once the room is standing: a plan abandoned above must not leave a pair marked.
+        if (ownShelfBoost) DungeonTrainWorldData.get(level).markOwnShelfPair(pairKey);
         OVERLAP_WARNED_AT.remove(pairKey);
         STAMPED_AT.put(pairKey, level.getGameTime());
         // A drifting room is registered once its blocks are down (or, on a relocation, told where
@@ -2704,7 +2743,6 @@ public final class PortalCarriageEvents {
         // Half the room's overhang either side of the corridor, plus a block; never less than the
         // slack the built-in room was tuned with.
         int slackZ = Math.max(POCKET_ROOM_SLACK, (room.getZ() - dims.width()) / 2 + 1);
-        int slackY = Math.max(POCKET_ROOM_SLACK, room.getY() - dims.height() + 1);
 
         int minX = Math.min(origin.getX() - 1, structure.tiledMinX(dims, layout) - 1);
         int maxX = Math.max(origin.getX() + span + 1, structure.tiledMaxX(dims, layout) + 2);
@@ -2721,9 +2759,11 @@ public final class PortalCarriageEvents {
         // entry door stands one corridor below the other. Everything this box drives (the fog, the
         // train audio, "is this player in the structure") then stopped at the lane and left the rest
         // of the room outside it.
-        // slackY already reaches past the room's own ceiling, so only the FLOOR term moves here.
+        // The ceiling is the room's own, counted up from its floor — counted up from the lane, a
+        // sunken room's box reached the train deck overhead (see structureCeilingY).
         int minY = Math.min(origin.getY(), roomOrigin.getY()) - 1;
-        int maxY = origin.getY() + dims.height() + slackY;
+        int maxY = PortalRoomLayout.structureCeilingY(origin.getY(), roomOrigin.getY(), room.getY(),
+            dims.height(), POCKET_ROOM_SLACK);
         if (corridors != null) {
             minX = Math.min(minX, corridors.minX() - 1);
             maxX = Math.max(maxX, corridors.maxX() + 2);

@@ -122,30 +122,38 @@ public final class PartPositionMenuController {
         LAST_HOVER.clear();
     }
 
-    /** Per-player exit reset. Hooked from {@link VariantOverlayRenderer#forget}. */
     /**
      * Re-send this player's open part menu, if any, because its underlying state
      * changed behind the controller's back — an editor undo or redo.
      *
      * <p>Drops only the hover dedup key, so the per-tick hover sync re-composes
      * and re-sends on the next tick. Deliberately not {@link #forget}, which
-     * also clears the mode and pushes an empty packet — that <i>closes</i> the
-     * menu rather than refreshing it.</p>
+     * pushes an empty packet — that <i>closes</i> the menu rather than
+     * refreshing it.</p>
      */
     public static void resyncOpen(ServerPlayer player) {
         LAST_HOVER.remove(player.getUUID());
     }
 
+    /**
+     * Per-player exit reset. Hooked from {@link VariantOverlayRenderer#forget}, which runs every
+     * tick the player is below the build area — a test session's basement included.
+     *
+     * <p>Closes the open part menu and nothing else. The {@link EditorMenusMode} is the player's
+     * setting for the session, so it is kept: dropping it here reset it to the default each time
+     * they entered a test. {@link #forgetSession} is what lets go of it.</p>
+     */
     public static void forget(ServerPlayer player) {
-        UUID uuid = player.getUUID();
-        // Leaving the editor drops the mode back to the default, so say so — otherwise the client
-        // keeps filtering (or hiding) panels on a setting the server no longer holds.
-        if (MODES.remove(uuid) != null) {
-            DungeonTrainNet.sendTo(player, EditorMenusModePacket.of(EditorMenusMode.DEFAULT));
-        }
-        if (LAST_HOVER.remove(uuid) != null) {
+        if (LAST_HOVER.remove(player.getUUID()) != null) {
             DungeonTrainNet.sendTo(player, PartAssignmentSyncPacket.empty());
         }
+    }
+
+    /** Logout reset — drops the player's mode too. Sends nothing; the client is going away. */
+    public static void forgetSession(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        MODES.remove(uuid);
+        LAST_HOVER.remove(uuid);
     }
 
     /**

@@ -351,10 +351,13 @@ public final class BuilderSave {
      *
      * <p>One write, unlike {@link #saveWholeCarriage}'s two. A whole carriage is written twice because
      * the spawn pool only knows about carriage <em>shells</em>, so a build has to exist as one to keep
-     * appearing in trains. A group has no such second home — nothing places a group on a train yet —
-     * and writing its whole run into the shell store would register a template three carriages long
-     * where every reader expects one, which the shell store's own footprint gate would then refuse on
-     * every read.</p>
+     * appearing in trains. A group is placed as a group ({@code WholeGroupSelection}), and writing
+     * its whole run into the shell store would register a template three carriages long where every
+     * reader expects one, which the shell store's own footprint gate would then refuse on every
+     * read.</p>
+     *
+     * <p>Its variant pools and container contents go with it, under the same {@code whole_group:}
+     * key the editor's Group plot and the train's overlay read.</p>
      *
      * <p>The carriage count lives in the footprint rather than beside it: {@code carriages × length}
      * is the box, so a group cannot claim to be a size it isn't. See {@code CarriageGroupTemplateStore}.</p>
@@ -370,6 +373,7 @@ public final class BuilderSave {
             LOGGER.info("[DungeonTrain] Builder save: registered new carriage group '{}' ({} carriages)",
                     name, carriages);
         }
+        BuilderSidecarCarry.carryGroupToTemplate(level, group.id(), dims);
         return new Written(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, name, "", origin,
                 CarriageGroupPlacer.sizeOf(dims, carriages));
     }

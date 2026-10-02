@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.event.PortalCarriageEvents;
 import games.brennan.dungeontrain.net.relay.BookAuthorsClient;
 import games.brennan.dungeontrain.portal.PortalRoomAuthorLocks;
 import games.brennan.dungeontrain.portal.PortalRoomBooks;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.Map;
@@ -45,11 +46,19 @@ public final class PortalLibraryGreeter {
      * comparison, and nothing here can throw into the occupancy scan.</p>
      */
     public static void tick(ServerPlayer player, int pairKey) {
-        if (player == null || !SharedBookGate.canDiscover()) return;
+        if (player == null) return;
+        PortalRoomBooks books = PortalCarriageEvents.portalRoomBooksFor(pairKey);
+        // Arriving in a library of their own books is what a written book was boosting the odds
+        // of, so it spends that boost. Ahead of every gate below: it is about where the player is
+        // standing, not about whether there is a line to say or a relay to name an author.
+        if (books.locks() && PortalRoomAuthorLocks.effectiveShare(pairKey, books).isSelf()) {
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).visitOwnShelves(pairKey);
+        }
+
+        if (!SharedBookGate.canDiscover()) return;
         Integer last = GREETED.get(player.getUUID());
         if (last != null && last == pairKey) return;
 
-        PortalRoomBooks books = PortalCarriageEvents.portalRoomBooksFor(pairKey);
         if (!books.locks()) {
             // Not a library. Forget the last one so walking out of a locked room and back in later
             // announces again — the map holds "the library you are currently in", not a history.

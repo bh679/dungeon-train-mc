@@ -20,8 +20,8 @@ TradeEverything) are
 **not bundled** — they are required external downloads. Every existing player hits the
 missing-dependency path exactly once, on the update that un-bundled them.
 
-More siblings — KeepTrim, DungeonBackup, SableFenceTrapdoorFix, StreamDetect, DpiBypassDetect and
-PigmanVillagers — are **hybrid**: jarJar'd inside
+More siblings — KeepTrim, DungeonBackup, SableFenceTrapdoorFix, StreamDetect, DpiBypassDetect,
+PigmanVillagers and LostCityTerrainFit — are **hybrid**: jarJar'd inside
 the DT jar (Modrinth + manual installs) *and* declared required + shipped as Includes on
 CurseForge, where the CF app installs them as their own jars. NeoForge's JarSelector drops the
 nested copy when a top-level one is present; Cases A and G cover both layouts.
@@ -44,7 +44,7 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
+| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Exposure + Exposure: Polaroid + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
 | **C** | DT + Sable only | Fails — names **all five**, with each declared range (the hybrid trio is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
@@ -56,6 +56,11 @@ The NeoForge version follows `neo_version` for the same reason.
 | **J** | minus BetterEnd (libraries present) | Fails — names `betterend` with its `[x,)` floor |
 | **K** | minus WWOO + Biomes O' Plenty (their libraries present) | Fails — names `wwoo` and `biomesoplenty` with their `[x,)` floors |
 | **L** | Case A minus Sable Pathfinder (CurseForge layout — it isn't listed there) | Server starts cleanly (`optional` in mods.toml). A, D and G include it, proving its mixins apply against production bytecode |
+| **M** | minus VanillaBackport (Platform present) | Fails — names `vanillabackport` with its `[x,)` floor |
+| **N** | minus Big Lost City (the only case without it) | Fails — names `big_lost_city` with its `[x,)` floor, twice: requested by `dungeontrain` and by the jarJar'd `lostcityterrainfit` |
+| **O** | Case A + What Are They Up To + CoroUtil (a server carrying the modpack's two-sided companion) | Server starts cleanly |
+| **P** | WATUT without CoroUtil | Fails — names `coroutil`, requested by `watut`, with its `[1.21.0-1.3.7,)` floor |
+| **Q** | minus Exposure + its Polaroid add-on (the only case without them) | Fails — names `exposure` and `exposure_polaroid` with their `[x,)` floors |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.
@@ -72,6 +77,33 @@ every one of those ticks would break existing installs.
 **F is the contrast case.** Sable is exact-pinned because DT is compiled against one physics
 build; the siblings are additive and take minimums. Seeing `[2.0.2,2.0.2]` next to `[0.45.0,)`
 in the same run is the clearest statement of that difference.
+
+## Client-join test
+
+Mod loading is only half of a two-sided mod's contract: the other half is whether a client and a
+server that disagree about it can still connect. The cases above can't show that — it takes a
+real join. Stage a case, start the server for good, and point a dev client at it:
+
+```bash
+# server.properties (gitignored): a free server-port, online-mode=false, RCON to stop it cleanly
+scripts/deptest/run-case.sh "O - modpack companions WATUT + CoroUtil" <keys…>   # stages mods/
+(cd scripts/deptest/server && java @libraries/net/neoforged/neoforge/<neo_version>/unix_args.txt --nogui)
+./gradlew runClient -PquickJoin=127.0.0.1:<port>      # drop extra jars in run/mods/ for the client side
+```
+
+Read the outcome from the server log (`joined the game` / `lost connection`) and the client's
+`run/logs/latest.log` (`ModMismatchDisconnectedScreen` names the channel that failed).
+
+What Are They Up To, 2026-10-02 (1.21.0-1.2.7, NeoForge 21.1.230):
+
+| Server | Client | Result |
+|---|---|---|
+| with WATUT | with WATUT | Joins |
+| **without** WATUT | with WATUT (a modpack player) | **Refused** — `watut:nbt_server` / `watut:nbt_client` "missing on the server side, but required on the client" |
+| with WATUT | **without** WATUT | **Refused** — the same two channels "missing on the client side, but required on the server" |
+| without WATUT | without WATUT | Joins |
+
+So WATUT has to match on both sides: a server for modpack players must carry WATUT + CoroUtil.
 
 ## When to run it
 

@@ -12,15 +12,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -68,15 +68,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -122,15 +122,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -176,15 +176,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -206,6 +206,9 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
       "stone": "stone",
+      "overrides": {
+        "stage_glazed_terracotta": "minecraft:white_glazed_terracotta"
+      },
       "terracotta": [
         "minecraft:white_terracotta",
         "minecraft:yellow_terracotta",
@@ -216,9 +219,6 @@
         "minecraft:light_gray_concrete",
         "minecraft:gray_concrete"
       ],
-      "overrides": {
-        "stage_glazed_terracotta": "minecraft:white_glazed_terracotta"
-      },
       "woodLocked": true
     }
   },
@@ -235,15 +235,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -291,15 +291,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -352,15 +352,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -408,15 +408,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -464,15 +464,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -524,15 +524,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -584,15 +584,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -640,15 +640,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -696,15 +696,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -792,15 +792,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -826,6 +826,15 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
       "stone": "quartz",
+      "overrides": {
+        "stage_stone_bricks_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_cobbled_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_cracked_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_feature_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_mossy_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_polished_wall": "minecraft:polished_blackstone_wall",
+        "stage_stone_wall": "minecraft:polished_blackstone_wall"
+      },
       "terracotta": [
         "minecraft:white_terracotta",
         "minecraft:blue_terracotta",
@@ -835,16 +844,7 @@
         "minecraft:black_concrete",
         "minecraft:cyan_concrete",
         "minecraft:white_concrete"
-      ],
-      "overrides": {
-        "stage_stone_bricks_wall": "minecraft:polished_blackstone_wall",
-        "stage_stone_cobbled_wall": "minecraft:polished_blackstone_wall",
-        "stage_stone_cracked_wall": "minecraft:polished_blackstone_wall",
-        "stage_stone_feature_wall": "minecraft:polished_blackstone_wall",
-        "stage_stone_mossy_wall": "minecraft:polished_blackstone_wall",
-        "stage_stone_polished_wall": "minecraft:polished_blackstone_wall",
-        "stage_stone_wall": "minecraft:polished_blackstone_wall"
-      }
+      ]
     }
   },
   "quartz": {
@@ -860,15 +860,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -893,6 +893,15 @@
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "birch",
       "stone": "quartz",
+      "overrides": {
+        "stage_stone_bricks_wall": "minecraft:diorite_wall",
+        "stage_stone_cobbled_wall": "minecraft:diorite_wall",
+        "stage_stone_cracked_wall": "minecraft:diorite_wall",
+        "stage_stone_feature_wall": "minecraft:diorite_wall",
+        "stage_stone_mossy_wall": "minecraft:diorite_wall",
+        "stage_stone_polished_wall": "minecraft:diorite_wall",
+        "stage_stone_wall": "minecraft:diorite_wall"
+      },
       "terracotta": [
         "minecraft:white_terracotta",
         "minecraft:blue_terracotta",
@@ -902,16 +911,7 @@
         "minecraft:white_concrete",
         "minecraft:purple_concrete",
         "minecraft:black_concrete"
-      ],
-      "overrides": {
-        "stage_stone_bricks_wall": "minecraft:diorite_wall",
-        "stage_stone_cobbled_wall": "minecraft:diorite_wall",
-        "stage_stone_cracked_wall": "minecraft:diorite_wall",
-        "stage_stone_feature_wall": "minecraft:diorite_wall",
-        "stage_stone_mossy_wall": "minecraft:diorite_wall",
-        "stage_stone_polished_wall": "minecraft:diorite_wall",
-        "stage_stone_wall": "minecraft:diorite_wall"
-      }
+      ]
     }
   },
   "spruce": {
@@ -926,15 +926,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -981,15 +981,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -1040,15 +1040,15 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
@@ -1096,36 +1096,33 @@
       "STACKS",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ],
     "palette": {
       "solid": [
-        "minecraft:oak_planks",
-        "minecraft:oak_wood",
-        "minecraft:stripped_oak_wood",
-        "minecraft:oak_log",
-        "minecraft:stripped_oak_log"
+        "minecraft:stone"
       ],
       "stairs": [
-        "minecraft:oak_stairs",
-        "minecraft:oak_stairs"
+        "minecraft:stone_stairs"
       ],
       "slabs": [
-        "minecraft:oak_slab",
-        "minecraft:oak_slab"
+        "minecraft:stone_slab"
       ],
       "button": "minecraft:stone_button",
       "pressurePlate": "minecraft:stone_pressure_plate",
       "wood": "oak",
       "stone": "stone",
+      "overrides": {
+        "stage_glazed_terracotta": "minecraft:orange_glazed_terracotta"
+      },
       "terracotta": [
         "minecraft:orange_terracotta",
         "minecraft:red_terracotta",
@@ -1136,9 +1133,6 @@
         "minecraft:gray_concrete",
         "minecraft:light_gray_concrete"
       ],
-      "overrides": {
-        "stage_glazed_terracotta": "minecraft:orange_glazed_terracotta"
-      },
       "woodLocked": true
     }
   }

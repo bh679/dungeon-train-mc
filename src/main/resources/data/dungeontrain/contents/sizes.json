@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "sizes": {
+    "cargocontents": "full",
+    "default_full": "full",
+    "enemies_group": "full",
+    "portal": "half",
+    "things": "full"
+  }
+}

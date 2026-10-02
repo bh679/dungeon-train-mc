@@ -51,6 +51,17 @@ public final class LegacyBiomes {
 
     private LegacyBiomes() {}
 
+    /**
+     * True where a legacy band's old generator owns this chunk (the same per-chunk roll as the override, mix
+     * zone included). VanillaBackport's biomes stay out of these chunks, as they do out of every non-vanilla
+     * stretch ({@code OverworldStretchBiomes#pick}).
+     */
+    public static boolean isLegacyChunk(int blockX, int blockZ) {
+        Context c = current;
+        if (c == null) return false;
+        return LegacyBands.kindOfChunk(c.seed(), WorldGenCycle.fromConfig(), blockX >> 4, blockZ >> 4) != null;
+    }
+
     /** Resolve and publish this world's mapping; clears it for a world without a train. */
     public static void publish(ServerLevel overworld) {
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);

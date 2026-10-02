@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.client.GraphicsCapabilities;
+import games.brennan.dungeontrain.compat.ExposureCaptureState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.DeltaTracker;
@@ -175,6 +176,9 @@ public final class RideSnapshotCapture {
      */
     public static void beginNestedCapture(GameRenderer gr, DeltaTracker deltaTracker) {
         if (capturing || !hasPending()) return; // guard our own nested pass / nothing to do
+        // A camera mod is taking its own photo this frame: hold ours. Nothing has been consumed
+        // yet, so every pending request stays armed and fires once that capture is over.
+        if (ExposureCaptureState.captureInFlight()) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
@@ -298,6 +302,11 @@ public final class RideSnapshotCapture {
             LOGGER.debug("[DungeonTrain] Ride snapshot {} tag={} ({}x{}) gfx={} gallery={}",
                     id, captureTag, shot.getWidth(), shot.getHeight(), meta.gfx(), RideSnapshotGallery.size());
         }
+    }
+
+    /** The long edge a gallery ride photo would be stored at right now (the bug-report lag tip reads it). */
+    public static int currentGalleryEdge() {
+        return targetEdge(false);
     }
 
     /**

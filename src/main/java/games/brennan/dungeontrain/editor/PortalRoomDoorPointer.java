@@ -183,27 +183,40 @@ public final class PortalRoomDoorPointer {
         try {
             TrackVariantWeights.setMode(TrackKind.PORTAL_ROOM, match.name(), updated.toTag());
         } catch (IOException e) {
-            player.displayClientMessage(Component.literal(
-                "Could not set door position for '" + match.name() + "': " + e.getMessage())
+            player.displayClientMessage(Component.translatable(
+                    BAR + "set_failed", match.name(), String.valueOf(e.getMessage()))
                 .withStyle(ChatFormatting.RED), true);
             return;
         }
 
-        String across = offset == 0 ? "centred" : (offset > 0 ? "+" + offset : Integer.toString(offset));
-        String up = heightOffset == 0 ? "at the floor"
-            : heightOffset + " block" + (heightOffset == 1 ? "" : "s") + " up";
-        String note = clampNote(dims, match, offset, heightOffset);
+        Component across = offset == 0
+            ? Component.translatable(BAR + "across_centred")
+            : Component.literal(offset > 0 ? "+" + offset : Integer.toString(offset));
+        Component up = heightOffset == 0
+            ? Component.translatable(BAR + "up_floor")
+            : Component.translatable(BAR + (heightOffset == 1 ? "up_one" : "up_many"), heightOffset);
+        Component note = clampNote(dims, match, offset, heightOffset);
         // Name the door, not just the room. The two ends can stand apart now, so a message that said
         // only "door position" would leave an author unable to tell which of their two clicks landed.
-        String which = match.role() == PortalCarriageRole.ENTRY ? "entry" : "exit";
-        player.displayClientMessage(Component.literal(
-            "Dimensional carriage '" + match.name() + "' " + which + " door position: "
-                + across + ", " + up + "." + note
-        ).withStyle(note.isEmpty() ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+        String whichKey = match.role() == PortalCarriageRole.ENTRY ? "position_entry" : "position_exit";
+        Component position = Component.translatable(BAR + whichKey, match.name(), across, up);
+        Component message = note == null
+            ? position
+            : Component.translatable(BAR + "position_with_note", position, note);
+        player.displayClientMessage(message.copy()
+            .withStyle(note == null ? ChatFormatting.GREEN : ChatFormatting.YELLOW), true);
+    }
+
+    /** Key prefix for this pointer's action-bar messages. */
+    private static final String BAR = "chat.dungeontrain.editor_bar.portal_door.";
+
+    /** "1 block" / "3 blocks" — a slack count for the clamp notes. */
+    private static Component blocks(int count) {
+        return Component.translatable(BAR + (count == 1 ? "blocks_one" : "blocks_many"), count);
     }
 
     /**
-     * Why a click did not land where it was aimed, when it did not — or empty when it did.
+     * Why a click did not land where it was aimed, when it did not — or {@code null} when it did.
      *
      * <p>Worth saying out loud, and the reason this method exists at all: a room is only free to move
      * its door through the slack it has over {@link PortalRoomLayout#minWidth} /
@@ -213,25 +226,20 @@ public final class PortalRoomDoorPointer {
      * and, without this note, reads as the feature being broken rather than as the room needing to be
      * taller. Naming the axis and the fix turns a dead control into an instruction.</p>
      */
-    private static String clampNote(CarriageDims dims, Match match, int offset, int heightOffset) {
+    private static Component clampNote(CarriageDims dims, Match match, int offset, int heightOffset) {
         boolean acrossClamped = offset != match.rawOffset();
         boolean upClamped = heightOffset != match.rawHeightOffset();
-        if (!acrossClamped && !upClamped) return "";
+        if (!acrossClamped && !upClamped) return null;
 
         int widthSlack = PortalRoomLayout.maxDoorOffset(dims, match.size().getZ());
         int heightSlack = PortalRoomLayout.maxDoorHeightOffset(dims, match.size().getY());
         if (acrossClamped && upClamped) {
-            return " Clamped on both axes — this room has " + widthSlack + " block"
-                + (widthSlack == 1 ? "" : "s") + " of slack across and " + heightSlack + " up."
-                + " Widen and heighten it to move the door further.";
+            return Component.translatable(BAR + "clamped_both", blocks(widthSlack), heightSlack);
         }
         if (acrossClamped) {
-            return " Clamped across — this room has " + widthSlack + " block"
-                + (widthSlack == 1 ? "" : "s") + " of slack either way. Widen it to move the door further.";
+            return Component.translatable(BAR + "clamped_across", blocks(widthSlack));
         }
-        return " Clamped up — this room has " + heightSlack + " block"
-            + (heightSlack == 1 ? "" : "s") + " of slack above the corridor."
-            + " Make it taller to raise the door.";
+        return Component.translatable(BAR + "clamped_up", blocks(heightSlack));
     }
 
     /**

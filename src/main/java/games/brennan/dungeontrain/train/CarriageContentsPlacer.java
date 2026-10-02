@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.train;
 
+import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
@@ -116,13 +117,11 @@ public final class CarriageContentsPlacer {
      * The box {@code contents} is authored against — which is <b>not</b> always the world's carriage
      * dims.
      *
-     * <p>The {@code portal} corridor's contents are the exception: a
-     * {@link games.brennan.dungeontrain.portal.PortalCorridorKind#LONG} corridor runs past its slot
-     * into the cart between a portal's pair, so what stands inside one is measured over
-     * {@link games.brennan.dungeontrain.portal.PortalCorridorSize#corridorDims} — 13×7×7 at the
-     * default, giving an 11×5×5 interior. ({@code portal_short}'s corridor is exactly a carriage, so
-     * its contents need no exception — the same reason {@code portal_short} is a separate id rather
-     * than a second size of {@code portal}.) The contents-side counterpart of
+     * <p>It is the box of the contents' {@link #sizeOf size}: {@link ContentsSize#ROOM} is a carriage,
+     * {@link ContentsSize#HALF} the long portal corridor (13×7×7 at the default, an 11×5×5 interior —
+     * where the {@code portal} contents live), {@link ContentsSize#FULL} a whole group as one carriage.
+     * ({@code portal_short}'s corridor is exactly a carriage, so its contents are ROOM.) The
+     * contents-side counterpart of
      * {@link CarriagePlacer#variantDims}, and load-bearing for the same reason: the template's size
      * gate, the editor plot, and the sidecar's bounds all have to agree on one box or the template is
      * rejected, the plot is the wrong size, and entries past the carriage's length are dropped.</p>
@@ -135,40 +134,45 @@ public final class CarriageContentsPlacer {
      * callers pass the resolved box.</p>
      */
     public static CarriageDims contentsDims(CarriageContents contents, CarriageDims dims) {
-        PortalCorridorKind kind = portalCorridorKindOf(contents.id());
-        return kind == null ? dims : PortalCorridorSize.corridorDims(dims, kind);
+        return sizeOf(contents).boxOrRoom(dims, games.brennan.dungeontrain.config.DungeonTrainConfig.getGroupSize());
     }
 
     /**
-     * True for the portal contents <b>or any sub-variant of it</b>.
+     * The {@link ContentsSize} {@code contents} is authored at — its own declared size, or, for a
+     * sub-variant, its group root's. A sub-variant is another filling for its parent's slot,
+     * so it is always its parent's box; one declared differently would be captured at a size its
+     * slot can never take.
      *
-     * <p>A sub-variant is an alternative filling for the same space — the group picks between the
-     * parent and its members for one slot — so a member of the portal group is authored into a
-     * corridor exactly as its parent is, and has to be measured the same way. Sizing one as a
-     * carriage gives it a plot four blocks short, and a template captured there is rejected by the
-     * size gate the moment it is loaded.</p>
-     *
-     * <p>Walks the whole parent chain rather than checking one level, since groups may nest, and
-     * counts its steps: {@code findParentOf} reads sidecars off disk, and a cycle authored into
-     * them ({@code a}'s parent is {@code b}, {@code b}'s is {@code a}) would otherwise hang the
-     * server on a lookup that runs per placement.</p>
-     *
-     * <p><b>Public because the editor's shell choice reads it too</b>
-     * ({@code CarriageContentsEditor.shellFor}). It used to compare ids directly and so shelled a
-     * sub-variant's corridor-sized plot with a standard carriage — the box rule and the shell rule
-     * were the same question answered twice, and only one of them learned about groups.</p>
+     * <p>Walks the parent chain with the same bound as {@link #portalCorridorKindOf}, for the same
+     * reason: the chain is read off sidecars on disk and an authored cycle must not hang a
+     * placement.</p>
      */
-    public static boolean isPortalContents(CarriageContents contents) {
-        return portalCorridorKindOf(contents.id()) != null;
+    public static ContentsSize sizeOf(CarriageContents contents) {
+        return sizeOf(contents.id());
     }
+
+    public static ContentsSize sizeOf(String id) {
+        String current = id;
+        for (int depth = 0; depth <= MAX_GROUP_DEPTH; depth++) {
+            Optional<String> parent = CarriageContentsGroupStore.findParentOf(current);
+            if (parent.isEmpty()) {
+                return games.brennan.dungeontrain.editor.TemplateSizeStore.CONTENTS.sizeOf(current);
+            }
+            current = parent.get();
+        }
+        LOGGER.warn("[DungeonTrain] Contents group chain from '{}' exceeded {} levels — "
+            + "sizing as room. Check for a cycle in the group sidecars.", id, MAX_GROUP_DEPTH);
+        return ContentsSize.ROOM;
+    }
+
 
     /**
      * Which corridor kind's contents this id belongs to, or {@code null} if it is not a corridor's
      * at all.
      *
-     * <p>The kind matters and cannot be flattened to a boolean: it is what {@link #contentsDims}
-     * sizes the box from, and the two kinds are different boxes. Callers that only want "is this a
-     * corridor's furnishing" — go through {@link #isPortalContents}.</p>
+     * <p>No longer what sizes the box — that is {@link #sizeOf}, which reads the declared size
+     * ({@code portal} is Half). This answers only "which corridor is this the furnishing of", so the
+     * editor can shell a plot with the right one.</p>
      *
      * <p><b>Public because the editor's shell choice reads it</b>
      * ({@code CarriageContentsEditor.shellFor}): a plot showing {@code portal_short}'s contents has
@@ -194,7 +198,7 @@ public final class CarriageContentsPlacer {
         return null;
     }
 
-    /** How far {@link #isPortalContents} will walk a group chain before calling it a cycle. */
+    /** How far {@link #sizeOf} and {@link #portalCorridorKindOf} walk a group chain before calling it a cycle. */
     private static final int MAX_GROUP_DEPTH = 16;
 
     /** {@link #interiorSize} of the box {@code contents} is authored against. */
@@ -234,7 +238,7 @@ public final class CarriageContentsPlacer {
         // Editor preview / template flows have no real seed — pass 0 so the
         // entity-variant lookup behaves deterministically for previews too
         // (sidecar.resolve handles any seed value the same way).
-        CarriageStampGuard.run(() -> placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true));
+        CarriageStampGuard.run(() -> placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true, PortalCorridorMask.NONE));
     }
 
     /**
@@ -253,15 +257,26 @@ public final class CarriageContentsPlacer {
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                CarriageDims dims, long seed, int carriageIndex) {
+        placeAt(level, carriageOrigin, contents, dims, seed, carriageIndex, PortalCorridorMask.NONE);
+    }
+
+    /**
+     * {@link #placeAt(ServerLevel, BlockPos, CarriageContents, CarriageDims, long, int)} writing no
+     * block into a cell {@code keep} covers — the carriage's own blocks when its template has
+     * "carriage blocks win" on (see {@link ShellWinsMask}).
+     */
+    public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                               CarriageDims dims, long seed, int carriageIndex, PortalCorridorMask keep) {
+        PortalCorridorMask mask = keep == null ? PortalCorridorMask.NONE : keep;
         CarriageStampGuard.run(() -> {
             Flip flip = carriageFlip(contents, seed, carriageIndex);
-            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
+            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true, mask);
             applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                contents, seed, carriageIndex, mask, flip);
             applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                seed, carriageIndex, mask, flip);
         });
     }
 
@@ -329,15 +344,22 @@ public final class CarriageContentsPlacer {
      */
     public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                         CarriageDims dims, long seed, int carriageIndex) {
+        placeBlocksOnly(level, carriageOrigin, contents, dims, seed, carriageIndex, PortalCorridorMask.NONE);
+    }
+
+    /** {@link #placeBlocksOnly} writing no block into a cell {@code keep} covers — see {@link ShellWinsMask}. */
+    public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                                        CarriageDims dims, long seed, int carriageIndex, PortalCorridorMask keep) {
+        PortalCorridorMask mask = keep == null ? PortalCorridorMask.NONE : keep;
         CarriageStampGuard.run(() -> {
             Flip flip = carriageFlip(contents, seed, carriageIndex);
-            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
+            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, mask);
             applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                contents, seed, carriageIndex, mask, flip);
             applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                seed, carriageIndex, mask, flip);
         });
     }
 
@@ -398,7 +420,7 @@ public final class CarriageContentsPlacer {
      */
     public static void placeEntitiesOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                           CarriageDims dims, long seed, int carriagePIdx) {
-        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriagePIdx, /*placeBlocks*/ false, /*spawnEntities*/ true);
+        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriagePIdx, /*placeBlocks*/ false, /*spawnEntities*/ true, PortalCorridorMask.NONE);
     }
 
     /**
@@ -411,7 +433,7 @@ public final class CarriageContentsPlacer {
      */
     private static void placeAtInternal(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                          CarriageDims dims, long seed, int carriagePIdx,
-                                         boolean placeBlocks, boolean spawnEntities) {
+                                         boolean placeBlocks, boolean spawnEntities, PortalCorridorMask mask) {
         Vec3i size = interiorSizeFor(contents, dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
             // Carriage at its minimum dims has zero or negative interior
@@ -426,7 +448,7 @@ public final class CarriageContentsPlacer {
         if (stored.isPresent()) {
             StructureTemplate template = stored.get();
             if (placeBlocks) {
-                stampTemplateBlocks(level, origin, template, PortalCorridorMask.NONE, flip);
+                stampTemplateBlocks(level, origin, template, mask, flip);
                 // Narrative lecterns must spawn EMPTY so they resolve their book
                 // lazily on first right-click (via BookFactory.buildOrRandomForLectern)
                 // instead of showing a book baked into the template. Some carriage
@@ -579,7 +601,10 @@ public final class CarriageContentsPlacer {
         boolean filterByDifficulty = carriageIndex != EDITOR_SENTINEL_PIDX;
         int diffTier = filterByDifficulty
             ? DifficultyProgression.positionTier(carriageIndex) : 0;
-        try (ConnectPass.Scope ignored = ConnectPass.open()) {
+        java.util.function.Predicate<BlockPos> within =
+            GrowthPass.inside(origin, size.getX(), size.getY(), size.getZ()).and(pos -> !mask.covers(pos));
+        try (ConnectPass.Scope ignored = ConnectPass.open();
+             GrowthPass.Scope grown = GrowthPass.open()) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = filterByDifficulty
                     ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
@@ -629,6 +654,10 @@ public final class CarriageContentsPlacer {
                         "contents:" + contents.id(), w.localPos(), seed, carriageIndex,
                         lootId);
                     ConnectPass.note(level, wWorld, w.entry().connect(), rotated);
+                    // A Y flip turns the carriage upside down, so an up-growing column grows down.
+                    VariantState growthEntry = flip.y() && !w.entry().growth().isDefault()
+                        ? w.entry().withGrowth(w.entry().growth().flipped()) : w.entry();
+                    GrowthPass.note(level, wWorld, growthEntry, rotated, w.localPos(), seed, carriageIndex, within);
                 }
             }
         }

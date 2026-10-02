@@ -131,7 +131,7 @@ public final class EditorTypeMenuInputHandler {
         if (!EditorStatusHudOverlay.isEditorMenusVisible()) return false;
         if (EditorTypeMenuRenderer.menus().isEmpty()) return false;
         if (CommandMenuState.isOpen()) return false;
-        if (PartPositionMenu.isActive()) return false;
+        if (PartPositionMenu.claimsPointer()) return false;
         return true;
     }
 
@@ -169,18 +169,6 @@ public final class EditorTypeMenuInputHandler {
             EditorTypeMenusPacket.CategoryButton btn = menu.categoryBar().get(slot);
             String cmd = "dt editor " + btn.id();
             LOGGER.debug("[DungeonTrain] EditorTypeMenu category click: {}", cmd);
-            CommandRunner.run(cmd);
-            return;
-        }
-
-        // WHOLE's "whole group every N" settings row — click +1, shift-click -1, cmd-click types.
-        if (hit.cell() == EditorTypeMenuRenderer.CellKind.WHOLE_EVERY) {
-            if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) {
-                openWholeEveryEntry();
-                return;
-            }
-            String cmd = "dungeontrain editor whole every " + (shift ? "dec" : "inc");
-            LOGGER.debug("[DungeonTrain] EditorTypeMenu whole-every: {}", cmd);
             CommandRunner.run(cmd);
             return;
         }
@@ -569,19 +557,6 @@ public final class EditorTypeMenuInputHandler {
      * Open the typed-weight pad for one row. The world-space panel is a HUD overlay drawn behind
      * the modal, so closing returns to the world with the menu still up.
      */
-    /** Type N for "whole group every N" — 0 is off. */
-    private static void openWholeEveryEntry() {
-        int current = Math.max(0, EditorTypeMenuRenderer.wholeGroupEvery());
-        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
-            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.whole_every"),
-            current, 0, games.brennan.dungeontrain.train.WholeGroupSettings.MAX_EVERY,
-            value -> {
-                String cmd = "dungeontrain editor whole every " + value;
-                LOGGER.debug("[DungeonTrain] EditorTypeMenu whole-every (typed): {}", cmd);
-                CommandRunner.run(cmd);
-            },
-            null));
-    }
 
     private static void openWeightEntry(EditorTypeMenusPacket.Menu menu,
                                         EditorTypeMenusPacket.Variant variant) {
@@ -613,7 +588,16 @@ public final class EditorTypeMenuInputHandler {
      * every variant in a single floating menu shares its category.</p>
      */
     private static void dispatchNew(EditorTypeMenusPacket.Menu menu) {
-        if (menu.variants().isEmpty()) return;
+        String sizeKey = NewSourcePickerScreen.contentsSizeKey(menu.typeName());
+        if (menu.variants().isEmpty()) {
+            // A contents size with no templates yet still needs a way to make its first one.
+            if (sizeKey != null && games.brennan.dungeontrain.editor.EditorCategory.CONTENTS.id()
+                    .equals(menu.activeCategoryId())) {
+                CommandMenuState.openAt(new NewSourcePickerScreen(
+                    NewSourcePickerScreen.Category.CONTENTS, sizeKey, ""));
+            }
+            return;
+        }
         EditorTypeMenusPacket.Variant first = menu.variants().get(0);
         String category = first.category();
         PlotCategory plotCategory = first.plotCategory();
@@ -655,8 +639,9 @@ public final class EditorTypeMenuInputHandler {
         NewSourcePickerScreen picker = plotCategory == null ? null : switch (plotCategory) {
             case CARRIAGES -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.CARRIAGES, null, currentId);
+            // The menu is one contents size (Room / Half / Full): offer that size only.
             case CONTENTS -> new NewSourcePickerScreen(
-                NewSourcePickerScreen.Category.CONTENTS, null, currentId);
+                NewSourcePickerScreen.Category.CONTENTS, sizeKey, currentId);
             // For PARTS the modelId is the kind tag (floor / walls / roof /
             // doors); the picker's "Current" option needs a part variant id,
             // which the variant rows don't represent for the floating-menu

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.tunnel;
 
+import games.brennan.dungeontrain.editor.GrowthPass;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.editor.TunnelTemplateStore;
@@ -93,7 +94,8 @@ public final class TunnelPlacer {
      * {@code tileIndex = origin.getX()} for runtime determinism.
      */
     public static void placeSectionNamed(ServerLevel level, BlockPos origin, String name) {
-        placeSectionNamed(level, origin, name, level.getSeed(), origin.getX());
+        // No growth: this stamp draws the editor / builder plot, which is captured back into the template.
+        placeSectionNamed(level, origin, name, level.getSeed(), origin.getX(), false);
     }
 
     /**
@@ -102,11 +104,16 @@ public final class TunnelPlacer {
      */
     public static void placeSectionNamed(ServerLevel level, BlockPos origin, String name,
                                          long worldSeed, int tileIndex) {
+        placeSectionNamed(level, origin, name, worldSeed, tileIndex, true);
+    }
+
+    private static void placeSectionNamed(ServerLevel level, BlockPos origin, String name,
+                                          long worldSeed, int tileIndex, boolean grow) {
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(level, TunnelVariant.SECTION, name);
         CarriageStampGuard.run(() -> {
             if (stored.isPresent()) {
                 stampTemplate(level, origin, stored.get(), false);
-                applyTunnelSidecar(level, origin, false, TrackKind.TUNNEL_SECTION, name, worldSeed, tileIndex);
+                applyTunnelSidecar(level, origin, false, TrackKind.TUNNEL_SECTION, name, worldSeed, tileIndex, grow);
                 return;
             }
             TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
@@ -120,18 +127,24 @@ public final class TunnelPlacer {
      * rationale.
      */
     public static void placePortalNamed(ServerLevel level, BlockPos origin, boolean mirrorX, String name) {
-        placePortalNamed(level, origin, mirrorX, name, level.getSeed(), origin.getX());
+        // No growth — see placeSectionNamed.
+        placePortalNamed(level, origin, mirrorX, name, level.getSeed(), origin.getX(), false);
     }
 
     /** {@link #placePortalNamed(ServerLevel, BlockPos, boolean, String)} with its variants rolled on {@code (worldSeed, tileIndex)}. */
     public static void placePortalNamed(ServerLevel level, BlockPos origin, boolean mirrorX, String name,
                                         long worldSeed, int tileIndex) {
+        placePortalNamed(level, origin, mirrorX, name, worldSeed, tileIndex, true);
+    }
+
+    private static void placePortalNamed(ServerLevel level, BlockPos origin, boolean mirrorX, String name,
+                                         long worldSeed, int tileIndex, boolean grow) {
         Optional<StructureTemplate> stored = TunnelTemplateStore.getFor(level, TunnelVariant.PORTAL, name);
         CarriageStampGuard.run(() -> {
             if (stored.isPresent()) {
                 BlockPos stampOrigin = mirrorX ? origin.offset(LENGTH - 1, 0, 0) : origin;
                 stampTemplate(level, stampOrigin, stored.get(), mirrorX);
-                applyTunnelSidecar(level, origin, mirrorX, TrackKind.TUNNEL_PORTAL, name, worldSeed, tileIndex);
+                applyTunnelSidecar(level, origin, mirrorX, TrackKind.TUNNEL_PORTAL, name, worldSeed, tileIndex, grow);
                 return;
             }
             TunnelGeometry tg = LegacyTunnelPaint.geometryForPlot(origin);
@@ -392,44 +405,50 @@ public final class TunnelPlacer {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(LENGTH, HEIGHT, WIDTH));
         if (sidecar.isEmpty()) return;
-        for (var entry : sidecar.entries()) {
-            int lx = entry.localPos().getX();
-            int ly = entry.localPos().getY();
-            int lz = entry.localPos().getZ();
-            int wx = mirrorX ? (origin.getX() + LENGTH - 1 - lx) : (origin.getX() + lx);
-            int wy = origin.getY() + ly;
-            int wz = origin.getZ() + lz;
-            // Masked overlay: only write cells the per-block fade selects as Nether; the Overworld
-            // stamp/sidecar already filled the rest.
-            if (fadeOverworld != null
-                && !NetherFade.selectsNether(genSeed, wx, wy, wz, NetherFade.rampAt(fadeOverworld, wx))) {
-                continue;
-            }
-            BlockPos wpos = new BlockPos(wx, wy, wz);
-            games.brennan.dungeontrain.editor.VariantState picked =
-                sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
-            if (picked == null) continue;
-            if (picked.isMob()) {
-                games.brennan.dungeontrain.track.TrackVariantMobs.warnDropped(
-                    "tunnel", entry.localPos(), picked.entityId());
-                level.setBlock(wpos, AIR, Block.UPDATE_CLIENTS);
-                continue;
-            }
-            // A two-space cell (door / bed / tall plant) writes both of its spaces.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
-                    entry.localPos(), worldSeed, tileIndex, games.brennan.dungeontrain.editor.VariantState::state)) {
-                BlockPos wWorld = tunnelWorldPos(origin, w.localPos(), mirrorX);
-                if (w.isAir()) {
-                    level.setBlock(wWorld, AIR, Block.UPDATE_CLIENTS);
+        GrowthPass.Target growTarget = GrowthPass.worldgen(level);
+        java.util.function.Predicate<BlockPos> within = GrowthPass.inside(origin, LENGTH, HEIGHT, WIDTH);
+        try (GrowthPass.Scope grown = GrowthPass.open()) {
+            for (var entry : sidecar.entries()) {
+                int lx = entry.localPos().getX();
+                int ly = entry.localPos().getY();
+                int lz = entry.localPos().getZ();
+                int wx = mirrorX ? (origin.getX() + LENGTH - 1 - lx) : (origin.getX() + lx);
+                int wy = origin.getY() + ly;
+                int wz = origin.getZ() + lz;
+                // Masked overlay: only write cells the per-block fade selects as Nether; the Overworld
+                // stamp/sidecar already filled the rest.
+                if (fadeOverworld != null
+                    && !NetherFade.selectsNether(genSeed, wx, wy, wz, NetherFade.rampAt(fadeOverworld, wx))) {
                     continue;
                 }
-                // Roll loot + stamp BE NBT through the WorldGenLevel so tunnel
-                // chests generated at chunkgen populate (and signs/banners keep
-                // their authored NBT), matching the runtime sidecar path.
-                games.brennan.dungeontrain.editor.ContainerContentsPlacement.placeWorldgen(
-                    level, wWorld, mirroredPair(w.state(), mirrorX), w.entry().blockEntityNbt(),
-                    "tunnel:" + kind.id() + ":" + name, w.localPos(), worldSeed, tileIndex,
-                    diffIndex, w.entry().linkedLootPrefabId());
+                BlockPos wpos = new BlockPos(wx, wy, wz);
+                games.brennan.dungeontrain.editor.VariantState picked =
+                    sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
+                if (picked == null) continue;
+                if (picked.isMob()) {
+                    games.brennan.dungeontrain.track.TrackVariantMobs.warnDropped(
+                        "tunnel", entry.localPos(), picked.entityId());
+                    level.setBlock(wpos, AIR, Block.UPDATE_CLIENTS);
+                    continue;
+                }
+                // A two-space cell (door / bed / tall plant) writes both of its spaces.
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
+                        entry.localPos(), worldSeed, tileIndex, games.brennan.dungeontrain.editor.VariantState::state)) {
+                    BlockPos wWorld = tunnelWorldPos(origin, w.localPos(), mirrorX);
+                    if (w.isAir()) {
+                        level.setBlock(wWorld, AIR, Block.UPDATE_CLIENTS);
+                        continue;
+                    }
+                    // Roll loot + stamp BE NBT through the WorldGenLevel so tunnel
+                    // chests generated at chunkgen populate (and signs/banners keep
+                    // their authored NBT), matching the runtime sidecar path.
+                    BlockState placedState = mirroredPair(w.state(), mirrorX);
+                    games.brennan.dungeontrain.editor.ContainerContentsPlacement.placeWorldgen(
+                        level, wWorld, placedState, w.entry().blockEntityNbt(),
+                        "tunnel:" + kind.id() + ":" + name, w.localPos(), worldSeed, tileIndex,
+                        diffIndex, w.entry().linkedLootPrefabId());
+                    GrowthPass.note(growTarget, wWorld, w.entry(), placedState, w.localPos(), worldSeed, tileIndex, within);
+                }
             }
         }
     }
@@ -478,49 +497,57 @@ public final class TunnelPlacer {
      */
     private static void applyTunnelSidecar(
         ServerLevel level, BlockPos origin, boolean mirrorX,
-        TrackKind kind, String name, long worldSeed, int tileIndex
+        TrackKind kind, String name, long worldSeed, int tileIndex, boolean grow
     ) {
         TrackVariantBlocks sidecar = TrackVariantBlocks.loadFor(
             kind, name, new Vec3i(LENGTH, HEIGHT, WIDTH));
         if (sidecar.isEmpty()) return;
         int diffIndex = diffIndexForTile(level, tileIndex);
-        for (var entry : sidecar.entries()) {
-            int lx = entry.localPos().getX();
-            int ly = entry.localPos().getY();
-            int lz = entry.localPos().getZ();
-            // FRONT_BACK negates X around the stamp origin (= origin + (LENGTH-1, 0, 0)),
-            // so for the mirrored side world X = (origin.x + LENGTH - 1) - lx.
-            // For the non-mirrored side world coords = origin + local.
-            int wx = mirrorX ? (origin.getX() + LENGTH - 1 - lx) : (origin.getX() + lx);
-            int wy = origin.getY() + ly;
-            int wz = origin.getZ() + lz;
-            BlockPos wpos = new BlockPos(wx, wy, wz);
-            if (Shipyards.of(level).isInShip(wpos)) continue;
-            games.brennan.dungeontrain.editor.VariantState picked =
-                sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
-            if (picked == null) continue;
-            if (picked.isMob()) {
-                games.brennan.dungeontrain.track.TrackVariantMobs.warnDropped(
-                    "tunnel-sidecar", entry.localPos(), picked.entityId());
-                SilentBlockOps.setBlockSilent(level, wpos, AIR);
-                continue;
-            }
-            // A two-space cell (door / bed / tall plant) writes both of its spaces.
-            for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
-                    entry.localPos(), worldSeed, tileIndex, games.brennan.dungeontrain.editor.VariantState::state)) {
-                BlockPos wWorld = tunnelWorldPos(origin, w.localPos(), mirrorX);
-                if (!wWorld.equals(wpos) && Shipyards.of(level).isInShip(wWorld)) continue;
-                if (w.isAir()) {
-                    SilentBlockOps.setBlockSilent(level, wWorld, AIR);
+        java.util.function.Predicate<BlockPos> within = GrowthPass.inside(origin, LENGTH, HEIGHT, WIDTH)
+            .and(pos -> !Shipyards.of(level).isInShip(pos));
+        try (GrowthPass.Scope grown = GrowthPass.open()) {
+            for (var entry : sidecar.entries()) {
+                int lx = entry.localPos().getX();
+                int ly = entry.localPos().getY();
+                int lz = entry.localPos().getZ();
+                // FRONT_BACK negates X around the stamp origin (= origin + (LENGTH-1, 0, 0)),
+                // so for the mirrored side world X = (origin.x + LENGTH - 1) - lx.
+                // For the non-mirrored side world coords = origin + local.
+                int wx = mirrorX ? (origin.getX() + LENGTH - 1 - lx) : (origin.getX() + lx);
+                int wy = origin.getY() + ly;
+                int wz = origin.getZ() + lz;
+                BlockPos wpos = new BlockPos(wx, wy, wz);
+                if (Shipyards.of(level).isInShip(wpos)) continue;
+                games.brennan.dungeontrain.editor.VariantState picked =
+                    sidecar.resolve(entry.localPos(), worldSeed, tileIndex);
+                if (picked == null) continue;
+                if (picked.isMob()) {
+                    games.brennan.dungeontrain.track.TrackVariantMobs.warnDropped(
+                        "tunnel-sidecar", entry.localPos(), picked.entityId());
+                    SilentBlockOps.setBlockSilent(level, wpos, AIR);
                     continue;
                 }
-                // Route through ContainerContentsPlacement so a loot-linked
-                // chest rolls its pool into the BE NBT (mirrors CarriagePartPlacer).
-                // Non-container blocks fall through to a plain silent set.
-                games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
-                    level, wWorld, mirroredPair(w.state(), mirrorX), w.entry().blockEntityNbt(),
-                    "tunnel:" + kind.id() + ":" + name, w.localPos(), worldSeed, tileIndex,
-                    diffIndex, w.entry().linkedLootPrefabId());
+                // A two-space cell (door / bed / tall plant) writes both of its spaces.
+                for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(entry.localPos()), picked,
+                        entry.localPos(), worldSeed, tileIndex, games.brennan.dungeontrain.editor.VariantState::state)) {
+                    BlockPos wWorld = tunnelWorldPos(origin, w.localPos(), mirrorX);
+                    if (!wWorld.equals(wpos) && Shipyards.of(level).isInShip(wWorld)) continue;
+                    if (w.isAir()) {
+                        SilentBlockOps.setBlockSilent(level, wWorld, AIR);
+                        continue;
+                    }
+                    // Route through ContainerContentsPlacement so a loot-linked
+                    // chest rolls its pool into the BE NBT (mirrors CarriagePartPlacer).
+                    // Non-container blocks fall through to a plain silent set.
+                    BlockState placedState = mirroredPair(w.state(), mirrorX);
+                    games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
+                        level, wWorld, placedState, w.entry().blockEntityNbt(),
+                        "tunnel:" + kind.id() + ":" + name, w.localPos(), worldSeed, tileIndex,
+                        diffIndex, w.entry().linkedLootPrefabId());
+                    if (grow) {
+                        GrowthPass.note(level, wWorld, w.entry(), placedState, w.localPos(), worldSeed, tileIndex, within);
+                    }
+                }
             }
         }
     }

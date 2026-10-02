@@ -19,8 +19,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * to outlive that, because {@link EditorMenusMode#AUTO} is precisely a rule about being in a plot
  * versus between plots.</p>
  *
- * <p>Sent when the mode changes, when the player leaves the editor (which resets it), and once on
- * login so a reconnect inside a running server session lands on the mode the server still holds.</p>
+ * <p>Sent when the mode changes, and once on login so a reconnect inside a running server session
+ * lands on the mode the server holds. Leaving the editor — a test session included — keeps it.</p>
  */
 public record EditorMenusModePacket(String mode) implements CustomPacketPayload {
 

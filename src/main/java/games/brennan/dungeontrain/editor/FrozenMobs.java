@@ -168,7 +168,8 @@ public final class FrozenMobs {
         Entity spawned = type.spawn(level, held, player, cell, MobSpawnType.SPAWN_EGG, true, false);
         if (spawned == null) {
             player.displayClientMessage(
-                Component.literal("Could not place " + type.getDescription().getString() + " here.")
+                Component.translatable("chat.dungeontrain.editor_bar.frozen_mobs.could_not_place",
+                        type.getDescription())
                     .withStyle(ChatFormatting.YELLOW), true);
             suppressVanilla(event);
             return;
@@ -204,7 +205,8 @@ public final class FrozenMobs {
         target.discard();
         event.setCanceled(true);
         player.displayClientMessage(
-            Component.literal("Removed " + target.getType().getDescription().getString())
+            Component.translatable("chat.dungeontrain.editor_bar.frozen_mobs.removed",
+                    target.getType().getDescription())
                 .withStyle(ChatFormatting.GRAY), true);
     }
 }

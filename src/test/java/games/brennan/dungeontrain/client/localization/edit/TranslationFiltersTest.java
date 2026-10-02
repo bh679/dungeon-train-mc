@@ -227,6 +227,7 @@ class TranslationFiltersTest {
         assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.editor_screen.tab.templates"));
         assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.builder.profile"));
         assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.block_variant.title"));
+        assertTrue(TranslationFilters.isEditorKey("chat.dungeontrain.editor_bar.common.save_failed"));
         assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.death.title"));
         assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.translate.body.editor"));
         assertFalse(TranslationFilters.isEditorKey("advancements.dungeontrain.pacifist.title"));

@@ -70,9 +70,15 @@ public record ContentsAllowRequestPacket(String kind, String target) implements 
         Set<String> children = CarriageContentsGroupStore.allChildIds();
         List<String> rows = new ArrayList<>();
         List<String> off = new ArrayList<>();
+        // A carriage only ever takes contents of its own size, so only those are worth a toggle.
+        // A portal room fits whatever is small enough, so it keeps the whole list.
+        games.brennan.dungeontrain.train.ContentsSize shellSize = KIND_PORTAL_ROOM.equals(kind) ? null
+            : games.brennan.dungeontrain.train.CarriagePlacer.sizeOfId(target.toLowerCase(Locale.ROOT));
         for (CarriageContents c : CarriageContentsRegistry.allContents()) {
             String id = c.id();
             if (children.contains(id)) continue;
+            if (shellSize != null
+                    && games.brennan.dungeontrain.train.CarriageContentsPlacer.sizeOf(id) != shellSize) continue;
             rows.add(id);
             if (!allow.isAllowed(id)) off.add(id);
         }

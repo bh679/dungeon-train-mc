@@ -116,7 +116,11 @@ public enum ClientOptionsTab {
         MENU_SPACE_COMMAND,
         MENU_SPACE_TEMPLATE_BLOCKS,
         MENU_SPACE_CONTAINER_CONTENTS,
-        MENU_SPACE_BLOCK_VARIANT
+        MENU_SPACE_BLOCK_VARIANT,
+        /** Whether the biome mods' own creative tabs are drawn. Off by default. */
+        CREATIVE_MOD_BLOCK_TABS,
+        /** Whether those tabs' contents are listed in the creative search. Off by default. */
+        CREATIVE_MOD_BLOCKS_IN_SEARCH
     }
 
     /**
@@ -207,6 +211,10 @@ public enum ClientOptionsTab {
                 rows.add(Row.MENU_SPACE_TEMPLATE_BLOCKS);
                 rows.add(Row.MENU_SPACE_CONTAINER_CONTENTS);
                 rows.add(Row.MENU_SPACE_BLOCK_VARIANT);
+                // The creative inventory is the editor's palette, so its two filters sit with the
+                // editor's other preferences. Adjacent, and last, so they pair with each other.
+                rows.add(Row.CREATIVE_MOD_BLOCK_TABS);
+                rows.add(Row.CREATIVE_MOD_BLOCKS_IN_SEARCH);
             }
         }
         return List.copyOf(rows);

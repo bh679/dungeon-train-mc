@@ -134,6 +134,20 @@ public final class EditorRoster {
         return entry.withRoom(mode, size.getX(), size.getZ(), size.getY());
     }
 
+    /** A carriage template's size, or the entry unchanged for every other row. */
+    private static EditorRosterPacket.Entry withShellSizeData(String categoryId, EditorRosterPacket.Entry entry) {
+        if (!EditorCategory.CARRIAGES.id().equals(categoryId)) return entry;
+        CarriageVariant v = CarriageVariantRegistry.find(entry.variant().modelId()).orElse(null);
+        // "Carriage blocks win" is about a carriage's contents, and a flatbed never has any.
+        if (v != null && CarriagePlotRows.rowOf(v) != CarriagePlotRows.Row.FLATBEDS) {
+            entry = entry.withShellWins(ShellWinsStore.wins(v.id()));
+        }
+        // A flatbed or portal keeps the size its role needs — no Room · Half · Group switch.
+        if (v != null && EditorTypeMenus.isFixedRow(CarriagePlotRows.rowOf(v))) return entry;
+        return entry.withShellSize(
+            games.brennan.dungeontrain.train.CarriagePlacer.sizeOfId(entry.variant().modelId()).key());
+    }
+
     /** A contents template's random-flip axes, or the entry unchanged for every other row. */
     private static EditorRosterPacket.Entry withFlipData(String categoryId, EditorRosterPacket.Entry entry) {
         if (!EditorCategory.CONTENTS.id().equals(categoryId)) return entry;
@@ -157,35 +171,48 @@ public final class EditorRoster {
     private static int relayIdFor(String categoryId, String groupModelId, EditorTypeMenusPacket.Variant v) {
         games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds rows = RELAY_ROWS.get();
         if (rows == null) return 0;
-        java.util.List<String> keys = new ArrayList<>(2);
-        String K = null;
-        if (EditorCategory.CARRIAGES.id().equals(categoryId) || PlotCategory.WHOLE.id().equals(categoryId)) {
-            // A whole room rides the relay under the carriage kind — see BuilderRelayInstall.
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", v.modelId()));
-        } else if (PlotCategory.WHOLE_GROUP.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE_GROUP, "", v.modelId()));
-        } else if (PlotCategory.PARTS.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PART, groupModelId, v.modelName()));
-        } else if (EditorCategory.CONTENTS.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CONTENTS, "", v.modelId()));
-        } else if (EditorCategory.TRACKS.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, groupModelId, v.modelName()));
-        } else if (EditorCategory.PORTALS.id().equals(categoryId)) {
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PORTAL_ROOM, "", v.modelName()));
-            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
-                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, TrackKind.PORTAL_ROOM.id(), v.modelName()));
-        }
-        for (String key : keys) {
+        for (String key : relayKeysFor(categoryId, groupModelId, v.modelId(), v.modelName())) {
             games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.Entry row = rows.get(key);
             if (row != null && row.relayId() > 0) return row.relayId();
         }
         return 0;
+    }
+
+    /** The relay keys a roster row may be filed under, most likely first. */
+    static java.util.List<String> relayKeysFor(String categoryId, String groupModelId,
+                                               String modelId, String modelName) {
+        java.util.List<String> keys = new ArrayList<>(2);
+        if (PlotCategory.WHOLE.id().equals(categoryId)) {
+            // An editor save files a whole room under the carriage kind with its own sub kind, apart
+            // from a shell of the same name (EditorRelayWrite); a room installed from the relay
+            // before that sub kind existed is filed without one.
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE,
+                games.brennan.dungeontrain.editor.relay.EditorRelayWrite.WHOLE_ROOM_SUBKIND, modelId));
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", modelId));
+        } else if (EditorCategory.CARRIAGES.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE, "", modelId));
+        } else if (PlotCategory.WHOLE_GROUP.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CARRIAGE_GROUP, "", modelId));
+        } else if (PlotCategory.PARTS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PART, groupModelId, modelName));
+        } else if (EditorCategory.CONTENTS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.CONTENTS, "", modelId));
+        } else if (EditorCategory.TRACKS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, groupModelId, modelName));
+        } else if (EditorCategory.PORTALS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PORTAL_ROOM, "", modelName));
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, TrackKind.PORTAL_ROOM.id(), modelName));
+        }
+        return keys;
     }
 
     /** The Whole section first — rooms then groups — matching the category bar and the world rows. */
@@ -202,11 +229,24 @@ public final class EditorRoster {
         }
     }
 
+    /**
+     * One group per carriage pool — Rooms, Halves, Groups — each modelled by its size key, so the
+     * X menu shows a tab per pool and its "+" makes a template in that pool. An empty pool still gets
+     * its group, so the "+" is there to make its first template.
+     */
     private static void addCarriages(List<EditorRosterPacket.Group> out) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) return;
-        out.add(group(EditorCategory.CARRIAGES.id(), "Carriages", "",
-            EditorTypeMenus.carriageRows(variants), null));
+        for (CarriagePlotRows.Row row : CarriagePlotRows.Row.values()) {
+            List<CarriageVariant> inRow = new ArrayList<>();
+            for (CarriageVariant v : variants) {
+                if (CarriagePlotRows.rowOf(v) == row) inRow.add(v);
+            }
+            // Flatbeds and Portals are only shown when they hold something: nothing is made into them.
+            if (inRow.isEmpty() && EditorTypeMenus.isFixedRow(row)) continue;
+            out.add(group(EditorCategory.CARRIAGES.id(), EditorTypeMenus.carriageRowTypeName(row),
+                EditorTypeMenus.carriageRowModelId(row), EditorTypeMenus.carriageRows(inRow), null));
+        }
     }
 
     private static void addParts(List<EditorRosterPacket.Group> out) {
@@ -218,11 +258,21 @@ public final class EditorRoster {
         }
     }
 
+    /**
+     * One group per contents size — Room, Half, Full — the way parts are one group per kind. Each
+     * carries its size key as the model id, so its "+" tile offers a blank of that size. A size with
+     * no templates yet still gets its group, or there would be nowhere to make the first one.
+     */
     private static void addContents(List<EditorRosterPacket.Group> out) {
         List<CarriageContents> topLevel = EditorTypeMenus.topLevelContents();
-        if (topLevel.isEmpty()) return;
-        out.add(group(EditorCategory.CONTENTS.id(), "Contents", "",
-            EditorTypeMenus.contentsRows(topLevel), EditorRoster::contentsSelfWeight));
+        for (games.brennan.dungeontrain.train.ContentsSize size : games.brennan.dungeontrain.train.ContentsSize.values()) {
+            List<CarriageContents> ofSize = new ArrayList<>();
+            for (CarriageContents c : topLevel) {
+                if (games.brennan.dungeontrain.train.CarriageContentsPlacer.sizeOf(c) == size) ofSize.add(c);
+            }
+            out.add(group(EditorCategory.CONTENTS.id(), EditorTypeMenus.contentsTypeName(size), size.key(),
+                EditorTypeMenus.contentsRows(ofSize), EditorRoster::contentsSelfWeight));
+        }
     }
 
     private static void addTracks(List<EditorRosterPacket.Group> out) {
@@ -258,8 +308,8 @@ public final class EditorRoster {
         List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
         for (EditorTypeMenusPacket.Variant v : rows) {
             int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
-            entries.add(withFlipData(categoryId, withRoomData(categoryId,
-                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v)))));
+            entries.add(withShellSizeData(categoryId, withFlipData(categoryId, withRoomData(categoryId,
+                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v))))));
         }
         return new EditorRosterPacket.Group(categoryId, typeName, modelId, entries);
     }

@@ -18,6 +18,7 @@ import net.minecraft.world.level.block.state.BlockState;
  *   <li>soul_sand_valley → soul_sand / soul_soil noise mix</li>
  *   <li>basalt_deltas → basalt / blackstone noise mix</li>
  *   <li>BetterNether biomes (alternate bands) → {@link BetterNetherSurfaceSkins}</li>
+ *   <li>Biomes O' Plenty biomes → {@link BopNetherSurfaceSkins} (erupting_inferno → brimstone)</li>
  *   <li>nether_wastes / anything else → plain netherrack (no skin)</li>
  * </ul>
  */
@@ -39,7 +40,8 @@ public final class NetherSurfacePalette {
                 || biome == Biomes.WARPED_FOREST
                 || biome == Biomes.SOUL_SAND_VALLEY
                 || biome == Biomes.BASALT_DELTAS
-                || BetterNetherSurfaceSkins.hasSurface(biome);
+                || BetterNetherSurfaceSkins.hasSurface(biome)
+                || BopNetherSurfaceSkins.hasSurface(biome);
     }
 
     /**
@@ -59,6 +61,9 @@ public final class NetherSurfacePalette {
         }
         if (biome == Biomes.BASALT_DELTAS) {
             return noise < 0.6 ? BASALT : BLACKSTONE;               // basalt dominant, blackstone patches
+        }
+        if (BopNetherSurfaceSkins.hasSurface(biome)) {
+            return BopNetherSurfaceSkins.surfaceBlock(biome);
         }
         return BetterNetherSurfaceSkins.surfaceBlock(biome, depthBelowTop, noise);
     }

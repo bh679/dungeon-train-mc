@@ -570,7 +570,11 @@ dependencies {
 
     // Sable Pathfinder — third-party mob pathing across Sable sub-levels (see gradle.properties).
     // Nothing compiles against it; on the dev classpath so runClient/runServer behave like players.
-    implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
+    // A/B seam: ./gradlew runServer -PnoSablePathfinder boots without it, matching a player who
+    // never installed it (mods.toml marks it optional), so its per-node cost can be measured.
+    if (!project.hasProperty('noSablePathfinder')) {
+        implementation "maven.modrinth:sable-pathfinder:${sablepathfinder_version}"
+    }
 
     // Second-lap overworld mods (WWOO + Biomes O' Plenty) and their libraries — REQUIRED third-party
     // deps (see gradle.properties). Not bundled. DT names their biomes/features only by registry id,
@@ -594,6 +598,16 @@ dependencies {
     implementation "maven.modrinth:worldweaver-neoforge:${worldweaver_version}"
     implementation "maven.modrinth:wunderlib-neoforge:${wunderlib_version}"
 
+    // VanillaBackport + Platform — REQUIRED third-party deps (see gradle.properties). DT names its biomes and
+    // blocks only by registry id, so nothing compiles against these jars.
+    implementation "maven.modrinth:vanillabackport:${vanillabackport_version}"
+    implementation "maven.modrinth:platform:${platform_version}"
+
+    // Exposure + its Polaroid add-on — REQUIRED third-party deps (see gradle.properties). DT compiles
+    // against both: compat/DisposableCamera* uses their camera, frame and photograph classes.
+    implementation "maven.modrinth:exposure:${exposure_version}"
+    implementation "maven.modrinth:exposure-polaroid:${exposurepolaroid_version}"
+
     // Big Lost City — REQUIRED third-party dep (see gradle.properties). Structures only; on the dev
     // classpath so runClient/runServer generate the Lost City era's cities.
     implementation "maven.modrinth:big-lost-city:${biglostcity_version}"
@@ -601,8 +615,9 @@ dependencies {
     // Lost City Terrain Fit — sibling mod (same author) that seats Big Lost City's buildings in the
     // world's terrain (footprint-floor seating, no-carve + fill-only beard, ground/water through the
     // ruins). Extracted from DT; DT keeps the era placement on top (LostCityStructures). Fetched via the
-    // shared bh679 Ivy repo (flat asset lostcityterrainfit-neoforge-<v>.jar). TEMPORARILY jarJar-bundled
-    // (like EdibleBackpacks) until its Modrinth/CurseForge listings are approved — see gradle.properties.
+    // shared bh679 Ivy repo (flat asset lostcityterrainfit-neoforge-<v>.jar). HYBRID like Pigman Villagers
+    // above: jarJar'd, and a required CurseForge sibling (listing 1717775) — NeoForge's JarSelector drops
+    // the nested copy when the CF app installs a top-level one. See gradle.properties.
     implementation "bh679:lostcityterrainfit:${lostcityterrainfit_version}"
     jarJar(group: 'bh679', name: 'lostcityterrainfit', version: lostcityterrainfit_version)
 
@@ -858,6 +873,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
         lostcityterrainfit_version       : lostcityterrainfit_version,
+        lostcityterrainfit_min_version   : lostcityterrainfit_min_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,
@@ -890,6 +906,12 @@ tasks.register('generateModMetadata', ProcessResources) {
         bclib_min_version                 : bclib_min_version,
         worldweaver_min_version           : worldweaver_min_version,
         wunderlib_min_version             : wunderlib_min_version,
+        // VanillaBackport + Platform — floors only.
+        vanillabackport_min_version       : vanillabackport_min_version,
+        platform_min_version              : platform_min_version,
+        // Exposure + its Polaroid add-on — floors only.
+        exposure_min_version              : exposure_min_version,
+        exposurepolaroid_min_version      : exposurepolaroid_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

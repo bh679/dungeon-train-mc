@@ -20,10 +20,11 @@ import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.DoorBlock;
 import net.neoforged.neoforge.client.model.data.ModelData;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Item renderer for the stage placeholder blocks: in GUI contexts (inventory, creative tab,
@@ -36,8 +37,9 @@ import java.util.List;
  *
  * <p>The item models are {@code builtin/entity} so this runs; the placeholder's own look comes from
  * its <em>block</em> model (default state — the straight stair, the bottom slab, the closed
- * trapdoor) with that model's display transforms, except the door, which uses the flat
- * {@link #DOOR_SPRITE} sprite like vanilla doors do.</p>
+ * trapdoor) with that model's display transforms, except the ones in {@link #ICON_MODELS}, whose
+ * block model makes no icon: fences, walls and buttons use their {@code _inventory} model, the
+ * door and the glass panes a flat sprite, like their vanilla counterparts.</p>
  */
 public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelRenderer {
 
@@ -46,9 +48,23 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
     /** Whole-icon opacity for a slot that only repeats an earlier one (looped list read). */
     public static final float REPEAT_ALPHA = 0.50f;
 
-    /** The door's flat item sprite, registered via {@code ModelEvent.RegisterAdditional}. */
-    public static final ModelResourceLocation DOOR_SPRITE = ModelResourceLocation.standalone(
-        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "item/stage_door_sprite"));
+    /**
+     * The placeholders whose tile is not their block model, by name — see
+     * {@link StagePlaceholderIcons}. Registered via {@code ModelEvent.RegisterAdditional}.
+     */
+    public static final Map<String, ModelResourceLocation> ICON_MODELS = iconModels();
+
+    private static Map<String, ModelResourceLocation> iconModels() {
+        Map<String, ModelResourceLocation> out = new HashMap<>();
+        for (String name : StagePlaceholderBlocks.names()) {
+            String path = StagePlaceholderIcons.iconModel(name);
+            if (path != null) {
+                out.put(name, ModelResourceLocation.standalone(
+                    ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, path)));
+            }
+        }
+        return Map.copyOf(out);
+    }
 
     private static final RandomSource RANDOM = RandomSource.create(42L);
 
@@ -93,8 +109,9 @@ public final class StagePlaceholderItemRenderer extends BlockEntityWithoutLevelR
             }
         }
 
-        BakedModel tile = placeholder instanceof DoorBlock
-            ? mc.getModelManager().getModel(DOOR_SPRITE)
+        ModelResourceLocation icon = ICON_MODELS.get(name);
+        BakedModel tile = icon != null
+            ? mc.getModelManager().getModel(icon)
             : mc.getBlockRenderer().getBlockModel(placeholder.defaultBlockState());
         pose.pushPose();
         tile = tile.applyTransform(context, pose, false);

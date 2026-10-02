@@ -32,8 +32,24 @@ import java.util.List;
  *                          anywhere in the editor world
  */
 public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, TrainSize trainSize,
-                                 List<StageEntry> stages, TunnelGroups tunnelGroups)
+                                 List<StageEntry> stages, TunnelGroups tunnelGroups, Layout layout)
     implements CustomPacketPayload {
+
+    /**
+     * How often each way of filling a group is drawn — Rooms ×3, Halves ×2, Group ×1 — for the
+     * Settings tab's Carriage layout rows. {@link #UNKNOWN} until a server has sent it.
+     */
+    public record Layout(int rooms, int halves, int group) {
+        public static final Layout UNKNOWN = new Layout(-1, -1, -1);
+
+        public boolean isKnown() {
+            return rooms >= 0 && halves >= 0 && group >= 0;
+        }
+
+        public int total() {
+            return Math.max(0, rooms) + Math.max(0, halves) + Math.max(0, group);
+        }
+    }
 
     /**
      * The tunnel template groups the editor can offer — every registered group plus any a template
@@ -158,9 +174,26 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
      * relay recorded. {@code relayId} is 0 for a template the relay has never seen.
      */
     public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId,
-                        String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask) {
+                        String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask,
+                        String shellSize, int shellWins) {
+        /** {@link #shellSize} for every row that is not a carriage template. */
+        public static final String NO_SHELL_SIZE = "";
+        /** {@link #shellWins} for a row with no "carriage blocks win" switch. */
+        public static final int NO_SHELL_WINS = 0;
+        public static final int SHELL_WINS_OFF = 1;
+        public static final int SHELL_WINS_ON = 2;
+
         public Entry {
             if (roomMode == null || roomMode.isEmpty()) roomMode = EditorStatusPacket.NO_MODE;
+            if (shellSize == null) shellSize = NO_SHELL_SIZE;
+        }
+
+        /** The shape from before the "carriage blocks win" switch rode along. */
+        public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId,
+                     String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask,
+                     String shellSize) {
+            this(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, flipMask,
+                shellSize, NO_SHELL_WINS);
         }
 
         public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight) {
@@ -170,7 +203,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         /** The three-field shape from before the screen could edit a room it is not stood in. */
         public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId) {
             this(variant, selfWeight, relayId, EditorStatusPacket.NO_MODE, EditorStatusPacket.NO_SIZE,
-                EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_FLIP);
+                EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_FLIP, NO_SHELL_SIZE);
         }
 
         /**
@@ -179,12 +212,23 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
          * which is what the pane read those rows from before.
          */
         public Entry withRoom(String mode, int length, int width, int height) {
-            return new Entry(variant, selfWeight, relayId, mode, length, width, height, flipMask);
+            return new Entry(variant, selfWeight, relayId, mode, length, width, height, flipMask, shellSize, shellWins);
         }
 
         /** A contents template's random-flip axes, packed as {@link EditorStatusPacket#flipMaskOf}. */
         public Entry withFlipMask(int mask) {
-            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, mask);
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, mask, shellSize, shellWins);
+        }
+
+        /** A carriage template's size key ({@code ContentsSize#key}) — Room, Half or Group. */
+        public Entry withShellSize(String size) {
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, flipMask, size, shellWins);
+        }
+
+        /** Whether a carriage template keeps its own blocks against its contents. */
+        public Entry withShellWins(boolean wins) {
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, flipMask,
+                shellSize, wins ? SHELL_WINS_ON : SHELL_WINS_OFF);
         }
 
         /** True when this row is a portal room whose tag and box rode along. */
@@ -229,6 +273,13 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
         if (trainSize == null) trainSize = TrainSize.UNKNOWN;
         stages = stages == null ? List.of() : List.copyOf(stages);
         if (tunnelGroups == null) tunnelGroups = TunnelGroups.EMPTY;
+        if (layout == null) layout = Layout.UNKNOWN;
+    }
+
+    /** The shape from before carriage layouts: no layout weights. */
+    public EditorRosterPacket(List<Group> groups, String stampedCategoryId, TrainSize trainSize,
+                              List<StageEntry> stages, TunnelGroups tunnelGroups) {
+        this(groups, stampedCategoryId, trainSize, stages, tunnelGroups, Layout.UNKNOWN);
     }
 
     /** The shape from before tunnel groups: a roster with no group registry. */
@@ -267,6 +318,8 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 buf.writeVarInt(e.roomWidth());
                 buf.writeVarInt(e.roomHeight());
                 buf.writeVarInt(e.flipMask());
+                buf.writeUtf(e.shellSize(), 16);
+                buf.writeVarInt(e.shellWins());
             }
         }
         buf.writeVarInt(stages.size());
@@ -314,6 +367,9 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             buf.writeVarInt(e.getValue().phaseMask());
             buf.writeUtf(e.getValue().stageId(), 64);
         }
+        buf.writeVarInt(layout.rooms());
+        buf.writeVarInt(layout.halves());
+        buf.writeVarInt(layout.group());
     }
 
     public static EditorRosterPacket decode(FriendlyByteBuf buf) {
@@ -331,7 +387,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 EditorTypeMenusPacket.Variant v = EditorTypeMenusPacket.decodeVariant(buf);
                 entries.add(new Entry(v, buf.readVarInt(), buf.readVarInt(),
                     buf.readUtf(EditorStatusPacket.MODE_TAG_MAX), buf.readVarInt(), buf.readVarInt(),
-                    buf.readVarInt(), buf.readVarInt()));
+                    buf.readVarInt(), buf.readVarInt(), buf.readUtf(16), buf.readVarInt()));
             }
             groups.add(new Group(categoryId, typeName, modelId, entries));
         }
@@ -371,8 +427,9 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             gates.put(buf.readUtf(64), new TunnelGroups.Gate(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
                 buf.readUtf(64)));
         }
+        Layout layout = new Layout(buf.readVarInt(), buf.readVarInt(), buf.readVarInt());
         return new EditorRosterPacket(groups, stamped, trainSize, stages,
-            new TunnelGroups(weights, ungroupedWeight, members, gates));
+            new TunnelGroups(weights, ungroupedWeight, members, gates), layout);
     }
 
     @Override

@@ -55,13 +55,13 @@
         "playermob"
       ],
       "project_id": 1559379,
-      "file_id": 8878899,
+      "file_id": 9002197,
       "required": true,
       "dependency_type": "required",
-      "version": "0.98.0",
+      "version": "0.101.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "rRdAYBNo"
+      "modrinth_version": "oTHnVFn7"
     },
     {
       "name": "Ender Chest Persistence",
@@ -85,13 +85,13 @@
         "tradeeverything"
       ],
       "project_id": 1622962,
-      "file_id": 8732181,
+      "file_id": 9036459,
       "required": true,
       "dependency_type": "required",
-      "version": "0.9.0",
+      "version": "0.14.0",
       "gradle_property": "tradeeverything_min_version",
       "modrinth_project": "trade-everything",
-      "modrinth_version": "QapKVWQ3"
+      "modrinth_version": "9XSQif7F"
     },
     {
       "name": "Keep Trim",
@@ -298,6 +298,66 @@
       "modrinth_version": "5db3GZzg"
     },
     {
+      "name": "VanillaBackport",
+      "slug": "vanillabackport",
+      "mod_ids": [
+        "vanillabackport"
+      ],
+      "project_id": 417430,
+      "file_id": 8229724,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "vanillabackport_min_version",
+      "version": "1.1.7.10",
+      "modrinth_project": "vanillabackport",
+      "modrinth_version": "rUSWdBok"
+    },
+    {
+      "name": "Platform",
+      "slug": "platform",
+      "mod_ids": [
+        "platform"
+      ],
+      "project_id": 997634,
+      "file_id": 8075942,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "platform_min_version",
+      "version": "1.3.3",
+      "modrinth_project": "platform",
+      "modrinth_version": "v7P0nBi2"
+    },
+    {
+      "name": "Exposure",
+      "slug": "exposure",
+      "mod_ids": [
+        "exposure"
+      ],
+      "project_id": 871755,
+      "file_id": 8957000,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "exposure_min_version",
+      "version": "1.9.19",
+      "modrinth_project": "exposure",
+      "modrinth_version": "iBvaR6AK"
+    },
+    {
+      "name": "Exposure: Polaroid",
+      "slug": "exposure-polaroid",
+      "mod_ids": [
+        "exposure_polaroid"
+      ],
+      "project_id": 1207005,
+      "file_id": 8533496,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "exposurepolaroid_min_version",
+      "version": "1.1.6",
+      "modrinth_project": "exposure-polaroid",
+      "modrinth_version": "WfVyzdJL"
+    },
+    {
       "name": "Dungeon Backup",
       "slug": "dungeon-train-backup",
       "mod_ids": [
@@ -365,6 +425,20 @@
       "dependency_type": "required",
       "version": "0.1.3",
       "gradle_property": "pigmanvillagers_min_version",
+      "curseforge_only": true
+    },
+    {
+      "name": "Lost City Terrain Fit",
+      "slug": "lost-city-terrain-fit-wwoo-and-vanilla",
+      "mod_ids": [
+        "lostcityterrainfit"
+      ],
+      "project_id": 1717775,
+      "file_id": 9009664,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.3.0",
+      "gradle_property": "lostcityterrainfit_min_version",
       "curseforge_only": true
     },
     {
@@ -855,6 +929,30 @@
       "required": true,
       "modrinth_project": "particle-effects",
       "modrinth_version": "AH6BZ7jO"
+    },
+    {
+      "name": "What Are They Up To",
+      "slug": "what-are-they-up-to",
+      "mod_ids": [
+        "watut"
+      ],
+      "project_id": 945479,
+      "file_id": 6418577,
+      "required": true,
+      "modrinth_project": "what-are-they-up-to",
+      "modrinth_version": "uWr2aTW9"
+    },
+    {
+      "name": "CoroUtil",
+      "slug": "coroutil",
+      "mod_ids": [
+        "coroutil"
+      ],
+      "project_id": 237749,
+      "file_id": 5622966,
+      "required": true,
+      "modrinth_project": "coroutil",
+      "modrinth_version": "H2YXCYUY"
     },
     {
       "name": "Sable Pathfinder",

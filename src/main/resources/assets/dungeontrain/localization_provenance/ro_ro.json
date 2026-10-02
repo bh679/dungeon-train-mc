@@ -97,7 +97,9 @@
       "gui.dungeontrain.editor_settings.container_contents_menu.tip",
       "gui.dungeontrain.editor_settings.block_variant_menu.tip",
       "gui.dungeontrain.custom_content.card.custom.tag",
-      "dungeontrain.leaderboard.deathnotes_people.header"
+      "dungeontrain.leaderboard.deathnotes_people.header",
+      "gui.dungeontrain.editor_menu.size.full",
+      "gui.dungeontrain.editor_menu.type_name.full"
     ],
     "adventureitemnames": [],
     "playermob": [],

@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
+import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantStore;
 import games.brennan.dungeontrain.train.CarriagePartKind;
@@ -41,8 +42,16 @@ public final class BuilderTemplateFiles {
         };
     }
 
-    /** As above, with the sub kind still in its relay spelling — a part or track kind id, or blank. */
+    /**
+     * As above, with the sub kind still in its relay spelling — a part or track kind id, blank, or
+     * the whole-room sub kind an editor whole room rides the carriage kind with, whose file lives in
+     * the whole-room store rather than beside the carriage shells.
+     */
     public static Optional<CompoundTag> rawTag(BuilderPhotoPaths.Kind kind, String subKind, String id) {
+        if (kind == BuilderPhotoPaths.Kind.CARRIAGE
+                && games.brennan.dungeontrain.editor.relay.EditorRelayWrite.WHOLE_ROOM_SUBKIND.equals(subKind)) {
+            return id == null || id.isEmpty() ? Optional.empty() : WholeCarriageTemplateStore.rawTag(id);
+        }
         CarriagePartKind partKind = kind == BuilderPhotoPaths.Kind.PART ? CarriagePartKind.fromId(subKind) : null;
         TrackKind trackKind = kind == BuilderPhotoPaths.Kind.TRACK ? TrackKind.fromId(subKind) : null;
         return rawTag(kind, id, partKind, trackKind);

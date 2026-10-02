@@ -45,7 +45,8 @@ public final class CarriageVariantContentsAllowStore {
     private static final String SOURCE_REL_PATH = "src/main/resources/data/dungeontrain/templates";
 
     private static final ContentsAllowStore STORE =
-        new ContentsAllowStore(SUBDIR, RESOURCE_PREFIX, SOURCE_REL_PATH);
+        new ContentsAllowStore(SUBDIR, RESOURCE_PREFIX, SOURCE_REL_PATH,
+            games.brennan.dungeontrain.train.ShellPool::path);
 
     private CarriageVariantContentsAllowStore() {}
 

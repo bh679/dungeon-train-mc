@@ -45,7 +45,10 @@ public final class SpheresProgressionConfig {
     public static final int DEFAULT_EXIT_TAPER_BLOCKS = 550;
     public static final int DEFAULT_EXIT_VOID_BLOCKS = 100;
     public static final int DEFAULT_APPLY_PER_TICK = 4;
-    public static final int DEFAULT_SAMPLER_THREADS = 2;
+    /** {@code worldgenSamplerThreads} value meaning "size the shared sampler pool from the core count". */
+    public static final int AUTO_SAMPLER_THREADS = 0;
+    public static final int DEFAULT_SAMPLER_THREADS = AUTO_SAMPLER_THREADS;
+    public static final int MAX_SAMPLER_THREADS = 8;
 
     private static ModConfigSpec.IntValue netherMixStart;
     private static ModConfigSpec.IntValue endMixStart;
@@ -125,9 +128,9 @@ public final class SpheresProgressionConfig {
                         "Default 4.")
                 .defineInRange("spheresForeignApplyPerTick", DEFAULT_APPLY_PER_TICK, 1, 64);
         samplerThreads = b
-                .comment("Background threads generating other-dimension sphere terrain. Default 2. Takes effect",
-                        "on restart.")
-                .defineInRange("spheresSamplerThreads", DEFAULT_SAMPLER_THREADS, 1, 8);
+                .comment("Background threads shared by the End-band and other-dimension sphere samplers, on top of",
+                        "vanilla's worldgen threads. 0 = auto (a quarter of the CPU cores, 1-4). Takes effect on restart.")
+                .defineInRange("worldgenSamplerThreads", DEFAULT_SAMPLER_THREADS, AUTO_SAMPLER_THREADS, MAX_SAMPLER_THREADS);
     }
 
     /** The progression layout; hardcoded defaults pre-load. */
@@ -184,7 +187,7 @@ public final class SpheresProgressionConfig {
         return DungeonTrainCommonConfig.isLoaded() && applyPerTick != null ? applyPerTick.get() : DEFAULT_APPLY_PER_TICK;
     }
 
-    /** Background sampler threads. */
+    /** Shared sampler pool size as configured; {@link #AUTO_SAMPLER_THREADS} means auto ({@code worldgen.SamplerPool}). */
     public static int samplerThreads() {
         return DungeonTrainCommonConfig.isLoaded() && samplerThreads != null ? samplerThreads.get() : DEFAULT_SAMPLER_THREADS;
     }

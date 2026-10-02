@@ -74,11 +74,11 @@ public final class CarriageTemplateStore {
     }
 
     public static Path fileFor(CarriageVariant variant) {
-        return directory().resolve(variant.id() + EXT);
+        return directory().resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
     }
 
     public static Path fileForId(String id) {
-        return directory().resolve(id + EXT);
+        return directory().resolve(games.brennan.dungeontrain.train.ShellPool.path(id) + EXT);
     }
 
     /**
@@ -86,7 +86,8 @@ public final class CarriageTemplateStore {
      * stamping it. See {@link TemplateNbt} for why the gate is skipped.
      */
     public static Optional<CompoundTag> rawTag(String id) {
-        return TemplateNbt.read(SUBDIR, id + EXT, RESOURCE_PREFIX + id + EXT,
+        return TemplateNbt.read(SUBDIR, games.brennan.dungeontrain.train.ShellPool.path(id) + EXT,
+            RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(id) + EXT,
             "carriage template " + id);
     }
 
@@ -112,6 +113,7 @@ public final class CarriageTemplateStore {
 
     public static synchronized void reload() {
         CACHE.clear();
+        HAS_BLOCKS.clear();
     }
 
     /**
@@ -122,6 +124,22 @@ public final class CarriageTemplateStore {
      */
     public static synchronized void clearCache() {
         CACHE.clear();
+        HAS_BLOCKS.clear();
+    }
+
+    /** {@link #hasBlocks} answers, per id; dropped with every template change. */
+    private static final java.util.Map<String, Boolean> HAS_BLOCKS = new java.util.HashMap<>();
+
+    /**
+     * Whether {@code id}'s template holds any blocks. A carriage made as a blank and never built is
+     * a box of air — stood around contents, or put on the train, it is no carriage at all — so the
+     * shell choices skip it. A variant with no template file at all has built-in geometry and counts
+     * as built.
+     */
+    public static synchronized boolean hasBlocks(String id) {
+        return HAS_BLOCKS.computeIfAbsent(id, k -> rawTag(k)
+            .map(tag -> !tag.getList("blocks", net.minecraft.nbt.Tag.TAG_COMPOUND).isEmpty())
+            .orElse(true));
     }
 
     /**
@@ -188,15 +206,17 @@ public final class CarriageTemplateStore {
 
     /** Write {@code template} to the per-install config-dir copy. */
     public static synchronized void save(CarriageVariant variant, StructureTemplate template) throws IOException {
-        Path dir = directory();
-        Files.createDirectories(dir);
         Path file = fileFor(variant);
+        Files.createDirectories(file.getParent());
         CompoundTag tag = DoubleBlockTemplateRepair.repair(template.save(new CompoundTag()), "save");
         NbtIo.writeCompressed(tag, file);
         // Dropped rather than replaced: the file on disk is the repaired copy
         // (DoubleBlockTemplateRepair), and the next read picks that up.
         CACHE.remove(variant.id());
+        HAS_BLOCKS.remove(variant.id());
         ProvenanceCache.invalidateAll();
+        // A flatbed's pads are cut from its template — the next pad re-cuts from the saved one.
+        games.brennan.dungeontrain.train.CarriagePlacer.clearHalfFlatbedCache();
         LOGGER.info("[DungeonTrain] Saved template {} to {}", variant.id(), file);
     }
 
@@ -272,13 +292,14 @@ public final class CarriageTemplateStore {
      * {@code CarriageContentsStore.sourceFileForId}.
      */
     public static Path sourceFileForId(String id) {
-        return sourceDirectory().resolve(id + EXT);
+        return sourceDirectory().resolve(games.brennan.dungeontrain.train.ShellPool.path(id) + EXT);
     }
 
     public static synchronized boolean delete(CarriageVariant variant) throws IOException {
         Path file = fileFor(variant);
         boolean existed = Files.deleteIfExists(file);
         CACHE.put(variant.id(), Optional.empty());
+        HAS_BLOCKS.remove(variant.id());
         ProvenanceCache.invalidateAll();
         if (existed) LOGGER.info("[DungeonTrain] Deleted template {} ({})", variant.id(), file);
         return existed;
@@ -308,7 +329,7 @@ public final class CarriageTemplateStore {
      */
     public static boolean bundled(CarriageVariant variant) {
         if (!(variant instanceof CarriageVariant.Builtin)) return false;
-        try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + variant.id() + EXT)) {
+        try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT)) {
             return in != null;
         } catch (IOException e) {
             return false;
@@ -322,7 +343,7 @@ public final class CarriageTemplateStore {
      */
     public static boolean shipsId(String id) {
         if (id == null || id.isEmpty()) return false;
-        try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + id + EXT)) {
+        try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(id) + EXT)) {
             return in != null;
         } catch (IOException e) {
             return false;
@@ -336,8 +357,12 @@ public final class CarriageTemplateStore {
      */
     public static synchronized boolean rename(String sourceId, String targetId) throws IOException {
         Path src = fileForId(sourceId);
+        // A renamed template stays in its pool.
+        games.brennan.dungeontrain.train.ShellPool.set(targetId,
+            games.brennan.dungeontrain.train.ShellPool.poolOf(sourceId));
         Path dst = fileForId(targetId);
         if (!Files.isRegularFile(src)) return false;
+        Files.createDirectories(dst.getParent());
         Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
         Optional<StructureTemplate> cached = CACHE.remove(sourceId);
         if (cached != null) CACHE.put(targetId, cached);
@@ -349,7 +374,7 @@ public final class CarriageTemplateStore {
     private static Optional<StructureTemplate> loadFromConfig(ServerLevel level, CarriageVariant variant) {
         // Look in user/templates/ first, then each imported/<pkg>/templates/
         // alphabetically — same precedence as UserContentPaths.findFile.
-        Path file = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
+        Path file = UserContentPaths.findFile(SUBDIR, games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
         if (file == null) return Optional.empty();
         try {
             CompoundTag tag = NbtIo.readCompressed(file, net.minecraft.nbt.NbtAccounter.unlimitedHeap());
@@ -361,7 +386,7 @@ public final class CarriageTemplateStore {
     }
 
     private static Optional<StructureTemplate> loadFromResource(ServerLevel level, CarriageVariant variant) {
-        String resource = RESOURCE_PREFIX + variant.id() + EXT;
+        String resource = RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT;
         try (InputStream in = CarriageTemplateStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
             CompoundTag tag = NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap());

@@ -160,4 +160,111 @@ class LeaderboardPoolTest {
         assertEquals("3d 4h", LeaderboardCategory.duration(3 * 86400 + 4 * 3600));
         assertEquals("0s", LeaderboardCategory.duration(-1));
     }
+
+    // ---- eras -----------------------------------------------------------------
+
+    private static final String ERAS = "{\"ok\":true,\"current\":{\"version\":\"v0.1013\",\"year\":\"y2026\"},"
+        + "\"categories\":[\"playtime_run\"],\"eras\":["
+        + "{\"id\":\"v0.0\",\"kind\":\"version\",\"label\":\"The First Era\",\"minVersion\":\"0.0.0\",\"retiredTs\":5,\"current\":false},"
+        + "{\"id\":\"v0.1013\",\"kind\":\"version\",\"label\":\"After the balancing\",\"current\":true},"
+        + "{\"id\":\"y2025\",\"kind\":\"year\",\"label\":\"2025\",\"current\":false},"
+        + "{\"id\":\"y2026\",\"kind\":\"year\",\"label\":\"2026\",\"current\":true},"
+        + "{\"id\":\"../x\",\"kind\":\"version\",\"label\":\"junk\"},"
+        + "{\"id\":\"m2026-09\",\"kind\":\"month\",\"label\":\"unknown kind\"},"
+        + "{\"id\":\"v9.9\",\"kind\":\"version\",\"current\":\"yes\"}]}";
+
+    @Test
+    @DisplayName("the era list parses: two kinds, current flags, junk ids and unknown kinds skipped")
+    void parsesEras() {
+        List<LeaderboardPool.Era> eras = LeaderboardPool.parseEras(ERAS);
+        assertEquals(List.of("v0.0", "v0.1013", "y2025", "y2026", "v9.9"),
+            eras.stream().map(LeaderboardPool.Era::id).toList());
+        assertEquals("The First Era", eras.get(0).label());
+        assertTrue(eras.get(0).isRetired());
+        assertFalse(eras.get(1).isRetired());
+        assertTrue(eras.get(2).isYear());
+        assertFalse(eras.get(1).isYear());
+        assertEquals("v9.9", eras.get(4).label(), "a missing label falls back to the id");
+        assertFalse(eras.get(4).current(), "a non-boolean current is not current");
+        assertEquals("0.0.0", eras.get(0).minVersion());
+        assertTrue(eras.get(0).isFounding());
+        assertEquals("", eras.get(1).minVersion(), "absent floor stays empty");
+        assertFalse(eras.get(2).isFounding(), "a year is never the founding era");
+        LeaderboardPool.applyEras(ERAS);
+        assertTrue(LeaderboardPool.nextVersionFloor("v9.9").isEmpty(), "the last one has no successor");
+        LeaderboardPool.applyEras("{\"eras\":[{\"id\":\"v0.0\",\"kind\":\"version\",\"minVersion\":\"0.0.0\"},"
+            + "{\"id\":\"y2025\",\"kind\":\"year\"},{\"id\":\"v0.1013\",\"kind\":\"version\",\"minVersion\":\"0.1013\"},"
+            + "{\"id\":\"v0.1020\",\"kind\":\"version\",\"minVersion\":\"0.1020\",\"current\":true}]}");
+        assertEquals("0.1013", LeaderboardPool.nextVersionFloor("v0.0").orElseThrow(), "years are skipped over");
+        assertEquals("0.1020", LeaderboardPool.nextVersionFloor("v0.1013").orElseThrow());
+        assertTrue(LeaderboardPool.nextVersionFloor("v0.1020").isEmpty());
+        assertTrue(LeaderboardPool.nextVersionFloor("y2025").isEmpty());
+        assertTrue(LeaderboardPool.parseEras("{\"ok\":true}").isEmpty());
+        assertTrue(LeaderboardPool.parseEras("not json").isEmpty());
+    }
+
+    @Test
+    @DisplayName("the retired eras are what circulate; the current ones never do")
+    void circulatingErasAreTheRetiredOnes() {
+        assertTrue(LeaderboardPool.circulatingEras().isEmpty(), "nothing before the list lands");
+        LeaderboardPool.applyEras(ERAS);
+        assertEquals(List.of("v0.0", "y2025", "v9.9"), LeaderboardPool.circulatingEras());
+        assertEquals("After the balancing", LeaderboardPool.era("v0.1013").orElseThrow().label());
+        assertTrue(LeaderboardPool.era("v0.5").isEmpty());
+        LeaderboardPool.applyEras("{\"eras\":[]}");
+        assertEquals(3, LeaderboardPool.circulatingEras().size(), "an empty answer keeps the last list");
+    }
+
+    @Test
+    @DisplayName("boards are cached per era, and only current ones count as populated")
+    void boardsArePerEra() {
+        LeaderboardPool.applyEras(ERAS);
+        LeaderboardPool.applyBoard(LeaderboardCategory.DISTANCE_RUN, "{\"rows\":[{\"name\":\"Ada\",\"score\":3}]}");
+        LeaderboardPool.applyBoard(new LeaderboardPool.BoardKey(LeaderboardCategory.DISTANCE_RUN, "v0.0"),
+            "{\"rows\":[{\"name\":\"Grace\",\"score\":9}]}");
+        LeaderboardPool.applyBoard(new LeaderboardPool.BoardKey(LeaderboardCategory.PLAYTIME_RUN, "y2025"),
+            "{\"rows\":[{\"name\":\"Alan\",\"score\":7}]}");
+        LeaderboardPool.applyBoard(new LeaderboardPool.BoardKey(LeaderboardCategory.PLAYTIME_RUN, "v0.5"),
+            "{\"rows\":[{\"name\":\"Ghost\",\"score\":1}]}"); // an era the relay no longer lists
+
+        assertEquals("Ada", LeaderboardPool.board(LeaderboardCategory.DISTANCE_RUN).entries().get(0).name());
+        assertEquals("Grace", LeaderboardPool.board(LeaderboardCategory.DISTANCE_RUN, "v0.0").entries().get(0).name());
+        assertTrue(LeaderboardPool.board(LeaderboardCategory.DISTANCE_RUN, "y2025").isEmpty());
+        assertEquals(List.of(LeaderboardCategory.DISTANCE_RUN), LeaderboardPool.populated());
+        assertEquals(List.of(
+                new LeaderboardPool.BoardKey(LeaderboardCategory.DISTANCE_RUN, "v0.0"),
+                new LeaderboardPool.BoardKey(LeaderboardCategory.PLAYTIME_RUN, "y2025")),
+            LeaderboardPool.populatedRetired(), "a board for an unlisted era is not offered");
+    }
+
+    @Test
+    @DisplayName("per-era standings parse beside the current ones and are read by era")
+    void parsesEraRanks() {
+        LeaderboardPool.applyRanks(PLAYER, "{\"ranks\":{\"lives\":{\"rank\":3,\"score\":9},\"distance_run\":{\"rank\":2,\"score\":500}},"
+            + "\"eras\":{\"v0.0\":{\"distance_run\":{\"rank\":1,\"score\":900}},"
+            + "\"y2025\":{\"distance_run\":{\"score\":50,\"beyond\":10000}},"
+            + "\"bad era!\":{\"distance_run\":{\"rank\":1,\"score\":1}}}}");
+        assertEquals(2, LeaderboardPool.standing(PLAYER, LeaderboardCategory.DISTANCE_RUN).orElseThrow().rank());
+        assertEquals(1, LeaderboardPool.standing(PLAYER, LeaderboardCategory.DISTANCE_RUN, "v0.0").orElseThrow().rank());
+        assertEquals(900L, LeaderboardPool.standing(PLAYER, LeaderboardCategory.DISTANCE_RUN, "v0.0").orElseThrow().score());
+        assertFalse(LeaderboardPool.standing(PLAYER, LeaderboardCategory.DISTANCE_RUN, "y2025").orElseThrow().isExact());
+        assertTrue(LeaderboardPool.standing(PLAYER, LeaderboardCategory.LIVES, "v0.0").isEmpty());
+        assertTrue(LeaderboardPool.standing(PLAYER, LeaderboardCategory.DISTANCE_RUN, "v0.5").isEmpty());
+    }
+
+    @Test
+    @DisplayName("the warm rotation covers every current board, then the one-life boards of each retired era")
+    void warmKeysCoverRetiredEras() {
+        int all = LeaderboardCategory.values().length;
+        assertEquals(all, LeaderboardPool.warmKeys().size(), "no eras known: current boards only");
+        LeaderboardPool.applyEras(ERAS);
+        List<LeaderboardPool.BoardKey> keys = LeaderboardPool.warmKeys();
+        int oneLife = LeaderboardPool.eraCategories().size();
+        assertEquals(8, oneLife);
+        assertEquals(all + 3 * oneLife, keys.size());
+        assertTrue(keys.subList(0, all).stream().allMatch(LeaderboardPool.BoardKey::isCurrent));
+        assertTrue(keys.subList(all, keys.size()).stream().noneMatch(LeaderboardPool.BoardKey::isCurrent));
+        assertTrue(keys.subList(all, keys.size()).stream()
+            .allMatch(k -> k.category().scope() == LeaderboardCategory.Scope.RUN));
+    }
 }
