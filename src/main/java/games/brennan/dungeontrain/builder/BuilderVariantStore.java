@@ -47,7 +47,12 @@ public final class BuilderVariantStore {
      * reads as an empty document, which is also the state a New build starts in.
      */
     public static synchronized TrackVariantBlocks loadFor(ServerLevel level, Vec3i footprint) {
-        Path file = BuilderStorePaths.variantsFile(level);
+        return loadFor(level, 0, footprint);
+    }
+
+    /** The sidecar of parked carriage {@code volume} — see {@link BuilderStorePaths#variantsFile(ServerLevel, int)}. */
+    public static synchronized TrackVariantBlocks loadFor(ServerLevel level, int volume, Vec3i footprint) {
+        Path file = BuilderStorePaths.variantsFile(level, volume);
         String key = file.toString();
         Cached cached = CACHE.get(key);
         if (cached != null && cached.footprint().equals(footprint)) {
@@ -61,7 +66,13 @@ public final class BuilderVariantStore {
     /** Persist {@code doc} as this build's sidecar. */
     public static synchronized void save(ServerLevel level, TrackVariantBlocks doc, Vec3i footprint)
             throws IOException {
-        Path file = BuilderStorePaths.variantsFile(level);
+        save(level, 0, doc, footprint);
+    }
+
+    /** Persist {@code doc} as the sidecar of parked carriage {@code volume}. */
+    public static synchronized void save(ServerLevel level, int volume, TrackVariantBlocks doc, Vec3i footprint)
+            throws IOException {
+        Path file = BuilderStorePaths.variantsFile(level, volume);
         Files.createDirectories(file.getParent());
         Files.writeString(file, doc.asJsonText(), StandardCharsets.UTF_8);
         CACHE.put(file.toString(), new Cached(footprint, doc));
@@ -73,7 +84,13 @@ public final class BuilderVariantStore {
      * which is what a New build wants.
      */
     public static synchronized void replace(ServerLevel level, @Nullable String json) throws IOException {
-        Path file = BuilderStorePaths.variantsFile(level);
+        replace(level, 0, json);
+    }
+
+    /** As above, for parked carriage {@code volume}. */
+    public static synchronized void replace(ServerLevel level, int volume, @Nullable String json)
+            throws IOException {
+        Path file = BuilderStorePaths.variantsFile(level, volume);
         CACHE.remove(file.toString());
         if (json == null || json.isBlank()) {
             Files.deleteIfExists(file);

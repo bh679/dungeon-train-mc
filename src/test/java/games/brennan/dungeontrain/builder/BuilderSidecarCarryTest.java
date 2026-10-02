@@ -4,13 +4,13 @@ import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.train.WholeKind;
 import net.minecraft.core.Vec3i;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * The coordinate and naming arithmetic that decides where a builder's authored variant pools and
@@ -32,7 +32,7 @@ final class BuilderSidecarCarryTest {
         assertEquals(Vec3i.ZERO, BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.CARRIAGE, null, DIMS));
         assertEquals(Vec3i.ZERO, BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.TRACK, null, DIMS));
         assertEquals(Vec3i.ZERO, BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.PORTAL_ROOM, null, DIMS));
-        // A group is several volumes and no sidecar; zero is the harmless answer, not a claim.
+        // A group's run starts at its first carriage's corner; the per-carriage shift is runOffset.
         assertEquals(Vec3i.ZERO, BuilderSidecarCarry.offsetFor(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, null, DIMS));
     }
 
@@ -78,10 +78,40 @@ final class BuilderSidecarCarryTest {
     }
 
     @Test
-    @DisplayName("A carriage group has no sidecar of its own to seed from")
-    void carriageGroupHasNoPlotKey() {
-        assertNull(new BuilderOpenRequest(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "run", null)
-                .templatePlotKey());
+    @DisplayName("A carriage group opens from the run's own document, the one its save writes")
+    void carriageGroupOpensFromTheRunDocument() {
+        assertEquals(BlockVariantPlot.wholeKey(WholeKind.GROUP, "run"),
+                new BuilderOpenRequest(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "run", null)
+                        .templatePlotKey());
+    }
+
+    @Test
+    @DisplayName("Each parked carriage sits one carriage-length further along the run, and nowhere else")
+    void runOffsetStepsByCarriageLength() {
+        assertEquals(Vec3i.ZERO, BuilderSidecarCarry.runOffset(0, DIMS));
+        assertEquals(new Vec3i(DIMS.length(), 0, 0), BuilderSidecarCarry.runOffset(1, DIMS));
+        assertEquals(new Vec3i(2 * DIMS.length(), 0, 0), BuilderSidecarCarry.runOffset(2, DIMS));
+    }
+
+    @Test
+    @DisplayName("Each parked carriage has its own plot key, and the first keeps the original one")
+    void builderKeysAreScopedByCarriage() {
+        assertEquals(BuilderCarriagePlot.KEY, BuilderCarriagePlot.keyFor(0));
+        assertEquals("builder:carriage:2", BuilderCarriagePlot.keyFor(2));
+        for (int i = 0; i < BuilderStorePaths.MAX_VOLUMES; i++) {
+            assertEquals(i, BuilderCarriagePlot.volumeOfKey(BuilderCarriagePlot.keyFor(i)));
+        }
+        assertEquals(-1, BuilderCarriagePlot.volumeOfKey("carriage:desert"));
+        assertEquals(-1, BuilderCarriagePlot.volumeOfKey("builder:carriage:x"));
+        assertEquals(-1, BuilderCarriagePlot.volumeOfKey(null));
+    }
+
+    @Test
+    @DisplayName("The first carriage's working files keep their names; the rest are numbered")
+    void workingFilesAreScopedByCarriage() {
+        assertEquals("build.variants.json", BuilderStorePaths.volumeName("build.variants.json", 0));
+        assertEquals("build.2.variants.json", BuilderStorePaths.volumeName("build.variants.json", 2));
+        assertEquals("build.1.contents.json", BuilderStorePaths.volumeName("build.contents.json", 1));
     }
 
     @Test
@@ -98,5 +128,7 @@ final class BuilderSidecarCarryTest {
         assertEquals("contents:mess_hall", BlockVariantPlot.contentsKey("mess_hall"));
         assertEquals("part:doors:slatted", BlockVariantPlot.partKey(CarriagePartKind.DOORS, "slatted"));
         assertEquals("track:portal_room:library", BlockVariantPlot.trackKey(TrackKind.PORTAL_ROOM, "library"));
+        assertEquals("whole:lounge", BlockVariantPlot.wholeKey(WholeKind.ROOM, "lounge"));
+        assertEquals("whole_group:run", BlockVariantPlot.wholeKey(WholeKind.GROUP, "run"));
     }
 }
