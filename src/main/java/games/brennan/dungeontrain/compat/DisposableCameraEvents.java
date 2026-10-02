@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.neoforge.api.event.ModifyFrameExtraDataEvent;
@@ -104,6 +105,7 @@ public final class DisposableCameraEvents {
             ExposureIdentifier printed = PENDING_PRINTS.remove(player.getUUID());
             ItemStack photograph = printed == null ? ItemStack.EMPTY : takePrintedPhotograph(inventory, printed);
             inventory.setItem(slot, photograph);
+            SharedPhotos.queueUpload(player, photograph);
             StartingBookEvents.dropAndBurn(player, camera);
             // Polaroid prints on the client too, into the slot the server just emptied again. The
             // server sees no net change there and would never correct it, leaving a second photo.

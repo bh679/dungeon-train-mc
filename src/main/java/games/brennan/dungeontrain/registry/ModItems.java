@@ -66,6 +66,16 @@ public final class ModItems {
     );
 
     /**
+     * Editor-only placeholder for a community photo. Substituted at chest spawn time for an
+     * Exposure photograph taken by another player (see {@code compat.photo.SharedPhotos#rollFound});
+     * the slot rolls empty when no approved photo is available.
+     */
+    public static final DeferredItem<Item> RANDOM_PLAYERPHOTO = ITEMS.register(
+        "random_playerphoto",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
      * Editor-only placeholder, third sibling to {@link #RANDOM_BOOK} and
      * {@link #RANDOM_PLAYERBOOK}. Substituted at chest spawn time for a
      * LEADERBOARD book — a ranked list of the top players in one category,
