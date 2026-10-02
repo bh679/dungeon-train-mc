@@ -190,6 +190,10 @@ public final class EditorScreenLang {
     public static final String LAYOUT_HALVES = PREFIX + "layout.halves";
     public static final String LAYOUT_GROUP = PREFIX + "layout.group";
     public static final String SHEET_SHELL_SIZE_TIP = PREFIX + "sheet.shell_size.tip";
+    public static final String SHEET_SHELL_WINS = PREFIX + "sheet.shell_wins";
+    public static final String SHEET_SHELL_WINS_OFF = PREFIX + "sheet.shell_wins.off";
+    public static final String SHEET_SHELL_WINS_ON = PREFIX + "sheet.shell_wins.on";
+    public static final String SHEET_SHELL_WINS_TIP = PREFIX + "sheet.shell_wins.tip";
     public static final String SHEET_BLOCKS = PREFIX + "sheet.blocks";
     public static final String SHEET_ENTITIES = PREFIX + "sheet.entities";
     public static final String SHEET_CONTAINERS = PREFIX + "sheet.containers";

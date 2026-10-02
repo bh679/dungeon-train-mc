@@ -237,7 +237,7 @@ public final class CarriageContentsPlacer {
         // Editor preview / template flows have no real seed — pass 0 so the
         // entity-variant lookup behaves deterministically for previews too
         // (sidecar.resolve handles any seed value the same way).
-        CarriageStampGuard.run(() -> placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true));
+        CarriageStampGuard.run(() -> placeAtInternal(level, carriageOrigin, contents, dims, /*seed*/ 0L, EDITOR_SENTINEL_PIDX, /*placeBlocks*/ true, /*spawnEntities*/ true, PortalCorridorMask.NONE));
     }
 
     /**
@@ -256,15 +256,26 @@ public final class CarriageContentsPlacer {
      */
     public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                CarriageDims dims, long seed, int carriageIndex) {
+        placeAt(level, carriageOrigin, contents, dims, seed, carriageIndex, PortalCorridorMask.NONE);
+    }
+
+    /**
+     * {@link #placeAt(ServerLevel, BlockPos, CarriageContents, CarriageDims, long, int)} writing no
+     * block into a cell {@code keep} covers — the carriage's own blocks when its template has
+     * "carriage blocks win" on (see {@link ShellWinsMask}).
+     */
+    public static void placeAt(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                               CarriageDims dims, long seed, int carriageIndex, PortalCorridorMask keep) {
+        PortalCorridorMask mask = keep == null ? PortalCorridorMask.NONE : keep;
         CarriageStampGuard.run(() -> {
             Flip flip = carriageFlip(contents, seed, carriageIndex);
-            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true);
+            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ true, mask);
             applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                contents, seed, carriageIndex, mask, flip);
             applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                seed, carriageIndex, mask, flip);
         });
     }
 
@@ -332,15 +343,22 @@ public final class CarriageContentsPlacer {
      */
     public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                         CarriageDims dims, long seed, int carriageIndex) {
+        placeBlocksOnly(level, carriageOrigin, contents, dims, seed, carriageIndex, PortalCorridorMask.NONE);
+    }
+
+    /** {@link #placeBlocksOnly} writing no block into a cell {@code keep} covers — see {@link ShellWinsMask}. */
+    public static void placeBlocksOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
+                                        CarriageDims dims, long seed, int carriageIndex, PortalCorridorMask keep) {
+        PortalCorridorMask mask = keep == null ? PortalCorridorMask.NONE : keep;
         CarriageStampGuard.run(() -> {
             Flip flip = carriageFlip(contents, seed, carriageIndex);
-            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false);
+            placeAtInternal(level, carriageOrigin, contents, dims, seed, carriageIndex, /*placeBlocks*/ true, /*spawnEntities*/ false, mask);
             applyVariantBlocks(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                contents, seed, carriageIndex, mask, flip);
             applyContentPools(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                contents, seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
-                seed, carriageIndex, PortalCorridorMask.NONE, flip);
+                seed, carriageIndex, mask, flip);
         });
     }
 
@@ -401,7 +419,7 @@ public final class CarriageContentsPlacer {
      */
     public static void placeEntitiesOnly(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                           CarriageDims dims, long seed, int carriagePIdx) {
-        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriagePIdx, /*placeBlocks*/ false, /*spawnEntities*/ true);
+        placeAtInternal(level, carriageOrigin, contents, dims, seed, carriagePIdx, /*placeBlocks*/ false, /*spawnEntities*/ true, PortalCorridorMask.NONE);
     }
 
     /**
@@ -414,7 +432,7 @@ public final class CarriageContentsPlacer {
      */
     private static void placeAtInternal(ServerLevel level, BlockPos carriageOrigin, CarriageContents contents,
                                          CarriageDims dims, long seed, int carriagePIdx,
-                                         boolean placeBlocks, boolean spawnEntities) {
+                                         boolean placeBlocks, boolean spawnEntities, PortalCorridorMask mask) {
         Vec3i size = interiorSizeFor(contents, dims);
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
             // Carriage at its minimum dims has zero or negative interior
@@ -429,7 +447,7 @@ public final class CarriageContentsPlacer {
         if (stored.isPresent()) {
             StructureTemplate template = stored.get();
             if (placeBlocks) {
-                stampTemplateBlocks(level, origin, template, PortalCorridorMask.NONE, flip);
+                stampTemplateBlocks(level, origin, template, mask, flip);
                 // Narrative lecterns must spawn EMPTY so they resolve their book
                 // lazily on first right-click (via BookFactory.buildOrRandomForLectern)
                 // instead of showing a book baked into the template. Some carriage

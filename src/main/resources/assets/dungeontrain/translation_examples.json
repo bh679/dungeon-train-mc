@@ -6526,6 +6526,33 @@
       ]
     }
   },
+  "chat.dungeontrain.editor.shell_wins_on": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "cargo",
+        "fire"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_wins_off": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "cargo",
+        "fire"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_wins_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "Permission denied"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.half_join_set": {
     "1": {
       "label": "a Half pair join mode",

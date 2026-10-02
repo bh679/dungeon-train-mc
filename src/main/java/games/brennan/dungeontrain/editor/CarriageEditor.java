@@ -636,6 +636,7 @@ public final class CarriageEditor {
         // container links and the weights entry — so the duplicate is the source, not just its shape.
         TemplateCopy.copy(games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.CARRIAGE, null,
             source.id(), target.id());
+        ShellWinsStore.copy(source.id(), target.id());
 
         setOutline(overworld, targetOrigin, OUTLINE_BLOCK, box);
 
@@ -764,6 +765,8 @@ public final class CarriageEditor {
             CarriageTemplateStore.delete(currentCustom);
             CarriageVariantBlocks.invalidate(currentCustom.name());
             TemplateSizeStore.SHELLS.forget(currentCustom.name());
+            ShellWinsStore.copy(currentCustom.name(), renamed.id());
+            ShellWinsStore.forget(currentCustom.name());
             games.brennan.dungeontrain.train.ShellPool.forget(currentCustom.name());
             LOGGER.info("[DungeonTrain] Editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
                 player.getName().getString(), currentCustom.name(), renamed.id());

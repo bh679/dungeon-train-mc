@@ -137,8 +137,12 @@ public final class EditorRoster {
     /** A carriage template's size, or the entry unchanged for every other row. */
     private static EditorRosterPacket.Entry withShellSizeData(String categoryId, EditorRosterPacket.Entry entry) {
         if (!EditorCategory.CARRIAGES.id().equals(categoryId)) return entry;
-        // A flatbed or portal keeps the size its role needs — no Room · Half · Group switch.
         CarriageVariant v = CarriageVariantRegistry.find(entry.variant().modelId()).orElse(null);
+        // "Carriage blocks win" is about a carriage's contents, and a flatbed never has any.
+        if (v != null && CarriagePlotRows.rowOf(v) != CarriagePlotRows.Row.FLATBEDS) {
+            entry = entry.withShellWins(ShellWinsStore.wins(v.id()));
+        }
+        // A flatbed or portal keeps the size its role needs — no Room · Half · Group switch.
         if (v != null && EditorTypeMenus.isFixedRow(CarriagePlotRows.rowOf(v))) return entry;
         return entry.withShellSize(
             games.brennan.dungeontrain.train.CarriagePlacer.sizeOfId(entry.variant().modelId()).key());

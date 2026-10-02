@@ -175,13 +175,25 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
      */
     public record Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId,
                         String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask,
-                        String shellSize) {
+                        String shellSize, int shellWins) {
         /** {@link #shellSize} for every row that is not a carriage template. */
         public static final String NO_SHELL_SIZE = "";
+        /** {@link #shellWins} for a row with no "carriage blocks win" switch. */
+        public static final int NO_SHELL_WINS = 0;
+        public static final int SHELL_WINS_OFF = 1;
+        public static final int SHELL_WINS_ON = 2;
 
         public Entry {
             if (roomMode == null || roomMode.isEmpty()) roomMode = EditorStatusPacket.NO_MODE;
             if (shellSize == null) shellSize = NO_SHELL_SIZE;
+        }
+
+        /** The shape from before the "carriage blocks win" switch rode along. */
+        public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight, int relayId,
+                     String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask,
+                     String shellSize) {
+            this(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, flipMask,
+                shellSize, NO_SHELL_WINS);
         }
 
         public Entry(EditorTypeMenusPacket.Variant variant, int selfWeight) {
@@ -200,17 +212,23 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
          * which is what the pane read those rows from before.
          */
         public Entry withRoom(String mode, int length, int width, int height) {
-            return new Entry(variant, selfWeight, relayId, mode, length, width, height, flipMask, shellSize);
+            return new Entry(variant, selfWeight, relayId, mode, length, width, height, flipMask, shellSize, shellWins);
         }
 
         /** A contents template's random-flip axes, packed as {@link EditorStatusPacket#flipMaskOf}. */
         public Entry withFlipMask(int mask) {
-            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, mask, shellSize);
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, mask, shellSize, shellWins);
         }
 
         /** A carriage template's size key ({@code ContentsSize#key}) — Room, Half or Group. */
         public Entry withShellSize(String size) {
-            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, flipMask, size);
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, flipMask, size, shellWins);
+        }
+
+        /** Whether a carriage template keeps its own blocks against its contents. */
+        public Entry withShellWins(boolean wins) {
+            return new Entry(variant, selfWeight, relayId, roomMode, roomLength, roomWidth, roomHeight, flipMask,
+                shellSize, wins ? SHELL_WINS_ON : SHELL_WINS_OFF);
         }
 
         /** True when this row is a portal room whose tag and box rode along. */
@@ -301,6 +319,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 buf.writeVarInt(e.roomHeight());
                 buf.writeVarInt(e.flipMask());
                 buf.writeUtf(e.shellSize(), 16);
+                buf.writeVarInt(e.shellWins());
             }
         }
         buf.writeVarInt(stages.size());
@@ -368,7 +387,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 EditorTypeMenusPacket.Variant v = EditorTypeMenusPacket.decodeVariant(buf);
                 entries.add(new Entry(v, buf.readVarInt(), buf.readVarInt(),
                     buf.readUtf(EditorStatusPacket.MODE_TAG_MAX), buf.readVarInt(), buf.readVarInt(),
-                    buf.readVarInt(), buf.readVarInt(), buf.readUtf(16)));
+                    buf.readVarInt(), buf.readVarInt(), buf.readUtf(16), buf.readVarInt()));
             }
             groups.add(new Group(categoryId, typeName, modelId, entries));
         }

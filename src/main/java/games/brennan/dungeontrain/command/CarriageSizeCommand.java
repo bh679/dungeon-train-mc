@@ -4,6 +4,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.ShellWinsStore;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.CarriageVariantRegistry;
@@ -47,6 +48,44 @@ final class CarriageSizeCommand {
                 runShellSize(ctx.getSource(), StringArgumentType.getString(ctx, "variant"), size)));
         }
         return sizeNode.then(variantArg);
+    }
+
+    /**
+     * {@code shell-wins <variant> on|off} — whether a carriage template keeps its own blocks against
+     * its contents ({@link ShellWinsStore}); the X menu's Off · On cells run it.
+     */
+    static LiteralArgumentBuilder<CommandSourceStack> shellWins() {
+        var variantArg = Commands.argument("variant", StringArgumentType.word())
+            .suggests((ctx, builder) -> {
+                for (CarriageVariant v : CarriageVariantRegistry.allVariants()) builder.suggest(v.id());
+                return builder.buildFuture();
+            });
+        variantArg.then(Commands.literal("on").executes(ctx ->
+            runShellWins(ctx.getSource(), StringArgumentType.getString(ctx, "variant"), true)));
+        variantArg.then(Commands.literal("off").executes(ctx ->
+            runShellWins(ctx.getSource(), StringArgumentType.getString(ctx, "variant"), false)));
+        return Commands.literal("shell-wins").then(variantArg);
+    }
+
+    private static int runShellWins(CommandSourceStack source, String rawVariant, boolean wins) {
+        CarriageVariant variant = CarriageVariantRegistry.find(rawVariant).orElse(null);
+        if (variant == null) {
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.shell_size_unknown", rawVariant)
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        try {
+            ShellWinsStore.set(variant.id(), wins);
+            source.sendSuccess(() -> Component.translatable(
+                wins ? "chat.dungeontrain.editor.shell_wins_on" : "chat.dungeontrain.editor.shell_wins_off",
+                variant.id()).withStyle(ChatFormatting.GREEN), true);
+            return 1;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] editor shell-wins failed for {}", variant.id(), e);
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.shell_wins_failed", e.getMessage())
+                .withStyle(ChatFormatting.RED));
+            return 0;
+        }
     }
 
     /**

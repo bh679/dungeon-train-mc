@@ -1030,6 +1030,7 @@ public final class EditorCommand {
                             StringArgumentType.getString(ctx, "variant"),
                             IntegerArgumentType.getInteger(ctx, "value"))))))
             .then(CarriageSizeCommand.shellSize())
+            .then(CarriageSizeCommand.shellWins())
             .then(CarriageSizeCommand.halfJoin())
             .then(CarriageSizeCommand.layout())
             .then(minLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
@@ -3835,6 +3836,7 @@ public final class EditorCommand {
             if (wasCustom) {
                 CarriageVariantRegistry.unregister(variant.id());
                 games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.forget(variant.id());
+                games.brennan.dungeontrain.editor.ShellWinsStore.forget(variant.id());
                 games.brennan.dungeontrain.train.ShellPool.forget(variant.id());
                 if (oldSpot != null) {
                     CarriageStampGuard.run(() ->

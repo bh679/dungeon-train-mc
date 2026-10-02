@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
 import games.brennan.dungeontrain.portal.PortalCarriageRole;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.portal.PortalCorridorKind;
+import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.portal.PortalCorridorSize;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.template.GateContext;
@@ -516,7 +517,8 @@ public final class CarriagePlacer {
             }
             spawnShellAndPartsVariantMobs(level, origin, variant, dims, seed, carriageIndex, anchor);
             if (contents != null) {
-                CarriageContentsPlacer.placeAt(level, origin, contents, dims, contentsSeed, carriageIndex);
+                CarriageContentsPlacer.placeAt(level, origin, contents, dims, contentsSeed, carriageIndex,
+                    ShellWinsMask.forShell(level, origin, variant, contents, dims));
             }
         }));
     }
@@ -894,10 +896,13 @@ public final class CarriagePlacer {
             if (spawnEntities) {
                 CarriageContentsPlacer.discardEntitiesAt(level, origin, dims);
             }
+            // "Carriage blocks win": read what the shell has standing before any contents block lands.
+            PortalCorridorMask keep = placeBlocks
+                ? ShellWinsMask.forShell(level, origin, variant, contents, dims) : PortalCorridorMask.NONE;
             if (placeBlocks && spawnEntities) {
-                CarriageContentsPlacer.placeAt(level, origin, contents, dims, config.seed(), carriageIndex);
+                CarriageContentsPlacer.placeAt(level, origin, contents, dims, config.seed(), carriageIndex, keep);
             } else if (placeBlocks) {
-                CarriageContentsPlacer.placeBlocksOnly(level, origin, contents, dims, config.seed(), carriageIndex);
+                CarriageContentsPlacer.placeBlocksOnly(level, origin, contents, dims, config.seed(), carriageIndex, keep);
             } else if (spawnEntities) {
                 CarriageContentsPlacer.placeEntitiesOnly(level, origin, contents, dims, config.seed(), carriageIndex);
             }

@@ -362,13 +362,30 @@ public final class EditorRosterIndex {
      * in; the same sentinels as {@code EditorStatusPacket}, which those rows used to be read from.</p>
      */
     public record Extras(String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask,
-                         String shellSize) {
+                         String shellSize, int shellWins) {
         public static final Extras NONE = new Extras(EditorStatusPacket.NO_MODE, EditorStatusPacket.NO_SIZE,
             EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_SIZE, EditorStatusPacket.NO_FLIP,
             EditorRosterPacket.Entry.NO_SHELL_SIZE);
 
         public static Extras of(EditorRosterPacket.Entry e) {
-            return new Extras(e.roomMode(), e.roomLength(), e.roomWidth(), e.roomHeight(), e.flipMask(), e.shellSize());
+            return new Extras(e.roomMode(), e.roomLength(), e.roomWidth(), e.roomHeight(), e.flipMask(),
+                e.shellSize(), e.shellWins());
+        }
+
+        /** The shape from before the "carriage blocks win" switch rode along. */
+        public Extras(String roomMode, int roomLength, int roomWidth, int roomHeight, int flipMask, String shellSize) {
+            this(roomMode, roomLength, roomWidth, roomHeight, flipMask, shellSize,
+                EditorRosterPacket.Entry.NO_SHELL_WINS);
+        }
+
+        /** True when a carriage template's "carriage blocks win" switch rode along. */
+        public boolean hasShellWins() {
+            return shellWins != EditorRosterPacket.Entry.NO_SHELL_WINS;
+        }
+
+        /** True when the carriage keeps its own blocks against its contents. */
+        public boolean shellWinsOn() {
+            return shellWins == EditorRosterPacket.Entry.SHELL_WINS_ON;
         }
 
         /** The shape from before carriage sizes rode along. */
