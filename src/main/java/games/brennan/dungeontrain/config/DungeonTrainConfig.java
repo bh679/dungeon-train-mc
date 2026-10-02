@@ -265,6 +265,21 @@ public final class DungeonTrainConfig {
     /** Default master for portal rooms whose template asks to stand under a sky of its own. */
     public static final boolean DEFAULT_PORTAL_ROOM_DAYLIGHT = true;
 
+    /**
+     * How heavily "a library of the rider's own books" weighs in the dimensional-carriage lottery,
+     * against what the authored weights alone would give it — see
+     * {@link games.brennan.dungeontrain.portal.PortalOwnShelves}.
+     *
+     * <p>Two values because the answer depends on the run: below 1 ordinarily, so a player who has
+     * written nothing lately is not handed their own shelves over and over, and well above 1 once
+     * they have signed a book this run, when finding it on a shelf is the reward. 1 on both is the
+     * lottery exactly as authored.</p>
+     */
+    public static final double DEFAULT_OWN_LIBRARY_CHANCE_SCALE = 0.5;
+    public static final double DEFAULT_OWN_LIBRARY_CHANCE_WRITTEN_SCALE = 3.0;
+    public static final double MIN_OWN_LIBRARY_CHANCE_SCALE = 0.0;
+    public static final double MAX_OWN_LIBRARY_CHANCE_SCALE = 10.0;
+
     /** Default master for serving approved player-written narrative series back on narrative lecterns. */
     public static final boolean DEFAULT_DISCOVER_NARRATIVES_ENABLED = true;
 
@@ -358,6 +373,8 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.IntValue SHARED_BOOK_REPEAT_GROUPS;
     public static final ModConfigSpec.IntValue PORTAL_ROOM_AUTHOR_MIN_BOOKS;
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_DAYLIGHT;
+    public static final ModConfigSpec.DoubleValue OWN_LIBRARY_CHANCE_SCALE;
+    public static final ModConfigSpec.DoubleValue OWN_LIBRARY_CHANCE_WRITTEN_SCALE;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGES_ENABLED;
     public static final ModConfigSpec.BooleanValue SHARED_CARRIAGE_LEASING_ENABLED;
     public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
@@ -424,6 +441,8 @@ public final class DungeonTrainConfig {
         SHARED_BOOK_REPEAT_GROUPS = pair.getLeft().sharedBookRepeatGroups;
         PORTAL_ROOM_AUTHOR_MIN_BOOKS = pair.getLeft().portalRoomAuthorMinBooks;
         PORTAL_ROOM_DAYLIGHT = pair.getLeft().portalRoomDaylight;
+        OWN_LIBRARY_CHANCE_SCALE = pair.getLeft().ownLibraryChanceScale;
+        OWN_LIBRARY_CHANCE_WRITTEN_SCALE = pair.getLeft().ownLibraryChanceWrittenScale;
         SHARED_CARRIAGES_ENABLED = pair.getLeft().sharedCarriagesEnabled;
         SHARED_CARRIAGE_LEASING_ENABLED = pair.getLeft().sharedCarriageLeasingEnabled;
         BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
@@ -635,6 +654,19 @@ public final class DungeonTrainConfig {
                         "lighting hook it installs — worth trying first if another lighting mod misbehaves.",
                         "Default true.")
                 .define("portalRoomDaylight", DEFAULT_PORTAL_ROOM_DAYLIGHT);
+        ModConfigSpec.DoubleValue ownLibraryChanceScale = b
+                .comment("How often a dimensional carriage turns out to be a library of the rider's OWN books, against what",
+                        "the room weights alone would give. Applies while the rider has NOT written a book this run. 0.5",
+                        "halves that outcome's weight in the lottery and every other dimension takes up the difference in",
+                        "proportion; 1 leaves the lottery exactly as authored; 0 means never. Default 0.5.")
+                .defineInRange("ownLibraryChanceScale", DEFAULT_OWN_LIBRARY_CHANCE_SCALE,
+                        MIN_OWN_LIBRARY_CHANCE_SCALE, MAX_OWN_LIBRARY_CHANCE_SCALE);
+        ModConfigSpec.DoubleValue ownLibraryChanceWrittenScale = b
+                .comment("The same weight once the rider HAS written a book this run — finding it on a shelf is the reward.",
+                        "3 triples the own-books library's weight in the lottery, at the cost of every other dimension in",
+                        "proportion. A carriage rolled while this applied keeps its room. Default 3.")
+                .defineInRange("ownLibraryChanceWrittenScale", DEFAULT_OWN_LIBRARY_CHANCE_WRITTEN_SCALE,
+                        MIN_OWN_LIBRARY_CHANCE_SCALE, MAX_OWN_LIBRARY_CHANCE_SCALE);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b
                 .comment("Serve approved player-written narrative series back on narrative lecterns. When true, a lectern",
                         "may (weighted + tapered like shared-book loot, at LETTER granularity) lock to a player's narrative",
@@ -811,6 +843,7 @@ public final class DungeonTrainConfig {
                 worldInfoToRelay, retiredLeaderboardBooks, shareBooksEnabled, discoverSharedBooksEnabled, deathNotesEnabled,
                 loveNotesEnabled, lettersEnabled,
                 sharedBookLootMaxChance, sharedBookRepeatGroups, portalRoomAuthorMinBooks, portalRoomDaylight,
+                ownLibraryChanceScale, ownLibraryChanceWrittenScale,
                 discoverNarrativesEnabled, narrativeDiscoveryRampThreshold,
                 difficultyLevelNoticeToDiscord, introCinematicEnabled, introCinematicDurationTicks,
                 introCinematicChunkPreloadEnabled, spawnSearchSyncGen, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
@@ -1110,6 +1143,18 @@ public final class DungeonTrainConfig {
     }
 
     /**
+     * The own-books library's weight in the dimension lottery, for a rider who has or has not
+     * written a book this run — see {@link #DEFAULT_OWN_LIBRARY_CHANCE_SCALE}.
+     */
+    public static double getOwnLibraryChanceScale(boolean wroteThisRun) {
+        double fallback = wroteThisRun
+            ? DEFAULT_OWN_LIBRARY_CHANCE_WRITTEN_SCALE : DEFAULT_OWN_LIBRARY_CHANCE_SCALE;
+        double v = !isLoaded() ? fallback
+            : wroteThisRun ? OWN_LIBRARY_CHANCE_WRITTEN_SCALE.get() : OWN_LIBRARY_CHANCE_SCALE.get();
+        return Math.max(MIN_OWN_LIBRARY_CHANCE_SCALE, Math.min(MAX_OWN_LIBRARY_CHANCE_SCALE, v));
+    }
+
+    /**
      * The repeat threshold in CARRIAGES — {@link #getSharedBookRepeatGroups()} × {@link #getGroupSize()}.
      * The selector compares raw carriage indices, so the group-based setting is resolved here rather than
      * teaching the selector about train structure. Floored at 1 so the escape always requires SOME travel.
@@ -1347,6 +1392,8 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue sharedBookRepeatGroups,
             ModConfigSpec.IntValue portalRoomAuthorMinBooks,
             ModConfigSpec.BooleanValue portalRoomDaylight,
+            ModConfigSpec.DoubleValue ownLibraryChanceScale,
+            ModConfigSpec.DoubleValue ownLibraryChanceWrittenScale,
             ModConfigSpec.BooleanValue discoverNarrativesEnabled,
             ModConfigSpec.DoubleValue narrativeDiscoveryRampThreshold,
             ModConfigSpec.BooleanValue difficultyLevelNoticeToDiscord,
