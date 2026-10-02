@@ -21973,6 +21973,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bookshelves-four-per-emerald",
+      "version": "0.1100.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Bookshelves trade four for an emerald",
+      "summary": "Villagers now give one emerald's worth for every four bookshelves.",
+      "highlights": [],
+      "pr": 1758,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
