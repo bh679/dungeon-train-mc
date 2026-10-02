@@ -110,12 +110,20 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Exposure — third-party, REQUIRED. DT's container loot hands out its camera, film, albums and frames,
-# so the items have to exist on both sides. Named by registry id only, so a floor is enough.
+# Exposure — third-party, REQUIRED. The camera, film and photographs; its items and photo data have
+# to exist on both sides. Named by registry id only, so a floor is enough.
 [[dependencies.${mod_id}]]
     modId="exposure"
     type="required"
     versionRange="[${exposure_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# Exposure: Polaroid — third-party, REQUIRED. The instant camera add-on; it needs Exposure itself.
+[[dependencies.${mod_id}]]
+    modId="exposure_polaroid"
+    type="required"
+    versionRange="[${exposurepolaroid_min_version},)"
     ordering="AFTER"
     side="BOTH"
 

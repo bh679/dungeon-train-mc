@@ -343,6 +343,21 @@
       "modrinth_version": "iBvaR6AK"
     },
     {
+      "name": "Exposure: Polaroid",
+      "slug": "exposure-polaroid",
+      "mod_ids": [
+        "exposure_polaroid"
+      ],
+      "project_id": 1207005,
+      "file_id": 8533496,
+      "required": true,
+      "dependency_type": "required",
+      "gradle_property": "exposurepolaroid_min_version",
+      "version": "1.1.6",
+      "modrinth_project": "exposure-polaroid",
+      "modrinth_version": "WfVyzdJL"
+    },
+    {
       "name": "Dungeon Backup",
       "slug": "dungeon-train-backup",
       "mod_ids": [
