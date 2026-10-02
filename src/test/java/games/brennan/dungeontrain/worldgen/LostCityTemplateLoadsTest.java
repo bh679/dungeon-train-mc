@@ -13,6 +13,7 @@ final class LostCityTemplateLoadsTest {
     void kinds() {
         assertEquals(ThreadKind.PRELOAD, LostCityTemplateLoads.kindOf(LostCityTemplateLoads.PRELOAD_THREAD_NAME));
         assertEquals(ThreadKind.WORLDGEN, LostCityTemplateLoads.kindOf("Worker-Main-7"));
+        assertEquals(ThreadKind.WORLDGEN, LostCityTemplateLoads.kindOf("worldgen"));   // the dev environment's task rename
         assertEquals(ThreadKind.DISTANT_HORIZONS, LostCityTemplateLoads.kindOf("DH-World Gen Thread[3]"));
         assertEquals(ThreadKind.SERVER, LostCityTemplateLoads.kindOf("Server thread"));
         assertEquals(ThreadKind.OTHER, LostCityTemplateLoads.kindOf("DH-LOD Builder Thread[0]"));

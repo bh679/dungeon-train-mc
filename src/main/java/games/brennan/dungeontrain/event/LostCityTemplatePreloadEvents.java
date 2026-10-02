@@ -276,6 +276,7 @@ public final class LostCityTemplatePreloadEvents {
                 + " cached=" + cached + " quietScans=" + quietScans
                 + " reach=" + LostCityTemplatePreload.reachBlocks(srv.getPlayerList().getViewDistance()));
         lines.add("preloads=" + PRELOADS.get() + " evictions=" + EVICTIONS.get()
+                + " starts=" + LostCityTemplateDemand.count()
                 + " lastStart=" + (sinceDemand < 0 ? "never" : sinceDemand + "s ago"));
         LostCityTemplateLoads.Snapshot loads = LostCityTemplateLoads.snapshot();
         StringBuilder sb = new StringBuilder("coldLookups offThread=" + loads.offThreadCount());
@@ -283,6 +284,15 @@ public final class LostCityTemplatePreloadEvents {
             sb.append(' ').append(kind).append('=').append(loads.count(kind)).append('/').append(loads.millis(kind)).append("ms");
         }
         lines.add(sb.toString());
+        ServerLevel overworld = srv.overworld();
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (overworld != null && cycle.hasLayout()) {
+            int reach = LostCityTemplatePreload.reachBlocks(srv.getPlayerList().getViewDistance());
+            for (ServerPlayer player : overworld.players()) {
+                lines.add(player.getGameProfile().getName() + " x=" + player.getBlockX() + " need="
+                        + LostCityTemplatePreload.needAt(cycle, player.getBlockX(), reach, LostCityTemplatePreload.MODE));
+            }
+        }
         return lines;
     }
 
@@ -291,6 +301,7 @@ public final class LostCityTemplatePreloadEvents {
         PRELOADS.set(0);
         EVICTIONS.set(0);
         LostCityTemplateLoads.reset();
+        LostCityTemplateDemand.resetCount();
     }
 
     @SubscribeEvent

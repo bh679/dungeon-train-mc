@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen;
 
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * The demand side of the Lost City template cache: every Lost City start the era veto lets through
  * ({@code mixin/StructureBasementMixin}) is reported here, on whichever thread is generating — a vanilla
@@ -23,6 +25,7 @@ public final class LostCityTemplateDemand {
     private static volatile boolean seen;
     private static volatile long lastNanos;
     private static volatile Listener listener;
+    private static final AtomicLong COUNT = new AtomicLong();
 
     private LostCityTemplateDemand() {}
 
@@ -34,6 +37,7 @@ public final class LostCityTemplateDemand {
     public static void requested(ResourceLocation structure, int chunkX) {
         lastNanos = System.nanoTime();
         seen = true;
+        COUNT.incrementAndGet();
         Listener l = listener;
         if (l != null) l.requested(structure, chunkX);
     }
@@ -46,6 +50,15 @@ public final class LostCityTemplateDemand {
     /** Seconds since the last approved start, or {@code -1} if there has been none. */
     public static long secondsSinceLast(long nowNanos) {
         return seen ? (nowNanos - lastNanos) / 1_000_000_000L : -1L;
+    }
+
+    /** Approved starts since the last {@link #resetCount} — how much demand a session has seen. */
+    public static long count() {
+        return COUNT.get();
+    }
+
+    public static void resetCount() {
+        COUNT.set(0L);
     }
 
     public static void reset() {

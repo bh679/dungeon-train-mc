@@ -64,7 +64,8 @@ public final class LostCityTemplateLoads {
         if (threadName.startsWith(PRELOAD_THREAD_NAME)) return ThreadKind.PRELOAD;
         if (LodGeneration.isLodThreadName(threadName)) return ThreadKind.DISTANT_HORIZONS;
         if (threadName.equals("Server thread")) return ThreadKind.SERVER;
-        if (threadName.startsWith("Worker-")) return ThreadKind.WORLDGEN;
+        // Vanilla's pool is Worker-Main-N; in a dev environment it renames a worker to its task ("worldgen") while it runs.
+        if (threadName.startsWith("Worker-") || threadName.equals("worldgen")) return ThreadKind.WORLDGEN;
         return ThreadKind.OTHER;
     }
 

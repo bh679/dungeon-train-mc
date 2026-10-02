@@ -165,6 +165,9 @@ public final class DebugCommand {
                 .executes(ctx -> LostCityTemplatesDebug.status(ctx.getSource()))
                 .then(Commands.literal("status").executes(ctx -> LostCityTemplatesDebug.status(ctx.getSource())))
                 .then(Commands.literal("reset").executes(ctx -> LostCityTemplatesDebug.reset(ctx.getSource())))
+                .then(Commands.literal("at")
+                    .then(Commands.argument("x", IntegerArgumentType.integer())
+                        .executes(ctx -> LostCityTemplatesDebug.at(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "x")))))
                 .then(Commands.literal("reach").executes(ctx -> LostCityTemplatesDebug.setMode(ctx.getSource(),
                     games.brennan.dungeontrain.worldgen.LostCityTemplatePreload.Mode.REACH)))
                 .then(Commands.literal("legacy").executes(ctx -> LostCityTemplatesDebug.setMode(ctx.getSource(),

@@ -7,9 +7,15 @@ package games.brennan.dungeontrain.worldgen;
  * other 33, ~140 MB raw, no pool names). A jigsaw start loads its pieces on first use, which without a pre-load
  * happens right as the train meets the first city — ~0.5 s of datafixing per template on a worldgen thread.
  * {@code event/LostCityTemplatePreloadEvents} loads them on a background thread instead and evicts them once
- * nothing needs them. Measured on a dev server (0.1071.1): the 42 hold ~120 MB of block infos and positions and
- * load in ~23 s on the background thread; all 75 held ~300 MB (~350 MB more heap after GC) for the rest of the
- * session and took ~61 s.
+ * nothing needs them.
+ *
+ * <p>What they cost, measured on a dev server (0.1111.x, {@code jcmd GC.run} then {@code GC.heap_info}): 1149 MB
+ * of heap in use with the 42 cached, 1015 MB once evicted — <b>~135 MB</b>. A class histogram puts ~120 MB of
+ * that in {@code StructureBlockInfo} and {@code BlockPos} instances (2.5 million of each) and the rest in the
+ * lists holding them. The pull request that introduced the eviction (0.1071.1) reported 156 MB for the 42 and
+ * 337 MB for all 75 by its own count of template objects; the proportion, not the absolute, is what carries
+ * over. Loading the 42 on the background thread took anywhere from 5 s to 34 s across runs on one machine
+ * (23 s in that pull request), so no single figure is reliable.</p>
  *
  * <p><b>What holds the cache is where chunks are generated, not where a player stands.</b> Each player (and
  * each absent player's last overworld position — the train they return to) has a {@link Need}, read with the
