@@ -664,7 +664,9 @@ public final class DungeonTrainConfig {
         ModConfigSpec.DoubleValue ownLibraryChanceWrittenScale = b
                 .comment("The same weight once the rider HAS written a book this run — finding it on a shelf is the reward.",
                         "3 triples the own-books library's weight in the lottery, at the cost of every other dimension in",
-                        "proportion. A carriage rolled while this applied keeps its room. Default 3.")
+                        "proportion. It lasts until they walk into a library of their own books, then drops back to",
+                        "ownLibraryChanceScale until they write another. A carriage rolled while this applied keeps its",
+                        "room. Default 3.")
                 .defineInRange("ownLibraryChanceWrittenScale", DEFAULT_OWN_LIBRARY_CHANCE_WRITTEN_SCALE,
                         MIN_OWN_LIBRARY_CHANCE_SCALE, MAX_OWN_LIBRARY_CHANCE_SCALE);
         ModConfigSpec.BooleanValue discoverNarrativesEnabled = b

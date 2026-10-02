@@ -2330,8 +2330,9 @@ public final class PortalCarriageEvents {
      * Whether {@code pairKey} rolls its room with the own-books library weighted up — see
      * {@link games.brennan.dungeontrain.portal.PortalOwnShelves}.
      *
-     * <p>True when the rider nearest the carriage has written a book this run, and — because that
-     * counter is in memory only and {@link #STRUCTURES} does not outlive the session — for any pair
+     * <p>True when the rider nearest the carriage has written a book this run and not yet walked
+     * into a library of their own since, and — because that
+     * flag is in memory only and {@link #STRUCTURES} does not outlive the session — for any pair
      * that was stamped that way before. Without the second half a restart would re-roll a standing
      * library as whatever the un-boosted lottery says, under a player who logged out inside it.</p>
      */
@@ -2351,7 +2352,7 @@ public final class PortalCarriageEvents {
         }
         return nearest != null && nearest.getData(
             games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get())
-            .booksWrittenCount() > 0;
+            .ownShelfBoostPending();
     }
 
     /**
