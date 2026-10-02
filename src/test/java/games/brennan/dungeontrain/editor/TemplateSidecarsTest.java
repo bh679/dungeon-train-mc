@@ -37,6 +37,11 @@ final class TemplateSidecarsTest {
                 default -> "";
             };
             List<TemplateSidecars.Sidecar> files = TemplateSidecars.filesFor(kind, subKind, "brick_cabin");
+            if (kind == BuilderPhotoPaths.Kind.LOST_CITY) {
+                assertTrue(files.isEmpty(), "an official Lost City building has no file of the player's");
+                assertFalse(TemplateSidecars.carries(kind));
+                continue;
+            }
             if (kind == BuilderPhotoPaths.Kind.CARRIAGE_GROUP) {
                 assertTrue(files.isEmpty(), "a group is a list of ids and nothing else");
                 assertFalse(TemplateSidecars.carries(kind));

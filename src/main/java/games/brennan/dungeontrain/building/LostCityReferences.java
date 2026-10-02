@@ -92,6 +92,28 @@ public final class LostCityReferences {
             .orElse(Buildings.MIN_SIZE));
     }
 
+    /**
+     * An official building's NBT straight from Big Lost City's jar, for drawing its tile and preview — the
+     * one place its blocks are read outside the server's template manager, and never to write them
+     * anywhere. Tries the {@code lt} variant the pools place, then the plain one; empty without the mod.
+     */
+    public static Optional<net.minecraft.nbt.CompoundTag> readForPreview(String name) {
+        if (name == null || !Buildings.NAME.matcher(name).matches()) return Optional.empty();
+        String known = find(name).map(r -> r.template().getPath()).orElse(null);
+        List<String> paths = known != null ? List.of(known) : List.of(name + "lt", name);
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        for (String path : paths) {
+            String resource = "data/" + NAMESPACE + "/structure/" + path + ".nbt";
+            try (java.io.InputStream in = loader.getResourceAsStream(resource)) {
+                if (in == null) continue;
+                return Optional.of(net.minecraft.nbt.NbtIo.readCompressed(in, net.minecraft.nbt.NbtAccounter.unlimitedHeap()));
+            } catch (java.io.IOException e) {
+                LOGGER.warn("[DungeonTrain] Could not read Lost City preview {}: {}", resource, e.toString());
+            }
+        }
+        return Optional.empty();
+    }
+
     /** The name a template goes by: its path, without Big Lost City's {@code lt} suffix. Pure. */
     static String displayName(ResourceLocation template) {
         String path = template.getPath();

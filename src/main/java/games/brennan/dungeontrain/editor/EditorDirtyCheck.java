@@ -656,7 +656,8 @@ public final class EditorDirtyCheck {
             case PORTAL_ROOM -> "portal_room." + id;
             case TRACK -> trackDirtyKeyFor(TrackKind.fromId(subKind), id);
             case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + id;
-            case PART, CARRIAGE_GROUP -> null;
+            case BUILDING -> games.brennan.dungeontrain.building.Buildings.MODEL_ID + "." + id;
+            case PART, CARRIAGE_GROUP, LOST_CITY -> null;
         };
     }
 

@@ -105,6 +105,30 @@ final class BuildingsTest {
         assertEquals(true, buildings + Buildings.MAX_SIZE.getY() + 2 < 320);
     }
 
+    @Test
+    @DisplayName("a big template's preview keeps its skin: a solid cube sheds its core, a hollow sealed box its inner face")
+    void tileShell() {
+        java.util.Map<net.minecraft.core.BlockPos, String> solid = new java.util.HashMap<>();
+        for (int x = 0; x < 5; x++) for (int y = 0; y < 5; y++) for (int z = 0; z < 5; z++) {
+            solid.put(new net.minecraft.core.BlockPos(x, y, z), "s");
+        }
+        // 5^3 minus the 3^3 nobody can touch.
+        assertEquals(125 - 27, games.brennan.dungeontrain.builder.TileShell.of(solid).size());
+
+        // A sealed 7^3 box with 2-thick walls: only the outer layer is reachable.
+        java.util.Map<net.minecraft.core.BlockPos, String> box = new java.util.HashMap<>();
+        for (int x = 0; x < 7; x++) for (int y = 0; y < 7; y++) for (int z = 0; z < 7; z++) {
+            boolean wall = x < 2 || x > 4 || y < 2 || y > 4 || z < 2 || z > 4;
+            if (wall) box.put(new net.minecraft.core.BlockPos(x, y, z), "w");
+        }
+        assertEquals(343 - 125, games.brennan.dungeontrain.builder.TileShell.of(box).size());
+
+        // Knock a hole through the wall and the inside it opens onto is seen too.
+        box.remove(new net.minecraft.core.BlockPos(0, 3, 3));
+        box.remove(new net.minecraft.core.BlockPos(1, 3, 3));
+        assertEquals(true, games.brennan.dungeontrain.builder.TileShell.of(box).size() > 343 - 125);
+    }
+
     private static ResourceLocation rl(String ns, String path) {
         return ResourceLocation.fromNamespaceAndPath(ns, path);
     }

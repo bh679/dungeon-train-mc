@@ -38,6 +38,10 @@ public final class BuilderRelayKinds {
     public static final String PORTAL_ROOM = "portal_room";
     /** A chunk frame. No relay kind of its own yet — frames are never uploaded (EditorRelayWrite.namingOf). */
     public static final String CHUNK_FRAME = "chunk_frame";
+    /** A building. Not uploaded until the relay knows the kind (EditorRelayWrite.namingOf). */
+    public static final String BUILDING = "building";
+    /** An official Lost City building — a name only; never uploaded, installed or offered. */
+    public static final String LOST_CITY = "lost_city";
 
     private BuilderRelayKinds() {}
 
@@ -52,6 +56,8 @@ public final class BuilderRelayKinds {
             case TRACK -> TRACK;
             case PORTAL_ROOM -> PORTAL_ROOM;
             case CHUNK_FRAME -> CHUNK_FRAME;
+            case BUILDING -> BUILDING;
+            case LOST_CITY -> LOST_CITY;
         };
     }
 
@@ -76,6 +82,7 @@ public final class BuilderRelayKinds {
             case TRACK -> BuilderPhotoPaths.Kind.TRACK;
             case PORTAL_ROOM -> BuilderPhotoPaths.Kind.PORTAL_ROOM;
             case CHUNK_FRAME -> BuilderPhotoPaths.Kind.CHUNK_FRAME;
+            case BUILDING -> BuilderPhotoPaths.Kind.BUILDING;
             default -> null;
         };
     }
@@ -97,6 +104,7 @@ public final class BuilderRelayKinds {
             case CONTENTS, PART -> BuilderMode.INSIDE_CARRIAGE;
             case TRACK -> BuilderMode.TRACKS_TUNNELS;
             case PORTAL_ROOM, CHUNK_FRAME -> BuilderMode.TRAIN_DIMENSIONS;
+            case BUILDING, LOST_CITY -> BuilderMode.BUILDINGS;
         };
     }
 
@@ -115,7 +123,8 @@ public final class BuilderRelayKinds {
      * button.</p>
      */
     public static boolean canSubmitForReview(BuilderPhotoPaths.Kind kind) {
-        return kind != null;
+        // Never an official Lost City building: Big Lost City's are All Rights Reserved, not ours to offer.
+        return kind != null && kind != BuilderPhotoPaths.Kind.LOST_CITY;
     }
 
     /**
@@ -172,6 +181,8 @@ public final class BuilderRelayKinds {
                     : PlotCategory.TRACKS.id();
             case PORTAL_ROOM -> PlotCategory.PORTALS.id();
             case CHUNK_FRAME -> PlotCategory.CHUNK_FRAMES.id();
+            case BUILDING -> PlotCategory.BUILDINGS.id();
+            case LOST_CITY -> PlotCategory.LOST_CITY.id();
             case CARRIAGE_GROUP -> null;
         };
     }

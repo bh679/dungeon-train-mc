@@ -128,8 +128,12 @@ public final class TemplateSidecars {
                 out.add(new Sidecar("contents-allow", room.subdir(), id + ContentsAllowStore.EXT));
                 out.add(new Sidecar("copies", room.subdir(), id + PortalRoomCopiesVariant.COPIES_EXT));
             }
-            // A group is a list of carriage ids and nothing else — its members carry their own.
-            case CARRIAGE_GROUP -> { }
+            // A new building's roster weight travels with it.
+            case BUILDING -> out.add(new Sidecar("meta", games.brennan.dungeontrain.building.Buildings.SUBDIR,
+                    id + games.brennan.dungeontrain.building.BuildingMeta.EXT));
+            // A group is a list of carriage ids and nothing else — its members carry their own. An
+            // official Lost City building has no file of the player's at all.
+            case CARRIAGE_GROUP, LOST_CITY -> { }
         }
         // Every kind with sidecars at all has a containers store, keyed by the same plot key the
         // editor uses — shared with TemplateLootPrefabs, which follows that store's links outward.
@@ -159,7 +163,7 @@ public final class TemplateSidecars {
             }
             case PORTAL_ROOM -> ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> ChunkFramePlot.KEY_PREFIX + id;
-            case CARRIAGE_GROUP -> null;
+            case CARRIAGE_GROUP, BUILDING, LOST_CITY -> null;
         };
     }
 
@@ -587,6 +591,7 @@ public final class TemplateSidecars {
 
     /** Whether {@code kind} has any sidecar at all — what a caller checks before bothering. */
     public static boolean carries(BuilderPhotoPaths.Kind kind) {
-        return kind != null && kind != BuilderPhotoPaths.Kind.CARRIAGE_GROUP;
+        return kind != null && kind != BuilderPhotoPaths.Kind.CARRIAGE_GROUP
+                && kind != BuilderPhotoPaths.Kind.LOST_CITY;
     }
 }

@@ -213,6 +213,8 @@ public final class BuilderRelayInstall {
             case PORTAL_ROOM -> installPortalRoom(id, template);
             // Frames have no relay kind yet: nothing is ever offered for one.
             case CHUNK_FRAME -> Outcome.UNSUPPORTED;
+            // Buildings wait for the relay to learn their kind; official Lost City ones are never installed.
+            case BUILDING, LOST_CITY -> Outcome.UNSUPPORTED;
         };
         if (outcome == Outcome.INSTALLED) TemplateSidecars.apply(kind, subKind, id, sidecars);
         return outcome;
@@ -273,6 +275,8 @@ public final class BuilderRelayInstall {
             }
             case PORTAL_ROOM -> PortalRoomTemplateStore.exists(id);
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(id);
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingRegistry.contains(id);
+            case LOST_CITY -> games.brennan.dungeontrain.building.LostCityReferences.find(id).isPresent();
         };
     }
 
@@ -309,6 +313,8 @@ public final class BuilderRelayInstall {
             }
             case PORTAL_ROOM -> TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names();
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingRegistry.names();
+            case LOST_CITY -> games.brennan.dungeontrain.building.LostCityReferences.all().stream().map(games.brennan.dungeontrain.building.LostCityReferences.Reference::name).toList();
         };
 
         List<String> out = new ArrayList<>();
@@ -348,6 +354,8 @@ public final class BuilderRelayInstall {
             }
             case PORTAL_ROOM -> TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.isBundled(id);
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingStore.isBundled(id);
+            case LOST_CITY -> true;
         };
     }
 
