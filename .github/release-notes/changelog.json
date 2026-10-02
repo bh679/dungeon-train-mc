@@ -22201,6 +22201,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "biome-twin-lookup-memo",
+      "version": "0.1113.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother scenery",
+      "summary": "The scenery colours in a little more smoothly as new ground comes into view.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1772,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
