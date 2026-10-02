@@ -297,6 +297,73 @@ public final class TrackVariantRegistry {
     }
 
     /**
+     * Every name {@link #pickName(TrackKind, long, long, GateContext)} could answer under
+     * {@code gateCtx}, with the probability it does — both hops, so a group's members appear in
+     * place of (and beside) their parent.
+     *
+     * <p>Read-only, and deliberately a second walk of the pool rather than a refactor of the pick:
+     * the pick's draw order is what keeps existing worlds on the rooms they have, and nothing here
+     * may disturb it. It mirrors the pick's fallbacks instead — an emptied gate falls back to the
+     * ungated pool, an all-zero pool is uniform, a group whose members are all gated out (or all
+     * weightless) answers its parent, and an unregistered member's share goes to the parent.</p>
+     *
+     * <p>Probabilities sum to 1 for a non-empty pool. Iteration order is the pool's.</p>
+     */
+    public static java.util.Map<String, Double> leafOdds(TrackKind kind, GateContext gateCtx) {
+        java.util.Map<String, Double> odds = new java.util.LinkedHashMap<>();
+        List<String> pool = games.brennan.dungeontrain.editor.TrackVariantGroupStore.topLevelNames(kind);
+        if (pool.isEmpty()) return odds;
+
+        List<String> effective = pool;
+        if (gateCtx != null) {
+            List<String> gated = new ArrayList<>(pool.size());
+            for (String name : pool) {
+                if (gateCtx.allows(TrackVariantWeights.gateFor(kind, name))) gated.add(name);
+            }
+            if (!gated.isEmpty()) effective = gated;
+        }
+
+        int total = 0;
+        for (String name : effective) total += TrackVariantWeights.weightFor(kind, name);
+        for (String name : effective) {
+            double share = total <= 0
+                ? 1.0 / effective.size()
+                : (double) TrackVariantWeights.weightFor(kind, name) / total;
+            if (share > 0.0) addGroupOdds(kind, name, share, gateCtx, odds);
+        }
+        return odds;
+    }
+
+    /** {@code parent}'s {@code share} of the pool, split the way {@link #resolveGroup} would draw it. */
+    private static void addGroupOdds(TrackKind kind, String parent, double share, GateContext gateCtx,
+                                     java.util.Map<String, Double> odds) {
+        Optional<TrackVariantGroup> groupOpt =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, parent);
+        List<TrackVariantGroup.Member> eligible = new ArrayList<>();
+        if (groupOpt.isPresent()) {
+            for (TrackVariantGroup.Member m : groupOpt.get().members()) {
+                if (gateCtx == null || gateCtx.allows(effectiveGateOf(m))) eligible.add(m);
+            }
+        }
+        int total = groupOpt.map(TrackVariantGroup::selfWeight).orElse(0);
+        for (TrackVariantGroup.Member m : eligible) total += m.weight();
+        if (eligible.isEmpty() || total <= 0) {
+            odds.merge(parent, share, Double::sum);
+            return;
+        }
+        double toParent = (double) groupOpt.get().selfWeight() / total;
+        for (TrackVariantGroup.Member m : eligible) {
+            double memberShare = (double) m.weight() / total;
+            if (contains(kind, m.id())) {
+                if (memberShare > 0.0) odds.merge(m.id(), share * memberShare, Double::sum);
+            } else {
+                toParent += memberShare;
+            }
+        }
+        if (toParent > 0.0) odds.merge(parent, share * toParent, Double::sum);
+    }
+
+    /**
      * Second hop of the pick: if {@code picked} has a group sidecar, draw one of its weighted
      * sub-variants against the parent's own {@code selfWeight}.
      *

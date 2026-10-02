@@ -105,12 +105,26 @@ public final class NewSourcePickerScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         switch (category) {
             case CARRIAGES -> {
-                // A carriage is a Room or, for a group-long carriage, Full. Half is the portal
-                // corridor's size alone, so it is not offered here.
-                out.add(new CommandMenuEntry.TypeArg(
-                    MenuLang.t("new_source.blank_size", sizeName("room")), "name", "dungeontrain editor new", "blank"));
-                out.add(new CommandMenuEntry.TypeArg(
-                    MenuLang.t("new_source.blank_size", sizeName("full")), "name", "dungeontrain editor new", "blank_full"));
+                // A carriage is a Room, a Half (two to a group), or a group-long Full ("Group"),
+                // each its own pool. From a pool's tab ({@code kind} is its size key) only that
+                // pool's blank is offered; from anywhere else, all three.
+                if ("flatbeds".equals(kind)) {
+                    // A flatbed variant: a blank flatbed, or a copy of the one stood in. The pads between
+                    // groups are cut from these, one per group, drawn by weight.
+                    out.add(new CommandMenuEntry.TypeArg(
+                        MenuLang.t("new_source.blank_flatbed"), "name", "dungeontrain editor new", "blank_flatbed"));
+                    if (!currentId.isEmpty()) {
+                        out.add(new CommandMenuEntry.TypeArg(
+                            MenuLang.t("new_source.current", currentId), "name", "dungeontrain editor new", currentId));
+                    }
+                    break;
+                }
+                for (String size : List.of("room", "half", "full")) {
+                    if (kind != null && !kind.isEmpty() && !kind.equals(size)) continue;
+                    out.add(new CommandMenuEntry.TypeArg(
+                        MenuLang.t("new_source.blank_size", sizeName(size)), "name", "dungeontrain editor new",
+                        size.equals("room") ? "blank" : "blank_" + size));
+                }
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(
                         MenuLang.t("new_source.current", currentId), "name",

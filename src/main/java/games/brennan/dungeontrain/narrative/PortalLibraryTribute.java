@@ -58,7 +58,45 @@ public final class PortalLibraryTribute {
         "These shelves were filled from a single hand, and then abandoned to whoever came next."
     );
 
+    /**
+     * The line the note signs off with when the shelves are the reader's OWN. The note itself is
+     * unchanged — same variant, same name under it — and this goes on a second page behind it: the
+     * one thing the reader cannot work out from the shelves, that writing another book is what
+     * makes a room like this likelier to turn up again ({@code PortalOwnShelves}).
+     */
+    private static final List<String> OWN_TIPS = List.of(
+        "Write another book and this room will find you again.",
+        "Want to come back? Sign a new book.",
+        "Every book you write leads back here.",
+        "The library favours those who keep writing.",
+        "A new book opens this door sooner.",
+        "Come back soon — write something first."
+    );
+
     private PortalLibraryTribute() {}
+
+    /** How many tips an own-books library can offer. */
+    public static int ownTipCount() {
+        return OWN_TIPS.size();
+    }
+
+    /** The note for a library of the reader's own books: the usual note, then a tip overleaf. */
+    public static ItemStack buildOwnStack(String author, long seed) {
+        return BookFactory.buildPlainBook(TITLE, CURATOR, ownPagesFor(author, seed));
+    }
+
+    /** The own-books pages: exactly {@link #pageFor} on the first, and one tip alone on the second. */
+    static List<String> ownPagesFor(String author, long seed) {
+        return List.of(pageFor(author, seed), ownTipFor(seed));
+    }
+
+    /**
+     * The tip {@code seed} selects — seeded for the same reason {@link #variantFor} is, and from
+     * the seed's complement so which tip a room gets does not follow from which note it got.
+     */
+    static String ownTipFor(long seed) {
+        return OWN_TIPS.get((int) Math.floorMod(mix(~seed), OWN_TIPS.size()));
+    }
 
     /** How many ways the note can be written — twenty. */
     public static int variantCount() {

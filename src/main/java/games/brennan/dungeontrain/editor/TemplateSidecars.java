@@ -101,12 +101,14 @@ public final class TemplateSidecars {
         if (kind == null || id == null || id.isEmpty()) return out;
         switch (kind) {
             case CARRIAGE -> {
+                // Beside the template, in its pool's folder (ShellPool).
+                String at = games.brennan.dungeontrain.train.ShellPool.path(id);
                 out.add(new Sidecar("variants", CarriageVariantBlocks.SUBDIR,
-                        id + CarriageVariantBlocks.EXT));
+                        at + CarriageVariantBlocks.EXT));
                 out.add(new Sidecar("parts", CarriageVariantPartsStore.SUBDIR,
-                        id + CarriageVariantPartsStore.EXT));
+                        at + CarriageVariantPartsStore.EXT));
                 out.add(new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR,
-                        id + ContentsAllowStore.EXT));
+                        at + ContentsAllowStore.EXT));
             }
             case CONTENTS -> out.add(new Sidecar("variants", CarriageContentsVariantBlocks.SUBDIR,
                     id + CarriageContentsVariantBlocks.EXT));
@@ -131,9 +133,12 @@ public final class TemplateSidecars {
             // A new building's roster weight travels with it.
             case BUILDING -> out.add(new Sidecar("meta", games.brennan.dungeontrain.building.Buildings.SUBDIR,
                     id + games.brennan.dungeontrain.building.BuildingMeta.EXT));
-            // A group is a list of carriage ids and nothing else — its members carry their own. An
-            // official Lost City building has no file of the player's at all.
-            case CARRIAGE_GROUP, LOST_CITY -> { }
+            // An official Lost City building has no file of the player's at all.
+            case LOST_CITY -> { }
+            // One document for the whole run, beside the group's .nbt — the file the editor's Group
+            // plot writes and the train's overlay reads.
+            case CARRIAGE_GROUP -> out.add(new Sidecar("variants", WholeKind.GROUP.userSubdir(),
+                    id + WholeVariantBlocks.EXT));
         }
         // Every kind with sidecars at all has a containers store, keyed by the same plot key the
         // editor uses — shared with TemplateLootPrefabs, which follows that store's links outward.
@@ -144,7 +149,7 @@ public final class TemplateSidecars {
 
     /**
      * The {@link ContainerContentsStore} plot key for template {@code id} of {@code kind}, or null
-     * for a kind that has no containers store (a group) or a sub kind this install cannot resolve.
+     * for a sub kind this install cannot resolve.
      * The one place these are spelled: the store keys its files by them, and a key spelled
      * differently here would upload one build's chests and install another's.
      */
@@ -163,7 +168,8 @@ public final class TemplateSidecars {
             }
             case PORTAL_ROOM -> ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> ChunkFramePlot.KEY_PREFIX + id;
-            case CARRIAGE_GROUP, BUILDING, LOST_CITY -> null;
+            case CARRIAGE_GROUP -> BlockVariantPlot.wholeKey(WholeKind.GROUP, id);
+            case BUILDING, LOST_CITY -> null;
         };
     }
 
@@ -472,9 +478,9 @@ public final class TemplateSidecars {
             // whose sub kind this install cannot resolve. Skipped, not an error.
             if (sidecar == null || !entry.getValue().isJsonPrimitive()) continue;
             try {
-                Path dir = UserContentPaths.activeSubDir(sidecar.subdir());
-                Files.createDirectories(dir);
-                Files.writeString(dir.resolve(sidecar.basename()), entry.getValue().getAsString(),
+                Path file = UserContentPaths.activeSubDir(sidecar.subdir()).resolve(sidecar.basename());
+                Files.createDirectories(file.getParent());
+                Files.writeString(file, entry.getValue().getAsString(),
                         StandardCharsets.UTF_8);
             } catch (Exception e) {
                 LOGGER.warn("[DungeonTrain] Template sidecars: could not write the {} sidecar for "
@@ -568,7 +574,11 @@ public final class TemplateSidecars {
                 PortalRoomContentsAllowStore.invalidate(id);
                 PortalRoomCopiesVariant.invalidate(id);
             }
-            case TRACK, CARRIAGE_GROUP -> { }
+            case CARRIAGE_GROUP -> {
+                WholeVariantBlocks.invalidate(WholeKind.GROUP, id);
+                ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.GROUP, id));
+            }
+            case TRACK -> { }
         }
     }
 
@@ -591,7 +601,6 @@ public final class TemplateSidecars {
 
     /** Whether {@code kind} has any sidecar at all — what a caller checks before bothering. */
     public static boolean carries(BuilderPhotoPaths.Kind kind) {
-        return kind != null && kind != BuilderPhotoPaths.Kind.CARRIAGE_GROUP
-                && kind != BuilderPhotoPaths.Kind.LOST_CITY;
+        return kind != null && kind != BuilderPhotoPaths.Kind.LOST_CITY;
     }
 }

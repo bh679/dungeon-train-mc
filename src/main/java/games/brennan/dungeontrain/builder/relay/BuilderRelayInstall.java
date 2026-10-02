@@ -8,10 +8,14 @@ import games.brennan.dungeontrain.building.BuildingSizes;
 import games.brennan.dungeontrain.building.BuildingStore;
 import games.brennan.dungeontrain.building.BuildingWorldgen;
 import games.brennan.dungeontrain.building.Buildings;
+import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.BuildingEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
+import games.brennan.dungeontrain.editor.WholeVariantBlocks;
+import games.brennan.dungeontrain.train.WholeKind;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
@@ -412,6 +416,11 @@ public final class BuilderRelayInstall {
             case CARRIAGE_GROUP -> {
                 if (!CarriageGroupTemplateStore.rename(id, newId)) return false;
                 CarriageGroupRegistry.register(CarriageGroup.of(newId));
+                // Its documents go with it: left behind, they would be inherited by whatever build
+                // lands on the old name next.
+                WholeVariantBlocks.rename(WholeKind.GROUP, id, newId);
+                ContainerContentsStore.rename(BlockVariantPlot.wholeKey(WholeKind.GROUP, id),
+                        BlockVariantPlot.wholeKey(WholeKind.GROUP, newId));
                 return true;
             }
             case CONTENTS -> {

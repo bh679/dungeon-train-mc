@@ -8,7 +8,9 @@ import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.CarriageGroupPlacer;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import games.brennan.dungeontrain.train.WholeKind;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
@@ -148,24 +150,140 @@ public final class BuilderSidecarCarry {
         }
     }
 
+    // ---- carriage groups: one template, several parked carriages ----
+
     /**
-     * Clear both working copies — the wipe half of {@code BuilderWorldSetup.resetScene}, which is
+     * Copy carriage group {@code groupId}'s documents into the working copies, one parked carriage
+     * at a time. The group's cells are relative to the run's first corner; each carriage's working
+     * copy is relative to its own, so carriage {@code i} takes the slice {@code i} carriage-lengths
+     * along and nothing else.
+     */
+    public static void seedGroupFromTemplate(ServerLevel level, String groupId, CarriageDims dims) {
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
+        if (volumes.isEmpty()) return;
+        String plotKey = BlockVariantPlot.wholeKey(WholeKind.GROUP, groupId);
+        ContainerContentsStore templateContents = ContainerContentsStore.loadFor(plotKey);
+        BlockVariantPlot source = null;
+        try {
+            source = BlockVariantPlot.wholeGroupDocument(groupId, CarriageGroupPlacer.sizeOf(dims, volumes.size()));
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Builder open: could not read variant pools of {}: {}", plotKey, t.toString());
+        }
+        for (int i = 0; i < volumes.size(); i++) {
+            Vec3i footprint = BuilderBounds.sizeOf(volumes.get(i));
+            Vec3i toVolume = negate(runOffset(i, dims));
+            if (source != null) {
+                try {
+                    TrackVariantBlocks target = BuilderVariantStore.loadFor(level, i, footprint);
+                    clearCells(target);
+                    for (BlockPos pos : source.allFlaggedPositions()) {
+                        BlockPos local = pos.offset(toVolume);
+                        if (!inBounds(local, footprint)) continue;
+                        copyCell(source, pos, target, local);
+                    }
+                    BuilderVariantStore.save(level, i, target, footprint);
+                } catch (Throwable t) {
+                    LOGGER.warn("[DungeonTrain] Builder open: could not seed variant pools from {}: {}",
+                            plotKey, t.toString());
+                }
+            }
+            ContainerContentsStore working = builderContents(level, i);
+            clearContents(working, plotKey);
+            addContents(templateContents, working, toVolume, footprint, plotKey);
+            saveContents(working);
+        }
+    }
+
+    /**
+     * Write every parked carriage's documents onto carriage group {@code groupId}, which a save has
+     * just written — the reverse of {@link #seedGroupFromTemplate}, bounded by the run that was
+     * actually saved rather than by the configured group size.
+     */
+    public static void carryGroupToTemplate(ServerLevel level, String groupId, CarriageDims dims) {
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
+        if (volumes.isEmpty()) return;
+        String plotKey = BlockVariantPlot.wholeKey(WholeKind.GROUP, groupId);
+        Vec3i run = CarriageGroupPlacer.sizeOf(dims, volumes.size());
+        try {
+            BlockVariantPlot target = BlockVariantPlot.wholeGroupDocument(groupId, run);
+            for (BlockPos pos : target.allFlaggedPositions()) {
+                target.remove(pos);
+            }
+            for (int i = 0; i < volumes.size(); i++) {
+                TrackVariantBlocks doc = BuilderVariantStore.loadFor(level, i, BuilderBounds.sizeOf(volumes.get(i)));
+                Vec3i toRun = runOffset(i, dims);
+                for (CarriageVariantBlocks.Entry entry : doc.entries()) {
+                    BlockPos local = entry.localPos().offset(toRun);
+                    if (!target.inBounds(local)) continue;
+                    target.put(local, entry.states());
+                    int lockId = doc.lockIdAt(entry.localPos());
+                    if (lockId > 0) target.setLockId(local, lockId);
+                    target.setCopyRoll(local, doc.copyRollAt(entry.localPos()));
+                    target.setCopyScope(local, doc.copyScopeAt(entry.localPos()));
+                    target.setSpan(local, doc.spanAt(entry.localPos()));
+                }
+            }
+            target.save();
+        } catch (Throwable t) {
+            // As for a single carriage: the geometry is written and the working copies still hold
+            // the pools, so this is loud rather than fatal.
+            LOGGER.warn("[DungeonTrain] Builder save: could not carry variant pools to {}: {}",
+                    plotKey, t.toString());
+        }
+
+        ContainerContentsStore carried = ContainerContentsStore.detached(plotKey);
+        for (int i = 0; i < volumes.size(); i++) {
+            addContents(builderContents(level, i), carried, runOffset(i, dims), run, plotKey);
+        }
+        try {
+            carried.save();
+            ContainerContentsStore.invalidate(plotKey);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Builder save: could not carry container contents to {}: {}",
+                    plotKey, e.toString());
+        }
+    }
+
+    /** Where parked carriage {@code volume}'s corner sits inside the run it is part of. */
+    static Vec3i runOffset(int volume, CarriageDims dims) {
+        return new Vec3i(Math.max(0, volume) * dims.length(), 0, 0);
+    }
+
+    private static void copyCell(BlockVariantPlot source, BlockPos from, TrackVariantBlocks target, BlockPos to) {
+        List<VariantState> states = source.statesAt(from);
+        if (states == null) return;
+        target.put(to, states);
+        int lockId = source.lockIdAt(from);
+        if (lockId > 0) target.setLockId(to, lockId);
+        target.setCopyRoll(to, source.copyRollAt(from));
+        target.setCopyScope(to, source.copyScopeAt(from));
+        target.setSpan(to, source.spanAt(from));
+    }
+
+    /**
+     * Clear every working copy — the wipe half of {@code BuilderWorldSetup.resetScene}, which is
      * what makes New, and switching what a builder world is building, start from nothing.
+     *
+     * <p>Every carriage's, not just the ones parked now: the count is about to change, and a third
+     * carriage's pools left behind would resurface the next time this world parks three.</p>
      */
     public static void reset(ServerLevel level) {
-        try {
-            BuilderVariantStore.replace(level, null);
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Builder reset: could not clear variant sidecar: {}", e.toString());
-        }
-        Path file = BuilderStorePaths.contentsFile(level);
-        ContainerContentsStore.setPathOverride(BuilderCarriagePlot.KEY, file);
-        ContainerContentsStore.invalidate(BuilderCarriagePlot.KEY);
-        try {
-            Files.deleteIfExists(file);
-        } catch (IOException e) {
-            LOGGER.warn("[DungeonTrain] Builder reset: could not clear container contents {}: {}",
-                    file, e.toString());
+        for (int i = 0; i < BuilderStorePaths.MAX_VOLUMES; i++) {
+            try {
+                BuilderVariantStore.replace(level, i, null);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Builder reset: could not clear variant sidecar: {}", e.toString());
+            }
+            Path file = BuilderStorePaths.contentsFile(level, i);
+            String key = BuilderCarriagePlot.keyFor(i);
+            ContainerContentsStore.setPathOverride(key, file);
+            ContainerContentsStore.invalidate(key);
+            try {
+                Files.deleteIfExists(file);
+            } catch (IOException e) {
+                LOGGER.warn("[DungeonTrain] Builder reset: could not clear container contents {}: {}",
+                        file, e.toString());
+            }
         }
     }
 
@@ -199,9 +317,9 @@ public final class BuilderSidecarCarry {
     // ---- helpers ----
 
     /**
-     * The build volume's extent, or null when this world holds no build. The first volume, for the
-     * same reason {@link BuilderCarriagePlot} takes it: a build is one box, and the only case with
-     * several is a carriage group, which has no sidecar to carry either way.
+     * The build volume's extent, or null when this world holds no build. The first volume: a build
+     * is one box, and the only case with several is a carriage group, which goes through
+     * {@link #seedGroupFromTemplate} and {@link #carryGroupToTemplate} instead.
      */
     private static @Nullable Vec3i buildFootprint(ServerLevel level) {
         List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
@@ -210,13 +328,23 @@ public final class BuilderSidecarCarry {
 
     /** This build's container-contents document, with its per-world path already registered. */
     private static ContainerContentsStore builderContents(ServerLevel level) {
-        ContainerContentsStore.setPathOverride(BuilderCarriagePlot.KEY, BuilderStorePaths.contentsFile(level));
-        return ContainerContentsStore.loadFor(BuilderCarriagePlot.KEY);
+        return builderContents(level, 0);
+    }
+
+    /** Parked carriage {@code volume}'s container-contents document, path registered. */
+    private static ContainerContentsStore builderContents(ServerLevel level, int volume) {
+        String key = BuilderCarriagePlot.keyFor(volume);
+        ContainerContentsStore.setPathOverride(key, BuilderStorePaths.contentsFile(level, volume));
+        return ContainerContentsStore.loadFor(key);
     }
 
     private static void saveContents(ServerLevel level) {
+        saveContents(builderContents(level));
+    }
+
+    private static void saveContents(ContainerContentsStore store) {
         try {
-            builderContents(level).save();
+            store.save();
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Builder: could not write container contents store: {}", e.toString());
         }
@@ -229,11 +357,26 @@ public final class BuilderSidecarCarry {
      */
     private static void copyContents(ContainerContentsStore from, ContainerContentsStore to,
                                      Vec3i offset, Vec3i bounds, String context) {
+        clearContents(to, context);
+        addContents(from, to, offset, bounds, context);
+    }
+
+    private static void clearContents(ContainerContentsStore to, String context) {
         try {
             for (BlockPos pos : Set.copyOf(to.allPositions())) {
                 to.clearLink(pos);
                 to.removePool(pos);
             }
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Builder: could not clear container contents for {}: {}",
+                    context, t.toString());
+        }
+    }
+
+    /** {@link #copyContents} without the clear — what lets several carriages land in one document. */
+    private static void addContents(ContainerContentsStore from, ContainerContentsStore to,
+                                    Vec3i offset, Vec3i bounds, String context) {
+        try {
             for (BlockPos pos : from.allPositions()) {
                 BlockPos local = pos.offset(offset);
                 if (bounds != null && !inBounds(local, bounds)) continue;

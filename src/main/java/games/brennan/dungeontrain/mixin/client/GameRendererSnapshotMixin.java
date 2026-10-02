@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotCapture;
 import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,5 +31,26 @@ public abstract class GameRendererSnapshotMixin {
     @Inject(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V", at = @At("HEAD"))
     private void dungeontrain$rideSnapshot(DeltaTracker deltaTracker, CallbackInfo ci) {
         RideSnapshotCapture.beginNestedCapture((GameRenderer) (Object) this, deltaTracker);
+    }
+
+    /**
+     * The snapshot pass renders at the player's own FOV setting, whatever is zooming the real view.
+     *
+     * <p>{@code getFov} is where every zoom lands — the spyglass, sprint and speed effects, and
+     * other mods' handlers (a camera mod's viewfinder overrides it outright). They are all about
+     * what the player is looking through; the snapshot is a third-person photo <em>of</em> the
+     * player and has no business inheriting them. Taken on the value {@code renderLevel} receives
+     * rather than inside {@code getFov}, so it holds whatever anybody injects in there.</p>
+     */
+    @ModifyExpressionValue(
+        method = "renderLevel(Lnet/minecraft/client/DeltaTracker;)V",
+        at = @At(
+            value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/GameRenderer;getFov(Lnet/minecraft/client/Camera;FZ)D"
+        )
+    )
+    private double dungeontrain$snapshotAtOwnFov(double fov) {
+        if (!RideSnapshotCapture.isCapturing()) return fov;
+        return Minecraft.getInstance().options.fov().get();
     }
 }

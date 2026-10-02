@@ -265,6 +265,8 @@ jobs:
             wunderlib-neoforge(required)
             vanillabackport(required)
             platform(required)
+            exposure(required)
+            exposure-polaroid(required)
             wwoo(required)
             cristel-lib(required)
             biomes-o-plenty(required)
@@ -304,6 +306,8 @@ jobs:
             wunderlib-neoforge(required)
             vanillabackport(required)
             platform(required)
+            exposure(required)
+            exposure-polaroid(required)
             william-wythers-overhauled-overworld(required)
             cristel-lib(required)
             biomes-o-plenty(required)
@@ -351,6 +355,8 @@ jobs:
             crash-assistant(optional)
             particle-effects(optional)
             advanced-shulkerboxes(optional)
+            what-are-they-up-to(optional)
+            coroutil(optional)
           java: 21
           retry-attempts: 2
           retry-delay: 10000

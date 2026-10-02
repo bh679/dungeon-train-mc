@@ -168,6 +168,10 @@ public final class TemplateDataSheet {
 
         out.add(builderLine(v, key, EditorStatusHudOverlay.isDevModeOn()));
         out.add(sizeLine(summary, roomRows, key, pending));
+        Line shellSize = shellSizeLine(tile, key);
+        if (shellSize != null) out.add(shellSize);
+        Line shellWins = shellWinsLine(tile, key);
+        if (shellWins != null) out.add(shellWins);
         out.add(blocksLine(summary, pending));
         out.add(lightsLine(summary, pending));
         out.add(lootLine(summary, pending));
@@ -243,6 +247,45 @@ public final class TemplateDataSheet {
         if (summary == null || summary.isEmpty()) return Line.of(label, pending);
         var s = summary.declaredSize();
         return Line.of(label, s.getX() + " × " + s.getY() + " × " + s.getZ());
+    }
+
+    /** The size keys a carriage template can be, in the order the cells show them. */
+    static final List<String> SHELL_SIZES = List.of("room", "half", "full");
+
+    /**
+     * The "carriage blocks win" switch — Off · On, the current one lit, each a click that sets it
+     * ({@code editor shell-wins}). Null for anything but a carriage template that can hold contents.
+     */
+    static Line shellWinsLine(EditorRosterIndex.Tile tile, VariantKey key) {
+        if (tile == null || key == null || key.category() != PlotCategory.CARRIAGES) return null;
+        if (!tile.extras().hasShellWins()) return null;
+        boolean on = tile.extras().shellWinsOn();
+        String tip = EditorScreenLang.text(EditorScreenLang.SHEET_SHELL_WINS_TIP);
+        String command = "dungeontrain editor shell-wins " + key.modelId() + " ";
+        return new Line(EditorScreenLang.text(EditorScreenLang.SHEET_SHELL_WINS), List.of(
+            new Cell(EditorScreenLang.text(EditorScreenLang.SHEET_SHELL_WINS_OFF),
+                new Action.Run(command + "off"), !on).withTooltip(tip),
+            new Cell(EditorScreenLang.text(EditorScreenLang.SHEET_SHELL_WINS_ON),
+                new Action.Run(command + "on"), on).withTooltip(tip)));
+    }
+
+    /**
+     * Carriage: Room · Half · Group — how long a carriage template is, the current one lit, each
+     * cell a click that resizes it ({@code editor shell-size}). Null for anything but a carriage
+     * template, or before the roster has said its size.
+     */
+    static Line shellSizeLine(EditorRosterIndex.Tile tile, VariantKey key) {
+        if (tile == null || key == null || key.category() != PlotCategory.CARRIAGES) return null;
+        if (!tile.extras().hasShellSize()) return null;
+        String current = tile.extras().shellSize();
+        String tip = EditorScreenLang.text(EditorScreenLang.SHEET_SHELL_SIZE_TIP);
+        List<Cell> cells = new ArrayList<>(SHELL_SIZES.size());
+        for (String size : SHELL_SIZES) {
+            String name = EditorScreenLang.text("gui.dungeontrain.editor_menu.size." + size);
+            cells.add(new Cell(name, new Action.Run("dungeontrain editor shell-size " + key.modelId() + " " + size),
+                size.equals(current)).withTooltip(tip));
+        }
+        return new Line(EditorScreenLang.text(EditorScreenLang.SHEET_SHELL_SIZE), cells);
     }
 
     /**

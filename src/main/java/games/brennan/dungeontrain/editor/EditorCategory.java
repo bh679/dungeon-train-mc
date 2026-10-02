@@ -404,10 +404,17 @@ public enum EditorCategory {
         }
         List<EditorStampQueue.Job> jobs = new ArrayList<>();
         boolean legacy = previous == null;   // stamped, but by a build that did not record which category
-        // Re-entering the resident category (a resize, a second "Editor" press) erases nothing here:
-        // every one of its stamps clears its own footprint first — see the keep parameter.
+        // Carriage plots sit at their own lengths, so a plot stamped before a size change — or by a
+        // build that spaced every plot for the widest — can stand where no slot points any more.
+        // Whenever the carriage row comes or goes, its whole span is swept first.
+        if (keep == CARRIAGES || previous == CARRIAGES || legacy) {
+            jobs.add(new EditorStampQueue.Job("erase carriage row",
+                () -> CarriageEditor.clearRowSpan(overworld, dims), CarriageEditor.rowSpanBox(dims)));
+        }
+        // Re-entering the resident category (a resize, a second "Editor" press) erases nothing more
+        // here: every one of its stamps clears its own footprint first — see the keep parameter.
         if (previous == keep) previous = null;
-        if (previous == null && !legacy) return List.of();
+        if (previous == null && !legacy) return jobs;
         if (previous == WHOLE || (legacy && keep != WHOLE)) {
             for (Template model : WHOLE.models()) {
                 jobs.add(new EditorStampQueue.Job("erase " + model.displayName(),

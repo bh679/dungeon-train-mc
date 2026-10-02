@@ -434,6 +434,23 @@ public final class ContainerContentsStore {
     }
 
     /**
+     * Move the config-dir sidecar of {@code fromKey} to {@code toKey}, replacing whatever was there.
+     * The document names no plot inside it, so the move is the whole rename.
+     *
+     * @return {@code true} if there was a file to move.
+     */
+    public static synchronized boolean rename(String fromKey, String toKey) throws IOException {
+        Path from = configPathFor(fromKey);
+        if (!Files.isRegularFile(from)) return false;
+        Path to = configPathFor(toKey);
+        Files.createDirectories(to.getParent());
+        Files.move(from, to, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        CACHE.remove(fromKey);
+        CACHE.remove(toKey);
+        return true;
+    }
+
+    /**
      * Remove the per-install config-dir sidecar for {@code plotKey} and drop its cached document.
      * The inverse of {@link #save()} — used when the plot's template is deleted outright, so the
      * next template saved under the same key starts with no inherited links or pools.

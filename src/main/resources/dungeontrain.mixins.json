@@ -135,6 +135,7 @@
     "client.CreativeShiftToHotbarMixin",
     "client.CreativePrefabDeleteMixin",
     "client.CreativeModeInventoryScreenAccessor",
+    "client.CreativeStageBlocksLayoutMixin",
     "client.AbstractContainerScreenPrefabTintMixin",
     "client.MainMenuLogoMixin",
     "client.SplashUpdateCountsMixin",

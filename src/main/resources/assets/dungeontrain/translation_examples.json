@@ -6631,6 +6631,251 @@
       ]
     }
   },
+  "chat.dungeontrain.editor.shell_size_set": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire",
+        "desert"
+      ]
+    },
+    "2": {
+      "label": "a carriage size name",
+      "examples": [
+        "Room",
+        "Half",
+        "Group"
+      ]
+    },
+    "3": {
+      "label": "a number",
+      "examples": [
+        "9",
+        "13",
+        "27"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_size_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "'fire' has unsaved edits — save or reset it first.",
+        "No such file"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_size_unknown": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "maze",
+        "fire"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_wins_on": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "cargo",
+        "fire"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_wins_off": {
+    "1": {
+      "label": "a template or stage id",
+      "examples": [
+        "cargo",
+        "fire"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.shell_wins_failed": {
+    "1": {
+      "label": "the underlying error text",
+      "examples": [
+        "No such file",
+        "Permission denied"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.half_join_set": {
+    "1": {
+      "label": "a Half pair join mode",
+      "examples": [
+        "wall",
+        "bridge",
+        "short",
+        "random"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.half_join_is": {
+    "1": {
+      "label": "a Half pair join mode",
+      "examples": [
+        "wall",
+        "bridge",
+        "short",
+        "random"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.rooms": {
+    "1": {
+      "label": "a weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.rooms.name": {
+    "1": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.halves": {
+    "1": {
+      "label": "a weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.halves.name": {
+    "1": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.group": {
+    "1": {
+      "label": "a weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.layout.group.name": {
+    "1": {
+      "label": "a percentage",
+      "examples": [
+        "80",
+        "10",
+        "0"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.layout_is": {
+    "1": {
+      "label": "the rooms weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "the halves weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "3": {
+      "label": "the group weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.layout_set": {
+    "1": {
+      "label": "a carriage layout",
+      "examples": [
+        "rooms",
+        "halves",
+        "group"
+      ]
+    },
+    "2": {
+      "label": "a weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "3": {
+      "label": "the rooms weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "4": {
+      "label": "the halves weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    "5": {
+      "label": "the group weight",
+      "examples": [
+        "8",
+        "1",
+        "0"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.weight_saved": {
     "1": {
       "label": "the template kind id",
@@ -12600,15 +12845,6 @@
       ]
     }
   },
-  "gui.dungeontrain.editor_menu.type_menu.whole_every": {
-    "1": {
-      "label": "how many carriage groups pass between whole groups",
-      "examples": [
-        "12",
-        "3"
-      ]
-    }
-  },
   "chat.dungeontrain.editor.whole_weight_saved": {
     "1": {
       "label": "the whole kind — room or group",
@@ -12687,15 +12923,6 @@
       "examples": [
         "whole room / fancyhall",
         "whole group / triple_market"
-      ]
-    }
-  },
-  "chat.dungeontrain.editor.whole_every_set": {
-    "1": {
-      "label": "how many carriage groups pass between whole groups",
-      "examples": [
-        "12",
-        "3"
       ]
     }
   },
