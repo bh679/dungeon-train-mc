@@ -105,6 +105,12 @@ public final class DisposableCameraEvents {
             ItemStack photograph = printed == null ? ItemStack.EMPTY : takePrintedPhotograph(inventory, printed);
             inventory.setItem(slot, photograph);
             StartingBookEvents.dropAndBurn(player, camera);
+            // Polaroid prints on the client too, into the slot the server just emptied again. The
+            // server sees no net change there and would never correct it, leaving a second photo.
+            player.inventoryMenu.sendAllDataToRemote();
+            if (player.containerMenu != player.inventoryMenu) {
+                player.containerMenu.sendAllDataToRemote();
+            }
         }
     }
 
