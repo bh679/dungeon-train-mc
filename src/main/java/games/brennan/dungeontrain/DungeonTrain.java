@@ -19,8 +19,10 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.discord.SurveyTag;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.discord.WorldJoinReport;
+import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.logging.SableAabbLogFilter;
 import games.brennan.dungeontrain.registry.ModBlocks;
@@ -529,6 +531,9 @@ public class DungeonTrain {
                 // cards) as a no-throw side effect on every join, then return the once-per-world Discord
                 // suffix. WorldInfoReporter reports per join (no one-shot); the relay dedupes identical records.
                 WorldInfoReporter.report(playerId, playerName);
+                // Learn the newest release now, so a feedback answer later in the session can say
+                // whether this build is current (see SurveyTag).
+                LatestReleaseCache.refreshIfStale();
                 return WorldJoinReport.suffixFor(playerId, playerName);
             }
             // Append a Dungeon-Train game-state line below each advancement announcement (its own line,
@@ -560,6 +565,13 @@ public class DungeonTrain {
             // Stamp the DT version on genuine survey answers (bug / feedback / improvement) and their
             // results copy as the embed footer — Discord's smallest text. Notices stay unstamped.
             @Override public String surveyEmbedFooter() { return "DT " + VersionInfo.VERSION; }
+            // The per-player form DP actually calls: the same version, led by a dot for how current
+            // that build is, then who is answering — their language, how modded the game is and how
+            // many games they have played. Server thread, behind DP's network-consent gate.
+            @Override public String surveyEmbedFooter(UUID playerId, String clientLanguage) {
+                LatestReleaseCache.refreshIfStale();
+                return SurveyTag.forPlayer(playerId, clientLanguage);
+            }
         });
 
         // One-line dev-vs-live routing signal at startup: states which Discord channel this build
