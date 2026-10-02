@@ -52,10 +52,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * prefetch strip keeps queuing chunks beyond the view, and under load the chunks beside the player used to
  * wait behind them as squares of void in the islands.</p>
  *
- * <p>Runs on the {@link SamplerPool} it shares with {@link ForeignSphereSampler}. Each request queues its
- * job here and posts one token to the pool; a token runs whichever job is nearest a player <em>when it
- * starts</em>, or nothing if the queue has emptied (job replaced, dropped or cleared) — so the order is
- * decided at run time, and every job has a token.</p>
+ * <p>Runs on the {@link SamplerPool} it shares with {@link ForeignSphereSampler}, whose queue decides the
+ * order at run time. Every job here is <b>droppable</b>: a chunk whose job is thrown away (out of range,
+ * or evicted from a full queue) asks again from the pending sweep or its next load.</p>
  */
 public final class EndBandSampler {
 
@@ -92,15 +91,8 @@ public final class EndBandSampler {
     private static final ConcurrentLinkedQueue<Result> READY = new ConcurrentLinkedQueue<>();
     /** Bumped on server stop so a job still running for the old server drops its result. */
     private static final AtomicInteger EPOCH = new AtomicInteger();
-    /** Waiting jobs, nearest player first; taken by the tokens {@link #request} posts to {@link SamplerPool}. */
-    private static final EndBandJobQueue<Job> QUEUE = new EndBandJobQueue<>();
     /** Undecorated End ground shared between samples under {@code endBandFeatureSpill} ({@link #sampleWithSpill}). */
     private static final EndBandGroundCache<ProtoChunk> GROUND = new EndBandGroundCache<>(EndBandGroundCache.DEFAULT_CAP);
-    /** Chunks from the nearest player beyond which a waiting job is dropped (view + prefetch strip + slack). */
-    private static volatile int keepRadius = Integer.MAX_VALUE;
-
-    /** One queued sample: the chunk it is for, and the work. */
-    private record Job(long key, Runnable work) {}
 
     /**
      * How a sample's ground is filled: {@link OfflineChunkSampler#fillGround} joins the noise future from a
@@ -158,33 +150,34 @@ public final class EndBandSampler {
      * unless that job is already queued, running, or finished and waiting. Never blocks.
      */
     public static void request(ServerLevel overworld, ChunkPos pos, long passIndex, int bedY) {
-        if (!IN_FLIGHT.add(pos.toLong())) return;
+        long key = pos.toLong();
+        if (!IN_FLIGHT.add(key)) return;
         MinecraftServer server = overworld.getServer();
         int displayMinY = overworld.getMinBuildHeight();
         int displayMaxY = overworld.getMaxBuildHeight();
         int epoch = EPOCH.get();
-        QUEUE.add(pos.toLong(), pos.x, pos.z, new Job(pos.toLong(), () -> {
+        boolean queued = SamplerPool.shared().submit(SamplerPool.Kind.END_BAND, key, pos.x, pos.z, true, () -> {
             long t0 = System.nanoTime();
             try {
                 Result result = sample(server, pos, passIndex, bedY, displayMinY, displayMaxY, OfflineChunkSampler::fillGround);
                 if (result != null && epoch == EPOCH.get()) READY.add(result);
-                else IN_FLIGHT.remove(pos.toLong());
+                else IN_FLIGHT.remove(key);
             } catch (Throwable t) {
-                IN_FLIGHT.remove(pos.toLong());
+                IN_FLIGHT.remove(key);
                 LOGGER.warn("[DungeonTrain] End-band sample failed for chunk {} (pass {})", pos, passIndex, t);
             }
             GenProfiler.addNanos(GenProfiler.Bucket.END_BAND_SAMPLE, System.nanoTime() - t0);
-        }));
-        SamplerPool.execute(EndBandSampler::runNearest);
+        }, () -> IN_FLIGHT.remove(key));
+        // Not queued (queue full of nearer work, or the server is stopping): free the chunk to ask again.
+        if (!queued) IN_FLIGHT.remove(key);
     }
 
     /**
-     * The players the queue is ordered by, and how far (in chunks) from the nearest of them a waiting job
-     * may be before it is dropped. Server thread, every tick.
+     * The players the shared queue is ordered by, and how far (in chunks) from the nearest of them a
+     * waiting End-band job may be before it is dropped. Server thread, every tick.
      */
     public static void updatePlayers(EndBandJobQueue.Players players, int dropBeyondChunks) {
-        keepRadius = dropBeyondChunks;
-        QUEUE.setPlayers(players);
+        SamplerPool.shared().updatePlayers(players, dropBeyondChunks);
     }
 
     /**
@@ -201,25 +194,17 @@ public final class EndBandSampler {
         IN_FLIGHT.remove(pos.toLong());
     }
 
-    /** Drop every queued and finished job (server stopping / world change). */
+    /**
+     * Drop every queued and finished job (server stopping / world change). Called again once the server has
+     * stopped and the pool is quiet ({@code SamplerPoolEvents}): a job running through the first call may
+     * have published a result, or refilled the ground cache, after it.
+     */
     public static void clear() {
         EPOCH.incrementAndGet();
-        QUEUE.clear(job -> { });
-        QUEUE.setPlayers(EndBandJobQueue.Players.NONE);
-        keepRadius = Integer.MAX_VALUE;
+        SamplerPool.shared().cancel(SamplerPool.Kind.END_BAND);
         READY.clear();
         IN_FLIGHT.clear();
         GROUND.clear();
-    }
-
-    /** One token's work: run the waiting job nearest a player, if any. A dropped job frees its chunk to be requested again. Sampler thread. */
-    private static void runNearest() {
-        try {
-            Job job = QUEUE.poll(keepRadius, dropped -> IN_FLIGHT.remove(dropped.key()));
-            if (job != null) job.work().run();
-        } catch (Throwable t) {
-            LOGGER.warn("[DungeonTrain] End-band sampler job threw", t);
-        }
     }
 
     /** Generate the End chunk behind display chunk {@code pos} and copy it out. Sampler thread, or a worldgen worker with the inline fill. */

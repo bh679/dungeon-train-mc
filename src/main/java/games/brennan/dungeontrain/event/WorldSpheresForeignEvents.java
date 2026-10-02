@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.FallingBlockAnchor;
 import games.brennan.dungeontrain.worldgen.ForeignSphereSampler;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.SamplerPool;
 import games.brennan.dungeontrain.worldgen.SphereField;
 import games.brennan.dungeontrain.worldgen.SpheresBand;
 import games.brennan.dungeontrain.worldgen.SunlitChunks;
@@ -33,6 +34,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -70,6 +72,17 @@ public final class WorldSpheresForeignEvents {
             Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
             Heightmap.Types.OCEAN_FLOOR);
 
+    private static final int RETRY_INTERVAL_TICKS = 10;
+
+    /**
+     * Loaded chunks whose sphere samples the full sampler queue turned away, asked for again while it has
+     * room ({@link #retryRefused}). Their {@link ModDataAttachments#SPHERE_PENDING} ids are the record of
+     * what is owed; this only remembers which chunks to re-read. Server thread only.
+     */
+    private static final Set<Long> RETRY = new LinkedHashSet<>();
+
+    private static int tickCounter;
+
     private WorldSpheresForeignEvents() {}
 
     /** Record {@code spheres} as owed to {@code chunk} and request their samples. Server thread. */
@@ -84,9 +97,12 @@ public final class WorldSpheresForeignEvents {
         request(level, chunk.getPos(), spheres);
     }
 
+    /** Ask for {@code spheres}' samples; a chunk the full queue turned away is kept in {@link #RETRY}. */
     private static void request(ServerLevel level, ChunkPos pos, List<SphereField.Sphere> spheres) {
         long seed = DungeonTrainWorldData.get(level).getGenerationSeed();
-        for (SphereField.Sphere s : spheres) ForeignSphereSampler.request(level, s, pos, seed);
+        boolean refused = false;
+        for (SphereField.Sphere s : spheres) refused |= !ForeignSphereSampler.request(level, s, pos, seed);
+        if (refused) RETRY.add(pos.toLong());
     }
 
     /** A chunk reloaded with spheres still owed: ask for them again. */
@@ -95,7 +111,24 @@ public final class WorldSpheresForeignEvents {
         if (event.isNewChunk()) return;                          // a new chunk queues from its carve
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-        ChunkAccess chunk = event.getChunk();
+        requestOwed(level, event.getChunk());
+    }
+
+    /**
+     * A chunk unloaded: its waiting samples go with it. Nothing is written into an unloaded chunk, and it
+     * asks again on its next load — so the queue never holds more than the loaded chunks are owed.
+     */
+    @SubscribeEvent
+    public static void onChunkUnload(ChunkEvent.Unload event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (!level.dimension().equals(Level.OVERWORLD)) return;
+        ChunkPos pos = event.getChunk().getPos();
+        ForeignSphereSampler.forget(pos);
+        RETRY.remove(pos.toLong());
+    }
+
+    /** Request every sphere {@code chunk} still owes. */
+    private static void requestOwed(ServerLevel level, ChunkAccess chunk) {
         List<Long> pending = chunk.getData(ModDataAttachments.SPHERE_PENDING);
         if (pending.isEmpty()) return;
         ChunkPos pos = chunk.getPos();
@@ -117,6 +150,7 @@ public final class WorldSpheresForeignEvents {
     public static void onServerTick(ServerTickEvent.Post event) {
         ServerLevel level = event.getServer().overworld();
         if (level == null) return;
+        if (++tickCounter % RETRY_INTERVAL_TICKS == 0 && !RETRY.isEmpty()) retryRefused(level);
         int budget = SpheresProgressionConfig.applyPerTick();
         for (int i = 0; i < budget; i++) {
             ForeignSphereSampler.Result r = ForeignSphereSampler.poll();
@@ -127,9 +161,24 @@ public final class WorldSpheresForeignEvents {
         }
     }
 
+    /**
+     * Ask again for the chunks the full queue turned away, while it has room. A chunk still refused goes
+     * back into {@link #RETRY}; one that has unloaded is forgotten (it asks when it loads).
+     */
+    private static void retryRefused(ServerLevel level) {
+        for (long key : List.copyOf(RETRY)) {
+            if (!SamplerPool.shared().hasRoom()) return;
+            RETRY.remove(key);
+            LevelChunk chunk = level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key));
+            if (chunk != null) requestOwed(level, chunk);
+        }
+    }
+
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
         ForeignSphereSampler.clear();
+        RETRY.clear();
+        tickCounter = 0;
     }
 
     /** Write one finished sample into its chunk, if it is loaded and still owes that sphere. */

@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * {@link Result} waits in a queue for {@code WorldSpheresEvents} to write it into the live chunk on the
  * server thread.</p>
  *
- * <p>Runs on the {@link SamplerPool} it shares with {@link EndBandSampler}, first in first out — never on
+ * <p>Runs on the {@link SamplerPool} it shares with {@link EndBandSampler}, nearest player first — never on
  * {@code Util.backgroundExecutor()} (see {@link SamplerPool}).</p>
  */
 public final class ForeignSphereSampler {
@@ -75,15 +75,19 @@ public final class ForeignSphereSampler {
     /**
      * Start sampling {@code sphere}'s terrain for the chunk at {@code pos}, unless that job is already
      * queued, running, or finished and waiting. Never blocks.
+     *
+     * <p>A sphere job is <b>not droppable</b>: a loaded chunk asks for its spheres only when it loads, so
+     * the queue never throws one away by distance or to make room. Returns {@code false} if the job could
+     * not be queued (the queue is full, or the server is stopping) — the caller asks again later.</p>
      */
-    public static void request(ServerLevel overworld, SphereField.Sphere sphere, ChunkPos pos, long seed) {
+    public static boolean request(ServerLevel overworld, SphereField.Sphere sphere, ChunkPos pos, long seed) {
         long key = jobKey(sphere, pos);
-        if (!IN_FLIGHT.add(key)) return;
+        if (!IN_FLIGHT.add(key)) return true;
         MinecraftServer server = overworld.getServer();
         int displayMinY = overworld.getMinBuildHeight();
         int displayMaxY = overworld.getMaxBuildHeight();
         int epoch = EPOCH.get();
-        SamplerPool.execute(() -> {
+        boolean queued = SamplerPool.shared().submit(SamplerPool.Kind.SPHERE, key, pos.x, pos.z, false, () -> {
             long t0 = System.nanoTime();
             try {
                 Result result = sample(server, sphere, pos, seed, displayMinY, displayMaxY);
@@ -95,7 +99,17 @@ public final class ForeignSphereSampler {
                         sphere.source(), sphere.cx(), sphere.cy(), sphere.cz(), pos, t);
             }
             GenProfiler.addNanos(GenProfiler.Bucket.SPHERES_FOREIGN_SAMPLE, System.nanoTime() - t0);
-        });
+        }, () -> IN_FLIGHT.remove(key));
+        if (!queued) IN_FLIGHT.remove(key);
+        return queued;
+    }
+
+    /**
+     * The chunk at {@code pos} unloaded: drop its waiting jobs. Their results could not have been written
+     * (only loaded chunks are), and the chunk asks again when it loads. Server thread.
+     */
+    public static void forget(ChunkPos pos) {
+        SamplerPool.shared().forget(SamplerPool.Kind.SPHERE, pos.x, pos.z);
     }
 
     /** The next finished sample, or {@code null}. Server thread. */
@@ -105,9 +119,14 @@ public final class ForeignSphereSampler {
         return r;
     }
 
-    /** Drop every queued and finished job (server stopping / world change). */
+    /**
+     * Drop every queued and finished job (server stopping / world change). Called again once the server has
+     * stopped and the pool is quiet ({@code SamplerPoolEvents}): a job running through the first call may
+     * have published a result after it.
+     */
     public static void clear() {
         EPOCH.incrementAndGet();
+        SamplerPool.shared().cancel(SamplerPool.Kind.SPHERE);
         READY.clear();
         IN_FLIGHT.clear();
         SphereStructures.clear();
