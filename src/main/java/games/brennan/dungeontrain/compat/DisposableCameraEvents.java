@@ -116,8 +116,10 @@ public final class DisposableCameraEvents {
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.type());
         photograph.setPopTime(Inventory.POP_TIME_DURATION);
-        inventory.setItem(slot, photograph);
+        // Camera out first, then the photo into the slot it left — same tick.
+        inventory.setItem(slot, ItemStack.EMPTY);
         StartingBookEvents.dropAndBurn(player, camera);
+        inventory.setItem(slot, photograph);
         player.level().playSound(null, player, Exposure.SoundEvents.PHOTOGRAPH_RUSTLE.get(), SoundSource.PLAYERS,
             0.6f, player.level().getRandom().nextFloat() * 0.2f + 1.0f);
         Exposure.CriteriaTriggers.FRAME_PRINTED.get().trigger(player, player.blockPosition(), frame, photograph);
