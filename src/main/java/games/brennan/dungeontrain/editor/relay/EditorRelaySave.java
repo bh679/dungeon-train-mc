@@ -150,6 +150,11 @@ public final class EditorRelaySave {
     private static void uploadBuilding(ServerPlayer player, String name) {
         if (games.brennan.dungeontrain.editor.EditorDevMode.isEnabled()
                 && games.brennan.dungeontrain.building.BuildingStore.isBundled(name)) {
+            // Said out loud, as the gate above is and for its reason: a save that quietly stops
+            // syncing leaves the relay holding an older building than the one on disk.
+            player.sendSystemMessage(Component.translatable(
+                    "gui.dungeontrain.builder.profile.builtin_not_uploaded", "building / " + name)
+                .withStyle(ChatFormatting.YELLOW));
             return;
         }
         MinecraftServer server = player.getServer();
