@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.EndBandJobQueue;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndBandSpill;
+import games.brennan.dungeontrain.worldgen.EndBandSpillWaiting;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
 import games.brennan.dungeontrain.worldgen.PendingChunkSweep;
@@ -68,10 +69,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *       re-lit and resent ({@link SunlitChunks}).</li>
  *   <li><b>Spill</b> ({@code endBandFeatureSpill}) — a sample also carries what its features wrote past
  *       its edges ({@link EndBandSpill}). Each neighbour's share is written the moment that neighbour is
- *       loaded with its own terrain in, else held in {@link #SPILL_WAITING} until it is (written right
- *       after its own sample, or on its next load). Adds pass the same gate as the sample; a carve only
- *       clears the exact ground block it dug through. Not persisted: spill for a chunk that never comes
- *       back before a restart is simply lost, like the prefetch stash.</li>
+ *       loaded with its own terrain in (re-lit once at the end of the tick, however many neighbours wrote),
+ *       else held in {@link #SPILL_WAITING} — one per neighbour — until it is (written right after its own
+ *       sample, or on its next load). Adds pass the same gate as the sample; a carve only clears the exact
+ *       ground block it dug through; and only columns of the spill's own pass take it. Not persisted: spill
+ *       for a chunk that never comes back before a restart is simply lost, like the prefetch stash.</li>
  * </ul>
  *
  * <p>Only loaded chunks are ever written ({@code getChunkNow}); nothing here loads or generates a chunk,
@@ -118,22 +120,25 @@ public final class WorldEndBandEvents {
 
     /** Each player's world X at the last prefetch, for {@link PrefetchDirection}. Server thread only. */
     private static final Map<UUID, Double> LAST_PREFETCH_X = new HashMap<>();
-    /** Neighbour chunks a held spill may wait for before the oldest is dropped. */
-    private static final int SPILL_WAITING_CAP = 512;
 
-    /** Feature spill for band chunks that don't have their own terrain yet (or aren't loaded), by chunk key. */
-    private static final Map<Long, List<EndBandSpill>> SPILL_WAITING = new LinkedHashMap<>(64, 0.75f, false) {
-        @Override
-        protected boolean removeEldestEntry(Map.Entry<Long, List<EndBandSpill>> eldest) {
-            return size() > SPILL_WAITING_CAP;
-        }
-    };
+    /**
+     * Feature spill for band chunks that don't have their own terrain yet (or aren't loaded), by chunk key —
+     * at most one per neighbour ({@link EndBandSpillWaiting}).
+     */
+    private static final EndBandSpillWaiting<EndBandSpill> SPILL_WAITING =
+            new EndBandSpillWaiting<>(EndBandSpillWaiting.DEFAULT_CAP);
 
     /** Held spill whose (already-terrained) chunk has just reloaded — written at the start of the next tick. */
     private static final Map<Long, List<EndBandSpill>> DUE_SPILL = new LinkedHashMap<>();
 
     /** Spill produced by samples written in worldgen ({@link EndBandInlineTerrain}), handed over from the worker threads. */
     private static final ConcurrentLinkedQueue<Map<Long, EndBandSpill>> INLINE_SPILL = new ConcurrentLinkedQueue<>();
+
+    /**
+     * Already-terrained chunks spill was written into this tick, re-lit and resent once at its end
+     * ({@link #relightTouched}) rather than once per neighbour's spill.
+     */
+    private static final Map<Long, LevelChunk> TOUCHED = new LinkedHashMap<>();
 
     private static int tickCounter;
 
@@ -150,8 +155,8 @@ public final class WorldEndBandEvents {
         if (action == EndBandLoadDecision.Action.NONE) {
             // Terrain already in (written in worldgen, or before it unloaded); only spill that arrived
             // while it was away may be owed.
-            List<EndBandSpill> owed = SPILL_WAITING.remove(pos.toLong());
-            if (owed != null) DUE_SPILL.put(pos.toLong(), owed);
+            List<EndBandSpill> owed = SPILL_WAITING.take(pos.toLong());
+            if (!owed.isEmpty()) DUE_SPILL.put(pos.toLong(), owed);
             return;
         }
         long pass = betterEndPass(level, pos);
@@ -193,7 +198,10 @@ public final class WorldEndBandEvents {
             long t0 = GenProfiler.t0();
             DUE_SPILL.forEach((key, spills) -> {
                 LevelChunk chunk = level.getChunkSource().getChunkNow(ChunkPos.getX(key), ChunkPos.getZ(key));
-                if (chunk != null) writeSpills(level, chunk, spills);
+                if (chunk == null) return;
+                boolean changed = false;
+                for (EndBandSpill spill : spills) changed |= writeSpill(level, chunk, spill);
+                if (changed) TOUCHED.put(key, chunk);
             });
             DUE_SPILL.clear();
             GenProfiler.add(GenProfiler.Bucket.END_BAND_APPLY, t0);
@@ -204,6 +212,17 @@ public final class WorldEndBandEvents {
                 view + PREFETCH_LEAD_CHUNKS + PREFETCH_DEPTH_CHUNKS + DROP_SLACK_CHUNKS);
         EndBandSampler.drainReady(FINISHED);
         if (!FINISHED.isEmpty()) writeFinished(level, players, view);
+        if (!TOUCHED.isEmpty()) {
+            long t0 = GenProfiler.t0();
+            relightTouched(level);
+            GenProfiler.add(GenProfiler.Bucket.END_BAND_APPLY, t0);
+        }
+    }
+
+    /** Re-light and resend each chunk spill was written into this tick, once however many neighbours wrote. */
+    private static void relightTouched(ServerLevel level) {
+        for (LevelChunk chunk : TOUCHED.values()) relight(level, chunk);
+        TOUCHED.clear();
     }
 
     /**
@@ -265,6 +284,7 @@ public final class WorldEndBandEvents {
         SPILL_WAITING.clear();
         DUE_SPILL.clear();
         INLINE_SPILL.clear();
+        TOUCHED.clear();
         tickCounter = 0;
     }
 
@@ -382,11 +402,11 @@ public final class WorldEndBandEvents {
         boolean changed = fill(level, chunk, r);
         chunk.setData(ModDataAttachments.END_BAND_PENDING, Boolean.FALSE);
         chunk.setUnsaved(true);
-        List<EndBandSpill> owed = SPILL_WAITING.remove(chunk.getPos().toLong());
-        if (owed != null) {
-            for (EndBandSpill spill : owed) changed |= writeSpill(level, chunk, spill);
+        for (EndBandSpill spill : SPILL_WAITING.take(chunk.getPos().toLong())) changed |= writeSpill(level, chunk, spill);
+        if (changed) {
+            relight(level, chunk);
+            TOUCHED.remove(chunk.getPos().toLong());   // just re-lit with everything in it
         }
-        if (changed) relight(level, chunk);
         r.spill().forEach((key, spill) -> deliverSpill(level, key, spill));
     }
 
@@ -396,24 +416,19 @@ public final class WorldEndBandEvents {
     }
 
     /**
-     * Hand a neighbour its spill: written now if that chunk is loaded with its own terrain already in,
-     * held otherwise ({@link #SPILL_WAITING}) — a chunk that isn't a sampled band chunk gets nothing.
+     * Hand a neighbour its spill: written now if that chunk is loaded with its own terrain already in (and
+     * re-lit at the end of the tick, {@link #TOUCHED}), held otherwise ({@link #SPILL_WAITING}) — a chunk that
+     * isn't a sampled band chunk gets nothing.
      */
     private static void deliverSpill(ServerLevel level, long key, EndBandSpill spill) {
         ChunkPos pos = new ChunkPos(ChunkPos.getX(key), ChunkPos.getZ(key));
         if (betterEndPass(level, pos) < 0L) return;
         LevelChunk chunk = level.getChunkSource().getChunkNow(pos.x, pos.z);
         if (chunk != null && !chunk.getData(ModDataAttachments.END_BAND_PENDING)) {
-            if (writeSpill(level, chunk, spill)) relight(level, chunk);
+            if (writeSpill(level, chunk, spill)) TOUCHED.put(key, chunk);
             return;
         }
-        SPILL_WAITING.computeIfAbsent(key, k -> new ArrayList<>()).add(spill);
-    }
-
-    private static void writeSpills(ServerLevel level, LevelChunk chunk, List<EndBandSpill> spills) {
-        boolean changed = false;
-        for (EndBandSpill spill : spills) changed |= writeSpill(level, chunk, spill);
-        if (changed) relight(level, chunk);
+        SPILL_WAITING.hold(key, spill.source(), spill);
     }
 
     private static boolean fill(ServerLevel level, LevelChunk chunk, EndBandSampler.Result r) {
@@ -422,7 +437,9 @@ public final class WorldEndBandEvents {
 
     /**
      * Write one neighbour's spill into {@code chunk}: adds through the same gate as the chunk's own sample,
-     * carves only where the cell still holds the ground block they dug through ({@link EndBandSpill#shouldWrite}).
+     * carves only where the cell still holds the ground block they dug through ({@link EndBandSpill#shouldWrite}),
+     * and only in columns the spill's own pass owns ({@link EndBandSpill#ownedBy}) — never across a seam into a
+     * vanilla-stamped column or another sampled pass's.
      */
     private static boolean writeSpill(ServerLevel level, LevelChunk chunk, EndBandSpill spill) {
         ChunkPos pos = chunk.getPos();
@@ -437,7 +454,7 @@ public final class WorldEndBandEvents {
             int worldX = BlockPos.getX(at[i]), y = BlockPos.getY(at[i]), worldZ = BlockPos.getZ(at[i]);
             if (y < yStart || y >= yEnd || (worldX >> 4) != pos.x || (worldZ >> 4) != pos.z) continue;
             double ramp = cycle.endIslandRamp(worldX);
-            if (ramp <= 0.0 || !EndBandTerrainWriter.sampledOwns(level, cycle, seed, worldX, worldZ)) continue;
+            if (ramp <= 0.0 || !spill.ownedBy(cycle.endSourcePassAt(worldX, worldZ, seed))) continue;
             int dx = worldX & 15, dz = worldZ & 15;
             BlockState after = spill.after()[i];
             if (after.isAir()) {

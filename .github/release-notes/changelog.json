@@ -21886,6 +21886,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "end-band-spill-hardening",
+      "version": "0.1095.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "world"
+      ],
+      "title": "Tidier joins between terrain styles",
+      "summary": "With the optional border-blending setting on, trees and other features now stay with their own terrain where two styles meet.",
+      "highlights": [],
+      "pr": 1745,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
