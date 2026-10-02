@@ -44,7 +44,7 @@ The NeoForge version follows `neo_version` for the same reason.
 
 | Case | `mods/` contents | Expected |
 |---|---|---|
-| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
+| **A** | DT + Sable + all five siblings + Fast Paintings + Moonlight + BetterNether + BetterEnd and their three shared libraries + WWOO/BoP and their libraries + VanillaBackport + Platform + Exposure + Exposure: Polaroid + top-level KeepTrim/DungeonBackup/SableFenceTrapdoorFix (CurseForge-app layout) | Server starts cleanly; prints `JarJar: nested copy skipped, mods/ copy wins` for all three hybrid ids |
 | **B** | minus AIN | Fails — `adventureitemnames … Actual version: '[MISSING]'` |
 | **C** | DT + Sable only | Fails — names **all five**, with each declared range (the hybrid trio is nested, so never missing) |
 | **D** | PlayerMob **above** the floor | Server starts cleanly |
@@ -60,6 +60,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **N** | minus Big Lost City (the only case without it) | Fails — names `big_lost_city` with its `[x,)` floor, twice: requested by `dungeontrain` and by the jarJar'd `lostcityterrainfit` |
 | **O** | Case A + What Are They Up To + CoroUtil (a server carrying the modpack's two-sided companion) | Server starts cleanly |
 | **P** | WATUT without CoroUtil | Fails — names `coroutil`, requested by `watut`, with its `[1.21.0-1.3.7,)` floor |
+| **Q** | minus Exposure + its Polaroid add-on (the only case without them) | Fails — names `exposure` and `exposure_polaroid` with their `[x,)` floors |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

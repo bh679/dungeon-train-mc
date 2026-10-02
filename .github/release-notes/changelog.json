@@ -22080,6 +22080,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "exposure-photography-required-mods",
+      "version": "0.1106.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Two new required mods",
+      "summary": "Dungeon Train now needs Exposure and Exposure: Polaroid installed, and the launchers add them for you.",
+      "highlights": [],
+      "pr": 1762,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

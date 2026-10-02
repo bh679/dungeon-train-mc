@@ -3970,6 +3970,7 @@
   "item.dungeontrain.random_potion": "ยาสุ่ม",
   "item.dungeontrain.random_good_potion": "ยาดีสุ่ม",
   "item.dungeontrain.random_bad_potion": "ยาร้ายสุ่ม",
+  "item.dungeontrain.disposable_camera": "กล้องใช้แล้วทิ้ง",
   "gui.dungeontrain.options.book_author_chat": "แสดงชื่อผู้เขียนหนังสือในแชท",
   "gui.dungeontrain.options.book_author_chat.tip": "พิมพ์ข้อความหนึ่งบรรทัดในแชทระบุชื่อผู้เขียนทุกครั้งที่หนังสือของ Dungeon Train ลุกไหม้ — \"หนังสือของ X กำลังลุกไหม้\" หนังสือที่คุณอ่าน ที่ทิ้ง หรือที่ร่วงตอนตาย ล้วนติดไฟทั้งนั้น และตรงนี้เป็นที่เดียวที่ให้เครดิตคนเขียน ปิดไว้ตั้งแต่แรก",
   "gui.dungeontrain.options.update_notice_chat": "แจ้งเวอร์ชันใหม่ในแชท",

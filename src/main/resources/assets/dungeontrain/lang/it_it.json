@@ -4016,6 +4016,7 @@
   "item.dungeontrain.random_potion": "Pozione casuale",
   "item.dungeontrain.random_good_potion": "Pozione buona casuale",
   "item.dungeontrain.random_bad_potion": "Pozione cattiva casuale",
+  "item.dungeontrain.disposable_camera": "Fotocamera usa e getta",
   "gui.dungeontrain.options.book_author_chat": "Autore del libro in chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Stampa in chat una riga con il nome dell'autore ogni volta che un libro di Dungeon Train brucia — «Il libro di X brucia». I libri che leggi, che getti via o che lasci cadere morendo prendono tutti fuoco, e questo è l'unico posto in cui viene accreditato chi li ha scritti. Disattivato in modo predefinito.",
   "gui.dungeontrain.options.update_notice_chat": "Chat nuova versione",

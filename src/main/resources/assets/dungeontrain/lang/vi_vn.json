@@ -3970,6 +3970,7 @@
   "item.dungeontrain.random_potion": "Thuốc Ngẫu nhiên",
   "item.dungeontrain.random_good_potion": "Thuốc Tốt Ngẫu nhiên",
   "item.dungeontrain.random_bad_potion": "Thuốc Xấu Ngẫu nhiên",
+  "item.dungeontrain.disposable_camera": "Máy ảnh dùng một lần",
   "gui.dungeontrain.options.book_author_chat": "Hiện tác giả sách trong khung chat",
   "gui.dungeontrain.options.book_author_chat.tip": "In một dòng chat nêu tên tác giả mỗi khi một cuốn sách của Dungeon Train bốc cháy — \"Cuốn sách của X bốc cháy\". Những cuốn bạn đọc, bạn vứt đi hay đánh rơi lúc chết đều bắt lửa, và đây là chỗ duy nhất người viết chúng được ghi công. Mặc định tắt.",
   "gui.dungeontrain.options.update_notice_chat": "Thông báo phiên bản mới",

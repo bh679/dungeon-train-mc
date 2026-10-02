@@ -3970,6 +3970,7 @@
   "item.dungeontrain.random_potion": "Random na Gayuma",
   "item.dungeontrain.random_good_potion": "Random na Mabuting Gayuma",
   "item.dungeontrain.random_bad_potion": "Random na Masamang Gayuma",
+  "item.dungeontrain.disposable_camera": "Disposable na Kamera",
   "gui.dungeontrain.options.book_author_chat": "May-akda ng aklat sa chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Naglalagay ng isang linya sa chat na nagbabanggit sa may-akda tuwing may nasusunog na aklat ng Dungeon Train — \"Nasusunog ang aklat ni X\". Ang mga aklat na binabasa mo, itinatapon, o nalalaglag kapag namatay ka ay pawang nag-aapoy, at dito lang binibigyang-kredito ang sumulat sa kanila. Naka-off bilang default.",
   "gui.dungeontrain.options.update_notice_chat": "Chat sa Bagong Bersyon",

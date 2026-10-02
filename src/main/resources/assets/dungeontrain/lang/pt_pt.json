@@ -4016,6 +4016,7 @@
   "item.dungeontrain.random_potion": "Poção Aleatória",
   "item.dungeontrain.random_good_potion": "Poção Boa Aleatória",
   "item.dungeontrain.random_bad_potion": "Poção Má Aleatória",
+  "item.dungeontrain.disposable_camera": "Câmara descartável",
   "gui.dungeontrain.options.book_author_chat": "Autor do livro no chat",
   "gui.dungeontrain.options.book_author_chat.tip": "Escreve no chat uma linha com o nome do autor sempre que um livro do Dungeon Train arde — «O livro de X arde». Os livros que lês, deitas fora ou deixas cair ao morrer ardem todos, e este é o único sítio onde quem os escreveu é creditado. Desligado por predefinição.",
   "gui.dungeontrain.options.update_notice_chat": "Chat de nova versão",
