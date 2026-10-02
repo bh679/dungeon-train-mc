@@ -52,6 +52,31 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
      */
     public static final String KEY = "builder:carriage";
 
+    /**
+     * The key of parked carriage {@code volume}: {@link #KEY} itself for the first, and
+     * {@code builder:carriage:<n>} for the rest.
+     *
+     * <p>A multi-carriage build is saved as one carriage group, and each carriage's cells are
+     * relative to its own corner. One key for all of them would file the same cell of every carriage
+     * together — in the variant document and in the container store, which is keyed by this string.</p>
+     */
+    public static String keyFor(int volume) {
+        return volume <= 0 ? KEY : KEY + ":" + volume;
+    }
+
+    /** Which parked carriage {@code key} names, or -1 when it is not a builder plot key at all. */
+    public static int volumeOfKey(@Nullable String key) {
+        if (key == null) return -1;
+        if (KEY.equals(key)) return 0;
+        if (!key.startsWith(KEY + ":")) return -1;
+        try {
+            int volume = Integer.parseInt(key.substring(KEY.length() + 1));
+            return volume > 0 ? volume : -1;
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
     private final ServerLevel level;
     private final BlockPos origin;
     private final Vec3i footprint;
@@ -88,11 +113,31 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
                 break;
             }
         }
+        return ofVolume(level, volumes, index);
+    }
+
+    /**
+     * The plot of parked carriage {@code volume}, or null if this isn't a builder world or it parks
+     * fewer than that. What a menu anchored to a plot key re-resolves through, so it keeps editing
+     * the carriage it was opened on rather than snapping back to the first.
+     */
+    public static @Nullable BuilderCarriagePlot ofVolume(ServerLevel level, int volume) {
+        if (!level.dimensionTypeRegistration().is(BuilderWorldLayout.BUILDER_DIMENSION_TYPE)) {
+            return null;
+        }
+        List<BoundingBox> volumes = BuilderBounds.volumesFor(level);
+        if (volume < 0 || volume >= volumes.size()) {
+            return null;
+        }
+        return ofVolume(level, volumes, volume);
+    }
+
+    private static BuilderCarriagePlot ofVolume(ServerLevel level, List<BoundingBox> volumes, int index) {
         BoundingBox box = volumes.get(index);
         // The C menu's store is keyed by plot key, and this plot's key is the same constant in
         // every builder world — so point that key at this world's own file before anyone loads it.
         // Idempotent, which is what lets it sit on the resolve path every menu open goes through.
-        ContainerContentsStore.setPathOverride(KEY, BuilderStorePaths.contentsFile(level));
+        ContainerContentsStore.setPathOverride(keyFor(index), BuilderStorePaths.contentsFile(level, index));
         // Size from the box, not from dims: a portal room volume is the author's size and only
         // matches the carriage figures by coincidence.
         return new BuilderCarriagePlot(level, BuilderBounds.originOf(box), BuilderBounds.sizeOf(box), index);
@@ -105,12 +150,12 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
      * including the ones that only want the origin or the mirror flags.</p>
      */
     private TrackVariantBlocks doc() {
-        return BuilderVariantStore.loadFor(level, footprint);
+        return BuilderVariantStore.loadFor(level, volumeIndex, footprint);
     }
 
     @Override
     public String key() {
-        return KEY;
+        return keyFor(volumeIndex);
     }
 
     @Override
@@ -172,7 +217,7 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
         // The mirror flags are already persisted — their setters write world data, which saves with
         // the world. The variant cells are not: they live in this build's own sidecar file.
         BlockVariantPlot.noteEdit(this, null);
-        BuilderVariantStore.save(level, doc(), footprint);
+        BuilderVariantStore.save(level, volumeIndex, doc(), footprint);
     }
 
     // ---- sidecar snapshots ----
@@ -195,7 +240,7 @@ public final class BuilderCarriagePlot implements BlockVariantPlot {
 
     @Override
     public void restoreJson(String json) throws IOException {
-        BuilderVariantStore.replace(level, json);
+        BuilderVariantStore.replace(level, volumeIndex, json);
     }
 
     // ---- variant pools ----

@@ -128,8 +128,10 @@ public final class TemplateSidecars {
                 out.add(new Sidecar("contents-allow", room.subdir(), id + ContentsAllowStore.EXT));
                 out.add(new Sidecar("copies", room.subdir(), id + PortalRoomCopiesVariant.COPIES_EXT));
             }
-            // A group is a list of carriage ids and nothing else — its members carry their own.
-            case CARRIAGE_GROUP -> { }
+            // One document for the whole run, beside the group's .nbt — the file the editor's Group
+            // plot writes and the train's overlay reads.
+            case CARRIAGE_GROUP -> out.add(new Sidecar("variants", WholeKind.GROUP.userSubdir(),
+                    id + WholeVariantBlocks.EXT));
         }
         // Every kind with sidecars at all has a containers store, keyed by the same plot key the
         // editor uses — shared with TemplateLootPrefabs, which follows that store's links outward.
@@ -140,7 +142,7 @@ public final class TemplateSidecars {
 
     /**
      * The {@link ContainerContentsStore} plot key for template {@code id} of {@code kind}, or null
-     * for a kind that has no containers store (a group) or a sub kind this install cannot resolve.
+     * for a sub kind this install cannot resolve.
      * The one place these are spelled: the store keys its files by them, and a key spelled
      * differently here would upload one build's chests and install another's.
      */
@@ -159,7 +161,7 @@ public final class TemplateSidecars {
             }
             case PORTAL_ROOM -> ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> ChunkFramePlot.KEY_PREFIX + id;
-            case CARRIAGE_GROUP -> null;
+            case CARRIAGE_GROUP -> BlockVariantPlot.wholeKey(WholeKind.GROUP, id);
         };
     }
 
@@ -564,7 +566,11 @@ public final class TemplateSidecars {
                 PortalRoomContentsAllowStore.invalidate(id);
                 PortalRoomCopiesVariant.invalidate(id);
             }
-            case TRACK, CARRIAGE_GROUP -> { }
+            case CARRIAGE_GROUP -> {
+                WholeVariantBlocks.invalidate(WholeKind.GROUP, id);
+                ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.GROUP, id));
+            }
+            case TRACK -> { }
         }
     }
 
@@ -587,6 +593,6 @@ public final class TemplateSidecars {
 
     /** Whether {@code kind} has any sidecar at all — what a caller checks before bothering. */
     public static boolean carries(BuilderPhotoPaths.Kind kind) {
-        return kind != null && kind != BuilderPhotoPaths.Kind.CARRIAGE_GROUP;
+        return kind != null;
     }
 }

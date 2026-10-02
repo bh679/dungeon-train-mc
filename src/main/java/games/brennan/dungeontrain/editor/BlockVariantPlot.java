@@ -337,10 +337,24 @@ public interface BlockVariantPlot {
      */
     static @Nullable BlockVariantPlot resolveByKey(@Nullable net.minecraft.server.level.ServerLevel level,
                                                    String key, CarriageDims dims) {
-        if (level != null && games.brennan.dungeontrain.builder.BuilderCarriagePlot.KEY.equals(key)) {
-            return games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, null, dims);
+        int builderVolume = games.brennan.dungeontrain.builder.BuilderCarriagePlot.volumeOfKey(key);
+        if (level != null && builderVolume >= 0) {
+            return games.brennan.dungeontrain.builder.BuilderCarriagePlot.ofVolume(level, builderVolume);
         }
         return resolveByKey(key, dims);
+    }
+
+    /**
+     * Carriage group {@code id}'s variant document over an explicit {@code footprint}, with no
+     * editor plot behind it.
+     *
+     * <p>For the Train Builder's open and save, which know how many carriages the run actually is.
+     * {@link #resolveByKey} sizes a group plot from the configured group size and needs the id in
+     * the registry — right for the editor, and wrong for a carry that must not be clipped to a size
+     * the build was never authored at.</p>
+     */
+    static BlockVariantPlot wholeGroupDocument(String id, Vec3i footprint) {
+        return new WholePlot(games.brennan.dungeontrain.train.WholeKind.GROUP, id, BlockPos.ZERO, footprint);
     }
 
     static @Nullable BlockVariantPlot resolveByKey(String key, CarriageDims dims) {

@@ -37,11 +37,6 @@ final class TemplateSidecarsTest {
                 default -> "";
             };
             List<TemplateSidecars.Sidecar> files = TemplateSidecars.filesFor(kind, subKind, "brick_cabin");
-            if (kind == BuilderPhotoPaths.Kind.CARRIAGE_GROUP) {
-                assertTrue(files.isEmpty(), "a group is a list of ids and nothing else");
-                assertFalse(TemplateSidecars.carries(kind));
-                continue;
-            }
             assertFalse(files.isEmpty(), kind + " has sidecars but names none");
             assertTrue(TemplateSidecars.carries(kind));
         }
@@ -75,6 +70,23 @@ final class TemplateSidecarsTest {
         assertEquals("library.contents-allow.json", byRole.get("contents-allow").basename());
         assertEquals("library.copies.json", byRole.get("copies").basename());
         assertEquals("containers", byRole.get("containers").subdir());
+    }
+
+    @Test
+    @DisplayName("a carriage group carries the run's variants and chest links, under the key the train's overlay reads")
+    void carriageGroupFiles() {
+        Map<String, TemplateSidecars.Sidecar> byRole =
+                byRole(TemplateSidecars.filesFor(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "", "night_mail"));
+
+        assertEquals(List.of("containers", "variants"), sorted(byRole.keySet()),
+                "a group is stamped verbatim — no parts or contents-allow to carry");
+        assertEquals(games.brennan.dungeontrain.train.WholeKind.GROUP.userSubdir(), byRole.get("variants").subdir(),
+                "beside the group's own .nbt, where WholeVariantBlocks looks");
+        assertEquals("night_mail.variants.json", byRole.get("variants").basename());
+        assertEquals("whole_group:night_mail",
+                TemplateSidecars.plotKeyFor(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, "", "night_mail"));
+        assertEquals(ContainerContentsStore.basenameFor("whole_group:night_mail"),
+                byRole.get("containers").basename());
     }
 
     @Test
