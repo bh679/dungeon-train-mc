@@ -37,6 +37,7 @@ public final class EditorMenuResync {
         BlockVariantMenuController.resyncOpen(player);
         ContainerContentsMenuController.resyncOpen(player);
         TemplateBlocksMenuController.resyncOpen(player);
+        TemplateBlockGroupsController.resyncOpen(player);
         // Stage panels are shared rather than per-player — another author may be
         // looking at the stage this step just changed.
         StagePanelController.resyncAllOpen(player.server);

@@ -99,7 +99,7 @@ public final class TemplateBlocksMenuController {
             return;
         }
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Template blocks menu requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.template_blocks.requires_op"), ChatFormatting.RED);
             return;
         }
 
@@ -108,7 +108,7 @@ public final class TemplateBlocksMenuController {
 
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) {
-            actionBar(player, "Not in an editor plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.not_in_plot"), ChatFormatting.YELLOW);
             return;
         }
 
@@ -233,7 +233,7 @@ public final class TemplateBlocksMenuController {
         }
         Block target = resolveBlock(packet.blockId());
         if (target == null) {
-            actionBar(player, "Unknown block: " + packet.blockId(), ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.unknown_block", packet.blockId()), ChatFormatting.YELLOW);
             return;
         }
 
@@ -282,12 +282,12 @@ public final class TemplateBlocksMenuController {
     private static void swapBlock(ServerPlayer player, ServerLevel level, BlockVariantPlot plot, Block target) {
         ItemStack held = player.getMainHandItem();
         if (held.isEmpty() || !(held.getItem() instanceof BlockItem blockItem)) {
-            actionBar(player, "Hold a block to swap with", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.template_blocks.hold_block_to_swap"), ChatFormatting.YELLOW);
             return;
         }
         Block newBlock = blockItem.getBlock();
         if (newBlock == target) {
-            actionBar(player, "Held block is the same as the selected block", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.held_block_same"), ChatFormatting.YELLOW);
             return;
         }
         boolean newHasBe = newBlock.defaultBlockState().hasBlockEntity();
@@ -346,15 +346,17 @@ public final class TemplateBlocksMenuController {
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] TemplateBlocksMenu swap save failed for {}: {}",
                     plot.key(), e.toString());
-                actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
                 return;
             }
         }
 
         if (swapped == 0) {
-            actionBar(player, "No occurrences of that block found", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.template_blocks.no_occurrences"), ChatFormatting.YELLOW);
         } else {
-            actionBar(player, "Swapped " + swapped + " occurrence" + (swapped == 1 ? "" : "s"),
+            actionBar(player, swapped == 1
+                    ? Component.translatable("chat.dungeontrain.editor_bar.template_blocks.swapped_one", swapped)
+                    : Component.translatable("chat.dungeontrain.editor_bar.template_blocks.swapped_many", swapped),
                 ChatFormatting.GREEN);
         }
     }
@@ -389,7 +391,7 @@ public final class TemplateBlocksMenuController {
         return block;
     }
 
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 }

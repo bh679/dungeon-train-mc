@@ -118,6 +118,9 @@ public final class TranslationCatalog {
                 TranslationPluralForms.project(english.keySet(), locale));
             keys.addAll(translated.keySet());
             for (String key : keys) {
+                if ("dungeontrain".equals(namespace) && TranslationContexts.isUnused(key)) {
+                    continue; // nothing in the game shows it — see TranslationContexts
+                }
                 out.add(new TranslationUnit(
                     TranslationUnit.Type.LANG,
                     namespace,

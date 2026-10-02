@@ -14,6 +14,7 @@ public final class EditorScreenLang {
     public static final String TAB_LAYOUT = PREFIX + "tab.layout";
     public static final String TAB_STAGES = PREFIX + "tab.stages";
     public static final String TAB_NAV = PREFIX + "tab.nav";
+    public static final String TAB_GROUPS = PREFIX + "tab.groups";
     public static final String TAB_SETTINGS = PREFIX + "tab.settings";
     public static final String TAB_EXIT = PREFIX + "tab.exit";
 
@@ -202,6 +203,11 @@ public final class EditorScreenLang {
     public static final String LOOT_PAGE_HEADER = PREFIX + "loot_page.header";
     public static final String SUBMISSION_PAGE_HEADER = PREFIX + "submission_page.header";
     public static final String LOOT_PAGE_IN = PREFIX + "loot_page.in";
+    public static final String SHEET_BLOCKS_TIP = PREFIX + "sheet.blocks_tip";
+    public static final String BLOCKS_PAGE_HEADER = PREFIX + "blocks_page.header";
+    public static final String BLOCKS_PAGE_CLICK = PREFIX + "blocks_page.click";
+    public static final String BLOCKS_PAGE_HOLD = PREFIX + "blocks_page.hold";
+    public static final String BLOCKS_PAGE_GO_HERE = PREFIX + "blocks_page.go_here";
     public static final String SHEET_WEIGHT = PREFIX + "sheet.weight";
     public static final String SHEET_SHARE = PREFIX + "sheet.share";
     public static final String SHEET_SPAWNS = PREFIX + "sheet.spawns";
@@ -261,6 +267,8 @@ public final class EditorScreenLang {
     public static final String DISABLED_NOT_HERE = PREFIX + "disabled.not_here";
     public static final String DISABLED_NOT_TESTABLE = PREFIX + "disabled.not_testable";
     public static final String DISABLED_NOT_LOCAL = PREFIX + "disabled.not_local";
+    public static final String DISABLED_UNGROUPED = PREFIX + "disabled.ungrouped";
+    public static final String DISABLED_GROUP_SUBMIT = PREFIX + "disabled.group_submit";
 
     public static final String TEST_CARRIAGE = PREFIX + "test_carriage";
     public static final String EXIT_TEST = PREFIX + "exit_test";

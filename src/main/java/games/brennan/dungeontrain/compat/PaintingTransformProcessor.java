@@ -8,6 +8,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.state.BlockState;
@@ -22,6 +23,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * {@link StructureProcessor} that keeps Fast Paintings' block paintings on the wall when a template
@@ -38,7 +40,8 @@ import java.util.List;
  *
  * <p>Touches only {@code fastpaintings:painting} cells, found by registry id and its three state
  * properties by name, so DT compiles without the mod on its classpath and a template with no
- * paintings costs one pass over the list. Runtime-only — never serialised.</p>
+ * paintings costs one pass over the list. Attached at runtime, but its type is registered
+ * ({@link #TYPE}) so a processor list holding it survives serialisation.</p>
  */
 public final class PaintingTransformProcessor extends StructureProcessor {
 
@@ -51,8 +54,20 @@ public final class PaintingTransformProcessor extends StructureProcessor {
     private static final String X_OFFSET = "x_offset";
     private static final String Y_OFFSET = "y_offset";
 
-    private static final StructureProcessorType<PaintingTransformProcessor> TYPE =
+    /**
+     * Registered as {@code dungeontrain:painting_transform} ({@code ModStructureProcessors}) so a
+     * processor list carrying it can be serialised. The unit codec decodes to the horizontal-only
+     * form — {@code yFlipped} is per-stamp runtime state, not data.
+     */
+    public static final StructureProcessorType<PaintingTransformProcessor> TYPE =
         () -> MapCodec.unit(new PaintingTransformProcessor(false));
+
+    /**
+     * Fast Paintings' block, resolved from the registry on first use (blocks are frozen long before
+     * any stamp runs) so the per-cell check is a reference compare. Empty when the mod is absent —
+     * {@code BLOCK.get} would hand back air there and match every air cell.
+     */
+    private static volatile Optional<Block> paintingBlock;
 
     private final boolean yFlipped;
 
@@ -111,10 +126,20 @@ public final class PaintingTransformProcessor extends StructureProcessor {
         return List.copyOf(out);
     }
 
+    /** Whether {@code state} is a Fast Paintings painting cell; always false without the mod. */
+    public static boolean isPaintingBlock(BlockState state) {
+        Optional<Block> block = paintingBlock;
+        if (block == null) {
+            block = BuiltInRegistries.BLOCK.getOptional(PAINTING_BLOCK);
+            paintingBlock = block;
+        }
+        return block.isPresent() && state.is(block.get());
+    }
+
     /** The cell view of a painting block info, or {@code null} for anything that is not one. */
     private static Cell toCell(StructureBlockInfo info) {
         BlockState state = info.state();
-        if (!PAINTING_BLOCK.equals(BuiltInRegistries.BLOCK.getKey(state.getBlock()))) return null;
+        if (!isPaintingBlock(state)) return null;
         DirectionProperty facing = property(state, FACING, DirectionProperty.class);
         IntegerProperty x = property(state, X_OFFSET, IntegerProperty.class);
         IntegerProperty y = property(state, Y_OFFSET, IntegerProperty.class);

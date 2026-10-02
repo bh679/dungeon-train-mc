@@ -284,6 +284,13 @@ public final class EditorMenuScreen implements MenuScreen {
         // Stage chip shows; to change the gate the player edits the Stage or picks Custom.
         if (weightRow != null) out.addAll(spawnGateRows(ctx));
 
+        // Tunnel groups — a tunnel builds every section and entrance from one group.
+        if (ctx.category() == PlotCategory.TRACKS && TunnelGroupPickerScreen.groupable(ctx.modelId())
+                && notEmpty(ctx.modelName())) {
+            out.add(new CommandMenuEntry.DrillIn("Tunnel groups…",
+                TunnelGroupPickerScreen.fromRoster(ctx.modelId(), ctx.modelName())));
+        }
+
         // Random flip — contents only. Which axes this template MAY be flipped along when it is
         // stamped into a carriage (each enabled axis is rolled per carriage), plus "Rooms": whether
         // that roll also applies when the template furnishes a portal room.
@@ -727,6 +734,17 @@ public final class EditorMenuScreen implements MenuScreen {
      * them to the new plot. Returns null for categories that don't support author-authored new
      * models.
      */
+    /** The size key of the Contents menu standing in the world, or null when none is. */
+    private static String residentContentsSizeKey() {
+        for (games.brennan.dungeontrain.net.EditorTypeMenusPacket.Menu m
+                : games.brennan.dungeontrain.client.menu.plot.EditorTypeMenuRenderer.menus()) {
+            if (!games.brennan.dungeontrain.editor.EditorCategory.CONTENTS.id().equals(m.activeCategoryId())) continue;
+            String key = NewSourcePickerScreen.contentsSizeKey(m.typeName());
+            if (key != null) return key;
+        }
+        return null;
+    }
+
     public static CommandMenuEntry newEntryFor(PlotCategory category, String modelId, String model) {
         if (category == null) return null;
         return switch (category) {
@@ -734,10 +752,11 @@ public final class EditorMenuScreen implements MenuScreen {
                 MenuLang.t("common.new"),
                 new NewSourcePickerScreen(
                     NewSourcePickerScreen.Category.CARRIAGES, null, modelId));
+            // The size the author is working in is the one the floating Contents menu shows.
             case CONTENTS -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.new"),
                 new NewSourcePickerScreen(
-                    NewSourcePickerScreen.Category.CONTENTS, null, modelId));
+                    NewSourcePickerScreen.Category.CONTENTS, residentContentsSizeKey(), modelId));
             case TRACKS -> {
                 if (modelId == null || modelId.isEmpty()) yield null;
                 yield new CommandMenuEntry.TypeArg(

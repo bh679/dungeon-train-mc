@@ -87,8 +87,25 @@ final class BuilderTileTemplates {
         TemplateCells.NbtTally tally = TemplateCells.tallyBlockEntities(template);
         TemplateSummary summary = new TemplateSummary(cells.size(), template.getSize(),
                 tally.blockEntities(), tally.containers(), TemplateCells.entityCount(tag.get()),
-                TemplateCells.lights(cells), TemplateLoot.of(template, kind, subKindOf(partKind, trackKind), id));
+                TemplateCells.lights(cells), TemplateLoot.of(template, kind, subKindOf(partKind, trackKind), id),
+                TemplateSummary.topBlockOf(cells.values()), TemplateSummary.solidCountsOf(cells.values()),
+                TemplateCells.blockCounts(cells));
         return new Loaded(cells, summary);
+    }
+
+    /** Every non-air block of a template already read from disk, or empty when it will not load. */
+    static Map<BlockPos, BlockState> cellsOf(CompoundTag tag) {
+        HolderGetter<Block> blocks = blockRegistry();
+        if (tag == null || blocks == null) {
+            return Map.of();
+        }
+        StructureTemplate template = new StructureTemplate();
+        try {
+            template.load(blocks, tag);
+        } catch (RuntimeException e) {
+            return Map.of();
+        }
+        return TemplateCells.of(template);
     }
 
     /** The sub kind a part or track is keyed by in its sidecars, or null for every other kind. */

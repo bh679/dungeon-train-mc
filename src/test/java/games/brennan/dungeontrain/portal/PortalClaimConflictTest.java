@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * When one pair's twin may not be stamped where another pair's already stands.
  *
- * <p>The bug this guards: a Bedrockless room relocated onto a pair the train had left far behind,
+ * <p>The bug this guards: a Void room relocated onto a pair the train had left far behind,
  * in the same Y lane — the old room's bedrock showed in the new room's void, and the old pair, still
  * claiming the space, pulled the player out as stranded.</p>
  */
@@ -53,8 +53,8 @@ class PortalClaimConflictTest {
     }
 
     @Test
-    @DisplayName("A Bedrockless claim reaches its void, so a pair standing in the void conflicts")
-    void bedrocklessVoidIsClaimed() {
+    @DisplayName("A Void claim reaches its void, so a pair standing in the void conflicts")
+    void voidClearanceIsClaimed() {
         BoundingBox room = footprint(0, -22, 40);
         BoundingBox halo = new BoundingBox(-50, -22, -50, 90, -22 + ROOM_HEIGHT, 60);
         BoundingBox claim = PortalCarriageBuilder.claimWithHalo(room, halo);

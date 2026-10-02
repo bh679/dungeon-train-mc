@@ -139,6 +139,13 @@ public final class DebugCommand {
                 .then(Commands.literal("on").executes(ctx -> setBiomeMemo(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setBiomeMemo(ctx.getSource(), false)))
                 .then(Commands.literal("status").executes(ctx -> biomeMemoStatus(ctx.getSource()))))
+            // /dungeontrain debug lost-city-memo <on|off|status> — toggles the per-chunk memo of the Lost City
+            // start veto (LostCityChunkVeto). OFF = the pre-change per-call path, byte-identical output —
+            // drives the Gate 2 A/B: same seed, compare the structure starts with it on vs off.
+            .then(Commands.literal("lost-city-memo")
+                .then(Commands.literal("on").executes(ctx -> setLostCityMemo(ctx.getSource(), true)))
+                .then(Commands.literal("off").executes(ctx -> setLostCityMemo(ctx.getSource(), false)))
+                .then(Commands.literal("status").executes(ctx -> lostCityMemoStatus(ctx.getSource()))))
             // /dungeontrain debug lod-lite <auto|force|off|status> — Distant Horizons LOD-lite Nether-core
             // decoration (see LodGeneration). `auto` (default) = lite only on DH-World Gen threads; `force`
             // = lite on every worldgen thread so a headless server measures the saving with no DH
@@ -151,6 +158,11 @@ public final class DebugCommand {
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
+            // /dungeontrain debug trade-values dump — every registered item with its name, Trade
+            // Everything's current value and where it comes from, to <server dir>/trade-values-catalog.json.
+            // Copied verbatim to the relay page's catalog.json (brennan.games/dungeontrain/items/).
+            .then(Commands.literal("trade-values")
+                .then(Commands.literal("dump").executes(ctx -> dumpTradeValues(ctx.getSource()))))
             // /dungeontrain debug cycle-layout [runs] — every band slot's world-X range (run 0 and the doubled
             // runs after it) with the phase read at its midpoint. Also logged at INFO for RCON runs.
             // /dungeontrain debug mix-pick — the mix-zone band each chunk around you generates as (a letter grid,
@@ -533,6 +545,24 @@ public final class DebugCommand {
         return 1;
     }
 
+    private static int setLostCityMemo(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.worldgen.LostCityChunkVeto.ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Lost City veto chunk memo " + (on
+                ? "ON (one verdict per chunk)"
+                : "OFF (pre-change per-call path — A/B mode)")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), true);
+        return 1;
+    }
+
+    private static int lostCityMemoStatus(CommandSourceStack source) {
+        boolean on = games.brennan.dungeontrain.worldgen.LostCityChunkVeto.ENABLED;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Lost City veto chunk memo " + (on ? "ON" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
+        return 1;
+    }
+
     private static int genTimingStatus(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] Gen-timing profiler " + (GenProfiler.enabled() ? "ON" : "OFF")
@@ -748,6 +778,25 @@ public final class DebugCommand {
         LOGGER.info("[DungeonTrain] Stage placeholder scan: {} leaked across {} carriage(s); top {}",
             leaked, carriages, fTop);
         return leaked == 0 ? 1 : 0;
+    }
+
+    /** See {@link games.brennan.dungeontrain.compat.TradeValuesCatalogDump}. Gated like the bridge. */
+    private static int dumpTradeValues(CommandSourceStack source) {
+        if (!net.neoforged.fml.ModList.get().isLoaded("tradeeverything")) {
+            source.sendFailure(Component.literal("Trade Everything is not loaded."));
+            return 0;
+        }
+        String version = net.neoforged.fml.ModList.get().getModContainerById("dungeontrain")
+            .map(c -> c.getModInfo().getVersion().toString()).orElse("dev");
+        try {
+            java.nio.file.Path out = games.brennan.dungeontrain.compat.TradeValuesCatalogDump.dump(source.getServer(), version);
+            source.sendSuccess(() -> Component.literal("Wrote " + out.toAbsolutePath()), false);
+            return 1;
+        } catch (Throwable t) {
+            LOGGER.warn("[trade-values] dump failed", t);
+            source.sendFailure(Component.literal("Dump failed: " + t));
+            return 0;
+        }
     }
 
     private static int runScan(CommandSourceStack source) {

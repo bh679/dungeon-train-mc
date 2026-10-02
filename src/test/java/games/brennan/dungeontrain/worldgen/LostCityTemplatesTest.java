@@ -49,7 +49,7 @@ class LostCityTemplatesTest {
     private static final int MAX_FOOTPRINT = 128;
     private static final int MAX_STRETCH_BAYS = 4;
 
-    private static final Path DIR = RepoPaths.resources().resolve("data/dungeontrain/structure/lost_city");
+    static final Path DIR =RepoPaths.resources().resolve("data/dungeontrain/structure/lost_city");
 
     @BeforeAll
     static void bootstrap() {
@@ -80,7 +80,7 @@ class LostCityTemplatesTest {
         return out;
     }
 
-    private static List<StructureTemplate.StructureBlockInfo> blocks(CompoundTag root) {
+    static List<StructureTemplate.StructureBlockInfo> blocks(CompoundTag root) {
         ListTag palette = root.getList("palette", Tag.TAG_COMPOUND);
         List<BlockState> states = new ArrayList<>();
         for (int i = 0; i < palette.size(); i++) {

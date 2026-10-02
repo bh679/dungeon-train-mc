@@ -13,6 +13,7 @@
     "betterend.BetterEndStaticShuffleMixin",
     "betterend.BetterEndWallScatterShuffleMixin",
     "wover.WoverBiomePickerOrderMixin",
+    "wover.WoverBiomePickerSampleMixin",
     "wover.WoverPossibleBiomesCompatOrderMixin",
     "wover.WoverPossibleBiomesOrderMixin"
   ],

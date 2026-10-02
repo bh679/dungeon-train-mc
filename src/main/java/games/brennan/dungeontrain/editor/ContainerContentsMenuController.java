@@ -89,7 +89,7 @@ public final class ContainerContentsMenuController {
             return;
         }
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Container contents menu requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.requires_op"), ChatFormatting.RED);
             return;
         }
 
@@ -117,7 +117,7 @@ public final class ContainerContentsMenuController {
             : entityHit.getLocation().distanceToSqr(eye);
 
         if (validBlockHit == null && entityHit == null) {
-            actionBar(player, "Look at a chest, barrel, armor stand, or item frame",
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.look_at_container"),
                 ChatFormatting.YELLOW);
             return;
         }
@@ -131,7 +131,7 @@ public final class ContainerContentsMenuController {
             : BlockPos.containing(entityHit.getLocation());
         BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(level, target, dims);
         if (plot == null) {
-            actionBar(player, "That block isn't in an editor plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.block_not_in_plot"), ChatFormatting.YELLOW);
             return;
         }
 
@@ -148,7 +148,7 @@ public final class ContainerContentsMenuController {
         BlockPos worldPos = bhit.getBlockPos();
         BlockPos localPos = worldPos.subtract(plot.origin());
         if (!plot.inBoundsTolerant(localPos)) {
-            actionBar(player, "Container is outside the editor plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.container_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
         BlockPos clampedLocal = clampToFootprint(localPos, plot);
@@ -174,7 +174,7 @@ public final class ContainerContentsMenuController {
         BlockPos worldPos = entity.blockPosition();
         BlockPos localPos = worldPos.subtract(plot.origin());
         if (!plot.inBoundsTolerant(localPos)) {
-            actionBar(player, "Entity is outside the editor plot", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.entity_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
         BlockPos clampedLocal = clampToFootprint(localPos, plot);
@@ -304,7 +304,7 @@ public final class ContainerContentsMenuController {
     public static void openAt(ServerPlayer player, BlockVariantPlot plot,
                               BlockPos localPos, Direction face, Vec3 up) {
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Container contents menu requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.requires_op"), ChatFormatting.RED);
             return;
         }
         BlockPos clamped = clampToFootprint(localPos, plot);
@@ -392,7 +392,7 @@ public final class ContainerContentsMenuController {
                 if (packet.itemId() != null && !packet.itemId().isEmpty()) {
                     id = ResourceLocation.tryParse(packet.itemId());
                     if (id == null) {
-                        actionBar(player, "Bad item id: " + packet.itemId(), ChatFormatting.YELLOW);
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.bad_item_id", packet.itemId()), ChatFormatting.YELLOW);
                         return;
                     }
                     count = 1;
@@ -400,7 +400,7 @@ public final class ContainerContentsMenuController {
                     // Empty itemId → use main-hand item.
                     ItemStack held = player.getMainHandItem();
                     if (held.isEmpty() || held.getItem() == Items.AIR) {
-                        actionBar(player, "Hold an item or use the search screen to add",
+                        actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.hold_item_or_search"),
                             ChatFormatting.YELLOW);
                         return;
                     }
@@ -412,7 +412,7 @@ public final class ContainerContentsMenuController {
                     potionId = ContainerContentsPotions.potionIdOf(held);
                 }
                 if (current.size() >= ContainerContentsPool.MAX_ENTRIES) {
-                    actionBar(player, "Pool full (max " + ContainerContentsPool.MAX_ENTRIES + ")",
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.pool_full", ContainerContentsPool.MAX_ENTRIES),
                         ChatFormatting.YELLOW);
                     return;
                 }
@@ -561,10 +561,10 @@ public final class ContainerContentsMenuController {
                 } catch (IOException e) {
                     LOGGER.error("[DungeonTrain] ContainerContentsStore unlink save failed for {}: {}",
                         plot.key(), e.toString());
-                    actionBar(player, "Unlink save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+                    actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.unlink_save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
                     return;
                 }
-                actionBar(player, "Unlinked container from '" + prev + "'", ChatFormatting.GREEN);
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.unlinked", prev), ChatFormatting.GREEN);
                 resyncSameFace(player, plot, localPos);
                 return;
             }
@@ -581,7 +581,7 @@ public final class ContainerContentsMenuController {
         if (linked != null) {
             Optional<LootPrefabStore.Data> templ = LootPrefabStore.load(linked);
             if (templ.isEmpty()) {
-                actionBar(player, "Linked template '" + linked + "' missing — unlink first",
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.linked_template_missing", linked),
                     ChatFormatting.YELLOW);
                 return;
             }
@@ -595,7 +595,7 @@ public final class ContainerContentsMenuController {
             } catch (IOException e) {
                 LOGGER.error("[DungeonTrain] Linked template save failed for {}: {}",
                     linked, e.toString());
-                actionBar(player, "Template save failed: " + e.getClass().getSimpleName(),
+                actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.template_save_failed", e.getClass().getSimpleName()),
                     ChatFormatting.RED);
                 return;
             }
@@ -616,7 +616,7 @@ public final class ContainerContentsMenuController {
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] ContainerContentsStore save failed for {}: {}",
                 plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
         }
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "used_contents_variant");
@@ -683,8 +683,8 @@ public final class ContainerContentsMenuController {
         sendSync(player, plot, localPos, worldPos, face, up);
     }
 
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 
     /**

@@ -74,14 +74,14 @@ public final class EffortlessBuildingVariants {
         if (!(held.getItem() instanceof VariantClipboardItem)) return false;
         if (!(player.level() instanceof ServerLevel level)) return false;
         if (!player.hasPermissions(2)) {
-            actionBar(player, "Variant clipboard requires OP", ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_requires_op"), ChatFormatting.RED);
             return true;
         }
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockVariantPlot plot = BlockVariantPlot.resolveAt(player, dims);
         if (plot == null) {
-            actionBar(player, "Stand inside a block-variant editor plot to paste", ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.stand_in_variant_plot_to_paste"), ChatFormatting.YELLOW);
             return true;
         }
 
@@ -102,7 +102,7 @@ public final class EffortlessBuildingVariants {
         int pasted = 0;
         int skipped = 0;
         VariantClipboardItem.PasteOutcome last = null;
-        String firstError = null;
+        Component firstError = null;
         for (BlockPos pos : cells) {
             VariantClipboardItem.PasteOutcome outcome = VariantClipboardItem.pasteAt(level, player, plot, pos, held);
             if (outcome.error() != null) {
@@ -115,22 +115,28 @@ public final class EffortlessBuildingVariants {
         }
 
         if (pasted == 0) {
-            actionBar(player, "Nothing pasted — " + (firstError != null ? firstError : "no cells"), ChatFormatting.YELLOW);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_nothing_pasted",
+                    firstError != null ? firstError : Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_no_cells")),
+                ChatFormatting.YELLOW);
             return true;
         }
         try {
             plot.save();
         } catch (IOException e) {
             LOGGER.error("[DungeonTrain] VariantClipboard bulk save failed for {}: {}", plot.key(), e.toString());
-            actionBar(player, "Save failed: " + e.getClass().getSimpleName(), ChatFormatting.RED);
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.save_failed", e.getClass().getSimpleName()), ChatFormatting.RED);
             return true;
         }
         boolean poolPasted = VariantClipboardItem.savePool(player, plot, last);
 
-        String line = "Pasted " + last.stateCount() + " variants onto " + pasted + " cells";
-        if (last.lockId() > 0) line += " (lock-id " + last.lockId() + ")";
-        if (poolPasted) line += " +pool(" + last.pool().size() + ")";
-        if (skipped > 0) line += " — " + skipped + " outside plot";
+        Component skippedSuffix = skipped > 0
+            ? Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_outside_plot_suffix", skipped)
+            : Component.empty();
+        Component line = Component.translatable("chat.dungeontrain.editor_bar.clipboard.paste_bulk_pasted",
+            last.stateCount(), pasted,
+            VariantClipboardItem.lockSuffix(last.lockId()),
+            VariantClipboardItem.poolSuffix(poolPasted ? last.pool() : null),
+            skippedSuffix);
         actionBar(player, line, ChatFormatting.GREEN);
         return true;
     }
@@ -181,7 +187,7 @@ public final class EffortlessBuildingVariants {
         return packet.getClass().getMethod(name).invoke(packet);
     }
 
-    private static void actionBar(ServerPlayer player, String text, ChatFormatting colour) {
-        player.displayClientMessage(Component.literal(text).withStyle(colour), true);
+    private static void actionBar(ServerPlayer player, Component text, ChatFormatting colour) {
+        player.displayClientMessage(text.copy().withStyle(colour), true);
     }
 }

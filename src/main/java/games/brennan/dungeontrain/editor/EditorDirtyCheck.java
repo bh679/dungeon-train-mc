@@ -165,7 +165,7 @@ public final class EditorDirtyCheck {
 
     private static void scanContents(ServerLevel level, CarriageDims dims, boolean devmode,
                                      List<DirtyEntry> out) {
-        for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+        for (CarriageContents c : CarriageContentsEditor.residentContents()) {
             BlockPos origin = CarriageContentsEditor.plotOrigin(c, dims);
             if (origin == null) continue;
 

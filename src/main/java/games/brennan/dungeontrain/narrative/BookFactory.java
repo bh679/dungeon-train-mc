@@ -576,7 +576,7 @@ public final class BookFactory {
      * beat-per-page layout insert {@code \n\n\n} between beats; {@code \n\n}
      * remains a soft paragraph break that may pack onto the same page.
      */
-    static List<String> paginate(String body) {
+    public static List<String> paginate(String body) {
         List<String> pages = new ArrayList<>();
         // Hard page break: three or more consecutive newlines. Each section
         // between hard breaks then runs through the greedy paragraph packer.

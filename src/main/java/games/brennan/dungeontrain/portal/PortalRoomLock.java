@@ -11,10 +11,10 @@ import java.util.Locale;
  * <i>whether</i> they seal. Bedrock is what every sealed room was wrapped in before this existed, so
  * a room that says nothing behaves exactly as it did.</p>
  *
- * <h2>Both sealing modes, not Bedrock Lock alone</h2>
+ * <h2>Both sealing modes, not Bedrock alone</h2>
  * <p>{@link PortalRoomMode#CHUNK_DIMENSION} writes the same skin for a reason of its own — a sampled
  * hillside runs straight into the box's faces, and the skin is the only thing between a player and
- * the basement. A setting that stopped at {@link PortalRoomMode#BEDROCK_LOCK} would leave one mode
+ * the basement. A setting that stopped at {@link PortalRoomMode#BEDROCK} would leave one mode
  * whose seal ignored the author, so this follows the writer rather than the mode's name.</p>
  *
  * <h2>Air is a value, and it genuinely unseals the room</h2>
@@ -22,7 +22,7 @@ import java.util.Locale;
  * corridor shells and the plugs are all written as air, and the room is minable straight out into
  * the basement. That is deliberate — the same gesture that authors air on a Copies plane
  * ({@link PortalRoomCopies.Kind#SINGLE}'s floor and roof rows) means the same thing here — and it is
- * not the same as {@link PortalRoomMode#BEDROCKLESS}, which additionally sweeps a clearance around
+ * not the same as {@link PortalRoomMode#VOID}, which additionally sweeps a clearance around
  * the room and hides its edge behind fog.</p>
  *
  * <p>Stored as the last segment of the room's {@code mode} tag — {@link PortalRoomSettings} owns the
@@ -33,7 +33,7 @@ import java.util.Locale;
 public record PortalRoomLock(String blockId) {
 
     /**
-     * What a room with nothing set is wrapped in — what {@link PortalRoomMode#BEDROCK_LOCK} is named
+     * What a room with nothing set is wrapped in — what {@link PortalRoomMode#BEDROCK} is named
      * for, and what every sealed room was made of before the block could be chosen.
      */
     public static final String DEFAULT_BLOCK = "minecraft:bedrock";

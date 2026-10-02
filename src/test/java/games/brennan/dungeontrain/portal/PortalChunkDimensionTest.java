@@ -34,13 +34,13 @@ class PortalChunkDimensionTest {
         assertTrue(mode.sealsCorridors());
         assertTrue(mode.generatesTerrain());
 
-        // Nothing else generates, and Bedrock Lock still seals exactly what it always did.
+        // Nothing else generates, and Bedrock still seals exactly what it always did.
         for (PortalRoomMode other : PortalRoomMode.values()) {
             if (other != mode) assertTrue(!other.generatesTerrain(), other + " must not generate terrain");
         }
-        assertTrue(PortalRoomMode.BEDROCK_LOCK.sealsRoomBox());
-        assertTrue(PortalRoomMode.BEDROCK_LOCK.sealsCorridors());
-        assertTrue(!PortalRoomMode.BEDROCKLESS.sealsRoomBox());
+        assertTrue(PortalRoomMode.BEDROCK.sealsRoomBox());
+        assertTrue(PortalRoomMode.BEDROCK.sealsCorridors());
+        assertTrue(!PortalRoomMode.VOID.sealsRoomBox());
         assertTrue(!PortalRoomMode.ENDLESS_OPEN.sealsCorridors());
 
         // A generated room is one box, not a grid of them, and there is nowhere to fog or tile to.

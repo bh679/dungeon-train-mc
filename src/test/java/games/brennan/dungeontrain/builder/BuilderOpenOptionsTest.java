@@ -166,7 +166,7 @@ final class BuilderOpenOptionsTest {
 
         // A room mode is a heading with nothing to photograph; the rooms under it are templates
         // with a picture beside them, taken when the room was last saved.
-        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "bedrock_lock"));
+        assertNull(BuilderOpenOptions.photoKindFor(BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "bedrock"));
         assertEquals(BuilderPhotoPaths.Kind.PORTAL_ROOM, BuilderOpenOptions.photoKindFor(
                 BuilderOpenOptions.OpenSource.PORTAL_ROOMS, "labrynth", true));
 

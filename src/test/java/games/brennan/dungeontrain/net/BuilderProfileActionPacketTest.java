@@ -13,7 +13,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Wire-format round trips for the submit / withdraw request.
@@ -52,6 +55,28 @@ final class BuilderProfileActionPacketTest {
         BuilderProfileActionPacket packet = new BuilderProfileActionPacket(4271, true, null);
         assertEquals(SubmitNote.EMPTY, packet.note());
         assertEquals(packet, roundTrip(packet));
+    }
+
+    @Test
+    @DisplayName("a submit carries the client's rendering, byte for byte")
+    void renderRoundTrip() {
+        byte[] png = new byte[4096];
+        for (int i = 0; i < png.length; i++) png[i] = (byte) (i * 31);
+        BuilderProfileActionPacket original = new BuilderProfileActionPacket(4271, true,
+                new SubmitNote("", "", "see picture"), png);
+        BuilderProfileActionPacket back = roundTrip(original);
+        assertEquals(original, back);
+        assertTrue(back.hasRender());
+        assertArrayEquals(png, back.render());
+    }
+
+    @Test
+    @DisplayName("a null rendering reads as none rather than a crash on encode")
+    void nullRenderBecomesEmpty() {
+        BuilderProfileActionPacket packet = new BuilderProfileActionPacket(4271, true, SubmitNote.EMPTY, null);
+        assertFalse(packet.hasRender());
+        assertEquals(0, roundTrip(packet).render().length);
+        assertFalse(new BuilderProfileActionPacket(4271, true, SubmitNote.EMPTY).hasRender());
     }
 
     @Test

@@ -228,7 +228,8 @@ public enum EditorCategory {
     }
 
     private static List<Template> contentsModels() {
-        List<CarriageContents> all = CarriageContentsRegistry.allContents();
+        // Only the resident size's: Room, Half and Full share the origin, one stamped at a time.
+        List<CarriageContents> all = CarriageContentsEditor.residentContents();
         List<Template> out = new ArrayList<>(all.size());
         for (CarriageContents c : all) {
             out.add(new Template.Contents(c));
@@ -426,7 +427,7 @@ public enum EditorCategory {
                 unionBoxOf(overworld, CARRIAGES, dims, m -> m instanceof Template.Part)));
         }
         if (previous == CONTENTS || (legacy && keep != CONTENTS)) {
-            for (CarriageContents c : CarriageContentsRegistry.allContents()) {
+            for (CarriageContents c : CarriageContentsEditor.residentContents()) {
                 jobs.add(new EditorStampQueue.Job("erase contents " + c.id(),
                     () -> CarriageContentsEditor.clearPlot(overworld, c, dims),
                     plotBoxOf(overworld, new Template.Contents(c), dims)));

@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.menu.CommandMenuEntry;
 import games.brennan.dungeontrain.client.menu.MenuRowPainter;
 import games.brennan.dungeontrain.client.menu.MenuScreen;
 import games.brennan.dungeontrain.client.menu.StagePickerScreen;
+import games.brennan.dungeontrain.client.menu.TunnelGroupPickerScreen;
 import games.brennan.dungeontrain.client.menu.plot.EditorPlotTeleport;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.editor.TemplateCells;
@@ -80,6 +81,9 @@ public final class TemplateDataSheet {
 
         /** Turn the detail pane to its Loot page — every item the build can give. */
         record ShowLoot() implements Action {}
+
+        /** Turn the detail pane to its Blocks page — every block the build uses, to swap. */
+        record ShowBlocks() implements Action {}
     }
 
     /**
@@ -162,20 +166,21 @@ public final class TemplateDataSheet {
         EditorTypeMenusPacket.Variant v = tile.variant();
         String pending = EditorScreenLang.text(EditorScreenLang.SHEET_PENDING);
 
-        // The path used to open the sheet; the bands line under a Custom stage needed its row more.
-        // A labelled build is drawn under its label everywhere else on this screen; the id is what
-        // every command and file is named by, so the sheet keeps it one line away.
-        if (v.isLabelled()) {
-            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
-        }
         out.add(builderLine(v, key, EditorStatusHudOverlay.isDevModeOn()));
         out.add(sizeLine(summary, roomRows, key, pending));
         out.add(blocksLine(summary, pending));
         out.add(lightsLine(summary, pending));
         out.add(lootLine(summary, pending));
-        out.add(weightLine(tile, key, pending));
+        out.add(withGroupsCell(weightLine(tile, key, pending), v, key));
         out.addAll(stageLines(v, key, pending));
         out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_SOURCE), sourceLabel(provenance)));
+        // A labelled build is drawn under its label everywhere else on this screen; the id is what
+        // every command and file is named by, so the sheet still shows it — but last. The sheet
+        // drops whatever runs past the pane's height, and the id (also in the path above) is the
+        // line to lose, not the editable Weight it used to push off the bottom.
+        if (v.isLabelled()) {
+            out.add(Line.of(EditorScreenLang.text(EditorScreenLang.SHEET_ID), v.name()));
+        }
         return out;
     }
 
@@ -287,7 +292,9 @@ public final class TemplateDataSheet {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS);
         if (summary == null || summary.isEmpty()) return Line.of(label, pending);
         List<Cell> cells = new ArrayList<>(3);
-        cells.add(Cell.plain(Integer.toString(summary.blocks())));
+        // The count opens the Blocks page, as the Loot total opens the Loot page.
+        cells.add(Cell.plain(Integer.toString(summary.blocks())).withAction(new Action.ShowBlocks())
+            .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_BLOCKS_TIP)));
         if (summary.entities() > 0) {
             cells.add(Cell.plain("· " + EditorScreenLang.text(EditorScreenLang.SHEET_ENTITIES, summary.entities())));
         }
@@ -414,31 +421,66 @@ public final class TemplateDataSheet {
             return List.of(Line.of(label, pending));
         }
         boolean linked = v.isStageLinked();
+        MenuScreen picker = new StagePickerScreen(key.category(), key.modelId(), key.modelName(),
+            linked ? v.primaryStageId() : "");
+        Stepper min = Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel())));
+        Stepper max = Stepper.of(EditorScreenActions.levelRow(key, "maxlevel",
+            v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel())));
+        PhaseCommand phases = (p, on) -> EditorPlotTeleport.phaseCommandFor(key.category(),
+            key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
+        return stageLines(v.minLevel(), v.maxLevel(), v.phaseMask(), linked ? v.primaryStageId() : "", picker,
+            min, max, phases);
+    }
 
-        String stageName = linked ? v.primaryStageId()
-            : EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT);
-        Cell stage = new Cell(stageName,
-            new Action.Open(new StagePickerScreen(key.category(), key.modelId(), key.modelName(),
-                linked ? v.primaryStageId() : "")), true)
+    /**
+     * The Stage / levels / bands lines for anything with a spawn gate — a template above, or a tunnel
+     * group on the Groups tab — given its <b>effective</b> gate, its Stage id ({@code ""} = Custom),
+     * the Stage picker to open, and the level steppers / band command to edit its inline gate with.
+     * While linked the bounds and letters are read-only, as the Stage owns them.
+     */
+    static List<Line> stageLines(int minLevel, int maxLevel, int phaseMask, String stageId, MenuScreen picker,
+                                 Stepper minStepper, Stepper maxStepper, PhaseCommand phaseCommand) {
+        String label = EditorScreenLang.text(EditorScreenLang.SHEET_STAGE);
+        boolean linked = stageId != null && !stageId.isEmpty();
+
+        String stageName = linked ? stageId : EditorScreenLang.text(EditorScreenLang.STAGE_CUSTOM_SHORT);
+        Cell stage = new Cell(stageName, new Action.Open(picker), true)
             .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_STAGE_TOOLTIP));
 
-        List<Cell> levels = levelCells(
-            v.minLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel()))),
-            v.maxLevel(), linked ? null : Stepper.of(EditorScreenActions.levelRow(key, "maxlevel",
-                v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()))));
-        PhaseCommand phases = linked ? null : (p, on) -> EditorPlotTeleport.phaseCommandFor(key.category(),
-            key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
+        List<Cell> levels = levelCells(minLevel, linked ? null : minStepper, maxLevel, linked ? null : maxStepper);
         if (linked) {
             // A linked Stage owns the gate: its bounds and letters are read-only and fit beside the name.
             List<Cell> cells = prepend(stage, levels);
             cells.add(Cell.plain("·"));
-            cells.addAll(bandCells(v.phaseMask(), null));
+            cells.addAll(bandCells(phaseMask, null));
             return List.of(new Line(label, cells));
         }
         // Custom means every bound and letter is live, which is too much for one line — so the
         // bounds take the stage's line and the bands a row of their own, every letter a button.
         List<Cell> first = prepend(stage, levels);
-        return List.of(new Line(label, first), bandsLine(v.phaseMask(), phases));
+        return List.of(new Line(label, first), bandsLine(phaseMask, phaseCommand));
+    }
+
+    /**
+     * {@code weight} with a {@code · stone +1} groups cell appended for a tunnel section / entrance —
+     * which tunnel groups it belongs to (a tunnel builds entrance to exit from one group), opening
+     * the multi-select picker. Rides on the Weight line rather than a line of its own because the
+     * sheet drops whatever does not fit the pane's height, and the lines below Weight are the first
+     * to go. Any other template's weight line is returned unchanged.
+     */
+    static Line withGroupsCell(Line weight, EditorTypeMenusPacket.Variant v, VariantKey key) {
+        if (key == null || key.isSubVariant() || !TunnelGroupPickerScreen.groupable(key.modelId())) return weight;
+        // Short on purpose — the sheet drops a cell that runs past the pane's edge, and the full list
+        // is in the tooltip.
+        Cell groups = new Cell(TunnelGroupPickerScreen.summary(v.groupIds()), new Action.Open(
+            new TunnelGroupPickerScreen(key.modelId(), v.name(), v.groupIds())), true)
+            .withTooltip(v.groupIds().isEmpty()
+                ? "A tunnel builds every section and entrance from one group. Click to choose."
+                : "Groups: " + String.join(", ", v.groupIds()) + ". Click to change.");
+        List<Cell> cells = new ArrayList<>(weight.cells());
+        cells.add(Cell.plain("·"));
+        cells.add(groups);
+        return new Line(weight.label(), cells);
     }
 
     /** {@code Bands  O N V E U C}: every band its own letter button (or plain when read-only). */

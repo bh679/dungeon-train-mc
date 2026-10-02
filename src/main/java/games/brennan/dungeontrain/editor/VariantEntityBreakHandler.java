@@ -65,7 +65,8 @@ public final class VariantEntityBreakHandler {
                 plot.save();
             } catch (IOException e) {
                 player.displayClientMessage(
-                    Component.literal("Variant save failed: " + e.getMessage())
+                    Component.translatable("chat.dungeontrain.editor_bar.common.variant_save_failed",
+                            String.valueOf(e.getMessage()))
                         .withStyle(ChatFormatting.YELLOW), true);
                 return;
             }
@@ -88,18 +89,20 @@ public final class VariantEntityBreakHandler {
         final int lx = local.getX();
         final int ly = local.getY();
         final int lz = local.getZ();
-        String entityKind = target instanceof ArmorStand ? "stand" : "frame";
-        StringBuilder msg = new StringBuilder("- removed ");
-        if (removedVariants > 0) {
-            msg.append(removedVariants).append(" variants");
+        Component entityKind = Component.translatable(target instanceof ArmorStand
+            ? "chat.dungeontrain.editor_bar.variant_edit.entity_kind_stand"
+            : "chat.dungeontrain.editor_bar.variant_edit.entity_kind_frame");
+        Component msg;
+        if (removedVariants > 0 && hadLink) {
+            msg = Component.translatable("chat.dungeontrain.editor_bar.variant_edit.removed_entity_variants_and_link",
+                removedVariants, prevLink, lx, ly, lz, entityKind);
+        } else if (hadLink) {
+            msg = Component.translatable("chat.dungeontrain.editor_bar.variant_edit.removed_entity_link",
+                prevLink, lx, ly, lz, entityKind);
+        } else {
+            msg = Component.translatable("chat.dungeontrain.editor_bar.variant_edit.removed_entity_variants",
+                removedVariants, lx, ly, lz, entityKind);
         }
-        if (removedVariants > 0 && hadLink) msg.append(" + ");
-        if (hadLink) {
-            msg.append("link '").append(prevLink).append('\'');
-        }
-        msg.append(" @ ").append(lx).append(',').append(ly).append(',').append(lz)
-            .append(" (").append(entityKind).append(')');
-        player.displayClientMessage(
-            Component.literal(msg.toString()).withStyle(ChatFormatting.GOLD), true);
+        player.displayClientMessage(msg.copy().withStyle(ChatFormatting.GOLD), true);
     }
 }

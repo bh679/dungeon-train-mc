@@ -53,7 +53,10 @@ public final class LostCityStructures {
     /** DT's copies of the big buildings: {@code dungeontrain:lost_city/<name>}. */
     public static final String TRACKSIDE_PREFIX = "lost_city/";
 
-    /** Clearance kept before the core's end — wider than the largest city's footprint (the 152-block warship). */
+    /**
+     * Clearance kept before the core's end — wider than the largest placed piece: house2lt's 80-block footprint
+     * (36×50×80) is the widest, ruined_skyscraperlt (55×147×47) and tall_skyscraperlt (39×159×38) the tallest.
+     */
     public static final int EXIT_MARGIN_BLOCKS = 160;
 
     /** Whether {@code id} is a Big Lost City structure, or one of DT's copies of one. */
@@ -81,9 +84,14 @@ public final class LostCityStructures {
         if (!data.startsWithTrain()) return false;
         long seed = data.getGenerationSeed();
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        if (!allowedAt(seed, cycle, chunkX, chunkZ)) return false;
-        if (!inWwooStretch(cycle, chunkX) || isNewBuildingSlot(id)) return true;
-        return LostCityWwooCensus.buildings(level, seed, cycle).contains(building(id));
+        // the chunk part once per chunk — vanilla retries the whole set in a refused one (LostCityChunkVeto)
+        return switch (LostCityChunkVeto.verdict(seed, cycle, chunkX, chunkZ)) {
+            case DENY -> false;
+            case ALLOW -> true;
+            // The new-building slot stands outside the WWOO pick — see isNewBuildingSlot.
+            case ALLOW_IF_WWOO_BUILDING -> isNewBuildingSlot(id)
+                || LostCityWwooCensus.buildings(level, seed, cycle).contains(building(id));
+        };
     }
 
     /**
