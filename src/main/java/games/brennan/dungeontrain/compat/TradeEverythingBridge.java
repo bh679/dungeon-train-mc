@@ -41,18 +41,24 @@ public final class TradeEverythingBridge {
     private static final int TRIM_TEMPLATE_VALUE_SIXTEENTHS = 35;
 
     /**
-     * Bookshelf and honey block — trade for 1 emerald each. 22 sixteenths × the
-     * default 0.75 payout margin = 16.5, so the payout clears exactly 1 emerald
-     * (16 would pay out only 12 sixteenths). Recipe derivation priced a
-     * bookshelf at ~8 emeralds, far too much for a block library carriages are
-     * packed with.
+     * Bookshelf — four trade for 1 emerald. {@code 4 × 6 × 0.75} (the default
+     * payout margin) = 18 sixteenths, which clears an emerald; three (13.5) do
+     * not. Library carriages are packed with them, so one each was far too much.
+     * A librarian sells them for 9 emeralds: Trade Everything 0.14.0+ pays the
+     * lower of this value and its 90% buy-back, older builds paid 8 emeralds.
      */
-    private static final int BOOKSHELF_VALUE_SIXTEENTHS = 22;
+    static final int BOOKSHELF_VALUE_SIXTEENTHS = 6;
+
+    /**
+     * Honey block — trades for 1 emerald each. 22 sixteenths × the default 0.75
+     * payout margin = 16.5, so the payout clears exactly 1 emerald (16 would pay
+     * out only 12 sixteenths).
+     */
     private static final int HONEY_BLOCK_VALUE_SIXTEENTHS = 22;
 
     /**
      * Value that pays out exactly one emerald per multiple — the same 22 as the
-     * bookshelf. {@code 22n × 0.75 = 16.5n} floors to n emeralds for every n < 32.
+     * honey block. {@code 22n × 0.75 = 16.5n} floors to n emeralds for every n < 32.
      */
     static final int EMERALD_PAYOUT_SIXTEENTHS = 22;
 
