@@ -48,6 +48,40 @@ class EditorTypeMenuTabHitTest {
             "contents", bar, strip);
     }
 
+    /** A companion list (the panel beside the plot) of two rows in {@code category}, each with a gate. */
+    private static EditorTypeMenusPacket.Menu companion(String category) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>();
+        for (String id : List.of("cargocontents", "things")) {
+            rows.add(new EditorTypeMenusPacket.Variant(id, 1, 0, -1, 0b111, category, id, id, false, false));
+        }
+        return new EditorTypeMenusPacket.Menu(new BlockPos(0, 239, 0), "Group", rows, true);
+    }
+
+    private static TreeSet<CellKind> cellsAlongFirstRow(EditorTypeMenusPacket.Menu menu, FixedFont font) {
+        double halfW = EditorTypeMenuRenderer.halfWidth(menu, font);
+        double rowY = EditorTypeMenuRenderer.halfHeight(menu, font) - 1.5 * EditorTypeMenuRenderer.ROW_H;
+        TreeSet<CellKind> cells = new TreeSet<>();
+        for (double x = -halfW + 0.01; x < halfW; x += 0.01) {
+            cells.add(EditorTypeMenuRenderer.hitFor(0, menu, font, x, rowY).cell());
+        }
+        return cells;
+    }
+
+    @Test
+    @DisplayName("the Contents list beside a plot offers Stage, level and dimension cells on every row")
+    void contentsCompanionIsGated() {
+        TreeSet<CellKind> cells = cellsAlongFirstRow(companion("CONTENTS"), new FixedFont());
+        assertEquals(true, cells.containsAll(List.of(CellKind.NAME, CellKind.WEIGHT, CellKind.STAGE,
+            CellKind.MIN_LEVEL, CellKind.MAX_LEVEL, CellKind.PHASE)), "cells found: " + cells);
+    }
+
+    @Test
+    @DisplayName("a Carriages list beside a plot stays name and weight only")
+    void otherCompanionsStayWeightOnly() {
+        TreeSet<CellKind> cells = cellsAlongFirstRow(companion("CARRIAGES"), new FixedFont());
+        assertEquals(new TreeSet<>(List.of(CellKind.NAME, CellKind.WEIGHT)), cells);
+    }
+
     @Test
     @DisplayName("all three Contents size tabs are hit somewhere along the tab row")
     void everyTabIsReachable() {

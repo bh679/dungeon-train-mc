@@ -484,6 +484,18 @@ public final class EditorTypeMenuRenderer {
      * to {@link #MIN_HALF_W} so short lists still read with comfortable
      * padding.
      */
+    /**
+     * Whether a companion menu's rows show their Stage, level and dimension cells: the Sub-Variants
+     * panel, and the list of Contents templates that floats beside the plot the author is in — a
+     * contents template's filtering has to be reachable from wherever its row is listed.
+     */
+    static boolean companionGated(EditorTypeMenusPacket.Menu menu) {
+        if (games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
+                .equals(menu.typeName())) return true;
+        return !menu.variants().isEmpty()
+            && menu.variants().get(0).plotCategory() == games.brennan.dungeontrain.editor.PlotCategory.CONTENTS;
+    }
+
     private static double companionHalfWidth(EditorTypeMenusPacket.Menu menu, Font font) {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
         // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
@@ -914,11 +926,10 @@ public final class EditorTypeMenuRenderer {
             return new Hovered(menuIdx, variantIdx, CellKind.NAME);
         }
 
-        // Sub-Variants companion rows carry the same gate + Stage cells as top-level rows; other
-        // companions keep the legacy weight-only hit logic. A NO_GATE row (e.g. the "(default)"
-        // self-row) collapses to name|weight via rightCells() regardless.
-        boolean gated = games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
-            .equals(menu.typeName());
+        // Sub-Variants and Contents companion rows carry the same gate + Stage cells as top-level
+        // rows; other companions keep the legacy weight-only hit logic. A NO_GATE row (e.g. the
+        // "(default)" self-row) collapses to name|weight via rightCells() regardless.
+        boolean gated = companionGated(menu);
         if (!gated) {
             double weightCellLeft = halfW - (halfW * 2.0) * WEIGHT_CELL_FRACTION;
             return hitX >= weightCellLeft
@@ -1152,11 +1163,11 @@ public final class EditorTypeMenuRenderer {
             boolean hasWeight = variant.weight() != EditorPlotLabelsPacket.NO_WEIGHT;
             CellKind hoverCell = hovered.variantIdx == vi ? hovered.cell : CellKind.NONE;
 
-            // The Sub-Variants companion's member rows carry a per-member spawn gate + Stage selector
-            // (same cells as top-level Contents rows); other companions stay weight-only. The
-            // "(default)" self-row has NO_GATE, so drawVariantRow collapses it to name|weight anyway.
-            boolean gated = games.brennan.dungeontrain.editor.VariantOverlayRenderer.SUB_VARIANTS_TYPE_NAME
-                .equals(menu.typeName());
+            // The Sub-Variants companion's member rows and the Contents companion's rows carry a
+            // spawn gate + Stage selector (same cells as the nav panel's Contents rows); other
+            // companions stay weight-only. The "(default)" self-row has NO_GATE, so drawVariantRow
+            // collapses it to name|weight anyway.
+            boolean gated = companionGated(menu);
             drawVariantRow(ps, buffer, font, variant, -halfW, rowBottom, halfW, rowTop,
                 rowCY, hasWeight, gated, gated, hoverCell, hovered.slotIdx(),
                 activeModelId, activeModelName);
