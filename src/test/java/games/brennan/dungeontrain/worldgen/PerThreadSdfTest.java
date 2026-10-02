@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.worldgen;
 
 import org.betterx.bclib.sdf.SDF;
 import org.betterx.bclib.sdf.operator.SDFDisplacement;
+import org.betterx.bclib.sdf.operator.SDFFlatWave;
 import org.betterx.bclib.sdf.operator.SDFTranslate;
 import org.betterx.bclib.sdf.primitive.SDFSphere;
 import org.junit.jupiter.api.DisplayName;
@@ -57,6 +58,15 @@ final class PerThreadSdfTest {
         SDFDisplacement displacement = new SDFDisplacement();
         SDFDisplacement copy = PerThreadSdf.copyOf(displacement, new IdentityHashMap<>());
         assertNotSame(field(displacement, SDFDisplacement.class, "pos"), field(copy, SDFDisplacement.class, "pos"));
+    }
+
+    @Test
+    @DisplayName("a node holding one of BCLib's own lambdas copies, sharing the lambda")
+    void nodeWithLibraryLambdaCopies() {
+        SDF wave = new SDFFlatWave().setRaysCount(12).setIntensity(1.3F).setSource(new SDFSphere().setRadius(3.0F));
+        SDF copy = PerThreadSdf.copyOf(wave, new IdentityHashMap<>());
+        assertNotSame(wave, copy);
+        assertEquals(wave.getDistance(1, 0, 2), copy.getDistance(1, 0, 2));
     }
 
     @Test

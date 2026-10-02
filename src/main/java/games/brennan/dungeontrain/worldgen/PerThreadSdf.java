@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
+import org.betterx.bclib.sdf.SDF;
 import org.joml.Vector3f;
 
 import java.lang.reflect.Field;
@@ -26,15 +27,21 @@ public final class PerThreadSdf {
     private static final boolean ENABLED =
         !"false".equalsIgnoreCase(System.getProperty("dungeontrain.betterendPerThreadSdf"));
 
-    private static final String SDF_PACKAGE = "org.betterx.bclib.sdf.";
-
     private static final ThreadLocal<Map<Object, Object>> COPIES = ThreadLocal.withInitial(IdentityHashMap::new);
 
     private PerThreadSdf() {}
 
     /** This thread's copy of {@code shared} and of everything it reaches, made on first use. */
     public static <T> T of(T shared) {
-        return ENABLED ? copyOf(shared, COPIES.get()) : shared;
+        if (!ENABLED) return shared;
+        Map<Object, Object> copies = COPIES.get();
+        try {
+            return copyOf(shared, copies);
+        } catch (RuntimeException e) {
+            // A copy that failed part-way is in the map half-built; never hand it to a later placement.
+            copies.clear();
+            throw e;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -57,7 +64,8 @@ public final class PerThreadSdf {
             for (Object element : list) copy.add(copy(element, copies));
             return copy;
         }
-        if (!original.getClass().getName().startsWith(SDF_PACKAGE)) return original;
+        // Only the nodes themselves: BCLib's own lambdas live in the same package and are shared as they are.
+        if (!(original instanceof SDF)) return original;
         return copyNode(original, copies);
     }
 
