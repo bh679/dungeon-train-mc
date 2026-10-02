@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.editor.EditorEditRecorder;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLEnvironment;
@@ -27,6 +28,16 @@ import net.neoforged.fml.ModList;
 public final class CommandEvents {
 
     private CommandEvents() {}
+
+    /**
+     * {@code LOWEST}, so it runs after Dungeon Backup has registered: 0.2.0 still adds
+     * {@code /dungeonbackup backup|restore}, open to every player. See {@link
+     * games.brennan.dungeontrain.command.BackupCommandLock}.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void closeBackupCommands(RegisterCommandsEvent event) {
+        games.brennan.dungeontrain.command.BackupCommandLock.close(event.getDispatcher());
+    }
 
     @SubscribeEvent
     public static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -46,8 +57,8 @@ public final class CommandEvents {
         // /fixconfig — moves every governed config aside so defaults regenerate (the DT-config
         // Free Play fix action; the same reset the title-screen prompt offers).
         FixConfigCommand.register(event.getDispatcher());
-        // /dtbackup and /dtrestore are registered by Dungeon Backup as DT's aliases of
-        // /dungeonbackup backup|restore — see DungeonTrainBackup.register().
+        // No /dtbackup or /dtrestore: backups and restores are never run by a player. See
+        // closeBackupCommands below and data.AutoRestore.
         // /dtrebuild [backups] — re-upload builds the relay has lost (the card's work, on demand).
         RebuildCommand.register(event.getDispatcher());
         // /reportcarriage [reason] — player-facing report of the shared carriage underfoot (also a

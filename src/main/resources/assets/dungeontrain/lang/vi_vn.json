@@ -3593,6 +3593,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Xác nhận khôi phục",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Nếu máy chủ làm mất những công trình bạn đã tải lên, Dungeon Train sẽ gửi chúng trở lại từ bản sao trên máy bạn. Chúng trở về ở chế độ riêng tư và không có gì được công khai. Bật tùy chọn này để được hỏi trước — và để chọn có bao gồm những công trình chỉ khôi phục được từ bản sao lưu hay không, vì có thể bạn đã cố ý xóa chúng.",
   "gui.dungeontrain.backup.data_description": "Công trình và tiến triển",
+  "gui.dungeontrain.auto_restore.title": "Dữ liệu của bạn đã được khôi phục",
+  "gui.dungeontrain.auto_restore.body": "Các công trình và tiến trình của bạn đã bị mất, nên Dungeon Train đã khôi phục chúng từ bản sao lưu. Số tệp đã khôi phục: %s",
   "gui.dungeontrain.options.custom_content": "Nội dung đoàn tàu tùy chỉnh",
   "gui.dungeontrain.options.custom_content.ask": "Hỏi ở mỗi thế giới",
   "gui.dungeontrain.options.custom_content.continue": "Luôn tiếp tục",

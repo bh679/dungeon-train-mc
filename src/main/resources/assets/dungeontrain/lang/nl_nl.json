@@ -3636,6 +3636,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Herstel bevestigen",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Als de bouwserver bouwsels kwijtraakt die je hebt geüpload, stuurt Dungeon Train ze terug vanaf je lokale kopie. Ze komen privé terug en er wordt niets gepubliceerd. Zet dit aan om het eerst gevraagd te krijgen — en om te kiezen of bouwsels die alleen nog in een back-up staan meegaan, want die heb je misschien met opzet verwijderd.",
   "gui.dungeontrain.backup.data_description": "bouwsels en voortgang",
+  "gui.dungeontrain.auto_restore.title": "Je gegevens zijn hersteld",
+  "gui.dungeontrain.auto_restore.body": "Je bouwsels en voortgang waren verdwenen, dus Dungeon Train heeft ze teruggezet vanuit een back-up. Herstelde bestanden: %s",
   "gui.dungeontrain.options.custom_content": "Eigen treininhoud",
   "gui.dungeontrain.options.custom_content.ask": "Per wereld vragen",
   "gui.dungeontrain.options.custom_content.continue": "Altijd doorgaan",

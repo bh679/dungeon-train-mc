@@ -2625,6 +2625,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Confirmă restaurările",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Dacă serverul pierde construcții pe care le-ai încărcat, Dungeon Train le trimite înapoi din copia ta locală. Revin private și nimic nu este publicat. Activează această opțiune ca să fii întrebat mai întâi — și ca să alegi dacă sunt incluse construcțiile recuperabile doar dintr-o copie de rezervă, pe care poate le-ai șters intenționat.",
   "gui.dungeontrain.backup.data_description": "Construcțiile și progresul",
+  "gui.dungeontrain.auto_restore.title": "Datele tale au fost restaurate",
+  "gui.dungeontrain.auto_restore.body": "Construcțiile și progresul tău dispăruseră, așa că Dungeon Train le-a recuperat dintr-o copie de rezervă. Fișiere restaurate: %s",
   "gui.dungeontrain.options.custom_content": "Conținut personalizat pentru tren",
   "gui.dungeontrain.options.custom_content.ask": "Întreabă la fiecare lume",
   "gui.dungeontrain.options.custom_content.continue": "Continuă mereu",

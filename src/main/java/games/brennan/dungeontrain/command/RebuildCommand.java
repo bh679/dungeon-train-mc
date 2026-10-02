@@ -20,7 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
  * the card: a build with no file left may have been deleted on purpose.</p>
  *
  * <p>A root command rather than a {@code /dungeontrain} subcommand, because those need permission
- * level 2 and this is for every player — the same call {@code /dtbackup} and {@code /dtrestore} make.
+ * level 2 and this is for every player.
  * It can only add rows to the player's own relay profile, so it is open to everyone.</p>
  */
 public final class RebuildCommand {

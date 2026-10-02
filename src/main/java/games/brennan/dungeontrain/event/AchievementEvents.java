@@ -1007,17 +1007,6 @@ public final class AchievementEvents {
     }
 
     /**
-     * Re-apply the cross-world store to a player who is already online — after a backup restore
-     * merged the sidecar mid-session. Without it the restored advancements would sit on disk until
-     * the next login, and the logout reconcile in {@link #onPlayerLoggedOut} would first delete
-     * every one of them as "revoked" (not done in this world). Server thread only.
-     */
-    public static void resyncFromGlobalStore(ServerPlayer player) {
-        replaySidecarAdvancements(player);
-        CompletionistAdvancement.checkAndGrant(player);
-    }
-
-    /**
      * Replay the cross-world {@link GlobalAchievementStore} sidecar onto this
      * world's {@code PlayerAdvancements}, re-granting every advancement the
      * player earned on this instance regardless of which world it happened in.

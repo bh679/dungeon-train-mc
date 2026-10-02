@@ -3607,6 +3607,8 @@
   "gui.dungeontrain.options.confirm_build_restore": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f0106d9280c3c8fe"},
   "gui.dungeontrain.options.confirm_build_restore.tip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "09a0abecf376ebc2"},
   "gui.dungeontrain.backup.data_description": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "16bbda09e97f824d"},
+  "gui.dungeontrain.auto_restore.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "dcb26c5437fd602c"},
+  "gui.dungeontrain.auto_restore.body": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2c1a3bafdade9c92"},
   "gui.dungeontrain.options.custom_content": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ae8dd2dc063f3bb4"},
   "gui.dungeontrain.options.custom_content.ask": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "18338a24f47ce378"},
   "gui.dungeontrain.options.custom_content.continue": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "03d7cda6b0b9a2c9"},

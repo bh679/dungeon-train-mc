@@ -3679,6 +3679,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Potwierdzaj przywracanie",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Jeśli serwer utraci wysłane przez ciebie budowle, Dungeon Train odeśle je z twojej lokalnej kopii. Wracają jako prywatne i nic nie jest publikowane. Włącz to, aby najpierw zapytano cię o zgodę — i aby wybrać, czy uwzględnić budowle możliwe do odzyskania tylko z kopii zapasowej, które mogłeś usunąć celowo.",
   "gui.dungeontrain.backup.data_description": "budowli i postępu",
+  "gui.dungeontrain.auto_restore.title": "Twoje dane zostały przywrócone",
+  "gui.dungeontrain.auto_restore.body": "Twoje budowle i postępy zniknęły, więc Dungeon Train przywrócił je z kopii zapasowej. Przywrócone pliki: %s",
   "gui.dungeontrain.options.custom_content": "Własne treści pociągu",
   "gui.dungeontrain.options.custom_content.ask": "Pytaj przy każdym świecie",
   "gui.dungeontrain.options.custom_content.continue": "Zawsze kontynuuj",

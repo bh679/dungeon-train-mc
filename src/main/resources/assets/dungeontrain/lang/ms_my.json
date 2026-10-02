@@ -3593,6 +3593,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Sahkan pemulihan",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Jika pelayan kehilangan binaan yang anda muat naik, Dungeon Train menghantarnya semula daripada salinan tempatan anda. Semuanya kembali secara peribadi dan tiada apa-apa diterbitkan. Hidupkan untuk ditanya dahulu — dan untuk memilih sama ada binaan yang hanya boleh dipulihkan daripada sandaran turut disertakan, kerana mungkin anda memadamnya dengan sengaja.",
   "gui.dungeontrain.backup.data_description": "Binaan dan kemajuan",
+  "gui.dungeontrain.auto_restore.title": "Data Anda Telah Dipulihkan",
+  "gui.dungeontrain.auto_restore.body": "Binaan dan kemajuan anda hilang, jadi Dungeon Train memulihkannya daripada sandaran. Fail dipulihkan: %s",
   "gui.dungeontrain.options.custom_content": "Kandungan Kereta Api Tersuai",
   "gui.dungeontrain.options.custom_content.ask": "Tanya bagi setiap dunia",
   "gui.dungeontrain.options.custom_content.continue": "Sentiasa teruskan",

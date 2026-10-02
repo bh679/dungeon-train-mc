@@ -3636,6 +3636,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Wiederherstellung bestätigen",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Wenn der Build-Server hochgeladene Bauten verliert, sendet Dungeon Train sie aus deiner lokalen Kopie zurück. Sie kehren privat zurück, nichts wird veröffentlicht. Aktiviere dies, um vorher gefragt zu werden – und um zu wählen, ob Bauten einbezogen werden, die nur noch in einem Backup liegen und die du vielleicht absichtlich gelöscht hast.",
   "gui.dungeontrain.backup.data_description": "Bauten und Fortschritte",
+  "gui.dungeontrain.auto_restore.title": "Deine Daten wurden wiederhergestellt",
+  "gui.dungeontrain.auto_restore.body": "Deine Bauten und dein Fortschritt waren verschwunden, deshalb hat Dungeon Train sie aus einer Sicherung zurückgeholt. Wiederhergestellte Dateien: %s",
   "gui.dungeontrain.options.custom_content": "Eigene Zuginhalte",
   "gui.dungeontrain.options.custom_content.ask": "Bei jeder Welt fragen",
   "gui.dungeontrain.options.custom_content.continue": "Immer fortfahren",

@@ -39,7 +39,10 @@ public final class DungeonTrainBackup {
     /** Translation key for what DT's data is, in the recovery card's sentences. */
     public static final String DATA_DESCRIPTION_KEY = "gui.dungeontrain.backup.data_description";
 
-    /** JVM flag that un-suppresses the recovery card on a dev build. */
+    /**
+     * JVM flag that lets a dev build restore lost data automatically
+     * ({@code ./gradlew runClient -PbackupPrompt}). Off by default there — see {@link AutoRestore}.
+     */
     public static final String PROMPT_PROPERTY = "dungeontrain.backups.prompt";
 
     /** The archive label DT's data root is written under. Existing archives depend on it. */
@@ -79,16 +82,11 @@ public final class DungeonTrainBackup {
             // Recovered templates are on disk but not in any cache — without the barrier they
             // wouldn't appear in the editor until the next restart. The importer pass runs too:
             // a backup can carry dtpacks/<name>.zip, which only becomes a package once extracted.
-            .onRestored(() -> {
-                TemplateStores.reloadAll(true);
-                RestoredProfileSync.apply();
-            })
-            // Dev builds keep tripping the card: a working copy routinely has an empty data root.
-            // -Ddungeontrain.backups.prompt=true (./gradlew runClient -PbackupPrompt) lets a dev
-            // build show it anyway — the only way to see the card outside a release build.
-            .promptSuppressed(() -> DungeonTrain.isDevBuild() && !Boolean.getBoolean(PROMPT_PROPERTY))
+            .onRestored(() -> TemplateStores.reloadAll(true))
+            // The library's "Missing … Data" card never opens for DT: lost data is put back by
+            // AutoRestore, unasked, and a card with a Restore button would be a manual restore.
+            .promptSuppressed(() -> true)
             .dataDescriptionKey(DATA_DESCRIPTION_KEY)
-            .commandAliases("dtbackup", "dtrestore")
             // Operators who set these before the extraction keep working.
             .legacyOverrideNames("dungeontrain.backups", "DUNGEONTRAIN_BACKUPS")
             .backupOn(Trigger.WORLD_LOAD, Trigger.PLAYER_DEATH, Trigger.SESSION_END);
@@ -101,8 +99,7 @@ public final class DungeonTrainBackup {
 
         // Cross-world progress files regenerate on every world join, so by the time a player who
         // lost data reaches the restore button a fresh, near-empty copy already exists and a plain
-        // restore would skip the backup. Merge those instead — see RestoreMergers. The in-memory
-        // caches and online players catch up in RestoredProfileSync, from onRestored above.
+        // restore would skip the backup. Merge those instead — see RestoreMergers.
         // Through the bridge: mergeOnRestore needs Dungeon Backup 0.3.0, which DT doesn't require yet.
         RestoreMergeBridge.registerAll(builder, ROOT_LABEL, RestoreMergers.BY_GLOB);
         return builder;

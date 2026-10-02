@@ -3679,6 +3679,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Подтверждать восстановление",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Если сервер теряет загруженные вами постройки, Dungeon Train отправляет их обратно из вашей локальной копии. Они возвращаются приватными, ничего не публикуется. Включите, чтобы вас спрашивали заранее — и чтобы выбирать, включать ли постройки, которые можно взять только из резервной копии: возможно, вы удалили их намеренно.",
   "gui.dungeontrain.backup.data_description": "постройки и прогресс",
+  "gui.dungeontrain.auto_restore.title": "Ваши данные восстановлены",
+  "gui.dungeontrain.auto_restore.body": "Ваши постройки и прогресс пропали, поэтому Dungeon Train вернул их из резервной копии. Восстановлено файлов: %s",
   "gui.dungeontrain.options.custom_content": "Пользовательский контент поезда",
   "gui.dungeontrain.options.custom_content.ask": "Спрашивать каждый раз",
   "gui.dungeontrain.options.custom_content.continue": "Всегда использовать",

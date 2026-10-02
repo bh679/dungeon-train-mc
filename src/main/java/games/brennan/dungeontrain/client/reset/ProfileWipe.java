@@ -114,6 +114,12 @@ public final class ProfileWipe {
             }
         }
 
+        // The profile is now empty on purpose. Without this the next launch would read that as
+        // lost data and put every cleared item straight back from a backup.
+        if (items > 0) {
+            games.brennan.dungeontrain.data.AutoRestore.markEmptiedOnPurpose();
+        }
+
         LOGGER.info("[DungeonTrain] ProfileWipe: deleted {} world(s), cleared {} profile item(s), {} failure(s)",
             worlds, items, failures.size());
         return new Result(worlds, items, List.copyOf(failures));

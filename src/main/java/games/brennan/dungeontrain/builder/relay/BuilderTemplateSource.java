@@ -32,7 +32,7 @@ import java.util.Optional;
  * <p>Two places, and the order matters. The <b>live store</b> is the build: what the player has now,
  * and what a re-upload should carry. A <b>backup archive</b> is the fallback for a build that is gone
  * from disk as well as from the relay — read out of the zip and uploaded, never written back into the
- * store. Putting it back on disk is {@code /dtrestore}'s job and is a different decision: this path
+ * store. Putting it back on disk is {@code data.AutoRestore}'s job and is a different decision: this path
  * runs for builds whose local file may have been deleted deliberately, and resurrecting those without
  * being asked would undo the player's own housekeeping.</p>
  *

@@ -3593,6 +3593,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Konfirmasi pemulihan",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Jika server kehilangan bangunan yang kamu unggah, Dungeon Train mengirimnya kembali dari salinan lokalmu. Semuanya kembali secara privat dan tidak ada yang dipublikasikan. Aktifkan untuk ditanya lebih dulu — dan untuk memilih apakah bangunan yang hanya bisa dipulihkan dari cadangan ikut disertakan, karena mungkin sengaja kamu hapus.",
   "gui.dungeontrain.backup.data_description": "Bangunan dan kemajuan",
+  "gui.dungeontrain.auto_restore.title": "Datamu Telah Dipulihkan",
+  "gui.dungeontrain.auto_restore.body": "Bangunan dan progresmu hilang, jadi Dungeon Train mengembalikannya dari cadangan. Berkas yang dipulihkan: %s",
   "gui.dungeontrain.options.custom_content": "Konten Kereta Buatan Sendiri",
   "gui.dungeontrain.options.custom_content.ask": "Tanya di setiap dunia",
   "gui.dungeontrain.options.custom_content.continue": "Selalu lanjutkan",

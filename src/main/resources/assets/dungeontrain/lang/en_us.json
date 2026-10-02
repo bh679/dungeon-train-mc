@@ -2585,6 +2585,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Confirm restores",
   "gui.dungeontrain.options.confirm_build_restore.tip": "If the build server loses builds you uploaded, Dungeon Train sends them back up from your local copy. They return private, and nothing is published. Turn this on to be asked first — and to choose whether builds recoverable only from a backup are included, which may be ones you deleted on purpose.",
   "gui.dungeontrain.backup.data_description": "builds and progress",
+  "gui.dungeontrain.auto_restore.title": "Your Data Was Restored",
+  "gui.dungeontrain.auto_restore.body": "Your builds and progress went missing, so Dungeon Train put them back from a backup. Files restored: %s",
   "gui.dungeontrain.options.custom_content": "Custom Train Content",
   "gui.dungeontrain.options.custom_content.ask": "Ask each world",
   "gui.dungeontrain.options.custom_content.continue": "Always continue",

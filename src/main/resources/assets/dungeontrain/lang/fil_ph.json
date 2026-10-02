@@ -3593,6 +3593,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Kumpirmahin ang pagbabalik",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Kung mawala sa server ang mga gawang inupload mo, ipapadala silang pabalik ng Dungeon Train mula sa lokal mong kopya. Babalik silang pribado at walang mailalathala. I-on ito para tanungin ka muna — at para piliin kung isasama ang mga gawang mababawi lang mula sa backup, na baka sinadya mong burahin.",
   "gui.dungeontrain.backup.data_description": "mga gawa at progreso",
+  "gui.dungeontrain.auto_restore.title": "Naibalik ang Iyong Data",
+  "gui.dungeontrain.auto_restore.body": "Nawala ang iyong mga build at progreso, kaya ibinalik ng Dungeon Train ang mga ito mula sa isang backup. Mga file na naibalik: %s",
   "gui.dungeontrain.options.custom_content": "Sariling Nilalaman ng Tren",
   "gui.dungeontrain.options.custom_content.ask": "Magtanong sa bawat mundo",
   "gui.dungeontrain.options.custom_content.continue": "Laging magpatuloy",

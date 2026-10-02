@@ -3607,6 +3607,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "确认恢复",
   "gui.dungeontrain.options.confirm_build_restore.tip": "如果构建服务器丢失了你上传的建筑，Dungeon Train 会从你的本地副本重新发送。它们以私密状态返回，不会公开任何内容。开启后会先询问你，并可选择是否包含仅能从备份恢复的建筑——那些可能是你故意删除的。",
   "gui.dungeontrain.backup.data_description": "建筑与进度",
+  "gui.dungeontrain.auto_restore.title": "你的数据已恢复",
+  "gui.dungeontrain.auto_restore.body": "你的建筑和进度丢失了，Dungeon Train 已从备份中将它们恢复。已恢复文件数：%s",
   "gui.dungeontrain.options.custom_content": "自定义列车内容",
   "gui.dungeontrain.options.custom_content.ask": "每个世界询问一次",
   "gui.dungeontrain.options.custom_content.continue": "始终继续",

@@ -3636,6 +3636,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "Conferma i ripristini",
   "gui.dungeontrain.options.confirm_build_restore.tip": "Se il server perde costruzioni che hai caricato, Dungeon Train le rinvia dalla tua copia locale. Tornano private e non viene pubblicato nulla. Attiva questa opzione per essere avvisato prima e per scegliere se includere le costruzioni recuperabili solo da un backup, che potresti aver eliminato di proposito.",
   "gui.dungeontrain.backup.data_description": "costruzioni e i tuoi progressi",
+  "gui.dungeontrain.auto_restore.title": "I tuoi dati sono stati ripristinati",
+  "gui.dungeontrain.auto_restore.body": "Le tue costruzioni e i tuoi progressi erano spariti, quindi Dungeon Train li ha recuperati da un backup. File ripristinati: %s",
   "gui.dungeontrain.options.custom_content": "Contenuti del treno personalizzati",
   "gui.dungeontrain.options.custom_content.ask": "Chiedi per ogni mondo",
   "gui.dungeontrain.options.custom_content.continue": "Continua sempre",

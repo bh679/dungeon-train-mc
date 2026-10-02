@@ -3593,6 +3593,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "復元を確認する",
   "gui.dungeontrain.options.confirm_build_restore.tip": "アップロードした建築をビルドサーバーが失った場合、Dungeon Train はローカルのコピーから送り返します。非公開で戻り、公開はされません。事前に確認したい場合はオンにしてください。バックアップからしか復元できない建築（意図的に削除したものかもしれません）を含めるかどうかも選べます。",
   "gui.dungeontrain.backup.data_description": "建築と進捗",
+  "gui.dungeontrain.auto_restore.title": "データを復元しました",
+  "gui.dungeontrain.auto_restore.body": "ビルドと進行状況が失われていたため、Dungeon Train がバックアップから復元しました。復元したファイル数：%s",
   "gui.dungeontrain.options.custom_content": "カスタムの列車コンテンツ",
   "gui.dungeontrain.options.custom_content.ask": "ワールドごとに尋ねる",
   "gui.dungeontrain.options.custom_content.continue": "常に続行",

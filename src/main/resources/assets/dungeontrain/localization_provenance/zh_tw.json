@@ -3597,6 +3597,8 @@
       "gui.dungeontrain.options.confirm_build_restore",
       "gui.dungeontrain.options.confirm_build_restore.tip",
       "gui.dungeontrain.backup.data_description",
+      "gui.dungeontrain.auto_restore.title",
+      "gui.dungeontrain.auto_restore.body",
       "gui.dungeontrain.options.custom_content",
       "gui.dungeontrain.options.custom_content.ask",
       "gui.dungeontrain.options.custom_content.continue",

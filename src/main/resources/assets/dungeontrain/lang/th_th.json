@@ -3593,6 +3593,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "ยืนยันการกู้คืน",
   "gui.dungeontrain.options.confirm_build_restore.tip": "หากเซิร์ฟเวอร์ทำสิ่งก่อสร้างที่คุณอัปโหลดหายไป Dungeon Train จะส่งกลับขึ้นไปจากสำเนาในเครื่องของคุณ ทั้งหมดจะกลับมาเป็นแบบส่วนตัวและจะไม่มีการเผยแพร่ใด ๆ เปิดตัวเลือกนี้เพื่อให้ถามก่อน และเพื่อเลือกว่าจะรวมสิ่งก่อสร้างที่กู้ได้จากข้อมูลสำรองเท่านั้นหรือไม่ ซึ่งอาจเป็นรายการที่คุณตั้งใจลบไป",
   "gui.dungeontrain.backup.data_description": "สิ่งก่อสร้างและความคืบหน้า",
+  "gui.dungeontrain.auto_restore.title": "กู้คืนข้อมูลของคุณแล้ว",
+  "gui.dungeontrain.auto_restore.body": "สิ่งก่อสร้างและความคืบหน้าของคุณหายไป Dungeon Train จึงกู้คืนจากข้อมูลสำรองให้แล้ว ไฟล์ที่กู้คืน: %s",
   "gui.dungeontrain.options.custom_content": "เนื้อหาขบวนรถแบบกำหนดเอง",
   "gui.dungeontrain.options.custom_content.ask": "ถามทุกโลก",
   "gui.dungeontrain.options.custom_content.continue": "ไปต่อเสมอ",

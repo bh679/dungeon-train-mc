@@ -3593,6 +3593,8 @@
   "gui.dungeontrain.options.confirm_build_restore": "복원 확인",
   "gui.dungeontrain.options.confirm_build_restore.tip": "빌드 서버가 업로드한 건축물을 잃어버리면 Dungeon Train이 로컬 사본에서 다시 보냅니다. 비공개로 돌아오며 아무것도 공개되지 않습니다. 먼저 확인받으려면 켜세요 — 백업에서만 복구할 수 있는 건축물(일부러 삭제한 것일 수도 있습니다)을 포함할지도 선택할 수 있습니다.",
   "gui.dungeontrain.backup.data_description": "건축물과 진행 상황",
+  "gui.dungeontrain.auto_restore.title": "데이터를 복원했습니다",
+  "gui.dungeontrain.auto_restore.body": "건축물과 진행 상황이 사라져서 Dungeon Train이 백업에서 복원했습니다. 복원한 파일 수: %s",
   "gui.dungeontrain.options.custom_content": "사용자 지정 열차 콘텐츠",
   "gui.dungeontrain.options.custom_content.ask": "세계마다 묻기",
   "gui.dungeontrain.options.custom_content.continue": "항상 계속",

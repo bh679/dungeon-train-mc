@@ -272,9 +272,8 @@ public final class GlobalNarrativeProgress {
     }
 
     /**
-     * Drop the in-memory cache so the next access re-reads {@code global.json}. Called after a
-     * backup restore merged that file: writes are write-through, so nothing unsaved is lost, but a
-     * cache loaded before the restore would re-save the pre-restore progress on the next mutation.
+     * Drop the in-memory cache so the next access re-reads {@code global.json}. Writes are
+     * write-through, so nothing unsaved is lost.
      */
     public static synchronized void invalidate() {
         readLetters = null;

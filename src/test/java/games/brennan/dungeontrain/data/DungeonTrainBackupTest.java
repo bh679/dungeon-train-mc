@@ -56,8 +56,10 @@ class DungeonTrainBackupTest {
         assertEquals("dtpacks", labels.get(1));
         assertTrue(reg().excludeTopLevel().contains(PlayerDataPaths.BACKUPS));
         assertEquals("DungeonTrain", reg().externalDirName(), "the mirror folder every player already has");
-        assertEquals("dtbackup", reg().backupCommandAlias());
-        assertEquals("dtrestore", reg().restoreCommandAlias());
+        // No commands: a player can't run a backup or a restore; DT asks for no aliases.
+        assertEquals(null, reg().backupCommandAlias());
+        assertEquals(null, reg().restoreCommandAlias());
+        assertTrue(reg().promptSuppressed(), "the library card must never open — AutoRestore handles a loss");
         assertEquals("dungeontrain.backups", reg().legacyOverrideProperty());
     }
 
