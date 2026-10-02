@@ -22045,6 +22045,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "villager-stock-sell-prices",
+      "version": "0.1104.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Villager sell-back prices tuned",
+      "summary": "Villagers now pay a set price for bells, name tags and a handful of other things they stock.",
+      "highlights": [],
+      "pr": 1760,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
