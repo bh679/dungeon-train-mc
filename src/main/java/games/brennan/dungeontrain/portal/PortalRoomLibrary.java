@@ -55,8 +55,8 @@ public final class PortalRoomLibrary {
      * every shelf as the template authored it, which is exactly what a room whose author could not be
      * resolved should look like.</p>
      *
-     * @param ownShelves true when the catalogue is the reader's own writing — the lectern then
-     *                   carries a tip rather than the note about an unknown author
+     * @param ownShelves true when the catalogue is the reader's own writing — the lectern's note
+     *                   then closes with a tip
      */
     public static int stock(ServerLevel level, BlockPos origin, Vec3i size,
                             List<SharedBookPool.PoolBook> catalogue, int pairKey, String authorName,

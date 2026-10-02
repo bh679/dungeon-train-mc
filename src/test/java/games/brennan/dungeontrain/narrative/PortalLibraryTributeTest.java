@@ -86,13 +86,25 @@ class PortalLibraryTributeTest {
     }
 
     @Test
-    @DisplayName("The own-books page is the tip, signed, and the same every time for a room")
-    void theOwnPageSignsItself() {
-        String page = PortalLibraryTribute.ownPageFor("Faulthurst", 7L);
-        assertTrue(page.startsWith(PortalLibraryTribute.ownTipFor(7L)), page);
-        assertTrue(page.endsWith("\n\n* Faulthurst"), page);
-        assertEquals(page, PortalLibraryTribute.ownPageFor("Faulthurst", 7L));
-        assertTrue(PortalLibraryTribute.ownPageFor(" ", 7L).endsWith("* an unknown hand"));
+    @DisplayName("The own-books page is the usual note, unchanged, with one tip appended")
+    void theOwnPageAppendsATip() {
+        for (long seed = 0; seed < 200; seed++) {
+            String page = PortalLibraryTribute.ownPageFor("Faulthurst", seed);
+            assertEquals(PortalLibraryTribute.pageFor("Faulthurst", seed)
+                + "\n\n" + PortalLibraryTribute.ownTipFor(seed), page);
+            assertEquals(page, PortalLibraryTribute.ownPageFor("Faulthurst", seed), "stable per room");
+        }
+        assertTrue(PortalLibraryTribute.ownPageFor(" ", 7L).contains("* an unknown hand\n\n"));
+    }
+
+    @Test
+    @DisplayName("Which tip a room gets does not follow from which note it got")
+    void tipAndNoteVaryIndependently() {
+        Set<String> pairs = new HashSet<>();
+        for (long seed = 0; seed < 6000; seed++) {
+            pairs.add(PortalLibraryTribute.variantFor(seed) + "|" + PortalLibraryTribute.ownTipFor(seed));
+        }
+        assertEquals(20 * 6, pairs.size(), "every note should be able to close with every tip");
     }
 
     private static int indexOf(String variant) {

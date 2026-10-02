@@ -59,10 +59,10 @@ public final class PortalLibraryTribute {
     );
 
     /**
-     * What the note says instead when the shelves are the reader's OWN. There is nothing to be
-     * uncertain about in that room — they know who wrote these — so the lectern uses the space for
-     * the one thing they cannot work out from the shelves: that writing another book is what makes
-     * a room like this likelier to turn up again ({@code PortalOwnShelves}).
+     * The line the note signs off with when the shelves are the reader's OWN. The note itself is
+     * unchanged — same variant, same name under it — and this is appended after it: the one thing
+     * the reader cannot work out from the shelves, that writing another book is what makes a room
+     * like this likelier to turn up again ({@code PortalOwnShelves}).
      */
     private static final List<String> OWN_TIPS = List.of(
         "Write another book and this room will find you again.",
@@ -80,20 +80,22 @@ public final class PortalLibraryTribute {
         return OWN_TIPS.size();
     }
 
-    /** The note for a library of the reader's own books: one tip, signed with their name. */
+    /** The note for a library of the reader's own books: the usual note, with a tip to close. */
     public static ItemStack buildOwnStack(String author, long seed) {
         return BookFactory.buildPlainBook(TITLE, CURATOR, List.of(ownPageFor(author, seed)));
     }
 
-    /** The own-books page: one tip, a blank line, and the reader's name under a bullet. */
+    /** The own-books page: exactly {@link #pageFor}, then a blank line and one tip. */
     static String ownPageFor(String author, long seed) {
-        String name = author == null || author.isBlank() ? "an unknown hand" : author;
-        return ownTipFor(seed) + "\n\n* " + name;
+        return pageFor(author, seed) + "\n\n" + ownTipFor(seed);
     }
 
-    /** The tip {@code seed} selects — seeded for the same reason {@link #variantFor} is. */
+    /**
+     * The tip {@code seed} selects — seeded for the same reason {@link #variantFor} is, and from
+     * the seed's complement so which tip a room gets does not follow from which note it got.
+     */
     static String ownTipFor(long seed) {
-        return OWN_TIPS.get((int) Math.floorMod(mix(seed), OWN_TIPS.size()));
+        return OWN_TIPS.get((int) Math.floorMod(mix(~seed), OWN_TIPS.size()));
     }
 
     /** How many ways the note can be written — twenty. */
