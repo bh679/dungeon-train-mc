@@ -368,6 +368,11 @@ public final class VariantOverlayRenderer {
                     sidecar::statesAt);
                 continue;
             }
+            // Out of every carriage plot: the parts menu is only ever closed by update(), which runs
+            // in one — so a player who left while it was open (a teleport to another category, a walk
+            // off the end) kept it active client-side, and the floating type menus ignore every
+            // click while a parts menu is active.
+            PartPositionMenuController.forget(player);
 
             // Contents plot — icon HUD for the contents' own variant
             // sidecar, anchored to the interior origin (one block in from
