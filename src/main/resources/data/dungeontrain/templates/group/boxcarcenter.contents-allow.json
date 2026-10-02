@@ -1,7 +1,10 @@
 {
   "schemaVersion": 2,
-  "excluded": [],
+  "excluded": [
+    "default_full"
+  ],
   "included": [
-    "enemies_group"
+    "enemies_group",
+    "things"
   ]
 }
