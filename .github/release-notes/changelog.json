@@ -22010,8 +22010,27 @@
       "released_at": null
     },
     {
-      "id": "longer-carriages",
+      "id": "own-library-dimension-odds",
       "version": "0.1102.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "books",
+        "balance"
+      ],
+      "title": "Your own library turns up when you've written something",
+      "summary": "A dimensional carriage is more likely to open onto a library of your own books after you've written one.",
+      "highlights": [],
+      "pr": 1757,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "longer-carriages",
+      "version": "0.1103.0",
       "type": "feat",
       "tags": [
         "feature",

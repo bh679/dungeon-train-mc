@@ -168,6 +168,23 @@ public final class PlayerRunState {
      */
     private int booksWrittenCount;
     /**
+     * Whether a book this player wrote is still waiting to be found: set by writing one, spent by
+     * walking into a library of their own books. While it stands, that library weighs more in the
+     * dimension lottery ({@code PortalOwnShelves}) — a reward per book, not a state of the run, so
+     * the next library is as rare as it was until they write again.
+     *
+     * <p>In memory only, for the reason {@link #booksWrittenCount} is.</p>
+     */
+    private boolean ownShelfBoostPending;
+    /**
+     * The own-books library this player last walked into, or {@link #NO_OWN_SHELF_PAIR}. Kept so
+     * standing in one is a single visit: a book signed inside the room is not spent by the same
+     * room on the next occupancy scan.
+     */
+    private int lastOwnShelfPair = NO_OWN_SHELF_PAIR;
+    /** {@link #lastOwnShelfPair} before any visit. Pair keys are carriage indices, never this. */
+    private static final int NO_OWN_SHELF_PAIR = Integer.MIN_VALUE;
+    /**
      * Death Notes and Love Notes this player has SIGNED this run — the per-run twins of the
      * {@code deathnotes_written} / {@code lovenotes_written} leaderboards, and what a Faulthurst
      * stat book reports for them.
@@ -558,7 +575,23 @@ public final class PlayerRunState {
     }
 
     public int incrementBooksWritten() {
+        ownShelfBoostPending = true;
         return ++booksWrittenCount;
+    }
+
+    /** Whether a book written this run has yet to be met in a library — see the field. */
+    public boolean ownShelfBoostPending() {
+        return ownShelfBoostPending;
+    }
+
+    /**
+     * Note that this player is standing in the own-books library of {@code pairKey}. Arriving in
+     * one spends the pending boost; staying in it, or coming back to the same one, does not.
+     */
+    public void visitOwnShelves(int pairKey) {
+        if (lastOwnShelfPair == pairKey) return;
+        lastOwnShelfPair = pairKey;
+        ownShelfBoostPending = false;
     }
 
     /** Death Notes signed this run. */
@@ -765,6 +798,8 @@ public final class PlayerRunState {
         containersOpened = 0;
         booksReadCount = 0;
         booksWrittenCount = 0;
+        ownShelfBoostPending = false;
+        lastOwnShelfPair = NO_OWN_SHELF_PAIR;
         deathNotesWritten = 0;
         loveNotesWritten = 0;
         narrativeLetters.clear();
