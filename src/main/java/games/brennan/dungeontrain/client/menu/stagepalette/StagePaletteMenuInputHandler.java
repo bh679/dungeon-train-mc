@@ -86,7 +86,7 @@ public final class StagePaletteMenuInputHandler {
         if (!StagePaletteMenu.isActive()) return false;
         if (CommandMenuState.isOpen()) return false;
         if (BlockVariantMenu.isActive()) return false;
-        if (PartPositionMenu.isActive()) return false;
+        if (PartPositionMenu.claimsPointer()) return false;
         if (EditorTypeMenuRenderer.hovered().cell() != EditorTypeMenuRenderer.CellKind.NONE) return false;
         if (StagePanelMenu.hovered().kind() != StagePanelMenu.CellKind.NONE) return false;
         return true;

@@ -131,7 +131,7 @@ public final class EditorTypeMenuInputHandler {
         if (!EditorStatusHudOverlay.isEditorMenusVisible()) return false;
         if (EditorTypeMenuRenderer.menus().isEmpty()) return false;
         if (CommandMenuState.isOpen()) return false;
-        if (PartPositionMenu.isActive()) return false;
+        if (PartPositionMenu.claimsPointer()) return false;
         return true;
     }
 
