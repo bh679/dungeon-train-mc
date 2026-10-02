@@ -117,6 +117,7 @@ public final class WorldLifecycleEvents {
         // stopped-tick count would be subtracted from a fresh train's elapsed ticks and start it
         // life somewhere behind where it belongs.
         games.brennan.dungeontrain.train.TrainMotionFreeze.clear();
+        games.brennan.dungeontrain.train.TrainMotion.clear();
         games.brennan.dungeontrain.train.TrainCarriageAppender.clearSettleTracker();
         // With the registry, for the same reason: a singleplayer world switch reuses the JVM, so
         // world A's held sub-level ids would otherwise answer isHeld for world B.

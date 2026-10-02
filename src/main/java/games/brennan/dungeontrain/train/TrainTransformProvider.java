@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -250,11 +251,11 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
      */
     private long frozenTicksAtSpawn = 0L;
 
-    // Set by {@link #setTargetVelocity} (any thread) when the velocity changes; consumed by the
-    // next {@link #nextTransform}, which re-bases the anchor onto the current canonical position
-    // before the formula prices the elapsed ticks at the new speed. See
-    // {@link #shouldRebaseOnVelocityChange}.
-    private volatile boolean rebaseAnchorPending = false;
+    // How many of this train's velocity changes ({@link TrainMotion}) this carriage has applied.
+    // {@link #nextTransform} replays the rest before it prices any ticks, so a carriage that was
+    // culled, parked or simply not ticked when the speed changed catches up on its next tick and
+    // lands in formation. Physics-tick owned, like the anchor it moves.
+    private int motionEpoch;
 
     // One-shot sub-block world-X nudge applied the instant spawnWorldPos is
     // captured on the first kinematic tick (see nextTransform). Lets the
@@ -353,7 +354,11 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         if (groupSize < 1) {
             throw new IllegalArgumentException("groupSize must be ≥ 1, got " + groupSize);
         }
-        this.targetVelocity = new Vector3d(targetVelocity);
+        // A carriage built after a speed change starts on the train's current velocity with nothing
+        // to replay — whatever the caller read (a plan made a few ticks ago, a lead that has not
+        // ticked since the change) cannot put it on a stale one.
+        this.targetVelocity = new Vector3d(TrainMotion.velocityOr(trainId, targetVelocity));
+        this.motionEpoch = TrainMotion.epoch(trainId);
         this.shipyardOrigin = shipyardOrigin.immutable();
         this.dimensionKey = dimensionKey;
         this.dims = dims;
@@ -386,27 +391,27 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         return trainId;
     }
 
+    /**
+     * The train's velocity now. Read from the train's schedule ({@link TrainMotion}) rather than
+     * this carriage's copy, which is only brought up to date on its own next tick — a carriage
+     * that has not ticked since a speed change would otherwise answer with the old speed.
+     */
     public Vector3dc getTargetVelocity() {
-        return targetVelocity;
+        return TrainMotion.velocityOr(trainId, targetVelocity);
     }
 
     /**
-     * Replace the target velocity with a fresh vector. Safe to call from any
-     * thread — the physics tick reads {@code targetVelocity} via the volatile
-     * reference and never mutates it in place.
+     * Change the velocity of this carriage's <b>train</b> from {@code gameTick} on.
+     *
+     * <p>There is no per-carriage velocity to set: the position formula multiplies the current
+     * velocity by every tick since the anchor, so a new velocity has to move each carriage's anchor
+     * onto where it was at the tick of the change, and only the train can say when that was to a
+     * carriage that was not being ticked at the time. The change is recorded on the train and every
+     * carriage — this one included — applies it on its next tick. See {@link TrainMotion} and the
+     * [rebase.velocity] block in {@link #nextTransform}.</p>
      */
-    public void setTargetVelocity(Vector3dc v) {
-        Vector3dc previous = this.targetVelocity;
-        this.targetVelocity = new Vector3d(v);
-        // The position formula multiplies the CURRENT velocity by every tick since the anchor, so
-        // a new velocity would re-price the whole distance travelled so far and teleport the
-        // carriage (a `/dungeontrain speed 0` snapped the train back to its spawn X; `speed 2`
-        // snapped it forward by 2 × the ticks elapsed, up to ~1000 blocks). Arm a re-base so the
-        // next tick moves the anchor onto the current position first and the new speed applies
-        // from here. See the [rebase.velocity] block in nextTransform.
-        if (shouldRebaseOnVelocityChange(previous, v)) {
-            rebaseAnchorPending = true;
-        }
+    public void setTargetVelocity(Vector3dc v, long gameTick) {
+        TrainMotion.setVelocity(trainId, targetVelocity, v, gameTick);
     }
 
     /**
@@ -1045,22 +1050,8 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         double prevCanonX = canonicalPos.x;
         double prevCanonY = canonicalPos.y;
         double prevCanonZ = canonicalPos.z;
-        // A velocity change re-bases the anchor onto where the carriage is NOW, so the new speed
-        // prices only the ticks from here on and the pose is continuous across the change. Same
-        // three writes as the resume-after-cull re-anchor below, and for the same reason the
-        // frozen baseline moves with the anchor. World-space riders (untagged mobs, Sable
-        // Pathfinder walkers) stay on their floor instead of being left in mid-air.
-        if (rebaseAnchorPending) {
-            rebaseAnchorPending = false;
-            if (JITTER_LOGGER.isDebugEnabled()) {
-                JITTER_LOGGER.debug("[rebase.velocity] pIdx={} trainId={} anchor {} -> {} velocityX={}",
-                    pIdx, trainId, fmt(spawnWorldPos), fmt(canonicalPos),
-                    String.format("%.3f", targetVelocity.x()));
-            }
-            spawnWorldPos.set(canonicalPos);
-            spawnGameTick = currentGameTick;
-            frozenTicksAtSpawn = TrainMotionFreeze.frozenTicks(trainId);
-        }
+        // Catch up on any change of the train's velocity before pricing a single tick with it.
+        boolean velocityChanged = applyScheduledVelocityChanges();
         // Hold a freshly-(re)loaded carriage at its spawn position until this
         // dimension's world-load grace window expires, then advance smoothly
         // (elapsed steps 0 → 0 → 1, no jump). A no-op for every carriage
@@ -1095,6 +1086,10 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
             }
             canonicalPos.set(prevCanonX, prevCanonY, prevCanonZ);
         }
+        // The step across a change is one tick at the old speed or the new, whichever the command
+        // landed before; the tripwire below measures against the new one alone and would call a
+        // sharp slow-down a jump.
+        if (velocityChanged && prevEffectivePos != null) prevEffectivePos.set(canonicalPos);
 
         // Resume-after-cull re-anchor. When this sub-level was culled to
         // holding it dropped out of SableKinematicTicker and stopped being
@@ -1134,6 +1129,56 @@ private static final double PHYSICS_DT = 1.0 / 20.0;
         TickOutput next = computeCompensatedTransform(input);
         logPhysicsProbe(input, next);
         return next;
+    }
+
+    /**
+     * Replay the changes of velocity this carriage has not applied yet, oldest first.
+     *
+     * <p>Each one moves the anchor onto where the carriage was <b>at the tick of that change</b> —
+     * the old velocity priced over the ticks up to it, with the same hold and frozen terms the
+     * formula uses — and only then adopts the new velocity, so the new speed prices nothing but
+     * the ticks since. That is the position every sibling computes for that tick, whether it was
+     * ticked on it or comes back from Sable holding minutes and several changes later: the anchor
+     * is derived from the train's schedule, never from wherever this carriage last happened to be
+     * (which, for one that had not ticked in eighty ticks, was eighty ticks of travel behind).
+     * World-space riders stay on their floor instead of being left in mid-air.</p>
+     *
+     * <p>The same three writes as the resume-after-cull re-anchor, and for the same reason the
+     * frozen baseline moves with the anchor. A no-op — one map read — for a train whose speed has
+     * never been changed.</p>
+     *
+     * @return true if the anchor moved
+     */
+    private boolean applyScheduledVelocityChanges() {
+        List<TrainMotion.Change> missed = TrainMotion.changesSince(trainId, motionEpoch);
+        if (missed.isEmpty()) return false;
+        long holdUntil = MOTION_HOLD_UNTIL.getOrDefault(dimensionKey, Long.MIN_VALUE);
+        boolean moved = false;
+        for (TrainMotion.Change change : missed) {
+            motionEpoch++;
+            Vector3d previous = targetVelocity;
+            if (!shouldRebaseOnVelocityChange(previous, change.velocity())) continue;
+            long ticksToChange = effectiveElapsedTicks(change.gameTick(), spawnGameTick, holdUntil,
+                change.frozenTicksAtChange() - frozenTicksAtSpawn);
+            if (JITTER_LOGGER.isDebugEnabled()) {
+                JITTER_LOGGER.debug("[rebase.velocity] pIdx={} trainId={} changeTick={} anchor {} +{} ticks at velocityX={} -> velocityX={}",
+                    pIdx, trainId, change.gameTick(), fmt(spawnWorldPos), ticksToChange,
+                    String.format("%.3f", previous.x()), String.format("%.3f", change.velocity().x()));
+            }
+            spawnWorldPos.add(
+                previous.x() * ticksToChange * PHYSICS_DT,
+                previous.y() * ticksToChange * PHYSICS_DT,
+                previous.z() * ticksToChange * PHYSICS_DT);
+            // The anchor's clock only ever moves forward. A change dated before the anchor priced
+            // no ticks above, and must not drag the baseline back over ticks already counted.
+            if (change.gameTick() >= spawnGameTick) {
+                spawnGameTick = change.gameTick();
+                frozenTicksAtSpawn = change.frozenTicksAtChange();
+            }
+            targetVelocity = new Vector3d(change.velocity());
+            moved = true;
+        }
+        return moved;
     }
 
     /**

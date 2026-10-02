@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.train;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyards;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import org.joml.Vector3dc;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -231,6 +233,43 @@ public final class Trains {
         map.put(anchorPIdx, ship);
     }
 
+    /**
+     * Change the velocity of every train on the server, from this tick on — what
+     * {@code /dungeontrain speed} and the settings screen both mean.
+     *
+     * <p>Walks the spawn registry rather than the loaded sub-levels, so a train that is partly or
+     * wholly culled to Sable holding is included: the change is recorded on the train
+     * ({@link TrainMotion}), and each carriage applies it on its next tick whenever that is. The
+     * loaded pass after it only catches a train the registry does not name.</p>
+     *
+     * @return how many trains there are (changed or already at {@code velocity})
+     */
+    public static int setVelocityForAllTrains(MinecraftServer server, Vector3dc velocity) {
+        // Every dimension reads the overworld's game time, which is the clock carriages tick on.
+        long now = server.overworld().getGameTime();
+        Map<UUID, Vector3dc> previousByTrain = new LinkedHashMap<>();
+        for (UUID trainId : registeredTrainIds()) {
+            previousByTrain.put(trainId, null);
+            for (ManagedShip ship : knownGroups(trainId).values()) {
+                // A culled group keeps its driver, so it can still say what the train was doing.
+                if (ship != null && ship.getKinematicDriver() instanceof TrainTransformProvider provider) {
+                    previousByTrain.put(trainId, provider.getTargetVelocity());
+                    break;
+                }
+            }
+        }
+        for (ServerLevel level : server.getAllLevels()) {
+            for (Carriage carriage : allCarriages(level)) {
+                previousByTrain.putIfAbsent(carriage.provider().getTrainId(),
+                    carriage.provider().getTargetVelocity());
+            }
+        }
+        for (Map.Entry<UUID, Vector3dc> train : previousByTrain.entrySet()) {
+            TrainMotion.setVelocity(train.getKey(), train.getValue(), velocity, now);
+        }
+        return previousByTrain.size();
+    }
+
     /** Clear every train registration. Wired to server stop and to {@code TrainAssembler.deleteAllTrains}. */
     public static void clearRegistry() {
         SPAWNED_GROUPS.clear();
@@ -335,9 +374,8 @@ public final class Trains {
 
     /**
      * Flat list of every loaded {@link TrainTransformProvider} carriage in
-     * {@code level}, ungrouped. Drop-in replacement for the legacy
-     * {@code TrainAssembler.getActiveTrainProviders} when callers don't care
-     * about train boundaries.
+     * {@code level}, ungrouped, for callers that don't care about train
+     * boundaries. Loaded only: a group culled to Sable holding is not here.
      */
     public static List<Carriage> allCarriages(ServerLevel level) {
         List<Carriage> out = new ArrayList<>();

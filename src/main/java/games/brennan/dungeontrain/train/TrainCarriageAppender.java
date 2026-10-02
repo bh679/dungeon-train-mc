@@ -1854,9 +1854,12 @@ public final class TrainCarriageAppender {
      * @param groupsSoFar    groups this run has spawned, bounded by {@link #CATCH_UP_FILL_MAX_GROUPS}
      * @param lastAdvancedTick the tick it last spawned on; a gap means the chain is no longer
      *                       contiguous and the lane must re-resolve its edge
+     * @param motionEpoch    {@link TrainMotion#epoch} when the plan was made. The chain advances the
+     *                       plan by one velocity × the ticks since; a change of speed in between
+     *                       makes that the wrong distance, so the run ends and the lane re-resolves
      */
     private record FillRun(Plan lastPlan, int lastAnchor, UUID lastSubLevelId, long lastShipId,
-                           int groupsSoFar, long planTick, long lastActiveTick) {}
+                           int groupsSoFar, long planTick, long lastActiveTick, int motionEpoch) {}
 
     /** In-progress fill runs, one per lane per train. See {@link FillRun}. */
     private static final Map<UUID, FillRun> FILL_RUN_FORWARD = new ConcurrentHashMap<>();
@@ -2341,7 +2344,8 @@ public final class TrainCarriageAppender {
                 // as long as they are within the catch-up cap of what exists.
                 if (fix == null || corridor == null) continue;
                 if (!isCorridorNear(player.getY(), player.getZ(), corridor.railY() + 1, corridor.trackCenterZ())) continue;
-                double minXNow = extrapolatedMinX(fix, tickNow, TrainMotionFreeze.frozenTicks(trainId));
+                double minXNow = extrapolatedMinX(fix, tickNow, TrainMotionFreeze.frozenTicks(trainId),
+                    TrainMotion.changesSince(trainId, fix.motionEpoch()));
                 int est = estimatePIdx(fix.anchor(), minXNow, player.getX(), groupSize, length, halfPadLen, TARGET_GAP_BLOCKS);
                 Integer nearestAnchor = nearestRegisteredAnchor(registeredAnchors, est);
                 if (nearestAnchor == null) nearestAnchor = leadAnchorPIdx;
@@ -4967,7 +4971,8 @@ public final class TrainCarriageAppender {
                                     ManagedShip ship, long now, int deficitPIdx, int groupSize) {
         if (CatchUpBurstAuto.effectiveMode() != CatchUpBurstMode.FILL) return;
         if (deficitGroups(deficitPIdx, groupSize) <= 1) return;
-        lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now, now));
+        lane.put(trainId, new FillRun(plan, anchor, ship.subLevelId(), ship.id(), 1, now, now,
+            TrainMotion.epoch(trainId)));
     }
 
     /** The lane's shortfall in whole groups; 0 when it is level or ahead. */
@@ -5009,6 +5014,12 @@ public final class TrainCarriageAppender {
         }
         if (!fillRunShouldContinue(run.lastActiveTick(), now, run.groupsSoFar(),
                 deficitGroups(deficitPIdx, groupSize))) {
+            lane.remove(trainId);
+            return false;
+        }
+        if (run.motionEpoch() != TrainMotion.epoch(trainId)) {
+            // The speed changed mid-run: the drift below is one velocity × the ticks since the
+            // plan, which no longer describes how far the train carried it.
             lane.remove(trainId);
             return false;
         }
@@ -5062,14 +5073,14 @@ public final class TrainCarriageAppender {
             if (deferred) {
                 // Hold the run open across the wait: same plan, same chain, continuity preserved.
                 lane.put(trainId, new FillRun(run.lastPlan(), run.lastAnchor(), run.lastSubLevelId(),
-                    run.lastShipId(), run.groupsSoFar(), run.planTick(), now));
+                    run.lastShipId(), run.groupsSoFar(), run.planTick(), now, run.motionEpoch()));
                 return false;
             }
             lane.remove(trainId);
             return false;
         }
         lane.put(trainId, new FillRun(prevPlan, prevAnchor, prevSubLevelId, prevShipId,
-            run.groupsSoFar() + spawned, now, now));
+            run.groupsSoFar() + spawned, now, now, run.motionEpoch()));
         LOGGER.info("[DungeonTrain] Catch-up fill on lane {}: +{} group(s) this tick (run total {}, deficitPIdx={} anchors up to {}) trainId={}",
             forward ? "forward" : "backward", spawned, run.groupsSoFar() + spawned,
             deficitPIdx, prevAnchor, trainId);
@@ -5818,9 +5829,12 @@ public final class TrainCarriageAppender {
      * @param backPadMinX      world X of the group's back-pad face (its world AABB minX)
      * @param gameTick         when it was read
      * @param frozenTicksAtFix {@link TrainMotionFreeze#frozenTicks} at that moment
-     * @param velX             the train's +X velocity (blocks per second)
+     * @param velX             the train's +X velocity (blocks per second) at that moment
+     * @param motionEpoch      {@link TrainMotion#epoch} at that moment — the changes of velocity
+     *                         made since are the ones the extrapolation has to take in turn
      */
-    record LineFix(int anchor, double backPadMinX, long gameTick, long frozenTicksAtFix, double velX) {}
+    record LineFix(int anchor, double backPadMinX, long gameTick, long frozenTicksAtFix, double velX,
+                   int motionEpoch) {}
 
     /**
      * Wake budget for one fully-culled train: last attempt tick, attempts this episode, and the
@@ -5857,11 +5871,16 @@ public final class TrainCarriageAppender {
     /**
      * Where {@code fix}'s back-pad face is at {@code now}: the recorded X plus the distance the
      * train travelled since, minus any ticks it spent frozen in between (both clamped at 0).
+     *
+     * <p>{@code changesSinceFix} are the train's changes of velocity since the fix was taken
+     * ({@link TrainMotion#changesSince} at {@link LineFix#motionEpoch}). A fix is consulted exactly
+     * when the train is culled, which is when a speed change cannot refresh it — pricing the whole
+     * stretch at the speed it was read at would put the line where the train is not.</p>
      */
-    static double extrapolatedMinX(LineFix fix, long now, long frozenNow) {
-        long frozenSince = Math.max(0L, frozenNow - fix.frozenTicksAtFix());
-        long elapsed = Math.max(0L, (now - fix.gameTick()) - frozenSince);
-        return fix.backPadMinX() + TrainTransformProvider.travelDistance(fix.velX(), elapsed);
+    static double extrapolatedMinX(LineFix fix, long now, long frozenNow,
+                                   List<TrainMotion.Change> changesSinceFix) {
+        return fix.backPadMinX() + TrainMotion.travelX(fix.velX(), fix.gameTick(),
+            fix.frozenTicksAtFix(), changesSinceFix, now, frozenNow);
     }
 
     /**
@@ -6294,7 +6313,7 @@ public final class TrainCarriageAppender {
         }
         if (best == null) return LINE_FIX.get(trainId);
         LineFix fresh = new LineFix(best.provider().getPIdx(), best.ship().worldAABB().minX(), now,
-            TrainMotionFreeze.frozenTicks(trainId), velocity.x());
+            TrainMotionFreeze.frozenTicks(trainId), velocity.x(), TrainMotion.epoch(trainId));
         LINE_FIX.put(trainId, fresh);
         return fresh;
     }
@@ -6384,7 +6403,8 @@ public final class TrainCarriageAppender {
             CarriageDims dims = any.dims();
             int groupSize = any.getGroupSize();
             int halfPadLen = CarriagePlacer.halfPadLen(dims);
-            double minXNow = extrapolatedMinX(fix, now, TrainMotionFreeze.frozenTicks(trainId));
+            double minXNow = extrapolatedMinX(fix, now, TrainMotionFreeze.frozenTicks(trainId),
+                TrainMotion.changesSince(trainId, fix.motionEpoch()));
             Set<Integer> anchors = groups.keySet();
             Integer bestEst = null;
             int bestDist = Integer.MAX_VALUE;

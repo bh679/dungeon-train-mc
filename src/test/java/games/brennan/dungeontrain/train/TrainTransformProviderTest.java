@@ -308,19 +308,201 @@ final class TrainTransformProviderTest {
         assertTrue(TrainTransformProvider.shouldRebaseOnVelocityChange(new Vector3d(0.0, 0.0, 0.0), two)); // speed 0 → 2
     }
 
+    // ──────────────────────────────────────────────────────────────────────
+    // Velocity changes, on real providers. The change is recorded on the train
+    // (TrainMotion) and each carriage replays it on its next tick — which is
+    // what lets a carriage that was culled to Sable holding at the time come
+    // back in formation. Every test has its own train id, so the static
+    // schedule and frozen counters cannot leak between them.
+
+    private static final Vector3d FOUR = new Vector3d(4, 0, 0);
+    private static final Vector3d ZERO = new Vector3d(0, 0, 0);
+    /** One group's stride on the reproduction train: 37 blocks of carriage plus the 0.4 seam. */
+    private static final double STRIDE = 37.4;
+
+    private static final ResourceKey<Level> OVERWORLD = ResourceKey.create(
+        Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath("minecraft", "overworld"));
+
+    private static TrainTransformProvider newProvider(UUID trainId, ResourceKey<Level> dim) {
+        return new TrainTransformProvider(
+            VEL, new BlockPos(0, 0, 0), dim, 0, 1, new CarriageDims(9, 7, 7), trainId);
+    }
+
+    /** As {@link #tick}, for a carriage whose spawn pose is at {@code spawnX}. */
+    private static double tickAt(TrainTransformProvider p, double spawnX, long gameTime) {
+        KinematicDriver.TickOutput out = p.nextTransform(new KinematicDriver.TickInput(
+            new Vector3d(spawnX, 64, 0), new Quaterniond(), new Vector3d(2.0e7, 100, 2.0e7), gameTime));
+        return out.position().x();
+    }
+
+    /** Tick every game tick in {@code [from, to]}; return the last emitted X. */
+    private static double run(TrainTransformProvider p, double spawnX, long from, long to) {
+        double x = Double.NaN;
+        for (long t = from; t <= to; t++) x = tickAt(p, spawnX, t);
+        return x;
+    }
+
     @Test
-    @DisplayName("re-based anchor keeps the position continuous across a velocity change")
-    void rebasedAnchor_positionIsContinuous() {
-        // 500 ticks at 2 b/s from x=1000, then the speed drops to 0. Without the re-base the
-        // formula would re-price those 500 ticks at 0 b/s and snap back to 1000; with the anchor
-        // moved onto the current position, elapsed restarts at 0 and the carriage stays put.
-        double before = 1000.0 + 2.0 * TrainTransformProvider.effectiveElapsedTicks(600L, 100L, Long.MIN_VALUE) * DT;
-        double anchorX = before;
-        long anchorTick = 600L;
-        double after = anchorX + 0.0 * TrainTransformProvider.effectiveElapsedTicks(600L, anchorTick, Long.MIN_VALUE) * DT;
-        assertEquals(before, after, EPS);
-        // ...and resuming at 2 b/s 40 ticks later advances from there, not from spawn.
-        double resumed = anchorX + 2.0 * TrainTransformProvider.effectiveElapsedTicks(640L, anchorTick, Long.MIN_VALUE) * DT;
-        assertEquals(before + 2.0 * 40 * DT, resumed, EPS);
+    @DisplayName("mid-ride change: the pose is continuous, then advances at the new speed")
+    void velocityChange_midRide_isContinuousThenUsesTheNewSpeed() {
+        TrainTransformProvider p = newProvider();
+        double at100 = run(p, 1000, 0, 100);
+        assertEquals(1000.0 + 2.0 * 100 * DT, at100, EPS);
+
+        p.setTargetVelocity(FOUR, 100L);
+        // Not 1000 + 4 × 101 × DT (the whole ride re-priced, +10 blocks in one tick): one step.
+        assertEquals(at100 + 4.0 * DT, tickAt(p, 1000, 101), EPS);
+        double at150 = run(p, 1000, 102, 150);
+        assertEquals(at100 + 4.0 * 50 * DT, at150, EPS);
+
+        p.setTargetVelocity(ZERO, 150L);
+        // Not back at the spawn X: parked where it is.
+        assertEquals(at150, run(p, 1000, 151, 200), EPS);
+
+        p.setTargetVelocity(VEL, 200L);
+        assertEquals(at150 + 2.0 * 40 * DT, run(p, 1000, 201, 240), EPS);
+    }
+
+    @Test
+    @DisplayName("held carriage: released after a speed change, it is where its sibling expects it")
+    void velocityChange_whileHeld_carriageReturnsInFormation() {
+        UUID trainId = UUID.randomUUID();
+        TrainTransformProvider live = newProvider(trainId, OVERWORLD);
+        TrainTransformProvider held = newProvider(trainId, OVERWORLD);
+        run(live, 1000, 0, 50);
+        run(held, 1000 + STRIDE, 0, 50);
+
+        // `held` is culled to Sable holding: it stops being ticked, and nothing that walks the
+        // loaded sub-levels can reach it. The speed changes while it is away.
+        run(live, 1000, 51, 100);
+        live.setTargetVelocity(FOUR, 100L);
+        assertEquals(4.0, held.getTargetVelocity().x(), "a held carriage answers with the train's speed");
+        double liveAt300 = run(live, 1000, 101, 300);
+
+        // Released at tick 300. Left at the old speed it would be 20 blocks behind and losing 0.1
+        // a tick — through the sibling behind it.
+        double heldAt300 = tickAt(held, 1000 + STRIDE, 300);
+        assertEquals(1000.0 + (2.0 * 100 + 4.0 * 200) * DT, liveAt300, EPS);
+        assertEquals(STRIDE, heldAt300 - liveAt300, EPS);
+
+        // ...and it stays there: both now run at the new speed.
+        assertEquals(STRIDE, tickAt(held, 1000 + STRIDE, 301) - tickAt(live, 1000, 301), EPS);
+        assertEquals(STRIDE, run(held, 1000 + STRIDE, 302, 400) - run(live, 1000, 302, 400), EPS);
+    }
+
+    @Test
+    @DisplayName("held carriage: several changes while away are replayed in order")
+    void velocityChange_severalWhileHeld_areAllReplayed() {
+        UUID trainId = UUID.randomUUID();
+        TrainTransformProvider live = newProvider(trainId, OVERWORLD);
+        TrainTransformProvider held = newProvider(trainId, OVERWORLD);
+        run(live, 1000, 0, 50);
+        run(held, 1000 + STRIDE, 0, 50);
+
+        run(live, 1000, 51, 100);
+        live.setTargetVelocity(FOUR, 100L);
+        run(live, 1000, 101, 160);
+        live.setTargetVelocity(ZERO, 160L);
+        run(live, 1000, 161, 220);
+        live.setTargetVelocity(new Vector3d(6, 0, 0), 220L);
+        double liveAt300 = run(live, 1000, 221, 300);
+
+        assertEquals(1000.0 + (2.0 * 100 + 4.0 * 60 + 0.0 * 60 + 6.0 * 80) * DT, liveAt300, EPS);
+        assertEquals(STRIDE, tickAt(held, 1000 + STRIDE, 300) - liveAt300, EPS);
+        assertEquals(STRIDE, tickAt(held, 1000 + STRIDE, 301) - tickAt(live, 1000, 301), EPS);
+    }
+
+    @Test
+    @DisplayName("a carriage not ticked since before the change re-bases to the change, not to its last tick")
+    void velocityChange_afterATickGap_pricesTheGapAtTheOldSpeed() {
+        // The reproduction's second fault: loaded when the command ran, so the change reached it,
+        // but last ticked 15 ticks before and next ticked 67 after. Re-basing onto its last
+        // emitted position left it 14.9 blocks behind its neighbours for good.
+        TrainTransformProvider p = newProvider();
+        run(p, 1000, 0, 18);
+        p.setTargetVelocity(FOUR, 33L);
+        assertEquals(1000.0 + (2.0 * 33 + 4.0 * 67) * DT, tickAt(p, 1000, 100), EPS);
+    }
+
+    @Test
+    @DisplayName("a carriage appended after a change starts on the train's current speed")
+    void velocityChange_carriageAppendedAfterwards_usesTheCurrentSpeed() {
+        UUID trainId = UUID.randomUUID();
+        TrainTransformProvider first = newProvider(trainId, OVERWORLD);
+        run(first, 1000, 0, 100);
+        first.setTargetVelocity(FOUR, 100L);
+        run(first, 1000, 101, 120);
+
+        // Built with the velocity its caller read before the change (VEL) — the constructor takes
+        // the train's — and with nothing to replay: no ticks before its own spawn to re-price.
+        TrainTransformProvider appended = newProvider(trainId, OVERWORLD);
+        appended.preSeedSpawnTick(120L);
+        assertEquals(4.0, appended.getTargetVelocity().x());
+        assertEquals(2000.0, tickAt(appended, 2000, 120), EPS);
+        assertEquals(2000.0 + 4.0 * DT, tickAt(appended, 2000, 121), EPS);
+    }
+
+    @Test
+    @DisplayName("re-applying the current speed is not a change")
+    void velocityChange_sameValue_leavesTheScheduleAlone() {
+        TrainTransformProvider p = newProvider();
+        run(p, 1000, 0, 50);
+        p.setTargetVelocity(new Vector3d(VEL), 50L);
+        assertEquals(0, TrainMotion.epoch(p.getTrainId()));
+        assertEquals(1000.0 + 2.0 * 60 * DT, run(p, 1000, 51, 60), EPS);
+    }
+
+    @Test
+    @DisplayName("a change while the train is frozen: it stays put, then leaves at the new speed")
+    void velocityChange_whileFrozen_holdsThenResumesAtTheNewSpeed() {
+        UUID trainId = UUID.randomUUID();
+        TrainTransformProvider live = newProvider(trainId, OVERWORLD);
+        TrainTransformProvider held = newProvider(trainId, OVERWORLD);
+        double parked = run(live, 1000, 0, 100);
+        run(held, 1000 + STRIDE, 0, 50);
+
+        TrainMotionFreeze.setFrozen(trainId, true);
+        try {
+            for (long t = 101; t <= 120; t++) {
+                TrainMotionFreeze.tickFrozen();
+                assertEquals(parked, tickAt(live, 1000, t), EPS, "frozen at tick " + t);
+                if (t == 110) live.setTargetVelocity(FOUR, t);
+            }
+        } finally {
+            TrainMotionFreeze.setFrozen(trainId, false);
+        }
+
+        assertEquals(parked + 4.0 * DT, tickAt(live, 1000, 121), EPS);
+        double liveAt130 = run(live, 1000, 122, 130);
+        assertEquals(parked + 4.0 * 10 * DT, liveAt130, EPS);
+        // The carriage that was away for the freeze and the change subtracts the same stopped time.
+        assertEquals(STRIDE, tickAt(held, 1000 + STRIDE, 130) - liveAt130, EPS);
+    }
+
+    @Test
+    @DisplayName("a change inside the world-load hold: still held, then starts at the new speed")
+    void velocityChange_duringLoadGrace_startsAtTheNewSpeed() {
+        // Its own dimension: the hold deadline is per dimension and static.
+        ResourceKey<Level> dim = ResourceKey.create(
+            Registries.DIMENSION, ResourceLocation.fromNamespaceAndPath("dungeontrain", "test_load_grace"));
+        TrainTransformProvider.beginLoadGrace(dim, 0L); // holds until tick 20
+        TrainTransformProvider p = newProvider(UUID.randomUUID(), dim);
+
+        assertEquals(1000.0, run(p, 1000, 0, 10), EPS);
+        p.setTargetVelocity(FOUR, 10L);
+        assertEquals(1000.0, run(p, 1000, 11, 20), EPS);
+        assertEquals(1000.0 + 4.0 * DT, tickAt(p, 1000, 21), EPS);
+        assertEquals(1000.0 + 4.0 * 10 * DT, run(p, 1000, 22, 30), EPS);
+    }
+
+    @Test
+    @DisplayName("a train whose speed never changes computes exactly what it always did")
+    void noVelocityChange_isBitIdenticalToTheFormula() {
+        TrainTransformProvider p = newProvider();
+        for (long t = 0; t <= 2000; t++) {
+            // No tolerance: the same expression, in the same order, as before the schedule existed.
+            assertEquals(1000.0 + 2.0 * t * DT, tickAt(p, 1000, t), "tick " + t);
+        }
+        assertEquals(0, TrainMotion.epoch(p.getTrainId()));
     }
 }

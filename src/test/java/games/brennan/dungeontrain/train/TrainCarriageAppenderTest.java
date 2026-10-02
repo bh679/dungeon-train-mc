@@ -1050,12 +1050,25 @@ final class TrainCarriageAppenderTest {
     @Test
     @DisplayName("extrapolatedMinX: travel since the fix, minus ticks spent frozen, never backwards")
     void lineFix_extrapolation() {
-        TrainCarriageAppender.LineFix fix = new TrainCarriageAppender.LineFix(0, 100.0, 1000L, 10L, 2.0);
-        assertEquals(110.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 10L), 1e-9);   // 100 ticks × 0.1
-        assertEquals(108.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 30L), 1e-9);   // 20 frozen
-        assertEquals(100.0, TrainCarriageAppender.extrapolatedMinX(fix, 900L, 10L), 1e-9);    // clock behind → 0
-        assertEquals(110.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 5L), 1e-9);    // frozen count reset → 0
-        assertEquals(100.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 500L), 1e-9);  // frozen the whole time
+        TrainCarriageAppender.LineFix fix = new TrainCarriageAppender.LineFix(0, 100.0, 1000L, 10L, 2.0, 0);
+        List<TrainMotion.Change> none = List.of();
+        assertEquals(110.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 10L, none), 1e-9);   // 100 ticks × 0.1
+        assertEquals(108.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 30L, none), 1e-9);   // 20 frozen
+        assertEquals(100.0, TrainCarriageAppender.extrapolatedMinX(fix, 900L, 10L, none), 1e-9);    // clock behind → 0
+        assertEquals(110.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 5L, none), 1e-9);    // frozen count reset → 0
+        assertEquals(100.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 500L, none), 1e-9);  // frozen the whole time
+    }
+
+    @Test
+    @DisplayName("extrapolatedMinX: a speed change since the fix is priced from the tick it happened")
+    void lineFix_extrapolationAcrossSpeedChange() {
+        // Fix read at 2 b/s; 40 ticks later the train (culled, so the fix cannot refresh) goes to 4.
+        TrainCarriageAppender.LineFix fix = new TrainCarriageAppender.LineFix(0, 100.0, 1000L, 10L, 2.0, 0);
+        List<TrainMotion.Change> changes = List.of(
+            new TrainMotion.Change(1040L, 10L, new org.joml.Vector3d(4, 0, 0)));
+        // 40 × 0.1 + 60 × 0.2. Priced at the fix's own speed throughout it would read 110 — six
+        // blocks short of the train, and falling a block further behind every ten ticks.
+        assertEquals(116.0, TrainCarriageAppender.extrapolatedMinX(fix, 1100L, 10L, changes), 1e-9);
     }
 
     @Test

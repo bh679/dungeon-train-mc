@@ -860,23 +860,6 @@ public final class TrainAssembler {
     }
 
     /**
-     * Return every loaded {@link TrainTransformProvider} group in
-     * {@code level}, ungrouped. Drop-in usage for legacy callers
-     * ({@code /dt speed}, settings screen) that iterate providers and
-     * mutate them. Per-train operations should prefer
-     * {@link Trains#byTrainId(ServerLevel)}.
-     */
-    public static List<TrainTransformProvider> getActiveTrainProviders(ServerLevel level) {
-        List<TrainTransformProvider> providers = new ArrayList<>();
-        for (ManagedShip ship : Shipyards.of(level).findAll()) {
-            if (ship.getKinematicDriver() instanceof TrainTransformProvider p) {
-                providers.add(p);
-            }
-        }
-        return providers;
-    }
-
-    /**
      * Public deletion helper for callers that need a clean slate before
      * spawning their own carriages outside the {@link #spawnTrain} path —
      * e.g. {@code /dt debug pair}, which spawns single-carriage groups
@@ -904,6 +887,9 @@ public final class TrainAssembler {
         // The stopped-tick counts go with the ids they are keyed on: the train being wiped here is
         // the only thing they described, and a fresh train must start from zero.
         TrainMotionFreeze.clear();
+        // And the velocity schedule with them: its entries are keyed on the same ids and dated
+        // against the frozen counts just dropped.
+        TrainMotion.clear();
         TrainCarriageAppender.clearSettleTracker();
         games.brennan.dungeontrain.event.CarriageGroupGapTicker.resetWarnings();
         Shipyard shipyard = Shipyards.of(level);

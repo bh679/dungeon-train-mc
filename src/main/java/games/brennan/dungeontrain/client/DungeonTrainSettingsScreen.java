@@ -5,8 +5,7 @@ import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageGenerationConfig;
 import games.brennan.dungeontrain.train.CarriageGenerationMode;
-import games.brennan.dungeontrain.train.TrainAssembler;
-import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,11 +16,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
 
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -276,21 +273,13 @@ public final class DungeonTrainSettingsScreen extends Screen {
 
         Vector3d velocity = new Vector3d(speed, 0.0, 0.0);
         server.execute(() -> {
-            // Per-carriage architecture: each carriage is its own sub-level
-            // with its own provider. Velocity propagates to every carriage
-            // in every train. Carriage count is now a config knob the
-            // appender reads — setting via DungeonTrainConfig already
-            // happened on the calling side; nothing to do per-provider for
-            // count.
-            int updated = 0;
-            for (ServerLevel level : server.getAllLevels()) {
-                List<TrainTransformProvider> providers = TrainAssembler.getActiveTrainProviders(level);
-                for (TrainTransformProvider p : providers) {
-                    p.setTargetVelocity(velocity);
-                    updated++;
-                }
-            }
-            LOGGER.info("[DungeonTrain] Live update applied to {} carriage(s) (config carriages={})", updated, carriages);
+            // Velocity is set on the train and every carriage picks it up on its next tick —
+            // including groups culled to Sable holding, which a walk over the loaded sub-levels
+            // never reached (see TrainMotion). Carriage count is a config knob the appender
+            // reads — setting via DungeonTrainConfig already happened on the calling side;
+            // nothing to do per-provider for count.
+            int updated = Trains.setVelocityForAllTrains(server, velocity);
+            LOGGER.info("[DungeonTrain] Live update applied to {} train(s) (config carriages={})", updated, carriages);
         });
     }
 

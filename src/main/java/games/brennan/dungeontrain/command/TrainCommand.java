@@ -14,7 +14,7 @@ import games.brennan.dungeontrain.event.DtpPlacementService;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.TrainAssembler;
-import games.brennan.dungeontrain.train.TrainTransformProvider;
+import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.event.TrainTickEvents;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -30,10 +30,6 @@ import games.brennan.dungeontrain.ship.ManagedShip;
 import org.joml.Vector3d;
 import org.slf4j.Logger;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * Registers OP-only (permission level 2) commands:
@@ -248,17 +244,9 @@ public final class TrainCommand {
     private static int runSpeed(CommandSourceStack source, double value) {
         DungeonTrainConfig.setSpeed(value);
 
-        MinecraftServer server = source.getServer();
-        Set<UUID> updatedTrainIds = new HashSet<>();
-        for (ServerLevel level : server.getAllLevels()) {
-            List<TrainTransformProvider> providers = TrainAssembler.getActiveTrainProviders(level);
-            for (TrainTransformProvider p : providers) {
-                p.setTargetVelocity(new Vector3d(value, 0.0, 0.0));
-                updatedTrainIds.add(p.getTrainId());
-            }
-        }
-
-        final int trainCount = updatedTrainIds.size();
+        // On the train, not on its loaded carriages: a group culled to Sable holding has to come
+        // back at the new speed and in formation too. See TrainMotion.
+        final int trainCount = Trains.setVelocityForAllTrains(source.getServer(), new Vector3d(value, 0.0, 0.0));
         LOGGER.info("[DungeonTrain] /dungeontrain speed {} — updated {} active train(s)", value, trainCount);
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.train_speed_set_m", value, trainCount, Component.translatable(trainCount == 1 ? "chat.dungeontrain.common.noun.train.singular" : "chat.dungeontrain.common.noun.train.plural")), true);
         return 1;
