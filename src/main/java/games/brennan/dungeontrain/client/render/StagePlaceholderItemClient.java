@@ -29,8 +29,8 @@ import net.neoforged.neoforge.registries.DeferredItem;
 
 /**
  * Client wiring for {@link StagePlaceholderItemRenderer}: hands every stage placeholder item the
- * renderer, and registers the door's flat sprite model (no item model references it any more —
- * the placeholder item models are {@code builtin/entity}). Also lends every placeholder its
+ * renderer, and registers the icon models it draws (no item model references them — the
+ * placeholder item models are {@code builtin/entity}). Also lends every placeholder its
  * target's block colour, so a placed {@code stage_leaves} previews with the biome's foliage tint.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -55,7 +55,7 @@ public final class StagePlaceholderItemClient {
 
     @SubscribeEvent
     public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event) {
-        event.register(StagePlaceholderItemRenderer.DOOR_SPRITE);
+        StagePlaceholderItemRenderer.ICON_MODELS.values().forEach(event::register);
     }
 
     /**
