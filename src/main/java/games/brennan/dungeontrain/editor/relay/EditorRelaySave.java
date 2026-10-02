@@ -98,6 +98,10 @@ public final class EditorRelaySave {
             // so this one stays silent.
             return;
         }
+        if (model instanceof Template.Building building) {
+            uploadBuilding(player, building.name());
+            return;
+        }
         if (EditorShipped.isShipped(model)) {
             // Said out loud, unlike the other early returns. A shipped NAME is the whole test — a
             // dimensional carriage called 'default' is one, and so is 'black' — so an author who
@@ -128,5 +132,41 @@ public final class EditorRelaySave {
         // The template's own stage link, not a builder world's current stage: a carriage built for
         // the desert stretch carries that with it, and a template with no link uploads with none.
         BuilderRelayUpload.afterSave(player, overworld, written, model.stageId());
+    }
+
+    /**
+     * Upload a building from the file its save just wrote.
+     *
+     * <p>Two things differ from every other kind. A shipped name is not a refusal: changing one of
+     * the mod's own buildings is what the Buildings tab is for, and the player's copy of it is their
+     * work — the relay tells an untouched copy from an edit by its hash. And the blocks are the
+     * stored template rather than the plot, so what goes up is exactly the file (see
+     * {@code BuilderRelayUpload.afterSave}).</p>
+     *
+     * <p>Dev mode is the one refusal, for the reason the gate above exists: there a save of a
+     * bundled building is the mod's own content being authored into the source tree, not somebody's
+     * build.</p>
+     */
+    private static void uploadBuilding(ServerPlayer player, String name) {
+        if (games.brennan.dungeontrain.editor.EditorDevMode.isEnabled()
+                && games.brennan.dungeontrain.building.BuildingStore.isBundled(name)) {
+            // Said out loud, as the gate above is and for its reason: a save that quietly stops
+            // syncing leaves the relay holding an older building than the one on disk.
+            player.sendSystemMessage(Component.translatable(
+                    "gui.dungeontrain.builder.profile.builtin_not_uploaded", "building / " + name)
+                .withStyle(ChatFormatting.YELLOW));
+            return;
+        }
+        MinecraftServer server = player.getServer();
+        if (server == null || server.overworld() == null) {
+            return;
+        }
+        net.minecraft.nbt.CompoundTag template =
+                games.brennan.dungeontrain.building.BuildingStore.readPlayerTag(name).orElse(null);
+        BuilderSave.Written written = EditorRelayWrite.ofBuilding(name, template);
+        if (written == null) {
+            return;
+        }
+        BuilderRelayUpload.afterSave(player, server.overworld(), written, "", template);
     }
 }

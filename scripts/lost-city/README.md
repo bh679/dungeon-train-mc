@@ -76,6 +76,15 @@ python3 scripts/lost-city/build-templates.py && python3 scripts/lost-city/genera
 python3 scripts/lost-city/test_lostcity.py
 ```
 
+The easy way to hand-edit a building is the in-game **Buildings** editor (`/dt editor buildings`). In
+dev mode, saving a shipped building writes its `.nbt` here and adds its name to `authored.json`:
+`build-templates.py` then leaves that file alone (no rewrite, no `--check` drift) and takes the
+manifest's `size` from it. Keep the conventions above by hand — a broken floor repeat just means the
+stretch designs place that building unstretched. Delete the name from `authored.json` to hand the
+building back to its recipe.
+
+Players use the same editor: their edits load in place of the shipped building in their own worlds,
+and new buildings join the roster through the `player_building` slot (placed as built, no processors).
+
 A template can also be loaded in-game with a structure block (`dungeontrain:lost_city/<name>`),
-edited, and saved back over the `.nbt`. If you keep such a hand-edited file, remove that archetype from
-`build-templates.py`'s output (or the `--check` step will flag the drift) and note it here.
+edited, and saved back over the `.nbt` — list it in `authored.json` the same way.
