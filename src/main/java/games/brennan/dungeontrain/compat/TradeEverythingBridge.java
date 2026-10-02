@@ -41,18 +41,28 @@ public final class TradeEverythingBridge {
     private static final int TRIM_TEMPLATE_VALUE_SIXTEENTHS = 35;
 
     /**
-     * Bookshelf and honey block — trade for 1 emerald each. 22 sixteenths × the
-     * default 0.75 payout margin = 16.5, so the payout clears exactly 1 emerald
-     * (16 would pay out only 12 sixteenths). Recipe derivation priced a
-     * bookshelf at ~8 emeralds, far too much for a block library carriages are
-     * packed with.
+     * Bookshelf — four trade for 1 emerald. In 256ths of an emerald, not
+     * sixteenths: the value is 5.5 sixteenths, and neither whole neighbour
+     * quotes a 4 → 1 row (5 gives 9 → 2, 6 gives 11 → 3 — Trade Everything
+     * skips a batch that rounds away more than 10%). {@code 4 × 88 × 0.75}
+     * (the default payout margin) = 264, one emerald (256) with 3% to spare;
+     * three (198) do not reach it. Library carriages are packed with them, so
+     * one each was far too much. A librarian sells them for 9 emeralds: Trade
+     * Everything 0.14.0+ pays the lower of this value and its 90% buy-back,
+     * older builds paid 8 emeralds.
      */
-    private static final int BOOKSHELF_VALUE_SIXTEENTHS = 22;
+    static final int BOOKSHELF_VALUE_256THS = 88;
+
+    /**
+     * Honey block — trades for 1 emerald each. 22 sixteenths × the default 0.75
+     * payout margin = 16.5, so the payout clears exactly 1 emerald (16 would pay
+     * out only 12 sixteenths).
+     */
     private static final int HONEY_BLOCK_VALUE_SIXTEENTHS = 22;
 
     /**
      * Value that pays out exactly one emerald per multiple — the same 22 as the
-     * bookshelf. {@code 22n × 0.75 = 16.5n} floors to n emeralds for every n < 32.
+     * honey block. {@code 22n × 0.75 = 16.5n} floors to n emeralds for every n < 32.
      */
     static final int EMERALD_PAYOUT_SIXTEENTHS = 22;
 
@@ -120,8 +130,8 @@ public final class TradeEverythingBridge {
         // floor every potion at 1 sixteenth — Strength II priced like a stick.
         TradeEverythingApi.registerValueProvider(TradeEverythingBridge::potionValue);
 
-        TradeEverythingApi.setItemOverride(
-            ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_SIXTEENTHS);
+        TradeEverythingApi.setItemOverride256ths(
+            ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_256THS);
         TradeEverythingApi.setItemOverride(
             ResourceLocation.withDefaultNamespace("honey_block"), HONEY_BLOCK_VALUE_SIXTEENTHS);
 
