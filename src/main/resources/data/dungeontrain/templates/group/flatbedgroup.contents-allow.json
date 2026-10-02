@@ -4,6 +4,7 @@
     "cargocontents"
   ],
   "included": [
-    "enemies_group"
+    "enemies_group",
+    "things"
   ]
 }

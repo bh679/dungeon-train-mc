@@ -112,6 +112,10 @@
   "sand": 0,
   "shop": 8,
   "statue": 1,
+  "things": {
+    "weight": 1,
+    "optIn": true
+  },
   "trapmid": {
     "weight": 1,
     "name": "zombiechoicetrap"

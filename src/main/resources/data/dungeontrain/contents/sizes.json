@@ -4,6 +4,7 @@
     "cargocontents": "full",
     "default_full": "full",
     "enemies_group": "full",
-    "portal": "half"
+    "portal": "half",
+    "things": "full"
   }
 }
