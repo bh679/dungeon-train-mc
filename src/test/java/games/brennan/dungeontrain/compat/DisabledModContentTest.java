@@ -105,4 +105,20 @@ final class DisabledModContentTest {
         assertFalse(DisabledModContent.isDisabledItem(id("betternether:bowl_upgrade_smithing_template"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("minecraft:netherite_upgrade_smithing_template"), false));
     }
+
+    @Test
+    @DisplayName("the biome mods' own creative tabs are hidden; vanilla and DT tabs are kept")
+    void creativeTabs() {
+        List<String> hidden = List.of(
+            "betternether:blocks", "betternether:items", "betternether:nature",
+            "betterend:blocks", "betterend:items", "betterend:nature",
+            "biomesoplenty:main");
+        for (String tab : hidden) {
+            assertTrue(DisabledModContent.isHiddenCreativeTab(id(tab)), tab);
+        }
+        assertFalse(DisabledModContent.isHiddenCreativeTab(id("minecraft:building_blocks")));
+        assertFalse(DisabledModContent.isHiddenCreativeTab(id("minecraft:search")));
+        assertFalse(DisabledModContent.isHiddenCreativeTab(id("dungeontrain:prefab_variants")));
+        assertFalse(DisabledModContent.isHiddenCreativeTab(null));
+    }
 }

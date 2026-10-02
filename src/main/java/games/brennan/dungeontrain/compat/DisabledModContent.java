@@ -57,6 +57,12 @@ public final class DisabledModContent {
             && ORE.matcher(placedFeature.getPath()).matches();
     }
 
+    /** A disabled mod's own creative tab ({@code betternether:blocks}, {@code biomesoplenty:main}, …) — hidden
+     *  so the creative inventory stays on DT's and vanilla's tabs; the blocks remain in the search tab. */
+    public static boolean isHiddenCreativeTab(ResourceLocation tabId) {
+        return tabId != null && NAMESPACES.contains(tabId.getNamespace());
+    }
+
     /** True for a disabled mod's armour, weapon, tool, tool part, gear smithing template, metal or ore item. */
     public static boolean isDisabledItem(Item item) {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(item);

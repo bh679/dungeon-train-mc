@@ -11,7 +11,10 @@ import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Hides {@link DisabledModContent} gear and ores from every creative tab and the creative search. */
+/**
+ * Hides {@link DisabledModContent} gear and ores from every creative tab and the creative search, and
+ * hides those mods' own tabs outright — an emptied tab is not drawn, and its blocks stay searchable.
+ */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DisabledModCreativeTabs {
 
@@ -19,6 +22,11 @@ public final class DisabledModCreativeTabs {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
+        if (DisabledModContent.isHiddenCreativeTab(event.getTabKey().location())) {
+            for (ItemStack stack : new ArrayList<>(event.getParentEntries())) {
+                event.remove(stack, CreativeModeTab.TabVisibility.PARENT_TAB_ONLY);
+            }
+        }
         List<ItemStack> disabled = new ArrayList<>();
         for (ItemStack stack : event.getParentEntries()) {
             if (DisabledModContent.isDisabledItem(stack)) {
