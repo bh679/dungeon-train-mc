@@ -901,6 +901,30 @@
       "modrinth_version": "AH6BZ7jO"
     },
     {
+      "name": "What Are They Up To",
+      "slug": "what-are-they-up-to",
+      "mod_ids": [
+        "watut"
+      ],
+      "project_id": 945479,
+      "file_id": 6418577,
+      "required": true,
+      "modrinth_project": "what-are-they-up-to",
+      "modrinth_version": "uWr2aTW9"
+    },
+    {
+      "name": "CoroUtil",
+      "slug": "coroutil",
+      "mod_ids": [
+        "coroutil"
+      ],
+      "project_id": 237749,
+      "file_id": 5622966,
+      "required": true,
+      "modrinth_project": "coroutil",
+      "modrinth_version": "H2YXCYUY"
+    },
+    {
       "name": "Sable Pathfinder",
       "slug": "sable-pathfinder",
       "mod_ids": [
