@@ -6,7 +6,6 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.SharedBookGate;
-import games.brennan.dungeontrain.narrative.WorldLanguage;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.ExposureServer;
@@ -27,6 +26,7 @@ import net.minecraft.world.item.component.ItemLore;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
@@ -38,7 +38,11 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -63,6 +67,13 @@ public final class SharedPhotos {
     /** Frame extra-data key carrying the relay id of a found photo. */
     public static final String SHARED_ID_KEY = "dt_shared_photo_id";
 
+    /** Frame extra-data key carrying the photographer's name on a found photo. */
+    public static final String SHARED_AUTHOR_KEY = "dt_shared_photo_author";
+
+    /** Send-off lines, keyed {@code chat.dungeontrain.shared_photo.1..N}; familiar lines likewise. */
+    private static final int SEND_OFF_LINES = 10;
+    private static final int FAMILIAR_LINES = 5;
+
     /** The client uploads the pixels to the server separately; they can trail the print by a moment. */
     private static final int PIXEL_WAIT_TICKS = 100;
     private static final int REFRESH_PERIOD_TICKS = 600;
@@ -83,6 +94,8 @@ public final class SharedPhotos {
     /** Server thread only. */
     private static List<PendingUpload> pendingUploads = List.of();
     private static volatile List<PoolPhoto> pool = List.of();
+    /** Found photos a player has already been greeted for, by relay id. Server thread only. */
+    private static final Map<UUID, Set<Integer>> greeted = new HashMap<>();
     private static final AtomicBoolean fetchInFlight = new AtomicBoolean();
     private static int ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
 
@@ -164,8 +177,9 @@ public final class SharedPhotos {
                             buildPayload(uuid, upload.author(), key, jpeg, upload.meta()).toString());
                     ServerPlayer player = server.getPlayerList().getPlayer(upload.playerId());
                     if (player != null) {
-                        player.displayClientMessage(Component.translatable("chat.dungeontrain.shared_photo")
-                                .withStyle(ChatFormatting.GRAY), false);
+                        int line = 1 + player.getRandom().nextInt(SEND_OFF_LINES);
+                        player.sendSystemMessage(Component.translatable("chat.dungeontrain.shared_photo." + line)
+                                .withStyle(ChatFormatting.GRAY));
                     }
                 }));
     }
@@ -185,6 +199,7 @@ public final class SharedPhotos {
     public static void onServerStopped(ServerStoppedEvent event) {
         pendingUploads = List.of();
         pool = List.of();
+        greeted.clear();
         ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
     }
 
@@ -194,8 +209,6 @@ public final class SharedPhotos {
         List<PoolPhoto> held = pool;
         String base = DungeonTrain.relayBaseUrl();
         StringBuilder url = new StringBuilder(base).append("/photos/pool?limit=").append(POOL_FETCH_LIMIT);
-        String hostUuid = WorldLanguage.hostUuidConsented(server);
-        if (hostUuid != null && !hostUuid.isBlank()) url.append("&uuid=").append(hostUuid.replace("-", ""));
         if (!held.isEmpty()) {
             url.append("&exclude=").append(held.stream().map(p -> String.valueOf(p.id())).collect(Collectors.joining(",")));
         }
@@ -242,6 +255,28 @@ public final class SharedPhotos {
 
     // ---- found photo ----------------------------------------------------------
 
+    /** Who took the photo in {@code stack}: a found photo's credited name, else the frame's photographer. Blank if none. */
+    public static String authorOf(ItemStack stack) {
+        Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        if (frame == null) return "";
+        String shared = frame.extraData().getString(SHARED_AUTHOR_KEY);
+        return shared.isBlank() ? frame.photographer().name() : shared;
+    }
+
+    /** A photographer who picks up their own photo from the train is told so, once per photo. */
+    @SubscribeEvent
+    public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        Frame frame = event.getTo().get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        if (frame == null || !frame.extraData().contains(SHARED_ID_KEY)) return;
+        if (!player.getGameProfile().getName().equals(frame.extraData().getString(SHARED_AUTHOR_KEY))) return;
+        int id = frame.extraData().getInt(SHARED_ID_KEY);
+        if (!greeted.computeIfAbsent(player.getUUID(), key -> new HashSet<>()).add(id)) return;
+        int line = 1 + player.getRandom().nextInt(FAMILIAR_LINES);
+        player.sendSystemMessage(Component.translatable("chat.dungeontrain.familiar_photo." + line)
+                .withStyle(ChatFormatting.GRAY));
+    }
+
     /** A community photo as an Exposure photograph, or {@link ItemStack#EMPTY} when none is available. */
     public static ItemStack rollFound(long seed) {
         List<PoolPhoto> photos = pool;
@@ -257,7 +292,10 @@ public final class SharedPhotos {
             }
             Frame frame = Frame.create()
                     .setIdentifier(ExposureIdentifier.id(exposureId))
-                    .updateExtraData(tag -> tag.putInt(SHARED_ID_KEY, photo.id()))
+                    .updateExtraData(tag -> {
+                        tag.putInt(SHARED_ID_KEY, photo.id());
+                        tag.putString(SHARED_AUTHOR_KEY, photo.author());
+                    })
                     .toImmutable();
             ItemStack stack = new ItemStack(Exposure.Items.PHOTOGRAPH.get());
             stack.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);

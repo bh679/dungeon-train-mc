@@ -625,6 +625,11 @@ public final class StartingBookEvents {
         ItemEntity dropped = dropFromPlayer(player, stack);
         if (BURN_ENTITIES.containsKey(dropped.getUUID())) return;
         igniteItem(dropped, FlameVariant.DEFAULT);
+        // Books are announced where their burn is detected; a photograph only ever burns through here.
+        if (!stack.has(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT)
+                && dropped.level() instanceof net.minecraft.server.level.ServerLevel level) {
+            BookBurnAuthorMessage.announce(level, dropped, stack);
+        }
     }
 
     /** Starts the burn on an item entity: locks pickup, tracks it, plays the ignition sound. */
