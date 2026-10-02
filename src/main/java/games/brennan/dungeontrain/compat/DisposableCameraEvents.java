@@ -7,26 +7,18 @@ import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.neoforge.api.event.ModifyFrameExtraDataEvent;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import io.github.mortuusars.exposure.world.entity.CameraOperator;
-import io.github.mortuusars.exposure.world.item.PhotographItem;
 import io.github.mortuusars.exposure.world.item.StackedPhotographsItem;
-import io.github.mortuusars.exposure.world.level.storage.ExposureIdentifier;
 import io.github.mortuusars.exposure.world.item.camera.CameraItem;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.ClickAction;
-import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.neoforge.event.ItemStackedOnOtherEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Behaviour of the {@link DisposableCamera}: one shot, the viewfinder closes so the print can be
@@ -37,9 +29,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link StartingBookEvents#dropAndBurn}, never through the burn-on-drop predicate the books use.</p>
  *
  * <p>A shot runs: release → shutter opens and the frame lands on the camera stack → shutter closes and
- * the item cooldown starts (Polaroid's print animation is that cooldown) → cooldown ends and Polaroid
- * prints the photograph, taking the frame off the camera. This class watches the camera stack through
- * those states from the server player tick.</p>
+ * the item cooldown starts (Polaroid's print animation is that cooldown) → this class closes the
+ * viewfinder and restarts the cooldown → as it runs out, this class prints the photograph into the
+ * camera's slot and burns the camera. It watches the camera stack through those states from the
+ * server player tick.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DisposableCameraEvents {
@@ -54,11 +47,10 @@ public final class DisposableCameraEvents {
     static final int PRINT_TICKS = 40;
 
     /**
-     * Player → the photo their disposable camera is about to print. Only bridges the ticks between
-     * the shot and the print; if it is lost (a relog mid-print) the photo just stays where Polaroid
-     * put it.
+     * DT prints the photo when this much of that cooldown is left — the last couple of ticks, so the
+     * server acts before Polaroid's own print (which fires at zero, on the client too) can.
      */
-    private static final Map<UUID, ExposureIdentifier> PENDING_PRINTS = new ConcurrentHashMap<>();
+    static final float PRINT_AT_COOLDOWN = 0.075f;
 
     private DisposableCameraEvents() {}
 
@@ -87,66 +79,52 @@ public final class DisposableCameraEvents {
     private static void tickCamera(ServerPlayer player, Inventory inventory, int slot, ItemStack camera) {
         CameraItem item = (CameraItem) camera.getItem();
         Frame pending = camera.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
-        if (pending != null) {
-            PENDING_PRINTS.put(player.getUUID(), pending.identifier());
-            if (!DisposableCamera.isShot(camera)) {
-                DisposableCamera.markShot(camera);
+        if (pending == null) {
+            if (DisposableCamera.isShot(camera)) {
+                // Polaroid got to the print first (it shouldn't); the spent camera still burns.
+                inventory.setItem(slot, ItemStack.EMPTY);
+                StartingBookEvents.dropAndBurn(player, camera);
             }
-            if (item.isActive(camera) && !item.getShutter().isOpen(camera)
-                    && player.getCooldowns().isOnCooldown(item)
-                    && player.getCooldowns().getCooldownPercent(item, 0f) <= CLOSE_VIEWFINDER_AT_COOLDOWN) {
+            return;
+        }
+        if (!DisposableCamera.isShot(camera)) {
+            DisposableCamera.markShot(camera);
+        }
+        if (item.getShutter().isOpen(camera)) {
+            return;
+        }
+        boolean coolingDown = player.getCooldowns().isOnCooldown(item);
+        float cooldownLeft = coolingDown ? player.getCooldowns().getCooldownPercent(item, 0f) : 0f;
+        if (item.isActive(camera)) {
+            if (cooldownLeft <= CLOSE_VIEWFINDER_AT_COOLDOWN) {
                 closeViewfinder(player, item, camera);
             }
             return;
         }
-        if (DisposableCamera.isShot(camera)) {
-            // The frame has left the camera: Polaroid printed the photograph this tick. The photo
-            // takes the camera's place in the inventory as the camera drops.
-            ExposureIdentifier printed = PENDING_PRINTS.remove(player.getUUID());
-            ItemStack photograph = printed == null ? ItemStack.EMPTY : takePrintedPhotograph(inventory, printed);
-            inventory.setItem(slot, photograph);
-            SharedPhotos.queueUpload(player, photograph);
-            StartingBookEvents.dropAndBurn(player, camera);
-            // Polaroid prints on the client too, into the slot the server just emptied again. The
-            // server sees no net change there and would never correct it, leaving a second photo.
-            player.inventoryMenu.sendAllDataToRemote();
-            if (player.containerMenu != player.inventoryMenu) {
-                player.containerMenu.sendAllDataToRemote();
-            }
+        if (cooldownLeft <= PRINT_AT_COOLDOWN) {
+            printAndBurn(player, inventory, slot, camera, pending);
         }
     }
 
     /**
-     * Takes the photograph Polaroid just printed back out of the inventory — it lands in the first
-     * free slot, or on top of a stack of photographs — so it can be put where the camera was. Empty
-     * if it isn't there (the inventory was full and it was dropped).
+     * The print animation is done: in one tick the photograph takes the camera's inventory slot and
+     * the camera drops and burns. DT prints it rather than leaving it to Polaroid, which would put
+     * the photo in the first free slot — on the client as well as the server — a moment later.
      */
-    private static ItemStack takePrintedPhotograph(Inventory inventory, ExposureIdentifier printed) {
-        for (int slot = 0; slot < inventory.getContainerSize(); slot++) {
-            ItemStack stack = inventory.getItem(slot);
-            if (isPhotographOf(stack, printed)) {
-                inventory.setItem(slot, ItemStack.EMPTY);
-                return stack;
-            }
-            if (stack.getItem() instanceof StackedPhotographsItem stacked
-                    && stacked.getPhotographs(stack).size() > 0
-                    && isPhotographOf(stacked.getPhotographs(stack).getItemUnsafe(0), printed)) {
-                ItemStack photograph = stacked.removeTopPhotograph(stack).getItemStack();
-                if (stacked.getPhotographs(stack).size() == 1) {
-                    inventory.setItem(slot, stacked.removeTopPhotograph(stack).getItemStack());
-                }
-                return photograph;
-            }
-        }
-        return ItemStack.EMPTY;
-    }
-
-    private static boolean isPhotographOf(ItemStack stack, ExposureIdentifier identifier) {
-        if (!(stack.getItem() instanceof PhotographItem)) {
-            return false;
-        }
-        Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
-        return frame != null && identifier.equals(frame.identifier());
+    private static void printAndBurn(ServerPlayer player, Inventory inventory, int slot, ItemStack camera, Frame frame) {
+        camera.remove(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        ItemStack photograph = new ItemStack(Exposure.Items.PHOTOGRAPH.get());
+        photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
+        photograph.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.type());
+        photograph.setPopTime(Inventory.POP_TIME_DURATION);
+        // Camera out first, then the photo into the slot it left — same tick.
+        inventory.setItem(slot, ItemStack.EMPTY);
+        StartingBookEvents.dropAndBurn(player, camera);
+        inventory.setItem(slot, photograph);
+        SharedPhotos.queueUpload(player, photograph);
+        player.level().playSound(null, player, Exposure.SoundEvents.PHOTOGRAPH_RUSTLE.get(), SoundSource.PLAYERS,
+            0.6f, player.level().getRandom().nextFloat() * 0.2f + 1.0f);
+        Exposure.CriteriaTriggers.FRAME_PRINTED.get().trigger(player, player.blockPosition(), frame, photograph);
     }
 
     private static void closeViewfinder(ServerPlayer player, CameraItem item, ItemStack camera) {
@@ -160,13 +138,6 @@ public final class DisposableCameraEvents {
     public static void onItemStackedOn(ItemStackedOnOtherEvent event) {
         if (event.getClickAction() == ClickAction.SECONDARY && DisposableCamera.is(event.getStackedOnItem())) {
             event.setCanceled(true);
-        }
-    }
-
-    @SubscribeEvent
-    public static void onBuildCreativeTabs(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(DisposableCamera.create(), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
         }
     }
 

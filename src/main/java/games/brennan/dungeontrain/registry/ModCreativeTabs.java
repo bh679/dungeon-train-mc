@@ -134,6 +134,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
+                // The one camera players get — Exposure's own tab is hidden (DisabledModContent).
+                output.accept(games.brennan.dungeontrain.compat.DisposableCamera.create());
             })
             .build()
     );

@@ -2486,6 +2486,8 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": "自动",
   "gui.dungeontrain.editor_menu.editor.menu_distance": "菜单距离：%s",
   "gui.dungeontrain.editor_menu.editor.plot_lighting": "场地光照  [%s]",
+  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": "模组方块标签页  [%s]",
+  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": "搜索中显示模组方块  [%s]",
   "gui.dungeontrain.editor_menu.editor.observers": "侦测器",
   "gui.dungeontrain.editor_menu.editor.mobs": "生物",
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": "方块",

@@ -2472,6 +2472,8 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": "อัตโนมัติ",
   "gui.dungeontrain.editor_menu.editor.menu_distance": "ระยะเมนู: %s",
   "gui.dungeontrain.editor_menu.editor.plot_lighting": "แสงในผัง  [%s]",
+  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": "แท็บบล็อกม็อด  [%s]",
+  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": "บล็อกม็อดในการค้นหา  [%s]",
   "gui.dungeontrain.editor_menu.editor.observers": "ออบเซิร์ฟเวอร์",
   "gui.dungeontrain.editor_menu.editor.mobs": "ม็อบ",
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": "บล็อก",

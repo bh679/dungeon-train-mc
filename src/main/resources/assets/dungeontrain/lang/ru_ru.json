@@ -2559,6 +2559,8 @@
   "gui.dungeontrain.editor_menu.editor.menus_auto": "Авто",
   "gui.dungeontrain.editor_menu.editor.menu_distance": "Дистанция меню: %s",
   "gui.dungeontrain.editor_menu.editor.plot_lighting": "Свет участка  [%s]",
+  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": "Вкладки блоков модов  [%s]",
+  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": "Блоки модов в поиске  [%s]",
   "gui.dungeontrain.editor_menu.editor.observers": "Наблюдатели",
   "gui.dungeontrain.editor_menu.editor.mobs": "Мобы",
   "gui.dungeontrain.editor_menu.editor.mobs_blocks": "Блоки",

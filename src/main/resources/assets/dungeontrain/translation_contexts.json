@@ -9025,6 +9025,16 @@
   "screen",
   "world"
  ],
+ "gui.dungeontrain.editor_menu.editor.mod_block_tabs": [
+  "button",
+  "screen",
+  "world"
+ ],
+ "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": [
+  "button",
+  "screen",
+  "world"
+ ],
  "gui.dungeontrain.editor_menu.editor.observers": [
   "screen",
   "world"

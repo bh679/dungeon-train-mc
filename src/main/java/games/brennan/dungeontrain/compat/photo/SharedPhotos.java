@@ -302,6 +302,7 @@ public final class SharedPhotos {
                     .toImmutable();
             ItemStack stack = new ItemStack(Exposure.Items.PHOTOGRAPH.get());
             stack.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
+            stack.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.type());
             if (!photo.author().isBlank()) {
                 stack.set(DataComponents.LORE, new ItemLore(List.of(
                         Component.translatable("item.dungeontrain.shared_photo.by", photo.author())
