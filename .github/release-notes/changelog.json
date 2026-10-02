@@ -22097,6 +22097,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-copies-not-votable",
+      "version": "0.1107.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "books"
+      ],
+      "title": "Copies of community books",
+      "summary": "Copies of community books no longer ask for your vote.",
+      "highlights": [],
+      "pr": 1764,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
