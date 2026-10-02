@@ -22148,6 +22148,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stage-blocks-tab-rows",
+      "version": "0.1110.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Tidier Stage Blocks tab",
+      "summary": "The Stage Blocks creative tab is grouped into rows by material, and every stage block shows its icon.",
+      "highlights": [],
+      "pr": 1766,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
