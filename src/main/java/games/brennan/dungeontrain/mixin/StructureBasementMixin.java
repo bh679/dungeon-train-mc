@@ -72,6 +72,12 @@ public abstract class StructureBasementMixin {
             return;
         }
         if (!LostCityStructures.isLostCityStructure(id)) return;
+        if (LostCityStructures.isNewBuildingSlot(id)
+                && !games.brennan.dungeontrain.building.BuildingWorldgen.hasNewBuildings()) {
+            // No new buildings in this world: the slot has nothing to place, so the set tries its others.
+            cir.setReturnValue(StructureStart.INVALID_START);
+            return;
+        }
         // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
         // else, including a start we can't place in a level (a sampler or foreign generator), is dropped
         // before any template is loaded.

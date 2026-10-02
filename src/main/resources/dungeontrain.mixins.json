@@ -50,6 +50,8 @@
     "StructurePieceAccessor",
     "StructureTemplateUpsideDownEntitiesMixin",
     "StructureTemplateClearMixin",
+    "StructureTemplateManagerBuildingMixin",
+    "StructureTemplatePoolBuildingMixin",
     "ChunkStatusSpawnMixin",
     "RandomStateMixin",
     "TagLoaderWwooFilterMixin",

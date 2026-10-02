@@ -84,6 +84,21 @@ public final class EditorRelayWrite {
     }
 
     /**
+     * What a save of building {@code name} just wrote, from the file it wrote.
+     *
+     * <p>Not through {@link #of}: a building's upload is its stored template, not its plot (see
+     * {@code BuilderRelayUpload.afterSave}), so the volume named here is the template's own — its
+     * size as saved, at the origin, since nothing is read from the world.</p>
+     */
+    public static BuilderSave.Written ofBuilding(String name, net.minecraft.nbt.CompoundTag template) {
+        if (name == null || name.isEmpty() || template == null) {
+            return null;
+        }
+        return new BuilderSave.Written(BuilderPhotoPaths.Kind.BUILDING, name, "", BlockPos.ZERO,
+                games.brennan.dungeontrain.building.BuildingSizes.sizeIn(template));
+    }
+
+    /**
      * The relay's name for {@code model}, or {@code null} for a template the editor cannot upload.
      *
      * <p>The sub kinds here deliberately match what {@code BuilderSave.savePart} and
@@ -134,6 +149,11 @@ public final class EditorRelayWrite {
 
             // Frames have no relay kind yet, so nothing to file.
             case Template.ChunkFrame ignored -> null;
+            // One flat namespace: a building's name is the whole of its identity.
+            case Template.Building building ->
+                    new Naming(BuilderPhotoPaths.Kind.BUILDING, "", building.name());
+            // Official Lost City buildings are never uploaded — Big Lost City is All Rights Reserved.
+            case Template.LostCity ignored -> null;
         };
     }
 
