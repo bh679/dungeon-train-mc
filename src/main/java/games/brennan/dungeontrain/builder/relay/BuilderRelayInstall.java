@@ -8,7 +8,10 @@ import games.brennan.dungeontrain.building.BuildingSizes;
 import games.brennan.dungeontrain.building.BuildingStore;
 import games.brennan.dungeontrain.building.BuildingWorldgen;
 import games.brennan.dungeontrain.building.Buildings;
+import games.brennan.dungeontrain.editor.BuildingEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
+import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartRegistry;
@@ -464,6 +467,7 @@ public final class BuilderRelayInstall {
                 MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
                 BuildingWorldgen.evict(server, id);
                 BuildingWorldgen.evict(server, newId);
+                restampIfShowing(server, newId);
                 return true;
             }
             // No store of the player's to move: frames are never offered, groups handled above,
@@ -583,9 +587,25 @@ public final class BuilderRelayInstall {
         if (!BuildingStore.isShipped(id)) BuildingMeta.save(id, BuildingMeta.load(id), false);
         BuildingRegistry.register(id);
         BuildingSizes.settle(id, size);
-        BuildingWorldgen.evict(ServerLifecycleHooks.getCurrentServer(), id);
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        BuildingWorldgen.evict(server, id);
+        restampIfShowing(server, id);
         LOGGER.info("[DungeonTrain] Builder relay download: installed building '{}'", id);
         return Outcome.INSTALLED;
+    }
+
+    /**
+     * Put a building's plot back in step with its file, when the Buildings tab is the one standing.
+     *
+     * <p>The other kinds leave this to the editor's enter command, which stamps on the way in. A
+     * building is opened by walking to its plot instead — entering would restamp over unsaved work —
+     * so a plot nobody stamps here stays as it was: empty for a build that just arrived, and the old
+     * blocks for one that was replaced. With another tab standing there is no plot to touch, and
+     * entering Buildings stamps every one from disk.</p>
+     */
+    private static void restampIfShowing(MinecraftServer server, String id) {
+        if (server == null || !EditorStampedCategoryState.isActive(EditorCategory.BUILDINGS)) return;
+        BuildingEditor.restamp(server.overworld(), id);
     }
 
     /** The variant to write a carriage under — the registered one, or a new custom. See {@code BuilderSave.variantFor}. */
