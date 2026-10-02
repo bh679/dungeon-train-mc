@@ -25,8 +25,8 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 
 /**
  * Adds two buttons under a found player photo while it is open in Exposure's viewer:
- * {@code Tribute 1 ◆} — pay a diamond to keep the photo travelling — and {@code Close}.
- * Each button is only as wide as what is written on it.
+ * {@code 1 ◆} — pay a diamond to keep the photo travelling — and {@code X} to close. Each button
+ * is only as wide as what is drawn on it.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoTributeButtons {
@@ -36,9 +36,9 @@ public final class PhotoTributeButtons {
     private static final int GAP = 6;
     private static final int BOTTOM_MARGIN = 8;
     private static final int ICON_SIZE = 16;
-    private static final int LABEL_COLOUR = 0xFFFFFF;
     private static final int CAN_AFFORD_COLOUR = 0x55AAFF;
     private static final int CANNOT_AFFORD_COLOUR = 0xFF5555;
+    private static final String CLOSE_MARK = "X";
 
     /** The viewer the buttons were last added to, and those buttons. Render thread only. */
     private static Screen shownOn;
@@ -59,10 +59,10 @@ public final class PhotoTributeButtons {
 
         Font font = minecraft.font;
         int diamonds = player.getInventory().countItem(Items.DIAMOND);
-        boolean canAfford = player.getAbilities().instabuild || diamonds >= SharedPhotos.TRIBUTE_COST;
+        boolean canAfford = diamonds >= SharedPhotos.TRIBUTE_COST;
         Component closeLabel = Component.translatable("gui.dungeontrain.photo_tribute.close");
         int tributeWidth = TributeButton.widthFor(font);
-        int closeWidth = font.width(closeLabel) + 2 * PADDING;
+        int closeWidth = font.width(CLOSE_MARK) + 2 * PADDING;
         int left = (screen.width - tributeWidth - GAP - closeWidth) / 2;
         int y = screen.height - HEIGHT - BOTTOM_MARGIN;
 
@@ -71,9 +71,11 @@ public final class PhotoTributeButtons {
             screen.onClose();
         });
         tribute.active = canAfford;
-        tribute.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.have", diamonds)));
-        Button close = Button.builder(closeLabel, button -> screen.onClose())
-            .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT).build();
+        tribute.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.offer")
+            .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have", diamonds))));
+        Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
+            .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT)
+            .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
         event.addListener(tribute);
         event.addListener(close);
         shownOn = screen;
@@ -96,7 +98,7 @@ public final class PhotoTributeButtons {
         shown = List.of();
     }
 
-    /** {@code Tribute <cost> <diamond>}: the cost is blue when the player can pay it, red when not. */
+    /** {@code <cost> <diamond>}: the cost is blue when the player carries enough diamonds, red when not. */
     private static final class TributeButton extends Button {
 
         private static final Component LABEL = Component.translatable("gui.dungeontrain.photo_tribute.tribute");
@@ -111,7 +113,7 @@ public final class PhotoTributeButtons {
         }
 
         static int widthFor(Font font) {
-            return PADDING + font.width(LABEL) + font.width(" " + COST) + 2 + ICON_SIZE + PADDING / 2;
+            return PADDING + font.width(COST) + 2 + ICON_SIZE + PADDING / 2;
         }
 
         @Override
@@ -120,10 +122,8 @@ public final class PhotoTributeButtons {
             Font font = Minecraft.getInstance().font;
             int textY = getY() + (height - font.lineHeight) / 2 + 1;
             int x = getX() + PADDING;
-            graphics.drawString(font, LABEL, x, textY, LABEL_COLOUR);
-            x += font.width(LABEL);
-            graphics.drawString(font, " " + COST, x, textY, canAfford ? CAN_AFFORD_COLOUR : CANNOT_AFFORD_COLOUR);
-            x += font.width(" " + COST) + 2;
+            graphics.drawString(font, COST, x, textY, canAfford ? CAN_AFFORD_COLOUR : CANNOT_AFFORD_COLOUR);
+            x += font.width(COST) + 2;
             graphics.renderItem(ICON, x, getY() + (height - ICON_SIZE) / 2);
         }
 

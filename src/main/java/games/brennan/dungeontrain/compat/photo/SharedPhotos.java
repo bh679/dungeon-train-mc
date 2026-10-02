@@ -273,8 +273,7 @@ public final class SharedPhotos {
     public static void payTribute(ServerPlayer player) {
         int photoId = heldSharedId(player);
         if (photoId == 0) return;
-        if (!player.getAbilities().instabuild
-                && player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.DIAMOND), TRIBUTE_COST, player.inventoryMenu.getCraftSlots()) < TRIBUTE_COST) {
+        if (player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.DIAMOND), TRIBUTE_COST, player.inventoryMenu.getCraftSlots()) < TRIBUTE_COST) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.photo_tribute.no_diamond").withStyle(ChatFormatting.GRAY));
             return;
         }
