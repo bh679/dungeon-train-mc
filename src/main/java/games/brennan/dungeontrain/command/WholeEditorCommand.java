@@ -19,7 +19,6 @@ import games.brennan.dungeontrain.train.CarriageGroup;
 import games.brennan.dungeontrain.train.CarriageGroupRegistry;
 import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
-import games.brennan.dungeontrain.train.WholeGroupSettings;
 import games.brennan.dungeontrain.train.WholeKind;
 import games.brennan.dungeontrain.train.WholeWeights;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -68,13 +67,7 @@ public final class WholeEditorCommand {
 
     public static LiteralArgumentBuilder<CommandSourceStack> build() {
         LiteralArgumentBuilder<CommandSourceStack> whole = Commands.literal("whole")
-            .executes(ctx -> EditorCommand.enterCategory(ctx.getSource(), EditorCategory.WHOLE))
-            .then(Commands.literal("every")
-                .then(Commands.literal("off").executes(ctx -> runEvery(ctx.getSource(), WholeGroupSettings.OFF)))
-                .then(Commands.literal("inc").executes(ctx -> runEvery(ctx.getSource(), WholeGroupSettings.every() + 1)))
-                .then(Commands.literal("dec").executes(ctx -> runEvery(ctx.getSource(), WholeGroupSettings.every() - 1)))
-                .then(Commands.argument("n", IntegerArgumentType.integer(WholeGroupSettings.OFF, WholeGroupSettings.MAX_EVERY))
-                    .executes(ctx -> runEvery(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "n")))));
+            .executes(ctx -> EditorCommand.enterCategory(ctx.getSource(), EditorCategory.WHOLE));
         attachVerbs(whole, WholeKind.ROOM, ROOM_SUGGESTIONS);
         LiteralArgumentBuilder<CommandSourceStack> group = Commands.literal("group");
         attachVerbs(group, WholeKind.GROUP, GROUP_SUGGESTIONS);
@@ -312,18 +305,6 @@ public final class WholeEditorCommand {
         CarriageDims dims = DungeonTrainWorldData.get(player.serverLevel().getServer().overworld()).dims();
         WholeCarriageEditor.PlotLocation at = WholeCarriageEditor.plotContaining(player.blockPosition(), dims);
         return at != null && at.kind() == kind ? at.id() : null;
-    }
-
-    private static int runEvery(CommandSourceStack source, int n) {
-        try {
-            int stored = WholeGroupSettings.set(n);
-            source.sendSuccess(() -> stored == WholeGroupSettings.OFF
-                ? Component.translatable("chat.dungeontrain.editor.whole_every_off").withStyle(ChatFormatting.GREEN)
-                : Component.translatable("chat.dungeontrain.editor.whole_every_set", stored).withStyle(ChatFormatting.GREEN), true);
-            return 1;
-        } catch (IOException e) {
-            return failure(source, "every", e);
-        }
     }
 
     // ---- shared ---------------------------------------------------------------------------------

@@ -55,5 +55,9 @@
     "name": "Cargo Stone"
   },
   "whole": 0,
+  "wholegroup": {
+    "weight": 1,
+    "name": "Whole Group"
+  },
   "windowed": 20
 }

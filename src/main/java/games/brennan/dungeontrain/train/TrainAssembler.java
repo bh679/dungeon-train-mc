@@ -483,8 +483,17 @@ public final class TrainAssembler {
         // Whole-room slots and the whole-group verdict — see WholeCarriageSelection / WholeGroupSelection.
         WholeCarriageSelection.RoomPick[] roomBySlot = new WholeCarriageSelection.RoomPick[groupSize];
         GateContext anchorGate = GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, anchorPIdx, length);
+        // How the group is filled: rooms, a Half pair or one Group carriage, drawn by the layout
+        // weights. A layout whose pool has nothing for this group falls back to rooms.
+        CarriageLayout layout = layoutFor(level, anchorPIdx, groupSize, genCfg.seed());
+        // A Group carriage: one group-long shell over the run, its Group contents laid after assembly
+        // like any carriage's. Portal groups never take one — see FullCarriageSelection.
+        FullCarriageSelection.FullPick drawnFull = layout == CarriageLayout.GROUP
+            ? FullCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
+        // Drawing the Whole Group template makes the run a whole group, the way drawing `whole`
+        // makes a slot a whole room; with none that fits, the template stands as the Group carriage.
         WholeGroupSelection.GroupPick groupPick =
-            WholeGroupSelection.isWholeGroup(level, anchorPIdx, groupSize, genCfg.seed())
+            WholeGroupSelection.wantsWholeGroup(level, anchorPIdx, groupSize, drawnFull == null ? null : drawnFull.shell())
                 ? WholeGroupSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
         final boolean wholeGroup = groupPick != null;
         if (wholeGroup) {
@@ -495,14 +504,7 @@ public final class TrainAssembler {
             blocks.addAll(StagePlacementScope.with(anchorStage,
                 () -> WholeGroupSelection.place(level, runOrigin, groupPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
         }
-        // How the rest of the group is filled: rooms, a Half pair or one Group carriage, drawn by the
-        // layout weights. A layout whose pool has nothing for this group falls back to rooms.
-        CarriageLayout layout = wholeGroup ? CarriageLayout.ROOMS
-            : layoutFor(level, anchorPIdx, groupSize, genCfg.seed());
-        // A Group carriage: one group-long shell over the run, its Group contents laid after assembly
-        // like any carriage's. Portal groups never take one — see FullCarriageSelection.
-        FullCarriageSelection.FullPick fullPick = layout == CarriageLayout.GROUP
-            ? FullCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
+        final FullCarriageSelection.FullPick fullPick = wholeGroup ? null : drawnFull;
         final boolean fullGroup = fullPick != null;
         if (fullGroup) {
             BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
@@ -511,7 +513,7 @@ public final class TrainAssembler {
                 () -> FullCarriageSelection.place(level, runOrigin, fullPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
         }
         // A Half pair: two Half shells end to end, each its own pick — see HalfCarriageSelection.
-        HalfCarriageSelection.HalfPick halfPick = layout == CarriageLayout.HALVES
+        HalfCarriageSelection.HalfPick halfPick = layout == CarriageLayout.HALVES && !wholeGroup
             ? HalfCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
         final boolean halfGroup = halfPick != null;
         if (halfGroup) {

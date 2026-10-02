@@ -124,8 +124,6 @@ public final class EditorTypeMenuRenderer {
         PKG_RELOAD,
         /** Top-row Open Packages cell — opens the dtpacks root. */
         PKG_OPEN_FOLDER,
-        /** The WHOLE category's "whole group every N" settings row — click +1, shift-click -1, cmd-click types. */
-        WHOLE_EVERY,
         /** Top-right {@code ↻} on the top row — face the player; shift resets to the grid. */
         FACE,
         /** Tunnel template groups cell (tunnel section / entrance rows) — click opens the group picker. */
@@ -294,8 +292,6 @@ public final class EditorTypeMenuRenderer {
      * defaulted flag there would pop a dismissed panel back up.
      */
     private static volatile boolean HELP_PANEL_DISMISSED = false;
-    /** The WHOLE category's "every N", or {@link EditorTypeMenusPacket#NO_WHOLE_GROUP_EVERY}. */
-    private static volatile int WHOLE_GROUP_EVERY = EditorTypeMenusPacket.NO_WHOLE_GROUP_EVERY;
     private static volatile Hovered HOVERED = Hovered.NONE;
 
     private EditorTypeMenuRenderer() {}
@@ -362,7 +358,6 @@ public final class EditorTypeMenuRenderer {
             EditorPanelFacing.clearAll();
             SELECTED_STAGE = "";
             HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
-            WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
             HOVERED = Hovered.NONE;
             stagesRemoveMode = false;
             StagesSort.clear();
@@ -378,7 +373,6 @@ public final class EditorTypeMenuRenderer {
         CACHE = menus;
         SELECTED_STAGE = packet.selectedStageId();
         HELP_PANEL_DISMISSED = packet.helpPanelDismissed();
-        WHOLE_GROUP_EVERY = packet.wholeGroupEvery();
         EditorTypeMenusPacket.Menu first = menus.get(0);
         LOGGER.info("[DungeonTrain] EditorTypeMenus: client received {} menus (first: '{}' with {} variants @ {})",
             menus.size(), first.typeName(), first.variants().size(), first.worldPos());
@@ -398,14 +392,9 @@ public final class EditorTypeMenuRenderer {
         return HELP_PANEL_DISMISSED;
     }
 
-    /** The WHOLE category's "whole group every N" as last pushed, or {@code NO_WHOLE_GROUP_EVERY}. */
-    public static int wholeGroupEvery() {
-        return WHOLE_GROUP_EVERY;
-    }
-
-    /** Category bar + tab strip, plus the settings row when the menu carries one. */
+    /** The rows above a nav menu's variants: the category bar and the tab strip. */
     static int navChromeRows(EditorTypeMenusPacket.Menu menu) {
-        return 2 + EditorTypeMenuSettingsRow.rows(menu);
+        return 2;
     }
 
     public static Hovered hovered() {
@@ -499,10 +488,6 @@ public final class EditorTypeMenuRenderer {
         double headerW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
         // The top row ends in the ↻ face button; the centred title keeps clear of it both sides.
         headerW += 2 * EditorPanelFacing.BUTTON_W;
-        // The Group companion's header also carries "Whole group every N" beside the title.
-        if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
-            headerW += font.width(EditorTypeMenuSettingsRow.label()) * TEXT_SCALE + 2 * PAD_X;
-        }
         double newW = font.width(newLabel()) * TEXT_SCALE + 2 * PAD_X;
         double maxNameW = 0;
         boolean anyWeight = false;
@@ -907,10 +892,6 @@ public final class EditorTypeMenuRenderer {
         // shortcut, with variantIdx=-1 (the dispatch resolves the actual
         // first variant from menu.variants().get(0)).
         if (rowFromTop == 0) {
-            if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
-                double titleW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
-                if (hitX >= -halfW + titleW) return new Hovered(menuIdx, -1, CellKind.WHOLE_EVERY);
-            }
             return new Hovered(menuIdx, -1, CellKind.HEADER);
         }
 
@@ -1000,11 +981,6 @@ public final class EditorTypeMenuRenderer {
                 xCursor += w;
             }
             return Hovered.NONE;
-        }
-
-        // Row 2 — the settings row, on the menus that carry one (WHOLE's Group menu).
-        if (rowFromTop == 2 && EditorTypeMenuSettingsRow.present(menu)) {
-            return EditorTypeMenuSettingsRow.hit(menuIdx, menu, halfW, hitX);
         }
 
         // Rows after the chrome — variant rows + wrapped sub-variant lines + +New.
@@ -1155,25 +1131,11 @@ public final class EditorTypeMenuRenderer {
         double headerBottom = headerTop - ROW_H;
         double headerCY = (headerTop + headerBottom) / 2.0;
         drawQuad(ps, buffer, -halfW, headerBottom, halfW, headerTop, HEADER_BG);
-        if (EditorTypeMenuSettingsRow.headerEvery(menu)) {
-            // Title in the left part, the "every N" cell in the right — split where the title ends.
-            double titleW = font.width(MenuLang.typeName(menu.typeName())) * TEXT_SCALE + 2 * PAD_X;
-            double split = -halfW + titleW;
-            if (hovered.cell == CellKind.HEADER) {
-                drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005, split - 0.005, headerTop - 0.005, HOVER_COLOR);
-            } else if (hovered.cell == CellKind.WHOLE_EVERY) {
-                drawQuad(ps, buffer, split + 0.005, headerBottom + 0.005, halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
-            }
-            drawQuad(ps, buffer, split - COLUMN_DIVIDER_W / 2.0, headerBottom, split + COLUMN_DIVIDER_W / 2.0, headerTop, COLUMN_SEP_COLOR);
-            drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), (-halfW + split) / 2.0, headerCY, HEADER_COLOR);
-            drawCenteredText(ps, buffer, font, EditorTypeMenuSettingsRow.label(), (split + halfW) / 2.0, headerCY, HEADER_COLOR);
-        } else {
-            if (hovered.cell == CellKind.HEADER) {
-                drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005,
-                    halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
-            }
-            drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), 0, headerCY, HEADER_COLOR);
+        if (hovered.cell == CellKind.HEADER) {
+            drawQuad(ps, buffer, -halfW + 0.005, headerBottom + 0.005,
+                halfW - 0.005, headerTop - 0.005, HOVER_COLOR);
         }
+        drawCenteredText(ps, buffer, font, MenuLang.typeName(menu.typeName()), 0, headerCY, HEADER_COLOR);
 
         String activeModelId = activeModelId();
         String activeModelName = activeModelName();
@@ -1308,13 +1270,6 @@ public final class EditorTypeMenuRenderer {
         }
         // Row separator below the tab strip.
         drawQuad(ps, buffer, -halfW, tabBottom - 0.005, halfW, tabBottom + 0.005, ROW_SEP_COLOR);
-
-        // The settings row, on the menus that carry one — the variant body starts below it.
-        if (EditorTypeMenuSettingsRow.present(menu)) {
-            EditorTypeMenuSettingsRow.draw(ps, buffer, font, menu, hovered, halfW, tabBottom);
-            tabBottom -= ROW_H;
-            drawQuad(ps, buffer, -halfW, tabBottom - 0.005, halfW, tabBottom + 0.005, ROW_SEP_COLOR);
-        }
 
         // Faint tint behind the entire right-of-expanded area so the
         // reserved sub-variant region reads as part of the menu instead of

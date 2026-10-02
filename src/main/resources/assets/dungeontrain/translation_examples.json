@@ -12696,15 +12696,6 @@
       ]
     }
   },
-  "gui.dungeontrain.editor_menu.type_menu.whole_every": {
-    "1": {
-      "label": "how many carriage groups pass between whole groups",
-      "examples": [
-        "12",
-        "3"
-      ]
-    }
-  },
   "chat.dungeontrain.editor.whole_weight_saved": {
     "1": {
       "label": "the whole kind — room or group",
@@ -12783,15 +12774,6 @@
       "examples": [
         "whole room / fancyhall",
         "whole group / triple_market"
-      ]
-    }
-  },
-  "chat.dungeontrain.editor.whole_every_set": {
-    "1": {
-      "label": "how many carriage groups pass between whole groups",
-      "examples": [
-        "12",
-        "3"
       ]
     }
   },
