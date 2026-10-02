@@ -134,13 +134,15 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
+                // The one camera players get — Exposure's own tab is hidden (DisabledModContent).
+                output.accept(games.brennan.dungeontrain.compat.DisposableCamera.create());
             })
             .build()
     );
 
     /**
-     * The stage placeholder blocks, in slot order — see
-     * {@link games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks}.
+     * The stage placeholder blocks, grouped by material family — see
+     * {@link games.brennan.dungeontrain.block.stage.StageBlocksTabLayout}.
      */
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> STAGE_BLOCKS = TABS.register(
         "stage_blocks",
@@ -149,8 +151,12 @@ public final class ModCreativeTabs {
             .icon(() -> new ItemStack(
                 games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.items().get(0).get()))
             .displayItems((parameters, output) -> {
+                java.util.Map<String, Item> byName = new java.util.HashMap<>();
                 for (var item : games.brennan.dungeontrain.block.stage.StagePlaceholderBlocks.items()) {
-                    output.accept(item.get());
+                    byName.put(item.getId().getPath(), item.get());
+                }
+                for (String name : games.brennan.dungeontrain.block.stage.StageBlocksTabLayout.names()) {
+                    output.accept(byName.get(name));
                 }
             })
             .build()

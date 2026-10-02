@@ -63,7 +63,7 @@ class EndBandSpillTest {
     @Test
     @DisplayName("the builder packs cells and re-keys block entities to display space, clipping the Y window")
     void builderPacksAndReKeys() {
-        EndBandSpill.Builder b = new EndBandSpill.Builder();
+        EndBandSpill.Builder b = new EndBandSpill.Builder(3L, ChunkPos.asLong(2313, 4));
         assertTrue(b.isEmpty());
         long cell = BlockPos.asLong(37008, 90, 70);
         b.add(cell, END_STONE, AIR);
@@ -82,5 +82,16 @@ class EndBandSpillTest {
         assertEquals(1, spill.blockEntities().size(), "the clipped block entity is dropped");
         assertTrue(spill.blockEntities().containsKey(BlockPos.asLong(37008, 90, 70)));
         assertNull(spill.blockEntities().get(BlockPos.asLong(37008, 10, 70)));
+        assertEquals(3L, spill.pass(), "the pass travels with the spill");
+        assertEquals(ChunkPos.asLong(2313, 4), spill.source(), "and the chunk it came from");
+    }
+
+    @Test
+    @DisplayName("spill only lands in columns of its own pass — never another sampled pass across a seam")
+    void onlyItsOwnPassTakesIt() {
+        EndBandSpill spill = new EndBandSpill.Builder(3L, 0L).build();
+        assertTrue(spill.ownedBy(3L), "its own pass");
+        assertFalse(spill.ownedBy(2L), "the pass on the other side of a joined seam copies another stretch of the End");
+        assertFalse(spill.ownedBy(-1L), "no End pass at all");
     }
 }

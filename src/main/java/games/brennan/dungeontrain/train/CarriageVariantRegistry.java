@@ -167,8 +167,13 @@ public final class CarriageVariantRegistry {
 
         CUSTOMS.clear();
         customsChanged();
-        int bundled = loadBundledScan();
-        int config = loadConfigDir();
+        java.util.Map<String, ShellPool> pools = new java.util.HashMap<>();
+        int bundled = 0;
+        int config = 0;
+        for (ShellPool pool : ShellPool.values()) bundled += loadBundledScan(pool, pools);
+        // The user tier wins: a bundled template moved to another pool lands there in the user tier.
+        for (ShellPool pool : ShellPool.values()) config += loadConfigDir(pool, pools);
+        ShellPool.setAll(pools);
 
         // Both hallway portal corridors are always offered, with or without an .nbt on disk. Every
         // other custom is discovered by finding its file, but a portal has code-generated geometry to
@@ -209,20 +214,22 @@ public final class CarriageVariantRegistry {
      * cross-check doesn't generate spurious "missing from manifest" warnings
      * about expected built-ins.</p>
      */
-    private static int loadBundledScan() {
+    private static int loadBundledScan(ShellPool pool, java.util.Map<String, ShellPool> pools) {
+        String prefix = BUNDLED_RESOURCE_PREFIX + (pool.folder().isEmpty() ? "" : pool.folder() + "/");
         Set<String> scanned = BundledNbtScanner.scanBasenames(
-            CarriageVariantRegistry.class, BUNDLED_RESOURCE_PREFIX, LOGGER);
+            CarriageVariantRegistry.class, prefix, LOGGER);
         TreeSet<String> customsScanned = new TreeSet<>();
         for (String id : scanned) {
             if (CarriageVariant.isReservedBuiltinName(id)) continue;
             customsScanned.add(id);
         }
         Set<String> manifest = BundledNbtScanner.readManifestBasenames(
-            CarriageVariantRegistry.class, BUNDLED_RESOURCE_PREFIX, "customs.json", LOGGER);
-        BundledNbtScanner.warnDrift("templates", customsScanned, manifest, LOGGER);
+            CarriageVariantRegistry.class, prefix, "customs.json", LOGGER);
+        BundledNbtScanner.warnDrift("templates/" + pool.folder(), customsScanned, manifest, LOGGER);
         int added = 0;
         for (String id : customsScanned) {
             if (!acceptCustomId(id, "bundled scan")) continue;
+            if (!claimPool(id, pool, pools, "bundled")) continue;
             if (CUSTOMS.add(id)) added++;
         }
         return added;
@@ -239,17 +246,36 @@ public final class CarriageVariantRegistry {
      * stays user-authored. The registry only needs to know "this id
      * exists somewhere"; precedence is the load-time concern.</p>
      */
-    private static int loadConfigDir() {
+    private static int loadConfigDir(ShellPool pool, java.util.Map<String, ShellPool> pools) {
+        String dir = games.brennan.dungeontrain.editor.CarriageTemplateStore.SUBDIR
+            + (pool.folder().isEmpty() ? "" : "/" + pool.folder());
         java.util.Set<String> ids = games.brennan.dungeontrain.editor.UserContentPaths
-            .listBasenamesAcrossSearchDirs(
-                games.brennan.dungeontrain.editor.CarriageTemplateStore.SUBDIR, ".nbt");
+            .listBasenamesAcrossSearchDirs(dir, ".nbt");
         int added = 0;
         for (String basename : ids) {
             if (CarriageVariant.isReservedBuiltinName(basename)) continue;
             if (!acceptCustomId(basename, "user/ + imports")) continue;
+            pools.remove(basename);   // the user tier's pool replaces the bundled one
+            if (!claimPool(basename, pool, pools, "user")) continue;
             if (CUSTOMS.add(basename)) added++;
         }
         return added;
+    }
+
+    /**
+     * Record {@code id} in {@code pool}. Ids are unique across the pools — weights and container
+     * sidecars are keyed by id alone — so a second pool in the same tier is refused with a warning.
+     */
+    private static boolean claimPool(String id, ShellPool pool, java.util.Map<String, ShellPool> pools, String tier) {
+        ShellPool already = pools.get(id);
+        if (already != null && already != pool) {
+            LOGGER.warn("[DungeonTrain] Carriage '{}' is in both the {} and {} pools ({} tier) — keeping {}.",
+                id, already, pool, tier, already);
+            return false;
+        }
+        if (pool != ShellPool.ROOM) pools.put(id, pool);
+        else pools.putIfAbsent(id, ShellPool.ROOM);
+        return true;
     }
 
     /**

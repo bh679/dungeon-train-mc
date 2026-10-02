@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.BookIdentity;
 import games.brennan.dungeontrain.discord.BookVoteReporter;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
+import games.brennan.dungeontrain.narrative.BookCopy;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -87,10 +88,14 @@ public record BookVotePacket(String bookType, String bookId, int vote, int varia
         });
     }
 
-    /** {@code held} when its resolved DT identity matches the packet's {@code (bookType, bookId)}, else null. */
+    /**
+     * {@code held} when its resolved DT identity matches the packet's {@code (bookType, bookId)}, else
+     * null. A crafted copy never matches — it inherits the original's identity, but the client offers
+     * no vote page on one (see {@link BookCopy}) and this is the server's half of that.
+     */
     private static ItemStack matching(ItemStack held, BookVotePacket packet) {
         Optional<BookIdentity> id = BookIdentity.resolve(held);
-        if (id.isEmpty()) return null;
+        if (id.isEmpty() || BookCopy.isCopy(held)) return null;
         return id.get().bookType().equals(packet.bookType) && id.get().bookId().equals(packet.bookId)
             ? held : null;
     }

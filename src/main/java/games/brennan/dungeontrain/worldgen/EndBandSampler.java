@@ -307,7 +307,8 @@ public final class EndBandSampler {
         int maxY = own.minY() + own.height() - 1;
         Map<Long, EndBandSpill> spill = new HashMap<>();
         originals.forEach((n, g) -> {
-            EndBandSpill s = EndBandSpill.diff(g, ring.get(n), shiftX, bedY, own.minY(), maxY, end.registryAccess());
+            EndBandSpill s = EndBandSpill.diff(g, ring.get(n), shiftX, bedY, own.minY(), maxY, end.registryAccess(),
+                    passIndex, pos.toLong());
             if (s != null) spill.put(EndBandSpill.displayChunkKey(n.x, n.z, chunkOffsetX), s);
         });
         return own.withSpill(Map.copyOf(spill));

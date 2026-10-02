@@ -134,6 +134,20 @@ public final class EditorRoster {
         return entry.withRoom(mode, size.getX(), size.getZ(), size.getY());
     }
 
+    /** A carriage template's size, or the entry unchanged for every other row. */
+    private static EditorRosterPacket.Entry withShellSizeData(String categoryId, EditorRosterPacket.Entry entry) {
+        if (!EditorCategory.CARRIAGES.id().equals(categoryId)) return entry;
+        CarriageVariant v = CarriageVariantRegistry.find(entry.variant().modelId()).orElse(null);
+        // "Carriage blocks win" is about a carriage's contents, and a flatbed never has any.
+        if (v != null && CarriagePlotRows.rowOf(v) != CarriagePlotRows.Row.FLATBEDS) {
+            entry = entry.withShellWins(ShellWinsStore.wins(v.id()));
+        }
+        // A flatbed or portal keeps the size its role needs — no Room · Half · Group switch.
+        if (v != null && EditorTypeMenus.isFixedRow(CarriagePlotRows.rowOf(v))) return entry;
+        return entry.withShellSize(
+            games.brennan.dungeontrain.train.CarriagePlacer.sizeOfId(entry.variant().modelId()).key());
+    }
+
     /** A contents template's random-flip axes, or the entry unchanged for every other row. */
     private static EditorRosterPacket.Entry withFlipData(String categoryId, EditorRosterPacket.Entry entry) {
         if (!EditorCategory.CONTENTS.id().equals(categoryId)) return entry;
@@ -215,11 +229,24 @@ public final class EditorRoster {
         }
     }
 
+    /**
+     * One group per carriage pool — Rooms, Halves, Groups — each modelled by its size key, so the
+     * X menu shows a tab per pool and its "+" makes a template in that pool. An empty pool still gets
+     * its group, so the "+" is there to make its first template.
+     */
     private static void addCarriages(List<EditorRosterPacket.Group> out) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) return;
-        out.add(group(EditorCategory.CARRIAGES.id(), "Carriages", "",
-            EditorTypeMenus.carriageRows(variants), null));
+        for (CarriagePlotRows.Row row : CarriagePlotRows.Row.values()) {
+            List<CarriageVariant> inRow = new ArrayList<>();
+            for (CarriageVariant v : variants) {
+                if (CarriagePlotRows.rowOf(v) == row) inRow.add(v);
+            }
+            // Flatbeds and Portals are only shown when they hold something: nothing is made into them.
+            if (inRow.isEmpty() && EditorTypeMenus.isFixedRow(row)) continue;
+            out.add(group(EditorCategory.CARRIAGES.id(), EditorTypeMenus.carriageRowTypeName(row),
+                EditorTypeMenus.carriageRowModelId(row), EditorTypeMenus.carriageRows(inRow), null));
+        }
     }
 
     private static void addParts(List<EditorRosterPacket.Group> out) {
@@ -281,8 +308,8 @@ public final class EditorRoster {
         List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
         for (EditorTypeMenusPacket.Variant v : rows) {
             int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
-            entries.add(withFlipData(categoryId, withRoomData(categoryId,
-                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v)))));
+            entries.add(withShellSizeData(categoryId, withFlipData(categoryId, withRoomData(categoryId,
+                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v))))));
         }
         return new EditorRosterPacket.Group(categoryId, typeName, modelId, entries);
     }

@@ -154,6 +154,7 @@ public final class EditorLayoutPage {
         if (index == null) return out;
         Query q = query == null ? Query.EVERYTHING : query;
         Folds f = folds == null ? Folds.DEFAULT : folds;
+        out.addAll(layoutRows(EditorRosterClient.layout(), q));
         for (EditorRosterPacket.Group g : index.groups()) {
             if (!q.admits(g)) continue;
             List<EditorRosterIndex.Tile> tiles = EditorRosterIndex.filter(EditorRosterIndex.tiles(g), q.filters(), q.text());
@@ -178,6 +179,39 @@ public final class EditorLayoutPage {
     /** The whole table, nothing narrowed. */
     public static List<Row> rows(EditorRosterIndex index, Consumer<VariantKey> select, Consumer<String> toggle) {
         return rows(index, Query.EVERYTHING, select, toggle);
+    }
+
+    /** The section id of the Carriage layout block. */
+    static final String LAYOUT_SECTION = "carriages/layout";
+
+    /**
+     * Carriage layout — how often a group is filled with three Rooms, two Halves or one Group
+     * carriage — at the top of the table, above the templates those layouts draw from. Each row's
+     * weight cell steps and types like every other weight here. Shown while the query takes in
+     * carriages and no search text is set; empty until a roster has said the weights.
+     */
+    static List<Row> layoutRows(EditorRosterPacket.Layout layout, Query q) {
+        if (layout == null || !layout.isKnown() || !q.text().isEmpty()) return List.of();
+        PlotCategory cat = q.category().category();
+        if (cat != null && cat != PlotCategory.CARRIAGES) return List.of();
+        List<Row> rows = new ArrayList<>(4);
+        rows.add(new Row(new CommandMenuEntry.Label(EditorScreenLang.text(EditorScreenLang.LAYOUT_HEADING)),
+            null, 0, LAYOUT_SECTION));
+        rows.add(layoutRow("rooms", EditorScreenLang.LAYOUT_ROOMS, layout.rooms(), layout.total()));
+        rows.add(layoutRow("halves", EditorScreenLang.LAYOUT_HALVES, layout.halves(), layout.total()));
+        rows.add(layoutRow("group", EditorScreenLang.LAYOUT_GROUP, layout.group(), layout.total()));
+        return rows;
+    }
+
+    private static Row layoutRow(String key, String labelKey, int weight, int total) {
+        String prefix = "dungeontrain editor layout " + key;
+        int share = total > 0 ? Math.round(100f * weight / total) : 0;
+        String value = Integer.toString(weight);
+        TemplateDataSheet.Stepper stepper = new TemplateDataSheet.Stepper(prefix, prefix + " dec", prefix + " inc",
+            value, EditorScreenLang.text(labelKey, weight, share));
+        CommandMenuEntry name = new CommandMenuEntry.Label(EditorScreenLang.text(labelKey + ".name", share));
+        return new Row(cells(BLANK, name, new CommandMenuEntry.ClientAction(value, () -> { }, false), BLANK),
+            null, 1, LAYOUT_SECTION, null, stepper);
     }
 
     private static Row header(EditorRosterPacket.Group g, String id, int shown, boolean folded, Consumer<String> toggle) {

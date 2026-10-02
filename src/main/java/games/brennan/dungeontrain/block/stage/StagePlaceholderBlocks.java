@@ -302,7 +302,7 @@ public final class StagePlaceholderBlocks {
     }
 
     /** {@code stage_stone_<kind>}; the plain kind is {@code stage_stone} itself. */
-    private static String stoneName(StoneKind kind) {
+    static String stoneName(StoneKind kind) {
         return kind == StoneKind.STONE ? "stage_stone" : "stage_stone_" + kind.id();
     }
 

@@ -1,92 +1,76 @@
 package games.brennan.dungeontrain.train;
 
-import games.brennan.dungeontrain.template.SeededDraw;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The pure half of {@link WholeGroupSelection} — the one-in-N lottery over group ordinals.
- *
- * <p>Pinned the way {@code PortalCarriageLotteryTest} pins the portal draw: a verdict is a function
- * of {@code (seed, ordinal, every)} and nothing else, the rate comes out near {@code 1/N} over a long
- * stretch of track, {@code every == 1} is every group and {@code OFF} is none, and the track behind
- * the origin draws the same way as the track ahead.</p>
+ * The pure half of {@link WholeGroupSelection}: a run asks for a whole group when its Group-carriage
+ * draw landed on the Whole Group template, the way a slot asks for a whole room when it drew
+ * {@code whole}. The only cadence left is the session's forced one, a test aid.
  */
 final class WholeGroupLotteryTest {
 
     private static final int GROUP = 3;
-    private static final long SEED = 0x5EEDL;
 
     @Test
-    @DisplayName("off draws nothing; every=1 draws every group")
-    void offAndAlways() {
-        for (int anchor = -300; anchor <= 300; anchor += GROUP) {
-            assertFalse(WholeGroupSelection.isWholeGroup(anchor, GROUP, WholeGroupSettings.OFF, SEED));
-            assertTrue(WholeGroupSelection.isWholeGroup(anchor, GROUP, 1, SEED));
-        }
+    @DisplayName("only the Whole Group template stands for a whole group")
+    void wholeGroupVariant() {
+        assertTrue(WholeGroupSelection.isWholeGroupVariant(CarriageVariant.custom(WholeGroupSelection.VARIANT_ID)));
+        assertFalse(WholeGroupSelection.isWholeGroupVariant(CarriageVariant.custom("cargo")));
+        assertFalse(WholeGroupSelection.isWholeGroupVariant(CarriageVariant.custom(WholeCarriageSelection.VARIANT_ID)),
+            "the whole-room template is a different template");
+        assertFalse(WholeGroupSelection.isWholeGroupVariant(null), "a run that drew no Group carriage");
     }
 
     @Test
-    @DisplayName("stable: the same (seed, anchor) answers the same twice")
-    void stable() {
-        for (int anchor = -3000; anchor <= 3000; anchor += GROUP) {
-            assertEquals(WholeGroupSelection.isWholeGroup(anchor, GROUP, 12, SEED),
-                WholeGroupSelection.isWholeGroup(anchor, GROUP, 12, SEED));
+    @DisplayName("the forced cadence is off at 0 and takes every Nth group ordinal otherwise")
+    void forcedCadence() {
+        for (int anchor = -300; anchor <= 300; anchor += GROUP) {
+            assertFalse(WholeGroupSelection.isForced(anchor, GROUP, WholeGroupSettings.OFF));
+            assertTrue(WholeGroupSelection.isForced(anchor, GROUP, 1));
         }
+        int hits = 0;
+        for (int g = 0; g < 400; g++) {
+            if (WholeGroupSelection.isForced(g * GROUP, GROUP, 4)) hits++;
+        }
+        assertEquals(100, hits, "every 4th group of 400");
     }
 
     @Test
-    @DisplayName("every slot of a group agrees with its anchor")
-    void slotsAgreeWithAnchor() {
+    @DisplayName("every carriage of a group reads the same forced verdict, behind the origin too")
+    void wholeGroupAgrees() {
         for (int anchor = -300; anchor <= 300; anchor += GROUP) {
-            boolean expected = WholeGroupSelection.isWholeGroup(anchor, GROUP, 5, SEED);
-            for (int slot = 0; slot < GROUP; slot++) {
-                assertEquals(expected, WholeGroupSelection.isWholeGroup(anchor + slot, GROUP, 5, SEED));
+            boolean expected = WholeGroupSelection.isForced(anchor, GROUP, 5);
+            for (int slot = 1; slot < GROUP; slot++) {
+                assertEquals(expected, WholeGroupSelection.isForced(anchor + slot, GROUP, 5));
             }
         }
     }
 
     @Test
-    @DisplayName("the rate lands near 1/N over twenty thousand groups")
-    void rateIsAboutOneInN() {
-        for (int every : new int[] {3, 12, 40}) {
-            int hits = 0;
-            int groups = 20_000;
-            for (int g = 0; g < groups; g++) {
-                if (WholeGroupSelection.isWholeGroup(g * GROUP, GROUP, every, SEED)) hits++;
-            }
-            double rate = hits / (double) groups;
-            double target = 1.0 / every;
-            assertTrue(Math.abs(rate - target) < target * 0.15,
-                "every=" + every + " drew " + rate + ", expected about " + target);
+    @DisplayName("the Whole Group template ships in the Group row with a weight and a shape")
+    void shipped() throws Exception {
+        try (InputStream in = WholeGroupLotteryTest.class.getResourceAsStream(
+                "/data/dungeontrain/templates/group/" + WholeGroupSelection.VARIANT_ID + ".nbt")) {
+            assertNotNull(in, "group/wholegroup.nbt is the fallback Group carriage");
         }
-    }
-
-    @Test
-    @DisplayName("a different seed draws a different track")
-    void seedMatters() {
-        int differ = 0;
-        for (int g = 0; g < 2_000; g++) {
-            if (WholeGroupSelection.isWholeGroup(g * GROUP, GROUP, 4, SEED)
-                != WholeGroupSelection.isWholeGroup(g * GROUP, GROUP, 4, SEED + 1)) differ++;
+        try (InputStream in = WholeGroupLotteryTest.class.getResourceAsStream("/data/dungeontrain/templates/weights.json")) {
+            assertNotNull(in);
+            String weights = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            assertTrue(weights.contains("\"" + WholeGroupSelection.VARIANT_ID + "\""),
+                "its weight is the whole-group rate, so it must have an entry");
         }
-        assertTrue(differ > 200, "only " + differ + " of 2000 verdicts moved with the seed");
-    }
-
-    @Test
-    @DisplayName("salted: the group draw does not line up with the unsalted draw over the same ordinals")
-    void decorrelatedFromUnsaltedDraw() {
-        int same = 0;
-        for (int g = 0; g < 2_000; g++) {
-            boolean whole = WholeGroupSelection.isWholeGroup(g * GROUP, GROUP, 4, SEED);
-            boolean raw = SeededDraw.hit(SEED, g, 4);
-            if (whole == raw) same++;
+        try (InputStream in = WholeGroupLotteryTest.class.getResourceAsStream("/data/dungeontrain/templates/group/customs.json")) {
+            assertNotNull(in);
+            assertTrue(new String(in.readAllBytes(), StandardCharsets.UTF_8).contains(WholeGroupSelection.VARIANT_ID));
         }
-        assertNotEquals(2_000, same, "the whole-group lottery must not be the bare hash of the ordinal");
     }
 }

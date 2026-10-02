@@ -704,7 +704,7 @@ public final class EditorCommand {
                         .executes(ctx -> {
                             String name = StringArgumentType.getString(ctx, "name");
                             String src = StringArgumentType.getString(ctx, "source");
-                            java.util.Optional<games.brennan.dungeontrain.train.ContentsSize> blank = blankSize(src);
+                            java.util.Optional<games.brennan.dungeontrain.train.ShellPool> blank = blankPool(src);
                             if (blank.isPresent()) {
                                 return runNewBlank(ctx.getSource(), name, blank.get());
                             }
@@ -1029,6 +1029,10 @@ public final class EditorCommand {
                         .executes(ctx -> runWeightSet(ctx.getSource(),
                             StringArgumentType.getString(ctx, "variant"),
                             IntegerArgumentType.getInteger(ctx, "value"))))))
+            .then(CarriageSizeCommand.shellSize())
+            .then(CarriageSizeCommand.shellWins())
+            .then(CarriageSizeCommand.halfJoin())
+            .then(CarriageSizeCommand.layout())
             .then(minLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(maxLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(phaseSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
@@ -3819,8 +3823,8 @@ public final class EditorCommand {
             // restamp pass knows which positions are dirty (the deleted
             // variant's slot plus every slot to the right that just shifted
             // left by one).
-            int oldSlot = CarriageEditor.slotOf(variant.id());
-            int oldRowCount = CarriageEditor.rowCount();
+            // Where its plot stood, taken before it leaves the registry and its row closes up.
+            CarriageEditor.RowSpot oldSpot = CarriageEditor.spotOf(variant, dims);
 
             // Plot erase + row restamp are DT's own rewrites — guarded so observers in the
             // touched plots stay quiet (ObserverBlockStampMixin).
@@ -3832,9 +3836,11 @@ public final class EditorCommand {
             if (wasCustom) {
                 CarriageVariantRegistry.unregister(variant.id());
                 games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.forget(variant.id());
-                if (oldSlot >= 0) {
+                games.brennan.dungeontrain.editor.ShellWinsStore.forget(variant.id());
+                games.brennan.dungeontrain.train.ShellPool.forget(variant.id());
+                if (oldSpot != null) {
                     CarriageStampGuard.run(() ->
-                        CarriageEditor.restampRowAfterDeletion(overworld, oldSlot, oldRowCount, dims));
+                        CarriageEditor.restampRowAfterDeletion(overworld, oldSpot, dims));
                 }
             }
             source.sendSuccess(() -> (deleted
@@ -4060,8 +4066,17 @@ public final class EditorCommand {
         return games.brennan.dungeontrain.train.ContentsSize.parse(t.substring("blank_".length()));
     }
 
+    /**
+     * A carriage blank's pool from its source token: {@code blank} (Room), {@code blank_half},
+     * {@code blank_full} (Group) or {@code blank_flatbed} (a flatbed variant).
+     */
+    static java.util.Optional<games.brennan.dungeontrain.train.ShellPool> blankPool(String token) {
+        if ("blank_flatbed".equalsIgnoreCase(token)) return java.util.Optional.of(games.brennan.dungeontrain.train.ShellPool.FLATBED);
+        return blankSize(token).map(games.brennan.dungeontrain.train.ShellPool::of);
+    }
+
     private static int runNewBlank(CommandSourceStack source, String rawName,
-                                   games.brennan.dungeontrain.train.ContentsSize size) {
+                                   games.brennan.dungeontrain.train.ShellPool size) {
         ServerPlayer player = requirePlayer(source);
         if (player == null) return 0;
 

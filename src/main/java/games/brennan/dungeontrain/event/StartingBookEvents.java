@@ -589,6 +589,13 @@ public final class StartingBookEvents {
             markStartingBookBurned(player);
         }
 
+        dropFromPlayer(player, stack);
+        LOGGER.info("[DungeonTrain] BurnableBook: {} closed a burnable book — drop spawned (burn registered via EntityJoinLevelEvent)",
+            player.getName().getString());
+    }
+
+    /** Throws {@code stack} forward from {@code player} as an owner-less item entity. */
+    private static ItemEntity dropFromPlayer(ServerPlayer player, ItemStack stack) {
         ItemEntity dropped = player.drop(stack, /*dropAround*/ false, /*includeThrowerName*/ false);
         if (dropped == null) {
             // Player.drop returned null (e.g. dropped in creative with
@@ -601,8 +608,47 @@ public final class StartingBookEvents {
             dropped.setDeltaMovement(dir.scale(0.3));
             player.serverLevel().addFreshEntity(dropped);
         }
-        LOGGER.info("[DungeonTrain] BurnableBook: {} closed a burnable book — drop spawned (burn registered via EntityJoinLevelEvent)",
-            player.getName().getString());
+        return dropped;
+    }
+
+    /**
+     * Drops {@code stack} from {@code player} and burns it — the same flame, ghost fire block and
+     * smoke a burnable book gets, for an item that is not one (a spent disposable camera, a viewed
+     * photograph; see {@code compat/DisposableCameraEvents}).
+     *
+     * <p>The caller has already taken the stack out of the inventory. This ignites the entity
+     * directly instead of through {@link BurnableBookTag}, so a spent camera burns only here — an
+     * unused one dropped by hand does not. Photographs also burn on any drop, through
+     * {@link #onEntityJoinLevel}.</p>
+     */
+    public static void dropAndBurn(ServerPlayer player, ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+        ItemEntity dropped = dropFromPlayer(player, stack);
+        if (BURN_ENTITIES.containsKey(dropped.getUUID())) return;
+        igniteItem(dropped, FlameVariant.DEFAULT);
+    }
+
+    /** Starts the burn on an item entity: locks pickup, tracks it, plays the ignition sound. */
+    private static void igniteItem(ItemEntity item, FlameVariant variant) {
+        // Lock pickup for the burn window so the player can't snatch the
+        // burning item mid-burn and stash it.
+        item.setPickUpDelay(BURN_DURATION_TICKS);
+        BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, variant));
+
+        // Ignition atmosphere — a quiet "whoosh" (a soul escape for a Death Note) at the drop point.
+        // SOUL_ESCAPE is a Holder<SoundEvent> and FIRE_AMBIENT a plain SoundEvent, so branch rather
+        // than mix them in one conditional (no single playSound-compatible type).
+        ServerLevel level = (ServerLevel) item.level();
+        if (variant == FlameVariant.SOUL) {
+            level.playSound(null, item.getX(), item.getY(), item.getZ(),
+                SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.6f, 1.5f);
+        } else if (variant == FlameVariant.LOVE) {
+            level.playSound(null, item.getX(), item.getY(), item.getZ(),
+                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.6f, 1.5f);
+        } else {
+            level.playSound(null, item.getX(), item.getY(), item.getZ(),
+                SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 0.6f, 1.5f);
+        }
     }
 
     /**
@@ -634,35 +680,24 @@ public final class StartingBookEvents {
         if (event.getLevel().isClientSide()) return;
         if (!(event.getEntity() instanceof ItemEntity item)) return;
         ItemStack stack = item.getItem();
-        if (!BurnableBookTag.isBurnable(stack)) return;
+        if (!BurnableBookTag.isBurnable(stack)) {
+            // A disposable-camera photograph burns on any drop too — the same flame, with none of
+            // the book bookkeeping below.
+            if (games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
+                    && !BURN_ENTITIES.containsKey(item.getUUID())) {
+                igniteItem(item, FlameVariant.DEFAULT);
+            }
+            return;
+        }
         if (item.getPersistentData().getBoolean(ENTITY_TAG_SPAWN_BOOK)) return;
         if (BURN_ENTITIES.containsKey(item.getUUID())) return;
 
-        // Lock pickup for the burn window so the player can't snatch the
-        // burning book mid-burn and stash it. Matches the close-handler
-        // behaviour from the earlier inline-registration code path.
         // A signed "Death Note" curse book burns with the SOUL variant (ghostly soul-fire + a soul
         // sound) and a "Love Note" with the pink LOVE variant instead of the normal fire — see
         // DeathNoteBookTag / LoveNoteBookTag; otherwise a book the player voted on burns with a
         // green (approved) or red (rejected) flame tint. The note burns win.
-        FlameVariant variant = flameVariantOf(stack);
-        item.setPickUpDelay(BURN_DURATION_TICKS);
-        BURN_ENTITIES.put(item.getUUID(), new BurnState(BURN_DURATION_TICKS, variant));
-
-        // Ignition atmosphere — a quiet "whoosh" (a soul escape for a Death Note) at the drop point.
-        // SOUL_ESCAPE is a Holder<SoundEvent> and FIRE_AMBIENT a plain SoundEvent, so branch rather
-        // than mix them in one conditional (no single playSound-compatible type).
+        igniteItem(item, flameVariantOf(stack));
         ServerLevel level = (ServerLevel) item.level();
-        if (variant == FlameVariant.SOUL) {
-            level.playSound(null, item.getX(), item.getY(), item.getZ(),
-                SoundEvents.SOUL_ESCAPE, SoundSource.PLAYERS, 0.6f, 1.5f);
-        } else if (variant == FlameVariant.LOVE) {
-            level.playSound(null, item.getX(), item.getY(), item.getZ(),
-                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.6f, 1.5f);
-        } else {
-            level.playSound(null, item.getX(), item.getY(), item.getZ(),
-                SoundEvents.FIRE_AMBIENT, SoundSource.PLAYERS, 0.6f, 1.5f);
-        }
 
         LOGGER.info("[DungeonTrain] BurnableBook: detected dropped burnable book — burning entity {} ({} ticks)",
             item.getUUID(), BURN_DURATION_TICKS);

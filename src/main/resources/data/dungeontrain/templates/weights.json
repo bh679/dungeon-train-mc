@@ -1,5 +1,11 @@
 {
   "black": 1,
+  "boxcar": 2,
+  "boxcarcenter": 2,
+  "cargo": {
+    "weight": 2,
+    "name": "Cargo"
+  },
   "cracked": 3,
   "fancywood": 13,
   "fire": {
@@ -8,9 +14,13 @@
       "NETHER"
     ]
   },
-  "long": 1,
+  "flatbedgroup": {
+    "weight": 2,
+    "name": "Flatbed"
+  },
+  "long": 0,
   "pen": 15,
-  "portal": 1,
+  "portal": 0,
   "portal_middle": 0,
   "portal_short": 1,
   "shared": 1,
@@ -27,17 +37,29 @@
       "SPHERES",
       "BETA",
       "ALPHA",
-      "INFDEV",
-      "CLASSIC",
       "SKYLANDS",
+      "INFDEV",
       "FLOATING",
       "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
       "LARGE_BIOMES",
       "AMPLIFIED",
-      "LOST_CITY",
-      "CAVES_OF_CHAOS"
+      "LOST_CITY"
     ]
   },
+  "standard_half": {
+    "weight": 1,
+    "name": "Standard Half"
+  },
+  "stonecargo": {
+    "weight": 2,
+    "name": "Cargo Stone"
+  },
   "whole": 0,
+  "wholegroup": {
+    "weight": 0,
+    "name": "Whole Group"
+  },
   "windowed": 20
 }

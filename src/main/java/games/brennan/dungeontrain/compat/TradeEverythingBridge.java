@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
 
+import java.util.Map;
 import java.util.OptionalInt;
 
 /**
@@ -41,20 +42,54 @@ public final class TradeEverythingBridge {
     private static final int TRIM_TEMPLATE_VALUE_SIXTEENTHS = 35;
 
     /**
-     * Bookshelf and honey block — trade for 1 emerald each. 22 sixteenths × the
-     * default 0.75 payout margin = 16.5, so the payout clears exactly 1 emerald
-     * (16 would pay out only 12 sixteenths). Recipe derivation priced a
-     * bookshelf at ~8 emeralds, far too much for a block library carriages are
-     * packed with.
+     * Bookshelf — four trade for 1 emerald. In 256ths of an emerald, not
+     * sixteenths: the value is 5.5 sixteenths, and neither whole neighbour
+     * quotes a 4 → 1 row (5 gives 9 → 2, 6 gives 11 → 3 — Trade Everything
+     * skips a batch that rounds away more than 10%). {@code 4 × 88 × 0.75}
+     * (the default payout margin) = 264, one emerald (256) with 3% to spare;
+     * three (198) do not reach it. Library carriages are packed with them, so
+     * one each was far too much. A librarian sells them for 9 emeralds: Trade
+     * Everything 0.14.0+ pays the lower of this value and its 90% buy-back,
+     * older builds paid 8 emeralds.
      */
-    private static final int BOOKSHELF_VALUE_SIXTEENTHS = 22;
+    static final int BOOKSHELF_VALUE_256THS = 88;
+
+    /**
+     * Honey block — trades for 1 emerald each. 22 sixteenths × the default 0.75
+     * payout margin = 16.5, so the payout clears exactly 1 emerald (16 would pay
+     * out only 12 sixteenths).
+     */
     private static final int HONEY_BLOCK_VALUE_SIXTEENTHS = 22;
 
     /**
      * Value that pays out exactly one emerald per multiple — the same 22 as the
-     * bookshelf. {@code 22n × 0.75 = 16.5n} floors to n emeralds for every n < 32.
+     * honey block. {@code 22n × 0.75 = 16.5n} floors to n emeralds for every n < 32.
      */
     static final int EMERALD_PAYOUT_SIXTEENTHS = 22;
+
+    /** 256ths of an emerald in one sixteenth — Trade Everything's finer override unit. */
+    private static final int SIXTEENTH_IN_256THS = 16;
+
+    /**
+     * Things villagers sell, priced by hand, keyed by vanilla item path, in 256ths
+     * of an emerald. Trade Everything pays the lower of an item's value and 90% of
+     * the villager's sell price, and these default to next to nothing (a bell at
+     * the 1-sixteenth floor), so a 36-emerald bell sold back for a twentieth of an
+     * emerald. The prices are what one pays after the 0.75 margin: whole emeralds
+     * use the 22-sixteenths-per-emerald convention, the fractions are picked so the
+     * first batch within TE's 10% rounding tolerance is the stated row. Gear prices
+     * are for an undamaged item — TE scales worn ones down.
+     */
+    static final Map<String, Integer> VILLAGER_STOCK_VALUES_256THS = Map.of(
+        "bell", emeraldsTo256ths(2),
+        "name_tag", emeraldsTo256ths(1),
+        "globe_banner_pattern", emeraldsTo256ths(1),
+        "iron_chestplate", emeraldsTo256ths(5),
+        "leather_chestplate", emeraldsTo256ths(3),
+        "ender_pearl", emeraldsTo256ths(2),
+        "item_frame", 137, // 0.4 emerald: 5 → 2
+        "map", 171,        // 0.5 emerald: 2 → 1
+        "blue_ice", 103);  // 0.3 emerald: 7 → 2, the nearest row the tolerance allows
 
     /** Every effect potion trades for at least 1 emerald. */
     static final int POTION_BASE_EMERALDS = 1;
@@ -120,10 +155,12 @@ public final class TradeEverythingBridge {
         // floor every potion at 1 sixteenth — Strength II priced like a stick.
         TradeEverythingApi.registerValueProvider(TradeEverythingBridge::potionValue);
 
-        TradeEverythingApi.setItemOverride(
-            ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_SIXTEENTHS);
+        TradeEverythingApi.setItemOverride256ths(
+            ResourceLocation.withDefaultNamespace("bookshelf"), BOOKSHELF_VALUE_256THS);
         TradeEverythingApi.setItemOverride(
             ResourceLocation.withDefaultNamespace("honey_block"), HONEY_BLOCK_VALUE_SIXTEENTHS);
+        VILLAGER_STOCK_VALUES_256THS.forEach((path, value) ->
+            TradeEverythingApi.setItemOverride256ths(ResourceLocation.withDefaultNamespace(path), value));
 
         // Sibling-mod items, addressed by id so the sibling is never classloaded:
         // absent EdibleBackpacks simply means the override never matches.
@@ -142,6 +179,10 @@ public final class TradeEverythingBridge {
      */
     static boolean isHandTuned(ResourceLocation id, ItemStack stack) {
         if (stack.is(ItemTags.TRIM_TEMPLATES)) return true;
+        if (ResourceLocation.DEFAULT_NAMESPACE.equals(id.getNamespace())
+            && VILLAGER_STOCK_VALUES_256THS.containsKey(id.getPath())) {
+            return true;
+        }
         String s = id.toString();
         return s.equals("minecraft:bookshelf") || s.equals("minecraft:honey_block")
             || s.equals("ediblebackpacks:edible_backpack") || s.equals("ediblebackpacks:golden_edible_backpack");
@@ -194,6 +235,11 @@ public final class TradeEverythingBridge {
 
     static int emeraldsToSixteenths(int emeralds) {
         return EMERALD_PAYOUT_SIXTEENTHS * emeralds;
+    }
+
+    /** {@link #emeraldsToSixteenths} in 256ths, for {@link #VILLAGER_STOCK_VALUES_256THS}. */
+    static int emeraldsTo256ths(int emeralds) {
+        return emeraldsToSixteenths(emeralds) * SIXTEENTH_IN_256THS;
     }
 
     /** See {@link #OMINOUS_BANNER_NAME_KEY} for why the check is component-based. */

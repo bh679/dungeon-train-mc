@@ -36,7 +36,8 @@ public final class TemplateFileLocator {
         String id = modelId == null ? "" : modelId;
         String name = modelName == null ? "" : modelName;
         return switch (category) {
-            case CARRIAGES -> named(CarriageTemplateStore.SUBDIR, id);
+            case CARRIAGES -> named(CarriageTemplateStore.SUBDIR
+                + (games.brennan.dungeontrain.train.ShellPool.poolOf(id).folder().isEmpty() ? "" : "/" + games.brennan.dungeontrain.train.ShellPool.poolOf(id).folder()), id);
             case CONTENTS -> named(CarriageContentsStore.SUBDIR, id);
             case WHOLE -> named(WholeCarriageTemplateStore.SUBDIR, id);
             case WHOLE_GROUP -> named(CarriageGroupTemplateStore.SUBDIR, id);

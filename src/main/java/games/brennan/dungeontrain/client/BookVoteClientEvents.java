@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
+import games.brennan.dungeontrain.narrative.BookCopy;
 import games.brennan.dungeontrain.narrative.BookModerationState;
 import games.brennan.dungeontrain.narrative.BookModerationTag;
 import games.brennan.dungeontrain.narrative.BookPrivateTag;
@@ -44,7 +45,8 @@ import java.util.OptionalInt;
 /**
  * The 👍/👎 vote page — a VIRTUAL page appended after the last real page of every PLAYER-WRITTEN
  * community book the player reads ({@code shared} identity only — dev-authored random/starting/
- * narrative content, deathnotes and letters are untouched). Zero mixins and zero stack mutation: on
+ * narrative content, deathnotes and letters are untouched, and so is a crafted copy of a community
+ * book — see {@link BookCopy}). Zero mixins and zero stack mutation: on
  * {@code Init.Post} the screen's public {@link BookViewScreen#setBookAccess} is handed a copy of the
  * real pages plus one EMPTY page, so the vanilla forward PageButton, page indicator and page-turn
  * flow all "discover" the extra page on their own — and everything on it (warm dim, the train's
@@ -710,10 +712,13 @@ public final class BookVoteClientEvents {
      * {@code stack} when it is a votable book (sets the identity fields), else null. Only
      * PLAYER-WRITTEN community books ({@code shared} — discovered submissions from other players)
      * are votable; dev-authored content (random/starting/narrative) and everything untagged is not.
+     * Nor is a crafted copy of one: it inherits the original's id, but the train only asks about the
+     * book it handed out (see {@link BookCopy}).
      */
     private static ItemStack votable(ItemStack stack) {
         Optional<BookIdentity> id = BookIdentity.resolve(stack);
         if (id.isEmpty() || !"shared".equals(id.get().bookType())) return null;
+        if (BookCopy.isCopy(stack)) return null;
         bookType = id.get().bookType();
         bookId = id.get().bookId();
         variantIndex = id.get().variantIndex();
