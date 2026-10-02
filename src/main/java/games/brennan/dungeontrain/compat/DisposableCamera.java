@@ -21,7 +21,7 @@ import net.minecraft.world.item.component.CustomData;
  * to its {@code instant_camera} item, so this is that item carrying one {@link FineInstantSlide}
  * already loaded, a DT marker and a DT name. {@link DisposableCameraEvents} gives the marked stack
  * its behaviour: the viewfinder closes after the shot, the camera burns once the photo has printed,
- * and the photo burns after it has been viewed.</p>
+ * and the photo burns after it has been viewed, or when it is dropped.</p>
  *
  * <p>Markers, all booleans:</p>
  * <ul>
