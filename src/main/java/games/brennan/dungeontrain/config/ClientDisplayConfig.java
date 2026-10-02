@@ -78,6 +78,12 @@ public final class ClientDisplayConfig {
      */
     public static final boolean DEFAULT_EDITOR_PLOT_LIGHTING = true;
 
+    /** The biome mods' own creative tabs are hidden unless asked for. See {@link #isCreativeModBlockTabs()}. */
+    public static final boolean DEFAULT_CREATIVE_MOD_BLOCK_TABS = false;
+
+    /** Those tabs' contents are left out of creative search unless asked for. See {@link #isCreativeModBlocksInSearch()}. */
+    public static final boolean DEFAULT_CREATIVE_MOD_BLOCKS_IN_SEARCH = false;
+
     /**
      * Whether the debug screen reports a surface Y inside a dimensional carriage.
      *
@@ -230,6 +236,10 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue BETTERX_SUPPRESS_STARTUP_SCREENS;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
     public static final ModConfigSpec.BooleanValue CREATIVE_SHIFT_CLICK_TO_HOTBAR;
+    /** Whether the biome mods' creative tabs are drawn. See {@link #isCreativeModBlockTabs()}. */
+    public static final ModConfigSpec.BooleanValue CREATIVE_MOD_BLOCK_TABS;
+    /** Whether those tabs' contents are searchable. See {@link #isCreativeModBlocksInSearch()}. */
+    public static final ModConfigSpec.BooleanValue CREATIVE_MOD_BLOCKS_IN_SEARCH;
     /**
      * Relay pool ids of community (player-written) books this player has read, stored as decimal strings.
      * GLOBAL client-side read history — persists across worlds and servers (unlike the retired per-world
@@ -383,6 +393,8 @@ public final class ClientDisplayConfig {
         BETTERX_SUPPRESS_STARTUP_SCREENS = pair.getLeft().betterXSuppressStartupScreens;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
+        CREATIVE_MOD_BLOCK_TABS = pair.getLeft().creativeModBlockTabs;
+        CREATIVE_MOD_BLOCKS_IN_SEARCH = pair.getLeft().creativeModBlocksInSearch;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         DEATH_FORM_ANSWERED_IDS = pair.getLeft().deathFormAnsweredIds;
@@ -577,6 +589,15 @@ public final class ClientDisplayConfig {
                          "The first shift-click is untouched — it still just maxes the stack on your cursor.",
                          "Turn this off for pure vanilla creative-menu behaviour.")
                 .define("shiftClickToHotbar", true);
+        ModConfigSpec.BooleanValue creativeModBlockTabs = b
+                .comment("Show the creative tabs the biome mods add — BetterNether, BetterEnd, Biomes O' Plenty and",
+                         "VanillaBackport. Off by default, which keeps the creative menu on the vanilla and Dungeon",
+                         "Train tabs. Set in-game from Options > Dungeon Train > Editor.")
+                .define("modBlockTabs", DEFAULT_CREATIVE_MOD_BLOCK_TABS);
+        ModConfigSpec.BooleanValue creativeModBlocksInSearch = b
+                .comment("List the contents of those biome-mod tabs in the creative search tab. Off by default.",
+                         "Independent of modBlockTabs. Set in-game from Options > Dungeon Train > Editor.")
+                .define("modBlocksInSearch", DEFAULT_CREATIVE_MOD_BLOCKS_IN_SEARCH);
         b.pop();
 
         b.push("world");
@@ -769,7 +790,8 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar, deleteWorldOnReboard,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
@@ -1435,6 +1457,41 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * Are the biome mods' own creative tabs drawn? Defaults to
+     * {@link #DEFAULT_CREATIVE_MOD_BLOCK_TABS}, pre-load included. Read when the tabs are built —
+     * see {@code compat.DisabledModCreativeTabs}.
+     */
+    public static boolean isCreativeModBlockTabs() {
+        return isLoaded() ? CREATIVE_MOD_BLOCK_TABS.get() : DEFAULT_CREATIVE_MOD_BLOCK_TABS;
+    }
+
+    /**
+     * Are the contents of the biome mods' creative tabs listed in the creative search? Defaults to
+     * {@link #DEFAULT_CREATIVE_MOD_BLOCKS_IN_SEARCH}, pre-load included. Independent of
+     * {@link #isCreativeModBlockTabs()}.
+     */
+    public static boolean isCreativeModBlocksInSearch() {
+        return isLoaded() ? CREATIVE_MOD_BLOCKS_IN_SEARCH.get() : DEFAULT_CREATIVE_MOD_BLOCKS_IN_SEARCH;
+    }
+
+    /** Persist the mod-tabs preference. Idempotent — skips the TOML write when unchanged. */
+    public static void setCreativeModBlockTabs(boolean on) {
+        setCreativeFlag(CREATIVE_MOD_BLOCK_TABS, on);
+    }
+
+    /** Persist the mod-blocks-in-search preference. Idempotent — skips the TOML write when unchanged. */
+    public static void setCreativeModBlocksInSearch(boolean on) {
+        setCreativeFlag(CREATIVE_MOD_BLOCKS_IN_SEARCH, on);
+    }
+
+    private static void setCreativeFlag(ModConfigSpec.BooleanValue slot, boolean on) {
+        if (!isLoaded()) return;
+        if (slot.get() == on) return;
+        slot.set(on);
+        slot.save();
+    }
+
+    /**
      * Delete the old world's save when reboarding? Defaults to {@code true} (also pre-load) —
      * Dungeon Train is a new-world-per-run game, so abandoned run saves are cleaned up unless
      * the player opts out via the death screen's trash toggle. The delete path itself carries
@@ -1808,6 +1865,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue betterXSuppressStartupScreens,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
+            ModConfigSpec.BooleanValue creativeModBlockTabs,
+            ModConfigSpec.BooleanValue creativeModBlocksInSearch,
             ModConfigSpec.BooleanValue deleteWorldOnReboard,
             ModConfigSpec.IntValue builderTilesPerRow,
             ModConfigSpec.IntValue menuRenderDistance,
