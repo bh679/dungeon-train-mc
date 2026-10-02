@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.BookIdentity;
 import games.brennan.dungeontrain.discord.BookReportReporter;
 import games.brennan.dungeontrain.event.NetworkConsentMirror;
+import games.brennan.dungeontrain.narrative.BookCopy;
 import games.brennan.dungeontrain.narrative.BookReportTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -81,10 +82,13 @@ public record BookReportPacket(String bookType, String bookId) implements Custom
         });
     }
 
-    /** {@code held} when its resolved DT identity matches the packet's {@code (bookType, bookId)}, else null. */
+    /**
+     * {@code held} when its resolved DT identity matches the packet's {@code (bookType, bookId)}, else
+     * null. A crafted copy never matches — same rule as {@link BookVotePacket} (see {@link BookCopy}).
+     */
     private static ItemStack matching(ItemStack held, BookReportPacket packet) {
         Optional<BookIdentity> id = BookIdentity.resolve(held);
-        if (id.isEmpty()) return null;
+        if (id.isEmpty() || BookCopy.isCopy(held)) return null;
         return id.get().bookType().equals(packet.bookType) && id.get().bookId().equals(packet.bookId)
             ? held : null;
     }

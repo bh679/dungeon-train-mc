@@ -22097,6 +22097,57 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ride-snapshot-fov-guard",
+      "version": "0.1107.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Ride photos stay properly framed",
+      "summary": "Ride photos keep their normal framing while you're zoomed in.",
+      "highlights": [],
+      "pr": 1763,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "book-copies-not-votable",
+      "version": "0.1108.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "books"
+      ],
+      "title": "Copies of community books",
+      "summary": "Copies of community books no longer ask for your vote.",
+      "highlights": [],
+      "pr": 1764,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photos-burn-when-dropped",
+      "version": "0.1109.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Photographs burn when dropped",
+      "summary": "A photograph now burns if you drop it.",
+      "highlights": [],
+      "pr": 1765,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

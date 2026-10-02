@@ -21,11 +21,12 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
  * Behaviour of the {@link DisposableCamera}: one shot, the viewfinder closes so the print can be
- * watched, the camera burns once the photo is out, and the photo burns after it has been viewed.
+ * watched, the camera burns once the photo is out, and the photo burns after it has been viewed or
+ * whenever it is dropped.
  *
- * <p>Nothing here burns on a drop — an unused camera or an unviewed photo can be dropped, stored or
- * lost on death like any item. The burns are started explicitly through
- * {@link StartingBookEvents#dropAndBurn}, never through the burn-on-drop predicate the books use.</p>
+ * <p>An unused camera does not burn on a drop — it can be dropped, stored or lost on death like any
+ * item; a spent one is burned explicitly through {@link StartingBookEvents#dropAndBurn}. A photo,
+ * like a DT book, burns on any drop: {@link StartingBookEvents#onEntityJoinLevel} ignites it.</p>
  *
  * <p>A shot runs: release → shutter opens and the frame lands on the camera stack → shutter closes and
  * the item cooldown starts (Polaroid's print animation is that cooldown) → this class closes the
