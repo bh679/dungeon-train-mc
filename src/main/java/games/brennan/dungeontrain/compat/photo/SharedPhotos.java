@@ -82,7 +82,10 @@ public final class SharedPhotos {
     private static final int POOL_MAX = 40;
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
-    private static final HttpClient HTTP = HttpClient.newBuilder().connectTimeout(REQUEST_TIMEOUT).build();
+    // HTTP/1.1 on purpose: over plain http the default client first asks to upgrade to HTTP/2, and the
+    // relay closes that connection without answering.
+    private static final HttpClient HTTP = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1).connectTimeout(REQUEST_TIMEOUT).build();
 
     private record PendingUpload(UUID playerId, String author, String exposureId, JsonObject meta, int ticksLeft) {
         PendingUpload tick() { return new PendingUpload(playerId, author, exposureId, meta, ticksLeft - 1); }
