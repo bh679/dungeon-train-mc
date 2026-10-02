@@ -60,9 +60,9 @@ public final class PortalLibraryTribute {
 
     /**
      * The line the note signs off with when the shelves are the reader's OWN. The note itself is
-     * unchanged — same variant, same name under it — and this is appended after it: the one thing
-     * the reader cannot work out from the shelves, that writing another book is what makes a room
-     * like this likelier to turn up again ({@code PortalOwnShelves}).
+     * unchanged — same variant, same name under it — and this goes on a second page behind it: the
+     * one thing the reader cannot work out from the shelves, that writing another book is what
+     * makes a room like this likelier to turn up again ({@code PortalOwnShelves}).
      */
     private static final List<String> OWN_TIPS = List.of(
         "Write another book and this room will find you again.",
@@ -80,14 +80,14 @@ public final class PortalLibraryTribute {
         return OWN_TIPS.size();
     }
 
-    /** The note for a library of the reader's own books: the usual note, with a tip to close. */
+    /** The note for a library of the reader's own books: the usual note, then a tip overleaf. */
     public static ItemStack buildOwnStack(String author, long seed) {
-        return BookFactory.buildPlainBook(TITLE, CURATOR, List.of(ownPageFor(author, seed)));
+        return BookFactory.buildPlainBook(TITLE, CURATOR, ownPagesFor(author, seed));
     }
 
-    /** The own-books page: exactly {@link #pageFor}, then a blank line and one tip. */
-    static String ownPageFor(String author, long seed) {
-        return pageFor(author, seed) + "\n\n" + ownTipFor(seed);
+    /** The own-books pages: exactly {@link #pageFor} on the first, and one tip alone on the second. */
+    static List<String> ownPagesFor(String author, long seed) {
+        return List.of(pageFor(author, seed), ownTipFor(seed));
     }
 
     /**

@@ -56,7 +56,7 @@ public final class PortalRoomLibrary {
      * resolved should look like.</p>
      *
      * @param ownShelves true when the catalogue is the reader's own writing — the lectern's note
-     *                   then closes with a tip
+     *                   then carries a tip on a second page
      */
     public static int stock(ServerLevel level, BlockPos origin, Vec3i size,
                             List<SharedBookPool.PoolBook> catalogue, int pairKey, String authorName,

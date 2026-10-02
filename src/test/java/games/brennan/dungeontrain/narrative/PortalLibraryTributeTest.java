@@ -86,15 +86,16 @@ class PortalLibraryTributeTest {
     }
 
     @Test
-    @DisplayName("The own-books page is the usual note, unchanged, with one tip appended")
-    void theOwnPageAppendsATip() {
+    @DisplayName("The own-books note is the usual page, unchanged, with one tip on a second page")
+    void theOwnNoteCarriesItsTipOverleaf() {
         for (long seed = 0; seed < 200; seed++) {
-            String page = PortalLibraryTribute.ownPageFor("Faulthurst", seed);
-            assertEquals(PortalLibraryTribute.pageFor("Faulthurst", seed)
-                + "\n\n" + PortalLibraryTribute.ownTipFor(seed), page);
-            assertEquals(page, PortalLibraryTribute.ownPageFor("Faulthurst", seed), "stable per room");
+            java.util.List<String> pages = PortalLibraryTribute.ownPagesFor("Faulthurst", seed);
+            assertEquals(2, pages.size());
+            assertEquals(PortalLibraryTribute.pageFor("Faulthurst", seed), pages.get(0));
+            assertEquals(PortalLibraryTribute.ownTipFor(seed), pages.get(1));
+            assertEquals(pages, PortalLibraryTribute.ownPagesFor("Faulthurst", seed), "stable per room");
         }
-        assertTrue(PortalLibraryTribute.ownPageFor(" ", 7L).contains("* an unknown hand\n\n"));
+        assertTrue(PortalLibraryTribute.ownPagesFor(" ", 7L).get(0).endsWith("* an unknown hand"));
     }
 
     @Test
