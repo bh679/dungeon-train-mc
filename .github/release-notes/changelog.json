@@ -21955,6 +21955,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "see-what-others-are-doing",
+      "version": "0.1099.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "compatibility"
+      ],
+      "title": "See what others are up to",
+      "summary": "You can now see what the players riding with you are doing.",
+      "highlights": [],
+      "pr": 1754,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
