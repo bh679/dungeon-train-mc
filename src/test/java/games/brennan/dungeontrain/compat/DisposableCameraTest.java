@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,6 +35,57 @@ final class DisposableCameraTest {
         DisposableCamera.markShot(stack);
         assertTrue(DisposableCamera.isShot(stack));
         assertTrue(DisposableCamera.hasMarker(stack, DisposableCamera.NBT_CAMERA));
+    }
+
+    @Test
+    @DisplayName("print timer stamps read back, and are unset (-1) until written")
+    void tickStamps() {
+        ItemStack stack = new ItemStack(Items.STICK);
+        assertEquals(-1L, DisposableCamera.tick(stack, DisposableCamera.NBT_PRINT_START));
+        assertEquals(-1L, DisposableCamera.tick(ItemStack.EMPTY, DisposableCamera.NBT_SHOT_TICK));
+
+        DisposableCamera.setTick(stack, DisposableCamera.NBT_SHOT_TICK, 1234L);
+        assertEquals(1234L, DisposableCamera.tick(stack, DisposableCamera.NBT_SHOT_TICK));
+        assertEquals(-1L, DisposableCamera.tick(stack, DisposableCamera.NBT_PRINT_START));
+        assertFalse(DisposableCamera.hasPendingFrame(stack));
+    }
+
+    @Test
+    @DisplayName("a camera that has not started printing shows no print progress")
+    void noProgressBeforePrint() {
+        ItemStack stack = new ItemStack(Items.STICK);
+        assertEquals(0f, DisposableCamera.printProgress(stack, 5000.0));
+        DisposableCamera.setTick(stack, DisposableCamera.NBT_SHOT_TICK, 4990L);
+        assertEquals(0f, DisposableCamera.printProgress(stack, 5000.0));
+    }
+
+    @Test
+    @DisplayName("print progress runs 0..1 over PRINT_TICKS and clamps either side")
+    void printProgressClamps() {
+        ItemStack stack = new ItemStack(Items.STICK);
+        DisposableCamera.setTick(stack, DisposableCamera.NBT_PRINT_START, 100L);
+        int ticks = DisposableCameraEvents.PRINT_TICKS;
+        assertEquals(0f, DisposableCamera.printProgress(stack, 90.0));
+        assertEquals(0f, DisposableCamera.printProgress(stack, 100.0));
+        assertEquals(0.5f, DisposableCamera.printProgress(stack, 100.0 + ticks / 2.0), 1e-6);
+        assertEquals(1f, DisposableCamera.printProgress(stack, 100.0 + ticks));
+        assertEquals(1f, DisposableCamera.printProgress(stack, 100.0 + ticks * 3));
+    }
+
+    @Test
+    @DisplayName("reload sweep: none before the shot, full until the print starts, then shrinks to 0")
+    void reloadRemaining() {
+        ItemStack stack = new ItemStack(Items.STICK);
+        assertEquals(0f, DisposableCamera.reloadRemaining(stack, 100.0));
+
+        DisposableCamera.markShot(stack);
+        assertEquals(1f, DisposableCamera.reloadRemaining(stack, 100.0));
+
+        DisposableCamera.setTick(stack, DisposableCamera.NBT_PRINT_START, 100L);
+        int ticks = DisposableCameraEvents.PRINT_TICKS;
+        assertEquals(1f, DisposableCamera.reloadRemaining(stack, 100.0));
+        assertEquals(0.5f, DisposableCamera.reloadRemaining(stack, 100.0 + ticks / 2.0), 1e-6);
+        assertEquals(0f, DisposableCamera.reloadRemaining(stack, 100.0 + ticks));
     }
 
     @Test
