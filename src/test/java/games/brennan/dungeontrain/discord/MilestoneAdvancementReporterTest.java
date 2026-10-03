@@ -27,6 +27,14 @@ class MilestoneAdvancementReporterTest {
     }
 
     @Test
+    @DisplayName("the hint key follows the advancements lang layout")
+    void hintKey() {
+        assertEquals("advancements.dungeontrain.dungeon_train.the_long_run.hint",
+                MilestoneAdvancementReporter.hintKey(
+                        ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/the_long_run")));
+    }
+
+    @Test
     @DisplayName("title names the player and the advancement")
     void titleShape() {
         assertEquals("🏆 Steve earned Everything Burrito",

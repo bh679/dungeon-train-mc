@@ -1,19 +1,20 @@
 package games.brennan.dungeontrain.discord;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
+import games.brennan.dungeontrain.net.CaptureAdvancementPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.DisplayInfo;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -69,17 +70,30 @@ public final class MilestoneAdvancementReporter {
             DisplayInfo display = advancement.value().display().orElse(null);
             String advancementTitle = display == null ? advancement.id().getPath()
                     : display.getTitle().getString();
-            String advancementDescription = display == null ? "" : display.getDescription().getString();
             String title = title(name, advancementTitle);
-            String description = description(advancementDescription,
+            // The hint, never the description: the description is a secret other players are meant
+            // to find for themselves; the hint is what the advancements screen already shows everyone.
+            String description = description(hint(advancement.id()),
                     DiscordAdvancementSuffix.forPlayer(player.getUUID()));
             LOGGER.info("[DungeonTrain] {} earned {} — announcing in the passenger log.", name, advancement.id());
-            DiscordService.get().postReportTopLevel(player, title, description, List.of(), null, null,
-                    EMBED_COLOR, DungeonTrain.manifestWebhookOverride(),
-                    List.of(DungeonTrain.BRENNAN_DISCORD_ID));
+            MilestonePostBuffer.await(player, advancement.id(), title, description,
+                    DungeonTrain.manifestWebhookOverride());
+            DungeonTrainNet.sendTo(player, new CaptureAdvancementPacket(advancement.id()));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] milestone advancement announcement failed: {}", t.toString());
         }
+    }
+
+    /** The lang key of an advancement's hint — {@code dungeon_train/the_long_run} → {@code advancements.dungeontrain.dungeon_train.the_long_run.hint}. */
+    static String hintKey(ResourceLocation id) {
+        return "advancements." + id.getNamespace() + "." + id.getPath().replace('/', '.') + ".hint";
+    }
+
+    /** The hint as the server renders it, or {@code ""} when the advancement has none. */
+    static String hint(ResourceLocation id) {
+        String key = hintKey(id);
+        String text = Component.translatable(key).getString();
+        return key.equals(text) ? "" : text;
     }
 
     /** {@code "🏆 Steve earned Everything Burrito"}. */
