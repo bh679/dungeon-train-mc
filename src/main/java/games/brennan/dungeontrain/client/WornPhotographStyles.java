@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.photo.WornPhotographs;
+import io.github.mortuusars.exposure.ExposureClient;
 import io.github.mortuusars.exposure.client.image.modifier.ImageEffect;
 import io.github.mortuusars.exposure.client.render.photograph.PhotographStyle;
 import io.github.mortuusars.exposure.client.render.photograph.PhotographStyles;
@@ -16,8 +17,9 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class WornPhotographStyles {
 
-    private static final ResourceLocation ALBUM_PAPER =
-        ResourceLocation.fromNamespaceAndPath("exposure", "textures/photograph/photograph_album.png");
+    // Exposure's own "no overlay" marker. It compares against this, so null here crashes the renderer.
+    private static final ResourceLocation NO_OVERLAY = ExposureClient.Textures.EMPTY;
+    private static final ResourceLocation ALBUM_PAPER = ExposureClient.Textures.Photograph.REGULAR_ALBUM_PAPER;
 
     private WornPhotographStyles() {}
 
@@ -30,6 +32,6 @@ public final class WornPhotographStyles {
 
     private static void register(PhotographType type, String texture) {
         ResourceLocation paper = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/photograph/" + texture + ".png");
-        PhotographStyles.register(type, new PhotographStyle(paper, null, ALBUM_PAPER, null, ImageEffect.EMPTY));
+        PhotographStyles.register(type, new PhotographStyle(paper, NO_OVERLAY, ALBUM_PAPER, NO_OVERLAY, ImageEffect.EMPTY));
     }
 }
