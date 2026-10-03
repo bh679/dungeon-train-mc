@@ -22464,6 +22464,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "shared-player-photos",
+      "version": "0.1127.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Photos travel the train",
+      "summary": "A photo you take may now turn up for another passenger further down the line, and theirs for you.",
+      "highlights": [],
+      "pr": 1791,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
