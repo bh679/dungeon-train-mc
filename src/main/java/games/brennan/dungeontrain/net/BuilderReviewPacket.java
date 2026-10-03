@@ -26,7 +26,7 @@ import java.util.Objects;
  */
 public record BuilderReviewPacket(int relayId, String ownerUuid, String ownerName, String buildName,
                                   String kind, String subKind, boolean live, String review, String comment,
-                                  byte[] render) implements CustomPacketPayload {
+                                  byte[] render, String version, String versionOp) implements CustomPacketPayload {
 
     private static final byte[] NO_RENDER = new byte[0];
     private static final int MAX_STRING = 64;
@@ -39,6 +39,9 @@ public record BuilderReviewPacket(int relayId, String ownerUuid, String ownerNam
         subKind = subKind == null ? "" : subKind;
         review = BuilderReviewState.of(review);
         comment = comment == null ? "" : comment;
+        // The resubmit rule rides only with a resubmit; every other verdict has none.
+        version = version == null || !BuilderReviewState.RESUBMIT.equals(review) ? "" : version.strip();
+        versionOp = version.isEmpty() ? "" : BuilderReviewState.opOf(versionOp);
         // A picture only rides with an accept — it is for the announcement, and only an accept makes one.
         render = render == null || !BuilderReviewState.ACCEPTED.equals(review) ? NO_RENDER : render;
     }
@@ -59,11 +62,13 @@ public record BuilderReviewPacket(int relayId, String ownerUuid, String ownerNam
                 buf.writeUtf(p.review, MAX_STRING);
                 buf.writeUtf(p.comment, BuilderReviewEdits.COMMENT_MAX);
                 buf.writeByteArray(p.render);
+                buf.writeUtf(p.version, MAX_STRING);
+                buf.writeUtf(p.versionOp, MAX_STRING);
             },
             buf -> new BuilderReviewPacket(buf.readVarInt(), buf.readUtf(48), buf.readUtf(MAX_STRING),
                 buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING), buf.readBoolean(),
                 buf.readUtf(MAX_STRING), buf.readUtf(BuilderReviewEdits.COMMENT_MAX),
-                buf.readByteArray(BuilderProfileActionPacket.RENDER_MAX))
+                buf.readByteArray(BuilderProfileActionPacket.RENDER_MAX), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING))
         );
 
     @Override
@@ -76,7 +81,8 @@ public record BuilderReviewPacket(int relayId, String ownerUuid, String ownerNam
             if (!(ctx.player() instanceof ServerPlayer player) || player.getServer() == null) return;
             if (!BuilderRelayUpload.canUpload(player)) return;
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
-            BuilderReviewEdits.review(player, packet.relayId, packet.ownerUuid, live, packet.review, packet.comment)
+            BuilderReviewEdits.review(player, packet.relayId, packet.ownerUuid, live, packet.review, packet.comment,
+                    packet.version, packet.versionOp)
                 .thenAccept(outcome -> player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;
                     player.sendSystemMessage(outcome.message());
@@ -94,13 +100,14 @@ public record BuilderReviewPacket(int relayId, String ownerUuid, String ownerNam
         if (!(o instanceof BuilderReviewPacket p)) return false;
         return relayId == p.relayId && live == p.live && ownerUuid.equals(p.ownerUuid) && ownerName.equals(p.ownerName)
                 && buildName.equals(p.buildName) && kind.equals(p.kind) && subKind.equals(p.subKind)
-                && review.equals(p.review) && comment.equals(p.comment) && Arrays.equals(render, p.render);
+                && review.equals(p.review) && comment.equals(p.comment) && Arrays.equals(render, p.render)
+                && version.equals(p.version) && versionOp.equals(p.versionOp);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(relayId, ownerUuid, ownerName, buildName, kind, subKind, live, review, comment,
-                Arrays.hashCode(render));
+                Arrays.hashCode(render), version, versionOp);
     }
 
     @Override

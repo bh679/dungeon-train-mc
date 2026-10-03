@@ -29,6 +29,8 @@ record BuilderReviewBadge(int borderColour, ResourceLocation icon) {
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/review_declined");
     private static final ResourceLocation FEEDBACK =
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/review_feedback");
+    private static final ResourceLocation RESUBMIT =
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/review_resubmit");
 
     /** The badge for a review state, or null for one that isn't marked. */
     static BuilderReviewBadge of(String review) {
@@ -41,6 +43,8 @@ record BuilderReviewBadge(int borderColour, ResourceLocation icon) {
                     new BuilderReviewBadge(BuilderReviewState.BORDER_DECLINED, DECLINED);
             case BuilderReviewState.FEEDBACK ->
                     new BuilderReviewBadge(BuilderReviewState.BORDER_FEEDBACK, FEEDBACK);
+            case BuilderReviewState.RESUBMIT ->
+                    new BuilderReviewBadge(BuilderReviewState.BORDER_RESUBMIT, RESUBMIT);
             default -> null;
         };
     }

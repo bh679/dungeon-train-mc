@@ -22,6 +22,7 @@ final class BuilderReviewStateTest {
         assertEquals(BuilderReviewState.ACCEPTED, BuilderReviewState.of("accepted"));
         assertEquals(BuilderReviewState.DECLINED, BuilderReviewState.of("declined"));
         assertEquals(BuilderReviewState.FEEDBACK, BuilderReviewState.of("feedback"));
+        assertEquals(BuilderReviewState.RESUBMIT, BuilderReviewState.of("resubmit"));
 
         // A relay that predates the queue sends no field at all, which SharedCarriageClient reads as
         // the empty string — the commonest of these by far while the relay rolls out.
@@ -54,6 +55,23 @@ final class BuilderReviewStateTest {
                 BuilderReviewState.BORDER_FEEDBACK}) {
             assertEquals(0xFF, (colour >>> 24) & 0xFF, "alpha must be full");
         }
+    }
+
+    @Test
+    @DisplayName("a resubmit rule: dotted versions only, unknown ops read as or-above")
+    void resubmitRule() {
+        assertEquals(BuilderReviewState.OP_GTE, BuilderReviewState.opOf(null));
+        assertEquals(BuilderReviewState.OP_GTE, BuilderReviewState.opOf("sideways"));
+        assertEquals(BuilderReviewState.OP_EXACT, BuilderReviewState.opOf("exact"));
+        assertEquals(BuilderReviewState.OP_LTE, BuilderReviewState.opOf("lte"));
+        assertEquals(true, BuilderReviewState.isDottedVersion("0.1130.0"));
+        assertEquals(true, BuilderReviewState.isDottedVersion(" 1.2 "));
+        assertEquals(false, BuilderReviewState.isDottedVersion("latest"));
+        assertEquals(false, BuilderReviewState.isDottedVersion(""));
+        assertEquals(false, BuilderReviewState.isDottedVersion(null));
+        assertEquals(BuilderReviewState.BORDER_RESUBMIT, BuilderReviewState.borderColourFor(BuilderReviewState.RESUBMIT));
+        assertEquals("gui.dungeontrain.builder.profile.review.resubmit_note",
+                BuilderReviewState.noteKeyFor(BuilderReviewState.RESUBMIT));
     }
 
     @Test

@@ -39,7 +39,7 @@ public final class EditorCreatorPane {
     /** What a click landed on. */
     public enum HitKind {
         NONE, LOAD, PARENT, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT, PAGE_PREV, PAGE_NEXT, EDIT_NOTE,
-        REVIEW_ACCEPT, REVIEW_FEEDBACK, REVIEW_DECLINE
+        REVIEW_ACCEPT, REVIEW_FEEDBACK, REVIEW_RESUBMIT, REVIEW_DECLINE
     }
 
     /** The parent button's share of the load slot; the load button keeps the rest. */
@@ -112,7 +112,7 @@ public final class EditorCreatorPane {
         if (sheetPage == 1) {
             sheetButtons = SubmissionPage.draw(g, font, body, entry.note(), submitAnswer.hints(),
                 submitAnswer.canEdit(), submitAnswer.canReview(), entry.review(), entry.reviewComment(),
-                mouseX, mouseY);
+                entry.reviewVersion(), entry.reviewVersionOp(), mouseX, mouseY);
             editNoteRect = sheetButtons.edit();
         } else {
             int y = body.y();
@@ -361,6 +361,7 @@ public final class EditorCreatorPane {
         if (sheetPage == 1) {
             if (hits(sheetButtons.accept(), mx, my)) return HitKind.REVIEW_ACCEPT;
             if (hits(sheetButtons.feedback(), mx, my)) return HitKind.REVIEW_FEEDBACK;
+            if (hits(sheetButtons.resubmit(), mx, my)) return HitKind.REVIEW_RESUBMIT;
             if (hits(sheetButtons.decline(), mx, my)) return HitKind.REVIEW_DECLINE;
         }
         switch (EditorPager.hit(pagerRect, sheetPage, sheetPageCount, mx, my)) {

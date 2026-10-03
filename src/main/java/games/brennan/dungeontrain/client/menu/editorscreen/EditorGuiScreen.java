@@ -901,6 +901,11 @@ public final class EditorGuiScreen extends Screen {
                     creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.DECLINED);
                     return true;
                 }
+                case REVIEW_RESUBMIT -> {
+                    click();
+                    creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.RESUBMIT);
+                    return true;
+                }
                 case PREVIEW -> {
                     orbit.beginDrag();
                     return true;

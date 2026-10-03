@@ -29,13 +29,45 @@ public final class BuilderReviewState {
      * which ({@code reviewComment}); editing and submitting again puts it back in the queue.
      */
     public static final String FEEDBACK = "feedback";
+    /**
+     * Sent back to be re-saved and re-submitted from a particular Dungeon Train version — the build was
+     * made on one with a bug or a missing block. The relay holds it here until a submit arrives from a
+     * client on that version ({@code reviewVersion} + {@code reviewVersionOp}).
+     */
+    public static final String RESUBMIT = "resubmit";
+
+    /** How a resubmit rule reads its version: this one, this one or newer, this one or older. */
+    public static final String OP_EXACT = "exact";
+    public static final String OP_GTE = "gte";
+    public static final String OP_LTE = "lte";
+
+    /** Coerce a relay-supplied op; anything unknown reads as "or above", the commonest rule. */
+    public static String opOf(String op) {
+        return OP_EXACT.equals(op) || OP_LTE.equals(op) ? op : OP_GTE;
+    }
+
+    /** A plausible Dungeon Train version: dotted numbers like {@code 0.1130.0}. */
+    public static boolean isDottedVersion(String v) {
+        return v != null && v.strip().matches("\\d+(\\.\\d+){0,3}([-+][0-9A-Za-z.+-]*)?") && v.strip().length() <= 40;
+    }
+
+    /** "0.1130.0 or above" — a resubmit rule in the player's language; empty when there is no rule. */
+    public static net.minecraft.network.chat.MutableComponent ruleText(String version, String op) {
+        if (version == null || version.isBlank()) return net.minecraft.network.chat.Component.empty();
+        String key = switch (opOf(op)) {
+            case OP_EXACT -> "gui.dungeontrain.builder.profile.review.rule_exact";
+            case OP_LTE -> "gui.dungeontrain.builder.profile.review.rule_lte";
+            default -> "gui.dungeontrain.builder.profile.review.rule_gte";
+        };
+        return net.minecraft.network.chat.Component.translatable(key, version.strip());
+    }
 
     private BuilderReviewState() {}
 
     /** Coerce a relay-supplied value. Anything absent, empty or unrecognised reads as never-asked. */
     public static String of(String review) {
         if (SUBMITTED.equals(review) || ACCEPTED.equals(review) || DECLINED.equals(review)
-                || FEEDBACK.equals(review)) return review;
+                || FEEDBACK.equals(review) || RESUBMIT.equals(review)) return review;
         return NONE;
     }
 
@@ -47,6 +79,8 @@ public final class BuilderReviewState {
     public static final int BORDER_DECLINED = 0xFFFF5555;
     /** Sent back with notes — §e, the yellow of "look at this", between waiting's blue and declined's red. */
     public static final int BORDER_FEEDBACK = 0xFFFFFF55;
+    /** Sent back for a version — §6 gold, between feedback's yellow and declined's red. */
+    public static final int BORDER_RESUBMIT = 0xFFFFAA00;
     /** No colour: the tile keeps the ordinary border every other builder grid draws. */
     public static final int BORDER_NONE = 0;
 
@@ -64,6 +98,7 @@ public final class BuilderReviewState {
             case ACCEPTED -> BORDER_ACCEPTED;
             case DECLINED -> BORDER_DECLINED;
             case FEEDBACK -> BORDER_FEEDBACK;
+            case RESUBMIT -> BORDER_RESUBMIT;
             default -> BORDER_NONE;
         };
     }
@@ -78,6 +113,8 @@ public final class BuilderReviewState {
             case SUBMITTED -> "gui.dungeontrain.builder.profile.review.submitted_note";
             case DECLINED -> "gui.dungeontrain.builder.profile.review.declined_note";
             case FEEDBACK -> "gui.dungeontrain.builder.profile.review.feedback_note";
+            // Takes the rule as its one argument — see ruleText; callers pass it.
+            case RESUBMIT -> "gui.dungeontrain.builder.profile.review.resubmit_note";
             default -> null;
         };
     }

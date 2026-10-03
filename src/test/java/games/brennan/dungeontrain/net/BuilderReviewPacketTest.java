@@ -21,7 +21,7 @@ final class BuilderReviewPacketTest {
     @DisplayName("an accept carries its picture and comment round the wire")
     void acceptRoundTrip() {
         BuilderReviewPacket original = new BuilderReviewPacket(41, OWNER, "Ada", "brick_cabin", "carriage", "",
-                false, BuilderReviewState.ACCEPTED, "Lovely roofline.", new byte[] {1, 2, 3});
+                false, BuilderReviewState.ACCEPTED, "Lovely roofline.", new byte[] {1, 2, 3}, "", "");
         BuilderReviewPacket back = roundTrip(original);
         assertEquals(original, back);
         assertEquals(3, back.render().length);
@@ -33,7 +33,8 @@ final class BuilderReviewPacketTest {
     void noRenderUnlessAccepting() {
         for (String review : new String[] {BuilderReviewState.FEEDBACK, BuilderReviewState.DECLINED}) {
             BuilderReviewPacket p = new BuilderReviewPacket(41, OWNER, "Ada", "brick_cabin", "carriage", "",
-                    true, review, "Needs a door.", new byte[] {9, 9});
+                    true, review, "Needs a door.", new byte[] {9, 9}, "0.1130.0", "gte");
+            assertEquals("", p.version(), "a rule rides only with a resubmit");
             assertEquals(0, p.render().length, review);
             assertEquals(p, roundTrip(p));
         }
@@ -43,9 +44,20 @@ final class BuilderReviewPacketTest {
     @DisplayName("an unknown verdict reads as none, so a stale client cannot invent a state")
     void unknownReview() {
         BuilderReviewPacket p = new BuilderReviewPacket(41, OWNER, "Ada", "b", "carriage", "", false,
-                "approved-ish", "", null);
+                "approved-ish", "", null, "", "");
         assertEquals(BuilderReviewState.NONE, p.review());
         assertEquals(0, p.render().length);
+    }
+
+    @Test
+    @DisplayName("a resubmit carries its version rule; an unknown op reads as or-above")
+    void resubmitRule() {
+        BuilderReviewPacket p = new BuilderReviewPacket(41, OWNER, "Ada", "b", "carriage", "", false,
+                BuilderReviewState.RESUBMIT, "Fixed in the next one.", new byte[] {1}, " 0.1130.0 ", "sideways");
+        assertEquals("0.1130.0", p.version());
+        assertEquals(BuilderReviewState.OP_GTE, p.versionOp());
+        assertEquals(0, p.render().length);
+        assertEquals(p, roundTrip(p));
     }
 
     private static BuilderReviewPacket roundTrip(BuilderReviewPacket packet) {

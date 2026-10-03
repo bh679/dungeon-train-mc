@@ -35,7 +35,7 @@ public final class BuilderReviewEdits {
     /** True for a verdict the editor's buttons can set — never {@code none} or {@code submitted}. */
     public static boolean isVerdict(String review) {
         return BuilderReviewState.ACCEPTED.equals(review) || BuilderReviewState.FEEDBACK.equals(review)
-                || BuilderReviewState.DECLINED.equals(review);
+                || BuilderReviewState.DECLINED.equals(review) || BuilderReviewState.RESUBMIT.equals(review);
     }
 
     /** How a review went: whether the relay took it, and the chat line that says so. */
@@ -48,12 +48,28 @@ public final class BuilderReviewEdits {
      */
     public static CompletableFuture<Outcome> review(ServerPlayer player, int relayId, String ownerUuid,
                                                     boolean live, String review, String comment) {
+        return review(player, relayId, ownerUuid, live, review, comment, "", "");
+    }
+
+    /**
+     * As above with a resubmit rule. A {@code resubmit} without a plausible dotted version is refused
+     * here — the relay would refuse it too, but "a version is needed" is a better line than "didn't save".
+     */
+    public static CompletableFuture<Outcome> review(ServerPlayer player, int relayId, String ownerUuid,
+                                                    boolean live, String review, String comment,
+                                                    String version, String versionOp) {
         if (!isVerdict(review) || !canReview(player, ownerUuid)) {
             return CompletableFuture.completedFuture(new Outcome(false,
                     Component.translatable("gui.dungeontrain.builder.profile.review.not_allowed").withStyle(ChatFormatting.YELLOW)));
         }
+        boolean resubmit = BuilderReviewState.RESUBMIT.equals(review);
+        if (resubmit && !BuilderReviewState.isDottedVersion(version)) {
+            return CompletableFuture.completedFuture(new Outcome(false,
+                    Component.translatable("gui.dungeontrain.builder.profile.review.bad_version").withStyle(ChatFormatting.YELLOW)));
+        }
         String by = player.getGameProfile().getName();
-        return SharedCarriageClient.adminSetReview(relayId, live, review, clean(comment), by)
+        return SharedCarriageClient.adminSetReview(relayId, live, review, clean(comment), by,
+                        resubmit ? version.strip() : "", resubmit ? BuilderReviewState.opOf(versionOp) : "")
                 .thenApply(status -> new Outcome(status == SharedCarriageClient.CallStatus.OK, said(status)));
     }
 

@@ -113,8 +113,8 @@ final class BuilderProfilePacketTest {
         assertEquals("Doors should open outward.", back.builds().get(0).reviewComment());
         assertEquals("", back.builds().get(1).reviewComment());
         assertEquals(told, back.builds().get(0));
-        assertEquals(silent.withReview(BuilderReviewState.DECLINED, "Too dark."),
-                back.builds().get(1).withReview(BuilderReviewState.DECLINED, "Too dark."),
+        assertEquals(silent.withReview(BuilderReviewState.DECLINED, "Too dark.", "", ""),
+                back.builds().get(1).withReview(BuilderReviewState.DECLINED, "Too dark.", "", ""),
                 "the optimistic flip changes only the verdict and the comment");
     }
 

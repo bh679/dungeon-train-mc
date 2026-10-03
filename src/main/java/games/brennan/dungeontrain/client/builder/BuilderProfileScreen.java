@@ -144,6 +144,9 @@ public final class BuilderProfileScreen extends Screen {
             new BuilderProfileFilterButton.Option(BuilderReviewState.FEEDBACK,
                     "gui.dungeontrain.builder.profile.status.feedback",
                     BuilderReviewState.BORDER_FEEDBACK),
+            new BuilderProfileFilterButton.Option(BuilderReviewState.RESUBMIT,
+                    "gui.dungeontrain.builder.profile.status.resubmit",
+                    BuilderReviewState.BORDER_RESUBMIT),
             new BuilderProfileFilterButton.Option(BuilderReviewState.DECLINED,
                     "gui.dungeontrain.builder.profile.status.declined",
                     BuilderReviewState.BORDER_DECLINED));
@@ -1114,6 +1117,11 @@ public final class BuilderProfileScreen extends Screen {
         String verdict = BuilderReviewState.of(entry.review());
         if (BuilderReviewState.DECLINED.equals(verdict) || BuilderReviewState.FEEDBACK.equals(verdict)) {
             return withComment(Component.translatable(BuilderReviewState.noteKeyFor(verdict)), entry);
+        }
+        if (BuilderReviewState.RESUBMIT.equals(verdict)) {
+            // The rule is the message: which Dungeon Train to come back on.
+            return withComment(Component.translatable(BuilderReviewState.noteKeyFor(verdict),
+                    BuilderReviewState.ruleText(entry.reviewVersion(), entry.reviewVersionOp()).getString()), entry);
         }
         // A carriage is only placed into a stage it belongs to, and a build authored without one
         // belongs to none — so it can be submitted and still never appear anywhere. Said here because

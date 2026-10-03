@@ -243,10 +243,22 @@ public final class SharedCarriageClient {
                                String source, String stage, String flag, String review, int l, int h, int w,
                                int changeCount, long updatedTs,
                                boolean favourite, String ownerUuid, String ownerName,
-                               boolean templateCopy, SubmitNote note, String reviewComment) {
+                               boolean templateCopy, SubmitNote note, String reviewComment,
+                               String reviewVersion, String reviewVersionOp) {
         public ProfileBuild {
             note = note == null ? SubmitNote.EMPTY : note;
             reviewComment = reviewComment == null ? "" : reviewComment;
+            reviewVersion = reviewVersion == null ? "" : reviewVersion;
+            reviewVersionOp = reviewVersionOp == null ? "" : reviewVersionOp;
+        }
+
+        /** A row with a comment but no resubmit rule. */
+        public ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
+                            String source, String stage, String flag, String review, int l, int h, int w,
+                            int changeCount, long updatedTs, boolean favourite, String ownerUuid,
+                            String ownerName, boolean templateCopy, SubmitNote note, String reviewComment) {
+            this(id, kind, subKind, buildName, visibility, source, stage, flag, review, l, h, w, changeCount,
+                    updatedTs, favourite, ownerUuid, ownerName, templateCopy, note, reviewComment, "", "");
         }
 
         /** A row with answers but no reviewer's comment — what every listing carried before the comment. */
@@ -415,7 +427,7 @@ public final class SharedCarriageClient {
                 r.has("templateCopy") && r.get("templateCopy").isJsonPrimitive()
                         && r.get("templateCopy").getAsJsonPrimitive().isBoolean()
                         && r.get("templateCopy").getAsBoolean(),
-                noteOf(r), str(r, "reviewComment"));
+                noteOf(r), str(r, "reviewComment"), str(r, "reviewVersion"), str(r, "reviewVersionOp"));
     }
 
     /**
@@ -737,6 +749,9 @@ public final class SharedCarriageClient {
         // Always on a submit, empty included: the relay keeps the stored answers when a submit carries
         // no note at all, so sending one is what lets clearing every box clear them.
         if (publish && note != null) body.add("note", noteJson(note));
+        // Which Dungeon Train this submit comes from — a build sent back for a particular version is
+        // only re-queued when the submitting client is on it (the relay's resubmit rule).
+        body.addProperty("dtVersion", games.brennan.dungeontrain.client.VersionInfo.VERSION);
         return post("/carriages/publish", body).thenApply(resp -> {
             if (resp == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
             int sc = resp.statusCode();
@@ -745,8 +760,11 @@ public final class SharedCarriageClient {
             JsonObject o = sc / 100 == 2 ? asObject(resp) : null;
             if (o == null) return new VisibilityResult(CallStatus.ERROR, false, false, "");
             boolean ok = o.has("ok") && o.get("ok").getAsBoolean();
-            boolean inUse = !ok && "in_use".equals(str(o, "reason"));
-            return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, str(o, "token"));
+            String reason = ok ? "" : str(o, "reason");
+            boolean inUse = "in_use".equals(reason);
+            boolean needsVersion = "needs_version".equals(reason);
+            return new VisibilityResult(ok ? CallStatus.OK : CallStatus.ERROR, ok, inUse, str(o, "token"),
+                    needsVersion, needsVersion ? str(o, "version") : "", needsVersion ? str(o, "op") : "");
         });
     }
 
@@ -783,12 +801,26 @@ public final class SharedCarriageClient {
      */
     public static CompletableFuture<CallStatus> adminSetReview(int id, boolean useLive, String review,
                                                               String comment, String by) {
+        return adminSetReview(id, useLive, review, comment, by, "", "");
+    }
+
+    /**
+     * As above with a resubmit rule — the Dungeon Train version the author must come back on and how
+     * it reads ({@code exact|gte|lte}). The relay requires one for {@code resubmit} and ignores it for
+     * every other verdict.
+     */
+    public static CompletableFuture<CallStatus> adminSetReview(int id, boolean useLive, String review,
+                                                              String comment, String by, String version, String op) {
         String admin = RelayTarget.adminSearchBase();
         if (admin.isEmpty()) return CompletableFuture.completedFuture(CallStatus.ERROR);
         JsonObject body = new JsonObject();
         body.addProperty("review", review == null ? "" : review);
         body.addProperty("comment", comment == null ? "" : comment);
         if (by != null && !by.isBlank()) body.addProperty("by", by);
+        if (version != null && !version.isBlank()) {
+            body.addProperty("version", version.strip());
+            body.addProperty("versionOp", op == null ? "" : op);
+        }
         return post(admin, "/carriages/" + id + "/review?cap=" + (useLive ? "live" : "dev"), body)
                 .thenApply(SharedCarriageClient::noteStatus);
     }
@@ -819,7 +851,19 @@ public final class SharedCarriageClient {
      * Outcome of a publish/withdraw: whether it took, whether the build is out on someone's train right
      * now, and — on a withdraw — the fresh lease token the relay handed back so editing can continue.
      */
-    public record VisibilityResult(CallStatus status, boolean ok, boolean inUse, String token) {}
+    public record VisibilityResult(CallStatus status, boolean ok, boolean inUse, String token,
+                                   boolean needsVersion, String version, String versionOp) {
+        public VisibilityResult {
+            token = token == null ? "" : token;
+            version = version == null ? "" : version;
+            versionOp = versionOp == null ? "" : versionOp;
+        }
+
+        /** A result with no version rule in play — every answer but a refused resubmit. */
+        public VisibilityResult(CallStatus status, boolean ok, boolean inUse, String token) {
+            this(status, ok, inUse, token, false, "", "");
+        }
+    }
 
     /**
      * Remove one of this player's builds from the relay for good — the My Builds trash button. Authed

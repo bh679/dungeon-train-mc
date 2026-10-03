@@ -18,6 +18,7 @@ final class BuilderReviewEditsTest {
         assertTrue(BuilderReviewEdits.isVerdict(BuilderReviewState.ACCEPTED));
         assertTrue(BuilderReviewEdits.isVerdict(BuilderReviewState.FEEDBACK));
         assertTrue(BuilderReviewEdits.isVerdict(BuilderReviewState.DECLINED));
+        assertTrue(BuilderReviewEdits.isVerdict(BuilderReviewState.RESUBMIT));
         assertFalse(BuilderReviewEdits.isVerdict(BuilderReviewState.SUBMITTED), "re-queueing is not a decision");
         assertFalse(BuilderReviewEdits.isVerdict(BuilderReviewState.NONE));
         assertFalse(BuilderReviewEdits.isVerdict(null));
