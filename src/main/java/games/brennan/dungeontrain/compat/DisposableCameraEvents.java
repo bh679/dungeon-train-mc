@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.compat;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.StartingBookEvents;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.neoforge.api.event.ModifyFrameExtraDataEvent;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
@@ -141,6 +142,8 @@ public final class DisposableCameraEvents {
         }
         camera.remove(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         DisposableCamera.setTick(camera, DisposableCamera.NBT_SHOT_TICK, now);
+        // The death screen's photo page shows this run's shots, even one still printing at death.
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).recordCameraFrame(frame);
     }
 
     /**

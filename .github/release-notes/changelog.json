@@ -22382,6 +22382,23 @@
       "released_at": null
     },
     {
+      "id": "death-screen-photo-page",
+      "version": "0.1123.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Photos on the death screen",
+      "summary": "When the ride ends, the photos from your life get a page of their own.",
+      "highlights": [],
+      "pr": 1787,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "update-card-any-launcher",
       "version": "0.1123.0",
       "type": "feat",
