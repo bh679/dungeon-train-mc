@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
+import games.brennan.dungeontrain.worldgen.SampledCells;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.neoforged.bus.api.IEventBus;
@@ -81,6 +82,26 @@ public final class ModDataAttachments {
         TYPES.register("end_band_pending",
             () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
                 .serialize(Codec.BOOL, pending -> pending)
+                .build()
+        );
+
+    /**
+     * Per-chunk record of the cells the End-band sampler wrote during the chunk's own worldgen
+     * ({@code EndBandInlineTerrain}, the {@code endBandTerrain = worldgen} default), so the void erosion
+     * that runs when the chunk goes live ({@code WorldDisintegrationEvents}) leaves exactly those cells
+     * alone. Copied verbatim from the proto chunk to the live chunk on promotion (the default copy path
+     * needs a serializer, which would persist 12 KB per chunk for nothing). Persisted only as a marker
+     * while a record exists, and read back as {@link SampledCells#ALL}: the one way a chunk is promoted
+     * without its record is a chunk saved mid-generation and finished on a later boot, where skipping its
+     * erosion beats erasing its islands.
+     */
+    public static final Supplier<AttachmentType<SampledCells>> END_BAND_SAMPLED_CELLS =
+        TYPES.register("end_band_sampled_cells",
+            () -> AttachmentType.builder(() -> SampledCells.NONE)
+                .serialize(Codec.BOOL.xmap(written -> written ? SampledCells.ALL : SampledCells.NONE,
+                                           cells -> cells != SampledCells.NONE),
+                           cells -> cells != SampledCells.NONE && !cells.isEmpty())
+                .copyHandler((cells, holder, provider) -> cells)   // after serialize(): the builder insists
                 .build()
         );
 
