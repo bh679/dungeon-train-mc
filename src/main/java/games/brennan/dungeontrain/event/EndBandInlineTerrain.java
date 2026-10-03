@@ -53,7 +53,7 @@ public final class EndBandInlineTerrain {
                 return;
             }
             EndBandTerrainWriter.write(overworld, proto, r, EndBandTerrainWriter.protoSink(proto, overworld.registryAccess()));
-            if (!r.spill().isEmpty()) WorldEndBandEvents.offerSpill(r.spill());
+            if (!r.spill().isEmpty()) WorldEndBandEvents.offerSpill(server, r.spill());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] End-band terrain failed in worldgen at {}; leaving it to the background sampler", pos, t);
             owe(proto);
