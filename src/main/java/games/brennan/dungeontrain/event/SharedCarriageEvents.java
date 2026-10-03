@@ -18,6 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -399,7 +400,10 @@ public final class SharedCarriageEvents {
         return null;
     }
 
-    @SubscribeEvent
+    // HIGHEST: ShipShutdownEvents deletes every train sub-level on this same event, and the final capture
+    // must read the plot before that — otherwise every lease goes back bare and storage looted since the
+    // last block edit (parked, see Instance.releaseParked) never reaches the relay.
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStopping(ServerStoppingEvent event) {
         // Final flush + hand back every held lease + the unused buffer so carriages don't stay locked to a
         // stopped world for the full TTL. Best-effort (the return POST is async) — the relay's TTL covers
