@@ -362,6 +362,11 @@ public final class ContainerContentsRoller {
         if (isDecoratedPot(state)) {
             return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
         }
+        // Suspicious sand / gravel hold one item under the same "item" key, but aren't a
+        // Container at all — an authored pool rolls into it the way a vase does.
+        if (isBrushable(state)) {
+            return rollBrushable(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
+        }
         int slots = nativeContainerSlots(state);
         if (slots <= 0) return baseNbt;
 
@@ -545,6 +550,7 @@ public final class ContainerContentsRoller {
      * past the container's capacity.
      */
     public static int slotsForContainer(BlockState state) {
+        if (isBrushable(state)) return 1;
         return containerSlotsFor(state);
     }
 
@@ -587,11 +593,6 @@ public final class ContainerContentsRoller {
                                                 int diffIndex,
                                                 @Nullable CompoundTag baseNbt,
                                                 HolderLookup.Provider registries) {
-        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
-            ? 1 : Math.min(pool.fillMax(), 1);
-        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
-        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
-
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
         out.remove(NBT_POT_ITEM);
         // Vases also bake their single Luck-potion bonus candidate now, from the same pool —
@@ -600,6 +601,39 @@ public final class ContainerContentsRoller {
         ListTag bonus = LuckyBonusRoller.preRoll(
             pool, localPos, worldSeed, carriageIndex, diffIndex, LuckyBonusRoller.VASE_BONUS, registries);
         out = LuckyBonusRoller.withBonus(out, bonus);
+        return putSingleItem(out, pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, registries);
+    }
+
+    /**
+     * Brushable roll path — the vase's single-item roll written under the same {@code item} key,
+     * minus the Luck-potion bonus (that is served when a vase breaks; nothing brushes one out).
+     * Any {@code LootTable} / {@code LootTableSeed} is dropped first: vanilla
+     * {@code BrushableBlockEntity} prefers a stored table over {@code item}, so leaving one behind
+     * would quietly put the archaeology loot back.
+     */
+    private static CompoundTag rollBrushable(ContainerContentsPool pool, int totalWeight,
+                                             BlockPos localPos, long worldSeed, int carriageIndex,
+                                             int diffIndex,
+                                             @Nullable CompoundTag baseNbt,
+                                             HolderLookup.Provider registries) {
+        CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
+        out.remove(NBT_POT_ITEM);
+        out.remove(NBT_BRUSHABLE_LOOT_TABLE);
+        out.remove(NBT_BRUSHABLE_LOOT_SEED);
+        return putSingleItem(out, pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, registries);
+    }
+
+    /**
+     * Roll K in {@code [fillMin, min(fillMax, 1)]} and, when it lands on 1, write one weighted pick
+     * into {@code out} under {@link #NBT_POT_ITEM}. Shared by the two single-item holders.
+     */
+    private static CompoundTag putSingleItem(CompoundTag out, ContainerContentsPool pool, int totalWeight,
+                                             BlockPos localPos, long worldSeed, int carriageIndex,
+                                             int diffIndex, HolderLookup.Provider registries) {
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? 1 : Math.min(pool.fillMax(), 1);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
         if (k <= 0) return out;
 
         ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, /*slot*/ 0);
@@ -636,6 +670,14 @@ public final class ContainerContentsRoller {
      */
     public static boolean isBrushable(BlockState state) {
         return state.getBlock() instanceof BrushableBlock;
+    }
+
+    /**
+     * True for any block the loot (C) menu can author a pool for: a vanilla {@link Container}, or a
+     * brushable block, whose single dig item rolls from the pool like a vase's.
+     */
+    public static boolean isLootAuthorable(BlockState state) {
+        return isContainerState(state) || isBrushable(state);
     }
 
     /**

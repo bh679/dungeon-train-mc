@@ -758,7 +758,7 @@ public final class CarriageContentsPlacer {
                                          long seed, int carriageIndex) {
         net.minecraft.world.level.block.state.BlockState state = level.getBlockState(worldPos);
         if (!state.hasBlockEntity()) return;
-        if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isContainerState(state)
+        if (!games.brennan.dungeontrain.editor.ContainerContentsRoller.isLootAuthorable(state)
             && !games.brennan.dungeontrain.editor.ContainerContentsRoller.isDecoratedPot(state)) return;
         net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(worldPos);
         if (be == null) return;

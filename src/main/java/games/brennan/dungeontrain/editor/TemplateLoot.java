@@ -179,26 +179,24 @@ public final class TemplateLoot {
                                boolean variant) {
         if (state == null || state.isAir()) return null;
         boolean brushable = ContainerContentsRoller.isBrushable(state);
-        if (!brushable && !ContainerContentsRoller.isContainerState(state)) return null;
+        if (!ContainerContentsRoller.isLootAuthorable(state)) return null;
         Block block = state.getBlock();
         double weight = chance / 100.0;
 
-        if (!brushable) {
-            int slots = ContainerContentsRoller.slotsForContainer(state);
-            if (prefabLink != null) {
-                ContainerContentsPool pool = LootPrefabStore.load(prefabLink)
-                    .map(LootPrefabStore.Data::pool).orElse(null);
-                if (pool != null && !pool.isEmpty()) {
-                    return new Found(block, Source.PREFAB, prefabLink, chance, variant,
-                        weight * LootValue.poolValue(pool, slots), LootValue.items(pool));
-                }
-            }
-            if (store != null && store.hasPoolAt(pos)) {
-                ContainerContentsPool pool = store.poolAt(pos);
-                String link = store.linkAt(pos);
-                return new Found(block, link == null ? Source.POOL : Source.PREFAB, link, chance, variant,
+        int slots = ContainerContentsRoller.slotsForContainer(state);
+        if (prefabLink != null) {
+            ContainerContentsPool pool = LootPrefabStore.load(prefabLink)
+                .map(LootPrefabStore.Data::pool).orElse(null);
+            if (pool != null && !pool.isEmpty()) {
+                return new Found(block, Source.PREFAB, prefabLink, chance, variant,
                     weight * LootValue.poolValue(pool, slots), LootValue.items(pool));
             }
+        }
+        if (store != null && store.hasPoolAt(pos)) {
+            ContainerContentsPool pool = store.poolAt(pos);
+            String link = store.linkAt(pos);
+            return new Found(block, link == null ? Source.POOL : Source.PREFAB, link, chance, variant,
+                weight * LootValue.poolValue(pool, slots), LootValue.items(pool));
         }
         if (nbt != null && nbt.contains(NBT_LOOT_TABLE, Tag.TAG_STRING)) {
             return new Found(block, Source.TABLE, nbt.getString(NBT_LOOT_TABLE), chance, variant,

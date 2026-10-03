@@ -171,14 +171,10 @@ public final class ContainerContentsPlacement {
                                                int diffIndex,
                                                @Nullable String variantLinkedLootPrefabId,
                                                @Nullable Level rollLevel) {
-        // Brushable blocks (suspicious sand/gravel) aren't Containers — give them
-        // a vanilla archaeology loot table so brushing yields loot like world gen.
-        if (state.hasBlockEntity() && ContainerContentsRoller.isBrushable(state)) {
-            return ContainerContentsRoller.stampArchaeologyLoot(state, baseBeNbt, localPos, worldSeed, carriageIndex);
-        }
-        if (!(state.hasBlockEntity() && ContainerContentsRoller.isContainerState(state))) {
+        if (!(state.hasBlockEntity() && ContainerContentsRoller.isLootAuthorable(state))) {
             return baseBeNbt;
         }
+        boolean brushable = ContainerContentsRoller.isBrushable(state);
         ContainerContentsPool pool;
         if (variantLinkedLootPrefabId != null) {
             pool = LootPrefabStore.load(variantLinkedLootPrefabId)
@@ -186,6 +182,11 @@ public final class ContainerContentsPlacement {
                 .orElse(ContainerContentsPool.empty());
         } else {
             pool = ContainerContentsStore.loadFor(plotKey).poolAt(localPos);
+        }
+        // Brushable blocks (suspicious sand/gravel) with no authored pool keep a vanilla
+        // archaeology loot table, so brushing yields loot like world gen.
+        if (brushable && pool.isEmpty()) {
+            return ContainerContentsRoller.stampArchaeologyLoot(state, baseBeNbt, localPos, worldSeed, carriageIndex);
         }
         if (pool.isEmpty()) {
             pool = BlockLootDefaults.resolveDefaultPool(state, localPos, worldSeed, carriageIndex)
