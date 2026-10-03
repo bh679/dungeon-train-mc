@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.discord.PhotoUpscale;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.TributePhotoReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
@@ -228,6 +229,15 @@ public final class SharedPhotos {
 
     /** Encode off-thread, then hand the PNG to {@code then} back on the server thread. */
     private static void encodeThen(MinecraftServer server, ExposureData data, String label, java.util.function.Consumer<byte[]> then) {
+        encodeThen(server, data, false, label, then);
+    }
+
+    /**
+     * As above; {@code forDiscord} enlarges the picture first ({@link PhotoUpscale}) so it shows at a
+     * viewable size in an embed. Uploads to the relay never set it — those stay the true pixels.
+     */
+    private static void encodeThen(MinecraftServer server, ExposureData data, boolean forDiscord, String label,
+                                   java.util.function.Consumer<byte[]> then) {
         int width = data.getWidth();
         int height = data.getHeight();
         byte[] pixels = data.getPixels().clone();
@@ -235,6 +245,11 @@ public final class SharedPhotos {
         CompletableFuture
                 .supplyAsync(() -> {
                     try {
+                        int factor = forDiscord ? PhotoUpscale.factorFor(width, height) : 1;
+                        if (factor > 1) {
+                            return PhotoPngCodec.encode(width * factor, height * factor,
+                                    PhotoUpscale.nearest(pixels, width, height, factor), palette);
+                        }
                         return PhotoPngCodec.encode(width, height, pixels, palette);
                     } catch (Exception e) {
                         throw new IllegalStateException(e);
@@ -350,7 +365,7 @@ public final class SharedPhotos {
             LOGGER.debug("[DungeonTrain] Tributed photo {} has no copy in this world; not posted.", photoId);
             return;
         }
-        encodeThen(server, data.get(), exposureId,
+        encodeThen(server, data.get(), true, exposureId,
                 png -> TributePhotoReporter.post(player, photographer, tributeNumber, cost, png));
     }
 
