@@ -69,6 +69,39 @@ public final class PhotoPngCodec {
         return bytes.toByteArray();
     }
 
+    /**
+     * A full-colour PNG with alpha (colour type 6) — for a picture that is no longer palette-indexed,
+     * like a photo drawn on its torn paper, whose tears must stay transparent. Not for the relay.
+     *
+     * @param argb ARGB colours, row by row, {@code width * height} long
+     */
+    public static byte[] encodeArgb(int width, int height, int[] argb) throws IOException {
+        if (width <= 0 || height <= 0 || argb.length != width * height) {
+            throw new IOException("image is " + width + "x" + height + " but has " + argb.length + " pixels");
+        }
+        int stride = width * 4 + 1;
+        byte[] rows = new byte[height * stride];
+        for (int y = 0; y < height; y++) {
+            int at = y * stride + 1;
+            for (int x = 0; x < width; x++) {
+                int c = argb[y * width + x];
+                rows[at++] = (byte) (c >> 16);
+                rows[at++] = (byte) (c >> 8);
+                rows[at++] = (byte) c;
+                rows[at++] = (byte) (c >>> 24);
+            }
+        }
+        ByteBuffer header = ByteBuffer.allocate(13);
+        header.putInt(width).putInt(height).put((byte) 8).put((byte) 6).put((byte) 0).put((byte) 0).put((byte) 0);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream(rows.length / 4);
+        DataOutputStream out = new DataOutputStream(bytes);
+        out.write(SIGNATURE);
+        writeChunk(out, "IHDR", header.array());
+        writeChunk(out, "IDAT", deflate(rows));
+        writeChunk(out, "IEND", new byte[0]);
+        return bytes.toByteArray();
+    }
+
     /** Read a PNG this codec wrote. Anything else — another colour type, a filtered row — is refused. */
     public static Decoded decode(byte[] png) throws IOException {
         if (png.length < SIGNATURE.length || !Arrays.equals(Arrays.copyOf(png, SIGNATURE.length), SIGNATURE)) {
