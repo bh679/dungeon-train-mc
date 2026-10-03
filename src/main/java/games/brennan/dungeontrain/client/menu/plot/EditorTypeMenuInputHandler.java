@@ -131,7 +131,7 @@ public final class EditorTypeMenuInputHandler {
         if (!EditorStatusHudOverlay.isEditorMenusVisible()) return false;
         if (EditorTypeMenuRenderer.menus().isEmpty()) return false;
         if (CommandMenuState.isOpen()) return false;
-        if (PartPositionMenu.isActive()) return false;
+        if (PartPositionMenu.claimsPointer()) return false;
         return true;
     }
 
@@ -169,18 +169,6 @@ public final class EditorTypeMenuInputHandler {
             EditorTypeMenusPacket.CategoryButton btn = menu.categoryBar().get(slot);
             String cmd = "dt editor " + btn.id();
             LOGGER.debug("[DungeonTrain] EditorTypeMenu category click: {}", cmd);
-            CommandRunner.run(cmd);
-            return;
-        }
-
-        // WHOLE's "whole group every N" settings row — click +1, shift-click -1, cmd-click types.
-        if (hit.cell() == EditorTypeMenuRenderer.CellKind.WHOLE_EVERY) {
-            if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) {
-                openWholeEveryEntry();
-                return;
-            }
-            String cmd = "dungeontrain editor whole every " + (shift ? "dec" : "inc");
-            LOGGER.debug("[DungeonTrain] EditorTypeMenu whole-every: {}", cmd);
             CommandRunner.run(cmd);
             return;
         }
@@ -569,19 +557,6 @@ public final class EditorTypeMenuInputHandler {
      * Open the typed-weight pad for one row. The world-space panel is a HUD overlay drawn behind
      * the modal, so closing returns to the world with the menu still up.
      */
-    /** Type N for "whole group every N" — 0 is off. */
-    private static void openWholeEveryEntry() {
-        int current = Math.max(0, EditorTypeMenuRenderer.wholeGroupEvery());
-        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
-            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.whole_every"),
-            current, 0, games.brennan.dungeontrain.train.WholeGroupSettings.MAX_EVERY,
-            value -> {
-                String cmd = "dungeontrain editor whole every " + value;
-                LOGGER.debug("[DungeonTrain] EditorTypeMenu whole-every (typed): {}", cmd);
-                CommandRunner.run(cmd);
-            },
-            null));
-    }
 
     private static void openWeightEntry(EditorTypeMenusPacket.Menu menu,
                                         EditorTypeMenusPacket.Variant variant) {
@@ -694,8 +669,12 @@ public final class EditorTypeMenuInputHandler {
                 plotCategory == PlotCategory.WHOLE_GROUP
                     ? NewSourcePickerScreen.Category.WHOLE_GROUP : NewSourcePickerScreen.Category.WHOLE,
                 null, standingKindId(plotCategory));
-            // No models to seed a new one from.
-            case ARCHITECTURE -> null;
+            // A new building is a bare pad or a copy of the one stood in (shipped or new).
+            case BUILDINGS -> new NewSourcePickerScreen(
+                NewSourcePickerScreen.Category.BUILDINGS, first.modelId(),
+                first.modelId().equals(EditorStatusHudOverlay.modelId()) ? EditorStatusHudOverlay.modelName() : "");
+            // Official buildings are never a source; no models to seed from in architecture.
+            case LOST_CITY, ARCHITECTURE -> null;
         };
         if (picker == null) {
             LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);

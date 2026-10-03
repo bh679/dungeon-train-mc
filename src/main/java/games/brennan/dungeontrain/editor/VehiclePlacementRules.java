@@ -146,7 +146,7 @@ public final class VehiclePlacementRules {
         // Plots are not confined to the editor world: `/dungeontrain editor enter` stamps one at
         // sky height in whatever world the author is in, so the plot test comes first and
         // unconditionally — it is a Y early-out and a box lookup, cheap enough for every click.
-        if (player.blockPosition().getY() >= EditorLayout.PLOT_Y) {
+        if (EditorStampedCategoryState.atPlotHeight(player.blockPosition().getY())) {
             var scope = EditorPlotScope.resolveAt(player, level);
             if (scope.isPresent()) {
                 return new Build(scope.get().key().toLowerCase(Locale.ROOT).contains(":" + ROOM_KIND + ":"));

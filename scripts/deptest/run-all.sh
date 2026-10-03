@@ -31,5 +31,11 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "M - missing VanillaBackport (Platform present)"   dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc pf exp expp
 # Big Lost City is required with a `[x,)` floor; N is the only case without `blc`.
 "$HERE/run-case.sh" "N - missing Big Lost City"                        dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch vb pf exp expp
-# Exposure and its Polaroid add-on are required with `[x,)` floors; O is the only case without them.
-"$HERE/run-case.sh" "O - missing Exposure + Polaroid"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf
+# What Are They Up To + CoroUtil are modpack companions (on by default), needed on client AND
+# server. O = a server that runs the pack's set; P = WATUT without its library.
+"$HERE/run-case.sh" "O - modpack companions WATUT + CoroUtil"          dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dbd pv lctf sp blc vb pf exp expp watut coro
+"$HERE/run-case.sh" "P - WATUT without CoroUtil"                       dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf exp expp watut
+# Exposure and its Polaroid add-on are required with `[x,)` floors; Q is the only case without them.
+"$HERE/run-case.sh" "Q - missing Exposure + Polaroid"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf
+# TerraBlender has a `[x,)` floor of DT's own (DT compiles against it and mixes into it); R is the only case without it.
+"$HERE/run-case.sh" "R - missing TerraBlender"                         dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop glitch blc vb pf exp expp

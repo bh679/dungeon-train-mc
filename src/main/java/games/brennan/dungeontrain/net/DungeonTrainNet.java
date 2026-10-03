@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "110";
+    public static final String PROTOCOL_VERSION = "113";
 
     private DungeonTrainNet() {}
 
@@ -299,6 +299,10 @@ public final class DungeonTrainNet {
         // echo; client → server with the resulting PNG, buffered on the encounter journal for its story embed.
         registrar.playToClient(CaptureEchoPacket.TYPE, CaptureEchoPacket.STREAM_CODEC, CaptureEchoPacket::handle);
         registrar.playToServer(EchoPhotoPacket.TYPE, EchoPhotoPacket.STREAM_CODEC, EchoPhotoPacket::handle);
+        // Milestone advancement screenshot: server → earning player to grab their screen while the toast
+        // is up (chat hidden); client → server with the JPEG, buffered for the passenger-log announcement.
+        registrar.playToClient(CaptureAdvancementPacket.TYPE, CaptureAdvancementPacket.STREAM_CODEC, CaptureAdvancementPacket::handle);
+        registrar.playToServer(AdvancementPhotoPacket.TYPE, AdvancementPhotoPacket.STREAM_CODEC, AdvancementPhotoPacket::handle);
 
         // Developer-message consent: client → server login sync of persisted consent state;
         // server → client push when consent is granted in-game so the client persists it.

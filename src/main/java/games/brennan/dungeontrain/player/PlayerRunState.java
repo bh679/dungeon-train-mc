@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.player;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -77,6 +78,8 @@ public final class PlayerRunState {
      * bounds the list the death report names, which no surface shows more than a handful of.
      */
     private static final int TAMED_NAMES_CAP = 16;
+    /** How many disposable-camera frames a run keeps for the death screen's photo page. */
+    public static final int CAMERA_FRAMES_CAP = 24;
 
     public static final Codec<PlayerRunState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
         BlockPos.CODEC.listOf().optionalFieldOf("uniqueChests", List.of()).forGetter(PlayerRunState::uniqueChestsList),
@@ -168,6 +171,23 @@ public final class PlayerRunState {
      */
     private int booksWrittenCount;
     /**
+     * Whether a book this player wrote is still waiting to be found: set by writing one, spent by
+     * walking into a library of their own books. While it stands, that library weighs more in the
+     * dimension lottery ({@code PortalOwnShelves}) — a reward per book, not a state of the run, so
+     * the next library is as rare as it was until they write again.
+     *
+     * <p>In memory only, for the reason {@link #booksWrittenCount} is.</p>
+     */
+    private boolean ownShelfBoostPending;
+    /**
+     * The own-books library this player last walked into, or {@link #NO_OWN_SHELF_PAIR}. Kept so
+     * standing in one is a single visit: a book signed inside the room is not spent by the same
+     * room on the next occupancy scan.
+     */
+    private int lastOwnShelfPair = NO_OWN_SHELF_PAIR;
+    /** {@link #lastOwnShelfPair} before any visit. Pair keys are carriage indices, never this. */
+    private static final int NO_OWN_SHELF_PAIR = Integer.MIN_VALUE;
+    /**
      * Death Notes and Love Notes this player has SIGNED this run — the per-run twins of the
      * {@code deathnotes_written} / {@code lovenotes_written} leaderboards, and what a Faulthurst
      * stat book reports for them.
@@ -248,6 +268,14 @@ public final class PlayerRunState {
     private final List<ResourceLocation> tamedAnimals;
     /** Animals tamed this run — exact, even past {@link #TAMED_NAMES_CAP} named types. */
     private int tamedCount;
+    /**
+     * Disposable-camera frames taken this run, oldest first — the death screen's photo page shows
+     * them. Capped at {@link #CAMERA_FRAMES_CAP}; later shots past the cap are not kept.
+     *
+     * <p><b>In-memory only — deliberately NOT in {@link #CODEC}</b>, like {@link #tamedAnimals}: a
+     * relog mid-run forgets the shots taken so far (the photographs themselves are unaffected).</p>
+     */
+    private final List<Frame> cameraFrames = new ArrayList<>();
 
     public PlayerRunState() {
         this.uniqueChests = new HashSet<>();
@@ -338,6 +366,18 @@ public final class PlayerRunState {
     /** The tamed entity types, in taming order — at most {@link #TAMED_NAMES_CAP} of them. */
     public List<ResourceLocation> tamedAnimals() {
         return List.copyOf(tamedAnimals);
+    }
+
+    /** Remember a disposable-camera frame taken this run (ignored once {@link #CAMERA_FRAMES_CAP} are kept). */
+    public void recordCameraFrame(Frame frame) {
+        if (frame != null && cameraFrames.size() < CAMERA_FRAMES_CAP) {
+            cameraFrames.add(frame);
+        }
+    }
+
+    /** Disposable-camera frames taken this run, oldest first — at most {@link #CAMERA_FRAMES_CAP}. */
+    public List<Frame> cameraFrames() {
+        return List.copyOf(cameraFrames);
     }
 
     public Set<BlockPos> uniqueChests() {
@@ -558,7 +598,23 @@ public final class PlayerRunState {
     }
 
     public int incrementBooksWritten() {
+        ownShelfBoostPending = true;
         return ++booksWrittenCount;
+    }
+
+    /** Whether a book written this run has yet to be met in a library — see the field. */
+    public boolean ownShelfBoostPending() {
+        return ownShelfBoostPending;
+    }
+
+    /**
+     * Note that this player is standing in the own-books library of {@code pairKey}. Arriving in
+     * one spends the pending boost; staying in it, or coming back to the same one, does not.
+     */
+    public void visitOwnShelves(int pairKey) {
+        if (lastOwnShelfPair == pairKey) return;
+        lastOwnShelfPair = pairKey;
+        ownShelfBoostPending = false;
     }
 
     /** Death Notes signed this run. */
@@ -765,6 +821,8 @@ public final class PlayerRunState {
         containersOpened = 0;
         booksReadCount = 0;
         booksWrittenCount = 0;
+        ownShelfBoostPending = false;
+        lastOwnShelfPair = NO_OWN_SHELF_PAIR;
         deathNotesWritten = 0;
         loveNotesWritten = 0;
         narrativeLetters.clear();

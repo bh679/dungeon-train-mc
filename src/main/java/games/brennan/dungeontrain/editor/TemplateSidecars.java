@@ -101,12 +101,14 @@ public final class TemplateSidecars {
         if (kind == null || id == null || id.isEmpty()) return out;
         switch (kind) {
             case CARRIAGE -> {
+                // Beside the template, in its pool's folder (ShellPool).
+                String at = games.brennan.dungeontrain.train.ShellPool.path(id);
                 out.add(new Sidecar("variants", CarriageVariantBlocks.SUBDIR,
-                        id + CarriageVariantBlocks.EXT));
+                        at + CarriageVariantBlocks.EXT));
                 out.add(new Sidecar("parts", CarriageVariantPartsStore.SUBDIR,
-                        id + CarriageVariantPartsStore.EXT));
+                        at + CarriageVariantPartsStore.EXT));
                 out.add(new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR,
-                        id + ContentsAllowStore.EXT));
+                        at + ContentsAllowStore.EXT));
             }
             case CONTENTS -> out.add(new Sidecar("variants", CarriageContentsVariantBlocks.SUBDIR,
                     id + CarriageContentsVariantBlocks.EXT));
@@ -128,6 +130,11 @@ public final class TemplateSidecars {
                 out.add(new Sidecar("contents-allow", room.subdir(), id + ContentsAllowStore.EXT));
                 out.add(new Sidecar("copies", room.subdir(), id + PortalRoomCopiesVariant.COPIES_EXT));
             }
+            // A new building's roster weight travels with it.
+            case BUILDING -> out.add(new Sidecar("meta", games.brennan.dungeontrain.building.Buildings.SUBDIR,
+                    id + games.brennan.dungeontrain.building.BuildingMeta.EXT));
+            // An official Lost City building has no file of the player's at all.
+            case LOST_CITY -> { }
             // One document for the whole run, beside the group's .nbt — the file the editor's Group
             // plot writes and the train's overlay reads.
             case CARRIAGE_GROUP -> out.add(new Sidecar("variants", WholeKind.GROUP.userSubdir(),
@@ -162,6 +169,7 @@ public final class TemplateSidecars {
             case PORTAL_ROOM -> ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> ChunkFramePlot.KEY_PREFIX + id;
             case CARRIAGE_GROUP -> BlockVariantPlot.wholeKey(WholeKind.GROUP, id);
+            case BUILDING, LOST_CITY -> null;
         };
     }
 
@@ -470,9 +478,9 @@ public final class TemplateSidecars {
             // whose sub kind this install cannot resolve. Skipped, not an error.
             if (sidecar == null || !entry.getValue().isJsonPrimitive()) continue;
             try {
-                Path dir = UserContentPaths.activeSubDir(sidecar.subdir());
-                Files.createDirectories(dir);
-                Files.writeString(dir.resolve(sidecar.basename()), entry.getValue().getAsString(),
+                Path file = UserContentPaths.activeSubDir(sidecar.subdir()).resolve(sidecar.basename());
+                Files.createDirectories(file.getParent());
+                Files.writeString(file, entry.getValue().getAsString(),
                         StandardCharsets.UTF_8);
             } catch (Exception e) {
                 LOGGER.warn("[DungeonTrain] Template sidecars: could not write the {} sidecar for "
@@ -593,6 +601,6 @@ public final class TemplateSidecars {
 
     /** Whether {@code kind} has any sidecar at all — what a caller checks before bothering. */
     public static boolean carries(BuilderPhotoPaths.Kind kind) {
-        return kind != null;
+        return kind != null && kind != BuilderPhotoPaths.Kind.LOST_CITY;
     }
 }

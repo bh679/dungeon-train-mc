@@ -184,6 +184,9 @@ public final class RunStatsEvents {
         // it is measured from, so there is exactly one moment this can be read. Shared by the
         // lifetime displacement counter below and by every reporter that describes this death.
         RunPosition pos = RunPosition.of(player);
+        // Every death counts as a game played, Free Play included — unlike the lifetime counters
+        // below, this one answers "how much has this player played", not "how did they score".
+        GlobalPlayerStats.addGames(id, 1L);
         long lifeDeaths;
         long lifeDisplacement;
         if (cheated) {
@@ -513,7 +516,8 @@ public final class RunStatsEvents {
                 portrait,
                 run.earnedAdvancements(),
                 run.tamedCount(),
-                run.tamedAnimals()
+                run.tamedAnimals(),
+                run.cameraFrames()
         );
     }
 

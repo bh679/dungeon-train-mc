@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.tools;
 
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.builder.relay.BuilderTemplateSource;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
@@ -57,6 +58,9 @@ public final class BundledFingerprints {
 
     private BundledFingerprints() {}
 
+    /** Where the jar keeps its buildings, under {@code data/dungeontrain/} — see {@code BuildingStore}. */
+    static final List<String> SHIPPED_BUILDING_DIRS = List.of("structure/lost_city", "structure/buildings");
+
     /** One shipped template's identity and hash, as the relay files it. */
     public record Fingerprint(String hash, String kind, String subKind, String name, String path) {}
 
@@ -93,7 +97,13 @@ public final class BundledFingerprints {
      */
     public static List<Fingerprint> scan(Path root) throws IOException {
         List<Fingerprint> out = new ArrayList<>();
-        for (BuilderTemplateSource.Slug slug : BuilderTemplateSource.slugs()) {
+        List<BuilderTemplateSource.Slug> slugs = new ArrayList<>(BuilderTemplateSource.slugs());
+        // Buildings are the one kind whose shipped copies are not where a player's are: the jar keeps
+        // them under structure/ so worldgen can place them, a player's are in buildings/.
+        for (String shipped : SHIPPED_BUILDING_DIRS) {
+            slugs.add(new BuilderTemplateSource.Slug(BuilderPhotoPaths.Kind.BUILDING, "", shipped));
+        }
+        for (BuilderTemplateSource.Slug slug : slugs) {
             Path dir = root.resolve(slug.subSlug());
             if (!Files.isDirectory(dir)) continue;
             try (Stream<Path> files = Files.list(dir)) {

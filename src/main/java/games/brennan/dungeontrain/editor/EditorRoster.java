@@ -57,6 +57,7 @@ public final class EditorRoster {
             addTracks(out);
             addPortals(out);
             addChunkFrames(out);
+            addBuildings(out);
             return out;
         } finally {
             RELAY_ROWS.set(null);
@@ -134,6 +135,20 @@ public final class EditorRoster {
         return entry.withRoom(mode, size.getX(), size.getZ(), size.getY());
     }
 
+    /** A carriage template's size, or the entry unchanged for every other row. */
+    private static EditorRosterPacket.Entry withShellSizeData(String categoryId, EditorRosterPacket.Entry entry) {
+        if (!EditorCategory.CARRIAGES.id().equals(categoryId)) return entry;
+        CarriageVariant v = CarriageVariantRegistry.find(entry.variant().modelId()).orElse(null);
+        // "Carriage blocks win" is about a carriage's contents, and a flatbed never has any.
+        if (v != null && CarriagePlotRows.rowOf(v) != CarriagePlotRows.Row.FLATBEDS) {
+            entry = entry.withShellWins(ShellWinsStore.wins(v.id()));
+        }
+        // A flatbed or portal keeps the size its role needs — no Room · Half · Group switch.
+        if (v != null && EditorTypeMenus.isFixedRow(CarriagePlotRows.rowOf(v))) return entry;
+        return entry.withShellSize(
+            games.brennan.dungeontrain.train.CarriagePlacer.sizeOfId(entry.variant().modelId()).key());
+    }
+
     /** A contents template's random-flip axes, or the entry unchanged for every other row. */
     private static EditorRosterPacket.Entry withFlipData(String categoryId, EditorRosterPacket.Entry entry) {
         if (!EditorCategory.CONTENTS.id().equals(categoryId)) return entry;
@@ -197,6 +212,9 @@ public final class EditorRoster {
                 games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.PORTAL_ROOM, "", modelName));
             keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
                 games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.TRACK, TrackKind.PORTAL_ROOM.id(), modelName));
+        } else if (PlotCategory.BUILDINGS.id().equals(categoryId)) {
+            keys.add(games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds.keyOf(
+                games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.BUILDING, "", modelName));
         }
         return keys;
     }
@@ -215,11 +233,24 @@ public final class EditorRoster {
         }
     }
 
+    /**
+     * One group per carriage pool — Rooms, Halves, Groups — each modelled by its size key, so the
+     * X menu shows a tab per pool and its "+" makes a template in that pool. An empty pool still gets
+     * its group, so the "+" is there to make its first template.
+     */
     private static void addCarriages(List<EditorRosterPacket.Group> out) {
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
         if (variants.isEmpty()) return;
-        out.add(group(EditorCategory.CARRIAGES.id(), "Carriages", "",
-            EditorTypeMenus.carriageRows(variants), null));
+        for (CarriagePlotRows.Row row : CarriagePlotRows.Row.values()) {
+            List<CarriageVariant> inRow = new ArrayList<>();
+            for (CarriageVariant v : variants) {
+                if (CarriagePlotRows.rowOf(v) == row) inRow.add(v);
+            }
+            // Flatbeds and Portals are only shown when they hold something: nothing is made into them.
+            if (inRow.isEmpty() && EditorTypeMenus.isFixedRow(row)) continue;
+            out.add(group(EditorCategory.CARRIAGES.id(), EditorTypeMenus.carriageRowTypeName(row),
+                EditorTypeMenus.carriageRowModelId(row), EditorTypeMenus.carriageRows(inRow), null));
+        }
     }
 
     private static void addParts(List<EditorRosterPacket.Group> out) {
@@ -274,6 +305,21 @@ public final class EditorRoster {
             EditorTypeMenus.chunkFrameRows(names), null));
     }
 
+    /** The buildings, one group — shipped Lost City buildings first, then new ones. */
+    private static void addBuildings(List<EditorRosterPacket.Group> out) {
+        List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
+        if (!names.isEmpty()) {
+            out.add(group(PlotCategory.BUILDINGS.id(), EditorTypeMenus.BUILDINGS_TYPE_NAME,
+                games.brennan.dungeontrain.building.Buildings.MODEL_ID, EditorTypeMenus.buildingRows(names), null));
+        }
+        // The official Lost City buildings, a group of their own — browsable, never editable.
+        var official = games.brennan.dungeontrain.building.LostCityReferences.all();
+        if (!official.isEmpty()) {
+            out.add(group(PlotCategory.LOST_CITY.id(), EditorTypeMenus.LOST_CITY_TYPE_NAME,
+                LostCityReferenceEditor.MODEL_ID, EditorTypeMenus.lostCityRows(official), null));
+        }
+    }
+
     private static EditorRosterPacket.Group group(
         String categoryId, String typeName, String modelId,
         List<EditorTypeMenusPacket.Variant> rows, SelfWeight selfWeight
@@ -281,8 +327,8 @@ public final class EditorRoster {
         List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
         for (EditorTypeMenusPacket.Variant v : rows) {
             int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
-            entries.add(withFlipData(categoryId, withRoomData(categoryId,
-                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v)))));
+            entries.add(withShellSizeData(categoryId, withFlipData(categoryId, withRoomData(categoryId,
+                new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v))))));
         }
         return new EditorRosterPacket.Group(categoryId, typeName, modelId, entries);
     }

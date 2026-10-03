@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.template.GateContext;
-import games.brennan.dungeontrain.template.SeededDraw;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -18,11 +17,13 @@ import java.util.Set;
  * Decides whether a carriage group is a whole <b>group</b> — one {@link CarriageGroup} template
  * stamped over the entire run — and which one.
  *
- * <p>Modelled on {@code PortalCarriageSelection.isPortalGroup}: a seeded lottery per group ordinal
- * at one-in-{@link WholeGroupSettings#every() N}, hashed rather than rolled so a re-stamped window
- * gets the same answer. Salted with {@link #GROUP_SALT} so it never lines up with the portal draw,
- * and a portal group always wins the collision anyway. No minimum gap: two whole groups in a row is
- * an ordinary thing for a pool of authored runs.</p>
+ * <p>Two rolls decide a whole group, the same two that decide a whole room
+ * ({@link WholeCarriageSelection}). The Group-carriage draw decides <em>whether</em> the run is a
+ * whole one, by landing on the {@link #VARIANT_ID wholegroup} template in the Group row — so that
+ * template's weight in {@code templates/weights.json} is the whole-group rate. This class then
+ * decides <em>which</em> group, by a weighted draw over the pool salted with {@link #GROUP_SALT}.
+ * When nothing fits, the caller places {@code wholegroup.nbt} as an ordinary Group carriage,
+ * exactly as a whole-room slot falls back to {@code whole.nbt}. A portal group never takes one.</p>
  *
  * <p>A template is only offered when its footprint holds exactly this train's
  * {@code groupSize} carriages; a group that has no fitting template at all is not a whole group.</p>
@@ -38,22 +39,28 @@ public final class WholeGroupSelection {
 
     private WholeGroupSelection() {}
 
-    /** The pure lottery — testable without a level. {@code every <= 0} is off. */
-    public static boolean isWholeGroup(int anchorPIdx, int groupSize, int every, long worldSeed) {
-        if (every <= 0) return false;
-        long groupIndex = Math.floorDiv((long) anchorPIdx, Math.max(1, groupSize));
-        return SeededDraw.hit(worldSeed ^ GROUP_SALT, groupIndex, every);
+    /** The Group carriage template whose weight is the whole-group frequency. */
+    public static final String VARIANT_ID = "wholegroup";
+
+    public static boolean isWholeGroupVariant(CarriageVariant variant) {
+        return variant != null && VARIANT_ID.equals(variant.id());
     }
 
-    /** The live verdict: settings, the session-only forced cadence, and the portal exclusion. */
-    public static boolean isWholeGroup(ServerLevel level, int anchorPIdx, int groupSize, long worldSeed) {
+    /** The forced test cadence, pure: every {@code forced}-th group ordinal; {@code forced <= 0} is off. */
+    public static boolean isForced(int anchorPIdx, int groupSize, int forced) {
+        if (forced <= 0) return false;
+        long groupIndex = Math.floorDiv((long) anchorPIdx, Math.max(1, groupSize));
+        return Math.floorMod(groupIndex, (long) forced) == 0L;
+    }
+
+    /**
+     * Whether this run should try for a whole group: the Group-carriage draw landed on the
+     * {@link #VARIANT_ID Whole Group} template ({@code drawnShell}, null when the run drew no Group
+     * carriage), or the session's forced cadence says so. Never a portal group.
+     */
+    public static boolean wantsWholeGroup(ServerLevel level, int anchorPIdx, int groupSize, CarriageVariant drawnShell) {
         if (PortalCarriageSelection.isPortalGroup(level, anchorPIdx)) return false;
-        int forced = WholeGroupSettings.forced();
-        if (forced > 0) {
-            long groupIndex = Math.floorDiv((long) anchorPIdx, Math.max(1, groupSize));
-            return Math.floorMod(groupIndex, (long) forced) == 0L;
-        }
-        return isWholeGroup(anchorPIdx, groupSize, WholeGroupSettings.every(), worldSeed);
+        return isWholeGroupVariant(drawnShell) || isForced(anchorPIdx, groupSize, WholeGroupSettings.forced());
     }
 
     /**

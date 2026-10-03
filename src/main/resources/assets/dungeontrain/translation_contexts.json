@@ -7840,6 +7840,18 @@
  "gui.dungeontrain.editor_settings.block_variant_menu.tip": [
   "tooltip"
  ],
+ "gui.dungeontrain.editor_settings.mod_block_tabs": [
+  "button"
+ ],
+ "gui.dungeontrain.editor_settings.mod_block_tabs.tip": [
+  "tooltip"
+ ],
+ "gui.dungeontrain.editor_settings.mod_blocks_in_search": [
+  "button"
+ ],
+ "gui.dungeontrain.editor_settings.mod_blocks_in_search.tip": [
+  "tooltip"
+ ],
  "gui.dungeontrain.menu_space.worldspace": [
   "button"
  ],

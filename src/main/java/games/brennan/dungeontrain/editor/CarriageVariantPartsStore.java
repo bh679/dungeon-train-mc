@@ -67,7 +67,7 @@ public final class CarriageVariantPartsStore {
     }
 
     public static Path fileFor(CarriageVariant variant) {
-        return directory().resolve(variant.id() + EXT);
+        return directory().resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
     }
 
     public static Path sourceFileFor(CarriageType type) {
@@ -100,8 +100,8 @@ public final class CarriageVariantPartsStore {
     }
 
     public static synchronized void save(CarriageVariant variant, CarriagePartAssignment assignment) throws IOException {
-        Files.createDirectories(directory());
         Path file = fileFor(variant);
+        Files.createDirectories(file.getParent());
         String pretty = new GsonBuilder().setPrettyPrinting().create().toJson(assignment.toJson());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
             w.write(pretty);
@@ -184,7 +184,7 @@ public final class CarriageVariantPartsStore {
 
     /** Source-tree path for any variant — by {@code id()}, regardless of Builtin/Custom. */
     private static Path sourceFileForVariant(CarriageVariant variant) {
-        return sourceDirectory().resolve(variant.id() + EXT);
+        return sourceDirectory().resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
     }
 
     /**
@@ -196,7 +196,7 @@ public final class CarriageVariantPartsStore {
      */
     private static boolean shipsWithGame(CarriageVariant variant) {
         if (!sourceTreeAvailable()) return false;
-        return Files.exists(sourceDirectory().resolve(variant.id() + ".nbt"));
+        return Files.exists(sourceDirectory().resolve(games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + ".nbt"));
     }
 
     public static boolean exists(CarriageVariant variant) {
@@ -205,7 +205,7 @@ public final class CarriageVariantPartsStore {
 
     public static boolean bundled(CarriageVariant variant) {
         try (InputStream in = CarriageVariantPartsStore.class.getResourceAsStream(
-                RESOURCE_PREFIX + variant.id() + EXT)) {
+                RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT)) {
             return in != null;
         } catch (IOException e) {
             return false;
@@ -213,7 +213,7 @@ public final class CarriageVariantPartsStore {
     }
 
     private static Optional<CarriagePartAssignment> loadFromConfig(CarriageVariant variant) {
-        Path file = UserContentPaths.findFile(SUBDIR, variant.id() + EXT);
+        Path file = UserContentPaths.findFile(SUBDIR, games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT);
         if (file == null) return Optional.empty();
         try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             JsonElement root = JsonParser.parseReader(r);
@@ -232,7 +232,7 @@ public final class CarriageVariantPartsStore {
     }
 
     private static Optional<CarriagePartAssignment> loadFromResource(CarriageVariant variant) {
-        String resource = RESOURCE_PREFIX + variant.id() + EXT;
+        String resource = RESOURCE_PREFIX + games.brennan.dungeontrain.train.ShellPool.path(variant.id()) + EXT;
         try (InputStream in = CarriageVariantPartsStore.class.getResourceAsStream(resource)) {
             if (in == null) return Optional.empty();
             JsonElement root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));

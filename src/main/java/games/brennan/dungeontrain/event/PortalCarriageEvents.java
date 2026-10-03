@@ -33,6 +33,7 @@ import games.brennan.dungeontrain.portal.PortalOrbPull;
 import games.brennan.dungeontrain.portal.PortalPuppets;
 import games.brennan.dungeontrain.portal.PortalRegistry;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomMemory;
 import games.brennan.dungeontrain.portal.PortalRoomMobs;
 import games.brennan.dungeontrain.portal.PortalRoomRescue;
 import games.brennan.dungeontrain.portal.PortalRoomSizes;
@@ -83,6 +84,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
@@ -645,6 +647,8 @@ public final class PortalCarriageEvents {
         STAMPED_AT.clear();
         EVICTED.clear();
         OVERLAP_WARNED_AT.clear();
+        PortalRoomMemory.clearSession();
+        games.brennan.dungeontrain.portal.PortalCorridorResync.clear();
         // Each pairing holds its carriage's plot; a pair key names a different carriage next world.
         games.brennan.dungeontrain.portal.PortalPairIndex.clear();
         // The author each locked room settled on, and the catalogues behind them. Keyed by pair key
@@ -1742,6 +1746,11 @@ public final class PortalCarriageEvents {
         // crossed, and both corridors are identical anyway — and it is precisely what keeps the
         // destination inside the columns the client already has.
         boolean pinned = structure != null && anyPlayerInStructure(players, dims, structure);
+        // Somebody inside is somebody who can mine or loot it — from now on the room is captured
+        // before any erase, so its next stamp lays it as they left it (PortalRoomMemory).
+        if (pinned && !games.brennan.dungeontrain.portal.PortalTestSession.isTestStamp(pairKey)) {
+            PortalRoomMemory.markTouched(level, pairKey, dims);
+        }
         boolean occupied = pinned
             || anyPlayerInCorridor(players, layout, originX, originY, originZ);
 
@@ -1784,7 +1793,8 @@ public final class PortalCarriageEvents {
         // right, whichever corridor noticed the drift.
         PortalStructure built = structure != null && pinned
             ? structure
-            : ensureStructure(level, dims, pairKey, structureAnchorX, originY, originZ, groupSize);
+            : ensureStructure(level, players, dims, pairKey, structureAnchorX, originY, originZ,
+                groupSize);
         if (built == null) {
             // No twin — a world too shallow to hold one. With only half a pair there is no opposite
             // corridor for a puppet to stand in.
@@ -1846,8 +1856,14 @@ public final class PortalCarriageEvents {
         // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
         // on the hot path of every sub-level block change and cannot re-derive train geometry there —
         // and for PortalPuppetAttack, which needs the frames to measure a hit through the mirror.
-        publishPairing(carriageIndex, ship, dims, built.kind(), originX, originY, originZ,
-            twinOrigin, frames);
+        PortalPairIndex.Entry published = publishPairing(carriageIndex, ship, dims, built.kind(),
+            originX, originY, originZ, twinOrigin, frames);
+        // A twin re-stamped from its template has lost whatever a player changed in this corridor;
+        // the carriage kept it. Copied across once per stamp, before anybody can cross into it.
+        Long stampedAt = STAMPED_AT.get(pairKey);
+        if (published != null && stampedAt != null) {
+            games.brennan.dungeontrain.portal.PortalCorridorResync.syncIfRestamped(level, published, stampedAt);
+        }
 
         swapPlayers(level, players, frames, carriageIndex, pairKey, built, dims, role,
             PortalRoomTiling.Tile.BASE, /*copyOnly*/ false);
@@ -2326,11 +2342,41 @@ public final class PortalCarriageEvents {
     }
 
     /**
+     * Whether {@code pairKey} rolls its room with the own-books library weighted up — see
+     * {@link games.brennan.dungeontrain.portal.PortalOwnShelves}.
+     *
+     * <p>True when the rider nearest the carriage has written a book this run and not yet walked
+     * into a library of their own since, and — because that
+     * flag is in memory only and {@link #STRUCTURES} does not outlive the session — for any pair
+     * that was stamped that way before. Without the second half a restart would re-roll a standing
+     * library as whatever the un-boosted lottery says, under a player who logged out inside it.</p>
+     */
+    private static boolean ownShelfBoostFor(ServerLevel level, List<ServerPlayer> players,
+                                            int pairKey, double originX, double originZ) {
+        if (DungeonTrainWorldData.get(level).isOwnShelfPair(pairKey)) return true;
+        ServerPlayer nearest = null;
+        double best = Double.MAX_VALUE;
+        for (ServerPlayer player : players) {
+            double dx = player.getX() - originX;
+            double dz = player.getZ() - originZ;
+            double distanceSq = dx * dx + dz * dz;
+            if (distanceSq < best) {
+                best = distanceSq;
+                nearest = player;
+            }
+        }
+        return nearest != null && nearest.getData(
+            games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get())
+            .ownShelfBoostPending();
+    }
+
+    /**
      * The twin for this carriage, stamping it if there is none yet or the carriage has rolled out of
      * the chunk columns the old one sits in — which is the condition the crossing's seamlessness
      * depends on, so it is also exactly when a fresh one is worth the block writes.
      */
-    private static PortalStructure ensureStructure(ServerLevel level, CarriageDims dims, int pairKey,
+    private static PortalStructure ensureStructure(ServerLevel level, List<ServerPlayer> players,
+                                                   CarriageDims dims, int pairKey,
                                                    double originX, double originY, double originZ,
                                                    int groupSize) {
         PortalStructure existing = STRUCTURES.get(pairKey);
@@ -2357,10 +2403,16 @@ public final class PortalCarriageEvents {
         // keeps the room and the mode it was built with and only moves them.
         // A pair evicted by another one's stamp keeps the room it rolled, the same as a relocation.
         PortalStructure evicted = existing == null ? EVICTED.get(pairKey) : null;
+        // The one input to the roll that is not the seed, the key or the gate: whether the rider it
+        // is being rolled for has written a book this run, which makes a library of their own books
+        // a likelier answer. Asked only for a pair that is actually rolling.
+        boolean ownShelfBoost = existing == null && evicted == null
+            && ownShelfBoostFor(level, players, pairKey, originX, originZ);
         PortalStructure planned = existing != null ? existing.movedTo(wanted)
             : evicted != null ? evicted.movedTo(wanted)
             : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey, region,
-                GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()));
+                GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()),
+                ownShelfBoost);
 
         // A pair whose room could not be planned yet — a chunk dimension still sampling its terrain
         // is the only thing that answers null. It keeps whatever it had (nothing, the first time
@@ -2467,6 +2519,12 @@ public final class PortalCarriageEvents {
             // there, before the erase below; null means the template will do.
             games.brennan.dungeontrain.portal.PortalRoomBlob carried =
                 SharedRoomEvents.captureForRelocation(pairKey);
+            // Any other room a player has been in is carried the same way, from this world's own
+            // memory — otherwise the template re-lays every block they mined and refills every chest.
+            if (carried == null) carried = rememberIfTouched(level, dims, pairKey, existing);
+            else if (PortalRoomMemory.isTouched(pairKey)) {
+                PortalRoomMemory.remember(level, pairKey, existing.roomName(), carried.snapshot());
+            }
             if (carried != null) planned = planned.withBlob(carried);
             // The room's OWN mobs go with the room, before anything is carried: the stamp below rolls
             // and spawns a fresh set for the new site, and clearIntruders spares anything carrying
@@ -2501,14 +2559,25 @@ public final class PortalCarriageEvents {
         // here, on the way into the stamp, rather than at plan time: every early return above is a
         // plan that never landed, and a lease taken for one of those is a copy locked away from
         // every other world until it expires. A relocation keeps what it carries.
+        // A pair this world already stamped and somebody went into — evicted since, or standing before
+        // a restart — comes back as they left it, ahead of any lease: the room is already this
+        // world's own.
         if (existing == null) {
-            planned = PortalCarriageBuilder.withDriftedCopy(level, planned, pairKey, stageId);
+            games.brennan.dungeontrain.portal.PortalRoomBlob remembered = recallRemembered(level, pairKey, planned);
+            if (remembered != null) {
+                planned = planned.withBlob(remembered);
+                PortalRoomMemory.markTouched(level, pairKey, dims);
+            } else {
+                planned = PortalCarriageBuilder.withDriftedCopy(level, planned, pairKey, stageId);
+            }
         }
         final PortalStructure toStamp = planned;
         games.brennan.dungeontrain.train.StagePlacementScope.run(stageId,
             () -> PortalCarriageBuilder.stampPairStructure(level, toStamp, dims, pairKey));
         STRUCTURES.put(pairKey, planned);
         EVICTED.remove(pairKey);
+        // Only once the room is standing: a plan abandoned above must not leave a pair marked.
+        if (ownShelfBoost) DungeonTrainWorldData.get(level).markOwnShelfPair(pairKey);
         OVERLAP_WARNED_AT.remove(pairKey);
         STAMPED_AT.put(pairKey, level.getGameTime());
         // A drifting room is registered once its blocks are down (or, on a relocation, told where
@@ -2570,6 +2639,9 @@ public final class PortalCarriageEvents {
         // erase, while the blocks can still be read. The evicted record keeps the room it rolled but
         // not the copy: a pair that comes back is stamped afresh, as a culled carriage is.
         SharedRoomEvents.onStructureGone(pairKey);
+        // Remembered before the erase, so the stamp it gets when its carriage next wants a twin lays
+        // the room as it was left. Before the mob reap too: a living mob is part of how it was left.
+        rememberIfTouched(level, dims, pairKey, structure);
         PortalRoomMobs.reapPair(level, PortalCarriageBuilder.footprintOf(level, structure, dims), pairKey);
         PortalCarriageBuilder.eraseTwin(level, structure, dims);
         EVICTED.put(pairKey, structure.withBlob(null));
@@ -2581,6 +2653,59 @@ public final class PortalCarriageEvents {
         LOGGER.info("[DungeonTrain] Portal pair {} evicted: pair {} is stamping over the space its "
             + "twin ('{}' at {}) was left standing in — it is stamped afresh when next needed",
             pairKey, byPair, structure.roomName(), structure.origin());
+    }
+
+    /**
+     * Capture and remember {@code structure}'s room box when a player has been inside it, and hand the
+     * capture back as the blob its next stamp should lay; null for an untouched room (its template is
+     * what it still is) or one whose chunks are not loaded — reading those would load them, and a room
+     * nobody can see has not changed since it was last captured anyway.
+     */
+    private static games.brennan.dungeontrain.portal.PortalRoomBlob rememberIfTouched(
+            ServerLevel level, CarriageDims dims, int pairKey, PortalStructure structure) {
+        if (!PortalRoomMemory.isTouched(pairKey)) return null;
+        BlockPos roomOrigin = structure.roomOrigin(dims,
+            PortalCarriageBuilder.layoutFor(dims, structure.kind()));
+        net.minecraft.core.Vec3i size = structure.roomSize();
+        BlockPos far = roomOrigin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1);
+        if (!level.hasChunksAt(roomOrigin, far)) return null;
+        long started = System.nanoTime();
+        net.minecraft.nbt.CompoundTag snapshot = PortalRoomMemory.capture(level, roomOrigin, size);
+        if (snapshot == null) return null;
+        PortalRoomMemory.remember(level, pairKey, structure.roomName(), snapshot);
+        LOGGER.info("[DungeonTrain] Portal pair {} room '{}' remembered as it was left ({} ms)",
+            pairKey, structure.roomName(), fmt((System.nanoTime() - started) / 1_000_000.0));
+        return games.brennan.dungeontrain.portal.PortalRoomBlob.live(snapshot);
+    }
+
+    /** Pair {@code pairKey}'s remembered room as a blob for {@code planned}, or null to use the template. */
+    private static games.brennan.dungeontrain.portal.PortalRoomBlob recallRemembered(
+            ServerLevel level, int pairKey, PortalStructure planned) {
+        if (games.brennan.dungeontrain.portal.PortalTestSession.isTestStamp(pairKey)) return null;
+        net.minecraft.nbt.CompoundTag snapshot =
+            PortalRoomMemory.recall(level, pairKey, planned.roomName(), planned.roomSize());
+        if (snapshot == null) return null;
+        LOGGER.info("[DungeonTrain] Portal pair {} room '{}' restored as it was left", pairKey, planned.roomName());
+        return games.brennan.dungeontrain.portal.PortalRoomBlob.live(snapshot);
+    }
+
+    /**
+     * Remember every standing room a player has been in before the server goes down — the structure
+     * maps do not survive it, so the first stamp after a restart reads the memory instead.
+     */
+    @SubscribeEvent
+    public static void onServerStopping(ServerStoppingEvent event) {
+        Map<Integer, PortalRoomMemory.Touch> touched = PortalRoomMemory.touched();
+        for (Map.Entry<Integer, PortalStructure> entry : STRUCTURES.entrySet()) {
+            PortalRoomMemory.Touch touch = touched.get(entry.getKey());
+            if (touch == null) continue;
+            try {
+                rememberIfTouched(touch.level(), touch.dims(), entry.getKey(), entry.getValue());
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] Could not remember portal pair {} at shutdown: {}",
+                    entry.getKey(), t.toString());
+            }
+        }
     }
 
     private static void warnOverlapWait(ServerLevel level, int pairKey, int blockingKey) {
@@ -2600,23 +2725,24 @@ public final class PortalCarriageEvents {
      * conversion {@code CarriageBlockSnapshot} and {@code SoulCampfireHealEvents} use to reach
      * carriage blocks.</p>
      */
-    private static void publishPairing(int carriageIndex, ManagedShip ship, CarriageDims dims,
-                                       PortalCorridorKind kind,
-                                       double originX, double originY, double originZ,
-                                       BlockPos twinOrigin, PortalFrames frames) {
-        if (!(ship instanceof SableManagedShip sable)) return;
+    private static PortalPairIndex.Entry publishPairing(int carriageIndex, ManagedShip ship,
+                                                        CarriageDims dims, PortalCorridorKind kind,
+                                                        double originX, double originY, double originZ,
+                                                        BlockPos twinOrigin, PortalFrames frames) {
+        if (!(ship instanceof SableManagedShip sable)) return null;
 
         ServerSubLevel subLevel = sable.subLevel();
-        if (subLevel == null) return;
+        if (subLevel == null) return null;
         LevelPlot plot = subLevel.getPlot();
-        if (plot == null) return;
+        if (plot == null) return null;
 
         // The world origin, not a precomputed plot origin: the entry converts each point through the
         // ship's own transform, so nothing here has to assume the plot's axes run the same way as the
         // world's — an assumption that reflected mirrored edits onto the opposite side of the corridor.
-        PortalPairIndex.publish(carriageIndex,
-            new PortalPairIndex.Entry(carriageIndex, plot, ship,
-                new Vec3(originX, originY, originZ), twinOrigin, dims, kind, frames));
+        PortalPairIndex.Entry entry = new PortalPairIndex.Entry(carriageIndex, plot, ship,
+            new Vec3(originX, originY, originZ), twinOrigin, dims, kind, frames);
+        PortalPairIndex.publish(carriageIndex, entry);
+        return entry;
     }
 
     /**

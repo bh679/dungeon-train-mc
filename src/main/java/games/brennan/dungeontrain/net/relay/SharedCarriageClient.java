@@ -655,6 +655,28 @@ public final class SharedCarriageClient {
         });
     }
 
+    /**
+     * The block hashes of the builds of {@code kind} an operator has accepted, from this build's own
+     * relay — what {@code ApprovedBuildings} compares local files against.
+     *
+     * <p>{@code null} when the relay could not be asked or does not have the route yet, and an empty
+     * set when it answered that nothing is accepted: "we couldn't ask" must not be read as "nothing
+     * is", or one dropped request would un-accept everything for the session.</p>
+     */
+    public static CompletableFuture<java.util.Set<String>> acceptedHashes(String kind) {
+        JsonObject body = new JsonObject();
+        body.addProperty("kind", kind == null ? "" : kind);
+        return post("/carriages/accepted", body).thenApply(resp -> {
+            JsonObject o = okJson(resp);
+            if (o == null || !o.has("hashes") || !o.get("hashes").isJsonArray()) return null;
+            java.util.Set<String> hashes = new java.util.HashSet<>();
+            for (JsonElement el : o.getAsJsonArray("hashes")) {
+                if (el.isJsonPrimitive() && el.getAsString().matches("[0-9a-f]{64}")) hashes.add(el.getAsString());
+            }
+            return java.util.Set.copyOf(hashes);
+        });
+    }
+
     /** GET a JSON URL; resolves to the HttpResponse, or null on transport failure. */
     private static CompletableFuture<HttpResponse<String>> get(String url) {
         try {

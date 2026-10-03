@@ -125,11 +125,11 @@ public final class EditorPlotPanelInputHandler {
     private static boolean shouldHandle() {
         if (!EditorStatusHudOverlay.isEditorMenusVisible()) return false;
         if (EditorPlotLabelsRenderer.entries().isEmpty()) return false;
-        // Defer to the keyboard menu and the part-position menu when either is
-        // taking input — both have their own click handlers we'd otherwise
-        // double-fire with.
+        // Defer to the keyboard menu while it is open, and to the part-position
+        // menu while the crosshair is on it — both have their own click handlers
+        // we'd otherwise double-fire with.
         if (CommandMenuState.isOpen()) return false;
-        if (PartPositionMenu.isActive()) return false;
+        if (PartPositionMenu.claimsPointer()) return false;
         return true;
     }
 

@@ -297,7 +297,7 @@ public final class VariantOverlayRenderer {
         // editor's clock runs or rests. See EditorClock.
         boolean cycleSeen = false;
         for (ServerPlayer player : players) {
-            if (EditorLayout.isAtPlotHeight(player.getBlockY())) atPlots++;
+            if (EditorStampedCategoryState.atPlotHeight(player.getBlockY())) atPlots++;
             // The two snapshots the block-variant menu draws itself against, and nothing else: the
             // rest of the cascade below is about editor plots — a plot grid, per-plot labels, type
             // menus, a plot sky — none of which a builder world has. Both are plot-driven and
@@ -318,7 +318,7 @@ public final class VariantOverlayRenderer {
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
             // forget() clears any lingering editor HUD once on the way out, then no-ops (cheap
             // map checks), so a player descending from the build area doesn't keep stale overlay.
-            if (!EditorLayout.isAtPlotHeight(player.getBlockY())) {
+            if (!EditorStampedCategoryState.atPlotHeight(player.getBlockY())) {
                 forget(player);
                 continue;
             }
@@ -368,6 +368,11 @@ public final class VariantOverlayRenderer {
                     sidecar::statesAt);
                 continue;
             }
+            // Out of every carriage plot: the parts menu is only ever closed by update(), which runs
+            // in one — so a player who left while it was open (a teleport to another category, a walk
+            // off the end) kept it active client-side, and the floating type menus ignore every
+            // click while a parts menu is active.
+            PartPositionMenuController.forget(player);
 
             // Contents plot — icon HUD for the contents' own variant
             // sidecar, anchored to the interior origin (one block in from
@@ -971,9 +976,6 @@ public final class VariantOverlayRenderer {
         // In the key as well as the packet, or closing / reopening the Welcome panel would be
         // deduped away and the panel would not react until something else changed the snapshot.
         keyBuf.append("help:").append(helpPanelDismissed).append('|');
-        // The WHOLE category's type-level setting rides with the menus; in the key so an edit re-pushes.
-        int wholeGroupEvery = games.brennan.dungeontrain.train.WholeGroupSettings.every();
-        keyBuf.append("every:").append(wholeGroupEvery).append('|');
         for (EditorTypeMenusPacket.Menu m : menus) {
             BlockPos p = m.worldPos();
             keyBuf.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ())
@@ -1005,7 +1007,7 @@ public final class VariantOverlayRenderer {
             menus.size(), category, first.typeName(), first.variants().size(), first.worldPos(),
             player.getName().getString());
         DungeonTrainNet.sendTo(player, new EditorTypeMenusPacket(
-            menus, EditorStageSelection.effective(), helpPanelDismissed, wholeGroupEvery));
+            menus, EditorStageSelection.effective(), helpPanelDismissed));
     }
 
     /**
@@ -1160,7 +1162,7 @@ public final class VariantOverlayRenderer {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
         if (EditorStampedCategoryState.current().isEmpty()) return;
         for (ServerPlayer player : players) {
-            if (EditorLayout.isAtPlotHeight(player.getBlockY())) {
+            if (EditorStampedCategoryState.atPlotHeight(player.getBlockY())) {
                 EditorStrayBlocks.sweepStep(level, dims);
                 return;
             }

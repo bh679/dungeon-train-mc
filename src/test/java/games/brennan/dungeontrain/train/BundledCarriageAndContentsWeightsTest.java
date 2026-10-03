@@ -115,9 +115,13 @@ final class BundledCarriageAndContentsWeightsTest {
     private static Set<String> carriageNames() {
         TreeSet<String> names = new TreeSet<>();
         for (CarriageType t : CarriageType.values()) names.add(t.id());
-        names.addAll(BundledNbtScanner.scanBasenames(
-            BundledCarriageAndContentsWeightsTest.class,
-            CarriageVariantRegistry.BUNDLED_RESOURCE_PREFIX, LOGGER));
+        // Every pool's folder: Room templates at the prefix, Half and Group in their sub-folders.
+        for (ShellPool pool : ShellPool.values()) {
+            names.addAll(BundledNbtScanner.scanBasenames(
+                BundledCarriageAndContentsWeightsTest.class,
+                CarriageVariantRegistry.BUNDLED_RESOURCE_PREFIX
+                    + (pool.folder().isEmpty() ? "" : pool.folder() + "/"), LOGGER));
+        }
         // Registered by code rather than discovered by file — see this class's javadoc. Both
         // corridor kinds, since CarriageVariantRegistry.reload force-adds each.
         for (PortalCorridorKind kind : PortalCorridorKind.values()) {

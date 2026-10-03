@@ -21883,9 +21883,9 @@
       "highlights": [],
       "pr": 1744,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "end-band-spill-hardening",
@@ -21901,9 +21901,9 @@
       "highlights": [],
       "pr": 1745,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "editor-menus-survive-test-mode",
@@ -21918,9 +21918,9 @@
       "highlights": [],
       "pr": 1747,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "carriage-group-variants-loot",
@@ -21936,9 +21936,9 @@
       "highlights": [],
       "pr": 1748,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
     },
     {
       "id": "main-menu-tidy-up",
@@ -21952,6 +21952,499 @@
       "highlights": [],
       "pr": 1749,
       "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
+    },
+    {
+      "id": "see-what-others-are-doing",
+      "version": "0.1099.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "multiplayer",
+        "compatibility"
+      ],
+      "title": "See what others are up to",
+      "summary": "You can now see what the players riding with you are doing.",
+      "highlights": [],
+      "pr": 1754,
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
+    },
+    {
+      "id": "hide-biome-mod-creative-tabs",
+      "version": "0.1100.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Tidier creative inventory",
+      "summary": "The creative inventory now keeps to the vanilla and Dungeon Train tabs, and the mod block tabs and their search entries can be switched back on from Options, Dungeon Train, Editor.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
+    },
+    {
+      "id": "bookshelves-four-per-emerald",
+      "version": "0.1101.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Bookshelves trade four for an emerald",
+      "summary": "Villagers now give one emerald's worth for every four bookshelves.",
+      "highlights": [],
+      "pr": 1758,
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
+    },
+    {
+      "id": "own-library-dimension-odds",
+      "version": "0.1102.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "books",
+        "balance"
+      ],
+      "title": "Your own library turns up when you've written something",
+      "summary": "A dimensional carriage is more likely to open onto a library of your own books after you've written one.",
+      "highlights": [],
+      "pr": 1757,
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
+    },
+    {
+      "id": "longer-carriages",
+      "version": "0.1103.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "train"
+      ],
+      "title": "Longer carriages",
+      "summary": "Some carriages on the train are now much longer.",
+      "highlights": [],
+      "pr": 1755,
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
+    },
+    {
+      "id": "narrative-tab-side-shortcut",
+      "version": "0.1104.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Narrative tab shortcut",
+      "summary": "The creative inventory's left edge now has a shortcut to the Dungeon Train narrative tab.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1104.0",
+      "released_at": "2026-10-02T11:26:20Z"
+    },
+    {
+      "id": "villager-stock-sell-prices",
+      "version": "0.1105.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Villager sell-back prices tuned",
+      "summary": "Villagers now pay a set price for bells, name tags and a handful of other things they stock.",
+      "highlights": [],
+      "pr": 1760,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "exposure-photography-required-mods",
+      "version": "0.1106.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Two new required mods",
+      "summary": "Dungeon Train now needs Exposure and Exposure: Polaroid installed, and the launchers add them for you.",
+      "highlights": [],
+      "pr": 1762,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "ride-snapshot-fov-guard",
+      "version": "0.1107.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Ride photos stay properly framed",
+      "summary": "Ride photos keep their normal framing while you're zoomed in.",
+      "highlights": [],
+      "pr": 1763,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "book-copies-not-votable",
+      "version": "0.1108.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "books"
+      ],
+      "title": "Copies of community books",
+      "summary": "Copies of community books no longer ask for your vote.",
+      "highlights": [],
+      "pr": 1764,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photos-burn-when-dropped",
+      "version": "0.1109.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Photographs burn when dropped",
+      "summary": "A photograph now burns if you drop it.",
+      "highlights": [],
+      "pr": 1765,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stage-blocks-tab-rows",
+      "version": "0.1110.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Tidier Stage Blocks tab",
+      "summary": "The Stage Blocks creative tab is grouped into rows by material, and every stage block shows its icon.",
+      "highlights": [],
+      "pr": 1766,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "feedback-header-freshness",
+      "version": "0.1111.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "internal"
+      ],
+      "title": "Feedback says a little more",
+      "summary": "Feedback you send now carries a little more about your game, so it is easier to act on.",
+      "highlights": [],
+      "pr": 1767,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "betterend-sdf-per-thread",
+      "version": "0.1112.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Giant mushrooms and layered rock keep their shape",
+      "summary": "Giant glowing mushrooms and bands of coloured rock now come out whole and the same every time, however many places the world is being built at once.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "buildings-editor-tab",
+      "version": "0.1113.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "world",
+        "ui"
+      ],
+      "title": "Build the buildings",
+      "summary": "The Train Editor has a new Buildings tab, where you can change the buildings the world places or add your own and share them.",
+      "highlights": [],
+      "pr": 1769,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "biome-twin-lookup-memo",
+      "version": "0.1114.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother scenery",
+      "summary": "The scenery colours in a little more smoothly as new ground comes into view.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1772,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "milestone-advancements-passenger-log",
+      "version": "0.1115.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "The rarest advancements make the passenger log",
+      "summary": "When someone earns one of the train's rarest advancements on a clean run, the passenger log hears about it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perthread-sdf-quaternion",
+      "version": "0.1116.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "World generation fix",
+      "summary": "Some of the world's shapes now build a little more reliably.",
+      "highlights": [],
+      "pr": 1779,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "endband-worldgen-erosion",
+      "version": "0.1116.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Bare islands grow back",
+      "summary": "Some islands far down the line now carry the growth and rock they were always meant to, instead of standing bare.",
+      "highlights": [],
+      "pr": 1777,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "lost-city-template-cache-reach",
+      "version": "0.1118.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility",
+        "world"
+      ],
+      "title": "Fewer hitches as new scenery loads",
+      "summary": "Big buildings ahead now load quietly in the background, even after a long jump.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1773,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mixin-target-guards",
+      "version": "0.1118.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "World mod updates no longer stop the game loading",
+      "summary": "The game keeps loading when one of the world mods it builds on updates.",
+      "highlights": [],
+      "pr": 1775,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "first-ever-advancement-announcement",
+      "version": "0.1120.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "The first passenger to earn an advancement is remembered",
+      "summary": "Be the first passenger ever to earn an advancement and the whole train hears about it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "disposable-camera-per-stack-print",
+      "version": "0.1121.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Disposable cameras keep to themselves",
+      "summary": "Only the disposable camera you shoot with reloads now, and every shot prints a single photo.",
+      "highlights": [],
+      "pr": 1782,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "rendering-hiccup-no-crash",
+      "version": "0.1122.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Rendering hiccups",
+      "summary": "A rare rendering hiccup no longer ends your ride.",
+      "highlights": [],
+      "pr": 1784,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "death-screen-photo-page",
+      "version": "0.1123.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Photos on the death screen",
+      "summary": "When the ride ends, the photos from your life get a page of their own.",
+      "highlights": [],
+      "pr": 1787,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriages-remember",
+      "version": "0.1124.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages remember your visit",
+      "summary": "Dimensional carriages now stay as you left them when you come back.",
+      "highlights": [],
+      "pr": 1786,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "update-card-any-launcher",
+      "version": "0.1125.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Know when a new version is out",
+      "summary": "A short note now appears before the main menu when a newer version of Dungeon Train is out.",
+      "highlights": [],
+      "pr": 1788,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "endband-state-clear-on-stopped",
+      "version": "0.1126.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A clean slate",
+      "summary": "Opening another world after leaving one no longer carries a stray piece of the old one with it.",
+      "highlights": [],
+      "pr": 1789,
+      "date": "2026-10-03",
       "released": false,
       "released_in": null,
       "released_at": null

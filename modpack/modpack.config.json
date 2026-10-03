@@ -85,13 +85,13 @@
         "tradeeverything"
       ],
       "project_id": 1622962,
-      "file_id": 8845030,
+      "file_id": 9036459,
       "required": true,
       "dependency_type": "required",
-      "version": "0.13.0",
+      "version": "0.14.0",
       "gradle_property": "tradeeverything_min_version",
       "modrinth_project": "trade-everything",
-      "modrinth_version": "1078Z5Qf"
+      "modrinth_version": "9XSQif7F"
     },
     {
       "name": "Keep Trim",
@@ -929,6 +929,30 @@
       "required": true,
       "modrinth_project": "particle-effects",
       "modrinth_version": "AH6BZ7jO"
+    },
+    {
+      "name": "What Are They Up To",
+      "slug": "what-are-they-up-to",
+      "mod_ids": [
+        "watut"
+      ],
+      "project_id": 945479,
+      "file_id": 6418577,
+      "required": true,
+      "modrinth_project": "what-are-they-up-to",
+      "modrinth_version": "uWr2aTW9"
+    },
+    {
+      "name": "CoroUtil",
+      "slug": "coroutil",
+      "mod_ids": [
+        "coroutil"
+      ],
+      "project_id": 237749,
+      "file_id": 5622966,
+      "required": true,
+      "modrinth_project": "coroutil",
+      "modrinth_version": "H2YXCYUY"
     },
     {
       "name": "Sable Pathfinder",

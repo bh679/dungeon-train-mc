@@ -71,6 +71,7 @@ public final class EditorTypeMenus {
             case CONTENTS -> contentsMenus(dims);
             case TRACKS -> trackMenus(dims);
             case PORTALS -> portalMenus(dims);
+            case BUILDINGS -> buildingMenus();
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -81,20 +82,18 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.TypeTab> typeStrip = buildCarriagesTypeStrip();
         String activeId = EditorCategory.CARRIAGES.id();
 
-        // Carriages row (extends along +X). First plot is the first variant
-        // in the registry's ordering — same as EditorPlotLabels.carriageLabels.
-        List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        if (!variants.isEmpty()) {
-            CarriageVariant first = variants.get(0);
-            BlockPos firstOrigin = CarriageEditor.plotOrigin(first, dims);
-            if (firstOrigin != null) {
-                Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
-                BlockPos anchor = anchorForXRow(firstOrigin, footprint);
-                List<EditorTypeMenusPacket.Variant> rows = carriageRows(variants);
-                out.add(new EditorTypeMenusPacket.Menu(
-                    anchor, "Carriages", rows, false,
-                    activeId, categoryBar, typeStrip));
-            }
+        // One menu per template row (Rooms, Halves, Groups, Flatbeds, Portals — each extends along
+        // +X), anchored at the row's first plot and listing only that row's templates: the list beside
+        // the row you are in is that row's.
+        Vec3i footprint = new Vec3i(dims.length(), dims.height(), dims.width());
+        for (CarriagePlotRows.Row row : CarriagePlotRows.Row.values()) {
+            List<CarriageVariant> inRow = CarriagePlotRows.membersOf(row);
+            if (inRow.isEmpty()) continue;
+            BlockPos firstOrigin = CarriageEditor.plotOrigin(inRow.get(0), dims);
+            if (firstOrigin == null) continue;
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(firstOrigin, footprint), carriageRowTypeName(row), carriageRows(inRow), false,
+                activeId, categoryBar, typeStrip));
         }
 
         // Parts kind rows (CARRIAGES view stamps these alongside the carriage row).
@@ -152,6 +151,36 @@ public final class EditorTypeMenus {
             EditorCategory.CONTENTS.id(), buildCategoryBar(), buildContentsTypeStrip(topLevel)));
     }
 
+    /** The tab a carriage template row goes by. */
+    public static String carriageRowTypeName(CarriagePlotRows.Row row) {
+        return switch (row) {
+            case ROOMS -> "Rooms";
+            case HALVES -> "Halves";
+            case GROUPS -> "Groups";
+            case FLATBEDS -> "Flatbeds";
+            case PORTALS -> "Portals";
+        };
+    }
+
+    /**
+     * A row's model id on the roster: a pool row's size key (what its "+" makes), else the row's own
+     * name — the X menu reads anything that is not a size key as a row with no "+".
+     */
+    public static String carriageRowModelId(CarriagePlotRows.Row row) {
+        return switch (row) {
+            case ROOMS -> "room";
+            case HALVES -> "half";
+            case GROUPS -> "full";
+            case FLATBEDS -> "flatbeds";
+            case PORTALS -> "portals";
+        };
+    }
+
+    /** True for the rows placed by fixed rules rather than drawn by weight — nothing is made into them. */
+    public static boolean isFixedRow(CarriagePlotRows.Row row) {
+        return row == CarriagePlotRows.Row.FLATBEDS || row == CarriagePlotRows.Row.PORTALS;
+    }
+
     /** The type label a contents size goes by in the Contents menus. */
     static String contentsTypeName(ContentsSize size) {
         return switch (size) {
@@ -206,6 +235,69 @@ public final class EditorTypeMenus {
                 chunkFrameRows(frames), false, activeId, categoryBar, typeStrip));
         }
         return out;
+    }
+
+    /** The type labels the two building rows go by in their menus and the roster. */
+    static final String BUILDINGS_TYPE_NAME = "Buildings";
+    static final String LOST_CITY_TYPE_NAME = "Lost City";
+
+    /**
+     * The Buildings tab's two menus — the editable Buildings row and the view-only official Lost City row —
+     * sharing one type strip, so the player switches between them the way Dimensions switches rooms/frames.
+     */
+    private static List<EditorTypeMenusPacket.Menu> buildingMenus() {
+        List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
+        List<games.brennan.dungeontrain.building.LostCityReferences.Reference> official =
+            games.brennan.dungeontrain.building.LostCityReferences.all();
+        List<EditorTypeMenusPacket.TypeTab> typeStrip = new ArrayList<>();
+        if (!names.isEmpty()) {
+            typeStrip.add(new EditorTypeMenusPacket.TypeTab(BUILDINGS_TYPE_NAME, PlotCategory.BUILDINGS.name(),
+                games.brennan.dungeontrain.building.Buildings.MODEL_ID, names.get(0)));
+        }
+        if (!official.isEmpty()) {
+            typeStrip.add(new EditorTypeMenusPacket.TypeTab(LOST_CITY_TYPE_NAME, PlotCategory.LOST_CITY.name(),
+                LostCityReferenceEditor.MODEL_ID, official.get(0).name()));
+        }
+        List<EditorTypeMenusPacket.Menu> out = new ArrayList<>();
+        List<EditorTypeMenusPacket.CategoryButton> bar = buildCategoryBar();
+        BlockPos first = names.isEmpty() ? null : BuildingEditor.registeredPlotOrigin(names.get(0));
+        if (first != null) {
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(first, games.brennan.dungeontrain.building.BuildingSizes.sizeOf(names.get(0))),
+                BUILDINGS_TYPE_NAME, buildingRows(names), false, EditorCategory.BUILDINGS.id(), bar, typeStrip));
+        }
+        BlockPos firstOfficial = official.isEmpty() ? null : LostCityReferenceEditor.plotOrigin(official.get(0).name());
+        if (firstOfficial != null) {
+            out.add(new EditorTypeMenusPacket.Menu(
+                anchorForXRow(firstOfficial, games.brennan.dungeontrain.building.Buildings.MAX_SIZE),
+                LOST_CITY_TYPE_NAME, lostCityRows(official), false, EditorCategory.BUILDINGS.id(), bar, typeStrip));
+        }
+        return out;
+    }
+
+    /** One row per official building — no weight, never the player's. */
+    static List<EditorTypeMenusPacket.Variant> lostCityRows(
+            List<games.brennan.dungeontrain.building.LostCityReferences.Reference> official) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(official.size());
+        for (games.brennan.dungeontrain.building.LostCityReferences.Reference ref : official) {
+            rows.add(new EditorTypeMenusPacket.Variant(ref.name(), EditorPlotLabelsPacket.NO_WEIGHT,
+                PlotCategory.LOST_CITY.name(), LostCityReferenceEditor.MODEL_ID, ref.name(), false, false));
+        }
+        return rows;
+    }
+
+    /** One row per building; a new building shows its roster weight, a shipped one none. */
+    static List<EditorTypeMenusPacket.Variant> buildingRows(List<String> names) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
+        for (String name : names) {
+            java.nio.file.Path file = games.brennan.dungeontrain.building.BuildingStore.playerFile(name);
+            EditorPlotLabels.Provenance p = file == null
+                ? new EditorPlotLabels.Provenance(false, false) : EditorPlotLabels.provenanceOf(file);
+            rows.add(new EditorTypeMenusPacket.Variant(
+                name, new games.brennan.dungeontrain.template.Template.Building(name).weight(), PlotCategory.BUILDINGS.name(),
+                games.brennan.dungeontrain.building.Buildings.MODEL_ID, name, p.isUser(), p.isImported()));
+        }
+        return rows;
     }
 
     /** The type label chunk frames go by in the Dimensions menus and the roster. */
@@ -416,10 +508,14 @@ public final class EditorTypeMenus {
         List<EditorTypeMenusPacket.TypeTab> strip = new ArrayList<>();
         String carriagesCat = EditorCategory.CARRIAGES.name();
         List<CarriageVariant> variants = CarriageVariantRegistry.allVariants();
-        if (!variants.isEmpty()) {
-            CarriageVariant first = variants.get(0);
-            strip.add(new EditorTypeMenusPacket.TypeTab(
-                "Carriages", carriagesCat, first.id(), first.id()));
+        // One tab per template row that holds a template, jumping to its first.
+        for (CarriagePlotRows.Row row : CarriagePlotRows.Row.values()) {
+            for (CarriageVariant v : variants) {
+                if (CarriagePlotRows.rowOf(v) != row) continue;
+                strip.add(new EditorTypeMenusPacket.TypeTab(
+                    carriageRowTypeName(row), carriagesCat, v.id(), v.id()));
+                break;
+            }
         }
         addPartTab(strip, CarriagePartKind.FLOOR, "Floor");
         addPartTab(strip, CarriagePartKind.WALLS, "Walls");

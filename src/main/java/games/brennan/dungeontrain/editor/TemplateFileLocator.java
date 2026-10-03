@@ -36,7 +36,8 @@ public final class TemplateFileLocator {
         String id = modelId == null ? "" : modelId;
         String name = modelName == null ? "" : modelName;
         return switch (category) {
-            case CARRIAGES -> named(CarriageTemplateStore.SUBDIR, id);
+            case CARRIAGES -> named(CarriageTemplateStore.SUBDIR
+                + (games.brennan.dungeontrain.train.ShellPool.poolOf(id).folder().isEmpty() ? "" : "/" + games.brennan.dungeontrain.train.ShellPool.poolOf(id).folder()), id);
             case CONTENTS -> named(CarriageContentsStore.SUBDIR, id);
             case WHOLE -> named(WholeCarriageTemplateStore.SUBDIR, id);
             case WHOLE_GROUP -> named(CarriageGroupTemplateStore.SUBDIR, id);
@@ -45,7 +46,9 @@ public final class TemplateFileLocator {
             case TRACKS -> Optional.ofNullable(trackKind(id)).flatMap(k -> named(k.subdir(), name));
             case PORTALS -> named(TrackKind.PORTAL_ROOM.subdir(), name);
             case CHUNK_FRAMES -> named(ChunkFrameStore.SUBDIR, name);
-            case ARCHITECTURE -> Optional.empty();
+            case BUILDINGS -> named(games.brennan.dungeontrain.building.Buildings.SUBDIR, name);
+            // Official buildings have no file of the player's — Big Lost City's live only in its jar.
+            case LOST_CITY, ARCHITECTURE -> Optional.empty();
         };
     }
 
