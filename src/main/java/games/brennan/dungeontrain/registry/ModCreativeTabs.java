@@ -117,6 +117,8 @@ public final class ModCreativeTabs {
      *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
      *       lectern variant (also remains in vanilla FUNCTIONAL_BLOCKS for
      *       discoverability).</li>
+     *   <li>{@link ModItems#RANDOM_PLAYERPHOTO} — placeholder that substitutes
+     *       a community photo from the relay pool when a container rolls.</li>
      * </ul>
      */
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> NARRATIVE = TABS.register(
@@ -134,6 +136,7 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
+                output.accept(ModItems.RANDOM_PLAYERPHOTO.get());
                 // The one camera players get — Exposure's own tab is hidden (DisabledModContent).
                 output.accept(games.brennan.dungeontrain.compat.DisposableCamera.create());
             })
