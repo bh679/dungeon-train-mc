@@ -164,7 +164,8 @@ public final class EndCoreBiomes {
                     end.registryAccess().lookupOrThrow(Registries.BIOME));
             Climate.Sampler sampler = end.getChunkSource().randomState().sampler();
             BopEnd.Built bop = BopEnd.get(server);
-            return new EndCoreBiomes(src, vanilla, sampler, fallback, EndBandSampler.available(server),
+            return new EndCoreBiomes(src, vanilla, sampler, fallback,
+                    EndBandSampler.appliesTo(server, CycleLayout.Style.BETTER),
                     bop == null ? null : bop.source());
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to capture End biome source; core stays single-biome", t);
