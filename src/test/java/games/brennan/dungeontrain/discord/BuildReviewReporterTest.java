@@ -40,6 +40,16 @@ final class BuildReviewReporterTest {
     }
 
     @Test
+    @DisplayName("the id and the kind share one embed row")
+    void oneRow() {
+        var fields = BuildSubmitReporter.fields(155, "carriage", "");
+        assertEquals(1, fields.size());
+        assertEquals("#155 \u00B7 carriage", fields.get(0).value());
+        assertEquals("#7 \u00B7 portal_room / library", BuildSubmitReporter.fields(7, "portal_room", "library").get(0).value());
+        assertEquals("#9", BuildSubmitReporter.fields(9, "", "").get(0).value());
+    }
+
+    @Test
     @DisplayName("the body is the comment, clipped, or a stock line when nothing was said")
     void description() {
         assertEquals("Lovely roofline.", BuildReviewReporter.description("  Lovely roofline. "));
