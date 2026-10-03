@@ -751,7 +751,7 @@ public final class BlockVariantMenuController {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
-                int newMask = packet.delta() & VariantRotation.ALL_DIRS_MASK;
+                int newMask = packet.delta() & VariantRotation.ALL_SLOTS_MASK;
                 VariantRotation prev = mutated.get(idx).rotation();
                 VariantRotation next = new VariantRotation(prev.mode(), newMask);
                 mutated.set(idx, mutated.get(idx).withRotation(next));

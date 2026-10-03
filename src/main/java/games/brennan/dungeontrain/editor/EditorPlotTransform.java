@@ -159,7 +159,7 @@ public interface EditorPlotTransform {
             if (v.isMob()) return v;
             return new VariantState(
                 v.state().rotate(vanilla()), v.blockEntityNbt(), v.weight(),
-                rotateRotation(v.rotation()), v.linkedLootPrefabId(), v.entityId(),
+                rotateRotation(v.rotation(), v.state()), v.linkedLootPrefabId(), v.entityId(),
                 v.half(), v.difficulty(), v.groupRef(), v.active(), v.connect(), v.growth());
         }
 
@@ -168,8 +168,11 @@ public interface EditorPlotTransform {
          * image under a yaw rotation, which {@link Rotation#rotate(Direction)}
          * already handles; {@code RANDOM} carries no facing at all.
          */
-        private VariantRotation rotateRotation(VariantRotation r) {
+        private VariantRotation rotateRotation(VariantRotation r, BlockState state) {
             if (r.dirMask() == 0) return r;
+            if (RotationApplier.isCompass(state)) {
+                return new VariantRotation(r.mode(), RotationApplier.rotateCompassMask(r.dirMask(), vanilla()));
+            }
             int mask = 0;
             for (Direction d : r.directions()) {
                 mask |= VariantRotation.maskOf(vanilla().rotate(d));

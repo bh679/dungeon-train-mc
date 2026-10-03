@@ -22560,6 +22560,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "head-banner-sign-8-direction-rotation",
+      "version": "0.1132.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Rotate heads, banners and signs in 8 directions",
+      "summary": "Heads, skulls, standing banners and signs placed on the floor can now be given a rotation in the block variants menu. Lock one direction, or pick any of the 8 compass points for each spawn to choose from.",
+      "highlights": [
+        "Lock cycles through N, NE, E, SE, S, SW, W and NW",
+        "Options opens a compass rose so you can tick the directions you want",
+        "Mirroring and rotating a plot turns these directions along with the block"
+      ],
+      "pr": 1795,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

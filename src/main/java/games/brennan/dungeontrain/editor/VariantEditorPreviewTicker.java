@@ -6,7 +6,6 @@ import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
@@ -313,21 +312,22 @@ public final class VariantEditorPreviewTicker {
         if (rot.mode() == VariantRotation.Mode.LOCK && rot.dirMask() != 0) {
             int bit = Integer.lowestOneBit(rot.dirMask());
             if ((validMask & bit) == 0) return base;
-            return RotationApplier.applyDirection(base, Direction.values()[Integer.numberOfTrailingZeros(bit)]);
+            return RotationApplier.applySlot(base, Integer.numberOfTrailingZeros(bit));
         }
 
         int requestMask = rot.mode() == VariantRotation.Mode.OPTIONS
             ? rot.dirMask()
-            : VariantRotation.ALL_DIRS_MASK;
+            : VariantRotation.ALL_SLOTS_MASK;
         int finalMask = validMask & requestMask;
         if (finalMask == 0) return base;
-        List<Direction> options = new ArrayList<>(6);
-        for (Direction d : Direction.values()) {
-            if ((finalMask & VariantRotation.maskOf(d)) != 0) options.add(d);
+        int slotCount = RotationApplier.slotCount(base);
+        List<Integer> options = new ArrayList<>(slotCount);
+        for (int slot = 0; slot < slotCount; slot++) {
+            if ((finalMask & (1 << slot)) != 0) options.add(slot);
         }
         if (options.isEmpty()) return base;
         int dirIdx = (int) (previewTick % options.size());
-        return RotationApplier.applyDirection(base, options.get(dirIdx));
+        return RotationApplier.applySlot(base, options.get(dirIdx));
     }
 
     /**
