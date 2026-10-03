@@ -24,8 +24,10 @@ import java.util.Random;
  *       from inside that room's range.</li>
  *   <li><b>Stats</b> — the room whose range holds the full tally, or comes nearest to it.</li>
  * </ul>
- * <p>Whatever fails to fit falls back to a weighted draw over every candidate, so a pair never goes
- * without a room.</p>
+ * <p>Every draw among rooms — the ones that fit, or all of them when nothing fits — goes by each room's
+ * <b>own Books weight for the rolled share</b>: a room with Player 10 stands a Player library ten times
+ * as often as one with Player 1. A room weighted 0 for a share never stands it, unless no room is
+ * weighted for it at all, when they draw evenly so a pair never goes without a room.</p>
  *
  * <p>Pure: the candidates and the two author pages are passed in, so the whole decision is testable
  * without a server. Seeded from {@code (worldSeed, pairKey)} so the same inputs give the same room.</p>
@@ -34,8 +36,8 @@ public final class PortalAuthorRoomPick {
 
     private PortalAuthorRoomPick() {}
 
-    /** A sub-variant the pick may land on, with its weight inside the parent and its own Books. */
-    public record Candidate(String name, int weight, PortalRoomBooks books) {}
+    /** A sub-variant the pick may land on, with its own Books — its range, and its weight per share. */
+    public record Candidate(String name, PortalRoomBooks books) {}
 
     /** The two author pages the pick can read, already cached — empty when cold. */
     public interface Authors {
@@ -70,19 +72,20 @@ public final class PortalAuthorRoomPick {
                                 List<Candidate> candidates, Authors authors, int tallySize) {
         if (candidates == null || candidates.isEmpty()) return null;
         Random rng = new Random(mix(worldSeed, pairKey));
+        List<Candidate> pool = standing(candidates, share);
 
         if (share.isStats()) {
-            return new Choice(weighted(nearest(candidates, tallySize), rng).name(), share, null);
+            return new Choice(weighted(nearest(pool, tallySize), share, rng).name(), share, null);
         }
         if (share.isSelf()) {
             List<BookAuthorsClient.Author> own = authors.self();
-            if (own == null || own.isEmpty()) return new Choice(weighted(candidates, rng).name(), share, null);
+            if (own == null || own.isEmpty()) return new Choice(weighted(pool, share, rng).name(), share, null);
             BookAuthorsClient.Author mine = own.get(rng.nextInt(own.size()));
-            return new Choice(weighted(nearest(candidates, mine.count()), rng).name(), share, mine);
+            return new Choice(weighted(nearest(pool, mine.count()), share, rng).name(), share, mine);
         }
-        Choice fitted = fitToAuthor(candidates, authors.directory(share, band(candidates)), share, rng);
+        Choice fitted = fitToAuthor(pool, authors.directory(share, band(pool)), share, rng);
         if (fitted != null) return fitted;
-        return new Choice(weighted(candidates, rng).name(), share, null);
+        return new Choice(weighted(pool, share, rng).name(), share, null);
     }
 
     /**
@@ -96,9 +99,21 @@ public final class PortalAuthorRoomPick {
         java.util.Collections.shuffle(order, rng);
         for (BookAuthorsClient.Author author : order) {
             List<Candidate> fit = fitting(candidates, author.count());
-            if (!fit.isEmpty()) return new Choice(weighted(fit, rng).name(), share, author);
+            if (!fit.isEmpty()) return new Choice(weighted(fit, share, rng).name(), share, author);
         }
         return null;
+    }
+
+    /**
+     * The candidates weighted above 0 for {@code share} — the rooms that stand it. All of them when
+     * none is, so the share still gets a room.
+     */
+    static List<Candidate> standing(List<Candidate> candidates, PortalRoomBooks.Share share) {
+        List<Candidate> out = new ArrayList<>();
+        for (Candidate c : candidates) {
+            if (c.books() != null && c.books().weightFor(share) > 0) out.add(c);
+        }
+        return out.isEmpty() ? candidates : out;
     }
 
     /** The candidates whose book range holds {@code count}. */
@@ -162,17 +177,21 @@ public final class PortalAuthorRoomPick {
             min, open ? PortalRoomBooks.NO_MAXIMUM : max);
     }
 
-    /** A weighted draw; all-zero weights draw evenly, as the registry's pick does. */
-    static Candidate weighted(List<Candidate> from, Random rng) {
+    /** A draw by each room's weight for {@code share}; all-zero weights draw evenly. */
+    static Candidate weighted(List<Candidate> from, PortalRoomBooks.Share share, Random rng) {
         int total = 0;
-        for (Candidate c : from) total += Math.max(0, c.weight());
+        for (Candidate c : from) total += weightOf(c, share);
         if (total <= 0) return from.get(rng.nextInt(from.size()));
         int r = rng.nextInt(total);
         for (Candidate c : from) {
-            r -= Math.max(0, c.weight());
+            r -= weightOf(c, share);
             if (r < 0) return c;
         }
         return from.get(from.size() - 1);
+    }
+
+    private static int weightOf(Candidate c, PortalRoomBooks.Share share) {
+        return c.books() == null ? 0 : Math.max(0, c.books().weightFor(share));
     }
 
     /** Splittable-mix, salted so this roll does not track the room pick's, the share's or the boost's. */

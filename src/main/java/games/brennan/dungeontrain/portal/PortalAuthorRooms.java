@@ -115,8 +115,8 @@ public final class PortalAuthorRooms {
         if (members.isEmpty()) return null;
         List<PortalAuthorRoomPick.Candidate> candidates = new ArrayList<>(members.size());
         for (TrackVariantGroup.Member m : members) {
-            candidates.add(new PortalAuthorRoomPick.Candidate(
-                m.id(), m.weight(), PortalRoomSettings.of(m.id()).books()));
+            // Weighted by each room's own Books weight for the rolled share, not the member weight.
+            candidates.add(new PortalAuthorRoomPick.Candidate(m.id(), PortalRoomSettings.of(m.id()).books()));
         }
         PortalRoomBooks.Share share = PortalAuthorRoomPick.share(
             PortalRoomSettings.of(parent).books(), pairKey, pinnedToSelf);

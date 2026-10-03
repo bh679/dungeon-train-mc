@@ -31,7 +31,12 @@ class PortalAuthorRoomPickTest {
     private static final List<Candidate> ROOMS = List.of(SMALL, MID, BIG, OPEN);
 
     private static Candidate room(String name, int min, int max) {
-        return new Candidate(name, 1, new PortalRoomBooks(Kind.MIX, 1, 1, 1, 1, min, max));
+        return new Candidate(name, new PortalRoomBooks(Kind.MIX, 1, 1, 1, 1, min, max));
+    }
+
+    /** A room holding (5–∞) books, weighted {@code player} for Player and 1 for everything else. */
+    private static Candidate playerWeighted(String name, int player) {
+        return new Candidate(name, new PortalRoomBooks(Kind.MIX, 1, player, 1, 1, 5, PortalRoomBooks.NO_MAXIMUM));
     }
 
     private static BookAuthorsClient.Author author(String name, int count) {
@@ -158,6 +163,44 @@ class PortalAuthorRoomPickTest {
             Choice again = PortalAuthorRoomPick.choose(SEED, pair, Share.PLAYER, ROOMS, dir, TALLY);
             assertEquals(first, again);
         }
+    }
+
+    @Test
+    @DisplayName("among rooms that fit, each is drawn by its own weight for the share: player 1/5/10")
+    void fittingRoomsDrawByShareWeight() {
+        List<Candidate> rooms = List.of(playerWeighted("one", 1), playerWeighted("five", 5), playerWeighted("ten", 10));
+        PortalAuthorRoomPick.Authors dir = pages(List.of(), List.of(author("twelve", 12)));
+        Map<String, Integer> seen = new java.util.HashMap<>();
+        int pairs = 32_000;
+        for (int pair = 0; pair < pairs; pair++) {
+            seen.merge(PortalAuthorRoomPick.choose(SEED, pair, Share.PLAYER, rooms, dir, TALLY).roomName(), 1, Integer::sum);
+        }
+        assertEquals(1 / 16.0, seen.get("one") / (double) pairs, 0.01);
+        assertEquals(5 / 16.0, seen.get("five") / (double) pairs, 0.01);
+        assertEquals(10 / 16.0, seen.get("ten") / (double) pairs, 0.01);
+    }
+
+    @Test
+    @DisplayName("a room weighted 0 for a share never stands it")
+    void zeroWeightNeverStandsShare() {
+        Candidate noStats = new Candidate("no_stats", new PortalRoomBooks(Kind.MIX, 1, 1, 0, 0, 5, PortalRoomBooks.NO_MAXIMUM));
+        Candidate stats = new Candidate("stats", new PortalRoomBooks(Kind.MIX, 1, 1, 0, 1, 5, PortalRoomBooks.NO_MAXIMUM));
+        for (int pair = 0; pair < 500; pair++) {
+            assertEquals("stats", PortalAuthorRoomPick.choose(SEED, pair, Share.STATS,
+                List.of(noStats, stats), COLD, TALLY).roomName());
+        }
+    }
+
+    @Test
+    @DisplayName("when no room is weighted for the share, they draw evenly rather than go roomless")
+    void noRoomWeightedFallsBackEvenly() {
+        Candidate a = new Candidate("a", new PortalRoomBooks(Kind.MIX, 1, 1, 0, 0, 5, PortalRoomBooks.NO_MAXIMUM));
+        Candidate b = new Candidate("b", new PortalRoomBooks(Kind.MIX, 1, 1, 0, 0, 5, PortalRoomBooks.NO_MAXIMUM));
+        Map<String, Integer> seen = new java.util.HashMap<>();
+        for (int pair = 0; pair < 2000; pair++) {
+            seen.merge(PortalAuthorRoomPick.choose(SEED, pair, Share.STATS, List.of(a, b), COLD, TALLY).roomName(), 1, Integer::sum);
+        }
+        assertEquals(2, seen.size());
     }
 
     @Test
