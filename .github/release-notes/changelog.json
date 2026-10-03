@@ -22275,6 +22275,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "endband-worldgen-erosion",
+      "version": "0.1116.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Bare islands grow back",
+      "summary": "Some islands far down the line now carry the growth and rock they were always meant to, instead of standing bare.",
+      "highlights": [],
+      "pr": 1777,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
