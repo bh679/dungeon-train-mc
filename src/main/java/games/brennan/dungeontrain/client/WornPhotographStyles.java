@@ -24,12 +24,14 @@ public final class WornPhotographStyles {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        register(WornPhotographs.LIGHT, "worn_1");
-        register(WornPhotographs.MEDIUM, "worn_2");
-        register(WornPhotographs.HEAVY, "worn_3");
+        // Each type's paper texture carries the type's own name.
+        register(WornPhotographs.LIGHT);
+        WornPhotographs.MEDIUM.forEach(WornPhotographStyles::register);
+        WornPhotographs.HEAVY.forEach(WornPhotographStyles::register);
     }
 
-    private static void register(PhotographType type, String texture) {
+    private static void register(PhotographType type) {
+        String texture = type.id().getPath();
         ResourceLocation paper = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "textures/photograph/" + texture + ".png");
         PhotographStyles.register(type, new PhotographStyle(paper, NO_OVERLAY, ALBUM_PAPER, NO_OVERLAY,
             new TornEdgeEffect("dt_torn_" + texture, paper)));

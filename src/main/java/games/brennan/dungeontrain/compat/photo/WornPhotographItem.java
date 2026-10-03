@@ -17,6 +17,6 @@ public final class WornPhotographItem extends PhotographItem {
 
     @Override
     public PhotographType getType(ItemStack stack) {
-        return WornPhotographs.forViewsLeft(SharedPhotos.viewsLeft(stack));
+        return WornPhotographs.forViewsLeft(SharedPhotos.viewsLeft(stack), SharedPhotos.sharedId(stack));
     }
 }
