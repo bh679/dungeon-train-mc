@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
+import games.brennan.dungeontrain.advancement.FirstEverAdvancements;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
@@ -1269,6 +1270,9 @@ public final class AchievementEvents {
             // The three milestone earns go to the public passenger log and ping Brennan —
             // genuine earns only (this block), clean runs only (the reporter checks).
             MilestoneAdvancementReporter.maybePost(player, advancement);
+            // Any clean DT earn may be the first ever — the relay decides, and a confirmed first is
+            // told in chat and announced the same way (a pending milestone post is retitled, not doubled).
+            FirstEverAdvancements.onEarn(player, advancement);
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the

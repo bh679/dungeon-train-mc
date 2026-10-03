@@ -60,28 +60,56 @@ public final class MilestoneAdvancementReporter {
      */
     public static void maybePost(ServerPlayer player, AdvancementHolder advancement) {
         if (!isMilestone(advancement.id())) return;
+        if (RunIntegrity.isCheated(player)) {
+            LOGGER.info("[DungeonTrain] {} earned {} in Free Play — not announced.",
+                    player.getGameProfile().getName(), advancement.id());
+            return;
+        }
+        announce(player, advancement, title(player.getGameProfile().getName(),
+                advancementTitle(advancement).getString()));
+    }
+
+    /**
+     * The "first passenger ever" announcement ({@code FirstEverAdvancements}), already confirmed by the
+     * relay and clean. A milestone that is also a first ever has its pending milestone post retitled
+     * rather than posted twice — the relay answers well inside the photo wait.
+     */
+    public static void announceFirstEver(ServerPlayer player, AdvancementHolder advancement) {
+        String title = firstEverTitle(player.getGameProfile().getName(), advancementTitle(advancement).getString());
+        if (MilestonePostBuffer.retitle(player, advancement.id(), title)) {
+            LOGGER.info("[DungeonTrain] {}'s pending {} announcement retitled as a first ever.",
+                    player.getGameProfile().getName(), advancement.id());
+            return;
+        }
+        announce(player, advancement, title);
+    }
+
+    /** Compose, buffer for the client's photo, and ask for it. Server thread; never throws. */
+    private static void announce(ServerPlayer player, AdvancementHolder advancement, String title) {
         try {
-            if (RunIntegrity.isCheated(player)) {
-                LOGGER.info("[DungeonTrain] {} earned {} in Free Play — not announced.",
-                        player.getGameProfile().getName(), advancement.id());
-                return;
-            }
-            String name = player.getGameProfile().getName();
-            DisplayInfo display = advancement.value().display().orElse(null);
-            String advancementTitle = display == null ? advancement.id().getPath()
-                    : display.getTitle().getString();
-            String title = title(name, advancementTitle);
             // The hint, never the description: the description is a secret other players are meant
             // to find for themselves; the hint is what the advancements screen already shows everyone.
             String description = description(hint(advancement.id()),
                     DiscordAdvancementSuffix.forPlayer(player.getUUID()));
-            LOGGER.info("[DungeonTrain] {} earned {} — announcing in the passenger log.", name, advancement.id());
+            LOGGER.info("[DungeonTrain] {} earned {} — announcing in the passenger log.",
+                    player.getGameProfile().getName(), advancement.id());
             MilestonePostBuffer.await(player, advancement.id(), title, description,
                     DungeonTrain.manifestWebhookOverride());
             DungeonTrainNet.sendTo(player, new CaptureAdvancementPacket(advancement.id()));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] milestone advancement announcement failed: {}", t.toString());
         }
+    }
+
+    /** The advancement's display title, or its path when it has no display. */
+    public static Component advancementTitle(AdvancementHolder advancement) {
+        DisplayInfo display = advancement.value().display().orElse(null);
+        return display == null ? Component.literal(advancement.id().getPath()) : display.getTitle();
+    }
+
+    /** {@code "🥇 Steve — first passenger ever to earn Cross-Country"}. */
+    static String firstEverTitle(String playerName, String advancementTitle) {
+        return "🥇 " + playerName + " — first passenger ever to earn " + advancementTitle;
     }
 
     /** The lang key of an advancement's hint — {@code dungeon_train/the_long_run} → {@code advancements.dungeontrain.dungeon_train.the_long_run.hint}. */
