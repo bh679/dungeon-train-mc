@@ -28,7 +28,7 @@ final class EditorBrowserStatusChipTest {
     void cycleCoversEveryState() {
         List<String> seen = new ArrayList<>();
         String state = BuilderProfileFilters.ALL;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             seen.add(state);
             state = EditorFilterBar.nextStatus(state);
         }
