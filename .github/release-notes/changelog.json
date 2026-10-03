@@ -22186,8 +22186,65 @@
       "released_at": null
     },
     {
-      "id": "milestone-advancements-passenger-log",
+      "id": "betterend-sdf-per-thread",
       "version": "0.1112.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Giant mushrooms and layered rock keep their shape",
+      "summary": "Giant glowing mushrooms and bands of coloured rock now come out whole and the same every time, however many places the world is being built at once.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "buildings-editor-tab",
+      "version": "0.1113.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "world",
+        "ui"
+      ],
+      "title": "Build the buildings",
+      "summary": "The Train Editor has a new Buildings tab, where you can change the buildings the world places or add your own and share them.",
+      "highlights": [],
+      "pr": 1769,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "biome-twin-lookup-memo",
+      "version": "0.1114.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother scenery",
+      "summary": "The scenery colours in a little more smoothly as new ground comes into view.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1772,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "milestone-advancements-passenger-log",
+      "version": "0.1115.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -22197,7 +22254,7 @@
       "title": "The rarest advancements make the passenger log",
       "summary": "When someone earns one of the train's rarest advancements on a clean run, the passenger log hears about it.",
       "highlights": [],
-      "date": "2026-10-02",
+      "date": "2026-10-03",
       "released": false,
       "released_in": null,
       "released_at": null

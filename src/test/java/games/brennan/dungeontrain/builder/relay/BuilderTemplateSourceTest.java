@@ -55,6 +55,14 @@ final class BuilderTemplateSourceTest {
         assertEquals(BuilderPhotoPaths.Kind.PORTAL_ROOM, room.kind());
         assertEquals("man", room.id());
 
+        // A building: one flat namespace, and its weight sidecar beside it is not a template.
+        BuilderTemplateIdentity.Identity building =
+            BuilderTemplateSource.identityOf("buildings", "clock_tower.nbt").orElseThrow();
+        assertEquals(BuilderPhotoPaths.Kind.BUILDING, building.kind());
+        assertEquals("", building.subKind());
+        assertEquals("clock_tower", building.id());
+        assertTrue(BuilderTemplateSource.identityOf("buildings", "clock_tower.building.json").isEmpty());
+
         // Windows separators reach here from a path relativised on this machine.
         assertTrue(BuilderTemplateSource.identityOf("parts\\floor", "standard.nbt").isPresent());
 
