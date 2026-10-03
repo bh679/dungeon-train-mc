@@ -140,7 +140,8 @@ public final class PortalChunkSources {
             LOGGER.info("[DungeonTrain] Chunk dimension {} samples the vanilla preset: this world has "
                 + "no {} generator to sample (y {}..{})", source, source.levelKey().location(), minY, maxY);
             return new Resolved(host, noise, random, minY, maxY, true);
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LinkageError e) {
+            // LinkageError: TerraBlender's internal IExtended* interfaces moved in a newer build.
             LOGGER.warn("[DungeonTrain] Chunk dimension {} has nothing to sample: no {} generator in "
                 + "this world and the vanilla preset could not stand one in", source,
                 source.levelKey().location(), e);

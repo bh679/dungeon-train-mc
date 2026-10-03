@@ -22184,6 +22184,219 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "betterend-sdf-per-thread",
+      "version": "0.1112.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Giant mushrooms and layered rock keep their shape",
+      "summary": "Giant glowing mushrooms and bands of coloured rock now come out whole and the same every time, however many places the world is being built at once.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "buildings-editor-tab",
+      "version": "0.1113.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "world",
+        "ui"
+      ],
+      "title": "Build the buildings",
+      "summary": "The Train Editor has a new Buildings tab, where you can change the buildings the world places or add your own and share them.",
+      "highlights": [],
+      "pr": 1769,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "biome-twin-lookup-memo",
+      "version": "0.1114.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother scenery",
+      "summary": "The scenery colours in a little more smoothly as new ground comes into view.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1772,
+      "date": "2026-10-02",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "milestone-advancements-passenger-log",
+      "version": "0.1115.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "The rarest advancements make the passenger log",
+      "summary": "When someone earns one of the train's rarest advancements on a clean run, the passenger log hears about it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "perthread-sdf-quaternion",
+      "version": "0.1116.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "World generation fix",
+      "summary": "Some of the world's shapes now build a little more reliably.",
+      "highlights": [],
+      "pr": 1779,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "endband-worldgen-erosion",
+      "version": "0.1116.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Bare islands grow back",
+      "summary": "Some islands far down the line now carry the growth and rock they were always meant to, instead of standing bare.",
+      "highlights": [],
+      "pr": 1777,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "lost-city-template-cache-reach",
+      "version": "0.1118.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility",
+        "world"
+      ],
+      "title": "Fewer hitches as new scenery loads",
+      "summary": "Big buildings ahead now load quietly in the background, even after a long jump.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1773,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "mixin-target-guards",
+      "version": "0.1118.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "World mod updates no longer stop the game loading",
+      "summary": "The game keeps loading when one of the world mods it builds on updates.",
+      "highlights": [],
+      "pr": 1775,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "first-ever-advancement-announcement",
+      "version": "0.1120.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "The first passenger to earn an advancement is remembered",
+      "summary": "Be the first passenger ever to earn an advancement and the whole train hears about it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "disposable-camera-per-stack-print",
+      "version": "0.1121.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Disposable cameras keep to themselves",
+      "summary": "Only the disposable camera you shoot with reloads now, and every shot prints a single photo.",
+      "highlights": [],
+      "pr": 1782,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "rendering-hiccup-no-crash",
+      "version": "0.1122.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Rendering hiccups",
+      "summary": "A rare rendering hiccup no longer ends your ride.",
+      "highlights": [],
+      "pr": 1784,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "death-screen-photo-page",
+      "version": "0.1123.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Photos on the death screen",
+      "summary": "When the ride ends, the photos from your life get a page of their own.",
+      "highlights": [],
+      "pr": 1787,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

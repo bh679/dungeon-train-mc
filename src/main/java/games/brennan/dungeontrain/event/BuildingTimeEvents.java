@@ -64,8 +64,13 @@ public final class BuildingTimeEvents {
      * everything else — riding, walking, standing on a platform — is not building.
      */
     public static Target targetFor(boolean builderWorld, int blockY) {
+        return targetFor(builderWorld, EditorLayout.isAtPlotHeight(blockY));
+    }
+
+    /** {@link #targetFor(boolean, int)} once the height question is answered — the Buildings plots stand lower. */
+    public static Target targetFor(boolean builderWorld, boolean atPlots) {
         if (builderWorld) return Target.BUILDER;
-        return EditorLayout.isAtPlotHeight(blockY) ? Target.EDITOR : Target.NONE;
+        return atPlots ? Target.EDITOR : Target.NONE;
     }
 
     @SubscribeEvent
@@ -77,7 +82,8 @@ public final class BuildingTimeEvents {
 
         boolean builderWorld = isBuilderWorld(level);
         for (ServerPlayer player : players) {
-            Target target = targetFor(builderWorld, player.getBlockY());
+            Target target = targetFor(builderWorld,
+                games.brennan.dungeontrain.editor.EditorStampedCategoryState.atPlotHeight(player.getBlockY()));
             if (target == Target.NONE) continue;
             UUID id = player.getUUID();
             if (target == Target.BUILDER) {

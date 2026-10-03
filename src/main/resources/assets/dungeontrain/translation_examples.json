@@ -14639,5 +14639,14 @@
         "5"
       ]
     }
+  },
+  "chat.dungeontrain.first_ever": {
+    "1": {
+      "label": "the advancement's title",
+      "examples": [
+        "Cross-Country",
+        "Everything Burrito"
+      ]
+    }
   }
 }

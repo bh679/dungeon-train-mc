@@ -61,6 +61,7 @@ The NeoForge version follows `neo_version` for the same reason.
 | **O** | Case A + What Are They Up To + CoroUtil (a server carrying the modpack's two-sided companion) | Server starts cleanly |
 | **P** | WATUT without CoroUtil | Fails — names `coroutil`, requested by `watut`, with its `[1.21.0-1.3.7,)` floor |
 | **Q** | minus Exposure + its Polaroid add-on (the only case without them) | Fails — names `exposure` and `exposure_polaroid` with their `[x,)` floors |
+| **R** | Case A minus TerraBlender (the only case without it) | Fails — names `terrablender` with DT's own `[x,)` floor (Biomes O' Plenty asks for it too) |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

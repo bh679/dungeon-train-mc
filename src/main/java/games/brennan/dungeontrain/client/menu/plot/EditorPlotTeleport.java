@@ -42,6 +42,9 @@ public final class EditorPlotTeleport {
             case PARTS -> "dungeontrain editor part enter " + modelId + " " + modelName;
             // Chunk frames have no kinds: modelName is the frame.
             case CHUNK_FRAMES -> "dungeontrain editor chunkframe enter " + modelName;
+            // Buildings have no kinds either; goto keeps unsaved edits standing.
+            case BUILDINGS -> "dungeontrain editor buildings goto " + modelName;
+            case LOST_CITY -> "dungeontrain editor buildings lostcity goto " + modelName;
             // Nothing authored yet, so no plot to stand in.
             case ARCHITECTURE -> null;
         };
@@ -62,7 +65,8 @@ public final class EditorPlotTeleport {
             case PORTALS -> "dungeontrain editor portals weight " + modelId + " " + modelName + " " + dir;
             case WHOLE -> "dungeontrain editor whole weight " + modelId + " " + dir;
             case WHOLE_GROUP -> "dungeontrain editor whole group weight " + modelId + " " + dir;
-            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no weight pool — refused by the guard above
+            case BUILDINGS -> "dungeontrain editor buildings weight " + modelName + " " + dir;
+            case PARTS, CHUNK_FRAMES, LOST_CITY, ARCHITECTURE -> null; // no weight pool — refused by the guard above
         };
     }
 
@@ -211,7 +215,7 @@ public final class EditorPlotTeleport {
             case PORTALS -> "dungeontrain editor portals " + sub + " " + modelId + " " + modelName + " " + dir;
             case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId + " " + dir;
             case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId + " " + dir;
-            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
+            case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -232,7 +236,7 @@ public final class EditorPlotTeleport {
             case PORTALS -> "dungeontrain editor portals phase " + modelId + " " + modelName + " " + phaseToken + " " + action;
             case WHOLE -> "dungeontrain editor whole phase " + modelId + " " + phaseToken + " " + action;
             case WHOLE_GROUP -> "dungeontrain editor whole group phase " + modelId + " " + phaseToken + " " + action;
-            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
+            case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE -> null; // no spawn gate — refused by the guard above
         };
     }
 
@@ -333,7 +337,7 @@ public final class EditorPlotTeleport {
             case PORTALS -> "dungeontrain editor stage apply tracks " + modelId + " " + modelName + " " + stageToken;
             case WHOLE -> "dungeontrain editor stage apply whole " + modelId + " " + stageToken;
             case WHOLE_GROUP -> "dungeontrain editor stage apply whole_group " + modelId + " " + stageToken;
-            case PARTS, CHUNK_FRAMES, ARCHITECTURE -> null; // no stage link — refused by the guard above
+            case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE -> null; // no stage link — refused by the guard above
         };
     }
 
