@@ -187,6 +187,7 @@ public final class EditorGuiScreen extends Screen {
         super.removed();
         BuilderTilePreviews.clear();
         RelayBuildPreviews.clear();
+        games.brennan.dungeontrain.client.builder.WorkbenchPreviews.clear();
         games.brennan.dungeontrain.client.builder.StagePreviews.clear();
         search.close();
         EditorCreatorBuilds.detach();
@@ -398,7 +399,10 @@ public final class EditorGuiScreen extends Screen {
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
-            TemplateSummary summary = art == null ? null : art.summary();
+            boolean staged = ctx.hasSelection() && ctx.selection().category() == PlotCategory.WORKBENCH;
+            TemplateSummary summary = staged
+                ? games.brennan.dungeontrain.client.builder.WorkbenchPreviews.summary(ctx.selection().modelName())
+                : art == null ? null : art.summary();
             trackVersionsOf(tile == null ? 0 : tile.relayId(), "");
             detail.showVersion(tile == null ? 0 : tile.relayId(), previewSeq);
             detail.showSummary(summary);

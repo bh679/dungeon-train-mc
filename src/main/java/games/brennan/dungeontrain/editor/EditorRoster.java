@@ -170,6 +170,11 @@ public final class EditorRoster {
      * kind over time, so both are asked.</p>
      */
     private static int relayIdFor(String categoryId, String groupModelId, EditorTypeMenusPacket.Variant v) {
+        // A staged build knows its own row: it came off the relay and is in no store the keys below name.
+        if (PlotCategory.WORKBENCH.id().equals(categoryId)) {
+            return games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.find(v.modelName())
+                .map(games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild::relayId).orElse(0);
+        }
         games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds rows = RELAY_ROWS.get();
         if (rows == null) return 0;
         for (String key : relayKeysFor(categoryId, groupModelId, v.modelId(), v.modelName())) {

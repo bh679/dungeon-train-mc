@@ -241,7 +241,8 @@ public final class EditorScreenState {
     private static void browseTo(VariantKey key, EditorRosterPacket.Group group) {
         EditorCategoryFilter target = EditorCategoryFilter.forCategory(key.category());
         if (target != null) category = target;
-        page = EditorScreenPage.TEMPLATES;
+        // Through setPage, so leaving the Workbench tab puts its pool and status chip back.
+        setPage(EditorScreenPage.TEMPLATES);
         typeName = group != null ? group.typeName() : "";
     }
 
@@ -263,6 +264,13 @@ public final class EditorScreenState {
             selectStandingPending = false;
             VariantKey here = standingIn();
             if (here != null) {
+                // The plot under the author's feet is the subject, so somebody else's uploads step
+                // aside: creator mode would otherwise keep the right pane on a relay build.
+                if (EditorCreatorBuilds.active()) {
+                    EditorCreatorBuilds.clear();
+                    workbenchOpenedPool = false;
+                    if (BuilderProfileFilters.PENDING.equals(creatorReview)) creatorReview = BuilderProfileFilters.ALL;
+                }
                 selection = index.find(here) != null ? index.find(here).key() : here;
                 // The category and strip move to it, but the FILTERS stay: the browser now keeps
                 // the standing template at the front of the grid however they are set, so clearing

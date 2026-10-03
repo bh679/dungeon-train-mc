@@ -255,8 +255,13 @@ public final class EditorBrowserPane {
         float yaw = spin.advance(art == null ? key.toString() : art.spinKey(), hov, seconds);
         int weight = asSelf ? tile.selfWeight() : v.weight();
         String name = asSelf ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.displayName()) : v.displayName();
-        TemplateTilePainter.draw(g, font, art, name, weight, x, y, size, yaw,
-            new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup(), ghost));
+        TemplateTilePainter.Marks marks = new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup(), ghost);
+        if (cat == PlotCategory.WORKBENCH) {
+            // A staged build's picture is its own snapshot; the relay's copy stands in off this machine.
+            TemplateTilePainter.drawStaged(g, font, key.modelName(), name, weight, x, y, size, yaw, marks, tile.relayId());
+        } else {
+            TemplateTilePainter.draw(g, font, art, name, weight, x, y, size, yaw, marks);
+        }
     }
 
     /** Whether the point is on tile {@code i}'s star rather than the picture behind it. */

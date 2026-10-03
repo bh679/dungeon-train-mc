@@ -366,7 +366,15 @@ public final class EditorDetailPane {
         String name = tile == null ? "" : tile.variant().displayName();
         shownName = name;
         if (onModelPage()) {
-            PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
+            String staged = ctx.hasSelection() && ctx.selection().category() == games.brennan.dungeontrain.editor.PlotCategory.WORKBENCH
+                ? ctx.selection().modelName() : null;
+            if (staged != null && seq == 0) {
+                // A staged build's picture is its own snapshot on the shelf; the relay's copy of the
+                // same row stands in when the file is not on this machine (a dedicated server).
+                PreviewPane.drawStaged(g, font, layout.preview(), staged, name, yaw, theme, relayId);
+            } else {
+                PreviewPane.draw(g, font, layout.preview(), art, name, yaw, theme, seq == 0 ? 0 : relayId, seq);
+            }
             versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
             drawUploadNoteOnPreview(g, font, art);
             sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
