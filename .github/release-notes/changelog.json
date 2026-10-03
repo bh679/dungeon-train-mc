@@ -21955,6 +21955,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tributed-photo-passenger-log",
+      "version": "0.1099.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tributed photos are shared with everyone",
+      "summary": "When someone pays tribute to a photo, the whole passenger log gets to see it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
