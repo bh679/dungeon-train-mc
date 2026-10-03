@@ -28,7 +28,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.ItemLore;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
@@ -315,11 +314,10 @@ public final class SharedPhotos {
         ItemStack held = player.getItemInHand(hand.get());
         int photoId = sharedId(held);
         int cost = tributeCost(held);
-        if (player.getInventory().countItem(Items.EMERALD) < cost) {
+        if (!TributePayment.pay(player, cost)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.photo_tribute.cannot_afford").withStyle(ChatFormatting.GRAY));
             return;
         }
-        player.getInventory().clearOrCountMatchingItems(stack -> stack.is(Items.EMERALD), cost, player.inventoryMenu.getCraftSlots());
         recordView(player, photoId);
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());

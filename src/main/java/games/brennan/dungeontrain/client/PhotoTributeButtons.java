@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.DisposableCamera;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
+import games.brennan.dungeontrain.compat.photo.TributePayment;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PhotoTributePacket;
 import io.github.mortuusars.exposure.client.gui.screen.PhotographScreen;
@@ -82,8 +83,8 @@ public final class PhotoTributeButtons {
         }
 
         int cost = SharedPhotos.tributeCost(photo);
-        int emeralds = player.getInventory().countItem(Items.EMERALD);
-        boolean canAfford = emeralds >= cost;
+        int emeralds = TributePayment.worth(player.getInventory());
+        boolean canAfford = TributePayment.canPay(player.getInventory(), cost);
         int viewsLeft = SharedPhotos.viewsLeft(photo);
         Component viewsLabel = Component.literal(viewsLeft + "/" + SharedPhotos.VIEWS_MAX);
         int viewsWidth = font.width(viewsLabel) + 2 * PADDING;
