@@ -314,15 +314,17 @@ public final class SharedPhotos {
         ItemStack held = player.getItemInHand(hand.get());
         int photoId = sharedId(held);
         int cost = tributeCost(held);
-        if (!TributePayment.pay(player, cost)) {
+        if (!TributePayment.canPay(player.getInventory(), cost)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.photo_tribute.cannot_afford").withStyle(ChatFormatting.GRAY));
             return;
         }
+        // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
+        player.setItemInHand(hand.get(), ItemStack.EMPTY);
+        TributePayment.pay(player, cost);
         recordView(player, photoId);
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
-        player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurnApproved(player, held);
         player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, VIEWS_MAX));
     }

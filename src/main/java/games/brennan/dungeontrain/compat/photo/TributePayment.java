@@ -8,7 +8,8 @@ import net.minecraft.world.item.Items;
 /**
  * Paying a Tribute in emeralds. A player short of loose emeralds can still pay if their emerald
  * blocks cover the rest: just enough blocks are broken down, the cost is taken, and the change
- * comes back as emeralds — provided there is somewhere to put it.
+ * comes back as emeralds. The change never needs a spare slot: the photo being paid for burns, and
+ * the slot it was held in is free by the time the change arrives.
  *
  * <p>Shared by the client (is the button affordable?) and the server (take the payment), so the
  * two can never disagree about what counts as enough.</p>
@@ -37,16 +38,13 @@ public final class TributePayment {
     public static boolean canPay(Inventory inventory, int cost) {
         int emeralds = inventory.countItem(Items.EMERALD);
         if (emeralds >= cost) return true;
-        int blocks = inventory.countItem(Items.EMERALD_BLOCK);
-        int needed = blocksNeeded(emeralds, cost);
-        if (blocks < needed) return false;
-        if (change(emeralds, cost) == 0) return true;
-        // The change needs a slot: one opens up when the loose emeralds are all spent or the last
-        // block goes; otherwise the player must already have an empty one.
-        return emeralds > 0 || blocks == needed || inventory.getFreeSlot() != -1;
+        return inventory.countItem(Items.EMERALD_BLOCK) >= blocksNeeded(emeralds, cost);
     }
 
-    /** Take {@code cost} from the player. Returns false, taking nothing, if they cannot pay. */
+    /**
+     * Take {@code cost} from the player. Returns false, taking nothing, if they cannot pay. Call it
+     * once the photo has left the player's hand, so its slot can take the change.
+     */
     public static boolean pay(Player player, int cost) {
         Inventory inventory = player.getInventory();
         if (!canPay(inventory, cost)) return false;
