@@ -22666,6 +22666,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-heads-face-into-rooms",
+      "version": "0.1135.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Player heads look into the room",
+      "summary": "Player heads placed around carriage rooms now turn to face into the room, each picking a slightly different angle so no two trains look quite the same. A head in the middle of a room can face any way.",
+      "highlights": [
+        "Heads look toward the centre of the room, give or take a quarter-turn either way, never at the wall behind them"
+      ],
+      "pr": 1800,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
