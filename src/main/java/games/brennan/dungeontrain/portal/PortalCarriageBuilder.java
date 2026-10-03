@@ -1018,7 +1018,9 @@ public final class PortalCarriageBuilder {
         // A generated room fills the box the template just laid before anything is wrapped around
         // it: the skin is written one column outside the room, so the two never touch, but the order
         // keeps "what the room turned out to be" true for the mode branch below.
-        if (structure.mode().generatesTerrain()) {
+        // Not over a captured room: the blob already holds the terrain as it was left, and re-laying
+        // the sample would put back every ore a player mined out of it.
+        if (structure.mode().generatesTerrain() && !structure.stampsFromBlob()) {
             PortalChunkDimension.fill(level, structure, dims, pairKey);
         }
 
