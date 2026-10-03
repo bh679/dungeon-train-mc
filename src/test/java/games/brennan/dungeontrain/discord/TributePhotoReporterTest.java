@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** What the passenger log says about a tributed photo. */
 class TributePhotoReporterTest {
@@ -30,8 +31,18 @@ class TributePhotoReporterTest {
     @Test
     @DisplayName("description counts the tribute and its emerald cost")
     void descriptionShape() {
-        assertEquals("Tribute #1 · 1 emerald", TributePhotoReporter.description(1, 1));
-        assertEquals("Tribute #3 · 3 emeralds", TributePhotoReporter.description(3, 3));
-        assertEquals("Tribute #1 · 2 emeralds", TributePhotoReporter.description(0, 2));
+        assertEquals("Tribute #1 · 1 emerald\n🤲 Held by 1 passenger · was 9 views from fading",
+                TributePhotoReporter.description(1, 1, 1, 10));
+        assertEquals("Tribute #3 · 3 emeralds\n🤲 Held by 7 passengers · was 3 views from fading",
+                TributePhotoReporter.description(3, 3, 7, 4));
+        assertTrue(TributePhotoReporter.description(0, 2, 1, 10).startsWith("Tribute #1 · 2 emeralds\n"));
+    }
+
+    @Test
+    @DisplayName("view line: how many hands, and how close it came to fading")
+    void viewLine() {
+        assertTrue(TributePhotoReporter.description(1, 1, 12, 2).endsWith("Held by 12 passengers · was 1 view from fading"));
+        assertTrue(TributePhotoReporter.description(1, 1, 10, 1).endsWith("Held by 10 passengers · was on its last view"));
+        assertTrue(TributePhotoReporter.description(1, 1, 0, 0).endsWith("Held by 1 passenger · was on its last view"));
     }
 }

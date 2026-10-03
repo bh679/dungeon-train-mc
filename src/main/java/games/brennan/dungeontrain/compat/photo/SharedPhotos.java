@@ -5,7 +5,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.GlobalTributeStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.discord.PhotoPaperComposite;
 import games.brennan.dungeontrain.discord.PhotoUpscale;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.TributePhotoReporter;
@@ -231,14 +233,17 @@ public final class SharedPhotos {
 
     /** Encode off-thread, then hand the PNG to {@code then} back on the server thread. */
     private static void encodeThen(MinecraftServer server, ExposureData data, String label, java.util.function.Consumer<byte[]> then) {
-        encodeThen(server, data, false, label, then);
+        encodeThen(server, data, PhotoPngCodec::encode, label, then);
     }
 
-    /**
-     * As above; {@code forDiscord} enlarges the picture first ({@link PhotoUpscale}) so it shows at a
-     * viewable size in an embed. Uploads to the relay never set it — those stay the true pixels.
-     */
-    private static void encodeThen(MinecraftServer server, ExposureData data, boolean forDiscord, String label,
+    /** Turns a photo's palette indices into the bytes to send. Runs off the server thread. */
+    @FunctionalInterface
+    private interface Encoder {
+        byte[] encode(int width, int height, byte[] pixels, int[] palette) throws java.io.IOException;
+    }
+
+    /** As above, with the bytes made by {@code encoder} — the relay's true pixels, or {@link #discordPng}. */
+    private static void encodeThen(MinecraftServer server, ExposureData data, Encoder encoder, String label,
                                    java.util.function.Consumer<byte[]> then) {
         int width = data.getWidth();
         int height = data.getHeight();
@@ -247,12 +252,7 @@ public final class SharedPhotos {
         CompletableFuture
                 .supplyAsync(() -> {
                     try {
-                        int factor = forDiscord ? PhotoUpscale.factorFor(width, height) : 1;
-                        if (factor > 1) {
-                            return PhotoPngCodec.encode(width * factor, height * factor,
-                                    PhotoUpscale.nearest(pixels, width, height, factor), palette);
-                        }
-                        return PhotoPngCodec.encode(width, height, pixels, palette);
+                        return encoder.encode(width, height, pixels, palette);
                     } catch (Exception e) {
                         throw new IllegalStateException(e);
                     }
@@ -264,6 +264,26 @@ public final class SharedPhotos {
                         then.accept(png);
                     }
                 }));
+    }
+
+    /**
+     * The photo for Discord: enlarged ({@link PhotoUpscale}) so it shows at a viewable size in an
+     * embed, and laid on its paper with the paper's tears ({@link PhotoPaperComposite}) when the paper
+     * could be read. Only the Discord post uses this; uploads to the relay keep the true pixels.
+     */
+    static byte[] discordPng(int width, int height, byte[] pixels, int[] palette, Optional<int[]> paper) throws java.io.IOException {
+        int factor = PhotoUpscale.factorFor(width, height);
+        int scaledWidth = width * factor;
+        int scaledHeight = height * factor;
+        byte[] scaled = PhotoUpscale.nearest(pixels, width, height, factor);
+        if (paper.isEmpty()) return PhotoPngCodec.encode(scaledWidth, scaledHeight, scaled, palette);
+        int[] argb = new int[scaled.length];
+        for (int i = 0; i < scaled.length; i++) {
+            int index = scaled[i] & 0xFF;
+            argb[i] = index < palette.length ? palette[index] : 0;
+        }
+        PhotoPaperComposite.Composite composite = PhotoPaperComposite.compose(paper.get(), argb, scaledWidth, scaledHeight);
+        return PhotoPngCodec.encodeArgb(composite.width(), composite.height(), composite.argb());
     }
 
     // ---- views and Tribute ----------------------------------------------------
@@ -360,6 +380,8 @@ public final class SharedPhotos {
      * Show the tributed photo in the public passenger log ({@link TributePhotoReporter}). Clean runs
      * only — a Free Play Tribute still keeps the photo alive, it just isn't announced. The picture
      * comes from this world's copy, the same one {@link #restore} sends back; no copy, no post.
+     * And only a personal best: the most emeralds this player has ever paid for one Tribute
+     * ({@link GlobalTributeStats}). Only Tributes that could post count toward that record.
      */
     private static void announceTribute(ServerPlayer player, ItemStack held, int photoId, int cost) {
         MinecraftServer server = player.getServer();
@@ -374,8 +396,17 @@ public final class SharedPhotos {
             LOGGER.debug("[DungeonTrain] Tributed photo {} has no copy in this world; not posted.", photoId);
             return;
         }
-        encodeThen(server, data.get(), true, exposureId,
-                png -> TributePhotoReporter.post(player, photographer, tributeNumber, cost, png));
+        if (!GlobalTributeStats.recordIfHighest(player.getUUID(), cost)) {
+            LOGGER.debug("[DungeonTrain] Tribute of {} to photo {} is not {}'s best (best {}); not posted.",
+                    cost, photoId, player.getGameProfile().getName(), GlobalTributeStats.highestTributePaid(player.getUUID()));
+            return;
+        }
+        // As the tributer held it: how many hands before theirs, and the paper those views had worn.
+        int hands = viewsSeen(held) + 1;
+        int viewsLeft = viewsLeft(held);
+        Optional<int[]> paper = PhotoPaperTextures.paper(WornPhotographs.forViewsLeft(viewsLeft, photoId));
+        encodeThen(server, data.get(), (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, paper), exposureId,
+                png -> TributePhotoReporter.post(player, photographer, tributeNumber, cost, hands, viewsLeft, png));
     }
 
     /** Registration only — no network, no game state. Called once at mod construction. */

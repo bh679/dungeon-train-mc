@@ -22607,6 +22607,27 @@
       "released_at": null
     },
     {
+      "id": "tribute-photo-views-worn-paper",
+      "version": "0.1132.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tributed photos show how far they travelled",
+      "summary": "A tributed photo in the passenger log now shows how many passengers have held it and how close it came to fading, printed on the same worn, torn paper it had when you paid. Only your biggest tribute yet gets posted, so to share a photo with everyone, pay more than you ever have before.",
+      "highlights": [
+        "The passenger log shows how many hands a tributed photo has passed through",
+        "The posted picture keeps its worn paper and torn edges",
+        "Only a tribute bigger than any you've paid before is posted"
+      ],
+      "pr": 1798,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "editor-build-review-verdicts",
       "version": "0.1133.0",
       "type": "feat",
