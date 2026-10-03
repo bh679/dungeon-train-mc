@@ -45,6 +45,7 @@
     "SinglePoolElementAccessor",
     "StructureTemplateAccessor",
     "StructureTemplateManagerAccessor",
+    "StructureTemplateManagerLoadMixin",
     "ListPoolElementAccessor",
     "StructurePieceAccessor",
     "StructureTemplateUpsideDownEntitiesMixin",
