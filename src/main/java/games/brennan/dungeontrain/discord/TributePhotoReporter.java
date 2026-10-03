@@ -34,16 +34,19 @@ public final class TributePhotoReporter {
      * @param photographer who took the photo, as the found photo names them ({@code ""} if unknown)
      * @param tributeNumber which Tribute this is for the photo, counting this one (1 = its first)
      * @param cost emeralds this Tribute cost
-     * @param png the photo, encoded
+     * @param hands how many people have held the photo, counting the tributer
+     * @param viewsLeft views the photo had left when the tributer opened it, counting theirs
+     * @param png the photo on its paper, encoded
      */
-    public static void post(ServerPlayer tributer, String photographer, int tributeNumber, int cost, byte[] png) {
+    public static void post(ServerPlayer tributer, String photographer, int tributeNumber, int cost,
+                            int hands, int viewsLeft, byte[] png) {
         if (png == null || png.length == 0) return;
         try {
             String name = tributer.getGameProfile().getName();
             LOGGER.info("[DungeonTrain] {} paid tribute to a photo by {} — posting it to the passenger log.",
                     name, photographer == null || photographer.isBlank() ? "an unknown passenger" : photographer);
             DiscordService.get().postReportTopLevel(tributer, title(name, photographer),
-                    description(tributeNumber, cost), List.of(), png, PHOTO_FILENAME, EMBED_COLOR,
+                    description(tributeNumber, cost, hands, viewsLeft), List.of(), png, PHOTO_FILENAME, EMBED_COLOR,
                     DungeonTrain.manifestWebhookOverride());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] tributed photo post failed: {}", t.toString());
@@ -58,8 +61,17 @@ public final class TributePhotoReporter {
         return "📸 " + tributer + " paid tribute to a photo by " + (known ? photographer : "a fellow passenger");
     }
 
-    /** {@code "Tribute #3 · 3 emeralds"} — how many times this photo has been kept alive, and what it cost. */
-    static String description(int tributeNumber, int cost) {
-        return "Tribute #" + Math.max(1, tributeNumber) + " · " + cost + (cost == 1 ? " emerald" : " emeralds");
+    /**
+     * {@code "Tribute #3 · 3 emeralds\n🤲 Held by 7 passengers · was 3 views from fading"} — how many
+     * times this photo has been kept alive and what it cost, then how many hands it has passed through
+     * and how close it came to burning out for good.
+     */
+    static String description(int tributeNumber, int cost, int hands, int viewsLeft) {
+        int held = Math.max(1, hands);
+        int left = Math.max(0, viewsLeft - 1);   // the tributer's own view is spent
+        String fading = left == 0 ? "was on its last view"
+                : "was " + left + (left == 1 ? " view" : " views") + " from fading";
+        return "Tribute #" + Math.max(1, tributeNumber) + " · " + cost + (cost == 1 ? " emerald" : " emeralds")
+                + "\n🤲 Held by " + held + (held == 1 ? " passenger" : " passengers") + " · " + fading;
     }
 }
