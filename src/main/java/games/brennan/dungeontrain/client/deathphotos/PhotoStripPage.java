@@ -12,13 +12,12 @@ import java.util.List;
  * <p>The wheel — vertical or horizontal — moves a scroll target; the drawn offset eases toward it.
  * Fade bands at either edge show there is more row off-screen. A click on a thumbnail is reported by
  * {@link #photoAt} so the host can open the fullscreen viewer. Arrow buttons sit at either end of
- * the row while there is more to see that way; {@link #arrowClick} slides it most of a screen.</p>
+ * the row while there is more to see that way; {@link #arrowClick} centres the next photo that way.</p>
  */
 public final class PhotoStripPage {
 
     /** Side room for the arrow buttons, outside the row's viewport. */
     private static final int MARGIN_X = PhotoPainter.BTN + 10;
-    private static final float PAGE_FRACTION = 0.8f;
     private static final int GAP = 8;
     private static final int MIN_HEIGHT = 48;
     private static final int MAX_HEIGHT = 400;
@@ -116,12 +115,18 @@ public final class PhotoStripPage {
         return hoverIndex(mx, my);
     }
 
-    /** A click on an end arrow: slide the row most of a viewport that way. Returns whether one was hit. */
+    /**
+     * A click on an end arrow: centre the photo after (or before) the one nearest the middle now.
+     * Steps from the scroll target, not the eased offset, so quick clicks each advance one photo.
+     * Returns whether an arrow was hit.
+     */
     public boolean arrowClick(double mx, double my) {
         if (layout == null) return false;
         int dir = PhotoPainter.has(prevRect, mx, my) ? -1 : PhotoPainter.has(nextRect, mx, my) ? 1 : 0;
         if (dir == 0) return false;
-        scrollTarget = clamp(scrollTarget + dir * vpW * PAGE_FRACTION, layout.maxScroll(vpW));
+        int current = layout.centredIndex(Math.round(scrollTarget), vpW);
+        int next = Math.max(0, Math.min(layout.xs().length - 1, current + dir));
+        scrollTarget = layout.scrollToCentre(next, vpW);
         return true;
     }
 

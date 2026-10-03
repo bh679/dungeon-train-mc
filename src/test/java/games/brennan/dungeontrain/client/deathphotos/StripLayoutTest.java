@@ -48,6 +48,20 @@ class StripLayoutTest {
     }
 
     @Test
+    @DisplayName("an arrow step centres the next photo, clamped at the row's ends")
+    void centreStepping() {
+        StripLayout l = StripLayout.of(new float[] {2f, 2f, 2f, 2f, 2f}, 100, 10); // 200 wide each, 1040 total
+        int vw = 300;                                  // max scroll 740
+        assertEquals(0, l.centredIndex(0, vw));        // centre at 150 → photo 0 (centre 100)
+        assertEquals(160, l.scrollToCentre(1, vw));    // centre 310 − 150
+        assertEquals(1, l.centredIndex(160, vw));
+        assertEquals(370, l.scrollToCentre(2, vw));    // centre 520 − 150
+        assertEquals(0, l.scrollToCentre(0, vw));      // clamped at the start
+        assertEquals(740, l.scrollToCentre(4, vw));    // centre 940 − 150 = 790 → clamped to 740
+        assertEquals(4, l.centredIndex(740, vw));
+    }
+
+    @Test
     @DisplayName("Exposure ARGB pixels become opaque NativeImage ABGR")
     void argbToAbgr() {
         assertEquals(0xFF332211, CameraDeathPhoto.argbToAbgr(0x80112233));

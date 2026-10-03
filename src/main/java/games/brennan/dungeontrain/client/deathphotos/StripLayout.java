@@ -41,6 +41,24 @@ public record StripLayout(int[] xs, int[] widths, int height, int totalWidth) {
         return Math.max(0, (viewportWidth - totalWidth) / 2);
     }
 
+    /** The thumbnail whose centre is nearest the viewport's centre at {@code scroll} (-1 if empty). */
+    public int centredIndex(int scroll, int viewportWidth) {
+        int mid = scroll + viewportWidth / 2 - centreInset(viewportWidth);
+        int best = -1, bestDist = Integer.MAX_VALUE;
+        for (int i = 0; i < xs.length; i++) {
+            int d = Math.abs(xs[i] + widths[i] / 2 - mid);
+            if (d < bestDist) { best = i; bestDist = d; }
+        }
+        return best;
+    }
+
+    /** The scroll that centres thumbnail {@code index} in the viewport, clamped to the row's ends. */
+    public int scrollToCentre(int index, int viewportWidth) {
+        if (index < 0 || index >= xs.length) return 0;
+        int s = xs[index] + widths[index] / 2 - viewportWidth / 2;
+        return Math.max(0, Math.min(maxScroll(viewportWidth), s));
+    }
+
     /**
      * The thumbnail under viewport-relative {@code localX} at scroll {@code scroll}, or -1 for a gap
      * or past either end. The caller checks the vertical bounds.
