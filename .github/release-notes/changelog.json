@@ -22499,6 +22499,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-submit-keeps-name",
+      "version": "0.1129.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Your translator credit stays as you set it",
+      "summary": "On the Help Translate send screen, the name you want to be credited by, and whether you want credit at all, no longer reset when you resize the window or alt-tab out of fullscreen.",
+      "highlights": [],
+      "pr": 1792,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
