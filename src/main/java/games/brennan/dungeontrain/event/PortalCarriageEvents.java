@@ -648,6 +648,7 @@ public final class PortalCarriageEvents {
         EVICTED.clear();
         OVERLAP_WARNED_AT.clear();
         PortalRoomMemory.clearSession();
+        games.brennan.dungeontrain.portal.PortalCorridorResync.clear();
         // Each pairing holds its carriage's plot; a pair key names a different carriage next world.
         games.brennan.dungeontrain.portal.PortalPairIndex.clear();
         // The author each locked room settled on, and the catalogues behind them. Keyed by pair key
@@ -1855,8 +1856,14 @@ public final class PortalCarriageEvents {
         // Publish for PortalEditMirror, which needs to answer "is this block in a portal corridor?"
         // on the hot path of every sub-level block change and cannot re-derive train geometry there —
         // and for PortalPuppetAttack, which needs the frames to measure a hit through the mirror.
-        publishPairing(carriageIndex, ship, dims, built.kind(), originX, originY, originZ,
-            twinOrigin, frames);
+        PortalPairIndex.Entry published = publishPairing(carriageIndex, ship, dims, built.kind(),
+            originX, originY, originZ, twinOrigin, frames);
+        // A twin re-stamped from its template has lost whatever a player changed in this corridor;
+        // the carriage kept it. Copied across once per stamp, before anybody can cross into it.
+        Long stampedAt = STAMPED_AT.get(pairKey);
+        if (published != null && stampedAt != null) {
+            games.brennan.dungeontrain.portal.PortalCorridorResync.syncIfRestamped(level, published, stampedAt);
+        }
 
         swapPlayers(level, players, frames, carriageIndex, pairKey, built, dims, role,
             PortalRoomTiling.Tile.BASE, /*copyOnly*/ false);
@@ -2718,23 +2725,24 @@ public final class PortalCarriageEvents {
      * conversion {@code CarriageBlockSnapshot} and {@code SoulCampfireHealEvents} use to reach
      * carriage blocks.</p>
      */
-    private static void publishPairing(int carriageIndex, ManagedShip ship, CarriageDims dims,
-                                       PortalCorridorKind kind,
-                                       double originX, double originY, double originZ,
-                                       BlockPos twinOrigin, PortalFrames frames) {
-        if (!(ship instanceof SableManagedShip sable)) return;
+    private static PortalPairIndex.Entry publishPairing(int carriageIndex, ManagedShip ship,
+                                                        CarriageDims dims, PortalCorridorKind kind,
+                                                        double originX, double originY, double originZ,
+                                                        BlockPos twinOrigin, PortalFrames frames) {
+        if (!(ship instanceof SableManagedShip sable)) return null;
 
         ServerSubLevel subLevel = sable.subLevel();
-        if (subLevel == null) return;
+        if (subLevel == null) return null;
         LevelPlot plot = subLevel.getPlot();
-        if (plot == null) return;
+        if (plot == null) return null;
 
         // The world origin, not a precomputed plot origin: the entry converts each point through the
         // ship's own transform, so nothing here has to assume the plot's axes run the same way as the
         // world's — an assumption that reflected mirrored edits onto the opposite side of the corridor.
-        PortalPairIndex.publish(carriageIndex,
-            new PortalPairIndex.Entry(carriageIndex, plot, ship,
-                new Vec3(originX, originY, originZ), twinOrigin, dims, kind, frames));
+        PortalPairIndex.Entry entry = new PortalPairIndex.Entry(carriageIndex, plot, ship,
+            new Vec3(originX, originY, originZ), twinOrigin, dims, kind, frames);
+        PortalPairIndex.publish(carriageIndex, entry);
+        return entry;
     }
 
     /**
