@@ -22702,6 +22702,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "loading-screen-stories-10-11",
+      "version": "0.1137.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "ui"
+      ],
+      "title": "Two new loading-screen stories",
+      "summary": "Two more verses join the loading screen's rotating story. One asks why the train looks the way it does, and what you see when you look at it. The other wonders who really built the train.",
+      "highlights": [
+        "New stories: \"Why does the train look that way?\" and \"Some ask of how the train was built?\"",
+        "Both are translated into every supported language"
+      ],
+      "pr": 1802,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
