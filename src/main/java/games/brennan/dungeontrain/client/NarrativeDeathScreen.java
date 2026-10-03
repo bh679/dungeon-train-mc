@@ -2764,10 +2764,10 @@ public final class NarrativeDeathScreen extends Screen {
         y += 14;
         drawTrain(g, left, w, y, currentPage);
         y += 46;
-        y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.gallery.title").getString(), cx, w, y);
-        drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.photos.hint"), cx, y + 2, KICKER);
-        y += this.font.lineHeight + 6;
-        return photoStrip.draw(g, this.font, photos(), this.width, y, this.height - 34, mouseX, mouseY, settled());
+        y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.photos.title").getString(), cx, w, y);
+        drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.photos.subtitle"), cx, y + 2, KICKER);
+        y += this.font.lineHeight + 4;
+        return photoStrip.draw(g, this.font, photos(), this.width, y, this.height - 30, mouseX, mouseY, settled());
     }
 
     /**

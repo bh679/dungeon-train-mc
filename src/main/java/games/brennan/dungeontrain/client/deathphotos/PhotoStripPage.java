@@ -18,7 +18,7 @@ public final class PhotoStripPage {
     private static final int MARGIN_X = 16;
     private static final int GAP = 8;
     private static final int MIN_HEIGHT = 48;
-    private static final int MAX_HEIGHT = 240;
+    private static final int MAX_HEIGHT = 400;
     private static final int SCROLL_STEP = 64;
     private static final int FADE_W = 24;
     private static final float EASE = 0.35f;
@@ -45,7 +45,8 @@ public final class PhotoStripPage {
     public int draw(GuiGraphics g, Font font, List<DeathPhoto> photos, int screenW, int top, int bottom,
                     int mouseX, int mouseY, boolean settled) {
         int avail = Math.max(0, bottom - top);
-        int h = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, Math.min(avail - 16, Math.round(screenW * 0.3f))));
+        // As tall as the space allows: the photos are the page.
+        int h = Math.max(MIN_HEIGHT, Math.min(MAX_HEIGHT, avail - 4));
         vpX = MARGIN_X;
         vpW = Math.max(1, screenW - 2 * MARGIN_X);
         vpH = h;
