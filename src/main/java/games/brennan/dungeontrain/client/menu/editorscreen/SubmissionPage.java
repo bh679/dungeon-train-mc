@@ -192,7 +192,11 @@ final class SubmissionPage {
         boolean hov = b.contains(mouseX, mouseY);
         g.fill(b.x(), b.y(), b.right(), b.bottom(), hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
         if (ring != 0) g.renderOutline(b.x(), b.y(), b.w(), b.h(), ring);
-        String shown = font.plainSubstrByWidth(label, b.w() - 4);
+        // A narrow sheet gets the word without its glyph before it gets a cut word: "Feedback" reads,
+        // "✎ Feedba" does not.
+        String fit = label;
+        if (font.width(fit) > b.w() - 4 && fit.indexOf(' ') > 0) fit = fit.substring(fit.indexOf(' ') + 1).strip();
+        String shown = font.plainSubstrByWidth(fit, b.w() - 4);
         g.drawString(font, shown, b.x() + (b.w() - Math.min(font.width(shown), b.w() - 4)) / 2,
                 b.y() + (BUTTON_H - font.lineHeight) / 2 + 1, hov ? MenuRowPainter.TEXT_ON_HOVER : TEXT, false);
     }
