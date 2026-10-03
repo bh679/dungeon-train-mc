@@ -220,7 +220,7 @@ class SharedCarriageRegistryTest {
     @Test
     void lootingARelayCarriageDrainsItWithoutABlockEdit() {
         SharedCarriageRegistry.Instance inst = relayCarriage();
-        inst.parkContainer(CHEST, 10L, 9);
+        inst.parkContainer(CHEST, 10L);
 
         // Emptied the chest, never touched a block — the relay copy must still lose the items.
         assertEquals(1, inst.releaseParked(pos -> holding(99L, 0)));
@@ -229,11 +229,11 @@ class SharedCarriageRegistryTest {
     }
 
     @Test
-    void puttingSomethingInAndTakingItBackOutSendsNothing() {
+    void rearrangingAndPuttingBackSendsNothing() {
         SharedCarriageRegistry.Instance inst = relayCarriage();
-        inst.parkContainer(CHEST, 10L, 3); // baseline before the gift
-        inst.parkContainer(CHEST, 11L, 4); // reopened after it — must not move the baseline
-        // Took the gift back out: exactly as it was, so the relay copy needs nothing.
+        inst.parkContainer(CHEST, 10L); // baseline before the first change
+        inst.parkContainer(CHEST, 11L); // reopened after it — must not move the baseline
+        // Put everything back exactly as it was, so the relay copy needs nothing.
         assertEquals(0, inst.releaseParked(pos -> holding(10L, 3)));
         assertFalse(inst.hasPending());
         assertFalse(inst.hasParked());
@@ -242,7 +242,7 @@ class SharedCarriageRegistryTest {
     @Test
     void lootingAFreshCarriageStaysLocalUntilItIsBlockEdited() {
         SharedCarriageRegistry.Instance inst = freshCarriage();
-        inst.parkContainer(CHEST, 10L, 9);
+        inst.parkContainer(CHEST, 10L);
 
         assertEquals(0, inst.releaseParked(pos -> holding(99L, 2))); // looting a stock template publishes nothing
         assertFalse(inst.hasPending());
@@ -255,18 +255,14 @@ class SharedCarriageRegistryTest {
     }
 
     @Test
-    void aGiftSharesAFreshCarriage() {
-        SharedCarriageRegistry.Instance inst = freshCarriage();
-        BlockPos looted = new BlockPos(2, 1, 1);
-        inst.parkContainer(CHEST, 10L, 0);
-        inst.parkContainer(looted, 20L, 5);
-
-        // One container gained items — that alone sends the carriage, withdrawals included.
-        java.util.Map<BlockPos, StorageContents.Snapshot> live = new java.util.HashMap<>();
-        live.put(CHEST, holding(11L, 1));
-        live.put(looted, holding(21L, 0));
-        assertEquals(2, inst.releaseParked(live::get));
-        assertEquals(Set.of(CHEST, looted), inst.drainPending());
+    void aGiftUploadedAtCloseResetsTheBaseline() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L);      // looted earlier: baseline is the pre-loot contents
+        inst.unparkContainer(CHEST);         // then a gift uploaded the chest as it stands
+        assertFalse(inst.hasParked());
+        inst.parkContainer(CHEST, 20L);      // taking the gift back parks against the uploaded contents
+        assertEquals(1, inst.releaseParked(pos -> holding(10L, 0)));
+        assertEquals(Set.of(CHEST), inst.drainPending());
     }
 
     @Test
@@ -274,9 +270,9 @@ class SharedCarriageRegistryTest {
         SharedCarriageRegistry.Instance inst = relayCarriage();
         BlockPos putBack = new BlockPos(2, 1, 1);
         BlockPos broken = new BlockPos(3, 1, 1);
-        inst.parkContainer(CHEST, 10L, 5);
-        inst.parkContainer(putBack, 20L, 5);
-        inst.parkContainer(broken, 30L, 5);
+        inst.parkContainer(CHEST, 10L);
+        inst.parkContainer(putBack, 20L);
+        inst.parkContainer(broken, 30L);
 
         java.util.Map<BlockPos, StorageContents.Snapshot> live = new java.util.HashMap<>();
         live.put(CHEST, holding(11L, 4));   // contents differ from the baseline
@@ -290,7 +286,7 @@ class SharedCarriageRegistryTest {
     @Test
     void cullingDropsParkedStorage() {
         SharedCarriageRegistry.Instance inst = relayCarriage();
-        inst.parkContainer(CHEST, 10L, 1);
+        inst.parkContainer(CHEST, 10L);
         inst.markCulled();
         assertFalse(inst.hasParked());
     }

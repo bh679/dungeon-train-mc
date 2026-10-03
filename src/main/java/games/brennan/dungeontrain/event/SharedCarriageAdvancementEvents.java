@@ -20,6 +20,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,9 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>{@code drift_gift_left} — left an item in a container aboard one, for whoever leases it next.</li>
  * </ul>
  *
- * <p>The container close hook also feeds storage edits to the upload (see {@link #closeAction}): every
- * change — gift, withdrawal or rearrangement — is flagged locally and travels in one batch when the
- * player leaves the carriage or the next block edit on it is flushed.</p>
+ * <p>The container close hook also feeds storage edits to the upload (see {@link #closeAction}): a gift
+ * is queued at once; any other change is flagged locally and travels in one batch when the player leaves
+ * the carriage or the next block edit (or gift) on it is flushed.</p>
  *
  * <p>(The fourth, {@code drift_own_return}, fires from {@link SharedCarriageEnterEvents} — it is about
  * arriving, not editing.)</p>
@@ -78,7 +79,7 @@ public final class SharedCarriageAdvancementEvents {
                                  int itemCount, long contentsSig, double value) {}
 
     /** What the close hook does with a storage edit — see {@link #closeAction}. */
-    enum CloseAction { PARK, NONE }
+    enum CloseAction { SEND_NOW, PARK, NONE }
 
     private SharedCarriageAdvancementEvents() {}
 
@@ -162,13 +163,21 @@ public final class SharedCarriageAdvancementEvents {
         DriftGenerosity.onClose(player, inst, opened.levelKey(), opened.pos(), opened.value(), after.value());
         CloseAction action = closeAction(opened.itemCount(), after.itemCount(), opened.contentsSig(), after.sig());
         if (action == CloseAction.NONE) return;
-        // Every half shares the combined signature and count, so each is parked against the same baseline.
-        for (BlockPos cell : StorageContents.cells(level, opened.pos())) {
-            inst.parkContainer(cell, opened.contentsSig(), opened.itemCount());
+        List<BlockPos> cells = StorageContents.cells(level, opened.pos());
+        if (action == CloseAction.PARK) {
+            // Every half shares the combined signature, so each is parked against the same baseline.
+            for (BlockPos cell : cells) inst.parkContainer(cell, opened.contentsSig());
+            LOGGER.debug("[DungeonTrain] storage changed in drifting carriage pIdx={} at {} by {} (parked until they leave or a block edit flushes).",
+                    inst.pIdx, opened.pos(), player.getGameProfile().getName());
+            return;
         }
-        LOGGER.debug("[DungeonTrain] storage changed in drifting carriage pIdx={} at {} by {} (parked until they leave or a block edit flushes).",
+        // Uploading these cells now: a later withdrawal must be measured from what was just sent.
+        for (BlockPos cell : cells) {
+            inst.unparkContainer(cell);
+            inst.enqueue(cell);
+        }
+        LOGGER.debug("[DungeonTrain] gift left in drifting carriage pIdx={} at {} by {} (queued for upload).",
                 inst.pIdx, opened.pos(), player.getGameProfile().getName());
-        if (!isGift(opened.itemCount(), after.itemCount())) return;
         cuePhoto(player, "left a gift in a drifting carriage");
         if (SharedCarriageGate.canContribute(player)) trigger(player, "drift_gift_left");
     }
@@ -185,7 +194,10 @@ public final class SharedCarriageAdvancementEvents {
      * What a storage edit between open and close leads to.
      *
      * <ul>
-     *   <li>{@link CloseAction#PARK} — the contents differ (giving, taking, swapping, rearranging):
+     *   <li>{@link CloseAction#SEND_NOW} — a gift ({@link #isGift}): queued for upload at once; it is what
+     *       shares a fresh carriage in the first place. Taking it back out again is a PARK like any other
+     *       withdrawal, so the relay copy is drained again when the player leaves.</li>
+     *   <li>{@link CloseAction#PARK} — any other difference (taking, swapping, rearranging):
      *       flagged locally. {@code SharedCarriageEnterEvents} releases it when the player leaves, and
      *       {@code SharedCarriageEvents} with the next block-edit flush, so a visit costs at most one
      *       relay delta. Taking items always travels on a carriage already on the relay — the next world
@@ -195,6 +207,7 @@ public final class SharedCarriageAdvancementEvents {
      */
     static CloseAction closeAction(Integer beforeCount, int afterCount, long beforeSig, long afterSig) {
         if (beforeCount == null) return CloseAction.NONE;
+        if (isGift(beforeCount, afterCount)) return CloseAction.SEND_NOW;
         return beforeSig != afterSig ? CloseAction.PARK : CloseAction.NONE;
     }
 

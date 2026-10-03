@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The "left something behind" rule for {@code drift_gift_left}: a drifting-carriage container counts
  * as a gift only when it holds MORE at close than it did at open.
  *
- * <p>Plus {@code closeAction}: every change, gift included, is parked locally and travels in one batch
- * when the player leaves or the next block edit flushes — see {@code SharedCarriageRegistryTest}.</p>
+ * <p>Plus {@code closeAction}: a gift is sent at once; any other change is parked locally and travels in
+ * one batch when the player leaves or the next upload flushes — see {@code SharedCarriageRegistryTest}.</p>
  */
 class DriftingCarriageGiftTest {
 
@@ -51,8 +51,8 @@ class DriftingCarriageGiftTest {
     private static final long SIG_B = 222L;
 
     @Test
-    void aGiftIsParkedLikeAnyOtherChange() {
-        assertEquals(CloseAction.PARK, SharedCarriageAdvancementEvents.closeAction(0, 1, SIG_A, SIG_B));
+    void aGiftIsSentAtOnce() {
+        assertEquals(CloseAction.SEND_NOW, SharedCarriageAdvancementEvents.closeAction(0, 1, SIG_A, SIG_B));
     }
 
     @Test
