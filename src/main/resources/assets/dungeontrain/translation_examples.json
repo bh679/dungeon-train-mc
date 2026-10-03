@@ -830,6 +830,46 @@
       ]
     }
   },
+  "gui.dungeontrain.photo_tribute.viewer.st": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "21",
+        "31",
+        "101"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.nd": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "2",
+        "22",
+        "32"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.rd": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "3",
+        "23",
+        "33"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.th": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "4",
+        "11",
+        "15"
+      ]
+    }
+  },
   "gui.dungeontrain.photo_tribute.views_left": {
     "1": {
       "label": "how many more views the photo has before it is gone",

@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.DisposableCamera;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.compat.photo.TributePayment;
+import games.brennan.dungeontrain.compat.photo.ViewOrdinal;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PhotoTributePacket;
 import io.github.mortuusars.exposure.client.gui.screen.PhotographScreen;
@@ -11,7 +12,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
@@ -49,7 +51,7 @@ public final class PhotoTributeButtons {
     /** The viewer the buttons were last added to, and those buttons. Render thread only. */
     private static Screen shownOn;
     private static List<Button> shown = List.of();
-    private static StringWidget viewsShown;
+    private static ViewCounter viewsShown;
 
     private PhotoTributeButtons() {}
 
@@ -86,14 +88,14 @@ public final class PhotoTributeButtons {
         int emeralds = TributePayment.worth(player.getInventory());
         boolean canAfford = TributePayment.canPay(player.getInventory(), cost);
         int viewsLeft = SharedPhotos.viewsLeft(photo);
-        Component viewsLabel = Component.literal(viewsLeft + "/" + SharedPhotos.VIEWS_MAX);
-        int viewsWidth = font.width(viewsLabel) + 2 * PADDING;
+        int seen = SharedPhotos.viewsSeen(photo);
+        ViewCounter views = new ViewCounter(font, seen, seen + viewsLeft);
+        int viewsWidth = views.getWidth();
         int tributeWidth = TributeButton.widthFor(font, cost);
         int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - closeWidth) / 2;
 
-        // Plain text, not a button: nothing happens when it is clicked, so it must not look clickable.
-        StringWidget views = new StringWidget(left, y, viewsWidth, HEIGHT, viewsLabel, font);
-        views.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.views_left", viewsLeft)));
+        views.setPosition(left, y);
+        views.setTooltip(Tooltip.create(viewerLine(seen + 1).append("\n").append(remainingLine(viewsLeft - 1))));
         left += viewsWidth + GAP;
         TributeButton tribute = new TributeButton(left, y, tributeWidth, cost, canAfford, button -> {
             DungeonTrainNet.sendToServer(new PhotoTributePacket());
@@ -137,6 +139,71 @@ public final class PhotoTributeButtons {
         shownOn = null;
         shown = List.of();
         viewsShown = null;
+    }
+
+    /** "You're the First." / "You're the 4th." — where this viewer comes in the photo's life. */
+    private static MutableComponent viewerLine(int place) {
+        return place == 1
+            ? Component.translatable("gui.dungeontrain.photo_tribute.viewer.first")
+            : Component.translatable("gui.dungeontrain.photo_tribute.viewer." + ViewOrdinal.ending(place), place);
+    }
+
+    /** How many people can still see the photo after this viewer. */
+    private static MutableComponent remainingLine(int after) {
+        if (after <= 0) return Component.translatable("gui.dungeontrain.photo_tribute.views_left.none");
+        return after == 1
+            ? Component.translatable("gui.dungeontrain.photo_tribute.views_left.one")
+            : Component.translatable("gui.dungeontrain.photo_tribute.views_left", after);
+    }
+
+    /**
+     * {@code seen / total} as plain text: how many people have opened the photo, over how many
+     * will ever get to. The count is full size; {@code / total} is smaller, at its bottom right.
+     */
+    private static final class ViewCounter extends AbstractWidget {
+
+        private static final float SMALL = 0.6f;
+        private static final int TEXT_COLOUR = 0xFFFFFF;
+        private static final int SMALL_COLOUR = 0xC8C8C8;
+
+        private final Font font;
+        private final String seen;
+        private final String total;
+
+        ViewCounter(Font font, int seen, int total) {
+            super(0, 0, widthFor(font, seen, total), HEIGHT, Component.literal(seen + " / " + total));
+            this.font = font;
+            this.seen = String.valueOf(seen);
+            this.total = "/ " + total;
+        }
+
+        private static int widthFor(Font font, int seen, int total) {
+            return PADDING + font.width(String.valueOf(seen)) + 2 + Math.round(font.width("/ " + total) * SMALL) + PADDING;
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            int textY = getY() + (height - font.lineHeight) / 2 + 1;
+            int x = getX() + PADDING;
+            graphics.drawString(font, seen, x, textY, TEXT_COLOUR);
+            float smallX = x + font.width(seen) + 2;
+            float smallY = textY + font.lineHeight - font.lineHeight * SMALL;
+            graphics.pose().pushPose();
+            graphics.pose().translate(smallX, smallY, 0);
+            graphics.pose().scale(SMALL, SMALL, 1);
+            graphics.drawString(font, total, 0, 0, SMALL_COLOUR);
+            graphics.pose().popPose();
+        }
+
+        @Override
+        protected void updateWidgetNarration(NarrationElementOutput output) {
+            defaultButtonNarrationText(output);
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            return false; // text, not a control
+        }
     }
 
     /** {@code <cost> <emerald>}: the cost is blue when the player carries enough emeralds, red when not. */
