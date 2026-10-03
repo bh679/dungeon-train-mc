@@ -51,6 +51,15 @@ public final class MilestonePostBuffer {
                 description, webhookOverride, Util.getMillis() + TIMEOUT_MS));
     }
 
+    /** Swap the title of a still-pending announcement; false when nothing is pending for this earn. */
+    public static boolean retitle(ServerPlayer player, ResourceLocation advancementId, String title) {
+        String k = key(player.getUUID(), advancementId);
+        Pending p = PENDING.get(k);
+        if (p == null) return false;
+        return PENDING.replace(k, p, new Pending(p.player(), p.advancementId(), title, p.description(),
+                p.webhookOverride(), p.deadlineMs()));
+    }
+
     /** The client delivered its screenshot (possibly empty) — post now. */
     public static void onPhoto(ServerPlayer player, ResourceLocation advancementId, byte[] image) {
         Pending p = PENDING.remove(key(player.getUUID(), advancementId));
