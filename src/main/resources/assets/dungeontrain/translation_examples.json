@@ -14856,5 +14856,50 @@
         "1 release"
       ]
     }
+  },
+  "gui.dungeontrain.builder.profile.review.resubmit_note": {
+    "1": {
+      "label": "the version rule the reviewer set, e.g. a version followed by 'or above'",
+      "examples": [
+        "0.1130.0 or above",
+        "1.2.0 exactly"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.review.rule_gte": {
+    "1": {
+      "label": "a Dungeon Train version number",
+      "examples": [
+        "0.1130.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.review.rule_exact": {
+    "1": {
+      "label": "a Dungeon Train version number",
+      "examples": [
+        "0.1130.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.review.rule_lte": {
+    "1": {
+      "label": "a Dungeon Train version number",
+      "examples": [
+        "0.1130.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.needs_version": {
+    "1": {
+      "label": "the version rule the reviewer set, e.g. a version followed by 'or above'",
+      "examples": [
+        "0.1130.0 or above",
+        "1.2.0 exactly"
+      ]
+    }
   }
 }

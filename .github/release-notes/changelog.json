@@ -22607,8 +22607,69 @@
       "released_at": null
     },
     {
-      "id": "player-heads-face-into-rooms",
+      "id": "tribute-photo-views-worn-paper",
+      "version": "0.1132.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tributed photos show how far they travelled",
+      "summary": "A tributed photo in the passenger log now shows how many passengers have held it and how close it came to fading, printed on the same worn, torn paper it had when you paid. Only your biggest tribute yet gets posted, so to share a photo with everyone, pay more than you ever have before.",
+      "highlights": [
+        "The passenger log shows how many hands a tributed photo has passed through",
+        "The posted picture keeps its worn paper and torn edges",
+        "Only a tribute bigger than any you've paid before is posted"
+      ],
+      "pr": 1798,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-build-review-verdicts",
       "version": "0.1133.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Your submitted builds now come back with a verdict and a note",
+      "summary": "When a build you submitted for review has been looked at, My Builds now tells you what was decided \u2014 accepted, feedback, not accepted, or 'resubmit from a newer version' \u2014 with the reviewer's comment right beside it. Accepted builds are announced in Discord's build-submissions channel.",
+      "highlights": [
+        "Four outcomes, each with a note from the reviewer: accepted, feedback, resubmit from a given Dungeon Train version, or not accepted. The tile's border and icon in My Builds say which, and the comment sits under the build.",
+        "A build sent back for a version waits until you submit it again from that version \u2014 Submit for Review tells you which one it needs.",
+        "If you have a chat thread with the dev, the verdict and comment also arrive in your in-game inbox."
+      ],
+      "pr": 1796,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "drifting-carriage-fix",
+      "version": "0.1134.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Drifting carriage fix",
+      "summary": "Fixed an issue with drifting carriages.",
+      "highlights": [],
+      "pr": 1799,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "player-heads-face-into-rooms",
+      "version": "0.1135.0",
       "type": "feat",
       "tags": [
         "feature",

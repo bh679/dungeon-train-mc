@@ -26,6 +26,7 @@ import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -90,6 +91,8 @@ public final class BuilderProfileScreen extends Screen {
     private static final int BACK_BUTTON_WIDTH = 200;
     private static final int BACK_BUTTON_BOTTOM_MARGIN = 28;
     private static final int STATUS_GAP = 14;
+    /** Rows the status line may take; past that it is the comment that is too long, not the screen. */
+    private static final int STATUS_MAX_LINES = 2;
     private static final int SCROLL_STEP = 24;
     private static final int NOTE_COLOUR = 0xA0A0A0;
     private static final int ACTION_GAP = 4;
@@ -138,6 +141,12 @@ public final class BuilderProfileScreen extends Screen {
             new BuilderProfileFilterButton.Option(BuilderReviewState.ACCEPTED,
                     "gui.dungeontrain.builder.profile.status.accepted",
                     BuilderReviewState.BORDER_ACCEPTED),
+            new BuilderProfileFilterButton.Option(BuilderReviewState.FEEDBACK,
+                    "gui.dungeontrain.builder.profile.status.feedback",
+                    BuilderReviewState.BORDER_FEEDBACK),
+            new BuilderProfileFilterButton.Option(BuilderReviewState.RESUBMIT,
+                    "gui.dungeontrain.builder.profile.status.resubmit",
+                    BuilderReviewState.BORDER_RESUBMIT),
             new BuilderProfileFilterButton.Option(BuilderReviewState.DECLINED,
                     "gui.dungeontrain.builder.profile.status.declined",
                     BuilderReviewState.BORDER_DECLINED));
@@ -191,6 +200,8 @@ public final class BuilderProfileScreen extends Screen {
     private BuilderTemplateGridLayout grid;
     private int scrollY;
     private int selected = -1;
+    /** Where the status line starts, as the last {@link #rebuild()} laid it out. */
+    private int statusTop;
     private Button actionButton;
     private Button downloadButton;
     private Button deleteButton;
@@ -421,7 +432,14 @@ public final class BuilderProfileScreen extends Screen {
                 controlY, CONTROL_ROW_H, this.width, this::rebuild));
 
         int gridTop = controlY + CONTROL_ROW_H + CONTROL_GAP;
-        int gridBottom = this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP - 24;
+        // The status line normally takes one row between the action buttons and Back. A verdict with
+        // the reviewer's comment after it can need two, and the grid gives up the extra row rather
+        // than the line sitting on a button — the comment is the one thing the author came to read.
+        Component noteNow = statusNote();
+        int noteLines = noteNow == null ? 1 : Math.min(STATUS_MAX_LINES, this.font.split(noteNow, this.width - 32).size());
+        int gridBottom = this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP - 24
+                - (noteLines - 1) * this.font.lineHeight;
+        this.statusTop = gridBottom + 4 + 20 + 2;
         this.grid = BuilderTemplateGridLayout.of(this.width, gridTop, gridBottom, shown.size(),
                 BuilderTilesPerRowButton.effectiveColumns(this.width));
         this.scrollY = grid.clampScroll(scrollY);
@@ -925,8 +943,17 @@ public final class BuilderProfileScreen extends Screen {
 
         Component note = statusNote();
         if (note != null) {
-            g.drawCenteredString(this.font, note, this.width / 2,
-                    this.height - BACK_BUTTON_BOTTOM_MARGIN - STATUS_GAP + 2, NOTE_COLOUR);
+            // Wrapped and bottom-anchored: a verdict with the reviewer's comment after it is the one
+            // line here that can run past the screen, and a cut sentence is the reviewer's point lost.
+            // Two lines at most — past that it is the comment that is too long, not the screen.
+            List<net.minecraft.util.FormattedCharSequence> rows = this.font.split(note, this.width - 32);
+            int shown = Math.min(rows.size(), STATUS_MAX_LINES);
+            // From the top the layout left for it (rebuild() lifted the action row for a second line).
+            for (int i = 0; i < shown; i++) {
+                net.minecraft.util.FormattedCharSequence row = rows.get(i);
+                g.drawString(this.font, row, this.width / 2 - this.font.width(row) / 2,
+                        statusTop + i * this.font.lineHeight, NOTE_COLOUR, true);
+            }
         }
     }
 
@@ -1087,8 +1114,14 @@ public final class BuilderProfileScreen extends Screen {
         }
         // A declined build is a decision about this build and outranks everything below: fixing its
         // stage would not put it on the train, and saying "waiting" of it would be untrue.
-        if (BuilderReviewState.DECLINED.equals(BuilderReviewState.of(entry.review()))) {
-            return Component.translatable("gui.dungeontrain.builder.profile.review.declined_note");
+        String verdict = BuilderReviewState.of(entry.review());
+        if (BuilderReviewState.DECLINED.equals(verdict) || BuilderReviewState.FEEDBACK.equals(verdict)) {
+            return withComment(Component.translatable(BuilderReviewState.noteKeyFor(verdict)), entry);
+        }
+        if (BuilderReviewState.RESUBMIT.equals(verdict)) {
+            // The rule is the message: which Dungeon Train to come back on.
+            return withComment(Component.translatable(BuilderReviewState.noteKeyFor(verdict),
+                    BuilderReviewState.ruleText(entry.reviewVersion(), entry.reviewVersionOp()).getString()), entry);
         }
         // A carriage is only placed into a stage it belongs to, and a build authored without one
         // belongs to none — so it can be submitted and still never appear anywhere. Said here because
@@ -1100,7 +1133,22 @@ public final class BuilderProfileScreen extends Screen {
         // build with no stage has something its author can still fix while it waits.
         String reviewNote = BuilderReviewState.noteKeyFor(entry.review());
         if (reviewNote != null) return Component.translatable(reviewNote);
+        // An accepted build with a word from the reviewer — the one case a green tile has more to say.
+        if (BuilderReviewState.ACCEPTED.equals(verdict) && !entry.reviewComment().isBlank()) {
+            return withComment(Component.translatable("gui.dungeontrain.builder.profile.review.accepted_note"), entry);
+        }
         return null;
+    }
+
+    /**
+     * The verdict's line with the reviewer's comment after it, quoted — the author's one chance to read
+     * why, since the comment travels nowhere else they look. Just the line when nothing was said.
+     */
+    static Component withComment(Component line, BuilderProfilePacket.Entry entry) {
+        String comment = entry.reviewComment().strip();
+        if (comment.isEmpty()) return line;
+        return line.copy().append(" \u201C").append(Component.literal(comment).withStyle(ChatFormatting.ITALIC))
+                .append("\u201D");
     }
 
     private float frameSeconds() {
