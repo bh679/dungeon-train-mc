@@ -42,8 +42,8 @@ public record BuilderReviewPacket(int relayId, String ownerUuid, String ownerNam
         // The resubmit rule rides only with a resubmit; every other verdict has none.
         version = version == null || !BuilderReviewState.RESUBMIT.equals(review) ? "" : version.strip();
         versionOp = version.isEmpty() ? "" : BuilderReviewState.opOf(versionOp);
-        // A picture only rides with an accept — it is for the announcement, and only an accept makes one.
-        render = render == null || !BuilderReviewState.ACCEPTED.equals(review) ? NO_RENDER : render;
+        // A picture rides only with a verdict the channel hears about — it is for the announcement.
+        render = render == null || !BuildReviewReporter.announces(review) ? NO_RENDER : render;
     }
 
     public static final Type<BuilderReviewPacket> TYPE =
@@ -86,9 +86,10 @@ public record BuilderReviewPacket(int relayId, String ownerUuid, String ownerNam
                 .thenAccept(outcome -> player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;
                     player.sendSystemMessage(outcome.message());
-                    if (outcome.ok() && BuilderReviewState.ACCEPTED.equals(packet.review)) {
+                    if (outcome.ok() && BuildReviewReporter.announces(packet.review)) {
                         BuildReviewReporter.postSafely(player, packet.relayId, packet.ownerName, packet.kind,
-                                packet.subKind, packet.buildName, packet.comment, packet.render);
+                                packet.subKind, packet.buildName, packet.comment, packet.render,
+                                packet.review, packet.version, packet.versionOp);
                     }
                 }));
         });
