@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.DisposableCamera;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PhotoTributePacket;
@@ -23,12 +24,14 @@ import java.util.List;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
+import org.lwjgl.glfw.GLFW;
 
 /**
  * Adds two buttons under a found player photo while it is open in Exposure's viewer:
  * how many views it has left, the Tribute cost beside an emerald — pay it to keep the photo
- * travelling — and {@code X} to close. Either way the photo burns afterwards. Each button is only
- * as wide as what is drawn on it.
+ * travelling — and {@code X} to close. Either way the photo burns afterwards. A player's own fresh
+ * print, which burns after viewing too, gets just the {@code X}. Space closes either. Each button
+ * is only as wide as what is drawn on it.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoTributeButtons {
@@ -60,21 +63,32 @@ public final class PhotoTributeButtons {
         if (!(event.getScreen() instanceof PhotographScreen screen)) return;
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
-        ItemStack photo = player == null ? ItemStack.EMPTY : heldFoundPhoto(player);
-        if (photo.isEmpty()) return;
-
+        if (player == null) return;
+        ItemStack photo = heldFoundPhoto(player);
         Font font = minecraft.font;
+        Component closeLabel = Component.translatable("gui.dungeontrain.photo_tribute.close");
+        int closeWidth = font.width(CLOSE_MARK) + 2 * PADDING;
+        int y = screen.height - HEIGHT - BOTTOM_MARGIN;
+        if (photo.isEmpty()) {
+            if (!DisposableCamera.holdsBurnAfterViewing(player.getMainHandItem())
+                && !DisposableCamera.holdsBurnAfterViewing(player.getOffhandItem())) return;
+            Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
+                .bounds((screen.width - closeWidth) / 2, y, closeWidth, HEIGHT)
+                .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
+            event.addListener(close);
+            shownOn = screen;
+            shown = List.of(close);
+            return;
+        }
+
         int cost = SharedPhotos.tributeCost(photo);
         int emeralds = player.getInventory().countItem(Items.EMERALD);
         boolean canAfford = emeralds >= cost;
-        Component closeLabel = Component.translatable("gui.dungeontrain.photo_tribute.close");
         int viewsLeft = SharedPhotos.viewsLeft(photo);
         Component viewsLabel = Component.literal(viewsLeft + "/" + SharedPhotos.VIEWS_MAX);
         int viewsWidth = font.width(viewsLabel) + 2 * PADDING;
         int tributeWidth = TributeButton.widthFor(font, cost);
-        int closeWidth = font.width(CLOSE_MARK) + 2 * PADDING;
         int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - closeWidth) / 2;
-        int y = screen.height - HEIGHT - BOTTOM_MARGIN;
 
         // Plain text, not a button: nothing happens when it is clicked, so it must not look clickable.
         StringWidget views = new StringWidget(left, y, viewsWidth, HEIGHT, viewsLabel, font);
@@ -106,6 +120,14 @@ public final class PhotoTributeButtons {
         for (Button button : shown) {
             button.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
         }
+    }
+
+    /** Space closes the photo, like the X. */
+    @SubscribeEvent
+    public static void onKeyPressed(ScreenEvent.KeyPressed.Pre event) {
+        if (event.getScreen() != shownOn || event.getKeyCode() != GLFW.GLFW_KEY_SPACE) return;
+        event.getScreen().onClose();
+        event.setCanceled(true);
     }
 
     @SubscribeEvent
