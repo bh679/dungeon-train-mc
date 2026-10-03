@@ -29,15 +29,17 @@ final class BuilderReviewPacketTest {
     }
 
     @Test
-    @DisplayName("feedback and a decline drop the picture before it is ever written")
-    void noRenderUnlessAccepting() {
-        for (String review : new String[] {BuilderReviewState.FEEDBACK, BuilderReviewState.DECLINED}) {
-            BuilderReviewPacket p = new BuilderReviewPacket(41, OWNER, "Ada", "brick_cabin", "carriage", "",
-                    true, review, "Needs a door.", new byte[] {9, 9}, "0.1130.0", "gte");
-            assertEquals("", p.version(), "a rule rides only with a resubmit");
-            assertEquals(0, p.render().length, review);
-            assertEquals(p, roundTrip(p));
-        }
+    @DisplayName("a decline drops the picture; feedback keeps it, since the channel hears about feedback")
+    void renderOnlyForAnnouncedVerdicts() {
+        BuilderReviewPacket declined = new BuilderReviewPacket(41, OWNER, "Ada", "brick_cabin", "carriage", "",
+                true, BuilderReviewState.DECLINED, "Needs a door.", new byte[] {9, 9}, "0.1130.0", "gte");
+        assertEquals("", declined.version(), "a rule rides only with a resubmit");
+        assertEquals(0, declined.render().length);
+        assertEquals(declined, roundTrip(declined));
+        BuilderReviewPacket feedback = new BuilderReviewPacket(41, OWNER, "Ada", "brick_cabin", "carriage", "",
+                true, BuilderReviewState.FEEDBACK, "Needs a door.", new byte[] {9, 9}, "", "");
+        assertEquals(2, feedback.render().length);
+        assertEquals(feedback, roundTrip(feedback));
     }
 
     @Test
@@ -56,7 +58,7 @@ final class BuilderReviewPacketTest {
                 BuilderReviewState.RESUBMIT, "Fixed in the next one.", new byte[] {1}, " 0.1130.0 ", "sideways");
         assertEquals("0.1130.0", p.version());
         assertEquals(BuilderReviewState.OP_GTE, p.versionOp());
-        assertEquals(0, p.render().length);
+        assertEquals(1, p.render().length, "a resubmit is announced, so its picture rides along");
         assertEquals(p, roundTrip(p));
     }
 

@@ -75,13 +75,15 @@ public final class BuildSubmitReporter {
         return lines.isEmpty() ? "No notes from the author." : String.join("\n", lines);
     }
 
-    /** Where to find it: the relay id, and what kind of build it is. */
+    /**
+     * Where to find it and what it is, as ONE field — "#155 · carriage" — so the embed is a single
+     * row rather than two stacked labels for two short facts.
+     */
     static List<DeathField> fields(int relayId, String kind, String subKind) {
-        List<DeathField> fields = new ArrayList<>();
-        fields.add(new DeathField("Build", "#" + relayId));
         String what = kind == null ? "" : kind;
         if (subKind != null && !subKind.isEmpty()) what = what.isEmpty() ? subKind : what + " / " + subKind;
-        if (!what.isEmpty()) fields.add(new DeathField("Kind", what));
+        List<DeathField> fields = new ArrayList<>();
+        fields.add(new DeathField("Build", "#" + relayId + (what.isEmpty() ? "" : " \u00B7 " + what)));
         return fields;
     }
 

@@ -22685,6 +22685,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "review-feedback-discord-post",
+      "version": "0.1136.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Feedback and resubmit verdicts are announced too",
+      "summary": "When the reviewer sends a submitted build back with feedback, or asks for it again from a newer version, that now posts to Discord's build-submissions channel alongside accepts \u2014 so the whole conversation about a build sits in one place.",
+      "highlights": [],
+      "pr": 1801,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
