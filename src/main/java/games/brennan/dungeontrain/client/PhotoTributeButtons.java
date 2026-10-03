@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.player.LocalPlayer;
@@ -44,6 +45,7 @@ public final class PhotoTributeButtons {
     /** The viewer the buttons were last added to, and those buttons. Render thread only. */
     private static Screen shownOn;
     private static List<Button> shown = List.of();
+    private static StringWidget viewsShown;
 
     private PhotoTributeButtons() {}
 
@@ -74,10 +76,9 @@ public final class PhotoTributeButtons {
         int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - closeWidth) / 2;
         int y = screen.height - HEIGHT - BOTTOM_MARGIN;
 
-        Button views = Button.builder(viewsLabel, button -> { })
-            .bounds(left, y, viewsWidth, HEIGHT)
-            .tooltip(Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.views_left", viewsLeft)))
-            .createNarration(message -> Component.translatable("gui.dungeontrain.photo_tribute.views_left", viewsLeft)).build();
+        // Plain text, not a button: nothing happens when it is clicked, so it must not look clickable.
+        StringWidget views = new StringWidget(left, y, viewsWidth, HEIGHT, viewsLabel, font);
+        views.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.photo_tribute.views_left", viewsLeft)));
         left += viewsWidth + GAP;
         TributeButton tribute = new TributeButton(left, y, tributeWidth, cost, canAfford, button -> {
             DungeonTrainNet.sendToServer(new PhotoTributePacket());
@@ -93,13 +94,15 @@ public final class PhotoTributeButtons {
         event.addListener(tribute);
         event.addListener(close);
         shownOn = screen;
-        shown = List.of(views, tribute, close);
+        shown = List.of(tribute, close);
+        viewsShown = views;
     }
 
     /** Exposure's viewer draws only the photo, never its widgets, so the buttons are drawn here. */
     @SubscribeEvent
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (event.getScreen() != shownOn) return;
+        if (viewsShown != null) viewsShown.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
         for (Button button : shown) {
             button.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
         }
@@ -110,6 +113,7 @@ public final class PhotoTributeButtons {
         if (event.getScreen() != shownOn) return;
         shownOn = null;
         shown = List.of();
+        viewsShown = null;
     }
 
     /** {@code <cost> <emerald>}: the cost is blue when the player carries enough emeralds, red when not. */

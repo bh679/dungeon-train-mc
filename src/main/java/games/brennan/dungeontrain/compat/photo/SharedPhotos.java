@@ -291,6 +291,11 @@ public final class SharedPhotos {
         recordView(player, sharedId(held));
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurn(player, held);
+        // As far as this copy knows: the views it came with, less the one just taken.
+        int left = Math.max(0, viewsLeft(held) - 1);
+        String key = left == 0 ? "chat.dungeontrain.photo_viewed.last"
+                : left == 1 ? "chat.dungeontrain.photo_viewed.one" : "chat.dungeontrain.photo_viewed.more";
+        player.sendSystemMessage(Component.translatable(key, left).withStyle(ChatFormatting.GRAY));
         return true;
     }
 
@@ -321,7 +326,7 @@ public final class SharedPhotos {
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player));
+        player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, VIEWS_MAX));
     }
 
     /** Registration only — no network, no game state. Called once at mod construction. */

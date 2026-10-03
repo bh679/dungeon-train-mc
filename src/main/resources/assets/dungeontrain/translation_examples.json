@@ -790,6 +790,66 @@
       ]
     }
   },
+  "chat.dungeontrain.photo_viewed.more": {
+    "1": {
+      "label": "how many more people can view the photo",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_viewed.one": {
+    "1": {
+      "label": "always 1 (unused in the English text)",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_viewed.last": {
+    "1": {
+      "label": "always 0 (unused in the English text)",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.paid.1": {
+    "1": {
+      "label": "how many views the photo starts again with",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.paid.2": {
+    "1": {
+      "label": "how many views the photo starts again with",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.paid.3": {
+    "1": {
+      "label": "how many views the photo starts again with",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
   "gui.dungeontrain.photo_tribute.views_left": {
     "1": {
       "label": "how many more views the photo has before it is gone",
