@@ -4005,5 +4005,6 @@
   "gui.dungeontrain.low_memory.ok": "わかった",
   "gui.dungeontrain.low_memory.dont_show": "今後表示しない",
   "chat.dungeontrain.free_play.cause.keep_inventory": "このワールドでは「インベントリを保持」が有効です。",
+  "chat.dungeontrain.free_play.cause.terrain": "このワールドは標準のDungeon Trainの地形を使っていません。",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train は、死ぬことに代償があることを前提に調整されています。そのため、このワールドはここから先の統計を自分の中だけに留めます。ゲームルールを戻しても変わりません — 死をくぐり抜けて持ち越した装備は、もうあなたのものです。"
 }

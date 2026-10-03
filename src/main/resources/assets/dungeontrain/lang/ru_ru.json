@@ -4097,5 +4097,6 @@
   "gui.dungeontrain.low_memory.ok": "Понятно",
   "gui.dungeontrain.low_memory.dont_show": "Больше не показывать",
   "chat.dungeontrain.free_play.cause.keep_inventory": "В мире включено сохранение инвентаря.",
+  "chat.dungeontrain.free_play.cause.terrain": "В этом мире не стандартный рельеф Dungeon Train.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train сбалансирован вокруг того, что смерть чего-то стоит, поэтому теперь этот мир хранит свою статистику отдельно. Выключение ничего не изменит — снаряжение, которое вы пронесли через смерть, уже ваше."
 }

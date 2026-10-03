@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.cheat.CheatModIntegrity;
 import games.brennan.dungeontrain.cheat.CommandAllowlist;
 import games.brennan.dungeontrain.cheat.DtConfigIntegrity;
 import games.brennan.dungeontrain.cheat.KeepInventoryIntegrity;
+import games.brennan.dungeontrain.cheat.TerrainIntegrity;
 import games.brennan.dungeontrain.cheat.OperatorIntegrity;
 import games.brennan.dungeontrain.cheat.PortalTuningIntegrity;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
@@ -287,6 +288,14 @@ public final class CheatDetectionEvents {
                 Component.translatable("chat.dungeontrain.free_play.cause.keep_inventory"));
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.keep_inventory_on")
                 .withStyle(ChatFormatting.GRAY));
+        }
+        if (TerrainIntegrity.isWorldFreePlay()) {
+            // World-level terrain taint: the overworld isn't DT's default terrain (Compatible
+            // Terrain, flat, a floor preset, another mod's world type). Fixed at world creation,
+            // so it explains itself on every join and has no fix short of a new world.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.terrain"));
         }
         if (RunIntegrity.isPermanentlyCheated(player)) {
             RunIntegrity.applyFreePlayEffect(player); // re-apply across relog

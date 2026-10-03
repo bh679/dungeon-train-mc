@@ -86,7 +86,8 @@ public final class RunIntegrity {
      * or someone online has cheats ({@link OperatorIntegrity#isSessionFreePlay}),
      * OR the world's portal rate has been retuned
      * ({@link PortalTuningIntegrity#isWorldFreePlay}) or the world has run with
-     * {@code keepInventory} on ({@link KeepInventoryIntegrity#isWorldFreePlay}) —
+     * {@code keepInventory} on ({@link KeepInventoryIntegrity#isWorldFreePlay}) or the
+     * world doesn't use the default terrain ({@link TerrainIntegrity#isWorldFreePlay}) —
      * those last two per-world and permanent rather than per-session and derived,
      * see those classes.
      * Every persistence gate keys off this, so the session taints inherit all
@@ -101,6 +102,7 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
+            || TerrainIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
     }
 
@@ -146,6 +148,7 @@ public final class RunIntegrity {
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
             || KeepInventoryIntegrity.isWorldFreePlay()
+            || TerrainIntegrity.isWorldFreePlay()
             || isPermanentlyCheated(player);
     }
 
@@ -167,7 +170,8 @@ public final class RunIntegrity {
             || EditorContentIntegrity.isSessionFreePlay()
             || OperatorIntegrity.isSessionFreePlay()
             || PortalTuningIntegrity.isWorldFreePlay()
-            || KeepInventoryIntegrity.isWorldFreePlay();
+            || KeepInventoryIntegrity.isWorldFreePlay()
+            || TerrainIntegrity.isWorldFreePlay();
     }
 
     public static void markCheated(ServerPlayer player, Component cause) {
@@ -290,6 +294,9 @@ public final class RunIntegrity {
         }
         if (KeepInventoryIntegrity.isWorldFreePlay()) {
             causes.add(sessionCause("keep_inventory", List.of()));
+        }
+        if (TerrainIntegrity.isWorldFreePlay()) {
+            causes.add(sessionCause("terrain", List.of()));
         }
         if (isPermanentlyCheated(player)) {
             causes.add(new FreePlayCause(recordedCause(player), null));

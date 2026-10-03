@@ -4051,5 +4051,6 @@
   "gui.dungeontrain.low_memory.ok": "Begrepen",
   "gui.dungeontrain.low_memory.dont_show": "Niet meer tonen",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In deze wereld staat \"Inventaris behouden\" aan.",
+  "chat.dungeontrain.free_play.cause.terrain": "Deze wereld gebruikt niet het standaard Dungeon Train-terrein.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train is erop afgestemd dat doodgaan je iets kost, dus vanaf hier houdt deze wereld haar statistieken voor zichzelf. De spelregel weer uitzetten verandert daar niets aan — de spullen die je door een dood heen meedroeg zijn al van jou."
 }

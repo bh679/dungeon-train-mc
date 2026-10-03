@@ -4005,5 +4005,6 @@
   "gui.dungeontrain.low_memory.ok": "Đã hiểu",
   "gui.dungeontrain.low_memory.dont_show": "Không hiện lại",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Thế giới này đang bật \"Giữ hành trang\".",
+  "chat.dungeontrain.free_play.cause.terrain": "Thế giới này không dùng địa hình tiêu chuẩn của Dungeon Train.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train được cân bằng quanh việc cái chết phải lấy đi của bạn thứ gì đó, nên từ đây thế giới này giữ thống kê của riêng nó. Tắt lại luật chơi cũng không đổi được điều đó — số đồ bạn mang qua một lần chết thì đã là của bạn rồi."
 }

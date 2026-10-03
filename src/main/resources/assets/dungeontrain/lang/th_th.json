@@ -4005,5 +4005,6 @@
   "gui.dungeontrain.low_memory.ok": "เข้าใจแล้ว",
   "gui.dungeontrain.low_memory.dont_show": "ไม่ต้องแสดงอีก",
   "chat.dungeontrain.free_play.cause.keep_inventory": "โลกนี้เปิด \"เก็บของในกระเป๋าไว้\" อยู่",
+  "chat.dungeontrain.free_play.cause.terrain": "โลกนี้ไม่ได้ใช้ภูมิประเทศมาตรฐานของ Dungeon Train",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ปรับสมดุลไว้บนพื้นฐานที่ว่าการตายต้องแลกด้วยอะไรบางอย่าง โลกนี้จึงเก็บสถิติของตัวเองไว้นับจากนี้ไป การปิดกฎของเกมกลับไม่ได้เปลี่ยนเรื่องนั้น — ของที่คุณถือข้ามความตายมาแล้วนั้นเป็นของคุณไปแล้ว"
 }

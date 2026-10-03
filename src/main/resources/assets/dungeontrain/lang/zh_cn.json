@@ -4019,5 +4019,6 @@
   "gui.dungeontrain.low_memory.ok": "知道了",
   "gui.dungeontrain.low_memory.dont_show": "不再显示",
   "chat.dungeontrain.free_play.cause.keep_inventory": "本世界开启了「保留物品栏」。",
+  "chat.dungeontrain.free_play.cause.terrain": "此世界未使用标准的 Dungeon Train 地形。",
   "chat.dungeontrain.free_play.keep_inventory_on": "《地牢列车》是以死亡要付出代价为前提来平衡的，因此从现在起本世界的统计只留在自己这里。把游戏规则再关掉也无济于事——你带着穿过一次死亡的装备，已经是你的了。"
 }

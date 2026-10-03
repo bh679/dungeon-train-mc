@@ -4005,5 +4005,6 @@
   "gui.dungeontrain.low_memory.ok": "Faham",
   "gui.dungeontrain.low_memory.dont_show": "Jangan tunjuk lagi",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Dalam dunia ini \"Simpan Inventori\" sedang dihidupkan.",
+  "chat.dungeontrain.free_play.cause.terrain": "Dunia ini tidak menggunakan rupa bumi standard Dungeon Train.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda."
 }

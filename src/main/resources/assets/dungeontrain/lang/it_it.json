@@ -4051,5 +4051,6 @@
   "gui.dungeontrain.low_memory.ok": "Ho capito",
   "gui.dungeontrain.low_memory.dont_show": "Non mostrare più",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In questo mondo «Mantieni inventario» è attivo.",
+  "chat.dungeontrain.free_play.cause.terrain": "Questo mondo non usa il terreno standard di Dungeon Train.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train è bilanciato sul fatto che morire ti costi qualcosa, quindi da qui in poi questo mondo si tiene le proprie statistiche. Rimettere la regola di gioco su off non cambierà le cose — l'equipaggiamento che ti sei portato attraverso una morte è già tuo."
 }

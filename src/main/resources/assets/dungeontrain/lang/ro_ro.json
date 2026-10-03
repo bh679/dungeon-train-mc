@@ -229,6 +229,7 @@
   "chat.dungeontrain.free_play.ais_fix": "Apasă aici ca să restaurezi setările implicite, apoi repornește jocul ca să joci normal.",
   "chat.dungeontrain.free_play.cause.portal_rate": "Cât de des apar vagoanele dimensionale a fost modificat în această lume.",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Keep Inventory este activat în această lume.",
+  "chat.dungeontrain.free_play.cause.terrain": "Această lume nu folosește terenul standard Dungeon Train.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train este echilibrat în jurul ideii că moartea te costă ceva, așa că de acum înainte lumea aceasta își ține propriile statistici. Dezactivarea regulii la loc nu schimbă asta — echipamentul cu care ai trecut printr-o moarte este deja al tău.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Șina pe care o generează această lume nu mai este cea față de care este echilibrat Dungeon Train, așa că lumea rămâne în Joc Liber.",
   "chat.dungeontrain.free_play.cause.dt_config": "Setările de dificultate Dungeon Train au fost modificate.",

@@ -4097,5 +4097,6 @@
   "gui.dungeontrain.low_memory.ok": "Rozumiem",
   "gui.dungeontrain.low_memory.dont_show": "Nie pokazuj więcej",
   "chat.dungeontrain.free_play.cause.keep_inventory": "W tym świecie włączone jest „Zachowaj ekwipunek”.",
+  "chat.dungeontrain.free_play.cause.terrain": "Ten świat nie używa standardowego terenu Dungeon Train.",
   "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train jest wyważony wokół tego, że śmierć coś cię kosztuje, więc od tej chwili ten świat zatrzymuje swoje statystyki dla siebie. Ponowne wyłączenie reguły gry tego nie zmieni — sprzęt, który przeniosłeś przez śmierć, już jest twój."
 }
