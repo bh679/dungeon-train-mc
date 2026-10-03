@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.gl.SectionUploadFailures;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
@@ -16,8 +17,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Skips drawing a {@link VertexBuffer} that never received an upload, so a failed section upload is
- * reported as itself rather than as {@code Cannot read field "asGLMode" because "this.mode" is null}.
+ * Skips drawing a {@link VertexBuffer} that never received an upload, instead of crashing the client
+ * with {@code Cannot read field "asGLMode" because "this.mode" is null}.
  *
  * <p>{@code mode} is set only at the end of a successful {@code upload(MeshData)}. When a section's
  * upload throws, vanilla's {@code RebuildTask} hands the error to {@code Minecraft.delayCrash} and then
@@ -27,11 +28,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * the delayed one — the real error is never shown. Reported 2026-10-02 in the Far Lands on a 512 MB
  * AMD iGPU, whose dense sections are the likeliest to fail a GPU allocation mid-upload.</p>
  *
- * <p>This does not prevent the crash: {@code Minecraft.run} raises the delayed crash on its next loop,
- * so the game still stops — but with a "Rendering section" report naming the real upload error
- * (verified 2026-10-03 with a forced upload failure). Any other never-uploaded buffer is simply left
- * undrawn. The upload itself is wrapped only to log what failed, then rethrows, so vanilla's handling
- * is unchanged. Remove once vanilla or NeoForge stop storing a section whose upload failed.</p>
+ * <p>Skipping the draw alone does not save the game: {@code Minecraft.run} raises the delayed crash on
+ * its next loop. The upload wrapper therefore records the error it rethrows, so
+ * {@link SectionRebuildUploadFailureMixin} can forgive a transient failure and rebuild the section; a
+ * failure that keeps recurring still crashes, with a "Rendering section" report naming the real
+ * error. A skipped draw leaves the section blank until that rebuild. Remove once vanilla or NeoForge
+ * stop storing a section whose upload failed.</p>
  */
 @Mixin(VertexBuffer.class)
 public abstract class VertexBufferUnuploadedDrawGuardMixin {
@@ -74,6 +76,7 @@ public abstract class VertexBufferUnuploadedDrawGuardMixin {
         try {
             original.call(meshData);
         } catch (RuntimeException | Error e) {
+            SectionUploadFailures.shared().record(e);
             long now = System.currentTimeMillis();
             if (now - dungeontrain$lastUploadLogMs >= dungeontrain$LOG_INTERVAL_MS) {
                 dungeontrain$lastUploadLogMs = now;
