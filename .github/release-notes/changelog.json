@@ -22241,6 +22241,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mixin-target-guards",
+      "version": "0.1115.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "World mod updates no longer stop the game loading",
+      "summary": "The game keeps loading when one of the world mods it builds on updates.",
+      "highlights": [],
+      "pr": 1775,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
