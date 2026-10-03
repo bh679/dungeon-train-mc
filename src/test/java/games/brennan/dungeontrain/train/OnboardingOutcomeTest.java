@@ -25,9 +25,9 @@ class OnboardingOutcomeTest {
     }
 
     @Test
-    @DisplayName("a hostile in play follows the stage: withheld, then a slime, then as authored")
+    @DisplayName("a hostile in play follows the stage: a slime through both opening stages, then as authored")
     void hostileInPlayFollowsTheStage() {
-        assertEquals(OnboardingOutcome.SUPPRESSED, decide(OnboardingStage.NO_HOSTILES, true, false, false));
+        assertEquals(OnboardingOutcome.SUBSTITUTED, decide(OnboardingStage.NO_HOSTILES, true, false, false));
         assertEquals(OnboardingOutcome.SUBSTITUTED, decide(OnboardingStage.EASY_MOBS, true, false, false));
         assertEquals(OnboardingOutcome.AS_AUTHORED, decide(OnboardingStage.NORMAL, true, false, false));
     }

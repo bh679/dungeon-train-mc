@@ -1290,10 +1290,8 @@ public final class CarriageContentsPlacer {
      * Gentle-onboarding hostile gate. For an authored hostile ({@link Enemy}) carriage mob, applies
      * the current {@link DifficultyProgression.OnboardingStage}:
      * <ul>
-     *   <li>{@link DifficultyProgression.OnboardingStage#NO_HOSTILES NO_HOSTILES} — suppresses the
-     *       mob entirely ({@link OnboardingOutcome#SUPPRESSED} — nothing is spawned; the original is
-     *       discarded unadded, exactly like the slime path below);</li>
-     *   <li>{@link DifficultyProgression.OnboardingStage#EASY_MOBS EASY_MOBS} — spawns a small Slime
+     *   <li>{@link DifficultyProgression.OnboardingStage#NO_HOSTILES NO_HOSTILES} and
+     *       {@link DifficultyProgression.OnboardingStage#EASY_MOBS EASY_MOBS} — spawns a small Slime
      *       (or a small Magma Cube when {@code original}'s type is in {@link #FIRST_BAND_MAGMA_MOBS})
      *       at {@code pos}, tagged + persisted exactly like a carriage-contents mob, and returns
      *       {@link OnboardingOutcome#SUBSTITUTED} so the caller skips the original; the slime / magma / no-substitute decision
@@ -1374,8 +1372,10 @@ public final class CarriageContentsPlacer {
                                                boolean editorSentinel, boolean asAuthored) {
         if (!hostile || editorSentinel || asAuthored) return OnboardingOutcome.AS_AUTHORED;
         return switch (stage) {
-            case NO_HOSTILES -> OnboardingOutcome.SUPPRESSED;
-            case EASY_MOBS -> OnboardingOutcome.SUBSTITUTED;
+            // The opening stretch keeps enemy carts out of the contents pool (HostileContents), so a
+            // hostile reaching here is a stray — a carriage stamped past the stretch while the lead
+            // player is still in it. A slime, never an emptied room.
+            case NO_HOSTILES, EASY_MOBS -> OnboardingOutcome.SUBSTITUTED;
             case NORMAL -> OnboardingOutcome.AS_AUTHORED;
         };
     }

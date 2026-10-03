@@ -316,6 +316,22 @@ public final class DifficultyProgression {
     }
 
     /**
+     * Whether the carriage at track position {@code carriageIndex} lies in the no-hostiles opening
+     * stretch, where contents that can roll a hostile mob ("enemy carts") are kept out of the pool.
+     * Keys off the carriage's position, not player progress, so the pick is deterministic — the same
+     * carriage re-stamps with the same contents. Pure (params in).
+     */
+    public static boolean excludesEnemyCarts(int carriageIndex, boolean noHostilesOn, int noHostilesCarriages) {
+        return noHostilesOn && Math.abs(carriageIndex) < Math.max(0, noHostilesCarriages);
+    }
+
+    /** {@link #excludesEnemyCarts(int, boolean, int)} against the live config. */
+    public static boolean excludesEnemyCarts(int carriageIndex) {
+        return excludesEnemyCarts(carriageIndex,
+            DungeonTrainConfig.getFirstLevelNoHostiles(), DungeonTrainConfig.getFirstLevelNoHostilesCarriages());
+    }
+
+    /**
      * Whether {@code travelled} is still inside the gentle opening window — the
      * {@code noHostilesCarriages + easyMobsCarriages} carriages spanning both onboarding stages,
      * regardless of the per-stage toggles. Drives the {@link #effectiveLootPrefabId starter-loot}

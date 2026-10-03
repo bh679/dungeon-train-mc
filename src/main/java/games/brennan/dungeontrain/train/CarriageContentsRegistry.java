@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.difficulty.DifficultyProgression;
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
@@ -194,7 +195,13 @@ public final class CarriageContentsRegistry {
         if (variant == null) return pick(worldSeed, carriageIndex, CarriageContentsAllowList.EMPTY, gateCtx);
         CarriageContentsAllowList allow =
             CarriageVariantContentsAllowStore.get(variant).orElse(CarriageContentsAllowList.EMPTY);
-        return pick(worldSeed, carriageIndex, allow, gateCtx, sizeFilter(CarriagePlacer.sizeOf(variant)));
+        Predicate<String> ok = sizeFilter(CarriagePlacer.sizeOf(variant));
+        // The no-hostiles opening stretch: enemy carts never roll there (editor previews excepted).
+        if (carriageIndex != CarriageContentsPlacer.EDITOR_SENTINEL_PIDX
+                && DifficultyProgression.excludesEnemyCarts(carriageIndex)) {
+            ok = ok.and(id -> !HostileContents.canSpawnHostile(id));
+        }
+        return pick(worldSeed, carriageIndex, allow, gateCtx, ok);
     }
 
     /**
