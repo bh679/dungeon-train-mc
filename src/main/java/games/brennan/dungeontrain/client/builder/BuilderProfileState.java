@@ -179,7 +179,36 @@ public final class BuilderProfileState {
             if (e.relayId() == relayId) {
                 updated.add(new BuilderProfilePacket.Entry(e.relayId(), e.kind(), e.subKind(),
                         e.buildName(), e.published(), e.flag(), e.review(), e.stage(), e.changes(),
-                        e.favourite(), e.ownerUuid(), e.ownerName(), e.templateCopy(), note));
+                        e.favourite(), e.ownerUuid(), e.ownerName(), e.templateCopy(), note, e.reviewComment(),
+                        e.reviewVersion(), e.reviewVersionOp()));
+                changed = true;
+            } else {
+                updated.add(e);
+            }
+        }
+        return changed ? new BuilderProfilePacket(packet.status(), List.copyOf(updated),
+                packet.ownerUuid(), packet.ownerName(), packet.mine()) : packet;
+    }
+
+    /**
+     * Note locally that the developer just decided one build — Accept, Feedback or Decline, with a
+     * comment — so the tile's border and the sheet flip before the relay's listing comes back. Same
+     * contract as {@link #noteAnswers}: fire-and-forget, chat says if it failed, the next listing is
+     * the truth.
+     */
+    public static void noteReview(int relayId, String review, String comment, String version, String op) {
+        latest = withReview(latest, relayId, review, comment, version, op);
+        mineLatest = withReview(mineLatest, relayId, review, comment, version, op);
+    }
+
+    private static BuilderProfilePacket withReview(BuilderProfilePacket packet, int relayId, String review,
+                                                   String comment, String version, String op) {
+        if (packet == null) return null;
+        List<BuilderProfilePacket.Entry> updated = new java.util.ArrayList<>(packet.builds().size());
+        boolean changed = false;
+        for (BuilderProfilePacket.Entry e : packet.builds()) {
+            if (e.relayId() == relayId) {
+                updated.add(e.withReview(review, comment, version, op));
                 changed = true;
             } else {
                 updated.add(e);

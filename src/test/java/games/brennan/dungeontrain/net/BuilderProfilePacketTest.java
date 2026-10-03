@@ -100,6 +100,24 @@ final class BuilderProfilePacketTest {
         assertEquals(packet, roundTrip(packet));
     }
 
+    @Test
+    @DisplayName("the reviewer's comment survives the wire beside the verdict, and is empty when unsaid")
+    void reviewCommentRoundTrip() {
+        BuilderProfilePacket.Entry told = new BuilderProfilePacket.Entry(44, "carriage", "", "lantern_car", true,
+                "approved", BuilderReviewState.FEEDBACK, "stone", 2, false, MINE, "Brennan", false,
+                games.brennan.dungeontrain.builder.relay.SubmitNote.EMPTY, "Doors should open outward.");
+        BuilderProfilePacket.Entry silent = new BuilderProfilePacket.Entry(45, "carriage", "", "quiet_car", true,
+                "approved", BuilderReviewState.ACCEPTED, "stone", 0, false, MINE, "Brennan", false);
+        BuilderProfilePacket back = roundTrip(new BuilderProfilePacket(BuilderProfilePacket.Status.OK,
+                List.of(told, silent), MINE, "Brennan", true));
+        assertEquals("Doors should open outward.", back.builds().get(0).reviewComment());
+        assertEquals("", back.builds().get(1).reviewComment());
+        assertEquals(told, back.builds().get(0));
+        assertEquals(silent.withReview(BuilderReviewState.DECLINED, "Too dark.", "", ""),
+                back.builds().get(1).withReview(BuilderReviewState.DECLINED, "Too dark.", "", ""),
+                "the optimistic flip changes only the verdict and the comment");
+    }
+
     private static BuilderProfilePacket roundTrip(BuilderProfilePacket packet) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         BuilderProfilePacket.STREAM_CODEC.encode(buf, packet);

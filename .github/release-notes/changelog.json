@@ -22626,6 +22626,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-build-review-verdicts",
+      "version": "0.1133.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Your submitted builds now come back with a verdict and a note",
+      "summary": "When a build you submitted for review has been looked at, My Builds now tells you what was decided \u2014 accepted, feedback, not accepted, or 'resubmit from a newer version' \u2014 with the reviewer's comment right beside it. Accepted builds are announced in Discord's build-submissions channel.",
+      "highlights": [
+        "Four outcomes, each with a note from the reviewer: accepted, feedback, resubmit from a given Dungeon Train version, or not accepted. The tile's border and icon in My Builds say which, and the comment sits under the build.",
+        "A build sent back for a version waits until you submit it again from that version \u2014 Submit for Review tells you which one it needs.",
+        "If you have a chat thread with the dev, the verdict and comment also arrive in your in-game inbox."
+      ],
+      "pr": 1796,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

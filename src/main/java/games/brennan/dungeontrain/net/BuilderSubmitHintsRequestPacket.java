@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.BuilderNoteEdits;
+import games.brennan.dungeontrain.builder.relay.BuilderReviewEdits;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayUpload;
 import games.brennan.dungeontrain.builder.relay.BuilderSubmitHints;
 import games.brennan.dungeontrain.editor.SubmitHints;
@@ -56,7 +57,7 @@ public record BuilderSubmitHintsRequestPacket(int relayId, String ownerUuid, boo
             if (!(ctx.player() instanceof ServerPlayer player) || player.getServer() == null) return;
             if (!BuilderRelayUpload.canUpload(player)) {
                 DungeonTrainNet.sendTo(player,
-                    new BuilderSubmitHintsPacket(packet.relayId, SubmitHints.Hints.NONE, false));
+                    new BuilderSubmitHintsPacket(packet.relayId, SubmitHints.Hints.NONE, false, false));
                 return;
             }
             ServerLevel level = player.getServer().overworld();
@@ -64,10 +65,11 @@ public record BuilderSubmitHintsRequestPacket(int relayId, String ownerUuid, boo
             String owner = packet.ownerUuid.isEmpty() ? player.getUUID().toString() : packet.ownerUuid;
             boolean live = BuilderProfileRequestPacket.liveRequested(packet.live);
             boolean canEdit = BuilderNoteEdits.canEdit(player, owner);
+            boolean canReview = BuilderReviewEdits.canReview(player, owner);
             BuilderSubmitHints.forBuild(player, level, packet.relayId, owner, live)
                 .thenAccept(hints -> player.getServer().execute(() -> {
                     if (player.hasDisconnected()) return;
-                    DungeonTrainNet.sendTo(player, new BuilderSubmitHintsPacket(packet.relayId, hints, canEdit));
+                    DungeonTrainNet.sendTo(player, new BuilderSubmitHintsPacket(packet.relayId, hints, canEdit, canReview));
                 }));
         });
     }
