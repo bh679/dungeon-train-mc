@@ -50,7 +50,9 @@ never affected.
   cells in a lock group pick together across the whole building. A pick goes through the design's swaps, so
   a recolour and the dry look cover it. Growth entries (`"growth": "down 1-4"`) hang their column into free
   space of the piece.
-- **Not applied:** the `containers` role and loot-prefab links (an entry's own `nbt` is carried).
+- **Not applied:** the `containers` role and loot-prefab links (an entry's own `nbt` is carried), and a
+  shipped building's document once a player has saved their own copy of it in the Buildings editor — its
+  cells belong to the shipped template. New player buildings have no document yet.
 
 ## Conventions the processors rely on
 
