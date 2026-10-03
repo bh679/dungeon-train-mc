@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client.deathphotos;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -26,16 +25,12 @@ public final class PhotoViewerOverlay {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    private static final ResourceLocation SAVE_ICON = icon("save");
-    private static final ResourceLocation SAVED_ICON = icon("review_accepted");
-    private static final ResourceLocation PREV_ICON = icon("prev");
-    private static final ResourceLocation NEXT_ICON = icon("next");
+    private static final ResourceLocation SAVE_ICON = PhotoPainter.icon("save");
+    private static final ResourceLocation SAVED_ICON = PhotoPainter.icon("review_accepted");
 
     private static final int BACKDROP = 0xF2050506;
-    private static final int BTN = 22;
-    private static final int BTN_BG = 0xAA000000;
-    private static final int BTN_BORDER = 0x55FFFFFF;
-    private static final int BTN_BORDER_HOVER = 0xFFE6D6B0;
+    private static final int BTN = PhotoPainter.BTN;
+    private static final int BTN_BORDER = PhotoPainter.BTN_BORDER;
     private static final int SAVED_BORDER = 0xFF3C6B41;
     private static final int COUNTER = 0xFF9A8F74;
     private static final int STATUS_OK = 0xFF7FAE84;
@@ -50,10 +45,6 @@ public final class PhotoViewerOverlay {
 
     // Hit rects from the last frame, {x, y, w, h}.
     private int[] photoRect, saveRect, prevRect, nextRect;
-
-    private static ResourceLocation icon(String name) {
-        return ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/" + name);
-    }
 
     public boolean isOpen() {
         return index >= 0;
@@ -86,8 +77,8 @@ public final class PhotoViewerOverlay {
 
         if (multi) {
             g.drawCenteredString(font, (index + 1) + " / " + photos.size(), w / 2, 12, COUNTER);
-            prevRect = button(g, PREV_ICON, 9, h / 2 - BTN / 2, BTN_BORDER, mouseX, mouseY);
-            nextRect = button(g, NEXT_ICON, w - 9 - BTN, h / 2 - BTN / 2, BTN_BORDER, mouseX, mouseY);
+            prevRect = button(g, PhotoPainter.PREV_ICON, 9, h / 2 - BTN / 2, BTN_BORDER, mouseX, mouseY);
+            nextRect = button(g, PhotoPainter.NEXT_ICON, w - 9 - BTN, h / 2 - BTN / 2, BTN_BORDER, mouseX, mouseY);
         } else {
             prevRect = nextRect = null;
         }
@@ -109,11 +100,7 @@ public final class PhotoViewerOverlay {
     }
 
     private int[] button(GuiGraphics g, ResourceLocation sprite, int x, int y, int border, int mx, int my) {
-        boolean hover = mx >= x && mx < x + BTN && my >= y && my < y + BTN;
-        g.fill(x, y, x + BTN, y + BTN, BTN_BG);
-        PhotoPainter.drawBorder(g, x, y, BTN, BTN, hover ? BTN_BORDER_HOVER : border);
-        g.blitSprite(sprite, x + (BTN - 16) / 2, y + (BTN - 16) / 2, 16, 16);
-        return new int[] {x, y, BTN, BTN};
+        return PhotoPainter.iconButton(g, sprite, x, y, border, mx, my);
     }
 
     /** Mouse press while open. Always consumes the event, so nothing beneath reacts. */
@@ -163,6 +150,6 @@ public final class PhotoViewerOverlay {
     }
 
     private static boolean has(int[] r, double mx, double my) {
-        return r != null && mx >= r[0] && mx < r[0] + r[2] && my >= r[1] && my < r[1] + r[3];
+        return PhotoPainter.has(r, mx, my);
     }
 }

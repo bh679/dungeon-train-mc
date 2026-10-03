@@ -2422,6 +2422,7 @@ public final class NarrativeDeathScreen extends Screen {
             }
             if (backRect != null && backRect.has(mx, my)) { back(); return true; }
             if (page.kind() == Kind.PHOTOS && settled()) {
+                if (photoStrip.arrowClick(mx, my)) return true;
                 int photo = photoStrip.photoAt(mx, my);
                 if (photo >= 0) { photoViewer.open(photo); return true; }
             }

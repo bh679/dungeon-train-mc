@@ -11,11 +11,14 @@ import java.util.List;
  *
  * <p>The wheel — vertical or horizontal — moves a scroll target; the drawn offset eases toward it.
  * Fade bands at either edge show there is more row off-screen. A click on a thumbnail is reported by
- * {@link #photoAt} so the host can open the fullscreen viewer.</p>
+ * {@link #photoAt} so the host can open the fullscreen viewer. Arrow buttons sit at either end of
+ * the row while there is more to see that way; {@link #arrowClick} slides it most of a screen.</p>
  */
 public final class PhotoStripPage {
 
-    private static final int MARGIN_X = 16;
+    /** Side room for the arrow buttons, outside the row's viewport. */
+    private static final int MARGIN_X = PhotoPainter.BTN + 10;
+    private static final float PAGE_FRACTION = 0.8f;
     private static final int GAP = 8;
     private static final int MIN_HEIGHT = 48;
     private static final int MAX_HEIGHT = 400;
@@ -30,6 +33,7 @@ public final class PhotoStripPage {
     private float scrollTarget;
     private StripLayout layout;
     private int vpX, vpY, vpW, vpH;
+    private int[] prevRect, nextRect; // arrow hit rects from the last frame; null when hidden
 
     /** Back to the start of the row (page entered again). */
     public void resetScroll() {
@@ -62,6 +66,7 @@ public final class PhotoStripPage {
         if (Math.abs(scrollTarget - scroll) < 0.5f) scroll = scrollTarget;
         scroll = clamp(scroll, max);
 
+        prevRect = nextRect = null;
         if (!settled || photos.isEmpty()) return vpY + vpH;
 
         int offset = Math.round(scroll);
@@ -79,6 +84,15 @@ public final class PhotoStripPage {
         if (offset > 0) drawEdgeFade(g, vpX, true);
         if (offset < max) drawEdgeFade(g, vpX + vpW - FADE_W, false);
         g.disableScissor();
+        int arrowY = vpY + (vpH - PhotoPainter.BTN) / 2;
+        if (scrollTarget > 0f) {
+            prevRect = PhotoPainter.iconButton(g, PhotoPainter.PREV_ICON, vpX - PhotoPainter.BTN - 5, arrowY,
+                    PhotoPainter.BTN_BORDER, mouseX, mouseY);
+        }
+        if (scrollTarget < max) {
+            nextRect = PhotoPainter.iconButton(g, PhotoPainter.NEXT_ICON, vpX + vpW + 5, arrowY,
+                    PhotoPainter.BTN_BORDER, mouseX, mouseY);
+        }
         return vpY + vpH;
     }
 
@@ -100,6 +114,15 @@ public final class PhotoStripPage {
     /** The photo under the cursor, or -1. */
     public int photoAt(double mx, double my) {
         return hoverIndex(mx, my);
+    }
+
+    /** A click on an end arrow: slide the row most of a viewport that way. Returns whether one was hit. */
+    public boolean arrowClick(double mx, double my) {
+        if (layout == null) return false;
+        int dir = PhotoPainter.has(prevRect, mx, my) ? -1 : PhotoPainter.has(nextRect, mx, my) ? 1 : 0;
+        if (dir == 0) return false;
+        scrollTarget = clamp(scrollTarget + dir * vpW * PAGE_FRACTION, layout.maxScroll(vpW));
+        return true;
     }
 
     /** Wheel over the row: scroll it. Returns whether the event was used. */
