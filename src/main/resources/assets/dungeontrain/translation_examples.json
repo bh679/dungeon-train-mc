@@ -760,6 +760,156 @@
       ]
     }
   },
+  "chat.dungeontrain.familiar_photo.tributed.1": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_photo.tributed.2": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_photo.tributed.3": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_viewed.more": {
+    "1": {
+      "label": "how many more people can view the photo",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.paid.1": {
+    "1": {
+      "label": "how many views the photo starts again with",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.paid.2": {
+    "1": {
+      "label": "how many views the photo starts again with",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.paid.3": {
+    "1": {
+      "label": "how many views the photo starts again with",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.st": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "21",
+        "31",
+        "101"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.nd": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "2",
+        "22",
+        "32"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.rd": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "3",
+        "23",
+        "33"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.th": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "4",
+        "11",
+        "15"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.views_left": {
+    "1": {
+      "label": "how many more views the photo has before it is gone",
+      "examples": [
+        "10",
+        "3",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.have": {
+    "1": {
+      "label": "how many emeralds the player is carrying",
+      "examples": [
+        "0",
+        "1",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_burns_author": {
+    "1": {
+      "label": "the player who took the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "item.dungeontrain.shared_photo.by": {
+    "1": {
+      "label": "the player who took the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
   "chat.dungeontrain.book_suspended.duplicate": {
     "1": {
       "label": "how long the pause still has to run",
@@ -5845,6 +5995,24 @@
     }
   },
   "gui.dungeontrain.editor_menu.editor.plot_lighting": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": {
     "1": {
       "label": "ON or OFF, already translated",
       "examples": [

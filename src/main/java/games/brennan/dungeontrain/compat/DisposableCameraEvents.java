@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import io.github.mortuusars.exposure.Exposure;
@@ -175,6 +176,7 @@ public final class DisposableCameraEvents {
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.type());
         photograph.setPopTime(Inventory.POP_TIME_DURATION);
         inventory.setItem(slot, photograph);
+        SharedPhotos.queueUpload(player, photograph);
         player.level().playSound(null, player, Exposure.SoundEvents.PHOTOGRAPH_RUSTLE.get(), SoundSource.PLAYERS,
             0.6f, player.level().getRandom().nextFloat() * 0.2f + 1.0f);
         Exposure.CriteriaTriggers.FRAME_PRINTED.get().trigger(player, player.blockPosition(), frame, photograph);
@@ -193,6 +195,8 @@ public final class DisposableCameraEvents {
      * viewed from — the photo itself, or each such photo in a stack of photographs.
      */
     public static void handlePhotographViewClosed(ServerPlayer player) {
+        // A found photo counts the view and then burns as well.
+        if (SharedPhotos.reportView(player)) return;
         for (InteractionHand hand : InteractionHand.values()) {
             ItemStack held = player.getItemInHand(hand);
             if (DisposableCamera.burnsAfterViewing(held)) {

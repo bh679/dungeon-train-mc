@@ -18,8 +18,8 @@ import net.minecraft.world.item.Items;
  */
 public final class FineInstantSlide {
 
-    /** The original Exposure camera's photo size; the instant camera's default is 240. */
-    public static final int FRAME_SIZE = 320;
+    /** Twice the original Exposure camera's 320; the instant camera's default is 240. */
+    public static final int FRAME_SIZE = 640;
 
     static final ResourceLocation SLIDE_ITEM =
         ResourceLocation.fromNamespaceAndPath("exposure_polaroid", "instant_color_slide");

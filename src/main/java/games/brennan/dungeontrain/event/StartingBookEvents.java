@@ -617,15 +617,30 @@ public final class StartingBookEvents {
      * photograph; see {@code compat/DisposableCameraEvents}).
      *
      * <p>The caller has already taken the stack out of the inventory. This ignites the entity
-     * directly instead of through {@link BurnableBookTag}, so a spent camera burns only here — an
-     * unused one dropped by hand does not. Photographs also burn on any drop, through
-     * {@link #onEntityJoinLevel}.</p>
+     * directly instead of through {@link BurnableBookTag}, so a spent camera or a found photo burns
+     * only here. A player's own print also burns on any drop, through {@link #onEntityJoinLevel},
+     * which gets to it first.</p>
      */
     public static void dropAndBurn(ServerPlayer player, ItemStack stack) {
+        dropAndBurn(player, stack, FlameVariant.DEFAULT);
+    }
+
+    /** {@link #dropAndBurn}, in the green flames a thumbs-up book burns with — a photo that was paid Tribute. */
+    public static void dropAndBurnApproved(ServerPlayer player, ItemStack stack) {
+        dropAndBurn(player, stack, FlameVariant.APPROVED);
+    }
+
+    private static void dropAndBurn(ServerPlayer player, ItemStack stack, FlameVariant variant) {
         if (stack == null || stack.isEmpty()) return;
         ItemEntity dropped = dropFromPlayer(player, stack);
         if (BURN_ENTITIES.containsKey(dropped.getUUID())) return;
-        igniteItem(dropped, FlameVariant.DEFAULT);
+        igniteItem(dropped, variant);
+        // Books and a player's own prints are announced where their burn is detected; a found
+        // photograph only ever burns through here.
+        if (!stack.has(net.minecraft.core.component.DataComponents.WRITTEN_BOOK_CONTENT)
+                && dropped.level() instanceof net.minecraft.server.level.ServerLevel level) {
+            BookBurnAuthorMessage.announce(level, dropped, stack);
+        }
     }
 
     /** Starts the burn on an item entity: locks pickup, tracks it, plays the ignition sound. */
@@ -686,6 +701,8 @@ public final class StartingBookEvents {
             if (games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
                     && !BURN_ENTITIES.containsKey(item.getUUID())) {
                 igniteItem(item, FlameVariant.DEFAULT);
+                // Opt-in author credit, as for a book: the photographer is named as it catches fire.
+                BookBurnAuthorMessage.announce((ServerLevel) item.level(), item, stack);
             }
             return;
         }
