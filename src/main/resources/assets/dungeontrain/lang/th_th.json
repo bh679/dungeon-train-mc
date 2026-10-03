@@ -490,6 +490,7 @@
   "chat.dungeontrain.advancements_hint.2": "ขึ้นรถได้แล้ว! บันทึกการเดินทางของคุณรออยู่ - กด %s",
   "chat.dungeontrain.advancements_hint.3": "ป้ายหน้า: ความสำเร็จของคุณ กด %s เพื่อดูความสำเร็จ Dungeon Train ทั้งหมด",
   "chat.dungeontrain.advancements_hint.4": "นายตรวจยกหมวกคารวะ - กด %s เพื่อทบทวนการเดินทางของคุณ",
+  "chat.dungeontrain.first_ever": "คุณคือผู้โดยสารคนแรกที่ได้รับ %s ทั้งขบวนรถไฟได้ยินข่าวนี้แล้ว",
   "chat.dungeontrain.advancements_hint.5": "นายตรวจ: \"กด %s เพื่อตรวจตั๋วแห่งความสำเร็จของคุณสิ ผู้โดยสาร\"",
   "chat.dungeontrain.advancements_hint.6": "นายตรวจพยักหน้า: กด %s เพื่อดูว่าคุณมาไกลแค่ไหนแล้ว",
   "chat.dungeontrain.advancements_hint.7": "ตอกตั๋วแห่งหมุดหมายของคุณ - กด %s",
