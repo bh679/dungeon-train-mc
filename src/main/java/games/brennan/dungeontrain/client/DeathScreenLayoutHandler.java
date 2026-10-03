@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.player.PendingInventory;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.Shipyard;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
+import games.brennan.dungeontrain.client.worldgen.PendingWorldPreset;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -255,6 +256,7 @@ public final class DeathScreenLayoutHandler {
                 curOpts.generateBonusChest());
 
         ResourceKey<WorldPreset> targetPreset = presetFor(startingDim);
+        PendingWorldPreset.set(targetPreset);
         Function<RegistryAccess, WorldDimensions> dims = registryAccess -> {
             Registry<WorldPreset> presets = registryAccess.registryOrThrow(Registries.WORLD_PRESET);
             Optional<Holder.Reference<WorldPreset>> dt = presets.getHolder(targetPreset);

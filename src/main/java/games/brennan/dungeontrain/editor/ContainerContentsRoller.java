@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -995,6 +996,10 @@ public final class ContainerContentsRoller {
         if (item == ModItems.RANDOM_BAD_POTION.get()) {
             return bakeRandomPotion(BAD_POTION_TIERS, picked.scaleWithDistance(), picked.potionForm(),
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
+        }
+
+        if (item == ModItems.RANDOM_PLAYERPHOTO.get()) {
+            return SharedPhotos.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
         }
 
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {

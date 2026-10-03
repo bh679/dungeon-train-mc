@@ -48,7 +48,8 @@ public final class DungeonTrainWorldData extends SavedData {
             (tag, registries) -> load(tag));
 
     private static final String TAG_TRAIN_Y = "trainY";
-    private static final String TAG_STARTS_WITH_TRAIN = "startsWithTrain";
+    /** Package-visible for {@link DungeonTrainSave}, which reads it straight off disk before the world opens. */
+    static final String TAG_STARTS_WITH_TRAIN = "startsWithTrain";
     private static final String TAG_CARRIAGE_LENGTH = "carriageLength";
     private static final String TAG_CARRIAGE_WIDTH = "carriageWidth";
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
@@ -93,6 +94,16 @@ public final class DungeonTrainWorldData extends SavedData {
     private int trainY;
     private boolean startsWithTrain;
     private CarriageDims dims;
+
+    /**
+     * Whether this world was created from a {@code dungeontrain:} world preset, or {@code null} when
+     * nobody recorded it — every world saved before the marker existed, and any world created
+     * without a preset being published (a dedicated server). Kept three-valued on disk too: the tag
+     * is written only once known, so loading and re-saving an old world never turns "unknown" into
+     * "no". Read before the world opens by {@link DungeonTrainSave}.
+     */
+    @javax.annotation.Nullable
+    private Boolean dungeonTrainPreset;
 
     /**
      * Whether the sky editor has ever stamped a plot in this world. {@code EditorCategory.clearAllPlots}
@@ -522,6 +533,10 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_CUSTOM_CONTENT_CHOICE)) {
             data.customContentChoice = CustomContentChoice.fromNbt(tag.getString(TAG_CUSTOM_CONTENT_CHOICE));
         }
+        // Absent on every world saved before the preset was recorded → stays unknown (null).
+        if (tag.contains(DungeonTrainSave.PRESET_MARKER_TAG)) {
+            data.dungeonTrainPreset = tag.getBoolean(DungeonTrainSave.PRESET_MARKER_TAG);
+        }
         // Absent on every world saved before the rate was settable → false, which is correct: those
         // worlds ran at the rate DT balanced.
         data.portalRateTuned = tag.getBoolean(TAG_PORTAL_RATE_TUNED);
@@ -639,6 +654,9 @@ public final class DungeonTrainWorldData extends SavedData {
         }
         if (breakBlocksOnContactOverride != null) {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
+        }
+        if (dungeonTrainPreset != null) {
+            tag.putBoolean(DungeonTrainSave.PRESET_MARKER_TAG, dungeonTrainPreset);
         }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putBoolean(TAG_EDITOR_PLOTS_STAMPED, editorPlotsStamped);
@@ -1179,6 +1197,22 @@ public final class DungeonTrainWorldData extends SavedData {
         this.trainY = clampY(trainY);
         this.startsWithTrain = startsWithTrain;
         this.dims = dims;
+        setDirty();
+    }
+
+    /** Whether this world came from a {@code dungeontrain:} preset; {@code null} when never recorded. */
+    @javax.annotation.Nullable
+    public Boolean dungeonTrainPreset() {
+        return dungeonTrainPreset;
+    }
+
+    /**
+     * Record, once, at world creation, whether the world came from a {@code dungeontrain:} preset.
+     * A world that already carries an answer keeps it.
+     */
+    public void recordDungeonTrainPreset(boolean fromDungeonTrainPreset) {
+        if (dungeonTrainPreset != null) return;
+        dungeonTrainPreset = fromDungeonTrainPreset;
         setDirty();
     }
 

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.bclib;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.world.DungeonTrainSave;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.betterx.bclib.api.v2.datafixer.DataFixerAPI;
@@ -27,8 +28,8 @@ import java.util.function.Consumer;
  * {@code <gameDir>/dungeontrain}, not world saves.
  *
  * <p>Any other world, a BetterNether/BetterEnd world the player made themselves, gets BCLib's prompt
- * untouched. The DT check reads the save's {@code level.dat} ({@link DungeonTrainSave}) because this runs
- * before the world opens. Wrapping the call inside the private {@code fixData(File, …)} rather than
+ * untouched. The DT check reads the save folder ({@link DungeonTrainSave}: {@code level.dat}, then the
+ * preset marker that covers Compatible Terrain worlds) because this runs before the world opens. Wrapping the call inside the private {@code fixData(File, …)} rather than
  * {@code showBackupWarning} itself is what gives us the save folder; the latter only sees the level id.</p>
  */
 @Mixin(value = DataFixerAPI.class, remap = false)
@@ -46,7 +47,8 @@ public abstract class BclibFixPromptMixin {
                                                           File levelBaseDir, String levelID, boolean showUI,
                                                           Consumer<Boolean> onResume,
                                                           LevelStorageSource.LevelStorageAccess access) {
-        if (!DungeonTrainSave.isDungeonTrainSave(levelBaseDir.toPath())) {
+        if (!DungeonTrainSave.isDungeonTrainSave(levelBaseDir.toPath(),
+                DungeonTrainCommonConfig.getDefaultCompatibleTerrain())) {
             original.call(levelId, callback);
             return;
         }
