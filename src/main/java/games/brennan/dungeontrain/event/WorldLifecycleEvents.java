@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.PendingWorldChoices;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
+import games.brennan.dungeontrain.client.worldgen.PendingWorldPreset;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.PillarTemplateStore;
@@ -13,6 +14,7 @@ import games.brennan.dungeontrain.train.CarriageGenerationMode;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.storage.LevelResource;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -20,6 +22,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.slf4j.Logger;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Bridges client-side world-creation choices into server-side per-world
@@ -64,7 +69,16 @@ public final class WorldLifecycleEvents {
         // publish on the same event sees the committed choices).
         if (!(event.getLevel() instanceof ServerLevel overworld)) return;
         if (!overworld.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
+        boolean newWorld = isNewWorld(overworld);
         DungeonTrainWorldData data = DungeonTrainWorldData.get(overworld);
+
+        // The preset is recorded only for the world it was published for. A value left over from a
+        // cancelled Create World screen must not stamp whichever existing world is opened next, so
+        // it is taken (and so cleared) on every load but written only into a brand-new world.
+        Boolean dungeonTrainPreset = PendingWorldPreset.take();
+        if (newWorld && dungeonTrainPreset != null) {
+            data.recordDungeonTrainPreset(dungeonTrainPreset);
+        }
 
         // Starting dimension is published unconditionally by the World-Type
         // mixin (defaults to OVERWORLD), so it must be committed even when the
@@ -106,6 +120,16 @@ public final class WorldLifecycleEvents {
         }
 
         overworld.getDataStorage().save();
+    }
+
+    /**
+     * A world nobody has played or saved yet: no game time has passed and DT's per-world data has
+     * never been written. Must be asked before {@link DungeonTrainWorldData#get} is saved below.
+     */
+    private static boolean isNewWorld(ServerLevel overworld) {
+        Path worldData = overworld.getServer().getWorldPath(LevelResource.ROOT)
+                .resolve("data").resolve(DungeonTrainWorldData.NAME + ".dat");
+        return overworld.getGameTime() == 0L && !Files.exists(worldData);
     }
 
     @SubscribeEvent
