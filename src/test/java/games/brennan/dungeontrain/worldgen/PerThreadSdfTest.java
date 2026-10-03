@@ -3,8 +3,10 @@ package games.brennan.dungeontrain.worldgen;
 import org.betterx.bclib.sdf.SDF;
 import org.betterx.bclib.sdf.operator.SDFDisplacement;
 import org.betterx.bclib.sdf.operator.SDFFlatWave;
+import org.betterx.bclib.sdf.operator.SDFRotation;
 import org.betterx.bclib.sdf.operator.SDFTranslate;
 import org.betterx.bclib.sdf.primitive.SDFSphere;
+import org.joml.Vector3f;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -58,6 +60,20 @@ final class PerThreadSdfTest {
         SDFDisplacement displacement = new SDFDisplacement();
         SDFDisplacement copy = PerThreadSdf.copyOf(displacement, new IdentityHashMap<>());
         assertNotSame(field(displacement, SDFDisplacement.class, "pos"), field(copy, SDFDisplacement.class, "pos"));
+    }
+
+    @Test
+    @DisplayName("a node's rotation quaternion is copied, not shared, and keeps its value")
+    void rotationQuaternionIsCopied() throws ReflectiveOperationException {
+        SDFRotation rotation = new SDFRotation().setRotation(new Vector3f(0, 1, 0), 0.7F);
+        rotation.setSource(new SDFTranslate().setTranslate(2, 0, 0).setSource(new SDFSphere().setRadius(1.0F)));
+        SDFRotation copy = PerThreadSdf.copyOf(rotation, new IdentityHashMap<>());
+
+        Object shared = field(rotation, SDFRotation.class, "rotation");
+        Object copied = field(copy, SDFRotation.class, "rotation");
+        assertNotSame(shared, copied);
+        assertEquals(shared, copied);
+        assertEquals(rotation.getDistance(1, 0.5F, 2), copy.getDistance(1, 0.5F, 2));
     }
 
     @Test

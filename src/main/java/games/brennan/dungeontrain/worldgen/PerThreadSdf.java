@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen;
 
 import org.betterx.bclib.sdf.SDF;
+import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.lang.reflect.Field;
@@ -17,7 +18,7 @@ import java.util.Map;
  * nodes before filling; with DT decorating BetterEnd chunks on every worldgen worker, two placements at once
  * fill with each other's settings. Each thread gets its own copy of the whole graph instead.
  *
- * <p>The copy keeps the graph's wiring: every SDF node and scratch vector reachable from {@code shared} is
+ * <p>The copy keeps the graph's wiring: every SDF node, scratch vector and rotation quaternion reachable from {@code shared} is
  * cloned once per thread, so two statics that point into the same graph still do in the copy. Everything
  * else — functions, block states, noise — is immutable and stays shared.</p>
  */
@@ -55,6 +56,11 @@ public final class PerThreadSdf {
         if (known != null) return known;
         if (original instanceof Vector3f vector) {
             Vector3f copy = new Vector3f(vector);
+            copies.put(original, copy);
+            return copy;
+        }
+        if (original instanceof Quaternionf rotation) {
+            Quaternionf copy = new Quaternionf(rotation);
             copies.put(original, copy);
             return copy;
         }
