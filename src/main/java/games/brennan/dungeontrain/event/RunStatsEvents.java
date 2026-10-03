@@ -516,7 +516,8 @@ public final class RunStatsEvents {
                 portrait,
                 run.earnedAdvancements(),
                 run.tamedCount(),
-                run.tamedAnimals()
+                run.tamedAnimals(),
+                run.cameraFrames()
         );
     }
 
