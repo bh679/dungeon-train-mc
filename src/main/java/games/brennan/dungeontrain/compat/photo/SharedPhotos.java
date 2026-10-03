@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.GlobalTributeStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.PhotoPaperComposite;
 import games.brennan.dungeontrain.discord.PhotoUpscale;
@@ -379,6 +380,8 @@ public final class SharedPhotos {
      * Show the tributed photo in the public passenger log ({@link TributePhotoReporter}). Clean runs
      * only — a Free Play Tribute still keeps the photo alive, it just isn't announced. The picture
      * comes from this world's copy, the same one {@link #restore} sends back; no copy, no post.
+     * And only a personal best: the most emeralds this player has ever paid for one Tribute
+     * ({@link GlobalTributeStats}). Only Tributes that could post count toward that record.
      */
     private static void announceTribute(ServerPlayer player, ItemStack held, int photoId, int cost) {
         MinecraftServer server = player.getServer();
@@ -391,6 +394,11 @@ public final class SharedPhotos {
         Optional<ExposureData> data = ExposureServer.exposureRepository().load(exposureId).getData();
         if (data.isEmpty()) {
             LOGGER.debug("[DungeonTrain] Tributed photo {} has no copy in this world; not posted.", photoId);
+            return;
+        }
+        if (!GlobalTributeStats.recordIfHighest(player.getUUID(), cost)) {
+            LOGGER.debug("[DungeonTrain] Tribute of {} to photo {} is not {}'s best (best {}); not posted.",
+                    cost, photoId, player.getGameProfile().getName(), GlobalTributeStats.highestTributePaid(player.getUUID()));
             return;
         }
         // As the tributer held it: how many hands before theirs, and the paper those views had worn.
