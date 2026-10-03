@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.tunnel.TunnelGeometry;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -8,6 +9,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.DisintegrationBand;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.SampledCells;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
@@ -33,11 +35,14 @@ import java.util.Set;
  * <b>after all worldgen decoration of every chunk</b>, so vegetation (trees/leaves)
  * that spills in from neighbouring chunks is cleaned up too.
  *
- * <p>Preserved: the track bed + rails (by geometry) and the End-stone islands +
+ * <p>Preserved: the track bed + rails (by geometry), the End-stone islands +
  * chorus plants that {@code DisintegrationFeature} placed during generation (by block
- * type) — everything else in the band is dissolved. Writes go through raw
- * {@link LevelChunkSection#setBlockState}, the Sable-safe path (see
- * {@link BedrockFloorEvents}).</p>
+ * type), and the cells a sampled BetterEnd / BoP End pass wrote during the chunk's own
+ * worldgen ({@link EndBandInlineTerrain}, recorded per chunk in
+ * {@link ModDataAttachments#END_BAND_SAMPLED_CELLS}) — everything else in the band is
+ * dissolved. The background path needs no record: it writes its sample on a later tick, after
+ * this erosion. Writes go through raw {@link LevelChunkSection#setBlockState}, the Sable-safe
+ * path (see {@link BedrockFloorEvents}).</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldDisintegrationEvents {
@@ -82,13 +87,24 @@ public final class WorldDisintegrationEvents {
         if (!event.isNewChunk()) return;
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
-
-        long startX = DisintegrationBand.startX(level);
-
         ChunkAccess chunk = event.getChunk();
+        erode(level, chunk, chunk.getData(ModDataAttachments.END_BAND_SAMPLED_CELLS));
+    }
+
+    /**
+     * The void erosion of one chunk; {@code exempt} cells are left alone. Deterministic in the world seed
+     * and the block position, so running it twice on a chunk removes nothing the first pass kept — which
+     * is how {@link EndBandInlineTerrain} uses it: once inside worldgen before the End sample is written
+     * (so the sample lands in cleared air, as it does on the background path), and once more at chunk
+     * load, exempting the sampled cells, to catch what neighbouring chunks' decoration spilled in since.
+     * True if any block was removed.
+     */
+    public static boolean erode(ServerLevel level, ChunkAccess chunk, SampledCells exempt) {
+        long startX = DisintegrationBand.startX(level);
         ChunkPos pos = chunk.getPos();
         int chunkMinX = pos.getMinBlockX();
-        if (startX == DisintegrationBand.OFF) return; // disabled (bands run both ways from the anchor)
+        if (startX == DisintegrationBand.OFF) return false; // disabled (bands run both ways from the anchor)
+        if (exempt.isAll()) return false;                   // record lost (see ModDataAttachments) — keep the islands
 
         DungeonTrainWorldData data = DungeonTrainWorldData.get(level);
         CarriageDims dims = data.dims();
@@ -121,7 +137,7 @@ public final class WorldDisintegrationEvents {
                     : DisintegrationBand.middleRampAt(level, worldX, pos.getMinBlockZ());
             if (middle[dx] > 0.0) anyMiddle = true;
         }
-        if (!anyMiddle) return;
+        if (!anyMiddle) return false;
 
         int chunkMinZ = pos.getMinBlockZ();
         boolean changed = false;
@@ -152,6 +168,7 @@ public final class WorldDisintegrationEvents {
                         if (Disintegration.coherentNoise(seed, worldX, y, worldZ) >= p) continue;
                         BlockState cur = section.getBlockState(dx, ly, dz);
                         if (cur.isAir() || isPreservedEndBlock(cur, ramp >= 1.0)) continue;
+                        if (exempt.contains(dx, y, dz)) continue;   // the End sample's own blocks
                         if (cur.hasBlockEntity()) {
                             chunk.removeBlockEntity(new BlockPos(worldX, y, worldZ));
                         }
@@ -163,5 +180,6 @@ public final class WorldDisintegrationEvents {
         }
         GenProfiler.add(GenProfiler.Bucket.EROSION, genT0);
         if (changed) chunk.setUnsaved(true);
+        return changed;
     }
 }
