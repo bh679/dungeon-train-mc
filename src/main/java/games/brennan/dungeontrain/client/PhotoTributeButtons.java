@@ -89,7 +89,8 @@ public final class PhotoTributeButtons {
         boolean canAfford = TributePayment.canPay(player.getInventory(), cost);
         int viewsLeft = SharedPhotos.viewsLeft(photo);
         int seen = SharedPhotos.viewsSeen(photo);
-        ViewCounter views = new ViewCounter(font, seen, seen + viewsLeft);
+        // This viewer's own place: 1 / 10 for the first to open it, 10 / 10 for the last.
+        ViewCounter views = new ViewCounter(font, seen + 1, seen + viewsLeft);
         int viewsWidth = views.getWidth();
         int tributeWidth = TributeButton.widthFor(font, cost);
         int left = (screen.width - viewsWidth - GAP - tributeWidth - GAP - closeWidth) / 2;
@@ -157,8 +158,8 @@ public final class PhotoTributeButtons {
     }
 
     /**
-     * {@code seen / total} as plain text: how many people have opened the photo, over how many
-     * will ever get to. The count is full size; {@code / total} is smaller, at its bottom right.
+     * {@code place / total} as plain text: which viewer of the photo this player is, over how many
+     * will ever get to see it. The count is full size; {@code / total} is smaller, at its bottom right.
      */
     private static final class ViewCounter extends AbstractWidget {
 
