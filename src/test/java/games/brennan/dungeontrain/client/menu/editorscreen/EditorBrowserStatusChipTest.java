@@ -32,10 +32,10 @@ final class EditorBrowserStatusChipTest {
             seen.add(state);
             state = EditorFilterBar.nextStatus(state);
         }
-        assertEquals(List.of(BuilderProfileFilters.ALL, BuilderReviewState.NONE,
+        assertEquals(List.of(BuilderProfileFilters.ALL, BuilderProfileFilters.PENDING, BuilderReviewState.NONE,
                 BuilderReviewState.SUBMITTED, BuilderReviewState.ACCEPTED, BuilderReviewState.DECLINED),
                 seen, "funnel order: never asked, waiting, then decided");
-        assertEquals(BuilderProfileFilters.ALL, state, "the sixth press is back to everything");
+        assertEquals(BuilderProfileFilters.ALL, state, "the seventh press is back to everything");
     }
 
     @Test
@@ -58,7 +58,10 @@ final class EditorBrowserStatusChipTest {
     }
 
     private static games.brennan.dungeontrain.net.BuilderProfilePacket.Entry entry(String review) {
+        // Pending is the chip's one virtual state: a build that satisfies it is in the queue.
+        String carried = BuilderReviewState.NONE.equals(review) ? ""
+            : BuilderProfileFilters.PENDING.equals(review) ? BuilderReviewState.SUBMITTED : review;
         return new games.brennan.dungeontrain.net.BuilderProfilePacket.Entry(1, "carriage", "", "cabin",
-                false, "", BuilderReviewState.NONE.equals(review) ? "" : review, "", 0, false, "u", "n", false);
+                false, "", carried, "", 0, false, "u", "n", false);
     }
 }
