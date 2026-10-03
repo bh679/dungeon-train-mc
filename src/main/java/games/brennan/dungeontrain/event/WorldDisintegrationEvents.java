@@ -88,7 +88,10 @@ public final class WorldDisintegrationEvents {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!level.dimension().equals(Level.OVERWORLD)) return;
         ChunkAccess chunk = event.getChunk();
-        erode(level, chunk, chunk.getData(ModDataAttachments.END_BAND_SAMPLED_CELLS));
+        SampledCells sampled = chunk.getData(ModDataAttachments.END_BAND_SAMPLED_CELLS);
+        erode(level, chunk, sampled);
+        // The record has done its one job; drop it so neither the bits nor the on-disk marker outlive it.
+        if (sampled != SampledCells.NONE) chunk.removeData(ModDataAttachments.END_BAND_SAMPLED_CELLS.get());
     }
 
     /**
