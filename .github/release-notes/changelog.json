@@ -22364,6 +22364,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "rendering-hiccup-no-crash",
+      "version": "0.1122.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Rendering hiccups",
+      "summary": "A rare rendering hiccup no longer ends your ride.",
+      "highlights": [],
+      "pr": 1784,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
