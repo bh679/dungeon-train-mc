@@ -194,8 +194,9 @@ public final class BuilderReviewCommentScreen extends Screen {
             syncVersionField();
             return;
         }
-        // The picture rides only with an accept — it is for the announcement, and only an accept makes one.
-        byte[] render = BuilderReviewState.ACCEPTED.equals(review) ? BuildRenderCapture.png(entry) : null;
+        // The picture rides only with a verdict the channel hears about — it is for the announcement.
+        byte[] render = games.brennan.dungeontrain.discord.BuildReviewReporter.announces(review)
+                ? BuildRenderCapture.png(entry) : null;
         BuilderProfileState.noteReview(entry.relayId(), review, written, version, resubmit ? op : "");
         DungeonTrainNet.sendToServer(new BuilderReviewPacket(entry.relayId(), entry.ownerUuid(), entry.ownerName(),
                 entry.buildName(), entry.kind(), entry.subKind(), live, review, written, render, version, resubmit ? op : ""));
