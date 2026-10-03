@@ -42,6 +42,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -280,6 +281,8 @@ public final class EditorGuiScreen extends Screen {
             loading = false;
             // Given up on: an answer that turns up after this is dropped rather than replayed.
             lastDownload = null;
+            lastStageRelayId = -1;
+            autoloadPending.clear();
             creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOAD_FAILED);
         }
     }
@@ -385,6 +388,7 @@ public final class EditorGuiScreen extends Screen {
             BuilderProfilePacket.Entry picked = selectedCreatorBuild();
             trackVersionsOf(picked == null ? 0 : picked.relayId(),
                 EditorCreatorBuilds.ownerOf(picked));
+            creatorPane.workbenchTab(EditorScreenState.onWorkbenchTab(), browser.creatorTiles().size());
             creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
                 creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
                 loading, previewSeq, mx, my);
@@ -520,6 +524,36 @@ public final class EditorGuiScreen extends Screen {
     private BuilderProfileDownloadPacket lastDownload;
     /** The relay row the last "To Workbench" press asked about, or -1; its answer comes back as a download result. */
     private int lastStageRelayId = -1;
+    /** The relay rows an Autoload is still waiting on; each answer comes back as a download result. */
+    private final java.util.Set<Integer> autoloadPending = new java.util.HashSet<>();
+    private int autoloadTotal;
+
+    /**
+     * Stage every build the grid lists — one server round trip, which enters the Workbench first when
+     * another category is resident. Answers arrive one per build and are counted in
+     * {@link #onDownloadResult}; the note reads the count up.
+     */
+    private void autoloadWorkbench() {
+        List<BuilderProfilePacket.Entry> listed = browser.creatorTiles();
+        if (listed.isEmpty() || loading) return;
+        List<games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.Item> items = new ArrayList<>();
+        autoloadPending.clear();
+        for (BuilderProfilePacket.Entry entry : listed) {
+            if (items.size() >= games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.MAX_ITEMS) break;
+            String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
+                ? EditorCreatorBuilds.viewedName() : entry.ownerName();
+            items.add(new games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.Item(entry.relayId(),
+                EditorCreatorBuilds.ownerOf(entry), ownerName));
+            autoloadPending.add(entry.relayId());
+        }
+        autoloadTotal = items.size();
+        lastDownload = null;
+        lastStageRelayId = -1;
+        DungeonTrainNet.sendToServer(new games.brennan.dungeontrain.net.WorkbenchAutoloadPacket(items, BuilderProfileState.live()));
+        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADING, 0, autoloadTotal);
+        loading = true;
+        loadingTicks = LOAD_TIMEOUT_TICKS * Math.max(1, autoloadTotal);
+    }
 
     /**
      * Stage the selected build on the Workbench: the same fetch as a Load, landing on the shelf instead
@@ -612,6 +646,18 @@ public final class EditorGuiScreen extends Screen {
     private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
         // Only the press this screen is waiting on: an answer to one it never made, or gave up on,
         // says nothing about the row in front of the player.
+        if (autoloadPending.remove(packet.relayId())) {
+            // One of a batch: count it, and stay greyed until the last one is in.
+            int done = autoloadTotal - autoloadPending.size();
+            creatorNote = autoloadPending.isEmpty()
+                ? EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADED, done)
+                : EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADING, done, autoloadTotal);
+            if (autoloadPending.isEmpty()) {
+                loading = false;
+                afterCommand();
+            }
+            return;
+        }
         boolean stagePress = lastStageRelayId >= 0 && packet.relayId() == lastStageRelayId;
         if (!stagePress && (lastDownload == null || packet.relayId() != lastDownload.relayId())) return;
         if (stagePress) lastStageRelayId = -1;
@@ -886,6 +932,11 @@ public final class EditorGuiScreen extends Screen {
                 case WORKBENCH -> {
                     click();
                     stageSelectedCreatorBuild();
+                    return true;
+                }
+                case AUTOLOAD -> {
+                    click();
+                    autoloadWorkbench();
                     return true;
                 }
                 case SUBMIT -> {

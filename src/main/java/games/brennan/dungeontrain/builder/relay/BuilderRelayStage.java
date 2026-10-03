@@ -62,6 +62,13 @@ public final class BuilderRelayStage {
                     build.id(), build.kind(), build.buildName());
             return BuilderRelayDownload.Result.of(BuilderRelayDownload.Outcome.UNSUPPORTED);
         }
+        // Already on the shelf: say so rather than shelving a second copy — Autoload is pressed twice.
+        for (WorkbenchStagedBuild already : WorkbenchStagingStore.list()) {
+            if (already.relayId() == build.id()) {
+                return new BuilderRelayDownload.Result(BuilderRelayDownload.Outcome.STAGED_ALREADY, kind,
+                        already.stagedId(), build.subKind());
+            }
+        }
         CompoundTag snapshot;
         try {
             snapshot = BuilderRelayDownload.fold(CarriageBlockSnapshot.decode(build.blocks()), build);

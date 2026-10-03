@@ -22,6 +22,12 @@ public final class BuilderProfileFilters {
 
     /** Every chip's first option: no narrowing at all. */
     public static final String ALL = "";
+    /**
+     * The review axis' one virtual value: awaiting review — {@code submitted} or {@code resubmit}
+     * ({@link BuilderReviewState#isPending}). Not a state the relay ever sends, so it can never collide
+     * with one; the Workbench tab's default.
+     */
+    public static final String PENDING = "pending";
 
     /**
      * The favourite chip's other option: only builds this player has starred.
@@ -57,7 +63,11 @@ public final class BuilderProfileFilters {
     public static boolean matches(BuilderProfilePacket.Entry entry, String kind, String review, String favourite) {
         if (entry == null) return false;
         if (!ALL.equals(kind) && !kind.equals(entry.kind())) return false;
-        if (!ALL.equals(review) && !review.equals(BuilderReviewState.of(entry.review()))) return false;
+        if (PENDING.equals(review)) {
+            if (!BuilderReviewState.isPending(entry.review())) return false;
+        } else if (!ALL.equals(review) && !review.equals(BuilderReviewState.of(entry.review()))) {
+            return false;
+        }
         return !STARRED.equals(favourite) || entry.favourite();
     }
 

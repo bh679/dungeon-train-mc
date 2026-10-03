@@ -35,7 +35,7 @@ public final class EditorCreatorPane {
     static final int LOADED_TEXT = 0xFF88DD88;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, LOAD, PARENT, WORKBENCH, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT, PAGE_PREV, PAGE_NEXT, EDIT_NOTE }
+    public enum HitKind { NONE, LOAD, PARENT, WORKBENCH, AUTOLOAD, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT, PAGE_PREV, PAGE_NEXT, EDIT_NOTE }
 
     /** The parent button's share of the load slot; the load button keeps the rest. */
     static final double PARENT_SHARE = 0.42;
@@ -48,6 +48,17 @@ public final class EditorCreatorPane {
     private InventoryEditorLayout.Rect loadRect;
     private InventoryEditorLayout.Rect parentRect;
     private InventoryEditorLayout.Rect workbenchRect;
+    private InventoryEditorLayout.Rect autoloadRect;
+    /** On the Workbench tab the bottom slot is To Workbench | Autoload; elsewhere Load and its parent. */
+    private boolean workbenchTab;
+    /** How many builds the grid is showing — what Autoload would stage. */
+    private int listed;
+
+    /** Tell the pane which tab it is drawn on and how many builds the grid lists. */
+    public void workbenchTab(boolean on, int listedCount) {
+        this.workbenchTab = on;
+        this.listed = listedCount;
+    }
     private InventoryEditorLayout.Rect goHereRect;
     private InventoryEditorLayout.Rect previewRect;
     private InventoryEditorLayout.Rect submitRect;
@@ -218,6 +229,11 @@ public final class EditorCreatorPane {
         loadRect = null;
         parentRect = null;
         workbenchRect = null;
+        autoloadRect = null;
+        if (workbenchTab) {
+            drawWorkbenchButtons(g, font, r, entry, loading, mouseX, mouseY);
+            return;
+        }
         // Already here, and Shift is not down: not a button. Pressing it again would fetch the same
         // build and be told the name is taken — by the copy it just made. Shift is the way to ask
         // for that copy on purpose (the editor's usual "the other thing this control does"), and
@@ -233,6 +249,24 @@ public final class EditorCreatorPane {
             return;
         }
         drawLoadButtons(g, font, r, entry, asCopy || landed != null, loading, mouseX, mouseY);
+    }
+
+    /**
+     * The Workbench tab's slot: stage the selected build, or every build the grid lists. No Load — this
+     * tab is about looking before deciding, and nothing here installs.
+     */
+    private void drawWorkbenchButtons(GuiGraphics g, Font font, InventoryEditorLayout.Rect r,
+                                      BuilderProfilePacket.Entry entry, boolean loading, int mouseX, int mouseY) {
+        int half = (r.w() - BUTTON_GAP) / 2;
+        workbenchRect = new InventoryEditorLayout.Rect(r.x(), r.y(), half, r.h());
+        autoloadRect = new InventoryEditorLayout.Rect(r.x() + half + BUTTON_GAP, r.y(), r.w() - half - BUTTON_GAP, r.h());
+        boolean one = entry != null && !loading;
+        boolean all = listed > 0 && !loading;
+        button(g, font, workbenchRect, EditorScreenLang.text(EditorScreenLang.CREATOR_LOAD_WORKBENCH), one, mouseX, mouseY);
+        button(g, font, autoloadRect, EditorScreenLang.text(loading ? EditorScreenLang.CREATOR_LOAD_PENDING
+            : EditorScreenLang.CREATOR_AUTOLOAD, listed), all, mouseX, mouseY);
+        if (!one) workbenchRect = null;
+        if (!all) autoloadRect = null;
     }
 
     /** The load button and, for a kind with sub-variants, the parent picker beside it. */
@@ -354,6 +388,7 @@ public final class EditorCreatorPane {
         if (loadRect != null && loadRect.contains(mx, my)) return HitKind.LOAD;
         if (parentRect != null && parentRect.contains(mx, my)) return HitKind.PARENT;
         if (workbenchRect != null && workbenchRect.contains(mx, my)) return HitKind.WORKBENCH;
+        if (autoloadRect != null && autoloadRect.contains(mx, my)) return HitKind.AUTOLOAD;
         if (previewRect != null && previewRect.contains(mx, my)) return HitKind.PREVIEW;
         return HitKind.NONE;
     }

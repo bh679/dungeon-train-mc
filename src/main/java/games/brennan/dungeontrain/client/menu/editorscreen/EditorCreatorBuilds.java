@@ -371,7 +371,11 @@ public final class EditorCreatorBuilds {
         List<BuilderProfilePacket.Entry> out = new ArrayList<>();
         for (BuilderProfilePacket.Entry entry : builds) {
             if (!admits(filter, entry.kind())) continue;
-            if (!needle.isEmpty() && !entry.buildName().toLowerCase(Locale.ROOT).contains(needle)) continue;
+            // The build's name or its builder's: the pooled listing is browsed by who made what.
+            if (!needle.isEmpty() && !entry.buildName().toLowerCase(Locale.ROOT).contains(needle)
+                    && !(entry.ownerName() != null && entry.ownerName().toLowerCase(Locale.ROOT).contains(needle))) {
+                continue;
+            }
             if (!BuilderProfileFilters.matches(entry, BuilderProfileFilters.ALL, review)) continue;
             if (starredOnly && !starred(entry)) continue;
             out.add(entry);

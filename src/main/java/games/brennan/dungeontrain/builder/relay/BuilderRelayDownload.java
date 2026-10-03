@@ -80,7 +80,9 @@ public final class BuilderRelayDownload {
         /** The build is on the Workbench shelf; another category is resident, so it is not standing yet. */
         STAGED_NOT_SHOWING,
         /** Too tall to stand on the Workbench layer; nothing was written. */
-        TOO_TALL
+        TOO_TALL,
+        /** This relay row is already on the Workbench shelf; {@code Result.id} names it. Nothing was written. */
+        STAGED_ALREADY
     }
 
     /**
@@ -98,7 +100,7 @@ public final class BuilderRelayDownload {
             this(outcome, kind, id, subKind, List.of(), List.of());
         }
 
-        static Result of(Outcome outcome) {
+        public static Result of(Outcome outcome) {
             return new Result(outcome, null, "", "", List.of(), List.of());
         }
 

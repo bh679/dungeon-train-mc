@@ -65,6 +65,13 @@ public final class EditorScreenState {
      */
     private static boolean selectStandingPending;
 
+    /**
+     * Whether the Workbench tab is the one that pooled every builder's uploads into creator mode. It
+     * puts the Templates tab back as it was on the way out — but only what it changed: a pool the
+     * reviewer had opened by hand through Find a Builder stays open.
+     */
+    private static boolean workbenchOpenedPool;
+
     private EditorScreenState() {}
 
     public static EditorScreenPage page() { return page; }
@@ -122,7 +129,42 @@ public final class EditorScreenState {
     /** Change tab. The type strip is left alone: it belongs to the category, not the page. */
     public static void setPage(EditorScreenPage next) {
         if (next == null || next == page) return;
+        EditorScreenPage previous = page;
         page = next;
+        if (next == EditorScreenPage.WORKBENCH) enterWorkbenchTab();
+        else if (previous == EditorScreenPage.WORKBENCH) leaveWorkbenchTab();
+    }
+
+    /**
+     * The Workbench tab's view: every builder's uploads, narrowed to the ones awaiting review, in the
+     * category the author is standing in — every kind when that is the Workbench itself, which holds
+     * every kind. The strip and the status chip stay live: these are defaults, not locks.
+     */
+    static void enterWorkbenchTab() {
+        if (!EditorCreatorBuilds.pooled()) {
+            EditorCreatorBuilds.showAll();
+            workbenchOpenedPool = true;
+        }
+        creatorReview = BuilderProfileFilters.PENDING;
+        EditorRosterIndex index = EditorRosterClient.index();
+        games.brennan.dungeontrain.editor.PlotCategory standing = index == null ? null : index.stampedCategory();
+        EditorCategoryFilter cell = standing == null || standing == games.brennan.dungeontrain.editor.PlotCategory.WORKBENCH
+            ? EditorCategoryFilter.ALL
+            : EditorCategoryFilter.forCategory(standing);
+        setCategory(cell == null ? EditorCategoryFilter.ALL : cell);
+    }
+
+    static void leaveWorkbenchTab() {
+        if (workbenchOpenedPool) {
+            EditorCreatorBuilds.clear();
+            workbenchOpenedPool = false;
+        }
+        if (BuilderProfileFilters.PENDING.equals(creatorReview)) creatorReview = BuilderProfileFilters.ALL;
+    }
+
+    /** Whether the Workbench tab is the page being looked at. */
+    public static boolean onWorkbenchTab() {
+        return page == EditorScreenPage.WORKBENCH;
     }
 
     /** Change category cell; the remembered type strip goes with the old one. */

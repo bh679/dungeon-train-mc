@@ -2,7 +2,7 @@
   "locale": "ja_jp",
   "name": "人間のレビューなしのAI",
   "human_reviewed": false,
-  "total_keys": 4080,
-  "ai_authored": 4080,
-  "ai_unreviewed": 4080
+  "total_keys": 4085,
+  "ai_authored": 4085,
+  "ai_unreviewed": 4085
 }

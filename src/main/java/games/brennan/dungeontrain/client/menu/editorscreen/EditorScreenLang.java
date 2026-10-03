@@ -270,6 +270,9 @@ public final class EditorScreenLang {
 
     // ---- Workbench ----
     public static final String CREATOR_LOAD_WORKBENCH = PREFIX + "creator.load_workbench";
+    public static final String CREATOR_AUTOLOAD = PREFIX + "creator.autoload";
+    public static final String CREATOR_AUTOLOADING = PREFIX + "creator.autoloading";
+    public static final String CREATOR_AUTOLOADED = PREFIX + "creator.autoloaded";
     public static final String ICON_COMMIT = PREFIX + "icon.commit";
     public static final String DISABLED_NOT_WORKBENCH = PREFIX + "disabled.not_workbench";
     public static final String COMMIT_TITLE = PREFIX + "commit.title";

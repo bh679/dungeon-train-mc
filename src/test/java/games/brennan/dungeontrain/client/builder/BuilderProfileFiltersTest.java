@@ -60,6 +60,21 @@ final class BuilderProfileFiltersTest {
     }
 
     @Test
+    @DisplayName("the Pending axis admits submitted and resubmit, and nothing else")
+    void pendingAxis() {
+        BuilderProfilePacket.Entry submitted = build(1, "contents", "submitted", false);
+        BuilderProfilePacket.Entry resubmit = build(2, "contents", "resubmit", false);
+        BuilderProfilePacket.Entry feedback = build(3, "contents", "feedback", false);
+        BuilderProfilePacket.Entry accepted = build(4, "contents", "accepted", false);
+        BuilderProfilePacket.Entry none = build(5, "contents", "none", false);
+        assertTrue(BuilderProfileFilters.matches(submitted, BuilderProfileFilters.ALL, BuilderProfileFilters.PENDING));
+        assertTrue(BuilderProfileFilters.matches(resubmit, BuilderProfileFilters.ALL, BuilderProfileFilters.PENDING));
+        assertFalse(BuilderProfileFilters.matches(feedback, BuilderProfileFilters.ALL, BuilderProfileFilters.PENDING));
+        assertFalse(BuilderProfileFilters.matches(accepted, BuilderProfileFilters.ALL, BuilderProfileFilters.PENDING));
+        assertFalse(BuilderProfileFilters.matches(none, BuilderProfileFilters.ALL, BuilderProfileFilters.PENDING));
+    }
+
+    @Test
     @DisplayName("order is the relay's order, which is newest-first")
     void keepsOrder() {
         List<BuilderProfilePacket.Entry> reversed = List.of(ROOM, ACCEPTED, WAITING);

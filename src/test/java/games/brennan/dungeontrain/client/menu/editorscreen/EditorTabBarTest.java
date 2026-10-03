@@ -24,19 +24,20 @@ final class EditorTabBarTest {
     @DisplayName("Templates, Layout, Stages then Nav from the left; Settings and Exit are locked to the right")
     void order() {
         List<EditorTabBar.Tab> t = tabs(640);
-        assertEquals(6, t.size());
+        assertEquals(7, t.size());
         assertEquals(EditorScreenPage.TEMPLATES, t.get(0).page());
         assertEquals(EditorScreenPage.LAYOUT, t.get(1).page());
         assertEquals(EditorScreenPage.STAGES, t.get(2).page());
         assertEquals(EditorScreenPage.NAV, t.get(3).page());
-        assertEquals(EditorScreenPage.SETTINGS, t.get(4).page());
-        assertEquals(EditorTabBar.Kind.EXIT, t.get(5).kind());
-        EditorTabBar.Tab exit = t.get(5);
+        assertEquals(EditorScreenPage.WORKBENCH, t.get(4).page());
+        assertEquals(EditorScreenPage.SETTINGS, t.get(5).page());
+        assertEquals(EditorTabBar.Kind.EXIT, t.get(6).kind());
+        EditorTabBar.Tab exit = t.get(6);
         assertEquals(6 + 640 - 12, exit.x() + exit.w());
         for (int i = 1; i < t.size(); i++) {
             assertTrue(t.get(i - 1).x() + t.get(i - 1).w() <= t.get(i).x());
         }
-        assertEquals("SETTINGS", t.get(4).label());
+        assertEquals("SETTINGS", t.get(5).label());
     }
 
     @Test
@@ -44,10 +45,11 @@ final class EditorTabBarTest {
     void groupsTabSitsAfterNavOnlyWhenShown() {
         List<EditorTabBar.Tab> t = EditorTabBar.layout(new Rect(6, 4, 640 - 12, 16), s -> s.length() * 6,
             EditorScreenPage::name, true);
-        assertEquals(7, t.size());
+        assertEquals(8, t.size());
         assertEquals(EditorScreenPage.NAV, t.get(3).page());
         assertEquals(EditorScreenPage.GROUPS, t.get(4).page());
-        assertEquals(EditorScreenPage.SETTINGS, t.get(5).page());
+        assertEquals(EditorScreenPage.WORKBENCH, t.get(5).page());
+        assertEquals(EditorScreenPage.SETTINGS, t.get(6).page());
         for (EditorTabBar.Tab tab : tabs(640)) {
             assertTrue(tab.page() != EditorScreenPage.GROUPS, "Groups is hidden by default");
         }

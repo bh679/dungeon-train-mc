@@ -83,6 +83,7 @@ final class EditorFilterBar {
      */
     private static final List<String[]> STATUS_OPTIONS = List.of(
         new String[] {BuilderProfileFilters.ALL, "gui.dungeontrain.builder.profile.status.all"},
+        new String[] {BuilderProfileFilters.PENDING, "gui.dungeontrain.builder.profile.status.pending"},
         new String[] {BuilderReviewState.NONE, "gui.dungeontrain.builder.profile.status.none"},
         new String[] {BuilderReviewState.SUBMITTED, "gui.dungeontrain.builder.profile.status.submitted"},
         new String[] {BuilderReviewState.ACCEPTED, "gui.dungeontrain.builder.profile.status.accepted"},

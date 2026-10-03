@@ -15002,5 +15002,36 @@
         "12"
       ]
     }
+  },
+  "gui.dungeontrain.editor_screen.creator.autoload": {
+    "1": {
+      "label": "how many builds the grid lists",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.creator.autoloading": {
+    "1": {
+      "label": "builds staged so far",
+      "examples": [
+        "2"
+      ]
+    },
+    "2": {
+      "label": "builds in the batch",
+      "examples": [
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.creator.autoloaded": {
+    "1": {
+      "label": "builds staged by the batch",
+      "examples": [
+        "7"
+      ]
+    }
   }
 }

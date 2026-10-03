@@ -24,13 +24,26 @@ public final class BuilderReviewState {
     public static final String ACCEPTED = "accepted";
     /** Looked at and turned down. The build stays in its author's profile. */
     public static final String DECLINED = "declined";
+    /** Sent back to the builder with notes; not in the queue until they resubmit. */
+    public static final String FEEDBACK = "feedback";
+    /** Resubmitted after feedback — back in the queue, awaiting review like {@link #SUBMITTED}. */
+    public static final String RESUBMIT = "resubmit";
 
     private BuilderReviewState() {}
 
     /** Coerce a relay-supplied value. Anything absent, empty or unrecognised reads as never-asked. */
     public static String of(String review) {
-        if (SUBMITTED.equals(review) || ACCEPTED.equals(review) || DECLINED.equals(review)) return review;
+        if (SUBMITTED.equals(review) || ACCEPTED.equals(review) || DECLINED.equals(review)
+                || FEEDBACK.equals(review) || RESUBMIT.equals(review)) {
+            return review;
+        }
         return NONE;
+    }
+
+    /** Whether a build with this state is in the review queue — what the Workbench tab lists. */
+    public static boolean isPending(String review) {
+        String state = of(review);
+        return SUBMITTED.equals(state) || RESUBMIT.equals(state);
     }
 
     /** Waiting on a person: the blue of Minecraft's own §b, which reads as "in progress", not "wrong". */
@@ -52,7 +65,7 @@ public final class BuilderReviewState {
      */
     public static int borderColourFor(String review) {
         return switch (of(review)) {
-            case SUBMITTED -> BORDER_SUBMITTED;
+            case SUBMITTED, RESUBMIT -> BORDER_SUBMITTED;
             case ACCEPTED -> BORDER_ACCEPTED;
             case DECLINED -> BORDER_DECLINED;
             default -> BORDER_NONE;
@@ -66,7 +79,7 @@ public final class BuilderReviewState {
      */
     public static String noteKeyFor(String review) {
         return switch (of(review)) {
-            case SUBMITTED -> "gui.dungeontrain.builder.profile.review.submitted_note";
+            case SUBMITTED, RESUBMIT -> "gui.dungeontrain.builder.profile.review.submitted_note";
             case DECLINED -> "gui.dungeontrain.builder.profile.review.declined_note";
             default -> null;
         };
