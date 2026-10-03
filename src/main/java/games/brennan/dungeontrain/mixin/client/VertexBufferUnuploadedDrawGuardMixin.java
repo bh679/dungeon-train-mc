@@ -16,8 +16,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Skips drawing a {@link VertexBuffer} that never received an upload, instead of crashing the client
- * with {@code Cannot read field "asGLMode" because "this.mode" is null}.
+ * Skips drawing a {@link VertexBuffer} that never received an upload, so a failed section upload is
+ * reported as itself rather than as {@code Cannot read field "asGLMode" because "this.mode" is null}.
  *
  * <p>{@code mode} is set only at the end of a successful {@code upload(MeshData)}. When a section's
  * upload throws, vanilla's {@code RebuildTask} hands the error to {@code Minecraft.delayCrash} and then
@@ -27,9 +27,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * the delayed one — the real error is never shown. Reported 2026-10-02 in the Far Lands on a 512 MB
  * AMD iGPU, whose dense sections are the likeliest to fail a GPU allocation mid-upload.</p>
  *
- * <p>A skipped draw leaves that section blank until its next rebuild uploads it again. The upload
- * itself is wrapped only to log what failed, then rethrows, so vanilla's handling is unchanged. Remove
- * once vanilla or NeoForge stop storing a section whose upload failed.</p>
+ * <p>This does not prevent the crash: {@code Minecraft.run} raises the delayed crash on its next loop,
+ * so the game still stops — but with a "Rendering section" report naming the real upload error
+ * (verified 2026-10-03 with a forced upload failure). Any other never-uploaded buffer is simply left
+ * undrawn. The upload itself is wrapped only to log what failed, then rethrows, so vanilla's handling
+ * is unchanged. Remove once vanilla or NeoForge stop storing a section whose upload failed.</p>
  */
 @Mixin(VertexBuffer.class)
 public abstract class VertexBufferUnuploadedDrawGuardMixin {
