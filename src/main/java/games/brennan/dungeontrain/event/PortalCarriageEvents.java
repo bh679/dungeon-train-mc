@@ -2341,6 +2341,22 @@ public final class PortalCarriageEvents {
         return false;
     }
 
+    /** The player nearest {@code (originX, originZ)} on the horizontal, or null with nobody about. */
+    private static ServerPlayer nearestRider(List<ServerPlayer> players, double originX, double originZ) {
+        ServerPlayer nearest = null;
+        double best = Double.MAX_VALUE;
+        for (ServerPlayer player : players) {
+            double dx = player.getX() - originX;
+            double dz = player.getZ() - originZ;
+            double distanceSq = dx * dx + dz * dz;
+            if (distanceSq < best) {
+                best = distanceSq;
+                nearest = player;
+            }
+        }
+        return nearest;
+    }
+
     /**
      * Whether {@code pairKey} rolls its room with the own-books library weighted up — see
      * {@link games.brennan.dungeontrain.portal.PortalOwnShelves}.
@@ -2354,17 +2370,7 @@ public final class PortalCarriageEvents {
     private static boolean ownShelfBoostFor(ServerLevel level, List<ServerPlayer> players,
                                             int pairKey, double originX, double originZ) {
         if (DungeonTrainWorldData.get(level).isOwnShelfPair(pairKey)) return true;
-        ServerPlayer nearest = null;
-        double best = Double.MAX_VALUE;
-        for (ServerPlayer player : players) {
-            double dx = player.getX() - originX;
-            double dz = player.getZ() - originZ;
-            double distanceSq = dx * dx + dz * dz;
-            if (distanceSq < best) {
-                best = distanceSq;
-                nearest = player;
-            }
-        }
+        ServerPlayer nearest = nearestRider(players, originX, originZ);
         return nearest != null && nearest.getData(
             games.brennan.dungeontrain.registry.ModDataAttachments.PLAYER_RUN_STATE.get())
             .ownShelfBoostPending();
@@ -2412,7 +2418,7 @@ public final class PortalCarriageEvents {
             : evicted != null ? evicted.movedTo(wanted)
             : PortalCarriageBuilder.planStructure(level, dims, wanted, pairKey, region,
                 GateContext.forCarriageAtWorldX(level, Mth.floor(originX), pairKey, dims.length()),
-                ownShelfBoost);
+                ownShelfBoost, nearestRider(players, originX, originZ));
 
         // A pair whose room could not be planned yet — a chunk dimension still sampling its terrain
         // is the only thing that answers null. It keeps whatever it had (nothing, the first time

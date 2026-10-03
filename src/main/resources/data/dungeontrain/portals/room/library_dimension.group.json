@@ -3,32 +3,8 @@
   "selfWeight": 3,
   "variants": [
     {
-      "id": "smalllibrary",
-      "weight": 1
-    },
-    {
-      "id": "midlibrary",
-      "weight": 1
-    },
-    {
       "id": "pretty",
       "weight": 1
-    },
-    {
-      "id": "author_new",
-      "weight": 2
-    },
-    {
-      "id": "author_fancy",
-      "weight": 2
-    },
-    {
-      "id": "author_fancy24",
-      "weight": 2
-    },
-    {
-      "id": "author_fancy_126",
-      "weight": 2
     }
   ]
 }

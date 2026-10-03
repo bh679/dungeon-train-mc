@@ -440,4 +440,20 @@ public record PortalRoomBooks(Kind kind, int selfWeight, int playerWeight, int s
                 weight, minBooks, maxBooks);
         };
     }
+
+    /**
+     * This room with the roll taken out of it: {@code share}, every time, at the same book range.
+     *
+     * <p>How a room carries a share decided somewhere else — an author-room parent's split, or the
+     * own-books boost — so everything that asks the room what it stocks gets that answer without
+     * knowing there was a roll. Always {@link Kind#MIX}: a pinned share is a room that stocks.</p>
+     */
+    public PortalRoomBooks only(Share share) {
+        return new PortalRoomBooks(Kind.MIX,
+            share == Share.SELF ? 1 : 0,
+            share == Share.PLAYER ? 1 : 0,
+            share == Share.SIGNATURE ? 1 : 0,
+            share == Share.STATS ? 1 : 0,
+            minBooks, maxBooks);
+    }
 }
