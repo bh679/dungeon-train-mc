@@ -87,7 +87,7 @@ public record EditorPlotScope(String key, BlockPos origin, Vec3i size) {
         if (player == null || model == null) return false;
         MinecraftServer server = player.getServer();
         if (server == null || player.level() != server.overworld()) return false;
-        if (player.blockPosition().getY() < EditorLayout.PLOT_Y) return false;
+        if (!EditorStampedCategoryState.atPlotHeight(player.blockPosition().getY())) return false;
         ServerLevel overworld = server.overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
         Optional<EditorCategory.Located> here = EditorCategory.locate(player, dims);
@@ -119,7 +119,7 @@ public record EditorPlotScope(String key, BlockPos origin, Vec3i size) {
      */
     public static boolean isInsideAnyPlot(ServerPlayer player) {
         if (player == null) return false;
-        if (player.blockPosition().getY() < EditorLayout.PLOT_Y) return false;
+        if (!EditorStampedCategoryState.atPlotHeight(player.blockPosition().getY())) return false;
         ServerLevel level = player.serverLevel();
         if (level == null) return false;
         return resolveAt(player, level).isPresent();

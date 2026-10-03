@@ -60,7 +60,7 @@ public record BuilderSwitchPacket(String modeId, boolean force) implements Custo
                 return; // not a builder world — a client can send anything
             }
 
-            Optional<BuilderMode> mode = BuilderMode.fromId(packet.modeId);
+            Optional<BuilderMode> mode = BuilderMode.fromBuilderId(packet.modeId);
             if (mode.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Builder switch: unknown mode id '{}' — ignoring", packet.modeId);
                 return;

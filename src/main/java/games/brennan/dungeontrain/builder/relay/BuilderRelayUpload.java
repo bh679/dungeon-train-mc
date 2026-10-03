@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
+import games.brennan.dungeontrain.train.CarriageSnapshotTemplate;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -87,15 +88,36 @@ public final class BuilderRelayUpload {
      */
     public static void afterSave(ServerPlayer player, ServerLevel level, BuilderSave.Written written,
                                  String stageId) {
+        afterSave(player, level, written, stageId, null);
+    }
+
+    /**
+     * As above, for a save whose blocks are the <b>file</b> rather than the plot.
+     *
+     * <p>{@code template} is the stored template NBT the save just wrote, or null to capture
+     * {@code written}'s volume from the world as every train piece does. A building is the one kind
+     * that passes it: its file is not its plot — the save trims the empty margin and keeps the air
+     * inside, which a world capture would undo — and the relay's hash of the upload has to be the
+     * hash of that file, because that is what an accepted building is later recognised by
+     * ({@code BundledFingerprints.hashOf}).</p>
+     */
+    public static void afterSave(ServerPlayer player, ServerLevel level, BuilderSave.Written written,
+                                 String stageId, CompoundTag template) {
         if (written == null || !canUpload(player)) return;
         String blocks;
         String text;
         try {
-            CarriageBlockSnapshot.Captured captured = CarriageBlockSnapshot.captureLevel(
-                    level, written.origin(), written.size(), level.registryAccess(),
-                    DungeonTrainConfig.getSharedCarriageMaxEntities());
-            blocks = CarriageBlockSnapshot.encode(captured.tag());
-            text = captured.text();
+            if (template != null) {
+                CompoundTag snapshot = CarriageSnapshotTemplate.fromTemplateTag(template);
+                blocks = CarriageBlockSnapshot.encode(snapshot);
+                text = CarriageSnapshotTemplate.textOf(snapshot, level.registryAccess());
+            } else {
+                CarriageBlockSnapshot.Captured captured = CarriageBlockSnapshot.captureLevel(
+                        level, written.origin(), written.size(), level.registryAccess(),
+                        DungeonTrainConfig.getSharedCarriageMaxEntities());
+                blocks = CarriageBlockSnapshot.encode(captured.tag());
+                text = captured.text();
+            }
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Builder relay upload: could not capture '{}': {}", written.id(), t.toString());
             tell(player, "gui.dungeontrain.builder.profile.upload_failed", ChatFormatting.RED, written.id());

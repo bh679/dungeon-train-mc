@@ -16,6 +16,13 @@ ORDER = {"dungeontrain:lost_city_stretch": 0, "dungeontrain:lost_city_swap": 1, 
 DATA = "src/main/resources/data/dungeontrain"
 SET_PATH = f"{DATA}/worldgen/structure_set/lost_city.json"
 
+# The one slot that places players' new buildings (building/BuildingWorldgen.java): its pool holds a single
+# placeholder that StructureTemplatePoolBuildingMixin swaps for a weighted pick of the world's new buildings.
+PLAYER_BUILDING = "player_building"
+PLAYER_BUILDING_SLOT = "dungeontrain:building_slot"
+PLAYER_BUILDING_WEIGHT = 6
+TRACKSIDE_BIOMES = "#dungeontrain:lost_city_trackside"
+
 
 def dumps(obj) -> bytes:
     return (json.dumps(obj, indent=2) + "\n").encode()
@@ -36,22 +43,32 @@ def pool(archetype: Archetype, designs: Iterable[Design]) -> dict:
 
 
 def structure(archetype: Archetype) -> dict:
-    name = archetype.spec.name
+    return jigsaw(archetype.spec.name, archetype.spec.biomes)
+
+
+def jigsaw(name: str, biomes: str) -> dict:
     return {
         "type": "minecraft:jigsaw", "start_pool": f"dungeontrain:lost_city/{name}", "size": 1,
         "max_distance_from_center": 64, "spawn_overrides": {}, "step": "surface_structures",
         "terrain_adaptation": "beard_thin", "start_height": {"absolute": 0},
-        "project_start_to_heightmap": "WORLD_SURFACE_WG", "biomes": archetype.spec.biomes, "use_expansion_hack": False,
+        "project_start_to_heightmap": "WORLD_SURFACE_WG", "biomes": biomes, "use_expansion_hack": False,
     }
+
+
+def player_building_pool() -> dict:
+    return {"name": f"dungeontrain:lost_city/{PLAYER_BUILDING}", "fallback": "minecraft:empty", "elements": [
+        {"weight": 1, "element": {"element_type": "minecraft:single_pool_element", "location": PLAYER_BUILDING_SLOT,
+                                  "projection": "rigid", "processors": "minecraft:empty"}}]}
 
 
 def structure_set(existing: dict, archetypes: Iterable[Archetype]) -> dict:
     """The set with an entry per DT building appended (and its weight refreshed), everything else kept."""
-    names = {a.spec.name for a in archetypes}
+    names = {a.spec.name for a in archetypes} | {PLAYER_BUILDING}
     structures = [s for s in existing["structures"]
                   if not (s["structure"].startswith("dungeontrain:lost_city/") and s["structure"].split("/")[-1] in names)]
     for a in archetypes:
         structures.append({"structure": f"dungeontrain:lost_city/{a.spec.name}", "weight": a.spec.weight})
+    structures.append({"structure": f"dungeontrain:lost_city/{PLAYER_BUILDING}", "weight": PLAYER_BUILDING_WEIGHT})
     return {**existing, "structures": structures}
 
 
@@ -64,6 +81,8 @@ def render(archetypes: Iterable[Archetype], designs: dict[str, list[Design]], ex
             files[f"{DATA}/worldgen/processor_list/lost_city/{name}_{d.name}.json"] = dumps(processor_list(d))
         files[f"{DATA}/worldgen/template_pool/lost_city/{name}.json"] = dumps(pool(a, designs[name]))
         files[f"{DATA}/worldgen/structure/lost_city/{name}.json"] = dumps(structure(a))
+    files[f"{DATA}/worldgen/template_pool/lost_city/{PLAYER_BUILDING}.json"] = dumps(player_building_pool())
+    files[f"{DATA}/worldgen/structure/lost_city/{PLAYER_BUILDING}.json"] = dumps(jigsaw(PLAYER_BUILDING, TRACKSIDE_BIOMES))
     files[SET_PATH] = dumps(structure_set(existing_set, archetypes))
     for path, data in files.items():
         if b"big_lost_city:" in data and path != SET_PATH:
