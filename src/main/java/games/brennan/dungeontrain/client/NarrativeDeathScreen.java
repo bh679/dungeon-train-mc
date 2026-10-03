@@ -10,11 +10,10 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.bugresponse.BugIssueClassifier;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
-import games.brennan.dungeontrain.client.bugresponse.ReleasesBehind;
 import games.brennan.dungeontrain.client.version.compare.FullSemver;
 import games.brennan.dungeontrain.client.version.compare.InstalledVersion;
 import games.brennan.dungeontrain.client.version.compare.Platform;
-import games.brennan.dungeontrain.client.version.compare.PlatformVersions;
+import games.brennan.dungeontrain.client.version.compare.NewestRelease;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareState;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.support.DevHours;
@@ -2031,26 +2030,29 @@ public final class NarrativeDeathScreen extends Screen {
         return y;
     }
 
-    /** This launcher's listing, when it has arrived. */
-    private static Optional<PlatformVersions> ownListing() {
-        return VersionCompareState.versions(Platform.current());
+    /**
+     * The newest real release on any launcher, when it is newer than this build — the player's own
+     * launcher first, the other one when it is further ahead (CurseForge's review can hold a build back).
+     */
+    private static Optional<NewestRelease.Target> newestRelease() {
+        Optional<FullSemver> installed = InstalledVersion.get();
+        if (installed.isEmpty()) return Optional.empty();
+        Platform launcher = Platform.current();
+        return NewestRelease.across(installed.get(), launcher,
+                VersionCompareState.versions(launcher), VersionCompareState.versions(launcher.other()));
     }
 
-    /** The version this launcher would update to, when it is a newer real release than this build. */
+    /** The version the Update button offers, when this build is behind on any launcher. */
     private static Optional<FullSemver> updateTarget() {
-        Optional<FullSemver> installed = InstalledVersion.get();
-        Optional<PlatformVersions> own = ownListing();
-        if (installed.isEmpty() || own.isEmpty()) return Optional.empty();
-        return ReleasesBehind.updateTarget(own.get(), installed.get());
+        return newestRelease().map(NewestRelease.Target::version);
     }
 
     private static int releasesBehind() {
-        Optional<FullSemver> installed = InstalledVersion.get();
-        Optional<PlatformVersions> own = ownListing();
-        if (installed.isEmpty() || own.isEmpty()) return 0;
-        return ReleasesBehind.count(own.get(), installed.get());
+        return newestRelease().map(NewestRelease.Target::releasesBehind).orElse(0);
     }
 
+    // Always the player's own launcher's page, even when the newer build is only on the other one:
+    // the button tells a CurseForge player an update exists but never sends them off CurseForge.
     private void openUpdatePage() {
         ConfirmLinkScreen.confirmLinkNow(this, BugResponseCard.packUrl(Platform.current()));
     }

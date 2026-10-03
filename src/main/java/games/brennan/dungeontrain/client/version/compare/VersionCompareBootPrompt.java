@@ -13,8 +13,9 @@ import org.slf4j.Logger;
 import java.util.Optional;
 
 /**
- * Opens the Versions page by itself, once per session, when the build is behind the newest
- * release on the player's launcher. Same idea as {@code ConfigDeviationPromptHandler}, but the
+ * Opens the Versions page by itself, once per session, when the build is behind the newest real
+ * release on any launcher ({@link NewestRelease}) — not just the player's own, which for CurseForge
+ * players can lag for as long as a build sits in review. Same idea as {@code ConfigDeviationPromptHandler}, but the
  * thing it waits on is the listing, not a tick count: the page only knows it is behind once the
  * launcher's pack listing has arrived, and that lands on the render thread through
  * {@link VersionCompareState}, which pokes this class every time a fetch completes.
@@ -49,18 +50,35 @@ public final class VersionCompareBootPrompt {
         Minecraft mc = Minecraft.getInstance();
         if (mc == null || !(mc.screen instanceof TitleScreen title)) return;
 
-        Platform launcher = Platform.current();
-        if (VersionCompareState.status(launcher) != VersionCompareState.Status.OK) return;
         Optional<FullSemver> installed = InstalledVersion.get();
-        Optional<FullSemver> latest = VersionCompareState.versions(launcher)
-                .flatMap(PlatformVersions::latest).map(ReleaseEntry::version);
-        decided = true;
-        armed = false;
-        if (installed.isEmpty() || latest.isEmpty() || !latest.get().isNewerThan(installed.get())) {
+        if (installed.isEmpty()) {
+            decided = true;
+            armed = false;
             return;
         }
+        Platform launcher = Platform.current();
+        Optional<NewestRelease.Target> target = NewestRelease.across(installed.get(), launcher,
+                VersionCompareState.versions(launcher), VersionCompareState.versions(launcher.other()));
+        if (target.isEmpty()) {
+            // Not behind on what has loaded so far. Only settle "never open" once neither launcher is
+            // still loading — a lagging launcher's listing must not hide the other's newer release.
+            if (!anyLoading()) {
+                decided = true;
+                armed = false;
+            }
+            return;
+        }
+        decided = true;
+        armed = false;
         LOGGER.info("Versions page: installed {} is behind {} {} — opening at the title screen",
-                installed.get(), launcher, latest.get());
+                installed.get(), target.get().platform(), target.get().version());
         mc.setScreen(new VersionCompareScreen(title));
+    }
+
+    private static boolean anyLoading() {
+        for (Platform p : Platform.values()) {
+            if (VersionCompareState.status(p) == VersionCompareState.Status.LOADING) return true;
+        }
+        return false;
     }
 }
