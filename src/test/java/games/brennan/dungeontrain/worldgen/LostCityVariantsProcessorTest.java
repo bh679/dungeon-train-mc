@@ -79,11 +79,14 @@ final class LostCityVariantsProcessorTest {
     @BeforeEach
     void on() {
         LostCityVariantsProcessor.enabled = () -> true;
+        LostCityVariantDocs.playerCopy = name -> false;
+        LostCityVariantDocs.forgetAll();
     }
 
     @AfterEach
     void restore() {
         LostCityVariantsProcessor.enabled = DungeonTrainCommonConfig::isLostCityBlockVariants;
+        LostCityVariantDocs.playerCopy = games.brennan.dungeontrain.building.BuildingStore::hasPlayerCopy;
         LostCityVariantDocs.publish(Map.of());
         LostCityPlacementMemo.enabled = true;
         LostCityPlacementMemo.clear();
@@ -284,6 +287,26 @@ final class LostCityVariantsProcessorTest {
 
         LostCityVariantsProcessor.enabled = () -> false;
         assertSameBlocks(place(without, AT, template), place(list, AT, template), "setting off");
+    }
+
+    @Test
+    @DisplayName("a player's own copy of a shipped building: its shipped document is not rolled, until the copy goes")
+    void playerCopyIsUntouched() throws IOException {
+        LostCityVariantDocs.publish(realDocs(Set.of("office_tower")));
+        List<StructureBlockInfo> template = LostCityPlacementMemoTest.load("office_tower");
+        List<StructureProcessor> list = realList("office_tower_shipped");
+        List<StructureProcessor> without = list.stream().filter(p -> !(p instanceof LostCityVariantsProcessor)).toList();
+        List<StructureBlockInfo> plain = place(without, AT, template);
+
+        LostCityVariantDocs.playerCopy = name -> name.equals("office_tower");
+        LostCityVariantDocs.forget("office_tower");
+        assertSameBlocks(plain, place(list, AT, template), "player copy");
+
+        LostCityVariantDocs.playerCopy = name -> false;
+        LostCityPlacementMemo.clear();
+        assertSameBlocks(plain, place(list, AT, template), "the cached answer holds until the building is evicted");
+        LostCityVariantDocs.forget("office_tower");
+        assertNotEquals(byPos(plain, AT), byPos(place(list, AT, template), AT), "the roll is back once the copy is gone");
     }
 
     // ---- the roll ----

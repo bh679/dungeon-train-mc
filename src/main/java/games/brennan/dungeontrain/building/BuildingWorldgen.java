@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.building;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.mixin.SinglePoolElementAccessor;
+import games.brennan.dungeontrain.worldgen.LostCityVariantDocs;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.RandomSource;
@@ -81,6 +82,7 @@ public final class BuildingWorldgen {
     /** Drop {@code name}'s cached template and the roster, so worldgen reads both fresh. */
     public static void evict(MinecraftServer server, String name) {
         roster = null;
+        if (name != null) LostCityVariantDocs.forget(name);
         if (server == null || name == null) return;
         server.getStructureManager().remove(Buildings.shippedTemplateId(name));
         server.getStructureManager().remove(Buildings.playerTemplateId(name));
@@ -89,6 +91,7 @@ public final class BuildingWorldgen {
     /** Drop every building's cached template and the roster — a template reload or package switch. */
     public static void evictAll(MinecraftServer server) {
         roster = null;
+        LostCityVariantDocs.forgetAll();
         if (server == null) return;
         for (String name : BuildingRegistry.names()) evict(server, name);
     }

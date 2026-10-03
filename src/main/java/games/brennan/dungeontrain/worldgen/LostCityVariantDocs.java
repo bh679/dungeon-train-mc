@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.worldgen;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.building.BuildingStore;
+import games.brennan.dungeontrain.building.Buildings;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.track.variant.TrackVariantBlocks;
 import net.minecraft.core.BlockPos;
@@ -22,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 /**
  * The block-variant documents of DT's own worldgen buildings: {@code <name>.variants.json} beside the
@@ -54,15 +58,51 @@ public final class LostCityVariantDocs {
 
     private LostCityVariantDocs() {}
 
-    /** The document for the template {@code dungeontrain:lost_city/<name>}, or {@code null}. */
+    /**
+     * The document for the template {@code dungeontrain:lost_city/<name>}, or {@code null} — also when a
+     * player's own copy of the building replaces the jar's ({@code StructureTemplateManagerBuildingMixin}):
+     * the shipped document's cells belong to the shipped template, not to what the player built.
+     */
     @Nullable
     static Doc get(ResourceLocation template) {
-        return docs.get(template);
+        Doc doc = docs.get(template);
+        if (doc == null) return null;
+        return OVERRIDDEN.computeIfAbsent(template, LostCityVariantDocs::overridden) ? null : doc;
+    }
+
+    /**
+     * Whether a building has a player copy, per template. Cached as the template manager caches the copy, and
+     * dropped with it ({@link #forget}, from {@code BuildingWorldgen.evict}) — the processor asks once per block.
+     */
+    private static final Map<ResourceLocation, Boolean> OVERRIDDEN = new ConcurrentHashMap<>();
+
+    /** Whether the player has their own copy of a building; swapped in tests. */
+    static volatile Predicate<String> playerCopy = BuildingStore::hasPlayerCopy;
+
+    private static boolean overridden(ResourceLocation template) {
+        boolean overridden = Buildings.nameOf(template).map(playerCopy::test).orElse(false);
+        if (overridden) {
+            LOGGER.info("[DungeonTrain] Building variants: {} is the player's own copy; its shipped variants are not rolled",
+                    template);
+        }
+        return overridden;
+    }
+
+    /** Drop what is known about {@code name}'s player copy — after a save, reset or delete of that building. */
+    public static void forget(String name) {
+        OVERRIDDEN.remove(Buildings.shippedTemplateId(name));
+        OVERRIDDEN.remove(Buildings.playerTemplateId(name));
+    }
+
+    /** Drop what is known about every building's player copy — a package switch or template reload. */
+    public static void forgetAll() {
+        OVERRIDDEN.clear();
     }
 
     /** Replaces the published set (the reload listener, and tests). */
     static void publish(Map<ResourceLocation, Doc> next) {
         docs = Map.copyOf(next);
+        forgetAll();
     }
 
     /** Parses one document; a document with no usable cell is {@code null}. */
