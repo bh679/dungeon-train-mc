@@ -8,6 +8,7 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Where a newly staged build stands in the Workbench.
@@ -52,21 +53,45 @@ public final class WorkbenchPlacement {
      * terminate regardless.
      */
     public static BlockPos nextFree(Collection<BoundingBox> taken, Vec3i size, int anchorX) {
+        return nextFree(taken, size, anchorX, box -> false);
+    }
+
+    /**
+     * How many candidate slots the scan will try before giving up on "free of blocks" and landing
+     * past every recorded box. Each rejection by {@code occupied} steps one gap along, so this bounds
+     * the walk along a long run of stray blocks.
+     */
+    static final int MAX_OCCUPIED_STEPS = 512;
+
+    /**
+     * As {@link #nextFree(Collection, Vec3i, int)}, also refusing any slot {@code occupied} says holds
+     * blocks — the world itself, not just the record. The record can lag the world (a plot whose entry
+     * was lost, a leftover of another category's layer, an erase still queued), and a build must never
+     * be stamped into something standing: a slot rejected only by {@code occupied} steps one gap along
+     * and tries again.
+     */
+    public static BlockPos nextFree(Collection<BoundingBox> taken, Vec3i size, int anchorX,
+                                    Predicate<BoundingBox> occupied) {
         int startX = Math.max(FIRST_X, anchorX);
         int x = startX;
-        // Each failed candidate jumps past the box it hit, so the scan visits at most one candidate
-        // per taken box plus one.
-        for (int guard = 0; guard <= taken.size() + 1; guard++) {
+        for (int guard = 0; guard <= taken.size() + 1 + MAX_OCCUPIED_STEPS; guard++) {
             BoundingBox candidate = EditorLayerSweep.plotBox(new BlockPos(x, PLOT_Y, ROW_Z), size);
             BoundingBox hit = firstOverlap(candidate, taken);
-            if (hit == null) return new BlockPos(x, PLOT_Y, ROW_Z);
-            // The next slot starts GAP past the cage it collided with.
-            x = hit.maxX() + 1 + GAP;
+            if (hit != null) {
+                // The next slot starts GAP past the cage it collided with.
+                x = hit.maxX() + 1 + GAP;
+                continue;
+            }
+            if (occupied.test(candidate)) {
+                x += GAP + 1;
+                continue;
+            }
+            return new BlockPos(x, PLOT_Y, ROW_Z);
         }
-        // Unreachable in practice; land past everything rather than return null.
+        // Past every recorded box, whatever the world holds — the stamp erases its footprint first.
         int maxX = FIRST_X;
         for (BoundingBox b : taken) maxX = Math.max(maxX, b.maxX() + 1 + GAP);
-        return new BlockPos(Math.max(maxX, startX), PLOT_Y, ROW_Z);
+        return new BlockPos(Math.max(maxX, x), PLOT_Y, ROW_Z);
     }
 
     /** The cage-inclusive box a build of {@code size} at {@code origin} occupies. */

@@ -94,6 +94,19 @@ final class WorkbenchPlacementTest {
     }
 
     @Test
+    @DisplayName("a slot the world says holds blocks is skipped even when no record claims it")
+    void occupiedWorldIsSkipped() {
+        // Nothing recorded, but blocks standing from x=-1 to x=20 on the layer (a stale plot, say).
+        BoundingBox stray = new BoundingBox(-1, WorkbenchPlacement.PLOT_Y - 1, -1, 20, WorkbenchPlacement.PLOT_Y + 5, 10);
+        BlockPos origin = WorkbenchPlacement.nextFree(List.of(), SMALL, WorkbenchPlacement.FIRST_X, stray::intersects);
+        assertFalse(WorkbenchPlacement.boxAt(origin, SMALL).intersects(stray), "landed inside standing blocks: " + origin);
+        assertTrue(origin.getX() > 20);
+        // A clear world is untouched by the predicate.
+        assertEquals(WorkbenchPlacement.nextFree(List.of(), SMALL),
+            WorkbenchPlacement.nextFree(List.of(), SMALL, WorkbenchPlacement.FIRST_X, box -> false));
+    }
+
+    @Test
     @DisplayName("the world-data form round-trips through a box and back")
     void recordRoundTrip() {
         BlockPos origin = new BlockPos(37, WorkbenchPlacement.PLOT_Y, 0);

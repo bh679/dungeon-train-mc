@@ -127,9 +127,23 @@ public final class WorkbenchEditor {
             BoundingBox box = WorkbenchPlacement.boxOf(e.getValue());
             if (box != null) taken.add(box);
         }
-        BlockPos origin = WorkbenchPlacement.nextFree(taken, build.size(), anchorX);
+        // Free of recorded boxes AND free of blocks: the record can lag the world, and a build is
+        // never stamped into something already standing on the layer.
+        BlockPos origin = WorkbenchPlacement.nextFree(taken, build.size(), anchorX, box -> holdsBlocks(overworld, box));
         data.recordWorkbenchPlotBox(build.stagedId(), WorkbenchPlacement.record(origin, build.size()));
         return origin;
+    }
+
+    /** Whether any cell of {@code box} is not air. Loads the few chunks it spans; a plot is small. */
+    static boolean holdsBlocks(ServerLevel level, BoundingBox box) {
+        for (int x = box.minX(); x <= box.maxX(); x++) {
+            for (int z = box.minZ(); z <= box.maxZ(); z++) {
+                for (int y = box.minY(); y <= box.maxY(); y++) {
+                    if (!level.getBlockState(new BlockPos(x, y, z)).isAir()) return true;
+                }
+            }
+        }
+        return false;
     }
 
     // ---- stamping ----
