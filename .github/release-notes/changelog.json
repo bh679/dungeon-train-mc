@@ -22605,6 +22605,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "drifting-carriage-loot-drains",
+      "version": "0.1133.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "loot"
+      ],
+      "title": "Drifting carriages no longer hand out the same loot twice",
+      "summary": "Take something from a chest or shulker box aboard a drifting carriage and it is gone for whoever finds that carriage next. Before, the next traveller could find the same loot still waiting.",
+      "highlights": [
+        "Chests you empty stay empty further down the line, and a shulker box you pick up goes with you.",
+        "Items you leave behind still travel on for a stranger to find."
+      ],
+      "pr": 1799,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
