@@ -22431,6 +22431,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "endband-state-clear-on-stopped",
+      "version": "0.1126.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A clean slate",
+      "summary": "Opening another world after leaving one no longer carries a stray piece of the old one with it.",
+      "highlights": [],
+      "pr": 1789,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
