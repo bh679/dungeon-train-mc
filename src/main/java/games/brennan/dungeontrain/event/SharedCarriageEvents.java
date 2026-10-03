@@ -18,6 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -214,6 +215,9 @@ public final class SharedCarriageEvents {
             return;
         }
         if (inst.hasPending()) {
+            // A block edit is one of the two moments parked storage travels (leaving is the other), so
+            // fold it into this same upload rather than a delta of its own.
+            if (inst.hasParked()) inst.releaseParked(pos -> StorageContents.read(inst.level, pos));
             if (inst.isOnRelay()) flushDelta(inst, false); // leased/submitted → stream only the changed cells
             else submitFresh(inst);                       // never uploaded → one-time full submit
             return;
@@ -324,7 +328,7 @@ public final class SharedCarriageEvents {
         // Storage a player changed but never walked away from (culled around them, server stopping) —
         // queue it now, while the plot is still readable and before markCulled stops enqueue, so the
         // full capture below carries it.
-        inst.releaseParked(pos -> StorageContents.sig(inst.level, pos));
+        inst.releaseParked(pos -> StorageContents.read(inst.level, pos));
         SableManagedShip ship = liveShip(inst.level, inst);
         // No ship → nothing readable; the flow then does a bare return (allowCapture is moot).
         return SharedUploadFlow.finalFlushAndReturn(inst,
@@ -396,7 +400,10 @@ public final class SharedCarriageEvents {
         return null;
     }
 
-    @SubscribeEvent
+    // HIGHEST: ShipShutdownEvents deletes every train sub-level on this same event, and the final capture
+    // must read the plot before that — otherwise every lease goes back bare and storage looted since the
+    // last block edit (parked, see Instance.releaseParked) never reaches the relay.
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStopping(ServerStoppingEvent event) {
         // Final flush + hand back every held lease + the unused buffer so carriages don't stay locked to a
         // stopped world for the full TTL. Best-effort (the return POST is async) — the relay's TTL covers

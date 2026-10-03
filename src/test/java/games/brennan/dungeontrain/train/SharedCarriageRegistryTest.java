@@ -199,63 +199,94 @@ class SharedCarriageRegistryTest {
 
     // ---------------- Parked storage ----------------
 
-    private static SharedCarriageRegistry.Instance parkingCarriage() {
+    private static final BlockPos CHEST = new BlockPos(1, 1, 1);
+
+    /** A carriage leased from the pool — already on the relay. */
+    private static SharedCarriageRegistry.Instance relayCarriage() {
         return SharedCarriageRegistry.register(null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0),
                 DIMS, "shared", true, false, "", 7, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
     }
 
-    @Test
-    void parkedStorageStaysLocalUntilTheCarriageIsBlockEdited() {
-        SharedCarriageRegistry.Instance inst = parkingCarriage();
-        inst.parkContainer(new BlockPos(1, 1, 1), 10L);
+    /** A fresh local carriage — never uploaded, so anything sent publishes it to the pool. */
+    private static SharedCarriageRegistry.Instance freshCarriage() {
+        return SharedCarriageRegistry.register(null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0),
+                DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+    }
 
-        assertEquals(0, inst.releaseParked(pos -> 99L)); // looting only → nothing travels
+    private static StorageContents.Snapshot holding(long sig, int itemCount) {
+        return new StorageContents.Snapshot(itemCount, sig, 0.0);
+    }
+
+    @Test
+    void lootingARelayCarriageDrainsItWithoutABlockEdit() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L);
+
+        // Emptied the chest, never touched a block — the relay copy must still lose the items.
+        assertEquals(1, inst.releaseParked(pos -> holding(99L, 0)));
+        assertEquals(Set.of(CHEST), inst.drainPending());
+        assertFalse(inst.hasParked());
+    }
+
+    @Test
+    void rearrangingAndPuttingBackSendsNothing() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L); // baseline before the first change
+        inst.parkContainer(CHEST, 11L); // reopened after it — must not move the baseline
+        // Put everything back exactly as it was, so the relay copy needs nothing.
+        assertEquals(0, inst.releaseParked(pos -> holding(10L, 3)));
         assertFalse(inst.hasPending());
-        assertTrue(inst.hasParked());                    // kept for a later edit + leave
+        assertFalse(inst.hasParked());
+    }
+
+    @Test
+    void lootingAFreshCarriageStaysLocalUntilItIsBlockEdited() {
+        SharedCarriageRegistry.Instance inst = freshCarriage();
+        inst.parkContainer(CHEST, 10L);
+
+        assertEquals(0, inst.releaseParked(pos -> holding(99L, 2))); // looting a stock template publishes nothing
+        assertFalse(inst.hasPending());
+        assertTrue(inst.hasParked());                                // kept for a later edit + leave
 
         inst.markBlockEdited();
-        assertEquals(1, inst.releaseParked(pos -> 99L));
-        assertEquals(Set.of(new BlockPos(1, 1, 1)), inst.drainPending());
+        assertEquals(1, inst.releaseParked(pos -> holding(99L, 2)));
+        assertEquals(Set.of(CHEST), inst.drainPending());
         assertFalse(inst.hasParked());
+    }
+
+    @Test
+    void aGiftUploadedAtCloseResetsTheBaseline() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L);      // looted earlier: baseline is the pre-loot contents
+        inst.unparkContainer(CHEST);         // then a gift uploaded the chest as it stands
+        assertFalse(inst.hasParked());
+        inst.parkContainer(CHEST, 20L);      // taking the gift back parks against the uploaded contents
+        assertEquals(1, inst.releaseParked(pos -> holding(10L, 0)));
+        assertEquals(Set.of(CHEST), inst.drainPending());
     }
 
     @Test
     void releaseSendsOnlyStorageThatReallyChanged() {
-        SharedCarriageRegistry.Instance inst = parkingCarriage();
-        inst.markBlockEdited();
-        BlockPos changed = new BlockPos(1, 1, 1);
+        SharedCarriageRegistry.Instance inst = relayCarriage();
         BlockPos putBack = new BlockPos(2, 1, 1);
         BlockPos broken = new BlockPos(3, 1, 1);
-        inst.parkContainer(changed, 10L);
+        inst.parkContainer(CHEST, 10L);
         inst.parkContainer(putBack, 20L);
         inst.parkContainer(broken, 30L);
 
-        java.util.Map<BlockPos, Long> live = new java.util.HashMap<>();
-        live.put(changed, 11L); // contents differ from the baseline
-        live.put(putBack, 20L); // emptied and refilled — same as before
-        // `broken` absent → unreadable → dropped, never uploaded as whatever stands there now
-        int queued = inst.releaseParked(live::get);
-
-        assertEquals(1, queued);
-        assertEquals(Set.of(changed), inst.drainPending());
+        java.util.Map<BlockPos, StorageContents.Snapshot> live = new java.util.HashMap<>();
+        live.put(CHEST, holding(11L, 4));   // contents differ from the baseline
+        live.put(putBack, holding(20L, 5)); // emptied and refilled — same as before
+        // `broken` absent → unreadable → dropped here (the break itself is a block change of its own)
+        assertEquals(1, inst.releaseParked(live::get));
+        assertEquals(Set.of(CHEST), inst.drainPending());
         assertFalse(inst.hasParked());
     }
 
     @Test
-    void theFirstParkedSignatureIsTheBaseline() {
-        SharedCarriageRegistry.Instance inst = parkingCarriage();
-        inst.markBlockEdited();
-        BlockPos pos = new BlockPos(1, 1, 1);
-        inst.parkContainer(pos, 10L); // before the first edit
-        inst.parkContainer(pos, 11L); // reopened after it — must not move the baseline
-        // Put back exactly as it was before the first edit → nothing to send.
-        assertEquals(0, inst.releaseParked(p -> 10L));
-    }
-
-    @Test
     void cullingDropsParkedStorage() {
-        SharedCarriageRegistry.Instance inst = parkingCarriage();
-        inst.parkContainer(new BlockPos(1, 1, 1), 10L);
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L);
         inst.markCulled();
         assertFalse(inst.hasParked());
     }

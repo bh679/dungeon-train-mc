@@ -22649,6 +22649,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "drifting-carriage-fix",
+      "version": "0.1134.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Drifting carriage fix",
+      "summary": "Fixed an issue with drifting carriages.",
+      "highlights": [],
+      "pr": 1799,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

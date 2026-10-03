@@ -221,14 +221,15 @@ public final class SharedCarriageRegistry {
         /**
          * Storage blocks whose contents a player changed without it being a gift (taking, swapping,
          * rearranging), mapped to the contents signature from BEFORE the first such change. Flagged
-         * locally only — nothing is sent until {@link #releaseParked} decides it should be, so that
-         * looting neither costs a relay delta per container nor drains a carriage's loot across worlds.
+         * locally only — nothing is sent until {@link #releaseParked} runs, which happens when the player
+         * leaves the carriage or a block edit (or a gift) is flushed — so a visit costs at most one relay
+         * delta however many containers were looted.
          */
         private final Map<BlockPos, Long> parkedContainers = new ConcurrentHashMap<>();
         /**
          * Set once a real block edit lands on this carriage in this session (see
-         * {@code SableBlockChangeGuardMixin}). Parked container changes only travel on a carriage somebody
-         * actually built on — a player who only loots never uploads anything.
+         * {@code SableBlockChangeGuardMixin}). Only matters for a fresh carriage: it is what lets parked
+         * storage travel on one that is not on the relay yet (see {@link #releaseParked}).
          */
         private volatile boolean blockEditedThisSession;
 
@@ -245,21 +246,36 @@ public final class SharedCarriageRegistry {
         }
 
         /**
+         * Forget a parked storage block — its current contents are being uploaded right now (a gift), so
+         * a later withdrawal must be measured from what was just sent, not from before it.
+         */
+        public void unparkContainer(BlockPos pos) {
+            parkedContainers.remove(pos);
+        }
+
+        /**
          * Queue every parked container whose live contents really differ from its baseline — one emptied
-         * and refilled nets to nothing — and forget them. Does nothing (and keeps them parked) until a
-         * block edit has landed this session, so a later edit plus a later release still sends them.
-         * {@code liveSig} returns null when the container cannot be read (unloaded, broken); such a cell
-         * is dropped rather than uploaded as whatever now stands there.
+         * and refilled nets to nothing — and forget them. {@code live} returns null when the container
+         * cannot be read (unloaded, broken); such a cell is dropped rather than uploaded as whatever now
+         * stands there (breaking a container is a block change of its own — see
+         * {@link SharedCarriageChangeFilter}).
+         *
+         * <p>On a carriage already on the relay this always releases: taking items out must drain the
+         * relay copy, or the next world to lease it is handed the same loot again. A fresh carriage is
+         * different — sending anything publishes it to the pool — so it releases only once it was
+         * block-edited this session (a gift publishes it on its own, after which it is on the relay).
+         * Looting a fresh carriage alone keeps everything parked, so a later edit still sends it.</p>
          *
          * @return how many cells were queued
          */
-        public int releaseParked(Function<BlockPos, Long> liveSig) {
-            if (!blockEditedThisSession || parkedContainers.isEmpty()) return 0;
+        public int releaseParked(Function<BlockPos, StorageContents.Snapshot> live) {
+            if (parkedContainers.isEmpty()) return 0;
+            if (!isOnRelay() && !blockEditedThisSession) return 0;
             int queued = 0;
             for (Map.Entry<BlockPos, Long> e : Map.copyOf(parkedContainers).entrySet()) {
                 parkedContainers.remove(e.getKey());
-                Long live = liveSig.apply(e.getKey());
-                if (live == null || live.longValue() == e.getValue()) continue;
+                StorageContents.Snapshot snap = live.apply(e.getKey());
+                if (snap == null || snap.sig() == e.getValue()) continue;
                 enqueue(e.getKey());
                 queued++;
             }
