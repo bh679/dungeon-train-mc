@@ -171,6 +171,8 @@
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
     "client.SectionCompilerNoLevelGuardMixin",
+    "client.VertexBufferUnuploadedDrawGuardMixin",
+    "client.SectionRebuildUploadFailureMixin",
     "client.LevelRendererSubLevelTeardownMixin",
     "client.MinecraftFramerateThrottleMixin",
     "client.MinecraftInitialScreensMixin",
