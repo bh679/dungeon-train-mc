@@ -58,6 +58,7 @@ public final class LostCityWwooCensus {
         try {
             List<ResourceLocation> ids = level.registryAccess().registryOrThrow(Registries.STRUCTURE).keySet().stream()
                     .filter(LostCityStructures::isLostCityStructure)
+                    .filter(id -> !LostCityStructures.isNewBuildingSlot(id))
                     .toList();
             int starts = expectedStarts(state, seed, cycle);
             Set<String> picked = LostCityStructures.wwooBuildings(seed, ids, starts);

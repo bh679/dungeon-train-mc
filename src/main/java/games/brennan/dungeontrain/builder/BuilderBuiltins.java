@@ -75,6 +75,9 @@ public final class BuilderBuiltins {
             }
             case PORTAL_ROOM -> TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.isBundled(id);
+            // A shipped building the player has remade is theirs; only an untouched one is the mod's.
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingStore.isBundled(id) && !games.brennan.dungeontrain.building.BuildingStore.hasPlayerCopy(id);
+            case LOST_CITY -> true;
         };
     }
 }

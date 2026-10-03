@@ -120,7 +120,9 @@ public final class BuilderProfileScreen extends Screen {
             new BuilderProfileFilterButton.Option(BuilderRelayKinds.TRACK,
                     "gui.dungeontrain.builder.profile.type.track"),
             new BuilderProfileFilterButton.Option(BuilderRelayKinds.PORTAL_ROOM,
-                    "gui.dungeontrain.builder.profile.type.portal_room"));
+                    "gui.dungeontrain.builder.profile.type.portal_room"),
+            new BuilderProfileFilterButton.Option(BuilderRelayKinds.BUILDING,
+                    "gui.dungeontrain.builder.profile.type.building"));
 
     /** The review states, in funnel order: never asked → waiting → decided. */
     private static final List<BuilderProfileFilterButton.Option> STATUS_OPTIONS = List.of(
@@ -1018,6 +1020,7 @@ public final class BuilderProfileScreen extends Screen {
             case BuilderRelayKinds.PART -> BuilderPhotoPaths.Kind.PART;
             case BuilderRelayKinds.TRACK -> BuilderPhotoPaths.Kind.TRACK;
             case BuilderRelayKinds.PORTAL_ROOM -> BuilderPhotoPaths.Kind.PORTAL_ROOM;
+            case BuilderRelayKinds.BUILDING -> BuilderPhotoPaths.Kind.BUILDING;
             default -> BuilderPhotoPaths.Kind.CARRIAGE;
         };
     }
