@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.worldgen;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.mixinguard.MixinGuardReport;
 import games.brennan.dungeontrain.config.EndBandConfig;
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import net.minecraft.core.BlockPos;
@@ -148,7 +149,9 @@ public final class EndBandSampler {
      * a pass is either fully vanilla-stamped or fully sampled, never both or neither.
      */
     public static boolean appliesTo(MinecraftServer server, CycleLayout.Style style) {
-        if (style == CycleLayout.Style.BETTER) return available(server);
+        // A skipped End-determinism mixin (a newer WorldWeaver/BetterEnd moved its target) would make the
+        // BetterEnd End lay out differently each boot, so its passes stamp vanilla instead.
+        if (style == CycleLayout.Style.BETTER) return available(server) && MixinGuardReport.endDeterminismIntact();
         if (style == CycleLayout.Style.BOP) return available(server) && BopEnd.get(server) != null;
         return false;
     }

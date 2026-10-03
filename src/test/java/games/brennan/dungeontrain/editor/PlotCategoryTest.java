@@ -78,12 +78,19 @@ final class PlotCategoryTest {
         assertFalse(PlotCategory.PARTS.browsesUnder(PlotCategory.WHOLE));
         assertFalse(PlotCategory.CONTENTS.browsesUnder(null));
         for (PlotCategory c : PlotCategory.values()) {
-            if (c == PlotCategory.PARTS || c == PlotCategory.WHOLE_GROUP || c == PlotCategory.CHUNK_FRAMES) continue;
+            if (c == PlotCategory.PARTS || c == PlotCategory.WHOLE_GROUP || c == PlotCategory.CHUNK_FRAMES
+                || c == PlotCategory.LOST_CITY) continue;
             assertEquals(c.name(), c.owner().name(), c + " should own itself");
         }
         // Chunk parts are browsed and stamped with the Dimensions rooms, as carriage parts are with carriages.
         assertSame(EditorCategory.PORTALS, PlotCategory.CHUNK_FRAMES.owner());
         assertTrue(PlotCategory.CHUNK_FRAMES.browsesUnder(PlotCategory.PORTALS));
+        // The official Lost City buildings are a view-only type under Buildings.
+        assertSame(EditorCategory.BUILDINGS, PlotCategory.LOST_CITY.owner());
+        assertTrue(PlotCategory.LOST_CITY.browsesUnder(PlotCategory.BUILDINGS));
+        assertFalse(PlotCategory.LOST_CITY.hasActionRow());
+        assertFalse(PlotCategory.LOST_CITY.hasWeightPool());
+        assertFalse(PlotCategory.LOST_CITY.hasGate());
     }
 
     @Test
@@ -95,9 +102,10 @@ final class PlotCategoryTest {
             assertFalse(widened == PlotCategory.PARTS);
             assertFalse(widened == PlotCategory.WHOLE_GROUP);
             assertFalse(widened == PlotCategory.CHUNK_FRAMES);
+            assertFalse(widened == PlotCategory.LOST_CITY);
         }
-        // PARTS, CHUNK_FRAMES and WHOLE_GROUP are exactly the addressable values with no stamping counterpart.
-        assertEquals(EditorCategory.values().length + 3, PlotCategory.values().length);
+        // PARTS, CHUNK_FRAMES, LOST_CITY and WHOLE_GROUP are exactly the addressable values with no stamping counterpart.
+        assertEquals(EditorCategory.values().length + 4, PlotCategory.values().length);
     }
 
     @Test
@@ -118,13 +126,14 @@ final class PlotCategoryTest {
         // — plus the two Whole kinds, which have plots to save and a pool to weight.
         assertEquals(
             EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
-                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS),
             matching(PlotCategory::hasActionRow));
 
         // EditorPlotTeleport.weightCommandFor had arms for those same four, default -> null.
+        // Buildings: a new building's roster weight (a shipped one has none of its own).
         assertEquals(
             EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
-                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS),
             matching(PlotCategory::hasWeightPool));
 
         // levelCommandFor / phaseCommandFor / stageApplyCommandFor: same arms, whole rows included.

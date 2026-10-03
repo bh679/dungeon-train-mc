@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.worldgen.MixBand;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.EndBandConfig;
@@ -13,11 +14,13 @@ import games.brennan.dungeontrain.worldgen.EndBandSpill;
 import games.brennan.dungeontrain.worldgen.EndBandSpillWaiting;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import games.brennan.dungeontrain.worldgen.GenProfiler;
+import games.brennan.dungeontrain.worldgen.OwnerScopedQueue;
 import games.brennan.dungeontrain.worldgen.PendingChunkSweep;
 import games.brennan.dungeontrain.worldgen.PrefetchDirection;
 import games.brennan.dungeontrain.worldgen.SunlitChunks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
@@ -29,8 +32,10 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -43,7 +48,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Writes the BetterEnd End-band passes ({@link EndBandStyle}) in: a chunk in one of those passes
@@ -74,6 +78,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *       sample, or on its next load). Adds pass the same gate as the sample; a carve only clears the exact
  *       ground block it dug through; and only columns of the spill's own pass take it. Not persisted: spill
  *       for a chunk that never comes back before a restart is simply lost, like the prefetch stash.</li>
+ *   <li><b>Stop</b> — all of this state is static, so it is dropped when the server stops, twice: at
+ *       stopping, and again at stopped. Between the two the server is still finishing chunk work — a
+ *       worldgen worker can hand over spill ({@link #offerSpill}) and a chunk load can ask for a sample —
+ *       and none of that may reach the next world opened in the same JVM. Spill handed over from worldgen
+ *       also carries its server, and is dropped if drained by another.</li>
  * </ul>
  *
  * <p>Only loaded chunks are ever written ({@code getChunkNow}); nothing here loads or generates a chunk,
@@ -81,6 +90,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class WorldEndBandEvents {
+
+    private static final Logger LOGGER = LogUtils.getLogger();
 
     private static final int PREFETCH_INTERVAL_TICKS = 10;
     /** How many chunk columns past the view distance the prefetch strip reaches. */
@@ -131,8 +142,11 @@ public final class WorldEndBandEvents {
     /** Held spill whose (already-terrained) chunk has just reloaded — written at the start of the next tick. */
     private static final Map<Long, List<EndBandSpill>> DUE_SPILL = new LinkedHashMap<>();
 
-    /** Spill produced by samples written in worldgen ({@link EndBandInlineTerrain}), handed over from the worker threads. */
-    private static final ConcurrentLinkedQueue<Map<Long, EndBandSpill>> INLINE_SPILL = new ConcurrentLinkedQueue<>();
+    /**
+     * Spill produced by samples written in worldgen ({@link EndBandInlineTerrain}), handed over from the worker
+     * threads with the server it was generated for.
+     */
+    private static final OwnerScopedQueue<Map<Long, EndBandSpill>> INLINE_SPILL = new OwnerScopedQueue<>();
 
     /**
      * Already-terrained chunks spill was written into this tick, re-lit and resent once at its end
@@ -275,6 +289,26 @@ public final class WorldEndBandEvents {
 
     @SubscribeEvent
     public static void onServerStopping(ServerStoppingEvent event) {
+        clearState();
+    }
+
+    /**
+     * Clear again once the server has fully stopped. Stopping fires before {@code stopServer()}, which keeps
+     * ticking chunk work until none is left: a worldgen step already running finishes there and hands over
+     * its spill, and a chunk load there can queue a sample — both after the first clear. By now no worldgen
+     * step can still be running (a chunk can't unload while one holds it).
+     */
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        int lateSpill = INLINE_SPILL.size();
+        if (lateSpill > 0) {
+            LOGGER.debug("[DungeonTrain] Dropped {} End-band spill hand-over(s) made while the server was stopping", lateSpill);
+        }
+        clearState();
+    }
+
+    /** Drop every sample, stash and spill this class (and the End sampler) holds. */
+    private static void clearState() {
         EndBandSampler.clear();
         games.brennan.dungeontrain.worldgen.BopEnd.clear();
         STASH.clear();
@@ -288,15 +322,20 @@ public final class WorldEndBandEvents {
         tickCounter = 0;
     }
 
-    /** A worldgen-time sample's spill for its neighbours; delivered on the next server tick. Any thread. */
-    static void offerSpill(Map<Long, EndBandSpill> spill) {
-        INLINE_SPILL.add(spill);
+    /**
+     * A worldgen-time sample's spill for its neighbours, generated for {@code server}; delivered on that
+     * server's next tick, never another's. Any thread.
+     */
+    static void offerSpill(MinecraftServer server, Map<Long, EndBandSpill> spill) {
+        INLINE_SPILL.offer(server, spill);
     }
 
     private static void drainInlineSpill(ServerLevel level) {
-        Map<Long, EndBandSpill> spill;
-        while ((spill = INLINE_SPILL.poll()) != null) {
-            spill.forEach((key, s) -> deliverSpill(level, key, s));
+        if (INLINE_SPILL.size() == 0) return;
+        int dropped = INLINE_SPILL.drain(level.getServer(),
+                spill -> spill.forEach((key, s) -> deliverSpill(level, key, s)));
+        if (dropped > 0) {
+            LOGGER.debug("[DungeonTrain] Dropped {} End-band spill hand-over(s) left from a previous server", dropped);
         }
     }
 

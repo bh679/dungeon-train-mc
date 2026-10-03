@@ -13165,7 +13165,7 @@
   },
   "gui.dungeontrain.death.update_button": {
     "1": {
-      "label": "the newest version on the player's launcher, without the leading v",
+      "label": "the newest version on any launcher, without the leading v",
       "examples": [
         "0.1078.0",
         "0.1081.0"
@@ -13174,10 +13174,9 @@
   },
   "gui.dungeontrain.death.update_sub.one": {
     "1": {
-      "label": "a launcher name (Modrinth or CurseForge)",
+      "label": "the website the button opens (a site name, keep as is)",
       "examples": [
-        "Modrinth",
-        "CurseForge"
+        "brennan.games"
       ]
     },
     "2": {
@@ -13190,10 +13189,9 @@
   },
   "gui.dungeontrain.death.update_sub.other": {
     "1": {
-      "label": "a launcher name (Modrinth or CurseForge)",
+      "label": "the website the button opens (a site name, keep as is)",
       "examples": [
-        "Modrinth",
-        "CurseForge"
+        "brennan.games"
       ]
     },
     "2": {
@@ -14637,6 +14635,57 @@
       "examples": [
         "2",
         "5"
+      ]
+    }
+  },
+  "chat.dungeontrain.first_ever": {
+    "1": {
+      "label": "the advancement's title",
+      "examples": [
+        "Cross-Country",
+        "Everything Burrito"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.body": {
+    "1": {
+      "label": "the mod's name and newest version, shown in green",
+      "examples": [
+        "Dungeon Train v0.1104.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.yours": {
+    "1": {
+      "label": "the version the player has, without the leading v",
+      "examples": [
+        "0.927.0",
+        "0.1093.0"
+      ]
+    },
+    "2": {
+      "label": "how far behind, in brackets, shown dimmer",
+      "examples": [
+        "(29 releases behind)",
+        "(1 release behind)"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.newest": {
+    "1": {
+      "label": "the newest version, without the leading v",
+      "examples": [
+        "0.1104.0",
+        "0.1121.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.behind": {
+    "1": {
+      "label": "how many releases newer, already counted with its noun",
+      "examples": [
+        "29 releases",
+        "1 release"
       ]
     }
   }

@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.worldgen.Disintegration;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import games.brennan.dungeontrain.worldgen.MixBand;
+import games.brennan.dungeontrain.worldgen.SampledCells;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.RegistryAccess;
@@ -130,6 +131,27 @@ final class EndBandTerrainWriter {
             public void blockEntity(BlockPos at, BlockState state, CompoundTag nbt) {
                 BlockEntity be = blockEntityFor(at, state, nbt, level.registryAccess());
                 if (be != null) level.setBlockEntity(be);
+            }
+        };
+    }
+
+    /** {@code inner}, with every cell it writes also marked in {@code cells} (for the void erosion to skip). */
+    static Sink recordingSink(Sink inner, SampledCells cells) {
+        return new Sink() {
+            @Override
+            public BlockState get(int dx, int y, int dz) {
+                return inner.get(dx, y, dz);
+            }
+
+            @Override
+            public void set(int dx, int y, int dz, BlockState state) {
+                inner.set(dx, y, dz, state);
+                cells.mark(dx, y, dz);
+            }
+
+            @Override
+            public void blockEntity(BlockPos at, BlockState state, CompoundTag nbt) {
+                inner.blockEntity(at, state, nbt);
             }
         };
     }

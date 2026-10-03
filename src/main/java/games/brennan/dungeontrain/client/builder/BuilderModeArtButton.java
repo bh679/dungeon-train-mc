@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -62,8 +63,8 @@ final class BuilderModeArtButton extends Button {
 
     @Override
     public void onPress() {
-        BuilderMode[] all = BuilderMode.values();
-        mode = all[(mode.ordinal() + 1) % all.length];
+        List<BuilderMode> all = BuilderMode.BUILDER_MODES;
+        mode = all.get((all.indexOf(mode) + 1) % all.size());
         setMessage(Component.translatable(mode.labelKey()));
         onChange.accept(mode);
     }
