@@ -22380,6 +22380,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriages-remember",
+      "version": "0.1123.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages remember your visit",
+      "summary": "Dimensional carriages now stay as you left them when you come back.",
+      "highlights": [],
+      "pr": 1786,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
