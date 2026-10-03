@@ -22260,6 +22260,23 @@
       "released_at": null
     },
     {
+      "id": "perthread-sdf-quaternion",
+      "version": "0.1116.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "World generation fix",
+      "summary": "Some of the world's shapes now build a little more reliably.",
+      "highlights": [],
+      "pr": 1779,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "lost-city-template-cache-reach",
       "version": "0.1116.0",
       "type": "perf",
