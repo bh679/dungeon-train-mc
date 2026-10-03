@@ -22380,6 +22380,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "update-card-any-launcher",
+      "version": "0.1123.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Know when a new version is out",
+      "summary": "A short note now appears before the main menu when a newer version of Dungeon Train is out.",
+      "highlights": [],
+      "pr": 1788,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
