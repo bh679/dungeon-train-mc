@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.client.version.compare.FullSemver;
 import games.brennan.dungeontrain.client.version.compare.InstalledVersion;
 import games.brennan.dungeontrain.client.version.compare.Platform;
 import games.brennan.dungeontrain.client.version.compare.NewestRelease;
+import games.brennan.dungeontrain.client.version.compare.UpdatePage;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareState;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.support.DevHours;
@@ -2025,7 +2026,7 @@ public final class NarrativeDeathScreen extends Screen {
             int behind = releasesBehind();
             y = drawCentered(g, Component.translatable(
                     "gui.dungeontrain.death.update_sub." + PluralRules.category(ClientLanguage.selected(), behind),
-                    Platform.current().displayName(), behind), cx, w, y, SUBLINE);
+                    UpdatePage.SITE_NAME, behind), cx, w, y, SUBLINE);
         }
         return y;
     }
@@ -2051,10 +2052,10 @@ public final class NarrativeDeathScreen extends Screen {
         return newestRelease().map(NewestRelease.Target::releasesBehind).orElse(0);
     }
 
-    // Always the player's own launcher's page, even when the newer build is only on the other one:
-    // the button tells a CurseForge player an update exists but never sends them off CurseForge.
+    // DT's own update page, not a launcher: it lists every launcher openly with the player's first,
+    // so a CurseForge build tells players a newer release is out without linking off CurseForge.
     private void openUpdatePage() {
-        ConfirmLinkScreen.confirmLinkNow(this, BugResponseCard.packUrl(Platform.current()));
+        ConfirmLinkScreen.confirmLinkNow(this, UpdatePage.url(InstalledVersion.get(), Platform.current()));
     }
 
     /** The bug-report card draws with this screen's bevels, chips and fade. */
