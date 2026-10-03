@@ -22448,6 +22448,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "every-train-world-opens-straight-in",
+      "version": "0.1127.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Straight back aboard",
+      "summary": "Every Dungeon Train world now opens straight away after an update.",
+      "highlights": [],
+      "pr": 1790,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
