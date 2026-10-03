@@ -22537,6 +22537,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-photos-in-train-loot",
+      "version": "0.1131.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Other players' photos turn up in the train",
+      "summary": "Photos other players have shared can now be found in bookshelves, barrels, pots, villager stock and more across the train. Meals are a little more generous with the basics.",
+      "highlights": [
+        "Shared player photos join ten kinds of train loot",
+        "Builders can place a Random Player Photo straight from the Narrative creative tab"
+      ],
+      "pr": 1793,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
