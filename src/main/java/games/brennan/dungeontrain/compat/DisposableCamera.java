@@ -130,6 +130,21 @@ public final class DisposableCamera {
         return (float) Math.max(0.0, Math.min(1.0, progress));
     }
 
+    /**
+     * How much of this camera's "reload" sweep is left, 0..1 — the per-stack stand-in for vanilla's
+     * item-cooldown overlay. Full from the shot until the print starts, then shrinking with the print;
+     * 0 for a camera that has not shot.
+     */
+    public static float reloadRemaining(ItemStack camera, double gameTime) {
+        if (!isShot(camera)) {
+            return 0f;
+        }
+        if (tick(camera, NBT_PRINT_START) < 0) {
+            return 1f;
+        }
+        return 1f - printProgress(camera, gameTime);
+    }
+
     /** True for a single photograph taken with a disposable camera. */
     public static boolean burnsAfterViewing(ItemStack stack) {
         if (stack == null || !(stack.getItem() instanceof PhotographItem)) {

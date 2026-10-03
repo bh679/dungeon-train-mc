@@ -73,6 +73,22 @@ final class DisposableCameraTest {
     }
 
     @Test
+    @DisplayName("reload sweep: none before the shot, full until the print starts, then shrinks to 0")
+    void reloadRemaining() {
+        ItemStack stack = new ItemStack(Items.STICK);
+        assertEquals(0f, DisposableCamera.reloadRemaining(stack, 100.0));
+
+        DisposableCamera.markShot(stack);
+        assertEquals(1f, DisposableCamera.reloadRemaining(stack, 100.0));
+
+        DisposableCamera.setTick(stack, DisposableCamera.NBT_PRINT_START, 100L);
+        int ticks = DisposableCameraEvents.PRINT_TICKS;
+        assertEquals(1f, DisposableCamera.reloadRemaining(stack, 100.0));
+        assertEquals(0.5f, DisposableCamera.reloadRemaining(stack, 100.0 + ticks / 2.0), 1e-6);
+        assertEquals(0f, DisposableCamera.reloadRemaining(stack, 100.0 + ticks));
+    }
+
+    @Test
     @DisplayName("a marked stack that is not an instant camera is not a disposable camera")
     void markerAloneIsNotACamera() {
         ItemStack stack = new ItemStack(Items.STICK);
