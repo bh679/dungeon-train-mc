@@ -22668,8 +22668,27 @@
       "released_at": null
     },
     {
-      "id": "review-feedback-discord-post",
+      "id": "player-heads-face-into-rooms",
       "version": "0.1135.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Player heads look into the room",
+      "summary": "Player heads placed around carriage rooms now turn to face into the room, each picking a slightly different angle so no two trains look quite the same. A head in the middle of a room can face any way.",
+      "highlights": [
+        "Heads look toward the centre of the room, give or take a quarter-turn either way, never at the wall behind them"
+      ],
+      "pr": 1800,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "review-feedback-discord-post",
+      "version": "0.1136.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -22678,6 +22697,7 @@
       "title": "Feedback and resubmit verdicts are announced too",
       "summary": "When the reviewer sends a submitted build back with feedback, or asks for it again from a newer version, that now posts to Discord's build-submissions channel alongside accepts \u2014 so the whole conversation about a build sits in one place.",
       "highlights": [],
+      "pr": 1801,
       "date": "2026-10-03",
       "released": false,
       "released_in": null,

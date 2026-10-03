@@ -586,7 +586,7 @@ public final class CarriageVariantBlocks {
                     int rawW = obj.get("weight").getAsInt();
                     mobWeight = rawW < 1 ? 1 : rawW;
                 }
-                VariantRotation mobRot = parseRotation(obj.get("rotation"), contextId, contextPos);
+                VariantRotation mobRot = parseRotation(obj.get("rotation"), false, contextId, contextPos);
                 // Mob entries never have SLAB_TYPE / HALF (the state is the
                 // empty-placeholder sentinel), but parse the field for round-trip
                 // fidelity in case future schema lets mobs carry it.
@@ -629,7 +629,8 @@ public final class CarriageVariantBlocks {
                 int raw = obj.get("weight").getAsInt();
                 weight = raw < 1 ? 1 : raw;
             }
-            VariantRotation rotation = parseRotation(obj.get("rotation"), contextId, contextPos);
+            VariantRotation rotation = parseRotation(obj.get("rotation"),
+                RotationApplier.isCompass(base.state()), contextId, contextPos);
             String lootPrefab = null;
             if (obj.has("lootPrefab") && obj.get("lootPrefab").isJsonPrimitive()
                 && obj.get("lootPrefab").getAsJsonPrimitive().isString()) {
@@ -1409,8 +1410,15 @@ public final class CarriageVariantBlocks {
      * Returns {@link VariantRotation#NONE} if the element is missing, null,
      * or malformed. The {@link VariantRotation} canonical constructor
      * silently re-clamps malformed mode/mask combinations.
+     *
+     * <p>{@code compass} says the entry's block is a {@link RotationApplier#isCompass}
+     * block: only {@code "compass"} is read then, and a legacy {@code "dirs"} is
+     * ignored. Heads captured before compass rotation often inherited a 6-way
+     * lock from a neighbouring block, which had no effect; read as compass
+     * slots it would turn them (NORTH's bit is slot 2, west). Other blocks read
+     * only {@code "dirs"}.</p>
      */
-    static VariantRotation parseRotation(JsonElement el, String contextId, BlockPos contextPos) {
+    static VariantRotation parseRotation(JsonElement el, boolean compass, String contextId, BlockPos contextPos) {
         if (el == null || !el.isJsonObject()) return VariantRotation.NONE;
         JsonObject obj = el.getAsJsonObject();
         VariantRotation.Mode mode = VariantRotation.Mode.RANDOM;
@@ -1424,7 +1432,7 @@ public final class CarriageVariantBlocks {
             }
         }
         int dirMask = 0;
-        if (obj.has("dirs") && obj.get("dirs").isJsonArray()) {
+        if (!compass && obj.has("dirs") && obj.get("dirs").isJsonArray()) {
             for (JsonElement d : obj.getAsJsonArray("dirs")) {
                 if (!d.isJsonPrimitive()) continue;
                 String name = d.getAsString().trim().toUpperCase(Locale.ROOT);
@@ -1437,7 +1445,7 @@ public final class CarriageVariantBlocks {
                 }
             }
         }
-        if (obj.has("compass") && obj.get("compass").isJsonArray()) {
+        if (compass && obj.has("compass") && obj.get("compass").isJsonArray()) {
             for (JsonElement c : obj.getAsJsonArray("compass")) {
                 if (!c.isJsonPrimitive()) continue;
                 int slot = RotationApplier.compassSlotOf(c.getAsString());

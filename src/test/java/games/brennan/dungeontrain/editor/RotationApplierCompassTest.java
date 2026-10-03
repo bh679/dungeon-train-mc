@@ -137,12 +137,25 @@ final class RotationApplierCompassTest {
         CarriageVariantBlocks.appendRotationJson(sb, opts, true);
         assertEquals("{\"mode\": \"options\", \"compass\": [\"s\", \"ne\", \"se\"]}", sb.toString());
         VariantRotation back = CarriageVariantBlocks.parseRotation(
-            JsonParser.parseString(sb.toString()), "test", BlockPos.ZERO);
+            JsonParser.parseString(sb.toString()), true, "test", BlockPos.ZERO);
         assertEquals(opts, back);
 
         // Facing blocks keep the historical "dirs" shape.
         StringBuilder dirs = new StringBuilder();
         CarriageVariantBlocks.appendRotationJson(dirs, VariantRotation.lock(Direction.EAST), false);
         assertEquals("{\"mode\": \"lock\", \"dirs\": [\"east\"]}", dirs.toString());
+    }
+
+    @Test
+    @DisplayName("Legacy 6-way \"dirs\" on a head is ignored (it never turned heads); facing blocks still read it")
+    void legacyDirsIgnoredOnCompass() {
+        String legacy = "{\"mode\": \"lock\", \"dirs\": [\"north\"]}";
+        assertEquals(VariantRotation.NONE, CarriageVariantBlocks.parseRotation(
+            JsonParser.parseString(legacy), true, "test", BlockPos.ZERO));
+        assertEquals(VariantRotation.lock(Direction.NORTH), CarriageVariantBlocks.parseRotation(
+            JsonParser.parseString(legacy), false, "test", BlockPos.ZERO));
+        String compass = "{\"mode\": \"lock\", \"compass\": [\"n\"]}";
+        assertEquals(VariantRotation.NONE, CarriageVariantBlocks.parseRotation(
+            JsonParser.parseString(compass), false, "test", BlockPos.ZERO));
     }
 }
