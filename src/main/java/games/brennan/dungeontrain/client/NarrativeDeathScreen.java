@@ -24,6 +24,10 @@ import games.brennan.dungeontrain.client.support.FundingGoals;
 import games.brennan.dungeontrain.client.support.LastActive;
 import games.brennan.dungeontrain.client.support.UpdateStats;
 import games.brennan.dungeontrain.net.relay.DonationSummaryClient.Goal;
+import games.brennan.dungeontrain.client.deathphotos.DeathPhoto;
+import games.brennan.dungeontrain.client.deathphotos.DeathPhotoSet;
+import games.brennan.dungeontrain.client.deathphotos.PhotoStripPage;
+import games.brennan.dungeontrain.client.deathphotos.PhotoViewerOverlay;
 import games.brennan.dungeontrain.client.modrec.ModRecPage;
 import games.brennan.dungeontrain.client.modrec.ModRecState;
 import games.brennan.dungeontrain.modrec.ModRoster;
@@ -116,7 +120,7 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 public final class NarrativeDeathScreen extends Screen {
 
-    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, MODREC, DONATE, PLATFORM }
+    private enum Kind { FALL, DEEDS, GEAR, LIVES, SURVEY, BUG_RESPONSE, MODREC, DONATE, PHOTOS, PLATFORM }
 
     private record Page(Kind kind, SurveyQuestionPayload.Entry survey) {
         static Page of(Kind k) { return new Page(k, null); }
@@ -294,6 +298,14 @@ public final class NarrativeDeathScreen extends Screen {
     // init() runs, and left empty (page absent) when the player runs nothing of their own.
     private ModRecState modRec;
     private ModRecPage modRecPage;
+
+    // ---- Photo page (PHOTOS): this run's camera shots + ride photos, before the final page ----
+    private final PhotoStripPage photoStrip = new PhotoStripPage();
+    // Fullscreen view of one photo; while open it takes every click, key and wheel event.
+    private final PhotoViewerOverlay photoViewer = new PhotoViewerOverlay();
+    // Photo count the page set was built with — camera frames ride in the death packet, which can
+    // land a tick after the screen opens, so tick() rebuilds when this goes stale.
+    private int lastPhotoCount = -1;
     private EditBox modCommentBox;   // "why would you recommend it?" — required before Send
     private EditBox modNameBox;      // the requested mod's name; only for the "not installed" tile
     private boolean opened = false;
@@ -439,6 +451,10 @@ public final class NarrativeDeathScreen extends Screen {
         if (modRec != null && !modRec.isEmpty()) {
             list.add(Page.of(Kind.MODREC));
         }
+        // The photo page shows off this run's photos, right before the final page — only when there
+        // are any.
+        lastPhotoCount = photoSet().size();
+        if (lastPhotoCount > 0) list.add(Page.of(Kind.PHOTOS));
         list.add(Page.of(Kind.PLATFORM));
         return list;
     }
@@ -572,6 +588,11 @@ public final class NarrativeDeathScreen extends Screen {
             addRenderableWidget(commentBox);
         }
 
+        if (p.kind() != Kind.PHOTOS) {
+            photoViewer.close();
+            photoStrip.resetScroll();
+        }
+
         if (p.kind() == Kind.MODREC && modRec != null) {
             // Both boxes exist for the whole page; drawModRec positions them and hides them when
             // nothing is selected. The state — not the widget — is the source of truth for Send, so
@@ -662,7 +683,8 @@ public final class NarrativeDeathScreen extends Screen {
         ticksOpen++;
         // The death packet + survey questions arrive a tick or two after the
         // screen opens. If the survey set changed, rebuild so the pages match.
-        if (SurveyClientState.questions().size() != lastSurveyCount) {
+        if (SurveyClientState.questions().size() != lastSurveyCount
+                || photoSet().size() != lastPhotoCount) {
             this.rebuildWidgets();
         }
     }
@@ -714,6 +736,12 @@ public final class NarrativeDeathScreen extends Screen {
             transStartMs = now - (T_FADE + T_HOLD);
         }
         updateTransition(now);
+        // The fullscreen photo viewer sits over everything: the page beneath gets no hover.
+        int viewerMouseX = mouseX, viewerMouseY = mouseY;
+        if (photoViewer.isOpen()) {
+            mouseX = Integer.MIN_VALUE / 2;
+            mouseY = Integer.MIN_VALUE / 2;
+        }
 
         DeathStatsPacket stats = DeathStatsCache.get();
         DeathNarrative narr = stats != null ? stats.narrative() : DeathNarrative.EMPTY;
@@ -803,6 +831,7 @@ public final class NarrativeDeathScreen extends Screen {
                 case BUG_RESPONSE -> y = drawBugResponse(g, left, contentW, cx, y);
                 case MODREC -> y = drawModRec(g, left, contentW, cx, y, mouseX, mouseY);
                 case DONATE -> y = drawDonate(g, left, contentW, cx, y, mouseX, mouseY);
+                case PHOTOS -> y = drawPhotos(g, left, contentW, cx, y, mouseX, mouseY);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
             }
 
@@ -852,6 +881,7 @@ public final class NarrativeDeathScreen extends Screen {
                         Component.translatable("gui.dungeontrain.death.narr.feedback_chip_tip"), mouseX, mouseY);
             }
         }
+        photoViewer.render(g, this.font, photos(), this.width, this.height, viewerMouseX, viewerMouseY);
     }
 
     // ---- Transition / backdrop ----
@@ -891,7 +921,7 @@ public final class NarrativeDeathScreen extends Screen {
             case DEEDS    -> List.of(SnapshotTag.COMBAT, SnapshotTag.SCENIC);
             case GEAR     -> List.of(SnapshotTag.GEAR, SnapshotTag.SCENIC);
             case LIVES    -> List.of(SnapshotTag.SOCIAL, SnapshotTag.SCENIC);
-            case SURVEY, BUG_RESPONSE, MODREC, DONATE, PLATFORM -> List.of();
+            case SURVEY, BUG_RESPONSE, MODREC, DONATE, PHOTOS, PLATFORM -> List.of();
         };
     }
 
@@ -912,6 +942,8 @@ public final class NarrativeDeathScreen extends Screen {
             case MODREC -> UiAnalytics.PAGE_MODREC;
             case DONATE -> UiAnalytics.PAGE_DONATE;
             case PLATFORM -> UiAnalytics.PAGE_PLATFORM;
+            // Untracked: UiAnalytics PAGE_* ids are lock-step with the relay's ui-events.js.
+            case PHOTOS -> null;
         };
     }
 
@@ -920,6 +952,7 @@ public final class NarrativeDeathScreen extends Screen {
         openedPage = pageAnalyticsId(page.kind());
         openedQuestionId = page.kind() == Kind.SURVEY && page.survey() != null ? page.survey().id() : null;
         pageOpenedAtMs = Util.getMillis();
+        if (openedPage == null) return; // untracked page — leavePageAnalytics skips it too
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_DEATH_SCREEN, openedPage, openedQuestionId);
     }
 
@@ -2327,6 +2360,7 @@ public final class NarrativeDeathScreen extends Screen {
         // While the chrome is mid-fade, any click fast-tracks it rather than acting
         // on the fading / hidden controls beneath. Once settled (incl. the slow image
         // rise) clicks fall through, so only the Continue button advances — not empty space.
+        if (photoViewer.isOpen()) return photoViewer.mouseClicked(photos(), mx, my, button);
         if (button == 0 && uiBusy) { skipTransition(); return true; }
         if (button == 0) {
             if (photosRect != null && photosRect.has(mx, my)) { openGallery(); return true; }
@@ -2387,6 +2421,11 @@ public final class NarrativeDeathScreen extends Screen {
                 return true;
             }
             if (backRect != null && backRect.has(mx, my)) { back(); return true; }
+            if (page.kind() == Kind.PHOTOS && settled()) {
+                if (photoStrip.arrowClick(mx, my)) return true;
+                int photo = photoStrip.photoAt(mx, my);
+                if (photo >= 0) { photoViewer.open(photo); return true; }
+            }
             if (page.kind() == Kind.GEAR && seeAllRect != null && seeAllRect.has(mx, my)) {
                 openAdvancements();
                 return true;
@@ -2442,6 +2481,11 @@ public final class NarrativeDeathScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        if (photoViewer.isOpen()) return true;
+        // Scroll the PHOTOS strip sideways (either wheel axis) when the cursor is over it.
+        if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.PHOTOS && photoStrip.scroll(mx, my, dx, dy)) {
+            return true;
+        }
         // Horizontal-scroll the GEAR advancements row when the cursor is over its viewport.
         if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.GEAR
                 && advViewport != null && advViewport.has(mx, my) && gearAdvMaxScroll > 0) {
@@ -2715,6 +2759,39 @@ public final class NarrativeDeathScreen extends Screen {
     }
 
     // ---- Draw helpers ----
+
+    private int drawPhotos(GuiGraphics g, int left, int w, int cx, int y, int mouseX, int mouseY) {
+        drawKicker(g, cx, y, "gui.dungeontrain.death.photos.kicker");
+        y += 14;
+        drawTrain(g, left, w, y, currentPage);
+        y += 46;
+        y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.photos.title").getString(), cx, w, y);
+        drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.photos.subtitle"), cx, y + 2, KICKER);
+        y += this.font.lineHeight + 4;
+        return photoStrip.draw(g, this.font, photos(), this.width, y, this.height - 30, mouseX, mouseY, settled());
+    }
+
+    /**
+     * This death's photos: the camera frames from the death packet, then the frozen ride gallery
+     * (only while ride snapshots are on). {@link DeathPhotoSet#of} hands back the same set while
+     * those inputs are unchanged, so developed camera textures survive every frame and page swap.
+     */
+    private DeathPhotoSet photoSet() {
+        DeathStatsPacket s = DeathStatsCache.get();
+        return DeathPhotoSet.of(
+                s != null ? s.cameraFrames() : List.of(),
+                ClientDisplayConfig.isRideSnapshotsEnabled() ? RideSnapshotGallery.all() : List.of());
+    }
+
+    private List<DeathPhoto> photos() {
+        return photoSet().photos();
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (photoViewer.isOpen()) return photoViewer.keyPressed(photos(), keyCode);
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
 
     private void drawKicker(GuiGraphics g, int cx, int y, String key) {
         drawCenteredStr(g, Component.translatable(key), cx, y, KICKER);
