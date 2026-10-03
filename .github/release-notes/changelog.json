@@ -22278,7 +22278,7 @@
     },
     {
       "id": "mixin-target-guards",
-      "version": "0.1116.0",
+      "version": "0.1117.0",
       "type": "fix",
       "tags": [
         "fix",
