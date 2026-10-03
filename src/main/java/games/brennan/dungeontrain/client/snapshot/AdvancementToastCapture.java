@@ -2,86 +2,81 @@ package games.brennan.dungeontrain.client.snapshot;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.logging.LogUtils;
-import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.AdvancementPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
-import net.minecraft.Util;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderFrameEvent;
-import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
-import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import org.slf4j.Logger;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 /**
- * Takes the screenshot a milestone announcement carries: the player's own view, a moment after the
- * advancement toast has slid in, with the chat hidden for that one frame. Asked for by
- * {@code CaptureAdvancementPacket}; the JPEG goes back as {@link AdvancementPhotoPacket}.
+ * The photo a milestone announcement carries: the game's framed third-person "photo moment" of the
+ * player ({@link RideSnapshotCapture#requestEchoCapture} around the player themself — the same lit,
+ * unobstructed framing the ride gallery and echo stories use), with the advancement's
+ * "Challenge Complete!" toast painted on afterwards ({@link ToastOverlayPainter}), since the snapshot
+ * pass draws the level only. Asked for by {@code CaptureAdvancementPacket}; the JPEG goes back as
+ * {@link AdvancementPhotoPacket}.
  *
- * <p>The toast appears when the client receives the advancement itself, which lands just before
- * the capture request, so a short {@link #SETTLE_MS} wait catches it fully on screen (vanilla keeps
- * it up for ~5 s). Chat is hidden by cancelling the vanilla chat GUI layer while
- * {@link #captureFrame} is set; everything else on the HUD renders as the player sees it.</p>
+ * <p>If no clean angle is found within the capture's bounded retries the request is dropped
+ * silently by the capture; the server's buffer then posts text-only after its own timeout.</p>
  */
-@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class AdvancementToastCapture {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Wait for the toast's slide-in before grabbing the frame. */
-    static final long SETTLE_MS = 1_500L;
     /** Stays under {@link AdvancementPhotoPacket}'s 1 MB codec cap, like the death-screen ride photo. */
     private static final int MAX_BYTES = 1_000_000;
-
-    private static volatile ResourceLocation pendingId;
-    private static long captureAtMs;
-    private static boolean captureFrame;
+    /** Set {@code -Ddungeontrain.milestonePhotoDump=true} to also write each photo to {@code screenshots/}. */
+    private static final boolean DUMP = Boolean.getBoolean("dungeontrain.milestonePhotoDump");
 
     private AdvancementToastCapture() {}
 
-    /** Queue a capture for {@code advancementId}; a newer request replaces an older unsent one. */
+    /** Queue the framed capture for {@code advancementId}; a newer request replaces an unsent one. */
     public static void request(ResourceLocation advancementId) {
-        pendingId = advancementId;
-        captureAtMs = Util.getMillis() + SETTLE_MS;
-        captureFrame = false;
-    }
-
-    /** Hide the chat on the frame being captured. */
-    @SubscribeEvent
-    public static void onGuiLayer(RenderGuiLayerEvent.Pre event) {
-        if (captureFrame && VanillaGuiLayers.CHAT.equals(event.getName())) {
-            event.setCanceled(true);
-        }
-    }
-
-    /** Decide before the frame renders whether this is the one. */
-    @SubscribeEvent
-    public static void onFrameStart(RenderFrameEvent.Pre event) {
-        if (pendingId == null || captureFrame) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || mc.player == null) { pendingId = null; return; }
-        if (Util.getMillis() >= captureAtMs) captureFrame = true;
+        if (mc.level == null || mc.player == null || mc.getConnection() == null) return;
+        AdvancementHolder holder = mc.getConnection().getAdvancements().get(advancementId);
+        DisplayInfo display = holder == null ? null : holder.value().display().orElse(null);
+        RideSnapshotCapture.requestEchoCapture(mc.player.getId(),
+                bytes -> mc.execute(() -> finish(mc, advancementId, display, bytes)));
     }
 
-    /** The frame (HUD included, chat left out) has been drawn — grab it and send it. */
-    @SubscribeEvent
-    public static void onFrameEnd(RenderFrameEvent.Post event) {
-        if (!captureFrame) return;
-        ResourceLocation id = pendingId;
-        captureFrame = false;
-        pendingId = null;
-        if (id == null) return;
+    /** Render thread: paint the toast on the framed shot, encode, send. {@code bytes} is the capture's JPEG. */
+    private static void finish(Minecraft mc, ResourceLocation advancementId, DisplayInfo display, byte[] bytes) {
         byte[] jpeg = null;
-        try (NativeImage shot = Screenshot.takeScreenshot(Minecraft.getInstance().getMainRenderTarget())) {
-            jpeg = SnapshotJpegEncoder.encode(shot, MAX_BYTES);
-        } catch (Throwable t) {
-            LOGGER.warn("[DungeonTrain] advancement screenshot failed: {}", t.toString());
+        if (bytes != null && bytes.length > 0) {
+            try (NativeImage photo = NativeImage.read(new ByteArrayInputStream(bytes))) {
+                if (display == null) {
+                    jpeg = SnapshotJpegEncoder.encode(photo, MAX_BYTES);
+                } else {
+                    try (NativeImage framed = ToastOverlayPainter.paint(mc, photo, display)) {
+                        jpeg = SnapshotJpegEncoder.encode(framed, MAX_BYTES);
+                    }
+                }
+            } catch (Throwable t) {
+                LOGGER.warn("[DungeonTrain] milestone photo for {} failed: {}", advancementId, t.toString());
+            }
         }
+        if (DUMP && jpeg != null) dump(mc, advancementId, jpeg);
         // An empty image still goes back so the server posts promptly instead of waiting out its timeout.
-        DungeonTrainNet.sendToServer(new AdvancementPhotoPacket(id, jpeg != null ? jpeg : new byte[0]));
+        DungeonTrainNet.sendToServer(new AdvancementPhotoPacket(advancementId, jpeg != null ? jpeg : new byte[0]));
+    }
+
+    private static void dump(Minecraft mc, ResourceLocation advancementId, byte[] jpeg) {
+        try {
+            Path dir = mc.gameDirectory.toPath().resolve("screenshots");
+            Files.createDirectories(dir);
+            Path file = dir.resolve("milestone-" + advancementId.getPath().replace('/', '_') + ".jpg");
+            Files.write(file, jpeg);
+            LOGGER.info("[DungeonTrain] milestone photo written to {}", file);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] milestone photo dump failed: {}", e.toString());
+        }
     }
 }

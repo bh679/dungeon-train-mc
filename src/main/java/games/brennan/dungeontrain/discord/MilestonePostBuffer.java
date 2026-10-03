@@ -29,7 +29,7 @@ public final class MilestonePostBuffer {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     /** How long to wait for the client's screenshot before posting without one. */
-    static final long TIMEOUT_MS = 6_000L;
+    static final long TIMEOUT_MS = 10_000L;
     private static final String PHOTO_FILENAME = "advancement.jpg";
 
     private record Pending(ServerPlayer player, ResourceLocation advancementId, String title,
