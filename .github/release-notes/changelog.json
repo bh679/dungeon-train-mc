@@ -22275,6 +22275,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "first-ever-advancement-announcement",
+      "version": "0.1116.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "The first passenger to earn an advancement is remembered",
+      "summary": "Be the first passenger ever to earn an advancement and the whole train hears about it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
