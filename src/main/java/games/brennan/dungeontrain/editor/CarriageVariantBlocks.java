@@ -1341,7 +1341,7 @@ public final class CarriageVariantBlocks {
             }
             if (!s.rotation().isDefault()) {
                 sb.append(", \"rotation\": ");
-                appendRotationJson(sb, s.rotation());
+                appendRotationJson(sb, s.rotation(), false);
             }
             // Armor-stand / entity entries can carry an equipment loadout link
             // (e.g. minecraft:armor_stand + lootPrefab); emit it so the link
@@ -1381,7 +1381,7 @@ public final class CarriageVariantBlocks {
         }
         if (!s.rotation().isDefault()) {
             sb.append(", \"rotation\": ");
-            appendRotationJson(sb, s.rotation());
+            appendRotationJson(sb, s.rotation(), RotationApplier.isCompass(s.state()));
         }
         if (s.linkedLootPrefabId() != null) {
             sb.append(", \"lootPrefab\": \"").append(escapeJson(s.linkedLootPrefabId())).append("\"");
@@ -1410,7 +1410,7 @@ public final class CarriageVariantBlocks {
      * or malformed. The {@link VariantRotation} canonical constructor
      * silently re-clamps malformed mode/mask combinations.
      */
-    private static VariantRotation parseRotation(JsonElement el, String contextId, BlockPos contextPos) {
+    static VariantRotation parseRotation(JsonElement el, String contextId, BlockPos contextPos) {
         if (el == null || !el.isJsonObject()) return VariantRotation.NONE;
         JsonObject obj = el.getAsJsonObject();
         VariantRotation.Mode mode = VariantRotation.Mode.RANDOM;
@@ -1435,6 +1435,18 @@ public final class CarriageVariantBlocks {
                     LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown rotation dir '{}', skipping.",
                         contextId, contextPos, name);
                 }
+            }
+        }
+        if (obj.has("compass") && obj.get("compass").isJsonArray()) {
+            for (JsonElement c : obj.getAsJsonArray("compass")) {
+                if (!c.isJsonPrimitive()) continue;
+                int slot = RotationApplier.compassSlotOf(c.getAsString());
+                if (slot < 0) {
+                    LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown compass point '{}', skipping.",
+                        contextId, contextPos, c.getAsString());
+                    continue;
+                }
+                dirMask |= 1 << slot;
             }
         }
         return new VariantRotation(mode, dirMask);
@@ -1610,11 +1622,23 @@ public final class CarriageVariantBlocks {
     /**
      * Serialise a {@link VariantRotation} to the v5 JSON shape. Direction
      * names are written lowercase for human readability; the parser is
-     * case-insensitive.
+     * case-insensitive. A {@link RotationApplier#isCompass} block's mask is
+     * compass slots, written as {@code "compass": ["n", "ne", ...]} so it never
+     * collides with the {@code "dirs"} meaning.
      */
-    private static void appendRotationJson(StringBuilder sb, VariantRotation rot) {
+    static void appendRotationJson(StringBuilder sb, VariantRotation rot, boolean compass) {
         sb.append("{\"mode\": \"").append(rot.mode().name().toLowerCase(Locale.ROOT)).append("\"");
-        if (rot.dirMask() != 0) {
+        if (compass && rot.dirMask() != 0) {
+            sb.append(", \"compass\": [");
+            boolean first = true;
+            for (int slot = 0; slot < RotationApplier.COMPASS_SLOTS; slot++) {
+                if ((rot.dirMask() & (1 << slot)) == 0) continue;
+                if (!first) sb.append(", ");
+                sb.append('"').append(RotationApplier.compassJsonName(slot)).append('"');
+                first = false;
+            }
+            sb.append("]");
+        } else if (rot.dirMask() != 0) {
             sb.append(", \"dirs\": [");
             boolean first = true;
             for (net.minecraft.core.Direction d : net.minecraft.core.Direction.values()) {

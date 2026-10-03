@@ -22562,8 +22562,53 @@
       "released_at": null
     },
     {
-      "id": "editor-build-review-verdicts",
+      "id": "head-banner-sign-8-direction-rotation",
       "version": "0.1132.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Rotate heads, banners and signs in 8 directions",
+      "summary": "Heads, skulls, standing banners and signs placed on the floor can now be given a rotation in the block variants menu. Lock one direction, or pick any of the 8 compass points for each spawn to choose from.",
+      "highlights": [
+        "Lock cycles through N, NE, E, SE, S, SW, W and NW",
+        "Options opens a compass rose so you can tick the directions you want",
+        "Mirroring and rotating a plot turns these directions along with the block"
+      ],
+      "pr": 1795,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "luggage-new-carriage-safe-room",
+      "version": "0.1132.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Luggage, a new carriage, and a rebuilt parkour room",
+      "summary": "Some book carriages now have travellers' luggage piled up in them. A new carriage design joins the train. One of the parkour dimensional carriages has been rebuilt and keeps turning up much further into a run. Shop carriages come up a little less often.",
+      "highlights": [
+        "Luggage piled up in some book carriages",
+        "A new carriage design on the train",
+        "A rebuilt parkour dimensional carriage that appears deeper into a run",
+        "Shop carriages are slightly rarer"
+      ],
+      "pr": 1797,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-build-review-verdicts",
+      "version": "0.1133.0",
       "type": "feat",
       "tags": [
         "feature",
