@@ -14654,12 +14654,21 @@
         "0.1104.0",
         "0.1121.0"
       ]
-    },
-    "2": {
+    }
+  },
+  "gui.dungeontrain.update_prompt.yours": {
+    "1": {
       "label": "the version the player has, without the leading v",
       "examples": [
         "0.927.0",
         "0.1093.0"
+      ]
+    },
+    "2": {
+      "label": "how many releases newer, already counted with its noun",
+      "examples": [
+        "29 releases",
+        "1 release"
       ]
     }
   }

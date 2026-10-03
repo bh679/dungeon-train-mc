@@ -83,7 +83,8 @@ public final class UpdatePromptHandler {
         decided = true;
         LOGGER.info("Update prompt: installed {} is behind {} (newest on {}) — showing the card",
                 installed.get(), target.get().version(), target.get().platform());
-        mc.setScreen(new UpdatePromptScreen(parent, target.get().version(), installed.get()));
+        mc.setScreen(new UpdatePromptScreen(parent, target.get().version(), installed.get(),
+                target.get().releasesBehind()));
     }
 
     private static boolean anyLoading() {
