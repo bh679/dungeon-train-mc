@@ -22347,6 +22347,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "disposable-camera-per-stack-print",
+      "version": "0.1121.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Disposable cameras keep to themselves",
+      "summary": "Only the disposable camera you shoot with reloads now, and every shot prints a single photo.",
+      "highlights": [],
+      "pr": 1782,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
