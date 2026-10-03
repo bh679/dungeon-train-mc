@@ -81,7 +81,11 @@ public record EditorPlotActionPacket(
      * post-download jump needs, so the two walks that must keep unsaved edits are sent this way
      * where the intent is explicit.</p>
      */
-    public enum Action { SAVE, RESET, CLEAR, ENTER_INSIDE, GO_HERE }
+    public enum Action {
+        SAVE, RESET, CLEAR, ENTER_INSIDE, GO_HERE,
+        /** Workbench only: erase the staged plot and delete the build from the shelf. Appended last — ordinal on the wire. */
+        REMOVE
+    }
 
     public static final Type<EditorPlotActionPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "editor_plot_action"));
@@ -186,6 +190,7 @@ public record EditorPlotActionPacket(
                     case TRACKS -> dispatchTracks(sender, overworld, dims, packet);
                     case PORTALS -> dispatchPortals(sender, overworld, dims, packet);
                     case BUILDINGS -> dispatchBuildings(sender, overworld, packet);
+                    case WORKBENCH -> dispatchWorkbench(sender, overworld, packet);
                     case ARCHITECTURE -> {} // no models
                 }
             } catch (Throwable t) {
@@ -383,6 +388,36 @@ public record EditorPlotActionPacket(
         }
         LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} building '{}'",
             sender.getName().getString(), packet.action, name);
+    }
+
+    // ----- Workbench (staged relay builds) -----
+
+    private static void dispatchWorkbench(ServerPlayer sender, ServerLevel overworld,
+                                          EditorPlotActionPacket packet) throws Exception {
+        String id = packet.modelName;
+        if (games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.find(id).isEmpty()) {
+            LOGGER.warn("[DungeonTrain] EditorPlotAction (workbench): unknown staged build '{}'", id);
+            return;
+        }
+        switch (packet.action) {
+            case SAVE -> SaveCommand.saveOrPrompt(sender, new Template.Staged(id));
+            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Staged(id));
+            case CLEAR -> {
+                games.brennan.dungeontrain.editor.WorkbenchEditor.clearBlocks(overworld, id);
+                sender.sendSystemMessage(Component.translatable("chat.dungeontrain.workbench.cleared", id)
+                    .withStyle(ChatFormatting.GREEN));
+            }
+            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.WorkbenchEditor.enter(sender, overworld, id, false, packet.inside());
+            case GO_HERE -> games.brennan.dungeontrain.editor.WorkbenchEditor.enter(sender, overworld, id, true,
+                EditorPlotArrival.Inside.FRONT_DOOR);
+            case REMOVE -> {
+                games.brennan.dungeontrain.editor.WorkbenchEditor.remove(overworld, id);
+                sender.sendSystemMessage(Component.translatable("chat.dungeontrain.workbench.removed", id)
+                    .withStyle(ChatFormatting.GREEN));
+            }
+        }
+        LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} workbench '{}'",
+            sender.getName().getString(), packet.action, id);
     }
 
     private static void dispatchPortals(ServerPlayer sender, ServerLevel overworld, CarriageDims dims,

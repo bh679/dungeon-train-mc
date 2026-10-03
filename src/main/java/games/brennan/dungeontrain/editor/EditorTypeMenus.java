@@ -72,6 +72,7 @@ public final class EditorTypeMenus {
             case TRACKS -> trackMenus(dims);
             case PORTALS -> portalMenus(dims);
             case BUILDINGS -> buildingMenus();
+            case WORKBENCH -> workbenchMenus();
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -287,6 +288,35 @@ public final class EditorTypeMenus {
     }
 
     /** One row per building; a new building shows its roster weight, a shipped one none. */
+    static final String WORKBENCH_TYPE_NAME = "Workbench";
+
+    /** One menu at the first staged plot, one row per staged build — the relay's name, no weight. */
+    private static List<EditorTypeMenusPacket.Menu> workbenchMenus() {
+        net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        List<games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild> staged =
+            games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.list();
+        if (server == null || staged.isEmpty()) return Collections.emptyList();
+        BlockPos first = WorkbenchEditor.plotOrigin(server.overworld(), staged.get(0).stagedId());
+        if (first == null) return Collections.emptyList();
+        List<EditorTypeMenusPacket.TypeTab> typeStrip = List.of(new EditorTypeMenusPacket.TypeTab(
+            WORKBENCH_TYPE_NAME, PlotCategory.WORKBENCH.name(), WorkbenchEditor.MODEL_ID, staged.get(0).stagedId()));
+        return List.of(new EditorTypeMenusPacket.Menu(anchorForXRow(first, staged.get(0).size()),
+            WORKBENCH_TYPE_NAME, workbenchRows(staged), false, EditorCategory.WORKBENCH.id(),
+            buildCategoryBar(), typeStrip));
+    }
+
+    static List<EditorTypeMenusPacket.Variant> workbenchRows(
+            List<games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild> staged) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(staged.size());
+        for (games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild b : staged) {
+            String label = b.buildName().isEmpty() ? b.stagedId() : b.buildName() + "  ·  " + b.relayKind();
+            rows.add(new EditorTypeMenusPacket.Variant(b.stagedId(), EditorPlotLabelsPacket.NO_WEIGHT,
+                PlotCategory.WORKBENCH.name(), WorkbenchEditor.MODEL_ID, b.stagedId(), true, false)
+                .withDisplayName(label).withBuilder(b.ownerUuid(), b.ownerName()));
+        }
+        return rows;
+    }
+
     static List<EditorTypeMenusPacket.Variant> buildingRows(List<String> names) {
         List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(names.size());
         for (String name : names) {

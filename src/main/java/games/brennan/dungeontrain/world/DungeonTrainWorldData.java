@@ -88,6 +88,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
+    private static final String TAG_EDITOR_WORKBENCH_PLOT_BOXES = "editorWorkbenchPlotBoxes";
     private static final String TAG_EDITOR_STAMPED_CATEGORY = "editorStampedCategory";
     private static final String TAG_EDITOR_CONTENTS_SIZE = "editorContentsSize";
 
@@ -136,6 +137,13 @@ public final class DungeonTrainWorldData extends SavedData {
      * blocks are.</p>
      */
     private final java.util.Map<String, int[]> editorPortalPlotBoxes = new java.util.LinkedHashMap<>();
+    /**
+     * Where each Workbench build stands, by staged id — {@code [x, y, z, sx, sy, sz]}. The Workbench
+     * is the one category whose plots are placed rather than laid out (see {@code WorkbenchPlacement}),
+     * so this record IS the layout: a staged build with no entry has no plot until the next entry
+     * gives it one, and nothing here ever moves an entry.
+     */
+    private final java.util.Map<String, int[]> editorWorkbenchPlotBoxes = new java.util.LinkedHashMap<>();
     private long generationSeed;
     /**
      * World X where a player first stood on the train — "spawn" for the reversed bands: distance behind
@@ -564,6 +572,13 @@ public final class DungeonTrainWorldData extends SavedData {
                 if (box.length == 6) data.editorPortalPlotBoxes.put(name, box);
             }
         }
+        if (tag.contains(TAG_EDITOR_WORKBENCH_PLOT_BOXES, net.minecraft.nbt.Tag.TAG_COMPOUND)) {
+            CompoundTag boxes = tag.getCompound(TAG_EDITOR_WORKBENCH_PLOT_BOXES);
+            for (String id : boxes.getAllKeys()) {
+                int[] box = boxes.getIntArray(id);
+                if (box.length == 6) data.editorWorkbenchPlotBoxes.put(id, box);
+            }
+        }
         // Absent in every non-builder world (and in builder worlds saved before the stamp ran).
         if (tag.contains(TAG_BUILDER_MODE)) {
             data.builderMode = tag.getString(TAG_BUILDER_MODE);
@@ -683,6 +698,13 @@ public final class DungeonTrainWorldData extends SavedData {
                 boxes.putIntArray(e.getKey(), e.getValue());
             }
             tag.put(TAG_EDITOR_PORTAL_PLOT_BOXES, boxes);
+        }
+        if (!editorWorkbenchPlotBoxes.isEmpty()) {
+            CompoundTag boxes = new CompoundTag();
+            for (java.util.Map.Entry<String, int[]> e : editorWorkbenchPlotBoxes.entrySet()) {
+                boxes.putIntArray(e.getKey(), e.getValue());
+            }
+            tag.put(TAG_EDITOR_WORKBENCH_PLOT_BOXES, boxes);
         }
         if (builderMode != null) {
             tag.putString(TAG_BUILDER_MODE, builderMode);
@@ -983,6 +1005,33 @@ public final class DungeonTrainWorldData extends SavedData {
     /** {@code name}'s plot has been erased — or was never there. */
     public void forgetPortalPlotBox(String name) {
         if (name != null && editorPortalPlotBoxes.remove(name) != null) setDirty();
+    }
+
+    /** Where the Workbench build {@code stagedId} stands, or null when it has no plot. */
+    public int[] workbenchPlotBox(String stagedId) {
+        int[] box = editorWorkbenchPlotBoxes.get(stagedId);
+        return box == null ? null : box.clone();
+    }
+
+    /** Every Workbench plot box, by staged id. A copy — write through the methods below. */
+    public java.util.Map<String, int[]> workbenchPlotBoxes() {
+        java.util.Map<String, int[]> out = new java.util.LinkedHashMap<>();
+        for (java.util.Map.Entry<String, int[]> e : editorWorkbenchPlotBoxes.entrySet()) {
+            out.put(e.getKey(), e.getValue().clone());
+        }
+        return out;
+    }
+
+    /** The Workbench build {@code stagedId} stands at this box from now on. */
+    public void recordWorkbenchPlotBox(String stagedId, int[] box) {
+        if (stagedId == null || stagedId.isEmpty() || box == null || box.length != 6) return;
+        int[] was = editorWorkbenchPlotBoxes.put(stagedId, box.clone());
+        if (was == null || !java.util.Arrays.equals(was, box)) setDirty();
+    }
+
+    /** The Workbench build {@code stagedId} has left the Workbench. */
+    public void forgetWorkbenchPlotBox(String stagedId) {
+        if (stagedId != null && editorWorkbenchPlotBoxes.remove(stagedId) != null) setDirty();
     }
 
     /** The id of the category whose plots are stamped, or empty — see {@link #setEditorStampedCategory}. */

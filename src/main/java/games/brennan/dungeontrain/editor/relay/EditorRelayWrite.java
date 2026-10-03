@@ -154,6 +154,8 @@ public final class EditorRelayWrite {
                     new Naming(BuilderPhotoPaths.Kind.BUILDING, "", building.name());
             // Official Lost City buildings are never uploaded — Big Lost City is All Rights Reserved.
             case Template.LostCity ignored -> null;
+            // A staged build is not a template yet; it reaches the relay only after a commit, as its kind.
+            case Template.Staged ignored -> null;
         };
     }
 

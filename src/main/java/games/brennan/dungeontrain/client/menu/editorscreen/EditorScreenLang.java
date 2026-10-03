@@ -27,6 +27,7 @@ public final class EditorScreenLang {
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
     public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
     public static final String TAB_BUILDINGS = PREFIX + "tab.buildings";
+    public static final String TAB_WORKBENCH = PREFIX + "tab.workbench";
 
     /**
      * The Nav tab: the red button under the picked area, its greyed form when already there, the
@@ -266,6 +267,18 @@ public final class EditorScreenLang {
     public static final String MOVE_TOP_LEVEL = PREFIX + "move.top_level";
     public static final String MOVE_NO_TARGETS = PREFIX + "move.no_targets";
     public static final String MOVE_BACK = PREFIX + "move.back";
+
+    // ---- Workbench ----
+    public static final String CREATOR_LOAD_WORKBENCH = PREFIX + "creator.load_workbench";
+    public static final String ICON_COMMIT = PREFIX + "icon.commit";
+    public static final String DISABLED_NOT_WORKBENCH = PREFIX + "disabled.not_workbench";
+    public static final String COMMIT_TITLE = PREFIX + "commit.title";
+    public static final String COMMIT_KIND = PREFIX + "commit.kind";
+    public static final String COMMIT_SUB_KIND = PREFIX + "commit.sub_kind";
+    public static final String COMMIT_PARENT = PREFIX + "commit.parent";
+    public static final String COMMIT_REPLACE_ON = PREFIX + "commit.replace_on";
+    public static final String COMMIT_REPLACE_OFF = PREFIX + "commit.replace_off";
+    public static final String COMMIT_GO = PREFIX + "commit.go";
     /** The submit icon wears My Builds' own two words, so one decision reads the same in both. */
     public static final String ICON_SUBMIT = "gui.dungeontrain.builder.profile.submit_for_review";
     public static final String ICON_WITHDRAW = "gui.dungeontrain.builder.profile.withdraw_submission";

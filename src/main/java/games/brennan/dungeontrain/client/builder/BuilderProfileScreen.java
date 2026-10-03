@@ -829,6 +829,9 @@ public final class BuilderProfileScreen extends Screen {
             case TIMED_OUT -> "gui.dungeontrain.builder.profile.download_timed_out";
             case UNSUPPORTED -> "gui.dungeontrain.builder.profile.download_unsupported";
             case FAILED -> "gui.dungeontrain.builder.profile.download_failed";
+            case STAGED -> "gui.dungeontrain.editor_screen.creator.staged";
+            case STAGED_NOT_SHOWING -> "gui.dungeontrain.editor_screen.creator.staged_not_showing";
+            case TOO_TALL -> "gui.dungeontrain.editor_screen.creator.staged_too_tall";
         };
     }
 

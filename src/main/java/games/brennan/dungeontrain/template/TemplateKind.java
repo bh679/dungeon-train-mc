@@ -31,7 +31,9 @@ public enum TemplateKind {
     /** A Lost City / WWOO building — shipped or player-made; see {@code building.Buildings}. */
     BUILDING,
     /** An official Lost City building — Big Lost City's, view-only; see {@code building.LostCityReferences}. */
-    LOST_CITY;
+    LOST_CITY,
+    /** A relay build parked in the editor's Workbench, committed to no kind yet — see {@code Template.Staged}. */
+    STAGED;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

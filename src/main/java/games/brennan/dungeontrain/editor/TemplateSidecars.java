@@ -599,6 +599,57 @@ public final class TemplateSidecars {
         }
     }
 
+    /**
+     * {@code doc} as it should be applied to a template of {@code toKind}/{@code toSub} when it was
+     * collected from one of {@code fromKind}/{@code fromSub} — the Workbench's commit, which may file
+     * a build under a kind other than the one the relay called it.
+     *
+     * <p>The same kind and sub kind pass through untouched. Otherwise: the byline and the chest →
+     * prefab links always travel (positions in the same box mean the same thing whatever the kind);
+     * every other file role travels only when the target kind has that role at all
+     * ({@link #filesFor}); and the weights entry is dropped, because each kind's weight file has its
+     * own shape and a portal room's doorway tag landing on a contents entry would be read as nonsense.
+     * The result is re-encoded plain (never compressed) — a commit is a local write, not a wire hop.</p>
+     *
+     * <p>Never throws: a document that will not parse is handed back blank, which {@link #apply}
+     * treats as "nothing to apply".</p>
+     */
+    public static String retargeted(String doc, BuilderPhotoPaths.Kind fromKind, String fromSub,
+                                    BuilderPhotoPaths.Kind toKind, String toSub) {
+        if (doc == null || doc.isBlank()) return "";
+        String from = fromSub == null ? "" : fromSub;
+        String to = toSub == null ? "" : toSub;
+        if (fromKind == toKind && from.equals(to)) return doc;
+        JsonObject root;
+        try {
+            root = SidecarDocCodec.parse(doc);
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Template sidecars: a document would not parse while retargeting "
+                    + "{} → {} — committed without sidecars: {}", fromKind, toKind, e.toString());
+            return "";
+        }
+        return retargetedRoles(root, toKind, to).toString();
+    }
+
+    /** The pure half of {@link #retargeted}: {@code root} with only the roles {@code toKind} can hold. */
+    static JsonObject retargetedRoles(JsonObject root, BuilderPhotoPaths.Kind toKind, String toSub) {
+        JsonObject out = new JsonObject();
+        if (root.has(K_CREDIT)) out.add(K_CREDIT, root.get(K_CREDIT));
+        if (root.has(K_FILES) && root.get(K_FILES).isJsonObject()) {
+            java.util.Set<String> allowed = new java.util.HashSet<>();
+            // A placeholder id: only the roles matter here, and filesFor needs a non-empty one.
+            for (Sidecar s : filesFor(toKind, toSub, "retarget")) allowed.add(s.role());
+            allowed.add(ROLE_CONTAINERS);
+            JsonObject files = new JsonObject();
+            for (Map.Entry<String, JsonElement> e : root.getAsJsonObject(K_FILES).entrySet()) {
+                if (allowed.contains(e.getKey())) files.add(e.getKey(), e.getValue());
+            }
+            if (!files.isEmpty()) out.add(K_FILES, files);
+        }
+        // K_WEIGHTS deliberately absent — see retargeted.
+        return out;
+    }
+
     /** Whether {@code kind} has any sidecar at all — what a caller checks before bothering. */
     public static boolean carries(BuilderPhotoPaths.Kind kind) {
         return kind != null && kind != BuilderPhotoPaths.Kind.LOST_CITY;

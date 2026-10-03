@@ -518,6 +518,27 @@ public final class EditorGuiScreen extends Screen {
 
     /** The press most recently sent, so the loot-prefab question can replay it with the answer attached. */
     private BuilderProfileDownloadPacket lastDownload;
+    /** The relay row the last "To Workbench" press asked about, or -1; its answer comes back as a download result. */
+    private int lastStageRelayId = -1;
+
+    /**
+     * Stage the selected build on the Workbench: the same fetch as a Load, landing on the shelf instead
+     * of in a store — and never a category switch. What comes back is read by {@link #onDownloadResult}.
+     */
+    private void stageSelectedCreatorBuild() {
+        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
+        if (entry == null || loading) return;
+        String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
+            ? EditorCreatorBuilds.viewedName()
+            : entry.ownerName();
+        lastDownload = null;
+        lastStageRelayId = entry.relayId();
+        DungeonTrainNet.sendToServer(new games.brennan.dungeontrain.net.WorkbenchStagePacket(entry.relayId(),
+            EditorCreatorBuilds.ownerOf(entry), ownerName, BuilderProfileState.live()));
+        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
+        loading = true;
+        loadingTicks = LOAD_TIMEOUT_TICKS;
+    }
 
     private void sendDownload(BuilderProfileDownloadPacket packet) {
         this.lastDownload = packet;
@@ -591,7 +612,9 @@ public final class EditorGuiScreen extends Screen {
     private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
         // Only the press this screen is waiting on: an answer to one it never made, or gave up on,
         // says nothing about the row in front of the player.
-        if (lastDownload == null || packet.relayId() != lastDownload.relayId()) return;
+        boolean stagePress = lastStageRelayId >= 0 && packet.relayId() == lastStageRelayId;
+        if (!stagePress && (lastDownload == null || packet.relayId() != lastDownload.relayId())) return;
+        if (stagePress) lastStageRelayId = -1;
         // Answered, whatever the answer: the button is back. A prefab question below re-sends and
         // greys it again.
         loading = false;
@@ -858,6 +881,11 @@ public final class EditorGuiScreen extends Screen {
                 case PARENT -> {
                     click();
                     pickLoadParent();
+                    return true;
+                }
+                case WORKBENCH -> {
+                    click();
+                    stageSelectedCreatorBuild();
                     return true;
                 }
                 case SUBMIT -> {

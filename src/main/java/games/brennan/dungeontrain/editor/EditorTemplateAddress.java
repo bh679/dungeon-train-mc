@@ -41,6 +41,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
     public static final String CHUNK_FRAME = "chunk_frame";
     public static final String BUILDING = "building";
     public static final String LOST_CITY = "lost_city";
+    public static final String STAGED = "staged";
 
     public EditorTemplateAddress {
         type = type == null ? "" : type;
@@ -65,6 +66,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
             case Template.ChunkFrame f -> new EditorTemplateAddress(CHUNK_FRAME, "", f.name());
             case Template.Building b -> new EditorTemplateAddress(BUILDING, "", b.name());
             case Template.LostCity l -> new EditorTemplateAddress(LOST_CITY, "", l.name());
+            case Template.Staged s -> new EditorTemplateAddress(STAGED, "", s.stagedId());
         };
     }
 

@@ -59,7 +59,7 @@ public final class EditorSaveStatus {
         if (category == null || modelId == null || modelId.isEmpty()) return null;
         return switch (category) {
             case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP -> modelId;
-            case TRACKS, PORTALS, CHUNK_FRAMES, BUILDINGS -> (modelName == null || modelName.isEmpty())
+            case TRACKS, PORTALS, CHUNK_FRAMES, BUILDINGS, WORKBENCH -> (modelName == null || modelName.isEmpty())
                 ? modelId : modelId + "." + modelName;
             case ARCHITECTURE, PARTS, LOST_CITY -> null;
         };

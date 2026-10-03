@@ -55,6 +55,12 @@ public enum EditorCategory {
     PORTALS("Dimensions"),
     /** The Lost City / WWOO buildings — DT's shipped ones to edit, and players' new ones. */
     BUILDINGS("Buildings"),
+    /**
+     * The Workbench — relay builds of any kind, staged side by side where they were put, until each
+     * is committed as a kind. The one category whose plots are placed, not laid out
+     * ({@link WorkbenchEditor}).
+     */
+    WORKBENCH("Workbench"),
     ARCHITECTURE("Architecture");
 
     private final String displayName;
@@ -85,6 +91,7 @@ public enum EditorCategory {
             case TRACKS -> trackModels();
             case PORTALS -> portalModels();
             case BUILDINGS -> buildingModels();
+            case WORKBENCH -> workbenchModels();
             case ARCHITECTURE -> List.of();
         };
     }
@@ -133,6 +140,8 @@ public enum EditorCategory {
                 .map(name -> new Located(BUILDINGS, (Template) new Template.Building(name)))
                 .or(() -> LostCityReferenceEditor.plotContaining(pos)
                     .map(name -> new Located(BUILDINGS, new Template.LostCity(name))));
+            case WORKBENCH -> WorkbenchEditor.plotContaining(pos)
+                .map(id -> new Located(WORKBENCH, (Template) new Template.Staged(id)));
             case ARCHITECTURE -> Optional.empty();
         };
     }
@@ -302,6 +311,11 @@ public enum EditorCategory {
         return out;
     }
 
+    /** Every staged build, in the order they were staged — the order their slots were given out. */
+    private static List<Template> workbenchModels() {
+        return new ArrayList<>(WorkbenchTemplates.registry().all());
+    }
+
     /** A category + which specific model the player is standing in. */
     public record Located(EditorCategory category, Template model) {}
 
@@ -327,6 +341,7 @@ public enum EditorCategory {
             case Template.ChunkFrame f -> PORTALS;
             case Template.Building b -> BUILDINGS;
             case Template.LostCity l -> BUILDINGS;
+            case Template.Staged s -> WORKBENCH;
         };
     }
 
@@ -477,6 +492,11 @@ public enum EditorCategory {
                     () -> BuildingEditor.clearPlot(overworld, name),
                     plotBoxOf(overworld, model, dims)));
             }
+        }
+        if (previous == WORKBENCH || (legacy && keep != WORKBENCH)) {
+            // From the recorded boxes, not the models: a staged build that was deleted from the shelf
+            // while standing still has a plot to erase.
+            jobs.addAll(WorkbenchEditor.clearAllPlotJobs(overworld));
         }
         return jobs;
     }

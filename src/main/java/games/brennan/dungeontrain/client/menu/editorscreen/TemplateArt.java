@@ -41,7 +41,8 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
             case CHUNK_FRAMES -> new TemplateArt(BuilderPhotoPaths.Kind.CHUNK_FRAME, key.modelName(), null, null);
             case BUILDINGS -> new TemplateArt(BuilderPhotoPaths.Kind.BUILDING, key.modelName(), null, null);
             case LOST_CITY -> new TemplateArt(BuilderPhotoPaths.Kind.LOST_CITY, key.modelName(), null, null);
-            case ARCHITECTURE -> null;
+            // A staged build has no photo store of its own until it is committed.
+            case ARCHITECTURE, WORKBENCH -> null;
         };
     }
 

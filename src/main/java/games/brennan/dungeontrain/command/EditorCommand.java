@@ -604,6 +604,7 @@ public final class EditorCommand {
             .then(WholeEditorCommand.build())
             .then(ChunkFrameCommand.build())
             .then(BuildingCommand.build())
+            .then(WorkbenchCommand.build())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -3128,6 +3129,22 @@ public final class EditorCommand {
         java.util.Optional<Template> first = category.firstModel();
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        if (first.isEmpty() && category == EditorCategory.WORKBENCH) {
+            // An empty Workbench still has to open: builds are loaded into it from Find a Builder.
+            List<EditorStampQueue.Job> erases = EditorCategory.clearAllPlotJobs(overworld, dims, category);
+            EditorStampedCategoryState.set(overworld, category);
+            for (EditorStampQueue.Job job : erases) job.work().run();
+            EditorCategory.layerSweepJob(overworld, dims, null).work().run();
+            net.minecraft.core.BlockPos origin = new net.minecraft.core.BlockPos(
+                games.brennan.dungeontrain.editor.workbench.WorkbenchPlacement.FIRST_X,
+                games.brennan.dungeontrain.editor.workbench.WorkbenchPlacement.PLOT_Y,
+                games.brennan.dungeontrain.editor.workbench.WorkbenchPlacement.ROW_Z);
+            games.brennan.dungeontrain.editor.EditorPlotArrival.land(player, overworld, origin,
+                new net.minecraft.core.Vec3i(dims.length(), 1, dims.width()), true,
+                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR, null);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.workbench.empty"), true);
+            return 1;
+        }
         if (first.isEmpty() && category == EditorCategory.WHOLE) {
             // The Whole pool starts empty on a fresh install; the section still has to open so the
             // player can load a build into it. Erase whatever was resident and land at the row origin.
@@ -3159,6 +3176,11 @@ public final class EditorCommand {
         // now; the entering category's own erases are left out because every stamp erases its own
         // footprint first.
         List<EditorStampQueue.Job> erases = EditorCategory.clearAllPlotJobs(overworld, dims, category);
+        // The Workbench's layout is its record of placed boxes: bring it in line with the shelf before
+        // a single plot is stamped from it.
+        if (category == EditorCategory.WORKBENCH) {
+            games.brennan.dungeontrain.editor.WorkbenchEditor.reconcile(overworld);
+        }
 
         Template head = first.get();
         // Remember which category is resident so VariantOverlayRenderer can keep the floating plot
@@ -3241,6 +3263,9 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.BuildingEditor.walkTo(player, player.serverLevel(), b.name(), false);
         } else if (head instanceof Template.LostCity l) {
             games.brennan.dungeontrain.editor.LostCityReferenceEditor.walkTo(player, player.serverLevel(), l.name(), false);
+        } else if (head instanceof Template.Staged s) {
+            games.brennan.dungeontrain.editor.WorkbenchEditor.enter(player, player.getServer().overworld(), s.stagedId(), true,
+                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
         }
     }
 
@@ -3265,6 +3290,8 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.BuildingEditor.stampPlot(overworld, b.name());
         } else if (model instanceof Template.LostCity l) {
             games.brennan.dungeontrain.editor.LostCityReferenceEditor.stampPlot(overworld, l.name());
+        } else if (model instanceof Template.Staged s) {
+            games.brennan.dungeontrain.editor.WorkbenchEditor.stampPlot(overworld, s.stagedId());
         }
     }
 

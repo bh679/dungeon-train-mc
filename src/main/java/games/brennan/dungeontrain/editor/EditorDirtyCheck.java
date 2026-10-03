@@ -101,6 +101,7 @@ public final class EditorDirtyCheck {
         scanPortalRooms(overworld, dims, devmode, out);
         scanChunkFrames(overworld, out);
         scanBuildings(overworld, out);
+        scanWorkbench(overworld, out);
 
         return out;
     }
@@ -347,6 +348,24 @@ public final class EditorDirtyCheck {
         }
     }
 
+    /** Staged builds whose plot no longer matches the staged snapshot. */
+    private static void scanWorkbench(ServerLevel level, List<DirtyEntry> out) {
+        for (games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild build
+                : games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.list()) {
+            String key = WorkbenchEditor.snapshotKey(build.stagedId());
+            if (!EditorPlotSnapshots.has(key)) continue;
+            BlockPos origin = WorkbenchEditor.plotOrigin(level, build.stagedId());
+            if (origin == null) continue;
+            Vec3i size = build.size();
+            Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
+            if (snapshot != null && !regionMatchesSnapshot(key, level, origin, size.getX(), size.getY(), size.getZ(),
+                    snapshot, Set.of())) {
+                out.add(new DirtyEntry(PlotCategory.WORKBENCH.id(), build.stagedId(),
+                    "workbench / " + build.stagedId(), true, false));
+            }
+        }
+    }
+
     private static void scanPortalRooms(ServerLevel level, CarriageDims dims, boolean devmode,
                                         List<DirtyEntry> out) {
         for (String name : TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM)) {
@@ -460,6 +479,14 @@ public final class EditorDirtyCheck {
             Set<BlockPos> skip = variantCellPositions(WholeVariantBlocks.loadFor(kind, modelId, fp).entries());
             collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
                 EditorPlotSnapshots.get(WholeCarriageEditor.snapshotKey(kind, modelId)), skip, out);
+            return out;
+        }
+        if ("workbench".equals(categoryId)) {
+            BlockPos origin = WorkbenchEditor.plotOrigin(overworld, modelId);
+            if (origin == null) return out;
+            Vec3i fp = WorkbenchEditor.plotSize(modelId);
+            collectDiffs(overworld, origin, fp.getX(), fp.getY(), fp.getZ(),
+                EditorPlotSnapshots.get(WorkbenchEditor.snapshotKey(modelId)), Set.of(), out);
             return out;
         }
         if ("carriages".equals(categoryId)) {
@@ -630,6 +657,7 @@ public final class EditorDirtyCheck {
             // Neither is covered by a scan pass yet.
             case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + model.variantName();
             case BUILDING -> games.brennan.dungeontrain.building.Buildings.MODEL_ID + "." + model.variantName();
+            case STAGED -> model.variantName();
             case PART, LOST_CITY -> null;
         };
     }

@@ -43,6 +43,8 @@ public enum PlotCategory {
     BUILDINGS(EditorCategory.BUILDINGS),
     /** The official Lost City buildings — view-only, browsed and stamped with {@link #BUILDINGS}. */
     LOST_CITY(EditorCategory.BUILDINGS),
+    /** Staged relay builds — the Workbench's own, placed plots; see {@code WorkbenchEditor}. */
+    WORKBENCH(EditorCategory.WORKBENCH),
     ARCHITECTURE(EditorCategory.ARCHITECTURE),
     /** Carriage parts — addressable in its own right, but stamped as part of {@link #CARRIAGES}. */
     PARTS(EditorCategory.CARRIAGES),
@@ -128,12 +130,13 @@ public enum PlotCategory {
 
     /** Whether templates here have a spawn-weight pool to bump. False for parts and architecture. */
     public boolean hasWeightPool() {
-        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != LOST_CITY;
+        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != LOST_CITY && this != WORKBENCH;
     }
 
     /** Whether templates here carry a spawn gate — min/max level, dimensions, stage link. */
     public boolean hasGate() {
-        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != BUILDINGS && this != LOST_CITY;
+        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != BUILDINGS && this != LOST_CITY
+            && this != WORKBENCH;
     }
 
     /**

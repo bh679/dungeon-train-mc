@@ -14856,5 +14856,151 @@
         "1 release"
       ]
     }
+  },
+  "gui.dungeontrain.editor_screen.commit.title": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271",
+        "library-88"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.commit.kind": {
+    "1": {
+      "label": "the template kind the build will become",
+      "examples": [
+        "contents",
+        "portal_room"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.commit.sub_kind": {
+    "1": {
+      "label": "the sub kind within that kind (a part kind or a track kind)",
+      "examples": [
+        "floor",
+        "tunnel_section"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.commit.parent": {
+    "1": {
+      "label": "the chosen variant parent's label",
+      "examples": [
+        "User builds",
+        "Top level"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.cleared": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.removed": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.saved": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.not_standing": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.failed": {
+    "1": {
+      "label": "the error text or outcome name",
+      "examples": [
+        "FAILED",
+        "No such file"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.unknown": {
+    "1": {
+      "label": "the Workbench id that was asked for",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.bad_kind": {
+    "1": {
+      "label": "the kind word that was typed",
+      "examples": [
+        "chunk_frame",
+        "house"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.committed": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    },
+    "2": {
+      "label": "the kind it became",
+      "examples": [
+        "contents",
+        "building"
+      ]
+    },
+    "3": {
+      "label": "the template name it landed under",
+      "examples": [
+        "brick_cabin"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.name_taken": {
+    "1": {
+      "label": "the template name that is already in use",
+      "examples": [
+        "brick_cabin"
+      ]
+    },
+    "2": {
+      "label": "the kind it was being committed as",
+      "examples": [
+        "contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.prefabs_kept_local": {
+    "1": {
+      "label": "comma-separated loot prefab ids",
+      "examples": [
+        "gold_hoard, trap_chest"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.list_header": {
+    "1": {
+      "label": "how many builds are on the Workbench",
+      "examples": [
+        "1",
+        "12"
+      ]
+    }
   }
 }

@@ -99,7 +99,8 @@ public sealed interface Template
             Template.PortalRoom,
             Template.ChunkFrame,
             Template.Building,
-            Template.LostCity {
+            Template.LostCity,
+            Template.Staged {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -1143,6 +1144,60 @@ public sealed interface Template
         @Override public Vec3i plotSize(CarriageDims dims) {
             net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
             return games.brennan.dungeontrain.building.LostCityReferences.sizeOf(server, name);
+        }
+    }
+
+    /**
+     * A relay build parked in the editor's <b>Workbench</b> — not yet a template of any kind.
+     *
+     * <p>Named by its staged id ({@link games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore}).
+     * Its plot is wherever the world says it was placed ({@code DungeonTrainWorldData.workbenchPlotBox}):
+     * the Workbench is the one category whose plots are placed rather than laid out, so this record
+     * reads its origin from that record instead of computing it. It has no weight, no gate and no
+     * bundled tier; a save re-captures the staged snapshot, and the only way out is a commit.</p>
+     */
+    record Staged(String stagedId) implements Template {
+        public Staged {
+            Objects.requireNonNull(stagedId, "stagedId");
+        }
+
+        @Override public String id() { return games.brennan.dungeontrain.editor.WorkbenchEditor.MODEL_ID; }
+
+        @Override public String displayName() { return "workbench / " + stagedId; }
+
+        @Override public TemplateKind kind() { return TemplateKind.STAGED; }
+
+        @Override public boolean isBuiltin() { return false; }
+
+        @Override public boolean canPromote() { return false; }
+
+        @Override public TemplateStore<Staged> store() {
+            return games.brennan.dungeontrain.editor.WorkbenchTemplates.store();
+        }
+        @Override public TemplateRegistry<Staged> registry() {
+            return games.brennan.dungeontrain.editor.WorkbenchTemplates.registry();
+        }
+
+        @Override public int weight() { return games.brennan.dungeontrain.net.EditorStatusPacket.NO_WEIGHT; }
+
+        @Override public String variantName() { return stagedId; }
+
+        @Override public boolean hasBundledTier() { return false; }
+
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            games.brennan.dungeontrain.editor.WorkbenchEditor.stampPlot(level, stagedId);
+        }
+
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return Optional.empty();
+        }
+
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.WorkbenchEditor.plotOrigin(level, stagedId);
+        }
+
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.WorkbenchEditor.plotSize(stagedId);
         }
     }
 }

@@ -123,10 +123,12 @@ final class PlotCategoryTest {
     void capabilities_pinTheAllowlistsTheyReplaced() {
         // EditorPlotLabelsRenderer.hasActionRow was literally:
         //   "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c) || "PORTALS".equals(c)
-        // — plus the two Whole kinds, which have plots to save and a pool to weight.
+        // — plus the two Whole kinds, which have plots to save and a pool to weight, and the Workbench,
+        // whose staged plots take Save / Reset / Clear / Remove by staged id.
         assertEquals(
             EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
-                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS),
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS,
+                PlotCategory.WORKBENCH),
             matching(PlotCategory::hasActionRow));
 
         // EditorPlotTeleport.weightCommandFor had arms for those same four, default -> null.

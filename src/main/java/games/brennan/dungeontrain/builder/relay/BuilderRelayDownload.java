@@ -72,7 +72,16 @@ public final class BuilderRelayDownload {
      * attempts). Kept apart because the remedy differs — a slow relay wants "press Load again", an
      * unreachable one does not — and because the two look identical from the old single line.</p>
      */
-    public enum Outcome { INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, TIMED_OUT, UNSUPPORTED, FAILED, PREFAB_CONFLICT }
+    public enum Outcome {
+        INSTALLED, ALREADY_HERE, NAME_TAKEN, UNSAVED_EDITS, NOT_YOURS, GONE, UNAVAILABLE, TIMED_OUT, UNSUPPORTED, FAILED,
+        PREFAB_CONFLICT,
+        /** The build is on the Workbench shelf and standing in the Workbench (which was resident). */
+        STAGED,
+        /** The build is on the Workbench shelf; another category is resident, so it is not standing yet. */
+        STAGED_NOT_SHOWING,
+        /** Too tall to stand on the Workbench layer; nothing was written. */
+        TOO_TALL
+    }
 
     /**
      * What an install produced: the outcome, and — when something landed — enough to name it, so the
@@ -171,8 +180,45 @@ public final class BuilderRelayDownload {
                                                      String newName, String ownerUuid, String ownerName,
                                                      boolean live, boolean overwriteUnsaved, String parentId,
                                                      PrefabAnswer prefabs) {
+        return fetch(player, level, relayId, ownerUuid, live).thenCompose(fetched -> fetched.failed()
+                ? CompletableFuture.completedFuture(Result.of(fetched.failure()))
+                : onServer(level, () -> install(level, fetched.build(), resolution, newName,
+                        new BuildCredits.Credit(fetched.owner(), ownerName, System.currentTimeMillis()), fetched.mine(),
+                        overwriteUnsaved, parentId == null ? "" : parentId,
+                        prefabs == null ? PrefabAnswer.UNASKED : prefabs)));
+    }
+
+    /**
+     * A build pulled off the relay and who it belongs to, before anything decides what to do with it.
+     *
+     * @param failure why there is no build, or null when {@link #build} is set
+     * @param owner   whose build was asked for — the caller's own uuid when none was named
+     * @param mine    whether {@code owner} is the caller
+     */
+    public record Fetched(Outcome failure, SharedCarriageClient.BuildFetch build, String owner, boolean mine) {
+        static Fetched failed(Outcome failure) {
+            return new Fetched(failure, null, "", false);
+        }
+
+        public boolean failed() {
+            return failure != null;
+        }
+    }
+
+    /**
+     * The network half of a download: the consent gate, the owner proof, the fetch and the mapping of
+     * what the relay said to an {@link Outcome}. Shared by the install path above and the Workbench's
+     * staging path ({@link BuilderRelayStage}), which differ only in what they do with the build.
+     *
+     * <p>Gated on the same two things an upload is ({@link BuilderRelayUpload#canUpload}): the server
+     * has to have profiles on, and the player has to have granted network consent. Fail-closed, and
+     * the same posture in both directions — a player who has not consented to their builds going up
+     * is not asked to accept them coming down either.</p>
+     */
+    public static CompletableFuture<Fetched> fetch(ServerPlayer player, ServerLevel level, int relayId,
+                                                   String ownerUuid, boolean live) {
         if (player == null || level == null || !BuilderRelayUpload.canUpload(player)) {
-            return CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
+            return CompletableFuture.completedFuture(Fetched.failed(Outcome.UNAVAILABLE));
         }
         String own = player.getUUID().toString();
         String owner = ownerUuid == null || ownerUuid.isBlank() ? own : ownerUuid.trim();
@@ -186,15 +232,12 @@ public final class BuilderRelayDownload {
         // PATIENT: this is a button press, and the fetch is a read — see FetchPatience.
         return proof.thenCompose(p -> SharedCarriageClient.fetchBuild(relayId, owner, relay, p,
                         SharedCarriageClient.FetchPatience.PATIENT))
-                .thenCompose(result -> switch (result.status()) {
-                    case FORBIDDEN -> CompletableFuture.completedFuture(Result.of(Outcome.NOT_YOURS));
-                    case UNKNOWN -> CompletableFuture.completedFuture(Result.of(Outcome.GONE));
-                    case ERROR -> CompletableFuture.completedFuture(Result.of(Outcome.UNAVAILABLE));
-                    case TIMEOUT -> CompletableFuture.completedFuture(Result.of(Outcome.TIMED_OUT));
-                    case OK -> onServer(level, () -> install(level, result.build(), resolution, newName,
-                            new BuildCredits.Credit(owner, ownerName, System.currentTimeMillis()), mine,
-                            overwriteUnsaved, parentId == null ? "" : parentId,
-                            prefabs == null ? PrefabAnswer.UNASKED : prefabs));
+                .thenApply(result -> switch (result.status()) {
+                    case FORBIDDEN -> Fetched.failed(Outcome.NOT_YOURS);
+                    case UNKNOWN -> Fetched.failed(Outcome.GONE);
+                    case ERROR -> Fetched.failed(Outcome.UNAVAILABLE);
+                    case TIMEOUT -> Fetched.failed(Outcome.TIMED_OUT);
+                    case OK -> new Fetched(null, result.build(), owner, mine);
                 });
     }
 
@@ -348,8 +391,8 @@ public final class BuilderRelayDownload {
      * what stops a build passing through a second player's profile from being re-attributed to
      * them.</p>
      */
-    private static void credit(BuilderPhotoPaths.Kind kind, String subKind, String installedAs,
-                               BuildCredits.Credit credit, boolean mine, boolean carriesCredit) {
+    static void credit(BuilderPhotoPaths.Kind kind, String subKind, String installedAs,
+                       BuildCredits.Credit credit, boolean mine, boolean carriesCredit) {
         if (mine) {
             if (!carriesCredit) BuildCredits.forget(kind, subKind, installedAs);
             return;
@@ -389,8 +432,8 @@ public final class BuilderRelayDownload {
      * next save claims one, which is exactly the path
      * {@link BuilderRelayUpload#afterSave} already takes for a build it knows but is not holding.</p>
      */
-    private static void remember(ServerLevel level, SharedCarriageClient.BuildFetch build,
-                                 BuilderPhotoPaths.Kind kind) {
+    static void remember(ServerLevel level, SharedCarriageClient.BuildFetch build,
+                         BuilderPhotoPaths.Kind kind) {
         if (build.secret().isEmpty()) {
             // No owner proof (a dedicated server, a LAN guest, an offline account), or a build stored
             // before secrets existed. The template is installed and usable; only the link back to its
@@ -423,8 +466,8 @@ public final class BuilderRelayDownload {
     }
 
     /** Run {@code work} on the server thread and resolve to what it returned. */
-    private static CompletableFuture<Result> onServer(ServerLevel level,
-                                                      java.util.function.Supplier<Result> work) {
+    static CompletableFuture<Result> onServer(ServerLevel level,
+                                              java.util.function.Supplier<Result> work) {
         MinecraftServer server = level.getServer();
         if (server == null) return CompletableFuture.completedFuture(Result.of(Outcome.FAILED));
         CompletableFuture<Result> done = new CompletableFuture<>();

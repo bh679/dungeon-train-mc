@@ -126,6 +126,7 @@ public final class EditorPlotLabels {
             case TRACKS -> trackLabels(dims);
             case PORTALS -> portalLabels(dims);
             case BUILDINGS -> buildingLabels();
+            case WORKBENCH -> workbenchLabels();
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -280,6 +281,23 @@ public final class EditorPlotLabels {
             if (origin == null) continue;
             out.add(new Label(anchorAbove(origin, games.brennan.dungeontrain.building.Buildings.MAX_SIZE), ref.name(),
                 EditorPlotLabelsPacket.NO_WEIGHT, official, LostCityReferenceEditor.MODEL_ID, ref.name(), false, false, false));
+        }
+        return out;
+    }
+
+    /** One label per staged build, over its recorded plot: the relay's name, no weight. */
+    private static List<Label> workbenchLabels() {
+        net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return Collections.emptyList();
+        net.minecraft.server.level.ServerLevel overworld = server.overworld();
+        List<Label> out = new ArrayList<>();
+        String category = EditorCategory.WORKBENCH.name();
+        for (games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild build
+                : games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.list()) {
+            BlockPos origin = WorkbenchEditor.plotOrigin(overworld, build.stagedId());
+            if (origin == null) continue;
+            out.add(new Label(anchorAbove(origin, build.size()), build.stagedId(), EditorPlotLabelsPacket.NO_WEIGHT,
+                category, WorkbenchEditor.MODEL_ID, build.stagedId(), false, true, false));
         }
         return out;
     }

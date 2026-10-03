@@ -156,6 +156,12 @@ public final class EditorScreenActions {
         out.add(new Icon("remove", EditorScreenLang.ICON_REMOVE, removeEntry(ctx),
             EditorScreenLang.DISABLED_NOT_HERE));
 
+        // The Workbench's own verb: a staged build becomes a template of the kind the author picks.
+        if (cat == PlotCategory.WORKBENCH) {
+            out.add(new Icon("commit", EditorScreenLang.ICON_COMMIT, commitEntry(ctx),
+                EditorScreenLang.DISABLED_NOT_WORKBENCH));
+        }
+
         // The history is the player's own and spans every plot, so these are live wherever they
         // stand — and each says what it would step through, read from the server's own stack.
         out.add(historyIcon("undo", EditorScreenLang.ICON_UNDO, "dungeontrain editor undo",
@@ -286,7 +292,7 @@ public final class EditorScreenActions {
                 "dungeontrain editor whole group label " + id, "", current);
             case CHUNK_FRAMES -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor chunkframe rename " + sel.modelName(), "", sel.modelName());
-            case PARTS, TRACKS, BUILDINGS, LOST_CITY, ARCHITECTURE -> null;
+            case PARTS, TRACKS, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null;
         };
     }
 
@@ -295,6 +301,14 @@ public final class EditorScreenActions {
      * down under one. Opens {@link GroupParentPickerScreen}; null for the categories that have no
      * groups (the icon shows why).
      */
+    /** Open {@link games.brennan.dungeontrain.client.menu.WorkbenchCommitScreen} for the selected staged build. */
+    static CommandMenuEntry commitEntry(Ctx ctx) {
+        if (!ctx.hasSelection() || ctx.category() != PlotCategory.WORKBENCH) return null;
+        return new CommandMenuEntry.DrillIn(MenuLang.t("editor.commit"),
+            new games.brennan.dungeontrain.client.menu.WorkbenchCommitScreen(
+                ctx.selection().modelName(), ctx.selection().displayName()));
+    }
+
     static CommandMenuEntry moveEntry(Ctx ctx) {
         if (!ctx.hasSelection()) return null;
         return moveEntryFor(ctx.selection(), EditorScreenLang.text(EditorScreenLang.ICON_MOVE));

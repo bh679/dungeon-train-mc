@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "113";
+    public static final String PROTOCOL_VERSION = "114";
 
     private DungeonTrainNet() {}
 
@@ -266,6 +266,9 @@ public final class DungeonTrainNet {
         registrar.playToClient(BuilderProfileDeleteResultPacket.TYPE, BuilderProfileDeleteResultPacket.STREAM_CODEC, BuilderProfileDeleteResultPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
+        // The editor's Workbench: stage a relay build without installing it (the commit that follows is a
+        // command — /dungeontrain editor workbench commit). Answers through the download result packet above.
+        registrar.playToServer(WorkbenchStagePacket.TYPE, WorkbenchStagePacket.STREAM_CODEC, WorkbenchStagePacket::handle);
         // Blocks for a tile-sized picture of somebody's relay build — a read, where the download
         // above is a write. See RelayBuildPreviewRequestPacket.
         registrar.playToServer(RelayBuildPreviewRequestPacket.TYPE, RelayBuildPreviewRequestPacket.STREAM_CODEC, RelayBuildPreviewRequestPacket::handle);

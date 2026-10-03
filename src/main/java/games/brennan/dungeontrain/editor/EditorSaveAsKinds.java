@@ -80,6 +80,7 @@ public final class EditorSaveAsKinds {
             case Template.ChunkFrame ignored -> CHUNK_FRAME;
             case Template.Building ignored -> BUILDING;
             case Template.LostCity ignored -> LOST_CITY;
+            case Template.Staged ignored -> STAGED;
         };
     }
 
@@ -553,6 +554,27 @@ public final class EditorSaveAsKinds {
     // ---- official Lost City buildings: never copied ----
 
     /** Refuses at validation, so nothing below it ever runs: Big Lost City's buildings are All Rights Reserved. */
+    /** A staged build is not yet a template of any kind; save-as has nothing to copy it into. Commit it instead. */
+    private static final Adapter STAGED = new Adapter() {
+        @Override public String categoryId(Template source) { return EditorCategory.WORKBENCH.id(); }
+
+        @Override public Optional<Component> validate(Template source, String name) {
+            return Optional.of(Component.translatable("chat.dungeontrain.workbench.save_as_unsupported"));
+        }
+
+        @Override public List<Template> reloaded(Template source, String name) { return List.of(); }
+
+        @Override public List<Path> userFiles(Template source) { return List.of(); }
+
+        @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
+            throw new IOException("A staged build cannot be saved as — commit it to a kind first.");
+        }
+
+        @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
+            WorkbenchEditor.stampPlot(level, ((Template.Staged) source).stagedId());
+        }
+    };
+
     private static final Adapter LOST_CITY = new Adapter() {
         @Override public String categoryId(Template source) { return null; }
 
