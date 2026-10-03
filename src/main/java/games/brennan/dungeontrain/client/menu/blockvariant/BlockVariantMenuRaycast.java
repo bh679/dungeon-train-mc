@@ -9,7 +9,6 @@ import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantSyncPacket;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
@@ -291,40 +290,19 @@ public final class BlockVariantMenuRaycast {
                                                  double colActualW, double gridTop, double halfW) {
         BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
         if (parsed == null) return BlockVariantMenu.Hit.NONE;
-        int col = rowIndex / BlockVariantMenu.ROWS_PER_COLUMN;
-        int row = rowIndex % BlockVariantMenu.ROWS_PER_COLUMN;
-        double colXL = -halfW + col * colActualW;
-        double rowTop = gridTop - row * BlockVariantMenuRenderer.ROW_HEIGHT;
-
-        double popupW = 3 * BlockVariantMenuRenderer.POPUP_BUTTON_SIZE + 0.04;
-        double popupH = 2 * BlockVariantMenuRenderer.POPUP_BUTTON_SIZE + 0.04;
-        double popupCX = colXL + colActualW
-            - BlockVariantMenuRenderer.ROT_DIRS_CELL_WIDTH / 2.0
-            - BlockVariantMenuRenderer.WEIGHT_CELL_WIDTH;
-        double popupBot = rowTop + 0.02;
-        double popupTop = popupBot + popupH;
-        double popupL = popupCX - popupW / 2.0;
-        double popupR = popupL + popupW;
-
-        if (hitX < popupL || hitX > popupR || hitY < popupBot || hitY > popupTop) {
+        int[][] grid = RotationPopupLayout.grid(parsed);
+        double[] popup = RotationPopupLayout.bounds(grid, rowIndex, colActualW, gridTop, halfW);
+        if (hitX < popup[0] || hitX > popup[2] || hitY < popup[1] || hitY > popup[3]) {
             return BlockVariantMenu.Hit.NONE;
         }
 
-        Direction[][] grid = {
-            { Direction.UP, Direction.EAST, Direction.SOUTH },
-            { Direction.DOWN, Direction.WEST, Direction.NORTH }
-        };
-        for (int gy = 0; gy < 2; gy++) {
-            for (int gx = 0; gx < 3; gx++) {
-                double bL = popupL + 0.02 + gx * BlockVariantMenuRenderer.POPUP_BUTTON_SIZE;
-                double bR = bL + BlockVariantMenuRenderer.POPUP_BUTTON_SIZE - 0.005;
-                double bTop = popupTop - 0.02 - gy * BlockVariantMenuRenderer.POPUP_BUTTON_SIZE;
-                double bBot = bTop - BlockVariantMenuRenderer.POPUP_BUTTON_SIZE + 0.005;
-                if (hitX >= bL && hitX <= bR && hitY >= bBot && hitY <= bTop) {
+        for (int gy = 0; gy < grid.length; gy++) {
+            for (int gx = 0; gx < grid[gy].length; gx++) {
+                if (grid[gy][gx] < 0) continue;
+                double[] b = RotationPopupLayout.button(popup, gx, gy);
+                if (hitX >= b[0] && hitX <= b[2] && hitY >= b[1] && hitY <= b[3]) {
                     return new BlockVariantMenu.Hit(
-                        BlockVariantMenu.CellKind.ROT_DIR_OPTION,
-                        rowIndex,
-                        grid[gy][gx].ordinal());
+                        BlockVariantMenu.CellKind.ROT_DIR_OPTION, rowIndex, grid[gy][gx]);
                 }
             }
         }
