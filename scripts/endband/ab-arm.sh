@@ -92,10 +92,12 @@ waitfor "$SLOG" 'Done \(' 900 "server ready" || exit 1
 sleep 5
 
 # The band layout: first "end better" slot of run 0 (forward), as INFO-logged by the debug command.
-echo "dungeontrain debug cycle-layout 1" >&3; sleep 4
-LINE=$(/usr/bin/grep -E '^\s*[0-9]+ +end +better' "$SLOG" | head -1)
-LINE=${LINE:-$(/usr/bin/grep -oE '[0-9]+ +end +better +core=[0-9]+ +X -?[0-9]+\.\.-?[0-9]+' "$SLOG" | head -1)}
-if [ -z "$LINE" ]; then say "no 'end better' slot in the layout log; see $SLOG"; echo "stop" >&3; sleep 10; exit 1; fi
+# Poll rather than sleep: the layout is logged a few seconds after the command and a one-shot grep
+# raced it (both arms of the first run lost by under a second).
+SLOT_RE='[0-9]+ +end +better +core=[0-9]+ +X -?[0-9]+\.\.-?[0-9]+'
+echo "dungeontrain debug cycle-layout 1" >&3
+waitfor "$SLOG" "$SLOT_RE" 60 "layout logged" || { say "no 'end better' slot in the layout log; see $SLOG"; echo "stop" >&3; sleep 10; exit 1; }
+LINE=$(/usr/bin/grep -oE "$SLOT_RE" "$SLOG" | head -1)
 SLOT_FROM=$(echo "$LINE" | sed -E 's/.*X (-?[0-9]+)\.\.(-?[0-9]+).*/\1/')
 SLOT_TO=$(echo "$LINE" | sed -E 's/.*X (-?[0-9]+)\.\.(-?[0-9]+).*/\2/')
 X0=$(( (SLOT_FROM + STRIP_IN) / 16 * 16 ))
