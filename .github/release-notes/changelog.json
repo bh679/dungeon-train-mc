@@ -22499,6 +22499,112 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-submit-keeps-name",
+      "version": "0.1129.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Your translator credit stays as you set it",
+      "summary": "On the Help Translate send screen, the name you want to be credited by, and whether you want credit at all, no longer reset when you resize the window or alt-tab out of fullscreen.",
+      "highlights": [],
+      "pr": 1792,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "camera-left-click-shutter",
+      "version": "0.1130.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Take photos with either click",
+      "summary": "Holding a camera up to your eye, a left-click now takes the photo too, just like a right-click. The camera's hover text is tidier as well \u2014 no more slide count or slide-swapping hints.",
+      "highlights": [
+        "Left-click or right-click takes a photo through the viewfinder",
+        "Camera hover text no longer lists slides"
+      ],
+      "pr": 1794,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "player-photos-in-train-loot",
+      "version": "0.1131.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Other players' photos turn up in the train",
+      "summary": "Photos other players have shared can now be found in bookshelves, barrels, pots, villager stock and more across the train. Meals are a little more generous with the basics.",
+      "highlights": [
+        "Shared player photos join ten kinds of train loot",
+        "Builders can place a Random Player Photo straight from the Narrative creative tab"
+      ],
+      "pr": 1793,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "head-banner-sign-8-direction-rotation",
+      "version": "0.1132.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Rotate heads, banners and signs in 8 directions",
+      "summary": "Heads, skulls, standing banners and signs placed on the floor can now be given a rotation in the block variants menu. Lock one direction, or pick any of the 8 compass points for each spawn to choose from.",
+      "highlights": [
+        "Lock cycles through N, NE, E, SE, S, SW, W and NW",
+        "Options opens a compass rose so you can tick the directions you want",
+        "Mirroring and rotating a plot turns these directions along with the block"
+      ],
+      "pr": 1795,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "luggage-new-carriage-safe-room",
+      "version": "0.1132.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Luggage, a new carriage, and a rebuilt parkour room",
+      "summary": "Some book carriages now have travellers' luggage piled up in them. A new carriage design joins the train. One of the parkour dimensional carriages has been rebuilt and keeps turning up much further into a run. Shop carriages come up a little less often.",
+      "highlights": [
+        "Luggage piled up in some book carriages",
+        "A new carriage design on the train",
+        "A rebuilt parkour dimensional carriage that appears deeper into a run",
+        "Shop carriages are slightly rarer"
+      ],
+      "pr": 1797,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
