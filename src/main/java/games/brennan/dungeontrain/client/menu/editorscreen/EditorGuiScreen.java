@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.BuildRenderCapture;
 import games.brennan.dungeontrain.client.builder.BuilderProfilePrefabConflictScreen;
 import games.brennan.dungeontrain.client.EditorStatusHudOverlay;
@@ -883,6 +884,21 @@ public final class EditorGuiScreen extends Screen {
                 case EDIT_NOTE -> {
                     click();
                     creatorPane.openNoteEditor(selectedCreatorBuild());
+                    return true;
+                }
+                case REVIEW_ACCEPT -> {
+                    click();
+                    creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.ACCEPTED);
+                    return true;
+                }
+                case REVIEW_FEEDBACK -> {
+                    click();
+                    creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.FEEDBACK);
+                    return true;
+                }
+                case REVIEW_DECLINE -> {
+                    click();
+                    creatorPane.openReview(selectedCreatorBuild(), BuilderReviewState.DECLINED);
                     return true;
                 }
                 case PREVIEW -> {

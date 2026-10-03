@@ -83,13 +83,32 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
      *                   count includes them — so the tile can say why it is not counted as a build
      * @param note       what the author answered when submitting it for review — the editor's
      *                   Submitted answers page. Only a profile listing carries it; empty otherwise
+     * @param reviewComment what the reviewer told the author alongside the verdict — read with
+     *                   {@code review}, and empty when nothing was said. Only a profile listing
+     *                   carries it, like {@code note}
      */
     public record Entry(int relayId, String kind, String subKind, String buildName, boolean published,
                         String flag, String review, String stage, int changes,
                         boolean favourite, String ownerUuid, String ownerName, boolean templateCopy,
-                        SubmitNote note) {
+                        SubmitNote note, String reviewComment) {
         public Entry {
             note = note == null ? SubmitNote.EMPTY : note;
+            reviewComment = reviewComment == null ? "" : reviewComment;
+        }
+
+        /** An entry with answers but no reviewer's comment. */
+        public Entry(int relayId, String kind, String subKind, String buildName, boolean published,
+                     String flag, String review, String stage, int changes,
+                     boolean favourite, String ownerUuid, String ownerName, boolean templateCopy,
+                     SubmitNote note) {
+            this(relayId, kind, subKind, buildName, published, flag, review, stage, changes, favourite,
+                    ownerUuid, ownerName, templateCopy, note, "");
+        }
+
+        /** This entry with a different verdict and comment — the optimistic flip after a review press. */
+        public Entry withReview(String newReview, String newComment) {
+            return new Entry(relayId, kind, subKind, buildName, published, flag, newReview, stage, changes,
+                    favourite, ownerUuid, ownerName, templateCopy, note, newComment);
         }
 
         /** An entry with no submission answers — every listing but a profile's. */
@@ -156,6 +175,7 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
             buf.writeUtf(e.note().redstone(), BuilderProfileActionPacket.NOTE_MAX);
             buf.writeUtf(e.note().loot(), BuilderProfileActionPacket.NOTE_MAX);
             buf.writeUtf(e.note().notes(), BuilderProfileActionPacket.NOTE_MAX);
+            buf.writeUtf(e.reviewComment(), BuilderProfileActionPacket.NOTE_MAX);
         }
     }
 
@@ -170,7 +190,8 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
                     buf.readBoolean(), buf.readUtf(MAX_STRING), buf.readUtf(MAX_STRING),
                     buf.readBoolean(), new SubmitNote(buf.readUtf(BuilderProfileActionPacket.NOTE_MAX),
                         buf.readUtf(BuilderProfileActionPacket.NOTE_MAX),
-                        buf.readUtf(BuilderProfileActionPacket.NOTE_MAX))));
+                        buf.readUtf(BuilderProfileActionPacket.NOTE_MAX)),
+                    buf.readUtf(BuilderProfileActionPacket.NOTE_MAX)));
         }
         return List.copyOf(out);
     }
@@ -198,7 +219,7 @@ public record BuilderProfilePacket(Status status, List<Entry> builds, String own
         return new Entry(r.id(), r.kind(), r.subKind(), r.buildName(),
                 "published".equals(r.visibility()), r.flag(), BuilderReviewState.of(r.review()),
                 r.stage(), r.changeCount(), r.favourite(), r.ownerUuid(), r.ownerName(),
-                r.templateCopy(), r.note());
+                r.templateCopy(), r.note(), r.reviewComment());
     }
 
     /** How many entries a listing packet will carry — shared with {@link BuilderFavouritesPacket}. */

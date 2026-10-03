@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
 import games.brennan.dungeontrain.client.builder.BuilderSubmitNoteScreen;
+import games.brennan.dungeontrain.client.builder.BuilderReviewCommentScreen;
 import games.brennan.dungeontrain.client.builder.BuilderSubmitHintsRequests;
+import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.BuilderProfileState;
 import games.brennan.dungeontrain.builder.relay.BuilderRelayKinds;
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
@@ -35,7 +37,10 @@ public final class EditorCreatorPane {
     static final int LOADED_TEXT = 0xFF88DD88;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, LOAD, PARENT, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT, PAGE_PREV, PAGE_NEXT, EDIT_NOTE }
+    public enum HitKind {
+        NONE, LOAD, PARENT, GO_HERE, PREVIEW, OLDER, NEWER, SUBMIT, PAGE_PREV, PAGE_NEXT, EDIT_NOTE,
+        REVIEW_ACCEPT, REVIEW_FEEDBACK, REVIEW_DECLINE
+    }
 
     /** The parent button's share of the load slot; the load button keeps the rest. */
     static final double PARENT_SHARE = 0.42;
@@ -61,6 +66,8 @@ public final class EditorCreatorPane {
     private InventoryEditorLayout.Rect pagerRect;
     /** The answers page's Edit button as last drawn; null when not on screen. */
     private InventoryEditorLayout.Rect editNoteRect;
+    /** The answers page's buttons as last drawn — the verdict row is the developer's. */
+    private SubmissionPage.Buttons sheetButtons = SubmissionPage.Buttons.NONE;
     /** The server's word on the picked build's questions and whether this player may edit them. */
     private BuilderSubmitHintsRequests.Answer submitAnswer = BuilderSubmitHintsRequests.Answer.UNKNOWN;
 
@@ -97,13 +104,16 @@ public final class EditorCreatorPane {
             : BuilderSubmitHintsRequests.peek(entry.relayId(), EditorCreatorBuilds.ownerOf(entry),
                 BuilderProfileState.live());
         editNoteRect = null;
+        sheetButtons = SubmissionPage.Buttons.NONE;
         // The pager takes the sheet's last line when there is a second page to turn to.
         pagerRect = entry != null ? new InventoryEditorLayout.Rect(s.x(), s.bottom() - LINE_H - 2, s.w(), LINE_H + 2) : null;
         InventoryEditorLayout.Rect body = pagerRect == null ? s
             : new InventoryEditorLayout.Rect(s.x(), s.y(), s.w(), Math.max(0, pagerRect.y() - s.y()));
         if (sheetPage == 1) {
-            editNoteRect = SubmissionPage.draw(g, font, body, entry.note(), submitAnswer.hints(),
-                submitAnswer.canEdit(), mouseX, mouseY);
+            sheetButtons = SubmissionPage.draw(g, font, body, entry.note(), submitAnswer.hints(),
+                submitAnswer.canEdit(), submitAnswer.canReview(), entry.review(), entry.reviewComment(),
+                mouseX, mouseY);
+            editNoteRect = sheetButtons.edit();
         } else {
             int y = body.y();
             for (String[] line : lines(entry, seq)) {
@@ -305,12 +315,25 @@ public final class EditorCreatorPane {
         return mc.player.getUUID().toString().equals(entry.ownerUuid());
     }
 
+    /**
+     * Open the comment box for a verdict on the picked build — the answers page's Accept / Feedback /
+     * Decline. Refused unless the server said this player may review it.
+     */
+    public void openReview(BuilderProfilePacket.Entry entry, String review) {
+        if (entry == null || !submitAnswer.canReview()) return;
+        BuilderReviewCommentScreen.open(entry, BuilderProfileState.live(), review);
+    }
+
     /** Open the picked build's answers for editing — the answers page's Edit button. */
     public void openNoteEditor(BuilderProfilePacket.Entry entry) {
         if (entry == null || !submitAnswer.canEdit()) return;
         BuilderSubmitNoteScreen.openEditor(entry.relayId(), EditorCreatorBuilds.ownerOf(entry),
             BuilderProfileState.live(), Component.literal(EditorCreatorBuilds.label(entry)),
             submitAnswer.hints(), entry.note());
+    }
+
+    private static boolean hits(InventoryEditorLayout.Rect r, double mx, double my) {
+        return r != null && r.contains(mx, my);
     }
 
     /** Turn the sheet's page — the pager's arrows or the wheel. False when there is nowhere to turn. */
@@ -335,6 +358,11 @@ public final class EditorCreatorPane {
         }
         if (goHereRect != null && goHereRect.contains(mx, my)) return HitKind.GO_HERE;
         if (editNoteRect != null && sheetPage == 1 && editNoteRect.contains(mx, my)) return HitKind.EDIT_NOTE;
+        if (sheetPage == 1) {
+            if (hits(sheetButtons.accept(), mx, my)) return HitKind.REVIEW_ACCEPT;
+            if (hits(sheetButtons.feedback(), mx, my)) return HitKind.REVIEW_FEEDBACK;
+            if (hits(sheetButtons.decline(), mx, my)) return HitKind.REVIEW_DECLINE;
+        }
         switch (EditorPager.hit(pagerRect, sheetPage, sheetPageCount, mx, my)) {
             case PREV -> { return HitKind.PAGE_PREV; }
             case NEXT -> { return HitKind.PAGE_NEXT; }

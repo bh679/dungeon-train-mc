@@ -24,12 +24,18 @@ public final class BuilderReviewState {
     public static final String ACCEPTED = "accepted";
     /** Looked at and turned down. The build stays in its author's profile. */
     public static final String DECLINED = "declined";
+    /**
+     * Looked at and sent back with notes — neither in nor out. The reviewer wants changes and has said
+     * which ({@code reviewComment}); editing and submitting again puts it back in the queue.
+     */
+    public static final String FEEDBACK = "feedback";
 
     private BuilderReviewState() {}
 
     /** Coerce a relay-supplied value. Anything absent, empty or unrecognised reads as never-asked. */
     public static String of(String review) {
-        if (SUBMITTED.equals(review) || ACCEPTED.equals(review) || DECLINED.equals(review)) return review;
+        if (SUBMITTED.equals(review) || ACCEPTED.equals(review) || DECLINED.equals(review)
+                || FEEDBACK.equals(review)) return review;
         return NONE;
     }
 
@@ -39,6 +45,8 @@ public final class BuilderReviewState {
     public static final int BORDER_ACCEPTED = 0xFF55FF55;
     /** Turned down — §c. */
     public static final int BORDER_DECLINED = 0xFFFF5555;
+    /** Sent back with notes — §e, the yellow of "look at this", between waiting's blue and declined's red. */
+    public static final int BORDER_FEEDBACK = 0xFFFFFF55;
     /** No colour: the tile keeps the ordinary border every other builder grid draws. */
     public static final int BORDER_NONE = 0;
 
@@ -55,6 +63,7 @@ public final class BuilderReviewState {
             case SUBMITTED -> BORDER_SUBMITTED;
             case ACCEPTED -> BORDER_ACCEPTED;
             case DECLINED -> BORDER_DECLINED;
+            case FEEDBACK -> BORDER_FEEDBACK;
             default -> BORDER_NONE;
         };
     }
@@ -68,6 +77,7 @@ public final class BuilderReviewState {
         return switch (of(review)) {
             case SUBMITTED -> "gui.dungeontrain.builder.profile.review.submitted_note";
             case DECLINED -> "gui.dungeontrain.builder.profile.review.declined_note";
+            case FEEDBACK -> "gui.dungeontrain.builder.profile.review.feedback_note";
             default -> null;
         };
     }

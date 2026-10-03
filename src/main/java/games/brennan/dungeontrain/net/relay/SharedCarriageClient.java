@@ -243,9 +243,19 @@ public final class SharedCarriageClient {
                                String source, String stage, String flag, String review, int l, int h, int w,
                                int changeCount, long updatedTs,
                                boolean favourite, String ownerUuid, String ownerName,
-                               boolean templateCopy, SubmitNote note) {
+                               boolean templateCopy, SubmitNote note, String reviewComment) {
         public ProfileBuild {
             note = note == null ? SubmitNote.EMPTY : note;
+            reviewComment = reviewComment == null ? "" : reviewComment;
+        }
+
+        /** A row with answers but no reviewer's comment — what every listing carried before the comment. */
+        public ProfileBuild(int id, String kind, String subKind, String buildName, String visibility,
+                            String source, String stage, String flag, String review, int l, int h, int w,
+                            int changeCount, long updatedTs, boolean favourite, String ownerUuid,
+                            String ownerName, boolean templateCopy, SubmitNote note) {
+            this(id, kind, subKind, buildName, visibility, source, stage, flag, review, l, h, w, changeCount,
+                    updatedTs, favourite, ownerUuid, ownerName, templateCopy, note, "");
         }
 
         /** A row with no submission answers — every listing but {@code /carriages/mine}. */
@@ -405,7 +415,7 @@ public final class SharedCarriageClient {
                 r.has("templateCopy") && r.get("templateCopy").isJsonPrimitive()
                         && r.get("templateCopy").getAsJsonPrimitive().isBoolean()
                         && r.get("templateCopy").getAsBoolean(),
-                noteOf(r));
+                noteOf(r), str(r, "reviewComment"));
     }
 
     /**
@@ -765,7 +775,25 @@ public final class SharedCarriageClient {
                 .thenApply(SharedCarriageClient::noteStatus);
     }
 
-    /** What a note write came back with. */
+    /**
+     * Record the developer's verdict on anybody's build — Accept, Feedback or Decline, with what the
+     * reviewer wants its author to read — through the admin cap, as {@link #adminSetNote} does.
+     * {@link CallStatus#ERROR} straight away when this install holds no admin URL. {@code by} is the
+     * reviewer's display name, which the relay puts on the owner's inbox copy.
+     */
+    public static CompletableFuture<CallStatus> adminSetReview(int id, boolean useLive, String review,
+                                                              String comment, String by) {
+        String admin = RelayTarget.adminSearchBase();
+        if (admin.isEmpty()) return CompletableFuture.completedFuture(CallStatus.ERROR);
+        JsonObject body = new JsonObject();
+        body.addProperty("review", review == null ? "" : review);
+        body.addProperty("comment", comment == null ? "" : comment);
+        if (by != null && !by.isBlank()) body.addProperty("by", by);
+        return post(admin, "/carriages/" + id + "/review?cap=" + (useLive ? "live" : "dev"), body)
+                .thenApply(SharedCarriageClient::noteStatus);
+    }
+
+    /** What a note (or review) write came back with. */
     private static CallStatus noteStatus(HttpResponse<String> resp) {
         if (resp == null) {
             logFailure("/carriages/note", null);

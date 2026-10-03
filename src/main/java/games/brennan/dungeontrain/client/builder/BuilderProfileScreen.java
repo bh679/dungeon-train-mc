@@ -26,6 +26,7 @@ import games.brennan.dungeontrain.net.BuilderProfileRequestPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.train.CarriagePartKind;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -138,6 +139,9 @@ public final class BuilderProfileScreen extends Screen {
             new BuilderProfileFilterButton.Option(BuilderReviewState.ACCEPTED,
                     "gui.dungeontrain.builder.profile.status.accepted",
                     BuilderReviewState.BORDER_ACCEPTED),
+            new BuilderProfileFilterButton.Option(BuilderReviewState.FEEDBACK,
+                    "gui.dungeontrain.builder.profile.status.feedback",
+                    BuilderReviewState.BORDER_FEEDBACK),
             new BuilderProfileFilterButton.Option(BuilderReviewState.DECLINED,
                     "gui.dungeontrain.builder.profile.status.declined",
                     BuilderReviewState.BORDER_DECLINED));
@@ -1087,8 +1091,9 @@ public final class BuilderProfileScreen extends Screen {
         }
         // A declined build is a decision about this build and outranks everything below: fixing its
         // stage would not put it on the train, and saying "waiting" of it would be untrue.
-        if (BuilderReviewState.DECLINED.equals(BuilderReviewState.of(entry.review()))) {
-            return Component.translatable("gui.dungeontrain.builder.profile.review.declined_note");
+        String verdict = BuilderReviewState.of(entry.review());
+        if (BuilderReviewState.DECLINED.equals(verdict) || BuilderReviewState.FEEDBACK.equals(verdict)) {
+            return withComment(Component.translatable(BuilderReviewState.noteKeyFor(verdict)), entry);
         }
         // A carriage is only placed into a stage it belongs to, and a build authored without one
         // belongs to none — so it can be submitted and still never appear anywhere. Said here because
@@ -1100,7 +1105,22 @@ public final class BuilderProfileScreen extends Screen {
         // build with no stage has something its author can still fix while it waits.
         String reviewNote = BuilderReviewState.noteKeyFor(entry.review());
         if (reviewNote != null) return Component.translatable(reviewNote);
+        // An accepted build with a word from the reviewer — the one case a green tile has more to say.
+        if (BuilderReviewState.ACCEPTED.equals(verdict) && !entry.reviewComment().isBlank()) {
+            return withComment(Component.translatable("gui.dungeontrain.builder.profile.review.accepted_note"), entry);
+        }
         return null;
+    }
+
+    /**
+     * The verdict's line with the reviewer's comment after it, quoted — the author's one chance to read
+     * why, since the comment travels nowhere else they look. Just the line when nothing was said.
+     */
+    static Component withComment(Component line, BuilderProfilePacket.Entry entry) {
+        String comment = entry.reviewComment().strip();
+        if (comment.isEmpty()) return line;
+        return line.copy().append(" \u201C").append(Component.literal(comment).withStyle(ChatFormatting.ITALIC))
+                .append("\u201D");
     }
 
     private float frameSeconds() {

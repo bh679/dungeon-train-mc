@@ -67,6 +67,9 @@ public final class EditorDetailPane {
     private LootGrid blockGrid;
     /** The selection's Submit for Review answers, from the player's own relay listing; empty when none. */
     private SubmitNote submitNote = SubmitNote.EMPTY;
+    /** The reviewer's verdict + comment on this template's relay build, for the answers page. */
+    private String review = "";
+    private String reviewComment = "";
     /** Which questions the selection earns and whether the player may edit them — asked of the server once. */
     private BuilderSubmitHintsRequests.Answer submitAnswer = BuilderSubmitHintsRequests.Answer.UNKNOWN;
     /** The Submitted answers page's Edit button as last drawn; null when not on screen. */
@@ -160,6 +163,8 @@ public final class EditorDetailPane {
         // and editable, before the build is ever submitted.
         BuilderProfilePacket.Entry own = BuilderProfileState.ownBuild(relayId);
         submitNote = own == null ? SubmitNote.EMPTY : own.note();
+        review = own == null ? "" : own.review();
+        reviewComment = own == null ? "" : own.reviewComment();
         submitAnswer = own == null ? BuilderSubmitHintsRequests.Answer.UNKNOWN
             : BuilderSubmitHintsRequests.peek(relayId, "", false);
         int submitPages = own == null ? 0 : 1;
@@ -382,7 +387,7 @@ public final class EditorDetailPane {
             if (onBlocksPage()) drawBlocksPage(g, font);
             else if (onLootPage()) drawLootPage(g, font, theme);
             else if (onSubmitPage()) editNoteRect = SubmissionPage.draw(g, font, rowArea(), submitNote,
-                submitAnswer.hints(), submitAnswer.canEdit(), mouseX, mouseY);
+                submitAnswer.hints(), submitAnswer.canEdit(), false, review, reviewComment, mouseX, mouseY).edit();
             else drawRows(g, font, theme);
         }
         if (pages.hasPager()) drawPager(g, font);
