@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "113";
+    public static final String PROTOCOL_VERSION = "114";
 
     private DungeonTrainNet() {}
 
@@ -276,6 +276,8 @@ public final class DungeonTrainNet {
         registrar.playToClient(BuilderSubmitHintsPacket.TYPE, BuilderSubmitHintsPacket.STREAM_CODEC, BuilderSubmitHintsPacket::handle);
         // Editing a build's Submit for Review answers after the fact — owner or developer.
         registrar.playToServer(BuilderNoteEditPacket.TYPE, BuilderNoteEditPacket.STREAM_CODEC, BuilderNoteEditPacket::handle);
+        // The developer's verdict on somebody's build from the editor — Accept / Feedback / Decline + comment.
+        registrar.playToServer(BuilderReviewPacket.TYPE, BuilderReviewPacket.STREAM_CODEC, BuilderReviewPacket::handle);
         // The Stages tab's model: a carriage stamped with a stage's parts and rolled variants,
         // composed on the server and drawn on the client. See StagePreviewRequestPacket.
         registrar.playToServer(StagePreviewRequestPacket.TYPE, StagePreviewRequestPacket.STREAM_CODEC, StagePreviewRequestPacket::handle);
