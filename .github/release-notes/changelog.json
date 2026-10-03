@@ -22294,8 +22294,29 @@
       "released_at": null
     },
     {
+      "id": "lost-city-template-cache-reach",
+      "version": "0.1118.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility",
+        "world"
+      ],
+      "title": "Fewer hitches as new scenery loads",
+      "summary": "Big buildings ahead now load quietly in the background, even after a long jump.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1773,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "mixin-target-guards",
-      "version": "0.1117.0",
+      "version": "0.1118.0",
       "type": "fix",
       "tags": [
         "fix",
