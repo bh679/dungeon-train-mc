@@ -214,6 +214,9 @@ public final class SharedCarriageEvents {
             return;
         }
         if (inst.hasPending()) {
+            // A block edit is one of the two moments parked storage travels (leaving is the other), so
+            // fold it into this same upload rather than a delta of its own.
+            if (inst.hasParked()) inst.releaseParked(pos -> StorageContents.read(inst.level, pos));
             if (inst.isOnRelay()) flushDelta(inst, false); // leased/submitted → stream only the changed cells
             else submitFresh(inst);                       // never uploaded → one-time full submit
             return;
@@ -324,7 +327,7 @@ public final class SharedCarriageEvents {
         // Storage a player changed but never walked away from (culled around them, server stopping) —
         // queue it now, while the plot is still readable and before markCulled stops enqueue, so the
         // full capture below carries it.
-        inst.releaseParked(pos -> StorageContents.sig(inst.level, pos));
+        inst.releaseParked(pos -> StorageContents.read(inst.level, pos));
         SableManagedShip ship = liveShip(inst.level, inst);
         // No ship → nothing readable; the flow then does a bare return (allowCapture is moot).
         return SharedUploadFlow.finalFlushAndReturn(inst,

@@ -49,12 +49,6 @@ public final class StorageContents {
         return acc.snapshot();
     }
 
-    /** Just the signature, or null when unreadable — the shape {@code releaseParked} wants. */
-    public static Long sig(Level level, BlockPos pos) {
-        Snapshot s = read(level, pos);
-        return s == null ? null : s.sig();
-    }
-
     /**
      * The cells whose saved contents a change at {@code pos} touches: the block itself, plus the other
      * half of a double chest — the menu edits both, and each half's items are stored in its own cell.

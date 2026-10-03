@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -219,16 +220,16 @@ public final class SharedCarriageRegistry {
         }
 
         /**
-         * Storage blocks whose contents a player changed without it being a gift (taking, swapping,
-         * rearranging), mapped to the contents signature from BEFORE the first such change. Flagged
-         * locally only — nothing is sent until {@link #releaseParked} decides it should be, so that
-         * looting neither costs a relay delta per container nor drains a carriage's loot across worlds.
+         * Storage blocks whose contents a player changed (taking, giving, swapping, rearranging), mapped to
+         * the contents from BEFORE the first such change. Flagged locally only — nothing is sent until
+         * {@link #releaseParked} runs, which happens when the player leaves the carriage or a block edit
+         * is flushed — so a visit costs at most one relay delta however many containers were opened.
          */
-        private final Map<BlockPos, Long> parkedContainers = new ConcurrentHashMap<>();
+        private final Map<BlockPos, ParkedBaseline> parkedContainers = new ConcurrentHashMap<>();
         /**
          * Set once a real block edit lands on this carriage in this session (see
-         * {@code SableBlockChangeGuardMixin}). Parked container changes only travel on a carriage somebody
-         * actually built on — a player who only loots never uploads anything.
+         * {@code SableBlockChangeGuardMixin}). Only matters for a fresh carriage: it is what lets parked
+         * storage travel on one that is not on the relay yet (see {@link #releaseParked}).
          */
         private volatile boolean blockEditedThisSession;
 
@@ -237,33 +238,53 @@ public final class SharedCarriageRegistry {
         public boolean hasParked() { return !parkedContainers.isEmpty(); }
 
         /**
-         * Flag a storage block as changed locally. The FIRST signature wins, so the baseline stays the
-         * contents before this carriage's edits however many times the container is reopened.
+         * Flag a storage block as changed locally. The FIRST baseline wins, so it stays the contents before
+         * this carriage's edits however many times the container is reopened.
          */
-        public void parkContainer(BlockPos pos, long sigBefore) {
-            if (!culled) parkedContainers.putIfAbsent(pos.immutable(), sigBefore);
+        public void parkContainer(BlockPos pos, long sigBefore, int itemCountBefore) {
+            if (!culled) parkedContainers.putIfAbsent(pos.immutable(), new ParkedBaseline(sigBefore, itemCountBefore));
         }
 
         /**
          * Queue every parked container whose live contents really differ from its baseline — one emptied
-         * and refilled nets to nothing — and forget them. Does nothing (and keeps them parked) until a
-         * block edit has landed this session, so a later edit plus a later release still sends them.
-         * {@code liveSig} returns null when the container cannot be read (unloaded, broken); such a cell
-         * is dropped rather than uploaded as whatever now stands there.
+         * and refilled nets to nothing — and forget them. {@code live} returns null when the container
+         * cannot be read (unloaded, broken); such a cell is dropped rather than uploaded as whatever now
+         * stands there (breaking a container is a block change of its own — see
+         * {@link SharedCarriageChangeFilter}).
+         *
+         * <p>On a carriage already on the relay this always releases: taking items out must drain the
+         * relay copy, or the next world to lease it is handed the same loot again. A fresh carriage is
+         * different — sending anything publishes it to the pool — so it releases only once it was
+         * block-edited this session or a parked container now holds MORE than it did (a gift). Looting a
+         * fresh carriage alone keeps everything parked, so a later edit or gift still sends it.</p>
          *
          * @return how many cells were queued
          */
-        public int releaseParked(Function<BlockPos, Long> liveSig) {
-            if (!blockEditedThisSession || parkedContainers.isEmpty()) return 0;
+        public int releaseParked(Function<BlockPos, StorageContents.Snapshot> live) {
+            if (parkedContainers.isEmpty()) return 0;
+            Map<BlockPos, ParkedBaseline> parked = Map.copyOf(parkedContainers);
+            Map<BlockPos, StorageContents.Snapshot> now = new HashMap<>();
+            for (BlockPos pos : parked.keySet()) {
+                StorageContents.Snapshot snap = live.apply(pos);
+                if (snap != null) now.put(pos, snap);
+            }
+            if (!isOnRelay() && !blockEditedThisSession && !anyGift(parked, now)) return 0;
             int queued = 0;
-            for (Map.Entry<BlockPos, Long> e : Map.copyOf(parkedContainers).entrySet()) {
+            for (Map.Entry<BlockPos, ParkedBaseline> e : parked.entrySet()) {
                 parkedContainers.remove(e.getKey());
-                Long live = liveSig.apply(e.getKey());
-                if (live == null || live.longValue() == e.getValue()) continue;
+                StorageContents.Snapshot snap = now.get(e.getKey());
+                if (snap == null || snap.sig() == e.getValue().sig()) continue;
                 enqueue(e.getKey());
                 queued++;
             }
             return queued;
+        }
+
+        private static boolean anyGift(Map<BlockPos, ParkedBaseline> parked, Map<BlockPos, StorageContents.Snapshot> now) {
+            for (Map.Entry<BlockPos, StorageContents.Snapshot> e : now.entrySet()) {
+                if (e.getValue().itemCount() > parked.get(e.getKey()).itemCount()) return true;
+            }
+            return false;
         }
 
         /**
@@ -413,4 +434,7 @@ public final class SharedCarriageRegistry {
     public static void clear() {
         BY_SUBLEVEL.clear();
     }
+
+    /** A parked storage block's contents before the first change: its signature and item count. */
+    public record ParkedBaseline(long sig, int itemCount) {}
 }
