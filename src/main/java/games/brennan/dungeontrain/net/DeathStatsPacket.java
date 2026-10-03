@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.net;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.DeathStatsCache;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
+import games.brennan.dungeontrain.player.PlayerRunState;
+import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -80,7 +82,9 @@ public record DeathStatsPacket(
         List<ResourceLocation> earnedAdvancements,
         // Animals tamed this run: the exact total, plus the types (capped) the report names.
         int tamedCount,
-        List<ResourceLocation> tamedAnimals
+        List<ResourceLocation> tamedAnimals,
+        // Disposable-camera frames taken this run (capped by PlayerRunState) — the photo page.
+        List<Frame> cameraFrames
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -145,6 +149,11 @@ public record DeathStatsPacket(
         for (ResourceLocation id : tamedAnimals) {
             buf.writeResourceLocation(id);
         }
+        int frames = Math.min(cameraFrames.size(), PlayerRunState.CAMERA_FRAMES_CAP);
+        buf.writeVarInt(frames);
+        for (int i = 0; i < frames; i++) {
+            Frame.STREAM_CODEC.encode(buf, cameraFrames.get(i));
+        }
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -198,13 +207,22 @@ public record DeathStatsPacket(
         for (int i = 0; i < tamedTypes; i++) {
             tamedAnimals.add(buf.readResourceLocation());
         }
+        int frameCount = buf.readVarInt();
+        if (frameCount < 0 || frameCount > PlayerRunState.CAMERA_FRAMES_CAP) {
+            throw new IllegalArgumentException("DeathStatsPacket: bad camera frame count " + frameCount);
+        }
+        List<Frame> cameraFrames = new ArrayList<>(frameCount);
+        for (int i = 0; i < frameCount; i++) {
+            cameraFrames.add(Frame.STREAM_CODEC.decode(buf));
+        }
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, trainTimeTicks,
                 containersOpened, booksRead, booksWritten, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
                 lifeDeaths, lifeCarriages, lifeDistance, lifeFriends, lifeBooks, lifeTrainTicks,
                 lifeBooksWritten, lifeContainers, lifeMobKills, lifePlayersKilled,
                 lifePlayersEncountered, lifeEchos, lifeAdvancements, lifeDamageDealt, lifeDamageTaken,
-                narrative, deathCause, side, portrait, earnedAdvancements, tamedCount, tamedAnimals);
+                narrative, deathCause, side, portrait, earnedAdvancements, tamedCount, tamedAnimals,
+                cameraFrames);
     }
 
     @Override
