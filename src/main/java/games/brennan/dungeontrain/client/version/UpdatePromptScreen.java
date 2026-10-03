@@ -48,6 +48,10 @@ public final class UpdatePromptScreen extends Screen {
     private static final int CARD_BORDER = 0xFF3A3A42;
     private static final int COLOR_TITLE = 0xFFFFFFFF;
     private static final int COLOR_BODY = 0xFFE0E0E0;
+    /** The newest version's name — the good news, in the green the rest of DT's UI uses for "ready". */
+    private static final int COLOR_NEWEST = 0x55FF55;
+    /** "(N releases behind)" — context, a step dimmer than the body. */
+    private static final int COLOR_BEHIND = 0x9A9A9A;
 
     private final Screen previousScreen;
     private final FullSemver newest;
@@ -74,12 +78,15 @@ public final class UpdatePromptScreen extends Screen {
     @Override
     protected void init() {
         int innerWidth = CARD_W - 2 * PAD;
-        // "Dungeon Train vX is out." then, on its own line, "You're on vY (N releases behind)".
+        // "Dungeon Train vX is out." (the name and version in green) then, on its own line,
+        // "You're on vY (N releases behind)" with the parenthetical dimmed.
+        Component newestName = Component.translatable(KEY + "newest", newest.toString()).withColor(COLOR_NEWEST);
         List<FormattedCharSequence> lines = new ArrayList<>(font.split(
-                Component.translatable(KEY + "body", newest.toString()), innerWidth));
+                Component.translatable(KEY + "body", newestName), innerWidth));
         // "N releases" is the Versions page's already-translated plural clause, so this line needs no family of its own.
         Component releases = PluralRules.clause(ClientLanguage.selected(), RELEASES_CLAUSE, releasesBehind);
-        lines.addAll(font.split(Component.translatable(KEY + "yours", installed.toString(), releases), innerWidth));
+        Component behind = Component.translatable(KEY + "behind", releases).withColor(COLOR_BEHIND);
+        lines.addAll(font.split(Component.translatable(KEY + "yours", installed.toString(), behind), innerWidth));
         bodyLines = List.copyOf(lines);
 
         int contentH = font.lineHeight + GAP_TITLE

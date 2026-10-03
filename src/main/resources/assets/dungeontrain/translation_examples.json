@@ -14649,10 +14649,9 @@
   },
   "gui.dungeontrain.update_prompt.body": {
     "1": {
-      "label": "the newest version, without the leading v",
+      "label": "the mod's name and newest version, shown in green",
       "examples": [
-        "0.1104.0",
-        "0.1121.0"
+        "Dungeon Train v0.1104.0"
       ]
     }
   },
@@ -14665,6 +14664,24 @@
       ]
     },
     "2": {
+      "label": "how far behind, in brackets, shown dimmer",
+      "examples": [
+        "(29 releases behind)",
+        "(1 release behind)"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.newest": {
+    "1": {
+      "label": "the newest version, without the leading v",
+      "examples": [
+        "0.1104.0",
+        "0.1121.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.behind": {
+    "1": {
       "label": "how many releases newer, already counted with its noun",
       "examples": [
         "29 releases",
