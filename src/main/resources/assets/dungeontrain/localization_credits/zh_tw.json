@@ -2,7 +2,7 @@
   "locale": "zh_tw",
   "name": "AI 未經人工審閱",
   "human_reviewed": false,
-  "total_keys": 4014,
-  "ai_authored": 4003,
-  "ai_unreviewed": 4000
+  "total_keys": 4021,
+  "ai_authored": 4010,
+  "ai_unreviewed": 4007
 }
