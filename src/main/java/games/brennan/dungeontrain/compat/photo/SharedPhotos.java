@@ -5,7 +5,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.RunPosition;
+import games.brennan.dungeontrain.discord.TributePhotoReporter;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -324,9 +326,32 @@ public final class SharedPhotos {
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
+        announceTribute(player, held, photoId, cost);
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurnApproved(player, held);
         player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, VIEWS_MAX));
+    }
+
+    /**
+     * Show the tributed photo in the public passenger log ({@link TributePhotoReporter}). Clean runs
+     * only — a Free Play Tribute still keeps the photo alive, it just isn't announced. The picture
+     * comes from this world's copy, the same one {@link #restore} sends back; no copy, no post.
+     */
+    private static void announceTribute(ServerPlayer player, ItemStack held, int photoId, int cost) {
+        MinecraftServer server = player.getServer();
+        if (server == null || RunIntegrity.isCheated(player)) return;
+        Frame frame = held.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        String photographer = frame == null ? "" : frame.extraData().getString(SHARED_AUTHOR_KEY);
+        // The frame carries the Tributes the photo had when handed out; this one is the next.
+        int tributeNumber = (frame == null ? 0 : Math.max(0, frame.extraData().getInt(SHARED_TRIBUTES_KEY))) + 1;
+        String exposureId = exposureIdFor(photoId);
+        Optional<ExposureData> data = ExposureServer.exposureRepository().load(exposureId).getData();
+        if (data.isEmpty()) {
+            LOGGER.debug("[DungeonTrain] Tributed photo {} has no copy in this world; not posted.", photoId);
+            return;
+        }
+        encodeThen(server, data.get(), exposureId,
+                png -> TributePhotoReporter.post(player, photographer, tributeNumber, cost, png));
     }
 
     /** Registration only — no network, no game state. Called once at mod construction. */
