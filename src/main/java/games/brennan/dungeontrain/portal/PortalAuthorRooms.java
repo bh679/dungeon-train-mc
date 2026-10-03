@@ -88,19 +88,10 @@ public final class PortalAuthorRooms {
         Planned remembered = remembered(data.authorRoomPick(pairKey));
         if (remembered != null) return remembered;
 
-        List<TrackVariantGroup.Member> members =
-            TrackVariantRegistry.eligibleMembers(TrackKind.PORTAL_ROOM, parent, gateCtx);
-        if (members.isEmpty()) return redrawn(pairKey, parent, pickAt);
-
-        List<PortalAuthorRoomPick.Candidate> candidates = new ArrayList<>(members.size());
-        for (TrackVariantGroup.Member m : members) {
-            candidates.add(new PortalAuthorRoomPick.Candidate(
-                m.id(), m.weight(), PortalRoomSettings.of(m.id()).books()));
+        if (TrackVariantRegistry.eligibleMembers(TrackKind.PORTAL_ROOM, parent, gateCtx).isEmpty()) {
+            return redrawn(pairKey, parent, pickAt);
         }
-        PortalRoomBooks.Share share = PortalAuthorRoomPick.share(
-            PortalRoomSettings.of(parent).books(), pairKey, pinnedToSelf);
-        PortalAuthorRoomPick.Choice choice = PortalAuthorRoomPick.choose(
-            level.getSeed(), pairKey, share, candidates, authorsFor(rider), PortalRoomStatShelves.FULL_SET);
+        PortalAuthorRoomPick.Choice choice = decide(level, pairKey, parent, pinnedToSelf, gateCtx, rider);
         if (choice == null) return null;
 
         PortalRoomAuthorLocks.preLock(pairKey, rider, choice.share(), choice.author());
@@ -109,6 +100,28 @@ public final class PortalAuthorRooms {
         LOGGER.info("[DungeonTrain] Author room pair={} rolled {} → '{}'{}", pairKey, choice.share().id(),
             choice.roomName(), author == null ? "" : " for '" + author.name() + "' (" + author.count() + " book(s))");
         return planned(choice.roomName(), choice.share());
+    }
+
+    /**
+     * The choice {@link #plan} would commit for {@code pairKey} under {@code parent}, with nothing
+     * locked or remembered — also what {@code /dungeontrain debug author-rooms} tallies. Null when
+     * every member is gated out. Kicks a fetch of any author page that is cold, as planning does.
+     */
+    public static PortalAuthorRoomPick.Choice decide(ServerLevel level, int pairKey, String parent,
+                                                     boolean pinnedToSelf, GateContext gateCtx,
+                                                     ServerPlayer rider) {
+        List<TrackVariantGroup.Member> members =
+            TrackVariantRegistry.eligibleMembers(TrackKind.PORTAL_ROOM, parent, gateCtx);
+        if (members.isEmpty()) return null;
+        List<PortalAuthorRoomPick.Candidate> candidates = new ArrayList<>(members.size());
+        for (TrackVariantGroup.Member m : members) {
+            candidates.add(new PortalAuthorRoomPick.Candidate(
+                m.id(), m.weight(), PortalRoomSettings.of(m.id()).books()));
+        }
+        PortalRoomBooks.Share share = PortalAuthorRoomPick.share(
+            PortalRoomSettings.of(parent).books(), pairKey, pinnedToSelf);
+        return PortalAuthorRoomPick.choose(
+            level.getSeed(), pairKey, share, candidates, authorsFor(rider), PortalRoomStatShelves.FULL_SET);
     }
 
     /** The cached author pages {@code rider} can offer — both empty with no rider. */

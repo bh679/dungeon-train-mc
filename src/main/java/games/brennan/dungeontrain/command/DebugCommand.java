@@ -211,6 +211,17 @@ public final class DebugCommand {
                         .executes(ctx -> PortalSitesDebug.probeEnd(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
                 .then(Commands.argument("count", IntegerArgumentType.integer(1, 100_000))
                     .executes(ctx -> PortalSitesDebug.report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
+            // /dungeontrain debug author-rooms [count] [player] — how often the lottery lands on an
+            // author room, the share each rolls and the sub-room that fits it. INFO-logged too.
+            .then(Commands.literal("author-rooms")
+                .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(), AuthorRoomsDebug.DEFAULT_COUNT, null))
+                .then(Commands.argument("count", IntegerArgumentType.integer(1, 100_000))
+                    .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(),
+                        IntegerArgumentType.getInteger(ctx, "count"), null))
+                    .then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player())
+                        .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(),
+                            IntegerArgumentType.getInteger(ctx, "count"),
+                            net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "player"))))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
