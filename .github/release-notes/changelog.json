@@ -22582,6 +22582,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "luggage-new-carriage-safe-room",
+      "version": "0.1132.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Luggage, a new carriage, and a rebuilt parkour room",
+      "summary": "Some book carriages now have travellers' luggage piled up in them. A new carriage design joins the train. One of the parkour dimensional carriages has been rebuilt and keeps turning up much further into a run. Shop carriages come up a little less often.",
+      "highlights": [
+        "Luggage piled up in some book carriages",
+        "A new carriage design on the train",
+        "A rebuilt parkour dimensional carriage that appears deeper into a run",
+        "Shop carriages are slightly rarer"
+      ],
+      "pr": 1797,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
