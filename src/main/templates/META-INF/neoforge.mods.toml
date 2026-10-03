@@ -129,8 +129,8 @@ logoFile="logo.png"
 
 # Second-lap overworld mods — third-party, REQUIRED. On odd laps the overworld gap before the
 # Nether band is William Wythers' Overhauled Overworld and the gap after it is Biomes O' Plenty
-# (worldgen/SecondLapOverworld). Floors only; their libraries (Cristel Lib, TerraBlender,
-# GlitchCore) are declared by the mods themselves.
+# (worldgen/SecondLapOverworld). Floors only; Cristel Lib and GlitchCore are declared by the mods
+# themselves. TerraBlender gets its own floor below because DT compiles against it directly.
 [[dependencies.${mod_id}]]
     modId="wwoo"
     type="required"
@@ -142,6 +142,15 @@ logoFile="logo.png"
     modId="biomesoplenty"
     type="required"
     versionRange="[${biomesoplenty_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# TerraBlender — BoP's library, but DT uses it directly: its Regions/SurfaceRuleManager API, some
+# internals (guarded by mixin/ThirdPartyMixinPlugin and fall-backs), and a surface-rule mixin.
+[[dependencies.${mod_id}]]
+    modId="terrablender"
+    type="required"
+    versionRange="[${terrablender_min_version},)"
     ordering="AFTER"
     side="BOTH"
 

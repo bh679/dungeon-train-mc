@@ -37,3 +37,5 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "P - WATUT without CoroUtil"                       dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf exp expp watut
 # Exposure and its Polaroid add-on are required with `[x,)` floors; Q is the only case without them.
 "$HERE/run-case.sh" "Q - missing Exposure + Polaroid"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf
+# TerraBlender has a `[x,)` floor of DT's own (DT compiles against it and mixes into it); R is the only case without it.
+"$HERE/run-case.sh" "R - missing TerraBlender"                         dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop glitch blc vb pf exp expp
