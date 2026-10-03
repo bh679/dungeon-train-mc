@@ -48,6 +48,17 @@ public sealed interface MixinTargetRequirement {
         }
     }
 
+    /**
+     * A {@code GETSTATIC} ({@code write} false) or {@code PUTSTATIC} of the class's own field {@code name}
+     * inside method {@code inMethod} — a field {@code @Redirect} aimed at one method or lambda.
+     */
+    record AccessesStatic(String inMethod, String name, boolean write) implements MixinTargetRequirement {
+        @Override
+        public String describe() {
+            return (write ? "write" : "read") + " of static field " + name + " in " + inMethod;
+        }
+    }
+
     static MixinTargetRequirement method(String name, String desc) {
         return new Method(name, desc);
     }
@@ -66,5 +77,13 @@ public sealed interface MixinTargetRequirement {
 
     static MixinTargetRequirement readsStatic(String name) {
         return new ReadsStatic(name);
+    }
+
+    static MixinTargetRequirement readsStaticIn(String inMethod, String name) {
+        return new AccessesStatic(inMethod, name, false);
+    }
+
+    static MixinTargetRequirement writesStaticIn(String inMethod, String name) {
+        return new AccessesStatic(inMethod, name, true);
     }
 }

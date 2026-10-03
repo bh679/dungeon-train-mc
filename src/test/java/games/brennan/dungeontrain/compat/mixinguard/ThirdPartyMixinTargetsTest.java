@@ -95,7 +95,9 @@ final class ThirdPartyMixinTargetsTest {
                 "WoverBiomePickerOrderMixin", "WoverBiomePickerSampleMixin", "WoverPossibleBiomesOrderMixin",
                 "WoverPossibleBiomesCompatOrderMixin",
                 "BetterEndStaticShuffleMixin", "BetterEndWallScatterShuffleMixin", "BetterEndDirPerThreadMixin",
-                "BetterEndDirectionsPerThreadMixin", "BetterEndHorizontalPerThreadMixin")), end);
+                "BetterEndDirectionsPerThreadMixin", "BetterEndHorizontalPerThreadMixin",
+                "BetterEndBiomeIslandPerThreadMixin", "BetterEndGlowshroomPerThreadMixin",
+                "BetterEndOreLayerPerThreadMixin")), end);
     }
 
     @Test

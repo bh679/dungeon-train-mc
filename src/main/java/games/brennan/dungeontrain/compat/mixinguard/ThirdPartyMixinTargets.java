@@ -8,6 +8,8 @@ import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequiremen
 import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequirement.invokes;
 import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequirement.method;
 import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequirement.readsStatic;
+import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequirement.readsStaticIn;
+import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequirement.writesStaticIn;
 import static games.brennan.dungeontrain.compat.mixinguard.MixinTargetRequirement.staticField;
 
 /**
@@ -60,6 +62,18 @@ public final class ThirdPartyMixinTargets {
     private static final String SULPHURIC_CAVE = BE + "structures.piece.SulphuricCavePiece";
     private static final String WALL_SCATTER = BE + "features.WallScatterFeature";
     private static final String STRUCTURE_ERODE = "org.betterx.bclib.util.StructureErode";
+    private static final String BIOME_ISLAND = BE + "features.BiomeIslandFeature";
+    private static final String GLOWSHROOM = BE + "features.trees.MossyGlowshroomFeature";
+    private static final String ORE_LAYER = BE + "features.terrain.OreLayerFeature";
+
+    private static final String PLACE = "place";
+    private static final String PLACE_DESC = "(Lnet/minecraft/world/level/levelgen/feature/FeaturePlaceContext;)Z";
+    private static final String ISLAND_BLOCK_LAMBDA = "lambda$createSDFIsland$0";
+    private static final String ISLAND_NOISE_LAMBDA = "lambda$createSDFIsland$1";
+    private static final String BLOCK_STATE = "Lnet/minecraft/world/level/block/state/BlockState;";
+    private static final String SDF = "Lorg/betterx/bclib/sdf/SDF;";
+    private static final String SDF_PRIMITIVE = "Lorg/betterx/bclib/sdf/primitive/SDFPrimitive;";
+    private static final String SDF_OPERATOR = "Lorg/betterx/bclib/sdf/operator/";
 
     private static final String MHELPER_SHUFFLE_DESC = "([Ljava/lang/Object;Lnet/minecraft/util/RandomSource;)V";
     private static final MixinTargetRequirement CALLS_MHELPER_SHUFFLE =
@@ -135,6 +149,55 @@ public final class ThirdPartyMixinTargets {
             Map.of(WALL_SCATTER, List.of(
                 staticField("DIR", DIRECTIONS),
                 method("shuffle", "(Lnet/minecraft/util/RandomSource;)V"))),
+            Map.of(), END_VANILLA, true)),
+        Map.entry(MIXIN_PACKAGE + "betterend.BetterEndBiomeIslandPerThreadMixin", new Spec(
+            Map.of(BIOME_ISLAND, List.of(
+                method(PLACE, PLACE_DESC),
+                method("createSDFIsland", "()" + SDF),
+                staticField("CENTER", "Lnet/minecraft/core/BlockPos$MutableBlockPos;"),
+                staticField("ISLAND", SDF),
+                staticField("simplexNoise", "Lorg/betterx/betterend/noise/OpenSimplexNoise;"),
+                staticField("topBlock", BLOCK_STATE),
+                staticField("underBlock", BLOCK_STATE),
+                readsStaticIn(PLACE, "CENTER"),
+                readsStaticIn(ISLAND_BLOCK_LAMBDA, "CENTER"),
+                readsStaticIn(ISLAND_NOISE_LAMBDA, "CENTER"),
+                readsStaticIn(PLACE, "ISLAND"),
+                readsStaticIn(ISLAND_NOISE_LAMBDA, "simplexNoise"),
+                writesStaticIn(PLACE, "simplexNoise"),
+                readsStaticIn(ISLAND_BLOCK_LAMBDA, "topBlock"),
+                writesStaticIn(PLACE, "topBlock"),
+                readsStaticIn(ISLAND_BLOCK_LAMBDA, "underBlock"),
+                writesStaticIn(PLACE, "underBlock"))),
+            Map.of(), END_VANILLA, true)),
+        Map.entry(MIXIN_PACKAGE + "betterend.BetterEndGlowshroomPerThreadMixin", new Spec(
+            Map.of(GLOWSHROOM, List.of(
+                staticField("CENTER", "Lorg/joml/Vector3f;"),
+                staticField("CONE1", SDF_PRIMITIVE),
+                staticField("CONE2", SDF_PRIMITIVE),
+                staticField("CONE_GLOW", SDF_PRIMITIVE),
+                staticField("ROOTS", SDF_PRIMITIVE),
+                staticField("HEAD_POS", SDF_OPERATOR + "SDFTranslate;"),
+                staticField("ROOTS_ROT", SDF_OPERATOR + "SDFFlatWave;"),
+                staticField("FUNCTION", SDF_OPERATOR + "SDFBinary;"),
+                readsStaticIn(PLACE, "CENTER"),
+                readsStaticIn("lambda$static$2", "CENTER"),
+                readsStaticIn(PLACE, "CONE1"),
+                readsStaticIn(PLACE, "CONE2"),
+                readsStaticIn(PLACE, "CONE_GLOW"),
+                readsStaticIn(PLACE, "ROOTS"),
+                readsStaticIn(PLACE, "HEAD_POS"),
+                readsStaticIn(PLACE, "ROOTS_ROT"),
+                readsStaticIn(PLACE, "FUNCTION"))),
+            Map.of(), END_VANILLA, true)),
+        Map.entry(MIXIN_PACKAGE + "betterend.BetterEndOreLayerPerThreadMixin", new Spec(
+            Map.of(ORE_LAYER, List.of(
+                staticField("SPHERE", "Lorg/betterx/bclib/sdf/primitive/SDFSphere;"),
+                staticField("NOISE", SDF_OPERATOR + "SDFCoordModify;"),
+                staticField("FUNCTION", SDF),
+                readsStaticIn(PLACE, "SPHERE"),
+                readsStaticIn(PLACE, "NOISE"),
+                readsStaticIn(PLACE, "FUNCTION"))),
             Map.of(), END_VANILLA, true)),
 
         // ── TerraBlender ─────────────────────────────────────────────────────────────────────────

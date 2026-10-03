@@ -40,6 +40,10 @@ public final class MixinTargetCheck {
                     MixinTargetRequirement.Invokes.ANY_METHOD, insn ->
                     insn instanceof FieldInsnNode read && read.getOpcode() == Opcodes.GETSTATIC
                             && read.owner.equals(node.name) && read.name.equals(r.name()));
+            case MixinTargetRequirement.AccessesStatic a -> anyInstruction(node, a.inMethod(), insn ->
+                    insn instanceof FieldInsnNode access
+                            && access.getOpcode() == (a.write() ? Opcodes.PUTSTATIC : Opcodes.GETSTATIC)
+                            && access.owner.equals(node.name) && access.name.equals(a.name()));
         };
     }
 

@@ -81,6 +81,17 @@ final class MixinTargetCheckTest {
     }
 
     @Test
+    void staticAccessIsCheckedPerMethodAndDirection() {
+        ClassNode node = target("rebuild", "DIR", "forEach");
+        assertEquals(List.of(), MixinTargetCheck.missing(node, List.of(
+                MixinTargetRequirement.readsStaticIn("rebuild", "DIR"))));
+        assertEquals(List.of("read of static field DIR in lambda$rebuild$0"), MixinTargetCheck.missing(node,
+                List.of(MixinTargetRequirement.readsStaticIn("lambda$rebuild$0", "DIR"))));
+        assertEquals(List.of("write of static field DIR in rebuild"), MixinTargetCheck.missing(node,
+                List.of(MixinTargetRequirement.writesStaticIn("rebuild", "DIR"))));
+    }
+
+    @Test
     void anyMethodCallSiteMatchesWherever() {
         ClassNode node = target("place", "DIR", "forEach");
         assertEquals(List.of(), MixinTargetCheck.missing(node, List.of(invokes(
