@@ -18,6 +18,24 @@
       "description": "Dungeon Train Minecraft Mod has offically launched on CurseForge! [https://www.curseforge.com/minecraft/mc-mods/dungeon-train](https://www.curseforge.com/minecraft/mc-mods/dungeon-train)\n\nIts still early days, but already looking good! Give it a download, let me know what you think.\n\nLeave a review to boost it! (I dont know if it supports reviews so if not, favourite it I guess)\n\nThanks to Kat Flare for the screenshots!"
     },
     {
+      "id": "release-approved-on-modrinth",
+      "version": "0.147.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Approved on Modrinth",
+      "summary": "Modrinth App has been approved! \ud83e\udd73 https://modrinth.com/mod/dungeon-train",
+      "highlights": [],
+      "date": "2026-05-12",
+      "released": true,
+      "released_in": "v0.147.0",
+      "released_at": "2026-05-12T07:14:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "Modrinth App has been approved! \ud83e\udd73 [https://modrinth.com/mod/dungeon-train](https://modrinth.com/mod/dungeon-train)\n\nGo check it out, fav it, save it!, download it, play it."
+    },
+    {
       "id": "release-todays-changes",
       "version": "0.270.0",
       "type": "docs",
@@ -5123,6 +5141,25 @@
       "released": true,
       "released_in": "v0.430.0",
       "released_at": "2026-07-11T08:44:22Z"
+    },
+    {
+      "id": "release-first-influencer-and-translation",
+      "version": "0.430.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "First Influencer and Translation",
+      "summary": "https://www.bilibili.com/video/BV1TNMW6iEiQ/",
+      "highlights": [],
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.430.0",
+      "released_at": "2026-07-11T11:04:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "[https://www.bilibili.com/video/BV1TNMW6iEiQ/](https://www.bilibili.com/video/BV1TNMW6iEiQ/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/first-influencer-bilibili.jpg"
     },
     {
       "id": "vase-group-live-tuning",
@@ -14349,6 +14386,24 @@
       "released": true,
       "released_in": "v0.788.0",
       "released_at": "2026-09-02T12:47:47Z"
+    },
+    {
+      "id": "release-curseforge-hidden-gem",
+      "version": "0.788.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "CurseForge Hidden Gem",
+      "summary": "The unexpected and incredibly successful CurseFroge Hidden Gem feature is over.",
+      "highlights": [],
+      "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.788.0",
+      "released_at": "2026-09-02T12:17:19Z",
+      "major": true,
+      "milestone": true,
+      "description": "Hey All,\n\nThe unexpected and incredibly successful CurseFroge Hidden Gem feature is over.\n\nIn 2 weeks, we went from 20,000 downloads, to 160,000. The game had over 1500days of playtime in the last two weeks. nearly 30,000 books published and over 6,000 drifting carraiges made.\nI've seen at least 15 new videos go live on Youtube, IG and Tiktok. Please keep sharing what you make or find in \ud83d\udcfa-streams-and-media-of-dungeont\u2026 !\n\nI put out close to 200 \ud83c\udd95-minor-updates in those two weeks. Fixing bugs, adding features and keeping the server alive. It was a lot of work. I put off my actual paid work to do so.\nYou may have noticed Im slightly less active in the discord the last few days, as I rest from a huge two weeks. I'm still here answering questions and welcoming you all, but anyone who can step in to welcome newcomers and answer questions is greatly appreciated right now.\n\nOver the next week, I will still be working hard to put out regular updates. Probably not at the rate I have been, but likely still daily.\nI am working on several things right now\n\n- Builder Update - to get all your hard work into the game.\n- Shader update, to support shaders.\n- Bug fixes and balancing\n\nThings I intend to fix in the future\n\n- Adding custom mobs and items\n- Mutliplayer support\n- More dimensions and variation.\n\nI am always listerning close to your feedback and suggestions, thank you for all the ideas!"
     },
     {
       "id": "nether-arrival-tuning",
