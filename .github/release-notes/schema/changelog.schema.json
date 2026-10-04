@@ -52,9 +52,19 @@
           "items": {"type": "string", "minLength": 1},
           "description": "Optional player-facing bullet points."
         },
-        "lead": {
+        "major": {
           "type": "boolean",
-          "description": "Optional release summary. A lead entry renders first in the release notes (title as a heading, highlights under 'Other significant updates'), above the tag line and outside the per-version groups, so it opens the GitHub/Modrinth/CurseForge body and the Discord post."
+          "description": "Optional major release. A major entry renders first in the release notes (title as a heading, photo, then its description — or, without one, the summary plus highlights under 'Other significant updates'), above the tag line and outside the per-version groups, so it opens the GitHub/Modrinth/CurseForge body and the Discord post. The web update page shows it as the headline card."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Major release only: markdown description rendered under the heading, replacing summary + highlights."
+        },
+        "image": {
+          "type": "string",
+          "pattern": "^https://\\S+$",
+          "description": "Major release only: https:// URL of the release photo."
         },
         "addresses": {
           "type": "array",

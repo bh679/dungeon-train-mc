@@ -22998,7 +22998,8 @@
       "released": true,
       "released_in": "v0.1149.0",
       "released_at": "2026-10-04T10:04:47Z",
-      "lead": true
+      "major": true,
+      "description": "What did you see on train? What did the train see of you?\nFind disposable cameras in the loot and snap with a click. Your shots travel down the line into other passengers' bookshelves, barrels and chests, and theirs find you. Pay tribute to a photo to keep it travelling. A new page on the death screen.\n\n## Other significant updates\n\n- A villager get tired of repeat sales, and devalue the items he has to many of.\n- Finding you own library has never been easier, sign a book and the chances multiply until you find one next. New and improved author rooms.\n- THE LADDER BUG IS DEAD\n- New carraiges.\n- Many train editor improvements.\n- Improvements to the translation editor\n- New and improved connections to discord.\n- More loading screen lore.\n- Bug fixes\n- Performance improvements"
     },
     {
       "id": "performance-options-tab",
