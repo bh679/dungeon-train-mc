@@ -22767,6 +22767,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-band-cave-mob-spawns",
+      "version": "0.1140.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "No Nether mobs in the mountain caves",
+      "summary": "Zombified piglins and magma cubes no longer spawn in the overworld caves inside the mountains around the Nether crossing. They only appear where the ground is actually Nether.",
+      "highlights": [],
+      "pr": 1805,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
