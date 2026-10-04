@@ -59,4 +59,30 @@ class ChangelogLinesTest {
         assertEquals("Fixes", lines.get(0).text().getString());
         assertEquals(ChangelogLines.COLOUR_HEADING, lines.get(0).colour());
     }
+
+    @Test
+    @DisplayName("the modpack divider and the update-page footer are web-only and never shown in game")
+    void webOnlyLinesDropped() {
+        String notes = """
+                Dungeon Train modpack v0.1150.0 — bundles Dungeon Train v0.1150.0 + Sable for NeoForge 1.21.1.
+
+                ---
+
+                - one
+
+                ---
+
+                **[See every Dungeon Train update on our website](https://brennan.games/dungeontrain/update/)**
+                """;
+        assertEquals(List.of(
+                "Dungeon Train modpack v0.1150.0 — bundles Dungeon Train v0.1150.0 + Sable for NeoForge 1.21.1.",
+                "• one"), texts(ChangelogLines.fromMarkdown(notes)));
+    }
+
+    @Test
+    @DisplayName("an ordinary bullet starting with dashes and other links are kept")
+    void otherLinksKept() {
+        assertEquals(List.of("• - nested", "See the wiki"),
+                texts(ChangelogLines.fromMarkdown("- - nested\nSee [the wiki](https://example.org/wiki)")));
+    }
 }

@@ -94,7 +94,7 @@ public final class ChangelogLines {
         List<ShaderDetailPane.Line> out = new ArrayList<>();
         for (String raw : markdown.split("\\r?\\n")) {
             String line = raw.strip();
-            if (line.isEmpty()) continue;
+            if (line.isEmpty() || isWebOnly(line)) continue;
             if (line.startsWith("#")) {
                 String text = line.replaceFirst("^#+\\s*", "");
                 // The notes already open with "### <version>", which the entry heading has said.
@@ -112,6 +112,16 @@ public final class ChangelogLines {
             }
         }
         return out;
+    }
+
+    /**
+     * Lines that only make sense on a web page: a horizontal rule ({@code ---}, the modpack header's
+     * divider) and the footer every published changelog ends with, linking to the update page
+     * (scripts/release-notes/update-page-footer.md). In game the link would be dead text, and this
+     * screen has its own update button.
+     */
+    static boolean isWebOnly(String line) {
+        return line.matches("-{3,}") || line.contains("](" + UpdatePage.BASE_URL);
     }
 
     static ShaderDetailPane.Line heading(String text) {
