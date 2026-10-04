@@ -51,6 +51,8 @@ public final class PlayerMobCameraBridge {
             return;
         }
         subject.dungeontrain$setPhotoSubject(giver.getUUID());
+        // Straight into the main hand: the mob is holding its new camera from the moment it has it.
+        mob.equipWeapon(gift.getItem());
         LOGGER.info("[PlayerMobCamera] {} will photograph {}", mob.getName().getString(), giver.getGameProfile().getName());
     }
 }

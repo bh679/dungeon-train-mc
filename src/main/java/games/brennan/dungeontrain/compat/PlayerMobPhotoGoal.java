@@ -9,7 +9,11 @@ import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import io.github.mortuusars.exposure.world.camera.frame.Photographer;
+import io.github.mortuusars.exposure.network.Packets;
+import io.github.mortuusars.exposure.network.packet.clientbound.ActiveCameraRemoveS2CP;
+import io.github.mortuusars.exposure.world.camera.CameraInHand;
 import io.github.mortuusars.exposure.world.entity.CameraHolder;
+import io.github.mortuusars.exposure.world.entity.CameraOperator;
 import io.github.mortuusars.exposure.world.item.camera.CameraItem;
 import io.github.mortuusars.exposure_polaroid.world.item.InstantCameraItem;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
@@ -17,6 +21,7 @@ import net.minecraft.Util;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -34,10 +39,12 @@ import java.util.UUID;
  * free; modelled on PlayerMob's own short tool goals (swap in, wind up, act, hand back).
  *
  * <ol>
- *   <li><b>SWAP</b> — bring the camera from the backpack to the main hand, stop walking.</li>
- *   <li><b>AIM</b> — face the subject and hold still long enough for the pose to reach their client,
- *       which is what renders the shot (the mob is an Exposure {@link CameraHolder} whose executing
- *       player is the subject — {@code mixin.PlayerMobCameraHolderMixin}).</li>
+ *   <li><b>SWAP</b> — the camera is usually already in hand (the bridge equips it the moment the
+ *       gift is credited); if not, bring it from the backpack. Stop walking.</li>
+ *   <li><b>AIM</b> — raise the viewfinder (Exposure's own active-camera state and sync packet, so
+ *       nearby clients pose the mob's arms around the camera) and face the subject for a moment; the
+ *       subject's client is what renders the shot (the mob is an Exposure {@link CameraHolder} whose
+ *       executing player is the subject — {@code mixin.PlayerMobCameraHolderMixin}).</li>
  *   <li><b>SHOOT</b> — {@link CameraItem#release}. Exposure plays the shutter, flashes if dark,
  *       sends the capture to the subject's client, and lands the frame on the camera stack.</li>
  *   <li><b>PRINT</b> — tick the camera until the shutter closes (nothing ticks a mob's held item),
@@ -56,8 +63,9 @@ public final class PlayerMobPhotoGoal extends Goal {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    static final int SWAP_TICKS = 10;
-    static final int AIM_TICKS = 15;
+    static final int SWAP_TICKS = 5;
+    /** Viewfinder up and held on the subject before the shutter — long enough to read as a pose. */
+    static final int AIM_TICKS = 30;
     /** Shutter close + print, after the shot; beyond this the camera is treated as jammed. */
     static final int PRINT_TIMEOUT_TICKS = 200;
     /** The subject must be this close for the mob to bother. */
@@ -73,6 +81,7 @@ public final class PlayerMobPhotoGoal extends Goal {
     private int ticks;
     private long shotTick = -1;
     private ServerPlayer target;
+    private boolean viewfinderUp;
 
     private PlayerMobPhotoGoal(PlayerMobEntity mob) {
         this.mob = mob;
@@ -125,6 +134,7 @@ public final class PlayerMobPhotoGoal extends Goal {
 
     @Override
     public void stop() {
+        lowerViewfinder();
         ItemStack held = mob.getMainHandItem();
         if (isCamera(held)) {
             mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
@@ -177,18 +187,47 @@ public final class PlayerMobPhotoGoal extends Goal {
                 abort("camera gone");
                 return;
             }
-            if (ticks < SWAP_TICKS) {
-                return;
-            }
             if (!mob.equipWeapon(mob.getInventory().getItem(slot).getItem())) {
                 abort("could not hold camera");
                 return;
             }
         }
         if (ticks >= SWAP_TICKS) {
+            raiseViewfinder();
             phase = Phase.AIM;
             ticks = 0;
         }
+    }
+
+    /**
+     * Open the viewfinder: the camera stack goes active (Exposure's open sound) and the mob becomes
+     * its operator, synced to nearby clients with Exposure's own packet so they pose its arms around
+     * the camera — the same look as a player raising theirs.
+     */
+    private void raiseViewfinder() {
+        ItemStack camera = mob.getMainHandItem();
+        if (viewfinderUp || !(camera.getItem() instanceof CameraItem item) || !(mob instanceof CameraOperator operator)) return;
+        item.activate(mob, camera);
+        CameraInHand inHand = new CameraInHand(holder, item.getOrCreateId(camera), InteractionHand.MAIN_HAND);
+        operator.setActiveExposureCamera(inHand);
+        Packets.sendToClients(inHand.createSyncPacket(), this::tracks);
+        viewfinderUp = true;
+    }
+
+    /** Lower the camera again: stack inactive (close sound), operator cleared, clients told. Idempotent. */
+    private void lowerViewfinder() {
+        if (!viewfinderUp) return;
+        viewfinderUp = false;
+        ItemStack camera = mob.getMainHandItem();
+        if (camera.getItem() instanceof CameraItem item && item.isActive(camera)) {
+            item.deactivate(mob, camera);
+        }
+        if (mob instanceof CameraOperator operator) operator.removeActiveExposureCamera();
+        Packets.sendToClients(new ActiveCameraRemoveS2CP(mob.getId()), this::tracks);
+    }
+
+    private boolean tracks(ServerPlayer player) {
+        return player.level() == mob.level() && player.distanceToSqr(mob) <= 64.0 * 64.0;
     }
 
     private void tickShoot() {
@@ -231,6 +270,9 @@ public final class PlayerMobPhotoGoal extends Goal {
         item.tick(holder, camera);
         stashFrame(camera);
         long since = mob.level().getGameTime() - shotTick;
+        if (!item.getShutter().isOpen(camera) && since >= DisposableCameraEvents.VIEWFINDER_HOLD_TICKS) {
+            lowerViewfinder(); // shot taken: bring the camera down while the print runs
+        }
         boolean printed = DisposableCamera.hasPendingFrame(camera) && !item.getShutter().isOpen(camera)
                 && since >= DisposableCameraEvents.VIEWFINDER_HOLD_TICKS + DisposableCameraEvents.PRINT_TICKS;
         if (printed) {
@@ -241,6 +283,7 @@ public final class PlayerMobPhotoGoal extends Goal {
     }
 
     private void keep() {
+        lowerViewfinder();
         ItemStack camera = mob.getMainHandItem();
         Optional<Frame> frame = DisposableCamera.pendingFrame(camera, mob.registryAccess());
         DisposableCamera.clearPendingFrame(camera);

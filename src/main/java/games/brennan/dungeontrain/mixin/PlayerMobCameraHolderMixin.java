@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.compat.PlayerMobPhotoSubject;
 import games.brennan.playermob.entity.PlayerMobEntity;
+import io.github.mortuusars.exposure.world.camera.Camera;
 import io.github.mortuusars.exposure.world.entity.CameraHolder;
 import io.github.mortuusars.exposure.world.entity.CameraOperator;
 import net.minecraft.world.entity.Entity;
@@ -13,7 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Makes every PlayerMob an Exposure {@link CameraHolder}, so it can take a photo with a camera it
+ * Makes every PlayerMob an Exposure {@link CameraHolder} (and {@link CameraOperator}), so it can take a photo with a camera it
  * holds the way a camera stand does: the shot is <em>rendered by a player's client</em> — the
  * "executing player" — from the holder entity's eyes, and credited to the holder.
  *
@@ -24,7 +25,7 @@ import java.util.UUID;
  * sides: the client's capture template also asks {@code entity instanceof CameraHolder}.</p>
  */
 @Mixin(PlayerMobEntity.class)
-public abstract class PlayerMobCameraHolderMixin implements CameraHolder, PlayerMobPhotoSubject {
+public abstract class PlayerMobCameraHolderMixin implements CameraHolder, CameraOperator, PlayerMobPhotoSubject {
 
     /** Beyond this the subject's client is too far to be asked to render the shot. */
     @Unique
@@ -81,13 +82,30 @@ public abstract class PlayerMobCameraHolderMixin implements CameraHolder, Player
         return (Entity) (Object) this;
     }
 
-    /**
-     * A PlayerMob operates its own camera but is not an Exposure {@link CameraOperator} (that is
-     * the player-side viewfinder/animation role). Exposure's default here throws, so answer empty:
-     * the shutter-open packet then simply has no operator client to go to.
-     */
+    // ---- CameraOperator: the mob operates its own camera, so clients pose its arms around the
+    // viewfinder (Exposure's HumanoidModel mixin reads the operator's active camera). The active
+    // camera is set by the server through Exposure's own sync packets, as for a player.
+
+    @Unique
+    private Camera dungeontrain$activeCamera;
+
+    @Override
+    public Camera getActiveExposureCamera() {
+        return dungeontrain$activeCamera;
+    }
+
+    @Override
+    public void setActiveExposureCamera(Camera camera) {
+        this.dungeontrain$activeCamera = camera;
+    }
+
+    @Override
+    public void removeActiveExposureCamera() {
+        this.dungeontrain$activeCamera = null;
+    }
+
     @Override
     public Optional<CameraOperator> getExposureCameraOperator() {
-        return Optional.empty();
+        return Optional.of(this);
     }
 }
