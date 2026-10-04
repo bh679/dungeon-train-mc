@@ -3,7 +3,7 @@
 
 The editor writes files a human wrote by hand, so the writer's first duty is to leave everything it
 did not touch byte-identical. The corpus is not uniform: books carry fields the schema never mentions
-(``_translator_note``, ``unused``, ``deferred``, letter ``notes``), ``weight`` is an int in most files
+(``_translator_note``, ``unused``, ``deferred``, ``after``, letter ``notes``), ``weight`` is an int in most files
 and a float in five, and only 44 of the 56 files end in a newline. Rather than assume a house style,
 :func:`detect_style` probes each file on load — it re-serialises the parsed data with every plausible
 combination of indent / ASCII-escaping / trailing newline and keeps the one that reproduces the file
