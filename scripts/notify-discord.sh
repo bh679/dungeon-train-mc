@@ -46,7 +46,7 @@ NOTES=$(printf '%s\n' "$FULL_NOTES" | python3 "$SCRIPT_DIR/release-notes/link-ch
 
 LOGO_URL="https://raw.githubusercontent.com/$REPO/main/src/main/resources/logo.png"
 # Every link in the message goes to ONE place, the update page (dp-relay public/dungeontrain/update/):
-# the embed title and the Download button under it. The page shows the newest modpack on CurseForge
+# the embed title opens this release on it (#vX.Y.Z), the Download button the page itself. The page shows the newest modpack on CurseForge
 # and Modrinth, the standalone mod, and what changed. Same URL as the in-game notifier
 # (client/version/compare/UpdatePage#BASE_URL). Deliberately no per-platform download fields — one
 # place to go, and it is never stale while a pack awaits CurseForge approval.
@@ -58,6 +58,7 @@ PAYLOAD=$(jq -n \
   --arg notes "$NOTES" \
   --argjson color "$COLOR" \
   --arg update_url "$UPDATE_PAGE_URL" \
+  --arg tag "$RELEASE_TAG" \
   --arg download_label "Download $RELEASE_TAG" \
   --arg logo "$LOGO_URL" \
   '{
@@ -65,7 +66,7 @@ PAYLOAD=$(jq -n \
     avatar_url: $logo,
     embeds: [{
       title: $title,
-      url: $update_url,
+      url: ($update_url + "#" + $tag),
       description: ("**" + $type + "** — a new build is available.\n\n" + $notes),
       color: $color,
       thumbnail: { url: $logo },

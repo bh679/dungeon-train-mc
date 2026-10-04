@@ -156,12 +156,13 @@ jobs:
             fi
           fi
           # Every published changelog points at the update page on our website: its title heading
-          # links there and it ends with "Read more" (scripts/release-notes/link-changelog.py). The
+          # opens this release there (#vX.Y.Z — a cascade tick's tag snaps down to the release whose
+          # notes it carries) and it ends with "Read more" (scripts/release-notes/link-changelog.py). The
           # plain copy feeds update.json — that text is read inside Minecraft, whose version screen
           # has its own update-page button.
           python3 scripts/release-notes/link-changelog.py --strip < curseforge-notes.md > curseforge-notes.plain.md
           for f in release-notes.md curseforge-notes.md; do
-            python3 scripts/release-notes/link-changelog.py < "$f" > "$f.linked"
+            python3 scripts/release-notes/link-changelog.py --release "$RELEASE_TAG" < "$f" > "$f.linked"
             mv "$f.linked" "$f"
           done
           echo "::group::CurseForge mod changelog"; cat curseforge-notes.md; echo "::endgroup::"

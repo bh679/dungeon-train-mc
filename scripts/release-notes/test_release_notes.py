@@ -636,8 +636,18 @@ def test_link_changelog_leaves_a_heading_linking_elsewhere():
 
 
 def test_link_changelog_rejects_unknown_args():
-    r = subprocess.run([sys.executable, LINK, "--bogus"], input="", capture_output=True, text=True)
-    assert r.returncode == 2
+    for bad in (["--bogus"], ["--release"], ["--release", "0.1149.0"], ["--release", "v1.2"]):
+        r = subprocess.run([sys.executable, LINK, *bad], input="", capture_output=True, text=True)
+        assert r.returncode == 2, bad
+
+
+def test_link_changelog_release_links_title_to_that_version():
+    out = run_link(CURATED, "--release", "v0.1149.0")
+    lines = out.rstrip("\n").split("\n")
+    assert lines[0] == f"# [Capture The View]({UPDATE_PAGE}#v0.1149.0)", lines[0]
+    assert lines[-1] == READ_MORE, "Read more stays on the page itself"
+    assert run_link(out, "--release", "v0.1149.0") == out
+    assert run_link(out, "--strip") == CURATED
 
 
 def test_render_major_description_and_image() -> None:
@@ -701,6 +711,7 @@ def main() -> int:
         test_link_changelog_generated_notes_get_footer_only,
         test_link_changelog_leaves_a_heading_linking_elsewhere,
         test_link_changelog_rejects_unknown_args,
+        test_link_changelog_release_links_title_to_that_version,
         test_append_computes_minor_bump_when_patch_nonzero,
         test_append_shares_version_when_patch_zero,
         test_append_version_override,
