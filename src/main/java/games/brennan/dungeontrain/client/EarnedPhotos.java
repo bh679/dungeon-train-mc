@@ -9,6 +9,13 @@ import io.github.mortuusars.exposure.client.image.renderable.RenderableImage;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import io.github.mortuusars.exposure.world.level.storage.ExposureIdentifier;
 import io.github.mortuusars.exposure.world.level.storage.RequestedPalettedExposure;
+import io.github.mortuusars.exposure.client.render.photograph.PhotographStyle;
+import io.github.mortuusars.exposure.client.render.photograph.PhotographStyles;
+import io.github.mortuusars.exposure.world.photograph.PhotographType;
+import com.mojang.blaze3d.platform.NativeImage;
+import games.brennan.dungeontrain.discord.PhotoPaperComposite;
+import java.io.InputStream;
+import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -46,16 +53,19 @@ public final class EarnedPhotos {
     /** How often to ask again while the image is on its way, and how long before the first ask. */
     private static final int RETRY_TICKS = 20;
 
-    private record Pending(String exposureId, int ticksLeft, int nextTry) {}
+    private record Pending(String exposureId, ResourceLocation type, int ticksLeft, int nextTry) {}
 
     private static final Map<ResourceLocation, Pending> PENDING = new LinkedHashMap<>();
 
     private EarnedPhotos() {}
 
-    /** The server says {@code advancement} was earned with this photo: fetch it and keep a copy. */
-    public static void capture(ResourceLocation advancement, String exposureId) {
+    /**
+     * The server says {@code advancement} was earned with this photo, printed on {@code type}'s paper:
+     * fetch it and keep a copy, laid on that paper the way the game draws the print.
+     */
+    public static void capture(ResourceLocation advancement, String exposureId, ResourceLocation type) {
         if (advancement == null || exposureId == null || exposureId.isBlank()) return;
-        PENDING.put(advancement, new Pending(exposureId, FETCH_TIMEOUT_TICKS, RETRY_TICKS));
+        PENDING.put(advancement, new Pending(exposureId, type, FETCH_TIMEOUT_TICKS, RETRY_TICKS));
     }
 
     /** File names kept on disk, read once — {@link #has} runs every frame a tooltip is hovered. */
@@ -103,13 +113,13 @@ public final class EarnedPhotos {
                 continue;
             }
             if (p.nextTry() > 0) {
-                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.ticksLeft() - 1, p.nextTry() - 1));
+                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.type(), p.ticksLeft() - 1, p.nextTry() - 1));
                 continue;
             }
-            if (trySave(e.getKey(), p.exposureId())) {
+            if (trySave(e.getKey(), p.exposureId(), p.type())) {
                 done.add(e.getKey());
             } else {
-                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.ticksLeft() - 1, RETRY_TICKS));
+                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.type(), p.ticksLeft() - 1, RETRY_TICKS));
             }
         }
         done.forEach(PENDING::remove);
@@ -120,7 +130,7 @@ public final class EarnedPhotos {
      * moment after the advancement is earned, so an early ask comes back "not found" — Exposure caches
      * that answer, so it is cleared before the next ask.
      */
-    private static boolean trySave(ResourceLocation advancement, String exposureId) {
+    private static boolean trySave(ResourceLocation advancement, String exposureId, ResourceLocation type) {
         try {
             RequestedPalettedExposure requested = ExposureClient.exposureStore().getOrRequest(exposureId);
             if (requested.isError()) {
@@ -136,10 +146,19 @@ public final class EarnedPhotos {
                 return false;
             }
             if (image.isEmpty() || image.width() <= 0 || image.height() <= 0) return false;
-            int w = image.width(), h = image.height();
+            PhotographStyle style = PhotographStyles.get(new PhotographType(type == null ? PhotographType.REGULAR.id() : type));
+            RenderableImage styled = style.process(image);
+            int w = styled.width(), h = styled.height();
             int[] argb = new int[w * h];
             for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) argb[y * w + x] = image.getPixelARGB(x, y) | 0xFF000000;
+                for (int x = 0; x < w; x++) argb[y * w + x] = styled.getPixelARGB(x, y) | 0xFF000000;
+            }
+            Optional<int[]> paper = paper(style.paperTexture());
+            if (paper.isPresent()) {
+                PhotoPaperComposite.Composite print = PhotoPaperComposite.compose(paper.get(), argb, w, h);
+                w = print.width();
+                h = print.height();
+                argb = print.argb();
             }
             Path target = file(advancement);
             Files.createDirectories(target.getParent());
@@ -152,6 +171,28 @@ public final class EarnedPhotos {
             LOGGER.warn("[DungeonTrain] Couldn't keep the photo for {} yet: {}", advancement, ex.toString());
             return false;
         }
+    }
+
+    /** The paper texture, {@code PAPER_SIZE²} ARGB, from the resource packs; empty when it can't be read. */
+    private static Optional<int[]> paper(ResourceLocation texture) {
+        try (InputStream in = Minecraft.getInstance().getResourceManager().open(texture);
+             NativeImage image = NativeImage.read(in)) {
+            int size = PhotoPaperComposite.PAPER_SIZE;
+            if (image.getWidth() != size || image.getHeight() != size) return Optional.empty();
+            int[] argb = new int[size * size];
+            for (int y = 0; y < size; y++) {
+                for (int x = 0; x < size; x++) argb[y * size + x] = abgrToArgb(image.getPixelRGBA(x, y));
+            }
+            return Optional.of(argb);
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("[DungeonTrain] Couldn't read photo paper {}: {}", texture, e.toString());
+            return Optional.empty();
+        }
+    }
+
+    /** {@link NativeImage} stores ABGR; the compositor works in ARGB. */
+    private static int abgrToArgb(int abgr) {
+        return (abgr & 0xFF00FF00) | ((abgr & 0xFF) << 16) | ((abgr >> 16) & 0xFF);
     }
 
     static Path file(ResourceLocation advancement) {

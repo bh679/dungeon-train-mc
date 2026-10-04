@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
@@ -31,10 +32,8 @@ public final class EarnedPhotoThumbnails {
     private static final Logger LOGGER = LogUtils.getLogger();
     /** Lines reserved under the description (9px each). */
     static final int SLOT_LINES = 6;
-    /** Thumbnail edge in GUI pixels, inside a 2px paper border, leaving a gap line above it. */
-    private static final int SIZE = (SLOT_LINES - 1) * 9 - 4;
-    private static final int BORDER = 2;
-    private static final int PAPER = 0xFFF2EEE4;
+    /** Thumbnail edge in GUI pixels — the print on its own paper — leaving a gap line above it. */
+    private static final int SIZE = (SLOT_LINES - 1) * 9;
     /** Pixels kept per thumbnail edge — plenty for a ~40px tooltip print. */
     private static final int SAMPLE = 64;
 
@@ -61,8 +60,9 @@ public final class EarnedPhotoThumbnails {
         if (line != SLOT || id == null) return;
         ResourceLocation texture = texture(id);
         if (texture == null) return;
-        g.fill(x, y, x + SIZE + 2 * BORDER, y + SIZE + 2 * BORDER, PAPER);
-        g.blit(texture, x + BORDER, y + BORDER, SIZE, SIZE, 0, 0, SAMPLE, SAMPLE, SAMPLE, SAMPLE);
+        RenderSystem.enableBlend();
+        g.blit(texture, x, y, SIZE, SIZE, 0, 0, SAMPLE, SAMPLE, SAMPLE, SAMPLE);
+        RenderSystem.disableBlend();
     }
 
     /** Drop {@code id}'s cached thumbnail — a new photo was just kept for it. */

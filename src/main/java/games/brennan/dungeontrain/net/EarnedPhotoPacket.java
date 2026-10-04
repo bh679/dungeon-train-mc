@@ -11,10 +11,10 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Server → client: the local player just earned {@code advancement} with the photo whose Exposure id is
- * {@code exposureId}. The client fetches the image and keeps its own copy, shown when the advancement
+ * {@code exposureId}, printed on {@code photoType}'s paper. The client fetches the image and keeps its own copy, shown when the advancement
  * is clicked — see {@link EarnedPhotos}.
  */
-public record EarnedPhotoPacket(ResourceLocation advancement, String exposureId) implements CustomPacketPayload {
+public record EarnedPhotoPacket(ResourceLocation advancement, String exposureId, ResourceLocation photoType) implements CustomPacketPayload {
 
     public static final Type<EarnedPhotoPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "earned_photo"));
@@ -22,6 +22,7 @@ public record EarnedPhotoPacket(ResourceLocation advancement, String exposureId)
     public static final StreamCodec<FriendlyByteBuf, EarnedPhotoPacket> STREAM_CODEC = StreamCodec.composite(
         ResourceLocation.STREAM_CODEC, EarnedPhotoPacket::advancement,
         ByteBufCodecs.STRING_UTF8, EarnedPhotoPacket::exposureId,
+        ResourceLocation.STREAM_CODEC, EarnedPhotoPacket::photoType,
         EarnedPhotoPacket::new
     );
 
@@ -32,6 +33,6 @@ public record EarnedPhotoPacket(ResourceLocation advancement, String exposureId)
 
     /** Client-bound handler — only ever runs on the physical client. */
     public static void handle(EarnedPhotoPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> EarnedPhotos.capture(packet.advancement(), packet.exposureId()));
+        ctx.enqueueWork(() -> EarnedPhotos.capture(packet.advancement(), packet.exposureId(), packet.photoType()));
     }
 }

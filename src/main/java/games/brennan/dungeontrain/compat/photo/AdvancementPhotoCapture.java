@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.net.EarnedPhotoPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
+import io.github.mortuusars.exposure.world.item.PhotographItem;
+import io.github.mortuusars.exposure.world.photograph.PhotographType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -23,19 +25,40 @@ import net.minecraft.world.item.ItemStack;
 public final class AdvancementPhotoCapture {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
-    private static final ThreadLocal<String> CURRENT = new ThreadLocal<>();
+    /** The photo behind the triggers now running: its exposure, and the paper it is printed on. */
+    private record Photo(String exposureId, ResourceLocation type) {}
+
+    private static final ThreadLocal<Photo> CURRENT = new ThreadLocal<>();
 
     private AdvancementPhotoCapture() {}
 
-    /** Run {@code triggers} with {@code frame}'s exposure as the current photo. */
+    /** Run {@code triggers} with {@code frame}'s exposure as the current photo — a fresh shot, on regular paper. */
     public static void during(Frame frame, Runnable triggers) {
+        during(frame, PhotographType.REGULAR, triggers);
+    }
+
+    /**
+     * {@link #during} the frame a photograph stack carries (none for anything else), on the paper the
+     * stack is printed on — a found photo wears one of DT's worn papers ({@code WornPhotographItem}).
+     */
+    public static void during(ItemStack photograph, Runnable triggers) {
+        if (photograph == null) {
+            triggers.run();
+            return;
+        }
+        Frame frame = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        PhotographType type = photograph.getItem() instanceof PhotographItem item ? item.getType(photograph) : null;
+        during(frame, type, triggers);
+    }
+
+    private static void during(Frame frame, PhotographType type, Runnable triggers) {
         String exposureId = exposureId(frame);
         if (exposureId == null) {
             triggers.run();
             return;
         }
-        String previous = CURRENT.get();
-        CURRENT.set(exposureId);
+        Photo previous = CURRENT.get();
+        CURRENT.set(new Photo(exposureId, (type == null ? PhotographType.REGULAR : type).id()));
         try {
             triggers.run();
         } finally {
@@ -44,17 +67,13 @@ public final class AdvancementPhotoCapture {
         }
     }
 
-    /** {@link #during} the frame a photograph stack carries (none for anything else). */
-    public static void during(ItemStack photograph, Runnable triggers) {
-        during(photograph == null ? null : photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME), triggers);
-    }
-
     /** Called for every advancement earn: sends the earning photo when one is current. */
     public static void onEarn(ServerPlayer player, ResourceLocation advancement, boolean replaying) {
-        String exposureId = CURRENT.get();
-        if (shouldSend(advancement, exposureId, replaying)) {
-            LOGGER.info("[DungeonTrain] {} earned {} with photo {}", player.getName().getString(), advancement, exposureId);
-            DungeonTrainNet.sendTo(player, new EarnedPhotoPacket(advancement, exposureId));
+        Photo photo = CURRENT.get();
+        if (photo != null && shouldSend(advancement, photo.exposureId(), replaying)) {
+            LOGGER.info("[DungeonTrain] {} earned {} with photo {} ({})", player.getName().getString(), advancement,
+                    photo.exposureId(), photo.type());
+            DungeonTrainNet.sendTo(player, new EarnedPhotoPacket(advancement, photo.exposureId(), photo.type()));
         }
     }
 

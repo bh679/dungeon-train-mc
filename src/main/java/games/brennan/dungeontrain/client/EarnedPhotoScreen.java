@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,7 +17,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Shows the photo that earned an advancement, as a print with the advancement's title beneath it. Opened
+ * Shows the photo that earned an advancement, as the print it was in game — on its own paper — with the
+ * advancement's title beneath it. Opened
  * by clicking the earned advancement ({@link EarnedPhotos#tryOpen}), drawn over the advancements screen;
  * a click anywhere or Esc puts it away. A screen of DT's own — not Exposure's photograph screen — so the burn-after-viewing and
  * Tribute hooks that watch that screen never see it.
@@ -26,8 +28,6 @@ public final class EarnedPhotoScreen extends Screen {
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final ResourceLocation TEXTURE =
             ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "earned_photo/view");
-    private static final int PAPER = 0xFFF2EEE4;
-    private static final int BORDER = 8;
     private static final int CAPTION = 18;
     /** Depth the overlay draws at: above the advancements screen's item icons and tooltips. */
     private static final float OVERLAY_Z = 1000F;
@@ -67,7 +67,7 @@ public final class EarnedPhotoScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
         if (texture == null || imageWidth <= 0 || imageHeight <= 0) return;
-        int maxSide = Math.min(width, height) - 2 * BORDER - CAPTION - 40;
+        int maxSide = Math.min(width, height) - CAPTION - 40;
         float scale = Math.min((float) maxSide / imageWidth, (float) maxSide / imageHeight);
         int w = Math.max(1, Math.round(imageWidth * scale));
         int h = Math.max(1, Math.round(imageHeight * scale));
@@ -75,9 +75,11 @@ public final class EarnedPhotoScreen extends Screen {
         int y = (height - h - CAPTION) / 2;
         g.pose().pushPose();
         g.pose().translate(0, 0, OVERLAY_Z);
-        g.fill(x - BORDER, y - BORDER, x + w + BORDER, y + h + BORDER + CAPTION, PAPER);
+        // The kept image is already the print on its paper, torn edges and all — drawn as is.
+        RenderSystem.enableBlend();
         g.blit(TEXTURE, x, y, w, h, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
-        g.drawString(font, title, (width - font.width(title)) / 2, y + h + 6, 0xFF3A3530, false);
+        RenderSystem.disableBlend();
+        g.drawString(font, title, (width - font.width(title)) / 2, y + h + 8, 0xFFFFFFFF, true);
         g.pose().popPose();
     }
 
