@@ -22858,6 +22858,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "feedback-answer-count",
+      "version": "0.1144.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Feedback posts count your answers",
+      "summary": "Each feedback post to Discord now notes how many times you have answered that question, in brackets at the end of its small tag line \u2014 so a fifth take on the same question reads as one.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
