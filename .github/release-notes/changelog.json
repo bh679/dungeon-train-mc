@@ -22912,6 +22912,45 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermob-camera-photos",
+      "version": "0.1146.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "mobs"
+      ],
+      "title": "Hand a PlayerMob a camera and it takes your photo",
+      "summary": "PlayerMobs now pick up dropped disposable cameras. Toss one to a PlayerMob that is on good terms with you and not busy fighting: it raises the camera, lines you up and takes your picture, then hands you the print and the spent camera burns as yours do. The photo is credited to the PlayerMob by name and shows up in the passenger log on Discord. A PlayerMob that dislikes you keeps the camera and takes no photo.",
+      "highlights": [
+        "Dropped cameras are something PlayerMobs want \u2014 they pick them up like any valuable",
+        "Gift one to a friendly PlayerMob and it photographs you, viewfinder up, then tosses you the print",
+        "Prints are credited to the PlayerMob's name, in game and in the Discord passenger log"
+      ],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "bookshelf-photo-weight",
+      "version": "0.1147.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "More photos on the shelves",
+      "summary": "Chiseled bookshelves turn up community photos about four times as often. When there are no photos left to find, a photo slot now gives you a player book instead of sitting empty, and disposable cameras turn up a little less often.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -29,6 +29,7 @@
     "NoiseGeneratorSettingsAccessor",
     "NoiseBasedChunkGeneratorInvoker",
     "EchoDropCreditMixin",
+    "PlayerMobCameraHolderMixin",
     "LivingEntityLastEquipmentAccessor",
     "EndIslandDensityFunctionMixin",
     "ChunkGeneratorDecorationMixin",
