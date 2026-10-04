@@ -534,7 +534,8 @@ public final class DebugCommand {
         boolean configOn = games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDistantLodLiteDecoration();
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] LOD-lite Nether-core decoration: " + describeLodLite(mode)
-                + " (config distantLodLiteDecoration=" + configOn + ")"
+                + " (config distantLodLiteDecoration=" + configOn + "); DH pause-hold: "
+                + games.brennan.dungeontrain.worldgen.LodGenerationHold.describe(System.currentTimeMillis())
         ).withStyle(configOn && mode != LodGeneration.Mode.FORCE_OFF ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }
