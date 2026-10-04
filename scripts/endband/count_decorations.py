@@ -12,8 +12,10 @@ attachments issue #1785 asks about.
     count_decorations.py --compare A/region B/region --x ... --z ...            # A/B per-chunk + per-X-slab diff
     count_decorations.py run/world/region --x ... --z ... --count-full         # just the FULL-chunk count (polling)
 
-A chunk is classed **bare** when it has End ground but nothing else: that is exactly what the void
-erosion leaves behind when a sampled chunk's decoration is lost (#1774 / #1777).
+A chunk is classed **bare** when it has End ground but nothing else, **ore-only** when the only
+BetterEnd blocks on it are the ores BetterEnd injects into vanilla's End biomes, and the per-chunk
+`vanilla_end_quarts` counts section palette entries naming a vanilla End biome — a BetterEnd band
+generated with endBandBetterEndOnly (#1785) should show 0 of each.
 
 The pure pieces (`parse_nbt`, `section_counts`, `classify`, `slab_totals`) are unit-tested in
 `test_count_decorations.py` against a synthetic region file.
@@ -34,6 +36,17 @@ from typing import Dict, Iterator, List, Optional, Tuple
 
 TAG_END, TAG_BYTE, TAG_SHORT, TAG_INT, TAG_LONG, TAG_FLOAT, TAG_DOUBLE = range(7)
 TAG_BYTE_ARRAY, TAG_STRING, TAG_LIST, TAG_COMPOUND, TAG_INT_ARRAY, TAG_LONG_ARRAY = range(7, 13)
+
+# Vanilla's End biomes. BetterEnd's End map keeps them beside its own; end_barrens and small_end_islands
+# place nothing, which is what #1785's bare chunks turned out to be. The band's remap (endBandBetterEndOnly)
+# should leave none of these in a BetterEnd band.
+VANILLA_END_BIOMES = frozenset({
+    "minecraft:the_end", "minecraft:end_highlands", "minecraft:end_midlands",
+    "minecraft:end_barrens", "minecraft:small_end_islands",
+})
+# BetterEnd's ores, injected into the vanilla End biomes by a biome modification: a chunk whose only
+# betterend:* blocks are these is a vanilla-biome chunk that caught a vein, not a decorated one.
+BETTEREND_ORES = frozenset({"betterend:flavolite", "betterend:thallasium_ore", "betterend:ender_ore"})
 
 
 class _Reader:
@@ -231,6 +244,8 @@ class ChunkStats:
     sampled_marker: bool = False
     # non-air per chunk-local X column (16 entries), for the per-X-slab comparison
     slab: List[int] = field(default_factory=lambda: [0] * 16)
+    # biome palette entries per section, by biome id — the sections' palettes, not a per-quart count
+    biomes: Counter = field(default_factory=Counter)
 
     @property
     def non_air(self) -> int:
@@ -245,6 +260,15 @@ class ChunkStats:
         return sum(n for k, n in self.counts.items() if k.startswith("betterend:"))
 
     @property
+    def betterend_non_ore(self) -> int:
+        return sum(n for k, n in self.counts.items() if k.startswith("betterend:") and k not in BETTEREND_ORES)
+
+    @property
+    def vanilla_end_quarts(self) -> int:
+        """Section palette entries naming a vanilla End biome (0 in a fully remapped BetterEnd band chunk)."""
+        return sum(n for k, n in self.biomes.items() if k in VANILLA_END_BIOMES)
+
+    @property
     def other(self) -> int:
         return sum(n for k, n in self.counts.items()
                    if k not in AIR and k not in END_GROUND and k not in STRUCTURAL and not k.startswith("betterend:"))
@@ -255,13 +279,17 @@ class ChunkStats:
 
 
 def classify(stats: ChunkStats) -> str:
-    """empty (nothing at all), bare (End ground and nothing else), decorated, or other (no End ground)."""
+    """empty (nothing at all), bare (End ground and nothing else), ore-only (End ground plus BetterEnd's
+    injected ores and nothing else — a vanilla-biome chunk that caught a vein), decorated, or other (no End
+    ground)."""
     if stats.non_air == 0:
         return "empty"
     if stats.ground == 0:
         return "other"
     if stats.betterend == 0 and stats.other == 0:
         return "bare"
+    if stats.betterend_non_ore == 0 and stats.other == 0:
+        return "ore-only"
     return "decorated"
 
 
@@ -285,6 +313,9 @@ def chunk_stats(cx: int, cz: int, root: dict, z0: int, z1: int) -> ChunkStats:
         for lx in range(16):
             col = section_counts(palette, data, (lx, lx, lz0, lz1))
             st.slab[lx] += sum(n for k, n in col.items() if k not in AIR)
+    for sec in root.get("sections", []):
+        for name in ((sec.get("biomes") or {}).get("palette") or []):
+            st.biomes[name] += 1
     att = root.get(ATTACH_KEY) or {}
     st.pending = bool(att.get(PENDING_KEY, 0))
     st.sampled_marker = bool(att.get(SAMPLED_KEY, 0))
@@ -320,7 +351,10 @@ def summary(stats: Dict[Tuple[int, int], ChunkStats]) -> dict:
     return {
         "chunks": len(stats),
         "full": sum(1 for s in stats.values() if s.status == "minecraft:full"),
-        "empty": classes["empty"], "bare": classes["bare"], "decorated": classes["decorated"], "other": classes["other"],
+        "empty": classes["empty"], "bare": classes["bare"], "ore_only": classes["ore-only"],
+        "decorated": classes["decorated"], "other": classes["other"],
+        "vanilla_end_quarts": sum(s.vanilla_end_quarts for s in stats.values()),
+        "vanilla_end_chunks": sum(1 for s in stats.values() if s.vanilla_end_quarts),
         "pending": sum(1 for s in stats.values() if s.pending),
         "sampled_marker": sum(1 for s in stats.values() if s.sampled_marker),
         "non_air": sum(s.non_air for s in stats.values()),
@@ -335,30 +369,32 @@ def summary(stats: Dict[Tuple[int, int], ChunkStats]) -> dict:
 def _print_table(stats: Dict[Tuple[int, int], ChunkStats], csv: bool) -> None:
     rows = sorted(stats.values(), key=lambda s: (s.cx, s.cz))
     if csv:
-        print("cx,cz,status,class,non_air,end_ground,betterend,other,pending,sampled_marker,top")
+        print("cx,cz,status,class,non_air,end_ground,betterend,other,pending,sampled_marker,vanilla_end_quarts,top")
         for s in rows:
             print(",".join(str(v) for v in (s.cx, s.cz, s.status, classify(s), s.non_air, s.ground, s.betterend,
-                                             s.other, int(s.pending), int(s.sampled_marker), '"%s"' % s.top())))
+                                             s.other, int(s.pending), int(s.sampled_marker), s.vanilla_end_quarts,
+                                             '"%s"' % s.top())))
         return
-    print("%6s %5s %-18s %-9s %7s %7s %7s %6s %3s %3s  %s" % (
-        "cx", "cz", "status", "class", "nonair", "ground", "bend", "other", "pnd", "smp", "top blocks"))
+    print("%6s %5s %-18s %-9s %7s %7s %7s %6s %3s %3s %4s  %s" % (
+        "cx", "cz", "status", "class", "nonair", "ground", "bend", "other", "pnd", "smp", "vanQ", "top blocks"))
     for s in rows:
-        print("%6d %5d %-18s %-9s %7d %7d %7d %6d %3s %3s  %s" % (
+        print("%6d %5d %-18s %-9s %7d %7d %7d %6d %3s %3s %4d  %s" % (
             s.cx, s.cz, s.status.replace("minecraft:", ""), classify(s), s.non_air, s.ground, s.betterend, s.other,
-            "Y" if s.pending else "-", "Y" if s.sampled_marker else "-", s.top()))
+            "Y" if s.pending else "-", "Y" if s.sampled_marker else "-", s.vanilla_end_quarts, s.top()))
 
 
 def _print_summary(label: str, s: dict) -> None:
-    print("%s: chunks=%d full=%d | decorated=%d bare=%d empty=%d other=%d | pending=%d sampled_marker=%d | "
-          "non_air=%d end_ground=%d betterend=%d other_blocks=%d" % (
-              label, s["chunks"], s["full"], s["decorated"], s["bare"], s["empty"], s["other"], s["pending"],
-              s["sampled_marker"], s["non_air"], s["end_ground"], s["betterend"], s["other_blocks"]))
+    print("%s: chunks=%d full=%d | decorated=%d ore-only=%d bare=%d empty=%d other=%d | pending=%d sampled_marker=%d | "
+          "vanilla_end_biome chunks=%d quarts=%d | non_air=%d end_ground=%d betterend=%d other_blocks=%d" % (
+              label, s["chunks"], s["full"], s["decorated"], s["ore_only"], s["bare"], s["empty"], s["other"],
+              s["pending"], s["sampled_marker"], s["vanilla_end_chunks"], s["vanilla_end_quarts"],
+              s["non_air"], s["end_ground"], s["betterend"], s["other_blocks"]))
 
 
 def compare(a: Dict[Tuple[int, int], ChunkStats], b: Dict[Tuple[int, int], ChunkStats]) -> int:
     """Print per-chunk class/count differences and the per-X-slab diff. Returns the number of differing slabs."""
     keys = sorted(set(a) | set(b))
-    print("%6s %5s  %-9s %-9s %8s %8s %8s" % ("cx", "cz", "classA", "classB", "nonairA", "nonairB", "bendDiff"))
+    print("%6s %5s  %-9s %-9s %8s %8s %8s %5s %5s" % ("cx", "cz", "classA", "classB", "nonairA", "nonairB", "bendDiff", "vanQA", "vanQB"))
     for k in keys:
         sa, sb = a.get(k), b.get(k)
         ca = classify(sa) if sa else "missing"
@@ -367,8 +403,10 @@ def compare(a: Dict[Tuple[int, int], ChunkStats], b: Dict[Tuple[int, int], Chunk
         nb = sb.non_air if sb else 0
         ba = sa.betterend if sa else 0
         bb = sb.betterend if sb else 0
-        flag = "" if (ca == cb and na == nb) else "  <-- differs"
-        print("%6d %5d  %-9s %-9s %8d %8d %+8d%s" % (k[0], k[1], ca, cb, na, nb, bb - ba, flag))
+        va = sa.vanilla_end_quarts if sa else 0
+        vb = sb.vanilla_end_quarts if sb else 0
+        flag = "" if (ca == cb and na == nb and va == vb) else "  <-- differs"
+        print("%6d %5d  %-9s %-9s %8d %8d %+8d %5d %5d%s" % (k[0], k[1], ca, cb, na, nb, bb - ba, va, vb, flag))
     ta, tb = slab_totals(a), slab_totals(b)
     xs = sorted(set(ta) | set(tb))
     diff = [(x, ta.get(x, 0), tb.get(x, 0)) for x in xs if ta.get(x, 0) != tb.get(x, 0)]

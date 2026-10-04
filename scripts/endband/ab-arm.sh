@@ -5,6 +5,14 @@
 #
 # Usage: ab-arm.sh <armName> <on|off> <worktreePath> <port> [seed] [outDir]
 #
+# Environment knobs (all optional):
+#   REMAP=on|off     write endBandBetterEndOnly (the #1785 vanilla->BetterEnd remap); unset = NeoForge default
+#   STRIP_IN=1500    blocks past the slot's start the strip begins (ignored when STRIP_X0 is set)
+#   STRIP_X0=36272   absolute strip start X (chunk-aligned down); must lie inside the slot
+#   STRIP_LEN=1024   strip length in blocks
+#   Z0=32 Z1=95      strip Z range (inclusive); the default is 4 chunk rows off the corridor
+#   SETTLE_SECS=90   wait after the FULL count stops moving before `stop`
+#
 #   bash scripts/endband/ab-arm.sh A_off off ../dt-ab-A 25571 424242
 #   bash scripts/endband/ab-arm.sh B_on  on  ../dt-ab-B 25572 424242
 #   python3 scripts/endband/count_decorations.py --compare \
@@ -23,12 +31,21 @@ OUT="${6:-$S/out}"
 WT_SLUG="$(basename "$WT")"
 STRIP_IN="${STRIP_IN:-1500}"          # blocks past the slot's start (clear of the fade-in)
 STRIP_LEN="${STRIP_LEN:-1024}"        # 64 chunk columns
-Z0=32; Z1=95                           # 4 chunk rows off the corridor
+Z0="${Z0:-32}"; Z1="${Z1:-95}"          # 4 chunk rows off the corridor unless overridden
+STRIP_X0="${STRIP_X0:-}"               # absolute strip start; empty = slot start + STRIP_IN
+REMAP="${REMAP:-}"                     # endBandBetterEndOnly: on|off, empty = mod default
 SETTLE_SECS="${SETTLE_SECS:-90}"       # after the FULL count stops moving: spill delivery, saves
 POLL_SECS=30
 mkdir -p "$OUT"
 
 case "$SPILL" in on) SPILL_BOOL=true ;; off) SPILL_BOOL=false ;; *) echo "spill must be on|off"; exit 1 ;; esac
+REMAP_LINE=""
+case "$REMAP" in
+  on)  REMAP_LINE="	endBandBetterEndOnly = true" ;;
+  off) REMAP_LINE="	endBandBetterEndOnly = false" ;;
+  "")  ;;
+  *)   echo "REMAP must be on|off"; exit 1 ;;
+esac
 
 if [ -z "${JAVA_HOME:-}" ]; then
   JAVA_HOME="$(ls -d "$HOME"/.gradle/jdks/*adoptium*21*/*/Contents/Home 2>/dev/null | head -1)"
@@ -68,14 +85,15 @@ EOF
 echo "eula=true" > run/eula.txt
 
 # A partial COMMON config is enough: NeoForge fills every other key with its default.
-cat > run/config/dungeontrain-common.toml <<EOF
-[worldgen]
-	endBandFeatureSpill = $SPILL_BOOL
-	endBandTerrain = "WORLDGEN"
-EOF
+{
+  echo "[worldgen]"
+  echo "	endBandFeatureSpill = $SPILL_BOOL"
+  echo "	endBandTerrain = \"WORLDGEN\""
+  [ -n "$REMAP_LINE" ] && echo "$REMAP_LINE"
+} > run/config/dungeontrain-common.toml
 
 FIFO="$OUT/$ARM.fifo"; rm -f "$FIFO"; mkfifo "$FIFO"
-say "server up (seed=$SEED spill=$SPILL port=$PORT wt=$WT_SLUG)"
+say "server up (seed=$SEED spill=$SPILL remap=${REMAP:-default} port=$PORT wt=$WT_SLUG)"
 ./gradlew runServer -I "$S/../perf/stdin.gradle" --console=plain < "$FIFO" > "$SLOG" 2>&1 &
 exec 3>"$FIFO"
 
@@ -100,9 +118,9 @@ waitfor "$SLOG" "$SLOT_RE" 60 "layout logged" || { say "no 'end better' slot in 
 LINE=$(/usr/bin/grep -oE "$SLOT_RE" "$SLOG" | head -1)
 SLOT_FROM=$(echo "$LINE" | sed -E 's/.*X (-?[0-9]+)\.\.(-?[0-9]+).*/\1/')
 SLOT_TO=$(echo "$LINE" | sed -E 's/.*X (-?[0-9]+)\.\.(-?[0-9]+).*/\2/')
-X0=$(( (SLOT_FROM + STRIP_IN) / 16 * 16 ))
+if [ -n "$STRIP_X0" ]; then X0=$(( STRIP_X0 / 16 * 16 )); else X0=$(( (SLOT_FROM + STRIP_IN) / 16 * 16 )); fi
 X1=$(( X0 + STRIP_LEN - 1 ))
-if [ "$X1" -ge "$SLOT_TO" ]; then say "strip $X0..$X1 leaves the slot ($SLOT_FROM..$SLOT_TO); shorten STRIP_LEN"; echo "stop" >&3; sleep 10; exit 1; fi
+if [ "$X0" -lt "$SLOT_FROM" ] || [ "$X1" -ge "$SLOT_TO" ]; then say "strip $X0..$X1 leaves the slot ($SLOT_FROM..$SLOT_TO); move STRIP_X0 / shorten STRIP_LEN"; echo "stop" >&3; sleep 10; exit 1; fi
 say "slot 'end better' X $SLOT_FROM..$SLOT_TO; strip X $X0..$X1 Z $Z0..$Z1"
 echo "$X0 $X1 $Z0 $Z1" > "$OUT/$ARM.strip"
 
@@ -114,7 +132,7 @@ while [ "$x" -le "$X1" ]; do
   x=$(( xe + 1 ))
   sleep 1
 done
-EXPECTED=$(( (STRIP_LEN / 16) * 4 ))
+EXPECTED=$(( (STRIP_LEN / 16) * ((Z1 - Z0 + 1) / 16) ))
 
 # Poll until every strip chunk is FULL on disk and the count has stopped moving.
 REGION="run/world/region"

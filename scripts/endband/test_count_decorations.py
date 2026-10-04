@@ -22,6 +22,7 @@ AIR = {"Name": "minecraft:air"}
 END_STONE = {"Name": "minecraft:end_stone"}
 MOSS = {"Name": "betterend:end_moss"}
 LOG = {"Name": "betterend:lacugrove_log"}
+FLAVOLITE = {"Name": "betterend:flavolite"}
 
 
 # --- a minimal NBT writer ---------------------------------------------------------------------------
@@ -98,11 +99,14 @@ def pack_indices(indices, palette_size) -> LongArray:
     return LongArray(words)
 
 
-def section(y: int, palette, indices=None) -> dict:
+def section(y: int, palette, indices=None, biomes=None) -> dict:
     bs = {"palette": list(palette)}
     if indices is not None:
         bs["data"] = pack_indices(indices, len(palette))
-    return {"Y": Byte(y), "block_states": bs}
+    out = {"Y": Byte(y), "block_states": bs}
+    if biomes is not None:
+        out["biomes"] = {"palette": list(biomes)}
+    return out
 
 
 def chunk(cx: int, cz: int, sections, status="minecraft:full", attachments=None) -> dict:
@@ -159,16 +163,29 @@ def bare_indices():
     return idx
 
 
+def ore_only_indices():
+    """Bare ground with one flavolite vein in it — a vanilla-biome chunk that caught BetterEnd's ore."""
+    idx = bare_indices()  # palette: 0 air, 1 end_stone, 2 flavolite
+    for x in range(3, 6):
+        idx[(1 * 16 + 5) * 16 + x] = 2
+    return idx
+
+
 @pytest.fixture
 def region_dir(tmp_path):
     d = tmp_path / "region"
     d.mkdir()
-    decorated = chunk(2400, 2, [section(4, [AIR, END_STONE, MOSS, LOG], decorated_indices())])
-    bare = chunk(2401, 2, [section(4, [AIR, END_STONE], bare_indices())])
+    decorated = chunk(2400, 2, [section(4, [AIR, END_STONE, MOSS, LOG], decorated_indices(),
+                                        biomes=["betterend:shadow_forest"])])
+    bare = chunk(2401, 2, [section(4, [AIR, END_STONE], bare_indices(),
+                                   biomes=["minecraft:small_end_islands", "betterend:ice_starfield"])])
     pending = chunk(2402, 2, [section(4, [AIR])], attachments={"dungeontrain:end_band_pending": Byte(1)})
     marker = chunk(2403, 2, [section(4, [END_STONE])],  # single-palette section: no data array
                    status="minecraft:features", attachments={"dungeontrain:end_band_sampled_cells": Byte(1)})
-    write_region(str(d / "r.75.0.mca"), [(2400, 2, decorated), (2401, 2, bare), (2402, 2, pending), (2403, 2, marker)])
+    ore_only = chunk(2404, 2, [section(4, [AIR, END_STONE, FLAVOLITE], ore_only_indices(),
+                                       biomes=["minecraft:end_barrens"])])
+    write_region(str(d / "r.75.0.mca"), [(2400, 2, decorated), (2401, 2, bare), (2402, 2, pending), (2403, 2, marker),
+                                         (2404, 2, ore_only)])
     return str(d)
 
 
@@ -205,22 +222,35 @@ def test_section_counts_z_clip():
 
 
 def test_census_classifies_chunks(region_dir):
-    stats = cd.census(region_dir, 2400 * 16, 2403 * 16 + 15, 32, 47)
-    assert sorted(stats) == [(2400, 2), (2401, 2), (2402, 2), (2403, 2)]
+    stats = cd.census(region_dir, 2400 * 16, 2404 * 16 + 15, 32, 47)
+    assert sorted(stats) == [(2400, 2), (2401, 2), (2402, 2), (2403, 2), (2404, 2)]
     assert cd.classify(stats[(2400, 2)]) == "decorated"
     assert cd.classify(stats[(2401, 2)]) == "bare"
     assert cd.classify(stats[(2402, 2)]) == "empty"
     assert cd.classify(stats[(2403, 2)]) == "bare"
+    assert cd.classify(stats[(2404, 2)]) == "ore-only"
     assert stats[(2402, 2)].pending and not stats[(2400, 2)].pending
     assert stats[(2403, 2)].sampled_marker and stats[(2403, 2)].status == "minecraft:features"
     assert stats[(2400, 2)].betterend == 256 + 7
+    assert stats[(2404, 2)].betterend == 3 and stats[(2404, 2)].betterend_non_ore == 0
+
+
+def test_vanilla_end_biome_quarts(region_dir):
+    """Section biome palettes are read; vanilla End ids are counted, BetterEnd ones are not."""
+    stats = cd.census(region_dir, 2400 * 16, 2404 * 16 + 15, 32, 47)
+    assert stats[(2400, 2)].vanilla_end_quarts == 0          # betterend:shadow_forest only
+    assert stats[(2401, 2)].vanilla_end_quarts == 1          # small_end_islands beside ice_starfield
+    assert stats[(2404, 2)].vanilla_end_quarts == 1          # end_barrens
+    assert stats[(2403, 2)].vanilla_end_quarts == 0          # no biomes tag at all
+    assert stats[(2401, 2)].biomes == Counter({"minecraft:small_end_islands": 1, "betterend:ice_starfield": 1})
 
 
 def test_summary_and_slabs(region_dir):
-    stats = cd.census(region_dir, 2400 * 16, 2403 * 16 + 15, 32, 47)
+    stats = cd.census(region_dir, 2400 * 16, 2404 * 16 + 15, 32, 47)
     s = cd.summary(stats)
-    assert (s["chunks"], s["full"], s["decorated"], s["bare"], s["empty"]) == (4, 3, 1, 2, 1)
+    assert (s["chunks"], s["full"], s["decorated"], s["ore_only"], s["bare"], s["empty"]) == (5, 4, 1, 1, 2, 1)
     assert (s["pending"], s["sampled_marker"]) == (1, 1)
+    assert (s["vanilla_end_chunks"], s["vanilla_end_quarts"]) == (2, 2)
     slabs = cd.slab_totals(stats)
     assert slabs[2400 * 16 + 7] == 4 * 16 + 16 + 7      # the log column's X
     assert slabs[2400 * 16 + 0] == 4 * 16 + 16
