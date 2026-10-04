@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import io.github.mortuusars.exposure.Exposure;
@@ -18,7 +19,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.goal.Goal;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
 import java.util.EnumSet;
@@ -246,14 +249,11 @@ public final class PlayerMobPhotoGoal extends Goal {
             ItemStack photograph = new ItemStack(Exposure.Items.PHOTOGRAPH.get());
             photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.get());
             photograph.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.get().type());
-            ItemStack leftover = mob.getInventory().addItem(photograph);
-            if (!leftover.isEmpty()) {
-                mob.setItemSlot(EquipmentSlot.MAINHAND, leftover); // full pack: hold it instead
+            if (frame.get().identifier().isId() && target != null) {
+                // The community sees the mob's photo too, credited to the mob, with the subject's consent.
+                SharedPhotos.queueMobPhotoPost(target, mob.getName().getString(), frame.get().identifier().id());
             }
-            if (mob.level() instanceof ServerLevel level) {
-                level.playSound(null, mob, Exposure.SoundEvents.PHOTOGRAPH_RUSTLE.get(), SoundSource.NEUTRAL,
-                    0.6f, level.getRandom().nextFloat() * 0.2f + 1.0f);
-            }
+            handOver(photograph);
         } else {
             LOGGER.warn("[PlayerMobCamera] {}'s stored frame did not decode; the camera burned without a photo",
                 mob.getName().getString());
@@ -277,6 +277,27 @@ public final class PlayerMobPhotoGoal extends Goal {
         return Photographer.CODEC.parse(JsonOps.INSTANCE, json).result()
             .map(by -> frame.toMutable().setPhotographer(by).toImmutable())
             .orElse(frame);
+    }
+
+    /**
+     * Toss the print to the person in it. Flagged so DT's burn-on-drop rule for disposable prints lets
+     * this one drop pass — it is a hand-over, not a discard; the photo still burns once it is viewed.
+     * The mob never wants photographs back off the floor, so it will not re-collect it.
+     */
+    private void handOver(ItemStack photograph) {
+        if (!(mob.level() instanceof ServerLevel level)) return;
+        Vec3 from = mob.getEyePosition().subtract(0, 0.3, 0);
+        Vec3 toward = target != null
+            ? target.getEyePosition().subtract(mob.getEyePosition()).normalize()
+            : mob.getLookAngle();
+        ItemEntity print = new ItemEntity(level, from.x, from.y, from.z, photograph);
+        print.getPersistentData().putBoolean(StartingBookEvents.ENTITY_TAG_HANDED_PHOTO, true);
+        print.setThrower(mob);
+        print.setPickUpDelay(10);
+        print.setDeltaMovement(toward.scale(0.25).add(0, 0.12, 0));
+        level.addFreshEntity(print);
+        level.playSound(null, mob, Exposure.SoundEvents.PHOTOGRAPH_RUSTLE.get(), SoundSource.NEUTRAL,
+            0.6f, level.getRandom().nextFloat() * 0.2f + 1.0f);
     }
 
     private void abort(String why) {

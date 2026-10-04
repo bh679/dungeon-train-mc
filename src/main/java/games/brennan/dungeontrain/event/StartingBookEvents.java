@@ -237,6 +237,8 @@ public final class StartingBookEvents {
      * the burn flow normally.</p>
      */
     private static final String ENTITY_TAG_SPAWN_BOOK = "dt_starting_spawn_book";
+    /** Item-entity persistent flag: a photo a PlayerMob is handing to its subject — never ignited on that drop. */
+    public static final String ENTITY_TAG_HANDED_PHOTO = "dungeontrain:handed_photo";
 
     private StartingBookEvents() {}
 
@@ -715,7 +717,10 @@ public final class StartingBookEvents {
         if (!BurnableBookTag.isBurnable(stack)) {
             // A disposable-camera photograph burns on any drop too — the same flame, with none of
             // the book bookkeeping below.
+            // ...except the one toss that is a hand-over, not a discard: a PlayerMob passing the photo it
+            // just took to the person in it (PlayerMobPhotoGoal). The print still burns once viewed.
             if (games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
+                    && !item.getPersistentData().getBoolean(ENTITY_TAG_HANDED_PHOTO)
                     && !BURN_ENTITIES.containsKey(item.getUUID())) {
                 igniteItem(item, FlameVariant.DEFAULT);
                 // Opt-in author credit, as for a book: the photographer is named as it catches fire.

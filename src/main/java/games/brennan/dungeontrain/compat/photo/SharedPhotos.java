@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.GlobalTributeStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.PhotoPaperComposite;
+import games.brennan.dungeontrain.discord.PlayerMobPhotoReporter;
 import games.brennan.dungeontrain.discord.PhotoUpscale;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.TributePhotoReporter;
@@ -133,11 +134,17 @@ public final class SharedPhotos {
         PendingUpload tick() { return new PendingUpload(playerId, author, exposureId, meta, ticksLeft - 1); }
     }
 
+    /** A PlayerMob's photo of {@code playerId}, waiting for the client's pixels before it is posted to Discord. */
+    private record PendingMobPost(UUID playerId, String photographer, String exposureId, int ticksLeft) {
+        PendingMobPost tick() { return new PendingMobPost(playerId, photographer, exposureId, ticksLeft - 1); }
+    }
+
     /** One photo from the relay, decoded. {@code tributedBy} is set on a photographer's own tributed photo. */
     private record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, PhotoPngCodec.Decoded image) {}
 
     /** Server thread only. */
     private static List<PendingUpload> pendingUploads = List.of();
+    private static List<PendingMobPost> pendingMobPosts = List.of();
     private static volatile List<PoolPhoto> pool = List.of();
     /** Ids already handed out or opened here, oldest first. Guarded by its own monitor. */
     private static final List<Integer> spent = new ArrayList<>();
@@ -169,6 +176,41 @@ public final class SharedPhotos {
         next.add(new PendingUpload(player.getUUID(), player.getGameProfile().getName(),
                 frame.identifier().id(), buildMeta(player, frame.extraData()), PIXEL_WAIT_TICKS));
         pendingUploads = List.copyOf(next);
+    }
+
+    /**
+     * A PlayerMob photographed {@code subject} with a gifted camera ({@code PlayerMobPhotoGoal}): post the
+     * picture to the passenger log, credited to the mob, once the subject's client has delivered the
+     * pixels. The subject is the one in the photo, so it is their sharing consent that is asked
+     * ({@link SharedBookGate#canContribute}). Never uploaded to the relay's found-photo pool: the mob
+     * keeps the only print.
+     */
+    public static void queueMobPhotoPost(ServerPlayer subject, String photographer, String exposureId) {
+        if (subject == null || exposureId == null || exposureId.isBlank() || !SharedBookGate.canContribute(subject)) return;
+        List<PendingMobPost> next = new ArrayList<>(pendingMobPosts);
+        next.add(new PendingMobPost(subject.getUUID(), photographer, exposureId, PIXEL_WAIT_TICKS));
+        pendingMobPosts = List.copyOf(next);
+    }
+
+    private static void tickMobPosts(MinecraftServer server) {
+        if (pendingMobPosts.isEmpty()) return;
+        ExposureRepository repository = ExposureServer.exposureRepository();
+        List<PendingMobPost> waiting = new ArrayList<>();
+        for (PendingMobPost post : pendingMobPosts) {
+            Optional<ExposureData> data = repository.load(post.exposureId()).getData();
+            if (data.isPresent()) {
+                encodeThen(server, data.get(), (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, Optional.empty()),
+                        post.exposureId(), png -> {
+                            ServerPlayer subject = server.getPlayerList().getPlayer(post.playerId());
+                            if (subject != null) PlayerMobPhotoReporter.post(subject, post.photographer(), png);
+                        });
+            } else if (post.ticksLeft() > 1) {
+                waiting.add(post.tick());
+            } else {
+                LOGGER.warn("[DungeonTrain] PlayerMob photo {} never reached the server; not posted.", post.exposureId());
+            }
+        }
+        pendingMobPosts = List.copyOf(waiting);
     }
 
     /** Where and when the photo was taken: the frame's own details plus the photographer's run. */
@@ -466,6 +508,7 @@ public final class SharedPhotos {
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         tickUploads(server);
+        tickMobPosts(server);
         if (--ticksUntilRefresh > 0) return;
         ticksUntilRefresh = REFRESH_PERIOD_TICKS;
         if (SharedBookGate.canDiscover()) refreshPool(server);
