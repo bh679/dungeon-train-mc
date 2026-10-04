@@ -284,6 +284,20 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * How many times this player has paid Tribute to their own photo this life — each one triples the
+     * next one's cost ({@link games.brennan.dungeontrain.compat.photo.OwnPhotoTribute#cost}).
+     *
+     * <p>Serialized so a mid-life logout can't reset the price, and <b>no</b> {@code copyOnDeath} so
+     * every new life starts back at the base cost — the same shape as {@link #CARTS_AT_LAST_CONTAINER_OPEN}.</p>
+     */
+    public static final Supplier<AttachmentType<Integer>> OWN_PHOTO_TRIBUTES_THIS_LIFE =
+        TYPES.register("own_photo_tributes_this_life",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
     private ModDataAttachments() {}
 
     public static void register(IEventBus modBus) {

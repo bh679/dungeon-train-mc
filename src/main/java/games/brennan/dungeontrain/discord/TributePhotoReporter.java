@@ -53,6 +53,30 @@ public final class TributePhotoReporter {
         }
     }
 
+    /**
+     * Post a photo its own photographer just paid Tribute to ({@code OwnPhotoTribute.pay}). Server thread.
+     *
+     * @param tributeNumber which own-photo Tribute this is for the player this life (1 = their first)
+     * @param cost emeralds this Tribute cost
+     * @param png the photo on its paper, encoded
+     */
+    public static void postOwn(ServerPlayer tributer, int tributeNumber, int cost, byte[] png) {
+        if (png == null || png.length == 0) return;
+        try {
+            String name = tributer.getGameProfile().getName();
+            LOGGER.info("[DungeonTrain] {} paid tribute to their own photo — posting it to the passenger log.", name);
+            DiscordService.get().postReportTopLevel(tributer, title(name, name), ownDescription(tributeNumber, cost),
+                    List.of(), png, PHOTO_FILENAME, EMBED_COLOR, DungeonTrain.manifestWebhookOverride());
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] own tributed photo post failed: {}", t.toString());
+        }
+    }
+
+    /** {@code "Tribute #2 this life · 9 emeralds"}. */
+    static String ownDescription(int tributeNumber, int cost) {
+        return "Tribute #" + Math.max(1, tributeNumber) + " this life · " + cost + (cost == 1 ? " emerald" : " emeralds");
+    }
+
     /** {@code "📸 Steve paid tribute to a photo by Alex"}; a photo with no known photographer says so plainly. */
     static String title(String tributer, String photographer) {
         boolean known = photographer != null && !photographer.isBlank();

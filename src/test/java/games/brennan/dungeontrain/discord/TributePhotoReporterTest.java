@@ -45,4 +45,12 @@ class TributePhotoReporterTest {
         assertTrue(TributePhotoReporter.description(1, 1, 10, 1).endsWith("Held by 10 passengers · was on its last view"));
         assertTrue(TributePhotoReporter.description(1, 1, 0, 0).endsWith("Held by 1 passenger · was on its last view"));
     }
+
+    @Test
+    @DisplayName("own-photo description counts this life's Tribute and its cost")
+    void ownDescription() {
+        assertEquals("Tribute #1 this life · 3 emeralds", TributePhotoReporter.ownDescription(1, 3));
+        assertEquals("Tribute #3 this life · 27 emeralds", TributePhotoReporter.ownDescription(3, 27));
+        assertEquals("Tribute #1 this life · 1 emerald", TributePhotoReporter.ownDescription(0, 1));
+    }
 }

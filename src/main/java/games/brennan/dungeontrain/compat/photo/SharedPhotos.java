@@ -275,6 +275,12 @@ public final class SharedPhotos {
         pendingUploads = List.copyOf(waiting);
     }
 
+    /** {@link #discordPng} off-thread, then hand the PNG to {@code then} back on the server thread. */
+    static void encodeForDiscord(MinecraftServer server, ExposureData data, Optional<int[]> paper, String label,
+                                 java.util.function.Consumer<byte[]> then) {
+        encodeThen(server, data, (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, paper), label, then);
+    }
+
     /** Encode off-thread, then hand the PNG to {@code then} back on the server thread. */
     private static void encodeThen(MinecraftServer server, ExposureData data, String label, java.util.function.Consumer<byte[]> then) {
         encodeThen(server, data, PhotoPngCodec::encode, label, then);

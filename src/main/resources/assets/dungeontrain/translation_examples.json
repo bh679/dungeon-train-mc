@@ -14928,5 +14928,35 @@
         "1.2.0 exactly"
       ]
     }
+  },
+  "chat.dungeontrain.own_photo_tribute.paid.1": {
+    "1": {
+      "label": "emeralds the next tribute to your own photo costs",
+      "examples": [
+        "9",
+        "27",
+        "81"
+      ]
+    }
+  },
+  "chat.dungeontrain.own_photo_tribute.paid.2": {
+    "1": {
+      "label": "emeralds the next tribute to your own photo costs",
+      "examples": [
+        "9",
+        "27",
+        "81"
+      ]
+    }
+  },
+  "chat.dungeontrain.own_photo_tribute.paid.3": {
+    "1": {
+      "label": "emeralds the next tribute to your own photo costs",
+      "examples": [
+        "9",
+        "27",
+        "81"
+      ]
+    }
   }
 }
