@@ -22841,6 +22841,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "ladder-climb-moving-train",
+      "version": "0.1143.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "train"
+      ],
+      "title": "FIXED THE LADDER BUG!",
+      "summary": "Helll yeahhhhh",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
