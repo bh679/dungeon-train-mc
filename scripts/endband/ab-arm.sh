@@ -124,15 +124,17 @@ if [ "$X0" -lt "$SLOT_FROM" ] || [ "$X1" -ge "$SLOT_TO" ]; then say "strip $X0..
 say "slot 'end better' X $SLOT_FROM..$SLOT_TO; strip X $X0..$X1 Z $Z0..$Z1"
 echo "$X0 $X1 $Z0 $Z1" > "$OUT/$ARM.strip"
 
-# forceload in batches of 32 chunk columns x 4 rows = 128 chunks (vanilla caps one command at 256).
+# forceload in batches: vanilla caps one command at 256 chunks, so columns per batch = 256 / rows.
+ROWS=$(( (Z1 - Z0 + 1) / 16 )); [ "$ROWS" -lt 1 ] && ROWS=1
+COLS=$(( 256 / ROWS )); [ "$COLS" -lt 1 ] && COLS=1
 x=$X0
 while [ "$x" -le "$X1" ]; do
-  xe=$(( x + 32*16 - 1 )); [ "$xe" -gt "$X1" ] && xe=$X1
+  xe=$(( x + COLS*16 - 1 )); [ "$xe" -gt "$X1" ] && xe=$X1
   echo "forceload add $x $Z0 $xe $Z1" >&3
   x=$(( xe + 1 ))
   sleep 1
 done
-EXPECTED=$(( (STRIP_LEN / 16) * ((Z1 - Z0 + 1) / 16) ))
+EXPECTED=$(( (STRIP_LEN / 16) * ROWS ))
 
 # Poll until every strip chunk is FULL on disk and the count has stopped moving.
 REGION="run/world/region"
