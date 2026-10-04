@@ -2966,7 +2966,8 @@
       "released_in": "v0.354.0",
       "released_at": "2026-06-23T12:31:05Z",
       "major": true,
-      "description": "The dungeon Train now travels into multiple dimensions in a single ride.\n\n(All screenshots taken from a single ride)"
+      "description": "The dungeon Train now travels into multiple dimensions in a single ride.\n\n(All screenshots taken from a single ride)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/beyond-the-overworld.jpg"
     },
     {
       "id": "quiet-rule-combine-repair",
