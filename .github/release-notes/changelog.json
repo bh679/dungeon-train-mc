@@ -22785,6 +22785,62 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "keep-trim-dye",
+      "version": "0.1140.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Repairs keep your dye",
+      "summary": "Repairing dyed leather armour in the crafting grid now keeps the left item's colour, just like its trim.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "end-islands-no-bare-patches",
+      "version": "0.1141.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "No more bare islands in the stranger stretches",
+      "summary": "Some islands in the stranger stretches of the journey came through as flat bare stone right beside lush, overgrown neighbours. They now wear the same scenery as everything around them. Only newly generated ground is affected \u2014 stretches you have already crossed keep their look.",
+      "highlights": [
+        "Bare stone islands now get their scenery.",
+        "Only newly generated ground changes; existing worlds keep what they have."
+      ],
+      "pr": 1807,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "disposable-camera-loot",
+      "version": "0.1142.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Disposable cameras on the train",
+      "summary": "Disposable cameras now turn up in the train's chests, barrels, bookshelves and pots. While the train is still short of community photos, a spot that would have held one may hold a camera instead, so you can go and take more.",
+      "highlights": [
+        "Find one-shot disposable cameras in the train's loot",
+        "Fewer community photos to find? You're more likely to find a camera in their place"
+      ],
+      "pr": 1808,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

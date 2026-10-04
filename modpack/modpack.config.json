@@ -100,11 +100,25 @@
         "keeptrim"
       ],
       "project_id": 1691315,
-      "file_id": 8858619,
+      "file_id": 9054814,
       "required": true,
       "dependency_type": "required",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "gradle_property": "keeptrim_min_version",
+      "curseforge_only": true
+    },
+    {
+      "name": "Edible Backpacks",
+      "slug": "edible-backpacks",
+      "mod_ids": [
+        "ediblebackpacks"
+      ],
+      "project_id": 1662311,
+      "file_id": 8871783,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.18.0",
+      "gradle_property": "ediblebackpacks_min_version",
       "curseforge_only": true
     },
     {
