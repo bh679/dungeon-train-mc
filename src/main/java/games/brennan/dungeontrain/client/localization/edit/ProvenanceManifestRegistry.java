@@ -136,6 +136,19 @@ public final class ProvenanceManifestRegistry {
         return false;
     }
 
+    /** The lang namespaces {@code locale}'s manifest covers; empty when it ships none. */
+    public static synchronized Set<String> langNamespaces(String locale) {
+        Map<String, Set<String>> byNamespace = LANG.get(normalize(locale));
+        return byNamespace == null ? Set.of() : Set.copyOf(byNamespace.keySet());
+    }
+
+    /** Whether every unit of {@code namespace} in {@code locale} is AI-unreviewed (the "*" marker). */
+    public static synchronized boolean isWholeNamespaceAiUnreviewed(String locale, String namespace) {
+        Map<String, Set<String>> byNamespace = LANG.get(normalize(locale));
+        return byNamespace != null && byNamespace.containsKey(namespace)
+            && byNamespace.get(namespace) == null;
+    }
+
     /** Whether the book at {@code bookPath} (e.g. {@code random_books/deathnote}) is AI-unreviewed. */
     public static synchronized boolean isAiUnreviewedBook(String locale, String bookPath) {
         String code = normalize(locale);
