@@ -59,10 +59,10 @@ public final class DisposableCameraEvents {
      * Ticks after the shot before the viewfinder closes — a short beat, so the client's capture
      * (taken through the viewfinder) is done before the view changes.
      */
-    static final int VIEWFINDER_HOLD_TICKS = 10;
+    public static final int VIEWFINDER_HOLD_TICKS = 10;
 
     /** Length of the print animation, from the viewfinder closing to the photo coming out. */
-    static final int PRINT_TICKS = 40;
+    public static final int PRINT_TICKS = 40;
 
     private DisposableCameraEvents() {}
 

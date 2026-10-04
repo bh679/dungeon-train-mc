@@ -4,7 +4,9 @@ import games.brennan.dungeontrain.advancement.PlayerMobSocialTracker;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DeathNoteEvents;
 import games.brennan.playermob.compat.PlayerMobSocialHooks;
+import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.UUID;
 
@@ -49,6 +51,12 @@ public final class PlayerMobSocialBridge {
                 // ...and if that mob is the Love Note echo sent to find THIS player, giving
                 // something back is the "Loved Back" advancement. Filtered + no-throw inside.
                 DeathNoteEvents.onPlayerGiftedEcho(giver, mobId);
+            }
+
+            @Override
+            public void onPlayerGift(ServerPlayer giver, PlayerMobEntity mob, ItemStack gift) {
+                // Same gift, with the stack: a camera asks the mob for a photo of the giver.
+                PlayerMobCameraBridge.onPlayerGift(giver, mob, gift);
             }
         });
     }

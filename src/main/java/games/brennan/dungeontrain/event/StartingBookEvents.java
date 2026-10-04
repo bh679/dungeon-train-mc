@@ -49,6 +49,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -623,6 +624,22 @@ public final class StartingBookEvents {
      */
     public static void dropAndBurn(ServerPlayer player, ItemStack stack) {
         dropAndBurn(player, stack, FlameVariant.DEFAULT);
+    }
+
+    /**
+     * {@link #dropAndBurn} for a non-player source — a PlayerMob burning the disposable camera it just
+     * shot with. Thrown forward from {@code source}'s eyes as an owner-less item entity, then burned
+     * with the default flame.
+     */
+    public static void dropAndBurnFrom(LivingEntity source, ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !(source.level() instanceof ServerLevel level)) return;
+        Vec3 eye = source.getEyePosition();
+        Vec3 dir = source.getLookAngle();
+        ItemEntity dropped = new ItemEntity(level, eye.x + dir.x * 0.3, eye.y - 0.3, eye.z + dir.z * 0.3, stack);
+        dropped.setDeltaMovement(dir.scale(0.3));
+        level.addFreshEntity(dropped);
+        if (BURN_ENTITIES.containsKey(dropped.getUUID())) return;
+        igniteItem(dropped, FlameVariant.DEFAULT);
     }
 
     /** {@link #dropAndBurn}, in the green flames a thumbs-up book burns with — a photo that was paid Tribute. */
