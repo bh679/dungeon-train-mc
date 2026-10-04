@@ -50,7 +50,7 @@ public final class OutdatedVersionNotice {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Wait after joining so the line isn't buried under the join messages. */
+    /** Wait, in play with no screen open, so the line isn't buried under the join messages. */
     static final int DELAY_TICKS = 100;
     /** Stop waiting for slow launcher listings after this long; an unknown answer says nothing. */
     static final int GIVE_UP_TICKS = 20 * 60;
@@ -87,6 +87,9 @@ public final class OutdatedVersionNotice {
         if (pendingKey == null) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
+        // Only while actually playing: DT's "Press Space to Start" loading screen (and any menu)
+        // would hide the line until it faded. No time limit on this wait — only on the listings.
+        if (mc.screen != null) return;
         if (++ticksSinceJoin < DELAY_TICKS) return;
         if (anyLoading() && ticksSinceJoin < GIVE_UP_TICKS) return;
 
