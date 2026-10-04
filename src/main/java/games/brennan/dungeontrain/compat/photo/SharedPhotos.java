@@ -122,8 +122,6 @@ public final class SharedPhotos {
     private static final int POOL_MAX = 40;
     /** How many handed-out or opened photo ids this server remembers, so it never asks for them again. */
     private static final int SPENT_MAX = 300;
-    /** Below this many approved photos on the relay, a photo slot with nothing to hand out may give a camera. */
-    static final int CAMERA_FALLBACK_BELOW = 1000;
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     // HTTP/1.1 on purpose: over plain http the default client first asks to upgrade to HTTP/2, and the
@@ -579,15 +577,19 @@ public final class SharedPhotos {
     }
 
     /**
-     * True while the relay holds fewer than {@link #CAMERA_FALLBACK_BELOW} approved photos — or its
-     * count is not known yet (offline, discovery off, first answer pending), so cameras still turn up.
+     * Percent chance a photo slot with nothing to hand out becomes a disposable camera instead: the
+     * fewer approved photos the relay holds, the likelier. An unknown count (offline, discovery off,
+     * first answer pending) counts as none, so cameras still turn up.
      */
-    public static boolean relayIsShortOfPhotos() {
-        return isShort(relayTotal);
+    public static int cameraFallbackPercent() {
+        return cameraFallbackPercent(relayTotal);
     }
 
-    static boolean isShort(int total) {
-        return total < CAMERA_FALLBACK_BELOW;
+    static int cameraFallbackPercent(int total) {
+        if (total < 1_000) return 50;
+        if (total < 5_000) return 20;
+        if (total < 10_000) return 5;
+        return 0;
     }
 
     /**

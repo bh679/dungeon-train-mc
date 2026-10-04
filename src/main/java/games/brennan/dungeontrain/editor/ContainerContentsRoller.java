@@ -101,8 +101,6 @@ public final class ContainerContentsRoller {
     private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
     /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
     private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
-    /** Percent chance an unfilled random_playerphoto slot becomes a disposable camera. */
-    private static final int PHOTO_CAMERA_FALLBACK_PCT = 50;
 
     /**
      * Which of the two kinds a {@code stats_book} slot comes up. Its own salt, so the flip does not
@@ -1046,12 +1044,12 @@ public final class ContainerContentsRoller {
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
 
-        // A community photo; when the relay has none left to hand out and is still short of photos,
-        // half the time a disposable camera instead, so players go and take more.
+        // A community photo; when the relay has none left to hand out, sometimes a disposable camera
+        // instead — likelier the fewer photos the relay holds — so players go and take more.
         if (item == ModItems.RANDOM_PLAYERPHOTO.get()) {
             ItemStack found = SharedPhotos.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
-            if (!found.isEmpty() || !SharedPhotos.relayIsShortOfPhotos()) return found;
-            return rollChance(PHOTO_CAMERA_FALLBACK_PCT, localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
+            if (!found.isEmpty()) return found;
+            return rollChance(SharedPhotos.cameraFallbackPercent(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
                 ? DisposableCamera.create() : ItemStack.EMPTY;
         }
 
