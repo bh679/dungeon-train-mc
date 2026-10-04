@@ -22858,6 +22858,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "villagers-tire-of-items",
+      "version": "0.1144.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Villagers tire of what you keep selling them",
+      "summary": "Selling one item over and over to the same villager now pays less each time. The first few sales pay full price, then the price eases down. The villager slowly gets its appetite back over a few in-game days. Red bars on the trade row show how much less it's paying.",
+      "highlights": [
+        "The first 8 emeralds' worth of any item still sells at full price",
+        "Every villager keeps its own tally, so a different villager pays full price again",
+        "Up to three red bars on the Trade Anything row: one once the price drops, two below 75%, three below half"
+      ],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
