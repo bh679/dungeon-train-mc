@@ -1045,12 +1045,13 @@ public final class ContainerContentsRoller {
         }
 
         // A community photo; when the relay has none left to hand out, sometimes a disposable camera
-        // instead — likelier the fewer photos the relay holds — so players go and take more.
+        // instead — likelier the fewer photos the relay holds — so players go and take more. Otherwise
+        // a player book, so the slot is never wasted.
         if (item == ModItems.RANDOM_PLAYERPHOTO.get()) {
             ItemStack found = SharedPhotos.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
             if (!found.isEmpty()) return found;
-            return rollChance(SharedPhotos.cameraFallbackPercent(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
-                ? DisposableCamera.create() : ItemStack.EMPTY;
+            return rollPerMille(SharedPhotos.cameraFallbackPerMille(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
+                ? DisposableCamera.create() : rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
         }
 
         // Polaroid's plain instant camera is hidden (DisabledModContent); a loot entry for it is the
@@ -1060,21 +1061,7 @@ public final class ContainerContentsRoller {
         }
 
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
-            if (SharedBookGate.canDiscover()) {
-                // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
-                // isn't wasted and mark it pending; when it first reaches a player's hand,
-                // NarrativeBookEvents.onEquipmentChange resolves it through SharedBookSelector against THAT
-                // player's read/served state (community-book selection is per-player, so it can't be
-                // resolved world-wide at container-load like it was before).
-                long pendingSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
-                ItemStack local = RandomBookFactory.rollFromPool(pendingSeed).orElse(ItemStack.EMPTY);
-                if (!local.isEmpty()) PlayerBookPendingTag.markPending(local);
-                return local;
-            }
-            // Discovery disabled — a permanent, intended local book; nothing to
-            // upgrade to, so it is not marked pending.
-            long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
-            return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
+            return rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
         }
 
         int maxStack = new ItemStack(item).getMaxStackSize();
@@ -1433,6 +1420,35 @@ public final class ContainerContentsRoller {
             lookup.get().get(ResourceKey.create(Registries.MOB_EFFECT, id)).ifPresent(out::add);
         }
         return out;
+    }
+
+    /** A community player book (pending per-player resolution) or, with discovery off, a local book. */
+    private static ItemStack rollPlayerBook(BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+        if (SharedBookGate.canDiscover()) {
+            // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
+            // isn't wasted and mark it pending; when it first reaches a player's hand,
+            // NarrativeBookEvents.onEquipmentChange resolves it through SharedBookSelector against THAT
+            // player's read/served state (community-book selection is per-player, so it can't be
+            // resolved world-wide at container-load like it was before).
+            long pendingSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
+            ItemStack local = RandomBookFactory.rollFromPool(pendingSeed).orElse(ItemStack.EMPTY);
+            if (!local.isEmpty()) PlayerBookPendingTag.markPending(local);
+            return local;
+        }
+        // Discovery disabled — a permanent, intended local book; nothing to
+        // upgrade to, so it is not marked pending.
+        long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
+        return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
+    }
+
+    /** {@link #rollChance} in tenths of a percent, for odds like 12.5%. */
+    static boolean rollPerMille(int perMille, BlockPos localPos, long worldSeed,
+                                int carriageIndex, int slot, long salt) {
+        if (perMille <= 0) return false;
+        if (perMille >= 1000) return true;
+        long state = mix(localPos, worldSeed, carriageIndex, slot, salt);
+        long unsigned = state & 0x7FFFFFFFFFFFFFFFL;
+        return (int) (unsigned % 1000L) < perMille;
     }
 
     /**
