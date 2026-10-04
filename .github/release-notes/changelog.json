@@ -23509,9 +23509,9 @@
       "highlights": [],
       "pr": 1841,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-04T20:22:34Z"
     },
     {
       "id": "playermob-camera-gift-only",
@@ -23526,9 +23526,9 @@
       "highlights": [],
       "pr": 1840,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-04T20:22:34Z"
     },
     {
       "id": "turkish-locale-new-game",
@@ -23543,9 +23543,9 @@
       "highlights": [],
       "pr": 1842,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-04T20:22:34Z"
     },
     {
       "id": "translator-credit-human-over-ai",
@@ -23562,9 +23562,9 @@
       ],
       "pr": 1843,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-04T20:22:34Z"
     }
   ]
 }
