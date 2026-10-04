@@ -1317,6 +1317,14 @@ public final class CarriageContentsPlacer {
     private static OnboardingOutcome tryHandleOnboardingHostile(ServerLevel level, Entity original,
                                                                 Vec3 pos, int carriagePIdx,
                                                                 boolean asAuthored) {
+        return tryHandleOnboardingHostile(level, original, pos, carriagePIdx, asAuthored, sub -> { });
+    }
+
+    /** As above, handing the added substitute to {@code onSubstituted} on {@link OnboardingOutcome#SUBSTITUTED}. */
+    private static OnboardingOutcome tryHandleOnboardingHostile(ServerLevel level, Entity original,
+                                                                Vec3 pos, int carriagePIdx,
+                                                                boolean asAuthored,
+                                                                java.util.function.Consumer<Entity> onSubstituted) {
         DifficultyProgression.OnboardingStage stage = DifficultyProgression.onboardingStageFor(level);
         OnboardingOutcome outcome = onboardingOutcome(stage, original instanceof Enemy,
             carriagePIdx == EDITOR_SENTINEL_PIDX, asAuthored);
@@ -1338,20 +1346,40 @@ public final class CarriageContentsPlacer {
         sub.setSize(1 + level.getRandom().nextInt(2), true);
         sub.setUUID(UUID.randomUUID());
         sub.moveTo(pos.x, pos.y, pos.z, level.getRandom().nextFloat() * 360.0f, 0.0f);
-        sub.addTag(contentsTagFor(carriagePIdx));
-        CompoundTag persistent = sub.getPersistentData();
-        persistent.putDouble(NBT_SPAWN_SHIPYARD_X, pos.x);
-        persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, pos.y);
-        persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, pos.z);
-        persistent.putLong(NBT_SPAWN_GAME_TICK, level.getGameTime());
-        persistent.putInt(NBT_SPAWN_CARRIAGE_PIDX, carriagePIdx);
-        sub.setPersistenceRequired();
+        stampContentsEntity(sub, pos, level.getGameTime(), carriagePIdx);
         if (!level.addFreshEntity(sub)) {
             LOGGER.warn("[DungeonTrain] First-band substitute: addFreshEntity rejected {} at {} pIdx={}",
                 sub.getType().getDescriptionId(), pos, carriagePIdx);
             return OnboardingOutcome.SUPPRESSED;
         }
+        onSubstituted.accept(sub);
         return OnboardingOutcome.SUBSTITUTED;
+    }
+
+    /**
+     * The carriage-contents identity every spawned contents entity carries: the per-carriage
+     * contents tag (carriage cleanup), the spawn-diagnostic persistent NBT, and
+     * {@code PersistenceRequired} on mobs (vanilla distance despawn). Does not touch the UUID.
+     */
+    private static void stampContentsEntity(Entity entity, Vec3 pos, long spawnTick, int carriagePIdx) {
+        entity.addTag(contentsTagFor(carriagePIdx));
+        CompoundTag persistent = entity.getPersistentData();
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_X, pos.x);
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, pos.y);
+        persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, pos.z);
+        persistent.putLong(NBT_SPAWN_GAME_TICK, spawnTick);
+        persistent.putInt(NBT_SPAWN_CARRIAGE_PIDX, carriagePIdx);
+        if (entity instanceof Mob mob) mob.setPersistenceRequired();
+    }
+
+    /**
+     * Fresh UUIDs for {@code root} and its riders that are not in the level yet, so the same template
+     * at several carriages doesn't collide on the UUID index (MC silently drops duplicate UUIDs).
+     */
+    private static void reidentifyUnadded(Entity root) {
+        root.getSelfAndPassengers().forEach(e -> {
+            if (!e.isAddedToLevel()) e.setUUID(UUID.randomUUID());
+        });
     }
 
     /**
@@ -1476,12 +1504,23 @@ public final class CarriageContentsPlacer {
     public static boolean spawnVariantMob(ServerLevel level, BlockPos worldPos,
                                            VariantState picked, int carriagePIdx, long seed,
                                            boolean asAuthored) {
-        if (picked == null || !picked.isMob()) return false;
+        return spawnVariantMobEntity(level, worldPos, picked, carriagePIdx, seed, asAuthored) != null;
+    }
+
+    /**
+     * {@link #spawnVariantMob(ServerLevel, BlockPos, VariantState, int, long, boolean)} returning what
+     * it put in the level: the mob (its riders already added with it), the onboarding substitute, or
+     * {@code null} when nothing was added. Public for {@code /dungeontrain debug spider-jockey}.
+     */
+    public static Entity spawnVariantMobEntity(ServerLevel level, BlockPos worldPos,
+                                               VariantState picked, int carriagePIdx, long seed,
+                                               boolean asAuthored) {
+        if (picked == null || !picked.isMob()) return null;
         Optional<EntityType<?>> typeOpt = EntityType.byString(picked.entityId().toString());
         if (typeOpt.isEmpty()) {
             LOGGER.warn("[DungeonTrain] Mob-variant: unknown entity id '{}' at {} pIdx={} — skipping.",
                 picked.entityId(), worldPos, carriagePIdx);
-            return false;
+            return null;
         }
         EntityType<?> type = typeOpt.get();
         Entity entity;
@@ -1494,7 +1533,7 @@ public final class CarriageContentsPlacer {
                 if (created.isEmpty()) {
                     LOGGER.warn("[DungeonTrain] Mob-variant: EntityType.create failed for {} at {} pIdx={}",
                         picked.entityId(), worldPos, carriagePIdx);
-                    return false;
+                    return null;
                 }
                 entity = created.get();
             } else {
@@ -1502,44 +1541,34 @@ public final class CarriageContentsPlacer {
                 if (entity == null) {
                     LOGGER.warn("[DungeonTrain] Mob-variant: type.create returned null for {} at {} pIdx={}",
                         picked.entityId(), worldPos, carriagePIdx);
-                    return false;
+                    return null;
                 }
             }
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Mob-variant: spawn threw for {} at {} pIdx={}: {}",
                 picked.entityId(), worldPos, carriagePIdx, t.toString());
-            return false;
+            return null;
         }
         // Gentle onboarding: in the no-hostiles stage suppress an authored hostile entirely; in the
         // slimes stage replace it with a small slime (magma cube for nether/raider mobs); no-op
         // otherwise. The substitute is spawned + tagged inside the helper, so we early-return here.
-        switch (tryHandleOnboardingHostile(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx, asAuthored)) {
-            case SUBSTITUTED -> { return true; }
+        Entity[] substitute = new Entity[1];
+        switch (tryHandleOnboardingHostile(level, entity, Vec3.atBottomCenterOf(worldPos), carriagePIdx,
+                asAuthored, sub -> substitute[0] = sub)) {
+            case SUBSTITUTED -> { return substitute[0]; }
             case SUPPRESSED -> {
                 LOGGER.debug("[DungeonTrain] Mob-variant: '{}' withheld by onboarding stage {} at {} pIdx={}",
                     picked.entityId(), DifficultyProgression.onboardingStageFor(level), worldPos, carriagePIdx);
-                return false;
+                return null;
             }
             case AS_AUTHORED -> { }
         }
-        // Fresh UUID so the same template at multiple carriages doesn't
-        // collide on the UUID index (MC silently drops duplicate UUIDs).
-        entity.setUUID(UUID.randomUUID());
         // Spawn at cell bottom-centre — matches the mob's footprint to the
         // cell so it doesn't clip the floor / walls.
         Vec3 pos = Vec3.atBottomCenterOf(worldPos);
         // Y-rot: zero by default. Future: reuse VariantRotation.dirMask to
         // pick a Direction and convert via Direction.toYRot.
         entity.moveTo(pos.x, pos.y, pos.z, 0.0f, 0.0f);
-
-        String tag = contentsTagFor(carriagePIdx);
-        entity.addTag(tag);
-        CompoundTag persistent = entity.getPersistentData();
-        persistent.putDouble(NBT_SPAWN_SHIPYARD_X, pos.x);
-        persistent.putDouble(NBT_SPAWN_SHIPYARD_Y, pos.y);
-        persistent.putDouble(NBT_SPAWN_SHIPYARD_Z, pos.z);
-        persistent.putLong(NBT_SPAWN_GAME_TICK, level.getGameTime());
-        persistent.putInt(NBT_SPAWN_CARRIAGE_PIDX, carriagePIdx);
 
         // Slimes/magma cubes: the variant path skips Mob#finalizeSpawn (where
         // vanilla rolls slime size), so without this every variant slime spawns
@@ -1571,12 +1600,25 @@ public final class CarriageContentsPlacer {
                         picked.entityId(), worldPos, carriagePIdx, t.toString());
                 }
             }
-            mob.setPersistenceRequired();
         }
-        if (!level.addFreshEntity(entity)) {
-            LOGGER.warn("[DungeonTrain] Mob-variant: addFreshEntity rejected {} at {} pIdx={}",
-                picked.entityId(), worldPos, carriagePIdx);
-            return false;
+        // finalizeSpawn can give the mob riders it never adds to the level: vanilla Spider rolls a
+        // 1-in-100 skeleton jockey and only calls startRiding, relying on its caller
+        // (EntityType.spawn) to use addFreshEntityWithPassengers. A plain addFreshEntity left that
+        // skeleton a ghost passenger — invisible until a chunk reload loaded it from the saved
+        // Passengers, untagged and despawnable. So stamp the whole riding tree with the contents
+        // identity and add it in one go. Only the mob and its riders: a vehicle it mounted (a baby
+        // zombie's chicken) is already in the level and may be a world chicken that isn't ours.
+        long spawnTick = level.getGameTime();
+        entity.getSelfAndPassengers().forEach(e -> stampContentsEntity(e, pos, spawnTick, carriagePIdx));
+        reidentifyUnadded(entity);
+        if (!level.tryAddFreshEntityWithPassengers(entity)) {
+            // A UUID in the tree is already loaded — re-roll once and retry, as the snapshot restores do.
+            reidentifyUnadded(entity);
+            if (!level.tryAddFreshEntityWithPassengers(entity)) {
+                LOGGER.warn("[DungeonTrain] Mob-variant: level rejected {} (with {} passenger(s)) at {} pIdx={}",
+                    picked.entityId(), entity.getPassengers().size(), worldPos, carriagePIdx);
+                return null;
+            }
         }
         // Armor-stand entries carry an equipment loadout via a linked
         // CATEGORY_ARMOR_STAND loot prefab. Roll + apply it onto the live stand
@@ -1595,7 +1637,7 @@ public final class CarriageContentsPlacer {
                     picked.linkedLootPrefabId(), worldPos, carriagePIdx);
             }
         }
-        return true;
+        return entity;
     }
 
     /**

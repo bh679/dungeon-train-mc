@@ -368,15 +368,23 @@ def with_major(
     description: str | None = None,
     image: str | None = None,
     clear_image: bool = False,
+    milestone: bool | None = None,
 ) -> dict:
     """Return a copy of `entry` marked as a major release.
 
     `description` / `image` replace the current values when given; `clear_image`
-    drops the photo. Raises ValueError (see validate_major_fields).
+    drops the photo; `milestone` True/False sets or drops the milestone flag (a
+    moment, not an update — the update page labels it "Milestone"). Raises
+    ValueError (see validate_major_fields).
     """
     validate_major_fields(description, image)
-    out = {k: v for k, v in entry.items() if not (clear_image and k == "image")}
+    out = {
+        k: v for k, v in entry.items()
+        if not (clear_image and k == "image") and not (milestone is False and k == "milestone")
+    }
     out["major"] = True
+    if milestone:
+        out["milestone"] = True
     if description is not None:
         out["description"] = description.strip()
     if image is not None:

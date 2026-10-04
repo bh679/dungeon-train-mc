@@ -636,8 +636,26 @@ def test_link_changelog_leaves_a_heading_linking_elsewhere():
 
 
 def test_link_changelog_rejects_unknown_args():
-    r = subprocess.run([sys.executable, LINK, "--bogus"], input="", capture_output=True, text=True)
-    assert r.returncode == 2
+    for bad in (["--bogus"], ["--release"], ["--release", "0.1149.0"], ["--release", "v1.2"],
+                ["--strip", "--no-footer"]):
+        r = subprocess.run([sys.executable, LINK, *bad], input="", capture_output=True, text=True)
+        assert r.returncode == 2, bad
+
+
+def test_link_changelog_release_links_title_to_that_version():
+    out = run_link(CURATED, "--release", "v0.1149.0")
+    lines = out.rstrip("\n").split("\n")
+    assert lines[0] == f"# [Capture The View]({UPDATE_PAGE}#v0.1149.0)", lines[0]
+    assert lines[-1] == READ_MORE, "Read more stays on the page itself"
+    assert run_link(out, "--release", "v0.1149.0") == out
+    assert run_link(out, "--strip") == CURATED
+
+
+def test_link_changelog_no_footer_keeps_linked_heading_for_discord():
+    published = run_link(CURATED, "--release", "v0.1149.0")
+    out = run_link(published, "--release", "v0.1149.0", "--no-footer")
+    assert out.startswith(f"# [Capture The View]({UPDATE_PAGE}#v0.1149.0)\n"), out
+    assert READ_MORE not in out and out.count(UPDATE_PAGE) == 1
 
 
 def test_render_major_description_and_image() -> None:
@@ -694,6 +712,19 @@ def test_set_major_attaches_and_clears_image() -> None:
     assert r.returncode == 1 and "no changelog entry" in r.stderr, r.stderr
 
 
+def test_set_major_milestone_sets_keeps_and_drops() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    r = run(SET_MAJOR, ws, "--id", "drop", "--milestone")
+    assert r.returncode == 0, r.stderr
+    assert read_changelog(ws)["entries"][0]["milestone"] is True
+    r = run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.png")
+    assert r.returncode == 0 and read_changelog(ws)["entries"][0]["milestone"] is True, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--not-milestone")
+    assert r.returncode == 0 and "milestone" not in read_changelog(ws)["entries"][0], r.stderr
+
+
 def main() -> int:
     tests = [
         test_link_changelog_links_title_and_appends_read_more,
@@ -701,6 +732,8 @@ def main() -> int:
         test_link_changelog_generated_notes_get_footer_only,
         test_link_changelog_leaves_a_heading_linking_elsewhere,
         test_link_changelog_rejects_unknown_args,
+        test_link_changelog_release_links_title_to_that_version,
+        test_link_changelog_no_footer_keeps_linked_heading_for_discord,
         test_append_computes_minor_bump_when_patch_nonzero,
         test_append_shares_version_when_patch_zero,
         test_append_version_override,
@@ -727,6 +760,7 @@ def main() -> int:
         test_validate_major_fields_rejects_bad_image_and_blank_description,
         test_append_major_with_description_and_image,
         test_set_major_attaches_and_clears_image,
+        test_set_major_milestone_sets_keeps_and_drops,
         test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,
