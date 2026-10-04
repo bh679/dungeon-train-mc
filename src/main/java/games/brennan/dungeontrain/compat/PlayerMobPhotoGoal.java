@@ -118,9 +118,17 @@ public final class PlayerMobPhotoGoal extends Goal {
 
     @Override
     public void stop() {
-        if (phase != Phase.KEEP && isCamera(mob.getMainHandItem())) {
-            // Hand the camera back to the pack (a weapon displaces it); it stays with the mob.
-            mob.equipBestMeleeInHand();
+        ItemStack held = mob.getMainHandItem();
+        if (isCamera(held)) {
+            mob.setItemSlot(EquipmentSlot.MAINHAND, ItemStack.EMPTY);
+            if (DisposableCamera.isShot(held) || DisposableCamera.hasPendingFrame(held)) {
+                // Shot but never printed (timed out / interrupted): a spent camera burns like a player's.
+                StartingBookEvents.dropAndBurnFrom(mob, held);
+            } else {
+                ItemStack leftover = mob.getInventory().addItem(held); // unshot: back to the pack
+                if (!leftover.isEmpty()) mob.setItemSlot(EquipmentSlot.MAINHAND, leftover);
+            }
+            if (mob.getMainHandItem().isEmpty()) mob.equipBestMeleeInHand();
         }
         subject.dungeontrain$setPhotoSubject(null);
         phase = Phase.IDLE;
@@ -129,6 +137,9 @@ public final class PlayerMobPhotoGoal extends Goal {
 
     @Override
     public void tick() {
+        if (phase == Phase.IDLE) {
+            return; // the tick after an abort, before canContinueToUse stops the goal
+        }
         if (target == null || !target.isAlive() || target.level() != mob.level()
                 || target.distanceToSqr(mob) > SUBJECT_RANGE_SQR) {
             abort("subject left");
@@ -181,8 +192,25 @@ public final class PlayerMobPhotoGoal extends Goal {
         }
         item.release(holder, camera);
         shotTick = mob.level().getGameTime();
+        // The frame lands on the camera stack synchronously inside release(); take it off before the
+        // camera is ever ticked, or Polaroid prints it its own way — as a dropped photograph, which
+        // a disposable print burns on.
+        stashFrame(camera);
         phase = Phase.PRINT;
         ticks = 0;
+    }
+
+    /** Move a frame Polaroid left on the stack into DT's pending data; returns true if one was there. */
+    private boolean stashFrame(ItemStack camera) {
+        Frame onStack = camera.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        if (onStack == null) {
+            return false;
+        }
+        if (DisposableCamera.setPendingFrame(camera, onStack, mob.registryAccess())) {
+            camera.remove(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+            DisposableCamera.markShot(camera);
+        }
+        return true;
     }
 
     private void tickPrint() {
@@ -191,14 +219,9 @@ public final class PlayerMobPhotoGoal extends Goal {
             abort("camera gone mid-print");
             return;
         }
+        stashFrame(camera);      // before the tick: Polaroid's tick prints any frame it finds
         item.tick(holder, camera);
-        Frame onStack = camera.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
-        if (onStack != null) {
-            if (DisposableCamera.setPendingFrame(camera, onStack, mob.registryAccess())) {
-                camera.remove(Exposure.DataComponents.PHOTOGRAPH_FRAME);
-                DisposableCamera.markShot(camera);
-            }
-        }
+        stashFrame(camera);
         long since = mob.level().getGameTime() - shotTick;
         boolean printed = DisposableCamera.hasPendingFrame(camera) && !item.getShutter().isOpen(camera)
                 && since >= DisposableCameraEvents.VIEWFINDER_HOLD_TICKS + DisposableCameraEvents.PRINT_TICKS;
@@ -238,7 +261,7 @@ public final class PlayerMobPhotoGoal extends Goal {
     }
 
     private void abort(String why) {
-        LOGGER.debug("[PlayerMobCamera] {} gave up the photo: {}", mob.getName().getString(), why);
+        LOGGER.info("[PlayerMobCamera] {} gave up the photo: {}", mob.getName().getString(), why);
         phase = Phase.IDLE;
     }
 
