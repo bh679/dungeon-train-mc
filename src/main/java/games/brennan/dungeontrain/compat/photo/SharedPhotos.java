@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.GlobalTributeStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.PhotoPaperComposite;
@@ -409,7 +411,7 @@ public final class SharedPhotos {
         Optional<InteractionHand> hand = heldSharedHand(player);
         if (hand.isEmpty()) return false;
         ItemStack held = player.getItemInHand(hand.get());
-        recordView(player, sharedId(held));
+        AdvancementPhotoCapture.during(held, () -> recordView(player, sharedId(held)));
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurn(player, held);
         // As far as this copy knows: the views it came with, less the one just taken.
@@ -421,6 +423,7 @@ public final class SharedPhotos {
     }
 
     private static void recordView(ServerPlayer player, int photoId) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.VIEWED_FOUND_PHOTO);
         markSpent(photoId);
         RelayOutbox.get().enqueue(VIEW_PATH, action(player, photoId).toString());
     }
@@ -443,7 +446,13 @@ public final class SharedPhotos {
         // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
-        recordView(player, photoId);
+        AdvancementPhotoCapture.during(held, () -> {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player,
+                    isOwnPhoto(held, player.getGameProfile().getName())
+                            ? EnchiridionAdvancements.TRIBUTED_OWN_PHOTO : EnchiridionAdvancements.TRIBUTED_OTHERS_PHOTO);
+            recordView(player, photoId);
+        });
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
@@ -629,6 +638,16 @@ public final class SharedPhotos {
     }
 
     /** Who took the photo in {@code stack}: a found photo's credited name, else the frame's photographer. Blank if none. */
+    /** True when {@code playerName} took the found photo {@code stack} — the relay can hand you back your own. */
+    static boolean isOwnPhoto(ItemStack stack, String playerName) {
+        return isOwnAuthor(authorOf(stack), playerName);
+    }
+
+    /** Whether a photo's credited author is {@code playerName} (blank authors are nobody's). */
+    static boolean isOwnAuthor(String author, String playerName) {
+        return author != null && !author.isBlank() && author.equals(playerName);
+    }
+
     public static String authorOf(ItemStack stack) {
         Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         if (frame == null) return "";

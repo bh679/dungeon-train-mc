@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import games.brennan.dungeontrain.client.HoveredAdvancement;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
+import games.brennan.dungeontrain.client.EarnedPhotoThumbnails;
 import games.brennan.dungeontrain.compat.AdvancementTileDecor;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
@@ -190,7 +191,7 @@ public abstract class BetterAdvancementWidgetCompatMixin {
     private List<FormattedCharSequence> dungeontrain$swapDescription(List<FormattedCharSequence> original) {
         if (advancementNode == null) return original;
         if (!AdvancementHintText.shouldMask(advancementNode.holder().id(), advancementProgress)) {
-            return original;
+            return EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id(), advancementProgress);
         }
         int revision = AdvancementHintText.maskedDescriptionRevision();
         if (dungeontrain$hiddenDesc == null || dungeontrain$hiddenDescRevision != revision) {
@@ -198,6 +199,20 @@ public abstract class BetterAdvancementWidgetCompatMixin {
                 AdvancementHintText.maskedDescription(advancementNode.holder().id()), width);
             dungeontrain$hiddenDescRevision = revision;
         }
-        return dungeontrain$hiddenDesc;
+        // Unearned: the hint, plus the latest photo of a collection still filling.
+        return EarnedPhotoThumbnails.withSlot(dungeontrain$hiddenDesc, advancementNode.holder().id(), advancementProgress);
+    }
+
+    /** Draw the kept photo's thumbnail where its reserved description line lands. */
+    @WrapOperation(
+        method = "drawHover",
+        at = @At(value = "INVOKE",
+                 target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;IIIZ)I")
+    )
+    private int dungeontrain$drawPhotoSlot(GuiGraphics g, net.minecraft.client.gui.Font font,
+                                           net.minecraft.util.FormattedCharSequence line, int x, int y, int color,
+                                           boolean shadow, Operation<Integer> original) {
+        EarnedPhotoThumbnails.drawIfSlot(g, line, x, y);
+        return original.call(g, font, line, x, y, color, shadow);
     }
 }

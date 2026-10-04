@@ -1,0 +1,328 @@
+{
+  "parent": "dungeontrain:enchiridion/say_cheese",
+  "display": {
+    "icon": {
+      "id": "minecraft:zombie_head"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.most_wanted.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.most_wanted.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "minecraft:blaze": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:blaze"
+      }
+    },
+    "minecraft:bogged": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:bogged"
+      }
+    },
+    "minecraft:breeze": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:breeze"
+      }
+    },
+    "minecraft:cave_spider": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:cave_spider"
+      }
+    },
+    "minecraft:creeper": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:creeper"
+      }
+    },
+    "minecraft:drowned": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:drowned"
+      }
+    },
+    "minecraft:elder_guardian": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:elder_guardian"
+      }
+    },
+    "minecraft:enderman": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:enderman"
+      }
+    },
+    "minecraft:endermite": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:endermite"
+      }
+    },
+    "minecraft:evoker": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:evoker"
+      }
+    },
+    "minecraft:ghast": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:ghast"
+      }
+    },
+    "minecraft:guardian": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:guardian"
+      }
+    },
+    "minecraft:hoglin": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:hoglin"
+      }
+    },
+    "minecraft:husk": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:husk"
+      }
+    },
+    "minecraft:magma_cube": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:magma_cube"
+      }
+    },
+    "minecraft:phantom": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:phantom"
+      }
+    },
+    "minecraft:piglin": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:piglin"
+      }
+    },
+    "minecraft:piglin_brute": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:piglin_brute"
+      }
+    },
+    "minecraft:pillager": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:pillager"
+      }
+    },
+    "minecraft:ravager": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:ravager"
+      }
+    },
+    "minecraft:shulker": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:shulker"
+      }
+    },
+    "minecraft:silverfish": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:silverfish"
+      }
+    },
+    "minecraft:skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:skeleton"
+      }
+    },
+    "minecraft:slime": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:slime"
+      }
+    },
+    "minecraft:spider": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:spider"
+      }
+    },
+    "minecraft:stray": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:stray"
+      }
+    },
+    "minecraft:vex": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:vex"
+      }
+    },
+    "minecraft:vindicator": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:vindicator"
+      }
+    },
+    "minecraft:witch": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:witch"
+      }
+    },
+    "minecraft:wither_skeleton": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:wither_skeleton"
+      }
+    },
+    "minecraft:zoglin": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:zoglin"
+      }
+    },
+    "minecraft:zombie": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:zombie"
+      }
+    },
+    "minecraft:zombie_villager": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:zombie_villager"
+      }
+    },
+    "minecraft:zombified_piglin": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:zombified_piglin"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "minecraft:blaze"
+    ],
+    [
+      "minecraft:bogged"
+    ],
+    [
+      "minecraft:breeze"
+    ],
+    [
+      "minecraft:cave_spider"
+    ],
+    [
+      "minecraft:creeper"
+    ],
+    [
+      "minecraft:drowned"
+    ],
+    [
+      "minecraft:elder_guardian"
+    ],
+    [
+      "minecraft:enderman"
+    ],
+    [
+      "minecraft:endermite"
+    ],
+    [
+      "minecraft:evoker"
+    ],
+    [
+      "minecraft:ghast"
+    ],
+    [
+      "minecraft:guardian"
+    ],
+    [
+      "minecraft:hoglin"
+    ],
+    [
+      "minecraft:husk"
+    ],
+    [
+      "minecraft:magma_cube"
+    ],
+    [
+      "minecraft:phantom"
+    ],
+    [
+      "minecraft:piglin"
+    ],
+    [
+      "minecraft:piglin_brute"
+    ],
+    [
+      "minecraft:pillager"
+    ],
+    [
+      "minecraft:ravager"
+    ],
+    [
+      "minecraft:shulker"
+    ],
+    [
+      "minecraft:silverfish"
+    ],
+    [
+      "minecraft:skeleton"
+    ],
+    [
+      "minecraft:slime"
+    ],
+    [
+      "minecraft:spider"
+    ],
+    [
+      "minecraft:stray"
+    ],
+    [
+      "minecraft:vex"
+    ],
+    [
+      "minecraft:vindicator"
+    ],
+    [
+      "minecraft:witch"
+    ],
+    [
+      "minecraft:wither_skeleton"
+    ],
+    [
+      "minecraft:zoglin"
+    ],
+    [
+      "minecraft:zombie"
+    ],
+    [
+      "minecraft:zombie_villager"
+    ],
+    [
+      "minecraft:zombified_piglin"
+    ]
+  ]
+}

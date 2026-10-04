@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/photo_superflat",
+  "display": {
+    "icon": {
+      "id": "minecraft:command_block"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_chuncks.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_chuncks.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "photo": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "band:reached_chuncks"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "photo"
+    ]
+  ]
+}

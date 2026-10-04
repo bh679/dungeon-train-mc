@@ -23476,8 +23476,29 @@
       "released_at": null
     },
     {
-      "id": "playermob-camera-gift-only",
+      "id": "photo-and-book-advancements",
       "version": "0.1164.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "A camera's worth of advancements",
+      "summary": "Your books and photos now share an advancement tab of their own, and the camera has plenty to earn \u2014 the people, creatures and places you capture along the line. Every photo that earns one is kept: hover the advancement to see the shot, and click it for the full print.",
+      "highlights": [
+        "Biome advancements now count every biome the train takes you through \u2014 and ask for more. Everyone earns them again.",
+        "Fixed an advancement tab that sometimes took several clicks to open."
+      ],
+      "pr": 1839,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-camera-gift-only",
+      "version": "0.1165.0",
       "type": "fix",
       "tags": [
         "fix",
@@ -23486,11 +23507,11 @@
       "title": "Player Mobs only take your camera to photograph you",
       "summary": "Player Mobs used to pocket any camera they found, even with no intention of using it. Now a mob picks up a camera only when you throw it to them and they're willing to take your photo. Cameras in chests, lying on the floor, or thrown at a mob that's fighting you are left alone.",
       "highlights": [],
+      "pr": 1840,
       "date": "2026-10-04",
       "released": false,
       "released_in": null,
-      "released_at": null,
-      "pr": 1840
+      "released_at": null
     }
   ]
 }
