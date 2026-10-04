@@ -62,9 +62,13 @@ public abstract class PlayerMobCameraHolderMixin implements CameraHolder, Player
         return dungeontrain$subjectPlayer();
     }
 
+    /**
+     * Nobody: the mob took the photo. Exposure hands this player its "frame exposed" stat and
+     * advancement, which the subject did not earn by being photographed.
+     */
     @Override
     public Optional<Player> getPlayerAwardedForExposure() {
-        return dungeontrain$subjectPlayer();
+        return Optional.empty();
     }
 
     @Override
