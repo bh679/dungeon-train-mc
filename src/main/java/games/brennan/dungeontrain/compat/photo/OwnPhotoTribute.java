@@ -34,8 +34,9 @@ import java.util.stream.Stream;
  * public passenger log ({@link TributePhotoReporter#postOwn}), then burns in green flames. The first
  * one in a life costs {@link #BASE_COST}; each one after triples it, and a new life starts over.
  *
- * <p>Offered only when the post can actually happen — a clean run, and a player who shares
- * ({@link SharedBookGate#canContribute}) — so no one pays for nothing. The client is told the current
+ * <p>Offered only when the post can actually happen — a clean run (or any run on a dev build, which
+ * posts to the dev channel), and a player who shares ({@link SharedBookGate#canContribute}) — so no
+ * one pays for nothing. The client is told the current
  * price ({@link OwnPhotoTributeCostPacket}; 0 = not offered) on login, respawn, every print and every
  * Tribute.</p>
  */
@@ -62,9 +63,15 @@ public final class OwnPhotoTribute {
         return (int) Math.min(cost, Integer.MAX_VALUE);
     }
 
-    /** What this player's next own-photo Tribute costs, or 0 when it isn't offered. */
+    /**
+     * What this player's next own-photo Tribute costs, or 0 when it isn't offered. Free Play runs are
+     * kept out of the public feed on a release build; a dev build offers it anyway, and its post lands
+     * in the dev channel ({@link DungeonTrain#manifestWebhookOverride()} is null off {@code main}) —
+     * the same rule as the run-ended manifest.
+     */
     public static int currentCost(ServerPlayer player) {
-        if (RunIntegrity.isCheated(player) || !SharedBookGate.canContribute(player)) return 0;
+        if (RunIntegrity.isCheated(player) && !DungeonTrain.isDevBuild()) return 0;
+        if (!SharedBookGate.canContribute(player)) return 0;
         return cost(player.getData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get()));
     }
 
