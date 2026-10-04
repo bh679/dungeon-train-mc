@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.photo.OwnPhotoTribute;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -177,6 +178,7 @@ public final class DisposableCameraEvents {
         photograph.setPopTime(Inventory.POP_TIME_DURATION);
         inventory.setItem(slot, photograph);
         SharedPhotos.queueUpload(player, photograph);
+        OwnPhotoTribute.sync(player);
         player.level().playSound(null, player, Exposure.SoundEvents.PHOTOGRAPH_RUSTLE.get(), SoundSource.PLAYERS,
             0.6f, player.level().getRandom().nextFloat() * 0.2f + 1.0f);
         Exposure.CriteriaTriggers.FRAME_PRINTED.get().trigger(player, player.blockPosition(), frame, photograph);

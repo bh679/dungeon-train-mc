@@ -11,6 +11,10 @@
     "dungeontrain": [
       "gui.dungeontrain.enderchest.expand",
       "gui.dungeontrain.enderchest.expand.tooltip",
+      "gui.dungeontrain.own_photo_tribute.offer",
+      "chat.dungeontrain.own_photo_tribute.paid.1",
+      "chat.dungeontrain.own_photo_tribute.paid.2",
+      "chat.dungeontrain.own_photo_tribute.paid.3",
       "gui.dungeontrain.death.narr.tip_goal_dev_tools",
       "gui.dungeontrain.abandon_confirm.title",
       "gui.dungeontrain.abandon_confirm.line1",

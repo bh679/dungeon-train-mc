@@ -2,10 +2,12 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.DisposableCamera;
+import games.brennan.dungeontrain.compat.photo.OwnPhotoTribute;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.compat.photo.TributePayment;
 import games.brennan.dungeontrain.compat.photo.ViewOrdinal;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.OwnPhotoTributePacket;
 import games.brennan.dungeontrain.net.PhotoTributePacket;
 import io.github.mortuusars.exposure.client.gui.screen.PhotographScreen;
 import net.minecraft.client.Minecraft;
@@ -33,8 +35,8 @@ import org.lwjgl.glfw.GLFW;
  * Adds two buttons under a found player photo while it is open in Exposure's viewer:
  * how many views it has left, the Tribute cost beside an emerald — pay it to keep the photo
  * travelling — and {@code X} to close. Either way the photo burns afterwards. A player's own fresh
- * print, which burns after viewing too, gets just the {@code X}. Space closes either. Each button
- * is only as wide as what is drawn on it.
+ * print, which burns after viewing too, gets the {@code X} and — when offered — a Tribute that
+ * posts it to the passenger log. Space closes either. Each button is only as wide as what is drawn on it.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoTributeButtons {
@@ -75,12 +77,7 @@ public final class PhotoTributeButtons {
         if (photo.isEmpty()) {
             if (!DisposableCamera.holdsBurnAfterViewing(player.getMainHandItem())
                 && !DisposableCamera.holdsBurnAfterViewing(player.getOffhandItem())) return;
-            Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
-                .bounds((screen.width - closeWidth) / 2, y, closeWidth, HEIGHT)
-                .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
-            event.addListener(close);
-            shownOn = screen;
-            shown = List.of(close);
+            addOwnPrintButtons(event, screen, player, font, closeLabel, closeWidth, y);
             return;
         }
 
@@ -114,6 +111,39 @@ public final class PhotoTributeButtons {
         shownOn = screen;
         shown = List.of(tribute, close);
         viewsShown = views;
+    }
+
+    /**
+     * A player's own fresh print: {@code X}, and — when the server offers it — a Tribute that posts the
+     * photo to the passenger log, its cost tripling with each one this life.
+     */
+    private static void addOwnPrintButtons(ScreenEvent.Init.Post event, Screen screen, LocalPlayer player, Font font,
+                                           Component closeLabel, int closeWidth, int y) {
+        String name = player.getGameProfile().getName();
+        boolean own = OwnPhotoTribute.isOwnPrint(player.getMainHandItem(), name)
+            || OwnPhotoTribute.isOwnPrint(player.getOffhandItem(), name);
+        int cost = own ? OwnPhotoTributeClientState.cost() : 0;
+        int tributeWidth = cost > 0 ? TributeButton.widthFor(font, cost) + GAP : 0;
+        int left = (screen.width - tributeWidth - closeWidth) / 2;
+        List<Button> buttons = new java.util.ArrayList<>();
+        if (cost > 0) {
+            boolean canAfford = TributePayment.canPay(player.getInventory(), cost);
+            TributeButton tribute = new TributeButton(left, y, tributeWidth - GAP, cost, canAfford, button -> {
+                DungeonTrainNet.sendToServer(new OwnPhotoTributePacket());
+                screen.onClose();
+            });
+            tribute.active = canAfford;
+            tribute.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.own_photo_tribute.offer")));
+            event.addListener(tribute);
+            buttons.add(tribute);
+        }
+        Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
+            .bounds(left + tributeWidth, y, closeWidth, HEIGHT)
+            .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
+        event.addListener(close);
+        buttons.add(close);
+        shownOn = screen;
+        shown = List.copyOf(buttons);
     }
 
     /** Exposure's viewer draws only the photo, never its widgets, so the buttons are drawn here. */
