@@ -51,6 +51,6 @@ public final class PlayerMobCameraBridge {
             return;
         }
         subject.dungeontrain$setPhotoSubject(giver.getUUID());
-        LOGGER.debug("[PlayerMobCamera] {} will photograph {}", mob.getName().getString(), giver.getGameProfile().getName());
+        LOGGER.info("[PlayerMobCamera] {} will photograph {}", mob.getName().getString(), giver.getGameProfile().getName());
     }
 }
