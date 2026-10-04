@@ -22851,8 +22851,8 @@
         "compatibility",
         "train"
       ],
-      "title": "Ladders on the moving train behave",
-      "summary": "Stepping onto a ladder while the train is moving no longer carries you up by itself. You climb when you push into the ladder or jump, and slide gently otherwise, just like on solid ground.",
+      "title": "FIXED THE LADDER BUG!",
+      "summary": "Helll yeahhhhh",
       "highlights": [],
       "date": "2026-10-04",
       "released": false,
