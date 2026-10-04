@@ -23083,6 +23083,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-resolution-720-option",
+      "version": "0.1154.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Ride-photo resolution shows 720p",
+      "summary": "Snapshot Max Resolution now offers 720p, in Options and the X menu. After using Lower resolution on the Performance tab, the setting reads 720p instead of AUTO.",
+      "highlights": [],
+      "pr": 1829,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
