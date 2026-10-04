@@ -22951,6 +22951,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-mix-more-cargo",
+      "version": "0.1148.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "More cargo and flatbed carriages",
+      "summary": "Boxcars, cargo carriages and flatbeds now come up more than twice as often, and the standard carriage's pillars pick from a tidier set of wood and stone.",
+      "highlights": [
+        "Boxcars, cargo and flatbed carriages are more common",
+        "Carriage pillars mix stripped logs, planks and stone bricks"
+      ],
+      "pr": 1815,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
