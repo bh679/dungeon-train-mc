@@ -5143,6 +5143,25 @@
       "released_at": "2026-07-11T08:44:22Z"
     },
     {
+      "id": "release-first-influencer-and-translation",
+      "version": "0.430.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "First Influencer and Translation",
+      "summary": "https://www.bilibili.com/video/BV1TNMW6iEiQ/",
+      "highlights": [],
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.430.0",
+      "released_at": "2026-07-11T11:04:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "[https://www.bilibili.com/video/BV1TNMW6iEiQ/](https://www.bilibili.com/video/BV1TNMW6iEiQ/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/first-influencer-bilibili.jpg"
+    },
+    {
       "id": "vase-group-live-tuning",
       "version": "0.432.0",
       "type": "content",
