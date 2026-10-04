@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.localization.edit;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import games.brennan.dungeontrain.narrative.PluralRules;
@@ -58,6 +59,31 @@ public final class TranslationPluralForms {
             }
         }
         return out;
+    }
+
+    /**
+     * The English text a translator should see for {@code key}.
+     *
+     * <p>Plain keys read their own English. A projected plural form English never carries —
+     * {@code .few} / {@code .many} for an east-Slavic or Polish translator — reads the family's
+     * English {@code .other} (its generic plural), which is the same text the request/apply
+     * tooling offers for those forms. Without this the row had no source at all, so the editor
+     * showed "(English original not supplied)" and the placeholder check rejected every
+     * {@code %s} the translation carried, leaving the row impossible to save in-game.</p>
+     *
+     * @return the English text, or {@code ""} when English has neither the key nor a family for it
+     */
+    public static String sourceFor(String key, Map<String, String> english) {
+        String own = english.get(key);
+        if (own != null) {
+            return own;
+        }
+        String base = baseOf(key);
+        if (base == null || !familyBases(english.keySet()).contains(base)) {
+            return "";
+        }
+        String other = english.get(base + "." + PluralRules.OTHER);
+        return other != null ? other : english.getOrDefault(base + "." + PluralRules.ONE, "");
     }
 
     /**
