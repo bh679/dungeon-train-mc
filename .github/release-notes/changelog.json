@@ -23432,6 +23432,27 @@
       "released": true,
       "released_in": "v0.1161.0",
       "released_at": "2026-10-04T19:20:57Z"
+    },
+    {
+      "id": "own-photo-tribute",
+      "version": "0.1162.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tribute your own photos",
+      "summary": "Took a photo worth sharing? Pay Tribute to your own print and it's posted to the passenger log on Discord for everyone to see \u2014 and it reaches twice as many players before it fades. The first Tribute in a life costs 3 emeralds; each one after costs three times the last.",
+      "highlights": [
+        "Pay Tribute to your own fresh photo to post it to the passenger log on Discord",
+        "A tributed photo can be seen by twice as many players before it fades",
+        "Costs 3 emeralds, tripling with each Tribute that life"
+      ],
+      "pr": 1835,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
