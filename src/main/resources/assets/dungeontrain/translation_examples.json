@@ -14938,5 +14938,14 @@
         "50"
       ]
     }
+  },
+  "gui.dungeontrain.earned_photos.count": {
+    "1": {
+      "label": "how many photos a collection album holds",
+      "examples": [
+        "3",
+        "26"
+      ]
+    }
   }
 }

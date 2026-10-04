@@ -60,6 +60,16 @@ public final class EnchiridionAdvancements {
     /** The End islands' photo advancement. */
     public static final String END_CREDITS = "end_credits";
 
+    /** The biome tiers share one album of photos, one per biome, kept under the first tier. */
+    public static final String BIOME_ALBUM = PATH_PREFIX + "scenic_route";
+
+    private static final Set<String> BIOME_TIERS = Set.of(
+            PATH_PREFIX + "scenic_route", PATH_PREFIX + "travel_brochure", PATH_PREFIX + "coffee_table_book");
+
+    /** Collections that keep a photo for every entry, not just the one that completed them. */
+    private static final Set<String> ENTITY_ALBUMS = Set.of(
+            PATH_PREFIX + "nature_documentary", PATH_PREFIX + "most_wanted");
+
     private EnchiridionAdvancements() {}
 
     /** True when {@code path} (a {@code dungeontrain:} path) is on The Enchiridion tab. */
@@ -77,5 +87,20 @@ public final class EnchiridionAdvancements {
         if (BandAdvancements.NETHER.equals(bandId)) return HELLISH_HOLIDAY;
         if (BandAdvancements.END_ISLANDS.equals(bandId)) return END_CREDITS;
         return PHOTO_PREFIX + BandAdvancements.reverseId(bandId).substring(BandAdvancements.REVERSE_PREFIX.length());
+    }
+
+    /**
+     * The album {@code path}'s photos are kept in — a photo per entry, logged as the collection fills —
+     * or {@code null} for an advancement with a single photo. The biome tiers share {@link #BIOME_ALBUM}.
+     */
+    public static String albumOf(String path) {
+        if (path == null) return null;
+        if (BIOME_TIERS.contains(path)) return BIOME_ALBUM;
+        return ENTITY_ALBUMS.contains(path) ? path : null;
+    }
+
+    /** True when {@code album}'s entries are biome ids; otherwise they are entity type ids. */
+    public static boolean isBiomeAlbum(String album) {
+        return BIOME_ALBUM.equals(album);
     }
 }

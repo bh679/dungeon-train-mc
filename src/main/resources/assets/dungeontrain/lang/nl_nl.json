@@ -3739,6 +3739,7 @@
   "advancements.dungeontrain.enchiridion.found_footage.title": "Found Footage",
   "advancements.dungeontrain.enchiridion.found_footage.description": "Bekijk een foto die in de trein is gevonden.",
   "advancements.dungeontrain.enchiridion.found_footage.hint": "Iemand heeft dit achtergelaten.",
+  "gui.dungeontrain.earned_photos.count": "Foto's: %s",
   "chat.dungeontrain.free_play.cause.portal_rate": "Hoe vaak dimensionale wagons verschijnen is in deze wereld aangepast.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Het spoor dat deze wereld genereert is niet langer het spoor waarop Dungeon Train is afgestemd, dus deze wereld blijft in Vrij Spel.",
   "chat.dungeontrain.free_play.cause.dt_config": "De moeilijkheidsinstellingen van Dungeon Train zijn aangepast.",

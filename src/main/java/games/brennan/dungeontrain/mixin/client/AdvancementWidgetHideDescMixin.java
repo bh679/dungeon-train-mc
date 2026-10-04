@@ -150,9 +150,10 @@ public abstract class AdvancementWidgetHideDescMixin {
     private List<FormattedCharSequence> dungeontrain$swapDescription(List<FormattedCharSequence> original) {
         if (!dungeontrain$shouldHideDescription()) {
             return advancementNode == null ? original
-                : EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id());
+                : EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id(), true);
         }
-        return dungeontrain$getHiddenDesc();
+        // Unearned: the hint, plus the latest photo of a collection still filling.
+        return EarnedPhotoThumbnails.withSlot(dungeontrain$getHiddenDesc(), advancementNode.holder().id(), false);
     }
 
     /**
@@ -215,9 +216,7 @@ public abstract class AdvancementWidgetHideDescMixin {
     private int dungeontrain$drawPhotoSlot(GuiGraphics g, net.minecraft.client.gui.Font font,
                                            net.minecraft.util.FormattedCharSequence line, int x, int y, int color,
                                            boolean shadow, Operation<Integer> original) {
-        if (advancementNode != null) {
-            EarnedPhotoThumbnails.drawIfSlot(g, line, advancementNode.holder().id(), x, y);
-        }
+        EarnedPhotoThumbnails.drawIfSlot(g, line, x, y);
         return original.call(g, font, line, x, y, color, shadow);
     }
 }

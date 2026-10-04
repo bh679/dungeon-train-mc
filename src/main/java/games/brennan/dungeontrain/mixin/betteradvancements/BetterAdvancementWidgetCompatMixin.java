@@ -191,7 +191,7 @@ public abstract class BetterAdvancementWidgetCompatMixin {
     private List<FormattedCharSequence> dungeontrain$swapDescription(List<FormattedCharSequence> original) {
         if (advancementNode == null) return original;
         if (!AdvancementHintText.shouldMask(advancementNode.holder().id(), advancementProgress)) {
-            return EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id());
+            return EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id(), true);
         }
         int revision = AdvancementHintText.maskedDescriptionRevision();
         if (dungeontrain$hiddenDesc == null || dungeontrain$hiddenDescRevision != revision) {
@@ -199,7 +199,8 @@ public abstract class BetterAdvancementWidgetCompatMixin {
                 AdvancementHintText.maskedDescription(advancementNode.holder().id()), width);
             dungeontrain$hiddenDescRevision = revision;
         }
-        return dungeontrain$hiddenDesc;
+        // Unearned: the hint, plus the latest photo of a collection still filling.
+        return EarnedPhotoThumbnails.withSlot(dungeontrain$hiddenDesc, advancementNode.holder().id(), false);
     }
 
     /** Draw the kept photo's thumbnail where its reserved description line lands. */
@@ -211,9 +212,7 @@ public abstract class BetterAdvancementWidgetCompatMixin {
     private int dungeontrain$drawPhotoSlot(GuiGraphics g, net.minecraft.client.gui.Font font,
                                            net.minecraft.util.FormattedCharSequence line, int x, int y, int color,
                                            boolean shadow, Operation<Integer> original) {
-        if (advancementNode != null) {
-            EarnedPhotoThumbnails.drawIfSlot(g, line, advancementNode.holder().id(), x, y);
-        }
+        EarnedPhotoThumbnails.drawIfSlot(g, line, x, y);
         return original.call(g, font, line, x, y, color, shadow);
     }
 }

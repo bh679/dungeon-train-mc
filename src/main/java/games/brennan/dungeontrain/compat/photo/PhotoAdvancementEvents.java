@@ -26,6 +26,7 @@ import net.minecraft.world.entity.animal.Rabbit;
 import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import org.slf4j.Logger;
 
@@ -68,6 +69,14 @@ public final class PhotoAdvancementEvents {
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Couldn't read photo subjects for {}: {}", player.getName().getString(), e.toString());
         }
+    }
+
+    /** Each animal or mob a collection gains keeps its own photo (when a photo is behind it). */
+    @SubscribeEvent
+    public static void onProgress(AdvancementEvent.AdvancementProgressEvent event) {
+        if (event.getProgressType() != AdvancementEvent.AdvancementProgressEvent.ProgressType.GRANT) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        AdvancementPhotoCapture.onCriterion(player, event.getAdvancement(), event.getCriterionName());
     }
 
     /** A print a PlayerMob took and tossed to its subject: whoever catches it earned "Candid". */
@@ -119,6 +128,9 @@ public final class PhotoAdvancementEvents {
         ListTag updated = seen.copy();
         updated.add(StringTag.valueOf(id));
         player.getPersistentData().put(PHOTO_BIOMES_KEY, updated);
+        // A new biome: its photo joins the biome tiers' album (the frame is current — see onFrameAdded).
+        AdvancementPhotoCapture.sendEntry(player,
+                ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, EnchiridionAdvancements.BIOME_ALBUM), id);
         ModAdvancementTriggers.PHOTO_BIOMES.get().trigger(player, updated.size());
     }
 }

@@ -112,4 +112,19 @@ final class EnchiridionAdvancementsTest {
     void frontierTab() {
         assertTrue(BandAdvancements.isFrontierTab("enchiridion/say_cheese"));
     }
+
+    @Test
+    @DisplayName("collections keep an album; the biome tiers share one; everything else has none")
+    void albums() throws IOException {
+        Map<String, String> parents = parents();
+        assertEquals("enchiridion/nature_documentary", EnchiridionAdvancements.albumOf("enchiridion/nature_documentary"));
+        assertEquals("enchiridion/most_wanted", EnchiridionAdvancements.albumOf("enchiridion/most_wanted"));
+        for (String tier : List.of("enchiridion/scenic_route", "enchiridion/travel_brochure", "enchiridion/coffee_table_book")) {
+            assertTrue(parents.containsKey(tier), tier);
+            assertEquals(EnchiridionAdvancements.BIOME_ALBUM, EnchiridionAdvancements.albumOf(tier));
+        }
+        assertTrue(EnchiridionAdvancements.isBiomeAlbum(EnchiridionAdvancements.BIOME_ALBUM));
+        assertNull(EnchiridionAdvancements.albumOf("enchiridion/say_cheese"));
+        assertNull(EnchiridionAdvancements.albumOf(null));
+    }
 }

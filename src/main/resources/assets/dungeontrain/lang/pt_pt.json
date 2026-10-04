@@ -3739,6 +3739,7 @@
   "advancements.dungeontrain.enchiridion.found_footage.title": "Found Footage",
   "advancements.dungeontrain.enchiridion.found_footage.description": "Vê uma fotografia encontrada no comboio.",
   "advancements.dungeontrain.enchiridion.found_footage.hint": "Alguém deixou isto para trás.",
+  "gui.dungeontrain.earned_photos.count": "Fotografias: %s",
   "chat.dungeontrain.free_play.cause.portal_rate": "A frequência com que as carruagens dimensionais aparecem foi alterada neste mundo.",
   "chat.dungeontrain.free_play.portal_rate_changed": "A via que este mundo gera já não é aquela para a qual o Dungeon Train está equilibrado, por isso este mundo mantém-se em Jogo Livre.",
   "chat.dungeontrain.free_play.cause.dt_config": "As definições de dificuldade do Dungeon Train foram alteradas.",

@@ -3707,6 +3707,7 @@
   "advancements.dungeontrain.enchiridion.found_footage.title": "寻获影像",
   "advancements.dungeontrain.enchiridion.found_footage.description": "查看一张在列车上找到的照片。",
   "advancements.dungeontrain.enchiridion.found_footage.hint": "有人把它落下了。",
+  "gui.dungeontrain.earned_photos.count": "照片：%s",
   "chat.dungeontrain.free_play.cause.portal_rate": "本世界中维度车厢出现的频率已被更改。",
   "chat.dungeontrain.free_play.portal_rate_changed": "本世界生成的轨道已不再是《地牢列车》所平衡的那一条，因此本世界将保持自由游玩状态。",
   "chat.dungeontrain.free_play.cause.dt_config": "《地牢列车》的难度设置已被更改。",

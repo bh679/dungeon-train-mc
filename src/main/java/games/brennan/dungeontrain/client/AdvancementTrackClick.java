@@ -36,8 +36,9 @@ public final class AdvancementTrackClick {
     public static boolean handle(int button) {
         if (button != LEFT_BUTTON) return false;
         ResourceLocation id = HoveredAdvancement.current();
-        // An earned camera advancement opens the photo that earned it, when this computer kept one.
-        if (HoveredAdvancement.currentIsEarned() && EarnedPhotos.has(id) && EarnedPhotos.tryOpen(id, titleOf(id))) {
+        // A camera advancement opens what this computer kept: a collection's album as it fills, or the
+        // photo that earned it once earned.
+        if (id != null && EarnedPhotos.tryOpen(id, titleOf(id), HoveredAdvancement.currentIsEarned())) {
             Minecraft.getInstance().getSoundManager().play(
                 SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
             return true;

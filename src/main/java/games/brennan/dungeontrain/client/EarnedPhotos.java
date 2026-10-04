@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import games.brennan.dungeontrain.compat.photo.PhotoPngCodec;
 import games.brennan.dungeontrain.data.PlayerDataPaths;
 import io.github.mortuusars.exposure.ExposureClient;
@@ -53,9 +54,15 @@ public final class EarnedPhotos {
     /** How often to ask again while the image is on its way, and how long before the first ask. */
     private static final int RETRY_TICKS = 20;
 
+    /** Where a photo goes: an advancement's own photo ({@code entry} empty), or one entry of its album. */
+    private record Slot(ResourceLocation advancement, String entry) {}
+
     private record Pending(String exposureId, ResourceLocation type, int ticksLeft, int nextTry) {}
 
-    private static final Map<ResourceLocation, Pending> PENDING = new LinkedHashMap<>();
+    private static final Map<Slot, Pending> PENDING = new LinkedHashMap<>();
+
+    /** One photo of an album: the entity or biome id it was logged for, and its file. */
+    public record Entry(ResourceLocation id, Path file) {}
 
     private EarnedPhotos() {}
 
@@ -63,9 +70,10 @@ public final class EarnedPhotos {
      * The server says {@code advancement} was earned with this photo, printed on {@code type}'s paper:
      * fetch it and keep a copy, laid on that paper the way the game draws the print.
      */
-    public static void capture(ResourceLocation advancement, String exposureId, ResourceLocation type) {
+    public static void capture(ResourceLocation advancement, String exposureId, ResourceLocation type, String entry) {
         if (advancement == null || exposureId == null || exposureId.isBlank()) return;
-        PENDING.put(advancement, new Pending(exposureId, type, FETCH_TIMEOUT_TICKS, RETRY_TICKS));
+        PENDING.put(new Slot(advancement, entry == null ? "" : entry),
+                new Pending(exposureId, type, FETCH_TIMEOUT_TICKS, RETRY_TICKS));
     }
 
     /** File names kept on disk, read once — {@link #has} runs every frame a tooltip is hovered. */
@@ -92,11 +100,62 @@ public final class EarnedPhotos {
         return kept;
     }
 
-    /** Open the photo kept for {@code advancement}, if any. Returns whether one opened. */
-    public static boolean tryOpen(ResourceLocation advancement, net.minecraft.network.chat.Component title) {
-        if (!has(advancement)) return false;
+    /** The album {@code advancement} shows, or {@code null} for an advancement with one photo. */
+    static ResourceLocation albumOf(ResourceLocation advancement) {
+        if (advancement == null || !DungeonTrain.MOD_ID.equals(advancement.getNamespace())) return null;
+        String album = EnchiridionAdvancements.albumOf(advancement.getPath());
+        return album == null ? null : ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, album);
+    }
+
+    /** {@code advancement}'s album entries, oldest first; empty when it has no album or nothing logged yet. */
+    public static List<Entry> entries(ResourceLocation advancement) {
+        ResourceLocation album = albumOf(advancement);
+        if (album == null) return List.of();
+        return ALBUMS.computeIfAbsent(album, EarnedPhotos::listAlbum);
+    }
+
+    /** Album listings, read once each — the tooltip asks every frame it is hovered. */
+    private static final Map<ResourceLocation, List<Entry>> ALBUMS = new java.util.HashMap<>();
+
+    private static List<Entry> listAlbum(ResourceLocation album) {
+        Path dir = albumDir(album);
+        if (!Files.isDirectory(dir)) return List.of();
+        List<Path> files = new ArrayList<>();
+        try (var listing = Files.list(dir)) {
+            listing.filter(f -> f.getFileName().toString().endsWith(".png")).forEach(files::add);
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Couldn't list the album {}: {}", album, e.toString());
+        }
+        files.sort(java.util.Comparator.comparingLong(EarnedPhotos::modified));
+        List<Entry> out = new ArrayList<>(files.size());
+        for (Path f : files) {
+            ResourceLocation id = entryId(f.getFileName().toString());
+            if (id != null) out.add(new Entry(id, f));
+        }
+        return List.copyOf(out);
+    }
+
+    /** The picture for {@code advancement}'s tooltip: its own photo once earned, else the album's latest. */
+    public static Path thumbnail(ResourceLocation advancement, boolean earned) {
+        if (earned && has(advancement)) return file(advancement);
+        List<Entry> album = entries(advancement);
+        return album.isEmpty() ? null : album.get(album.size() - 1).file();
+    }
+
+    /**
+     * Open what {@code advancement} has kept: its album, once anything is logged (earned or not — a
+     * collection shows as it fills), else its own photo once earned. Returns whether anything opened.
+     */
+    public static boolean tryOpen(ResourceLocation advancement, net.minecraft.network.chat.Component title, boolean earned) {
         Minecraft mc = Minecraft.getInstance();
         Screen parent = mc.screen;
+        List<Entry> album = entries(advancement);
+        if (!album.isEmpty()) {
+            boolean biomes = EnchiridionAdvancements.isBiomeAlbum(albumOf(advancement).getPath());
+            mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, album, biomes)));
+            return true;
+        }
+        if (!earned || !has(advancement)) return false;
         mc.execute(() -> mc.setScreen(new EarnedPhotoScreen(parent, title, file(advancement))));
         return true;
     }
@@ -104,8 +163,8 @@ public final class EarnedPhotos {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         if (PENDING.isEmpty()) return;
-        List<ResourceLocation> done = new ArrayList<>();
-        for (Map.Entry<ResourceLocation, Pending> e : new ArrayList<>(PENDING.entrySet())) {
+        List<Slot> done = new ArrayList<>();
+        for (Map.Entry<Slot, Pending> e : new ArrayList<>(PENDING.entrySet())) {
             Pending p = e.getValue();
             if (p.ticksLeft() <= 1) {
                 LOGGER.warn("[DungeonTrain] Photo {} for {} never arrived; none kept.", p.exposureId(), e.getKey());
@@ -130,7 +189,8 @@ public final class EarnedPhotos {
      * moment after the advancement is earned, so an early ask comes back "not found" — Exposure caches
      * that answer, so it is cleared before the next ask.
      */
-    private static boolean trySave(ResourceLocation advancement, String exposureId, ResourceLocation type) {
+    private static boolean trySave(Slot slot, String exposureId, ResourceLocation type) {
+        ResourceLocation advancement = slot.advancement();
         try {
             RequestedPalettedExposure requested = ExposureClient.exposureStore().getOrRequest(exposureId);
             if (requested.isError()) {
@@ -160,12 +220,15 @@ public final class EarnedPhotos {
                 h = print.height();
                 argb = print.argb();
             }
-            Path target = file(advancement);
+            Path target = slot.entry().isEmpty() ? file(advancement) : entryFile(advancement, slot.entry());
+            if (target == null) return true;
             Files.createDirectories(target.getParent());
             Files.write(target, PhotoPngCodec.encodeArgb(w, h, argb));
-            kept().add(fileName(advancement));
-            EarnedPhotoThumbnails.forget(advancement);
-            LOGGER.info("[DungeonTrain] Kept photo {} ({}x{}) for {}", exposureId, w, h, advancement);
+            if (slot.entry().isEmpty()) kept().add(fileName(advancement));
+            else ALBUMS.remove(albumOf(advancement));
+            EarnedPhotoThumbnails.forget(target);
+            LOGGER.info("[DungeonTrain] Kept photo {} ({}x{}) for {}{}", exposureId, w, h, advancement,
+                    slot.entry().isEmpty() ? "" : " [" + slot.entry() + "]");
             return true;
         } catch (IOException | RuntimeException ex) {
             LOGGER.warn("[DungeonTrain] Couldn't keep the photo for {} yet: {}", advancement, ex.toString());
@@ -202,5 +265,36 @@ public final class EarnedPhotos {
     /** {@code dungeontrain:enchiridion/say_cheese} → {@code dungeontrain__enchiridion.say_cheese.png}. */
     static String fileName(ResourceLocation advancement) {
         return advancement.getNamespace() + "__" + advancement.getPath().replace('/', '.') + ".png";
+    }
+
+    /** The folder an album's entries live in, beside the advancement photos. */
+    static Path albumDir(ResourceLocation album) {
+        String name = fileName(album);
+        return PlayerDataPaths.dir(PlayerDataPaths.USER).resolve(DIR).resolve(name.substring(0, name.length() - 4));
+    }
+
+    /** Where {@code entry} of {@code advancement}'s album is kept, or {@code null} for no album / a bad id. */
+    static Path entryFile(ResourceLocation advancement, String entry) {
+        ResourceLocation album = albumOf(advancement);
+        ResourceLocation id = ResourceLocation.tryParse(entry);
+        if (album == null || id == null) return null;
+        return albumDir(album).resolve(fileName(id));
+    }
+
+    /** The entity or biome id an album file was kept for: the reverse of {@link #fileName}. */
+    static ResourceLocation entryId(String fileName) {
+        if (!fileName.endsWith(".png")) return null;
+        String stem = fileName.substring(0, fileName.length() - 4);
+        int split = stem.indexOf("__");
+        if (split <= 0) return null;
+        return ResourceLocation.tryBuild(stem.substring(0, split), stem.substring(split + 2).replace('.', '/'));
+    }
+
+    private static long modified(Path file) {
+        try {
+            return Files.getLastModifiedTime(file).toMillis();
+        } catch (IOException e) {
+            return 0L;
+        }
     }
 }

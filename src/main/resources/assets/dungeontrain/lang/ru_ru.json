@@ -3790,6 +3790,7 @@
   "advancements.dungeontrain.enchiridion.found_footage.title": "Найденная плёнка",
   "advancements.dungeontrain.enchiridion.found_footage.description": "Посмотрите на фото, найденное в поезде.",
   "advancements.dungeontrain.enchiridion.found_footage.hint": "Кто-то оставил это здесь.",
+  "gui.dungeontrain.earned_photos.count": "Фото: %s",
   "chat.dungeontrain.free_play.cause.portal_rate": "В этом мире изменили, частоту появлявлений вагонов-порталов.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Генерация пути теперь не та, под которую задумана Dungeon Train, поэтому будет включена Свободная игра.",
   "chat.dungeontrain.free_play.cause.dt_config": "Настройки сложности Dungeon Train изменены.",

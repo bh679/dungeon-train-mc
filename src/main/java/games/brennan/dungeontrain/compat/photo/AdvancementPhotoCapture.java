@@ -8,6 +8,7 @@ import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import io.github.mortuusars.exposure.world.item.PhotographItem;
 import io.github.mortuusars.exposure.world.photograph.PhotographType;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -69,12 +70,29 @@ public final class AdvancementPhotoCapture {
 
     /** Called for every advancement earn: sends the earning photo when one is current. */
     public static void onEarn(ServerPlayer player, ResourceLocation advancement, boolean replaying) {
+        send(player, advancement, "", replaying);
+    }
+
+    /**
+     * Called for every criterion granted. A collection (more than one criterion — Nature Documentary,
+     * Most Wanted) keeps a photo per entry as it fills, named by the criterion (the entity id).
+     */
+    public static void onCriterion(ServerPlayer player, AdvancementHolder advancement, String criterion) {
+        if (advancement.value().criteria().size() <= 1) return;
+        send(player, advancement.id(), criterion, false);
+    }
+
+    /** Log the current photo as {@code entry} of {@code album} (the biome tiers' album, one per biome). */
+    public static void sendEntry(ServerPlayer player, ResourceLocation album, String entry) {
+        send(player, album, entry, false);
+    }
+
+    private static void send(ServerPlayer player, ResourceLocation advancement, String entry, boolean replaying) {
         Photo photo = CURRENT.get();
-        if (photo != null && shouldSend(advancement, photo.exposureId(), replaying)) {
-            LOGGER.info("[DungeonTrain] {} earned {} with photo {} ({})", player.getName().getString(), advancement,
-                    photo.exposureId(), photo.type());
-            DungeonTrainNet.sendTo(player, new EarnedPhotoPacket(advancement, photo.exposureId(), photo.type()));
-        }
+        if (photo == null || entry == null || !shouldSend(advancement, photo.exposureId(), replaying)) return;
+        LOGGER.info("[DungeonTrain] {} earned {}{} with photo {} ({})", player.getName().getString(), advancement,
+                entry.isEmpty() ? "" : " [" + entry + "]", photo.exposureId(), photo.type());
+        DungeonTrainNet.sendTo(player, new EarnedPhotoPacket(advancement, photo.exposureId(), photo.type(), entry));
     }
 
     /** A genuine earn of a camera advancement on The Enchiridion, with a photo behind it. */
