@@ -23388,6 +23388,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "videos-filter-solo",
+      "version": "0.1160.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Videos: click a platform to see just that one",
+      "summary": "On the Videos page, clicking a platform icon now shows only that platform's videos, and clicking it again brings everything back. Shift-click still shows or hides just one, so you can mix and match.",
+      "highlights": [
+        "Click YouTube, Bilibili, Twitch, Instagram or Twitch streamers to see only that one",
+        "Shift-click to show or hide a single platform",
+        "The same video list is now on the website too: brennan.games/dungeontrain/videos/"
+      ],
+      "pr": 1834,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
