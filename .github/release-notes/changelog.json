@@ -22933,6 +22933,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bookshelf-photo-weight",
+      "version": "0.1147.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "More photos on the shelves",
+      "summary": "Chiseled bookshelves turn up community photos about four times as often. When there are no photos left to find, a photo slot now gives you a player book instead of sitting empty, and disposable cameras turn up a little less often.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
