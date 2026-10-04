@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/paying_respects",
+  "display": {
+    "icon": {
+      "id": "minecraft:emerald_block"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.shameless_self_promotion.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.shameless_self_promotion.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "tributed": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "tributed_own_photo"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tributed"
+    ]
+  ]
+}

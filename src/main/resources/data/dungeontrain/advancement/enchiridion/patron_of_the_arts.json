@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/paying_respects",
+  "display": {
+    "icon": {
+      "id": "minecraft:painting"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.patron_of_the_arts.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.patron_of_the_arts.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "tributed": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "tributed_others_photo"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "tributed"
+    ]
+  ]
+}
