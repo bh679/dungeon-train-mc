@@ -89,8 +89,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     /** Vanilla insets its button text by 2px a side; leave a little more so nothing sits flush. */
     private static final int TEXT_PADDING = 8;
 
-    /** Ceiling ladder shared with the X-menu row: 0 = AUTO, then fixed long-edge caps. */
-    private static final List<Integer> RESOLUTION_VALUES = List.of(0, 1080, 1440, 2160);
+    /**
+     * Ceiling ladder shared with the X-menu row: 0 = AUTO, then fixed long-edge caps. 720 is the rung the
+     * Performance tab's "Lower resolution" sets, so it must be here or the row would misreport it as AUTO.
+     */
+    private static final List<Integer> RESOLUTION_VALUES = List.of(0, 720, 1080, 1440, 2160);
 
     /** Slider bounds for "Backups per version". Kept in step with the config's own range. */
     private static final int BACKUPS_PER_VERSION_MIN = 1;
@@ -577,8 +580,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 int currentRes = ClientDisplayConfig.getRideSnapshotMaxResolution();
                 yield withTip(
                         CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::resolutionLabel)
-                                .withValues(RESOLUTION_VALUES)
-                                .withInitialValue(RESOLUTION_VALUES.contains(currentRes) ? currentRes : 0)
+                                .withValues(resolutionValues(currentRes))
+                                .withInitialValue(Math.max(0, currentRes))
                                 .create(0, 0, width, ROW_H,
                                         Component.translatable("gui.dungeontrain.options.snapshot_max_res"),
                                         (btn, val) -> ClientDisplayConfig.setRideSnapshotMaxResolution(val)),
@@ -698,6 +701,20 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static <T extends AbstractWidget> T withTip(T widget, Component tip) {
         widget.setTooltip(Tooltip.create(tip));
         return widget;
+    }
+
+    /**
+     * The ladder, plus the stored value when it is off the ladder (a hand-edited toml), so the row shows
+     * what is actually set instead of AUTO — and cycling past it never silently discards it until chosen.
+     */
+    private static List<Integer> resolutionValues(int current) {
+        if (current <= 0 || RESOLUTION_VALUES.contains(current)) {
+            return RESOLUTION_VALUES;
+        }
+        List<Integer> values = new ArrayList<>(RESOLUTION_VALUES);
+        values.add(current);
+        values.sort(null);
+        return List.copyOf(values);
     }
 
     private static Component resolutionLabel(int value) {
