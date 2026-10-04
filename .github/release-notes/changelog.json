@@ -19788,13 +19788,16 @@
         "compatibility",
         "world"
       ],
-      "title": "Dimensions Overhaul 0.982.0",
+      "title": "Dimensions Overhaul",
       "summary": "## Number of dimensions\nA HUGE boost to the number of dimensions the train travels through. Many custom made for DT, some you may already know and love.\n\n## Shorter Dimensions\nDimensions are now short, pass through more quicker, but it will take longer to pass through them all.\n\n# The Whitelist for Mods\nMoving from blacklist to whitelist. Unless whitelisted, mods put you into freeplay. \nThe game will boot regardless, only whitelisted will enable high-scores.\n\n## Modpack Additions\n* **Advanced Shulkerboxes:** \n* **Sable Pathfinder:** *(Modrinth only for now)*\n* **Pigman Villagers:** ;)\n\n## Train Editor Tools\nThe train editor has undergone some big changes, make it work much better\n* **Test the Carriage** works on every carriage and contents template. Ctrl/Cmd+R re-rolls it\n* **Frames:** build your own to dress terrain dimensional carriages\n* **Doors, beds and tall plants** in block variants, with a new Span button\n* **Menus stay put** instead of following you, update as soon as you save, and no longer freeze on first open\n* **New** works for whole rooms and groups\n* **Save as new** on built-in templates, or keep a local edit\n* **Info panel** shows a build's lights and loot\n* **My Builds:** delete builds, and tell the reviewer about your build when you submit\n* Cmd/Ctrl-click deletes saved prefabs in the creative menu\n* Effortless Building breaks now clear block variants\n* Big shared builds keep their chest loot, and loading survives a busy server\n* Templates with thousands of block variants no longer lag\n\n## Bug Fixes\n* No more freezes when editing the train or saving\n* Distant Horizons no longer crashes on Mac\n* Dedicated servers now create Dungeon Train worlds\n* Eyes of ender lead to the same stronghold every time\n* Crops in dimensional carriages stay planted\n* Trees no longer turn the track into a tunnel\n\n## Bug fixes\n- New Biomes are cosmetics focused. New items and mobs on the train will be coming later.",
       "highlights": [],
       "date": "2026-09-27",
       "released": true,
       "released_in": "v0.982.0",
-      "released_at": "2026-09-27T09:01:26Z"
+      "released_at": "2026-09-27T09:01:26Z",
+      "major": true,
+      "description": "## Number of dimensions\nA HUGE boost to the number of dimensions the train travels through. Many custom made for DT, some you may already know and love.\n\n## Shorter Dimensions\nDimensions are now short, pass through more quicker, but it will take longer to pass through them all.\n\n# The Whitelist for Mods\nMoving from blacklist to whitelist. Unless whitelisted, mods put you into freeplay. \nThe game will boot regardless, only whitelisted will enable high-scores.\n\n## Modpack Additions\n* **Advanced Shulkerboxes:** \n* **Sable Pathfinder:** *(Modrinth only for now)*\n* **Pigman Villagers:** ;)\n\n## Train Editor Tools\nThe train editor has undergone some big changes, make it work much better\n* **Test the Carriage** works on every carriage and contents template. Ctrl/Cmd+R re-rolls it\n* **Frames:** build your own to dress terrain dimensional carriages\n* **Doors, beds and tall plants** in block variants, with a new Span button\n* **Menus stay put** instead of following you, update as soon as you save, and no longer freeze on first open\n* **New** works for whole rooms and groups\n* **Save as new** on built-in templates, or keep a local edit\n* **Info panel** shows a build's lights and loot\n* **My Builds:** delete builds, and tell the reviewer about your build when you submit\n* Cmd/Ctrl-click deletes saved prefabs in the creative menu\n* Effortless Building breaks now clear block variants\n* Big shared builds keep their chest loot, and loading survives a busy server\n* Templates with thousands of block variants no longer lag\n\n## Bug Fixes\n* No more freezes when editing the train or saving\n* Distant Horizons no longer crashes on Mac\n* Dedicated servers now create Dungeon Train worlds\n* Eyes of ender lead to the same stronghold every time\n* Crops in dimensional carriages stay planted\n* Trees no longer turn the track into a tunnel\n\n## Bug fixes\n- New Biomes are cosmetics focused. New items and mobs on the train will be coming later.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dimensions-overhaul.jpg"
     },
     {
       "id": "band-advancements-review",
@@ -22998,7 +23001,9 @@
       "released": true,
       "released_in": "v0.1149.0",
       "released_at": "2026-10-04T10:04:47Z",
-      "lead": true
+      "major": true,
+      "description": "What did you see on train? What did the train see of you?\nFind disposable cameras in the loot and snap with a click. Your shots travel down the line into other passengers' bookshelves, barrels and chests, and theirs find you. Pay tribute to a photo to keep it travelling. A new page on the death screen.\n\n## Other significant updates\n\n- A villager get tired of repeat sales, and devalue the items he has to many of.\n- Finding you own library has never been easier, sign a book and the chances multiply until you find one next. New and improved author rooms.\n- THE LADDER BUG IS DEAD\n- New carraiges.\n- Many train editor improvements.\n- Improvements to the translation editor\n- New and improved connections to discord.\n- More loading screen lore.\n- Bug fixes\n- Performance improvements",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/capture-the-view.jpg"
     },
     {
       "id": "performance-options-tab",
@@ -23017,6 +23022,26 @@
         "Shows how many releases behind you are, with a link to what changed"
       ],
       "pr": 1817,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "lectern-story-order",
+      "version": "0.1151.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "books"
+      ],
+      "title": "Lectern stories unfold in a better order",
+      "summary": "The letters you find on lecterns now arrive in a more deliberate order, so the stories make more sense as you read them.",
+      "highlights": [
+        "A family's letters now come in the order they were written, one person's story leading into the next",
+        "A few stories turn up sooner, and some now wait until you have read the rest"
+      ],
+      "pr": 1819,
       "date": "2026-10-04",
       "released": false,
       "released_in": null,

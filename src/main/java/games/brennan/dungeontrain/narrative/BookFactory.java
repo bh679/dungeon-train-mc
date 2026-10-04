@@ -540,9 +540,7 @@ public final class BookFactory {
      * identity NBT and for the progression data lookup.
      */
     private static String basenameOf(StoryFile story) {
-        String path = story.id().getPath();
-        int slash = path.lastIndexOf('/');
-        return slash >= 0 ? path.substring(slash + 1) : path;
+        return story.basename();
     }
 
     /**
