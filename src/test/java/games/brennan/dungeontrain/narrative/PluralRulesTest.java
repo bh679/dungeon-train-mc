@@ -47,6 +47,14 @@ final class PluralRulesTest {
         check("ru_ru", 22, PluralRules.FEW);
         check("ru_ru", 25, PluralRules.MANY);
         check("ru_ru", 50, PluralRules.MANY);     // пятьдесят раз
+        // Ukrainian shares the east-Slavic rule.
+        check("uk_ua", 1, PluralRules.ONE);       // один раз
+        check("uk_ua", 2, PluralRules.FEW);       // два рази
+        check("uk_ua", 5, PluralRules.MANY);      // п’ять разів
+        check("uk_ua", 11, PluralRules.MANY);
+        check("uk_ua", 21, PluralRules.ONE);
+        check("uk_ua", 22, PluralRules.FEW);
+        check("uk_ua", 25, PluralRules.MANY);
         check("ru_ru", 101, PluralRules.ONE);
         check("ru_ru", 111, PluralRules.MANY);
         check("ru_ru", 0, PluralRules.MANY);      // ноль раз

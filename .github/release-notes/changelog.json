@@ -23329,9 +23329,9 @@
       "highlights": [],
       "pr": 1828,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     },
     {
       "id": "spider-jockey-rider-visible",
@@ -23346,9 +23346,9 @@
       "highlights": [],
       "pr": 1827,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     },
     {
       "id": "photo-resolution-720-option",
@@ -23363,9 +23363,53 @@
       "highlights": [],
       "pr": 1829,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "ukrainian-localization",
+      "version": "0.1159.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations"
+      ],
+      "title": "Dungeon Train speaks Ukrainian",
+      "summary": "Ukrainian joins the language list \u2014 the whole game, not just the menus: every screen, the item names and all 57 in-game books, plus the Sable and Discord Presence menus in the modpack. The bulk is machine translation marked with the faded AI mark, but it already carries MrMultibite's community translations as human-reviewed text; if you read Ukrainian, the in-game translation editor is open and your fixes come back to everyone.",
+      "highlights": [
+        "Ukrainian (\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430) is selectable in the vanilla language list",
+        "Menus, HUD, advancements, item names and all 57 books translated",
+        "Counts follow Ukrainian grammar \u2014 1 \u0432\u0430\u0433\u043e\u043d, 3 \u0432\u0430\u0433\u043e\u043d\u0438, 5 \u0432\u0430\u0433\u043e\u043d\u0456\u0432",
+        "MrMultibite's approved translations shipped as human-reviewed text"
+      ],
+      "pr": 1833,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "videos-filter-solo",
+      "version": "0.1160.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Videos: click a platform to see just that one",
+      "summary": "On the Videos page, clicking a platform icon now shows only that platform's videos, and clicking it again brings everything back. Shift-click still shows or hides just one, so you can mix and match.",
+      "highlights": [
+        "Click YouTube, Bilibili, Twitch, Instagram or Twitch streamers to see only that one",
+        "Shift-click to show or hide a single platform",
+        "The same video list is now on the website too: brennan.games/dungeontrain/videos/"
+      ],
+      "pr": 1834,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     }
   ]
 }
