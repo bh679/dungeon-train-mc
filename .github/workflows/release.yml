@@ -543,8 +543,6 @@ jobs:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
           REPO: ${{ github.repository }}
           PRERELEASE: ${{ steps.release_type.outputs.prerelease }}
-          MODRINTH_VERSION: ${{ steps.mcpublish.outputs.modrinth-version }}
-          CURSEFORGE_VERSION: ${{ steps.mcpublish.outputs.curseforge-version }}
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/notify-discord.sh
 
