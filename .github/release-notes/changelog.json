@@ -23066,6 +23066,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photos-survive-broken-containers",
+      "version": "0.1154.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Photos survive a broken chest or bookshelf",
+      "summary": "Photos no longer burn when the bookshelf, chest, barrel or pot holding them is broken. They drop intact and only burn once you look at them or throw them away.",
+      "highlights": [],
+      "pr": 1824,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
