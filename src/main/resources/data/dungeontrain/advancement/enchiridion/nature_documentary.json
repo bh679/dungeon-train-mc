@@ -1,0 +1,256 @@
+{
+  "parent": "dungeontrain:enchiridion/say_cheese",
+  "display": {
+    "icon": {
+      "id": "minecraft:lead"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.nature_documentary.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.nature_documentary.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "minecraft:cow": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:cow"
+      }
+    },
+    "minecraft:pig": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:pig"
+      }
+    },
+    "minecraft:sheep": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:sheep"
+      }
+    },
+    "minecraft:chicken": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:chicken"
+      }
+    },
+    "minecraft:horse": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:horse"
+      }
+    },
+    "minecraft:donkey": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:donkey"
+      }
+    },
+    "minecraft:mule": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:mule"
+      }
+    },
+    "minecraft:llama": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:llama"
+      }
+    },
+    "minecraft:rabbit": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:rabbit"
+      }
+    },
+    "minecraft:wolf": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:wolf"
+      }
+    },
+    "minecraft:cat": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:cat"
+      }
+    },
+    "minecraft:ocelot": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:ocelot"
+      }
+    },
+    "minecraft:fox": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:fox"
+      }
+    },
+    "minecraft:panda": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:panda"
+      }
+    },
+    "minecraft:polar_bear": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:polar_bear"
+      }
+    },
+    "minecraft:turtle": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:turtle"
+      }
+    },
+    "minecraft:bee": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:bee"
+      }
+    },
+    "minecraft:goat": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:goat"
+      }
+    },
+    "minecraft:frog": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:frog"
+      }
+    },
+    "minecraft:axolotl": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:axolotl"
+      }
+    },
+    "minecraft:camel": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:camel"
+      }
+    },
+    "minecraft:sniffer": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:sniffer"
+      }
+    },
+    "minecraft:armadillo": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:armadillo"
+      }
+    },
+    "minecraft:parrot": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:parrot"
+      }
+    },
+    "minecraft:mooshroom": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:mooshroom"
+      }
+    },
+    "minecraft:strider": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "entity:minecraft:strider"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "minecraft:cow"
+    ],
+    [
+      "minecraft:pig"
+    ],
+    [
+      "minecraft:sheep"
+    ],
+    [
+      "minecraft:chicken"
+    ],
+    [
+      "minecraft:horse"
+    ],
+    [
+      "minecraft:donkey"
+    ],
+    [
+      "minecraft:mule"
+    ],
+    [
+      "minecraft:llama"
+    ],
+    [
+      "minecraft:rabbit"
+    ],
+    [
+      "minecraft:wolf"
+    ],
+    [
+      "minecraft:cat"
+    ],
+    [
+      "minecraft:ocelot"
+    ],
+    [
+      "minecraft:fox"
+    ],
+    [
+      "minecraft:panda"
+    ],
+    [
+      "minecraft:polar_bear"
+    ],
+    [
+      "minecraft:turtle"
+    ],
+    [
+      "minecraft:bee"
+    ],
+    [
+      "minecraft:goat"
+    ],
+    [
+      "minecraft:frog"
+    ],
+    [
+      "minecraft:axolotl"
+    ],
+    [
+      "minecraft:camel"
+    ],
+    [
+      "minecraft:sniffer"
+    ],
+    [
+      "minecraft:armadillo"
+    ],
+    [
+      "minecraft:parrot"
+    ],
+    [
+      "minecraft:mooshroom"
+    ],
+    [
+      "minecraft:strider"
+    ]
+  ]
+}

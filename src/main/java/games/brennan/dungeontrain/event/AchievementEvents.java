@@ -1240,6 +1240,8 @@ public final class AchievementEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         AdvancementHolder advancement = event.getAdvancement();
         ResourceLocation id = advancement.id();
+        // An Enchiridion camera advancement remembers the photo that earned it (client keeps the copy).
+        games.brennan.dungeontrain.compat.photo.AdvancementPhotoCapture.onEarn(player, id, replaying);
         // Persist across worlds: capture every GUI-visible advancement — vanilla,
         // Dungeon Train, and other mods alike — not just dungeontrain:*. The
         // hidden display-less recipe tree is filtered out by shouldPersist.

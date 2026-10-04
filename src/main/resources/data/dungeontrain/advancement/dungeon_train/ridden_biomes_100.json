@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/biomes_17",
+  "parent": "dungeontrain:dungeon_train/ridden_biomes_50",
   "display": {
     "icon": { "id": "minecraft:filled_map" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.biomes_25.title" },
@@ -12,7 +12,7 @@
   "criteria": {
     "milestone": {
       "trigger": "dungeontrain:biomes_visited",
-      "conditions": { "threshold": 25 }
+      "conditions": { "threshold": 100 }
     }
   },
   "requirements": [["milestone"]]

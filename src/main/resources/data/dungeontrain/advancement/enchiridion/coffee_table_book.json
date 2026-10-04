@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/travel_brochure",
+  "display": {
+    "icon": {
+      "id": "minecraft:filled_map"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.coffee_table_book.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.coffee_table_book.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "every_biome": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "photographed_every_biome"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "every_biome"
+    ]
+  ]
+}

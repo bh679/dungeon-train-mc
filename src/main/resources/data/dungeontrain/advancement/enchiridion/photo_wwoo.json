@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/hellish_holiday",
+  "display": {
+    "icon": {
+      "id": "minecraft:oak_sapling"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_wwoo.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_wwoo.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "photo": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "band:reached_wwoo"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "photo"
+    ]
+  ]
+}
