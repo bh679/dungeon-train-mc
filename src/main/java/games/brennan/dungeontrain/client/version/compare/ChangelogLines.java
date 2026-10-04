@@ -8,6 +8,7 @@ import net.minecraft.network.chat.MutableComponent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * The release notes' markdown, rendered as the coloured paragraphs {@link ShaderDetailPane}
@@ -94,7 +95,7 @@ public final class ChangelogLines {
         List<ShaderDetailPane.Line> out = new ArrayList<>();
         for (String raw : markdown.split("\\r?\\n")) {
             String line = raw.strip();
-            if (line.isEmpty()) continue;
+            if (line.isEmpty() || isWebOnly(line)) continue;
             if (line.startsWith("#")) {
                 String text = line.replaceFirst("^#+\\s*", "");
                 // The notes already open with "### <version>", which the entry heading has said.
@@ -112,6 +113,17 @@ public final class ChangelogLines {
             }
         }
         return out;
+    }
+
+    /**
+     * Lines that only make sense on a web page: a horizontal rule ({@code ---}, the modpack header's
+     * divider) and the "Read more" footer every published changelog ends with — a line that is
+     * nothing but a link to the update page (scripts/release-notes/link-changelog.py). In game the
+     * link would be dead text, and this screen has its own update button. The linked title heading
+     * stays: {@link #stripInline} already shows it as a plain heading.
+     */
+    static boolean isWebOnly(String line) {
+        return line.matches("-{3,}") || line.matches("\\[[^\\]]+]\\(" + Pattern.quote(UpdatePage.BASE_URL) + "\\)");
     }
 
     static ShaderDetailPane.Line heading(String text) {

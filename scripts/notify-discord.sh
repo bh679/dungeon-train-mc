@@ -33,12 +33,16 @@ else
   TYPE_LABEL="Release"
 fi
 
-# First ~500 chars of the GitHub release notes, used as the embed body.
+# First ~500 chars of the GitHub release notes, used as the embed body. Published notes link their
+# title heading to the update page and end with "Read more" (scripts/release-notes/link-changelog.py);
+# both are stripped first so the ping keeps one destination — its title and Download button.
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 if [ -n "${RELEASE_NOTES:-}" ]; then
-  NOTES=$(printf '%s' "$RELEASE_NOTES" | head -c 500)
+  FULL_NOTES=$RELEASE_NOTES
 else
-  NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body[:500]' 2>/dev/null || echo "")
+  FULL_NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
 fi
+NOTES=$(printf '%s\n' "$FULL_NOTES" | python3 "$SCRIPT_DIR/release-notes/link-changelog.py" --strip | head -c 500 || true)
 
 LOGO_URL="https://raw.githubusercontent.com/$REPO/main/src/main/resources/logo.png"
 # Every link in the message goes to ONE place, the update page (dp-relay public/dungeontrain/update/):
