@@ -98,15 +98,18 @@ public final class BuildSubmitReporter {
     }
 
     /**
-     * Where to find it and what it is, as ONE field — "#155 · carriage" — so the embed is a single
-     * row rather than two stacked labels for two short facts; then the version it came from, when known.
+     * Where to find it, what it is and the version it came from, as ONE line —
+     * "#155 · carriage · 🟢 DT 0.1149.0" — so the embed is a single row rather than stacked labels
+     * for short facts. Parts that are unknown are left out.
      */
     static List<DeathField> fields(int relayId, String kind, String subKind, String versionLine) {
         String what = kind == null ? "" : kind;
         if (subKind != null && !subKind.isEmpty()) what = what.isEmpty() ? subKind : what + " / " + subKind;
+        StringBuilder value = new StringBuilder("#").append(relayId);
+        if (!what.isEmpty()) value.append(" \u00B7 ").append(what);
+        if (versionLine != null && !versionLine.isEmpty()) value.append(" \u00B7 ").append(versionLine);
         List<DeathField> fields = new ArrayList<>();
-        fields.add(new DeathField("Build", "#" + relayId + (what.isEmpty() ? "" : " \u00B7 " + what)));
-        if (versionLine != null && !versionLine.isEmpty()) fields.add(new DeathField("Version", versionLine));
+        fields.add(new DeathField("Build", value.toString()));
         return fields;
     }
 

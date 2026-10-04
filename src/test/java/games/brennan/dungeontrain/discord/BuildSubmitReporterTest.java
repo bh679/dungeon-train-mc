@@ -26,15 +26,14 @@ class BuildSubmitReporterTest {
     }
 
     @Test
-    @DisplayName("Build first, then Version")
+    @DisplayName("id, kind and version share one line")
     void fieldsWithVersion() {
-        assertEquals(List.of(new DeathField("Build", "#45991 · building"),
-                        new DeathField("Version", "🟢 DT 0.1149.0")),
+        assertEquals(List.of(new DeathField("Build", "#45991 · building · 🟢 DT 0.1149.0")),
                 BuildSubmitReporter.fields(45991, "building", null, "🟢 DT 0.1149.0"));
     }
 
     @Test
-    @DisplayName("no version line leaves the Version field off")
+    @DisplayName("no version line leaves it off the line")
     void fieldsWithoutVersion() {
         assertEquals(List.of(new DeathField("Build", "#155 · carriage / roof")),
                 BuildSubmitReporter.fields(155, "carriage", "roof", ""));
