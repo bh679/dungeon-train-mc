@@ -22077,9 +22077,9 @@
       "highlights": [],
       "pr": 1760,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "exposure-photography-required-mods",
@@ -22094,9 +22094,9 @@
       "highlights": [],
       "pr": 1762,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "ride-snapshot-fov-guard",
@@ -22111,9 +22111,9 @@
       "highlights": [],
       "pr": 1763,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "book-copies-not-votable",
@@ -22129,9 +22129,9 @@
       "highlights": [],
       "pr": 1764,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "photos-burn-when-dropped",
@@ -22145,9 +22145,9 @@
       "highlights": [],
       "pr": 1765,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "stage-blocks-tab-rows",
@@ -22163,9 +22163,9 @@
       "highlights": [],
       "pr": 1766,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "feedback-header-freshness",
@@ -22181,9 +22181,9 @@
       "highlights": [],
       "pr": 1767,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "betterend-sdf-per-thread",
@@ -22198,9 +22198,9 @@
       "summary": "Giant glowing mushrooms and bands of coloured rock now come out whole and the same every time, however many places the world is being built at once.",
       "highlights": [],
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "buildings-editor-tab",
@@ -22218,9 +22218,9 @@
       "highlights": [],
       "pr": 1769,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "biome-twin-lookup-memo",
@@ -22238,9 +22238,9 @@
       ],
       "pr": 1772,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "milestone-advancements-passenger-log",
@@ -22255,9 +22255,9 @@
       "summary": "When someone earns one of the train's rarest advancements on a clean run, the passenger log hears about it.",
       "highlights": [],
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "perthread-sdf-quaternion",
@@ -22272,9 +22272,9 @@
       "highlights": [],
       "pr": 1779,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "endband-worldgen-erosion",
@@ -22289,9 +22289,9 @@
       "highlights": [],
       "pr": 1777,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "lost-city-template-cache-reach",
@@ -22310,9 +22310,9 @@
       ],
       "pr": 1773,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "mixin-target-guards",
@@ -22327,9 +22327,9 @@
       "highlights": [],
       "pr": 1775,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "first-ever-advancement-announcement",
@@ -22344,9 +22344,9 @@
       "summary": "Be the first passenger ever to earn an advancement and the whole train hears about it.",
       "highlights": [],
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "disposable-camera-per-stack-print",
@@ -22361,9 +22361,9 @@
       "highlights": [],
       "pr": 1782,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "rendering-hiccup-no-crash",
@@ -22377,9 +22377,9 @@
       "highlights": [],
       "pr": 1784,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "death-screen-photo-page",
@@ -22394,9 +22394,9 @@
       "highlights": [],
       "pr": 1787,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "dimensional-carriages-remember",
@@ -22411,9 +22411,9 @@
       "highlights": [],
       "pr": 1786,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "update-card-any-launcher",
@@ -22428,9 +22428,9 @@
       "highlights": [],
       "pr": 1788,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "endband-state-clear-on-stopped",
@@ -22445,9 +22445,9 @@
       "highlights": [],
       "pr": 1789,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "every-train-world-opens-straight-in",
@@ -22462,9 +22462,9 @@
       "highlights": [],
       "pr": 1790,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "tributed-photo-passenger-log",
@@ -22478,9 +22478,9 @@
       "summary": "When someone pays tribute to a photo, the whole passenger log gets to see it.",
       "highlights": [],
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "shared-player-photos",
@@ -22496,9 +22496,9 @@
       "highlights": [],
       "pr": 1791,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "translation-submit-keeps-name",
@@ -22514,9 +22514,9 @@
       "highlights": [],
       "pr": 1792,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "camera-left-click-shutter",
@@ -22534,9 +22534,9 @@
       ],
       "pr": 1794,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "player-photos-in-train-loot",
@@ -22557,9 +22557,9 @@
       ],
       "pr": 1793,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "head-banner-sign-8-direction-rotation",
@@ -22579,9 +22579,9 @@
       ],
       "pr": 1795,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "luggage-new-carriage-safe-room",
@@ -22602,9 +22602,9 @@
       ],
       "pr": 1797,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "tribute-photo-views-worn-paper",
@@ -22623,9 +22623,9 @@
       ],
       "pr": 1798,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "editor-build-review-verdicts",
@@ -22646,9 +22646,9 @@
       ],
       "pr": 1796,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "drifting-carriage-fix",
@@ -22663,9 +22663,9 @@
       "highlights": [],
       "pr": 1799,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "player-heads-face-into-rooms",
@@ -22682,9 +22682,9 @@
       ],
       "pr": 1800,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "review-feedback-discord-post",
@@ -22699,9 +22699,9 @@
       "highlights": [],
       "pr": 1801,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "loading-screen-stories-10-11",
@@ -22719,9 +22719,9 @@
       ],
       "pr": 1802,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "suspicious-sand-dig-loot",
@@ -22740,9 +22740,9 @@
       ],
       "pr": 1803,
       "date": "2026-10-03",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "author-rooms-fit-their-books",
@@ -22764,9 +22764,9 @@
       ],
       "pr": 1804,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "nether-band-cave-mob-spawns",
@@ -22782,9 +22782,9 @@
       "highlights": [],
       "pr": 1805,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "keep-trim-dye",
@@ -22797,9 +22797,9 @@
       "summary": "Repairing dyed leather armour in the crafting grid now keeps the left item's colour, just like its trim.",
       "highlights": [],
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "end-islands-no-bare-patches",
@@ -22817,9 +22817,9 @@
       ],
       "pr": 1807,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "disposable-camera-loot",
@@ -22838,9 +22838,9 @@
       ],
       "pr": 1808,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "ladder-climb-moving-train",
@@ -22855,9 +22855,9 @@
       "summary": "Helll yeahhhhh",
       "highlights": [],
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "dynamic-lights-whitelist",
@@ -22871,9 +22871,9 @@
       "summary": "Sodium Dynamic Lights, RyoamicLights, Dynamic Lights Reforged and Dynamic Lights now join LambDynamicLights on the approved-mods list, so running one no longer puts you into Free Play.",
       "highlights": [],
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "villagers-tire-of-items",
@@ -22893,9 +22893,9 @@
         "Up to three red bars on the Trade Anything row: one once the price drops, two below 75%, three below half"
       ],
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "feedback-answer-count",
@@ -22909,9 +22909,9 @@
       "summary": "Each feedback post to Discord now notes how many times you have answered that question, in brackets at the end of its small tag line \u2014 so a fifth take on the same question reads as one.",
       "highlights": [],
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "playermob-camera-photos",
@@ -22930,9 +22930,9 @@
         "Prints are credited to the PlayerMob's name, in game and in the Discord passenger log"
       ],
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "bookshelf-photo-weight",
@@ -22948,9 +22948,9 @@
       "summary": "Chiseled bookshelves turn up community photos about four times as often. When there are no photos left to find, a photo slot now gives you a player book instead of sitting empty, and disposable cameras turn up a little less often.",
       "highlights": [],
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "carriage-mix-more-cargo",
@@ -22969,9 +22969,9 @@
       ],
       "pr": 1815,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "release-capture-the-view",
@@ -22995,9 +22995,9 @@
         "Performance improvements"
       ],
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z",
       "lead": true
     }
   ]
