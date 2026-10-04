@@ -13,7 +13,7 @@ import org.slf4j.Logger;
  *
  * <ul>
  *   <li><b>Pickup</b> — {@link #install()} gives PlayerMob's {@link PlayerMobPickupHooks} a
- *       floor-gift want (0.106.1+): a mob takes an instant camera (DT's disposable camera is one) off
+ *       floor-gift want (0.107.0+): a mob takes an instant camera (DT's disposable camera is one) off
  *       the floor only when a player threw it and the mob would photograph that player right now
  *       ({@link #wouldPhotograph}). Any other camera — in a chest, dropped by a mob, thrown by someone
  *       it won't photograph — is left where it is.</li>
