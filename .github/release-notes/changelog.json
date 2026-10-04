@@ -22999,6 +22999,28 @@
       "released_in": "v0.1149.0",
       "released_at": "2026-10-04T10:04:47Z",
       "lead": true
+    },
+    {
+      "id": "performance-options-tab",
+      "version": "0.1150.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "ui"
+      ],
+      "title": "Performance tips in Options",
+      "summary": "Options \u2192 Dungeon Train\u2026 has a new Performance tab. It lists every setting that affects how smoothly Dungeon Train runs, checked against your setup, with a button to each one. The tips that would help you come first.",
+      "highlights": [
+        "The tips you used to see only after reporting lag are now always one click away",
+        "Each tip opens its setting: Video Settings, Shader Packs, Distant Horizons, Dungeon Train Settings, or lowers ride-photo resolution right there",
+        "Shows how many releases behind you are, with a link to what changed"
+      ],
+      "pr": 1817,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

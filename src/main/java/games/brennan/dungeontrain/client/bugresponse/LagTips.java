@@ -24,11 +24,15 @@ import java.util.Optional;
 
 /**
  * The lag tips the bug-report card offers when no newer release addresses lag. Each tip is checked
- * against this player's setup and only shown when it applies: Distant Horizons loaded, a high render
+ * against this player's setup and the card only shows it when it applies: Distant Horizons loaded, a high render
  * distance, a shader pack in use, ride photos above the lowest resolution, a singleplayer train long
  * enough to matter, too little memory handed to the game. Buttons open the screen where the setting
  * lives (Distant Horizons' own settings, Video Settings, the shader pack screen, Dungeon Train's
  * settings) or, for ride photos, apply the lower resolution directly.
+ *
+ * <p>The same list is the Performance tab of Options → Dungeon Train…
+ * ({@link games.brennan.dungeontrain.client.DungeonTrainClientOptionsScreen}), so players can find the
+ * tips without having to report lag first.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class LagTips {
@@ -49,69 +53,114 @@ public final class LagTips {
     /**
      * One tip. {@code button}/{@code action} are null when there is nothing to click; {@code hint} is
      * the grey note shown on the right instead (the memory tip — that setting lives in the launcher).
+     * {@code applies} is false for a tip whose setting is already fine on this setup: only the Options
+     * screen's Performance tab lists those, so every performance setting can be found in one place.
      */
     public record Tip(String id, Component text, @Nullable Component button, @Nullable Runnable action,
-                      @Nullable Component hint) {}
+                      @Nullable Component hint, boolean applies) {
+
+        public Tip(String id, Component text, @Nullable Component button, @Nullable Runnable action,
+                   @Nullable Component hint) {
+            this(id, text, button, action, hint, true);
+        }
+    }
 
     private LagTips() {}
 
+    /** The tips worth acting on for this setup — what the bug-report card and the chat response offer. */
     public static List<Tip> applicable(Screen parent) {
+        return all(parent).stream().filter(Tip::applies).toList();
+    }
+
+    /**
+     * Every tip, in a fixed order, each worded for this setup and flagged with whether it applies. A
+     * tip that does not apply still carries a way to its setting where there is one, so the Options
+     * screen can list every performance setting even when there is nothing to fix.
+     */
+    public static List<Tip> all(Screen parent) {
         Minecraft mc = Minecraft.getInstance();
         List<Tip> tips = new ArrayList<>();
+        tips.add(distantHorizons(parent));
+        tips.add(renderDistance(mc, parent));
+        tips.add(shaders(parent));
+        tips.add(photos());
+        tips.add(carriages(mc, parent));
+        tips.add(memory());
+        return tips;
+    }
 
-        if (GraphicsCapabilities.distantHorizonsActive()) {
-            boolean canOpen = distantHorizonsSettingsFactory().isPresent();
-            tips.add(new Tip("dh", Component.translatable(KEY + "dh"),
-                    canOpen ? Component.translatable(KEY + "dh.button") : null,
-                    canOpen ? () -> openDistantHorizonsSettings(parent) : null,
-                    null));
+    private static Tip distantHorizons(Screen parent) {
+        // Installed counts as applying: when it is loaded it is always the biggest cost.
+        if (!GraphicsCapabilities.distantHorizonsActive()) {
+            return new Tip("dh", Component.translatable(KEY + "dh.absent"), null, null,
+                    Component.translatable(KEY + "not_installed"), false);
         }
+        boolean canOpen = distantHorizonsSettingsFactory().isPresent();
+        return new Tip("dh", Component.translatable(KEY + "dh"),
+                canOpen ? Component.translatable(KEY + "dh.button") : null,
+                canOpen ? () -> openDistantHorizonsSettings(parent) : null,
+                null, true);
+    }
 
+    private static Tip renderDistance(Minecraft mc, Screen parent) {
         int renderDistance = mc.options.renderDistance().get();
-        if (renderDistance > RENDER_DISTANCE_LIMIT) {
-            tips.add(new Tip("render_distance",
-                    Component.translatable(KEY + "render_distance", renderDistance, RENDER_DISTANCE_SUGGESTED),
-                    Component.translatable("options.video"),
-                    () -> mc.setScreen(new VideoSettingsScreen(parent, mc, mc.options)),
-                    null));
-        }
+        boolean applies = renderDistance > RENDER_DISTANCE_LIMIT;
+        Component text = applies
+                ? Component.translatable(KEY + "render_distance", renderDistance, RENDER_DISTANCE_SUGGESTED)
+                : Component.translatable(KEY + "render_distance.ok", renderDistance);
+        return new Tip("render_distance", text, Component.translatable("options.video"),
+                () -> mc.setScreen(new VideoSettingsScreen(parent, mc, mc.options)), null, applies);
+    }
 
-        if (GraphicsCapabilities.shaderPackActive()) {
-            boolean canOpen = IrisPackControl.canOpenSettings();
-            tips.add(new Tip("shaders", Component.translatable(KEY + "shaders"),
-                    canOpen ? Component.translatable(KEY + "shaders.button") : null,
-                    canOpen ? () -> IrisPackControl.openSettings(parent) : null,
-                    null));
+    private static Tip shaders(Screen parent) {
+        boolean active = GraphicsCapabilities.shaderPackActive();
+        boolean canOpen = IrisPackControl.canOpenSettings();
+        Component text = Component.translatable(KEY + (active ? "shaders" : "shaders.off"));
+        if (!canOpen) {
+            return new Tip("shaders", text, null, null,
+                    active ? null : Component.translatable(KEY + "not_installed"), active);
         }
+        return new Tip("shaders", text, Component.translatable(KEY + "shaders.button"),
+                () -> IrisPackControl.openSettings(parent), null, active);
+    }
 
-        if (ClientDisplayConfig.isRideSnapshotsEnabled()) {
-            int edge = RideSnapshotCapture.currentGalleryEdge();
-            if (edge > PHOTO_EDGE_SUGGESTED) {
-                tips.add(new Tip("photos",
-                        Component.translatable(KEY + "photos", edge, PHOTO_EDGE_SUGGESTED),
-                        Component.translatable(KEY + "photos.button"),
-                        () -> ClientDisplayConfig.setRideSnapshotMaxResolution(PHOTO_EDGE_SUGGESTED),
-                        null));
-            }
+    private static Tip photos() {
+        if (!ClientDisplayConfig.isRideSnapshotsEnabled()) {
+            return new Tip("photos", Component.translatable(KEY + "photos.off"), null, null, null, false);
         }
+        int edge = RideSnapshotCapture.currentGalleryEdge();
+        if (edge > PHOTO_EDGE_SUGGESTED) {
+            return new Tip("photos", Component.translatable(KEY + "photos", edge, PHOTO_EDGE_SUGGESTED),
+                    Component.translatable(KEY + "photos.button"),
+                    () -> ClientDisplayConfig.setRideSnapshotMaxResolution(PHOTO_EDGE_SUGGESTED),
+                    null, true);
+        }
+        return new Tip("photos", Component.translatable(KEY + "photos.ok", edge), null, null, null, false);
+    }
 
+    private static Tip carriages(Minecraft mc, Screen parent) {
         // The carriage count is a server setting: only a singleplayer world's owner can change it.
-        if (mc.getSingleplayerServer() != null) {
-            tips.add(new Tip("carriages", Component.translatable(KEY + "carriages"),
-                    Component.translatable(KEY + "carriages.button"),
-                    () -> mc.setScreen(new DungeonTrainSettingsScreen(parent)),
-                    null));
+        if (mc.getSingleplayerServer() == null) {
+            return new Tip("carriages", Component.translatable(KEY + "carriages"), null, null,
+                    Component.translatable(KEY + "carriages.unavailable"), false);
         }
+        return new Tip("carriages", Component.translatable(KEY + "carriages"),
+                Component.translatable(KEY + "carriages.button"),
+                () -> mc.setScreen(new DungeonTrainSettingsScreen(parent)),
+                null, true);
+    }
 
+    private static Tip memory() {
         long heap = MachineSpecs.maxHeapBytes();
         long machine = MachineSpecs.physicalMemoryBytes();
         int recommended = GraphicsCapabilities.distantHorizonsActive() ? MEMORY_RECOMMENDED_DH_GB : MEMORY_RECOMMENDED_GB;
+        String allocated = heap > 0 ? String.format(Locale.ROOT, "%.0f", heap / (double) GB) : "?";
+        Component hint = Component.translatable(KEY + "memory.hint");
         if (heap > 0 && heap < (recommended - 0.5) * GB && machine >= MEMORY_MACHINE_MIN_GB * GB) {
-            String allocated = String.format(Locale.ROOT, "%.0f", heap / (double) GB);
-            tips.add(new Tip("memory", Component.translatable(KEY + "memory", allocated, recommended),
-                    null, null, Component.translatable(KEY + "memory.hint")));
+            return new Tip("memory", Component.translatable(KEY + "memory", allocated, recommended),
+                    null, null, hint, true);
         }
-        return tips;
+        return new Tip("memory", Component.translatable(KEY + "memory.ok", allocated), null, null, hint, false);
     }
 
     private record ConfigScreen(ModContainer mod, IConfigScreenFactory factory) {}
@@ -133,7 +182,7 @@ public final class LagTips {
             try {
                 Minecraft.getInstance().setScreen(c.factory().createScreen(c.mod(), parent));
             } catch (Throwable ignored) {
-                // A broken third-party screen must not take the death screen down with it.
+                // A broken third-party screen must not take the death screen or options down with it.
             }
         });
     }
