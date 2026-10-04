@@ -23329,9 +23329,9 @@
       "highlights": [],
       "pr": 1828,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     },
     {
       "id": "spider-jockey-rider-visible",
@@ -23346,9 +23346,9 @@
       "highlights": [],
       "pr": 1827,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     },
     {
       "id": "photo-resolution-720-option",
@@ -23363,9 +23363,9 @@
       "highlights": [],
       "pr": 1829,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     },
     {
       "id": "ukrainian-localization",
@@ -23385,9 +23385,9 @@
       ],
       "pr": 1833,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     },
     {
       "id": "videos-filter-solo",
@@ -23407,9 +23407,9 @@
       ],
       "pr": 1834,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     }
   ]
 }
