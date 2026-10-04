@@ -58,10 +58,10 @@
       "file_id": 9002197,
       "required": true,
       "dependency_type": "required",
-      "version": "0.101.0",
+      "version": "0.106.0",
       "gradle_property": "playermob_min_version",
       "modrinth_project": "interactive-player-mobs",
-      "modrinth_version": "oTHnVFn7"
+      "modrinth_version": "3rEVItLf"
     },
     {
       "name": "Ender Chest Persistence",
