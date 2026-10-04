@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.BopEnd;
 import games.brennan.dungeontrain.worldgen.CycleLayout;
+import games.brennan.dungeontrain.worldgen.EndBandBiomeRemap;
 import games.brennan.dungeontrain.worldgen.EndBandSampler;
 import games.brennan.dungeontrain.worldgen.EndBandStyle;
 import net.minecraft.core.Holder;
@@ -159,13 +160,17 @@ public final class EndCoreBiomes {
                 return new EndCoreBiomes(null, null, null, fallback, false, null);
             }
             ChunkGenerator gen = end.getChunkSource().getGenerator();
-            BiomeSource src = gen.getBiomeSource();
+            boolean betterEndPasses = EndBandSampler.appliesTo(server, CycleLayout.Style.BETTER);
+            // The label reads the same remapped source the BetterEnd samples are generated from
+            // (vanilla End patches -> BetterEnd, #1785), so label, surface and decoration agree.
+            BiomeSource src = betterEndPasses
+                    ? EndBandBiomeRemap.forEnd(end).wrap(gen.getBiomeSource())
+                    : gen.getBiomeSource();
             VanillaEndBiomes vanilla = VanillaEndBiomes.create(end.getSeed(),
                     end.registryAccess().lookupOrThrow(Registries.BIOME));
             Climate.Sampler sampler = end.getChunkSource().randomState().sampler();
             BopEnd.Built bop = BopEnd.get(server);
-            return new EndCoreBiomes(src, vanilla, sampler, fallback,
-                    EndBandSampler.appliesTo(server, CycleLayout.Style.BETTER),
+            return new EndCoreBiomes(src, vanilla, sampler, fallback, betterEndPasses,
                     bop == null ? null : bop.source());
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to capture End biome source; core stays single-biome", t);
