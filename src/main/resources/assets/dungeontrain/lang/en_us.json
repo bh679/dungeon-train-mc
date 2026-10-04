@@ -4200,7 +4200,7 @@
   "advancements.dungeontrain.enchiridion.say_cheese.description": "Take a photo.",
   "advancements.dungeontrain.enchiridion.say_cheese.hint": "Point and click.",
   "advancements.dungeontrain.enchiridion.paying_respects.title": "Paying Respects",
-  "advancements.dungeontrain.enchiridion.paying_respects.description": "Pay a Tribute to keep a found photo in circulation.",
+  "advancements.dungeontrain.enchiridion.paying_respects.description": "Pay a Tribute to a photo.",
   "advancements.dungeontrain.enchiridion.paying_respects.hint": "Some photos are worth keeping alive.",
   "advancements.dungeontrain.enchiridion.candid.title": "Candid",
   "advancements.dungeontrain.enchiridion.candid.description": "Catch a photo a passenger took of you.",
@@ -4330,5 +4330,11 @@
   "advancements.dungeontrain.enchiridion.spirit_photography.title": "Spirit Photography",
   "advancements.dungeontrain.enchiridion.spirit_photography.description": "Take a photo of someone else's Echo.",
   "advancements.dungeontrain.enchiridion.spirit_photography.hint": "Not every ghost is yours.",
-  "advancements.dungeontrain.enchiridion.coffee_table_book.description": "Take a photo in every biome."
+  "advancements.dungeontrain.enchiridion.coffee_table_book.description": "Take a photo in every biome.",
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.title": "Shameless Self-Promotion",
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.description": "Pay a Tribute to your own photo.",
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.hint": "Proud of that one?",
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.title": "Patron of the Arts",
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.description": "Pay a Tribute to someone else's photo.",
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.hint": "Good work deserves it."
 }

@@ -4249,7 +4249,7 @@
   "advancements.dungeontrain.enchiridion.say_cheese.description": "Fă o fotografie.",
   "advancements.dungeontrain.enchiridion.say_cheese.hint": "Țintește și apasă.",
   "advancements.dungeontrain.enchiridion.paying_respects.title": "Omagiu",
-  "advancements.dungeontrain.enchiridion.paying_respects.description": "Plătește un tribut ca o fotografie găsită să rămână în circulație.",
+  "advancements.dungeontrain.enchiridion.paying_respects.description": "Plătește un tribut pentru o fotografie.",
   "advancements.dungeontrain.enchiridion.paying_respects.hint": "Unele fotografii merită ținute în viață.",
   "advancements.dungeontrain.enchiridion.candid.title": "Pe Neașteptate",
   "advancements.dungeontrain.enchiridion.candid.description": "Primește o fotografie pe care ți-a făcut-o un pasager.",
@@ -4379,5 +4379,11 @@
   "advancements.dungeontrain.enchiridion.spirit_photography.title": "Fotografie Spiritistă",
   "advancements.dungeontrain.enchiridion.spirit_photography.description": "Fă o fotografie Echo-ului altcuiva.",
   "advancements.dungeontrain.enchiridion.spirit_photography.hint": "Nu orice fantomă e a ta.",
-  "advancements.dungeontrain.enchiridion.coffee_table_book.description": "Fă o fotografie în fiecare biom."
+  "advancements.dungeontrain.enchiridion.coffee_table_book.description": "Fă o fotografie în fiecare biom.",
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.title": "Autopromovare nerușinată",
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.description": "Plătește un tribut pentru propria fotografie.",
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.hint": "Mândru de asta?",
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.title": "Mecena al artelor",
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.description": "Plătește un tribut pentru fotografia altcuiva.",
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.hint": "Munca bună merită."
 }

@@ -448,6 +448,9 @@ public final class SharedPhotos {
         TributePayment.pay(player, cost);
         AdvancementPhotoCapture.during(held, () -> {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player,
+                    isOwnPhoto(held, player.getGameProfile().getName())
+                            ? EnchiridionAdvancements.TRIBUTED_OWN_PHOTO : EnchiridionAdvancements.TRIBUTED_OTHERS_PHOTO);
             recordView(player, photoId);
         });
         JsonObject body = action(player, photoId);
@@ -635,6 +638,16 @@ public final class SharedPhotos {
     }
 
     /** Who took the photo in {@code stack}: a found photo's credited name, else the frame's photographer. Blank if none. */
+    /** True when {@code playerName} took the found photo {@code stack} — the relay can hand you back your own. */
+    static boolean isOwnPhoto(ItemStack stack, String playerName) {
+        return isOwnAuthor(authorOf(stack), playerName);
+    }
+
+    /** Whether a photo's credited author is {@code playerName} (blank authors are nobody's). */
+    static boolean isOwnAuthor(String author, String playerName) {
+        return author != null && !author.isBlank() && author.equals(playerName);
+    }
+
     public static String authorOf(ItemStack stack) {
         Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         if (frame == null) return "";

@@ -4249,7 +4249,7 @@
   "advancements.dungeontrain.enchiridion.say_cheese.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a4e7de27a842abab"},
   "advancements.dungeontrain.enchiridion.say_cheese.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c140b0e3948e623e"},
   "advancements.dungeontrain.enchiridion.paying_respects.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1baae92f3dd5a444"},
-  "advancements.dungeontrain.enchiridion.paying_respects.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "49cc4a486881927e"},
+  "advancements.dungeontrain.enchiridion.paying_respects.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f6667246b2a247fc"},
   "advancements.dungeontrain.enchiridion.paying_respects.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1886d0d218f9b4ad"},
   "advancements.dungeontrain.enchiridion.candid.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c7ce2489b0415519"},
   "advancements.dungeontrain.enchiridion.candid.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a2ae97a78325297a"},
@@ -4379,5 +4379,11 @@
   "advancements.dungeontrain.enchiridion.spirit_photography.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e422dabc162860d2"},
   "advancements.dungeontrain.enchiridion.spirit_photography.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a1fdedd72846712a"},
   "advancements.dungeontrain.enchiridion.spirit_photography.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "310f1f0705b88391"},
-  "advancements.dungeontrain.enchiridion.coffee_table_book.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a6068c46f7f780a2"}
+  "advancements.dungeontrain.enchiridion.coffee_table_book.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a6068c46f7f780a2"},
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "212e1b33c1e34b69"},
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "47495889a74d398c"},
+  "advancements.dungeontrain.enchiridion.shameless_self_promotion.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "c8e3014a8878789a"},
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "20e638df50a59f61"},
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "62d66eebe303f7c8"},
+  "advancements.dungeontrain.enchiridion.patron_of_the_arts.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f3e75b8ad6108e58"}
 }

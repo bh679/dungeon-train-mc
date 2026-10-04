@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.compat.photo;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.DisposableCamera;
 import games.brennan.dungeontrain.discord.TributePhotoReporter;
@@ -117,6 +119,11 @@ public final class OwnPhotoTribute {
         // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
+        // Paying Respects + Shameless Self-Promotion, each keeping this print — see AdvancementPhotoCapture.
+        AdvancementPhotoCapture.during(held, () -> {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_OWN_PHOTO);
+        });
         int tributeNumber = player.getData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get()) + 1;
         player.setData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get(), tributeNumber);
         if (!SharedPhotos.boostOwnUpload(player, held)) {

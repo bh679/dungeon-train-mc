@@ -47,6 +47,10 @@ public final class EnchiridionAdvancements {
     /** {@code gameplay_action} ids fired by the camera hooks. */
     public static final String TOOK_PHOTO = "took_photo";
     public static final String TRIBUTED_PHOTO = "tributed_photo";
+    /** Paid Tribute to a photo you took yourself — your own print, or one of yours found on the train. */
+    public static final String TRIBUTED_OWN_PHOTO = "tributed_own_photo";
+    /** Paid Tribute to a photo someone else took. */
+    public static final String TRIBUTED_OTHERS_PHOTO = "tributed_others_photo";
     public static final String PHOTOGRAPHED_BY_PLAYERMOB = "photographed_by_playermob";
     /** Opened a found photo (or paid it Tribute) — "Found Footage", parent of the found-photo advancements. */
     public static final String VIEWED_FOUND_PHOTO = "viewed_found_photo";
