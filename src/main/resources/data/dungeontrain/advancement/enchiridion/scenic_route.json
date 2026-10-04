@@ -10,7 +10,7 @@
     "description": {
       "translate": "advancements.dungeontrain.enchiridion.photo_biomes.description",
       "with": [
-        10
+        30
       ]
     },
     "frame": "task",
@@ -22,7 +22,7 @@
     "biomes": {
       "trigger": "dungeontrain:photo_biomes",
       "conditions": {
-        "threshold": 10
+        "threshold": 30
       }
     }
   },

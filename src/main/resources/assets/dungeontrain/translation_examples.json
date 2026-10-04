@@ -5560,8 +5560,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "10",
-        "8"
+        "25",
+        "20"
       ]
     }
   },
@@ -5569,8 +5569,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "17",
-        "15"
+        "50",
+        "40"
       ]
     }
   },
@@ -5578,8 +5578,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "25",
-        "20"
+        "100",
+        "90"
       ]
     }
   },

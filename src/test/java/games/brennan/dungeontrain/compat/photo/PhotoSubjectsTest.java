@@ -12,43 +12,39 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** The subject keys the Enchiridion's {@code photo_subject} criteria are written against. */
 final class PhotoSubjectsTest {
 
-    private static PhotoSubjects.Facts plain(Set<String> types) {
-        return where(types, null, null);
-    }
-
     private static PhotoSubjects.Facts where(Set<String> types, String dimension, String band) {
-        return new PhotoSubjects.Facts(types, false, false, false, false, false, false, false, dimension, band);
+        return new PhotoSubjects.Facts(types, false, false, false, false, false, false, false, false, false, dimension, band);
     }
 
     @Test
     @DisplayName("an empty shot of nothing, nowhere, is worth nothing")
     void nothing() {
-        assertEquals(Set.of(), PhotoSubjects.keys(plain(Set.of())));
+        assertEquals(Set.of(), PhotoSubjects.keys(where(Set.of(), null, null)));
     }
 
     @Test
     @DisplayName("each entity type becomes entity:<id>")
     void entities() {
         assertEquals(Set.of("entity:minecraft:cow", "entity:minecraft:warden"),
-                PhotoSubjects.keys(plain(Set.of("minecraft:cow", "minecraft:warden"))));
+                PhotoSubjects.keys(where(Set.of("minecraft:cow", "minecraft:warden"), null, null)));
     }
 
     @Test
-    @DisplayName("a selfie only counts with a PlayerMob in it")
-    void selfieNeedsAPlayerMob() {
-        Set<String> alone = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, false, false, false,
-                true, false, null, null));
-        assertFalse(alone.contains(PhotoSubjects.SELFIE_PLAYERMOB));
-        Set<String> together = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), true, true, false, false, false,
-                true, false, null, null));
-        assertTrue(together.containsAll(Set.of("playermob", "echo", "selfie_playermob")));
+    @DisplayName("passengers: any, a friend, an Echo — yours or someone else's")
+    void passengers() {
+        Set<String> plain = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), true, false, false, false, false,
+                false, false, false, false, null, null));
+        assertEquals(Set.of("playermob"), plain);
+        Set<String> all = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), true, true, true, true, true,
+                false, false, false, false, null, null));
+        assertTrue(all.containsAll(Set.of("playermob", "friend_playermob", "echo", "echo_own", "echo_other")));
     }
 
     @Test
     @DisplayName("specials, cave, dimension and band keys")
     void places() {
-        Set<String> keys = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, true, true, true,
-                false, true, "minecraft:overworld", "reached_spheres"));
+        Set<String> keys = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, false, false, false,
+                true, true, true, true, "minecraft:overworld", "reached_spheres"));
         assertTrue(keys.containsAll(Set.of("pigman_villager", "killer_bunny", "technoblade_pig", "cave",
                 "dim:minecraft:overworld", "band:reached_spheres")));
         assertFalse(keys.contains(PhotoSubjects.NETHER));

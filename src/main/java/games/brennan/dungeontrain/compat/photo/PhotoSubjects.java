@@ -11,7 +11,8 @@ import java.util.Set;
  *
  * <ul>
  *   <li>{@code entity:<type id>} — every entity type in frame ({@code entity:minecraft:cow})</li>
- *   <li>{@code playermob}, {@code echo}, {@code selfie_playermob} (a selfie with a PlayerMob in it)</li>
+ *   <li>{@code playermob}, {@code friend_playermob} (a passenger who likes you), {@code echo},
+ *       {@code echo_own} (your own Echo), {@code echo_other} (someone else's)</li>
  *   <li>specials: {@code pigman_villager}, {@code killer_bunny}, {@code technoblade_pig}</li>
  *   <li>{@code cave}, {@code dim:<dimension id>}</li>
  *   <li>{@code nether} / {@code end} — the train's own Nether or End, or the vanilla dimension</li>
@@ -25,7 +26,9 @@ public final class PhotoSubjects {
     public static final String BAND_PREFIX = "band:";
     public static final String PLAYERMOB = "playermob";
     public static final String ECHO = "echo";
-    public static final String SELFIE_PLAYERMOB = "selfie_playermob";
+    public static final String FRIEND_PLAYERMOB = "friend_playermob";
+    public static final String ECHO_OWN = "echo_own";
+    public static final String ECHO_OTHER = "echo_other";
     public static final String PIGMAN_VILLAGER = "pigman_villager";
     public static final String KILLER_BUNNY = "killer_bunny";
     public static final String TECHNOBLADE_PIG = "technoblade_pig";
@@ -40,8 +43,9 @@ public final class PhotoSubjects {
      * @param dimension    dimension id the photo was taken in, or {@code null}
      * @param band         forward band advancement id the photographer stood in, or {@code null}
      */
-    public record Facts(Set<String> entityTypes, boolean playerMob, boolean echo, boolean pigmanVillager,
-                        boolean killerBunny, boolean technobladePig, boolean selfie, boolean inCave, String dimension, String band) {}
+    public record Facts(Set<String> entityTypes, boolean playerMob, boolean friend, boolean echo, boolean ownEcho,
+                        boolean otherEcho, boolean pigmanVillager, boolean killerBunny, boolean technobladePig,
+                        boolean inCave, String dimension, String band) {}
 
     /** The train's Nethers — the first one and its second, regrown look. */
     private static final Set<String> NETHER_BANDS = Set.of(BandAdvancements.NETHER, BandAdvancements.BETTER_NETHER);
@@ -55,8 +59,10 @@ public final class PhotoSubjects {
         Set<String> out = new LinkedHashSet<>();
         for (String type : f.entityTypes()) out.add(ENTITY_PREFIX + type);
         if (f.playerMob()) out.add(PLAYERMOB);
+        if (f.friend()) out.add(FRIEND_PLAYERMOB);
         if (f.echo()) out.add(ECHO);
-        if (f.selfie() && f.playerMob()) out.add(SELFIE_PLAYERMOB);
+        if (f.ownEcho()) out.add(ECHO_OWN);
+        if (f.otherEcho()) out.add(ECHO_OTHER);
         if (f.pigmanVillager()) out.add(PIGMAN_VILLAGER);
         if (f.killerBunny()) out.add(KILLER_BUNNY);
         if (f.technobladePig()) out.add(TECHNOBLADE_PIG);

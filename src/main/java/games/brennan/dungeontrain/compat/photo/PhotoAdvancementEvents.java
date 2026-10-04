@@ -13,7 +13,9 @@ import games.brennan.playermob.entity.PlayerMobEntity;
 import io.github.mortuusars.exposure.neoforge.api.event.FrameAddedEvent;
 import io.github.mortuusars.exposure.util.ExtraData;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
@@ -24,6 +26,9 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.Pig;
 import net.minecraft.world.entity.animal.Rabbit;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
+import net.neoforged.neoforge.common.Tags;
+import games.brennan.dungeontrain.event.RunStatsEvents;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
@@ -49,6 +54,9 @@ public final class PhotoAdvancementEvents {
 
     /** Player persistent-data key: the distinct biome ids this player has photographed. */
     static final String PHOTO_BIOMES_KEY = "dungeontrain_photo_biomes";
+
+    /** {@code gameplay_action} fired once every biome has been photographed. */
+    static final String PHOTOGRAPHED_EVERY_BIOME = "photographed_every_biome";
 
     private PhotoAdvancementEvents() {}
 
@@ -90,13 +98,19 @@ public final class PhotoAdvancementEvents {
 
     private static PhotoSubjects.Facts facts(ServerPlayer player, ExtraData data, List<LivingEntity> inFrame) {
         Set<String> types = new HashSet<>();
-        boolean playerMob = false, echo = false, pigman = false, killerBunny = false, techno = false;
+        boolean playerMob = false, friend = false, echo = false, ownEcho = false, otherEcho = false;
+        boolean pigman = false, killerBunny = false, techno = false;
         for (LivingEntity e : inFrame) {
             if (e == player) continue;
             types.add(BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString());
-            if (e instanceof PlayerMobEntity) {
+            if (e instanceof PlayerMobEntity mob) {
                 playerMob = true;
-                if (EchoIdentity.sourcePlayer(e).isPresent()) echo = true;
+                if (mob.feelingToward(player) > RunStatsEvents.FRIEND_FEELING_MIN) friend = true;
+                if (EchoIdentity.sourcePlayer(e).isPresent()) {
+                    echo = true;
+                    if (EchoIdentity.isOwnEcho(e, player.getUUID())) ownEcho = true;
+                    else otherEcho = true;
+                }
             }
             if (PigmanVillagersApi.isPigman(e)) pigman = true;
             if (e instanceof Rabbit rabbit && rabbit.getVariant() == Rabbit.Variant.EVIL) killerBunny = true;
@@ -105,9 +119,20 @@ public final class PhotoAdvancementEvents {
         }
         String dimension = data.get(Frame.DIMENSION).map(ResourceLocation::toString)
                 .orElse(player.level().dimension().location().toString());
-        return new PhotoSubjects.Facts(types, playerMob, echo, pigman, killerBunny, techno,
-                data.getOrDefault(Frame.SELFIE, false), data.getOrDefault(Frame.IN_CAVE, false),
-                dimension, bandAt(player));
+        return new PhotoSubjects.Facts(types, playerMob, friend, echo, ownEcho, otherEcho, pigman, killerBunny,
+                techno, data.getOrDefault(Frame.IN_CAVE, false) || inCave(player), dimension, bandAt(player));
+    }
+
+    /**
+     * Underground, without Exposure's own test's catch: it wants the photographer below sea level with
+     * no skylight at all, which a cave inside one of the train's raised mountains rarely is. A cave biome
+     * counts outright; otherwise no skylight and no sky above.
+     */
+    private static boolean inCave(ServerPlayer player) {
+        Level level = player.level();
+        BlockPos pos = player.blockPosition();
+        if (level.getBiome(pos).is(Tags.Biomes.IS_UNDERGROUND)) return true;
+        return level.getBrightness(LightLayer.SKY, pos) == 0 && !level.canSeeSky(pos);
     }
 
     /** The dimensional band the photographer stands in — the bands are overworld X ranges. */
@@ -122,6 +147,7 @@ public final class PhotoAdvancementEvents {
         for (Tag t : seen) {
             if (id.equals(t.getAsString())) {
                 ModAdvancementTriggers.PHOTO_BIOMES.get().trigger(player, seen.size());
+                checkEveryBiome(player, seen.size());
                 return;
             }
         }
@@ -132,5 +158,14 @@ public final class PhotoAdvancementEvents {
         AdvancementPhotoCapture.sendEntry(player,
                 ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, EnchiridionAdvancements.BIOME_ALBUM), id);
         ModAdvancementTriggers.PHOTO_BIOMES.get().trigger(player, updated.size());
+        checkEveryBiome(player, updated.size());
+    }
+
+    /** "Coffee Table Book": a photo taken in every biome the game has. */
+    private static void checkEveryBiome(ServerPlayer player, int photographed) {
+        int total = player.registryAccess().registryOrThrow(Registries.BIOME).size();
+        if (total > 0 && photographed >= total) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, PHOTOGRAPHED_EVERY_BIOME);
+        }
     }
 }

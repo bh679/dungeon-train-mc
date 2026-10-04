@@ -16,16 +16,16 @@
     "hidden": true
   },
   "criteria": {
-    "selfie": {
+    "friend": {
       "trigger": "dungeontrain:photo_subject",
       "conditions": {
-        "subject": "selfie_playermob"
+        "subject": "friend_playermob"
       }
     }
   },
   "requirements": [
     [
-      "selfie"
+      "friend"
     ]
   ]
 }

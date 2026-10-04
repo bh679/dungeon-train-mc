@@ -8,10 +8,7 @@
       "translate": "advancements.dungeontrain.enchiridion.coffee_table_book.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.photo_biomes.description",
-      "with": [
-        50
-      ]
+      "translate": "advancements.dungeontrain.enchiridion.coffee_table_book.description"
     },
     "frame": "challenge",
     "show_toast": true,
@@ -19,16 +16,16 @@
     "hidden": true
   },
   "criteria": {
-    "biomes": {
-      "trigger": "dungeontrain:photo_biomes",
+    "every_biome": {
+      "trigger": "dungeontrain:gameplay_action",
       "conditions": {
-        "threshold": 50
+        "actionId": "photographed_every_biome"
       }
     }
   },
   "requirements": [
     [
-      "biomes"
+      "every_biome"
     ]
   ]
 }
