@@ -601,18 +601,18 @@ jobs:
       # CurseForge. That is exactly how v0.692.0 shipped three-quarters of the way: two 500s, no
       # third attempt, success. This is the guard the MODPACK already had and the mod did not.
       #
-      # LAST on purpose: it polls the public listing for up to 30 min (the full 30 whenever
-      # CURSEFORGE_API_KEY is unset, since the cfwidget mirror can't prove absence). Nothing
-      # downstream needs it — the CurseForge modpack runs its own approval wait — so it only
-      # decides whether the run ends red, never when anything goes live.
+      # A missing file id means the upload itself failed — that turns this run red right here.
+      # Waiting for the file to appear on the public listing does NOT happen here any more: it used
+      # to poll for 30 min (every release spent ~30 of its ~34 min on it) and approval routinely
+      # takes longer than that. verify-curseforge-upload.yml does the wait in its own run, so a
+      # rejection shows up as a red run of that workflow, never as a slow release.
       #
       # Verification only — recovery is `reupload-curseforge.yml`, which re-publishes the tag's
       # existing artifact without burning a version number.
-      - name: Verify the CurseForge mod upload landed
+      - name: Dispatch CurseForge upload check
         if: ${{ always() && steps.publish_check.outputs.curseforge == 'true' }}
         env:
-          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
-          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
           CF_FILE_ID: ${{ steps.mcpublish.outputs.curseforge-version }}
         run: |
@@ -622,9 +622,7 @@ jobs:
             echo "::error::  gh workflow run reupload-curseforge.yml -f tag=$RELEASE_TAG"
             exit 1
           fi
-          python3 scripts/modpack/reconcile.py \
-            --verify "$RELEASE_TAG" \
-            --platform curseforge \
-            --curseforge-project "$CF_PROJECT" \
-            --timeout-minutes 30 \
-            --poll-seconds 60
+          echo "Dispatching the CurseForge listing check for $RELEASE_TAG (file $CF_FILE_ID)…"
+          gh workflow run verify-curseforge-upload.yml \
+            -f tag="$RELEASE_TAG" \
+            -f file_id="$CF_FILE_ID"
