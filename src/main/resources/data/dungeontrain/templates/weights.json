@@ -1,11 +1,12 @@
 {
   "black": 1,
-  "boxcar": 2,
-  "boxcarcenter": 2,
+  "boxcar": 5,
+  "boxcarcenter": 5,
   "cargo": {
-    "weight": 2,
+    "weight": 5,
     "name": "Cargo"
   },
+  "carriage": 1,
   "cracked": 3,
   "fancywood": 13,
   "fire": {
@@ -15,7 +16,7 @@
     ]
   },
   "flatbedgroup": {
-    "weight": 2,
+    "weight": 5,
     "name": "Flatbed"
   },
   "long": 0,
@@ -53,7 +54,7 @@
     "name": "Standard Half"
   },
   "stonecargo": {
-    "weight": 2,
+    "weight": 5,
     "name": "Cargo Stone"
   },
   "whole": 0,
