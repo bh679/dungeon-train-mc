@@ -309,7 +309,7 @@ public final class WorldEndBandEvents {
 
     /** Drop every sample, stash and spill this class (and the End sampler) holds. */
     private static void clearState() {
-        EndBandSampler.clear();
+        EndBandSampler.clear();                                   // also drops EndBandBiomeRemap
         games.brennan.dungeontrain.worldgen.BopEnd.clear();
         STASH.clear();
         DUE.clear();

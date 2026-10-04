@@ -567,12 +567,13 @@ public class DungeonTrain {
             // Stamp the DT version on genuine survey answers (bug / feedback / improvement) and their
             // results copy as the embed footer — Discord's smallest text. Notices stay unstamped.
             @Override public String surveyEmbedFooter() { return "DT " + VersionInfo.VERSION; }
-            // The per-player form DP actually calls: the same version, led by a dot for how current
-            // that build is, then who is answering — their language, how modded the game is and how
-            // many games they have played. Server thread, behind DP's network-consent gate.
-            @Override public String surveyEmbedFooter(UUID playerId, String clientLanguage) {
+            // The per-answer form DP actually calls: the same version, led by a dot for how current
+            // that build is, then who is answering — their language, how modded the game is, how
+            // many games they have played — and how many times they have now answered this question.
+            // Server thread, behind DP's network-consent gate.
+            @Override public String surveyEmbedFooter(UUID playerId, String clientLanguage, int timesAnswered) {
                 LatestReleaseCache.refreshIfStale();
-                return SurveyTag.forPlayer(playerId, clientLanguage);
+                return SurveyTag.forPlayer(playerId, clientLanguage, timesAnswered);
             }
         });
 
