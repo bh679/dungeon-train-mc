@@ -101,7 +101,7 @@ public final class ContainerContentsMenuController {
         BlockHitResult validBlockHit = null;
         if (blockHit instanceof BlockHitResult bhit && bhit.getType() != HitResult.Type.MISS) {
             BlockState targetState = level.getBlockState(bhit.getBlockPos());
-            if (ContainerContentsRoller.isContainerState(targetState)) {
+            if (ContainerContentsRoller.isLootAuthorable(targetState)) {
                 validBlockHit = bhit;
             }
         }

@@ -22722,6 +22722,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "suspicious-sand-dig-loot",
+      "version": "0.1138.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Choose what suspicious sand and gravel dig up",
+      "summary": "Builders can now set the loot inside suspicious sand and suspicious gravel from the loot menu, just like a chest. Brushing one on the train turns up a single item from that list, and blocks left alone still give their usual archaeology finds.",
+      "highlights": [
+        "The loot menu (C) now opens on suspicious sand and gravel",
+        "Each block rolls one item from its list, with an optional chance of finding nothing"
+      ],
+      "pr": 1803,
+      "date": "2026-10-03",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
