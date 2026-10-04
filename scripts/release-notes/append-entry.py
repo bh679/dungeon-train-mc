@@ -88,6 +88,11 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     p.add_argument("--pr", type=int, default=None, help="PR number (optional).")
     p.add_argument(
+        "--lead",
+        action="store_true",
+        help="Release summary: renders first in the release notes and the Discord post.",
+    )
+    p.add_argument(
         "--version",
         default=None,
         help="Override the computed ship version (X.Y.Z).",
@@ -157,6 +162,8 @@ def main(argv: list[str] | None = None) -> int:
         addresses=args.addresses,
         tags=args.tags,
     )
+    if args.lead:
+        entry = {**entry, "lead": True}
     try:
         new_entries = changelog_io.append_entry(data["entries"], entry)
     except ValueError as e:

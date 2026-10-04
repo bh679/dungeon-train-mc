@@ -328,6 +328,19 @@ def _render_entry(entry: dict) -> str:
     return "\n\n".join(block)
 
 
+def _render_lead(entry: dict) -> str:
+    """A release summary: heading, prose, then the other headline updates."""
+    block = [f"# {(entry.get('title') or '').strip()}"]
+    summary = (entry.get("summary") or "").strip()
+    if summary:
+        block.append(summary)
+    highlights = entry.get("highlights") or []
+    if highlights:
+        block.append("## Other significant updates")
+        block.append("\n".join(f"- {h}" for h in highlights))
+    return "\n\n".join(block)
+
+
 # Display labels for the tag-count line that opens the rendered notes. Mirrors
 # the client's en_us lang strings for the same tags.
 TAG_LABELS = {
@@ -384,13 +397,15 @@ def render_markdown(entries: list[dict]) -> str:
     """
     if not entries:
         return ""
+    leads = [e for e in entries if e.get("lead")]
+    entries = [e for e in entries if not e.get("lead")]
+    sections: list[str] = [_render_lead(e) for e in leads]
     groups: dict[str, list[dict]] = {}
     for e in entries:
         groups.setdefault(e.get("version", ""), []).append(e)
     ordered_versions = sorted(
         groups, key=lambda v: parse_semver(v) or (-1, -1, -1), reverse=True
     )
-    sections: list[str] = []
     tag_line = render_tag_line(entries)
     if tag_line:
         sections.append(tag_line)

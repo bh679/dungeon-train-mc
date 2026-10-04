@@ -52,6 +52,10 @@
           "items": {"type": "string", "minLength": 1},
           "description": "Optional player-facing bullet points."
         },
+        "lead": {
+          "type": "boolean",
+          "description": "Optional release summary. A lead entry renders first in the release notes (title as a heading, highlights under 'Other significant updates'), above the tag line and outside the per-version groups, so it opens the GitHub/Modrinth/CurseForge body and the Discord post."
+        },
         "addresses": {
           "type": "array",
           "uniqueItems": true,
