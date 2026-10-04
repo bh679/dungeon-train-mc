@@ -101,7 +101,7 @@ public final class PlayerMobPhotoGoal extends Goal {
     @Override
     public boolean canUse() {
         UUID wanted = subject.dungeontrain$photoSubject();
-        if (wanted == null || mob.isInCombat()) {
+        if (wanted == null || mob.isInCombat() || mob.isOnFire()) {
             return false;
         }
         ServerPlayer player = resolve(wanted);
@@ -162,8 +162,8 @@ public final class PlayerMobPhotoGoal extends Goal {
             abort("subject left");
             return;
         }
-        if (phase.ordinal() < Phase.PRINT.ordinal() && mob.isInCombat()) {
-            abort("combat");
+        if (phase.ordinal() < Phase.PRINT.ordinal() && (mob.isInCombat() || mob.isOnFire())) {
+            abort(mob.isOnFire() ? "on fire" : "combat");
             return;
         }
         mob.getNavigation().stop();
