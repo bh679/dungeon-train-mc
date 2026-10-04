@@ -588,8 +588,64 @@ def test_render_lead_opens_notes_outside_versions() -> None:
     assert md.count("### 1.2.0") == 1 and "**Big Drop**" not in md, md
 
 
+# --- link-changelog.py: title heading + "Read more" point at the update page ------------------
+
+LINK = os.path.join(HERE, "link-changelog.py")
+UPDATE_PAGE = "https://brennan.games/dungeontrain/update/"
+READ_MORE = f"[Read more]({UPDATE_PAGE})"
+
+
+def run_link(notes: str, *args: str) -> str:
+    r = subprocess.run([sys.executable, LINK, *args], input=notes, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    return r.stdout
+
+
+CURATED = "# Capture The View\n\nSnap photos.\n\n## Other significant updates\n\n- Bug fixes\n\n### 0.1148.0\n\n- More carriages\n"
+
+
+def test_link_changelog_links_title_and_appends_read_more():
+    out = run_link(CURATED)
+    lines = out.rstrip("\n").split("\n")
+    assert lines[0] == f"# [Capture The View]({UPDATE_PAGE})", lines[0]
+    assert "## Other significant updates" in lines, "sub-headings are never linked"
+    assert "### 0.1148.0" in lines
+    assert lines[-1] == READ_MORE and lines[-2] == "", lines[-3:]
+    assert out.count(UPDATE_PAGE) == 2
+
+
+def test_link_changelog_is_idempotent_and_strip_reverses_it():
+    once = run_link(CURATED)
+    assert run_link(once) == once, "re-linking a published body must not add a second footer"
+    assert run_link(once, "--strip") == CURATED
+
+
+def test_link_changelog_generated_notes_get_footer_only():
+    generated = "## What's Changed\n* feat: x by @bh679\n"
+    out = run_link(generated)
+    assert out.startswith("## What's Changed\n"), out
+    assert out.count(UPDATE_PAGE) == 1 and out.rstrip().endswith(READ_MORE)
+
+
+def test_link_changelog_leaves_a_heading_linking_elsewhere():
+    notes = "# [Wiki](https://example.org)\n\ntext\n"
+    out = run_link(notes)
+    assert out.startswith("# [Wiki](https://example.org)\n"), out
+    assert run_link(out, "--strip") == notes
+
+
+def test_link_changelog_rejects_unknown_args():
+    r = subprocess.run([sys.executable, LINK, "--bogus"], input="", capture_output=True, text=True)
+    assert r.returncode == 2
+
+
 def main() -> int:
     tests = [
+        test_link_changelog_links_title_and_appends_read_more,
+        test_link_changelog_is_idempotent_and_strip_reverses_it,
+        test_link_changelog_generated_notes_get_footer_only,
+        test_link_changelog_leaves_a_heading_linking_elsewhere,
+        test_link_changelog_rejects_unknown_args,
         test_append_computes_minor_bump_when_patch_nonzero,
         test_append_shares_version_when_patch_zero,
         test_append_version_override,

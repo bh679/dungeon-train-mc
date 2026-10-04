@@ -155,13 +155,14 @@ jobs:
               cp release-notes.md curseforge-notes.md
             fi
           fi
-          # Every published changelog ends by pointing at the update page on our website
-          # (scripts/release-notes/update-page-footer.md). The footer-free copy feeds update.json:
-          # that text is read inside Minecraft, whose version screen has its own update-page button.
-          cp curseforge-notes.md curseforge-notes.plain.md
-          FOOTER=scripts/release-notes/update-page-footer.md
+          # Every published changelog points at the update page on our website: its title heading
+          # links there and it ends with "Read more" (scripts/release-notes/link-changelog.py). The
+          # plain copy feeds update.json — that text is read inside Minecraft, whose version screen
+          # has its own update-page button.
+          python3 scripts/release-notes/link-changelog.py --strip < curseforge-notes.md > curseforge-notes.plain.md
           for f in release-notes.md curseforge-notes.md; do
-            printf '\n' >> "$f"; cat "$FOOTER" >> "$f"
+            python3 scripts/release-notes/link-changelog.py < "$f" > "$f.linked"
+            mv "$f.linked" "$f"
           done
           echo "::group::CurseForge mod changelog"; cat curseforge-notes.md; echo "::endgroup::"
 
