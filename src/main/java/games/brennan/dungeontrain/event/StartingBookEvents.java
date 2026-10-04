@@ -725,7 +725,9 @@ public final class StartingBookEvents {
             boolean mobDrop = item.getPersistentData().getBoolean(ENTITY_TAG_HANDED_PHOTO)
                     || games.brennan.dungeontrain.compat.PlayerMobDrops.inProgress()
                     || item.getOwner() instanceof games.brennan.playermob.entity.PlayerMobEntity;
-            if (games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
+            // A found photo (the relay pool's) burns on a player's drop too — it was never theirs to keep.
+            if ((games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
+                        || stack.is(games.brennan.dungeontrain.registry.ModItems.FOUND_PHOTOGRAPH.get()))
                     && !mobDrop
                     && !BURN_ENTITIES.containsKey(item.getUUID())) {
                 igniteItem(item, FlameVariant.DEFAULT);
