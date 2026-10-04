@@ -743,7 +743,7 @@ def write_verbatim(path: Path, text: str) -> None:
 # hints validate-locale.py requires to match the reference byte-for-byte, plus retired
 # prose no player ever sees. The editor never offers these, so an approved unit naming one
 # did not come from the editor.
-BOOK_STRUCTURAL_KEYS = frozenset({"id", "ref", "page", "_translator_note"})
+BOOK_STRUCTURAL_KEYS = frozenset({"id", "ref", "page", "after", "_translator_note"})
 BOOK_UNUSED_KEY = "unused"
 
 
