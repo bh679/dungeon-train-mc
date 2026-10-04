@@ -23200,9 +23200,9 @@
       ],
       "pr": 1817,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
     },
     {
       "id": "lectern-story-order",
@@ -23220,9 +23220,9 @@
       ],
       "pr": 1819,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
     },
     {
       "id": "dh-pause-hold-lod-gen",
@@ -23240,9 +23240,9 @@
       ],
       "pr": 1822,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
     },
     {
       "id": "photos-survive-broken-containers",
@@ -23257,9 +23257,9 @@
       "highlights": [],
       "pr": 1824,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
     }
   ]
 }
