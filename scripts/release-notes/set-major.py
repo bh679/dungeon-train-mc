@@ -12,6 +12,7 @@ Usage:
   python3 scripts/release-notes/set-major.py --id release-capture-the-view \
     --description-file notes.md
   python3 scripts/release-notes/set-major.py --id release-capture-the-view --clear-image
+  python3 scripts/release-notes/set-major.py --id release-approved-on-modrinth --milestone
 
 Path honours the CHANGELOG_FILE env override.
 """
@@ -27,6 +28,10 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--description-file", default=None, help="Markdown file for the release description.")
     p.add_argument("--image", default=None, help="https:// URL of the release photo.")
     p.add_argument("--clear-image", action="store_true", help="Remove the release photo.")
+    p.add_argument("--milestone", action="store_true", default=None,
+                   help="A moment, not an update: the update page labels it 'Milestone'.")
+    p.add_argument("--not-milestone", dest="milestone", action="store_false",
+                   help="Drop the milestone label.")
     args = p.parse_args(argv)
 
     if args.image and args.clear_image:
@@ -45,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
                 description = f.read()
         new_entries = [
             changelog_io.with_major(e, description=description, image=args.image,
-                                    clear_image=args.clear_image)
+                                    clear_image=args.clear_image, milestone=args.milestone)
             if e["id"] == args.id else e
             for e in entries
         ]

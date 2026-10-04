@@ -18,6 +18,24 @@
       "description": "Dungeon Train Minecraft Mod has offically launched on CurseForge! [https://www.curseforge.com/minecraft/mc-mods/dungeon-train](https://www.curseforge.com/minecraft/mc-mods/dungeon-train)\n\nIts still early days, but already looking good! Give it a download, let me know what you think.\n\nLeave a review to boost it! (I dont know if it supports reviews so if not, favourite it I guess)\n\nThanks to Kat Flare for the screenshots!"
     },
     {
+      "id": "release-approved-on-modrinth",
+      "version": "0.147.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Approved on Modrinth",
+      "summary": "Modrinth App has been approved! \ud83e\udd73 https://modrinth.com/mod/dungeon-train",
+      "highlights": [],
+      "date": "2026-05-12",
+      "released": true,
+      "released_in": "v0.147.0",
+      "released_at": "2026-05-12T07:14:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "Modrinth App has been approved! \ud83e\udd73 [https://modrinth.com/mod/dungeon-train](https://modrinth.com/mod/dungeon-train)\n\nGo check it out, fav it, save it!, download it, play it."
+    },
+    {
       "id": "release-todays-changes",
       "version": "0.270.0",
       "type": "docs",

@@ -712,6 +712,19 @@ def test_set_major_attaches_and_clears_image() -> None:
     assert r.returncode == 1 and "no changelog entry" in r.stderr, r.stderr
 
 
+def test_set_major_milestone_sets_keeps_and_drops() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    r = run(SET_MAJOR, ws, "--id", "drop", "--milestone")
+    assert r.returncode == 0, r.stderr
+    assert read_changelog(ws)["entries"][0]["milestone"] is True
+    r = run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.png")
+    assert r.returncode == 0 and read_changelog(ws)["entries"][0]["milestone"] is True, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--not-milestone")
+    assert r.returncode == 0 and "milestone" not in read_changelog(ws)["entries"][0], r.stderr
+
+
 def main() -> int:
     tests = [
         test_link_changelog_links_title_and_appends_read_more,
@@ -747,6 +760,7 @@ def main() -> int:
         test_validate_major_fields_rejects_bad_image_and_blank_description,
         test_append_major_with_description_and_image,
         test_set_major_attaches_and_clears_image,
+        test_set_major_milestone_sets_keeps_and_drops,
         test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,
