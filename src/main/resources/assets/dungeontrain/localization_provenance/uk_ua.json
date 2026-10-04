@@ -12,5 +12,7 @@
     "adventureitemnames": [],
     "playermob": [],
     "discordpresence": []
-  }
+  },
+  "books": "*",
+  "books_source_changed": []
 }
