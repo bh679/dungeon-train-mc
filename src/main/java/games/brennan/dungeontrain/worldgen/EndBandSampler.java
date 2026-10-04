@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -206,6 +207,7 @@ public final class EndBandSampler {
 
     /** Drop every queued and finished job (server stopping / world change). */
     public static void clear() {
+        EndBandBiomeRemap.clear();
         EPOCH.incrementAndGet();
         QUEUE.clear(job -> { });
         QUEUE.setPlayers(EndBandJobQueue.Players.NONE);
@@ -243,11 +245,14 @@ public final class EndBandSampler {
         RandomState random = end.getChunkSource().randomState();
 
         ChunkPos endPos = new ChunkPos(pos.x + EndBandStyle.endChunkOffsetX(passIndex), pos.z);
+        // A BetterEnd pass reads its biomes through the band's remap (vanilla End patches -> BetterEnd,
+        // #1785); a BoP pass reads its own generator's source as it is.
+        BiomeSource biomes = bop ? noise.getBiomeSource() : EndBandBiomeRemap.forEnd(end).wrap(noise.getBiomeSource());
         if (EndBandConfig.featureSpill()) {
-            return sampleWithSpill(end, noise, random, bop, pos, endPos, passIndex, bedY, displayMinY, displayMaxY, fill);
+            return sampleWithSpill(end, noise, random, biomes, bop, pos, endPos, passIndex, bedY, displayMinY, displayMaxY, fill);
         }
-        ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos);
-        OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk);
+        ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos, biomes);
+        OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk, biomes);
         ProtoChunk ground = fill.fill(end, noise, random, chunk, workspace);
         if (ground == null) return null;
         try {
@@ -275,10 +280,10 @@ public final class EndBandSampler {
      * first. A neighbour whose ground fails to generate is left blank, as before.
      */
     private static Result sampleWithSpill(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                          boolean bop, ChunkPos pos, ChunkPos endPos, long passIndex, int bedY,
-                                          int displayMinY, int displayMaxY, GroundFill fill) {
+                                          BiomeSource biomes, boolean bop, ChunkPos pos, ChunkPos endPos,
+                                          long passIndex, int bedY, int displayMinY, int displayMaxY, GroundFill fill) {
         CycleLayout.Style style = bop ? CycleLayout.Style.BOP : CycleLayout.Style.BETTER;
-        ProtoChunk cached = cachedGround(end, noise, random, style, endPos, fill);
+        ProtoChunk cached = cachedGround(end, noise, random, biomes, style, endPos, fill);
         if (cached == null) return null;
         ProtoChunk centre = copyGround(end, cached);
         Map<ChunkPos, ProtoChunk> originals = new HashMap<>(8);
@@ -287,13 +292,13 @@ public final class EndBandSampler {
             for (int dz = -1; dz <= 1; dz++) {
                 if (dx == 0 && dz == 0) continue;
                 ChunkPos n = new ChunkPos(endPos.x + dx, endPos.z + dz);
-                ProtoChunk g = cachedGround(end, noise, random, style, n, fill);
+                ProtoChunk g = cachedGround(end, noise, random, biomes, style, n, fill);
                 if (g == null) continue;
                 originals.put(n, g);
                 ring.put(n, copyGround(end, g));
             }
         }
-        OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, centre, ring::get);
+        OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, centre, ring::get, biomes);
         try {
             if (bop) OfflineChunkSampler.decorate(noise, workspace, centre, true, BopEnd.NAMESPACE);
             else OfflineChunkSampler.decorate(noise, workspace, centre);
@@ -316,16 +321,19 @@ public final class EndBandSampler {
 
     /** The undecorated ground of End chunk {@code endPos} for look {@code style}, generated once and shared. */
     private static ProtoChunk cachedGround(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                           CycleLayout.Style style, ChunkPos endPos, GroundFill fill) {
+                                           BiomeSource biomes, CycleLayout.Style style, ChunkPos endPos, GroundFill fill) {
         return GROUND.get(new EndBandGroundCache.Key(style, endPos.toLong()),
-                () -> generateGround(end, noise, random, endPos, fill));
+                () -> generateGround(end, noise, random, biomes, endPos, fill));
     }
 
-    /** Noise, surface rules and carvers for one End chunk — everything but decoration. */
+    /**
+     * Noise, surface rules and carvers for one End chunk — everything but decoration. The one place a cached
+     * ground's biomes are filled, so every sampler reads the same {@code biomes} for the same key.
+     */
     private static ProtoChunk generateGround(ServerLevel end, NoiseBasedChunkGenerator noise, RandomState random,
-                                             ChunkPos endPos, GroundFill fill) {
-        ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos);
-        OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk);
+                                             BiomeSource biomes, ChunkPos endPos, GroundFill fill) {
+        ProtoChunk chunk = OfflineChunkSampler.blankSample(end, noise, random, endPos, biomes);
+        OfflineChunkSampler.Workspace workspace = OfflineChunkSampler.workspaceFor(end, noise, random, chunk, biomes);
         ProtoChunk ground = fill.fill(end, noise, random, chunk, workspace);
         if (ground == null) return null;
         try {

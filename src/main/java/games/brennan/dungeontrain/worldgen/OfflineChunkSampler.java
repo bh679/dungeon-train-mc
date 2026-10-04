@@ -21,7 +21,6 @@ import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.ChunkSource;
 import net.minecraft.world.level.chunk.LevelChunkSection;
 import net.minecraft.world.level.chunk.LightChunk;
@@ -98,6 +97,8 @@ public final class OfflineChunkSampler {
 
     /** Set on the sampling thread for the span of {@link #decorate}; read by the decoration mixin. */
     private static final ThreadLocal<Boolean> SAMPLING = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    /** The biome source the sample this thread is decorating was generated from ({@link Workspace#biomes}). */
+    private static final ThreadLocal<BiomeSource> SAMPLE_BIOMES = new ThreadLocal<>();
 
     /** True while this thread is decorating an offline sample (see {@link #decorate}). */
     public static boolean isSampling() {
@@ -118,8 +119,10 @@ public final class OfflineChunkSampler {
         }
         try {
             ServerLevel server = level.getLevel();
-            ChunkGenerator generator = server.getChunkSource().getGenerator();
-            return generator.getBiomeSource().getNoiseBiome(QuartPos.fromBlock(pos.getX()),
+            // The source the sample was generated from — the End band's remapped one — else the level's.
+            BiomeSource source = SAMPLE_BIOMES.get();
+            if (source == null) source = server.getChunkSource().getGenerator().getBiomeSource();
+            return source.getNoiseBiome(QuartPos.fromBlock(pos.getX()),
                 QuartPos.fromBlock(pos.getY()), QuartPos.fromBlock(pos.getZ()),
                 server.getChunkSource().randomState().sampler());
         } catch (RuntimeException e) {
@@ -155,12 +158,15 @@ public final class OfflineChunkSampler {
     public static void decorate(NoiseBasedChunkGenerator generator, Workspace workspace, ProtoChunk chunk,
                                 boolean vanillaOnly, String alsoNamespace) {
         Boolean was = SAMPLING.get();
+        BiomeSource wasBiomes = SAMPLE_BIOMES.get();
         SAMPLING.set(Boolean.TRUE);
+        SAMPLE_BIOMES.set(workspace.biomes());
         VanillaOnlySample.set(vanillaOnly, alsoNamespace);
         try {
             generator.applyBiomeDecoration(workspace.region(), chunk, workspace.structures());
         } finally {
             SAMPLING.set(was);                // restored, not reset: a sample can run inside a display chunk's own decoration
+            SAMPLE_BIOMES.set(wasBiomes);
             VanillaOnlySample.set(false);
         }
     }
@@ -196,7 +202,7 @@ public final class OfflineChunkSampler {
      * and handed to every pass. The manager answers out of the throwaway chunks; the level's own would
      * read structure starts out of the world, one chunk load at a time.
      */
-    public record Workspace(WorldGenRegion region, StructureManager structures) {}
+    public record Workspace(WorldGenRegion region, StructureManager structures, BiomeSource biomes) {}
 
     private OfflineChunkSampler() {}
 
@@ -206,10 +212,21 @@ public final class OfflineChunkSampler {
      */
     public static ProtoChunk blankSample(ServerLevel level, NoiseBasedChunkGenerator generator,
                                          RandomState random, ChunkPos pos) {
+        return blankSample(level, generator, random, pos, generator.getBiomeSource());
+    }
+
+    /**
+     * {@link #blankSample(ServerLevel, NoiseBasedChunkGenerator, RandomState, ChunkPos)} with the biomes
+     * read from {@code source} instead of the generator's own — the End band's remapped source
+     * ({@link EndBandBiomeRemap}); hand the same source to {@link #workspaceFor} so surface rules, carvers
+     * and decoration read the chunk and its surroundings alike.
+     */
+    public static ProtoChunk blankSample(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                         RandomState random, ChunkPos pos, BiomeSource source) {
         Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
         ProtoChunk chunk = new ProtoChunk(pos, UpgradeData.EMPTY, level, biomes, null);
         // The End's biome sources ask the end_islands erosion once per quart: EndIslandDensityFunctionMixin memoises it.
-        chunk.fillBiomesFromNoise(generator.getBiomeSource(), random.sampler());
+        chunk.fillBiomesFromNoise(source, random.sampler());
         chunk.setPersistedStatus(ChunkStatus.SURFACE);
         return chunk;
     }
@@ -224,7 +241,7 @@ public final class OfflineChunkSampler {
                                         RandomState random, ProtoChunk chunk, Workspace workspace) {
         ChunkAccess filled =
             generator.fillFromNoise(Blender.empty(), random, workspace.structures(), chunk).join();
-        return finishGround(level, generator, random, filled);
+        return finishGround(level, generator, random, filled, workspace.biomes());
     }
 
     /**
@@ -257,12 +274,12 @@ public final class OfflineChunkSampler {
                 held.forEach(LevelChunkSection::release);
             }
         }
-        return finishGround(level, generator, random, filled);
+        return finishGround(level, generator, random, filled, workspace.biomes());
     }
 
     /** The surface rules and heightmaps over a noise-filled chunk — the tail both fills share. */
     private static ProtoChunk finishGround(ServerLevel level, NoiseBasedChunkGenerator generator,
-                                           RandomState random, ChunkAccess filled) {
+                                           RandomState random, ChunkAccess filled, BiomeSource source) {
         if (!(filled instanceof ProtoChunk ground)) return null;
         Heightmap.primeHeightmaps(ground, EnumSet.of(
             Heightmap.Types.WORLD_SURFACE_WG, Heightmap.Types.OCEAN_FLOOR_WG,
@@ -272,7 +289,7 @@ public final class OfflineChunkSampler {
         // pair is tracked, so heightmap-placed features would keep reading the noise-fill ground.
         // FEATURES is still below INITIALIZE_LIGHT, so no light engine is touched.
         ground.setPersistedStatus(ChunkStatus.FEATURES);
-        dressSurface(generator, level, random, ground);
+        dressSurface(generator, level, random, ground, source);
         return ground;
     }
 
@@ -286,11 +303,17 @@ public final class OfflineChunkSampler {
      */
     public static void dressSurface(NoiseBasedChunkGenerator generator, ServerLevel level,
                                     RandomState random, ProtoChunk chunk) {
+        dressSurface(generator, level, random, chunk, generator.getBiomeSource());
+    }
+
+    /** {@link #dressSurface(NoiseBasedChunkGenerator, ServerLevel, RandomState, ProtoChunk)} with biomes outside the chunk read from {@code source}. */
+    public static void dressSurface(NoiseBasedChunkGenerator generator, ServerLevel level,
+                                    RandomState random, ProtoChunk chunk, BiomeSource source) {
         NoiseGeneratorSettings settings = generator.generatorSettings().value();
         Registry<Biome> biomes = level.registryAccess().registryOrThrow(Registries.BIOME);
         NoiseChunk noise = NoiseChunk.forChunk(chunk, random, NO_BEARDS, settings,
             fluidPicker(settings), Blender.empty());
-        random.surfaceSystem().buildSurface(random, biomeManager(generator, random, level.getSeed(), chunk),
+        random.surfaceSystem().buildSurface(random, biomeManager(source, random, level.getSeed(), chunk),
             biomes, settings.useLegacyRandomSource(), new WorldGenerationContext(generator, level),
             chunk, noise, settings.surfaceRule());
     }
@@ -299,7 +322,7 @@ public final class OfflineChunkSampler {
     public static void carve(NoiseBasedChunkGenerator generator, RandomState random, ProtoChunk chunk,
                              Workspace workspace, long worldSeed) {
         generator.applyCarvers(workspace.region(), worldSeed, random,
-            biomeManager(generator, random, worldSeed, chunk), workspace.structures(), chunk,
+            biomeManager(workspace.biomes(), random, worldSeed, chunk), workspace.structures(), chunk,
             GenerationStep.Carving.AIR);
     }
 
@@ -326,7 +349,12 @@ public final class OfflineChunkSampler {
      */
     public static BiomeManager biomeManager(NoiseBasedChunkGenerator generator, RandomState random,
                                             long worldSeed, ChunkAccess sample) {
-        BiomeSource source = generator.getBiomeSource();
+        return biomeManager(generator.getBiomeSource(), random, worldSeed, sample);
+    }
+
+    /** {@link #biomeManager(NoiseBasedChunkGenerator, RandomState, long, ChunkAccess)} falling back to {@code source} outside the sample. */
+    public static BiomeManager biomeManager(BiomeSource source, RandomState random,
+                                            long worldSeed, ChunkAccess sample) {
         Climate.Sampler sampler = random.sampler();
         int minQx = QuartPos.fromBlock(sample.getPos().getMinBlockX());
         int minQz = QuartPos.fromBlock(sample.getPos().getMinBlockZ());
@@ -347,6 +375,12 @@ public final class OfflineChunkSampler {
         return workspaceFor(level, generator, random, chunk, pos -> null);
     }
 
+    /** {@link #workspaceFor(ServerLevel, NoiseBasedChunkGenerator, RandomState, ProtoChunk)} generating from {@code biomes} (see {@link #blankSample(ServerLevel, NoiseBasedChunkGenerator, RandomState, ChunkPos, BiomeSource)}). */
+    public static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                         RandomState random, ProtoChunk chunk, BiomeSource biomes) {
+        return workspaceFor(level, generator, random, chunk, pos -> null, biomes);
+    }
+
     /**
      * {@link #workspaceFor(ServerLevel, NoiseBasedChunkGenerator, RandomState, ProtoChunk)} with real
      * neighbours: {@code ring} answers a chunk to stand at a neighbouring position (or {@code null} for a
@@ -356,9 +390,16 @@ public final class OfflineChunkSampler {
     public static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
                                          RandomState random, ProtoChunk chunk,
                                          Function<ChunkPos, ProtoChunk> ring) {
+        return workspaceFor(level, generator, random, chunk, ring, generator.getBiomeSource());
+    }
+
+    /** {@link #workspaceFor(ServerLevel, NoiseBasedChunkGenerator, RandomState, ProtoChunk, Function)} generating from {@code biomes}. */
+    public static Workspace workspaceFor(ServerLevel level, NoiseBasedChunkGenerator generator,
+                                         RandomState random, ProtoChunk chunk,
+                                         Function<ChunkPos, ProtoChunk> ring, BiomeSource biomes) {
         WorldGenRegion region = regionAround(level, chunk,
             ChunkPyramid.GENERATION_PYRAMID.getStepTo(ChunkStatus.FEATURES), ring);
-        return new Workspace(region, level.structureManager().forWorldGenRegion(region));
+        return new Workspace(region, level.structureManager().forWorldGenRegion(region), biomes);
     }
 
     /**
