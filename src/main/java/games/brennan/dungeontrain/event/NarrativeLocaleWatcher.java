@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.AinLocaleOverlay;
 import games.brennan.dungeontrain.narrative.DeathLoreStore;
+import games.brennan.dungeontrain.narrative.HumanOnlyProse;
 import games.brennan.dungeontrain.narrative.NarrativeContentLocale;
 import games.brennan.dungeontrain.narrative.NarrativeTranslationOverrides;
 import games.brennan.dungeontrain.narrative.RandomBookRegistry;
@@ -89,6 +90,33 @@ public final class NarrativeLocaleWatcher {
     }
 
     /**
+     * Re-apply the host's "Human translations only" choice to prose and item names already loaded in
+     * the current content locale. The locale has not changed, so {@link #reevaluate} would skip it.
+     * Server thread only.
+     */
+    public static void reapplyHumanOnly(MinecraftServer server) {
+        if (server == null) return;
+        ResourceManager rm = server.getResourceManager();
+        reloadProse(rm);
+        selectItemNames(rm, NarrativeContentLocale.current());
+    }
+
+    /**
+     * AIN item names / mob titles: overlaid via AIN's session-overlay API (host-keyed, English
+     * players untouched), NOT a global datapack override. Guarded — a cross-mod API failure must
+     * degrade to English names, never disrupt the server tick.
+     */
+    private static void selectItemNames(ResourceManager rm, String locale) {
+        String names = HumanOnlyProse.itemNameLocale(locale);
+        try {
+            AinLocaleOverlay.select(rm, names);
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] AIN item-name overlay failed for '{}' — leaving item names in AIN's base language",
+                names.isEmpty() ? "en (base)" : names, t);
+        }
+    }
+
+    /**
      * Resolve the host locale, normalise to a supported content locale (else English), and reload the
      * prose registries only when that differs from the currently-applied locale. Runs on the server
      * thread; safe to call frequently — it's a no-op once the locale has settled.
@@ -102,15 +130,7 @@ public final class NarrativeLocaleWatcher {
 
         NarrativeContentLocale.set(desired);
         reloadProse(rm);
-        // AIN item names / mob titles: overlaid via AIN's session-overlay API (host-keyed, English
-        // players untouched), NOT a global datapack override. Guarded — a cross-mod API failure
-        // must degrade to English names, never disrupt the server tick.
-        try {
-            AinLocaleOverlay.select(rm, desired);
-        } catch (Throwable t) {
-            LOGGER.error("[DungeonTrain] AIN item-name overlay failed for '{}' — leaving item names in AIN's base language",
-                desired.isEmpty() ? "en (base)" : desired, t);
-        }
+        selectItemNames(rm, desired);
         LOGGER.info("[DungeonTrain] Narrative content locale set to '{}' (host locale '{}') — prose registries reloaded",
             desired.isEmpty() ? "en (base)" : desired, host);
     }

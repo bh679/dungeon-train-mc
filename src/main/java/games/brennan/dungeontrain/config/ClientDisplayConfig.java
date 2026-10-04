@@ -336,6 +336,7 @@ public final class ClientDisplayConfig {
      * save would have made. There is no decision in that worth interrupting a title screen for.</p>
      */
     public static final ModConfigSpec.BooleanValue CONFIRM_BUILD_RESTORE;
+    public static final ModConfigSpec.BooleanValue HUMAN_ONLY_TRANSLATIONS;
 
     /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
     public enum PoliticalFilter {
@@ -401,6 +402,7 @@ public final class ClientDisplayConfig {
         DEATH_FORM_MUTED_IDS = pair.getLeft().deathFormMutedIds;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONFIRM_BUILD_RESTORE = pair.getLeft().confirmBuildRestore;
+        HUMAN_ONLY_TRANSLATIONS = pair.getLeft().humanOnlyTranslations;
         CONTENT_MODE = pair.getLeft().contentMode;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
@@ -740,6 +742,14 @@ public final class ClientDisplayConfig {
                 .define("confirmBuildRestore", false);
         b.pop();
 
+        b.push("translations");
+        ModConfigSpec.BooleanValue humanOnlyTranslations = b
+                .comment("Show only translations a person wrote or reviewed. Dungeon Train text that is still",
+                         "machine-translated and unreviewed in your language is shown in English instead.",
+                         "Set from the person button on the Language screen.")
+                .define("humanOnly", false);
+        b.pop();
+
         b.push("configIntegrity");
         ModConfigSpec.ConfigValue<String> configDeviationAcknowledged = b
                 .comment("Internal: the Dungeon Train config change you last chose to keep at the launch prompt,",
@@ -804,7 +814,7 @@ public final class ClientDisplayConfig {
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
-                confirmBuildRestore);
+                confirmBuildRestore, humanOnlyTranslations);
     }
 
     /**
@@ -988,6 +998,21 @@ public final class ClientDisplayConfig {
         if (CONFIRM_BUILD_RESTORE.get() == value) return; // skip a needless TOML write
         CONFIRM_BUILD_RESTORE.set(value);
         CONFIRM_BUILD_RESTORE.save();
+    }
+
+    /**
+     * Whether the player has asked for human translations only — machine-translated lines nobody
+     * has reviewed fall back to English. {@code false} wherever the client spec is absent.
+     */
+    public static boolean isHumanOnlyTranslations() {
+        return isLoaded() && HUMAN_ONLY_TRANSLATIONS.get();
+    }
+
+    public static void setHumanOnlyTranslations(boolean value) {
+        if (!isLoaded()) return;
+        if (HUMAN_ONLY_TRANSLATIONS.get() == value) return; // skip a needless TOML write
+        HUMAN_ONLY_TRANSLATIONS.set(value);
+        HUMAN_ONLY_TRANSLATIONS.save();
     }
 
     // ----- Developer-message consent state (see DevMessageConsentClient) -----
@@ -1889,6 +1914,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
-            ModConfigSpec.BooleanValue confirmBuildRestore
+            ModConfigSpec.BooleanValue confirmBuildRestore,
+            ModConfigSpec.BooleanValue humanOnlyTranslations
     ) {}
 }
