@@ -23410,6 +23410,70 @@
       "released": true,
       "released_in": "v0.1160.0",
       "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "human-translations-only",
+      "version": "0.1161.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Human translations only",
+      "summary": "Prefer English over machine translation? A new switch on the Language screen shows only translations a person wrote or reviewed. Anything still machine-translated and unreviewed appears in English instead. It's off by default.",
+      "highlights": [
+        "New person button at the top right of the Language screen turns it on or off, instantly",
+        "Lines translated or reviewed by the community stay in your language",
+        "In single-player, unreviewed books and item names follow the same choice"
+      ],
+      "pr": 1837,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1161.0",
+      "released_at": "2026-10-04T19:20:57Z"
+    },
+    {
+      "id": "own-photo-tribute",
+      "version": "0.1162.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tribute your own photos",
+      "summary": "Took a photo worth sharing? Pay Tribute to your own print and it's posted to the passenger log on Discord for everyone to see \u2014 and it reaches twice as many players before it fades. The first Tribute in a life costs 3 emeralds; each one after costs three times the last.",
+      "highlights": [
+        "Pay Tribute to your own fresh photo to post it to the passenger log on Discord",
+        "A tributed photo can be seen by twice as many players before it fades",
+        "Costs 3 emeralds, tripling with each Tribute that life"
+      ],
+      "pr": 1835,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-plural-source",
+      "version": "0.1162.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Translators can now fix every plural form",
+      "summary": "In the in-game translation editor, the extra plural rows some languages need \u2014 Ukrainian, Russian, Polish and Romanian count things in three ways where English has two \u2014 showed no English text and refused to save anything with a number in it. They now show the English they stand for, so those lines can be corrected like any other.",
+      "highlights": [
+        "Plural rows show their English original instead of \"not supplied\"",
+        "Save works on those rows again \u2014 a %s is no longer reported as foreign"
+      ],
+      "pr": 1838,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
