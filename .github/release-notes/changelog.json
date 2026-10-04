@@ -23504,12 +23504,10 @@
         "fix",
         "translations"
       ],
-      "title": "Translators get credit for every line they write",
-      "summary": "Lines a community translator wrote are now always credited to them, even where a machine translation said the same thing, and their latest wording is the one that ships. Ukrainian players get MrMultibite's newest versions throughout.",
+      "title": "Translator credit fixes",
+      "summary": "Community translators are credited correctly for their work.",
       "highlights": [
-        "Community translations always take credit over machine ones.",
-        "A translator's latest fix is the version you read.",
-        "Ukrainian books and lines now show MrMultibite's newest wording."
+        "Ukrainian translation updates."
       ],
       "pr": 1843,
       "date": "2026-10-04",
