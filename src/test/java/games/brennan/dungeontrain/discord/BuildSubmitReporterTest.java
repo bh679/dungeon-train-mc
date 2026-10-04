@@ -26,16 +26,23 @@ class BuildSubmitReporterTest {
     }
 
     @Test
-    @DisplayName("id, kind and version share one line")
-    void fieldsWithVersion() {
-        assertEquals(List.of(new DeathField("Build", "#45991 · building · 🟢 DT 0.1149.0")),
-                BuildSubmitReporter.fields(45991, "building", null, "🟢 DT 0.1149.0"));
+    @DisplayName("id, kind and version share one bold-labelled line")
+    void buildLineWithVersion() {
+        assertEquals("**Build** #45991 · building · 🟢 DT 0.1149.0",
+                BuildSubmitReporter.buildLine(45991, "building", null, "🟢 DT 0.1149.0"));
     }
 
     @Test
     @DisplayName("no version line leaves it off the line")
-    void fieldsWithoutVersion() {
+    void buildLineWithoutVersion() {
+        assertEquals("**Build** #155 · carriage / roof",
+                BuildSubmitReporter.buildLine(155, "carriage", "roof", ""));
+    }
+
+    @Test
+    @DisplayName("the review-verdict field is unchanged")
+    void reviewField() {
         assertEquals(List.of(new DeathField("Build", "#155 · carriage / roof")),
-                BuildSubmitReporter.fields(155, "carriage", "roof", ""));
+                BuildSubmitReporter.fields(155, "carriage", "roof"));
     }
 }
