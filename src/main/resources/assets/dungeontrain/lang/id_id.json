@@ -3693,6 +3693,7 @@
   "advancements.dungeontrain.enchiridion.found_footage.title": "Rekaman Temuan",
   "advancements.dungeontrain.enchiridion.found_footage.description": "Lihat foto yang ditemukan di kereta.",
   "advancements.dungeontrain.enchiridion.found_footage.hint": "Seseorang meninggalkan ini.",
+  "advancements.dungeontrain.photo.click": "Klik untuk melihat foto",
   "chat.dungeontrain.free_play.cause.portal_rate": "Seberapa sering gerbong dimensi muncul telah diubah di dunia ini.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Rel yang dihasilkan dunia ini bukan lagi rel yang menjadi acuan penyeimbangan Dungeon Train, jadi dunia ini tetap dalam Permainan Bebas.",
   "chat.dungeontrain.free_play.cause.dt_config": "Pengaturan tingkat kesulitan Dungeon Train telah diubah.",

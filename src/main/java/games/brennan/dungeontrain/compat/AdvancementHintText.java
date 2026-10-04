@@ -39,6 +39,8 @@ public final class AdvancementHintText {
     /** Tooltip footer on a trackable, unearned advancement: click to track / click to stop tracking. */
     private static final String TRACK_CLICK_KEY = "advancements.dungeontrain.track.click";
     private static final String TRACK_TRACKING_KEY = "advancements.dungeontrain.track.tracking";
+    /** Tooltip footer on an earned advancement whose photo this computer kept: click to see it. */
+    private static final String PHOTO_CLICK_KEY = "advancements.dungeontrain.photo.click";
 
     /**
      * The advancements worth tracking: the ones a single action rules out for a life, plus the
@@ -76,6 +78,27 @@ public final class AdvancementHintText {
         if (path.endsWith("/root")) return false;
         if (path.startsWith("editor/")) return false;
         return progress == null || !progress.isDone();
+    }
+
+    /**
+     * The extra line under an <em>earned</em> advancement's description when the photo that earned it
+     * was kept ({@link games.brennan.dungeontrain.client.EarnedPhotos}), or {@code null} for none.
+     */
+    public static Component earnedPhotoFooter(ResourceLocation id, AdvancementProgress progress) {
+        if (progress == null || !progress.isDone()) return null;
+        if (!games.brennan.dungeontrain.client.EarnedPhotos.has(id)) return null;
+        return Component.translatable(PHOTO_CLICK_KEY).withStyle(ChatFormatting.DARK_GRAY);
+    }
+
+    /** {@code description} with {@link #earnedPhotoFooter} split onto the end, or {@code description} itself. */
+    public static java.util.List<net.minecraft.util.FormattedCharSequence> withEarnedPhotoFooter(
+            java.util.List<net.minecraft.util.FormattedCharSequence> description, ResourceLocation id,
+            AdvancementProgress progress, net.minecraft.client.gui.Font font, int width) {
+        Component footer = earnedPhotoFooter(id, progress);
+        if (footer == null) return description;
+        java.util.List<net.minecraft.util.FormattedCharSequence> out = new java.util.ArrayList<>(description);
+        out.addAll(font.split(footer, width));
+        return out;
     }
 
     /** True for an advancement the server can rule out for a life (and so the player may track). */

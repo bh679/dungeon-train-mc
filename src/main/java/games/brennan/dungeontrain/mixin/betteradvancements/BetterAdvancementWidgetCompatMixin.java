@@ -190,7 +190,8 @@ public abstract class BetterAdvancementWidgetCompatMixin {
     private List<FormattedCharSequence> dungeontrain$swapDescription(List<FormattedCharSequence> original) {
         if (advancementNode == null) return original;
         if (!AdvancementHintText.shouldMask(advancementNode.holder().id(), advancementProgress)) {
-            return original;
+            return AdvancementHintText.withEarnedPhotoFooter(
+                original, advancementNode.holder().id(), advancementProgress, minecraft.font, width);
         }
         int revision = AdvancementHintText.maskedDescriptionRevision();
         if (dungeontrain$hiddenDesc == null || dungeontrain$hiddenDescRevision != revision) {

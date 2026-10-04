@@ -3693,6 +3693,7 @@
   "advancements.dungeontrain.enchiridion.found_footage.title": "ファウンド・フッテージ",
   "advancements.dungeontrain.enchiridion.found_footage.description": "列車で見つけた写真を見る。",
   "advancements.dungeontrain.enchiridion.found_footage.hint": "誰かが置いていったもの。",
+  "advancements.dungeontrain.photo.click": "クリックで写真を見る",
   "chat.dungeontrain.free_play.cause.portal_rate": "このワールドでは、次元車両の出現頻度が変更されています。",
   "chat.dungeontrain.free_play.portal_rate_changed": "このワールドが生成する線路は、もう Dungeon Train が調整対象としているものではありません。そのためこのワールドはフリープレイのままになります。",
   "chat.dungeontrain.free_play.cause.dt_config": "Dungeon Train の難易度設定が変更されています。",

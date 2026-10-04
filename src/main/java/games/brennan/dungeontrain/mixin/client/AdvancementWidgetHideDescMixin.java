@@ -147,7 +147,10 @@ public abstract class AdvancementWidgetHideDescMixin {
                  target = "Lnet/minecraft/client/gui/screens/advancements/AdvancementWidget;description:Ljava/util/List;")
     )
     private List<FormattedCharSequence> dungeontrain$swapDescription(List<FormattedCharSequence> original) {
-        if (!dungeontrain$shouldHideDescription()) return original;
+        if (!dungeontrain$shouldHideDescription()) {
+            return advancementNode == null ? original : AdvancementHintText.withEarnedPhotoFooter(
+                original, advancementNode.holder().id(), progress, minecraft.font, width);
+        }
         return dungeontrain$getHiddenDesc();
     }
 

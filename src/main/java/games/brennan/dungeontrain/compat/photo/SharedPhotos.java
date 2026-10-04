@@ -379,7 +379,7 @@ public final class SharedPhotos {
         Optional<InteractionHand> hand = heldSharedHand(player);
         if (hand.isEmpty()) return false;
         ItemStack held = player.getItemInHand(hand.get());
-        recordView(player, sharedId(held));
+        AdvancementPhotoCapture.during(held, () -> recordView(player, sharedId(held)));
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurn(player, held);
         // As far as this copy knows: the views it came with, less the one just taken.
@@ -414,8 +414,10 @@ public final class SharedPhotos {
         // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
-        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
-        recordView(player, photoId);
+        AdvancementPhotoCapture.during(held, () -> {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
+            recordView(player, photoId);
+        });
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());

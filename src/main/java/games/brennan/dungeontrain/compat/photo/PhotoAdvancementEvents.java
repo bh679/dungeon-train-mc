@@ -54,6 +54,11 @@ public final class PhotoAdvancementEvents {
     @SubscribeEvent
     public static void onFrameAdded(FrameAddedEvent event) {
         if (!(event.getCameraHolderEntity() instanceof ServerPlayer player)) return;
+        // Every advancement this shot earns remembers it — see AdvancementPhotoCapture.
+        AdvancementPhotoCapture.during(event.getFrame(), () -> photoTriggers(player, event));
+    }
+
+    private static void photoTriggers(ServerPlayer player, FrameAddedEvent event) {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TOOK_PHOTO);
         try {
             ExtraData data = event.getFrame().extraData();
@@ -70,7 +75,8 @@ public final class PhotoAdvancementEvents {
     public static void onPickup(ItemEntityPickupEvent.Post event) {
         if (!(event.getPlayer() instanceof ServerPlayer player)) return;
         if (!event.getItemEntity().getPersistentData().getBoolean(StartingBookEvents.ENTITY_TAG_HANDED_PHOTO)) return;
-        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.PHOTOGRAPHED_BY_PLAYERMOB);
+        AdvancementPhotoCapture.during(event.getOriginalStack(), () ->
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.PHOTOGRAPHED_BY_PLAYERMOB));
     }
 
     private static PhotoSubjects.Facts facts(ServerPlayer player, ExtraData data, List<LivingEntity> inFrame) {

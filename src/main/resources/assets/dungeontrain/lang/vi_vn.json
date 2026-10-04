@@ -3693,6 +3693,7 @@
   "advancements.dungeontrain.enchiridion.found_footage.title": "Thước Phim Tìm Thấy",
   "advancements.dungeontrain.enchiridion.found_footage.description": "Xem một bức ảnh tìm thấy trên tàu.",
   "advancements.dungeontrain.enchiridion.found_footage.hint": "Ai đó đã bỏ lại thứ này.",
+  "advancements.dungeontrain.photo.click": "Nhấp để xem ảnh",
   "chat.dungeontrain.free_play.cause.portal_rate": "Tần suất xuất hiện của các toa liên chiều đã bị thay đổi trong thế giới này.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Đường ray mà thế giới này sinh ra không còn là đường ray mà Dungeon Train được cân bằng theo nữa, nên thế giới này vẫn ở chế độ Chơi Tự Do.",
   "chat.dungeontrain.free_play.cause.dt_config": "Các thiết lập độ khó của Dungeon Train đã bị thay đổi.",
