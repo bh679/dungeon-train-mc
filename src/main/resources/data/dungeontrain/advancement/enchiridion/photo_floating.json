@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/photo_skylands",
+  "display": {
+    "icon": {
+      "id": "minecraft:grass_block"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_floating.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_floating.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "photo": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "band:reached_floating"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "photo"
+    ]
+  ]
+}

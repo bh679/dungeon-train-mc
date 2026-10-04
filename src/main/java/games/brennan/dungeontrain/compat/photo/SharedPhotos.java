@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.GlobalTributeStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.PhotoPaperComposite;
@@ -101,6 +103,12 @@ public final class SharedPhotos {
     /** Views a photo starts with, and goes back to after a Tribute (the relay's PLAYER_PHOTOS_VIEWS). */
     public static final int VIEWS_MAX = 10;
 
+    /** A photographer's Tribute to their own print multiplies its views by this (the relay's BOOST_FACTOR). */
+    public static final int OWN_BOOST_FACTOR = 2;
+
+    /** Frame extra-data key carrying the key a print was uploaded with, so its photographer can boost it later. */
+    public static final String UPLOAD_KEY = "dt_upload_key";
+
     /** Emeralds the first Tribute to a photo costs; each Tribute it has had adds one. */
     public static final int TRIBUTE_BASE_COST = 1;
 
@@ -108,6 +116,7 @@ public final class SharedPhotos {
     static final String VIEW_PATH = "/photos/view";
     static final String TRIBUTE_PATH = "/photos/tribute";
     static final String RESTORE_PATH = "/photos/restore";
+    static final String BOOST_PATH = "/photos/boost";
 
     /** Chat line families, keyed {@code <key>.1..N} in the lang files. */
     private static final int SEND_OFF_LINES = 10;
@@ -130,8 +139,8 @@ public final class SharedPhotos {
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1).connectTimeout(REQUEST_TIMEOUT).build();
 
-    private record PendingUpload(UUID playerId, String author, String exposureId, JsonObject meta, int ticksLeft) {
-        PendingUpload tick() { return new PendingUpload(playerId, author, exposureId, meta, ticksLeft - 1); }
+    private record PendingUpload(UUID playerId, String author, String exposureId, String key, JsonObject meta, int ticksLeft) {
+        PendingUpload tick() { return new PendingUpload(playerId, author, exposureId, key, meta, ticksLeft - 1); }
     }
 
     /** A PlayerMob's photo of {@code playerId}, waiting for the client's pixels before it is posted to Discord. */
@@ -174,10 +183,29 @@ public final class SharedPhotos {
         Frame frame = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         // Projected frames are images from outside the game — never shared.
         if (frame == null || frame.isProjected() || !frame.identifier().isId()) return;
+        String key = newKey();
+        // The print carries its upload key, so a Tribute from its photographer can boost it later.
+        photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable().updateExtraData(tag -> tag.putString(UPLOAD_KEY, key)).toImmutable());
         List<PendingUpload> next = new ArrayList<>(pendingUploads);
         next.add(new PendingUpload(player.getUUID(), player.getGameProfile().getName(),
-                frame.identifier().id(), buildMeta(player, frame.extraData()), PIXEL_WAIT_TICKS));
+                frame.identifier().id(), key, buildMeta(player, frame.extraData()), PIXEL_WAIT_TICKS));
         pendingUploads = List.copyOf(next);
+    }
+
+    /**
+     * The photographer paid Tribute to their own print: ask the relay to give its upload
+     * {@link #OWN_BOOST_FACTOR}× the views. Safe to send before the upload itself — the relay holds the
+     * boost until the photo arrives. Returns false when the print was never uploaded (no key).
+     */
+    public static boolean boostOwnUpload(ServerPlayer player, ItemStack print) {
+        Frame frame = print.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        String key = frame == null ? "" : frame.extraData().getString(UPLOAD_KEY);
+        if (key.isBlank()) return false;
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", bare(player.getUUID()));
+        body.addProperty("key", key);
+        RelayOutbox.get().enqueue(BOOST_PATH, body.toString());
+        return true;
     }
 
     /**
@@ -262,7 +290,7 @@ public final class SharedPhotos {
             if (data.isPresent()) {
                 encodeThen(server, data.get(), upload.exposureId(), png -> {
                     RelayOutbox.get().enqueue(SUBMIT_PATH,
-                            buildPayload(bare(upload.playerId()), upload.author(), newKey(), png, upload.meta()).toString());
+                            buildPayload(bare(upload.playerId()), upload.author(), upload.key(), png, upload.meta()).toString());
                     ServerPlayer player = server.getPlayerList().getPlayer(upload.playerId());
                     if (player != null) player.sendSystemMessage(line("chat.dungeontrain.shared_photo", SEND_OFF_LINES, player));
                 });
@@ -273,6 +301,12 @@ public final class SharedPhotos {
             }
         }
         pendingUploads = List.copyOf(waiting);
+    }
+
+    /** {@link #discordPng} off-thread, then hand the PNG to {@code then} back on the server thread. */
+    static void encodeForDiscord(MinecraftServer server, ExposureData data, Optional<int[]> paper, String label,
+                                 java.util.function.Consumer<byte[]> then) {
+        encodeThen(server, data, (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, paper), label, then);
     }
 
     /** Encode off-thread, then hand the PNG to {@code then} back on the server thread. */
@@ -377,7 +411,7 @@ public final class SharedPhotos {
         Optional<InteractionHand> hand = heldSharedHand(player);
         if (hand.isEmpty()) return false;
         ItemStack held = player.getItemInHand(hand.get());
-        recordView(player, sharedId(held));
+        AdvancementPhotoCapture.during(held, () -> recordView(player, sharedId(held)));
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurn(player, held);
         // As far as this copy knows: the views it came with, less the one just taken.
@@ -389,6 +423,7 @@ public final class SharedPhotos {
     }
 
     private static void recordView(ServerPlayer player, int photoId) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.VIEWED_FOUND_PHOTO);
         markSpent(photoId);
         RelayOutbox.get().enqueue(VIEW_PATH, action(player, photoId).toString());
     }
@@ -411,7 +446,13 @@ public final class SharedPhotos {
         // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
-        recordView(player, photoId);
+        AdvancementPhotoCapture.during(held, () -> {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player,
+                    isOwnPhoto(held, player.getGameProfile().getName())
+                            ? EnchiridionAdvancements.TRIBUTED_OWN_PHOTO : EnchiridionAdvancements.TRIBUTED_OTHERS_PHOTO);
+            recordView(player, photoId);
+        });
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
@@ -597,6 +638,16 @@ public final class SharedPhotos {
     }
 
     /** Who took the photo in {@code stack}: a found photo's credited name, else the frame's photographer. Blank if none. */
+    /** True when {@code playerName} took the found photo {@code stack} — the relay can hand you back your own. */
+    static boolean isOwnPhoto(ItemStack stack, String playerName) {
+        return isOwnAuthor(authorOf(stack), playerName);
+    }
+
+    /** Whether a photo's credited author is {@code playerName} (blank authors are nobody's). */
+    static boolean isOwnAuthor(String author, String playerName) {
+        return author != null && !author.isBlank() && author.equals(playerName);
+    }
+
     public static String authorOf(ItemStack stack) {
         Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         if (frame == null) return "";

@@ -121,6 +121,16 @@ public final class ModAdvancementTriggers {
     public static final Supplier<EchoFeatTrigger> ECHO_FEAT =
         TRIGGERS.register("echo_feat", EchoFeatTrigger::new);
 
+    // --- The Enchiridion: camera advancements ---
+
+    /** Something in (or about) a photo — see {@link PhotoSubjectTrigger} for the subject keys. */
+    public static final Supplier<PhotoSubjectTrigger> PHOTO_SUBJECT =
+        TRIGGERS.register("photo_subject", PhotoSubjectTrigger::new);
+
+    /** Distinct biomes a player has photographed — same {@code threshold} shape as {@link #BIOMES_VISITED}. */
+    public static final Supplier<BiomesVisitedTrigger> PHOTO_BIOMES =
+        TRIGGERS.register("photo_biomes", BiomesVisitedTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {

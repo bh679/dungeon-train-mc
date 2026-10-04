@@ -87,6 +87,8 @@ public final class NarrativeContentLocale {
         // (stories/, random_books/, starting_books/…, death_lore/) that never collides with
         // starting_books' own context subfolders.
         String category = dir.startsWith(NARRATIVES_PREFIX) ? dir.substring(NARRATIVES_PREFIX.length()) : dir;
+        // The host asked for human translations only and this one is unreviewed AI: English base.
+        if (HumanOnlyProse.skipsBook(loc, category + "/" + rest)) return Optional.empty();
         String overlayPath = ROOT + "/" + loc + "/" + category + "/" + rest + JSON_EXT;
         return resourceManager.getResource(
             ResourceLocation.fromNamespaceAndPath(baseId.getNamespace(), overlayPath));

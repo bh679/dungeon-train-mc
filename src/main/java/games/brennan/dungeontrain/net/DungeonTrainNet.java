@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "114";
+    public static final String PROTOCOL_VERSION = "116";
 
     private DungeonTrainNet() {}
 
@@ -153,6 +153,8 @@ public final class DungeonTrainNet {
         // Disposable-camera photographs: client ScreenEvent.Closing on Exposure's photograph view → server burn.
         registrar.playToServer(PhotographViewClosedPacket.TYPE, PhotographViewClosedPacket.STREAM_CODEC, PhotographViewClosedPacket::handle);
         registrar.playToServer(PhotoTributePacket.TYPE, PhotoTributePacket.STREAM_CODEC, PhotoTributePacket::handle);
+        registrar.playToServer(OwnPhotoTributePacket.TYPE, OwnPhotoTributePacket.STREAM_CODEC, OwnPhotoTributePacket::handle);
+        registrar.playToClient(OwnPhotoTributeCostPacket.TYPE, OwnPhotoTributeCostPacket.STREAM_CODEC, OwnPhotoTributeCostPacket::handle);
 
         // Book-read telemetry: client measures a book read (open→close, per-page timing) and sends it on
         // close; server consent-gates + enriches narrative fields + reports to the relay's Books explorer.
@@ -228,6 +230,8 @@ public final class DungeonTrainNet {
         // "opened advancements" flag) and renders it with the live keybind.
         registrar.playToClient(AdvancementsHintPacket.TYPE, AdvancementsHintPacket.STREAM_CODEC, AdvancementsHintPacket::handle);
         registrar.playToClient(LifeDisqualifiedPacket.TYPE, LifeDisqualifiedPacket.STREAM_CODEC, LifeDisqualifiedPacket::handle);
+        registrar.playToClient(EarnedPhotoPacket.TYPE, EarnedPhotoPacket.STREAM_CODEC, EarnedPhotoPacket::handle);
+        registrar.playToClient(PhotoBiomesPacket.TYPE, PhotoBiomesPacket.STREAM_CODEC, PhotoBiomesPacket::handle);
 
         // Free Play confirmation: server holds a tainting action (creative/spectator
         // switch or cheat command) and asks before it commits; client replies

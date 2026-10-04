@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/biomes_25",
+  "parent": "dungeontrain:dungeon_train/ridden_biomes_100",
   "display": {
     "icon": { "id": "minecraft:lodestone" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.all_biome_families.title" },
@@ -12,7 +12,7 @@
   "criteria": {
     "milestone": {
       "trigger": "dungeontrain:biomes_visited",
-      "conditions": { "threshold": 63 }
+      "conditions": { "threshold": 150 }
     }
   },
   "requirements": [["milestone"]]
