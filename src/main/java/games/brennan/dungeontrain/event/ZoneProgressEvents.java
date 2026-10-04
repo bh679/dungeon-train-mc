@@ -89,6 +89,9 @@ public final class ZoneProgressEvents {
                         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, t.id());
                     }
                 }
+                if (BandAdvancements.isPastReverseJourney(level, px)) {
+                    ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, BandAdvancements.TFARCENIM);
+                }
                 continue;
             }
 

@@ -94,7 +94,8 @@ public final class RunStatsEvents {
     /** Radius (blocks) within which another passenger counts toward "Others?". */
     private static final double PROXIMITY_RADIUS = 4.0;
     /** A PlayerMob whose feeling (0–10 scale, default 5) toward the player exceeds this is the death-screen "friend" (portrait). */
-    private static final float FRIEND_FEELING_MIN = 6.0f;
+    /** A PlayerMob whose feeling toward a player is above this counts as that player's friend (death screen, photos). */
+    public static final float FRIEND_FEELING_MIN = 6.0f;
     /**
      * Upper bound on a single tracked damage event. Command / instakill sources
      * (e.g. {@code /kill} deals {@link Float#MAX_VALUE}) are already excluded by

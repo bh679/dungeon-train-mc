@@ -5560,8 +5560,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "10",
-        "8"
+        "25",
+        "20"
       ]
     }
   },
@@ -5569,8 +5569,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "17",
-        "15"
+        "50",
+        "40"
       ]
     }
   },
@@ -5578,8 +5578,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "25",
-        "20"
+        "100",
+        "90"
       ]
     }
   },
@@ -14926,6 +14926,25 @@
       "examples": [
         "0.1130.0 or above",
         "1.2.0 exactly"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.photo_biomes.description": {
+    "1": {
+      "label": "distinct biomes to take photos in",
+      "examples": [
+        "10",
+        "25",
+        "50"
+      ]
+    }
+  },
+  "gui.dungeontrain.earned_photos.count": {
+    "1": {
+      "label": "how many photos a collection album holds",
+      "examples": [
+        "3",
+        "26"
       ]
     }
   }

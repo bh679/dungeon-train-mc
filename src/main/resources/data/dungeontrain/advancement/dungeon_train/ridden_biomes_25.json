@@ -12,7 +12,7 @@
   "criteria": {
     "milestone": {
       "trigger": "dungeontrain:biomes_visited",
-      "conditions": { "threshold": 10 }
+      "conditions": { "threshold": 25 }
     }
   },
   "requirements": [["milestone"]]

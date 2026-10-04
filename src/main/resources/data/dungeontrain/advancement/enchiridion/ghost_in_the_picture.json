@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/familiar_faces",
+  "display": {
+    "icon": {
+      "id": "minecraft:soul_lantern"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.ghost_in_the_picture.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.ghost_in_the_picture.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "echo": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "echo"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "echo"
+    ]
+  ]
+}
