@@ -601,8 +601,9 @@ public class DungeonTrain {
             // (PlayerMobSpawnHooks, playermob 0.46.0+). Independent try so a build predating
             // the seam (e.g. an older bundled version) degrades to "no encounter stories"
             // rather than disabling the gift bridge above too.
-            // Cameras: PlayerMobs pick them up (PlayerMobPickupHooks, playermob 0.106.0+) and
-            // photograph a player who gifts them one (reached through the social bridge above).
+            // Cameras: a PlayerMob picks one up only as a gift from a player it will photograph
+            // (PlayerMobPickupHooks floor-gift want, playermob 0.106.1+), then photographs them
+            // (reached through the social bridge above).
             try {
                 PlayerMobCameraBridge.install();
             } catch (Throwable t) {
