@@ -46,6 +46,32 @@ public final class VideoQuery {
             return new Filter(next, channelQuery, devFavOnly, streamers);
         }
 
+        /**
+         * "Show only this platform": the platform toggles and the streamers toggle are one group, so
+         * a click shows {@code p} alone (streamer rows off). Clicking the platform already shown alone
+         * brings everything back. A new filter; this one untouched.
+         */
+        public Filter solo(VideoEntry.Platform p) {
+            if (isSolo(p)) return new Filter(ALL.platforms, channelQuery, devFavOnly, true);
+            return new Filter(EnumSet.of(p), channelQuery, devFavOnly, false);
+        }
+
+        /** "Show only the Twitch streamers" — the {@link #solo(VideoEntry.Platform)} rule for that toggle. */
+        public Filter soloStreamers() {
+            if (isSoloStreamers()) return new Filter(ALL.platforms, channelQuery, devFavOnly, true);
+            return new Filter(EnumSet.noneOf(VideoEntry.Platform.class), channelQuery, devFavOnly, true);
+        }
+
+        /** True when {@code p} is the one thing the group shows — its "click to show everything" state. */
+        public boolean isSolo(VideoEntry.Platform p) {
+            return !streamers && platforms.size() == 1 && platforms.contains(p);
+        }
+
+        /** True when only streamer rows are showing. */
+        public boolean isSoloStreamers() {
+            return streamers && platforms.isEmpty();
+        }
+
         public boolean has(VideoEntry.Platform p) {
             return platforms.contains(p);
         }

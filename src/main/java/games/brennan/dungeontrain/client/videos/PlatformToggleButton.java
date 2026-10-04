@@ -13,8 +13,9 @@ import java.util.function.BooleanSupplier;
 /**
  * One platform's toggle on the Videos page toolbar: a square tile carrying that platform's mark,
  * drawn programmatically (no texture assets — the same approach as {@code DiscordIconButton}).
- * Lit while the platform is shown, dimmed to a ghost while it is hidden; the tooltip names the
- * platform and the state, because a dimmed logomark alone does not say which way "off" is.
+ * Lit while the platform is shown, dimmed to a ghost while it is hidden. A click shows this platform
+ * alone, and a click while it is shown alone shows everything again ({@link VideoQuery.Filter#solo});
+ * the tooltip says which of the two a click will do.
  *
  * <p>The marks are the recognisable shapes, not the trademarks: a play triangle, a TV with two
  * antennae, a speech bubble with two slits, a camera outline with a lens and a dot. Each is a
@@ -29,21 +30,22 @@ public final class PlatformToggleButton extends Button {
 
     private final VideoEntry.Platform platform;
     private final BooleanSupplier lit;
+    private final BooleanSupplier alone;
 
     public PlatformToggleButton(int x, int y, int size, VideoEntry.Platform platform,
-                                BooleanSupplier lit, OnPress onPress) {
+                                BooleanSupplier lit, BooleanSupplier alone, OnPress onPress) {
         super(x, y, size, size, Component.translatable("gui.dungeontrain.videos.platform." + platform.key()),
                 onPress, DEFAULT_NARRATION);
         this.platform = platform;
         this.lit = lit;
+        this.alone = alone;
         refreshTooltip();
     }
 
     /** Re-read the state into the tooltip — called by the screen after every toggle. */
     public void refreshTooltip() {
         setTooltip(Tooltip.create(Component.translatable(
-                lit.getAsBoolean() ? "gui.dungeontrain.videos.filter.platform.shown"
-                                   : "gui.dungeontrain.videos.filter.platform.hidden",
+                alone.getAsBoolean() ? "gui.dungeontrain.videos.filter.solo.on" : "gui.dungeontrain.videos.filter.solo",
                 Component.translatable("gui.dungeontrain.videos.platform." + platform.key()))));
     }
 

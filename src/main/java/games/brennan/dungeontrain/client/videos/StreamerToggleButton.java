@@ -15,7 +15,8 @@ import java.util.function.BooleanSupplier;
  * The <b>Twitch streamers</b> toggle on the Videos page toolbar, beside the platform icons: the same
  * purple tile as the Twitch toggle but carrying a "live" mark — a filled dot with two broadcast arcs —
  * so the two Twitch buttons read as "clips" and "streamers" at a glance. Lit while streamer rows are
- * shown, dimmed while they are hidden; the tooltip says which, like {@link PlatformToggleButton}.
+ * shown, dimmed while they are hidden; a click shows streamers alone (or everything again), like
+ * {@link PlatformToggleButton}.
  */
 @OnlyIn(Dist.CLIENT)
 public final class StreamerToggleButton extends Button {
@@ -24,18 +25,19 @@ public final class StreamerToggleButton extends Button {
     private static final int OFF_ALPHA = 0x50;
 
     private final BooleanSupplier lit;
+    private final BooleanSupplier alone;
 
-    public StreamerToggleButton(int x, int y, int size, BooleanSupplier lit, OnPress onPress) {
+    public StreamerToggleButton(int x, int y, int size, BooleanSupplier lit, BooleanSupplier alone, OnPress onPress) {
         super(x, y, size, size, Component.translatable("gui.dungeontrain.videos.streamers.label"), onPress, DEFAULT_NARRATION);
         this.lit = lit;
+        this.alone = alone;
         refreshTooltip();
     }
 
     /** Re-read the state into the tooltip — called by the screen after every toggle. */
     public void refreshTooltip() {
         setTooltip(Tooltip.create(Component.translatable(
-                lit.getAsBoolean() ? "gui.dungeontrain.videos.filter.platform.shown"
-                                   : "gui.dungeontrain.videos.filter.platform.hidden",
+                alone.getAsBoolean() ? "gui.dungeontrain.videos.filter.solo.on" : "gui.dungeontrain.videos.filter.solo",
                 Component.translatable("gui.dungeontrain.videos.streamers.label"))));
     }
 
