@@ -617,7 +617,6 @@
   "chat.dungeontrain.photo_tribute.paid.2": "공물을 바쳤다. %s명이 더 네가 본 것을 보게 될 것이다.",
   "chat.dungeontrain.photo_tribute.paid.3": "기억 하나를 위한 공물. %s명이 더 보고 나면, 다시 사라진다.",
   "gui.dungeontrain.own_photo_tribute.offer": "당신의 사진에 공물을 바치면 더 많은 사람에게 닿습니다.",
-  "gui.dungeontrain.own_photo_tribute.boost": "그러면 이 사진의 조회 수가 %1$s회에서 %2$s회로 늘어납니다.",
   "chat.dungeontrain.own_photo_tribute.paid.1": "열차가 당신의 공물을, 그리고 사진을 가져갑니다.",
   "chat.dungeontrain.own_photo_tribute.paid.2": "공물을 바쳤습니다. 사진을 가져갔습니다.",
   "chat.dungeontrain.own_photo_tribute.paid.3": "당신 자신의 추억을 위한 공물.",

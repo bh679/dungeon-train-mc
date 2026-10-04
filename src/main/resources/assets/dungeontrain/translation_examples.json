@@ -14928,19 +14928,5 @@
         "1.2.0 exactly"
       ]
     }
-  },
-  "gui.dungeontrain.own_photo_tribute.boost": {
-    "1": {
-      "label": "views a photo normally has",
-      "examples": [
-        "10"
-      ]
-    },
-    "2": {
-      "label": "views the photo has after your tribute",
-      "examples": [
-        "20"
-      ]
-    }
   }
 }

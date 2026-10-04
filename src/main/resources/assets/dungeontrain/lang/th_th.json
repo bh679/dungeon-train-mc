@@ -617,7 +617,6 @@
   "chat.dungeontrain.photo_tribute.paid.2": "ถวายเครื่องบรรณาการแล้ว อีก %s คนจะได้เห็นสิ่งที่คุณเห็น",
   "chat.dungeontrain.photo_tribute.paid.3": "เครื่องบรรณาการแลกความทรงจำ อีก %s คน แล้วมันจะหายไปอีกครั้ง",
   "gui.dungeontrain.own_photo_tribute.offer": "ถวายบรรณาการให้ภาพของคุณเอง แล้วภาพจะไปถึงผู้คนมากขึ้น",
-  "gui.dungeontrain.own_photo_tribute.boost": "ภาพนี้จะได้รับการดูเพิ่มจาก %1$s ครั้งเป็น %2$s ครั้ง",
   "chat.dungeontrain.own_photo_tribute.paid.1": "รถไฟรับบรรณาการของคุณ และภาพของคุณไป",
   "chat.dungeontrain.own_photo_tribute.paid.2": "จ่ายบรรณาการแล้ว ภาพถูกนำไปแล้ว",
   "chat.dungeontrain.own_photo_tribute.paid.3": "บรรณาการเพื่อความทรงจำของคุณเอง",

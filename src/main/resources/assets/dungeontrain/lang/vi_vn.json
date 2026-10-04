@@ -617,7 +617,6 @@
   "chat.dungeontrain.photo_tribute.paid.2": "Cống phẩm đã dâng. %s người nữa sẽ thấy điều bạn đã thấy.",
   "chat.dungeontrain.photo_tribute.paid.3": "Một cống phẩm cho một ký ức. Thêm %s người nữa, rồi nó lại biến mất.",
   "gui.dungeontrain.own_photo_tribute.offer": "Dâng cống phẩm cho bức ảnh của chính bạn, nó sẽ đến với nhiều người hơn.",
-  "gui.dungeontrain.own_photo_tribute.boost": "Nhờ vậy bức ảnh tăng từ %1$s lượt xem lên %2$s.",
   "chat.dungeontrain.own_photo_tribute.paid.1": "Đoàn tàu nhận cống phẩm của bạn, và cả bức ảnh.",
   "chat.dungeontrain.own_photo_tribute.paid.2": "Đã dâng cống phẩm. Ảnh đã bị lấy đi.",
   "chat.dungeontrain.own_photo_tribute.paid.3": "Cống phẩm cho kỷ niệm của chính bạn.",
