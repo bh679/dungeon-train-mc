@@ -155,6 +155,15 @@ jobs:
               cp release-notes.md curseforge-notes.md
             fi
           fi
+          # Every published changelog points at the update page on our website: its title heading
+          # links there and it ends with "Read more" (scripts/release-notes/link-changelog.py). The
+          # plain copy feeds update.json — that text is read inside Minecraft, whose version screen
+          # has its own update-page button.
+          python3 scripts/release-notes/link-changelog.py --strip < curseforge-notes.md > curseforge-notes.plain.md
+          for f in release-notes.md curseforge-notes.md; do
+            python3 scripts/release-notes/link-changelog.py < "$f" > "$f.linked"
+            mv "$f.linked" "$f"
+          done
           echo "::group::CurseForge mod changelog"; cat curseforge-notes.md; echo "::endgroup::"
 
           MC_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
@@ -471,7 +480,7 @@ jobs:
       # having been created. Commits to main with [skip ci]; same rebase-retry as
       # the changelog-mark step since a cascade tick could push in between.
       #
-      # The per-version changelog text is taken from curseforge-notes.md — the SAME
+      # The per-version changelog text is taken from curseforge-notes.plain.md — the SAME
       # notes composed above for this published file (operator changelog input, or
       # the carried-forward last-released curated notes, or the generated notes).
       # Feeding update.json from that one source keeps the in-game notifier's notes
@@ -486,8 +495,8 @@ jobs:
           set -euo pipefail
           MC_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
           ARGS=(--version "${RELEASE_TAG#v}" --mc "$MC_VERSION")
-          if [ -s curseforge-notes.md ]; then
-            ARGS+=(--changelog "$(cat curseforge-notes.md)")
+          if [ -s curseforge-notes.plain.md ]; then
+            ARGS+=(--changelog "$(cat curseforge-notes.plain.md)")
           fi
           python3 scripts/release-notes/build-update-json.py "${ARGS[@]}"
           if git diff --quiet -- update.json; then
