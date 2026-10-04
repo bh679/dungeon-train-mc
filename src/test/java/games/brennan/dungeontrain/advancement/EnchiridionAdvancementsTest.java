@@ -127,4 +127,15 @@ final class EnchiridionAdvancementsTest {
         assertNull(EnchiridionAdvancements.albumOf("enchiridion/say_cheese"));
         assertNull(EnchiridionAdvancements.albumOf(null));
     }
+
+    @Test
+    @DisplayName("the album's biome targets match the tiers' JSON thresholds")
+    void biomeTargets() throws IOException {
+        for (Map.Entry<String, Integer> t : EnchiridionAdvancements.BIOME_TIER_TARGETS.entrySet()) {
+            JsonObject json = JsonParser.parseString(Files.readString(
+                    RepoPaths.advancements().resolve(t.getKey() + ".json"), StandardCharsets.UTF_8)).getAsJsonObject();
+            assertEquals(t.getValue().intValue(), json.getAsJsonObject("criteria").getAsJsonObject("biomes")
+                    .getAsJsonObject("conditions").get("threshold").getAsInt(), t.getKey());
+        }
+    }
 }

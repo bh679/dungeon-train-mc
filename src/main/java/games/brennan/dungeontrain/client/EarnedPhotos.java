@@ -62,7 +62,7 @@ public final class EarnedPhotos {
 
     private static final Map<Slot, Pending> PENDING = new LinkedHashMap<>();
 
-    /** One photo of an album: the entity or biome id it was logged for, and its file. */
+    /** One slot of an album: the entity or biome id it was logged for, and its file — both null while missing. */
     public record Entry(ResourceLocation id, Path file) {}
 
     private EarnedPhotos() {}
@@ -177,22 +177,59 @@ public final class EarnedPhotos {
     }
 
     /**
-     * Open what {@code advancement} has kept: its album, once anything this run counts (earned or not — a
-     * collection shows as it fills), else its own photo once earned. Returns whether anything opened.
+     * Open what {@code advancement} has kept. A collection always opens its album — every slot it asks
+     * for, photographed or still missing — earned or not; anything else opens its own photo once earned.
+     * Returns whether anything opened.
      */
     public static boolean tryOpen(ResourceLocation advancement, net.minecraft.network.chat.Component title,
                                   AdvancementProgress progress) {
         Minecraft mc = Minecraft.getInstance();
         Screen parent = mc.screen;
-        List<Entry> album = visibleEntries(advancement, progress);
-        if (!album.isEmpty()) {
-            boolean biomes = EnchiridionAdvancements.isBiomeAlbum(albumOf(advancement).getPath());
-            mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, album, biomes)));
+        ResourceLocation album = albumOf(advancement);
+        if (album != null) {
+            boolean biomes = EnchiridionAdvancements.isBiomeAlbum(album.getPath());
+            List<Entry> slots = albumSlots(advancement, progress, biomes);
+            mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, slots, biomes)));
             return true;
         }
         if (progress == null || !progress.isDone() || !has(advancement)) return false;
         mc.execute(() -> mc.setScreen(new EarnedPhotoScreen(parent, title, file(advancement))));
         return true;
+    }
+
+    /**
+     * Every slot of {@code advancement}'s album: the photos this run counts, then an empty slot
+     * ({@code file} null) for each still missing. A creature collection lists its criteria in order; a
+     * biome tier asks for its target number, Coffee Table Book for every biome there is.
+     */
+    static List<Entry> albumSlots(ResourceLocation advancement, AdvancementProgress progress, boolean biomes) {
+        List<Entry> visible = visibleEntries(advancement, progress);
+        List<Entry> out = new ArrayList<>();
+        if (biomes) {
+            out.addAll(visible);
+            for (int i = visible.size(); i < biomeTarget(advancement); i++) out.add(new Entry(null, null));
+            return out;
+        }
+        Map<String, Entry> byId = new LinkedHashMap<>();
+        visible.forEach(e -> byId.put(e.id().toString(), e));
+        var connection = Minecraft.getInstance().getConnection();
+        var holder = connection == null ? null : connection.getAdvancements().get(advancement);
+        if (holder == null) return visible;
+        for (List<String> group : holder.value().requirements().requirements()) {
+            for (String criterion : group) {
+                Entry e = byId.get(criterion);
+                out.add(e != null ? e : new Entry(null, null));
+            }
+        }
+        return out;
+    }
+
+    private static int biomeTarget(ResourceLocation advancement) {
+        Integer target = EnchiridionAdvancements.BIOME_TIER_TARGETS.get(advancement.getPath());
+        if (target != null) return target;
+        var level = Minecraft.getInstance().level;
+        return level == null ? 0
+                : level.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.BIOME).size();
     }
 
     @SubscribeEvent

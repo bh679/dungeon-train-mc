@@ -66,6 +66,14 @@ public final class EnchiridionAdvancements {
     private static final Set<String> BIOME_TIERS = Set.of(
             PATH_PREFIX + "scenic_route", PATH_PREFIX + "travel_brochure", PATH_PREFIX + "coffee_table_book");
 
+    /**
+     * How many biomes each photo tier asks for — the album shows that many slots. Kept here because a
+     * client never receives criterion conditions; a test pins these to the JSON. Coffee Table Book
+     * (absent) asks for every biome the game has.
+     */
+    public static final java.util.Map<String, Integer> BIOME_TIER_TARGETS = java.util.Map.of(
+            PATH_PREFIX + "scenic_route", 30, PATH_PREFIX + "travel_brochure", 60);
+
     /** Collections that keep a photo for every entry, not just the one that completed them. */
     private static final Set<String> ENTITY_ALBUMS = Set.of(
             PATH_PREFIX + "nature_documentary", PATH_PREFIX + "most_wanted");

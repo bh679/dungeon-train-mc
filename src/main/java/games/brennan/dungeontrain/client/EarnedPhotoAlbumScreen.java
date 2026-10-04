@@ -9,8 +9,9 @@ import org.lwjgl.glfw.GLFW;
 import java.util.List;
 
 /**
- * A collection's album — every photo logged toward it so far, one per animal, mob or biome, each on the
- * paper it was printed on and labelled with the game's own name for it. Opened by clicking the
+ * A collection's album — a slot for everything it asks for: each photo logged so far, one per animal, mob or
+ * biome, and an empty frame marked ??? for each still missing. Each photo sits on the paper it was
+ * printed on, labelled with the game's own name for what it shows. Opened by clicking the
  * advancement ({@link EarnedPhotos#tryOpen}), earned or still filling, drawn over the advancements
  * screen. Click a print to see it large and click again to go back; a click outside the prints, or
  * Esc, puts the album away.
@@ -90,8 +91,9 @@ public final class EarnedPhotoAlbumScreen extends Screen {
 
     private void renderGrid(GuiGraphics g, int mouseX, int mouseY) {
         g.drawCenteredString(font, title, width / 2, 12, 0xFFFFFFFF);
-        g.drawCenteredString(font, Component.translatable("gui.dungeontrain.earned_photos.count", entries.size()),
-                width / 2, 24, 0xFFAAAAAA);
+        long taken = entries.stream().filter(e -> e.file() != null).count();
+        g.drawCenteredString(font, Component.translatable("gui.dungeontrain.earned_photos.count",
+                taken + "/" + entries.size()), width / 2, 24, 0xFFAAAAAA);
         g.enableScissor(0, TOP - 2, width, height);
         int cols = columns();
         int left = gridLeft();
@@ -99,13 +101,31 @@ public final class EarnedPhotoAlbumScreen extends Screen {
             int x = left + (i % cols) * (CELL + GAP);
             int y = TOP + (i / cols) * (CELL + LABEL + GAP) - scroll;
             if (y + CELL + LABEL < TOP || y > height) continue;
-            boolean hover = mouseX >= x && mouseX < x + CELL && mouseY >= y && mouseY < y + CELL && mouseY >= TOP;
+            EarnedPhotos.Entry entry = entries.get(i);
+            boolean hover = entry.file() != null
+                    && mouseX >= x && mouseX < x + CELL && mouseY >= y && mouseY < y + CELL && mouseY >= TOP;
             if (hover) g.fill(x - 2, y - 2, x + CELL + 2, y + CELL + 2, 0x60FFFFFF);
-            EarnedPhotoThumbnails.draw(g, entries.get(i).file(), x, y, CELL, GRID_SAMPLE);
+            if (entry.file() != null) {
+                EarnedPhotoThumbnails.draw(g, entry.file(), x, y, CELL, GRID_SAMPLE);
+            } else {
+                drawMissing(g, x, y);
+            }
             String label = font.plainSubstrByWidth(name(entries.get(i).id()).getString(), CELL + GAP);
             g.drawString(font, label, x + (CELL - font.width(label)) / 2, y + CELL + 2, 0xFFFFFFFF, true);
         }
         g.disableScissor();
+    }
+
+    /** A slot still waiting for its photo: an empty frame with a big question mark. */
+    private void drawMissing(GuiGraphics g, int x, int y) {
+        g.fill(x, y, x + CELL, y + CELL, 0xFF6E6A62);
+        g.fill(x + 3, y + 3, x + CELL - 3, y + CELL - 3, 0xFF2A2825);
+        float scale = 4F;
+        g.pose().pushPose();
+        g.pose().translate(x + CELL / 2F - font.width("?") * scale / 2F, y + CELL / 2F - 4 * scale, 0);
+        g.pose().scale(scale, scale, 1F);
+        g.drawString(font, "?", 0, 0, 0xFF8C877D, false);
+        g.pose().popPose();
     }
 
     private void renderLarge(GuiGraphics g, EarnedPhotos.Entry entry) {
@@ -117,8 +137,9 @@ public final class EarnedPhotoAlbumScreen extends Screen {
         g.drawString(font, label, (width - font.width(label)) / 2, y + side + 6, 0xFFFFFFFF, true);
     }
 
-    /** The game's own name for what the photo was logged for — the biome, or the entity. */
+    /** The game's own name for what the photo was logged for — the biome, or the entity; ??? while missing. */
     private Component name(ResourceLocation id) {
+        if (id == null) return Component.translatable("advancements.dungeontrain.hidden_description");
         String key = (biomes ? "biome." : "entity.") + id.getNamespace() + "." + id.getPath().replace('/', '.');
         return Component.translatable(key);
     }
@@ -144,7 +165,7 @@ public final class EarnedPhotoAlbumScreen extends Screen {
         }
         int hit = entryAt(mouseX, mouseY);
         if (hit >= 0) {
-            enlarged = hit;
+            if (entries.get(hit).file() != null) enlarged = hit;   // a missing slot has nothing to show
         } else {
             onClose();
         }
