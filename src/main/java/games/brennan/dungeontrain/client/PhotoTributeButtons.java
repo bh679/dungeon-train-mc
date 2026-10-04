@@ -134,6 +134,8 @@ public final class PhotoTributeButtons {
             });
             tribute.active = canAfford;
             tribute.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.own_photo_tribute.offer")
+                .append("\n").append(Component.translatable("gui.dungeontrain.own_photo_tribute.boost",
+                    SharedPhotos.VIEWS_MAX, SharedPhotos.VIEWS_MAX * SharedPhotos.OWN_BOOST_FACTOR))
                 .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have",
                     TributePayment.worth(player.getInventory())))));
             event.addListener(tribute);

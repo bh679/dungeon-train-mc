@@ -53,4 +53,10 @@ class TributePhotoReporterTest {
         assertEquals("Tribute #3 this life · 27 emeralds", TributePhotoReporter.ownDescription(3, 27));
         assertEquals("Tribute #1 this life · 1 emerald", TributePhotoReporter.ownDescription(0, 1));
     }
+
+    @Test
+    @DisplayName("own-photo title asks whether it was worth it")
+    void ownTitle() {
+        assertEquals("📸 Steve tributed their photo. Was it worth it?", TributePhotoReporter.ownTitle("Steve"));
+    }
 }

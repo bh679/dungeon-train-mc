@@ -65,11 +65,16 @@ public final class TributePhotoReporter {
         try {
             String name = tributer.getGameProfile().getName();
             LOGGER.info("[DungeonTrain] {} paid tribute to their own photo — posting it to the passenger log.", name);
-            DiscordService.get().postReportTopLevel(tributer, title(name, name), ownDescription(tributeNumber, cost),
+            DiscordService.get().postReportTopLevel(tributer, ownTitle(name), ownDescription(tributeNumber, cost),
                     List.of(), png, PHOTO_FILENAME, EMBED_COLOR, DungeonTrain.manifestWebhookOverride());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] own tributed photo post failed: {}", t.toString());
         }
+    }
+
+    /** {@code "📸 Steve tributed their photo. Was it worth it?"} */
+    static String ownTitle(String tributer) {
+        return "📸 " + tributer + " tributed their photo. Was it worth it?";
     }
 
     /** {@code "Tribute #2 this life · 9 emeralds"}. */

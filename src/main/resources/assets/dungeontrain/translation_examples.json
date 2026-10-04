@@ -14929,33 +14929,17 @@
       ]
     }
   },
-  "chat.dungeontrain.own_photo_tribute.paid.1": {
+  "gui.dungeontrain.own_photo_tribute.boost": {
     "1": {
-      "label": "emeralds the next tribute to your own photo costs",
+      "label": "views a photo normally has",
       "examples": [
-        "9",
-        "27",
-        "81"
+        "10"
       ]
-    }
-  },
-  "chat.dungeontrain.own_photo_tribute.paid.2": {
-    "1": {
-      "label": "emeralds the next tribute to your own photo costs",
+    },
+    "2": {
+      "label": "views the photo has after your tribute",
       "examples": [
-        "9",
-        "27",
-        "81"
-      ]
-    }
-  },
-  "chat.dungeontrain.own_photo_tribute.paid.3": {
-    "1": {
-      "label": "emeralds the next tribute to your own photo costs",
-      "examples": [
-        "9",
-        "27",
-        "81"
+        "20"
       ]
     }
   }
