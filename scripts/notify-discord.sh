@@ -41,10 +41,11 @@ else
 fi
 
 LOGO_URL="https://raw.githubusercontent.com/$REPO/main/src/main/resources/logo.png"
-# The embed's ONE link: the title opens the update page (dp-relay public/dungeontrain/update/),
-# which shows the newest modpack on CurseForge and Modrinth, the standalone mod, and what changed.
-# Same URL as the in-game notifier (client/version/compare/UpdatePage#BASE_URL). Deliberately no
-# per-platform download fields — one place to go, and it is never stale while a pack awaits approval.
+# Every link in the message goes to ONE place, the update page (dp-relay public/dungeontrain/update/):
+# the embed title and the Download button under it. The page shows the newest modpack on CurseForge
+# and Modrinth, the standalone mod, and what changed. Same URL as the in-game notifier
+# (client/version/compare/UpdatePage#BASE_URL). Deliberately no per-platform download fields — one
+# place to go, and it is never stale while a pack awaits CurseForge approval.
 UPDATE_PAGE_URL="https://brennan.games/dungeontrain/update/"
 
 PAYLOAD=$(jq -n \
@@ -64,6 +65,10 @@ PAYLOAD=$(jq -n \
       color: $color,
       thumbnail: { url: $logo },
       footer: { text: "Powered by Sable" }
+    }],
+    components: [{
+      type: 1,
+      components: [{ type: 2, style: 5, label: "Download", url: $update_url }]
     }]
   }')
 
@@ -73,5 +78,12 @@ if [ "${DRY_RUN:-}" = "1" ]; then
   exit 0
 fi
 
-curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL" >/dev/null
+# A plain (non-application) webhook drops message components unless the request opts in with
+# with_components=true — without it the Download button silently vanishes. Link buttons need no
+# interaction handler, so this is all a webhook needs.
+case "$DISCORD_WEBHOOK_URL" in
+  *\?*) POST_URL="$DISCORD_WEBHOOK_URL&with_components=true" ;;
+  *)    POST_URL="$DISCORD_WEBHOOK_URL?with_components=true" ;;
+esac
+curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$POST_URL" >/dev/null
 echo "✓ Notified Discord for $RELEASE_TAG"
