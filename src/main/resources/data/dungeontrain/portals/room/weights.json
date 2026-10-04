@@ -7,9 +7,26 @@
       "name": "AntonioMacarely"
     }
   },
+  "author_fancy": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/mix:20:20:0:0:1:12/day"
+  },
+  "author_fancy24": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/mix:20:20:0:1:10:24/day"
+  },
+  "author_fancy_126": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/mix:20:20:0:1:24:126/day"
+  },
   "author_new": {
     "weight": 1,
-    "mode": "bedrock/exact/off/off/mix:2:1:0:1:5:0"
+    "mode": "bedrock/exact/off/off/mix:4:4:0:1:5:0"
+  },
+  "author_rooms": {
+    "weight": 2,
+    "minLevel": 5,
+    "mode": "bedrock/exact/off/off/mix:1:2:0:2:0:0"
   },
   "backrooms": {
     "weight": 1,
@@ -270,7 +287,7 @@
   },
   "midlibrary": {
     "weight": 1,
-    "mode": "bedrock/exact/off/off/mix:3:1:1:1:24:120"
+    "mode": "bedrock/exact/off/off/mix:1:2:1:1:24:120"
   },
   "miniword": {
     "weight": 1,
@@ -392,7 +409,7 @@
   },
   "smalllibrary": {
     "weight": 1,
-    "mode": "bedrock/exact/off/off/mix:1:1:1:0:10:0"
+    "mode": "bedrock/exact/off/off/mix:1:2:1:1:10:0"
   },
   "smallpat": 1,
   "squidwardshouse_2": {

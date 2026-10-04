@@ -22743,6 +22743,30 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "author-rooms-fit-their-books",
+      "version": "0.1139.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train",
+        "books"
+      ],
+      "title": "Libraries that fit their writer",
+      "summary": "Dimensional carriages that hold a writer's library now choose a room sized to that writer's shelf \u2014 a handful of books gets a cosy study, a prolific writer gets a grand hall \u2014 and three new library rooms join the rotation.",
+      "highlights": [
+        "Three new library rooms can now appear behind dimensional carriages",
+        "Each library is picked to fit its writer, so a few books aren't lost in an empty hall",
+        "Once you've signed a book, your own library is sized to how much you've written",
+        "Rooms of run statistics only appear where there's shelf space for the whole set"
+      ],
+      "pr": 1804,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

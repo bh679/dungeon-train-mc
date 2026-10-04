@@ -165,11 +165,7 @@ public final class PortalOwnShelves {
      * pinned answer without knowing there was one.</p>
      */
     public static PortalRoomBooks selfOnly(PortalRoomBooks books) {
-        return books
-            .withWeightFor(PortalRoomBooks.Share.SELF, 1)
-            .withWeightFor(PortalRoomBooks.Share.PLAYER, 0)
-            .withWeightFor(PortalRoomBooks.Share.SIGNATURE, 0)
-            .withWeightFor(PortalRoomBooks.Share.STATS, 0);
+        return books.only(PortalRoomBooks.Share.SELF);
     }
 
     /** Splittable-mix, salted so this roll does not track the room pick's or the share's. */

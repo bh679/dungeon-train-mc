@@ -869,20 +869,28 @@ public final class PortalCarriageBuilder {
                                                 BlockPos entryOrigin, int pairKey,
                                                 PortalTwinRegion region,
                                                 games.brennan.dungeontrain.template.GateContext gateCtx,
-                                                boolean ownShelfBoost) {
+                                                boolean ownShelfBoost,
+                                                net.minecraft.server.level.ServerPlayer rider) {
         long seed = level.getSeed();
+        java.util.function.LongFunction<String> pickAt =
+            index -> TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx);
         // The seeded pick, then how often it may answer "a library of the rider's own books" — the
         // one outcome whose weight depends on the run rather than on the room weights alone. See
-        // PortalOwnShelves; at a scale of 1 this is the pick and nothing else.
+        // PortalOwnShelves; at a scale of 1 this is the pick and nothing else. An author room's
+        // share is its parent's split, so that is the Books the lottery reads for one.
         PortalOwnShelves.Outcome picked = PortalOwnShelves.adjust(seed, pairKey,
-            TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, pairKey, gateCtx),
+            pickAt.apply(pairKey),
             () -> TrackVariantRegistry.leafOdds(TrackKind.PORTAL_ROOM, gateCtx),
-            name -> PortalRoomSettings.of(name).books(),
-            index -> TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx),
+            PortalAuthorRooms::lotteryBooks,
+            pickAt,
             DungeonTrainConfig.getOwnLibraryChanceScale(ownShelfBoost));
-        String roomName = picked.roomName();
-        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
-        if (picked.pinnedToSelf()) {
+        // Landing on an author room is one outcome; which of them stands is decided by the parent's
+        // split and what fits it. See PortalAuthorRooms.
+        PortalAuthorRooms.Planned authorRoom = PortalAuthorRooms.plan(
+            level, pairKey, picked.roomName(), picked.pinnedToSelf(), gateCtx, rider, pickAt);
+        String roomName = authorRoom != null ? authorRoom.roomName() : picked.roomName();
+        PortalRoomSettings settings = authorRoom != null ? authorRoom.settings() : PortalRoomSettings.of(roomName);
+        if (authorRoom == null && picked.pinnedToSelf()) {
             settings = settings.withBooks(PortalOwnShelves.selfOnly(settings.books()));
         }
         PortalCorridorKind kind = PortalCarriageSelection.corridorKindFor(level, pairKey);
