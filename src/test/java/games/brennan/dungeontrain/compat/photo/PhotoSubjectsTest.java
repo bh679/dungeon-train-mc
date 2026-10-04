@@ -13,7 +13,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class PhotoSubjectsTest {
 
     private static PhotoSubjects.Facts plain(Set<String> types) {
-        return new PhotoSubjects.Facts(types, false, false, false, false, false, false, false, false, null, null);
+        return where(types, null, null);
+    }
+
+    private static PhotoSubjects.Facts where(Set<String> types, String dimension, String band) {
+        return new PhotoSubjects.Facts(types, false, false, false, false, false, false, false, dimension, band);
     }
 
     @Test
@@ -33,19 +37,32 @@ final class PhotoSubjectsTest {
     @DisplayName("a selfie only counts with a PlayerMob in it")
     void selfieNeedsAPlayerMob() {
         Set<String> alone = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, false, false, false,
-                true, false, false, null, null));
+                true, false, null, null));
         assertFalse(alone.contains(PhotoSubjects.SELFIE_PLAYERMOB));
         Set<String> together = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), true, true, false, false, false,
-                true, false, false, null, null));
+                true, false, null, null));
         assertTrue(together.containsAll(Set.of("playermob", "echo", "selfie_playermob")));
     }
 
     @Test
-    @DisplayName("place, dimension and band keys")
+    @DisplayName("specials, cave, dimension and band keys")
     void places() {
         Set<String> keys = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, true, true, true,
-                false, true, true, "minecraft:overworld", "reached_nether"));
-        assertTrue(keys.containsAll(Set.of("pigman_villager", "killer_bunny", "technoblade_pig", "underwater", "cave",
-                "dim:minecraft:overworld", "band:reached_nether", "band:any")));
+                false, true, "minecraft:overworld", "reached_spheres"));
+        assertTrue(keys.containsAll(Set.of("pigman_villager", "killer_bunny", "technoblade_pig", "cave",
+                "dim:minecraft:overworld", "band:reached_spheres", "band:any")));
+        assertFalse(keys.contains(PhotoSubjects.NETHER));
+        assertFalse(keys.contains(PhotoSubjects.END));
+    }
+
+    @Test
+    @DisplayName("the train's Nether and End count as the Nether and the End, as do the vanilla ones")
+    void netherAndEnd() {
+        assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_nether")).contains("nether"));
+        assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_better_nether")).contains("nether"));
+        assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:the_nether", null)).contains("nether"));
+        assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_end_islands")).contains("end"));
+        assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_better_end")).contains("end"));
+        assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:the_end", null)).contains("end"));
     }
 }

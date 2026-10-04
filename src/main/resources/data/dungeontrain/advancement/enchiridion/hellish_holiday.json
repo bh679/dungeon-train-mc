@@ -19,7 +19,7 @@
     "nether": {
       "trigger": "dungeontrain:photo_subject",
       "conditions": {
-        "subject": "dim:minecraft:the_nether"
+        "subject": "nether"
       }
     }
   },

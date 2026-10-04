@@ -2,7 +2,7 @@
   "locale": "pt_pt",
   "name": "IA sem revisão humana",
   "human_reviewed": false,
-  "total_keys": 4260,
-  "ai_authored": 4260,
-  "ai_unreviewed": 4260
+  "total_keys": 4254,
+  "ai_authored": 4254,
+  "ai_unreviewed": 4254
 }

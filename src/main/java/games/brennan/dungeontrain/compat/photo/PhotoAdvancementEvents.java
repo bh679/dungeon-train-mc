@@ -91,8 +91,8 @@ public final class PhotoAdvancementEvents {
         String dimension = data.get(Frame.DIMENSION).map(ResourceLocation::toString)
                 .orElse(player.level().dimension().location().toString());
         return new PhotoSubjects.Facts(types, playerMob, echo, pigman, killerBunny, techno,
-                data.getOrDefault(Frame.SELFIE, false), data.getOrDefault(Frame.UNDERWATER, false),
-                data.getOrDefault(Frame.IN_CAVE, false), dimension, bandAt(player));
+                data.getOrDefault(Frame.SELFIE, false), data.getOrDefault(Frame.IN_CAVE, false),
+                dimension, bandAt(player));
     }
 
     /** The dimensional band the photographer stands in — the bands are overworld X ranges. */

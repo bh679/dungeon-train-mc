@@ -19,7 +19,7 @@
     "end": {
       "trigger": "dungeontrain:photo_subject",
       "conditions": {
-        "subject": "dim:minecraft:the_end"
+        "subject": "end"
       }
     }
   },
