@@ -246,5 +246,64 @@ def _main():
     return 1 if failures else 0
 
 
+# ---- per-field credit (--fields) ----------------------------------------------
+
+def _write_book(narrative_dir, book, data, locale="zh_cn"):
+    with open(os.path.join(narrative_dir, locale, book + ".json"), "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False)
+
+
+def test_fields_credit_only_those_fields():
+    narrative_dir, prov_dir = workspace()
+    _write_book(narrative_dir, "random_books/deathnote",
+                {"id": "deathnote", "title": "t", "variants": ["a", "b"]})
+    proc = run(narrative_dir, prov_dir, "--author", "老本願", "--reviewer", "老本願",
+               "--files", "random_books/deathnote", "--fields", "title")
+    assert proc.returncode == 0, proc.stderr
+    entry = read(prov_dir)["random_books/deathnote"]
+    assert entry["author"] == "Opus 4.8 (Claude)"
+    assert entry["reviewer"] == "老本願"
+    assert entry["fields"] == {"title": "老本願"}
+
+
+def test_fields_collapse_to_book_author_once_every_field_is_one_persons():
+    narrative_dir, prov_dir = workspace()
+    _write_book(narrative_dir, "random_books/deathnote",
+                {"id": "deathnote", "title": "t", "variants": ["a", "b"]})
+    for fields in (["title"], ["variants.0", "variants.1"]):
+        proc = run(narrative_dir, prov_dir, "--author", "老本願", "--reviewer", "老本願",
+                   "--files", "random_books/deathnote", "--fields", *fields)
+        assert proc.returncode == 0, proc.stderr
+    entry = read(prov_dir)["random_books/deathnote"]
+    assert entry["author"] == "老本願" and "fields" not in entry, entry
+
+
+def test_fields_naming_a_missing_field_fails_without_writing():
+    narrative_dir, prov_dir = workspace()
+    before = read(prov_dir)
+    proc = run(narrative_dir, prov_dir, "--author", "老本願",
+               "--files", "random_books/deathnote", "--fields", "no.such")
+    assert proc.returncode == 1
+    assert read(prov_dir) == before
+
+
+def test_fields_need_author_and_one_book():
+    narrative_dir, prov_dir = workspace()
+    proc = run(narrative_dir, prov_dir, "--reviewer", "老本願",
+               "--files", "random_books/deathnote", "--fields", "variants.0")
+    assert proc.returncode == 2
+
+
+def test_whole_book_author_stamp_clears_field_credit():
+    prov = dict(PROV, **{"random_books/deathnote": {
+        "author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "",
+        "fields": {"variants.0": "老本願"}}})
+    narrative_dir, prov_dir = workspace(prov=prov)
+    proc = run(narrative_dir, prov_dir, "--author", "阿世xAsh",
+               "--files", "random_books/deathnote")
+    assert proc.returncode == 0, proc.stderr
+    assert "fields" not in read(prov_dir)["random_books/deathnote"]
+
+
 if __name__ == "__main__":
     sys.exit(_main())
