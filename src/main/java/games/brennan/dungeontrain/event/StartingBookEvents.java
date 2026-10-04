@@ -49,6 +49,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -236,6 +237,8 @@ public final class StartingBookEvents {
      * the burn flow normally.</p>
      */
     private static final String ENTITY_TAG_SPAWN_BOOK = "dt_starting_spawn_book";
+    /** Item-entity persistent flag: dropped by a PlayerMob (hand-over, gift, spill, death loot) — a photo so dropped is never ignited. */
+    public static final String ENTITY_TAG_HANDED_PHOTO = "dungeontrain:playermob_drop";
 
     private StartingBookEvents() {}
 
@@ -625,6 +628,22 @@ public final class StartingBookEvents {
         dropAndBurn(player, stack, FlameVariant.DEFAULT);
     }
 
+    /**
+     * {@link #dropAndBurn} for a non-player source — a PlayerMob burning the disposable camera it just
+     * shot with. Thrown forward from {@code source}'s eyes as an owner-less item entity, then burned
+     * with the default flame.
+     */
+    public static void dropAndBurnFrom(LivingEntity source, ItemStack stack) {
+        if (stack == null || stack.isEmpty() || !(source.level() instanceof ServerLevel level)) return;
+        Vec3 eye = source.getEyePosition();
+        Vec3 dir = source.getLookAngle();
+        ItemEntity dropped = new ItemEntity(level, eye.x + dir.x * 0.3, eye.y - 0.3, eye.z + dir.z * 0.3, stack);
+        dropped.setDeltaMovement(dir.scale(0.3));
+        level.addFreshEntity(dropped);
+        if (BURN_ENTITIES.containsKey(dropped.getUUID())) return;
+        igniteItem(dropped, FlameVariant.DEFAULT);
+    }
+
     /** {@link #dropAndBurn}, in the green flames a thumbs-up book burns with — a photo that was paid Tribute. */
     public static void dropAndBurnApproved(ServerPlayer player, ItemStack stack) {
         dropAndBurn(player, stack, FlameVariant.APPROVED);
@@ -698,7 +717,18 @@ public final class StartingBookEvents {
         if (!BurnableBookTag.isBurnable(stack)) {
             // A disposable-camera photograph burns on any drop too — the same flame, with none of
             // the book bookkeeping below.
-            if (games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
+            // ...when a PLAYER drops it. A PlayerMob's drop is a hand-over, not a discard — the photo it
+            // just took tossed to its subject (PlayerMobPhotoGoal), a gift, a backpack spill, its death
+            // loot — so those land intact; the print still burns once a player views or drops it.
+            // Known by the photo goal's own flag, by the spawnAtLocation scope EchoDropCreditMixin opens
+            // (death loot, spills), and by a PlayerMob thrower (PlayerMob's own gift toss).
+            boolean mobDrop = item.getPersistentData().getBoolean(ENTITY_TAG_HANDED_PHOTO)
+                    || games.brennan.dungeontrain.compat.PlayerMobDrops.inProgress()
+                    || item.getOwner() instanceof games.brennan.playermob.entity.PlayerMobEntity;
+            // A found photo (the relay pool's) burns on a player's drop too — it was never theirs to keep.
+            if ((games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
+                        || stack.is(games.brennan.dungeontrain.registry.ModItems.FOUND_PHOTOGRAPH.get()))
+                    && !mobDrop
                     && !BURN_ENTITIES.containsKey(item.getUUID())) {
                 igniteItem(item, FlameVariant.DEFAULT);
                 // Opt-in author credit, as for a book: the photographer is named as it catches fire.
