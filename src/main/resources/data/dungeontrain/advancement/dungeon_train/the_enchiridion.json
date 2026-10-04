@@ -4,7 +4,7 @@
     "title": { "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.description" },
     "frame": "task",
-    "background": "minecraft:textures/block/bookshelf.png",
+    "background": "minecraft:textures/block/chiseled_bookshelf_top.png",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true
