@@ -18,6 +18,8 @@ Every file in this folder is one story. Schema:
   "character": "Author Name",
   "story": "Story Title",
   "deferred": false,
+  "after": "other_story_id",
+  "weight": 1,
   "letters": [
     {
       "index": 1,
@@ -42,9 +44,21 @@ Rules:
   it while any ordinary series is still unfinished, so the held-back ones are what remains once the
   rest of the corpus has been read. It is an ordering tier, not a removal — and once everything is
   complete the post-completion re-read pool treats every story alike. Currently `true` for
-  `the_querys_and_life_of_fourteen` and `edda_marsh_the_wither_at_the_window`.
-  The flag lives in the English base file only: a localized copy replaces the base wholesale and
-  carries no flag of its own, so `StoryRegistry.baseDeferred` puts the base's value back.
+  `the_querys_and_life_of_fourteen`, `edda_marsh_the_wither_at_the_window`,
+  `wren_halloway_rebuttals`, `weakness_then_gold` and
+  `the_letters_of_madame_ulster_the_answerless_prophet`.
+- `after` omitted → no prerequisite. A story id here chains this series behind that one: a lectern
+  never **starts** it until the named series is finished (an unknown id is ignored). A chain of
+  `after` links fills one slot in the start pick — only the member the world is up to is eligible.
+  Currently Pip → Soren → Della → Tomas (`pip_aaro_the_waiting_child` →
+  `soren_the_keeper_of_the_door` → `della_aaro_the_searching_mother` →
+  `tomas_aaro_the_walking_father`).
+- `weight` omitted → `1`. How likely the series is to be the one a lectern starts, among the series
+  eligible in its tier (`2` = twice baseline, `0.5` = half). Give every member of an `after` chain
+  the same weight — that is the chain slot's weight. Currently 20 for the Aaro chain, 4 for
+  `jay_kuruvilla_the_time_traveler`, 2 for `augustus_park`. Re-reads ignore it.
+- `deferred`, `after` and `weight` live in the English base file only: a localized copy replaces the
+  base wholesale and carries none of them, so `StoryRegistry.baseTuning` puts the base's values back.
 - Each letter MUST have `index` (1-based), `label`, and at least one `variants[]` entry.
 - `notes` is optional — used for editor annotations on a specific variant's char offset.
 

@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Locks down the hold-back tier: a {@code deferred} series must never be the one a lectern starts
  * while any ordinary series is still unfinished, and must become available once they are all read.
+ * Also the {@code after} chain (a series waits for its prerequisite) and the start-pick {@code weight}.
  *
  * <p>Drives the real {@link StoryRegistry} through a stub {@link ResourceManager} so the codec, the
  * registry and {@link NarrativeProgressData#randomUncompletedStory} are all exercised together —
@@ -37,9 +38,15 @@ final class StoryHoldBackTest {
     private static final String DIR = "narratives/stories";
 
     private static String storyJson(String id, boolean deferred, int letters) {
+        return storyJson(id, deferred, null, 1, letters);
+    }
+
+    private static String storyJson(String id, boolean deferred, String after, double weight, int letters) {
         StringBuilder b = new StringBuilder();
         b.append("{\"id\":\"").append(id).append("\",\"character\":\"Nobody\",\"story\":\"S\"");
         if (deferred) b.append(",\"deferred\":true");
+        if (after != null) b.append(",\"after\":\"").append(after).append('"');
+        if (weight != 1) b.append(",\"weight\":").append(weight);
         b.append(",\"letters\":[");
         for (int i = 1; i <= letters; i++) {
             if (i > 1) b.append(',');
@@ -190,5 +197,119 @@ final class StoryHoldBackTest {
         complete(data, "held_back", 2);
         assertTrue(data.randomUncompletedStory(1234L).isEmpty());
         assertTrue(data.nextUncompletedStory().isEmpty());
+    }
+
+    // ---------------- after-chain + weight ----------------
+
+    /** ordinary_a/b (weight 1), chain first → second → third (weight 20 each), held_back (deferred). */
+    private static Map<ResourceLocation, String> chainFixture() {
+        Map<ResourceLocation, String> files = new LinkedHashMap<>();
+        files.put(file("chain_first"), storyJson("chain_first", false, null, 20, 2));
+        files.put(file("chain_second"), storyJson("chain_second", false, "chain_first", 20, 2));
+        files.put(file("chain_third"), storyJson("chain_third", false, "chain_second", 20, 2));
+        files.put(file("held_back"), storyJson("held_back", true, 2));
+        files.put(file("ordinary_a"), storyJson("ordinary_a", false, 2));
+        files.put(file("ordinary_b"), storyJson("ordinary_b", false, 2));
+        return files;
+    }
+
+    private static Map<String, Integer> pickCounts(NarrativeProgressData data, int seeds) {
+        Map<String, Integer> counts = new java.util.HashMap<>();
+        for (long seed = 0; seed < seeds; seed++) {
+            // Spread raw seeds the way a lectern's pos+worldSeed would.
+            long mixed = seed * 0x9E3779B97F4A7C15L;
+            counts.merge(data.randomUncompletedStory(mixed).orElseThrow(), 1, Integer::sum);
+        }
+        return counts;
+    }
+
+    @Test
+    @DisplayName("a chained series never starts before its prerequisite is finished")
+    void chainWaitsForPrerequisite() {
+        StoryRegistry.load(managerOf(chainFixture()));
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        Map<String, Integer> counts = pickCounts(data, 5_000);
+        assertFalse(counts.containsKey("chain_second"));
+        assertFalse(counts.containsKey("chain_third"));
+        assertTrue(counts.containsKey("chain_first"));
+
+        data.markRead("chain_first", 1);   // started, not finished — still gates the next link
+        assertFalse(pickCounts(data, 2_000).containsKey("chain_second"));
+
+        complete(data, "chain_first", 2);
+        counts = pickCounts(data, 5_000);
+        assertTrue(counts.containsKey("chain_second"), "the next link opens once its prerequisite is read");
+        assertFalse(counts.containsKey("chain_first"));
+        assertFalse(counts.containsKey("chain_third"));
+    }
+
+    @Test
+    @DisplayName("the chain slot carries its weight against the ordinary series")
+    void chainSlotIsWeighted() {
+        StoryRegistry.load(managerOf(chainFixture()));
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        Map<String, Integer> counts = pickCounts(data, 22_000);
+        // Expected share 20/22 for the chain slot vs 1/22 for each ordinary series.
+        int chain = counts.getOrDefault("chain_first", 0);
+        assertTrue(chain > 18_500 && chain < 21_500, "chain slot picked " + chain + " / 22000");
+        assertTrue(counts.getOrDefault("ordinary_a", 0) > 500, "ordinary series still get picked");
+        assertTrue(counts.getOrDefault("ordinary_b", 0) > 500, "ordinary series still get picked");
+    }
+
+    @Test
+    @DisplayName("the whole chain comes before the deferred tier")
+    void chainPrecedesDeferred() {
+        StoryRegistry.load(managerOf(chainFixture()));
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        complete(data, "ordinary_a", 2);
+        complete(data, "ordinary_b", 2);
+        complete(data, "chain_first", 2);
+        complete(data, "chain_second", 2);
+        assertEquals(Set.of("chain_third"), pickCounts(data, 1_000).keySet());
+        assertEquals("chain_third", data.nextUncompletedStory().orElseThrow());
+        complete(data, "chain_third", 2);
+        assertEquals(Set.of("held_back"), pickCounts(data, 1_000).keySet());
+        assertEquals("held_back", data.nextUncompletedStory().orElseThrow());
+    }
+
+    @Test
+    @DisplayName("nextUncompletedStory never names a gated series")
+    void orderedCursorRespectsChain() {
+        StoryRegistry.load(managerOf(chainFixture()));
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        complete(data, "ordinary_a", 2);
+        complete(data, "ordinary_b", 2);
+        // chain_first unread → it, not chain_second (alphabetically later anyway) or chain_third.
+        assertEquals("chain_first", data.nextUncompletedStory().orElseThrow());
+    }
+
+    @Test
+    @DisplayName("an unknown prerequisite is ignored; a broken chain never stalls the world")
+    void brokenChainsDoNotStall() {
+        Map<ResourceLocation, String> files = new LinkedHashMap<>();
+        files.put(file("orphan"), storyJson("orphan", false, "no_such_story", 1, 2));
+        files.put(file("loop_a"), storyJson("loop_a", false, "loop_b", 1, 2));
+        files.put(file("loop_b"), storyJson("loop_b", false, "loop_a", 1, 2));
+        StoryRegistry.load(managerOf(files));
+        NarrativeProgressData data = NarrativeProgressData.load(new CompoundTag());
+        assertEquals(Set.of("orphan"), pickCounts(data, 500).keySet());
+        complete(data, "orphan", 2);
+        // Only the cycle is left — both blocked, served anyway rather than nothing.
+        assertTrue(data.randomUncompletedStory(42L).isPresent());
+        assertTrue(data.nextUncompletedStory().isPresent());
+    }
+
+    @Test
+    @DisplayName("a localized copy that omits after/weight keeps the English base's")
+    void localeOverlayKeepsChainAndWeight() {
+        Map<ResourceLocation, String> files = chainFixture();
+        files.put(ResourceLocation.fromNamespaceAndPath("dungeontrain",
+                "narrative_localizations/es_es/stories/chain_second.json"),
+            storyJson("chain_second", false, 2));   // translated prose, tuning dropped
+        NarrativeContentLocale.set("es_es");
+        StoryRegistry.load(managerOf(files));
+        StoryFile second = StoryRegistry.getByBasename("chain_second").orElseThrow();
+        assertEquals("chain_first", second.after());
+        assertEquals(20.0, second.weight());
     }
 }
