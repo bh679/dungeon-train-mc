@@ -33,7 +33,7 @@ import java.util.Map;
  * id and written as a PNG to {@code <gameDir>/dungeontrain/user/advancement-photos/}. Exposure keeps its
  * images per world, while DT carries earned advancements across worlds, so the copy here is what lets
  * the photo follow the advancement. Clicking an earned advancement with a photo opens
- * {@link EarnedPhotoScreen}. All access is on the client thread.</p>
+ * {@link EarnedPhotoScreen}; its tooltip shows a small print ({@link EarnedPhotoThumbnails}). All access is on the client thread.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class EarnedPhotos {
@@ -145,6 +145,7 @@ public final class EarnedPhotos {
             Files.createDirectories(target.getParent());
             Files.write(target, PhotoPngCodec.encodeArgb(w, h, argb));
             kept().add(fileName(advancement));
+            EarnedPhotoThumbnails.forget(advancement);
             LOGGER.info("[DungeonTrain] Kept photo {} ({}x{}) for {}", exposureId, w, h, advancement);
             return true;
         } catch (IOException | RuntimeException ex) {
@@ -153,7 +154,7 @@ public final class EarnedPhotos {
         }
     }
 
-    private static Path file(ResourceLocation advancement) {
+    static Path file(ResourceLocation advancement) {
         return PlayerDataPaths.dir(PlayerDataPaths.USER).resolve(DIR).resolve(fileName(advancement));
     }
 

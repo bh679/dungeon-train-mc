@@ -3693,7 +3693,6 @@
   "advancements.dungeontrain.enchiridion.found_footage.title": "ฟุตเทจที่ถูกพบ",
   "advancements.dungeontrain.enchiridion.found_footage.description": "ดูภาพถ่ายที่พบบนรถไฟ",
   "advancements.dungeontrain.enchiridion.found_footage.hint": "มีใครบางคนทิ้งสิ่งนี้ไว้",
-  "advancements.dungeontrain.photo.click": "คลิกเพื่อดูรูปถ่าย",
   "chat.dungeontrain.free_play.cause.portal_rate": "ความถี่ที่ตู้ข้ามมิติจะปรากฏถูกเปลี่ยนไปในโลกนี้",
   "chat.dungeontrain.free_play.portal_rate_changed": "รางที่โลกนี้สร้างขึ้นไม่ใช่รางที่ Dungeon Train ปรับสมดุลไว้อีกต่อไป โลกนี้จึงยังอยู่ในโหมดเล่นอิสระ",
   "chat.dungeontrain.free_play.cause.dt_config": "การตั้งค่าความยากของ Dungeon Train ถูกเปลี่ยนไป",

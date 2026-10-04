@@ -17,8 +17,8 @@ import java.nio.file.Path;
 
 /**
  * Shows the photo that earned an advancement, as a print with the advancement's title beneath it. Opened
- * by clicking the earned advancement ({@link EarnedPhotos#tryOpen}); Esc returns to the advancements
- * screen. A screen of DT's own — not Exposure's photograph screen — so the burn-after-viewing and
+ * by clicking the earned advancement ({@link EarnedPhotos#tryOpen}), drawn over the advancements screen;
+ * a click anywhere or Esc puts it away. A screen of DT's own — not Exposure's photograph screen — so the burn-after-viewing and
  * Tribute hooks that watch that screen never see it.
  */
 public final class EarnedPhotoScreen extends Screen {
@@ -44,6 +44,10 @@ public final class EarnedPhotoScreen extends Screen {
 
     @Override
     protected void init() {
+        // Drawn over the advancements screen: keep it laid out for the current window size.
+        if (parent != null && (parent.width != width || parent.height != height)) {
+            parent.resize(minecraft, width, height);
+        }
         if (texture != null) return;
         try (InputStream in = Files.newInputStream(file)) {
             NativeImage image = NativeImage.read(in);
@@ -70,6 +74,24 @@ public final class EarnedPhotoScreen extends Screen {
         g.fill(x - BORDER, y - BORDER, x + w + BORDER, y + h + BORDER + CAPTION, PAPER);
         g.blit(TEXTURE, x, y, w, h, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
         g.drawString(font, title, (width - font.width(title)) / 2, y + h + 6, 0xFF3A3530, false);
+    }
+
+    /** The advancements screen stays visible underneath, dimmed — not the blurred world. */
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        if (parent != null) {
+            parent.render(g, -1, -1, partialTick);
+        } else {
+            super.renderBackground(g, mouseX, mouseY, partialTick);
+        }
+        g.fill(0, 0, width, height, 0xA0000000);
+    }
+
+    /** A click anywhere puts the print away. */
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        onClose();
+        return true;
     }
 
     @Override

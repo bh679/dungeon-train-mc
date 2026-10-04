@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import games.brennan.dungeontrain.client.HoveredAdvancement;
 import games.brennan.dungeontrain.compat.AdvancementHintText;
+import games.brennan.dungeontrain.client.EarnedPhotoThumbnails;
 import games.brennan.dungeontrain.compat.AdvancementTileDecor;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
@@ -190,8 +191,7 @@ public abstract class BetterAdvancementWidgetCompatMixin {
     private List<FormattedCharSequence> dungeontrain$swapDescription(List<FormattedCharSequence> original) {
         if (advancementNode == null) return original;
         if (!AdvancementHintText.shouldMask(advancementNode.holder().id(), advancementProgress)) {
-            return AdvancementHintText.withEarnedPhotoFooter(
-                original, advancementNode.holder().id(), advancementProgress, minecraft.font, width);
+            return EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id());
         }
         int revision = AdvancementHintText.maskedDescriptionRevision();
         if (dungeontrain$hiddenDesc == null || dungeontrain$hiddenDescRevision != revision) {
@@ -200,5 +200,20 @@ public abstract class BetterAdvancementWidgetCompatMixin {
             dungeontrain$hiddenDescRevision = revision;
         }
         return dungeontrain$hiddenDesc;
+    }
+
+    /** Draw the kept photo's thumbnail where its reserved description line lands. */
+    @WrapOperation(
+        method = "drawHover",
+        at = @At(value = "INVOKE",
+                 target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/util/FormattedCharSequence;IIIZ)I")
+    )
+    private int dungeontrain$drawPhotoSlot(GuiGraphics g, net.minecraft.client.gui.Font font,
+                                           net.minecraft.util.FormattedCharSequence line, int x, int y, int color,
+                                           boolean shadow, Operation<Integer> original) {
+        if (advancementNode != null) {
+            EarnedPhotoThumbnails.drawIfSlot(g, line, advancementNode.holder().id(), x, y);
+        }
+        return original.call(g, font, line, x, y, color, shadow);
     }
 }
