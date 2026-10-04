@@ -4,11 +4,15 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import io.github.mortuusars.exposure.Exposure;
+import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
+import io.github.mortuusars.exposure.world.camera.frame.Photographer;
 import io.github.mortuusars.exposure.world.entity.CameraHolder;
 import io.github.mortuusars.exposure.world.item.camera.CameraItem;
 import io.github.mortuusars.exposure_polaroid.world.item.InstantCameraItem;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
+import net.minecraft.Util;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
@@ -206,7 +210,8 @@ public final class PlayerMobPhotoGoal extends Goal {
         if (onStack == null) {
             return false;
         }
-        if (DisposableCamera.setPendingFrame(camera, onStack, mob.registryAccess())) {
+        Frame credited = creditedToMob(onStack);
+        if (DisposableCamera.setPendingFrame(camera, credited, mob.registryAccess())) {
             camera.remove(Exposure.DataComponents.PHOTOGRAPH_FRAME);
             DisposableCamera.markShot(camera);
         }
@@ -258,6 +263,20 @@ public final class PlayerMobPhotoGoal extends Goal {
             mob.equipBestMeleeInHand();
         }
         phase = Phase.IDLE;
+    }
+
+    /**
+     * Exposure names a non-player photographer by entity type ({@code playermob:player_mob}); the
+     * credit — shown on the print and read out when a disposable photo burns — should carry the
+     * mob's own name. The photographer type has no public constructor, so it is built through its codec.
+     */
+    private Frame creditedToMob(Frame frame) {
+        JsonObject json = new JsonObject();
+        json.addProperty("name", mob.getName().getString());
+        json.addProperty("uuid", Util.NIL_UUID.toString());
+        return Photographer.CODEC.parse(JsonOps.INSTANCE, json).result()
+            .map(by -> frame.toMutable().setPhotographer(by).toImmutable())
+            .orElse(frame);
     }
 
     private void abort(String why) {
