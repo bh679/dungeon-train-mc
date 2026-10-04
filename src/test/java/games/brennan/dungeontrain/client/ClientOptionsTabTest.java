@@ -63,21 +63,21 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("Tab order is General, Backups, Train, Editor")
+    @DisplayName("Tab order is General, Backups, Train, Editor, Performance")
     void tabOrder() {
         assertEquals(List.of(ClientOptionsTab.GENERAL, ClientOptionsTab.BACKUPS,
-                        ClientOptionsTab.TRAIN, ClientOptionsTab.EDITOR),
+                        ClientOptionsTab.TRAIN, ClientOptionsTab.EDITOR, ClientOptionsTab.PERFORMANCE),
                 List.of(ClientOptionsTab.values()));
     }
 
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: twenty-four rows, none of the conditional rows present")
+    @DisplayName("Plain client: twenty-five rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(24, rows.size());
+        assertEquals(25, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -150,7 +150,7 @@ final class ClientOptionsTabTest {
     void allConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true, true);
 
-        assertEquals(27, rows.size());
+        assertEquals(28, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }

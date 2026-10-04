@@ -29,6 +29,10 @@ import java.util.Optional;
  * enough to matter, too little memory handed to the game. Buttons open the screen where the setting
  * lives (Distant Horizons' own settings, Video Settings, the shader pack screen, Dungeon Train's
  * settings) or, for ride photos, apply the lower resolution directly.
+ *
+ * <p>The same list is the Performance tab of Options → Dungeon Train…
+ * ({@link games.brennan.dungeontrain.client.DungeonTrainClientOptionsScreen}), so players can find the
+ * tips without having to report lag first.</p>
  */
 @OnlyIn(Dist.CLIENT)
 public final class LagTips {
@@ -133,7 +137,7 @@ public final class LagTips {
             try {
                 Minecraft.getInstance().setScreen(c.factory().createScreen(c.mod(), parent));
             } catch (Throwable ignored) {
-                // A broken third-party screen must not take the death screen down with it.
+                // A broken third-party screen must not take the death screen or options down with it.
             }
         });
     }

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The four tabs {@link DungeonTrainClientOptionsScreen} files its rows under, and which one the
+ * The five tabs {@link DungeonTrainClientOptionsScreen} files its rows under, and which one the
  * player is currently looking at.
  *
  * <p>Same split-by-subject shape as the editor menu's {@link games.brennan.dungeontrain.client.menu.EditorMenuTab},
@@ -20,6 +20,8 @@ import java.util.List;
  *       the ride-photo settings.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
  *       render at, plus where each of the four editor menus (X/V/C/Z) draws itself.</li>
+ *   <li>{@link #PERFORMANCE} — the lag tips the death screen's bug-report card offers, checked
+ *       against this player's setup, each with a button to where the setting lives.</li>
  * </ul>
  *
  * <p>Kept free of Minecraft types on purpose. Three rows are conditional — {@link Row#POLITICAL_FILTER}
@@ -34,7 +36,8 @@ public enum ClientOptionsTab {
     GENERAL("general"),
     BACKUPS("backups"),
     TRAIN("train"),
-    EDITOR("editor");
+    EDITOR("editor"),
+    PERFORMANCE("performance");
 
     private final String key;
 
@@ -120,7 +123,15 @@ public enum ClientOptionsTab {
         /** Whether the biome mods' own creative tabs are drawn. Off by default. */
         CREATIVE_MOD_BLOCK_TABS,
         /** Whether those tabs' contents are listed in the creative search. Off by default. */
-        CREATIVE_MOD_BLOCKS_IN_SEARCH
+        CREATIVE_MOD_BLOCKS_IN_SEARCH,
+
+        // --- Performance ---
+        /**
+         * Stands for the whole tip list: the screen expands it into an intro line plus one row per
+         * {@link games.brennan.dungeontrain.client.bugresponse.LagTips} tip that applies right now.
+         * The tips are decided per setup at build time, so they cannot be enum rows of their own.
+         */
+        PERFORMANCE_TIPS
     }
 
     /**
@@ -216,6 +227,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.CREATIVE_MOD_BLOCK_TABS);
                 rows.add(Row.CREATIVE_MOD_BLOCKS_IN_SEARCH);
             }
+            case PERFORMANCE -> rows.add(Row.PERFORMANCE_TIPS);
         }
         return List.copyOf(rows);
     }
