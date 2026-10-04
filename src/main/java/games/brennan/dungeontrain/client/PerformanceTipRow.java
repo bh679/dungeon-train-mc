@@ -9,14 +9,16 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 /**
  * One line of the Options screen's Performance tab: a {@link LagTips.Tip}'s text on the left and its
- * button (or grey hint) on the right — the same row the death screen's bug-report card draws, in
+ * button (or grey hint) on the right, wrapping to two lines when the text needs it — the same row the death screen's bug-report card draws, in
  * vanilla widgets.
  *
  * <p>A single widget rather than a pair because {@code OptionsList} pairs at a fixed 150px split, and
@@ -31,6 +33,8 @@ final class PerformanceTipRow extends AbstractWidget {
     private static final int HINT_COLOR = 0xFF948A70;
     private static final int BUTTON_PADDING = 12;
     private static final int GAP = 6;
+    /** Baseline-to-baseline step when a tip wraps onto two lines. */
+    private static final int LINE_STEP = 10;
 
     private final Font font;
     private final Component text;
@@ -46,7 +50,7 @@ final class PerformanceTipRow extends AbstractWidget {
         this.color = color;
         this.button = button;
         this.hint = hint;
-        if (font.width(text) > textWidth()) {
+        if (font.split(text, textWidth()).size() > 2) {
             setTooltip(Tooltip.create(text));
         }
     }
@@ -91,12 +95,31 @@ final class PerformanceTipRow extends AbstractWidget {
         } else if (hint != null) {
             g.drawString(font, hint, right - font.width(hint), textY, HINT_COLOR, false);
         }
-        String full = text.getString();
-        String shown = font.plainSubstrByWidth(full, textWidth());
-        if (shown.length() < full.length()) {
-            shown = font.plainSubstrByWidth(full, textWidth() - font.width("...")) + "...";
+        // Wraps onto a second line inside the 20px row (two 9px lines fit); a third is trimmed, and the
+        // tooltip set in the constructor carries the whole text.
+        List<FormattedCharSequence> lines = font.split(text, textWidth());
+        if (lines.size() == 1) {
+            g.drawString(font, lines.get(0), getX(), textY, color, true);
+            return;
         }
-        g.drawString(font, shown, getX(), textY, color, true);
+        int top = getY() + (getHeight() - (LINE_STEP + font.lineHeight)) / 2 + 1;
+        g.drawString(font, lines.get(0), getX(), top, color, true);
+        if (lines.size() == 2) {
+            g.drawString(font, lines.get(1), getX(), top + LINE_STEP, color, true);
+        } else {
+            String rest = text.getString().substring(lineLength(lines.get(0)));
+            String shown = font.plainSubstrByWidth(rest.stripLeading(), textWidth() - font.width("...")) + "...";
+            g.drawString(font, shown, getX(), top + LINE_STEP, color, true);
+        }
+    }
+
+    private static int lineLength(FormattedCharSequence line) {
+        StringBuilder sb = new StringBuilder();
+        line.accept((index, style, codePoint) -> {
+            sb.appendCodePoint(codePoint);
+            return true;
+        });
+        return sb.length();
     }
 
     @Override
