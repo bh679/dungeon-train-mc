@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import games.brennan.dungeontrain.compat.PlayerMobPhotoSubject;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import io.github.mortuusars.exposure.world.entity.CameraHolder;
+import io.github.mortuusars.exposure.world.entity.CameraOperator;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -74,5 +75,15 @@ public abstract class PlayerMobCameraHolderMixin implements CameraHolder, Player
     @Override
     public Entity asHolderEntity() {
         return (Entity) (Object) this;
+    }
+
+    /**
+     * A PlayerMob operates its own camera but is not an Exposure {@link CameraOperator} (that is
+     * the player-side viewfinder/animation role). Exposure's default here throws, so answer empty:
+     * the shutter-open packet then simply has no operator client to go to.
+     */
+    @Override
+    public Optional<CameraOperator> getExposureCameraOperator() {
+        return Optional.empty();
     }
 }
