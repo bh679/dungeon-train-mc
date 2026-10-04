@@ -23495,6 +23495,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "turkish-locale-new-game",
+      "version": "0.1165.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "New Game works on Turkish-language computers",
+      "summary": "If your computer's language was set to Turkish or Azerbaijani, starting a New Game showed the loading screen and then dropped you straight back to the main menu. Worlds now load normally, and your in-game language and number formatting are unchanged.",
+      "highlights": [],
+      "pr": 1842,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
