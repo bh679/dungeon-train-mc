@@ -23410,6 +23410,28 @@
       "released": true,
       "released_in": "v0.1160.0",
       "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "human-translations-only",
+      "version": "0.1161.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Human translations only",
+      "summary": "Prefer English over machine translation? A new switch on the Language screen shows only translations a person wrote or reviewed. Anything still machine-translated and unreviewed appears in English instead. It's off by default.",
+      "highlights": [
+        "New person button at the top right of the Language screen turns it on or off, instantly",
+        "Lines translated or reviewed by the community stay in your language",
+        "In single-player, unreviewed books and item names follow the same choice"
+      ],
+      "pr": 1837,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
