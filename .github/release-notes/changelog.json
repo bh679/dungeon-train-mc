@@ -23450,9 +23450,9 @@
       ],
       "pr": 1835,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1163.0",
+      "released_at": "2026-10-04T19:46:16Z"
     },
     {
       "id": "editor-plural-source",
@@ -23471,9 +23471,9 @@
       ],
       "pr": 1838,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1163.0",
+      "released_at": "2026-10-04T19:46:16Z"
     },
     {
       "id": "photo-and-book-advancements",
