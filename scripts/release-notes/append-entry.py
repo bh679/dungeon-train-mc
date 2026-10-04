@@ -34,6 +34,11 @@ Leave it off when the change does not target one of those issues.
 Optional:
   --addresses ISSUE Player-reported issue this fixes (repeatable): lag, train_vanished.
   --version X.Y.Z   Override the computed version (rarely needed).
+  --major           Major release: leads the release notes and gets the headline
+                    card on the web update page. With it:
+  --description-file PATH  Markdown description (replaces summary + highlights).
+  --image URL       https:// URL of the release photo.
+  Attach or change these later with set-major.py.
 
 Paths honour CHANGELOG_FILE / GRADLE_PROPERTIES_FILE env overrides.
 """
@@ -88,9 +93,20 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     )
     p.add_argument("--pr", type=int, default=None, help="PR number (optional).")
     p.add_argument(
-        "--lead",
+        "--major",
         action="store_true",
-        help="Release summary: renders first in the release notes and the Discord post.",
+        help="Major release: renders first in the release notes and the Discord post, "
+        "and as the headline card on the web update page.",
+    )
+    p.add_argument(
+        "--description-file",
+        default=None,
+        help="Major release only: markdown file whose text becomes the release description.",
+    )
+    p.add_argument(
+        "--image",
+        default=None,
+        help="Major release only: https:// URL of the release photo.",
     )
     p.add_argument(
         "--version",
@@ -98,6 +114,11 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="Override the computed ship version (X.Y.Z).",
     )
     return p.parse_args(argv)
+
+
+def read_text(path: str) -> str:
+    with open(path, encoding="utf-8") as f:
+        return f.read()
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -162,8 +183,16 @@ def main(argv: list[str] | None = None) -> int:
         addresses=args.addresses,
         tags=args.tags,
     )
-    if args.lead:
-        entry = {**entry, "lead": True}
+    if (args.description_file or args.image) and not args.major:
+        print("::error::--description-file / --image need --major", file=sys.stderr)
+        return 1
+    if args.major:
+        try:
+            description = read_text(args.description_file) if args.description_file else None
+            entry = changelog_io.with_major(entry, description=description, image=args.image)
+        except (OSError, ValueError) as e:
+            print(f"::error::{e}", file=sys.stderr)
+            return 1
     try:
         new_entries = changelog_io.append_entry(data["entries"], entry)
     except ValueError as e:
