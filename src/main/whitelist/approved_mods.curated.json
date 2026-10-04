@@ -99,10 +99,15 @@
         "fancymenu",
         "melody",
         "lambdynlights",
-        "lambdynlights_runtime"
+        "lambdynlights_runtime",
+        "sodiumdynamiclights",
+        "ryoamiclights",
+        "dynamiclightsreforged",
+        "dynamiclights"
       ],
       "note": [
-        "lambdynlights (dynamic lights from held torches) is a genuine borderline call — it lets you",
+        "Dynamic lights (lambdynlights, sodiumdynamiclights, ryoamiclights, dynamiclightsreforged,",
+        "AtomicStryker's dynamiclights — light from held torches) is a genuine borderline call — it lets you",
         "see a little further into an unlit room. Approved because the alternative is a player",
         "holding a torch, and because DT's difficulty comes from the train, not from darkness.",
         "Revoke it from the relay if that stops being true."
