@@ -22860,6 +22860,22 @@
       "released_at": null
     },
     {
+      "id": "dynamic-lights-whitelist",
+      "version": "0.1144.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "All the dynamic-lights mods count for fair play",
+      "summary": "Sodium Dynamic Lights, RyoamicLights, Dynamic Lights Reforged and Dynamic Lights now join LambDynamicLights on the approved-mods list, so running one no longer puts you into Free Play.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "feedback-answer-count",
       "version": "0.1144.0",
       "type": "feat",
