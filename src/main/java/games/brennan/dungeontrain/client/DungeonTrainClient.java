@@ -68,6 +68,8 @@ public final class DungeonTrainClient {
         // and must not be loaded when DH isn't installed.
         if (GraphicsCapabilities.distantHorizonsActive()) {
             DistantHorizonsSuppression.register();
+            // DH keeps generating LODs behind the pause menu; hold it while singleplayer is paused.
+            DistantHorizonsPauseHold.register();
         }
 
         // Skybox blocks mask each variant's sky with the stencil buffer, which Minecraft's

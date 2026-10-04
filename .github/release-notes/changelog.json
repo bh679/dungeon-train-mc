@@ -23046,6 +23046,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dh-pause-hold-lod-gen",
+      "version": "0.1154.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Far terrain rests while you're paused",
+      "summary": "Pausing the game now also pauses far-terrain generation, so a long break no longer leaves the game sluggish when you come back.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1822,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
