@@ -23497,8 +23497,25 @@
       "released_at": null
     },
     {
-      "id": "playermob-camera-gift-only",
+      "id": "outdated-version-chat-notice",
       "version": "0.1165.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Know when your version is out of date",
+      "summary": "Joining a game on an old version of Dungeon Train now tells you once, in chat, how many releases behind you are, with a link to update. It waits until you're actually in the world so it doesn't scroll past under the loading screen, and it won't repeat when you come back to the same game.",
+      "highlights": [],
+      "pr": 1841,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "playermob-camera-gift-only",
+      "version": "0.1166.0",
       "type": "fix",
       "tags": [
         "fix",
