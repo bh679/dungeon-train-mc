@@ -4,6 +4,7 @@
   "package": "games.brennan.dungeontrain.mixin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
+  "plugin": "games.brennan.dungeontrain.mixin.CoreMixinPlugin",
   "mixins": [
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
