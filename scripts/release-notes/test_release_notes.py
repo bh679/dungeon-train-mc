@@ -19,6 +19,7 @@ RENDER = os.path.join(HERE, "render-unreleased.py")
 RENDER_LAST = os.path.join(HERE, "render-last-released.py")
 MARK = os.path.join(HERE, "mark-released.py")
 SET_TAGS = os.path.join(HERE, "set-tags.py")
+SET_MAJOR = os.path.join(HERE, "set-major.py")
 sys.path.insert(0, HERE)
 import changelog_io  # noqa: E402
 SCHEMA_FILE = os.path.join(
@@ -577,12 +578,12 @@ def test_produced_and_shipped_changelog_match_schema() -> None:
     jsonschema.validate(read_changelog(ws), schema)
 
 
-def test_render_lead_opens_notes_outside_versions() -> None:
-    lead = {"id": "sum", "version": "1.2.0", "type": "docs", "tags": ["internal"],
-            "title": "Big Drop", "summary": "Intro.", "highlights": ["Other"], "lead": True}
+def test_render_major_opens_notes_outside_versions() -> None:
+    major = {"id": "sum", "version": "1.2.0", "type": "docs", "tags": ["internal"],
+             "title": "Big Drop", "summary": "Intro.", "highlights": ["Other"], "major": True}
     feat = {"id": "f", "version": "1.2.0", "type": "feat", "tags": ["feature"],
             "title": "Thing", "summary": "Does it."}
-    md = changelog_io.render_markdown([feat, lead])
+    md = changelog_io.render_markdown([feat, major])
     assert md.startswith("# Big Drop\n\nIntro.\n\n## Other significant updates\n\n- Other"), md
     assert "Behind the Scenes" not in md, md
     assert md.count("### 1.2.0") == 1 and "**Big Drop**" not in md, md
@@ -639,6 +640,60 @@ def test_link_changelog_rejects_unknown_args():
     assert r.returncode == 2
 
 
+def test_render_major_description_and_image() -> None:
+    major = {"id": "sum", "version": "1.2.0", "type": "docs", "tags": ["internal"],
+             "title": "Big Drop", "summary": "Intro.", "highlights": ["Other"], "major": True,
+             "description": "Long *story*.\n\n## More\n\n- a", "image": "https://x.test/p.png"}
+    md = changelog_io.render_markdown([major])
+    assert md.startswith("# Big Drop\n\n![Big Drop](https://x.test/p.png)\n\nLong *story*.\n\n## More\n\n- a"), md
+    assert "Intro." not in md and "Other significant updates" not in md, md
+
+
+def test_validate_major_fields_rejects_bad_image_and_blank_description() -> None:
+    for bad in ("http://x.test/p.png", "javascript:alert(1)", "https://x.test/a b.png", "https://"):
+        try:
+            changelog_io.validate_major_fields(None, bad)
+        except ValueError:
+            continue
+        raise AssertionError(f"accepted {bad!r}")
+    try:
+        changelog_io.validate_major_fields("   ", None)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("accepted a blank description")
+
+
+def test_append_major_with_description_and_image() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    desc = os.path.join(ws, "desc.md")
+    with open(desc, "w") as f:
+        f.write("# Hi\n\nBody.\n")
+    r = append(ws, "big", "--major", "--description-file", desc, "--image", "https://x.test/p.png")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["major"] is True and e["description"] == "# Hi\n\nBody." and e["image"] == "https://x.test/p.png", e
+    r = append(ws, "small", "--image", "https://x.test/p.png")
+    assert r.returncode == 1 and "need --major" in r.stderr, r.stderr
+    r = append(ws, "bad", "--major", "--image", "http://x.test/p.png")
+    assert r.returncode == 1 and "https://" in r.stderr, r.stderr
+
+
+def test_set_major_attaches_and_clears_image() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    r = run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.png")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["major"] is True and e["image"] == "https://x.test/p.png", e
+    r = run(SET_MAJOR, ws, "--id", "drop", "--clear-image")
+    assert r.returncode == 0 and "image" not in read_changelog(ws)["entries"][0], r.stderr
+    r = run(SET_MAJOR, ws, "--id", "nope", "--image", "https://x.test/p.png")
+    assert r.returncode == 1 and "no changelog entry" in r.stderr, r.stderr
+
+
 def main() -> int:
     tests = [
         test_link_changelog_links_title_and_appends_read_more,
@@ -667,7 +722,11 @@ def main() -> int:
         test_set_tags_rejects_unknown_id_or_tag_without_writing,
         test_set_tags_dry_run_writes_nothing,
         test_render_leads_with_tag_counts,
-        test_render_lead_opens_notes_outside_versions,
+        test_render_major_opens_notes_outside_versions,
+        test_render_major_description_and_image,
+        test_validate_major_fields_rejects_bad_image_and_blank_description,
+        test_append_major_with_description_and_image,
+        test_set_major_attaches_and_clears_image,
         test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,
