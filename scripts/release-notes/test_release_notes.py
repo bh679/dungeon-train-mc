@@ -577,6 +577,17 @@ def test_produced_and_shipped_changelog_match_schema() -> None:
     jsonschema.validate(read_changelog(ws), schema)
 
 
+def test_render_lead_opens_notes_outside_versions() -> None:
+    lead = {"id": "sum", "version": "1.2.0", "type": "docs", "tags": ["internal"],
+            "title": "Big Drop", "summary": "Intro.", "highlights": ["Other"], "lead": True}
+    feat = {"id": "f", "version": "1.2.0", "type": "feat", "tags": ["feature"],
+            "title": "Thing", "summary": "Does it."}
+    md = changelog_io.render_markdown([feat, lead])
+    assert md.startswith("# Big Drop\n\nIntro.\n\n## Other significant updates\n\n- Other"), md
+    assert "Behind the Scenes" not in md, md
+    assert md.count("### 1.2.0") == 1 and "**Big Drop**" not in md, md
+
+
 def main() -> int:
     tests = [
         test_append_computes_minor_bump_when_patch_nonzero,
@@ -600,6 +611,7 @@ def main() -> int:
         test_set_tags_rejects_unknown_id_or_tag_without_writing,
         test_set_tags_dry_run_writes_nothing,
         test_render_leads_with_tag_counts,
+        test_render_lead_opens_notes_outside_versions,
         test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,

@@ -73,6 +73,7 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 | `tags` | yes | Player-facing classification the in-game Versions page filters by, chosen by the agent from context (see [Tags](#tags)). The type-derived tag is always present (chore/ci/refactor/docs/test derive `internal`), so it is never empty. |
 | `title` | yes | Short headline. |
 | `summary` | yes | Player-facing prose. |
+| `lead` | no | `true` makes the entry the release summary: it renders first (title as a `#` heading, highlights under "Other significant updates"), above the tag line, so it opens the release body and Discord post. Log it with `append-entry.py --lead`. |
 | `highlights` | no | Bullet points. |
 | `addresses` | no | Player-reported issues the change fixes or improves: `lag`, `train_vanished` (`--addresses`, repeatable). A player who reports that issue on the death screen while on an older version is told a newer release addresses it. Omitted when empty. |
 | `pr` | no | PR number. |

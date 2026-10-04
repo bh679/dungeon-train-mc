@@ -22972,6 +22972,33 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "release-capture-the-view",
+      "version": "0.1148.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Capture The View",
+      "summary": "What did you see on train? What did the train see of you?\nFind disposable cameras in the loot and snap with a click. Your shots travel down the line into other passengers' bookshelves, barrels and chests, and theirs find you. Pay tribute to a photo to keep it travelling. A new page on the death screen.",
+      "highlights": [
+        "A villager get tired of repeat sales, and devalue the items he has to many of.",
+        "Finding you own library has never been easier, sign a book and the chances multiply until you find one next. New and improved author rooms.",
+        "THE LADDER BUG IS DEAD",
+        "New carraiges.",
+        "Many train editor improvements.",
+        "Improvements to the translation editor",
+        "New and improved connections to discord.",
+        "More loading screen lore.",
+        "Bug fixes",
+        "Performance improvements"
+      ],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "lead": true
     }
   ]
 }
