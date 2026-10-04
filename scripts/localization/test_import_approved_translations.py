@@ -144,11 +144,32 @@ def test_revised_line_credits_the_translator_as_author_and_reviewer():
     assert prov_of(ws)["b.key"]["author"] == "Opus 5 (Claude)"
 
 
-def test_matching_line_is_reviewed_not_reauthored():
+def test_matching_a_machine_line_makes_the_human_its_author():
+    # A person's approved text is theirs even when a model happened to write the same words —
+    # the uk_ua bootstrap left 18 of MrMultibite's lines credited to the model.
     ws = workspace()
     proc = run(ws, [unit(value="AI Alpha")])
     assert proc.returncode == 0, proc.stderr
-    assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
+    assert lang_of(ws)["a.key"] == "AI Alpha"
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
+
+
+def test_matching_a_human_line_is_reviewed_not_reauthored():
+    prov = dict(PROV, **{"a.key": {"author": "阿世xAsh", "reviewer": "", "source_hash": ""}})
+    ws = workspace(prov=prov, authors=dict(AUTHORS, **{"阿世xAsh": "human"}))
+    proc = run(ws, [unit(value="AI Alpha")])
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"] == {"author": "阿世xAsh", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
+
+
+def test_a_translators_newest_submission_beats_their_older_one_approved_later():
+    # The older wording was approved AFTER the newer one — approval order must not resurrect it.
+    rows = [unit(id=2, ts=2000, reviewedTs=2500, value="new words"),
+            unit(id=1, ts=1000, reviewedTs=9000, value="old words")]
+    ws = workspace()
+    proc = run(ws, rows)
+    assert proc.returncode == 0, proc.stderr
+    assert lang_of(ws)["a.key"] == "new words"
 
 
 # ---- two people, one line -----------------------------------------------------
@@ -197,14 +218,26 @@ def test_a_relay_pick_outranks_the_newest_approval():
     assert prov_of(ws)["a.key"] == {"author": "SandRuin", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
 
 
-def test_a_contender_for_a_line_that_already_matches_is_named_not_credited():
+def test_a_contender_for_a_machine_line_that_already_matches_is_credited_as_reviewer():
     ws = workspace(authors=CONTESTED_AUTHORS)
-    # The winner's text is what the file already holds, so the AI author stands and the only slot
-    # left is the reviewer's — there is nowhere to put the runner-up but the report.
+    # The winner's text matches what a MACHINE wrote, so the winner authors it and the runner-up
+    # takes the reviewer slot — both people end up credited.
     proc = run(ws, [unit(id=9, ts=200, translator="老本願", value="AI Alpha"),
                     unit(id=4, ts=100, translator="ecodead", value="別の Alpha")])
     assert proc.returncode == 0, proc.stderr
-    assert prov_of(ws)["a.key"] == {"author": "Opus 5 (Claude)", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "ecodead", "source_hash": pio.source_hash("Alpha")}
+    assert "WARNING" not in proc.stdout, proc.stdout
+
+
+def test_a_contender_for_a_human_line_that_already_matches_is_named_not_credited():
+    prov = dict(PROV, **{"a.key": {"author": "阿世xAsh", "reviewer": "", "source_hash": ""}})
+    ws = workspace(prov=prov, authors=dict(CONTESTED_AUTHORS, **{"阿世xAsh": "human"}))
+    # The text is another person's, so its author stands and the only slot left is the
+    # reviewer's — there is nowhere to put the runner-up but the report.
+    proc = run(ws, [unit(id=9, ts=200, translator="老本願", value="AI Alpha"),
+                    unit(id=4, ts=100, translator="ecodead", value="別の Alpha")])
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"] == {"author": "阿世xAsh", "reviewer": "老本願", "source_hash": pio.source_hash("Alpha")}
     assert "WARNING" in proc.stdout and "ecodead" in proc.stdout, proc.stdout
 
 
@@ -471,8 +504,8 @@ def book_prov_of(ws):
     return read_json(os.path.join(ws, "narrative-prov", "xx_yy.json"))
 
 
-def test_book_field_is_replaced_and_reviewed_not_reauthored():
-    """One field fixed out of three: a person has read the book, but did not write it."""
+def test_book_field_is_credited_per_field_and_the_book_reviewed():
+    """One field fixed out of three: that field is theirs, the rest stays the machine's."""
     ws = workspace()
     rows = [unit(unitType="book", namespace="dungeontrain",
                  unitId="random_books/deathnote#variants.0", source="", value="人工 one")]
@@ -483,7 +516,30 @@ def test_book_field_is_replaced_and_reviewed_not_reauthored():
     assert book["id"] == "deathnote", "structural key must be untouched"
     assert book_prov_of(ws)["random_books/deathnote"] == {
         "author": "Opus 5 (Claude)", "reviewer": "老本願",
-        "source_hash": pio.book_source_hash(BOOK_EN)}
+        "source_hash": pio.book_source_hash(BOOK_EN), "fields": {"variants.0": "老本願"}}
+
+
+def test_book_field_matching_machine_text_is_still_credited_to_the_human():
+    ws = workspace()
+    rows = [unit(unitType="book", unitId="random_books/deathnote#title", source="",
+                 value="AI Title")]
+    proc = run(ws, rows)
+    assert proc.returncode == 0, proc.stderr
+    assert book_prov_of(ws)["random_books/deathnote"]["fields"] == {"title": "老本願"}
+
+
+def test_book_field_newest_submission_wins_however_it_was_approved():
+    # Rows arrive newest-first; the importer used to write them in that order, so the OLDEST
+    # approval was written last and shipped.
+    rows = [unit(id=2, ts=2000, reviewedTs=2100, unitType="book",
+                 unitId="random_books/deathnote#variants.0", source="", value="newer"),
+            unit(id=1, ts=1000, reviewedTs=9000, unitType="book",
+                 unitId="random_books/deathnote#variants.0", source="", value="older")]
+    ws = workspace()
+    proc = run(ws, rows)
+    assert proc.returncode == 0, proc.stderr
+    book = read_json(os.path.join(ws, "narrative", "xx_yy", "random_books", "deathnote.json"))
+    assert book["variants"][0] == "newer"
 
 
 def test_book_with_every_field_replaced_takes_the_translator_as_author():
@@ -728,6 +784,73 @@ def _main():
             print(f"FAIL {fn.__name__}: {exc}")
     print(f"\n{len(funcs) - failures}/{len(funcs)} passed")
     return 1 if failures else 0
+
+
+
+
+# ---- .other written for a language that has no .other ---------------------------------------
+#
+# Driven through import_lang directly: the CLI fixture's xx_yy has English plural rules, and the
+# retarget only exists for a grammar that never selects `other` (east-Slavic, Polish).
+
+def _importer():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("import_approved", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _uk_workspace(many_author):
+    ws = tempfile.mkdtemp(prefix="import-plural-test-")
+    lang_dir, prov_dir = os.path.join(ws, "lang"), os.path.join(ws, "prov")
+    os.makedirs(lang_dir)
+    os.makedirs(prov_dir)
+    write_json(os.path.join(lang_dir, "en_us.json"),
+               {"n.chests.one": "%s chest", "n.chests.other": "%s chests"})
+    write_json(os.path.join(lang_dir, "uk_ua.json"),
+               {"n.chests.one": "%s скриня", "n.chests.few": "%s скрині", "n.chests.many": "AI %s"})
+    write_provenance(os.path.join(prov_dir, "uk_ua.json"), {
+        k: {"author": a, "reviewer": "", "source_hash": ""}
+        for k, a in (("n.chests.one", "Opus 5 (Claude)"), ("n.chests.few", "Opus 5 (Claude)"),
+                     ("n.chests.many", many_author))})
+    return ws, {"dungeontrain": pio.Namespace("dungeontrain", __import__("pathlib").Path(lang_dir),
+                                               __import__("pathlib").Path(prov_dir), None, None)}
+
+
+def _other_row(**over):
+    return unit(locale="uk_ua", unitId="n.chests.other", source="%s chests", value="%s скринь",
+                **over)
+
+
+def test_other_written_for_east_slavic_lands_on_many_over_a_machine_line():
+    mod = _importer()
+    ws, ns_dirs = _uk_workspace("Opus 5 (Claude)")
+    problems, deferred = [], []
+    result = mod.import_lang([_other_row()], ns_dirs, False, problems, deferred,
+                             {"Opus 5 (Claude)": "ai", "老本願": "human"})
+    assert not problems and not deferred, (problems, deferred)
+    assert read_json(os.path.join(ws, "lang", "uk_ua.json"))["n.chests.many"] == "%s скринь"
+    assert result.revised == {("dungeontrain", "uk_ua", "老本願", "老本願"): ["n.chests.many"]}
+
+
+def test_other_never_replaces_a_humans_many():
+    mod = _importer()
+    ws, ns_dirs = _uk_workspace("阿世xAsh")
+    problems, deferred = [], []
+    mod.import_lang([_other_row()], ns_dirs, False, problems, deferred,
+                    {"Opus 5 (Claude)": "ai", "老本願": "human", "阿世xAsh": "human"})
+    assert read_json(os.path.join(ws, "lang", "uk_ua.json"))["n.chests.many"] == "AI %s"
+    assert any("a person's work" in d for d in deferred), deferred
+
+
+def test_a_unit_written_for_many_outranks_one_retargeted_from_other():
+    mod = _importer()
+    ws, ns_dirs = _uk_workspace("Opus 5 (Claude)")
+    rows = [_other_row(id=9, ts=900),
+            unit(id=1, ts=100, locale="uk_ua", unitId="n.chests.many", source="", value="%s скринь!")]
+    mod.import_lang(rows, ns_dirs, False, [], [], {"Opus 5 (Claude)": "ai", "老本願": "human"})
+    assert read_json(os.path.join(ws, "lang", "uk_ua.json"))["n.chests.many"] == "%s скринь!"
 
 
 if __name__ == "__main__":

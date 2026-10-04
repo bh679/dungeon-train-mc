@@ -23546,6 +23546,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translator-credit-human-over-ai",
+      "version": "0.1169.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Translator credit fixes",
+      "summary": "Community translators are credited correctly for their work.",
+      "highlights": [
+        "Ukrainian translation updates."
+      ],
+      "pr": 1843,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -150,6 +150,10 @@ def rename_in_sidecar(path: Path, src: str, dst: str, dry_run: bool) -> int:
                 if new_entry.get(field) == src:
                     new_entry[field] = dst
                     changed += 1
+            fields = new_entry.get(pio.FIELDS_KEY)
+            if isinstance(fields, dict) and src in fields.values():
+                new_entry[pio.FIELDS_KEY] = {f: (dst if n == src else n) for f, n in fields.items()}
+                changed += sum(1 for n in fields.values() if n == src)
             out[key] = new_entry
         else:
             out[key] = entry

@@ -86,6 +86,11 @@ SOURCE_LOCALE = "en_us"
 ENTRY_FIELDS = ("author", "reviewer", "source_hash")
 # The fields that hold a registered name — what apply-translator-renames.py rewrites.
 NAME_FIELDS = ("author", "reviewer")
+# Optional on a BOOK entry only: {dotted field path: name} for the fields of a book somebody
+# other than its book-level author wrote. A book is translated as a unit, but not always by one
+# hand — a translator who wrote its title and two passages over an AI body is the author of
+# exactly those, and the per-book record alone could only say "AI, reviewed by them".
+FIELDS_KEY = "fields"
 
 # source_hash is 16 hex chars (64 bits of SHA-256) or "" for "English not in this repo".
 SOURCE_HASH_LEN = 16
@@ -249,18 +254,23 @@ def load_provenance(path: Path) -> dict:
     return data
 
 
-def validate_entries(prov: dict) -> list[str]:
+def validate_entries(prov: dict, allow_fields: bool = False) -> list[str]:
     """Structural errors for a parsed provenance object (empty list == valid).
 
     Checks entry shape only — key alignment against the lang file is the caller's
     job (check-provenance.py), because it needs the lang file for context.
+    ``allow_fields`` admits the optional per-field ``fields`` map, which only a book
+    sidecar may carry (a lang line has no fields to split).
     """
     errors: list[str] = []
+    allowed = set(ENTRY_FIELDS) | ({FIELDS_KEY} if allow_fields else set())
     for key, entry in prov.items():
         if not isinstance(entry, dict):
             errors.append(f"{key}: entry must be an object, got {type(entry).__name__}")
             continue
-        unknown = sorted(set(entry) - set(ENTRY_FIELDS))
+        if allow_fields and FIELDS_KEY in entry:
+            errors += _field_author_errors(key, entry[FIELDS_KEY])
+        unknown = sorted(set(entry) - allowed)
         missing = [f for f in ENTRY_FIELDS if f not in entry]
         if unknown:
             errors.append(f"{key}: unknown field(s) {', '.join(unknown)}")
@@ -279,6 +289,25 @@ def validate_entries(prov: dict) -> list[str]:
         if isinstance(digest, str) and digest and not SOURCE_HASH_RE.match(digest):
             errors.append(f"{key}: source_hash must be {SOURCE_HASH_LEN} lowercase hex chars or \"\"")
     return errors
+
+
+def _field_author_errors(key: str, fields) -> list[str]:
+    """Shape errors for a book entry's ``fields`` map: non-empty, path -> non-empty name."""
+    if not isinstance(fields, dict) or not fields:
+        return [f"{key}: {FIELDS_KEY} must be a non-empty object of field path -> name"]
+    return [f"{key}: {FIELDS_KEY}[{path!r}] must be a non-empty name"
+            for path, name in fields.items()
+            if not isinstance(path, str) or not path or not isinstance(name, str)
+            or not name.strip()]
+
+
+def entry_names(entry: dict) -> list[str]:
+    """Every registered name an entry holds: author, reviewer, and any per-field authors."""
+    names = [entry.get(f) for f in NAME_FIELDS]
+    fields = entry.get(FIELDS_KEY)
+    if isinstance(fields, dict):
+        names += list(fields.values())
+    return [n for n in names if isinstance(n, str) and n]
 
 
 # ---- the English a line was translated from --------------------------------
@@ -672,6 +701,8 @@ def write_provenance(path: Path, prov: dict) -> None:
     items = list(prov.items())
     for i, (key, entry) in enumerate(items):
         ordered = {f: entry[f] for f in ENTRY_FIELDS}
+        if entry.get(FIELDS_KEY):
+            ordered[FIELDS_KEY] = entry[FIELDS_KEY]
         line = (
             "  "
             + json.dumps(key, ensure_ascii=False)
