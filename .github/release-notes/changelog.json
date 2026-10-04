@@ -22820,6 +22820,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "disposable-camera-loot",
+      "version": "0.1142.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Disposable cameras on the train",
+      "summary": "Disposable cameras now turn up in the train's chests, barrels, bookshelves and pots. While the train is still short of community photos, a spot that would have held one may hold a camera instead, so you can go and take more.",
+      "highlights": [
+        "Find one-shot disposable cameras in the train's loot",
+        "Fewer community photos to find? You're more likely to find a camera in their place"
+      ],
+      "pr": 1808,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

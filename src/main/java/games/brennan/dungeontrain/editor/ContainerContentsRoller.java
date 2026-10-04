@@ -40,7 +40,9 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.DisposableCamera;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
+import io.github.mortuusars.exposure_polaroid.ExposurePolaroid;
 import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -97,6 +99,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     private static final long SALT_LEADERBOARD_BOOK = 0x1EADE7B0A2DB00C5L;
     private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
+    /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
+    private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
 
     /**
      * Which of the two kinds a {@code stats_book} slot comes up. Its own salt, so the flip does not
@@ -1040,8 +1044,19 @@ public final class ContainerContentsRoller {
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
 
+        // A community photo; when the relay has none left to hand out, sometimes a disposable camera
+        // instead — likelier the fewer photos the relay holds — so players go and take more.
         if (item == ModItems.RANDOM_PLAYERPHOTO.get()) {
-            return SharedPhotos.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
+            ItemStack found = SharedPhotos.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
+            if (!found.isEmpty()) return found;
+            return rollChance(SharedPhotos.cameraFallbackPercent(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
+                ? DisposableCamera.create() : ItemStack.EMPTY;
+        }
+
+        // Polaroid's plain instant camera is hidden (DisabledModContent); a loot entry for it is the
+        // one camera players get — DT's disposable camera.
+        if (item == ExposurePolaroid.Items.INSTANT_CAMERA.get()) {
+            return DisposableCamera.create();
         }
 
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
