@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.worldgen.density.BetterNetherCoreBiomes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -69,6 +70,11 @@ import java.util.List;
  * ({@link NetherBand#isInNetherBiome}, the same {@code netherRamp ≥ 0.5} zone this spawner uses), so
  * they survive intact. Every other roster mob (zombified piglins, magma cubes, skeletons, endermen,
  * ghasts) already behaves correctly outside the Nether.</p>
+ *
+ * <p><b>Only into a Nether biome.</b> The band's mountains are hollowed into overworld cave biomes
+ * (lush, dripstone, sulfur, deep dark) that can sit beneath a column already past the ramp threshold.
+ * Every spawn block must itself read as a Nether biome ({@link #isNetherSpawnBiome}), and the ground
+ * roster comes from that block's biome, so the caves stay free of zombified piglins and magma cubes.</p>
  *
  * <p><b>Never below the world floor, never in a portal room.</b> Candidate heights come from the
  * player's own Y, so a player who steps through a portal mid-band would otherwise have the band
@@ -183,6 +189,19 @@ public final class NetherMobSpawner {
                 .map(data -> data.type)
                 .filter(type -> type != EntityType.GHAST)
                 .orElse(null);
+    }
+
+    /**
+     * True for a biome band mobs may spawn into — any Nether biome (vanilla, BoP or BetterNether, all
+     * tagged {@link BiomeTags#IS_NETHER}; the BetterNether namespace is accepted too in case one of its
+     * biomes ships untagged). The overworld cave biomes the band hollows its mountains into fail it, so
+     * the default nether_wastes roster no longer leaks zombified piglins into lush or dripstone caves.
+     */
+    private static boolean isNetherSpawnBiome(Holder<Biome> biome) {
+        if (biome.is(BiomeTags.IS_NETHER)) return true;
+        return biome.unwrapKey()
+                .map(k -> BetterNetherCoreBiomes.NAMESPACE.equals(k.location().getNamespace()))
+                .orElse(false);
     }
 
     /**
@@ -328,7 +347,8 @@ public final class NetherMobSpawner {
         BlockPos probe = new BlockPos(wx, player.getBlockY(), wz);
         if (!level.isLoaded(probe)) return;
 
-        // Biome at the spawn column drives the roster + ghast frequency (the core cycles all 5 Nether biomes).
+        // Biome at the player's height drives the ghast frequency (the core cycles all 5 Nether biomes);
+        // the ground roster reads the biome at the chosen feet block instead.
         Holder<Biome> biome = level.getBiome(probe);
 
         // Capped-out and too-shallow ghast rolls fall through to the ground path rather than wasting
@@ -347,7 +367,7 @@ public final class NetherMobSpawner {
                 // `continue`, not `return`: the scan runs upward, so a blocked low pocket is no
                 // reason to give up on the legal ones above it.
                 if (blockedSpawnSite(dims, bedrockY, air)) continue;
-                if (level.getBiome(air).is(Biomes.DEEP_DARK)) continue;   // the deep dark spawns nothing
+                if (!isNetherSpawnBiome(level.getBiome(air))) continue;   // the mountain caves spawn nothing
                 if (hasRoomFor(level, EntityType.GHAST, air)) {
                     spawn(level, EntityType.GHAST, air, rng);
                     return;
@@ -357,15 +377,17 @@ public final class NetherMobSpawner {
         }
 
         // Ground mob: find a solid floor with 2 air above, near the player's Y.
-        EntityType<? extends Mob>[] roster = groundMobsFor(biome);
         for (int y = player.getBlockY() + FLOOR_SEARCH_UP; y >= player.getBlockY() - FLOOR_SEARCH_DOWN; y--) {
             BlockPos feet = new BlockPos(wx, y, wz);
             if (blockedSpawnSite(dims, bedrockY, feet)) continue;
             if (!level.getBlockState(feet.below()).blocksMotion()) continue;
             if (!level.getBlockState(feet).isAir() || !level.getBlockState(feet.above()).isAir()) continue;
-            // The band's deep-dark caverns (fall side) spawn nothing naturally — wardens come from shriekers.
-            if (level.getBiome(feet).is(Biomes.DEEP_DARK)) continue;
-            EntityType<?> betterNether = betterNetherGroundMob(biome, rng);
+            // The mountains' overworld caves (lush, dripstone, sulfur, deep dark) spawn nothing — the
+            // netherRamp test above is per column, and a column over the core can still be cave below.
+            Holder<Biome> feetBiome = level.getBiome(feet);
+            if (!isNetherSpawnBiome(feetBiome)) continue;
+            EntityType<? extends Mob>[] roster = groundMobsFor(feetBiome);
+            EntityType<?> betterNether = betterNetherGroundMob(feetBiome, rng);
             EntityType<?> type = betterNether != null ? betterNether : roster[rng.nextInt(roster.length)];
             spawn(level, type, feet, rng);
             return;
