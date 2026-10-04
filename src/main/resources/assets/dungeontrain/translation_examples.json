@@ -14928,5 +14928,25 @@
         "1.2.0 exactly"
       ]
     }
+  },
+  "advancements.dungeontrain.enchiridion.photo_biomes.description": {
+    "1": {
+      "label": "distinct biomes to take photos in",
+      "examples": [
+        "10",
+        "25",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.postcard.title": {
+    "1": {
+      "label": "name of a dimensional band's advancement (already translated)",
+      "examples": [
+        "Inter-Dimensional Passenger",
+        "Stack Overflow",
+        "Circle It"
+      ]
+    }
   }
 }

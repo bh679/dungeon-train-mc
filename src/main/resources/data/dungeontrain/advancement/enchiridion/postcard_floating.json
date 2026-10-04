@@ -1,0 +1,36 @@
+{
+  "parent": "dungeontrain:enchiridion/postcard_skylands",
+  "display": {
+    "icon": {
+      "id": "exposure:photograph"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.postcard.title",
+      "with": [
+        {
+          "translate": "advancements.dungeontrain.dungeon_train.reached_floating.title"
+        }
+      ]
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.postcard.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "photo": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "band:reached_floating"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "photo"
+    ]
+  ]
+}

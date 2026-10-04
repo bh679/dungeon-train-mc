@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.GlobalTributeStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.discord.PhotoPaperComposite;
@@ -411,6 +413,7 @@ public final class SharedPhotos {
         // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
         recordView(player, photoId);
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());

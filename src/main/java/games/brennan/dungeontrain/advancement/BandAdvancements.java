@@ -146,13 +146,15 @@ public final class BandAdvancements {
     }
 
     /**
-     * True when {@code path} is on a tab drawn as a frontier chain — Dungeon Train or The Secrete Menu:
+     * True when {@code path} is on a tab drawn as a frontier chain — Dungeon Train, The Secrete Menu or
+     * The Enchiridion (whose book half still lives under {@code dungeon_train/}):
      * earned nodes plus the one step past the furthest earned, nothing else (see
      * {@code AdvancementVisibilityEvaluatorMixin} and {@code PlayerAdvancementsRehomeMixin}).
      */
     public static boolean isFrontierTab(String path) {
         return path != null && (path.startsWith(BandAdvancementChainRewriter.PATH_PREFIX)
-                || path.startsWith(SECRETE_MENU_PREFIX));
+                || path.startsWith(SECRETE_MENU_PREFIX)
+                || path.startsWith(EnchiridionAdvancements.PATH_PREFIX));
     }
 
     private BandAdvancements() {}
@@ -368,6 +370,21 @@ public final class BandAdvancements {
             case END_ISLANDS -> (l, x) -> isInEndIslands(l, x) && !cycle(l).isBetterEndAt(x);
             default -> forward(forwardId).test();
         };
+    }
+
+    /**
+     * The band the column at world-X {@code worldX} of {@code overworld} reads as — its forward
+     * advancement id ({@link #ALL}), or {@code null} outside every band. No depth gate: any column
+     * inside the band counts. Where tests overlap, the later trigger wins, which is the more specific
+     * one (BetterNether over the Nether, BetterEnd over the End islands). The column tests are
+     * absolute in X, so this reads the same on either side of spawn.
+     */
+    public static String bandAt(ServerLevel overworld, int worldX) {
+        String found = null;
+        for (Trigger t : TRIGGERS) {
+            if (t.test().test(overworld, worldX)) found = t.id();
+        }
+        return found;
     }
 
     private static Trigger forward(String id) {
