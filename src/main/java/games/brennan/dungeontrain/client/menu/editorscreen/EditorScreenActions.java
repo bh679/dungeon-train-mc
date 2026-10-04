@@ -156,11 +156,6 @@ public final class EditorScreenActions {
         out.add(new Icon("remove", EditorScreenLang.ICON_REMOVE, removeEntry(ctx),
             EditorScreenLang.DISABLED_NOT_HERE));
 
-        // The Workbench's own verb: a staged build becomes a template of the kind the author picks.
-        if (cat == PlotCategory.WORKBENCH) {
-            out.add(new Icon("commit", EditorScreenLang.ICON_COMMIT, commitEntry(ctx),
-                EditorScreenLang.DISABLED_NOT_WORKBENCH));
-        }
 
         // The history is the player's own and spans every plot, so these are live wherever they
         // stand — and each says what it would step through, read from the server's own stack.
@@ -311,6 +306,8 @@ public final class EditorScreenActions {
 
     static CommandMenuEntry moveEntry(Ctx ctx) {
         if (!ctx.hasSelection()) return null;
+        // A staged build "moves" by being committed to a kind: Move is the commit picker here.
+        if (ctx.category() == PlotCategory.WORKBENCH) return commitEntry(ctx);
         return moveEntryFor(ctx.selection(), EditorScreenLang.text(EditorScreenLang.ICON_MOVE));
     }
 

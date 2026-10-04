@@ -44,9 +44,6 @@ public final class PreviewPane {
             g.drawString(font, pending, r.x() + (r.w() - font.width(pending)) / 2,
                 r.y() + (r.h() - font.lineHeight) / 2, HINT, false);
         }
-        if (!name.isEmpty()) {
-            g.drawString(font, font.plainSubstrByWidth(name, r.w() - 6), r.x() + 3, r.y() + 2, CAPTION, true);
-        }
         g.renderOutline(r.x(), r.y(), r.w(), r.h(), theme.outline());
     }
 

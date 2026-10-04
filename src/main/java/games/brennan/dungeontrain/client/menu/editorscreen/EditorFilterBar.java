@@ -171,7 +171,9 @@ final class EditorFilterBar {
         if (category != null && category != EditorCategoryFilter.ALL) {
             out.add(new ActiveChip(ActiveKind.CATEGORY, EditorScreenLang.text(category.langKey())));
         }
-        if (typeName != null && !typeName.isEmpty() && category != EditorCategoryFilter.ALL) {
+        // The Workbench has one strip named like its cell; a second "Workbench" chip says nothing.
+        if (typeName != null && !typeName.isEmpty() && category != EditorCategoryFilter.ALL
+                && category != EditorCategoryFilter.WORKBENCH) {
             out.add(new ActiveChip(ActiveKind.TYPE, typeName));
         }
         if (!creatorMode) {

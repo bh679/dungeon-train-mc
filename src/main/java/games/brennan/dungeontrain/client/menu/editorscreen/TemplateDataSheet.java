@@ -240,7 +240,9 @@ public final class TemplateDataSheet {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_SIZE);
         List<Cell> roomCells = roomSizeCells(roomRows);
         if (!roomCells.isEmpty()) return new Line(label, roomCells);
-        if (key != null && key.category() != null && key.category() != PlotCategory.PORTALS) {
+        // A staged build is whatever size it arrived as — read from its own snapshot, not the train's.
+        if (key != null && key.category() != null && key.category() != PlotCategory.PORTALS
+                && key.category() != PlotCategory.WORKBENCH) {
             List<Cell> trainCells = trainSizeCells();
             if (!trainCells.isEmpty()) return new Line(label, trainCells);
         }
