@@ -377,8 +377,13 @@ loads (Advancement Plaques needs Iceberg).
   A 2026-08-22 re-upload of the identical rejected manifest was **accepted**, so those rejections
   were a transient CurseForge fault — missing versions can be recovered by re-uploading.
   ⚠️ **Set the `CURSEFORGE_API_KEY` secret.** Without it the check reads the cached cfwidget
-  mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` reports
-  INCONCLUSIVE and won't fail the run. With the key it is authoritative.
+  mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` looks once,
+  reports INCONCLUSIVE and won't fail (or wait). With the key it is authoritative and polls.
+  The **mod** jar's listing is checked the same way, but off the release's critical path:
+  `release.yml` fails only on a missing upload file id, then dispatches
+  `verify-curseforge-upload.yml` (300-min approval wait) — a red run there means the file was
+  rejected; recover with `reupload-curseforge.yml`. (Until Oct 2026 `release.yml` polled for
+  30 min itself, which was ~30 of every release's ~34 minutes.)
 - Both publish scripts retry transient 5xx/transport failures via
   `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>

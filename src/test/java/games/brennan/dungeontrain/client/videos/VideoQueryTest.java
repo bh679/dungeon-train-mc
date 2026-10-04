@@ -8,8 +8,10 @@ import static games.brennan.dungeontrain.client.videos.VideoEntry.Platform.BILIB
 import static games.brennan.dungeontrain.client.videos.VideoEntry.Platform.TWITCH;
 import static games.brennan.dungeontrain.client.videos.VideoEntry.Platform.YOUTUBE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class VideoQueryTest {
 
@@ -61,6 +63,29 @@ class VideoQueryTest {
                 .togglePlatform(VideoEntry.Platform.INSTAGRAM).togglePlatform(VideoEntry.Platform.OTHER);
         assertEquals(List.of(), ids(VideoQuery.apply(ALL, none, VideoQuery.Sort.VIEWS)), "all off shows nothing");
         assertEquals(List.of(1, 4), ids(VideoQuery.apply(ALL, none.togglePlatform(YOUTUBE), VideoQuery.Sort.VIEWS)));
+    }
+
+    @Test
+    void platformClickShowsOnlyThatOneAndASecondClickShowsEverything() {
+        List<VideoEntry> all = List.of(A, B, C, D, marker(9, "droneleg", "2026-08-21"));
+        VideoQuery.Filter yt = VideoQuery.Filter.ALL.solo(YOUTUBE);
+        assertEquals(List.of("v1", "v4"), rowKeys(VideoQuery.applyRows(all, yt, VideoQuery.Sort.VIEWS)),
+                "only YouTube — other platforms and streamers off");
+        assertTrue(yt.isSolo(YOUTUBE));
+        assertFalse(yt.isSolo(BILIBILI));
+        assertEquals(VideoQuery.Filter.ALL, yt.solo(YOUTUBE), "a second click shows everything");
+        assertEquals(List.of("v2"), rowKeys(VideoQuery.applyRows(all, yt.solo(BILIBILI), VideoQuery.Sort.VIEWS)),
+                "another platform while soloed → only that one");
+
+        VideoQuery.Filter streamers = VideoQuery.Filter.ALL.soloStreamers();
+        assertEquals(List.of("s:droneleg"), rowKeys(VideoQuery.applyRows(all, streamers, VideoQuery.Sort.VIEWS)));
+        assertTrue(streamers.isSoloStreamers());
+        assertEquals(VideoQuery.Filter.ALL, streamers.soloStreamers());
+        assertEquals(List.of("v1", "v4"), rowKeys(VideoQuery.applyRows(all, streamers.solo(YOUTUBE), VideoQuery.Sort.VIEWS)));
+
+        VideoQuery.Filter keeps = VideoQuery.Filter.ALL.withDevFavOnly(true).withChannelQuery("alpha").solo(YOUTUBE);
+        assertTrue(keeps.devFavOnly(), "★ and the uploader box are not part of the group");
+        assertEquals("alpha", keeps.channelQuery());
     }
 
     @Test

@@ -1,6 +1,92 @@
 {
   "entries": [
     {
+      "id": "release-launched-on-curseforge",
+      "version": "0.95.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Launched on CurseForge",
+      "summary": "Dungeon Train Minecraft Mod has offically launched on CurseForge! https://www.curseforge.com/minecraft/mc-mods/dungeon-train",
+      "highlights": [],
+      "date": "2026-05-03",
+      "released": true,
+      "released_in": "v0.95.0",
+      "released_at": "2026-05-03T03:31:07Z",
+      "major": true,
+      "description": "Dungeon Train Minecraft Mod has offically launched on CurseForge! [https://www.curseforge.com/minecraft/mc-mods/dungeon-train](https://www.curseforge.com/minecraft/mc-mods/dungeon-train)\n\nIts still early days, but already looking good! Give it a download, let me know what you think.\n\nLeave a review to boost it! (I dont know if it supports reviews so if not, favourite it I guess)\n\nThanks to Kat Flare for the screenshots!"
+    },
+    {
+      "id": "release-approved-on-modrinth",
+      "version": "0.147.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Approved on Modrinth",
+      "summary": "Modrinth App has been approved! \ud83e\udd73 https://modrinth.com/mod/dungeon-train",
+      "highlights": [],
+      "date": "2026-05-12",
+      "released": true,
+      "released_in": "v0.147.0",
+      "released_at": "2026-05-12T07:14:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "Modrinth App has been approved! \ud83e\udd73 [https://modrinth.com/mod/dungeon-train](https://modrinth.com/mod/dungeon-train)\n\nGo check it out, fav it, save it!, download it, play it."
+    },
+    {
+      "id": "release-todays-changes",
+      "version": "0.270.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Todays Changes",
+      "summary": "Train has random chance to spawn in nether / the end (only after death)\nNether train / end world gen improved\nDeath Screen Improved\nBookshelves now have chance to drop narrative content\nNew narrative content for end/nether\nNew advancements\nStarted development of new mob!",
+      "highlights": [],
+      "date": "2026-05-31",
+      "released": true,
+      "released_in": "v0.270.0",
+      "released_at": "2026-05-31T14:41:46Z",
+      "major": true,
+      "description": "- Train has random chance to spawn in nether / the end (only after death)\n- Nether train / end world gen improved\n- Death Screen Improved\n- Bookshelves now have chance to drop narrative content\n- New narrative content for end/nether\n- New advancements\n- Started development of new mob!"
+    },
+    {
+      "id": "release-adventurers-on-the-train",
+      "version": "0.276.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Adventurers on the Train",
+      "summary": "You can now find other adventurers on the train!",
+      "highlights": [],
+      "date": "2026-06-07",
+      "released": true,
+      "released_in": "v0.276.0",
+      "released_at": "2026-06-07T14:56:41Z",
+      "major": true,
+      "description": "You can now find other adventurers on the train!\n\nThey are exploring the train just like you, each with their own alignment, traits and personalities.\n\nFight them, or along side them?\n\nIt also comes with several new advancements.\n\nFeedback I want in discord - How is the frequence of their spawning? Too often? To few? I want to balance hwo full the train feels with passanges / adventuers.\n\n## Extra Notes\n\n- Ive been putting a lot of effort into bringing these players to life, and making them feel as real as possible. I have a big update with this coming next on how the players relate to other players, open to ideas on how to improve this."
+    },
+    {
+      "id": "release-social-playermobs",
+      "version": "0.281.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Social PlayerMobs & Player Echos",
+      "summary": "Player Mobs found on the train have a significantly more complex social structure now.\nRandom personal traits, Dynamic feeling towards players / other playermobs and complex behaviours to pair with these.\nYou may even come across an Echo of a past life.",
+      "highlights": [],
+      "date": "2026-06-12",
+      "released": true,
+      "released_in": "v0.281.0",
+      "released_at": "2026-06-12T12:59:26Z",
+      "major": true,
+      "description": "Player Mobs found on the train have a significantly more complex social structure now.\nRandom personal traits, Dynamic feeling towards players / other playermobs and complex behaviours to pair with these.\nYou may even come across an Echo of a past life.\n\n## Traits\n\n### Friendliness\n\nPlayerMobs have a scale of Unfriendly to Friendly.\nOn one end unfriendly players will go out of their way to avoid or attack other players.\nIn the middle they are massive and generally ignore other players\nOn the friendly end, they will greet, exchange gifts and want to interact with you.\n\n### Aggression\n\nScaling from shy to aggressive, this dictates how likely the player is to start or join fights.\nShy players will run away from fights, or avoid players entirely.\nMore aggressive players are more likely to attack a player unprovoked - even if they are feeling neutral to a player.\n\n## Feelings\n\nPlayerMobs have dynamic feelings towards other players / playermobs on the train.\nThese feeling will change based on interactions, and result in different behaviours.\nThey will join fights with players along side players they like, or find an excuse to attack a player they dont.\nStronger feelings will result in better gifts, even potentially giving up better items they have if they notice you need it. If they really love you, they may start to follow you on your journey through the train. You may also see a group of PlayerMobs travelling together.\n\nThings you can to do influence the feelings of a player mob will depend on their personality. Some like your to spam crouch face them, most like gifts and being defended in fights. More aggressive players may even like you if start a fight with someone else in front of them.\n\n## Player Echos\n\nPlayer Echos are PlayerMobs that spawn as a copy of your past life. The personality traits defined by your behaviour in that life. Perhaps spawning with echos of the friends you made in that lifetime too.\n\n*Shout out to Dan in discord for this idea!\n\n## Smaller Updates\n\n- PlayerMobs now will attempt to return to the train if knocked off\n- An array of new Advancements have been added relating to interactions with PlayerMobs\n- PlayerMob pathfinding has been improved. Particularly with doors.\n- More skins added\n- PlayerMobs can now make use of shields\n- PlayerMobs alignment adjusted in line with players.\n- Food is slightly more scarce - this will happen more in the future too (Thanks Wizard in discord for the suggestion)"
+    },
+    {
       "id": "cinematic-spawn-on-train",
       "version": "0.294.0",
       "type": "feat",
@@ -1994,6 +2080,23 @@
       "released_at": "2026-06-20T11:52:24Z"
     },
     {
+      "id": "release-big-week-update",
+      "version": "0.336.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Big Week Update",
+      "summary": "47 releases in the last week (v0.289 \u2192 v0.336). Watch the new trailer: https://www.youtube.com/watch?v=_-YP7r6wNO8",
+      "highlights": [],
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.336.0",
+      "released_at": "2026-06-20T11:52:15Z",
+      "major": true,
+      "description": "47 releases in the last week (v0.289 \u2192 v0.336). Watch the new trailer: [https://www.youtube.com/watch?v=_-YP7r6wNO8](https://www.youtube.com/watch?v=_-YP7r6wNO8)\n\n## \ud83d\udc80 Death is now a story\n\nThe death screen is a 6-page run retrospective \u2014 what killed you, your deeds, cargo, lives & ledger. Your run's ride photos become the backdrop (saveable to a gallery), and it shows the advancements you earned that life.\n\n## \ud83c\udfc6 Advancements everywhere\n\nNew badges \u2014 biome diversity, distance & time milestones, own-Echo, \"The Great Beyond\", \"The Far Start\" + more. All advancements now persist across worlds. New Free Play mode: creative/cheat runs earn advancements live but don't touch your global stats.\n\n## \ud83c\udfac Cinematic arrival\n\nNew runs open on a cinematic spawn-on-train intro (replay with /dungeontrain cinematic), plus a TrainCinematographer spectator mode that auto-opens doors.\n\n## \ud83e\uddcd PlayerMobs get personal\n\nReincarnated \"Echo\" mobs wear the real skin of the player they came from \u2014 and these lives are cross-world and global, so you can meet echoes of other real players across the community. A loved PlayerMob follows you to your carriage down the train, and 30 new real-player skins (Dream SMP, MCC, YouTubers) push the pool to 68.\n\n## \ud83d\ude83 More to find\n\nToolsmith & leatherworker shops, new structures (houses, trees, cherry blossoms), 23 new lore-book entries, and escalating loot deeper into the run \u2014 plus gentler onboarding for new players.\n\n## \ud83d\udce6 Modpack overhaul\n\nSable physics \u2192 2.0.2. Now on by default: AppleSkin, FerriteCore, ModernFix, Advancement Plaques, AmbientSounds + more QoL.\n\n\ud83d\udcd6 Full write-up: [https://github.com/bh679/weekly-blog/wiki/Blog:-Dungeon-Train-Death-Gets-a-Story-and-the-Train-Learns-Some-Manners](https://github.com/bh679/weekly-blog/wiki/Blog:-Dungeon-Train-Death-Gets-a-Story-and-the-Train-Learns-Some-Manners)\n\n\u25b6\ufe0f Play it: Modrinth [https://modrinth.com/mod/dungeon-train](https://modrinth.com/mod/dungeon-train) \u00b7 CurseForge [https://www.curseforge.com/minecraft/mc-mods/dungeon-train](https://www.curseforge.com/minecraft/mc-mods/dungeon-train) \u00b7 Modpack [https://www.curseforge.com/minecraft/modpacks/dungeon-train](https://www.curseforge.com/minecraft/modpacks/dungeon-train)"
+    },
+    {
       "id": "death-screen-next-screen-label",
       "version": "0.337.0",
       "type": "fix",
@@ -2865,6 +2968,24 @@
       "released": true,
       "released_in": "v0.354.0",
       "released_at": "2026-06-23T12:31:19Z"
+    },
+    {
+      "id": "release-beyond-the-overworld",
+      "version": "0.354.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Beyond The OverWorld",
+      "summary": "The dungeon Train now travels into multiple dimensions in a single ride.",
+      "highlights": [],
+      "date": "2026-06-23",
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:05Z",
+      "major": true,
+      "description": "The dungeon Train now travels into multiple dimensions in a single ride.\n\n(All screenshots taken from a single ride)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/beyond-the-overworld.jpg"
     },
     {
       "id": "quiet-rule-combine-repair",
@@ -4906,6 +5027,23 @@
       "released_at": "2026-07-10T14:57:57Z"
     },
     {
+      "id": "release-whats-new-june-23-july-10",
+      "version": "0.425.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "What's New (June 23 \u2013 July 10)",
+      "summary": "Highlights from the last few weeks:",
+      "highlights": [],
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.425.0",
+      "released_at": "2026-07-10T14:57:48Z",
+      "major": true,
+      "description": "Highlights from the last few weeks:\n\n## Player-Written Books & Death Notes\n\n- Write a book, burn it, and it can turn up in another player's world \u2014 with loot odds that taper in fairly over time\n- Find your own book out in the world and it now tells you how it's doing, plus new advancements for signing, reading, and burning-without-reading\n- Death Notes: curse another player's next life when you die, with two new advancements\n- Echoes can now fight back with end crystals and TNT if you were carrying them when you died\n\n## Stages - The train changes as your progress\n\n- Carriages and the maze dungeon now shift through named Stages \u2014 Copper, Stone, Desert, Quartz, and more \u2014 each with its own look and content as you travel deeper into a run\n- New: Copper carriages, obsidian & quartz build sets, a desert temple, sandstone parts, mushroom rooms, and a batch of dungeon decor (pots, sculk, mossy rooms)\n- New enemy carriages: Witch, Evoker, Breeze, and Elder Guardian\n- Item stats now scale with difficulty, and late-game hostile gear keeps scaling past the old netherite plateau\n- The advancement page has been reorganized \u2014 it no longer spoils the whole tree, revealing the next advancement only once you're about to earn it. 22 new advancements since June 23, bringing the total to 88\n\n## Talk to the Dev & Bug Reports\n\n- New consent prompt before Developer messages show up in your chat \u2014 you choose whether to receive them\n- New `/bug` command \u2014 reports now ship your logs and, for lag reports, your system specs automatically\n\n## VR, Performance & Stability\n\n- Basic Vivecraft (VR) support for melee combat on the train\n- Smoother long-train rides, leaner world generation, and lighter editor overhead during normal play\n- Fixed carriages vanishing on pause/resume, on world save, and at low simulation distance\n- Fixed a world-gen freeze riding forward, dark carriage interiors, and long-train stutter/teleporting"
+    },
+    {
       "id": "death-detail-relay-reporting",
       "version": "0.426.0",
       "type": "chore",
@@ -5003,6 +5141,25 @@
       "released": true,
       "released_in": "v0.430.0",
       "released_at": "2026-07-11T08:44:22Z"
+    },
+    {
+      "id": "release-first-influencer-and-translation",
+      "version": "0.430.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "First Influencer and Translation",
+      "summary": "https://www.bilibili.com/video/BV1TNMW6iEiQ/",
+      "highlights": [],
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.430.0",
+      "released_at": "2026-07-11T11:04:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "[https://www.bilibili.com/video/BV1TNMW6iEiQ/](https://www.bilibili.com/video/BV1TNMW6iEiQ/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/first-influencer-bilibili.jpg"
     },
     {
       "id": "vase-group-live-tuning",
@@ -7336,6 +7493,24 @@
       "released_at": "2026-07-24T14:24:19Z"
     },
     {
+      "id": "release-update-11-24-july",
+      "version": "0.512.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update (11 \u2192 24 July)",
+      "summary": "Two weeks, a lot of track laid. Here's what's new.",
+      "highlights": [],
+      "date": "2026-07-24",
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:07Z",
+      "major": true,
+      "description": "Two weeks, a lot of track laid. Here's what's new.\n\n## By the numbers\n\n- 22,000+ downloads across CurseForge & Modrinth\n- ~5,900 hours played\n- 4,300+ community books written\n- 7,500+ players, avg rating 8.1 / 10\n\n## New worlds to ride through\n\n- The Upside Down \u2014 the train rides into a mirrored world where everything's flipped, then dissolves back to the overworld through a stretch of floating islands. New advancements for entering and surviving it.\n- Chuncks \u2014 a mostly-void band of scattered floating chunks. Mind the gaps.\n- Deepdark stage \u2014 the Warden, a Wither reality, and a fresh Ancient City encounter.\n- The End band now bites back \u2014 beds explode, and chorus no longer blocks the track.\n\n## Now playable in ~19 languages\n\n- Big localization push: 18 new languages on top of English, including a fully refreshed & expanded Simplified Chinese (\u7b80\u4f53\u4e2d\u6587).\n- Human-reviewed translations are marked in the language menu; machine-translated ones get an AI label and a translation ring around the logo.\n- Player-written books, letters, and Death Notes now match your language, and the Support page was revised by a community translator.\n- Localization pack authors are now credited on the title screen.\n\n## Community books & letters\n\n- Write your own books \u2014 just sign a book and it enters the community pool, turning up as loot in other players' worlds.\n- Or write letters on lecterns \u2014 they appear in other players' worlds as travelers' letters.\n- Vote on books other players wrote; your votes tilt which ones show up in loot.\n- New random_playerbook loot item, and a global, cross-world read history so you don't see the same book twice.\n\n## Train Improvements\n\n- The train now smashes through blocks in its path instead of grinding to a halt.\n- Tighter, consistent gaps between carriage groups, and loose blocks stay attached to the train.\n- Big performance wins: smoother Nether crossings on long trains, cheaper physics, and pausing or minimising now lets your computer rest.\n\n## New content & encounters\n\n- New creeper encounter, potion barrels, lampposts, wells, and suspicious sand you can brush for real archaeology loot.\n- Ghasts grow bolder every time you return to the Nether.\n- Room lighting improvements across most rooms.\n\n## Quality of life\n\n- Redesigned continuous loading screens with lore stories, plus a smoother cinematic spawn.\n- New `/dtp` command \u2014 teleport anywhere on the track, always land on a train, and difficulty scales to match the destination.\n- New \"Ways to Help\" menu, in-game update notifications, and sharper death-screen photos.\n\n## Mod ecosystem\n\n- New required companion: Trade Everything \u2014 villagers will trade anything, and their trades scale with your train well beyond Master level.\n- Armor bar now shows your full protection past 1.5 bars.\n- Companion mods (Adventure Item Names / Stats, Interactive Player Mobs, Ender Chest Persistence) are now separate downloads the launchers auto-install.\n\nI've had a ton of feedback these past weeks \u2014 and I've read every single one. So much of this update came straight from you. Keep it coming.\n\nHappy riding \u2014 and thank you to everyone writing books, translating, and reporting bugs.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/update-11-24-july.jpg"
+    },
+    {
       "id": "death-screen-donation-page",
       "version": "0.513.0",
       "type": "feat",
@@ -7808,7 +7983,10 @@
       "date": "2026-08-04",
       "released": true,
       "released_in": "v0.531.0",
-      "released_at": "2026-08-04T15:09:56Z"
+      "released_at": "2026-08-04T15:09:56Z",
+      "major": true,
+      "description": "## What can we give to the train?\n\nIt has given you much. Carriages, corridors, the dark ahead. What is there to give back?\n\nA room. That is what it asks, and what it takes.\n\nBuild one in the right place and it does not stay with you. The train carries it off \u2014 onto another line, into a world you will never see. And it brings you what others gave: a space you did not make, left exactly so by someone who was gone before you arrived.\n\nGive enough and it gives back. A room of yours comes round again, still as you left it \u2014 mostly. Other hands have been in it since.\n\nWho built this? Who has been here since? The carriage remembers, if you ask it.\n\n## And to the one who laid the track?\n\nPlayers in China had no way to answer \u2014 WeChat Pay now sits on Ways to Help and on the death screen, for clients set to Chinese.\n\n## Who keeps the kids safe, when no-one else is around?\n\nFirst launch asks who is playing. Kid mode closes the developer chat and lets through only the player-written books and carriages an AI has judged fit for children. Adult is everything, as before.\n\n## And what of our Chinese players, who must obey the laws of the land?\n\nFilter out the community books and letters that touch politically sensitive ground.\n\n## What else?\n\n- Updated translations thanks to \u8001\u672c\u9858\n- End cities in the End\n- Effect-less creepers \u2014 no more lingering potion cloud\n- Free Play echoes locked to Free Play\n- Trades more balanced\n- Dev replies stay in your chat history\n\n## And where should the track go next?\n\nFirst I sit where we are \u2014 answering, mending, tuning to use and feedback. Then there's fresh ground ahead, and a choice of which way to lay it.\n\nFour ways it might run:\n\n- Better multiplayer design\n- Portal carriages, bigger on the inside\n- A redesigned, longer train\n- Built to run with Create: Trains\n\nEach is a long stretch of track. I'll sit with them before deciding \u2014 putting them out now to hear which you'd want to ride.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/what-we-give.jpg"
     },
     {
       "id": "shared-carriages-switched-on",
@@ -8885,6 +9063,24 @@
       "released": true,
       "released_in": "v0.556.0",
       "released_at": "2026-08-12T15:07:04Z"
+    },
+    {
+      "id": "release-dimensional-carriages",
+      "version": "0.556.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Dimensional Carriages",
+      "summary": "Somewhere past your first stretch of track, a corridor between two carriages stops being a corridor. Walk it and the sound of the train falls away behind you, and you come out in a room that could never have fitted inside the carriage you stepped into \u2014 a hall, a library, a place of beams and sculk, some of them going on for as long as you care to keep walking.",
+      "highlights": [],
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:06:45Z",
+      "major": true,
+      "description": "Somewhere past your first stretch of track, a corridor between two carriages stops being a corridor. Walk it and the sound of the train falls away behind you, and you come out in a room that could never have fitted inside the carriage you stepped into \u2014 a hall, a library, a place of beams and sculk, some of them going on for as long as you care to keep walking.\n\nWhat you find is drawn from how far you have come, so late portals open onto places the early ones never do, and every portal rolls its own room: chests you loot stay looted when you walk back in. The train keeps rolling while you look around, and the ground you cover in there counts toward your journey. Nothing strands you \u2014 there is always a way back out \u2014 and if you would rather the door weren't there at all, breaking through the corridor's outer wall closes that portal for good.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dimensional-carriages.jpg"
     },
     {
       "id": "support-page-help-translate",
@@ -14192,6 +14388,24 @@
       "released_at": "2026-09-02T12:47:47Z"
     },
     {
+      "id": "release-curseforge-hidden-gem",
+      "version": "0.788.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "CurseForge Hidden Gem",
+      "summary": "The unexpected and incredibly successful CurseFroge Hidden Gem feature is over.",
+      "highlights": [],
+      "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.788.0",
+      "released_at": "2026-09-02T12:17:19Z",
+      "major": true,
+      "milestone": true,
+      "description": "Hey All,\n\nThe unexpected and incredibly successful CurseFroge Hidden Gem feature is over.\n\nIn 2 weeks, we went from 20,000 downloads, to 160,000. The game had over 1500days of playtime in the last two weeks. nearly 30,000 books published and over 6,000 drifting carraiges made.\nI've seen at least 15 new videos go live on Youtube, IG and Tiktok. Please keep sharing what you make or find in \ud83d\udcfa-streams-and-media-of-dungeont\u2026 !\n\nI put out close to 200 \ud83c\udd95-minor-updates in those two weeks. Fixing bugs, adding features and keeping the server alive. It was a lot of work. I put off my actual paid work to do so.\nYou may have noticed Im slightly less active in the discord the last few days, as I rest from a huge two weeks. I'm still here answering questions and welcoming you all, but anyone who can step in to welcome newcomers and answer questions is greatly appreciated right now.\n\nOver the next week, I will still be working hard to put out regular updates. Probably not at the rate I have been, but likely still daily.\nI am working on several things right now\n\n- Builder Update - to get all your hard work into the game.\n- Shader update, to support shaders.\n- Bug fixes and balancing\n\nThings I intend to fix in the future\n\n- Adding custom mobs and items\n- Mutliplayer support\n- More dimensions and variation.\n\nI am always listerning close to your feedback and suggestions, thank you for all the ideas!"
+    },
+    {
       "id": "nether-arrival-tuning",
       "version": "0.789.0",
       "type": "feat",
@@ -14409,6 +14623,24 @@
       "released": true,
       "released_in": "v0.795.0",
       "released_at": "2026-09-05T06:48:12Z"
+    },
+    {
+      "id": "release-shader-support",
+      "version": "0.795.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Shader Support",
+      "summary": "Nine shader packs are now supported, and there is a Shaders page to pick one from \u2014 on the title screen between Mods and Options, and in the Esc menu beside Mods. Each pack shows a screenshot of the same stretch of track at the same time of day, so you can see what it actually does before you commit to it, with the unshaded shot there to compare against. One click downloads it from the author's own page and turns it on; if you already have it, one click turns it on. Sort the list by our pick, by how demanding a pack is, by how close it stays to vanilla, or by mood.",
+      "highlights": [],
+      "date": "2026-09-05",
+      "released": true,
+      "released_in": "v0.795.0",
+      "released_at": "2026-09-05T06:17:48Z",
+      "major": true,
+      "description": "Nine shader packs are now supported, and there is a Shaders page to pick one from \u2014 on the title screen between Mods and Options, and in the Esc menu beside Mods. Each pack shows a screenshot of the same stretch of track at the same time of day, so you can see what it actually does before you commit to it, with the unshaded shot there to compare against. One click downloads it from the author's own page and turns it on; if you already have it, one click turns it on. Sort the list by our pick, by how demanding a pack is, by how close it stays to vanilla, or by mood.\n\n- A Shaders page on the title screen and in the Esc menu\n- Nine supported packs, each shown as the same scene so they can be compared\n- Download and turn a pack on in one click, straight from its author's page\n- Sort by our pick, performance cost, closeness to vanilla, or mood\n- Shader Settings opens the running pack's own options\n\n## Shader packs now render the Nether and the End properly\n\nWith a shader pack installed, the Nether and the End are rendered by the pack itself \u2014 its own sky, fog and lighting \u2014 and the change eases in as you travel into them rather than cutting. Skybox blocks, dimensional carriage fog and the upside-down band's permanent sunrise all work under shaders too.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/shader-support.jpg"
     },
     {
       "id": "x-menu-inventory-screen",
@@ -19788,13 +20020,16 @@
         "compatibility",
         "world"
       ],
-      "title": "Dimensions Overhaul 0.982.0",
+      "title": "Dimensions Overhaul",
       "summary": "## Number of dimensions\nA HUGE boost to the number of dimensions the train travels through. Many custom made for DT, some you may already know and love.\n\n## Shorter Dimensions\nDimensions are now short, pass through more quicker, but it will take longer to pass through them all.\n\n# The Whitelist for Mods\nMoving from blacklist to whitelist. Unless whitelisted, mods put you into freeplay. \nThe game will boot regardless, only whitelisted will enable high-scores.\n\n## Modpack Additions\n* **Advanced Shulkerboxes:** \n* **Sable Pathfinder:** *(Modrinth only for now)*\n* **Pigman Villagers:** ;)\n\n## Train Editor Tools\nThe train editor has undergone some big changes, make it work much better\n* **Test the Carriage** works on every carriage and contents template. Ctrl/Cmd+R re-rolls it\n* **Frames:** build your own to dress terrain dimensional carriages\n* **Doors, beds and tall plants** in block variants, with a new Span button\n* **Menus stay put** instead of following you, update as soon as you save, and no longer freeze on first open\n* **New** works for whole rooms and groups\n* **Save as new** on built-in templates, or keep a local edit\n* **Info panel** shows a build's lights and loot\n* **My Builds:** delete builds, and tell the reviewer about your build when you submit\n* Cmd/Ctrl-click deletes saved prefabs in the creative menu\n* Effortless Building breaks now clear block variants\n* Big shared builds keep their chest loot, and loading survives a busy server\n* Templates with thousands of block variants no longer lag\n\n## Bug Fixes\n* No more freezes when editing the train or saving\n* Distant Horizons no longer crashes on Mac\n* Dedicated servers now create Dungeon Train worlds\n* Eyes of ender lead to the same stronghold every time\n* Crops in dimensional carriages stay planted\n* Trees no longer turn the track into a tunnel\n\n## Bug fixes\n- New Biomes are cosmetics focused. New items and mobs on the train will be coming later.",
       "highlights": [],
       "date": "2026-09-27",
       "released": true,
       "released_in": "v0.982.0",
-      "released_at": "2026-09-27T09:01:26Z"
+      "released_at": "2026-09-27T09:01:26Z",
+      "major": true,
+      "description": "## Number of dimensions\nA HUGE boost to the number of dimensions the train travels through. Many custom made for DT, some you may already know and love.\n\n## Shorter Dimensions\nDimensions are now short, pass through more quicker, but it will take longer to pass through them all.\n\n# The Whitelist for Mods\nMoving from blacklist to whitelist. Unless whitelisted, mods put you into freeplay. \nThe game will boot regardless, only whitelisted will enable high-scores.\n\n## Modpack Additions\n* **Advanced Shulkerboxes:** \n* **Sable Pathfinder:** *(Modrinth only for now)*\n* **Pigman Villagers:** ;)\n\n## Train Editor Tools\nThe train editor has undergone some big changes, make it work much better\n* **Test the Carriage** works on every carriage and contents template. Ctrl/Cmd+R re-rolls it\n* **Frames:** build your own to dress terrain dimensional carriages\n* **Doors, beds and tall plants** in block variants, with a new Span button\n* **Menus stay put** instead of following you, update as soon as you save, and no longer freeze on first open\n* **New** works for whole rooms and groups\n* **Save as new** on built-in templates, or keep a local edit\n* **Info panel** shows a build's lights and loot\n* **My Builds:** delete builds, and tell the reviewer about your build when you submit\n* Cmd/Ctrl-click deletes saved prefabs in the creative menu\n* Effortless Building breaks now clear block variants\n* Big shared builds keep their chest loot, and loading survives a busy server\n* Templates with thousands of block variants no longer lag\n\n## Bug Fixes\n* No more freezes when editing the train or saving\n* Distant Horizons no longer crashes on Mac\n* Dedicated servers now create Dungeon Train worlds\n* Eyes of ender lead to the same stronghold every time\n* Crops in dimensional carriages stay planted\n* Trees no longer turn the track into a tunnel\n\n## Bug fixes\n- New Biomes are cosmetics focused. New items and mobs on the train will be coming later.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dimensions-overhaul.jpg"
     },
     {
       "id": "band-advancements-review",
@@ -22998,7 +23233,9 @@
       "released": true,
       "released_in": "v0.1149.0",
       "released_at": "2026-10-04T10:04:47Z",
-      "lead": true
+      "major": true,
+      "description": "What did you see on train? What did the train see of you?\nFind disposable cameras in the loot and snap with a click. Your shots travel down the line into other passengers' bookshelves, barrels and chests, and theirs find you. Pay tribute to a photo to keep it travelling. A new page on the death screen.\n\n## Other significant updates\n\n- A villager get tired of repeat sales, and devalue the items he has to many of.\n- Finding you own library has never been easier, sign a book and the chances multiply until you find one next. New and improved author rooms.\n- THE LADDER BUG IS DEAD\n- New carraiges.\n- Many train editor improvements.\n- Improvements to the translation editor\n- New and improved connections to discord.\n- More loading screen lore.\n- Bug fixes\n- Performance improvements",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/capture-the-view.jpg"
     },
     {
       "id": "performance-options-tab",
@@ -23018,9 +23255,161 @@
       ],
       "pr": 1817,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "lectern-story-order",
+      "version": "0.1151.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "books"
+      ],
+      "title": "Lectern stories unfold in a better order",
+      "summary": "The letters you find on lecterns now arrive in a more deliberate order, so the stories make more sense as you read them.",
+      "highlights": [
+        "A family's letters now come in the order they were written, one person's story leading into the next",
+        "A few stories turn up sooner, and some now wait until you have read the rest"
+      ],
+      "pr": 1819,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "dh-pause-hold-lod-gen",
+      "version": "0.1154.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Far terrain rests while you're paused",
+      "summary": "Pausing the game now also pauses far-terrain generation, so a long break no longer leaves the game sluggish when you come back.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1822,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "photos-survive-broken-containers",
+      "version": "0.1154.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Photos survive a broken chest or bookshelf",
+      "summary": "Photos no longer burn when the bookshelf, chest, barrel or pot holding them is broken. They drop intact and only burn once you look at them or throw them away.",
+      "highlights": [],
+      "pr": 1824,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "build-submission-version-dot",
+      "version": "0.1155.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Build submissions show their version",
+      "summary": "Builds submitted for review now show which version of Dungeon Train they were made on, with a coloured dot for how up to date it is.",
+      "highlights": [],
+      "pr": 1828,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "spider-jockey-rider-visible",
+      "version": "0.1157.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Spider jockeys arrive with their skeleton",
+      "summary": "The rare spider jockey that can turn up in a carriage now spawns with its skeleton rider in place. Before, the skeleton was missing \u2014 and could appear later out of nowhere.",
+      "highlights": [],
+      "pr": 1827,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "photo-resolution-720-option",
+      "version": "0.1154.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Ride-photo resolution shows 720p",
+      "summary": "Snapshot Max Resolution now offers 720p, in Options and the X menu. After using Lower resolution on the Performance tab, the setting reads 720p instead of AUTO.",
+      "highlights": [],
+      "pr": 1829,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "ukrainian-localization",
+      "version": "0.1159.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations"
+      ],
+      "title": "Dungeon Train speaks Ukrainian",
+      "summary": "Ukrainian joins the language list \u2014 the whole game, not just the menus: every screen, the item names and all 57 in-game books, plus the Sable and Discord Presence menus in the modpack. The bulk is machine translation marked with the faded AI mark, but it already carries MrMultibite's community translations as human-reviewed text; if you read Ukrainian, the in-game translation editor is open and your fixes come back to everyone.",
+      "highlights": [
+        "Ukrainian (\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430) is selectable in the vanilla language list",
+        "Menus, HUD, advancements, item names and all 57 books translated",
+        "Counts follow Ukrainian grammar \u2014 1 \u0432\u0430\u0433\u043e\u043d, 3 \u0432\u0430\u0433\u043e\u043d\u0438, 5 \u0432\u0430\u0433\u043e\u043d\u0456\u0432",
+        "MrMultibite's approved translations shipped as human-reviewed text"
+      ],
+      "pr": 1833,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "videos-filter-solo",
+      "version": "0.1160.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Videos: click a platform to see just that one",
+      "summary": "On the Videos page, clicking a platform icon now shows only that platform's videos, and clicking it again brings everything back. Shift-click still shows or hides just one, so you can mix and match.",
+      "highlights": [
+        "Click YouTube, Bilibili, Twitch, Instagram or Twitch streamers to see only that one",
+        "Shift-click to show or hide a single platform",
+        "The same video list is now on the website too: brennan.games/dungeontrain/videos/"
+      ],
+      "pr": 1834,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
     }
   ]
 }

@@ -5345,7 +5345,7 @@
       ]
     }
   },
-  "gui.dungeontrain.videos.filter.platform.shown": {
+  "gui.dungeontrain.videos.filter.solo": {
     "1": {
       "label": "the platform this toggle controls",
       "examples": [
@@ -5354,7 +5354,7 @@
       ]
     }
   },
-  "gui.dungeontrain.videos.filter.platform.hidden": {
+  "gui.dungeontrain.videos.filter.solo.on": {
     "1": {
       "label": "the platform this toggle controls",
       "examples": [

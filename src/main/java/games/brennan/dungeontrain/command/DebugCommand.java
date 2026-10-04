@@ -185,6 +185,10 @@ public final class DebugCommand {
             // /dungeontrain debug mix-pick — the mix-zone band each chunk around you generates as (a letter grid,
             // +X to the right), plus the candidate counts. Also logged at INFO for RCON runs.
             .then(Commands.literal("mix-pick").executes(ctx -> MixPickDebug.report(ctx.getSource())))
+            // /dungeontrain debug spider-jockey — spawn spiders through the carriage variant-mob path
+            // at your feet until one rolls a skeleton jockey; reports whether the rider is in the level
+            // and carries the contents tag (regression probe for the ghost-passenger bug).
+            .then(Commands.literal("spider-jockey").executes(ctx -> SpiderJockeyDebug.run(ctx.getSource())))
             .then(Commands.literal("cycle-layout")
                 .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
                 .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))
@@ -534,7 +538,8 @@ public final class DebugCommand {
         boolean configOn = games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDistantLodLiteDecoration();
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] LOD-lite Nether-core decoration: " + describeLodLite(mode)
-                + " (config distantLodLiteDecoration=" + configOn + ")"
+                + " (config distantLodLiteDecoration=" + configOn + "); DH pause-hold: "
+                + games.brennan.dungeontrain.worldgen.LodGenerationHold.describe(System.currentTimeMillis())
         ).withStyle(configOn && mode != LodGeneration.Mode.FORCE_OFF ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }

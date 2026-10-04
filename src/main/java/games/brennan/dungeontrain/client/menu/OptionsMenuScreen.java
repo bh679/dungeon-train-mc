@@ -66,10 +66,10 @@ public final class OptionsMenuScreen implements MenuScreen {
     }
 
     /** Ceiling ladder the resolution row cycles through: 0 = AUTO (adaptive), then fixed long-edge caps. */
-    private static final int[] RESOLUTION_LADDER = {0, 1080, 1440, 2160};
+    private static final int[] RESOLUTION_LADDER = {0, 720, 1080, 1440, 2160};
 
     /**
-     * Cycles the ride-photo resolution ceiling AUTO → 1080p → 1440p → 2160p → AUTO. Like
+     * Cycles the ride-photo resolution ceiling AUTO → 720p → 1080p → 1440p → 2160p → AUTO. Like
      * {@link #snapshotChatLogRow()} it's a {@link CommandMenuEntry.ClientAction} that mutates client
      * config and stays open; the per-tick rebuild refreshes the label. AUTO keeps the adaptive
      * DH+shaders/Fabulous behaviour; a cap only ever lowers the captured resolution.

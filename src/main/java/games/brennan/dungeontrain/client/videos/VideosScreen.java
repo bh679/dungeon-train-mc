@@ -38,7 +38,8 @@ import java.util.List;
  * <em>streamers</em> (the relay's bare-channel markers, one per stream day) fold into one row per
  * channel ({@link TwitchStreamers}) behind a toggle of their own, drawn unlike a video.
  *
- * <p>The toolbar, left to right: one <b>icon toggle per platform</b> present (lit = shown), the
+ * <p>The toolbar, left to right: one <b>icon toggle per platform</b> present (lit = shown; a click
+ * shows that platform alone, a second click everything — {@link VideoQuery.Filter#solo}), the
  * <b>Twitch streamers</b> toggle, the <b>★ dev-faves</b> toggle, the <b>uploader box</b> — type to narrow, with a suggestion list under
  * it that starts as every uploader and shrinks to matches (the shape of the editor's builder
  * search) — and the <b>sort</b> cycle button. Every icon carries a tooltip saying what it is and
@@ -102,7 +103,7 @@ public final class VideosScreen extends Screen {
                 ? VideoQuery.platforms(VideoCatalog.entries()) : List.of(VideoEntry.Platform.values());
         for (VideoEntry.Platform p : platforms) {
             PlatformToggleButton b = new PlatformToggleButton(x, TOP + ICON_INSET, ICON, p, () -> filter.has(p),
-                    btn -> togglePlatform(p));
+                    () -> filter.isSolo(p), btn -> togglePlatform(p));
             platformButtons.add(addRenderableWidget(b));
             x += ICON + GAP;
         }
@@ -112,7 +113,8 @@ public final class VideosScreen extends Screen {
         // proves there are none, for the same no-jump reason as above.
         boolean hasStreamers = VideoCatalog.state() != VideoCatalog.State.LOADED
                 || !TwitchStreamers.group(VideoCatalog.entries()).isEmpty();
-        streamerButton = new StreamerToggleButton(x, TOP + ICON_INSET, ICON, () -> filter.streamers(), b -> toggleStreamers());
+        streamerButton = new StreamerToggleButton(x, TOP + ICON_INSET, ICON, () -> filter.streamers(),
+                () -> filter.isSoloStreamers(), b -> toggleStreamers());
         if (hasStreamers) {
             addRenderableWidget(streamerButton);
             x += ICON + GAP;
@@ -229,13 +231,14 @@ public final class VideosScreen extends Screen {
 
     // ---- filter / sort controls -------------------------------------------------
 
+    /** A click shows only {@code p}; Shift-click flips just {@code p} and leaves the rest alone. */
     private void togglePlatform(VideoEntry.Platform p) {
-        filter = filter.togglePlatform(p);
+        filter = hasShiftDown() ? filter.togglePlatform(p) : filter.solo(p);
         refresh();
     }
 
     private void toggleStreamers() {
-        filter = filter.withStreamers(!filter.streamers());
+        filter = hasShiftDown() ? filter.withStreamers(!filter.streamers()) : filter.soloStreamers();
         refresh();
     }
 

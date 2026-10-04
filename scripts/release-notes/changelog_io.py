@@ -26,8 +26,9 @@ Public surface:
   normalise_tags(type, tags) — type-derived tag + topical tags, canonical order.
   TAG_GUIDE / render_tag_guide() — the per-tag question the agent answers when tagging.
   unreleased_entries / mark_all_released — the released-flag boundary.
-  render_markdown(entries) — player-facing Markdown: tag-count line, then
-      entries grouped by version desc.
+  render_markdown(entries) — player-facing Markdown: major releases first,
+      then a tag-count line, then entries grouped by version desc.
+  validate_major_fields / with_major — a major release's description + photo.
   write_github_output(**kv) — append step outputs to $GITHUB_OUTPUT.
 
 Env overrides (mirror scripts/auto-release for testability):
@@ -328,9 +329,21 @@ def _render_entry(entry: dict) -> str:
     return "\n\n".join(block)
 
 
-def _render_lead(entry: dict) -> str:
-    """A release summary: heading, prose, then the other headline updates."""
-    block = [f"# {(entry.get('title') or '').strip()}"]
+def _render_major(entry: dict) -> str:
+    """A major release: heading, photo, then its markdown description.
+
+    Without a description it falls back to the summary plus the highlights
+    under "Other significant updates".
+    """
+    title = (entry.get("title") or "").strip()
+    block = [f"# {title}"]
+    image = (entry.get("image") or "").strip()
+    if image:
+        block.append(f"![{title}]({image})")
+    description = (entry.get("description") or "").strip()
+    if description:
+        block.append(description)
+        return "\n\n".join(block)
     summary = (entry.get("summary") or "").strip()
     if summary:
         block.append(summary)
@@ -339,6 +352,44 @@ def _render_lead(entry: dict) -> str:
         block.append("## Other significant updates")
         block.append("\n".join(f"- {h}" for h in highlights))
     return "\n\n".join(block)
+
+
+def validate_major_fields(description: str | None, image: str | None) -> None:
+    """Raise ValueError for a blank description or an image that is not a plain https URL."""
+    if description is not None and not description.strip():
+        raise ValueError("major description must not be blank")
+    if image is not None:
+        if not image.startswith("https://") or any(c.isspace() for c in image) or len(image) <= len("https://"):
+            raise ValueError(f"major image must be an https:// URL with no spaces, got {image!r}")
+
+
+def with_major(
+    entry: dict,
+    description: str | None = None,
+    image: str | None = None,
+    clear_image: bool = False,
+    milestone: bool | None = None,
+) -> dict:
+    """Return a copy of `entry` marked as a major release.
+
+    `description` / `image` replace the current values when given; `clear_image`
+    drops the photo; `milestone` True/False sets or drops the milestone flag (a
+    moment, not an update — the update page labels it "Milestone"). Raises
+    ValueError (see validate_major_fields).
+    """
+    validate_major_fields(description, image)
+    out = {
+        k: v for k, v in entry.items()
+        if not (clear_image and k == "image") and not (milestone is False and k == "milestone")
+    }
+    out["major"] = True
+    if milestone:
+        out["milestone"] = True
+    if description is not None:
+        out["description"] = description.strip()
+    if image is not None:
+        out["image"] = image
+    return out
 
 
 # Display labels for the tag-count line that opens the rendered notes. Mirrors
@@ -397,9 +448,9 @@ def render_markdown(entries: list[dict]) -> str:
     """
     if not entries:
         return ""
-    leads = [e for e in entries if e.get("lead")]
-    entries = [e for e in entries if not e.get("lead")]
-    sections: list[str] = [_render_lead(e) for e in leads]
+    majors = [e for e in entries if e.get("major")]
+    entries = [e for e in entries if not e.get("major")]
+    sections: list[str] = [_render_major(e) for e in majors]
     groups: dict[str, list[dict]] = {}
     for e in entries:
         groups.setdefault(e.get("version", ""), []).append(e)
