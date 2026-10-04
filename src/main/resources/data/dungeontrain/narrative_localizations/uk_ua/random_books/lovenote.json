@@ -2,7 +2,7 @@
   "id": "lovenote",
   "_translator_note": "TITLE = the in-game trigger. Players make a Love Note by naming their own book & quill this exact title (case and spacing are ignored). Keep the translated title to 15 characters or fewer — Minecraft's book-title field won't accept more, so a longer title can't be typed and the game skips it as a trigger (English 'Love Note' always still works). Do NOT translate it as anything that collides with this language's Death Note title. This field is ignored by the game; it's only guidance for translators.",
   "title": "Любовна записка",
-  "author": "Невідомий",
+  "author": "Анонім",
   "generation": 0,
   "weight": 1,
   "variants": [
