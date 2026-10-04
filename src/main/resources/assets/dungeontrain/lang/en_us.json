@@ -4231,7 +4231,7 @@
   "advancements.dungeontrain.enchiridion.run_away.hint": "A rabbit with nasty big pointy teeth.",
   "advancements.dungeontrain.enchiridion.never_dies.title": "The Most Famous Pig",
   "advancements.dungeontrain.enchiridion.never_dies.description": "Technoblade Never Dies.",
-  "advancements.dungeontrain.enchiridion.never_dies.hint": "Snap the most famous pig.",
+  "advancements.dungeontrain.enchiridion.never_dies.hint": "Snap a famously named pig.",
   "advancements.dungeontrain.enchiridion.nature_documentary.title": "Nature Documentary",
   "advancements.dungeontrain.enchiridion.nature_documentary.description": "Take a photo of every animal.",
   "advancements.dungeontrain.enchiridion.nature_documentary.hint": "Every creature great and small.",
@@ -4307,5 +4307,11 @@
   "advancements.dungeontrain.enchiridion.photo_chuncks.hint": "Islands of chunks, adrift.",
   "advancements.dungeontrain.enchiridion.photo_stacks.title": "Burst Mode",
   "advancements.dungeontrain.enchiridion.photo_stacks.description": "Take a photo of the towers piled on themselves.",
-  "advancements.dungeontrain.enchiridion.photo_stacks.hint": "Same building, again and again."
+  "advancements.dungeontrain.enchiridion.photo_stacks.hint": "Same building, again and again.",
+  "advancements.dungeontrain.secrete_menu.tfarcenim.title": "tfarcenim",
+  "advancements.dungeontrain.secrete_menu.tfarcenim.description": "All the way back, through every dimension, to the overworld.",
+  "advancements.dungeontrain.secrete_menu.tfarcenim.hint": "Keep riding the wrong way.",
+  "advancements.dungeontrain.enchiridion.found_footage.title": "Found Footage",
+  "advancements.dungeontrain.enchiridion.found_footage.description": "Look at a photo found on the train.",
+  "advancements.dungeontrain.enchiridion.found_footage.hint": "Someone left this behind."
 }

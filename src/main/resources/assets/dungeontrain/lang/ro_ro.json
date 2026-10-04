@@ -4280,7 +4280,7 @@
   "advancements.dungeontrain.enchiridion.run_away.hint": "Un iepure cu dinți mari, ascuțiți și răi.",
   "advancements.dungeontrain.enchiridion.never_dies.title": "Cel Mai Faimos Porc",
   "advancements.dungeontrain.enchiridion.never_dies.description": "Technoblade Never Dies.",
-  "advancements.dungeontrain.enchiridion.never_dies.hint": "Fotografiază cel mai faimos porc.",
+  "advancements.dungeontrain.enchiridion.never_dies.hint": "Fotografiază un porc cu nume celebru.",
   "advancements.dungeontrain.enchiridion.nature_documentary.title": "Documentar despre Natură",
   "advancements.dungeontrain.enchiridion.nature_documentary.description": "Fă o fotografie fiecărui animal.",
   "advancements.dungeontrain.enchiridion.nature_documentary.hint": "Toate creaturile, mari și mici.",
@@ -4356,5 +4356,11 @@
   "advancements.dungeontrain.enchiridion.photo_chuncks.hint": "Insule de chunk-uri, în derivă.",
   "advancements.dungeontrain.enchiridion.photo_stacks.title": "Mod Rafală",
   "advancements.dungeontrain.enchiridion.photo_stacks.description": "Fă o fotografie turnurilor îngrămădite peste ele însele.",
-  "advancements.dungeontrain.enchiridion.photo_stacks.hint": "Aceeași clădire, iar și iar."
+  "advancements.dungeontrain.enchiridion.photo_stacks.hint": "Aceeași clădire, iar și iar.",
+  "advancements.dungeontrain.secrete_menu.tfarcenim.title": "tfarcenim",
+  "advancements.dungeontrain.secrete_menu.tfarcenim.description": "Tot drumul înapoi, prin fiecare dimensiune, până în lumea de suprafață.",
+  "advancements.dungeontrain.secrete_menu.tfarcenim.hint": "Continuă să mergi în direcția greșită.",
+  "advancements.dungeontrain.enchiridion.found_footage.title": "Found Footage",
+  "advancements.dungeontrain.enchiridion.found_footage.description": "Privește o fotografie găsită în tren.",
+  "advancements.dungeontrain.enchiridion.found_footage.hint": "Cineva a lăsat asta în urmă."
 }

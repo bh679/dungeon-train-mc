@@ -48,6 +48,8 @@ public final class EnchiridionAdvancements {
     public static final String TOOK_PHOTO = "took_photo";
     public static final String TRIBUTED_PHOTO = "tributed_photo";
     public static final String PHOTOGRAPHED_BY_PLAYERMOB = "photographed_by_playermob";
+    /** Opened a found photo (or paid it Tribute) — "Found Footage", parent of the found-photo advancements. */
+    public static final String VIEWED_FOUND_PHOTO = "viewed_found_photo";
 
     /** Prefix of the per-dimension photo advancements: {@code enchiridion/photo_<dimension>}. */
     public static final String PHOTO_PREFIX = "photo_";

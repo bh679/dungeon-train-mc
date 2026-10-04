@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:dungeon_train/the_enchiridion",
+  "display": {
+    "icon": {
+      "id": "dungeontrain:found_photograph"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.found_footage.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.found_footage.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "viewed": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "viewed_found_photo"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "viewed"
+    ]
+  ]
+}

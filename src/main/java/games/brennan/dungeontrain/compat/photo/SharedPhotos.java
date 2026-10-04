@@ -391,6 +391,7 @@ public final class SharedPhotos {
     }
 
     private static void recordView(ServerPlayer player, int photoId) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.VIEWED_FOUND_PHOTO);
         markSpent(photoId);
         RelayOutbox.get().enqueue(VIEW_PATH, action(player, photoId).toString());
     }

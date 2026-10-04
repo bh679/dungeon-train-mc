@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/the_enchiridion",
+  "parent": "dungeontrain:enchiridion/found_footage",
   "display": {
     "icon": {
       "id": "exposure:photograph"

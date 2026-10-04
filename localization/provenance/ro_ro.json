@@ -4280,7 +4280,7 @@
   "advancements.dungeontrain.enchiridion.run_away.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e3efe5efcb49e72f"},
   "advancements.dungeontrain.enchiridion.never_dies.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8a29cc2433bb9e0b"},
   "advancements.dungeontrain.enchiridion.never_dies.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f496bfc8e70a5f42"},
-  "advancements.dungeontrain.enchiridion.never_dies.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2842a17f00682ed3"},
+  "advancements.dungeontrain.enchiridion.never_dies.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a20c849b5064bfab"},
   "advancements.dungeontrain.enchiridion.nature_documentary.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "0aea47ff95032e85"},
   "advancements.dungeontrain.enchiridion.nature_documentary.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fa91a2dba51c52e1"},
   "advancements.dungeontrain.enchiridion.nature_documentary.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1eab0b06de70f721"},
@@ -4356,5 +4356,11 @@
   "advancements.dungeontrain.enchiridion.photo_chuncks.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b830cc4e3616220c"},
   "advancements.dungeontrain.enchiridion.photo_stacks.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "458ed5507113e669"},
   "advancements.dungeontrain.enchiridion.photo_stacks.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8df1c6f73157f844"},
-  "advancements.dungeontrain.enchiridion.photo_stacks.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b84f001cb9ba3bc2"}
+  "advancements.dungeontrain.enchiridion.photo_stacks.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b84f001cb9ba3bc2"},
+  "advancements.dungeontrain.secrete_menu.tfarcenim.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8b49b5c99b3adb0d"},
+  "advancements.dungeontrain.secrete_menu.tfarcenim.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9ddd0e85cdcc77ec"},
+  "advancements.dungeontrain.secrete_menu.tfarcenim.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7edc9c2d3da7fbfb"},
+  "advancements.dungeontrain.enchiridion.found_footage.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "dc0fda0c62a9bd11"},
+  "advancements.dungeontrain.enchiridion.found_footage.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fbc0e1ccfdc743b7"},
+  "advancements.dungeontrain.enchiridion.found_footage.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6accd933d1a01469"}
 }

@@ -1,8 +1,14 @@
 {
   "display": {
-    "icon": { "id": "minecraft:book" },
-    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.title" },
-    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.description" },
+    "icon": {
+      "id": "minecraft:book"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.description"
+    },
     "frame": "task",
     "background": "minecraft:textures/block/chiseled_bookshelf_top.png",
     "show_toast": true,
@@ -12,12 +18,28 @@
   "criteria": {
     "read_any_book": {
       "trigger": "dungeontrain:gameplay_action",
-      "conditions": { "actionId": "read_any_book" }
+      "conditions": {
+        "actionId": "read_any_book"
+      }
     },
     "took_photo": {
       "trigger": "dungeontrain:gameplay_action",
-      "conditions": { "actionId": "took_photo" }
+      "conditions": {
+        "actionId": "took_photo"
+      }
+    },
+    "viewed_found_photo": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "viewed_found_photo"
+      }
     }
   },
-  "requirements": [["read_any_book", "took_photo"]]
+  "requirements": [
+    [
+      "read_any_book",
+      "took_photo",
+      "viewed_found_photo"
+    ]
+  ]
 }

@@ -129,6 +129,12 @@ public final class BandAdvancements {
             SPHERES, BETTER_END, legacyId(LegacyBandKind.LOST_CITY), BETTER_NETHER, BOP,
             REASSEMBLY, UPSIDE_DOWN, VOID, END_ISLANDS, WWOO, NETHER);
 
+    /**
+     * "tfarcenim": the Secrete Menu's capstone — ridden backwards through every dimension of the first
+     * reversed run and out past its Nether into the overworld beyond. Hangs under {@code reversed_nether}.
+     */
+    public static final String TFARCENIM = "tfarcenim";
+
     /** The reverse advancement for forward band id {@code forwardId}: {@code reached_x} → {@code reversed_x}. */
     public static String reverseId(String forwardId) {
         if (UPSIDE_DOWN.equals(forwardId)) return REVERSE_PREFIX + "upside_down";
@@ -385,6 +391,30 @@ public final class BandAdvancements {
             if (t.test().test(overworld, worldX)) found = t.id();
         }
         return found;
+    }
+
+    /**
+     * True when world-X {@code worldX} is behind spawn and more than {@link #ENTRY_DEPTH_BLOCKS} past the
+     * far (-X) edge of the first reversed run's Nether — so the player has come back out of every
+     * dimension into the plain overworld beyond (that run's lead overworld slot, or anything further).
+     */
+    public static boolean isPastReverseJourney(ServerLevel overworld, int worldX) {
+        if (NetherBand.startX(overworld) == NetherBand.OFF) return false;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (!cycle.hasLayout() || !cycle.isMirroredAt(worldX)) return false;
+        long edge = reverseJourneyEndX(cycle);
+        return edge != Long.MIN_VALUE && worldX < edge - ENTRY_DEPTH_BLOCKS;
+    }
+
+    /**
+     * The -X edge of the first reversed run's first Nether — where the reverse journey runs out — or
+     * {@link Long#MIN_VALUE} when the layout has no Nether. Reversed run 0 is laid at scale 1 with its
+     * slots in forward orientation, so the Nether slot starts {@code layout.start(n)} above the run's low X.
+     */
+    public static long reverseJourneyEndX(WorldGenCycle cycle) {
+        int n = cycle.layout().indexOfOccurrence(CycleLayout.Type.NETHER, 0);
+        if (n < 0) return Long.MIN_VALUE;
+        return cycle.reversedRunLowX(0) + cycle.layout().start(n);
     }
 
     private static Trigger forward(String id) {
