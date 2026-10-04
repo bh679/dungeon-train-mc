@@ -23260,6 +23260,23 @@
       "released": true,
       "released_in": "v0.1154.0",
       "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "build-submission-version-dot",
+      "version": "0.1155.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Build submissions show their version",
+      "summary": "Builds submitted for review now show which version of Dungeon Train they were made on, with a coloured dot for how up to date it is.",
+      "highlights": [],
+      "pr": 1828,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
