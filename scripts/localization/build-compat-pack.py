@@ -42,6 +42,7 @@ LANG_META = {
     "it_it": ("Italiano (Italia)", "Italia", "Italiano (Italia)"),
     "pt_pt": ("Português (Portugal)", "Portugal", "Português (Portugal)"),
     "ro_ro": ("Română (România)", "România", "Română (România)"),
+    "uk_ua": ("Українська (Україна)", "Україна", "Українська (Україна)"),
     "nl_nl": ("Nederlands (Nederland)", "Nederland", "Nederlands (Nederland)"),
     "pl_pl": ("Polski (Polska)", "Polska", "Polski (Polska)"),
     "ru_ru": ("Русский (Россия)", "Россия", "Русский (Россия)"),
