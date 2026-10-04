@@ -32,4 +32,28 @@ public abstract class AdvancementsScreenEditorTabMixin {
             ci.cancel();
         }
     }
+
+    /** TEMP (Enchiridion tab-click diagnosis) — remove before merge. */
+    @Inject(method = "onAddAdvancementRoot", at = @At("HEAD"))
+    private void dungeontrain$logAddRoot(AdvancementNode node, CallbackInfo ci) {
+        org.slf4j.LoggerFactory.getLogger("DT-AdvTab").info("[DT-AdvTab] add root {}", node.holder().id());
+    }
+
+    /** TEMP (Enchiridion tab-click diagnosis) — remove before merge. */
+    @Inject(method = "onRemoveAdvancementRoot", at = @At("HEAD"))
+    private void dungeontrain$logRemoveRoot(AdvancementNode node, CallbackInfo ci) {
+        org.slf4j.LoggerFactory.getLogger("DT-AdvTab").info("[DT-AdvTab] remove root {}", node.holder().id());
+    }
+
+    /** TEMP (Enchiridion tab-click diagnosis) — remove before merge. */
+    @Inject(method = "onSelectedTabChanged", at = @At("HEAD"))
+    private void dungeontrain$logTabChanged(net.minecraft.advancements.AdvancementHolder holder, CallbackInfo ci) {
+        org.slf4j.LoggerFactory.getLogger("DT-AdvTab").info("[DT-AdvTab] screen tab -> {}", holder == null ? "null" : holder.id());
+    }
+
+    /** TEMP (Enchiridion tab-click diagnosis) — remove before merge. */
+    @Inject(method = "mouseClicked", at = @At("HEAD"))
+    private void dungeontrain$logClick(double x, double y, int button, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+        org.slf4j.LoggerFactory.getLogger("DT-AdvTab").info("[DT-AdvTab] click {} at {},{}", button, (int) x, (int) y);
+    }
 }

@@ -78,4 +78,11 @@ public abstract class AdvancementsCompactLayoutMixin {
             dungeontrain$spreadColumns(child);
         }
     }
+
+    /** TEMP (Enchiridion tab-click diagnosis) — remove before merge. */
+    @Inject(method = "setSelectedTab", at = @At("HEAD"))
+    private void dungeontrain$logTabSelect(net.minecraft.advancements.AdvancementHolder holder, boolean tellServer, CallbackInfo ci) {
+        com.mojang.logging.LogUtils.getLogger().info("[DT-AdvTab] select {} tellServer={}",
+            holder == null ? "null" : holder.id(), tellServer);
+    }
 }

@@ -43,7 +43,10 @@ public final class EarnedPhotos {
     /** How long to keep asking Exposure for an image that is still on its way (it uploads after the shot). */
     private static final int FETCH_TIMEOUT_TICKS = 20 * 30;
 
-    private record Pending(String exposureId, int ticksLeft) {}
+    /** How often to ask again while the image is on its way, and how long before the first ask. */
+    private static final int RETRY_TICKS = 20;
+
+    private record Pending(String exposureId, int ticksLeft, int nextTry) {}
 
     private static final Map<ResourceLocation, Pending> PENDING = new LinkedHashMap<>();
 
@@ -52,7 +55,7 @@ public final class EarnedPhotos {
     /** The server says {@code advancement} was earned with this photo: fetch it and keep a copy. */
     public static void capture(ResourceLocation advancement, String exposureId) {
         if (advancement == null || exposureId == null || exposureId.isBlank()) return;
-        PENDING.put(advancement, new Pending(exposureId, FETCH_TIMEOUT_TICKS));
+        PENDING.put(advancement, new Pending(exposureId, FETCH_TIMEOUT_TICKS, RETRY_TICKS));
     }
 
     /** File names kept on disk, read once — {@link #has} runs every frame a tooltip is hovered. */
@@ -94,27 +97,45 @@ public final class EarnedPhotos {
         List<ResourceLocation> done = new ArrayList<>();
         for (Map.Entry<ResourceLocation, Pending> e : new ArrayList<>(PENDING.entrySet())) {
             Pending p = e.getValue();
-            Boolean saved = trySave(e.getKey(), p.exposureId());
-            if (saved != null || p.ticksLeft() <= 1) {
-                if (saved == null) LOGGER.info("[DungeonTrain] Photo for {} never arrived; none kept.", e.getKey());
+            if (p.ticksLeft() <= 1) {
+                LOGGER.warn("[DungeonTrain] Photo {} for {} never arrived; none kept.", p.exposureId(), e.getKey());
+                done.add(e.getKey());
+                continue;
+            }
+            if (p.nextTry() > 0) {
+                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.ticksLeft() - 1, p.nextTry() - 1));
+                continue;
+            }
+            if (trySave(e.getKey(), p.exposureId())) {
                 done.add(e.getKey());
             } else {
-                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.ticksLeft() - 1));
+                PENDING.put(e.getKey(), new Pending(p.exposureId(), p.ticksLeft() - 1, RETRY_TICKS));
             }
         }
         done.forEach(PENDING::remove);
     }
 
-    /** True when saved, false when it can never be fetched, null while it is still developing. */
-    private static Boolean trySave(ResourceLocation advancement, String exposureId) {
+    /**
+     * Try to fetch and keep the image; false while it isn't there yet. The shot reaches the server a
+     * moment after the advancement is earned, so an early ask comes back "not found" — Exposure caches
+     * that answer, so it is cleared before the next ask.
+     */
+    private static boolean trySave(ResourceLocation advancement, String exposureId) {
         try {
             RequestedPalettedExposure requested = ExposureClient.exposureStore().getOrRequest(exposureId);
-            if (requested.isError()) return false;
-            if (requested.getData().isEmpty()) return null;
+            if (requested.isError()) {
+                ExposureClient.exposureStore().refresh(exposureId);
+                ExposureClient.renderedExposures().clearCacheOf(exposureId);
+                return false;
+            }
+            if (requested.getData().isEmpty()) return false;
             Frame frame = Frame.create().setIdentifier(ExposureIdentifier.id(exposureId)).toImmutable();
             RenderableImage image = ExposureClient.renderedExposures().getOrCreate(frame);
-            if (image == RenderableImage.MISSING) return false;
-            if (image.isEmpty() || image.width() <= 0 || image.height() <= 0) return null;
+            if (image == RenderableImage.MISSING) {
+                ExposureClient.renderedExposures().clearCacheOf(exposureId);
+                return false;
+            }
+            if (image.isEmpty() || image.width() <= 0 || image.height() <= 0) return false;
             int w = image.width(), h = image.height();
             int[] argb = new int[w * h];
             for (int y = 0; y < h; y++) {
@@ -124,9 +145,10 @@ public final class EarnedPhotos {
             Files.createDirectories(target.getParent());
             Files.write(target, PhotoPngCodec.encodeArgb(w, h, argb));
             kept().add(fileName(advancement));
+            LOGGER.info("[DungeonTrain] Kept photo {} ({}x{}) for {}", exposureId, w, h, advancement);
             return true;
         } catch (IOException | RuntimeException ex) {
-            LOGGER.warn("[DungeonTrain] Couldn't keep the photo for {}: {}", advancement, ex.toString());
+            LOGGER.warn("[DungeonTrain] Couldn't keep the photo for {} yet: {}", advancement, ex.toString());
             return false;
         }
     }

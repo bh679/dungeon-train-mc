@@ -22,6 +22,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class AdvancementPhotoCapture {
 
+    private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
     private static final ThreadLocal<String> CURRENT = new ThreadLocal<>();
 
     private AdvancementPhotoCapture() {}
@@ -52,6 +53,7 @@ public final class AdvancementPhotoCapture {
     public static void onEarn(ServerPlayer player, ResourceLocation advancement, boolean replaying) {
         String exposureId = CURRENT.get();
         if (shouldSend(advancement, exposureId, replaying)) {
+            LOGGER.info("[DungeonTrain] {} earned {} with photo {}", player.getName().getString(), advancement, exposureId);
             DungeonTrainNet.sendTo(player, new EarnedPhotoPacket(advancement, exposureId));
         }
     }
