@@ -122,6 +122,8 @@ public final class SharedPhotos {
     private static final int POOL_MAX = 40;
     /** How many handed-out or opened photo ids this server remembers, so it never asks for them again. */
     private static final int SPENT_MAX = 300;
+    /** Below this many approved photos on the relay, a photo slot with nothing to hand out may give a camera. */
+    static final int CAMERA_FALLBACK_BELOW = 1000;
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     // HTTP/1.1 on purpose: over plain http the default client first asks to upgrade to HTTP/2, and the
@@ -145,6 +147,8 @@ public final class SharedPhotos {
     private static final Map<UUID, Set<Integer>> greeted = new HashMap<>();
     private static final AtomicBoolean fetchInFlight = new AtomicBoolean();
     private static int ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
+    /** Approved photos the relay holds, from the last pool answer; -1 until one arrives. */
+    private static volatile int relayTotal = -1;
 
     private SharedPhotos() {}
 
@@ -475,6 +479,7 @@ public final class SharedPhotos {
     public static void onServerStopped(ServerStoppedEvent event) {
         pendingUploads = List.of();
         pool = List.of();
+        relayTotal = -1;
         greeted.clear();
         synchronized (spent) { spent.clear(); }
         ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
@@ -508,7 +513,9 @@ public final class SharedPhotos {
     /** Off-thread: download and decode every photo in the response. */
     private static List<PoolPhoto> fetchNew(String base, HttpResponse<String> response) {
         if (response.statusCode() != 200) throw new IllegalStateException("pool answered " + response.statusCode());
-        JsonArray photos = JsonParser.parseString(response.body()).getAsJsonObject().getAsJsonArray("photos");
+        JsonObject body = JsonParser.parseString(response.body()).getAsJsonObject();
+        if (body.has("total")) relayTotal = body.get("total").getAsInt();
+        JsonArray photos = body.getAsJsonArray("photos");
         List<PoolPhoto> fetched = new ArrayList<>();
         for (int i = 0; photos != null && i < photos.size(); i++) {
             JsonObject row = photos.get(i).getAsJsonObject();
@@ -569,6 +576,18 @@ public final class SharedPhotos {
         player.sendSystemMessage(tributedBy.isBlank()
                 ? line("chat.dungeontrain.familiar_photo", FAMILIAR_LINES, player)
                 : line("chat.dungeontrain.familiar_photo.tributed", FAMILIAR_TRIBUTED_LINES, player, tributedBy));
+    }
+
+    /**
+     * True while the relay holds fewer than {@link #CAMERA_FALLBACK_BELOW} approved photos — or its
+     * count is not known yet (offline, discovery off, first answer pending), so cameras still turn up.
+     */
+    public static boolean relayIsShortOfPhotos() {
+        return isShort(relayTotal);
+    }
+
+    static boolean isShort(int total) {
+        return total < CAMERA_FALLBACK_BELOW;
     }
 
     /**
