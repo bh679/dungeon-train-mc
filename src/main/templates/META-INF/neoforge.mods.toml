@@ -227,12 +227,12 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Edible Backpacks is jarJar'd INSIDE this jar (like DiscordPresence),
-# so the shipped version is always exactly ediblebackpacks_version — no floor indirection.
+# Edible Backpacks — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a
+# required external download on CurseForge. Range keys off the FLOOR, like the other siblings.
 [[dependencies.${mod_id}]]
     modId="ediblebackpacks"
     type="required"
-    versionRange="[${ediblebackpacks_version},)"
+    versionRange="[${ediblebackpacks_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
