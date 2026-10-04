@@ -23026,6 +23026,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "lectern-story-order",
+      "version": "0.1151.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "books"
+      ],
+      "title": "Lectern stories unfold in a better order",
+      "summary": "The letters you find on lecterns now arrive in a more deliberate order, so the stories make more sense as you read them.",
+      "highlights": [
+        "A family's letters now come in the order they were written, one person's story leading into the next",
+        "A few stories turn up sooner, and some now wait until you have read the rest"
+      ],
+      "pr": 1819,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

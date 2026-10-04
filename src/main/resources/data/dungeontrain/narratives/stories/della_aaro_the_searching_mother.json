@@ -2,6 +2,8 @@
   "id": "della_aaro_the_searching_mother",
   "character": "Della Aaro",
   "story": "The Searching Mother",
+  "after": "soren_the_keeper_of_the_door",
+  "weight": 20,
   "letters": [
     {
       "index": 1,

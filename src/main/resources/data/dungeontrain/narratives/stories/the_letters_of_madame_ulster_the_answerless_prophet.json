@@ -2,6 +2,7 @@
   "id": "the_letters_of_madame_ulster_the_answerless_prophet",
   "character": "Madame Ulster, The Answerless Prophet",
   "story": "The Letters of Madame Ulster, The Answerless Prophet",
+  "deferred": true,
   "letters": [
     {
       "index": 1,

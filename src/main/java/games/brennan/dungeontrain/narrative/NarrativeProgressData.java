@@ -517,26 +517,14 @@ public final class NarrativeProgressData extends SavedData {
     /**
      * Pick the next uncompleted story for the world, alphabetical by
      * basename. Iterates the live registry so newly-loaded stories show up
-     * automatically. {@code deferred} series come last, after every ordinary
-     * one is complete. Empty when every story is complete.
+     * automatically. Same tiers as {@link #randomUncompletedStory} — the two
+     * must not disagree, or one sweep would start a series the other refuses
+     * to — but takes the first of the tier rather than a weighted pick.
+     * Empty when every story is complete.
      */
     public Optional<String> nextUncompletedStory() {
-        List<String> all = StoryRegistry.basenames();
-        String firstDeferred = null;
-        for (String basename : all) {
-            Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
-            if (story.isEmpty()) continue;
-            NarrativeProgress p = progressFor(basename);
-            if (p.isComplete(story.get().letters().size())) continue;
-            // Same hold-back tier as randomUncompletedStory — the two must not disagree, or one
-            // sweep would start a series the other refuses to.
-            if (story.get().deferred()) {
-                if (firstDeferred == null) firstDeferred = basename;
-                continue;
-            }
-            return Optional.of(basename);
-        }
-        return Optional.ofNullable(firstDeferred);
+        List<StoryFile> tier = startTier();
+        return tier.isEmpty() ? Optional.empty() : Optional.of(tier.get(0).basename());
     }
 
     /**
@@ -563,31 +551,68 @@ public final class NarrativeProgressData extends SavedData {
     }
 
     /**
-     * Random pick from uncompleted stories, deterministic per
+     * Weighted pick from the stories a lectern may start now, deterministic per
      * {@code randomSeed}. Used by the narrative_lectern when the world has
      * no in-progress story — same lectern shows the same first-read story
      * on re-clicks (until something actually advances).
      *
-     * <p>Two-tier: a {@code deferred} series is never started while an ordinary series is still
-     * unfinished, so the held-back ones are what is left once the rest of the corpus has been read.
-     * Empty when every loaded story is complete.</p>
+     * <p>Tiers (see {@link #startTier}): a {@code deferred} series is never started while an ordinary
+     * series is still unfinished, and a series whose {@code after} prerequisite is unfinished waits for
+     * it. Within the tier each series counts by its {@code weight}. Empty when every loaded story is
+     * complete.</p>
      */
     public Optional<String> randomUncompletedStory(long randomSeed) {
-        List<String> uncompleted = new java.util.ArrayList<>();
-        List<String> deferred = new java.util.ArrayList<>();
+        List<StoryFile> tier = startTier();
+        if (tier.isEmpty()) return Optional.empty();
+        double total = 0;
+        for (StoryFile story : tier) total += story.weight();
+        // All-zero tier: weights can't choose, so fall back to a plain seeded index.
+        if (total <= 0) return Optional.of(tier.get(Math.floorMod(randomSeed, tier.size())).basename());
+        double target = WeightedPick.target(randomSeed, total);
+        for (StoryFile story : tier) {
+            target -= story.weight();
+            if (target < 0) return Optional.of(story.basename());
+        }
+        return Optional.of(tier.get(tier.size() - 1).basename());
+    }
+
+    /**
+     * The uncompleted stories a lectern may START right now, in registry order. First non-empty of:
+     * <ol>
+     *   <li>ordinary series whose {@code after} prerequisite is met;</li>
+     *   <li>ordinary series still blocked — only reachable if an {@code after} chain is broken
+     *       (a cycle, or a prerequisite that is itself deferred), so a bad chain can't stall a world;</li>
+     *   <li>deferred series whose prerequisite is met, then any deferred series.</li>
+     * </ol>
+     */
+    private List<StoryFile> startTier() {
+        List<StoryFile> ordinary = new java.util.ArrayList<>();
+        List<StoryFile> blocked = new java.util.ArrayList<>();
+        List<StoryFile> deferred = new java.util.ArrayList<>();
+        List<StoryFile> deferredBlocked = new java.util.ArrayList<>();
         for (String basename : StoryRegistry.basenames()) {
             Optional<StoryFile> story = StoryRegistry.getByBasename(basename);
             if (story.isEmpty()) continue;
-            NarrativeProgress p = progressFor(basename);
-            if (p.isComplete(story.get().letters().size())) continue;
-            (story.get().deferred() ? deferred : uncompleted).add(basename);
+            if (progressFor(basename).isComplete(story.get().letters().size())) continue;
+            boolean startable = prerequisiteMet(story.get());
+            if (story.get().deferred()) {
+                (startable ? deferred : deferredBlocked).add(story.get());
+            } else {
+                (startable ? ordinary : blocked).add(story.get());
+            }
         }
-        // Held-back series only once nothing ordinary is left to read.
-        List<String> tier = uncompleted.isEmpty() ? deferred : uncompleted;
-        if (tier.isEmpty()) return Optional.empty();
-        // Deterministic mix so the lectern seed produces a stable index
-        // across re-clicks until state advances.
-        return Optional.of(tier.get(Math.floorMod(randomSeed, tier.size())));
+        if (!ordinary.isEmpty()) return ordinary;
+        if (!blocked.isEmpty()) return blocked;
+        if (!deferred.isEmpty()) return deferred;
+        return deferredBlocked;
+    }
+
+    /** True when {@code story} has no {@code after}, or names a story that is unknown or complete. */
+    private boolean prerequisiteMet(StoryFile story) {
+        if (story.after() == null) return true;
+        Optional<StoryFile> prerequisite = StoryRegistry.getByBasename(story.after());
+        if (prerequisite.isEmpty()) return true;
+        return progressFor(story.after()).isComplete(prerequisite.get().letters().size());
     }
 
     // ---------------- Letter-series tracking (player-written lectern letters) ----------------
