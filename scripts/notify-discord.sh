@@ -54,6 +54,7 @@ PAYLOAD=$(jq -n \
   --arg notes "$NOTES" \
   --argjson color "$COLOR" \
   --arg update_url "$UPDATE_PAGE_URL" \
+  --arg download_label "Download $RELEASE_TAG" \
   --arg logo "$LOGO_URL" \
   '{
     username: "Dungeon Train",
@@ -68,7 +69,7 @@ PAYLOAD=$(jq -n \
     }],
     components: [{
       type: 1,
-      components: [{ type: 2, style: 5, label: "Download", url: $update_url }]
+      components: [{ type: 2, style: 5, label: $download_label, url: $update_url }]
     }]
   }')
 
