@@ -636,7 +636,8 @@ def test_link_changelog_leaves_a_heading_linking_elsewhere():
 
 
 def test_link_changelog_rejects_unknown_args():
-    for bad in (["--bogus"], ["--release"], ["--release", "0.1149.0"], ["--release", "v1.2"]):
+    for bad in (["--bogus"], ["--release"], ["--release", "0.1149.0"], ["--release", "v1.2"],
+                ["--strip", "--no-footer"]):
         r = subprocess.run([sys.executable, LINK, *bad], input="", capture_output=True, text=True)
         assert r.returncode == 2, bad
 
@@ -648,6 +649,13 @@ def test_link_changelog_release_links_title_to_that_version():
     assert lines[-1] == READ_MORE, "Read more stays on the page itself"
     assert run_link(out, "--release", "v0.1149.0") == out
     assert run_link(out, "--strip") == CURATED
+
+
+def test_link_changelog_no_footer_keeps_linked_heading_for_discord():
+    published = run_link(CURATED, "--release", "v0.1149.0")
+    out = run_link(published, "--release", "v0.1149.0", "--no-footer")
+    assert out.startswith(f"# [Capture The View]({UPDATE_PAGE}#v0.1149.0)\n"), out
+    assert READ_MORE not in out and out.count(UPDATE_PAGE) == 1
 
 
 def test_render_major_description_and_image() -> None:
@@ -712,6 +720,7 @@ def main() -> int:
         test_link_changelog_leaves_a_heading_linking_elsewhere,
         test_link_changelog_rejects_unknown_args,
         test_link_changelog_release_links_title_to_that_version,
+        test_link_changelog_no_footer_keeps_linked_heading_for_discord,
         test_append_computes_minor_bump_when_patch_nonzero,
         test_append_shares_version_when_patch_zero,
         test_append_version_override,
