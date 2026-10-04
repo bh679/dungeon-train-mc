@@ -5,9 +5,13 @@ import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.builder.relay.SubmitNote;
+import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,7 +55,10 @@ public final class BuildSubmitReporter {
         String author = player.getGameProfile().getName();
         String title = title(author, buildName);
         String description = description(note);
-        List<DeathField> fields = fields(relayId, kind, subKind);
+        VersionFreshness freshness = VersionFreshness.classify(VersionInfo.VERSION,
+                LatestReleaseCache.latestVersion(), VersionInfo.LAST_UPDATE_DATE,
+                LocalDate.now(ZoneOffset.UTC));
+        List<DeathField> fields = fields(relayId, kind, subKind, versionLine(freshness, VersionInfo.VERSION));
         byte[] png = render == null || render.length == 0 ? null : render;
         LOGGER.info("[DungeonTrain] {} submitted '{}' (relay #{}) — posting announcement{}.",
                 author, buildName, relayId, png == null ? " without a render" : "");
@@ -76,14 +83,30 @@ public final class BuildSubmitReporter {
     }
 
     /**
-     * Where to find it and what it is, as ONE field — "#155 · carriage" — so the embed is a single
-     * row rather than two stacked labels for two short facts.
+     * "🟢 DT 0.1149.0" — the version the build was submitted from, led by the same freshness dot as
+     * feedback posts ({@link SurveyTag}), so a reviewer can see at a glance whether it came from an
+     * out-of-date game. Blank when the version is unknown.
      */
+    static String versionLine(VersionFreshness freshness, String version) {
+        if (version == null || version.isBlank()) return "";
+        return freshness.dot() + " DT " + version.strip();
+    }
+
+    /** Just the Build field — for posts about a build that already exists (review verdicts). */
     static List<DeathField> fields(int relayId, String kind, String subKind) {
+        return fields(relayId, kind, subKind, "");
+    }
+
+    /**
+     * Where to find it and what it is, as ONE field — "#155 · carriage" — so the embed is a single
+     * row rather than two stacked labels for two short facts; then the version it came from, when known.
+     */
+    static List<DeathField> fields(int relayId, String kind, String subKind, String versionLine) {
         String what = kind == null ? "" : kind;
         if (subKind != null && !subKind.isEmpty()) what = what.isEmpty() ? subKind : what + " / " + subKind;
         List<DeathField> fields = new ArrayList<>();
         fields.add(new DeathField("Build", "#" + relayId + (what.isEmpty() ? "" : " \u00B7 " + what)));
+        if (versionLine != null && !versionLine.isEmpty()) fields.add(new DeathField("Version", versionLine));
         return fields;
     }
 
