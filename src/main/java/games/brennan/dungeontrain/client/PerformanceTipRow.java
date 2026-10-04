@@ -29,7 +29,10 @@ import java.util.List;
 final class PerformanceTipRow extends AbstractWidget {
 
     private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int CAPTION_COLOR = 0xFFAAAAAA;
+    private static final int CAPTION_COLOR = 0xFFE0B56A;
+    /** A tip whose setting is already fine here — listed so the setting can be found, not flagged. */
+    private static final int DIM_COLOR = 0xFF9A9A9A;
+    private static final int WARN_COLOR = 0xFFE9B04F;
     private static final int HINT_COLOR = 0xFF948A70;
     private static final int BUTTON_PADDING = 12;
     private static final int GAP = 6;
@@ -55,23 +58,36 @@ final class PerformanceTipRow extends AbstractWidget {
         }
     }
 
-    /** A tip row. {@code afterAction} runs after the tip's own action (e.g. to rebuild the screen). */
+    /**
+     * A tip row. A tip that does not apply to this setup is drawn dimmed. {@code afterAction} runs
+     * after the tip's own action (e.g. to rebuild the screen).
+     */
     static PerformanceTipRow tip(Font font, int width, int height, LagTips.Tip tip, Runnable afterAction) {
         Button button = null;
         if (tip.button() != null && tip.action() != null) {
-            Runnable action = tip.action();
-            button = Button.builder(tip.button(), b -> {
-                        action.run();
-                        afterAction.run();
-                    })
-                    .size(font.width(tip.button()) + BUTTON_PADDING, height)
-                    .build();
+            button = button(font, height, tip.button(), tip.action(), afterAction);
         }
         return new PerformanceTipRow(font, width, height, Component.literal("• ").append(tip.text()),
-                TEXT_COLOR, button, button == null ? tip.hint() : null);
+                tip.applies() ? TEXT_COLOR : DIM_COLOR, button, button == null ? tip.hint() : null);
     }
 
-    /** A line of grey text with nothing to click. */
+    /** A line of text with one button — the "releases behind" line and its See changes. */
+    static PerformanceTipRow action(Font font, int width, int height, Component text, Component label,
+                                    Runnable action) {
+        return new PerformanceTipRow(font, width, height, text, WARN_COLOR,
+                button(font, height, label, action, () -> { }), null);
+    }
+
+    private static Button button(Font font, int height, Component label, Runnable action, Runnable after) {
+        return Button.builder(label, b -> {
+                    action.run();
+                    after.run();
+                })
+                .size(font.width(label) + BUTTON_PADDING, height)
+                .build();
+    }
+
+    /** A gold caption line with nothing to click. */
     static PerformanceTipRow caption(Font font, int width, int height, Component text) {
         PerformanceTipRow row = new PerformanceTipRow(font, width, height, text, CAPTION_COLOR, null, null);
         row.active = false;

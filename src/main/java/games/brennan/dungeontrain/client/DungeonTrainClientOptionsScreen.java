@@ -2,7 +2,11 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.FreePlayText;
+import games.brennan.dungeontrain.client.bugresponse.BugIssue;
+import games.brennan.dungeontrain.client.bugresponse.BugResponse;
+import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
+import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
@@ -260,18 +264,44 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /**
-     * The Performance tab: the lag tips the death screen's bug-report card offers, one row each, decided
-     * from {@link LagTips#applicable} at build time so only the ones that fit this setup appear. Every
-     * screen a tip's button opens returns here, and returning re-runs {@code init()}, so a fixed tip
-     * drops off; the one action that stays on this screen (lowering the photo resolution) rebuilds it.
+     * The Performance tab: every lag tip the death screen's bug-report card can offer, worded for this
+     * setup. The ones that apply come first under their own caption; the rest follow dimmed under
+     * "Other performance settings", still with their buttons, so every setting that costs frames can be
+     * found here even when nothing needs fixing. When the player is behind, a last line says by how
+     * many releases, with the card's See changes button.
+     *
+     * <p>Every screen a tip's button opens returns here, and returning re-runs {@code init()}, so a fixed
+     * tip moves down to the other group; the one action that stays on this screen (lowering the photo
+     * resolution) rebuilds it.</p>
      */
     private void addPerformanceTips(OptionsList list) {
-        List<LagTips.Tip> tips = LagTips.applicable(this);
+        List<LagTips.Tip> tips = LagTips.all(this);
+        List<LagTips.Tip> worth = tips.stream().filter(LagTips.Tip::applies).toList();
+        List<LagTips.Tip> other = tips.stream().filter(t -> !t.applies()).toList();
+
         list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H, Component.translatable(
-                tips.isEmpty() ? "gui.dungeontrain.options.performance.none"
+                worth.isEmpty() ? "gui.dungeontrain.options.performance.none"
                         : "gui.dungeontrain.options.performance.intro")), null);
-        for (LagTips.Tip tip : tips) {
+        for (LagTips.Tip tip : worth) {
             list.addSmall(PerformanceTipRow.tip(this.font, WIDE_W, ROW_H, tip, this::rebuildIfShown), null);
+        }
+        if (!other.isEmpty()) {
+            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                    Component.translatable("gui.dungeontrain.options.performance.other")), null);
+            for (LagTips.Tip tip : other) {
+                list.addSmall(PerformanceTipRow.tip(this.font, WIDE_W, ROW_H, tip, this::rebuildIfShown), null);
+            }
+        }
+
+        // Read from whatever release listings have arrived; the title screen starts that fetch, so by
+        // the time a player is in Options it has usually landed. A miss just leaves the line out.
+        Minecraft mc = Minecraft.getInstance();
+        boolean multiplayer = mc.level != null && !mc.hasSingleplayerServer();
+        BugResponse.Result versions = BugResponseCard.decideNow(BugIssue.LAG, multiplayer);
+        if (versions.behind()) {
+            list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H, BugResponseCard.outdated(versions),
+                    Component.translatable("gui.dungeontrain.bug_response.button.changes"),
+                    () -> mc.setScreen(new VersionCompareScreen(this))), null);
         }
     }
 

@@ -7873,6 +7873,9 @@
  "gui.dungeontrain.options.performance.none": [
   "screen"
  ],
+ "gui.dungeontrain.options.performance.other": [
+  "screen"
+ ],
  "gui.dungeontrain.options.value_row": [
   "button"
  ],
