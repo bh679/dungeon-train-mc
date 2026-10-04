@@ -237,8 +237,8 @@ public final class StartingBookEvents {
      * the burn flow normally.</p>
      */
     private static final String ENTITY_TAG_SPAWN_BOOK = "dt_starting_spawn_book";
-    /** Item-entity persistent flag: a photo a PlayerMob is handing to its subject — never ignited on that drop. */
-    public static final String ENTITY_TAG_HANDED_PHOTO = "dungeontrain:handed_photo";
+    /** Item-entity persistent flag: dropped by a PlayerMob (hand-over, gift, spill, death loot) — a photo so dropped is never ignited. */
+    public static final String ENTITY_TAG_HANDED_PHOTO = "dungeontrain:playermob_drop";
 
     private StartingBookEvents() {}
 
@@ -717,10 +717,16 @@ public final class StartingBookEvents {
         if (!BurnableBookTag.isBurnable(stack)) {
             // A disposable-camera photograph burns on any drop too — the same flame, with none of
             // the book bookkeeping below.
-            // ...except the one toss that is a hand-over, not a discard: a PlayerMob passing the photo it
-            // just took to the person in it (PlayerMobPhotoGoal). The print still burns once viewed.
+            // ...when a PLAYER drops it. A PlayerMob's drop is a hand-over, not a discard — the photo it
+            // just took tossed to its subject (PlayerMobPhotoGoal), a gift, a backpack spill, its death
+            // loot — so those land intact; the print still burns once a player views or drops it.
+            // Known by the photo goal's own flag, by the spawnAtLocation scope EchoDropCreditMixin opens
+            // (death loot, spills), and by a PlayerMob thrower (PlayerMob's own gift toss).
+            boolean mobDrop = item.getPersistentData().getBoolean(ENTITY_TAG_HANDED_PHOTO)
+                    || games.brennan.dungeontrain.compat.PlayerMobDrops.inProgress()
+                    || item.getOwner() instanceof games.brennan.playermob.entity.PlayerMobEntity;
             if (games.brennan.dungeontrain.compat.DisposableCamera.holdsBurnAfterViewing(stack)
-                    && !item.getPersistentData().getBoolean(ENTITY_TAG_HANDED_PHOTO)
+                    && !mobDrop
                     && !BURN_ENTITIES.containsKey(item.getUUID())) {
                 igniteItem(item, FlameVariant.DEFAULT);
                 // Opt-in author credit, as for a book: the photographer is named as it catches fire.
