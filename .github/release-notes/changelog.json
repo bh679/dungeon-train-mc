@@ -23450,9 +23450,9 @@
       ],
       "pr": 1835,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1163.0",
+      "released_at": "2026-10-04T19:46:16Z"
     },
     {
       "id": "editor-plural-source",
@@ -23471,9 +23471,9 @@
       ],
       "pr": 1838,
       "date": "2026-10-04",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1163.0",
+      "released_at": "2026-10-04T19:46:16Z"
     },
     {
       "id": "photo-and-book-advancements",
@@ -23514,8 +23514,25 @@
       "released_at": null
     },
     {
-      "id": "translator-credit-human-over-ai",
+      "id": "playermob-camera-gift-only",
       "version": "0.1166.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Player Mobs only take your camera to photograph you",
+      "summary": "Player Mobs used to pocket any camera they found, even with no intention of using it. Now a mob picks up a camera only when you throw it to them and they're willing to take your photo. Cameras in chests, lying on the floor, or thrown at a mob that's fighting you are left alone.",
+      "highlights": [],
+      "pr": 1840,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "translator-credit-human-over-ai",
+      "version": "0.1167.0",
       "type": "fix",
       "tags": [
         "fix",
