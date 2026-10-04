@@ -125,9 +125,11 @@ public final class EndBandBiomeRemap {
                 List<Holder<Biome>> all = new ArrayList<>();
                 biomes.getTag(LAND).ifPresent(named -> named.forEach(all::add));
                 biomes.getTag(SMALL_ISLAND).ifPresent(named -> named.forEach(all::add));
+                // WorldWeaver tags vanilla's own End biomes into these pickers at runtime (small_end_islands
+                // into is_end/small_island), so the pools must drop vanilla themselves or map it to itself.
                 table = Table.of(all, EndBandBiomeRemap::id,
-                        h -> h.is(LAND) && !OverworldStretchBiomes.isBop(h),
-                        h -> h.is(SMALL_ISLAND) && !OverworldStretchBiomes.isBop(h));
+                        h -> h.is(LAND) && isCandidate(h),
+                        h -> h.is(SMALL_ISLAND) && isCandidate(h));
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] End-band biome remap unavailable; vanilla End patches stay vanilla", t);
             }
@@ -135,8 +137,9 @@ public final class EndBandBiomeRemap {
                 LOGGER.warn("[DungeonTrain] No BetterEnd biomes tagged {} / {} — End-band vanilla patches stay vanilla",
                         LAND.location(), SMALL_ISLAND.location());
             } else {
-                LOGGER.info("[DungeonTrain] End-band vanilla biomes remap to {} BetterEnd land + {} small-island biomes",
-                        table.land().size(), table.voids().size());
+                LOGGER.info("[DungeonTrain] End-band vanilla biomes remap to {} land {} + {} small-island {}",
+                        table.land().size(), table.land().stream().map(EndBandBiomeRemap::id).toList(),
+                        table.voids().size(), table.voids().stream().map(EndBandBiomeRemap::id).toList());
             }
         }
         return new EndBandBiomeRemap(seed, enabled, table);
@@ -144,6 +147,16 @@ public final class EndBandBiomeRemap {
 
     private static String id(Holder<Biome> h) {
         return h.unwrapKey().map(k -> k.location().toString()).orElse("");
+    }
+
+    /** A pool entry: never vanilla (the biomes being replaced) and never Biomes O' Plenty (kept to its stretch). */
+    private static boolean isCandidate(Holder<Biome> h) {
+        return !isVanilla(id(h)) && !OverworldStretchBiomes.isBop(h);
+    }
+
+    /** True for {@code minecraft:} ids — vanilla's End biomes, which WorldWeaver's End tags also carry. */
+    static boolean isVanilla(String id) {
+        return id.startsWith(ResourceLocation.DEFAULT_NAMESPACE + ":");
     }
 
     /** True when this remap changes anything at all. */

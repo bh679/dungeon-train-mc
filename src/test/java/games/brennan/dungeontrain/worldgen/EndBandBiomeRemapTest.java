@@ -95,6 +95,15 @@ class EndBandBiomeRemapTest {
         assertNotEquals(table(List.of("betterend:amber_land"), Set.of()), table(List.of(), Set.of()));
     }
 
+    @Test
+    @DisplayName("vanilla ids are recognised so WorldWeaver's tagging of them never puts them in a pool")
+    void vanillaIdsAreNeverCandidates() {
+        assertTrue(EndBandBiomeRemap.isVanilla("minecraft:small_end_islands"));
+        assertTrue(EndBandBiomeRemap.isVanilla("minecraft:end_barrens"));
+        assertTrue(!EndBandBiomeRemap.isVanilla("betterend:ice_starfield"));
+        assertTrue(!EndBandBiomeRemap.isVanilla("biomesoplenty:end_wilds"));
+    }
+
     /** Land = any betterend id not in {@code voids}; void = the ids in {@code voids}; everything else dropped. */
     private static EndBandBiomeRemap.Table<String> table(List<String> ids, Set<String> voids) {
         return EndBandBiomeRemap.Table.of(ids, id -> id,
