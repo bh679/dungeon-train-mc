@@ -22777,8 +22777,8 @@
         "world",
         "mobs"
       ],
-      "title": "No Nether mobs in the mountain caves",
-      "summary": "Zombified piglins and magma cubes no longer spawn in the overworld caves inside the mountains around the Nether crossing. They only appear where the ground is actually Nether.",
+      "title": "Mob spawning fix",
+      "summary": "Some mobs no longer turn up in places they don't belong.",
       "highlights": [],
       "pr": 1805,
       "date": "2026-10-04",
