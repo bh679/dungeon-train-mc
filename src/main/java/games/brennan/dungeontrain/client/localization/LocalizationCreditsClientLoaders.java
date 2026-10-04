@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.localization.edit.LocalizationCoverage;
 import games.brennan.dungeontrain.client.localization.edit.ProvenanceManifestRegistry;
 import games.brennan.dungeontrain.client.localization.edit.TranslationCharacters;
+import games.brennan.dungeontrain.client.localization.edit.TranslationOverrides;
 import games.brennan.dungeontrain.client.localization.edit.TranslationVariableExamples;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
@@ -73,6 +74,13 @@ public final class LocalizationCreditsClientLoaders {
             @Override
             public void onResourceManagerReload(ResourceManager resourceManager) {
                 ProvenanceManifestRegistry.load(resourceManager);
+                // LanguageManager reloads before this listener, so the language it just installed
+                // was overlaid against the previous manifests — rebuild the human-only layer now.
+                if (HumanOnlyTranslations.isEnabled()) {
+                    TranslationOverrides.reapplyHumanOnly();
+                } else {
+                    HumanOnlyTranslations.invalidate();
+                }
             }
 
             @Override
