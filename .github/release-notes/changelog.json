@@ -22785,6 +22785,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "keep-trim-dye",
+      "version": "0.1140.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Repairs keep your dye",
+      "summary": "Repairing dyed leather armour in the crafting grid now keeps the left item's colour, just like its trim.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

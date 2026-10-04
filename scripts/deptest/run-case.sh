@@ -113,6 +113,9 @@ resolve() {
     # Lost City Terrain Fit — hybrid like pv: jarJar'd inside the DT jar; present (Case A) models the
     # CurseForge-app install (top-level copy wins), absent (Case G) the nested copy loads.
     lctf)     cached "bh679/lostcityterrainfit"      "$(prop lostcityterrainfit_version)" ;;
+    # Edible Backpacks — hybrid like lctf: jarJar'd inside the DT jar; present (Case A) models the
+    # CurseForge-app install (top-level copy wins), absent (Case G) the nested copy loads.
+    eb)       cached "bh679/ediblebackpacks"         "$(prop ediblebackpacks_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two

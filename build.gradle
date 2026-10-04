@@ -879,6 +879,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
+        ediblebackpacks_min_version      : ediblebackpacks_min_version,
         lostcityterrainfit_version       : lostcityterrainfit_version,
         lostcityterrainfit_min_version   : lostcityterrainfit_min_version,
         keeptrim_version                 : keeptrim_version,
