@@ -346,7 +346,7 @@ def test_real_config_every_mod_has_modrinth_pins():
     # Modrinth keys. Keep Trim rides here while its Modrinth listing is in review.
     cf_only = bm.curseforge_only_entries(cfg)
     assert sorted(o["slug"] for o in cf_only) == [
-        "dpi-bypass-detect", "dungeon-train-backup", "keep-trim",
+        "dpi-bypass-detect", "dungeon-train-backup", "edible-backpacks", "keep-trim",
         "lost-city-terrain-fit-wwoo-and-vanilla", "pigman-villagers",
         "sable-fence-trapdoor-fix", "stream-detect",
     ], cf_only

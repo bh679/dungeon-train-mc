@@ -21,7 +21,7 @@ TradeEverything) are
 missing-dependency path exactly once, on the update that un-bundled them.
 
 More siblings — KeepTrim, DungeonBackup, SableFenceTrapdoorFix, StreamDetect, DpiBypassDetect,
-PigmanVillagers and LostCityTerrainFit — are **hybrid**: jarJar'd inside
+PigmanVillagers, LostCityTerrainFit and EdibleBackpacks — are **hybrid**: jarJar'd inside
 the DT jar (Modrinth + manual installs) *and* declared required + shipped as Includes on
 CurseForge, where the CF app installs them as their own jars. NeoForge's JarSelector drops the
 nested copy when a top-level one is present; Cases A and G cover both layouts.

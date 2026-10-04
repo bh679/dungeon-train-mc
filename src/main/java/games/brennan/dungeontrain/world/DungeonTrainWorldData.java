@@ -65,6 +65,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
     private static final String TAG_OWN_SHELF_PAIRS = "ownShelfPairs";
+    private static final String TAG_AUTHOR_ROOM_PICKS = "authorRoomPicks";
     private static final String TAG_BUILDER_MODE = "builderMode";
     private static final String TAG_BUILDER_VARIANT = "builderVariant";
     private static final String TAG_BUILDER_STAGE = "builderStage";
@@ -362,6 +363,17 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private final java.util.Set<Integer> ownShelfPairs = new java.util.LinkedHashSet<>();
 
+    /** Most author-room picks remembered; well past the pairs that can stand at once. */
+    private static final int MAX_AUTHOR_ROOM_PICKS = 512;
+
+    /**
+     * Pair key → {@code "<room>|<share>"} for pairs that landed on an author room. The room was fitted
+     * to an author or a self count fetched from the relay, neither of which is guaranteed to read the
+     * same after a restart, so the answer is kept rather than re-derived. Oldest dropped past
+     * {@link #MAX_AUTHOR_ROOM_PICKS}.
+     */
+    private final java.util.LinkedHashMap<Integer, String> authorRoomPicks = new java.util.LinkedHashMap<>();
+
     /**
      * What a Train Builder world has uploaded to the relay — one record per saved template. Empty in
      * every ordinary world. Its credentials cannot be re-derived, which is why they are saved rather
@@ -548,6 +560,15 @@ public final class DungeonTrainWorldData extends SavedData {
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
         // Empty for an absent key too, so a world saved before this was tracked has boosted nothing.
         for (int pairKey : tag.getIntArray(TAG_OWN_SHELF_PAIRS)) data.ownShelfPairs.add(pairKey);
+        // Absent on every world saved before author rooms were rolled together → nothing remembered.
+        net.minecraft.nbt.CompoundTag picks = tag.getCompound(TAG_AUTHOR_ROOM_PICKS);
+        for (String key : picks.getAllKeys()) {
+            try {
+                data.authorRoomPicks.put(Integer.parseInt(key), picks.getString(key));
+            } catch (NumberFormatException ignored) {
+                // A hand-edited key that is not a pair key names no pair; skip it.
+            }
+        }
         // Absent in every world that has never uploaded a build, which is every non-builder world.
         data.builderRelayBuilds.loadFrom(
                 tag.getList(TAG_BUILDER_RELAY_BUILDS, net.minecraft.nbt.Tag.TAG_COMPOUND));
@@ -670,6 +691,11 @@ public final class DungeonTrainWorldData extends SavedData {
         if (!ownShelfPairs.isEmpty()) {
             tag.putIntArray(TAG_OWN_SHELF_PAIRS,
                 ownShelfPairs.stream().mapToInt(Integer::intValue).toArray());
+        }
+        if (!authorRoomPicks.isEmpty()) {
+            net.minecraft.nbt.CompoundTag picks = new net.minecraft.nbt.CompoundTag();
+            authorRoomPicks.forEach((pairKey, pick) -> picks.putString(Integer.toString(pairKey), pick));
+            tag.put(TAG_AUTHOR_ROOM_PICKS, picks);
         }
         if (!builderRelayBuilds.isEmpty()) {
             tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
@@ -1252,6 +1278,21 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Remember that {@code pairKey}'s room was rolled with the own-books library weighted up. */
     public void markOwnShelfPair(int pairKey) {
         if (ownShelfPairs.add(pairKey)) setDirty();
+    }
+
+    /** {@code pairKey}'s remembered author-room pick as {@code "<room>|<share>"}, or null. */
+    public String authorRoomPick(int pairKey) {
+        return authorRoomPicks.get(pairKey);
+    }
+
+    /** Remember the author room {@code pairKey} landed on and whose books it holds. */
+    public void rememberAuthorRoomPick(int pairKey, String pick) {
+        if (pick == null || pick.equals(authorRoomPicks.get(pairKey))) return;
+        authorRoomPicks.put(pairKey, pick);
+        while (authorRoomPicks.size() > MAX_AUTHOR_ROOM_PICKS) {
+            authorRoomPicks.remove(authorRoomPicks.keySet().iterator().next());
+        }
+        setDirty();
     }
 
     /** Relay ids this world has already placed, newest first and capped at {@code limit}. */
