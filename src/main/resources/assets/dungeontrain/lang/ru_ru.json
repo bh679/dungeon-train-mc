@@ -3826,6 +3826,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": "Введите имя автора или выберите из списка",
   "gui.dungeontrain.videos.filter.solo": "Показать только %s",
   "gui.dungeontrain.videos.filter.solo.on": "Показано только: %s — нажмите, чтобы показать всё",
+  "gui.dungeontrain.videos.filter.shift_hint": "Shift + клик — показать или скрыть только этот",
   "gui.dungeontrain.videos.filter.dev_faves.on": "Только избранное разработчика — нажмите, чтобы показать всё",
   "gui.dungeontrain.videos.filter.dev_faves.off": "Показать только избранное разработчика",
   "gui.dungeontrain.videos.filter.dev_faves.narration": "Фильтр избранного разработчика",

@@ -3780,6 +3780,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": "Scrivi il nome di un autore o scegline uno dall'elenco",
   "gui.dungeontrain.videos.filter.solo": "Mostra solo %s",
   "gui.dungeontrain.videos.filter.solo.on": "Solo %s visibile: clicca per mostrare tutto",
+  "gui.dungeontrain.videos.filter.shift_hint": "Maiusc + clic per mostrare o nascondere solo questo",
   "gui.dungeontrain.videos.filter.dev_faves.on": "Solo preferiti dello sviluppatore: clicca per mostrare tutto",
   "gui.dungeontrain.videos.filter.dev_faves.off": "Mostra solo i preferiti dello sviluppatore",
   "gui.dungeontrain.videos.filter.dev_faves.narration": "Filtro preferiti dello sviluppatore",

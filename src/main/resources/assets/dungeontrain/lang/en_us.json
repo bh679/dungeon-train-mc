@@ -1363,6 +1363,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": "Type an uploader's name, or pick one from the list",
   "gui.dungeontrain.videos.filter.solo": "Show only %s",
   "gui.dungeontrain.videos.filter.solo.on": "Showing only %s — click to show everything",
+  "gui.dungeontrain.videos.filter.shift_hint": "Shift-click to show or hide just this one",
   "gui.dungeontrain.videos.filter.dev_faves.on": "Dev faves only — click to show everything",
   "gui.dungeontrain.videos.filter.dev_faves.off": "Show dev faves only",
   "gui.dungeontrain.videos.filter.dev_faves.narration": "Dev faves filter",

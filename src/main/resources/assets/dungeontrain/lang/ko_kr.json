@@ -3734,6 +3734,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": "업로더 이름을 입력하거나 목록에서 선택하세요",
   "gui.dungeontrain.videos.filter.solo": "%s만 표시",
   "gui.dungeontrain.videos.filter.solo.on": "%s만 표시 중 — 클릭하면 모두 표시합니다",
+  "gui.dungeontrain.videos.filter.shift_hint": "Shift+클릭하면 이것만 표시하거나 숨깁니다",
   "gui.dungeontrain.videos.filter.dev_faves.on": "개발자 즐겨찾기만 — 클릭하면 전체 표시",
   "gui.dungeontrain.videos.filter.dev_faves.off": "개발자 즐겨찾기만 표시",
   "gui.dungeontrain.videos.filter.dev_faves.narration": "개발자 즐겨찾기 필터",

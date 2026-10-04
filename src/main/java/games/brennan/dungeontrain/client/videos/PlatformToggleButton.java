@@ -44,9 +44,11 @@ public final class PlatformToggleButton extends Button {
 
     /** Re-read the state into the tooltip — called by the screen after every toggle. */
     public void refreshTooltip() {
-        setTooltip(Tooltip.create(Component.translatable(
+        Component click = Component.translatable(
                 alone.getAsBoolean() ? "gui.dungeontrain.videos.filter.solo.on" : "gui.dungeontrain.videos.filter.solo",
-                Component.translatable("gui.dungeontrain.videos.platform." + platform.key()))));
+                Component.translatable("gui.dungeontrain.videos.platform." + platform.key()));
+        setTooltip(Tooltip.create(click.copy().append("\n")
+                .append(Component.translatable("gui.dungeontrain.videos.filter.shift_hint"))));
     }
 
     @Override

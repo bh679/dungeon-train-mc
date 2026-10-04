@@ -231,13 +231,14 @@ public final class VideosScreen extends Screen {
 
     // ---- filter / sort controls -------------------------------------------------
 
+    /** A click shows only {@code p}; Shift-click flips just {@code p} and leaves the rest alone. */
     private void togglePlatform(VideoEntry.Platform p) {
-        filter = filter.solo(p);
+        filter = hasShiftDown() ? filter.togglePlatform(p) : filter.solo(p);
         refresh();
     }
 
     private void toggleStreamers() {
-        filter = filter.soloStreamers();
+        filter = hasShiftDown() ? filter.withStreamers(!filter.streamers()) : filter.soloStreamers();
         refresh();
     }
 

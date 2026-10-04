@@ -3734,6 +3734,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": "I-type ang pangalan ng uploader, o pumili mula sa listahan",
   "gui.dungeontrain.videos.filter.solo": "Ipakita lang ang %s",
   "gui.dungeontrain.videos.filter.solo.on": "%s lang ang ipinapakita — i-click para ipakita lahat",
+  "gui.dungeontrain.videos.filter.shift_hint": "Shift-click para ipakita o itago ito lang",
   "gui.dungeontrain.videos.filter.dev_faves.on": "Paborito ng dev lang — i-click para ipakita ang lahat",
   "gui.dungeontrain.videos.filter.dev_faves.off": "Ipakita lang ang paborito ng dev",
   "gui.dungeontrain.videos.filter.dev_faves.narration": "Filter ng paborito ng dev",

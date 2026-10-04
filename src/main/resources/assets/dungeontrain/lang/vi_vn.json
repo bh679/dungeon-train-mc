@@ -3734,6 +3734,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": "Nhập tên người đăng hoặc chọn từ danh sách",
   "gui.dungeontrain.videos.filter.solo": "Chỉ hiện %s",
   "gui.dungeontrain.videos.filter.solo.on": "Đang chỉ hiện %s — nhấn để hiện tất cả",
+  "gui.dungeontrain.videos.filter.shift_hint": "Shift + nhấn để hiện hoặc ẩn riêng mục này",
   "gui.dungeontrain.videos.filter.dev_faves.on": "Chỉ yêu thích của dev — nhấn để hiện tất cả",
   "gui.dungeontrain.videos.filter.dev_faves.off": "Chỉ hiện yêu thích của dev",
   "gui.dungeontrain.videos.filter.dev_faves.narration": "Bộ lọc yêu thích của dev",

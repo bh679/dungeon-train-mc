@@ -1397,6 +1397,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": "Scrie numele unui autor sau alege unul din listă",
   "gui.dungeontrain.videos.filter.solo": "Arată doar %s",
   "gui.dungeontrain.videos.filter.solo.on": "Doar %s afișat — clic pentru a afișa tot",
+  "gui.dungeontrain.videos.filter.shift_hint": "Shift + clic pentru a afișa sau ascunde doar acesta",
   "gui.dungeontrain.videos.filter.dev_faves.on": "Doar favoritele dezvoltatorului — clic pentru a afișa tot",
   "gui.dungeontrain.videos.filter.dev_faves.off": "Afișează doar favoritele dezvoltatorului",
   "gui.dungeontrain.videos.filter.dev_faves.narration": "Filtru favoritele dezvoltatorului",

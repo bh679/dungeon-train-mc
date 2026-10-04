@@ -3780,6 +3780,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c687675ba1d3a47d"},
   "gui.dungeontrain.videos.filter.solo": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "6778e4f134b2e185"},
   "gui.dungeontrain.videos.filter.solo.on": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "7ce3e3bb60dae979"},
+  "gui.dungeontrain.videos.filter.shift_hint": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "36b26a0bf505af89"},
   "gui.dungeontrain.videos.filter.dev_faves.on": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f396b65facdccfd1"},
   "gui.dungeontrain.videos.filter.dev_faves.off": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "2851594908fe967e"},
   "gui.dungeontrain.videos.filter.dev_faves.narration": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "04332af883f4b29d"},

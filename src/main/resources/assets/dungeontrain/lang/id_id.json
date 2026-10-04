@@ -3734,6 +3734,7 @@
   "gui.dungeontrain.videos.filter.uploader.tooltip": "Ketik nama pengunggah, atau pilih dari daftar",
   "gui.dungeontrain.videos.filter.solo": "Tampilkan hanya %s",
   "gui.dungeontrain.videos.filter.solo.on": "Hanya menampilkan %s — klik untuk menampilkan semua",
+  "gui.dungeontrain.videos.filter.shift_hint": "Shift-klik untuk menampilkan atau menyembunyikan yang ini saja",
   "gui.dungeontrain.videos.filter.dev_faves.on": "Hanya favorit dev — klik untuk menampilkan semua",
   "gui.dungeontrain.videos.filter.dev_faves.off": "Tampilkan hanya favorit dev",
   "gui.dungeontrain.videos.filter.dev_faves.narration": "Filter favorit dev",
