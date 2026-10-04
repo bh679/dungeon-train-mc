@@ -620,18 +620,18 @@ public final class SharedPhotos {
     }
 
     /**
-     * Percent chance a photo slot with nothing to hand out becomes a disposable camera instead: the
-     * fewer approved photos the relay holds, the likelier. An unknown count (offline, discovery off,
-     * first answer pending) counts as none, so cameras still turn up.
+     * Per-mille chance a photo slot with nothing to hand out becomes a disposable camera instead (the
+     * rest become a player book): the fewer approved photos the relay holds, the likelier. An unknown
+     * count (offline, discovery off, first answer pending) counts as none, so cameras still turn up.
      */
-    public static int cameraFallbackPercent() {
-        return cameraFallbackPercent(relayTotal);
+    public static int cameraFallbackPerMille() {
+        return cameraFallbackPerMille(relayTotal);
     }
 
-    static int cameraFallbackPercent(int total) {
-        if (total < 1_000) return 50;
-        if (total < 5_000) return 20;
-        if (total < 10_000) return 5;
+    static int cameraFallbackPerMille(int total) {
+        if (total < 1_000) return 300;
+        if (total < 5_000) return 125;
+        if (total < 10_000) return 50;
         return 0;
     }
 

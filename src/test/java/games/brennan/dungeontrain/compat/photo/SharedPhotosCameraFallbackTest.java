@@ -8,16 +8,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class SharedPhotosCameraFallbackTest {
 
     @Test
-    @DisplayName("Camera chance tapers 50 / 20 / 5 / 0 as the relay's photo count grows; unknown counts as none")
+    @DisplayName("Camera chance tapers 30% / 12.5% / 5% / 0 as the relay's photo count grows; unknown counts as none")
     void tiers() {
-        assertEquals(50, SharedPhotos.cameraFallbackPercent(-1));
-        assertEquals(50, SharedPhotos.cameraFallbackPercent(0));
-        assertEquals(50, SharedPhotos.cameraFallbackPercent(999));
-        assertEquals(20, SharedPhotos.cameraFallbackPercent(1_000));
-        assertEquals(20, SharedPhotos.cameraFallbackPercent(4_999));
-        assertEquals(5, SharedPhotos.cameraFallbackPercent(5_000));
-        assertEquals(5, SharedPhotos.cameraFallbackPercent(9_999));
-        assertEquals(0, SharedPhotos.cameraFallbackPercent(10_000));
-        assertEquals(0, SharedPhotos.cameraFallbackPercent(50_000));
+        assertEquals(300, SharedPhotos.cameraFallbackPerMille(-1));
+        assertEquals(300, SharedPhotos.cameraFallbackPerMille(0));
+        assertEquals(300, SharedPhotos.cameraFallbackPerMille(999));
+        assertEquals(125, SharedPhotos.cameraFallbackPerMille(1_000));
+        assertEquals(125, SharedPhotos.cameraFallbackPerMille(4_999));
+        assertEquals(50, SharedPhotos.cameraFallbackPerMille(5_000));
+        assertEquals(50, SharedPhotos.cameraFallbackPerMille(9_999));
+        assertEquals(0, SharedPhotos.cameraFallbackPerMille(10_000));
+        assertEquals(0, SharedPhotos.cameraFallbackPerMille(50_000));
     }
 }
