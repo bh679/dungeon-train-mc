@@ -29,6 +29,8 @@ public final class EarnedPhotoScreen extends Screen {
     private static final int PAPER = 0xFFF2EEE4;
     private static final int BORDER = 8;
     private static final int CAPTION = 18;
+    /** Depth the overlay draws at: above the advancements screen's item icons and tooltips. */
+    private static final float OVERLAY_Z = 1000F;
 
     private final Screen parent;
     private final Path file;
@@ -71,9 +73,12 @@ public final class EarnedPhotoScreen extends Screen {
         int h = Math.max(1, Math.round(imageHeight * scale));
         int x = (width - w) / 2;
         int y = (height - h - CAPTION) / 2;
+        g.pose().pushPose();
+        g.pose().translate(0, 0, OVERLAY_Z);
         g.fill(x - BORDER, y - BORDER, x + w + BORDER, y + h + BORDER + CAPTION, PAPER);
         g.blit(TEXTURE, x, y, w, h, 0, 0, imageWidth, imageHeight, imageWidth, imageHeight);
         g.drawString(font, title, (width - font.width(title)) / 2, y + h + 6, 0xFF3A3530, false);
+        g.pose().popPose();
     }
 
     /** The advancements screen stays visible underneath, dimmed — not the blurred world. */
@@ -84,7 +89,11 @@ public final class EarnedPhotoScreen extends Screen {
         } else {
             super.renderBackground(g, mouseX, mouseY, partialTick);
         }
+        // Above everything the advancements screen drew — its item icons sit at a raised depth.
+        g.pose().pushPose();
+        g.pose().translate(0, 0, OVERLAY_Z);
         g.fill(0, 0, width, height, 0xA0000000);
+        g.pose().popPose();
     }
 
     /** A click anywhere puts the print away. */
