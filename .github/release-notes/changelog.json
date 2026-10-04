@@ -23432,6 +23432,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-and-book-advancements",
+      "version": "0.1162.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "A camera's worth of advancements",
+      "summary": "Your books and photos now share an advancement tab of their own, and the camera has plenty to earn \u2014 the people, creatures and places you capture along the line. Every photo that earns one is kept: hover the advancement to see the shot, and click it for the full print.",
+      "highlights": [
+        "Proud of a shot? Pay Tribute to your own photo to share it with the community.",
+        "Biome advancements now count every biome the train takes you through \u2014 and ask for more. Everyone earns them again.",
+        "Fixed an advancement tab that sometimes took several clicks to open."
+      ],
+      "pr": 1839,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
