@@ -17,6 +17,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import games.brennan.dungeontrain.discord.PhotoPaperComposite;
 import java.io.InputStream;
 import java.util.Optional;
+import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.ResourceLocation;
@@ -72,6 +73,8 @@ public final class EarnedPhotos {
      */
     public static void capture(ResourceLocation advancement, String exposureId, ResourceLocation type, String entry) {
         if (advancement == null || exposureId == null || exposureId.isBlank()) return;
+        ResourceLocation album = entry == null || entry.isEmpty() ? null : albumOf(advancement);
+        if (album != null && EnchiridionAdvancements.isBiomeAlbum(album.getPath())) PHOTOGRAPHED_BIOMES.add(entry);
         PENDING.put(new Slot(advancement, entry == null ? "" : entry),
                 new Pending(exposureId, type, FETCH_TIMEOUT_TICKS, RETRY_TICKS));
     }
@@ -135,27 +138,59 @@ public final class EarnedPhotos {
         return List.copyOf(out);
     }
 
-    /** The picture for {@code advancement}'s tooltip: its own photo once earned, else the album's latest. */
-    public static Path thumbnail(ResourceLocation advancement, boolean earned) {
+    /**
+     * The album entries this run's progress backs: an animal or mob counts once its criterion is ticked,
+     * a biome once this world's photographed set has it. The album folder outlives worlds (and Free Play
+     * runs, which never carry progress over), so a photo from a run that no longer counts stays hidden
+     * until the subject is photographed again here.
+     */
+    public static List<Entry> visibleEntries(ResourceLocation advancement, AdvancementProgress progress) {
+        List<Entry> all = entries(advancement);
+        if (all.isEmpty()) return all;
+        boolean biomes = EnchiridionAdvancements.isBiomeAlbum(albumOf(advancement).getPath());
+        List<Entry> out = new ArrayList<>(all.size());
+        for (Entry e : all) {
+            boolean counts = biomes
+                    ? PHOTOGRAPHED_BIOMES.contains(e.id().toString())
+                    : progress != null && progress.getCriterion(e.id().toString()) != null
+                            && progress.getCriterion(e.id().toString()).isDone();
+            if (counts) out.add(e);
+        }
+        return out;
+    }
+
+    /** Biomes photographed in this world, from the server ({@code PhotoBiomesPacket}) plus each new one logged. */
+    private static final java.util.Set<String> PHOTOGRAPHED_BIOMES = new java.util.HashSet<>();
+
+    /** The server's photographed-biome set for this world — sent on join and respawn. */
+    public static void setPhotographedBiomes(List<String> biomes) {
+        PHOTOGRAPHED_BIOMES.clear();
+        PHOTOGRAPHED_BIOMES.addAll(biomes);
+    }
+
+    /** The picture for {@code advancement}'s tooltip: its own photo once earned, else the album's latest that counts. */
+    public static Path thumbnail(ResourceLocation advancement, AdvancementProgress progress) {
+        boolean earned = progress != null && progress.isDone();
         if (earned && has(advancement)) return file(advancement);
-        List<Entry> album = entries(advancement);
+        List<Entry> album = visibleEntries(advancement, progress);
         return album.isEmpty() ? null : album.get(album.size() - 1).file();
     }
 
     /**
-     * Open what {@code advancement} has kept: its album, once anything is logged (earned or not — a
+     * Open what {@code advancement} has kept: its album, once anything this run counts (earned or not — a
      * collection shows as it fills), else its own photo once earned. Returns whether anything opened.
      */
-    public static boolean tryOpen(ResourceLocation advancement, net.minecraft.network.chat.Component title, boolean earned) {
+    public static boolean tryOpen(ResourceLocation advancement, net.minecraft.network.chat.Component title,
+                                  AdvancementProgress progress) {
         Minecraft mc = Minecraft.getInstance();
         Screen parent = mc.screen;
-        List<Entry> album = entries(advancement);
+        List<Entry> album = visibleEntries(advancement, progress);
         if (!album.isEmpty()) {
             boolean biomes = EnchiridionAdvancements.isBiomeAlbum(albumOf(advancement).getPath());
             mc.execute(() -> mc.setScreen(new EarnedPhotoAlbumScreen(parent, title, album, biomes)));
             return true;
         }
-        if (!earned || !has(advancement)) return false;
+        if (progress == null || !progress.isDone() || !has(advancement)) return false;
         mc.execute(() -> mc.setScreen(new EarnedPhotoScreen(parent, title, file(advancement))));
         return true;
     }

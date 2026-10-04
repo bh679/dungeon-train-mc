@@ -191,7 +191,7 @@ public abstract class BetterAdvancementWidgetCompatMixin {
     private List<FormattedCharSequence> dungeontrain$swapDescription(List<FormattedCharSequence> original) {
         if (advancementNode == null) return original;
         if (!AdvancementHintText.shouldMask(advancementNode.holder().id(), advancementProgress)) {
-            return EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id(), true);
+            return EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id(), advancementProgress);
         }
         int revision = AdvancementHintText.maskedDescriptionRevision();
         if (dungeontrain$hiddenDesc == null || dungeontrain$hiddenDescRevision != revision) {
@@ -200,7 +200,7 @@ public abstract class BetterAdvancementWidgetCompatMixin {
             dungeontrain$hiddenDescRevision = revision;
         }
         // Unearned: the hint, plus the latest photo of a collection still filling.
-        return EarnedPhotoThumbnails.withSlot(dungeontrain$hiddenDesc, advancementNode.holder().id(), false);
+        return EarnedPhotoThumbnails.withSlot(dungeontrain$hiddenDesc, advancementNode.holder().id(), advancementProgress);
     }
 
     /** Draw the kept photo's thumbnail where its reserved description line lands. */

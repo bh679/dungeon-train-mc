@@ -33,6 +33,9 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.PhotoBiomesPacket;
 import org.slf4j.Logger;
 
 import java.util.HashSet;
@@ -77,6 +80,24 @@ public final class PhotoAdvancementEvents {
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Couldn't read photo subjects for {}: {}", player.getName().getString(), e.toString());
         }
+    }
+
+    /** Tell the client which biomes this world's photos already cover, so the biome album matches. */
+    @SubscribeEvent
+    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncPhotographedBiomes(player);
+    }
+
+    @SubscribeEvent
+    public static void onRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) syncPhotographedBiomes(player);
+    }
+
+    private static void syncPhotographedBiomes(ServerPlayer player) {
+        ListTag seen = player.getPersistentData().getList(PHOTO_BIOMES_KEY, Tag.TAG_STRING);
+        List<String> biomes = new java.util.ArrayList<>(seen.size());
+        for (Tag t : seen) biomes.add(t.getAsString());
+        DungeonTrainNet.sendTo(player, new PhotoBiomesPacket(biomes));
     }
 
     /** Each animal or mob a collection gains keeps its own photo (when a photo is behind it). */

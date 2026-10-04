@@ -150,10 +150,10 @@ public abstract class AdvancementWidgetHideDescMixin {
     private List<FormattedCharSequence> dungeontrain$swapDescription(List<FormattedCharSequence> original) {
         if (!dungeontrain$shouldHideDescription()) {
             return advancementNode == null ? original
-                : EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id(), true);
+                : EarnedPhotoThumbnails.withSlot(original, advancementNode.holder().id(), progress);
         }
         // Unearned: the hint, plus the latest photo of a collection still filling.
-        return EarnedPhotoThumbnails.withSlot(dungeontrain$getHiddenDesc(), advancementNode.holder().id(), false);
+        return EarnedPhotoThumbnails.withSlot(dungeontrain$getHiddenDesc(), advancementNode.holder().id(), progress);
     }
 
     /**

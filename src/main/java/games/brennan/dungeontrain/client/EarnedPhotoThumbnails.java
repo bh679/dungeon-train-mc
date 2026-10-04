@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import net.minecraft.advancements.AdvancementProgress;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -66,10 +67,10 @@ public final class EarnedPhotoThumbnails {
         return out;
     }
 
-    /** {@link #withSlot} for an advancement: its own photo once earned, else its album's latest. */
+    /** {@link #withSlot} for an advancement: its own photo once earned, else its album's latest that counts this run. */
     public static List<FormattedCharSequence> withSlot(List<FormattedCharSequence> description,
-                                                       ResourceLocation id, boolean earned) {
-        return withSlot(description, EarnedPhotos.thumbnail(id, earned));
+                                                       ResourceLocation id, AdvancementProgress progress) {
+        return withSlot(description, EarnedPhotos.thumbnail(id, progress));
     }
 
     /** Called for every description line drawn: at the marker, draws its photo at (x, y). */
