@@ -78,7 +78,7 @@ final class EnchiridionAdvancementsTest {
     @DisplayName("not required by the burrito, so the start-again wipe keeps it")
     void outsideTheBurrito() {
         for (String path : List.of(EnchiridionAdvancements.ROOT, "dungeon_train/taking_notes",
-                "dungeon_train/nothing_but_books", "enchiridion/say_cheese", "enchiridion/postcard_nether")) {
+                "dungeon_train/nothing_but_books", "enchiridion/say_cheese", "enchiridion/photo_stacks")) {
             assertFalse(CompletionistAdvancement.isRequiredId(rl(path), Set.of()), path);
             assertFalse(StartAgainAdvancement.isWiped(rl(path), false), path);
         }
@@ -92,15 +92,19 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
-    @DisplayName("every band has a postcard, named like its reverse advancement")
-    void everyBandHasAPostcard() throws IOException {
+    @DisplayName("every dimension has a photo advancement, chained in dimension order from Hellish Holiday")
+    void dimensionPhotoChain() throws IOException {
         Map<String, String> parents = parents();
+        String expectedParent = EnchiridionAdvancements.PATH_PREFIX + "say_cheese";
         for (String band : BandAdvancements.ALL) {
-            String postcard = EnchiridionAdvancements.PATH_PREFIX + EnchiridionAdvancements.postcardName(band);
-            assertTrue(parents.containsKey(postcard), "no postcard for " + band + " (" + postcard + ")");
+            String photo = EnchiridionAdvancements.PATH_PREFIX + EnchiridionAdvancements.photoName(band);
+            assertTrue(parents.containsKey(photo), "no photo advancement for " + band + " (" + photo + ")");
+            assertEquals(expectedParent, parents.get(photo), photo + " is out of the chain");
+            expectedParent = photo;
         }
-        assertEquals("postcard_upside_down", EnchiridionAdvancements.postcardName(BandAdvancements.UPSIDE_DOWN));
-        assertEquals("postcard_nether", EnchiridionAdvancements.postcardName(BandAdvancements.NETHER));
+        assertEquals("hellish_holiday", EnchiridionAdvancements.photoName(BandAdvancements.ALL.get(0)));
+        assertEquals("end_credits", EnchiridionAdvancements.photoName(BandAdvancements.END_ISLANDS));
+        assertEquals("photo_upside_down", EnchiridionAdvancements.photoName(BandAdvancements.UPSIDE_DOWN));
     }
 
     @Test

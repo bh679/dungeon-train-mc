@@ -50,7 +50,7 @@ final class PhotoSubjectsTest {
         Set<String> keys = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, true, true, true,
                 false, true, "minecraft:overworld", "reached_spheres"));
         assertTrue(keys.containsAll(Set.of("pigman_villager", "killer_bunny", "technoblade_pig", "cave",
-                "dim:minecraft:overworld", "band:reached_spheres", "band:any")));
+                "dim:minecraft:overworld", "band:reached_spheres")));
         assertFalse(keys.contains(PhotoSubjects.NETHER));
         assertFalse(keys.contains(PhotoSubjects.END));
     }

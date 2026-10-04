@@ -1,19 +1,14 @@
 {
-  "parent": "dungeontrain:enchiridion/postcard_skylands",
+  "parent": "dungeontrain:enchiridion/photo_skylands",
   "display": {
     "icon": {
-      "id": "exposure:photograph"
+      "id": "minecraft:grass_block"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.title",
-      "with": [
-        {
-          "translate": "advancements.dungeontrain.dungeon_train.reached_floating.title"
-        }
-      ]
+      "translate": "advancements.dungeontrain.enchiridion.photo_floating.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.description"
+      "translate": "advancements.dungeontrain.enchiridion.photo_floating.description"
     },
     "frame": "task",
     "show_toast": true,

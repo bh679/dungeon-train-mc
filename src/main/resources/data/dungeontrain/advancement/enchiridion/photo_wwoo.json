@@ -1,19 +1,14 @@
 {
-  "parent": "dungeontrain:enchiridion/postcard_nether",
+  "parent": "dungeontrain:enchiridion/hellish_holiday",
   "display": {
     "icon": {
-      "id": "exposure:photograph"
+      "id": "minecraft:oak_sapling"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.title",
-      "with": [
-        {
-          "translate": "advancements.dungeontrain.dungeon_train.reached_wwoo.title"
-        }
-      ]
+      "translate": "advancements.dungeontrain.enchiridion.photo_wwoo.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.description"
+      "translate": "advancements.dungeontrain.enchiridion.photo_wwoo.description"
     },
     "frame": "task",
     "show_toast": true,

@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:enchiridion/say_cheese",
+  "parent": "dungeontrain:enchiridion/photo_void",
   "display": {
     "icon": {
       "id": "minecraft:end_stone"

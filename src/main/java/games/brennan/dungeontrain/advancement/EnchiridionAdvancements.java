@@ -49,8 +49,14 @@ public final class EnchiridionAdvancements {
     public static final String TRIBUTED_PHOTO = "tributed_photo";
     public static final String PHOTOGRAPHED_BY_PLAYERMOB = "photographed_by_playermob";
 
-    /** Prefix of the per-band postcard advancements: {@code enchiridion/postcard_<band>}. */
-    public static final String POSTCARD_PREFIX = "postcard_";
+    /** Prefix of the per-dimension photo advancements: {@code enchiridion/photo_<dimension>}. */
+    public static final String PHOTO_PREFIX = "photo_";
+
+    /** The Nether's photo advancement — the first link of the dimension chain. */
+    public static final String HELLISH_HOLIDAY = "hellish_holiday";
+
+    /** The End islands' photo advancement. */
+    public static final String END_CREDITS = "end_credits";
 
     private EnchiridionAdvancements() {}
 
@@ -60,12 +66,14 @@ public final class EnchiridionAdvancements {
     }
 
     /**
-     * The postcard advancement name for forward band id {@code bandId} ({@link BandAdvancements#ALL}),
-     * without the {@link #PATH_PREFIX}: {@code reached_nether} → {@code postcard_nether}. Shares
-     * {@link BandAdvancements#reverseId}'s naming, so the two irregular ids (the upside-down,
-     * reassembly) read the same way here.
+     * The photo advancement name for dimension {@code bandId} ({@link BandAdvancements#ALL}), without
+     * the {@link #PATH_PREFIX}. The Nether and the End islands have their own names ({@link #HELLISH_HOLIDAY},
+     * {@link #END_CREDITS}); the rest are {@code photo_<dimension>}, sharing
+     * {@link BandAdvancements#reverseId}'s naming for the two irregular ids (the upside-down, reassembly).
      */
-    public static String postcardName(String bandId) {
-        return POSTCARD_PREFIX + BandAdvancements.reverseId(bandId).substring(BandAdvancements.REVERSE_PREFIX.length());
+    public static String photoName(String bandId) {
+        if (BandAdvancements.NETHER.equals(bandId)) return HELLISH_HOLIDAY;
+        if (BandAdvancements.END_ISLANDS.equals(bandId)) return END_CREDITS;
+        return PHOTO_PREFIX + BandAdvancements.reverseId(bandId).substring(BandAdvancements.REVERSE_PREFIX.length());
     }
 }

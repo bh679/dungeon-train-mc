@@ -1,14 +1,14 @@
 {
-  "parent": "dungeontrain:enchiridion/say_cheese",
+  "parent": "dungeontrain:enchiridion/photo_classic",
   "display": {
     "icon": {
-      "id": "minecraft:paper"
+      "id": "minecraft:dirt"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.wish_you_were_here.title"
+      "translate": "advancements.dungeontrain.enchiridion.photo_superflat.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.wish_you_were_here.description"
+      "translate": "advancements.dungeontrain.enchiridion.photo_superflat.description"
     },
     "frame": "task",
     "show_toast": true,
@@ -16,16 +16,16 @@
     "hidden": true
   },
   "criteria": {
-    "band": {
+    "photo": {
       "trigger": "dungeontrain:photo_subject",
       "conditions": {
-        "subject": "band:any"
+        "subject": "band:reached_superflat"
       }
     }
   },
   "requirements": [
     [
-      "band"
+      "photo"
     ]
   ]
 }

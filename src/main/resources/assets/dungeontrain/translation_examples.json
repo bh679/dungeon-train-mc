@@ -14938,15 +14938,5 @@
         "50"
       ]
     }
-  },
-  "advancements.dungeontrain.enchiridion.postcard.title": {
-    "1": {
-      "label": "name of a dimension's advancement (already translated)",
-      "examples": [
-        "Inter-Dimensional Passenger",
-        "Stack Overflow",
-        "Circle It"
-      ]
-    }
   }
 }

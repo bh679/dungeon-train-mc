@@ -1,19 +1,14 @@
 {
-  "parent": "dungeontrain:enchiridion/postcard_amplified",
+  "parent": "dungeontrain:enchiridion/photo_amplified",
   "display": {
     "icon": {
-      "id": "exposure:photograph"
+      "id": "minecraft:gravel"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.title",
-      "with": [
-        {
-          "translate": "advancements.dungeontrain.dungeon_train.reached_beta.title"
-        }
-      ]
+      "translate": "advancements.dungeontrain.enchiridion.photo_beta.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.description"
+      "translate": "advancements.dungeontrain.enchiridion.photo_beta.description"
     },
     "frame": "task",
     "show_toast": true,

@@ -1,19 +1,14 @@
 {
-  "parent": "dungeontrain:enchiridion/postcard_reassembly",
+  "parent": "dungeontrain:enchiridion/photo_reassembly",
   "display": {
     "icon": {
-      "id": "exposure:photograph"
+      "id": "minecraft:flowering_azalea"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.title",
-      "with": [
-        {
-          "translate": "advancements.dungeontrain.dungeon_train.reached_bop.title"
-        }
-      ]
+      "translate": "advancements.dungeontrain.enchiridion.photo_bop.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.description"
+      "translate": "advancements.dungeontrain.enchiridion.photo_bop.description"
     },
     "frame": "task",
     "show_toast": true,

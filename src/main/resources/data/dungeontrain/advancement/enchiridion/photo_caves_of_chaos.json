@@ -1,19 +1,14 @@
 {
-  "parent": "dungeontrain:enchiridion/postcard_far_lands",
+  "parent": "dungeontrain:enchiridion/photo_far_lands",
   "display": {
     "icon": {
-      "id": "exposure:photograph"
+      "id": "minecraft:glow_berries"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.title",
-      "with": [
-        {
-          "translate": "advancements.dungeontrain.dungeon_train.reached_caves_of_chaos.title"
-        }
-      ]
+      "translate": "advancements.dungeontrain.enchiridion.photo_caves_of_chaos.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.postcard.description"
+      "translate": "advancements.dungeontrain.enchiridion.photo_caves_of_chaos.description"
     },
     "frame": "task",
     "show_toast": true,

@@ -15,7 +15,7 @@ import java.util.Set;
  *   <li>specials: {@code pigman_villager}, {@code killer_bunny}, {@code technoblade_pig}</li>
  *   <li>{@code cave}, {@code dim:<dimension id>}</li>
  *   <li>{@code nether} / {@code end} — the train's own Nether or End, or the vanilla dimension</li>
- *   <li>{@code band:<forward band id>} and {@code band:any} — taken inside a dimensional band</li>
+ *   <li>{@code band:<forward band id>} — taken in one of the train's dimensions (either side of spawn)</li>
  * </ul>
  */
 public final class PhotoSubjects {
@@ -23,7 +23,6 @@ public final class PhotoSubjects {
     public static final String ENTITY_PREFIX = "entity:";
     public static final String DIMENSION_PREFIX = "dim:";
     public static final String BAND_PREFIX = "band:";
-    public static final String BAND_ANY = BAND_PREFIX + "any";
     public static final String PLAYERMOB = "playermob";
     public static final String ECHO = "echo";
     public static final String SELFIE_PLAYERMOB = "selfie_playermob";
@@ -65,10 +64,7 @@ public final class PhotoSubjects {
         if (f.dimension() != null) out.add(DIMENSION_PREFIX + f.dimension());
         if ("minecraft:the_nether".equals(f.dimension()) || (f.band() != null && NETHER_BANDS.contains(f.band()))) out.add(NETHER);
         if ("minecraft:the_end".equals(f.dimension()) || (f.band() != null && END_BANDS.contains(f.band()))) out.add(END);
-        if (f.band() != null) {
-            out.add(BAND_PREFIX + f.band());
-            out.add(BAND_ANY);
-        }
+        if (f.band() != null) out.add(BAND_PREFIX + f.band());
         return Set.copyOf(out);
     }
 }
