@@ -58,6 +58,7 @@ public final class EditorRoster {
             addPortals(out);
             addChunkFrames(out);
             addBuildings(out);
+            addWorkbench(out);
             return out;
         } finally {
             RELAY_ROWS.set(null);
@@ -311,6 +312,15 @@ public final class EditorRoster {
     }
 
     /** The buildings, one group — shipped Lost City buildings first, then new ones. */
+    /** The Workbench shelf: one group, one row per staged build, named by staged id. */
+    private static void addWorkbench(List<EditorRosterPacket.Group> out) {
+        List<games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild> staged =
+            games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.list();
+        if (staged.isEmpty()) return;
+        out.add(group(PlotCategory.WORKBENCH.id(), EditorTypeMenus.WORKBENCH_TYPE_NAME,
+            WorkbenchEditor.MODEL_ID, EditorTypeMenus.workbenchRows(staged), null));
+    }
+
     private static void addBuildings(List<EditorRosterPacket.Group> out) {
         List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
         if (!names.isEmpty()) {
