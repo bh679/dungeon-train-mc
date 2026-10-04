@@ -23083,6 +23083,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "spider-jockey-rider-visible",
+      "version": "0.1155.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Spider jockeys arrive with their skeleton",
+      "summary": "The rare spider jockey that can turn up in a carriage now spawns with its skeleton rider in place. Before, the skeleton was missing \u2014 and could appear later out of nowhere.",
+      "highlights": [],
+      "pr": 1827,
+      "date": "2026-10-04",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
