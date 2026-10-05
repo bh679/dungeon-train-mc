@@ -9072,7 +9072,7 @@
         "internal"
       ],
       "title": "Dimensional Carriages",
-      "summary": "Somewhere past your first stretch of track, a corridor between two carriages stops being a corridor. Walk it and the sound of the train falls away behind you, and you come out in a room that could never have fitted inside the carriage you stepped into \u2014 a hall, a library, a place of beams and sculk, some of them going on for as long as you care to keep walking.",
+      "summary": "Some corridors between carriages now open onto rooms far bigger than the train. Halls, libraries and stranger places to loot while the train rolls on.",
       "highlights": [],
       "date": "2026-08-12",
       "released": true,
@@ -14633,7 +14633,7 @@
         "internal"
       ],
       "title": "Shader Support",
-      "summary": "Nine shader packs are now supported, and there is a Shaders page to pick one from \u2014 on the title screen between Mods and Options, and in the Esc menu beside Mods. Each pack shows a screenshot of the same stretch of track at the same time of day, so you can see what it actually does before you commit to it, with the unshaded shot there to compare against. One click downloads it from the author's own page and turns it on; if you already have it, one click turns it on. Sort the list by our pick, by how demanding a pack is, by how close it stays to vanilla, or by mood.",
+      "summary": "Nine supported shader packs, a new Shaders page to compare and pick one, and one-click download and enable.",
       "highlights": [],
       "date": "2026-09-05",
       "released": true,
