@@ -23602,6 +23602,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "single-flowers-tall-plant-cells",
+      "version": "0.1173.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "No more stacked flowers",
+      "summary": "Flowers and grass in carriage gardens, animal pens and dimensional carriages now grow one block tall on the floor, instead of sometimes stacking a second flower on top of the first. Tall grass, ferns and tall flowers still grow two blocks tall.",
+      "highlights": [],
+      "pr": 1851,
+      "date": "2026-10-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
