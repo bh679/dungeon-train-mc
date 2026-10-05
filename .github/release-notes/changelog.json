@@ -23585,6 +23585,23 @@
       "milestone": true,
       "description": "Dungeon Train now has a website, complete with roadmaps and update history.\n\n[https://brennan.games/dungeontrain/](https://brennan.games/dungeontrain/)",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif"
+    },
+    {
+      "id": "tribute-photos-own-channel",
+      "version": "0.1172.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tributed Photos Get Their Own Channel",
+      "summary": "Photos you pay Tribute to now go up in their own channel on the Dungeon Train Discord, so every kept photo is in one place instead of mixed in with the passenger log.",
+      "highlights": [],
+      "pr": 1850,
+      "date": "2026-10-05",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
