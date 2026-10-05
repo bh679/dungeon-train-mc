@@ -10,9 +10,8 @@ import java.util.List;
 
 /**
  * Shows a tributed photo to the whole community: when a player pays Tribute to a found photo
- * ({@code SharedPhotos.payTribute}), the picture itself is posted top-level to the public passenger
- * log — the same feed as the death manifest and remote-echo stories
- * ({@link DungeonTrain#manifestWebhookOverride()}) — naming who paid and whose photo it is.
+ * ({@code SharedPhotos.payTribute}), the picture itself is posted top-level to its own tribute-photos
+ * channel ({@link DungeonTrain#tributeWebhookOverride()}) — naming who paid and whose photo it is.
  *
  * <p>A Tribute is one player saying "this one is worth keeping", which is exactly the photo worth
  * showing everyone. No @-mention: tributes are an everyday event, not a milestone. Best-effort,
@@ -43,11 +42,11 @@ public final class TributePhotoReporter {
         if (png == null || png.length == 0) return;
         try {
             String name = tributer.getGameProfile().getName();
-            LOGGER.info("[DungeonTrain] {} paid tribute to a photo by {} — posting it to the passenger log.",
+            LOGGER.info("[DungeonTrain] {} paid tribute to a photo by {} — posting it to the tribute-photos channel.",
                     name, photographer == null || photographer.isBlank() ? "an unknown passenger" : photographer);
             DiscordService.get().postReportTopLevel(tributer, title(name, photographer),
                     description(tributeNumber, cost, hands, viewsLeft), List.of(), png, PHOTO_FILENAME, EMBED_COLOR,
-                    DungeonTrain.manifestWebhookOverride());
+                    DungeonTrain.tributeWebhookOverride());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] tributed photo post failed: {}", t.toString());
         }
@@ -64,9 +63,9 @@ public final class TributePhotoReporter {
         if (png == null || png.length == 0) return;
         try {
             String name = tributer.getGameProfile().getName();
-            LOGGER.info("[DungeonTrain] {} paid tribute to their own photo — posting it to the passenger log.", name);
+            LOGGER.info("[DungeonTrain] {} paid tribute to their own photo — posting it to the tribute-photos channel.", name);
             DiscordService.get().postReportTopLevel(tributer, ownTitle(name), ownDescription(tributeNumber, cost),
-                    List.of(), png, PHOTO_FILENAME, EMBED_COLOR, DungeonTrain.manifestWebhookOverride());
+                    List.of(), png, PHOTO_FILENAME, EMBED_COLOR, DungeonTrain.tributeWebhookOverride());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] own tributed photo post failed: {}", t.toString());
         }
