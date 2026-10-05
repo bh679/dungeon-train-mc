@@ -23599,9 +23599,9 @@
       "highlights": [],
       "pr": 1850,
       "date": "2026-10-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1173.0",
+      "released_at": "2026-10-05T16:30:57Z"
     },
     {
       "id": "single-flowers-tall-plant-cells",
@@ -23616,9 +23616,9 @@
       "highlights": [],
       "pr": 1851,
       "date": "2026-10-05",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1173.0",
+      "released_at": "2026-10-05T16:30:57Z"
     }
   ]
 }
