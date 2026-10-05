@@ -23565,6 +23565,25 @@
       "released": true,
       "released_in": "v0.1169.0",
       "released_at": "2026-10-04T20:22:34Z"
+    },
+    {
+      "id": "release-website-launch",
+      "version": "0.1169.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Dungeon Train Has a Website",
+      "summary": "Dungeon Train now has a website, complete with roadmaps and update history.",
+      "highlights": [],
+      "date": "2026-10-05",
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-05T03:45:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "Dungeon Train now has a website, complete with roadmaps and update history.\n\n[https://brennan.games/dungeontrain/](https://brennan.games/dungeontrain/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif"
     }
   ]
 }
