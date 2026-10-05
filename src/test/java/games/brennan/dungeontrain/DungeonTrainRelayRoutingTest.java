@@ -72,6 +72,22 @@ class DungeonTrainRelayRoutingTest {
     }
 
     @Test
+    void tributePhotoRoutesToTributesCapOnlyOnMain() {
+        // A tributed photo posts to its own tribute-photos channel ONLY on a main build; every other
+        // branch returns null → the dev channel.
+        String main = DungeonTrain.tributeWebhookOverrideForBranch("main");
+        assertNotNull(main, "main must route tributed photos to the tributes cap");
+        assertTrue(main.endsWith("/hook"), "tributes cap must target the relay /hook, was: " + main);
+        assertNotEquals(DungeonTrain.manifestWebhookOverrideForBranch("main"), main,
+                "the tributes cap is its own channel, not the public passenger log");
+        assertNotEquals(DungeonTrain.buildSubmitWebhookOverrideForBranch("main"), main,
+                "the tributes cap is its own channel, not build submissions");
+        assertNull(DungeonTrain.tributeWebhookOverrideForBranch("dev/some-feature"));
+        assertNull(DungeonTrain.tributeWebhookOverrideForBranch("claude/worktree-slug"));
+        assertNull(DungeonTrain.tributeWebhookOverrideForBranch("?"));
+    }
+
+    @Test
     void surveyLinkGuildIdSplitsMainVsDev() {
         // The jump-link guild id matches the channel the original posted into: live server on main,
         // dev server otherwise (so the link resolves in the right server).

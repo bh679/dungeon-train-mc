@@ -69,7 +69,7 @@ public final class OwnPhotoTribute {
     /**
      * What this player's next own-photo Tribute costs, or 0 when it isn't offered. Free Play runs are
      * kept out of the public feed on a release build; a dev build offers it anyway, and its post lands
-     * in the dev channel ({@link DungeonTrain#manifestWebhookOverride()} is null off {@code main}) —
+     * in the dev channel ({@link DungeonTrain#tributeWebhookOverride()} is null off {@code main}) —
      * the same rule as the run-ended manifest.
      */
     public static int currentCost(ServerPlayer player) {

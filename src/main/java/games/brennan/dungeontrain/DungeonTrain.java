@@ -129,6 +129,15 @@ public class DungeonTrain {
      */
     private static final String RELAY_BUILDS_BASE_URL =
             "https://brennan.games/api/dp-relay/aaca6153252ea44856c8243b99fc382327afd6cb3853550e";
+    /**
+     * Tribute-photos channel capability. Every photo a player pays Tribute to on a RELEASE
+     * ({@code main}) build posts here, in its own channel rather than the public passenger log;
+     * dev/test builds fall through to the build's default cap (the dev channel). Non-secret +
+     * revocable like the others; the real channel webhook lives only on the relay (its
+     * {@code TRIBUTES_WEBHOOK_URL}, mapped to this cap in the relay's {@code .env}, never in the jar).
+     */
+    private static final String RELAY_TRIBUTES_BASE_URL =
+            "https://brennan.games/api/dp-relay/efb485a811a645b33514aea829d8ce2f2d27ed0fe43dab9e";
 
     /**
      * Discord guild (server) ids used to build the survey copy's jump-link back to the threaded
@@ -246,6 +255,23 @@ public class DungeonTrain {
      */
     static String buildSubmitWebhookOverrideForBranch(String branch) {
         return "main".equals(branch) ? RELAY_BUILDS_BASE_URL + "/hook" : null;
+    }
+
+    /**
+     * Where a tributed photo should post. On a RELEASE ({@code main}) build it routes to the
+     * dedicated tribute-photos cap; on a dev/test build it returns {@code null} so the post falls
+     * through to the build's default cap (the dev channel).
+     */
+    public static String tributeWebhookOverride() {
+        return tributeWebhookOverrideForBranch(VersionInfo.BRANCH);
+    }
+
+    /**
+     * Pure branch-&gt;tribute-photos-destination mapping (package-private for unit testing). Only a
+     * {@code main} build routes to the dedicated cap; every other branch returns {@code null}.
+     */
+    static String tributeWebhookOverrideForBranch(String branch) {
+        return "main".equals(branch) ? RELAY_TRIBUTES_BASE_URL + "/hook" : null;
     }
 
     /**
