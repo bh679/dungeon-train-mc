@@ -23643,8 +23643,26 @@
       "released_at": null
     },
     {
-      "id": "more-hidden-photo-advancements",
+      "id": "bookshelf-photos-rarer",
       "version": "0.1175.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Photos are rarer in bookshelves",
+      "summary": "Chiseled bookshelves hand out photos about half as often as before, so finding one feels special again.",
+      "highlights": [],
+      "pr": 1853,
+      "date": "2026-10-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "more-hidden-photo-advancements",
+      "version": "0.1176.0",
       "type": "feat",
       "tags": [
         "feature",
