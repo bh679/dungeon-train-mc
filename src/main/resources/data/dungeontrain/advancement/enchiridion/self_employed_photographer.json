@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:enchiridion/i_believe_in_myself",
+  "display": {
+    "icon": {
+      "id": "minecraft:beacon"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.self_employed_photographer.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.self_employed_photographer.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "dungeontrain:photo_tribute",
+      "conditions": {
+        "whose": "own",
+        "min_cost": 6561
+      }
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

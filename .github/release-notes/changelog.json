@@ -23659,6 +23659,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "more-hidden-photo-advancements",
+      "version": "0.1176.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New Photography Advancements",
+      "summary": "The camera's advancement tab has new hidden advancements to discover.",
+      "highlights": [],
+      "pr": 1854,
+      "date": "2026-10-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

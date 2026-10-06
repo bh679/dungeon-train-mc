@@ -119,10 +119,11 @@ public final class OwnPhotoTribute {
         // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
-        // Paying Respects + Shameless Self-Promotion, each keeping this print — see AdvancementPhotoCapture.
+        // Paying Respects, Shameless Self-Promotion and the spending tiers, each keeping this print — see AdvancementPhotoCapture.
         AdvancementPhotoCapture.during(held, () -> {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_OWN_PHOTO);
+            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, true, cost);
         });
         int tributeNumber = player.getData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get()) + 1;
         player.setData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get(), tributeNumber);

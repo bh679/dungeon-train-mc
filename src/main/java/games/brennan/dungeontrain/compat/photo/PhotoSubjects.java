@@ -17,6 +17,9 @@ import java.util.Set;
  *   <li>{@code cave}, {@code dim:<dimension id>}</li>
  *   <li>{@code nether} / {@code end} — the train's own Nether or End, or the vanilla dimension</li>
  *   <li>{@code band:<forward band id>} — taken in one of the train's dimensions (either side of spawn)</li>
+ *   <li>moments ({@link Scene}): {@code combat} (two creatures fighting each other), {@code pet_own}
+ *       (an animal tamed to you), {@code pet_echo} (an animal tamed to an Echo), {@code breeding}
+ *       (two animals in love)</li>
  * </ul>
  */
 public final class PhotoSubjects {
@@ -35,6 +38,10 @@ public final class PhotoSubjects {
     public static final String NETHER = "nether";
     public static final String END = "end";
     public static final String CAVE = "cave";
+    public static final String COMBAT = "combat";
+    public static final String PET_OWN = "pet_own";
+    public static final String PET_ECHO = "pet_echo";
+    public static final String BREEDING = "breeding";
 
     /**
      * What one photo shows, already read off the frame and the live entities in it.
@@ -47,6 +54,11 @@ public final class PhotoSubjects {
                         boolean otherEcho, boolean pigmanVillager, boolean killerBunny, boolean technobladePig,
                         boolean inCave, String dimension, String band) {}
 
+    /** What was happening between the creatures in frame, read off the live entities ({@code PhotoScene}). */
+    public record Scene(boolean combat, boolean ownPet, boolean echoPet, boolean breeding) {
+        public static final Scene NONE = new Scene(false, false, false, false);
+    }
+
     /** The train's Nethers — the first one and its second, regrown look. */
     private static final Set<String> NETHER_BANDS = Set.of(BandAdvancements.NETHER, BandAdvancements.BETTER_NETHER);
 
@@ -56,7 +68,15 @@ public final class PhotoSubjects {
     private PhotoSubjects() {}
 
     public static Set<String> keys(Facts f) {
+        return keys(f, Scene.NONE);
+    }
+
+    public static Set<String> keys(Facts f, Scene scene) {
         Set<String> out = new LinkedHashSet<>();
+        if (scene.combat()) out.add(COMBAT);
+        if (scene.ownPet()) out.add(PET_OWN);
+        if (scene.echoPet()) out.add(PET_ECHO);
+        if (scene.breeding()) out.add(BREEDING);
         for (String type : f.entityTypes()) out.add(ENTITY_PREFIX + type);
         if (f.playerMob()) out.add(PLAYERMOB);
         if (f.friend()) out.add(FRIEND_PLAYERMOB);

@@ -1,0 +1,35 @@
+{
+  "parent": "dungeontrain:enchiridion/wildlife_photographer",
+  "display": {
+    "icon": {
+      "id": "minecraft:turtle_scute"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.field_guide.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_count.animal.description",
+      "with": [
+        200
+      ]
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "dungeontrain:photo_count",
+      "conditions": {
+        "category": "animal",
+        "threshold": 200
+      }
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

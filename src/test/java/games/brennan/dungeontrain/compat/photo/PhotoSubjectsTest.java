@@ -61,4 +61,14 @@ final class PhotoSubjectsTest {
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_better_end")).contains("end"));
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:the_end", null)).contains("end"));
     }
+
+    @Test
+    @DisplayName("moments: a fight, your pet, an Echo's pet, a courtship")
+    void moments() {
+        PhotoSubjects.Facts nowhere = where(Set.of(), null, null);
+        assertEquals(Set.of(), PhotoSubjects.keys(nowhere, PhotoSubjects.Scene.NONE));
+        assertEquals(Set.of("combat", "pet_own", "pet_echo", "breeding"),
+                PhotoSubjects.keys(nowhere, new PhotoSubjects.Scene(true, true, true, true)));
+        assertEquals(Set.of("breeding"), PhotoSubjects.keys(nowhere, new PhotoSubjects.Scene(false, false, false, true)));
+    }
 }

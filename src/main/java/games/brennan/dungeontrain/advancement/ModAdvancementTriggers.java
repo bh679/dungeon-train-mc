@@ -131,6 +131,14 @@ public final class ModAdvancementTriggers {
     public static final Supplier<BiomesVisitedTrigger> PHOTO_BIOMES =
         TRIGGERS.register("photo_biomes", BiomesVisitedTrigger::new);
 
+    /** A Tribute paid — whose photo, and what it cost. See {@link PhotoTributeTrigger}. */
+    public static final Supplier<PhotoTributeTrigger> PHOTO_TRIBUTE =
+        TRIGGERS.register("photo_tribute", PhotoTributeTrigger::new);
+
+    /** Photos with an animal / hostile mob / passenger in frame. See {@link PhotoCountTrigger}. */
+    public static final Supplier<PhotoCountTrigger> PHOTO_COUNT =
+        TRIGGERS.register("photo_count", PhotoCountTrigger::new);
+
     private ModAdvancementTriggers() {}
 
     public static void register(IEventBus modBus) {
