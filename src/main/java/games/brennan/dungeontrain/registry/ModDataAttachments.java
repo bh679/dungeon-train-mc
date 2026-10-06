@@ -298,6 +298,21 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * A random id for this life, sent with every photo upload and Tribute so the relay can keep the
+     * one-life photo leaderboards ({@link games.brennan.dungeontrain.compat.photo.SharedPhotos#lifeFields}).
+     * Blank until the life's first photo event mints it.
+     *
+     * <p>Serialized so a mid-life logout keeps the same life, and <b>no</b> {@code copyOnDeath} so every
+     * new life gets a new one — the same shape as {@link #OWN_PHOTO_TRIBUTES_THIS_LIFE}.</p>
+     */
+    public static final Supplier<AttachmentType<String>> PHOTO_LIFE_ID =
+        TYPES.register("photo_life_id",
+            () -> AttachmentType.<String>builder(() -> "")
+                .serialize(Codec.STRING)
+                .build()
+        );
+
     private ModDataAttachments() {}
 
     public static void register(IEventBus modBus) {

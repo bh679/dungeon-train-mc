@@ -168,6 +168,26 @@ public final class SharedPhotos {
 
     private static String newKey() { return UUID.randomUUID().toString().replace("-", ""); }
 
+    /**
+     * Which life a photo event happened in, for the relay's one-life photo boards: this life's id
+     * (minted on its first photo event), whether it is Free Play, and the version playing it. The
+     * relay scores a life only when all three are stated and it is not Free Play — the same rule as
+     * every other one-life board. Upload meta already carries the version as {@code version}.
+     */
+    static void lifeFields(ServerPlayer player, JsonObject json, boolean withVersion) {
+        String lifeId = player.getData(ModDataAttachments.PHOTO_LIFE_ID.get());
+        if (lifeId.isBlank()) {
+            lifeId = newKey();
+            player.setData(ModDataAttachments.PHOTO_LIFE_ID.get(), lifeId);
+        }
+        json.addProperty("lifeId", lifeId);
+        json.addProperty("freePlay", RunIntegrity.isCheated(player));
+        if (withVersion) {
+            ModList.get().getModContainerById(DungeonTrain.MOD_ID)
+                    .ifPresent(mod -> json.addProperty("modVersion", mod.getModInfo().getVersion().toString()));
+        }
+    }
+
     private static String bare(UUID id) { return id.toString().replace("-", ""); }
 
     private static Component line(String family, int count, ServerPlayer player, Object... args) {
@@ -208,6 +228,7 @@ public final class SharedPhotos {
         // Name and price feed the relay's photo leaderboards (Most Photos Tributed, Most Emeralds Tributed).
         body.addProperty("name", player.getGameProfile().getName());
         body.addProperty("cost", cost);
+        lifeFields(player, body, true);
         RelayOutbox.get().enqueue(BOOST_PATH, body.toString());
         return true;
     }
@@ -252,6 +273,7 @@ public final class SharedPhotos {
         JsonObject meta = frameMeta(extraData);
         // Who or what was in the shot, for the relay's passenger / monster / animal photo boards.
         if (subjects.any()) meta.add("subjects", subjects.toJson());
+        lifeFields(player, meta, false);
         meta.addProperty("takenTs", System.currentTimeMillis());
         ModList.get().getModContainerById(DungeonTrain.MOD_ID)
                 .ifPresent(mod -> meta.addProperty("version", mod.getModInfo().getVersion().toString()));
@@ -463,6 +485,7 @@ public final class SharedPhotos {
         body.addProperty("name", player.getGameProfile().getName());
         // The price paid, for the relay's Most Emeralds Tributed board.
         body.addProperty("cost", cost);
+        lifeFields(player, body, true);
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);

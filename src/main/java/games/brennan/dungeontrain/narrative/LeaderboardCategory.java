@@ -112,9 +112,16 @@ public enum LeaderboardCategory {
     TRIBUTE_BIGGEST("tribute_biggest", "tribute_biggest", "Most Expensive Tribute", Scope.TOTAL, Format.COUNT),
     // Photos by what was in the frame (PhotoSubjectTally): a passenger (another player, a PlayerMob
     // or a villager), a hostile mob, or a peaceful creature. One photo counts once per board.
-    PHOTOS_PASSENGERS("photos_passengers", "photos_passengers", "Most Passenger Portraits", Scope.TOTAL, Format.COUNT),
+    PHOTOS_PASSENGERS("photos_passengers", "photos_passengers", "Passenger Portraits", Scope.TOTAL, Format.COUNT),
     PHOTOS_HOSTILE("photos_hostile", "photos_hostile", "Bravest Photographer", Scope.TOTAL, Format.COUNT),
-    PHOTOS_ANIMALS("photos_animals", "photos_animals", "Wildlife Photographer", Scope.TOTAL, Format.COUNT);
+    PHOTOS_ANIMALS("photos_animals", "photos_animals", "Wildlife Photographer", Scope.TOTAL, Format.COUNT),
+    // The one-life halves of the photo boards the player earns themselves (the relay keeps a counter
+    // per life). Tributes received, emeralds spent and the biggest Tribute are all-lives only.
+    PHOTOS_TAKEN_RUN("photos_taken_run", "photos_taken", "Most Photos Taken", Scope.RUN, Format.COUNT),
+    PHOTOS_TRIBUTED_RUN("photos_tributed_run", "photos_tributed", "Most Photos Tributed", Scope.RUN, Format.COUNT),
+    PHOTOS_PASSENGERS_RUN("photos_passengers_run", "photos_passengers", "Passenger Portraits", Scope.RUN, Format.COUNT),
+    PHOTOS_HOSTILE_RUN("photos_hostile_run", "photos_hostile", "Bravest Photographer", Scope.RUN, Format.COUNT),
+    PHOTOS_ANIMALS_RUN("photos_animals_run", "photos_animals", "Wildlife Photographer", Scope.RUN, Format.COUNT);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject
