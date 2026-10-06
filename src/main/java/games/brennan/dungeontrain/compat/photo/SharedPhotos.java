@@ -478,11 +478,12 @@ public final class SharedPhotos {
         // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
+        boolean ownPhoto = isOwnPhoto(held, player.getGameProfile().getName());
         AdvancementPhotoCapture.during(held, () -> {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player,
-                    isOwnPhoto(held, player.getGameProfile().getName())
-                            ? EnchiridionAdvancements.TRIBUTED_OWN_PHOTO : EnchiridionAdvancements.TRIBUTED_OTHERS_PHOTO);
+                    ownPhoto ? EnchiridionAdvancements.TRIBUTED_OWN_PHOTO : EnchiridionAdvancements.TRIBUTED_OTHERS_PHOTO);
+            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, ownPhoto, cost);
             recordView(player, photoId);
         });
         JsonObject body = action(player, photoId);

@@ -75,8 +75,11 @@ public final class PhotoAdvancementEvents {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TOOK_PHOTO);
         try {
             ExtraData data = event.getFrame().extraData();
+            List<LivingEntity> inFrame = event.getEntitiesInFrame();
             ModAdvancementTriggers.PHOTO_SUBJECT.get().trigger(player,
-                    PhotoSubjects.keys(facts(player, data, event.getEntitiesInFrame())));
+                    PhotoSubjects.keys(facts(player, data, inFrame), PhotoScene.of(player, inFrame)));
+            PhotoCounts.record(player, PhotoSubjectTally.of(player, inFrame));
+            PhotoFinalMoments.remember(player, event.getFrame(), inFrame);
             data.get(Frame.BIOME).ifPresent(biome -> recordBiome(player, biome));
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Couldn't read photo subjects for {}: {}", player.getName().getString(), e.toString());

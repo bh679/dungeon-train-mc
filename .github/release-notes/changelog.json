@@ -23638,9 +23638,9 @@
       ],
       "pr": 1852,
       "date": "2026-10-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1176.0",
+      "released_at": "2026-10-06T08:06:48Z"
     },
     {
       "id": "bookshelf-photos-rarer",
@@ -23656,9 +23656,26 @@
       "highlights": [],
       "pr": 1853,
       "date": "2026-10-06",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1176.0",
+      "released_at": "2026-10-06T08:06:48Z"
+    },
+    {
+      "id": "more-hidden-photo-advancements",
+      "version": "0.1176.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New Photography Advancements",
+      "summary": "The camera's advancement tab has new hidden advancements to discover.",
+      "highlights": [],
+      "pr": 1854,
+      "date": "2026-10-06",
+      "released": true,
+      "released_in": "v0.1176.0",
+      "released_at": "2026-10-06T08:06:48Z"
     }
   ]
 }

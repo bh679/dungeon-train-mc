@@ -15029,6 +15029,36 @@
       ]
     }
   },
+  "advancements.dungeontrain.enchiridion.photo_count.animal.description": {
+    "1": {
+      "label": "how many photos with an animal in them",
+      "examples": [
+        "50",
+        "200",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.photo_count.hostile.description": {
+    "1": {
+      "label": "how many photos with a hostile mob in them",
+      "examples": [
+        "50",
+        "200",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.photo_count.passenger.description": {
+    "1": {
+      "label": "how many photos with a passenger (villager, player or PlayerMob) in them",
+      "examples": [
+        "50",
+        "200",
+        "500"
+      ]
+    }
+  },
   "gui.dungeontrain.earned_photos.count": {
     "1": {
       "label": "how many photos a collection album holds",
