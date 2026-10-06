@@ -8707,6 +8707,18 @@
  "dungeontrain.leaderboard.books_praised.header": [
   "book"
  ],
+ "dungeontrain.leaderboard.photos_taken.header": [
+  "book"
+ ],
+ "dungeontrain.leaderboard.photos_tributed.header": [
+  "book"
+ ],
+ "dungeontrain.leaderboard.photo_tributes_received.header": [
+  "book"
+ ],
+ "dungeontrain.leaderboard.tribute_emeralds.header": [
+  "book"
+ ],
  "dungeontrain.leaderboard.books_read.header": [
   "book"
  ],

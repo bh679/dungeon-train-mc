@@ -100,7 +100,14 @@ public enum LeaderboardCategory {
     // Books the community liked: an author's shared books whose up-votes beat down-votes better
     // than ten to one. The Credits page's Writers card reads this one; books_written above counts
     // everything ever submitted.
-    BOOKS_PRAISED("books_praised", "books_praised", "Most Praised Writers", Scope.NONE, Format.COUNT);
+    BOOKS_PRAISED("books_praised", "books_praised", "Most Praised Writers", Scope.NONE, Format.COUNT),
+    // The photo boards, off the relay's per-player photo counters. Lifetime tallies like the note
+    // boards, so Scope.TOTAL. Tributes received counts other people's only — paying your own photo
+    // is not being admired. Emeralds spent is every Tribute's price, found photos and own prints.
+    PHOTOS_TAKEN("photos_taken", "photos_taken", "Most Photos Taken", Scope.TOTAL, Format.COUNT),
+    PHOTOS_TRIBUTED("photos_tributed", "photos_tributed", "Most Photos Tributed", Scope.TOTAL, Format.COUNT),
+    PHOTO_TRIBUTES_RECEIVED("photo_tributes_received", "photo_tributes_received", "Most Tributed Photographer", Scope.TOTAL, Format.COUNT),
+    TRIBUTE_EMERALDS("tribute_emeralds", "tribute_emeralds", "Most Emeralds Tributed", Scope.TOTAL, Format.COUNT);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject

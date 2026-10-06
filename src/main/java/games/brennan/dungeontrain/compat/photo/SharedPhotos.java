@@ -197,13 +197,16 @@ public final class SharedPhotos {
      * {@link #OWN_BOOST_FACTOR}× the views. Safe to send before the upload itself — the relay holds the
      * boost until the photo arrives. Returns false when the print was never uploaded (no key).
      */
-    public static boolean boostOwnUpload(ServerPlayer player, ItemStack print) {
+    public static boolean boostOwnUpload(ServerPlayer player, ItemStack print, int cost) {
         Frame frame = print.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         String key = frame == null ? "" : frame.extraData().getString(UPLOAD_KEY);
         if (key.isBlank()) return false;
         JsonObject body = new JsonObject();
         body.addProperty("uuid", bare(player.getUUID()));
         body.addProperty("key", key);
+        // Name and price feed the relay's photo leaderboards (Most Photos Tributed, Most Emeralds Tributed).
+        body.addProperty("name", player.getGameProfile().getName());
+        body.addProperty("cost", cost);
         RelayOutbox.get().enqueue(BOOST_PATH, body.toString());
         return true;
     }
@@ -455,6 +458,8 @@ public final class SharedPhotos {
         });
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
+        // The price paid, for the relay's Most Emeralds Tributed board.
+        body.addProperty("cost", cost);
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);

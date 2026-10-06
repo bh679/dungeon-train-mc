@@ -35,7 +35,8 @@ class LeaderboardCategoryTest {
         "deathnotes_written", "deathnotes_fought", "deathnotes_people",
         "lovenotes_written", "lovenotes_received", "lovenotes_people", "lovenotes_admirers",
         "book_votes", "translations", "donations", "donations_single",
-        "builder_time", "builds_approved", "templates_built", "books_praised");
+        "builder_time", "builds_approved", "templates_built", "books_praised",
+        "photos_taken", "photos_tributed", "photo_tributes_received", "tribute_emeralds");
 
     @Test
     @DisplayName("every category id matches one the relay serves, and none is missing")
