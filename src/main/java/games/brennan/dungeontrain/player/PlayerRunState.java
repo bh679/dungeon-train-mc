@@ -204,6 +204,20 @@ public final class PlayerRunState {
     private int deathNotesWritten;
     private int loveNotesWritten;
     /**
+     * This life's photo tallies — the one-life twins of the photo leaderboards, counted where the
+     * relay is told ({@code SharedPhotos}), so the Faulthurst note and the board agree. Photos taken
+     * (shared prints), Tributes paid (to found photos and to the player's own prints), and shared
+     * photos with a passenger / a monster / an animal in frame ({@code PhotoSubjectTally}).
+     *
+     * <p>In-memory only, NOT in {@link #CODEC}, for the same 16-field reason as the note counts above:
+     * a relog mid-life resets the note's number, never the relay's board.</p>
+     */
+    private int photosTaken;
+    private int photosTributed;
+    private int photosPassengers;
+    private int photosHostile;
+    private int photosAnimals;
+    /**
      * Visual identity of the PlayerMob that likes this player most this run — the
      * death-screen "friend" portrait — captured while it is loaded near the player
      * and only kept when its feeling clears the friend threshold (see
@@ -635,6 +649,33 @@ public final class PlayerRunState {
         return ++loveNotesWritten;
     }
 
+    /** Shared photos taken this run. */
+    public int photosTaken() { return photosTaken; }
+
+    /** Tributes paid this run — to found photos and to the player's own prints. */
+    public int photosTributed() { return photosTributed; }
+
+    /** Shared photos this run with another player, a PlayerMob or a villager in frame. */
+    public int photosPassengers() { return photosPassengers; }
+
+    /** Shared photos this run with a hostile mob in frame. */
+    public int photosHostile() { return photosHostile; }
+
+    /** Shared photos this run with a peaceful creature in frame. */
+    public int photosAnimals() { return photosAnimals; }
+
+    /** One shared photo, and what was in it. */
+    public void recordPhotoTaken(boolean passengers, boolean hostile, boolean animals) {
+        photosTaken++;
+        if (passengers) photosPassengers++;
+        if (hostile) photosHostile++;
+        if (animals) photosAnimals++;
+    }
+
+    public int incrementPhotosTributed() {
+        return ++photosTributed;
+    }
+
     /**
      * Record a narrative letter (key {@code storyBasename + "#" + letterIndex})
      * read at a lectern this run.
@@ -825,6 +866,11 @@ public final class PlayerRunState {
         lastOwnShelfPair = NO_OWN_SHELF_PAIR;
         deathNotesWritten = 0;
         loveNotesWritten = 0;
+        photosTaken = 0;
+        photosTributed = 0;
+        photosPassengers = 0;
+        photosHostile = 0;
+        photosAnimals = 0;
         narrativeLetters.clear();
         earnedAdvancements.clear();
         servedBookToCarriage.clear();

@@ -45,6 +45,12 @@
  "book.dungeontrain.statbook.open.9": [
   "book"
  ],
+ "book.dungeontrain.statbook.stat.animal_photos.one": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.animal_photos.other": [
+  "book"
+ ],
  "book.dungeontrain.statbook.stat.backwards.one": [
   "book"
  ],
@@ -129,6 +135,12 @@
  "book.dungeontrain.statbook.stat.mob_kills.other": [
   "book"
  ],
+ "book.dungeontrain.statbook.stat.monster_photos.one": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.monster_photos.other": [
+  "book"
+ ],
  "book.dungeontrain.statbook.stat.no_chest.one": [
   "book"
  ],
@@ -139,6 +151,18 @@
   "book"
  ],
  "book.dungeontrain.statbook.stat.pacifist.other": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.passenger_photos.one": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.passenger_photos.other": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.photos.one": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.photos.other": [
   "book"
  ],
  "book.dungeontrain.statbook.stat.player_kills.none.one": [
@@ -160,6 +184,12 @@
   "book"
  ],
  "book.dungeontrain.statbook.stat.tamed.other": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.tributes.one": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.tributes.other": [
   "book"
  ],
  "book.dungeontrain.statbook.tail.0": [

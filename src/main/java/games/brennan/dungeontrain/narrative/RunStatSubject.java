@@ -70,7 +70,15 @@ public enum RunStatSubject {
     // above already had one; these two are boards kept as lifetime tallies whose one-life half is
     // nonetheless a real, countable thing — so Faulthurst can remark on it.
     DEATH_NOTES("death_notes", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::deathNotesWritten, "deathnotes_written"),
-    LOVE_NOTES("love_notes", Format.COUNT, 1, Tone.KIND, PlayerRunState::loveNotesWritten, "lovenotes_written");
+    LOVE_NOTES("love_notes", Format.COUNT, 1, Tone.KIND, PlayerRunState::loveNotesWritten, "lovenotes_written"),
+
+    // The one-life photo boards. Counted where the relay is told (SharedPhotos), so the note and the
+    // board agree; Tributes received and emeralds spent have no one-life board and so no subject.
+    PHOTOS("photos", Format.COUNT, 1, Tone.KIND, PlayerRunState::photosTaken, "photos_taken"),
+    TRIBUTES("tributes", Format.COUNT, 1, Tone.KIND, PlayerRunState::photosTributed, "photos_tributed"),
+    PASSENGER_PHOTOS("passenger_photos", Format.COUNT, 1, Tone.KIND, PlayerRunState::photosPassengers, "photos_passengers"),
+    MONSTER_PHOTOS("monster_photos", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::photosHostile, "photos_hostile"),
+    ANIMAL_PHOTOS("animal_photos", Format.COUNT, 1, Tone.KIND, PlayerRunState::photosAnimals, "photos_animals");
 
     /**
      * Vanilla server tick rate — {@link #PLAYTIME} reports seconds, not ticks.

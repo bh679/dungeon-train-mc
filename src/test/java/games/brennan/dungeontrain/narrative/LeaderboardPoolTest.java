@@ -260,7 +260,7 @@ class LeaderboardPoolTest {
         LeaderboardPool.applyEras(ERAS);
         List<LeaderboardPool.BoardKey> keys = LeaderboardPool.warmKeys();
         int oneLife = LeaderboardPool.eraCategories().size();
-        assertEquals(8, oneLife);
+        assertEquals(13, oneLife);
         assertEquals(all + 3 * oneLife, keys.size());
         assertTrue(keys.subList(0, all).stream().allMatch(LeaderboardPool.BoardKey::isCurrent));
         assertTrue(keys.subList(all, keys.size()).stream().noneMatch(LeaderboardPool.BoardKey::isCurrent));

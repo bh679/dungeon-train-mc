@@ -206,11 +206,14 @@ public final class SharedPhotos {
         String key = newKey();
         // The print carries its upload key, so a Tribute from its photographer can boost it later.
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable().updateExtraData(tag -> tag.putString(UPLOAD_KEY, key)).toImmutable());
+        PhotoSubjectTally.Subjects subjects = PhotoSubjectTally.take(frame.identifier().id());
         List<PendingUpload> next = new ArrayList<>(pendingUploads);
         next.add(new PendingUpload(player.getUUID(), player.getGameProfile().getName(),
-                frame.identifier().id(), key,
-                buildMeta(player, frame.extraData(), PhotoSubjectTally.take(frame.identifier().id())), PIXEL_WAIT_TICKS));
+                frame.identifier().id(), key, buildMeta(player, frame.extraData(), subjects), PIXEL_WAIT_TICKS));
         pendingUploads = List.copyOf(next);
+        // This life's tally, for the Faulthurst note that twins the one-life photo boards.
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals());
     }
 
     /**
@@ -230,6 +233,7 @@ public final class SharedPhotos {
         body.addProperty("cost", cost);
         lifeFields(player, body, true);
         RelayOutbox.get().enqueue(BOOST_PATH, body.toString());
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         return true;
     }
 
@@ -487,6 +491,7 @@ public final class SharedPhotos {
         body.addProperty("cost", cost);
         lifeFields(player, body, true);
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
         player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, VIEWS_MAX));
