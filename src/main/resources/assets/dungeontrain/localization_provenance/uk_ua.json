@@ -4275,6 +4275,8 @@
   },
   "source_changed": {
     "dungeontrain": [
+      "gui.dungeontrain.loading.story.2.line.3",
+      "gui.dungeontrain.loading.story.9.line.28",
       "advancements.dungeontrain.dungeon_train.the_enchiridion.description"
     ],
     "adventureitemnames": [],
