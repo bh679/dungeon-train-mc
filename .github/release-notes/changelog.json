@@ -23619,6 +23619,28 @@
       "released": true,
       "released_in": "v0.1173.0",
       "released_at": "2026-10-05T16:30:57Z"
+    },
+    {
+      "id": "photo-tribute-leaderboards",
+      "version": "0.1174.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Photo & Tribute leaderboards",
+      "summary": "Thirteen new leaderboard books for the camera: who takes the most photos, who pays the most Tribute, whose photos other passengers honour most, and who has spent the most emeralds doing it.",
+      "highlights": [
+        "Most Photos Taken, Most Photos Tributed, Passenger Portraits, Bravest Photographer and Wildlife Photographer, each with an All Lives and a One Life board",
+        "Most Tributed Photographer counts only Tributes other players pay to your photos",
+        "Most Emeralds Tributed and Most Expensive Tribute count Tributes to your own prints and to other players' photos",
+        "Passenger, monster and animal boards fill from photos taken from this update on"
+      ],
+      "pr": 1852,
+      "date": "2026-10-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
