@@ -188,7 +188,8 @@ public final class SharedPhotos {
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable().updateExtraData(tag -> tag.putString(UPLOAD_KEY, key)).toImmutable());
         List<PendingUpload> next = new ArrayList<>(pendingUploads);
         next.add(new PendingUpload(player.getUUID(), player.getGameProfile().getName(),
-                frame.identifier().id(), key, buildMeta(player, frame.extraData()), PIXEL_WAIT_TICKS));
+                frame.identifier().id(), key,
+                buildMeta(player, frame.extraData(), PhotoSubjectTally.take(frame.identifier().id())), PIXEL_WAIT_TICKS));
         pendingUploads = List.copyOf(next);
     }
 
@@ -247,8 +248,10 @@ public final class SharedPhotos {
     }
 
     /** Where and when the photo was taken: the frame's own details plus the photographer's run. */
-    private static JsonObject buildMeta(ServerPlayer player, CompoundTag extraData) {
+    private static JsonObject buildMeta(ServerPlayer player, CompoundTag extraData, PhotoSubjectTally.Subjects subjects) {
         JsonObject meta = frameMeta(extraData);
+        // Who or what was in the shot, for the relay's passenger / monster / animal photo boards.
+        if (subjects.any()) meta.add("subjects", subjects.toJson());
         meta.addProperty("takenTs", System.currentTimeMillis());
         ModList.get().getModContainerById(DungeonTrain.MOD_ID)
                 .ifPresent(mod -> meta.addProperty("version", mod.getModInfo().getVersion().toString()));

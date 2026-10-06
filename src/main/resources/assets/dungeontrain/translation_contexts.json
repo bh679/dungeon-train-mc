@@ -8719,6 +8719,18 @@
  "dungeontrain.leaderboard.tribute_emeralds.header": [
   "book"
  ],
+ "dungeontrain.leaderboard.tribute_biggest.header": [
+  "book"
+ ],
+ "dungeontrain.leaderboard.photos_passengers.header": [
+  "book"
+ ],
+ "dungeontrain.leaderboard.photos_hostile.header": [
+  "book"
+ ],
+ "dungeontrain.leaderboard.photos_animals.header": [
+  "book"
+ ],
  "dungeontrain.leaderboard.books_read.header": [
   "book"
  ],

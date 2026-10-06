@@ -107,7 +107,14 @@ public enum LeaderboardCategory {
     PHOTOS_TAKEN("photos_taken", "photos_taken", "Most Photos Taken", Scope.TOTAL, Format.COUNT),
     PHOTOS_TRIBUTED("photos_tributed", "photos_tributed", "Most Photos Tributed", Scope.TOTAL, Format.COUNT),
     PHOTO_TRIBUTES_RECEIVED("photo_tributes_received", "photo_tributes_received", "Most Tributed Photographer", Scope.TOTAL, Format.COUNT),
-    TRIBUTE_EMERALDS("tribute_emeralds", "tribute_emeralds", "Most Emeralds Tributed", Scope.TOTAL, Format.COUNT);
+    TRIBUTE_EMERALDS("tribute_emeralds", "tribute_emeralds", "Most Emeralds Tributed", Scope.TOTAL, Format.COUNT),
+    // The single priciest Tribute a player has paid — a record, not a running total.
+    TRIBUTE_BIGGEST("tribute_biggest", "tribute_biggest", "Most Expensive Tribute", Scope.TOTAL, Format.COUNT),
+    // Photos by what was in the frame (PhotoSubjectTally): a passenger (another player, a PlayerMob
+    // or a villager), a hostile mob, or a peaceful creature. One photo counts once per board.
+    PHOTOS_PASSENGERS("photos_passengers", "photos_passengers", "Most Passenger Portraits", Scope.TOTAL, Format.COUNT),
+    PHOTOS_HOSTILE("photos_hostile", "photos_hostile", "Bravest Photographer", Scope.TOTAL, Format.COUNT),
+    PHOTOS_ANIMALS("photos_animals", "photos_animals", "Wildlife Photographer", Scope.TOTAL, Format.COUNT);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject
