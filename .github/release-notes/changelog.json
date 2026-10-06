@@ -9065,6 +9065,23 @@
       "released_at": "2026-08-12T15:07:04Z"
     },
     {
+      "id": "release-help-translate",
+      "version": "0.552.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Help Translate",
+      "summary": "Fix Dungeon Train's text in your own language from inside the game. Your fixes reach everyone playing in that language, with no update to install.",
+      "highlights": [],
+      "date": "2026-08-11",
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:00Z",
+      "major": true,
+      "description": "Dungeon Train speaks nineteen languages besides English, and most of those lines were written by a machine. Now the people who actually speak them can put them right. **Options \u2192 Language \u2192 Help Translate** opens every line the mod ships, with the English beside it and your language's current wording ready to edit.\n\n- Filter to the lines no human has ever checked\n- Work in a batch, and nothing leaves the game until you press Submit\n- Once a reviewer approves a fix, it reaches every player in that language the next time they start the game. No update needed\n- Translators are named in the credits, and the language list's AI ring shrinks as lines get human-checked\n- Prefer your own tools? Export and import the files\n\nThank you to everyone who has already sent fixes in."
+    },
+    {
       "id": "release-dimensional-carriages",
       "version": "0.556.0",
       "type": "docs",
