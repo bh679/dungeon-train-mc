@@ -54,6 +54,8 @@ public final class EnchiridionAdvancements {
     public static final String PHOTOGRAPHED_BY_PLAYERMOB = "photographed_by_playermob";
     /** Opened a found photo (or paid it Tribute) — "Found Footage", parent of the found-photo advancements. */
     public static final String VIEWED_FOUND_PHOTO = "viewed_found_photo";
+    /** A creature that was in a player's photo died within a second of the shot — "Final Moments". */
+    public static final String PHOTO_FINAL_MOMENTS = "photo_final_moments";
 
     /** Prefix of the per-dimension photo advancements: {@code enchiridion/photo_<dimension>}. */
     public static final String PHOTO_PREFIX = "photo_";
