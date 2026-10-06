@@ -23678,15 +23678,15 @@
       "released_at": "2026-10-06T08:06:48Z"
     },
     {
-      "id": "freeplay-photos-no-circulation",
+      "id": "community-photo-sharing-tidy",
       "version": "0.1177.0",
       "type": "fix",
       "tags": [
         "fix",
         "community"
       ],
-      "title": "Free Play photos stay with you",
-      "summary": "Photos taken during a Free Play run are no longer sent off to be found by other players. They stay in your own world.",
+      "title": "Community photo sharing fixes",
+      "summary": "Small fixes to how community photos are shared.",
       "highlights": [],
       "pr": 1856,
       "date": "2026-10-06",
