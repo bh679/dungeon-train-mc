@@ -67,7 +67,7 @@ import java.util.stream.Stream;
 
 /**
  * Community photos — the picture counterpart of shared books. A disposable-camera print is uploaded
- * to the relay, losslessly, when it is printed; photos from other players are kept in a small
+ * to the relay, losslessly, when it is printed (never from a Free Play run); photos from other players are kept in a small
  * pre-decoded pool and handed out as ordinary Exposure photographs when a container rolls
  * {@code dungeontrain:random_playerphoto}.
  *
@@ -203,17 +203,19 @@ public final class SharedPhotos {
         Frame frame = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         // Projected frames are images from outside the game — never shared.
         if (frame == null || frame.isProjected() || !frame.identifier().isId()) return;
+        PhotoSubjectTally.Subjects subjects = PhotoSubjectTally.take(frame.identifier().id());
+        // This life's tally, for the Faulthurst note that twins the one-life photo boards.
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals());
+        // A Free Play photo stays with its photographer: it is never sent to be found by other players.
+        if (RunIntegrity.isCheated(player)) return;
         String key = newKey();
         // The print carries its upload key, so a Tribute from its photographer can boost it later.
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable().updateExtraData(tag -> tag.putString(UPLOAD_KEY, key)).toImmutable());
-        PhotoSubjectTally.Subjects subjects = PhotoSubjectTally.take(frame.identifier().id());
         List<PendingUpload> next = new ArrayList<>(pendingUploads);
         next.add(new PendingUpload(player.getUUID(), player.getGameProfile().getName(),
                 frame.identifier().id(), key, buildMeta(player, frame.extraData(), subjects), PIXEL_WAIT_TICKS));
         pendingUploads = List.copyOf(next);
-        // This life's tally, for the Faulthurst note that twins the one-life photo boards.
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
-                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals());
     }
 
     /**
