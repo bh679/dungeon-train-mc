@@ -651,6 +651,21 @@ tasks.named('test', Test).configure {
     maxHeapSize = '2g'
     testLogging {
         events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+    // Every test prints a PASSED line, so a failure scrolls thousands of lines up a CI log that is
+    // only ever read from the tail. Repeat the failures, with their messages, after the suite.
+    def failedTests = []
+    afterTest { desc, result ->
+        if (result.resultType == TestResult.ResultType.FAILURE) {
+            failedTests << "${desc.className} > ${desc.displayName}: ${result.exception?.message?.readLines()?.find() ?: ''}"
+        }
+    }
+    afterSuite { desc, result ->
+        if (desc.parent == null && !failedTests.isEmpty()) {
+            logger.lifecycle("\nFAILED TESTS (${failedTests.size()}):")
+            failedTests.each { logger.lifecycle("  - ${it}") }
+        }
     }
 }
 

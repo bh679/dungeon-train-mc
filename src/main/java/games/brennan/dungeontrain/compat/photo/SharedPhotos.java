@@ -168,6 +168,26 @@ public final class SharedPhotos {
 
     private static String newKey() { return UUID.randomUUID().toString().replace("-", ""); }
 
+    /**
+     * Which life a photo event happened in, for the relay's one-life photo boards: this life's id
+     * (minted on its first photo event), whether it is Free Play, and the version playing it. The
+     * relay scores a life only when all three are stated and it is not Free Play — the same rule as
+     * every other one-life board. Upload meta already carries the version as {@code version}.
+     */
+    static void lifeFields(ServerPlayer player, JsonObject json, boolean withVersion) {
+        String lifeId = player.getData(ModDataAttachments.PHOTO_LIFE_ID.get());
+        if (lifeId.isBlank()) {
+            lifeId = newKey();
+            player.setData(ModDataAttachments.PHOTO_LIFE_ID.get(), lifeId);
+        }
+        json.addProperty("lifeId", lifeId);
+        json.addProperty("freePlay", RunIntegrity.isCheated(player));
+        if (withVersion) {
+            ModList.get().getModContainerById(DungeonTrain.MOD_ID)
+                    .ifPresent(mod -> json.addProperty("modVersion", mod.getModInfo().getVersion().toString()));
+        }
+    }
+
     private static String bare(UUID id) { return id.toString().replace("-", ""); }
 
     private static Component line(String family, int count, ServerPlayer player, Object... args) {
@@ -186,10 +206,14 @@ public final class SharedPhotos {
         String key = newKey();
         // The print carries its upload key, so a Tribute from its photographer can boost it later.
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable().updateExtraData(tag -> tag.putString(UPLOAD_KEY, key)).toImmutable());
+        PhotoSubjectTally.Subjects subjects = PhotoSubjectTally.take(frame.identifier().id());
         List<PendingUpload> next = new ArrayList<>(pendingUploads);
         next.add(new PendingUpload(player.getUUID(), player.getGameProfile().getName(),
-                frame.identifier().id(), key, buildMeta(player, frame.extraData()), PIXEL_WAIT_TICKS));
+                frame.identifier().id(), key, buildMeta(player, frame.extraData(), subjects), PIXEL_WAIT_TICKS));
         pendingUploads = List.copyOf(next);
+        // This life's tally, for the Faulthurst note that twins the one-life photo boards.
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals());
     }
 
     /**
@@ -197,14 +221,19 @@ public final class SharedPhotos {
      * {@link #OWN_BOOST_FACTOR}× the views. Safe to send before the upload itself — the relay holds the
      * boost until the photo arrives. Returns false when the print was never uploaded (no key).
      */
-    public static boolean boostOwnUpload(ServerPlayer player, ItemStack print) {
+    public static boolean boostOwnUpload(ServerPlayer player, ItemStack print, int cost) {
         Frame frame = print.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         String key = frame == null ? "" : frame.extraData().getString(UPLOAD_KEY);
         if (key.isBlank()) return false;
         JsonObject body = new JsonObject();
         body.addProperty("uuid", bare(player.getUUID()));
         body.addProperty("key", key);
+        // Name and price feed the relay's photo leaderboards (Most Photos Tributed, Most Emeralds Tributed).
+        body.addProperty("name", player.getGameProfile().getName());
+        body.addProperty("cost", cost);
+        lifeFields(player, body, true);
         RelayOutbox.get().enqueue(BOOST_PATH, body.toString());
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         return true;
     }
 
@@ -244,8 +273,11 @@ public final class SharedPhotos {
     }
 
     /** Where and when the photo was taken: the frame's own details plus the photographer's run. */
-    private static JsonObject buildMeta(ServerPlayer player, CompoundTag extraData) {
+    private static JsonObject buildMeta(ServerPlayer player, CompoundTag extraData, PhotoSubjectTally.Subjects subjects) {
         JsonObject meta = frameMeta(extraData);
+        // Who or what was in the shot, for the relay's passenger / monster / animal photo boards.
+        if (subjects.any()) meta.add("subjects", subjects.toJson());
+        lifeFields(player, meta, false);
         meta.addProperty("takenTs", System.currentTimeMillis());
         ModList.get().getModContainerById(DungeonTrain.MOD_ID)
                 .ifPresent(mod -> meta.addProperty("version", mod.getModInfo().getVersion().toString()));
@@ -455,7 +487,11 @@ public final class SharedPhotos {
         });
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
+        // The price paid, for the relay's Most Emeralds Tributed board.
+        body.addProperty("cost", cost);
+        lifeFields(player, body, true);
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
         player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, VIEWS_MAX));

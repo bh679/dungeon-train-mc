@@ -100,7 +100,28 @@ public enum LeaderboardCategory {
     // Books the community liked: an author's shared books whose up-votes beat down-votes better
     // than ten to one. The Credits page's Writers card reads this one; books_written above counts
     // everything ever submitted.
-    BOOKS_PRAISED("books_praised", "books_praised", "Most Praised Writers", Scope.NONE, Format.COUNT);
+    BOOKS_PRAISED("books_praised", "books_praised", "Most Praised Writers", Scope.NONE, Format.COUNT),
+    // The photo boards, off the relay's per-player photo counters. Lifetime tallies like the note
+    // boards, so Scope.TOTAL. Tributes received counts other people's only — paying your own photo
+    // is not being admired. Emeralds spent is every Tribute's price, found photos and own prints.
+    PHOTOS_TAKEN("photos_taken", "photos_taken", "Most Photos Taken", Scope.TOTAL, Format.COUNT),
+    PHOTOS_TRIBUTED("photos_tributed", "photos_tributed", "Most Photos Tributed", Scope.TOTAL, Format.COUNT),
+    PHOTO_TRIBUTES_RECEIVED("photo_tributes_received", "photo_tributes_received", "Most Tributed Photographer", Scope.TOTAL, Format.COUNT),
+    TRIBUTE_EMERALDS("tribute_emeralds", "tribute_emeralds", "Most Emeralds Tributed", Scope.TOTAL, Format.COUNT),
+    // The single priciest Tribute a player has paid — a record, not a running total.
+    TRIBUTE_BIGGEST("tribute_biggest", "tribute_biggest", "Most Expensive Tribute", Scope.TOTAL, Format.COUNT),
+    // Photos by what was in the frame (PhotoSubjectTally): a passenger (another player, a PlayerMob
+    // or a villager), a hostile mob, or a peaceful creature. One photo counts once per board.
+    PHOTOS_PASSENGERS("photos_passengers", "photos_passengers", "Passenger Portraits", Scope.TOTAL, Format.COUNT),
+    PHOTOS_HOSTILE("photos_hostile", "photos_hostile", "Bravest Photographer", Scope.TOTAL, Format.COUNT),
+    PHOTOS_ANIMALS("photos_animals", "photos_animals", "Wildlife Photographer", Scope.TOTAL, Format.COUNT),
+    // The one-life halves of the photo boards the player earns themselves (the relay keeps a counter
+    // per life). Tributes received, emeralds spent and the biggest Tribute are all-lives only.
+    PHOTOS_TAKEN_RUN("photos_taken_run", "photos_taken", "Most Photos Taken", Scope.RUN, Format.COUNT),
+    PHOTOS_TRIBUTED_RUN("photos_tributed_run", "photos_tributed", "Most Photos Tributed", Scope.RUN, Format.COUNT),
+    PHOTOS_PASSENGERS_RUN("photos_passengers_run", "photos_passengers", "Passenger Portraits", Scope.RUN, Format.COUNT),
+    PHOTOS_HOSTILE_RUN("photos_hostile_run", "photos_hostile", "Bravest Photographer", Scope.RUN, Format.COUNT),
+    PHOTOS_ANIMALS_RUN("photos_animals_run", "photos_animals", "Wildlife Photographer", Scope.RUN, Format.COUNT);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject

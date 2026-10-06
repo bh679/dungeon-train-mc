@@ -126,7 +126,7 @@ public final class OwnPhotoTribute {
         });
         int tributeNumber = player.getData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get()) + 1;
         player.setData(ModDataAttachments.OWN_PHOTO_TRIBUTES_THIS_LIFE.get(), tributeNumber);
-        if (!SharedPhotos.boostOwnUpload(player, held)) {
+        if (!SharedPhotos.boostOwnUpload(player, held, cost)) {
             LOGGER.debug("[DungeonTrain] Own photo {} was never uploaded; posted, but nothing to boost.", frame.identifier().id());
         }
         SharedPhotos.encodeForDiscord(server, data.get(), PhotoPaperTextures.paper(PhotographType.REGULAR), frame.identifier().id(),

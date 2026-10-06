@@ -66,6 +66,7 @@ public final class PhotoAdvancementEvents {
     @SubscribeEvent
     public static void onFrameAdded(FrameAddedEvent event) {
         if (!(event.getCameraHolderEntity() instanceof ServerPlayer player)) return;
+        rememberSubjects(player, event);
         // Every advancement this shot earns remembers it — see AdvancementPhotoCapture.
         AdvancementPhotoCapture.during(event.getFrame(), () -> photoTriggers(player, event));
     }
@@ -79,6 +80,17 @@ public final class PhotoAdvancementEvents {
             data.get(Frame.BIOME).ifPresent(biome -> recordBiome(player, biome));
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Couldn't read photo subjects for {}: {}", player.getName().getString(), e.toString());
+        }
+    }
+
+    /** Hold what the shot shows until its print uploads — the relay's photo-subject boards. */
+    private static void rememberSubjects(ServerPlayer player, FrameAddedEvent event) {
+        try {
+            Frame frame = event.getFrame();
+            if (!frame.identifier().isId()) return;
+            PhotoSubjectTally.record(frame.identifier().id(), PhotoSubjectTally.of(player, event.getEntitiesInFrame()));
+        } catch (RuntimeException e) {
+            LOGGER.debug("[DungeonTrain] Couldn't tally photo subjects for {}: {}", player.getName().getString(), e.toString());
         }
     }
 
