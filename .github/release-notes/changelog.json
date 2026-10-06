@@ -23676,6 +23676,23 @@
       "released": true,
       "released_in": "v0.1176.0",
       "released_at": "2026-10-06T08:06:48Z"
+    },
+    {
+      "id": "freeplay-photos-no-circulation",
+      "version": "0.1177.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Free Play photos stay with you",
+      "summary": "Photos taken during a Free Play run are no longer sent off to be found by other players. They stay in your own world.",
+      "highlights": [],
+      "pr": 1856,
+      "date": "2026-10-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
