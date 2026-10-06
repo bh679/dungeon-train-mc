@@ -23641,6 +23641,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "more-hidden-photo-advancements",
+      "version": "0.1175.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "More Photography Advancements",
+      "summary": "The camera's advancement tab has 23 new hidden advancements to find. Some reward generous Tributes, some reward a lot of photos, and some reward being in the right place at exactly the right moment.",
+      "highlights": [
+        "Big Tributes, to other people's photos and to your own, now earn their own advancements",
+        "Keep photographing animals, monsters and fellow passengers to unlock new tiers",
+        "A few shots now count for more if your timing is perfect"
+      ],
+      "pr": 1854,
+      "date": "2026-10-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
