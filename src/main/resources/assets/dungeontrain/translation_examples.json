@@ -449,6 +449,96 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.stat.photos.one": {
+    "1": {
+      "label": "Shared photos the reader has taken this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.photos.other": {
+    "1": {
+      "label": "Shared photos the reader has taken this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.tributes.one": {
+    "1": {
+      "label": "Tributes the reader has paid this run, to found photos and their own prints",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.tributes.other": {
+    "1": {
+      "label": "Tributes the reader has paid this run, to found photos and their own prints",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.passenger_photos.one": {
+    "1": {
+      "label": "Shared photos with another player, a PlayerMob or a villager in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.passenger_photos.other": {
+    "1": {
+      "label": "Shared photos with another player, a PlayerMob or a villager in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.monster_photos.one": {
+    "1": {
+      "label": "Shared photos with a hostile mob in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.monster_photos.other": {
+    "1": {
+      "label": "Shared photos with a hostile mob in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.animal_photos.one": {
+    "1": {
+      "label": "Shared photos with an animal in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.animal_photos.other": {
+    "1": {
+      "label": "Shared photos with an animal in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.mob_kills.one": {
     "1": {
       "label": "creatures the reader has killed this run",
