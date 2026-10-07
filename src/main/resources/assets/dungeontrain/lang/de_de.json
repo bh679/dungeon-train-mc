@@ -652,7 +652,7 @@
   "chat.dungeontrain.own_photo_tribute.paid.1": "Der Zug nimmt deinen Tribut – und dein Foto.",
   "chat.dungeontrain.own_photo_tribute.paid.2": "Tribut bezahlt. Foto genommen.",
   "chat.dungeontrain.own_photo_tribute.paid.3": "Ein Tribut für deine eigene Erinnerung.",
-  "gui.dungeontrain.own_photo_trash.tooltip": "Wegwerfen: Es ist für niemanden sonst.",
+  "gui.dungeontrain.own_photo_trash.tooltip": "Wegwerfen",
   "chat.dungeontrain.own_photo_trash.1": "Weg. Nur du hast es je gesehen.",
   "chat.dungeontrain.own_photo_trash.2": "Verbrannt. Es wird nicht mit dem Zug reisen.",
   "chat.dungeontrain.own_photo_trash.3": "Das bleibt zwischen dir und dem Feuer.",

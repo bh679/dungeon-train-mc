@@ -735,7 +735,7 @@
   "chat.dungeontrain.own_photo_tribute.paid.1": "Потяг забирає твою данину, і твоє фото.",
   "chat.dungeontrain.own_photo_tribute.paid.2": "Данину сплачено. Фото забрано.",
   "chat.dungeontrain.own_photo_tribute.paid.3": "Данина власному спогаду.",
-  "gui.dungeontrain.own_photo_trash.tooltip": "Викинути: це ні для кого більше.",
+  "gui.dungeontrain.own_photo_trash.tooltip": "Викинути",
   "chat.dungeontrain.own_photo_trash.1": "Немає. Бачив її лише ти.",
   "chat.dungeontrain.own_photo_trash.2": "Згоріла. Потягом вона не поїде.",
   "chat.dungeontrain.own_photo_trash.3": "Це залишиться між тобою та вогнем.",

@@ -107,6 +107,7 @@ public final class PhotoTributeButtons {
             .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have", emeralds))));
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
             .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT)
+            .tooltip(Tooltip.create(closeLabel))
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
         event.addListener(views);
         event.addListener(tribute);
@@ -143,6 +144,7 @@ public final class PhotoTributeButtons {
         }
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
             .bounds(left + tributeWidth, y, closeWidth, HEIGHT)
+            .tooltip(Tooltip.create(closeLabel))
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
         event.addListener(close);
         buttons.add(close);

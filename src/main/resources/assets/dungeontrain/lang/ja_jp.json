@@ -625,7 +625,7 @@
   "chat.dungeontrain.own_photo_tribute.paid.1": "列車は君の貢ぎ物を、そして君の写真を受け取る。",
   "chat.dungeontrain.own_photo_tribute.paid.2": "貢ぎ物を支払った。写真は持っていかれた。",
   "chat.dungeontrain.own_photo_tribute.paid.3": "自分の思い出への貢ぎ物。",
-  "gui.dungeontrain.own_photo_trash.tooltip": "捨てる：ほかの誰のものでもない。",
+  "gui.dungeontrain.own_photo_trash.tooltip": "捨てる",
   "chat.dungeontrain.own_photo_trash.1": "消えた。見たのは君だけだ。",
   "chat.dungeontrain.own_photo_trash.2": "燃えた。この写真は列車を旅しない。",
   "chat.dungeontrain.own_photo_trash.3": "それは君と炎だけの秘密だ。",

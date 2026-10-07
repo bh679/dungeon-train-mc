@@ -625,7 +625,7 @@
   "chat.dungeontrain.own_photo_tribute.paid.1": "列車收下了你的貢品，還有你的照片。",
   "chat.dungeontrain.own_photo_tribute.paid.2": "貢品已獻上。照片已被取走。",
   "chat.dungeontrain.own_photo_tribute.paid.3": "為你自己的回憶獻上的貢品。",
-  "gui.dungeontrain.own_photo_trash.tooltip": "丟棄：它不屬於任何別人。",
+  "gui.dungeontrain.own_photo_trash.tooltip": "丟棄",
   "chat.dungeontrain.own_photo_trash.1": "沒了。只有你見過它。",
   "chat.dungeontrain.own_photo_trash.2": "燒掉了。它不會在列車上流傳。",
   "chat.dungeontrain.own_photo_trash.3": "那張照片只留在你和火焰之間。",
