@@ -4025,6 +4025,20 @@
       ]
     }
   },
+  "gui.dungeontrain.credits.funders.developer_line": {
+    "1": {
+      "label": "the developer's name",
+      "examples": [
+        "Brennan Hatton"
+      ]
+    },
+    "2": {
+      "label": "Australian dollars the developer has spent on the game that donations have not yet covered, whole number (the A$ sign is in the text)",
+      "examples": [
+        "1782"
+      ]
+    }
+  },
   "gui.dungeontrain.credits.funders.person_line_hidden": {
     "1": {
       "label": "the funder's name (they chose not to show the amount)",

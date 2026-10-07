@@ -1084,6 +1084,7 @@
       "gui.dungeontrain.credits.funders.desc",
       "gui.dungeontrain.credits.funders.person_line",
       "gui.dungeontrain.credits.funders.person_line_hidden",
+      "gui.dungeontrain.credits.funders.developer_line",
       "gui.dungeontrain.credits.community.header",
       "gui.dungeontrain.credits.community.desc",
       "gui.dungeontrain.credits.community.person_line",

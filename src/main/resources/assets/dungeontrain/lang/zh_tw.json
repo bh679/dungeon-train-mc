@@ -1081,6 +1081,7 @@
   "gui.dungeontrain.credits.funders.desc": "感謝所有為 Dungeon Train 的開發提供資金的人：",
   "gui.dungeontrain.credits.funders.person_line": "%1$s — A$%2$s",
   "gui.dungeontrain.credits.funders.person_line_hidden": "%1$s",
+  "gui.dungeontrain.credits.funders.developer_line": "%1$s — 已支出 A$%2$s，未由社群負擔，不含時間投入",
   "gui.dungeontrain.credits.community.header": "社群",
   "gui.dungeontrain.credits.community.desc": "感謝 Dungeon Train Discord 的 Value Adders：",
   "gui.dungeontrain.credits.community.person_line": "%1$s — %2$s 級",

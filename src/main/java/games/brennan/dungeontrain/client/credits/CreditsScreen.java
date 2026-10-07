@@ -517,16 +517,19 @@ public final class CreditsScreen extends Screen {
         List<RelayFunders.Funder> topFive = funders.subList(0, Math.min(funders.size(), CreditsPaging.BUILDERS_COLLAPSED));
         CreditsPaging.View<RelayFunders.Funder> view = fundersPaging.view(topFive, funders);
         for (RelayFunders.Funder funder : view.rows()) {
-            boolean own = fundersStanding != null && funder.rank() > 0 && funder.rank() == fundersStanding.rank();
+            boolean own = !funder.house() && fundersStanding != null && funder.rank() > 0
+                    && funder.rank() == fundersStanding.rank();
             CreditsSelfEdits.Shown shown = own
                     ? CreditsSelfEdits.apply(Section.FUNDERS, funder.name(), funder.anonymous())
                     : new CreditsSelfEdits.Shown(funder.name(), funder.anonymous());
             boolean amountHidden = own ? CreditsSelfEdits.amountHidden(funder.amountHidden()) : funder.amountHidden();
             Component name = shown.anonymous() ? anonymousName(own) : Component.literal(shown.name());
+            // The developer's own row is what he has spent that community support has not yet covered.
+            String lineKey = funder.house() ? "gui.dungeontrain.credits.funders.developer_line"
+                    : "gui.dungeontrain.credits.funders.person_line";
             Component line = amountHidden
                     ? Component.translatable("gui.dungeontrain.credits.funders.person_line_hidden", name)
-                    : Component.translatable("gui.dungeontrain.credits.funders.person_line", name,
-                            Component.literal(Integer.toString(funder.amountAud())));
+                    : Component.translatable(lineKey, name, Component.literal(Integer.toString(funder.amountAud())));
             y = addCreditRow(line, own, Section.FUNDERS, shown.name(), shown.anonymous(), amountHidden,
                     innerX, innerW, y);
         }

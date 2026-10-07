@@ -1081,6 +1081,7 @@
   "gui.dungeontrain.credits.funders.desc": "Dungeon Train の開発を支援してくださった皆さんに感謝します：",
   "gui.dungeontrain.credits.funders.person_line": "%1$s — A$%2$s",
   "gui.dungeontrain.credits.funders.person_line_hidden": "%1$s",
+  "gui.dungeontrain.credits.funders.developer_line": "%1$s — A$%2$s を支出（コミュニティの支援で未補填、作業時間は含まず）",
   "gui.dungeontrain.credits.community.header": "コミュニティ",
   "gui.dungeontrain.credits.community.desc": "Dungeon Train Discord の Value Adders の皆さんに感謝します：",
   "gui.dungeontrain.credits.community.person_line": "%1$s — レベル %2$s",

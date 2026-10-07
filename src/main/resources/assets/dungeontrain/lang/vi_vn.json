@@ -1081,6 +1081,7 @@
   "gui.dungeontrain.credits.funders.desc": "Cảm ơn tất cả những ai đã tài trợ cho việc phát triển Dungeon Train:",
   "gui.dungeontrain.credits.funders.person_line": "%1$s — A$%2$s",
   "gui.dungeontrain.credits.funders.person_line_hidden": "%1$s",
+  "gui.dungeontrain.credits.funders.developer_line": "%1$s — đã chi A$%2$s, chưa được cộng đồng bù đắp và không tính thời gian",
   "gui.dungeontrain.credits.community.header": "Cộng đồng",
   "gui.dungeontrain.credits.community.desc": "Cảm ơn các Value Adders của Discord Dungeon Train:",
   "gui.dungeontrain.credits.community.person_line": "%1$s — Cấp %2$s",
