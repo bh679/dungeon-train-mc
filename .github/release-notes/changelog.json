@@ -23876,6 +23876,23 @@
       "released": true,
       "released_in": "v0.1181.0",
       "released_at": "2026-10-07T04:23:09Z"
+    },
+    {
+      "id": "credits-builders-count-builds",
+      "version": "0.1182.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Credits count builds, not templates",
+      "summary": "The Credits screen now thanks each builder for their builds instead of listing templates, in every language.",
+      "highlights": [],
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
