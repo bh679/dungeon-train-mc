@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.MapCodec;
+import games.brennan.dungeontrain.block.PhotographFrameBlock;
 import games.brennan.dungeontrain.compat.PaintingBlockLayout.Cell;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -126,8 +127,13 @@ public final class PaintingTransformProcessor extends StructureProcessor {
         return List.copyOf(out);
     }
 
-    /** Whether {@code state} is a Fast Paintings painting cell; always false without the mod. */
+    /**
+     * Whether {@code state} is a cell this processor re-lays: a Fast Paintings painting (always false
+     * without the mod) or DT's block photo frame, which uses the same three properties and master
+     * convention ({@link games.brennan.dungeontrain.compat.photo.PhotoFrameLayout}).
+     */
     public static boolean isPaintingBlock(BlockState state) {
+        if (state.getBlock() instanceof PhotographFrameBlock) return true;
         Optional<Block> block = paintingBlock;
         if (block == null) {
             block = BuiltInRegistries.BLOCK.getOptional(PAINTING_BLOCK);
