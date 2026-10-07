@@ -23795,6 +23795,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "loading-stories-no-dashes",
+      "version": "0.1178.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Smoother loading-screen stories",
+      "summary": "The stories told on the loading screen have been re-punctuated so they read more naturally.",
+      "highlights": [],
+      "pr": 1855,
+      "date": "2026-10-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
