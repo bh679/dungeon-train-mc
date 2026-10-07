@@ -36,7 +36,8 @@ player-visible counterparts are the [manifests](#shipped-manifests) and
   [Handing work to a translator](#workflows)), and
 - three GENERATED count fields — `total_keys` / `ai_authored` / `ai_unreviewed` —
   summarizing this directory's sidecars, which drive the **blue AI-fraction ring**
-  around that logo (filled circumference = `ai_unreviewed / total_keys`). Every
+  around that logo (filled circumference = `1 − (total_keys − ai_unreviewed) / counted_keys`,
+  never below 0). Every
   `stamp-provenance.py` run refreshes them, and `check-provenance.py` **hard-fails**
   (exit 1, in CI) when they drift from the sidecars — never hand-edit them. A fourth,
   `counted_keys`, is `total_keys` less the editor/creator-tool lines listed in

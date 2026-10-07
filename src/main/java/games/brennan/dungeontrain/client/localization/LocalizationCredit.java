@@ -59,14 +59,26 @@ public record LocalizationCredit(
             this(totalKeys, aiAuthored, aiUnreviewed, totalKeys);
         }
 
-        /** Fraction of lines that are AI-authored with no human reviewer. */
+        /**
+         * Fraction of the player-facing lines still awaiting a human: one minus the lines a human
+         * has done (written or reviewed, editor lines included) over {@code countedKeys}, never
+         * below 0. The same measure as a translator's share on the Credits page, so the ring and
+         * the credits agree — a translator who covered the editor too fills the ring sooner.
+         */
         public double unreviewedFraction() {
-            return (double) aiUnreviewed / totalKeys;
+            return remaining(aiUnreviewed);
         }
 
-        /** Fraction of lines that are AI-authored, reviewed or not. */
+        /** As {@link #unreviewedFraction}, counting every AI-authored line as not a human's. */
         public double authoredFraction() {
-            return (double) aiAuthored / totalKeys;
+            return remaining(aiAuthored);
+        }
+
+        private double remaining(int notHuman) {
+            if (countedKeys <= 0) {
+                return (double) notHuman / totalKeys;
+            }
+            return Math.max(0.0, 1.0 - (double) (totalKeys - notHuman) / countedKeys);
         }
     }
 }

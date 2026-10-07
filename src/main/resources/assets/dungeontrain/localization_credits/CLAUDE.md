@@ -46,7 +46,8 @@ The files bundled in the mod jar additionally carry four GENERATED integer field
 
 They summarize the repo-side provenance sidecars (`localization/provenance/<locale>.json`) and
 drive the **blue AI-fraction ring** around the logo in the language-selection list — the filled
-fraction of the ring's circumference is `ai_unreviewed / total_keys`. Refreshed by every
+fraction of the ring's circumference is `1 − (total_keys − ai_unreviewed) / counted_keys` (never
+below 0) — the lines a human has done, editor ones included, over the player-facing lines. Refreshed by every
 `scripts/localization/stamp-provenance.py` run and hard-validated by
 `scripts/localization/check-provenance.py` (CI fails when they drift), so never edit them by
 hand. Third-party packs may omit them — a credit without valid counts simply renders no ring.
