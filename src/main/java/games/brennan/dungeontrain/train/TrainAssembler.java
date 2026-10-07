@@ -212,6 +212,21 @@ public final class TrainAssembler {
         return sb.append(']').toString();
     }
 
+    /**
+     * Hand each leased build's entities to its registry instance until the deferred spawn fires, so an
+     * upload in the meantime carries them rather than the empty carriage (see
+     * {@link SharedCarriageRegistry.Instance#holdRelayEnts}). Resolved by footprint, so a build spanning
+     * the whole group is found from its first carriage's origin just as a one-carriage build is.
+     */
+    private static void holdPendingRelayEnts(UUID subLevelId, PendingRelayEntitySpawn[] pending) {
+        for (PendingRelayEntitySpawn p : pending) {
+            if (p == null) continue;
+            BlockPos o = p.shipyardOrigin();
+            SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.resolve(subLevelId, o.getX(), o.getY(), o.getZ());
+            if (inst != null) inst.holdRelayEnts(p.ents());
+        }
+    }
+
     private static RelayPlacement placeRelayLease(ServerLevel level, BlockPos carriageOrigin,
                                                   SharedCarriageClient.PoolLease lease, CarriageDims dims) {
         try {
@@ -858,6 +873,7 @@ public final class TrainAssembler {
             velocity, shipyardOrigin, level.dimension(), anchorPIdx, groupSize, dims, trainId);
         provider.setPendingContentsEntitySpawns(pendingEntities);
         provider.setPendingRelayEntitySpawns(pendingRelayEntities);
+        holdPendingRelayEnts(ship.subLevelId(), pendingRelayEntities);
         provider.setPendingWholeDecorSpawns(pendingWholeDecor);
         ship.setKinematicDriver(provider);
         ship.setStatic(true);

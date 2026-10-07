@@ -314,4 +314,61 @@ class SharedCarriageRegistryTest {
         inst.markCulled();
         assertFalse(inst.hasParked());
     }
+
+    private static net.minecraft.nbt.ListTag oneStand() {
+        net.minecraft.nbt.CompoundTag n = new net.minecraft.nbt.CompoundTag();
+        n.putString("id", "minecraft:armor_stand");
+        net.minecraft.nbt.CompoundTag entry = new net.minecraft.nbt.CompoundTag();
+        entry.put("n", n);
+        net.minecraft.nbt.ListTag ents = new net.minecraft.nbt.ListTag();
+        ents.add(entry);
+        return ents;
+    }
+
+    @Test
+    void heldLeaseEntitiesReplaceTheEmptyLiveListUntilReleased() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        net.minecraft.nbt.ListTag live = new net.minecraft.nbt.ListTag(); // spawn not fired → nothing standing
+        inst.holdRelayEnts(oneStand());
+        assertTrue(inst.isHoldingRelayEnts());
+
+        net.minecraft.nbt.ListTag up = inst.entsForUpload(live);
+        assertEquals(oneStand(), up);
+        up.clear(); // what an upload does to its copy never reaches the held list
+        assertEquals(oneStand(), inst.entsForUpload(live));
+
+        inst.releaseRelayEnts();
+        assertFalse(inst.isHoldingRelayEnts());
+        org.junit.jupiter.api.Assertions.assertSame(live, inst.entsForUpload(live)); // spawned → uploads read the carriage live
+    }
+
+    @Test
+    void holdingIsACopyOfTheLeaseList() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        net.minecraft.nbt.ListTag lease = oneStand();
+        inst.holdRelayEnts(lease);
+        lease.clear(); // the spawn path owns the original
+        assertEquals(oneStand(), inst.entsForUpload(new net.minecraft.nbt.ListTag()));
+    }
+
+    @Test
+    void anEmptyLeaseHoldsNothing() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.holdRelayEnts(new net.minecraft.nbt.ListTag());
+        assertFalse(inst.isHoldingRelayEnts());
+        inst.holdRelayEnts(null);
+        assertFalse(inst.isHoldingRelayEnts());
+    }
+
+    @Test
+    void aGroupLongBuildIsFoundFromItsFirstCarriageOrigin() {
+        // A drifting Group carriage registers once over the whole box; its pending entity record sits at
+        // the box's origin, which is how the hold and the release find it.
+        UUID sub = UUID.randomUUID();
+        CarriageDims groupBox = new CarriageDims(DIMS.length() * 3, DIMS.width(), DIMS.height());
+        SharedCarriageRegistry.Instance group = SharedCarriageRegistry.register(null, sub, UUID.randomUUID(), 0,
+            new BlockPos(0, 64, 0), groupBox, "shared", true, false, "", 7, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+        org.junit.jupiter.api.Assertions.assertSame(group, SharedCarriageRegistry.resolve(sub, 0, 64, 0));
+        org.junit.jupiter.api.Assertions.assertSame(group, SharedCarriageRegistry.resolve(sub, DIMS.length() * 2 + 1, 65, 1));
+    }
 }
