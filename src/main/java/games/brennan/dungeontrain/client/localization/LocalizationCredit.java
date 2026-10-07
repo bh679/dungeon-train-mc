@@ -46,8 +46,18 @@ public record LocalizationCredit(
      * The generated AI-translation counts for one locale. Invariant (enforced at
      * parse time): {@code 0 <= aiUnreviewed <= aiAuthored <= totalKeys} and
      * {@code totalKeys > 0}, so the fractions are always in {@code [0, 1]}.
+     *
+     * <p>{@code countedKeys} is {@code totalKeys} less the editor and creator-tool lines
+     * ({@code counted_keys}, see {@code TranslationFilters#isEditorKey}) — the denominator of a
+     * translator's "% translated" on the Credits screen. {@code 0 <= countedKeys <= totalKeys};
+     * equal to {@code totalKeys} for a pack stamped before the field existed.</p>
      */
-    public record AiCounts(int totalKeys, int aiAuthored, int aiUnreviewed) {
+    public record AiCounts(int totalKeys, int aiAuthored, int aiUnreviewed, int countedKeys) {
+
+        /** Counts with no editor split known: every line counts. */
+        public AiCounts(int totalKeys, int aiAuthored, int aiUnreviewed) {
+            this(totalKeys, aiAuthored, aiUnreviewed, totalKeys);
+        }
 
         /** Fraction of lines that are AI-authored with no human reviewer. */
         public double unreviewedFraction() {

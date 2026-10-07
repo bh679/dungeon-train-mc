@@ -202,7 +202,7 @@ public final class LocalizationCreditRegistry {
         // the stamp never saw, a pack of its own), and a negative would invert the ring.
         int unreviewed = Math.max(0, baked.aiUnreviewed() - reviewed);
         int authored = Math.max(unreviewed, baked.aiAuthored() - reviewed);
-        return new LocalizationCredit.AiCounts(baked.totalKeys(), authored, unreviewed);
+        return new LocalizationCredit.AiCounts(baked.totalKeys(), authored, unreviewed, baked.countedKeys());
     }
 
     /**
@@ -294,12 +294,12 @@ public final class LocalizationCreditRegistry {
     }
 
     /**
-     * How many lines this locale has in total, or 0 when nothing is known about it — the
-     * denominator behind a translator's percentage on the credits screen.
+     * How many of this locale's lines a player sees — all but the editor's — or 0 when nothing is
+     * known about it. The denominator behind a translator's percentage on the credits screen.
      */
-    public static synchronized int totalKeysFor(String localeCode) {
+    public static synchronized int countedKeysFor(String localeCode) {
         LocalizationCredit.AiCounts counts = bestCounts(localeCode);
-        return counts == null ? 0 : counts.totalKeys();
+        return counts == null ? 0 : counts.countedKeys();
     }
 
     /**
@@ -379,7 +379,12 @@ public final class LocalizationCreditRegistry {
         if (total <= 0 || unreviewed < 0 || unreviewed > authored || authored > total) {
             return Optional.empty();
         }
-        return Optional.of(new LocalizationCredit.AiCounts(total, authored, unreviewed));
+        // Optional on its own: a pack stamped before it existed counts every line.
+        Integer counted = optionalInt(obj, "counted_keys");
+        if (counted == null || counted <= 0 || counted > total) {
+            counted = total;
+        }
+        return Optional.of(new LocalizationCredit.AiCounts(total, authored, unreviewed, counted));
     }
 
     /** Integral number field, or {@code null} when absent, non-numeric, or not a whole number. */

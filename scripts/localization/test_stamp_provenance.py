@@ -290,7 +290,7 @@ def test_sync_writes_credit_counts():
     assert (credit["total_keys"], credit["ai_authored"], credit["ai_unreviewed"]) == (3, 2, 2)
     # hand-edited fields preserved in order, generated fields appended after them
     assert list(credit) == ["locale", "name", "url", "human_reviewed",
-                            "total_keys", "ai_authored", "ai_unreviewed"]
+                            "total_keys", "ai_authored", "ai_unreviewed", "counted_keys"]
     text = open(credit_path(lang_dir), encoding="utf-8").read()
     assert "老本願" in text and "\\u" not in text
     assert text.endswith("}\n")
@@ -315,7 +315,7 @@ def test_stale_credit_counts_corrected_in_place():
     credit = read_credit(lang_dir)
     assert (credit["total_keys"], credit["ai_authored"], credit["ai_unreviewed"]) == (3, 2, 2)
     assert list(credit) == ["locale", "name", "url", "human_reviewed",
-                            "total_keys", "ai_authored", "ai_unreviewed"]
+                            "total_keys", "ai_authored", "ai_unreviewed", "counted_keys"]
 
 
 def test_counts_stamped_into_every_matching_credit_file():

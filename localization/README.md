@@ -38,7 +38,11 @@ player-visible counterparts are the [manifests](#shipped-manifests) and
   summarizing this directory's sidecars, which drive the **blue AI-fraction ring**
   around that logo (filled circumference = `ai_unreviewed / total_keys`). Every
   `stamp-provenance.py` run refreshes them, and `check-provenance.py` **hard-fails**
-  (exit 1, in CI) when they drift from the sidecars — never hand-edit them.
+  (exit 1, in CI) when they drift from the sidecars — never hand-edit them. A fourth,
+  `counted_keys`, is `total_keys` less the editor/creator-tool lines listed in
+  `assets/dungeontrain/translation_editor_keys.json`: the denominator of every
+  "% translated" a player sees (Credits, the website). A translator's own count still
+  includes the editor lines they did, so their share can pass 100%.
 
 ## Schema
 

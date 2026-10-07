@@ -69,8 +69,13 @@ DEFAULT_NARRATIVE_PROVENANCE_DIR = REPO_ROOT / "localization" / "narrative_prove
 
 AUTHOR_KINDS = ("ai", "human")
 
-# Generated summary fields stamped into each shipped localization credit file.
-CREDIT_COUNT_FIELDS = ("total_keys", "ai_authored", "ai_unreviewed")
+# Generated summary fields stamped into each shipped localization credit file. counted_keys is
+# total_keys less the editor/creator-tool lines (see counted_keys) — the denominator of every
+# "% translated" a player sees.
+CREDIT_COUNT_FIELDS = ("total_keys", "ai_authored", "ai_unreviewed", "counted_keys")
+
+# Shipped list of the editor/creator-tool lang-key prefixes (also read by TranslationFilters).
+DEFAULT_EDITOR_KEYS_FILE = ASSETS_DIR / "dungeontrain" / "translation_editor_keys.json"
 
 # Marker written into the generated translation-contributors file so a reader knows
 # not to hand-edit it (see build_contributors). Part of the canonical output, so the
@@ -398,6 +403,44 @@ def ai_counts(prov: dict, authors: dict[str, str]) -> tuple[int, int, int]:
     return len(prov), ai, unrev
 
 
+_editor_prefixes_cache: dict[Path, tuple[str, ...]] = {}
+
+
+def load_editor_prefixes(path: Path = DEFAULT_EDITOR_KEYS_FILE) -> tuple[str, ...]:
+    """The editor/creator-tool lang-key prefixes from ``translation_editor_keys.json``.
+
+    Raises ValueError when the file is malformed — a silently empty list would quietly put
+    every editor line back into the count.
+    """
+    path = Path(path)
+    if path not in _editor_prefixes_cache:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        prefixes = data.get("prefixes") if isinstance(data, dict) else None
+        if not isinstance(prefixes, list) or not prefixes or not all(
+                isinstance(p, str) and p for p in prefixes):
+            raise ValueError(f"{path}: expected a non-empty \"prefixes\" list of strings")
+        _editor_prefixes_cache[path] = tuple(prefixes)
+    return _editor_prefixes_cache[path]
+
+
+def counted_keys(prov: dict, prefixes: tuple[str, ...] | None = None) -> int:
+    """How many of ``prov``'s keys a player-facing "% translated" counts: all but the editor's.
+
+    The denominator of a translator's share on the Credits page and of the website's
+    translation milestones. Only the denominator drops the editor — a translator's
+    contributed_keys still counts their editor lines, so a share can pass 100%.
+    """
+    if prefixes is None:
+        prefixes = load_editor_prefixes()
+    return sum(1 for key in prov if not key.startswith(prefixes))
+
+
+def credit_counts(prov: dict, authors: dict[str, str]) -> dict[str, int]:
+    """Every CREDIT_COUNT_FIELDS value for one sidecar, keyed by field name."""
+    return dict(zip(CREDIT_COUNT_FIELDS, (*ai_counts(prov, authors), counted_keys(prov))))
+
+
 def contributed_keys(prov: dict, name: str) -> int:
     """How many of ``prov``'s keys ``name`` authored or reviewed.
 
@@ -473,7 +516,8 @@ def build_contributors(lang_dir: Path, prov_dir: Path, authors: dict[str, str],
         if not prov_path.is_file():
             continue
         prov = load_provenance(prov_path)
-        total = len(prov)
+        # Player-facing lines only (counted_keys); contributed still counts editor lines.
+        total = counted_keys(prov)
         if total == 0:
             continue
         for name in humans:
