@@ -114,7 +114,8 @@ public final class PlayerAlbums {
             FoundAlbums.openAsFound(player, stack, slot, owner.get());
             return false;
         }
-        stack.set(Exposure.DataComponents.ALBUM_CONTENT, currentContent(player));
+        AlbumTimings.time("open album of " + player.getGameProfile().getName(),
+                () -> stack.set(Exposure.DataComponents.ALBUM_CONTENT, currentContent(player)));
         // The menu reads the pages off the client's copy of the stack — send it first.
         player.containerMenu.broadcastChanges();
         return true;
@@ -167,14 +168,16 @@ public final class PlayerAlbums {
         ItemStack album = player.getInventory().getItem(menu.getAlbumSlot());
         if (!AlbumOwnership.isOwnedBy(album, player.getUUID())) return;
         AlbumContent edited = album.getOrDefault(Exposure.DataComponents.ALBUM_CONTENT, AlbumContent.EMPTY);
-        if (!signature(edited).equals(signature(currentContent(player)))) save(player, edited);
+        AlbumStore.Entry stored = AlbumStore.get().entry(player.getUUID(), kindFor(player));
+        if (!pageKeys(edited).equals(AlbumStore.pageKeys(stored))) save(player, edited);
     }
 
-    /** What an album shows, page by page: which picture and which note. Stacks don't compare by value. */
-    static List<String> signature(AlbumContent content) {
+    /** What an album shows, page by page ({@link AlbumStore#pageKey}). Stacks don't compare by value. */
+    static List<String> pageKeys(AlbumContent content) {
         List<String> out = new ArrayList<>();
         for (AlbumPage page : content.removeTrailingPages().pages()) {
-            out.add(AlbumPageImages.exposureId(page.photograph()) + "|" + page.note());
+            ItemStack photo = page.photograph();
+            out.add(AlbumStore.pageKey(AlbumPageImages.knownHash(photo).orElse(null), AlbumPageImages.exposureId(photo), page.note()));
         }
         return out;
     }
@@ -226,7 +229,8 @@ public final class PlayerAlbums {
     public static ItemStack newAlbum(ServerPlayer player) {
         ItemStack album = new ItemStack(Exposure.Items.ALBUM.get());
         AlbumOwnership.stamp(album, player.getUUID(), player.getGameProfile().getName());
-        album.set(Exposure.DataComponents.ALBUM_CONTENT, currentContent(player));
+        AlbumTimings.time("new album for " + player.getGameProfile().getName(),
+                () -> album.set(Exposure.DataComponents.ALBUM_CONTENT, currentContent(player)));
         return album;
     }
 
@@ -237,6 +241,10 @@ public final class PlayerAlbums {
      * pictures written in the background — and, for the live album, send it on when they share.
      */
     static void save(ServerPlayer player, AlbumContent content) {
+        AlbumTimings.time("save album of " + player.getGameProfile().getName(), () -> saveNow(player, content));
+    }
+
+    private static void saveNow(ServerPlayer player, AlbumContent content) {
         MinecraftServer server = player.server;
         AlbumStore store = AlbumStore.get();
         AlbumKind kind = kindFor(player);
@@ -305,9 +313,11 @@ public final class PlayerAlbums {
     /** On joining, pull the player's live album from the relay when it is newer than this computer's copy. */
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player) || !SharedBookGate.canContribute(player)) return;
-        MinecraftServer server = player.server;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
         UUID owner = player.getUUID();
+        prewarm(AlbumStore.get().entry(owner, kindFor(player)));
+        if (!SharedBookGate.canContribute(player)) return;
+        MinecraftServer server = player.server;
         long known = AlbumStore.get().entry(owner, AlbumKind.LIVE).rev();
         String base = DungeonTrain.relayBaseUrl();
         HttpRequest request = HttpRequest.newBuilder(URI.create(base + MINE_PATH + "?uuid=" + AlbumSavePayload.bare(owner)))
@@ -343,8 +353,16 @@ public final class PlayerAlbums {
             pages.add(new AlbumStore.Page(held ? page.hash() : null, page.note(), held ? photoFor(before, page.hash()) : null));
             if (held) sentImages.add(page.hash());
         }
-        store.put(owner, AlbumKind.LIVE, new AlbumStore.Entry(downloaded.album().rev(), pages));
+        AlbumStore.Entry adopted = new AlbumStore.Entry(downloaded.album().rev(), pages);
+        store.put(owner, AlbumKind.LIVE, adopted);
         store.putImages(downloaded.pngs());
+        prewarm(adopted);
+    }
+
+    /** Decode an album's pictures in the background, so lending them later costs the tick nothing. */
+    private static void prewarm(AlbumStore.Entry entry) {
+        AlbumStore store = AlbumStore.get();
+        AlbumPictureCache.get().prewarm(entry.pages().stream().map(AlbumStore.Page::hash).toList(), store::image);
     }
 
     /** The photograph this computer already kept for a picture, so its photographer and details survive. */
@@ -397,6 +415,7 @@ public final class PlayerAlbums {
     public static void onServerStopped(ServerStoppedEvent event) {
         pendingBurns = List.of();
         sentImages.clear();
+        AlbumWorldBridge.forgetLent();
         AlbumStore.get().flush();
     }
 }

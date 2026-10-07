@@ -10,18 +10,23 @@ import io.github.mortuusars.exposure.world.item.component.album.AlbumContent;
 import io.github.mortuusars.exposure.world.item.component.album.AlbumPage;
 import io.github.mortuusars.exposure.world.level.storage.ExposureData;
 import io.github.mortuusars.exposure.world.level.storage.ExposureIdentifier;
-import io.github.mortuusars.exposure.world.level.storage.ExposureRepository;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.item.ItemStack;
 import org.slf4j.Logger;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Between a stored album ({@link AlbumStore}, outside any world) and the album a world shows
@@ -54,7 +59,7 @@ final class AlbumWorldBridge {
     }
 
     private static ItemStack photograph(MinecraftServer server, AlbumStore store, AlbumStore.Page page) {
-        if (page.hash() == null || !lend(store, page.hash())) return ItemStack.EMPTY;
+        if (page.hash() == null || !lend(server, store, page.hash())) return ItemStack.EMPTY;
         String id = AlbumImageHash.exposureId(page.hash());
         ItemStack stack = parse(server.registryAccess(), page.photo())
                 .orElseGet(() -> new ItemStack(Exposure.Items.PHOTOGRAPH.get()));
@@ -65,22 +70,64 @@ final class AlbumWorldBridge {
         return stack;
     }
 
-    /** Put the picture in this world's Exposure store if it is not there yet. False when this computer lacks it. */
-    private static boolean lend(AlbumStore store, String hash) {
+    /** Album pictures known to be in this world's Exposure store, by Exposure id. Cleared when the world stops. */
+    private static final Set<String> lent = ConcurrentHashMap.newKeySet();
+
+    static void forgetLent() {
+        lent.clear();
+    }
+
+    /** From the store: the decoded picture, decoding it here only when it was not prewarmed. */
+    private static boolean lend(MinecraftServer server, AlbumStore store, String hash) {
+        return lend(server, hash, () -> AlbumPictureCache.get().picture(hash).or(() -> store.image(hash).flatMap(png -> {
+            try {
+                PhotoPngCodec.Decoded decoded = PhotoPngCodec.decode(png);
+                AlbumPictureCache.get().put(hash, decoded);
+                return Optional.of(decoded);
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] Album picture {} unreadable: {}", hash, e.toString());
+                return Optional.empty();
+            }
+        })));
+    }
+
+    /**
+     * Put the picture in this world's Exposure store if it is not there yet — once per world: after
+     * that it is only a set lookup, never a read of Exposure's store. False when the picture is not to be had.
+     */
+    static boolean lend(MinecraftServer server, String hash, Supplier<Optional<PhotoPngCodec.Decoded>> picture) {
         String id = AlbumImageHash.exposureId(hash);
-        ExposureRepository repository = ExposureServer.exposureRepository();
-        if (repository.load(id).getData().isPresent()) return true;
-        Optional<byte[]> png = store.image(hash);
-        if (png.isEmpty()) return false;
-        try {
-            PhotoPngCodec.Decoded image = PhotoPngCodec.decode(png.get());
-            repository.save(id, new ExposureData(image.width(), image.height(), image.pixels(),
-                    ColorPalettes.DEFAULT.location(), ExposureData.Tag.EMPTY));
+        if (lent.contains(id)) return true;
+        if (Files.exists(exposureFile(server, id))) {
+            lent.add(id);
             return true;
-        } catch (Exception e) {
+        }
+        Optional<PhotoPngCodec.Decoded> image = picture.get();
+        if (image.isEmpty()) return false;
+        try {
+            ExposureServer.exposureRepository().save(id, new ExposureData(image.get().width(), image.get().height(),
+                    image.get().pixels(), ColorPalettes.DEFAULT.location(), ExposureData.Tag.EMPTY));
+            lent.add(id);
+            return true;
+        } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Album picture {} could not be lent to this world: {}", hash, e.toString());
             return false;
         }
+    }
+
+    /** Where Exposure keeps a photo of this world on disk ({@code ExposureRepository}: {@code data/exposures/<id>.dat}). */
+    private static Path exposureFile(MinecraftServer server, String id) {
+        return server.getWorldPath(LevelResource.ROOT).resolve("data").resolve("exposures").resolve(id + ".dat");
+    }
+
+    /** A photograph showing an album picture, lent to the world first. Empty when the picture is not to be had. */
+    static ItemStack photograph(MinecraftServer server, String hash, Supplier<Optional<PhotoPngCodec.Decoded>> picture) {
+        if (!lend(server, hash, picture)) return ItemStack.EMPTY;
+        Frame frame = Frame.create().setIdentifier(ExposureIdentifier.id(AlbumImageHash.exposureId(hash))).toImmutable();
+        ItemStack stack = new ItemStack(Exposure.Items.PHOTOGRAPH.get());
+        stack.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
+        stack.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.type());
+        return stack;
     }
 
     // ---- world → store ---------------------------------------------------------------
@@ -93,7 +140,6 @@ final class AlbumWorldBridge {
     static Snapshot fromContent(MinecraftServer server, AlbumStore store, AlbumContent content, String ownerName) {
         List<SavedPage> pages = new ArrayList<>();
         Map<String, AlbumPageImages.Picture> newPictures = new LinkedHashMap<>();
-        ExposureRepository repository = ExposureServer.exposureRepository();
         for (AlbumPage page : content.removeTrailingPages().pages()) {
             ItemStack photo = page.photograph();
             boolean shareable = PlayerAlbums.mayShare(photo, ownerName);
@@ -101,12 +147,12 @@ final class AlbumWorldBridge {
             if (hash == null) {
                 Optional<AlbumPageImages.Picture> picture = AlbumPageImages.read(server, photo);
                 if (picture.isPresent()) {
-                    hash = picture.get().hash();
-                    String id = AlbumImageHash.exposureId(hash);
-                    if (repository.load(id).getData().isEmpty()) {
-                        repository.load(AlbumPageImages.exposureId(photo)).getData().ifPresent(data -> repository.save(id, data));
-                    }
-                    if (!store.hasImage(hash)) newPictures.put(hash, picture.get());
+                    AlbumPageImages.Picture read = picture.get();
+                    hash = read.hash();
+                    PhotoPngCodec.Decoded decoded = new PhotoPngCodec.Decoded(read.width(), read.height(), read.pixels());
+                    AlbumPictureCache.get().put(hash, decoded);
+                    lend(server, hash, () -> Optional.of(decoded));
+                    if (!store.hasImage(hash)) newPictures.put(hash, read);
                 }
             }
             String snbt = photo.isEmpty() ? null : serialize(server.registryAccess(), photo);

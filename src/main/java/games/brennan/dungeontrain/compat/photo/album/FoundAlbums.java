@@ -26,6 +26,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -85,21 +86,25 @@ public final class FoundAlbums {
     /** Someone else's album as a found album, or {@link ItemStack#EMPTY} when none is available. */
     public static ItemStack rollFound(long seed) {
         List<PoolAlbum> albums = pool;
-        if (albums.isEmpty() || !SharedBookGate.canDiscover()) return ItemStack.EMPTY;
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (albums.isEmpty() || server == null || !SharedBookGate.canDiscover()) return ItemStack.EMPTY;
         PoolAlbum picked = albums.get((int) Math.floorMod(seed, (long) albums.size()));
-        try {
-            List<SignedAlbumPage> pages = new ArrayList<>();
-            for (AlbumSavePayload.Page page : picked.album().pages()) {
-                PhotoPngCodec.Decoded image = page.hash() == null ? null : picked.images().get(page.hash());
-                ItemStack photo = image == null ? ItemStack.EMPTY : AlbumPageImages.photograph(page.hash(), image, null);
-                pages.add(new SignedAlbumPage(photo, Component.literal(page.note())));
+        return AlbumTimings.time("found album of " + picked.album().name(), () -> {
+            try {
+                List<SignedAlbumPage> pages = new ArrayList<>();
+                for (AlbumSavePayload.Page page : picked.album().pages()) {
+                    PhotoPngCodec.Decoded image = page.hash() == null ? null : picked.images().get(page.hash());
+                    ItemStack photo = image == null ? ItemStack.EMPTY
+                            : AlbumWorldBridge.photograph(server, page.hash(), () -> Optional.of(image));
+                    pages.add(new SignedAlbumPage(photo, Component.literal(page.note())));
+                }
+                markSpent(picked.album().owner());
+                return signed(picked.album().owner(), picked.album().name(), pages);
+            } catch (RuntimeException e) {
+                LOGGER.warn("[DungeonTrain] Could not place found album of {}: {}", picked.album().name(), e.toString());
+                return ItemStack.EMPTY;
             }
-            markSpent(picked.album().owner());
-            return signed(picked.album().owner(), picked.album().name(), pages);
-        } catch (RuntimeException e) {
-            LOGGER.warn("[DungeonTrain] Could not place found album of {}: {}", picked.album().name(), e.toString());
-            return ItemStack.EMPTY;
-        }
+        });
     }
 
     /** A read-only copy of another player's album, from the pages its stack last showed. */
@@ -133,6 +138,10 @@ public final class FoundAlbums {
      * album is counted as seen once more. The view is a client screen, so the album is found in hand.
      */
     public static void handleViewClosed(ServerPlayer player) {
+        AlbumTimings.time("burn found album", () -> burnFoundInHand(player));
+    }
+
+    private static void burnFoundInHand(ServerPlayer player) {
         for (InteractionHand hand : InteractionHand.values()) {
             ItemStack album = player.getItemInHand(hand);
             Optional<UUID> owner = AlbumOwnership.foundOwner(album);

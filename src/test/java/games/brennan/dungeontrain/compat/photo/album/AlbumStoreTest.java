@@ -125,4 +125,14 @@ class AlbumStoreTest {
         assertEquals(AlbumKind.FREE_PLAY, AlbumKind.forRun(true));
         assertEquals(AlbumKind.LIVE, AlbumKind.forRun(false));
     }
+
+    @Test
+    @DisplayName("page keys: an album picture by hash, a fresh photo by its world id, an empty page by its note")
+    void pageKeys() {
+        assertEquals("h:" + H1 + "|n", AlbumStore.pageKey(H1, "dt_album_x", "n"));
+        assertEquals("id:Dev_3|n", AlbumStore.pageKey(null, "Dev_3", "n"));
+        assertEquals("|gap", AlbumStore.pageKey(null, "", "gap"));
+        assertEquals(List.of("h:" + H1 + "|a", "|b"), AlbumStore.pageKeys(album(1,
+                new AlbumStore.Page(H1, "a", null), new AlbumStore.Page(null, "b", null))));
+    }
 }

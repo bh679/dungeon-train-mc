@@ -65,6 +65,20 @@ public final class AlbumStore {
         }
     }
 
+    /**
+     * What one page shows, for telling whether an album was changed: its picture (by hash when it is
+     * an album picture, else by the world's photo id) and its note. An empty page is just its note.
+     */
+    public static String pageKey(String hash, String exposureId, String note) {
+        String picture = hash != null ? "h:" + hash : (exposureId == null || exposureId.isEmpty() ? "" : "id:" + exposureId);
+        return picture + "|" + (note == null ? "" : note);
+    }
+
+    /** The page keys of a stored album. */
+    public static List<String> pageKeys(Entry entry) {
+        return entry.pages().stream().map(p -> pageKey(p.hash(), "", p.note())).toList();
+    }
+
     private record Key(UUID owner, AlbumKind kind) {}
 
     private static volatile AlbumStore instance;
