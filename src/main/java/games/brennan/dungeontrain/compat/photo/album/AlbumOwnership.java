@@ -15,7 +15,7 @@ import java.util.UUID;
  * Who an album belongs to, carried on the stack in {@link DataComponents#CUSTOM_DATA}.
  *
  * <p>An owned {@code exposure:album} is a player's one album: the stack is only a window onto it,
- * its pages are refilled from {@link AlbumWorldCache} every time it opens. A found album (another
+ * its pages are refilled from {@link AlbumStore} every time it opens. A found album (another
  * player's, read-only) is an {@code exposure:signed_album} carrying {@link #NBT_FOUND} instead.</p>
  */
 public final class AlbumOwnership {

@@ -11,7 +11,6 @@ import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.world.item.component.album.AlbumContent;
-import io.github.mortuusars.exposure.world.item.component.album.AlbumPage;
 import io.github.mortuusars.exposure.world.item.component.album.SignedAlbumContent;
 import io.github.mortuusars.exposure.world.item.component.album.SignedAlbumPage;
 import net.minecraft.ChatFormatting;
@@ -37,6 +36,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -119,26 +119,32 @@ public final class FoundAlbums {
         return stack;
     }
 
-    /** Another player opened an album that is not theirs: swap in the read-only copy and open that instead. */
+    /**
+     * Another player opened an album that is not theirs: it becomes a read-only found album in place.
+     * Exposure opens a signed album on the client only, so the player opens this copy themselves.
+     */
     static void openAsFound(ServerPlayer player, ItemStack album, int slot, AlbumOwnership.Owner owner) {
-        ItemStack copy = readOnlyCopy(album, owner);
-        player.getInventory().setItem(slot, copy);
-        InteractionHand hand = slot == 40 ? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+        player.getInventory().setItem(slot, readOnlyCopy(album, owner));
         player.containerMenu.broadcastChanges();
-        copy.getItem().use(player.level(), player, hand);
     }
 
-    /** A found album closed: it burns, and its owner's album is counted as seen once more. */
-    static void onClosed(ServerPlayer player, int slot) {
-        ItemStack album = player.getInventory().getItem(slot);
-        AlbumOwnership.foundOwner(album).ifPresent(owner -> {
-            player.getInventory().setItem(slot, ItemStack.EMPTY);
+    /**
+     * The player closed a found album's view ({@code AlbumViewClosedPacket}): it burns, and its owner's
+     * album is counted as seen once more. The view is a client screen, so the album is found in hand.
+     */
+    public static void handleViewClosed(ServerPlayer player) {
+        for (InteractionHand hand : InteractionHand.values()) {
+            ItemStack album = player.getItemInHand(hand);
+            Optional<UUID> owner = AlbumOwnership.foundOwner(album);
+            if (owner.isEmpty()) continue;
+            player.setItemInHand(hand, ItemStack.EMPTY);
             StartingBookEvents.dropAndBurn(player, album);
             JsonObject body = new JsonObject();
-            body.addProperty("uuid", AlbumSavePayload.bare(owner));
+            body.addProperty("uuid", AlbumSavePayload.bare(owner.get()));
             RelayOutbox.get().enqueue(VIEW_PATH, body.toString());
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.found_album_burns").withStyle(ChatFormatting.GRAY));
-        });
+            return;
+        }
     }
 
     /** A found album cannot go on a lectern: it would be read there for ever without burning. */
