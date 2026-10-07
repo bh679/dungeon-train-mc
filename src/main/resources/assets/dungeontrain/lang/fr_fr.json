@@ -652,7 +652,7 @@
   "chat.dungeontrain.own_photo_tribute.paid.1": "Le train prend ton tribut, et ta photo.",
   "chat.dungeontrain.own_photo_tribute.paid.2": "Tribut payé. Photo prise.",
   "chat.dungeontrain.own_photo_tribute.paid.3": "Un tribut pour ton propre souvenir.",
-  "gui.dungeontrain.own_photo_trash.tooltip": "Jeter : brûle-la, et personne d'autre ne la trouvera jamais.",
+  "gui.dungeontrain.own_photo_trash.tooltip": "Jeter : ce n'est pour personne d'autre.",
   "chat.dungeontrain.own_photo_trash.1": "Disparue. Toi seul l'auras vue.",
   "chat.dungeontrain.own_photo_trash.2": "Brûlée. Elle ne voyagera pas dans le train.",
   "chat.dungeontrain.own_photo_trash.3": "Celle-là reste entre toi et le feu.",

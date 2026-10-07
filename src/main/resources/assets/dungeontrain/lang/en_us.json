@@ -708,7 +708,7 @@
   "chat.dungeontrain.own_photo_tribute.paid.1": "The train takes your tribute, and your photo.",
   "chat.dungeontrain.own_photo_tribute.paid.2": "Tribute paid. Photo taken.",
   "chat.dungeontrain.own_photo_tribute.paid.3": "A tribute for your own memory.",
-  "gui.dungeontrain.own_photo_trash.tooltip": "Trash: burn it, and no one else will ever find it.",
+  "gui.dungeontrain.own_photo_trash.tooltip": "Trash: It's for no-one else.",
   "chat.dungeontrain.own_photo_trash.1": "Gone. Only you ever saw it.",
   "chat.dungeontrain.own_photo_trash.2": "Burned. It won't travel the train.",
   "chat.dungeontrain.own_photo_trash.3": "That one stays between you and the fire.",
