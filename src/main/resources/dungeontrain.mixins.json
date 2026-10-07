@@ -6,6 +6,7 @@
   "refmap": "dungeontrain.refmap.json",
   "plugin": "games.brennan.dungeontrain.mixin.CoreMixinPlugin",
   "mixins": [
+    "PhotographFrameItemPlaceMixin",
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
     "PlayerSprintFlyMixin",
