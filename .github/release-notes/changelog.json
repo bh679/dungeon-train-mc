@@ -23973,6 +23973,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "hide-instant-slides",
+      "version": "0.1184.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Camera tidy-up",
+      "summary": "Removed some unused camera items.",
+      "highlights": [],
+      "pr": 1867,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
