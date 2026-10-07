@@ -23832,6 +23832,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "fancy-author-rooms-tuning",
+      "version": "0.1180.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Grander, more common fancy rooms in dimensional carriages",
+      "summary": "The fancy rooms inside dimensional carriages have been reworked with new quartz and deepslate pillars and finer stair detailing, and they now turn up far more often. Library rooms appear a little less often to make space for them.",
+      "highlights": [
+        "Fancy dimensional carriage rooms have new pillar and stair detail",
+        "Fancy rooms now appear about five times as often",
+        "Library rooms appear less often"
+      ],
+      "pr": 1860,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
