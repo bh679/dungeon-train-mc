@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "117";
+    public static final String PROTOCOL_VERSION = "118";
 
     private DungeonTrainNet() {}
 
@@ -152,6 +152,8 @@ public final class DungeonTrainNet {
 
         // Disposable-camera photographs: client ScreenEvent.Closing on Exposure's photograph view → server burn.
         registrar.playToServer(PhotographViewClosedPacket.TYPE, PhotographViewClosedPacket.STREAM_CODEC, PhotographViewClosedPacket::handle);
+        // Found albums: client ScreenEvent.Closing on Exposure's album view → server burn.
+        registrar.playToServer(AlbumViewClosedPacket.TYPE, AlbumViewClosedPacket.STREAM_CODEC, AlbumViewClosedPacket::handle);
         registrar.playToServer(PhotoTributePacket.TYPE, PhotoTributePacket.STREAM_CODEC, PhotoTributePacket::handle);
         registrar.playToServer(OwnPhotoTributePacket.TYPE, OwnPhotoTributePacket.STREAM_CODEC, OwnPhotoTributePacket::handle);
         registrar.playToServer(OwnPhotoTrashPacket.TYPE, OwnPhotoTrashPacket.STREAM_CODEC, OwnPhotoTrashPacket::handle);
