@@ -68,9 +68,9 @@ public final class TranslationFilters {
     }
 
     /**
-     * The lang-key prefixes that belong to the build editor and the other creator tools — the
+     * The lang-key prefixes that belong to the build editor and the translate screen — the
      * world-space menus, the X menu, the builder profile, the block-variant / container / prefab
-     * tools, the translate screen, the video tools — so a translator can take or leave that body on
+     * tools, the translation editor itself — so a translator can take or leave that body on
      * its own. It is creative-only UI, dense with jargon, and roughly a third of every string the
      * mod ships; a player translating the game they play should not have to wade through it, and a
      * builder translating the tool they use should not have to wade through the death screens to

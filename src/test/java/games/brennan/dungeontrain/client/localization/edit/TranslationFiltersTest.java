@@ -231,7 +231,10 @@ class TranslationFiltersTest {
         assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.death.title"));
         assertTrue(TranslationFilters.isEditorKey("chat.dungeontrain.editor.variants.saved"));
         assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.translate.body.editor"));
-        assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.video_tools.title"));
+        // Seen by players, so counted: video tools, the custom-content prompt, a built room's message.
+        assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.video_tools.title"));
+        assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.custom_content.title"));
+        assertFalse(TranslationFilters.isEditorKey("chat.dungeontrain.portal_builder.self"));
         assertFalse(TranslationFilters.isEditorKey("advancements.dungeontrain.pacifist.title"));
         assertFalse(TranslationFilters.isEditorKey(null));
     }
