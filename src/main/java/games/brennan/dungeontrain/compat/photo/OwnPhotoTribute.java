@@ -53,8 +53,6 @@ public final class OwnPhotoTribute {
     /** Each own-photo Tribute this life multiplies the next one's cost by this. */
     public static final int MULTIPLIER = 3;
 
-    private static final int PAID_LINES = 3;
-
     private OwnPhotoTribute() {}
 
     /** {@code BASE_COST × MULTIPLIER^tributesThisLife}, capped at {@link Integer#MAX_VALUE}. */
@@ -133,8 +131,7 @@ public final class OwnPhotoTribute {
         SharedPhotos.encodeForDiscord(server, data.get(), PhotoPaperTextures.paper(PhotographType.REGULAR), frame.identifier().id(),
                 png -> TributePhotoReporter.postOwn(player, tributeNumber, cost, png));
         StartingBookEvents.dropAndBurnApproved(player, held);
-        int n = 1 + player.getRandom().nextInt(PAID_LINES);
-        player.sendSystemMessage(Component.translatable("chat.dungeontrain.own_photo_tribute.paid." + n).withStyle(ChatFormatting.GRAY));
+        player.sendSystemMessage(SharedPhotos.tributePaidLine(player, cost, SharedPhotos.VIEWS_MAX * SharedPhotos.OWN_BOOST_FACTOR));
         sync(player);
     }
 

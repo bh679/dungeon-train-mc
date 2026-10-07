@@ -892,31 +892,75 @@
   },
   "chat.dungeontrain.photo_tribute.paid.1": {
     "1": {
-      "label": "how many views the photo starts again with",
+      "label": "the emeralds paid, as a whole clause",
       "examples": [
-        "10",
-        "4",
-        "1"
-      ]
-    }
-  },
-  "chat.dungeontrain.photo_tribute.paid.2": {
-    "1": {
-      "label": "how many views the photo starts again with",
-      "examples": [
-        "10",
-        "4",
-        "1"
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.one",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.other",
+          "args": [
+            "27"
+          ]
+        }
       ]
     }
   },
   "chat.dungeontrain.photo_tribute.paid.3": {
     "1": {
-      "label": "how many views the photo starts again with",
+      "label": "the emeralds paid, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.one",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.other",
+          "args": [
+            "27"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "how many more people can now see the photo",
       "examples": [
         "10",
-        "4",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.emeralds.one": {
+    "1": {
+      "label": "how many emeralds (always 1)",
+      "examples": [
         "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.emeralds.other": {
+    "1": {
+      "label": "how many emeralds",
+      "examples": [
+        "3",
+        "27"
       ]
     }
   },

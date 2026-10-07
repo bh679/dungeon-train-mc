@@ -14,6 +14,8 @@ import games.brennan.dungeontrain.discord.PlayerMobPhotoReporter;
 import games.brennan.dungeontrain.discord.PhotoUpscale;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.TributePhotoReporter;
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -120,10 +122,10 @@ public final class SharedPhotos {
     static final String WITHDRAW_PATH = "/photos/withdraw";
 
     /** Chat line families, keyed {@code <key>.1..N} in the lang files. */
-    private static final int SEND_OFF_LINES = 10;
+    private static final int SEND_OFF_LINES = 5;
     private static final int FAMILIAR_LINES = 5;
     private static final int FAMILIAR_TRIBUTED_LINES = 3;
-    private static final int TRIBUTE_PAID_LINES = 3;
+    private static final int TRIBUTE_PAID_LINES = 4;
 
     /** The client uploads the pixels to the server separately; they can trail the print by a moment. */
     private static final int PIXEL_WAIT_TICKS = 100;
@@ -523,7 +525,16 @@ public final class SharedPhotos {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, VIEWS_MAX));
+        player.sendSystemMessage(tributePaidLine(player, cost, VIEWS_MAX));
+    }
+
+    /**
+     * The chat line for a Tribute just paid, to any photo: {@code %1$s} is the price as a whole clause
+     * ("3 emeralds", in the reader's plural form), {@code %2$s} how many people can now see it.
+     */
+    public static Component tributePaidLine(ServerPlayer player, int cost, int views) {
+        Component emeralds = PluralRules.clause(WorldInfoReporter.clientLanguage(player), "chat.dungeontrain.photo_tribute.emeralds", cost);
+        return line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, emeralds, views);
     }
 
     /**
