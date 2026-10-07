@@ -4414,6 +4414,23 @@
       "released_at": "2026-07-08T12:20:41Z"
     },
     {
+      "id": "release-community-books",
+      "version": "0.399.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Community Books",
+      "summary": "Write a book. Someone else finds it.",
+      "highlights": [],
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.399.0",
+      "released_at": "2026-07-08T12:20:21Z",
+      "major": true,
+      "description": "Sign a book and quill and it burns away, carried off into a library shared by every Dungeon Train world. Other players find it later in dungeon chests, credited to you, and you'll find theirs.\n\n- Every book is screened before anyone can find it\n- The more of the train's own books you read, the more community books turn up"
+    },
+    {
       "id": "shared-book-advancements",
       "version": "0.400.0",
       "type": "feat",
@@ -4983,6 +5000,23 @@
       "released_at": "2026-07-10T14:07:11Z"
     },
     {
+      "id": "release-death-notes",
+      "version": "0.424.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Death Notes",
+      "summary": "Curse another player's next life.",
+      "highlights": [],
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.424.0",
+      "released_at": "2026-07-10T14:06:51Z",
+      "major": true,
+      "description": "Title a book and quill **Death Note**, write another player's name on the first page, and sign it. It burns away in blue soul-fire. The curse seals the moment you next die: in that player's next run, your vengeful echo waits at the very carriage you fell at, and hunts them down."
+    },
+    {
       "id": "familiar-book-author-stats",
       "version": "0.425.0",
       "type": "feat",
@@ -5149,7 +5183,7 @@
       "tags": [
         "internal"
       ],
-      "title": "First Influencer and Translation",
+      "title": "First Influencer",
       "summary": "https://www.bilibili.com/video/BV1TNMW6iEiQ/",
       "highlights": [],
       "date": "2026-07-11",
@@ -6181,6 +6215,23 @@
       "released": true,
       "released_in": "v0.462.0",
       "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "release-official-chinese",
+      "version": "0.462.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Official Chinese Support",
+      "summary": "Dungeon Train in Simplified Chinese (\u7b80\u4f53\u4e2d\u6587).",
+      "highlights": [],
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:05Z",
+      "major": true,
+      "description": "Dungeon Train now speaks Simplified Chinese. Every menu, plus the books, character stories and death lore, translated by community translator [\u8001\u672c\u9858](https://space.bilibili.com/296088227). Death-screen tallies are written in Chinese numerals, and Chinese players can reach the developer with @\u5f00\u53d1\u8005."
     },
     {
       "id": "lamppost-carriage-and-spawn-tuning",
@@ -7970,7 +8021,7 @@
         "train",
         "ui"
       ],
-      "title": "What We Give? What Comes Back?",
+      "title": "Drifting Carriages, Kid Mode & Political Filter",
       "summary": "#### What can we give to the train?\n\nIt has given you much. Carriages, corridors, the dark ahead. What is there to give back?\n\nA room. That is what it asks, and what it takes.\n\nBuild one in the right place and it does not stay with you. The train carries it off \u2014 onto another line, into a world you will never see. And it brings you what others gave: a space you did not make, left exactly so by someone who was gone before you arrived.\n\nGive enough and it gives back. A room of yours comes round again, still as you left it \u2014 mostly. Other hands have been in it since.\n\nWho built this? Who has been here since? The carriage remembers, if you ask it.\n\n#### And to the one who laid the track?\n\nPlayers in China had no way to answer \u2014 WeChat Pay now sits on Ways to Help and the death screen, for clients set to Chinese.\n\n#### Who keeps the kids safe, when no-one else is around?\n\nFirst launch asks who is playing. Kid mode closes the developer chat and lets through only the player-written books and carriages an AI has judged fit for children. Adult is everything, as before.\n\n#### And what of our Chinese players, who must obey the laws of the land?\n\nFilter out the community books and letters that touch politically sensitive ground.\n\n#### What else?",
       "highlights": [
         "Updated translations thanks to \u8001\u672c\u9858",
@@ -8250,6 +8301,23 @@
       "released": true,
       "released_in": "v0.543.0",
       "released_at": "2026-08-07T03:06:04Z"
+    },
+    {
+      "id": "release-love-notes",
+      "version": "0.543.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Love Notes",
+      "summary": "Leave a Love Note for a friend: like a Death Note, but the opposite.",
+      "highlights": [],
+      "date": "2026-08-07",
+      "released": true,
+      "released_in": "v0.543.0",
+      "released_at": "2026-08-07T03:05:44Z",
+      "major": true,
+      "description": "Dungeon Train adventurers can now leave Love Notes for each other. They work like Death Notes, but the opposite. What does that actually mean? You'll have to try it to find out.\n\nTitle a book **Love Note**, and put your friend's Minecraft name on the first line."
     },
     {
       "id": "mod-recommendations-death-screen",
@@ -9065,6 +9133,23 @@
       "released_at": "2026-08-12T15:07:04Z"
     },
     {
+      "id": "release-help-translate",
+      "version": "0.552.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Help Translate",
+      "summary": "Fix Dungeon Train's text in your own language from inside the game. Your fixes reach everyone playing in that language, with no update to install.",
+      "highlights": [],
+      "date": "2026-08-11",
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:00Z",
+      "major": true,
+      "description": "Dungeon Train speaks nineteen languages besides English, and most of those lines were written by a machine. Now the people who actually speak them can put them right. **Options \u2192 Language \u2192 Help Translate** opens every line the mod ships, with the English beside it and your language's current wording ready to edit.\n\n- Filter to the lines no human has ever checked\n- Work in a batch, and nothing leaves the game until you press Submit\n- Once a reviewer approves a fix, it reaches every player in that language the next time they start the game. No update needed\n- Translators are named in the credits, and the language list's AI ring shrinks as lines get human-checked\n- Prefer your own tools? Export and import the files\n\nThank you to everyone who has already sent fixes in."
+    },
+    {
       "id": "release-dimensional-carriages",
       "version": "0.556.0",
       "type": "docs",
@@ -9818,6 +9903,23 @@
       "released": true,
       "released_in": "v0.592.0",
       "released_at": "2026-08-21T11:09:14Z"
+    },
+    {
+      "id": "release-edible-backpacks",
+      "version": "0.592.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Edible Backpacks",
+      "summary": "Eat backpacks for extra inventory slots: up to 108 per run.",
+      "highlights": [],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.592.0",
+      "released_at": "2026-08-21T11:08:54Z",
+      "major": true,
+      "description": "I made a custom backpack mod for the modpack, and this version includes it: **Edible Backpacks**.\n\nFind and eat them to unlock a new slot, or find an upgraded backpack to add 9 slots at once. You can get up to 108 new slots! Your progress resets after each run."
     },
     {
       "id": "ain-0-49",
