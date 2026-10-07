@@ -319,6 +319,8 @@ public final class CreditsScreen extends Screen {
             case RESTORE -> CreditsSelfEdits.setHidden(false);
             case HIDE_AMOUNT -> CreditsSelfEdits.setAmountHidden(true);
             case SHOW_AMOUNT -> CreditsSelfEdits.setAmountHidden(false);
+            case HIDE_SKIN -> CreditsSelfEdits.setSkinHidden(true);
+            case SHOW_SKIN -> CreditsSelfEdits.setSkinHidden(false);
         }
         // Refetch WITHOUT clearing: the overlay already renders the change from the cached lists,
         // and an empty cache while the answer is in flight would drop them from the page.
