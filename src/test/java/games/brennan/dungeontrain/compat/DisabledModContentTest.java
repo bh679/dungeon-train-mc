@@ -86,7 +86,7 @@ final class DisabledModContentTest {
     }
 
     @Test
-    @DisplayName("Exposure's camera, film and lightroom are hidden; the instant camera and photographs are kept")
+    @DisplayName("Exposure's camera, film, lightroom and the instant slides are hidden; the instant camera and photographs are kept")
     void exposureFilmWorkflowHidden() {
         for (String hidden : new String[] {"camera", "black_and_white_film", "color_film",
                 "high_sensitivity_black_and_white_film", "high_sensitivity_color_film",
@@ -98,7 +98,10 @@ final class DisabledModContentTest {
         assertFalse(DisabledModContent.isDisabledItem(id("exposure:photograph_frame"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("exposure:camera_stand"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("exposure_polaroid:instant_camera"), false));
-        assertFalse(DisabledModContent.isDisabledItem(id("exposure_polaroid:instant_color_slide"), false));
+        for (String slide : new String[] {"instant_color_slide", "instant_black_and_white_slide",
+                "high_sensitivity_instant_color_slide", "high_sensitivity_instant_black_and_white_slide"}) {
+            assertTrue(DisabledModContent.isDisabledItem(id("exposure_polaroid:" + slide), false), slide);
+        }
     }
 
     @Test

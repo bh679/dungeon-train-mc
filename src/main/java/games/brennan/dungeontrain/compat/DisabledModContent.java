@@ -58,6 +58,10 @@ public final class DisabledModContent {
      * Exposure's original film workflow — the camera, its film rolls (fresh and developed), the lightroom
      * and the chromatic sheet it prints. Players get Exposure: Polaroid's instant camera instead, which
      * needs none of them; Exposure itself stays installed because the add-on runs on it.
+     *
+     * <p>Also the add-on's four instant slides. Players never hold a plain instant camera — only
+     * {@link DisposableCamera}, which comes with its slide loaded as data and can't be topped up — so
+     * the slide items have nothing to feed and are hidden with their recipes.</p>
      */
     static final Set<String> HIDDEN_ITEMS = Set.of(
         "exposure:camera",
@@ -68,7 +72,11 @@ public final class DisabledModContent {
         "exposure:developed_black_and_white_film",
         "exposure:developed_color_film",
         "exposure:lightroom",
-        "exposure:chromatic_sheet");
+        "exposure:chromatic_sheet",
+        "exposure_polaroid:instant_color_slide",
+        "exposure_polaroid:instant_black_and_white_slide",
+        "exposure_polaroid:high_sensitivity_instant_color_slide",
+        "exposure_polaroid:high_sensitivity_instant_black_and_white_slide");
 
     static final String INSTANT_CAMERA = "exposure_polaroid:instant_camera";
 
