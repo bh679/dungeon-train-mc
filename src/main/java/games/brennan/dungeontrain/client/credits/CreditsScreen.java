@@ -50,9 +50,11 @@ import java.util.Set;
  *       credit carries a URL. The whole card is omitted on stock installs where no credits exist,
  *       which is the normal en_us release-build path rather than an edge case.</li>
  *   <li><b>Writers</b> and <b>Builders</b> — the relay's most-praised writers and everyone credited
- *       as a shipped template's builder ({@link RelayWriters}, {@link TemplateBuilderCredits}).</li>
+ *       as a shipped template's builder ({@link RelayWriters}, {@link TemplateBuilderCredits}), plus
+ *       the team's own rows for the built-in books and uncredited templates ({@link HouseCredits}).</li>
  *   <li><b>Funders</b> — everyone in the relay's donation ledger, biggest contribution first, with
- *       the figure beside the name ({@link RelayFunders}). Skipped when the ledger is empty.</li>
+ *       the figure beside the name ({@link RelayFunders}). The relay adds the developer's own row
+ *       (lifetime cost less everything raised). Skipped when the ledger is empty.</li>
  *   <li><b>Community</b> — the Discord's Value Adders by MEE6 level ({@link RelayCommunity}). Always
  *       drawn: its footer is where a player links their Discord ({@link DiscordLinkScreen}).</li>
  * </ol>
@@ -181,8 +183,8 @@ public final class CreditsScreen extends Screen {
         }
 
         // The community's writers — the relay's Most Praised Writers board, past the bar
-        // RelayWriters sets. Relay-only: a book is written on the relay, never in the jar.
-        List<RelayWriters.Writer> writers = RelayWriters.current();
+        // RelayWriters sets — plus the team, for the books built into the jar (HouseCredits).
+        List<RelayWriters.Writer> writers = HouseCredits.mergedWriters();
         if (!writers.isEmpty()) {
             y += CardCanvas.CARD_GAP;
             y = addWritersCard(writers, y);

@@ -73,9 +73,20 @@ public final class TemplateBuilderCredits {
         return cached;
     }
 
-    /** The bundled list with the relay's laid over it — what the Credits page shows. */
+    /**
+     * The bundled list with the relay's laid over it, plus the team's own row for every shipped
+     * template nobody else is credited with ({@link HouseCredits}) — what the Credits page shows.
+     */
     public static List<Builder> merged() {
-        return merge(all(), RelayTemplateBuilders.current());
+        return withHouse(merge(all(), RelayTemplateBuilders.current()), HouseCredits.builders());
+    }
+
+    /** Add the team's rows (no uuid, so never anyone's own line) and re-sort. Pure. */
+    static List<Builder> withHouse(List<Builder> people, List<Builder> house) {
+        if (house.isEmpty()) return people;
+        List<Builder> out = new ArrayList<>(people);
+        out.addAll(house);
+        return sorted(out);
     }
 
     /**

@@ -118,6 +118,11 @@ jobs:
           python3 scripts/lost-city/build-templates.py --check
           python3 scripts/lost-city/generate-variants.py --check
 
+      - name: Credits house rows match the bundled builds + books
+        # The team's own Builders/Writers rows (mod + website) are counted from the bundled templates
+        # and books (scripts/credits). Fails when content changed and the counts were not regenerated.
+        run: python3 scripts/credits/house-credits.py --check
+
   # Stdlib-only Python guard for the client/server network handshake. DungeonTrainNet's
   # PROTOCOL_VERSION string is the only thing that keeps an older client off a newer server:
   # NeoForge negotiates payload *types*, not their layouts, so a packet that gains a field still
