@@ -229,9 +229,23 @@ class TranslationFiltersTest {
         assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.block_variant.title"));
         assertTrue(TranslationFilters.isEditorKey("chat.dungeontrain.editor_bar.common.save_failed"));
         assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.death.title"));
-        assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.translate.body.editor"));
+        assertTrue(TranslationFilters.isEditorKey("chat.dungeontrain.editor.variants.saved"));
+        assertTrue(TranslationFilters.isEditorKey("gui.dungeontrain.translate.body.editor"));
+        // Seen by players, so counted: video tools, the custom-content prompt, a built room's message.
+        assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.video_tools.title"));
+        assertFalse(TranslationFilters.isEditorKey("gui.dungeontrain.custom_content.title"));
+        assertFalse(TranslationFilters.isEditorKey("chat.dungeontrain.portal_builder.self"));
         assertFalse(TranslationFilters.isEditorKey("advancements.dungeontrain.pacifist.title"));
         assertFalse(TranslationFilters.isEditorKey(null));
+    }
+
+    @Test
+    @DisplayName("the prefixes come from the shipped translation_editor_keys.json")
+    void editorPrefixesLoadFromTheSharedAsset() {
+        assertEquals(java.util.List.of("a.", "b."),
+            TranslationFilters.parseEditorPrefixes("{\"prefixes\": [\"a.\", \"\", 3, \"b.\"]}"));
+        assertEquals(java.util.List.of(), TranslationFilters.parseEditorPrefixes("{\"other\": []}"));
+        assertTrue(TranslationFilters.class.getResource(TranslationFilters.EDITOR_KEYS_RESOURCE) != null);
     }
 
     @Test

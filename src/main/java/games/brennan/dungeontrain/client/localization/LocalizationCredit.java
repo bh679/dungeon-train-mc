@@ -46,17 +46,39 @@ public record LocalizationCredit(
      * The generated AI-translation counts for one locale. Invariant (enforced at
      * parse time): {@code 0 <= aiUnreviewed <= aiAuthored <= totalKeys} and
      * {@code totalKeys > 0}, so the fractions are always in {@code [0, 1]}.
+     *
+     * <p>{@code countedKeys} is {@code totalKeys} less the editor and creator-tool lines
+     * ({@code counted_keys}, see {@code TranslationFilters#isEditorKey}) — the denominator of a
+     * translator's "% translated" on the Credits screen. {@code 0 <= countedKeys <= totalKeys};
+     * equal to {@code totalKeys} for a pack stamped before the field existed.</p>
      */
-    public record AiCounts(int totalKeys, int aiAuthored, int aiUnreviewed) {
+    public record AiCounts(int totalKeys, int aiAuthored, int aiUnreviewed, int countedKeys) {
 
-        /** Fraction of lines that are AI-authored with no human reviewer. */
-        public double unreviewedFraction() {
-            return (double) aiUnreviewed / totalKeys;
+        /** Counts with no editor split known: every line counts. */
+        public AiCounts(int totalKeys, int aiAuthored, int aiUnreviewed) {
+            this(totalKeys, aiAuthored, aiUnreviewed, totalKeys);
         }
 
-        /** Fraction of lines that are AI-authored, reviewed or not. */
+        /**
+         * Fraction of the player-facing lines still awaiting a human: one minus the lines a human
+         * has done (written or reviewed, editor lines included) over {@code countedKeys}, never
+         * below 0. The same measure as a translator's share on the Credits page, so the ring and
+         * the credits agree — a translator who covered the editor too fills the ring sooner.
+         */
+        public double unreviewedFraction() {
+            return remaining(aiUnreviewed);
+        }
+
+        /** As {@link #unreviewedFraction}, counting every AI-authored line as not a human's. */
         public double authoredFraction() {
-            return (double) aiAuthored / totalKeys;
+            return remaining(aiAuthored);
+        }
+
+        private double remaining(int notHuman) {
+            if (countedKeys <= 0) {
+                return (double) notHuman / totalKeys;
+            }
+            return Math.max(0.0, 1.0 - (double) (totalKeys - notHuman) / countedKeys);
         }
     }
 }

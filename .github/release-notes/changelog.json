@@ -23955,6 +23955,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "player-facing-translation-progress",
+      "version": "0.1184.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Translation progress counts the lines you actually see",
+      "summary": "A language's progress \u2014 the ring on the Language screen and each translator's % in the Credits \u2014 now leaves out the train editor and the translation screen, which most players never open, so it shows how much of the game you play is translated. Translators who also did the editor still get credit for it, so a share can go past 100%.",
+      "highlights": [],
+      "pr": 1866,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
