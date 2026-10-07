@@ -23917,6 +23917,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "website-builders-credits-sync",
+      "version": "0.1183.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "Website Builders credits stay up to date",
+      "summary": "The Builders list on the Dungeon Train website now updates with every release, so newly credited builders show up there as well as in-game.",
+      "highlights": [],
+      "pr": 1865,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
