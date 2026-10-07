@@ -90,7 +90,7 @@ public final class OwnPhotoTribute {
         return frame != null && playerName.equals(frame.photographer().name());
     }
 
-    private static Optional<InteractionHand> heldOwnPrintHand(ServerPlayer player) {
+    static Optional<InteractionHand> heldOwnPrintHand(ServerPlayer player) {
         String name = player.getGameProfile().getName();
         return Stream.of(InteractionHand.values()).filter(hand -> isOwnPrint(player.getItemInHand(hand), name)).findFirst();
     }
