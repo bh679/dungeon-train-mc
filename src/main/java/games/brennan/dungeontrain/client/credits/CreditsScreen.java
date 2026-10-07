@@ -50,9 +50,11 @@ import java.util.Set;
  *       credit carries a URL. The whole card is omitted on stock installs where no credits exist,
  *       which is the normal en_us release-build path rather than an edge case.</li>
  *   <li><b>Writers</b> and <b>Builders</b> — the relay's most-praised writers and everyone credited
- *       as a shipped template's builder ({@link RelayWriters}, {@link TemplateBuilderCredits}).</li>
+ *       as a shipped template's builder ({@link RelayWriters}, {@link TemplateBuilderCredits}), plus
+ *       the team's own rows for the built-in books and uncredited templates ({@link HouseCredits}).</li>
  *   <li><b>Funders</b> — everyone in the relay's donation ledger, biggest contribution first, with
- *       the figure beside the name ({@link RelayFunders}). Skipped when the ledger is empty.</li>
+ *       the figure beside the name ({@link RelayFunders}). The relay adds the developer's own row
+ *       (lifetime cost less everything raised). Skipped when the ledger is empty.</li>
  *   <li><b>Community</b> — the Discord's Value Adders by MEE6 level ({@link RelayCommunity}). Always
  *       drawn: its footer is where a player links their Discord ({@link DiscordLinkScreen}).</li>
  * </ol>
@@ -181,8 +183,8 @@ public final class CreditsScreen extends Screen {
         }
 
         // The community's writers — the relay's Most Praised Writers board, past the bar
-        // RelayWriters sets. Relay-only: a book is written on the relay, never in the jar.
-        List<RelayWriters.Writer> writers = RelayWriters.current();
+        // RelayWriters sets — plus the team, for the books built into the jar (HouseCredits).
+        List<RelayWriters.Writer> writers = HouseCredits.mergedWriters();
         if (!writers.isEmpty()) {
             y += CardCanvas.CARD_GAP;
             y = addWritersCard(writers, y);
@@ -317,6 +319,8 @@ public final class CreditsScreen extends Screen {
             case RESTORE -> CreditsSelfEdits.setHidden(false);
             case HIDE_AMOUNT -> CreditsSelfEdits.setAmountHidden(true);
             case SHOW_AMOUNT -> CreditsSelfEdits.setAmountHidden(false);
+            case HIDE_SKIN -> CreditsSelfEdits.setSkinHidden(true);
+            case SHOW_SKIN -> CreditsSelfEdits.setSkinHidden(false);
         }
         // Refetch WITHOUT clearing: the overlay already renders the change from the cached lists,
         // and an empty cache while the answer is in flight would drop them from the page.
@@ -515,16 +519,19 @@ public final class CreditsScreen extends Screen {
         List<RelayFunders.Funder> topFive = funders.subList(0, Math.min(funders.size(), CreditsPaging.BUILDERS_COLLAPSED));
         CreditsPaging.View<RelayFunders.Funder> view = fundersPaging.view(topFive, funders);
         for (RelayFunders.Funder funder : view.rows()) {
-            boolean own = fundersStanding != null && funder.rank() > 0 && funder.rank() == fundersStanding.rank();
+            boolean own = !funder.house() && fundersStanding != null && funder.rank() > 0
+                    && funder.rank() == fundersStanding.rank();
             CreditsSelfEdits.Shown shown = own
                     ? CreditsSelfEdits.apply(Section.FUNDERS, funder.name(), funder.anonymous())
                     : new CreditsSelfEdits.Shown(funder.name(), funder.anonymous());
             boolean amountHidden = own ? CreditsSelfEdits.amountHidden(funder.amountHidden()) : funder.amountHidden();
             Component name = shown.anonymous() ? anonymousName(own) : Component.literal(shown.name());
+            // The developer's own row is what he has spent that community support has not yet covered.
+            String lineKey = funder.house() ? "gui.dungeontrain.credits.funders.developer_line"
+                    : "gui.dungeontrain.credits.funders.person_line";
             Component line = amountHidden
                     ? Component.translatable("gui.dungeontrain.credits.funders.person_line_hidden", name)
-                    : Component.translatable("gui.dungeontrain.credits.funders.person_line", name,
-                            Component.literal(Integer.toString(funder.amountAud())));
+                    : Component.translatable(lineKey, name, Component.literal(Integer.toString(funder.amountAud())));
             y = addCreditRow(line, own, Section.FUNDERS, shown.name(), shown.anonymous(), amountHidden,
                     innerX, innerW, y);
         }

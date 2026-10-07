@@ -26,6 +26,15 @@ final class RelayFundersTest {
     }
 
     @Test
+    @DisplayName("the developer's row is flagged house; older rows without the field are not")
+    void houseFlag() {
+        List<RelayFunders.Funder> out = RelayFunders.parse("{\"rows\":["
+            + "{\"name\":\"Brennan Hatton\",\"amountAud\":1782,\"house\":true},{\"name\":\"Ada\",\"amountAud\":70}]}");
+        assertEquals(new RelayFunders.Funder("Brennan Hatton", 1782, false, false, 1, true), out.get(0));
+        assertEquals(false, out.get(1).house());
+    }
+
+    @Test
     @DisplayName("anonymous keeps the figure; amountHidden (or a null amount) keeps the name; both together keep the row")
     void flags() {
         List<RelayFunders.Funder> out = RelayFunders.parse("{\"rows\":["
