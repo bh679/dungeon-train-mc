@@ -23834,8 +23834,30 @@
       "released_at": null
     },
     {
-      "id": "fancy-author-rooms-tuning",
+      "id": "trash-own-photos",
       "version": "0.1180.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Trash your own photos",
+      "summary": "When you look at a photo you've just taken, a trash button now sits beside the X. It burns the photo, and no other passenger will ever find it.",
+      "highlights": [
+        "Paying Tribute to a photo now tells you how many emeralds it cost and how many more people will see it.",
+        "The chat lines that follow your photos are shorter.",
+        "Hovering the buttons under a photo now shows a plain Trash, Close or Tribute."
+      ],
+      "pr": 1859,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fancy-author-rooms-tuning",
+      "version": "0.1181.0",
       "type": "content",
       "tags": [
         "content",

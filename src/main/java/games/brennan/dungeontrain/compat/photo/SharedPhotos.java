@@ -14,6 +14,8 @@ import games.brennan.dungeontrain.discord.PlayerMobPhotoReporter;
 import games.brennan.dungeontrain.discord.PhotoUpscale;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.TributePhotoReporter;
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -117,12 +119,13 @@ public final class SharedPhotos {
     static final String TRIBUTE_PATH = "/photos/tribute";
     static final String RESTORE_PATH = "/photos/restore";
     static final String BOOST_PATH = "/photos/boost";
+    static final String WITHDRAW_PATH = "/photos/withdraw";
 
     /** Chat line families, keyed {@code <key>.1..N} in the lang files. */
-    private static final int SEND_OFF_LINES = 10;
+    private static final int SEND_OFF_LINES = 5;
     private static final int FAMILIAR_LINES = 5;
     private static final int FAMILIAR_TRIBUTED_LINES = 3;
-    private static final int TRIBUTE_PAID_LINES = 3;
+    private static final int TRIBUTE_PAID_LINES = 4;
 
     /** The client uploads the pixels to the server separately; they can trail the print by a moment. */
     private static final int PIXEL_WAIT_TICKS = 100;
@@ -224,8 +227,7 @@ public final class SharedPhotos {
      * boost until the photo arrives. Returns false when the print was never uploaded (no key).
      */
     public static boolean boostOwnUpload(ServerPlayer player, ItemStack print, int cost) {
-        Frame frame = print.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
-        String key = frame == null ? "" : frame.extraData().getString(UPLOAD_KEY);
+        String key = uploadKey(print);
         if (key.isBlank()) return false;
         JsonObject body = new JsonObject();
         body.addProperty("uuid", bare(player.getUUID()));
@@ -236,6 +238,32 @@ public final class SharedPhotos {
         lifeFields(player, body, true);
         RelayOutbox.get().enqueue(BOOST_PATH, body.toString());
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
+        return true;
+    }
+
+    /** The upload key a print was queued with, or blank when it was never sent to be shared. */
+    public static String uploadKey(ItemStack print) {
+        Frame frame = print.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        return frame == null ? "" : frame.extraData().getString(UPLOAD_KEY);
+    }
+
+    /**
+     * The photographer trashed their own print: it must never be found. Still waiting here for its
+     * pixels, it is simply dropped; already on its way, the relay is asked to withdraw it — safe to
+     * arrive before the upload, which the relay then refuses. Returns false when it was never queued.
+     */
+    public static boolean withdrawOwnUpload(ServerPlayer player, ItemStack print) {
+        String key = uploadKey(print);
+        if (key.isBlank()) return false;
+        List<PendingUpload> kept = pendingUploads.stream().filter(upload -> !key.equals(upload.key())).toList();
+        if (kept.size() < pendingUploads.size()) {
+            pendingUploads = kept;
+            return true;
+        }
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", bare(player.getUUID()));
+        body.addProperty("key", key);
+        RelayOutbox.get().enqueue(WITHDRAW_PATH, body.toString());
         return true;
     }
 
@@ -497,7 +525,16 @@ public final class SharedPhotos {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, VIEWS_MAX));
+        player.sendSystemMessage(tributePaidLine(player, cost, VIEWS_MAX));
+    }
+
+    /**
+     * The chat line for a Tribute just paid, to any photo: {@code %1$s} is the price as a whole clause
+     * ("3 emeralds", in the reader's plural form), {@code %2$s} how many people can now see it.
+     */
+    public static Component tributePaidLine(ServerPlayer player, int cost, int views) {
+        Component emeralds = PluralRules.clause(WorldInfoReporter.clientLanguage(player), "chat.dungeontrain.photo_tribute.emeralds", cost);
+        return line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, emeralds, views);
     }
 
     /**
