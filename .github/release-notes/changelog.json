@@ -23678,8 +23678,25 @@
       "released_at": "2026-10-06T08:06:48Z"
     },
     {
-      "id": "loading-stories-no-dashes",
+      "id": "community-photo-sharing-tidy",
       "version": "0.1177.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Community photo sharing fixes",
+      "summary": "Small fixes to how community photos are shared.",
+      "highlights": [],
+      "pr": 1856,
+      "date": "2026-10-06",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "loading-stories-no-dashes",
+      "version": "0.1178.0",
       "type": "fix",
       "tags": [
         "fix",
