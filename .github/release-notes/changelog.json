@@ -23812,6 +23812,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "website-credits-page",
+      "version": "0.1179.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Credits on the website",
+      "summary": "The Credits are now on the website at brennan.games/dungeontrain/credits/ \u2014 every translator, writer, builder, funder and community member, with each list's top contributor standing beside it as an animated player in their own Minecraft skin.",
+      "highlights": [
+        "The top translator, writer, builder, funder and community member, each in their own skin",
+        "Renames and Anonymous choices from the in-game Credits page carry over",
+        "Linked from the front page of the website"
+      ],
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
