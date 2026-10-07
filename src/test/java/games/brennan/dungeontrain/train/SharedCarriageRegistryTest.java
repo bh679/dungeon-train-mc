@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SharedCarriageRegistryTest {
@@ -43,6 +44,29 @@ class SharedCarriageRegistryTest {
         assertEquals(1, b.pIdx);
         assertNull(SharedCarriageRegistry.resolve(sub, 100, 65, 3)); // outside every footprint
         assertNull(SharedCarriageRegistry.resolve(UUID.randomUUID(), 3, 65, 3)); // unknown sub-level
+    }
+
+    @Test
+    void aDriftingGroupResolvesFromEveryCarriageItSpans() {
+        UUID sub = UUID.randomUUID();
+        CarriageDims groupBox = new CarriageDims(27, 7, 7); // three 9-long carriages as one build
+        SharedCarriageRegistry.Instance group = SharedCarriageRegistry.register(null, sub, UUID.randomUUID(), 6,
+                new BlockPos(0, 64, 0), groupBox, "full", false, false, "", null, null, 0, "stone",
+                Credits.EMPTY, Deaths.EMPTY,
+                games.brennan.dungeontrain.net.relay.SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+        assertEquals("carriage_group", group.kind);
+        assertSame(group, SharedCarriageRegistry.resolve(sub, 2, 65, 3));
+        assertSame(group, SharedCarriageRegistry.resolve(sub, 13, 65, 3));
+        assertSame(group, SharedCarriageRegistry.resolve(sub, 26, 65, 3));
+        assertNull(SharedCarriageRegistry.resolve(sub, 27, 65, 3));
+    }
+
+    @Test
+    void anOrdinarySharedCarriageRegistersAsACarriage() {
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(null, UUID.randomUUID(),
+                UUID.randomUUID(), 0, BlockPos.ZERO, DIMS, "shared", false, false, "", null, null, 0, "stone",
+                Credits.EMPTY, Deaths.EMPTY);
+        assertEquals("carriage", inst.kind);
     }
 
     @Test

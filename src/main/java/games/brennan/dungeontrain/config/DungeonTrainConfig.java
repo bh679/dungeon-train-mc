@@ -218,6 +218,10 @@ public final class DungeonTrainConfig {
     public static final double DEFAULT_SHARED_ROOM_CHANCE = 1.0 / 15.0;
     public static final double MIN_SHARED_ROOM_CHANCE = 0.0;
     public static final double MAX_SHARED_ROOM_CHANCE = 1.0;
+    /** One Group carriage in fifty drifts — one group-long build travelling the relay whole. */
+    public static final double DEFAULT_SHARED_GROUP_CHANCE = 0.02;
+    public static final double MIN_SHARED_GROUP_CHANCE = 0.0;
+    public static final double MAX_SHARED_GROUP_CHANCE = 1.0;
     public static final double DEFAULT_SHARED_CARRIAGE_POOL_CHANCE = 0.65;
     public static final double MIN_SHARED_CARRIAGE_POOL_CHANCE = 0.0;
     public static final double MAX_SHARED_CARRIAGE_POOL_CHANCE = 1.0;
@@ -380,6 +384,7 @@ public final class DungeonTrainConfig {
     public static final ModConfigSpec.BooleanValue BUILDER_PROFILE_ENABLED;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_POOL_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_ROOM_CHANCE;
+    public static final ModConfigSpec.DoubleValue SHARED_GROUP_CHANCE;
     public static final ModConfigSpec.DoubleValue KILLER_BUNNY_CHANCE;
     public static final ModConfigSpec.DoubleValue KILLER_BUNNY_NAME_CHANCE;
     public static final ModConfigSpec.DoubleValue SHARED_CARRIAGE_OWN_CHANCE;
@@ -448,6 +453,7 @@ public final class DungeonTrainConfig {
         BUILDER_PROFILE_ENABLED = pair.getLeft().builderProfileEnabled;
         SHARED_CARRIAGE_POOL_CHANCE = pair.getLeft().sharedCarriagePoolChance;
         SHARED_ROOM_CHANCE = pair.getLeft().sharedRoomChance;
+        SHARED_GROUP_CHANCE = pair.getLeft().sharedGroupChance;
         KILLER_BUNNY_CHANCE = pair.getLeft().killerBunnyChance;
         KILLER_BUNNY_NAME_CHANCE = pair.getLeft().killerBunnyNameChance;
         SHARED_CARRIAGE_OWN_CHANCE = pair.getLeft().sharedCarriageOwnChance;
@@ -724,6 +730,13 @@ public final class DungeonTrainConfig {
                         "Authors can still veto a room outright with its Drift setting.")
                 .defineInRange("sharedRoomChance", DEFAULT_SHARED_ROOM_CHANCE,
                         MIN_SHARED_ROOM_CHANCE, MAX_SHARED_ROOM_CHANCE);
+        ModConfigSpec.DoubleValue sharedGroupChance = b
+                .comment("The probability a Group carriage (one carriage spanning the whole group) DRIFTS — travels the relay",
+                        "as one group-long build. A drifting one uploads whole when a player edits it and rolls the",
+                        "pool/own/fresh split above for whether it arrives as another world's copy; the rest are the plain",
+                        "Group template and never touch the relay. Rolled deterministically per group. Default 0.02.")
+                .defineInRange("sharedGroupChance", DEFAULT_SHARED_GROUP_CHANCE,
+                        MIN_SHARED_GROUP_CHANCE, MAX_SHARED_GROUP_CHANCE);
         ModConfigSpec.IntValue sharedCarriageMaxEntities = b
                 .comment("How many free ENTITIES (armor stands, item frames, paintings, mobs) a shared carriage may carry",
                         "into the community pool. They are captured with the build, drawn in the web preview, and spawned",
@@ -851,7 +864,7 @@ public final class DungeonTrainConfig {
                 introCinematicChunkPreloadEnabled, spawnSearchSyncGen, sharedCarriagesEnabled, sharedCarriageLeasingEnabled,
                 sharedCarriagePoolChance,
                 sharedCarriageOwnChance, sharedCarriageMaxEntities, builderProfileEnabled, sharedRoomChance,
-                killerBunnyChance, killerBunnyNameChance);
+                sharedGroupChance, killerBunnyChance, killerBunnyNameChance);
     }
 
     /**
@@ -886,6 +899,12 @@ public final class DungeonTrainConfig {
     public static double getSharedRoomChance() {
         double v = isLoaded() ? SHARED_ROOM_CHANCE.get() : DEFAULT_SHARED_ROOM_CHANCE;
         return Math.max(MIN_SHARED_ROOM_CHANCE, Math.min(MAX_SHARED_ROOM_CHANCE, v));
+    }
+
+    /** Probability a Group carriage drifts as one group-long build — see {@code SharedGroupDrift}. */
+    public static double getSharedGroupChance() {
+        double v = isLoaded() ? SHARED_GROUP_CHANCE.get() : DEFAULT_SHARED_GROUP_CHANCE;
+        return Math.max(MIN_SHARED_GROUP_CHANCE, Math.min(MAX_SHARED_GROUP_CHANCE, v));
     }
 
     /** Probability a freshly spawned rabbit is the Killer Bunny — see {@code KillerBunnyEvents}. */
@@ -1410,6 +1429,7 @@ public final class DungeonTrainConfig {
             ModConfigSpec.IntValue sharedCarriageMaxEntities,
             ModConfigSpec.BooleanValue builderProfileEnabled,
             ModConfigSpec.DoubleValue sharedRoomChance,
+            ModConfigSpec.DoubleValue sharedGroupChance,
             ModConfigSpec.DoubleValue killerBunnyChance,
             ModConfigSpec.DoubleValue killerBunnyNameChance
     ) {}

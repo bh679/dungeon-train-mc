@@ -151,6 +151,8 @@ public final class SharedCarriageClient {
         public static final String KIND_CARRIAGE = "carriage";
         /** The relay's name for a dimensional carriage's room. */
         public static final String KIND_PORTAL_ROOM = "portal_room";
+        /** The relay's name for a drifting Group carriage — one build spanning a whole group. */
+        public static final String KIND_CARRIAGE_GROUP = "carriage_group";
 
         public PoolLease {
             // A relay older than the kind field says nothing, and the only thing it can have served is
@@ -169,6 +171,11 @@ public final class SharedCarriageClient {
         /** True when the relay served a dimensional carriage's room rather than a carriage. */
         public boolean isRoom() {
             return KIND_PORTAL_ROOM.equals(kind);
+        }
+
+        /** True when the relay served a drifting Group carriage rather than a one-carriage build. */
+        public boolean isGroup() {
+            return KIND_CARRIAGE_GROUP.equals(kind);
         }
     }
 
@@ -1146,6 +1153,7 @@ public final class SharedCarriageClient {
                                                                String ownerUuid, String mode,
                                                                String kind, String subKind) {
         boolean wantsRoom = PoolLease.KIND_PORTAL_ROOM.equals(kind);
+        boolean wantsGroup = PoolLease.KIND_CARRIAGE_GROUP.equals(kind);
         JsonObject body = new JsonObject();
         if (kind != null && !kind.isEmpty()) body.addProperty("kind", kind);
         if (subKind != null && !subKind.isEmpty()) body.addProperty("subKind", subKind);
@@ -1186,6 +1194,14 @@ public final class SharedCarriageClient {
                 LOGGER.warn("[DungeonTrain] asked the relay for room '{}' and was served kind={} subKind='{}' "
                         + "(id={}) — an older relay ignores the kind; returning it unused. Update the relay.",
                         subKind, lease.kind(), lease.subKind(), lease.id());
+                returnLease(lease.id(), lease.token(), null, null, 0);
+                return Optional.empty();
+            }
+            // Same guard for a group: a relay that can't lease groups answers as a carriage pool, and a
+            // one-carriage build is never what a group-long box should be filled with.
+            if (wantsGroup && !lease.isGroup()) {
+                LOGGER.warn("[DungeonTrain] asked the relay for a carriage group and was served kind={} (id={}) — "
+                        + "returning it unused. Update the relay.", lease.kind(), lease.id());
                 returnLease(lease.id(), lease.token(), null, null, 0);
                 return Optional.empty();
             }

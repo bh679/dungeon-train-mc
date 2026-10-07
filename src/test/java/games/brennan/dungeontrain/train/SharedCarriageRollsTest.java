@@ -104,4 +104,25 @@ class SharedCarriageRollsTest {
         assertTrue(rate > 0.05 && rate < 0.085, "about one in fifteen, got " + rate);
         assertTrue(disagree > 0, "the room roll must not be the bucket roll in disguise");
     }
+
+    @Test
+    void groupRollIsDeterministicIndependentAndNearTheDefaultRate() {
+        long seed = 4242L;
+        assertEquals(SharedCarriageRolls.groupDrifts(seed, 7, 0.3), SharedCarriageRolls.groupDrifts(seed, 7, 0.3));
+        assertFalse(SharedCarriageRolls.groupDrifts(seed, 7, 0.0));
+        assertTrue(SharedCarriageRolls.groupDrifts(seed, 7, 1.0));
+        double chance = games.brennan.dungeontrain.config.DungeonTrainConfig.DEFAULT_SHARED_GROUP_CHANCE;
+        assertEquals(0.02, chance, 1e-9, "one Group carriage in fifty drifts by default");
+        int drifting = 0, disagreeRoom = 0;
+        int n = 50_000;
+        for (int group = 0; group < n; group++) {
+            boolean drifts = SharedCarriageRolls.groupDrifts(seed, group, chance);
+            if (drifts) drifting++;
+            // Its own stream: not the room roll under another name.
+            if (drifts != SharedCarriageRolls.roomDrifts(seed, group, chance)) disagreeRoom++;
+        }
+        double rate = drifting / (double) n;
+        assertTrue(rate > 0.015 && rate < 0.025, "about one in fifty, got " + rate);
+        assertTrue(disagreeRoom > 0, "the group roll must not be the room roll in disguise");
+    }
 }

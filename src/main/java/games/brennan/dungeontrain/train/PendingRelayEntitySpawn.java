@@ -22,11 +22,21 @@ import net.minecraft.nbt.ListTag;
  * @param shipyardOrigin the carriage's lowest corner in shipyard coords — the frame the entity offsets
  *                       in {@code ents} are relative to, and the same origin the blocks were stamped at
  * @param ents           the blob's {@code ents} list, exactly as {@link CarriageEntitySnapshot} wrote it
- * @param carriagePIdx   the carriage's pIdx, used for the contents tag + spawn anchor
+ * @param carriagePIdx   the pIdx of the carriage at {@code shipyardOrigin}, used for the contents tag +
+ *                       spawn anchor; a drifting Group carriage's later carriages follow on from it
+ * @param carriageLength one carriage's length, for slotting a group build's entities into the carriage
+ *                       each one stands in
+ * @param carriages      how many carriages the build spans — 1 for a carriage, the group size for a group
  */
 public record PendingRelayEntitySpawn(
     BlockPos shipyardOrigin,
     ListTag ents,
-    int carriagePIdx
+    int carriagePIdx,
+    int carriageLength,
+    int carriages
 ) {
+    /** A one-carriage build: every entity belongs to {@code carriagePIdx}. */
+    public PendingRelayEntitySpawn(BlockPos shipyardOrigin, ListTag ents, int carriagePIdx) {
+        this(shipyardOrigin, ents, carriagePIdx, 1, 1);
+    }
 }

@@ -1301,7 +1301,8 @@ public final class TrainCarriageAppender {
             if (p == null) continue;
             slots++;
             try {
-                spawned += CarriageEntitySnapshot.spawn(level, p.shipyardOrigin(), p.ents(), p.carriagePIdx());
+                spawned += CarriageEntitySnapshot.spawn(level, p.shipyardOrigin(), p.ents(), p.carriagePIdx(),
+                        p.carriageLength(), p.carriages());
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] Deferred relay-entity spawn failed for pIdx={} origin={}: {}",
                     p.carriagePIdx(), p.shipyardOrigin(), t.toString());
