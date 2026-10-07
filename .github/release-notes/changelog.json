@@ -23989,6 +23989,27 @@
       "released": true,
       "released_in": "v0.1184.0",
       "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "drifting-group-carriages",
+      "version": "0.1185.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train"
+      ],
+      "title": "Whole drifting carriages",
+      "summary": "Now and then a long carriage that spans a whole stretch of the train turns up drifting. Change it and it travels on down the line in one piece, so someone else might ride through everything you built.",
+      "highlights": [
+        "Long carriages can now drift between worlds, not just single carriages",
+        "Whatever you build inside one travels on as a whole"
+      ],
+      "pr": 1870,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
