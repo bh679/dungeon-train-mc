@@ -767,19 +767,21 @@ public final class TrainAssembler {
                     continue;
                 }
                 if (slot == 0) {
-                    if (groupDrifts) {
-                        // A fresh drifting Group carriage: uploads whole the first time someone changes it.
-                        SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
-                            carriageShipyardOrigin, groupBox, fullPick.shell().id(), false, false, "", null, null, 0,
-                            fullStage, SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY,
-                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
-                    }
                     CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, fullPick.shell(), dims,
                         genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingEntities[slot] = new PendingContentsEntitySpawn(
                         carriageShipyardOrigin, fullPick.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
                         carriageShipyardOrigin, fullPick.template(), carriagePIdx, groupSize);
+                    if (groupDrifts) {
+                        // A fresh drifting Group carriage: uploads whole the first time someone changes it.
+                        // Registered AFTER the contents pass, as a fresh shared slot is — registered before
+                        // it, every contents block would count as an edit and upload an untouched build.
+                        SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
+                            carriageShipyardOrigin, groupBox, fullPick.shell().id(), false, false, "", null, null, 0,
+                            fullStage, SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY,
+                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+                    }
                 }
                 continue;
             }
