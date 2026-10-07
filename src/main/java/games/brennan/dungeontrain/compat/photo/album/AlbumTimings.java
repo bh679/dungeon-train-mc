@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 final class AlbumTimings {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    static final long NOTICE_MS = 2;
+    static final long NOTICE_MS = 20;
 
     private AlbumTimings() {}
 

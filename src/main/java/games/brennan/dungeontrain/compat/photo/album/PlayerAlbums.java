@@ -225,12 +225,13 @@ public final class PlayerAlbums {
         }
     }
 
-    /** A fresh copy of {@code player}'s album for this run. */
+    /**
+     * A fresh copy of {@code player}'s album: only their name on it. Its pages are filled when it is
+     * opened ({@link #beforeOpen}), so taking it in hand costs the tick nothing.
+     */
     public static ItemStack newAlbum(ServerPlayer player) {
         ItemStack album = new ItemStack(Exposure.Items.ALBUM.get());
         AlbumOwnership.stamp(album, player.getUUID(), player.getGameProfile().getName());
-        AlbumTimings.time("new album for " + player.getGameProfile().getName(),
-                () -> album.set(Exposure.DataComponents.ALBUM_CONTENT, currentContent(player)));
         return album;
     }
 
