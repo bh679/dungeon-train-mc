@@ -138,7 +138,7 @@ public final class PhotoTributeButtons {
                 screen.onClose();
             });
             tribute.active = canAfford;
-            tribute.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.own_photo_tribute.offer")));
+            tribute.setTooltip(Tooltip.create(TributeButton.LABEL));
             event.addListener(tribute);
             buttons.add(tribute);
         }
