@@ -23989,6 +23989,29 @@
       "released": true,
       "released_in": "v0.1184.0",
       "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "photo-albums-on-train",
+      "version": "0.1185.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Photo albums ride the train",
+      "summary": "Photo albums now turn up on the train. Your own album is the same wherever you find it: slip a photo in and it drifts off down the train, to find you again. Other players' albums turn up too. Look through one, and it crumbles to ash when you close it.",
+      "highlights": [
+        "Your album keeps every photo you add, from one run to the next.",
+        "Free Play runs keep an album of their own, which never leaves your computer.",
+        "Find other players' albums on the train: one look, then they turn to ash.",
+        "Albums can't be signed; yours always carries your name."
+      ],
+      "pr": 1868,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
