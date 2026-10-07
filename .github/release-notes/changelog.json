@@ -23998,8 +23998,8 @@
         "fix",
         "community"
       ],
-      "title": "Shared carriages keep their armor stands and item frames",
-      "summary": "A shared carriage could lose its armor stands, item frames and mobs for good if the world closed before you got near it. They now stay with the build for the next world that receives it.",
+      "title": "Shared carriages hold on to their decorations",
+      "summary": "Fixed a case where a shared carriage could lose some of its decorations and occupants when passed on to the next world.",
       "highlights": [],
       "pr": 1869,
       "date": "2026-10-07",
