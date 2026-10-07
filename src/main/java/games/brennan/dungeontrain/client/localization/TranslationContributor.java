@@ -37,14 +37,25 @@ public record TranslationContributor(String name, Optional<String> url, List<Lan
 
     /**
      * How much of one language this contributor authored or reviewed: {@code contributed}
-     * of the locale's {@code total} keys. The invariant {@code 0 < contributed <= total}
-     * (total &gt; 0) is guaranteed by the generator, so {@link #fraction()} is always in
-     * {@code (0, 1]}.
+     * lines against the locale's {@code total} player-facing lines (editor lines left out, see
+     * {@code counted_keys}). {@code contributed} still counts the editor lines they did, so
+     * {@link #fraction()} can pass 1.
      */
     public record LanguageShare(String locale, int contributed, int total) {
 
         public double fraction() {
             return total > 0 ? (double) contributed / total : 0.0;
+        }
+
+        /**
+         * The share as a whole percent: at least 1, so a small-but-real contribution never reads
+         * as "0%", and deliberately NOT capped at 100. The denominator is only the lines a player
+         * sees, while the numerator is everything the translator did — editor lines, and for a
+         * relay credit books and narrative units too — so one who has done more than the game's
+         * own text reads over 100%.
+         */
+        public int percent() {
+            return Math.max(1, (int) Math.round(fraction() * 100));
         }
     }
 }

@@ -15,7 +15,7 @@ is a no-op.
     python3 scripts/relay/sync-template-credits.py --dry-run  # list what would be sent
     python3 scripts/relay/sync-template-credits.py --cap dev
 
-The admin URL is read from ``$DUNGEONTRAIN_RELAY_ADMIN_URL`` or ``~/.config/dungeontrain/
+The admin URL is read from ``$DUNGEONTRAIN_RELAY_ADMIN_BASE`` / ``$DUNGEONTRAIN_RELAY_ADMIN_URL`` or ``~/.config/dungeontrain/
 relay-admin-url.txt`` (first non-comment line) — the same two places ``RelayTarget`` looks — and is
 never printed.
 """
@@ -47,14 +47,15 @@ FILES = {
     "portals/room/weights.json": "portal_room",
 }
 
-ENV = "DUNGEONTRAIN_RELAY_ADMIN_URL"
+ENVS = ("DUNGEONTRAIN_RELAY_ADMIN_BASE", "DUNGEONTRAIN_RELAY_ADMIN_URL")  # CI sets the first
 HOME_FILE = Path.home() / ".config" / "dungeontrain" / "relay-admin-url.txt"
 
 
 def admin_base():
-    env = os.environ.get(ENV, "").strip()
-    if env:
-        return env.rstrip("/")
+    for name in ENVS:
+        env = os.environ.get(name, "").strip()
+        if env:
+            return env.rstrip("/")
     if HOME_FILE.is_file():
         for line in HOME_FILE.read_text(encoding="utf-8").splitlines():
             line = line.strip()
@@ -113,7 +114,7 @@ def main():
 
     base = admin_base()
     if not base:
-        print(f"error: no relay admin URL — set {ENV} or {HOME_FILE}", file=sys.stderr)
+        print(f"error: no relay admin URL — set {" or ".join(ENVS)} or {HOME_FILE}", file=sys.stderr)
         return 2
 
     sent = failed = 0

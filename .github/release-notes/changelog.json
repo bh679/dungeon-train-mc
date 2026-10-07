@@ -23890,9 +23890,9 @@
       "summary": "The Credits screen now thanks each builder for their builds instead of listing templates, in every language.",
       "highlights": [],
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
     },
     {
       "id": "credits-team-rows",
@@ -23914,9 +23914,9 @@
       ],
       "pr": 1862,
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
     },
     {
       "id": "photo-frames-ride-the-train",
@@ -23935,9 +23935,60 @@
       ],
       "pr": 1864,
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "website-builders-credits-sync",
+      "version": "0.1183.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "Website Builders credits stay up to date",
+      "summary": "The Builders list on the Dungeon Train website now updates with every release, so newly credited builders show up there as well as in-game.",
+      "highlights": [],
+      "pr": 1865,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "player-facing-translation-progress",
+      "version": "0.1184.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Translation progress counts the lines you actually see",
+      "summary": "A language's progress \u2014 the ring on the Language screen and each translator's % in the Credits \u2014 now leaves out the train editor and the translation screen, which most players never open, so it shows how much of the game you play is translated. Translators who also did the editor still get credit for it, so a share can go past 100%.",
+      "highlights": [],
+      "pr": 1866,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "hide-instant-slides",
+      "version": "0.1184.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Camera tidy-up",
+      "summary": "Removed some unused camera items.",
+      "highlights": [],
+      "pr": 1867,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
     }
   ]
 }

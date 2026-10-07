@@ -576,6 +576,22 @@ jobs:
           ./gradlew bundledFingerprints --no-daemon
           python3 scripts/relay/push-bundled-fingerprints.py
 
+      # Mirror every bundled template's builder credit (weights.json "builder") onto the relay, so the
+      # website's Credits Builders card matches the jar that just shipped (relay: template_credits).
+      # Upserts only, so a re-run is harmless. Never blocks a release: a relay hiccup here is a
+      # warning, and the next release (or scripts/relay/sync-template-credits.py by hand) catches up.
+      - name: Sync template builder credits to the relay
+        if: ${{ always() && env.RELEASE_TAG != '' }}
+        continue-on-error: true
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          if [ -z "$DUNGEONTRAIN_RELAY_ADMIN_BASE" ]; then
+            echo "::warning::RELAY_ADMIN_BASE is not set — builder credits not synced."
+            exit 0
+          fi
+          python3 scripts/relay/sync-template-credits.py || echo "::warning::Some builder credits failed to sync — re-run scripts/relay/sync-template-credits.py."
+
       # A balancing release retires the current one-life leaderboard era on the relay and opens the
       # next at this version (relay: leaderboard-eras.js). Operator-dispatched only: the cascade never
       # sets the input, and a test release is not a real one. Idempotent on the relay, so a re-run is

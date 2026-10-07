@@ -19,6 +19,14 @@ class LocalizationCreditAdjustTest {
     }
 
     @Test
+    @DisplayName("approvals leave the player-facing line count alone")
+    void approvalsKeepCountedKeys() {
+        LocalizationCredit.AiCounts baked = new LocalizationCredit.AiCounts(1000, 400, 300, 600);
+        assertEquals(600, LocalizationCreditRegistry.adjust(baked, 100).countedKeys());
+        assertEquals(1000, new LocalizationCredit.AiCounts(1000, 400, 300).countedKeys());
+    }
+
+    @Test
     @DisplayName("approvals come off both the unreviewed and the authored counts")
     void approvalsReduceBothCounts() {
         LocalizationCredit.AiCounts out = LocalizationCreditRegistry.adjust(baked(), 100);

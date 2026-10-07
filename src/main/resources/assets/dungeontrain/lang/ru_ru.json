@@ -1171,7 +1171,7 @@
   "gui.dungeontrain.credits.funders.desc": "Спасибо всем, кто профинансировал разработку Dungeon Train:",
   "gui.dungeontrain.credits.funders.person_line": "%1$s — A$%2$s",
   "gui.dungeontrain.credits.funders.person_line_hidden": "%1$s",
-  "gui.dungeontrain.credits.funders.developer_line": "%1$s — потрачено A$%2$s, не покрыто",
+  "gui.dungeontrain.credits.funders.developer_line": "%1$s — A$%2$s не покрыто",
   "gui.dungeontrain.credits.community.header": "Сообщество",
   "gui.dungeontrain.credits.community.desc": "Спасибо Value Adders из Discord-сервера Dungeon Train:",
   "gui.dungeontrain.credits.community.person_line": "%1$s — Уровень %2$s",

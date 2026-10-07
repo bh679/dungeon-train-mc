@@ -404,6 +404,44 @@ def test_check_cli_fails_on_an_orphan_manifest():
     assert "orphan manifest" in result.stderr
 
 
+# ---- player-facing line count (counted_keys) ------------------------------------------------
+
+def test_editor_prefixes_load_from_shipped_asset():
+    prefixes = pio.load_editor_prefixes()
+    assert "gui.dungeontrain.editor_menu." in prefixes
+    assert "chat.dungeontrain.editor." in prefixes
+
+
+def test_counted_keys_leaves_out_editor_lines():
+    entry = {"author": HUMAN, "reviewer": HUMAN, "source_hash": ""}
+    prov = {"gui.dungeontrain.death.title": entry,
+            "chat.dungeontrain.editor.saved": entry,
+            "gui.dungeontrain.editor_menu.close": entry}
+    assert pio.counted_keys(prov, ("chat.dungeontrain.editor.", "gui.dungeontrain.editor_menu.")) == 1
+    assert pio.credit_counts(prov, AUTHORS)["counted_keys"] == 1
+    assert pio.credit_counts(prov, AUTHORS)["total_keys"] == 3
+
+
+def test_contributor_share_counts_editor_lines_over_player_lines():
+    """The denominator drops the editor; the numerator keeps it — so a share can pass 100%."""
+    entry = {"author": HUMAN, "reviewer": HUMAN, "source_hash": ""}
+    with tempfile.TemporaryDirectory() as tmp:
+        lang_dir = os.path.join(tmp, "lang")
+        prov_dir = os.path.join(tmp, "prov")
+        os.makedirs(lang_dir)
+        os.makedirs(prov_dir)
+        keys = ["gui.dungeontrain.death.title", "chat.dungeontrain.editor.a", "chat.dungeontrain.editor.b"]
+        for loc in ("en_us", "xx_yy"):
+            with open(os.path.join(lang_dir, f"{loc}.json"), "w", encoding="utf-8") as f:
+                json.dump({k: k for k in keys}, f)
+        with open(os.path.join(prov_dir, "xx_yy.json"), "w", encoding="utf-8") as f:
+            json.dump({k: entry for k in keys}, f)
+        out = pio.build_contributors(pio.Path(lang_dir), pio.Path(prov_dir), AUTHORS, {})
+    (person,) = out["contributors"]
+    assert person["languages"] == [{"locale": "xx_yy", "contributed": 3, "total": 1}]
+
+
+
 def _main():
     funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failures = 0

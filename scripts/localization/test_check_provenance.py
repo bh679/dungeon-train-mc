@@ -192,7 +192,8 @@ def test_flag_true_with_partial_coverage_warns_but_passes():
     ignore the guard.
     """
     credits = {"xx_yy": {"locale": "xx_yy", "name": "Human", "human_reviewed": True,
-                         "total_keys": 3, "ai_authored": 2, "ai_unreviewed": 2}}
+                         "total_keys": 3, "ai_authored": 2, "ai_unreviewed": 2,
+                         "counted_keys": 3}}
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": PROV}, credits)
     proc = run(dirs)
     assert proc.returncode == 0, proc.stderr
@@ -203,7 +204,8 @@ def test_flag_true_with_partial_coverage_warns_but_passes():
 def test_flag_true_with_full_coverage_is_silent():
     prov = {k: {"author": "H", "reviewer": "H", "source_hash": ""} for k in LANG}
     credits = {"xx_yy": {"locale": "xx_yy", "name": "Human", "human_reviewed": True,
-                         "total_keys": 3, "ai_authored": 0, "ai_unreviewed": 0}}
+                         "total_keys": 3, "ai_authored": 0, "ai_unreviewed": 0,
+                         "counted_keys": 3}}
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov}, credits)
     proc = run(dirs)
     assert proc.returncode == 0, proc.stderr
@@ -213,16 +215,18 @@ def test_flag_true_with_full_coverage_is_silent():
 def test_flag_false_with_full_coverage_suggests_flipping():
     prov = {k: {"author": "H", "reviewer": "H", "source_hash": ""} for k in LANG}
     credits = {"xx_yy": {"locale": "xx_yy", "name": "AI", "human_reviewed": False,
-                         "total_keys": 3, "ai_authored": 0, "ai_unreviewed": 0}}
+                         "total_keys": 3, "ai_authored": 0, "ai_unreviewed": 0,
+                         "counted_keys": 3}}
     dirs = workspace({"en_us": LANG, "xx_yy": LANG}, {"xx_yy": prov}, credits)
     proc = run(dirs)
     assert proc.returncode == 0, proc.stderr
     assert "consider flipping" in proc.stderr
 
 
-# PROV yields (total=3, ai_authored=2, ai_unreviewed=2) against AUTHORS.
+# PROV yields (total=3, ai_authored=2, ai_unreviewed=2, counted=3) against AUTHORS.
 CREDIT_OK = {"locale": "xx_yy", "name": "Human",
-             "total_keys": 3, "ai_authored": 2, "ai_unreviewed": 2}
+             "total_keys": 3, "ai_authored": 2, "ai_unreviewed": 2,
+                         "counted_keys": 3}
 
 
 def test_matching_credit_counts_pass():

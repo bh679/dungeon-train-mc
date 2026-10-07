@@ -1086,7 +1086,7 @@
   "gui.dungeontrain.credits.funders.desc": "Salamat sa lahat ng nagpondo sa pagbuo ng Dungeon Train:",
   "gui.dungeontrain.credits.funders.person_line": "%1$s — A$%2$s",
   "gui.dungeontrain.credits.funders.person_line_hidden": "%1$s",
-  "gui.dungeontrain.credits.funders.developer_line": "%1$s — A$%2$s na nagastos, hindi sakop",
+  "gui.dungeontrain.credits.funders.developer_line": "%1$s — A$%2$s hindi sakop",
   "gui.dungeontrain.credits.community.header": "Komunidad",
   "gui.dungeontrain.credits.community.desc": "Salamat sa mga Value Adder ng Dungeon Train Discord:",
   "gui.dungeontrain.credits.community.person_line": "%1$s — Level %2$s",
