@@ -1161,7 +1161,7 @@
   "gui.dungeontrain.credits.funders.desc": "Dziękujemy wszystkim, którzy sfinansowali rozwój Dungeon Train:",
   "gui.dungeontrain.credits.funders.person_line": "%1$s — A$%2$s",
   "gui.dungeontrain.credits.funders.person_line_hidden": "%1$s",
-  "gui.dungeontrain.credits.funders.developer_line": "%1$s — wydane A$%2$s, niepokryte",
+  "gui.dungeontrain.credits.funders.developer_line": "%1$s — A$%2$s niepokryte",
   "gui.dungeontrain.credits.community.header": "Społeczność",
   "gui.dungeontrain.credits.community.desc": "Dziękujemy Value Adders z Discorda Dungeon Train:",
   "gui.dungeontrain.credits.community.person_line": "%1$s — Poziom %2$s",

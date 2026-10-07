@@ -211,4 +211,12 @@ class TranslationCreditsMergeTest {
         assertEquals(List.of("Ada"), names(TranslationCreditsMerge.merge(List.of(),
             Map.of("de_de", List.of(new Credit("", 3), new Credit("Ada", 1))), (l) -> 10)));
     }
+
+    @Test
+    @DisplayName("a share is at least 1% and can pass 100% — editor lines count for, not against")
+    void sharePercentFloorsAtOneAndIsNotCapped() {
+        assertEquals(1, new TranslationContributor.LanguageShare("zh_cn", 1, 2564).percent());
+        assertEquals(40, new TranslationContributor.LanguageShare("zh_cn", 1015, 2564).percent());
+        assertEquals(130, new TranslationContributor.LanguageShare("zh_cn", 3333, 2564).percent());
+    }
 }

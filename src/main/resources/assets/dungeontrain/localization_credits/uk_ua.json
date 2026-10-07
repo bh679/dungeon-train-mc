@@ -4,5 +4,6 @@
   "human_reviewed": false,
   "total_keys": 4475,
   "ai_authored": 4329,
-  "ai_unreviewed": 4329
+  "ai_unreviewed": 4329,
+  "counted_keys": 2723
 }
