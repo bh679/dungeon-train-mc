@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageEntitySnapshot;
 import games.brennan.dungeontrain.train.SharedCarriagePool;
+import games.brennan.dungeontrain.train.SharedGroupPool;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import games.brennan.dungeontrain.train.StorageContents;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -136,6 +137,7 @@ public final class SharedCarriageEvents {
             }
         }
         SharedCarriagePool.returnAllBuffered();
+        SharedGroupPool.returnAllBuffered();
         int rooms = SharedRoomEvents.returnAllHeld(); // the rooms' leases belong to the old pool too
         LOGGER.info("[DungeonTrain] Shared-carriage pool switched {} → {}; returned {} held carriage(s) and {} room(s) and cleared the buffers.",
                 previous, mode, detached, rooms);
@@ -175,6 +177,17 @@ public final class SharedCarriageEvents {
             int idx = Math.floorMod(ownPrefetchCursor++, players.size());
             String owner = players.get(idx).getUUID().toString().replace("-", "");
             SharedCarriagePool.refreshOwnAsync(dims, stage, owner, exclude, mode);
+        }
+        // Drifting Group carriages: only once one has drifted here (demand is null until then), so a
+        // world that never rolls one never locks a group build away from everyone else.
+        SharedGroupPool.Demand groupDemand = SharedGroupPool.demand();
+        if (groupDemand != null) {
+            SharedGroupPool.refreshAsync(groupDemand, hostUuid, hostName, exclude, mode);
+            if (!players.isEmpty()) {
+                String owner = players.get(Math.floorMod(ownPrefetchCursor, players.size()))
+                        .getUUID().toString().replace("-", "");
+                SharedGroupPool.refreshOwnAsync(groupDemand, owner, exclude, mode);
+            }
         }
     }
 
@@ -286,7 +299,7 @@ public final class SharedCarriageEvents {
         // this carriage was placed, and the build belongs to whichever pool the world is in when it lands.
         String mode = SharedCarriageMode.current(inst.level);
         SharedUploadFlow.submitFresh(inst, captureOf(ship, inst),
-                new SharedUploadFlow.SubmitSpec(SharedCarriageClient.PoolLease.KIND_CARRIAGE, null,
+                new SharedUploadFlow.SubmitSpec(inst.kind, null,
                         inst.dims.length(), inst.dims.height(), inst.dims.width()),
                 covered, ownerUuid, ownerName, inst.stageId, mode);
     }
@@ -430,12 +443,14 @@ public final class SharedCarriageEvents {
             }
         }
         SharedCarriagePool.returnAllBuffered();
+        SharedGroupPool.returnAllBuffered();
     }
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         SharedCarriageRegistry.clear();
         SharedCarriagePool.clear();
+        SharedGroupPool.clear();
         lastMode = null; // the next world decides its own pool from scratch
     }
 }

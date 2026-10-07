@@ -138,4 +138,17 @@ class CarriageEntitySnapshotTest {
                 ent("minecraft:villager", 1, 0, 1, null))));
         assertEquals(List.of(), CarriageEntitySnapshot.idsOf(null));
     }
+
+    @Test
+    void aDriftingGroupsEntitiesAreSlottedIntoTheCarriageTheyStandIn() {
+        // Three 9-long carriages: x in [0,9) is the first, [9,18) the second, [18,27) the third.
+        assertEquals(0, CarriageEntitySnapshot.carriageSlotOf(ent("e", 0.5, 1, 1, null), 9, 3));
+        assertEquals(1, CarriageEntitySnapshot.carriageSlotOf(ent("e", 9.0, 1, 1, null), 9, 3));
+        assertEquals(2, CarriageEntitySnapshot.carriageSlotOf(ent("e", 26.9, 1, 1, null), 9, 3));
+        // Hanging decor can sit a hair outside the box; it stays with the nearest carriage.
+        assertEquals(0, CarriageEntitySnapshot.carriageSlotOf(ent("e", -0.1, 1, 1, null), 9, 3));
+        assertEquals(2, CarriageEntitySnapshot.carriageSlotOf(ent("e", 27.2, 1, 1, null), 9, 3));
+        // A one-carriage build never moves an entity off its carriage.
+        assertEquals(0, CarriageEntitySnapshot.carriageSlotOf(ent("e", 15, 1, 1, null), 9, 1));
+    }
 }
