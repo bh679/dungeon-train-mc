@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "glass=false": { "model": "dungeontrain:block/photograph_frame" },
+    "glass=true": { "model": "dungeontrain:block/glass_photograph_frame" }
+  }
+}
