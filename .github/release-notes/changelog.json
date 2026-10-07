@@ -23999,13 +23999,11 @@
         "community",
         "loot"
       ],
-      "title": "Photo albums ride the train",
-      "summary": "Photo albums now turn up on the train. Your own album is the same wherever you find it: slip a photo in and it drifts off down the train, to find you again. Other players' albums turn up too. Look through one, and it crumbles to ash when you close it.",
+      "title": "Photo albums",
+      "summary": "Photo albums have found their way onto the train. Keep one of your own, and you may stumble across someone else's.",
       "highlights": [
-        "Your album keeps every photo you add, from one run to the next.",
-        "Free Play runs keep an album of their own, which never leaves your computer.",
-        "Find other players' albums on the train: one look, then they turn to ash.",
-        "Albums can't be signed; yours always carries your name."
+        "Your album remembers what you give it.",
+        "Other players' albums don't last long once opened."
       ],
       "pr": 1868,
       "date": "2026-10-07",
