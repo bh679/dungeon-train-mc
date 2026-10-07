@@ -23989,6 +23989,23 @@
       "released": true,
       "released_in": "v0.1184.0",
       "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "leased-carriage-keeps-entities",
+      "version": "0.1185.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Shared carriages keep their armor stands and item frames",
+      "summary": "A shared carriage could lose its armor stands, item frames and mobs for good if the world closed before you got near it. They now stay with the build for the next world that receives it.",
+      "highlights": [],
+      "pr": 1869,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
