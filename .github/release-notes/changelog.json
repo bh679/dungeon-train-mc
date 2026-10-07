@@ -23991,6 +23991,27 @@
       "released_at": "2026-10-07T14:54:07Z"
     },
     {
+      "id": "photo-albums-on-train",
+      "version": "0.1185.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Photo albums",
+      "summary": "Photo albums have found their way onto the train. Keep one of your own, and you may stumble across someone else's.",
+      "highlights": [
+        "Your album remembers what you give it.",
+        "Other players' albums don't last long once opened."
+      ],
+      "pr": 1868,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "leased-carriage-keeps-entities",
       "version": "0.1185.0",
       "type": "fix",
