@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
 
@@ -338,6 +339,34 @@ public final class SharedCarriageRegistry {
             if (nowMs - lastEntityScanMs < intervalMs) return false;
             lastEntityScanMs = nowMs;
             return true;
+        }
+
+        /**
+         * The lease's own {@code ents} list, held from placement until the deferred relay-entity spawn
+         * puts them in the world ({@code TrainCarriageAppender.firePendingRelayEntitySpawns}); null once
+         * spawned, and always null for a fresh build or a lease that carried no entities.
+         *
+         * <p>Every upload carries the carriage's WHOLE entity list, and the relay's fold replaces the
+         * base's with it. Before the spawn fires the live carriage stands empty, so a capture then — a
+         * block edit, a shutdown's final flush — would tell the relay the build has no entities, and the
+         * next world to lease it would get none. While this is set, uploads carry it instead.</p>
+         */
+        private volatile ListTag heldRelayEnts;
+
+        /** Hold {@code ents} as this carriage's entity list until {@link #releaseRelayEnts}. Empty holds nothing. */
+        public void holdRelayEnts(ListTag ents) {
+            this.heldRelayEnts = ents == null || ents.isEmpty() ? null : ents.copy();
+        }
+
+        /** The held entities are standing in the world now — uploads read them live from here on. */
+        public void releaseRelayEnts() { this.heldRelayEnts = null; }
+
+        public boolean isHoldingRelayEnts() { return heldRelayEnts != null; }
+
+        /** The entity list an upload should carry: the held lease list while one is held, else {@code live}. */
+        public ListTag entsForUpload(ListTag live) {
+            ListTag held = heldRelayEnts;
+            return held != null ? held.copy() : live;
         }
 
         public boolean needsRebaseline() { return rebaseline; }

@@ -253,6 +253,9 @@ public final class SharedCarriageEvents {
     private static boolean entitiesChanged(SharedCarriageRegistry.Instance inst) {
         SableManagedShip ship = liveShip(inst.level, inst);
         if (ship == null) return false;
+        // The lease's entities are still waiting on the deferred spawn, so the carriage stands empty and
+        // a fingerprint now would be adopted as the baseline — or worse, read as "emptied". Wait for them.
+        if (inst.isHoldingRelayEnts()) return false;
         long live = CarriageEntitySnapshot.liveDecorFingerprint(ship, inst.level, inst.shipyardOrigin, inst.dims);
         if (!inst.hasEntitySigBaseline()) {
             // A leased carriage was placed from the relay's own copy, so what stands in it now IS the
@@ -358,8 +361,7 @@ public final class SharedCarriageEvents {
                     // The fingerprint of what this upload actually carries — recorded only once the POST
                     // lands, so a failed upload is re-tried rather than mistaken for "the relay already
                     // has these entities".
-                    long sig = CarriageEntitySnapshot.decorFingerprint(
-                            cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
+                    long sig = CarriageEntitySnapshot.decorFingerprint(uploadEnts(inst, cap));
                     return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
                 } catch (Throwable tErr) {
                     LOGGER.debug("[DungeonTrain] shared-carriage delta capture failed for pIdx={}: {}", inst.pIdx, tErr.toString());
@@ -375,13 +377,25 @@ public final class SharedCarriageEvents {
             CarriageBlockSnapshot.Captured cap =
                     CarriageBlockSnapshot.capture(ship, inst.level, inst.shipyardOrigin, inst.dims,
                             DungeonTrainConfig.getSharedCarriageMaxEntities());
-            long sig = CarriageEntitySnapshot.decorFingerprint(
-                    cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
+            long sig = CarriageEntitySnapshot.decorFingerprint(uploadEnts(inst, cap));
             return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-carriage full capture failed for pIdx={}: {}", inst.pIdx, t.toString());
             return null;
         }
+    }
+
+    /**
+     * Settle the entity list {@code cap} uploads and return it. Normally that is what was just read live;
+     * while a leased carriage's own entities still wait on the deferred spawn it is the lease's list
+     * instead, because the carriage stands empty and every upload replaces the relay's whole list.
+     */
+    private static net.minecraft.nbt.ListTag uploadEnts(SharedCarriageRegistry.Instance inst,
+                                                        CarriageBlockSnapshot.Captured cap) {
+        net.minecraft.nbt.ListTag ents = inst.entsForUpload(
+                cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
+        cap.tag().put("ents", ents);
+        return ents;
     }
 
     private static ServerPlayer firstConsentingPlayer(ServerLevel level) {

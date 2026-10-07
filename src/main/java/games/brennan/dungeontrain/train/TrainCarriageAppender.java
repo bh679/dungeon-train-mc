@@ -1257,8 +1257,9 @@ public final class TrainCarriageAppender {
      * {@code null} slots in the returned array correspond to FLATBED slots —
      * those have no contents and are skipped without a log line.</p>
      */
-    private static void firePendingContentsEntitySpawns(ServerLevel level, TrainTransformProvider provider) {
-        firePendingRelayEntitySpawns(level, provider); // leased builds' own entities, same settle point
+    private static void firePendingContentsEntitySpawns(ServerLevel level, TrainTransformProvider provider,
+                                                        UUID subLevelId) {
+        firePendingRelayEntitySpawns(level, provider, subLevelId); // leased builds' own entities, same settle point
         firePendingWholeDecorSpawns(level, provider);   // whole rooms'/groups' own decor, likewise
         PendingContentsEntitySpawn[] pending = provider.takePendingContentsEntitySpawns();
         if (pending == null) return;
@@ -1292,7 +1293,8 @@ public final class TrainCarriageAppender {
      * costs nothing. Failures are logged and skipped: the blocks are already down, and a build missing an
      * item frame is a far better outcome than a group that never finishes spawning.</p>
      */
-    private static void firePendingRelayEntitySpawns(ServerLevel level, TrainTransformProvider provider) {
+    private static void firePendingRelayEntitySpawns(ServerLevel level, TrainTransformProvider provider,
+                                                     UUID subLevelId) {
         PendingRelayEntitySpawn[] pending = provider.takePendingRelayEntitySpawns();
         if (pending == null) return;
         int spawned = 0;
@@ -1302,6 +1304,12 @@ public final class TrainCarriageAppender {
             slots++;
             try {
                 spawned += CarriageEntitySnapshot.spawn(level, p.shipyardOrigin(), p.ents(), p.carriagePIdx());
+                // Standing in the world now, so uploads may read them live. A throw keeps the hold: the
+                // relay's copy stays the truth rather than being overwritten by a carriage left empty.
+                BlockPos o = p.shipyardOrigin();
+                SharedCarriageRegistry.Instance inst =
+                    SharedCarriageRegistry.resolve(subLevelId, o.getX(), o.getY(), o.getZ());
+                if (inst != null) inst.releaseRelayEnts();
             } catch (Throwable t) {
                 LOGGER.warn("[DungeonTrain] Deferred relay-entity spawn failed for pIdx={} origin={}: {}",
                     p.carriagePIdx(), p.shipyardOrigin(), t.toString());
@@ -2139,7 +2147,7 @@ public final class TrainCarriageAppender {
                 if (inRange) {
                     LOGGER.info("[DungeonTrain] Distance gate: pIdx={} player within {} blocks — firing deferred contents-entity spawn",
                         provider.getPIdx(), SPAWN_RADIUS_BLOCKS);
-                    firePendingContentsEntitySpawns(level, provider);
+                    firePendingContentsEntitySpawns(level, provider, carriage.ship().subLevelId());
                 }
             }
         }
