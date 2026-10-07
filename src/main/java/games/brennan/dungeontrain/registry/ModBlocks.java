@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.block.PhotographFrameBlock;
 import games.brennan.dungeontrain.block.SkyboxBlock;
 import games.brennan.dungeontrain.block.SkyboxSky;
 import games.brennan.dungeontrain.block.VariantPlaceholderBlock;
@@ -157,6 +158,26 @@ public final class ModBlocks {
 
     public static final DeferredItem<BlockItem> VARIANT_PLACEHOLDER_ITEM = BLOCK_ITEMS.register(
         "variant_placeholder", () -> new BlockItem(VARIANT_PLACEHOLDER.get(), new Item.Properties()));
+
+    /**
+     * Exposure's hanging photo frame as blocks, so it rides the train — see {@link PhotographFrameBlock}.
+     * No {@link BlockItem}: players hang it with Exposure's own frame items. Breaks in one hit like
+     * the entity; drops come from the block entity, not a loot table.
+     */
+    public static final DeferredBlock<PhotographFrameBlock> PHOTOGRAPH_FRAME = BLOCKS.register(
+        "photograph_frame",
+        () -> new PhotographFrameBlock(
+            BlockBehaviour.Properties.of()
+                .mapColor(MapColor.NONE)
+                .instabreak()
+                .noCollission()
+                .noOcclusion()
+                .noLootTable()
+                .isValidSpawn((state, level, pos, type) -> false)
+                .pushReaction(PushReaction.DESTROY)
+                .sound(SoundType.WOOD)
+        )
+    );
 
     /**
      * The stage placeholder blocks ({@code stage_block_1..10}, stairs/slab slots, button, plate and
