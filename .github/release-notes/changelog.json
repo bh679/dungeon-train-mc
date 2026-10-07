@@ -23893,6 +23893,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "credits-team-rows",
+      "version": "0.1183.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "The team joins the Credits lists",
+      "summary": "The Credits page now thanks the people behind the train's own content: Brennan Hatton for the builds and books that ship with the game, and Wilson Taylor, Narrative Director of the original Dungeon Train, for the stories he wrote.",
+      "highlights": [
+        "Builders: Brennan Hatton, for every shipped build no one else is credited with",
+        "Writers: Brennan Hatton and Wilson Taylor, for the books built into the game",
+        "Funders: Brennan Hatton, for what he has paid towards the game himself",
+        "The same names on the website's Credits page"
+      ],
+      "pr": 1862,
+      "date": "2026-10-07",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
