@@ -119,6 +119,8 @@ public final class ModCreativeTabs {
      *       discoverability).</li>
      *   <li>{@link ModItems#RANDOM_PLAYERPHOTO} — placeholder that substitutes
      *       a community photo from the relay pool when a container rolls.</li>
+     *   <li>{@link ModItems#RANDOM_PLAYERPHOTOALBUM} / {@link ModItems#YOUR_PHOTOALBUM} — someone
+     *       else's album (read-only, burns on close) and the holder's own album.</li>
      * </ul>
      */
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> NARRATIVE = TABS.register(
@@ -137,6 +139,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
                 output.accept(ModItems.RANDOM_PLAYERPHOTO.get());
+                output.accept(ModItems.RANDOM_PLAYERPHOTOALBUM.get());
+                output.accept(ModItems.YOUR_PHOTOALBUM.get());
                 // The one camera players get — Exposure's own tab is hidden (DisabledModContent).
                 output.accept(games.brennan.dungeontrain.compat.DisposableCamera.create());
             })

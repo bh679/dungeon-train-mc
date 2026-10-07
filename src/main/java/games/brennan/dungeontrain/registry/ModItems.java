@@ -77,6 +77,27 @@ public final class ModItems {
     );
 
     /**
+     * Editor-only placeholder for someone else's photo album. Substituted at chest spawn time for a
+     * read-only album another player filled (see {@code compat.photo.album.FoundAlbums#rollFound}),
+     * which burns once it has been looked through; with none to hand out, the slot rolls as a
+     * {@link #RANDOM_PLAYERPHOTO}.
+     */
+    public static final DeferredItem<Item> RANDOM_PLAYERPHOTOALBUM = ITEMS.register(
+        "random_playerphotoalbum",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
+     * The finder's own photo album. Stays as this item in the chest and becomes the holder's album
+     * — the one album they have, same pages everywhere — the moment it is taken in hand (see
+     * {@code compat.photo.album.PlayerAlbums#onEquipmentChange}).
+     */
+    public static final DeferredItem<Item> YOUR_PHOTOALBUM = ITEMS.register(
+        "your_photoalbum",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
      * What {@link #RANDOM_PLAYERPHOTO} becomes: Exposure's photograph, on paper that wears as the
      * photo's views run out ({@link games.brennan.dungeontrain.compat.photo.WornPhotographItem}).
      */
