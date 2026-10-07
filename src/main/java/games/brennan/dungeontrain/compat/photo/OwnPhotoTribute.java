@@ -110,7 +110,7 @@ public final class OwnPhotoTribute {
             LOGGER.warn("[DungeonTrain] Own photo {} has no image on the server; Tribute not taken.", frame.identifier().id());
             return;
         }
-        if (!TributePayment.canPay(player.getInventory(), cost)) {
+        if (!TributePayment.canPay(player, cost)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.photo_tribute.cannot_afford").withStyle(ChatFormatting.GRAY));
             return;
         }

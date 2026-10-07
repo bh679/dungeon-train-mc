@@ -501,7 +501,7 @@ public final class SharedPhotos {
         ItemStack held = player.getItemInHand(hand.get());
         int photoId = sharedId(held);
         int cost = tributeCost(held);
-        if (!TributePayment.canPay(player.getInventory(), cost)) {
+        if (!TributePayment.canPay(player, cost)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.photo_tribute.cannot_afford").withStyle(ChatFormatting.GRAY));
             return;
         }

@@ -85,8 +85,8 @@ public final class PhotoTributeButtons {
         }
 
         int cost = SharedPhotos.tributeCost(photo);
-        int emeralds = TributePayment.worth(player.getInventory());
-        boolean canAfford = TributePayment.canPay(player.getInventory(), cost);
+        int emeralds = TributePayment.worth(player);
+        boolean canAfford = TributePayment.canPay(player, cost);
         int viewsLeft = SharedPhotos.viewsLeft(photo);
         int seen = SharedPhotos.viewsSeen(photo);
         // This viewer's own place: 1 / 10 for the first to open it, 10 / 10 for the last.
@@ -132,7 +132,7 @@ public final class PhotoTributeButtons {
         int left = (screen.width - tributeWidth - closeWidth - trashWidth) / 2;
         List<Button> buttons = new java.util.ArrayList<>();
         if (cost > 0) {
-            boolean canAfford = TributePayment.canPay(player.getInventory(), cost);
+            boolean canAfford = TributePayment.canPay(player, cost);
             TributeButton tribute = new TributeButton(left, y, tributeWidth - GAP, cost, canAfford, button -> {
                 DungeonTrainNet.sendToServer(new OwnPhotoTributePacket());
                 screen.onClose();
