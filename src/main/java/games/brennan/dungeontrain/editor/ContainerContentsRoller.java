@@ -42,6 +42,7 @@ import java.util.function.Predicate;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.compat.DisposableCamera;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
+import games.brennan.dungeontrain.compat.photo.album.FoundAlbums;
 import io.github.mortuusars.exposure_polaroid.ExposurePolaroid;
 import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
@@ -1047,7 +1048,12 @@ public final class ContainerContentsRoller {
         // A community photo; when the relay has none left to hand out, sometimes a disposable camera
         // instead — likelier the fewer photos the relay holds — so players go and take more. Otherwise
         // a player book, so the slot is never wasted.
-        if (item == ModItems.RANDOM_PLAYERPHOTO.get()) {
+        // Someone else's album; with none to hand out, the slot is a community photo instead.
+        if (item == ModItems.RANDOM_PLAYERPHOTOALBUM.get()) {
+            ItemStack album = FoundAlbums.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
+            if (!album.isEmpty()) return album;
+        }
+        if (item == ModItems.RANDOM_PLAYERPHOTO.get() || item == ModItems.RANDOM_PLAYERPHOTOALBUM.get()) {
             ItemStack found = SharedPhotos.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
             if (!found.isEmpty()) return found;
             return rollPerMille(SharedPhotos.cameraFallbackPerMille(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
