@@ -11,8 +11,8 @@ import java.util.Optional;
 
 /**
  * Trash for a player's own fresh print: it burns as it would on closing, and it is taken back from
- * the community pool ({@link SharedPhotos#withdrawOwnUpload}) so no one else ever finds it. Offered
- * only on a print that was queued for sharing — any other print burns unseen on {@code X} anyway.
+ * the community pool ({@link SharedPhotos#withdrawOwnUpload}) so no one else ever finds it. A print
+ * that was never sent (Free Play, or a player who doesn't share) just burns.
  */
 public final class OwnPhotoTrash {
 
@@ -25,7 +25,7 @@ public final class OwnPhotoTrash {
         Optional<InteractionHand> hand = OwnPhotoTribute.heldOwnPrintHand(player);
         if (hand.isEmpty()) return;
         ItemStack held = player.getItemInHand(hand.get());
-        if (!SharedPhotos.withdrawOwnUpload(player, held)) return;
+        SharedPhotos.withdrawOwnUpload(player, held);
         // Out of the hand first, so the view-closed packet that follows finds nothing left to burn.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurn(player, held);

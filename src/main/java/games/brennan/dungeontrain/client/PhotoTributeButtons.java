@@ -38,8 +38,8 @@ import org.lwjgl.glfw.GLFW;
  * how many views it has left, the Tribute cost beside an emerald — pay it to keep the photo
  * travelling — and {@code X} to close. Either way the photo burns afterwards. A player's own fresh
  * print, which burns after viewing too, gets the {@code X}; when offered, a Tribute that
- * posts it to the passenger log; and when it was sent to be shared, a trash icon that takes it
- * back so no one else finds it. Space closes either. Each button is only as wide as what is drawn on it.
+ * posts it to the passenger log; and a trash icon that burns it and, if it was sent to be shared,
+ * takes it back so no one else finds it. Space closes either. Each button is only as wide as what is drawn on it.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoTributeButtons {
@@ -123,14 +123,11 @@ public final class PhotoTributeButtons {
     private static void addOwnPrintButtons(ScreenEvent.Init.Post event, Screen screen, LocalPlayer player, Font font,
                                            Component closeLabel, int closeWidth, int y) {
         String name = player.getGameProfile().getName();
-        ItemStack ownPrint = OwnPhotoTribute.isOwnPrint(player.getMainHandItem(), name) ? player.getMainHandItem()
-            : OwnPhotoTribute.isOwnPrint(player.getOffhandItem(), name) ? player.getOffhandItem() : ItemStack.EMPTY;
-        boolean own = !ownPrint.isEmpty();
+        boolean own = OwnPhotoTribute.isOwnPrint(player.getMainHandItem(), name)
+            || OwnPhotoTribute.isOwnPrint(player.getOffhandItem(), name);
         int cost = own ? OwnPhotoTributeClientState.cost() : 0;
-        // Trash only means something for a print that was sent to be shared; any other burns unseen on X.
-        boolean trashable = own && !SharedPhotos.uploadKey(ownPrint).isBlank();
         int tributeWidth = cost > 0 ? TributeButton.widthFor(font, cost) + GAP : 0;
-        int trashWidth = trashable ? GAP + TrashButton.SIZE : 0;
+        int trashWidth = own ? GAP + TrashButton.SIZE : 0;
         int left = (screen.width - tributeWidth - closeWidth - trashWidth) / 2;
         List<Button> buttons = new java.util.ArrayList<>();
         if (cost > 0) {
@@ -149,7 +146,7 @@ public final class PhotoTributeButtons {
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
         event.addListener(close);
         buttons.add(close);
-        if (trashable) {
+        if (own) {
             TrashButton trash = new TrashButton(left + tributeWidth + closeWidth + GAP, y, button -> {
                 DungeonTrainNet.sendToServer(new OwnPhotoTrashPacket());
                 screen.onClose();
