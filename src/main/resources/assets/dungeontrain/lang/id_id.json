@@ -1081,7 +1081,7 @@
   "gui.dungeontrain.credits.funders.desc": "Terima kasih kepada semua yang telah mendanai pengembangan Dungeon Train:",
   "gui.dungeontrain.credits.funders.person_line": "%1$s — A$%2$s",
   "gui.dungeontrain.credits.funders.person_line_hidden": "%1$s",
-  "gui.dungeontrain.credits.funders.developer_line": "%1$s — A$%2$s dibelanjakan, belum tertutup",
+  "gui.dungeontrain.credits.funders.developer_line": "%1$s — A$%2$s belum tertutup",
   "gui.dungeontrain.credits.community.header": "Komunitas",
   "gui.dungeontrain.credits.community.desc": "Terima kasih kepada para Value Adder di Discord Dungeon Train:",
   "gui.dungeontrain.credits.community.person_line": "%1$s — Level %2$s",
