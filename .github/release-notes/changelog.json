@@ -23979,14 +23979,11 @@
       "version": "0.1184.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "loot"
+        "feature"
       ],
-      "title": "Instant camera slides removed",
-      "summary": "The instant camera slides can no longer be crafted or found. They had nothing left to load: the disposable camera already comes with its film inside.",
-      "highlights": [
-        "No more slide recipes cluttering the recipe book"
-      ],
+      "title": "Camera tidy-up",
+      "summary": "Removed some unused camera items.",
+      "highlights": [],
       "pr": 1867,
       "date": "2026-10-07",
       "released": false,
