@@ -6,7 +6,9 @@ import games.brennan.dungeontrain.compat.photo.OwnPhotoTribute;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.compat.photo.TributePayment;
 import games.brennan.dungeontrain.compat.photo.ViewOrdinal;
+import games.brennan.dungeontrain.client.menu.editorscreen.EditorIcons;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.OwnPhotoTrashPacket;
 import games.brennan.dungeontrain.net.OwnPhotoTributePacket;
 import games.brennan.dungeontrain.net.PhotoTributePacket;
 import io.github.mortuusars.exposure.client.gui.screen.PhotographScreen;
@@ -35,8 +37,9 @@ import org.lwjgl.glfw.GLFW;
  * Adds two buttons under a found player photo while it is open in Exposure's viewer:
  * how many views it has left, the Tribute cost beside an emerald — pay it to keep the photo
  * travelling — and {@code X} to close. Either way the photo burns afterwards. A player's own fresh
- * print, which burns after viewing too, gets the {@code X} and — when offered — a Tribute that
- * posts it to the passenger log. Space closes either. Each button is only as wide as what is drawn on it.
+ * print, which burns after viewing too, gets the {@code X}; when offered, a Tribute that
+ * posts it to the passenger log; and a trash icon that burns it and, if it was sent to be shared,
+ * takes it back so no one else finds it. Space closes either. Each button is only as wide as what is drawn on it.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoTributeButtons {
@@ -104,6 +107,7 @@ public final class PhotoTributeButtons {
             .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have", emeralds))));
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
             .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT)
+            .tooltip(Tooltip.create(closeLabel))
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
         event.addListener(views);
         event.addListener(tribute);
@@ -124,7 +128,8 @@ public final class PhotoTributeButtons {
             || OwnPhotoTribute.isOwnPrint(player.getOffhandItem(), name);
         int cost = own ? OwnPhotoTributeClientState.cost() : 0;
         int tributeWidth = cost > 0 ? TributeButton.widthFor(font, cost) + GAP : 0;
-        int left = (screen.width - tributeWidth - closeWidth) / 2;
+        int trashWidth = own ? GAP + TrashButton.SIZE : 0;
+        int left = (screen.width - tributeWidth - closeWidth - trashWidth) / 2;
         List<Button> buttons = new java.util.ArrayList<>();
         if (cost > 0) {
             boolean canAfford = TributePayment.canPay(player.getInventory(), cost);
@@ -133,15 +138,24 @@ public final class PhotoTributeButtons {
                 screen.onClose();
             });
             tribute.active = canAfford;
-            tribute.setTooltip(Tooltip.create(Component.translatable("gui.dungeontrain.own_photo_tribute.offer")));
+            tribute.setTooltip(Tooltip.create(TributeButton.LABEL));
             event.addListener(tribute);
             buttons.add(tribute);
         }
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
             .bounds(left + tributeWidth, y, closeWidth, HEIGHT)
+            .tooltip(Tooltip.create(closeLabel))
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
         event.addListener(close);
         buttons.add(close);
+        if (own) {
+            TrashButton trash = new TrashButton(left + tributeWidth + closeWidth + GAP, y, button -> {
+                DungeonTrainNet.sendToServer(new OwnPhotoTrashPacket());
+                screen.onClose();
+            });
+            event.addListener(trash);
+            buttons.add(trash);
+        }
         shownOn = screen;
         shown = List.copyOf(buttons);
     }
@@ -234,6 +248,31 @@ public final class PhotoTributeButtons {
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
             return false; // text, not a control
+        }
+    }
+
+    /**
+     * The square trash icon, set apart by shape from Tribute and {@code X} — the same
+     * {@link EditorIcons#TRASH} glyph as My Builds' delete. The tooltip carries the words.
+     */
+    private static final class TrashButton extends Button {
+
+        static final int SIZE = HEIGHT;
+        private static final Component LABEL = Component.translatable("gui.dungeontrain.own_photo_trash.tooltip");
+
+        TrashButton(int x, int y, OnPress onPress) {
+            super(x, y, SIZE, SIZE, LABEL, onPress, DEFAULT_NARRATION);
+            setTooltip(Tooltip.create(LABEL));
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            Component message = getMessage();
+            setMessage(Component.empty());
+            super.renderWidget(graphics, mouseX, mouseY, partialTick);
+            setMessage(message);
+            int inset = (SIZE - ICON_SIZE) / 2;
+            graphics.blitSprite(EditorIcons.TRASH, getX() + inset, getY() + inset, ICON_SIZE, ICON_SIZE);
         }
     }
 
