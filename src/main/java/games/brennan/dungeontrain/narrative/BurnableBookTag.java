@@ -10,6 +10,11 @@ import net.minecraft.world.item.ItemStack;
  * ({@link games.brennan.dungeontrain.event.StartingBookEvents}) so the two
  * sides stay in lock-step about which book types catch fire.
  *
+ * <p>"Held" below means "has been in a player's inventory", not only a hand: the
+ * {@code NBT_HELD} markers are stamped on equip AND by the once-a-second inventory sweep in
+ * {@code NarrativeBookEvents#onPlayerTick}, so a book shift-clicked out of a chest is armed
+ * just like one taken in hand. Only books still sitting in a container stay inert.</p>
+ *
  * <p>Burnable book types:</p>
  * <ul>
  *   <li>{@link StartingBookTag} — lightning-spawned welcome books (one per

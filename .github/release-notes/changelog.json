@@ -24007,9 +24007,9 @@
       ],
       "pr": 1868,
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
     },
     {
       "id": "leased-carriage-keeps-entities",
@@ -24024,9 +24024,9 @@
       "highlights": [],
       "pr": 1869,
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
     },
     {
       "id": "drifting-group-carriages",
@@ -24045,9 +24045,9 @@
       ],
       "pr": 1870,
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
     },
     {
       "id": "item-preview-empty-slot-fix",
@@ -24066,9 +24066,9 @@
       ],
       "pr": 1872,
       "date": "2026-10-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
     },
     {
       "id": "photo-views-five-ten",
@@ -24087,9 +24087,88 @@
       ],
       "pr": 1873,
       "date": "2026-10-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
+    },
+    {
+      "id": "books-arm-on-pickup",
+      "version": "0.1189.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Book fixes",
+      "summary": "Books behave the same however they reach your inventory.",
+      "highlights": [],
+      "pr": 1875,
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
+    },
+    {
+      "id": "camera-photo-trade-values",
+      "version": "0.1190.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Cameras and photos now sell to villagers",
+      "summary": "Villagers will now buy cameras and photos, so a spare camera or a stack of photos turns into emeralds.",
+      "highlights": [],
+      "pr": 1877,
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
+    },
+    {
+      "id": "edible-backpacks-are-food",
+      "version": "0.1191.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Edible backpacks are a snack now",
+      "summary": "A backpack fills your hunger like an apple, and a golden one works like a golden apple.",
+      "highlights": [],
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
+    },
+    {
+      "id": "release-albums",
+      "version": "0.1191.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Albums & Bigger Drifting Carriages",
+      "summary": "## Albums\nFind an album, save your photo for later. Find someone else's for a deeper glimpse into their life.\n\n## Bigger Drifting Carriages\nDrifting carriages now spread beyond just one room. They are rare, but worth it.",
+      "highlights": [
+        "Pay Tribute to your own photos \u2014 they post to their own Discord channel and reach more players.",
+        "Photo & Tribute leaderboards, and a camera advancement tab full of things to capture.",
+        "Trash a photo you've just taken; photo frames now ride along with the train.",
+        "Villagers buy cameras and photos.",
+        "Whole drifting carriages, and grander fancy rooms in dimensional carriages.",
+        "Dungeon Train speaks Ukrainian, with community translations by MrMultibite, and a \"human translations only\" switch.",
+        "A Performance tab in Options, and far terrain rests while you're paused.",
+        "Bug fixes",
+        "Performance improvements"
+      ],
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1192.0",
+      "released_at": "2026-10-08T13:12:46Z",
+      "major": true,
+      "description": "## Albums\nFind an album, save your photo for later. Find someone else's for a deeper glimpse into their life.\n\n## Bigger Drifting Carriages\nDrifting carriages now spread beyond just one room. They are rare, but worth it.\n\n## Other significant updates\n\n- Pay Tribute to your own photos \u2014 they post to their own Discord channel and reach more players.\n- Photo & Tribute leaderboards, and a camera advancement tab full of things to capture.\n- Trash a photo you've just taken; photo frames now ride along with the train.\n- Villagers buy cameras and photos.\n- Whole drifting carriages, and grander fancy rooms in dimensional carriages.\n- Dungeon Train speaks Ukrainian, with community translations by MrMultibite, and a \"human translations only\" switch.\n- A Performance tab in Options, and far terrain rests while you're paused.\n- Bug fixes\n- Performance improvements",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/albums.jpg"
     }
   ]
 }
