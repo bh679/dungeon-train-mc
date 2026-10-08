@@ -102,6 +102,9 @@ public final class SharedPhotos {
     /** Frame extra-data key carrying how many people had opened a found photo when it was handed out. */
     public static final String SHARED_VIEWS_KEY = "dt_shared_photo_views";
 
+    /** Frame extra-data key carrying the views a Tribute refills a found photo to (more if its photographer boosted it). */
+    public static final String SHARED_MAX_VIEWS_KEY = "dt_shared_photo_max_views";
+
     /** Views a photo starts with, and goes back to after a Tribute (the relay's PLAYER_PHOTOS_VIEWS). */
     public static final int VIEWS_MAX = 5;
 
@@ -152,7 +155,7 @@ public final class SharedPhotos {
     }
 
     /** One photo from the relay, decoded. {@code tributedBy} is set on a photographer's own tributed photo. */
-    private record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, PhotoPngCodec.Decoded image) {}
+    private record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews, PhotoPngCodec.Decoded image) {}
 
     /** Server thread only. */
     private static List<PendingUpload> pendingUploads = List.of();
@@ -440,6 +443,12 @@ public final class SharedPhotos {
         return frame == null || !frame.extraData().contains(SHARED_VIEWS_LEFT_KEY) ? VIEWS_MAX : frame.extraData().getInt(SHARED_VIEWS_LEFT_KEY);
     }
 
+    /** Views a Tribute refills a found photo to, or {@link #VIEWS_MAX} when the relay didn't say. */
+    public static int maxViews(ItemStack stack) {
+        Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        return frame == null || !frame.extraData().contains(SHARED_MAX_VIEWS_KEY) ? VIEWS_MAX : frame.extraData().getInt(SHARED_MAX_VIEWS_KEY);
+    }
+
     /** How many people had opened a found photo before it was handed out. */
     public static int viewsSeen(ItemStack stack) {
         Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
@@ -525,7 +534,7 @@ public final class SharedPhotos {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(tributePaidLine(player, cost, VIEWS_MAX));
+        player.sendSystemMessage(tributePaidLine(player, cost, maxViews(held)));
     }
 
     /**
@@ -565,7 +574,7 @@ public final class SharedPhotos {
         // As the tributer held it: how many hands before theirs, and the paper those views had worn.
         int hands = viewsSeen(held) + 1;
         int viewsLeft = viewsLeft(held);
-        Optional<int[]> paper = PhotoPaperTextures.paper(WornPhotographs.forViewsLeft(viewsLeft, photoId));
+        Optional<int[]> paper = PhotoPaperTextures.paper(WornPhotographs.forViewsLeft(viewsLeft, maxViews(held), photoId));
         encodeThen(server, data.get(), (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, paper), exposureId,
                 png -> TributePhotoReporter.post(player, photographer, tributeNumber, cost, hands, viewsLeft, png));
     }
@@ -688,7 +697,8 @@ public final class SharedPhotos {
                 int tributes = row.has("tributes") ? row.get("tributes").getAsInt() : 0;
                 int viewsLeft = row.has("viewsLeft") ? row.get("viewsLeft").getAsInt() : VIEWS_MAX;
                 int views = row.has("views") ? row.get("views").getAsInt() : 0;
-                fetched.add(new PoolPhoto(id, author, tributedBy, tributes, viewsLeft, views, PhotoPngCodec.decode(bytes.body())));
+                int maxViews = row.has("maxViews") ? row.get("maxViews").getAsInt() : VIEWS_MAX;
+                fetched.add(new PoolPhoto(id, author, tributedBy, tributes, viewsLeft, views, maxViews, PhotoPngCodec.decode(bytes.body())));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -787,6 +797,7 @@ public final class SharedPhotos {
                         tag.putInt(SHARED_TRIBUTES_KEY, photo.tributes());
                         tag.putInt(SHARED_VIEWS_LEFT_KEY, photo.viewsLeft());
                         tag.putInt(SHARED_VIEWS_KEY, photo.views());
+                        tag.putInt(SHARED_MAX_VIEWS_KEY, photo.maxViews());
                         if (!photo.tributedBy().isBlank()) tag.putString(SHARED_TRIBUTED_BY_KEY, photo.tributedBy());
                     })
                     .toImmutable();
