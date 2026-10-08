@@ -407,7 +407,10 @@ public final class TranslationPreviewScreen extends Screen {
         readout.add(Component.translatable("gui.dungeontrain.translate.preview.death.sample").withColor(LABEL_COLOUR));
     }
 
-    /** The item, and its tooltip as recorded — or, for a name never seen in one, as the item builds it. */
+    /**
+     * The item, and its tooltip as recorded — or, for a name never seen in one, as the item builds it;
+     * a line not yet seen in any tooltip shows alone.
+     */
     private void initItem() {
         ItemTooltipRecorder.Snapshot snapshot = ItemTooltipRecorder.snapshotFor(unit.id());
         List<Component> lines;
@@ -417,6 +420,8 @@ public final class TranslationPreviewScreen extends Screen {
         } else {
             Item item = ClientPreviewEvidence.itemNamed(unit.id());
             if (item == null) {
+                // A line never seen in a tooltip yet: the line alone, not an empty slot.
+                itemLines = List.of(Component.literal(text));
                 return;
             }
             sceneItem = new ItemStack(item);
