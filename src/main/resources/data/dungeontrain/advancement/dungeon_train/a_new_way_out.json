@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/train_inside_a_train",
   "display": {
-    "icon": { "id": "minecraft:oak_door" },
+    "icon": { "id": "minecraft:oxidized_copper_door" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.a_new_way_out.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.a_new_way_out.description" },
     "frame": "goal",

@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/carts_100",
   "display": {
-    "icon": { "id": "minecraft:target" },
+    "icon": { "id": "minecraft:iron_sword" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.challenge_complete.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.challenge_complete.description" },
     "frame": "challenge",

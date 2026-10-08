@@ -8,6 +8,8 @@ dungeontrain:dungeon_train/drift_came_back
 dungeontrain:dungeon_train/drift_first_marks
 dungeontrain:dungeon_train/drift_left_behind
 dungeontrain:dungeon_train/drift_rearranged
+dungeontrain:dungeon_train/fully_developed
+dungeontrain:dungeon_train/heros_handbook
 dungeontrain:dungeon_train/im_not_alone
 dungeontrain:dungeon_train/landed_on_tracks
 dungeontrain:dungeon_train/left_train
@@ -17,6 +19,7 @@ dungeontrain:dungeon_train/roof_run_1
 dungeontrain:dungeon_train/roof_runner
 dungeontrain:dungeon_train/root
 dungeontrain:dungeon_train/summon_the_creator
+dungeontrain:dungeon_train/the_enchiridion
 dungeontrain:dungeon_train/the_great_beyond
 dungeontrain:dungeon_train/train_explored
 dungeontrain:dungeon_train/train_inside_a_train

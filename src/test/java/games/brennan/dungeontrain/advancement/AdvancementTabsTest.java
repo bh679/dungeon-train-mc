@@ -337,13 +337,13 @@ class AdvancementTabsTest {
             assertFalse((DT + "root").equals(tabOf(all, path)), path + " is outside the Dungeon Train tab");
             assertFalse(required.test(path), path + " counts through its tab-complete advancement, not directly");
         }
-        for (String path : List.of(DT + "train_explored", DT + "all_others", DT + "challenge_complete", DT + "carts_100")) {
+        for (String path : List.of(DT + "train_explored", DT + "all_others", DT + "challenge_complete", DT + "carts_100",
+                DT + "heros_handbook", DT + "fully_developed")) {
             assertTrue(required.test(path), path);
         }
-        for (String path : List.of(DT + "heros_handbook", DT + "fully_developed", DT + "all_out_of_secrets")) {
-            assertFalse(required.test(path), path + " stays out, as its tab is not part of the burrito");
-        }
-        assertFalse(CompletionistAdvancement.isRequiredId(ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "heros_handbook"),
+        assertFalse(required.test(DT + "all_out_of_secrets"), "set out of the burrito in the editor");
+        assertTrue(required.test(DT + "the_enchiridion"), "set into the burrito in the editor, though it heads its own tab");
+        assertFalse(CompletionistAdvancement.isRequiredId(ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "all_out_of_secrets"),
             Set.of(), true), "an editor override wins over the tab");
     }
 }
