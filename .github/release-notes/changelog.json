@@ -24125,6 +24125,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "edible-backpacks-are-food",
+      "version": "0.1191.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Edible backpacks are a snack now",
+      "summary": "A backpack fills your hunger like an apple, and a golden one works like a golden apple.",
+      "highlights": [],
+      "date": "2026-10-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
