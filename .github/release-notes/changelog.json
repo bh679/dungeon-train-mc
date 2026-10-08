@@ -24090,6 +24090,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "books-arm-on-pickup",
+      "version": "0.1189.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Book fixes",
+      "summary": "Books behave the same however they reach your inventory.",
+      "highlights": [],
+      "pr": 1875,
+      "date": "2026-10-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
