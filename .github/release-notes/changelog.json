@@ -24007,9 +24007,9 @@
       ],
       "pr": 1868,
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
     },
     {
       "id": "leased-carriage-keeps-entities",
@@ -24024,9 +24024,9 @@
       "highlights": [],
       "pr": 1869,
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
     },
     {
       "id": "drifting-group-carriages",
@@ -24045,9 +24045,9 @@
       ],
       "pr": 1870,
       "date": "2026-10-07",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
     },
     {
       "id": "item-preview-empty-slot-fix",
@@ -24066,9 +24066,9 @@
       ],
       "pr": 1872,
       "date": "2026-10-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
     },
     {
       "id": "photo-views-five-ten",
