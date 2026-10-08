@@ -8,6 +8,7 @@ needs no Pillow, so this runs in CI without it.
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -15,6 +16,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import apply as MOD  # noqa: E402
 import capstone_rules  # noqa: E402
+import commit as COMMIT  # noqa: E402
 
 DT = "dungeontrain:dungeon_train/"
 
@@ -244,6 +246,75 @@ def test_reword_existing_text():
         raise AssertionError(f"accepted {bad}")
 
 
+# ---------- Save & commit (commit.py) ----------
+
+def test_commit_pieces():
+    text, version = COMMIT.bump_patch("a=1\nmod_version=0.1188.22\nb=2\n")
+    assert version == "0.1188.23" and text == "a=1\nmod_version=0.1188.23\nb=2\n", text
+    assert COMMIT.summary({"icons": {"a": 1, "b": 2}, "parents": {"c": None}}) == "1 move, 2 icons"
+    assert COMMIT.summary({}) == "no changes"
+    assert COMMIT.blocking(["Translate x into the other locales", "dungeontrain:a is on the band journey: …"]) == \
+        ["Translate x into the other locales"]
+    for branch in ("main", "master", "HEAD", ""):
+        try:
+            COMMIT.refuse_branch(branch)
+        except COMMIT.CommitError:
+            continue
+        raise AssertionError(f"committed on {branch!r}")
+    COMMIT.refuse_branch("dev/advancement-tabs")
+
+
+def _git(cwd, *args):
+    subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True)
+
+
+def test_save_and_commit_commits_only_what_it_wrote_and_pushes():
+    ws = Workspace()
+    root = ws.root
+    (root / "gradle.properties").write_text("mod_version=1.2.3\n")
+    (root / "unrelated.txt").write_text("before\n")
+    remote = Path(tempfile.mkdtemp(prefix="adv-editor-remote-")) / "r.git"
+    _git(root.parent, "init", "-q", "--bare", str(remote))
+    _git(root, "init", "-q", "-b", "dev/test")
+    _git(root, "config", "user.email", "t@example.com")
+    _git(root, "config", "user.name", "Test")
+    _git(root, "add", "-A")
+    _git(root, "commit", "-q", "-m", "base")
+    _git(root, "remote", "add", "origin", str(remote))
+    (root / "unrelated.txt").write_text("after, must not be committed\n")
+    repo = COMMIT.Repo(root=root, adv_dir=ws.adv, tabs_file=ws.tabs, lang_file=ws.lang)
+    res = COMMIT.save_and_commit({"version": 1, "icons": {DT + "carts_100": "minecraft:chest"}}, repo,
+                                 run_tests=lambda r: None)
+    assert res.committed and res.version == "1.2.4", res
+    files = subprocess.run(["git", "show", "--name-only", "--format=", "HEAD"], cwd=root, capture_output=True,
+                           text=True).stdout.split()
+    assert sorted(files) == sorted(["advancement/dungeon_train/carts_100.json", "gradle.properties",
+                                    "src/test/resources/advancement/burrito_required.txt"]), files
+    assert "minecraft:chest" in ws.text("dungeon_train/carts_100")
+    assert subprocess.run(["git", "status", "--porcelain", "unrelated.txt"], cwd=root, capture_output=True,
+                          text=True).stdout.strip(), "the unrelated edit stays uncommitted"
+    pushed = subprocess.run(["git", "rev-parse", "dev/test"], cwd=remote, capture_output=True, text=True).stdout.strip()
+    assert pushed.startswith(res.commit), (pushed, res.commit)
+    try:
+        COMMIT.save_and_commit({"version": 1, "icons": {DT + "carts_100": "minecraft:chest"}}, repo,
+                               run_tests=lambda r: None)
+    except COMMIT.CommitError as exc:
+        assert "Nothing to save" in str(exc)
+    else:
+        raise AssertionError("committed an empty save")
+
+
+def test_save_and_commit_stops_for_translation():
+    ws = Workspace()
+    (ws.root / "gradle.properties").write_text("mod_version=1.2.3\n")
+    _git(ws.root, "init", "-q", "-b", "dev/test")
+    repo = COMMIT.Repo(root=ws.root, adv_dir=ws.adv, tabs_file=ws.tabs, lang_file=ws.lang)
+    res = COMMIT.save_and_commit({"version": 1, "tabNames": {DT + "root": "Renamed"}}, repo, push=False,
+                                 run_tests=lambda r: None)
+    assert not res.committed and "need a person" in res.message, res
+    assert (ws.root / "gradle.properties").read_text() == "mod_version=1.2.3\n", "no version bump without a commit"
+
+
 def test_more_icons_are_real_drawable_items():
     """Needs Pillow and a built workspace (game jars in ~/.gradle); skipped where they are missing, as in CI."""
     try:
@@ -267,13 +338,7 @@ GOLDEN = MOD.REPO / "src/test/resources/advancement/burrito_required.txt"
 
 
 def burrito_set() -> str:
-    tabs = MOD.load_tabs(MOD.TABS_FILE)
-    books = capstone_rules.book_paths()
-    files = {"dungeontrain:" + f.relative_to(MOD.ADV_DIR).with_suffix("").as_posix(): f for f in MOD.ADV_DIR.rglob("*.json")}
-    parent_of = lambda a: json.loads(files[a].read_text()).get("parent") if a in files else None
-    in_dt = lambda a: capstone_rules.tab_root(a, parent_of) == capstone_rules.DT_ROOT
-    return "\n".join(i for i in sorted(files)
-                     if capstone_rules.effective(i, capstone_rules.linked(tabs), books, tabs, in_dt(i))[0]) + "\n"
+    return capstone_rules.golden_burrito(MOD.ADV_DIR, MOD.load_tabs(MOD.TABS_FILE))
 
 
 def test_book_paths_parse():

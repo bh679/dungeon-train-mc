@@ -420,6 +420,59 @@ async function saveToRepo() {
   }
 }
 
+/** Write any pending edit to the page's database now (the shared page saves on a 600 ms debounce). */
+async function flushSave() {
+  if (!docRef || !writable) return false;
+  clearTimeout(saveTimer);
+  const body = JSON.stringify(edits);
+  if (body !== lastSaved) { await docRef.set({ edits: JSON.parse(body), savedAt: new Date().toISOString() }); lastSaved = body; }
+  setStatus('Saved');
+  return true;
+}
+
+/**
+ * Save & commit. Locally serve.py does it all (commit.py: apply, tests, version bump, commit, push). On the
+ * shared page there is no repo to reach, so the edits are saved to the page's database and a comment asks the
+ * Claude session watching this page to commit them; Claude replies in that thread with the commit.
+ */
+async function saveAndCommit(button) {
+  if (LOCAL) {
+    const changes = exportChanges();
+    setStatus('Saving, testing and committing…');
+    try {
+      const res = await fetch('/api/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes) });
+      const report = await res.json();
+      if (!res.ok) throw new Error(report.error || res.statusText);
+      try { localStorage.removeItem(EDITS_KEY); } catch (e) {}
+      sessionStorage.setItem('dt-adv-report', JSON.stringify(report));
+      location.reload();
+    } catch (err) {
+      setStatus(`Not committed: ${err.message}`, true);
+    }
+    return;
+  }
+  const comments = await commentsApi();
+  if (!comments) { setStatus('This view can\u2019t reach Claude to commit.', true); return; }
+  try {
+    if (!(await flushSave())) { setStatus('View only: nothing to commit from here.', true); return; }
+    const state = await comments.canSendToClaude();
+    if (state !== 'available') { setStatus(COMMIT_WHY[state] || COMMIT_WHY.off, true); return; }
+    const anchor = await comments.anchorFor(button);
+    await comments.sendToClaude({ anchor, text: `Save & commit: please commit the editor changes (saved ${new Date().toISOString()}).` });
+    setStatus('Sent to Claude to commit. The reply with the commit appears in the comment thread.');
+  } catch (err) {
+    setStatus(`Couldn\u2019t send it to Claude: ${(err && (err.message || err.code)) || err}`, true);
+  }
+}
+const COMMIT_WHY = {
+  no_session: 'No Claude session is open on this page to commit it.',
+  writers_only: 'Only the page\u2019s editors can ask Claude to commit.',
+  off: 'Sending to Claude isn\u2019t available in this view.',
+};
+let commentsPromise = null;
+const commentsApi = () => (commentsPromise = commentsPromise ||
+  (window.claude && window.claude.use ? window.claude.use('comments').catch(() => null) : Promise.resolve(null)));
+
 // ---------- paint mode: click to put advancements in or out of the burrito / It's Not That Simple ----------
 const PAINT_NAMES = { req: 'the Everything Burrito', reset: 'It\u2019s Not That Simple' };
 const capWrite = (ed, id, key, v) => { ed.capstone = ed.capstone || {}; ed.capstone[id] = { ...(ed.capstone[id] || {}), [key]: v }; };

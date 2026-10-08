@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Local advancement editor: the page reads the working tree and "Save to repo" writes back into it.
+"""Local advancement editor: the page reads the working tree and "Save to repo" writes back into it;
+"Save & commit" also commits and pushes just what it wrote (``commit.py``).
 
     python3 scripts/advancements/editor/serve.py        # → http://127.0.0.1:8833
 
@@ -16,6 +17,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from apply import ApplyError, apply_changes
+from commit import CommitError, save_and_commit
 from build import build_bundle, more_icons, page_html
 
 MAX_BODY = 2 * 1024 * 1024
@@ -49,7 +51,7 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, page_html(bundle, "local").encode(), "text/html; charset=utf-8")
 
     def do_POST(self) -> None:  # noqa: N802
-        if self.path != "/api/apply":
+        if self.path not in ("/api/apply", "/api/commit"):
             self._send(404, b"not found", "text/plain")
             return
         # Same-origin only: a page on another site must not be able to write the working tree.
@@ -63,8 +65,15 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": "empty or oversized body"}, 400)
             return
         try:
-            report = apply_changes(json.loads(self.rfile.read(length)))
-        except (ApplyError, json.JSONDecodeError) as exc:
+            changes = json.loads(self.rfile.read(length))
+            if self.path == "/api/commit":
+                result = save_and_commit(changes)
+                self.log_message("save & commit: %s", result.message)
+                self._json({"written": result.written, "todo": result.todo, "committed": result.committed,
+                            "message": result.message, "commit": result.commit, "version": result.version})
+                return
+            report = apply_changes(changes)
+        except (ApplyError, CommitError, json.JSONDecodeError) as exc:
             self._json({"error": str(exc)}, 400)
             return
         self.log_message("saved %d file(s)", len(report.written))

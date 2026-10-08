@@ -28,8 +28,15 @@ python3 scripts/advancements/editor/serve.py        # → http://127.0.0.1:8833
 ```
 
 The page opens on the layout the repo ships right now. Edits are kept in the browser until you press
-**Save to repo**, which writes them into the working tree. Review with `git diff` and commit it
-yourself. It binds to `127.0.0.1` only and refuses cross-origin writes.
+**Save to repo**, which writes them into the working tree for you to review with `git diff`, or
+**Save & commit**, which also regenerates the Everything Burrito golden list, runs `test_apply.py`, bumps
+`mod_version`'s PATCH, commits only the files it wrote and pushes the branch (`commit.py`). It refuses on
+`main`, and stops at "saved, not committed" when the save left text to translate. It binds to
+`127.0.0.1` only and refuses cross-origin writes.
+
+On the shared page there is no repo to reach: **Save & commit** saves the edits to the page's database
+and sends a comment to the Claude session watching the page, which commits them and replies in the
+thread. It is greyed out while no session is watching.
 
 Needs Pillow (`pip install pillow`) for the icons, and a workspace that has built once, so
 `~/.gradle/caches` holds the Minecraft client jar and the Exposure / Edible Backpacks jars.

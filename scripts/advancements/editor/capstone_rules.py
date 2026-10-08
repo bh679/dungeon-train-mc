@@ -101,3 +101,13 @@ def effective(adv_id: str, copies: dict[str, str], books: set[str], tabs: dict,
     if is_editable(adv_id, copies):
         reset = tabs.get("startAgainReset", {}).get(adv_id, reset)
     return required, reset
+
+
+def golden_burrito(adv_dir: Path, tabs: dict) -> str:
+    """The Everything Burrito's required set, one id per line: the golden list both test suites check."""
+    import json
+    books = book_paths()
+    files = {"dungeontrain:" + f.relative_to(adv_dir).with_suffix("").as_posix(): f for f in adv_dir.rglob("*.json")}
+    parent_of = lambda a: json.loads(files[a].read_text()).get("parent") if a in files else None  # noqa: E731
+    in_dt = lambda a: tab_root(a, parent_of) == DT_ROOT  # noqa: E731
+    return "\n".join(i for i in sorted(files) if effective(i, linked(tabs), books, tabs, in_dt(i))[0]) + "\n"

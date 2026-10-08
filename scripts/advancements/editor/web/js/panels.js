@@ -212,6 +212,23 @@ document.addEventListener('fullscreenchange', () => { if (!document.fullscreenEl
 const bSave = document.getElementById('bSave');
 bSave.hidden = !LOCAL;
 bSave.addEventListener('click', saveToRepo);
+const bCommit = document.getElementById('bCommit');
+bCommit.addEventListener('click', () => saveAndCommit(bCommit));
+(async () => {
+  // Locally serve.py commits; on the shared page only while a Claude session can take the request.
+  if (LOCAL) { bCommit.hidden = false; bCommit.title = 'Save, run the editor tests, bump the version, commit and push'; return; }
+  const comments = await commentsApi();
+  if (!comments) return;
+  bCommit.hidden = false;
+  const refresh = async () => {
+    let state = 'off';
+    try { state = await comments.canSendToClaude(); } catch (e) {}
+    bCommit.disabled = state !== 'available';
+    bCommit.title = state === 'available' ? 'Save these edits and ask Claude to commit them' : (COMMIT_WHY[state] || COMMIT_WHY.off);
+  };
+  refresh();
+  setInterval(refresh, 15000); // a disabled button gets no hover, so re-check now and then
+})();
 showSaveReport();
 (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => render());
 connect();
@@ -223,7 +240,9 @@ function showSaveReport() {
   if (!report) return;
   const box = document.getElementById('report');
   const files = report.written || [], todo = report.todo || [];
-  box.innerHTML = `<h2>Saved to the repo</h2><p>${files.length} file${files.length === 1 ? '' : 's'} changed. Review them with <b>git diff</b>.</p>`
+  box.innerHTML = (report.message
+      ? `<h2>${report.committed ? 'Committed' : 'Saved to the repo'}</h2><p>${esc(report.message)}</p>`
+      : `<h2>Saved to the repo</h2><p>${files.length} file${files.length === 1 ? '' : 's'} changed. Review them with <b>git diff</b>.</p>`)
     + (todo.length ? `<p>Still to do by hand:</p><ul class="notes">${todo.map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : '');
   box.hidden = false;
 }
