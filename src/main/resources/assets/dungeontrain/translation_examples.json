@@ -15183,5 +15183,21 @@
         "/discord"
       ]
     }
+  },
+  "gui.dungeontrain.options.account.minecraft": {
+    "1": {
+      "label": "the player's Minecraft username",
+      "examples": [
+        "Steve"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.account.discord": {
+    "1": {
+      "label": "the linked Discord account's display name",
+      "examples": [
+        "Brennan"
+      ]
+    }
   }
 }

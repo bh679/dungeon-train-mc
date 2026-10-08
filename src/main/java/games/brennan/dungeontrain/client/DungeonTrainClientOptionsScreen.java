@@ -358,6 +358,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             }
             return;
         }
+        // Who is linked to whom: the Minecraft account signed in here, and the Discord account the
+        // relay has it tied to — so a player with two Discords can see which one gets the pings.
+        list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H, Component.translatable(
+                "gui.dungeontrain.options.account.minecraft", this.minecraft.getUser().getName())), null);
+        list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H, !status.linked()
+                ? Component.translatable("gui.dungeontrain.options.account.discord_none")
+                : status.discordName().isEmpty()
+                        ? Component.translatable("gui.dungeontrain.options.account.discord_linked")
+                        : Component.translatable("gui.dungeontrain.options.account.discord", status.discordName())), null);
         if (!status.linked()) {
             // What linking does on its own line, then the button across the full width — the one
             // thing to do on this tab until the account is linked.

@@ -66,15 +66,18 @@ public final class CommunityLinkClient {
     /**
      * Whether the relay has seen {@code /dtlink} for this uuid, whether that link is @-pinged at all
      * ({@code pings}, the master switch) and on which kinds of post ({@code types} — every
-     * {@link PingType} present, on unless turned off); {@code ok} false with an {@link Error} otherwise.
+     * {@link PingType} present, on unless turned off), plus the linked account's Discord display name
+     * ({@code ""} when unknown); {@code ok} false with an {@link Error} otherwise.
      */
-    public record Status(boolean ok, boolean linked, boolean pings, Map<PingType, Boolean> types, Error error) {
+    public record Status(boolean ok, boolean linked, boolean pings, Map<PingType, Boolean> types,
+                         String discordName, Error error) {
         public Status {
             types = Collections.unmodifiableMap(new EnumMap<>(withDefaults(types)));
+            discordName = discordName == null ? "" : discordName;
         }
 
         static Status of(Error error) {
-            return new Status(false, false, false, Map.of(), error);
+            return new Status(false, false, false, Map.of(), "", error);
         }
 
         /** Whether this kind of post pings — the master switch and the kind both on. */
@@ -224,7 +227,7 @@ public final class CommunityLinkClient {
                 return Status.of(Error.FAILED);
             }
             return new Status(true, linked.getAsBoolean(), linked.getAsBoolean() && bool(o.get("pings")),
-                    types(o.get("types")), Error.NONE);
+                    types(o.get("types")), linked.getAsBoolean() ? str(o.get("discordName")).trim() : "", Error.NONE);
         }
         if (status == 429) return Status.of(Error.RATE_LIMITED);
         if (status == 503) return Status.of(Error.DISABLED);

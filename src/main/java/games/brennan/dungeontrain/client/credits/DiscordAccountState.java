@@ -93,7 +93,7 @@ public final class DiscordAccountState {
     }
 
     static CommunityLinkClient.Status withPings(CommunityLinkClient.Status s, boolean on, Map<PingType, Boolean> types) {
-        return new CommunityLinkClient.Status(s.ok(), s.linked(), on, types, s.error());
+        return new CommunityLinkClient.Status(s.ok(), s.linked(), on, types, s.discordName(), s.error());
     }
 
     private static void onClient(Runnable r) {

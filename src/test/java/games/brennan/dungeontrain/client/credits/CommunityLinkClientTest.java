@@ -40,10 +40,10 @@ final class CommunityLinkClientTest {
     @Test
     @DisplayName("linked is read only from a boolean; anything unreadable is a failure, never a link")
     void status() {
-        assertEquals(new Status(true, true, false, Map.of(), Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true}"));
-        assertEquals(new Status(true, true, true, Map.of(), Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"pings\":true}"));
-        assertEquals(new Status(true, false, false, Map.of(), Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false,\"pings\":true}"));
-        assertEquals(new Status(true, false, false, Map.of(), Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false}"));
+        assertEquals(new Status(true, true, false, Map.of(), "", Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true}"));
+        assertEquals(new Status(true, true, true, Map.of(), "", Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"pings\":true}"));
+        assertEquals(new Status(true, false, false, Map.of(), "", Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false,\"pings\":true}"));
+        assertEquals(new Status(true, false, false, Map.of(), "", Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false}"));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "{\"linked\":\"true\"}"));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "{}"));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "junk"));
@@ -82,5 +82,15 @@ final class CommunityLinkClientTest {
                 CommunityLinkClient.buildPingsPayload("abc", true, PingType.PHOTO_TRIBUTED).toString());
         Pings p = CommunityLinkClient.parsePings(200, "{\"ok\":true,\"pings\":true,\"types\":{\"own_tribute\":false}}");
         assertEquals(false, p.types().get(PingType.OWN_TRIBUTE));
+    }
+
+    @Test
+    @DisplayName("the linked Discord name is read when linked, and never for an unlinked uuid")
+    void discordName() {
+        assertEquals("Brennan", CommunityLinkClient.parseStatus(200,
+                "{\"ok\":true,\"linked\":true,\"discordName\":\" Brennan \"}").discordName());
+        assertEquals("", CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true}").discordName());
+        assertEquals("", CommunityLinkClient.parseStatus(200,
+                "{\"ok\":true,\"linked\":false,\"discordName\":\"x\"}").discordName());
     }
 }
