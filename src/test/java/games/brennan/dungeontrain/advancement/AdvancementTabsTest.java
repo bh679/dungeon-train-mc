@@ -185,6 +185,38 @@ class AdvancementTabsTest {
     }
 
     @Test
+    @DisplayName("the Everything Burrito set matches the editor's golden list (keeps capstone_rules.py honest)")
+    void burritoSetMatchesGolden() throws IOException {
+        List<String> required = new ArrayList<>();
+        for (String path : advancements().keySet()) {
+            ResourceLocation id = ResourceLocation.fromNamespaceAndPath("dungeontrain", path);
+            if (CompletionistAdvancement.isRequiredId(id, Set.of())) required.add(id.toString());
+        }
+        required.sort(null);
+        String golden;
+        try (var in = AdvancementTabsTest.class.getResourceAsStream("/advancement/burrito_required.txt")) {
+            assertNotNull(in, "golden list missing");
+            golden = new String(in.readAllBytes(), StandardCharsets.UTF_8).strip();
+        }
+        assertEquals(golden, String.join("\n", required),
+                "regenerate src/test/resources/advancement/burrito_required.txt with test_apply.py --regen-golden "
+                + "and check scripts/advancements/editor/capstone_rules.py still mirrors CompletionistAdvancement");
+    }
+
+    @Test
+    @DisplayName("capstone overrides parse from the tabs file; Start Again follows the burrito unless set")
+    void capstoneOverridesParse() {
+        TabGateways.Layout l = TabGateways.Layout.parse(new StringReader(
+                "{\"burrito\":{\"dungeontrain:dungeon_train/a\":false},\"startAgainReset\":{\"dungeontrain:dungeon_train/b\":true,\"x\":\"no\"}}"));
+        assertEquals(Map.of("dungeontrain:dungeon_train/a", false), l.burrito());
+        assertEquals(Map.of("dungeontrain:dungeon_train/b", true), l.startAgainReset(), "non-boolean values are ignored");
+        ResourceLocation carts = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "carts_100");
+        assertTrue(StartAgainAdvancement.isWiped(carts, true));
+        assertFalse(StartAgainAdvancement.isWiped(carts, false));
+        assertTrue(StartAgainAdvancement.isWiped(CompletionistAdvancement.ID, false), "the capstone is always cleared");
+    }
+
+    @Test
     @DisplayName("copies never count towards the Everything Burrito")
     void copiesOutsideTheBurrito() throws IOException {
         for (String copy : shippedLayout().copies().keySet()) {

@@ -14,6 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import apply as MOD  # noqa: E402
+import capstone_rules  # noqa: E402
 
 DT = "dungeontrain:dungeon_train/"
 
@@ -162,6 +163,49 @@ def test_rejects_bad_input():
     assert ws.text("dungeon_train/carts_100") == CARTS
 
 
+def test_capstone_override_is_stored_only_when_it_differs():
+    ws = Workspace()
+    ws.apply({"capstone": {DT + "carts_100": {"required": False}}})
+    tabs = json.loads(ws.tabs.read_text())
+    assert tabs["burrito"] == {DT + "carts_100": False}
+    assert "startAgainReset" not in tabs, "reset follows the burrito unless set on its own"
+    ws.apply({"capstone": {DT + "carts_100": {"required": True, "reset": False}}})
+    tabs = json.loads(ws.tabs.read_text())
+    assert "burrito" not in tabs, "back to the default: no override left"
+    assert tabs["startAgainReset"] == {DT + "carts_100": False}
+
+
+def test_capstone_refuses_fixed_advancements():
+    ws = Workspace()
+    (ws.adv / "dungeon_train" / "completionist.json").write_text(CARTS)
+    for bad in ({DT + "completionist": {"required": False}}, {DT + "carts_100": {"required": "yes"}}):
+        try:
+            ws.apply({"capstone": bad})
+        except MOD.ApplyError:
+            continue
+        raise AssertionError(f"accepted {bad}")
+
+
+GOLDEN = MOD.REPO / "src/test/resources/advancement/burrito_required.txt"
+
+
+def burrito_set() -> str:
+    tabs = MOD.load_tabs(MOD.TABS_FILE)
+    books = capstone_rules.book_paths()
+    ids = sorted("dungeontrain:" + f.relative_to(MOD.ADV_DIR).with_suffix("").as_posix() for f in MOD.ADV_DIR.rglob("*.json"))
+    return "\n".join(i for i in ids if capstone_rules.effective(i, tabs["copies"], books, tabs)[0]) + "\n"
+
+
+def test_book_paths_parse():
+    books = capstone_rules.book_paths()
+    assert "dungeon_train/the_enchiridion" in books and "dungeon_train/taking_notes" in books, books
+
+
+def test_burrito_mirror_matches_golden():
+    """The Java side (AdvancementTabsTest) checks the same file, so the two rules can't drift apart."""
+    assert burrito_set() == GOLDEN.read_text(), "run: python3 scripts/advancements/editor/test_apply.py --regen-golden"
+
+
 def _main():
     funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failures = 0
@@ -177,4 +221,8 @@ def _main():
 
 
 if __name__ == "__main__":
+    if "--regen-golden" in sys.argv:
+        GOLDEN.write_text(burrito_set())
+        print(f"wrote {GOLDEN}")
+        sys.exit(0)
     sys.exit(_main())

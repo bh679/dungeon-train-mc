@@ -162,11 +162,16 @@ public final class StartAgainAdvancement {
     }
 
     /**
-     * Does the start-again wipe clear advancement {@code id}? Only the capstone's parts: its required
-     * set, the capstone, and this advancement. Package-private for unit tests.
+     * Does the start-again wipe clear advancement {@code id}? By default only the capstone's parts:
+     * its required set, the capstone, and this advancement. An advancement's own setting in
+     * {@code advancement_tabs.json} ({@code startAgainReset}, written by the advancement editor) wins
+     * over that, except for the capstone pair, which is always cleared. Package-private for unit tests.
      */
     static boolean isWiped(ResourceLocation id, boolean requiredByCapstone) {
-        return requiredByCapstone || CompletionistAdvancement.ID.equals(id) || ID.equals(id);
+        if (CompletionistAdvancement.ID.equals(id) || ID.equals(id)) return true;
+        if (TabGateways.isCopy(id)) return false;
+        Boolean override = TabGateways.layout().startAgainReset().get(id.toString());
+        return override != null ? override : requiredByCapstone;
     }
 
     /**

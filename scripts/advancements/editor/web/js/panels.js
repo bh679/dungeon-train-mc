@@ -78,6 +78,10 @@ function renderControls(L) {
 }
 function renderChips(L, tabs) {
   const box = document.getElementById('chips'); box.innerHTML = '';
+  const caps = Object.values(L.E.nodes).filter(n => n.cap);
+  const need = caps.filter(n => n.cap.req).length, wiped = caps.filter(n => n.cap.reset).length;
+  document.getElementById('burrito').textContent =
+    `The Everything Burrito needs ${need} advancements. It\u2019s Not That Simple resets ${wiped}.`;
   L.tabs.forEach(t => {
     const vis = tabs.includes(t);
     const c = document.createElement('button'); c.type = 'button'; c.className = 'chip' + (vis ? '' : ' off');
@@ -103,6 +107,14 @@ function describeChanges(L) {
   Object.keys(edits.tabTitles).forEach(id => E.nodes[id] && out.push({ id, html: `Tab renamed to <em>${esc(edits.tabTitles[id])}</em>` }));
   Object.keys(edits.icons).forEach(id => E.nodes[id] && out.push({ id, html: `Icon of <em>${esc(name(id))}</em> is now ${esc(M.iconNames[edits.icons[id]])}` }));
   Object.keys(edits.bgs).forEach(id => E.nodes[id] && out.push({ id, html: `Background of <em>${esc(tabTitle(L, id))}</em> is now ${esc(bgName(edits.bgs[id]))}` }));
+  Object.keys(edits.capstone || {}).forEach(id => {
+    const n = E.nodes[id], base = M.nodes[id] && M.nodes[id].cap;
+    if (!n || !n.cap || !base) return;
+    const bits = [];
+    if (n.cap.req !== base.req) bits.push(n.cap.req ? 'now counts towards the Everything Burrito' : 'no longer counts towards the Everything Burrito');
+    if (n.cap.reset !== base.reset) bits.push(n.cap.reset ? 'is now reset by It\u2019s Not That Simple' : 'is now kept by It\u2019s Not That Simple');
+    if (bits.length) out.push({ id, html: `<em>${esc(name(id))}</em> ${bits.join(' and ')}` });
+  });
   Object.keys(edits.texts || {}).forEach(id => E.nodes[id] && out.push({ id, html: `Text of <em>${esc(name(id))}</em> changed` }));
   if (edits.order) out.push({ id: null, html: `Tab order: ${edits.order.filter(i => E.nodes[i] && !E.parents[i]).map(i => esc(tabTitle(L, i))).join(' · ')}` });
   return out;

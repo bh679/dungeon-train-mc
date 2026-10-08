@@ -12,7 +12,8 @@ button posts to ``serve.py``. Shape (every section optional)::
      "tabNames":    {"<tab root id>": "Train Explorer" | null},
      "order":       ["<tab root id>", ...],
      "created":     {"<id>": {"parent": ..., "copyOf": "<id>", "icon": ..., "background": ...}},
-     "deleted":     ["<id>", ...]}
+     "deleted":     ["<id>", ...],
+     "capstone":    {"<id>": {"required": true, "reset": false}}}  # Everything Burrito / It's Not That Simple
 
 Ids never change: a move only rewrites ``parent``, so players keep everything they earned. Edits
 to existing files are text-level (the one value on its line), so the diff is one line per change.
@@ -32,6 +33,8 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import capstone_rules
 
 REPO = Path(__file__).resolve().parents[3]
 RES = REPO / "src/main/resources"
@@ -215,6 +218,36 @@ def load_tabs(tabs_file: Path) -> dict:
             **{k: v for k, v in data.items() if k not in ("order", "tabNames", "copies")}}
 
 
+def set_capstone(tabs: dict, adv_id: str, flags: dict, adv_dir: Path) -> None:
+    """Record "counts towards the Everything Burrito" / "reset by It's Not That Simple" for one advancement.
+
+    Only a value that differs from the mod's default is stored, so the tabs file lists the exceptions:
+    ``burrito`` against the default rule, ``startAgainReset`` against "reset what the burrito needs".
+    """
+    adv_path(adv_id, adv_dir)
+    copies = tabs["copies"]
+    if not capstone_rules.is_editable(adv_id, copies):
+        raise ApplyError(f"{adv_id}: its Everything Burrito / start-again settings are fixed")
+    for key in ("required", "reset"):
+        if key in flags and not isinstance(flags[key], bool):
+            raise ApplyError(f"{adv_id}: {key} must be true or false")
+    burrito, reset = tabs.setdefault("burrito", {}), tabs.setdefault("startAgainReset", {})
+    default_req = capstone_rules.default_required(adv_id, copies, capstone_rules.book_paths())
+    required = flags.get("required", burrito.get(adv_id, default_req))
+    _store(burrito, adv_id, required, default_req)
+    _store(reset, adv_id, flags.get("reset", reset.get(adv_id, required)), required)
+    for table in ("burrito", "startAgainReset"):
+        if not tabs[table]:
+            del tabs[table]
+
+
+def _store(table: dict, adv_id: str, value: bool, default: bool) -> None:
+    if value == default:
+        table.pop(adv_id, None)
+    else:
+        table[adv_id] = value
+
+
 def tab_lang_key(root_id: str) -> str:
     """``dungeon_train/tab_train_explorer`` → ``…tab.train_explorer``; ``secrete_menu/root`` → ``…tab.secrete_menu``."""
     parts = ID_RE.match(root_id).group(1).split("/")
@@ -303,6 +336,10 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
             report.todo.append(f"Translate {key} into the other locales (merge-locale-keys.py), then stamp provenance.")
         else:
             tabs["tabNames"].pop(root, None)
+        tabs_dirty = True
+
+    for adv_id, flags in (changes.get("capstone") or {}).items():
+        set_capstone(tabs, adv_id, flags, adv_dir)
         tabs_dirty = True
 
     if changes.get("order"):

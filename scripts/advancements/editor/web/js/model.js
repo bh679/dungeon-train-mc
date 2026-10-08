@@ -13,7 +13,7 @@ rootEl.style.setProperty('--titlebox', `url(${SP.title_box})`);
 
 const IX = 9, IY = 18;
 let W = 252, H = 140, IW = 234, IH = 113, PER_ROW = 8;
-const emptyEdits = () => ({ parents: {}, created: {}, deleted: [], icons: {}, tabTitles: {}, bgs: {}, texts: {}, values: {}, order: null });
+const emptyEdits = () => ({ parents: {}, created: {}, deleted: [], icons: {}, tabTitles: {}, bgs: {}, texts: {}, values: {}, capstone: {}, order: null });
 const view = { layout: 'proposed', other: false, creative: false, earned: true, tabId: DT_ROOT, withChildren: true };
 try { Object.assign(view, JSON.parse(localStorage.getItem('dt-adv-view') || '{}')); } catch (e) {}
 const saveView = () => { try { localStorage.setItem('dt-adv-view', JSON.stringify(view)); } catch (e) {} };
@@ -75,6 +75,17 @@ function effective() {
   Object.keys(nodes).forEach(id => {
     const n = nodes[id]; if (!n.copyOf || !nodes[n.copyOf]) return;
     const s = nodes[n.copyOf]; n.t = s.t; n.d = s.d; n.f = s.f; n.req = s.req; n.hint = s.hint; if (!(id in icons) && !M.nodes[id]) n.i = s.i; // a saved copy keeps its own icon
+  });
+  // Everything Burrito / It's Not That Simple. Reset follows "counts" unless it was set on its own.
+  const caps = edits.capstone || {};
+  Object.keys(nodes).forEach(id => {
+    const n = nodes[id];
+    if (n.created && !n.cap) n.cap = n.copyOf ? { req: false, reset: false, ed: false } : { req: true, reset: true, ed: true };
+    if (!n.cap) return;
+    const e = caps[id] || {}, base = n.cap;
+    const req = 'req' in e ? e.req : base.req;
+    const reset = 'reset' in e ? e.reset : (base.reset === base.req ? req : base.reset);
+    n.cap = { ...base, req, reset };
   });
   const bgs = { ...B.bgs, ...edits.bgs };
   Object.keys(bgs).forEach(id => { if (nodes[id]) nodes[id].bg = bgs[id]; });
@@ -192,7 +203,7 @@ function deleteCreated(id) {
   if (Object.keys(L.E.nodes).some(k => L.E.nodes[k].copyOf === id)) { toast('Delete its copies first.'); return; }
   const t = L.E.nodes[id].t;
   commit(e => {
-    ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values'].forEach(k => { if (e[k]) delete e[k][id]; });
+    ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone'].forEach(k => { if (e[k]) delete e[k][id]; });
     delete e.created[id];
     if (M.baseline.created[id] && !e.deleted.includes(id)) e.deleted.push(id);
     if (e.order) e.order = e.order.filter(x => x !== id);
@@ -211,7 +222,7 @@ function moveTab(id, dir) {
 
 function resetNode(id) {
   commit(e => {
-    ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values'].forEach(k => { if (e[k]) delete e[k][id]; });
+    ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone'].forEach(k => { if (e[k]) delete e[k][id]; });
     if (e.created[id] && !M.baseline.created[id]) delete e.created[id];
     e.deleted = e.deleted.filter(x => x !== id);
   }, 'Undid your edits to this one.');
@@ -267,7 +278,7 @@ async function connect() {
 function exportChanges() {
   const saved = view.layout; view.layout = 'proposed';
   const L = computeLayout(); view.layout = saved;
-  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, order: null };
+  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, capstone: {}, order: null };
   Object.keys(E.nodes).forEach(id => {
     const n = E.nodes[id], base = M.nodes[id];
     if (kindOf(id) === 'other') return;
@@ -275,12 +286,14 @@ function exportChanges() {
       out.created[id] = n.copyOf
         ? { parent: E.parents[id] || null, copyOf: n.copyOf, icon: M.iconIds[n.i], background: n.bg || null }
         : { parent: E.parents[id] || null, title: n.t, description: n.d, frame: n.f, icon: M.iconIds[n.i], background: n.bg || null };
+      if (n.cap && n.cap.ed && (!n.cap.req || !n.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
       return;
     }
     if ((E.parents[id] || '') !== (M.gameParents[id] || '')) out.parents[id] = E.parents[id] || null;
     if (n.i !== base.i) out.icons[id] = M.iconIds[n.i];
     if (n.req && base.req && n.req.n !== base.req.n && !n.copyOf) out.values[id] = { field: base.req.field, from: base.req.n, to: n.req.n };
     if (!E.parents[id] && n.bg && n.bg !== base.bg) out.backgrounds[id] = n.bg;
+    if (n.cap && base.cap && n.cap.ed && (n.cap.req !== base.cap.req || n.cap.reset !== base.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
   });
   const titles = E.titles;
   Object.keys({ ...titles, ...M.baseline.tabTitles }).forEach(id => {

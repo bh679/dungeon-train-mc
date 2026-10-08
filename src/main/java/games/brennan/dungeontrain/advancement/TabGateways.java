@@ -34,6 +34,10 @@ import java.util.Optional;
  * play, and a hidden, silent <b>copy</b> (criterion {@code minecraft:impossible}) that this class keeps
  * in step with it. A hidden root is invisible until earned, so the copy earning is what unlocks a tab.</p>
  *
+ * <p>The same file carries the per-advancement capstone overrides the editor writes: {@code burrito}
+ * (counts towards the Everything Burrito — {@link CompletionistAdvancement#isRequiredId}) and
+ * {@code startAgainReset} (cleared by "It's Not That Simple" — {@link StartAgainAdvancement#isWiped}).</p>
+ *
  * <p>The pairs live in {@code /dungeontrain/advancement_tabs.json} (also read by the advancement editor,
  * {@code scripts/advancements/editor}), so a new pair is a data change. Copies are mirrors, never
  * achievements of their own: no cross-world persistence, hints, accolades or capstone credit
@@ -55,13 +59,32 @@ public final class TabGateways {
      * The tab layout: copy → original, tab root → lang key for its tab name, and the tab order.
      * Ids are kept as strings so the parse is testable without Minecraft's registries.
      */
-    public record Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order) {
+    public record Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order,
+                         Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset) {
 
-        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of());
+        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of());
+
+        /** A layout with copies, names and order only — no capstone overrides. */
+        public Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order) {
+            this(copies, tabNames, order, Map.of(), Map.of());
+        }
 
         public static Layout parse(Reader reader) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
-            return new Layout(stringMap(root, "copies"), stringMap(root, "tabNames"), stringList(root, "order"));
+            return new Layout(stringMap(root, "copies"), stringMap(root, "tabNames"), stringList(root, "order"),
+                    boolMap(root, "burrito"), boolMap(root, "startAgainReset"));
+        }
+
+        private static Map<String, Boolean> boolMap(JsonObject root, String key) {
+            Map<String, Boolean> out = new LinkedHashMap<>();
+            if (root.has(key) && root.get(key).isJsonObject()) {
+                for (Map.Entry<String, JsonElement> e : root.getAsJsonObject(key).entrySet()) {
+                    if (e.getValue().isJsonPrimitive() && e.getValue().getAsJsonPrimitive().isBoolean()) {
+                        out.put(e.getKey(), e.getValue().getAsBoolean());
+                    }
+                }
+            }
+            return Collections.unmodifiableMap(out);
         }
 
         /** The copies of {@code originalId}, usually one. */

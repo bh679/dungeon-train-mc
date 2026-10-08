@@ -21,6 +21,7 @@ import re
 import sys
 from pathlib import Path
 
+import capstone_rules
 from textures import Textures, png_uri, square
 
 REPO = Path(__file__).resolve().parents[3]
@@ -139,6 +140,7 @@ def build_bundle() -> tuple[dict, list[str]]:
             icon_ids.append(item_id)
         return icon_index[item_id]
 
+    books = capstone_rules.book_paths()
     nodes, parents = {}, {}
     for aid, adv in load_advancements(tex).items():
         d = adv.get("display")
@@ -154,6 +156,9 @@ def build_bundle() -> tuple[dict, list[str]]:
             node["req"] = req
         if aid in copies:
             node["copyOf"] = copies[aid]
+        if aid.startswith("dungeontrain:"):
+            required, reset = capstone_rules.effective(aid, copies, books, tabs_file)
+            node["cap"] = {"req": required, "reset": reset, "ed": capstone_rules.is_editable(aid, copies)}
         if CHAIN.match(aid):
             node["chain"] = True
         if not adv.get("parent"):

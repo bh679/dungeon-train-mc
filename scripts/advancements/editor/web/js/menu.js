@@ -65,12 +65,13 @@ function fillMenuRaw(id) {
           ${moreBgsOpen ? `<input type="text" id="mBgSearch" placeholder="Search ${Object.keys(M.moreBgs).length} block textures" value="${esc(bgQuery)}"><div class="bgs more-list" id="mBgMore">${moreBgButtons(n.bg)}</div>` : ''}
         ${id === DT_ROOT ? '' : `<div class="row"><button class="mcbtn" type="button" data-act="tabLeft" ${oi <= 1 ? 'disabled' : ''}>← Move tab</button><button class="mcbtn" type="button" data-act="tabRight" ${oi >= ord.length - 1 ? 'disabled' : ''}>Move tab →</button></div>`}</div>`;
     }
+    if (n.cap) h += capstoneSection(n);
     if (n.created && !n.copyOf) {
       h += `<div class="sec"><span>Text</span><label for="mTitle">Title</label><input type="text" id="mTitle" value="${esc(n.t)}" maxlength="60">
         <label for="mDesc">Description</label><textarea id="mDesc" maxlength="200">${esc(n.d)}</textarea></div>`;
     }
     h += `<div class="sec"><span>Icon</span><div class="icons" id="mIcons">${IC.map((u, i) => `<button type="button" data-icon="${i}" class="${i === n.i ? 'on' : ''}" title="${esc(M.iconNames[i])}" aria-label="${esc(M.iconNames[i])}"><i style="background-image:url(${u})"></i></button>`).join('')}</div></div>`;
-    const touched = ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values'].some(k => edits[k] && id in edits[k]) || id in edits.created;
+    const touched = ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone'].some(k => edits[k] && id in edits[k]) || id in edits.created;
     if (touched || n.created) h += `<div class="row">${touched ? '<button class="mcbtn" type="button" data-act="reset">Undo my edits to this</button>' : ''}${n.created ? '<button class="mcbtn" type="button" data-act="delete">Delete</button>' : ''}</div>`;
   }
   menu.innerHTML = h;
@@ -118,6 +119,9 @@ function wireMenu(id) {
   }));
   on('#mKids', 'change', e => { view.withChildren = e.target.checked; saveView(); renderControls(layoutCache); fillMenu(id); });
   on('#mParent', 'change', e => reparent(id, e.target.value));
+  const capEdit = (key, label) => e => { const v = e.target.checked; commit(ed => { ed.capstone = ed.capstone || {}; ed.capstone[id] = { ...(ed.capstone[id] || {}), [key]: v }; }, label(v)); };
+  on('#mCapReq', 'change', capEdit('req', v => v ? 'Now counts towards the Everything Burrito.' : 'No longer counts towards the Everything Burrito.'));
+  on('#mCapReset', 'change', capEdit('reset', v => v ? 'Now reset by It\u2019s Not That Simple.' : 'Now kept by It\u2019s Not That Simple.'));
   on('#mTab', 'change', e => moveToTab(id, e.target.value));
   let tt;
   on('#mTabTitle', 'input', e => { clearTimeout(tt); const v = e.target.value.trim(); tt = setTimeout(() => commit(ed => { if (v) ed.tabTitles[id] = v; else delete ed.tabTitles[id]; }), 400); });
@@ -153,4 +157,13 @@ function moreBgButtons(current) {
   const keys = Object.keys(M.moreBgs).filter(k => !q || bgName(k).includes(q));
   if (!keys.length) return '<span class="hint">No block texture matches.</span>';
   return keys.map(k => bgButton(k, M.moreBgs[k], current)).join('');
+}
+
+// ---------- Everything Burrito ----------
+function capstoneSection(n) {
+  const c = n.cap, dis = c.ed ? '' : ' disabled';
+  const why = c.ed ? '' : `<div class="hint">${n.copyOf ? 'A tab copy never counts: its original does.' : 'Fixed for the capstone itself, its reward and the Editor tab.'}</div>`;
+  return `<div class="sec"><span>Everything Burrito</span>
+    <label class="check"><input type="checkbox" id="mCapReq"${c.req ? ' checked' : ''}${dis}> Counts towards Everything Burrito</label>
+    <label class="check"><input type="checkbox" id="mCapReset"${c.reset ? ' checked' : ''}${dis}> Reset by It\u2019s Not That Simple</label>${why}</div>`;
 }

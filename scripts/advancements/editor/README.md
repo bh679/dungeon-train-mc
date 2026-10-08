@@ -2,12 +2,13 @@
 
 Edit Dungeon Train's advancement tabs on a copy of the real advancements screen: the vanilla window,
 tab sprites and item icons, read straight out of the game jars. Click an advancement to change its
-**parent**, **tab**, **required value** or **icon**. On a tab's first advancement you can also change
+**parent**, **tab**, **required value**, **icon**, and whether it **counts towards the Everything
+Burrito** and is **reset by It's Not That Simple**. On a tab's first advancement you can also change
 the **tab name**, **background** (any block texture, via **+**) and **tab order**. You can also drag
 an advancement onto another one, or onto a tab.
 
 ```bash
-python3 scripts/advancements/editor/serve.py        # → http://127.0.0.1:8796
+python3 scripts/advancements/editor/serve.py        # → http://127.0.0.1:8833
 ```
 
 The page opens on the layout the repo ships right now. Edits are kept in the browser until you press
@@ -27,6 +28,12 @@ Needs Pillow (`pip install pillow`) for the icons, and a workspace that has buil
 | Background | the tab root's `display.background` |
 | Tab name, tab order, tab copies | `src/main/resources/dungeontrain/advancement_tabs.json` (+ an `en_us` key for a name) |
 | "Open a copy as a new tab" | a new hidden, silent copy advancement, listed under `copies` |
+| Everything Burrito / It's Not That Simple | `advancement_tabs.json` → `burrito` / `startAgainReset`, only where it differs from the default |
+
+The default for both comes from the mod (`CompletionistAdvancement.isRequiredId`; Start Again resets what
+the burrito needs). `capstone_rules.py` mirrors it for the page, and a golden list
+(`src/test/resources/advancement/burrito_required.txt`) checked by both a Java and a Python test keeps the
+two in step. After changing the rule, run `test_apply.py --regen-golden`.
 
 **Ids never change.** A move only rewrites `parent`, so players keep everything they earned. Edits to
 existing files are text-level, so each change is one line in the diff.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local advancement editor: the page reads the working tree and "Save to repo" writes back into it.
 
-    python3 scripts/advancements/editor/serve.py        # → http://127.0.0.1:8796
+    python3 scripts/advancements/editor/serve.py        # → http://127.0.0.1:8833
 
 Binds to 127.0.0.1 only. Every page load rebuilds the bundle from the files as they are now, so
 after a save (or a ``git checkout``) a reload shows the result. Review a save with ``git diff``
@@ -69,7 +69,7 @@ class Handler(BaseHTTPRequestHandler):
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Serve the advancement editor on localhost.")
-    ap.add_argument("--port", type=int, default=8796)
+    ap.add_argument("--port", type=int, default=8833)
     args = ap.parse_args(argv)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     print(f"Advancement editor on http://127.0.0.1:{args.port}  (Ctrl+C to stop)")
