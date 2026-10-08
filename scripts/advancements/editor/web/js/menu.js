@@ -70,7 +70,8 @@ function fillMenuRaw(id) {
   if (n.hint || (canText && tx.includes('h'))) lines.push(part('text', n.hint ? `<span class="grey">Hint: ${esc(n.hint)}</span>` : '<span class="grey">No hint</span>', canText && tx.includes('h')));
   lines.push(part('tab', `Tab: <b>${esc(tabTitle(L, tabRoot))}</b>`, editable && id !== DT_ROOT) + (below ? ` · ${below} below it` : ''));
   if (n.req && !n.copyOf) lines.push(part('req', `Required: ${esc(formatReq(n.req))}`, canReq));
-  if (n.cap) lines.push(part('cap', esc(capLine(n.cap)), editable && n.cap.ed));
+  const capN = E.nodes[capOwner(E, id)]; // a copy shows (and edits) its original's flags
+  if (capN && capN.cap) lines.push(part('cap', esc(capLine(capN.cap)), editable && capN.cap.ed));
   h += `<div class="note card">${lines.join('<br>')}</div>`;
   if (editable) h += `<div class="hint" id="mHover">${openSec ? '' : 'Click any part above to change it.'}</div>`;
   const need = neededBy(L, id);
@@ -97,7 +98,7 @@ function openSection(L, id, n, { isRoot, tabRoot, below, tx }) {
     case 'icon': return iconSection(n);
     // Visibility and the Everything Burrito open together: both say who sees it and what it counts towards.
     case 'vis':
-    case 'cap': return (n.vis ? visibilitySection(n, isRoot) : '') + (n.cap ? capstoneSection(n) : '');
+    case 'cap': return (n.vis ? visibilitySection(n, isRoot) : '') + (E.nodes[capOwner(E, id)].cap ? capstoneSection(E, id) : '');
     case 'req':
       return `<div class="sec"><span>Required</span><div class="req"><input type="number" id="mReq" min="1" step="${n.req.unit === 'ticks' ? 'any' : 1}" value="${reqToInput(n.req)}" aria-label="Value required"><span>${reqUnitLabel(n.req)}</span></div>
         <div class="hint">Shows as “${esc(formatReq(n.req))}”. Shipped value ${esc(formatReq(M.nodes[id] ? M.nodes[id].req : n.req))}.</div></div>`;
@@ -194,7 +195,7 @@ function wireMenu(id) {
   on('#mParent', 'change', e => reparent(id, e.target.value));
   on('#mUnlock', 'change', e => setUnlock(id, e.target.value));
   on('#mVis', 'change', e => { const v = e.target.value; commit(ed => { ed.visibility = ed.visibility || {}; ed.visibility[id] = v; }, `Visibility: ${VIS_LABELS[v]}.`); });
-  const capEdit = (key, label) => e => { const v = e.target.checked; commit(ed => { ed.capstone = ed.capstone || {}; ed.capstone[id] = { ...(ed.capstone[id] || {}), [key]: v }; }, label(v)); };
+  const capEdit = (key, label) => e => { const v = e.target.checked, owner = capOwner(layoutCache.E, id); commit(ed => capWrite(ed, owner, key, v), label(v)); };
   on('#mCapReq', 'change', capEdit('req', v => v ? 'Now counts towards the Everything Burrito.' : 'No longer counts towards the Everything Burrito.'));
   on('#mCapReset', 'change', capEdit('reset', v => v ? 'Now reset by It\u2019s Not That Simple.' : 'Now kept by It\u2019s Not That Simple.'));
   on('#mTab', 'change', e => moveToTab(id, e.target.value));
@@ -238,12 +239,13 @@ function moreBgButtons(current) {
 }
 
 // ---------- Everything Burrito ----------
-function capstoneSection(n) {
-  const c = n.cap, dis = c.ed ? '' : ' disabled';
+function capstoneSection(E, id) {
+  const owner = capOwner(E, id), c = E.nodes[owner].cap, dis = c.ed ? '' : ' disabled';
+  const via = owner !== id ? `<div class="hint">A copy: these change its original, ${esc(E.nodes[owner].t)}, and the copy follows.</div>` : '';
   const why = c.ed ? `<div class="hint">${!c.base ? 'Never counts by default.' : c.def ? 'Counts by default: it is in the Dungeon Train tab.' : 'Doesn\u2019t count by default: only the Dungeon Train tab does (other tabs count through their tab-complete advancement).'}</div>` : `<div class="hint">${n.copyOf ? 'A tab copy never counts: its original does.' : 'Fixed for the capstone itself, its reward and the Editor tab.'}</div>`;
   return `<div class="sec"><span>Everything Burrito</span>
     <label class="check"><input type="checkbox" id="mCapReq"${c.req ? ' checked' : ''}${dis}> Counts towards Everything Burrito</label>
-    <label class="check"><input type="checkbox" id="mCapReset"${c.reset ? ' checked' : ''}${dis}> Reset by It\u2019s Not That Simple</label>${why}</div>`;
+    <label class="check"><input type="checkbox" id="mCapReset"${c.reset ? ' checked' : ''}${dis}> Reset by It\u2019s Not That Simple</label>${via}${why}</div>`;
 }
 
 // ---------- what unlocks a tab ----------

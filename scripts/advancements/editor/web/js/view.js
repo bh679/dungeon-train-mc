@@ -82,7 +82,7 @@ function render() {
     d.dataset.node = n.id;
     if (!view.earned && !visibleWithNothingEarned(L.E, n.id)) d.classList.add('hid');
     if (n.id === selected) d.classList.add('sel');
-    if (view.paint) { if (paintBlocked(n)) d.classList.add('fixed'); else if (!n.cap[view.paint]) d.classList.add('off'); }
+    if (view.paint) { if (paintBlocked(L.E, n.id)) d.classList.add('fixed'); else if (!paintIn(L.E, n.id, view.paint)) d.classList.add('off'); }
     d.setAttribute('role', 'button'); d.setAttribute('aria-label', `Edit ${n.t}`); d.tabIndex = 0;
     d.addEventListener('mouseenter', () => { if (!drag || !drag.active) showHover(n); });
     d.addEventListener('mouseleave', hideHover);

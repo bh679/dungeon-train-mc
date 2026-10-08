@@ -90,4 +90,18 @@ class CapstoneNeedsTest {
         assertFalse(CapstoneNeeds.needs(layout, burrito, node(DT + "completionist")), "never itself");
         assertFalse(CapstoneNeeds.needs(layout, ResourceLocation.parse(DT + "carts_100"), node(DT + "root")), "not a capstone");
     }
+
+    @Test
+    @DisplayName("clicking a capstone pins it, clicking it again unpins, any other advancement clears the pin")
+    void pinToggles() {
+        ResourceLocation burrito = ResourceLocation.parse(DT + "completionist");
+        ResourceLocation explored = ResourceLocation.parse(DT + "train_explored");
+        assertEquals(burrito, CapstoneNeeds.nextPin(layout, null, burrito));
+        assertEquals(null, CapstoneNeeds.nextPin(layout, burrito, burrito), "same one again: off");
+        assertEquals(explored, CapstoneNeeds.nextPin(layout, burrito, ResourceLocation.parse(DT + "train_explored_tab")),
+            "the in-tab copy pins its original");
+        assertEquals(null, CapstoneNeeds.nextPin(layout, explored, ResourceLocation.parse(DT + "carts_100")), "another advancement clears it");
+        assertTrue(CapstoneNeeds.isCapstone(layout, burrito));
+        assertFalse(CapstoneNeeds.isCapstone(layout, ResourceLocation.parse(DT + "carts_100")));
+    }
 }

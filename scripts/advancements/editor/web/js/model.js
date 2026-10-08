@@ -423,24 +423,35 @@ async function saveToRepo() {
 // ---------- paint mode: click to put advancements in or out of the burrito / It's Not That Simple ----------
 const PAINT_NAMES = { req: 'the Everything Burrito', reset: 'It\u2019s Not That Simple' };
 const capWrite = (ed, id, key, v) => { ed.capstone = ed.capstone || {}; ed.capstone[id] = { ...(ed.capstone[id] || {}), [key]: v }; };
+/**
+ * Whose Everything Burrito / It's Not That Simple flags an advancement shows and changes: its own, or — for a tab
+ * copy or a tab head unlocked by another — its original's, so the two always move together.
+ */
+function capOwner(E, id) {
+  const n = E.nodes[id], src = n && (n.copyOf || n.unlockedBy);
+  const s = src && E.nodes[src];
+  return s && s.cap && s.cap.ed ? src : id;
+}
 /** Why an advancement can't be painted, or null when it can. */
-function paintBlocked(n) {
+function paintBlocked(E, id) {
+  const n = E.nodes[capOwner(E, id)];
   if (!n || !n.cap) return 'Vanilla advancements never count.';
   if (n.cap.ed) return null;
-  if (n.copyOf) return 'A tab copy follows its original: change that one instead.';
-  if (n.unlockedBy) return 'It follows the advancement that unlocks it.';
   return 'Fixed: the Everything Burrito, its reward and the Editor tab can\u2019t change.';
 }
+/** Is it in (counts / is reset) for the paint key — through its original for a copy. */
+const paintIn = (E, id, key) => !!E.nodes[capOwner(E, id)].cap[key];
 function toggleCap(id) {
-  const key = view.paint, n = layoutCache.E.nodes[id], why = paintBlocked(n);
+  const E = layoutCache.E, key = view.paint, why = paintBlocked(E, id);
   if (why) { toast(why); return; }
-  const v = !n.cap[key];
+  const owner = capOwner(E, id), n = E.nodes[owner], v = !n.cap[key];
   const verb = key === 'req' ? (v ? 'now counts towards' : 'no longer counts towards') : (v ? 'now reset by' : 'now kept by');
-  commit(ed => capWrite(ed, id, key, v), `${n.t}: ${verb} ${PAINT_NAMES[key]}.`);
+  const via = owner !== id ? ' (and its copy)' : '';
+  commit(ed => capWrite(ed, owner, key, v), `${n.t}${via}: ${verb} ${PAINT_NAMES[key]}.`);
 }
-/** The tab's paintable advancements, and whether its button puts them all in (true) or takes them all out. */
+/** The tab's paintable originals (a copy counts through its original, once), and whether the button puts them in. */
 function tabPaint(L, tab) {
-  const ids = tab.nodes.map(m => m.id).filter(id => !paintBlocked(L.E.nodes[id]));
+  const ids = [...new Set(tab.nodes.map(m => m.id).filter(id => !paintBlocked(L.E, id)).map(id => capOwner(L.E, id)))];
   return { ids, putIn: ids.some(id => !L.E.nodes[id].cap[view.paint]) };
 }
 function paintTab(tab) {

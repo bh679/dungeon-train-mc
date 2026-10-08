@@ -12,7 +12,9 @@
     "betteradvancements.BetterAdvancementTabScrollMixin",
     "betteradvancements.BetterAdvancementsScreenEditorTabMixin",
     "betteradvancements.BetterAdvancementsScreenClickMixin",
-    "betteradvancements.BetterAdvancementTabTitleMixin"
+    "betteradvancements.BetterAdvancementTabTitleMixin",
+    "betteradvancements.BetterAdvancementTabHaloMixin",
+    "betteradvancements.BetterAdvancementTabTypeHaloMixin"
   ],
   "server": [],
   "injectors": {
