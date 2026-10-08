@@ -165,3 +165,7 @@ body.full .stage .exitfull { display: block; position: absolute; top: calc(6px +
 #tree .node.fixed { opacity: .5; }
 #tree .node.fixed::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(0,0,0,.35) 0 calc(2px * var(--s)), transparent calc(2px * var(--s)) calc(4px * var(--s))); pointer-events: none; z-index: 1; }
 #gui .tabpaint { position: absolute; z-index: 5; font-size: calc(7px * var(--s)); padding: calc(1px * var(--s)) calc(4px * var(--s)); min-height: 0; line-height: 1.2; }
+.menu .idrow { display: flex; align-items: center; gap: 4px; }
+.menu .idrow span { font-size: 13px; color: #5a5a5a; }
+.menu .idrow input { flex: 1; }
+.menu .hint.err { color: #a8322a; }

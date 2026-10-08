@@ -112,10 +112,15 @@ function openSection(L, id, n, { isRoot, tabRoot, below, tx }) {
         ${tx.includes('h') ? `<label for="mHint">Hint</label><textarea id="mHint" maxlength="200">${esc(n.hint || '')}</textarea>` : ''}
         ${n.created ? '' : '<div class="hint">English only. Saving lists the other languages to re-translate.</div>'}</div>`;
     }
-    case 'parent':
-      return `<div class="sec"><span>Parent</span>${kids}
+    case 'parent': {
+      const isNew = !M.nodes[id] && !M.baseline.created[id];
+      const idRow = isNew
+        ? `<label for="mId">Id (new, so it can still change)</label><div class="idrow"><span>dungeontrain:</span><input type="text" id="mId" value="${esc(id.slice('dungeontrain:'.length))}" spellcheck="false" autocomplete="off"></div><div class="hint" id="mIdHint">Press Enter to apply. Once saved it never changes.</div>`
+        : `<div class="hint">Id: <b>${esc(id)}</b>. Saved ids never change, so players keep what they earned.</div>`;
+      return `<div class="sec"><span>Parent</span>${idRow}${kids}
         <label for="mParent">Parent</label><select id="mParent">${parentOptions(L, id)}</select>
         <div class="row"><button class="mcbtn" type="button" data-act="pick">Pick parent on screen</button>${isRoot ? '' : '<button class="mcbtn" type="button" data-act="ownTab">Make it a tab</button>'}<button class="mcbtn" type="button" data-act="copyTab">Open a copy as a new tab</button></div></div>`;
+    }
     case 'tab': {
       const tabsOpts = L.tabs.filter(t => t.kind !== 'other').map(t => `<option value="${esc(t.id)}" ${t.id === tabRoot ? 'selected' : ''}>${esc(t.title)}</option>`).join('');
       let out = `<div class="sec"><span>Tab</span>${kids}<label for="mTab">Move to tab</label><select id="mTab">${tabsOpts}</select>
@@ -195,6 +200,18 @@ function wireMenu(id) {
   }));
   on('#mKids', 'change', e => { view.withChildren = e.target.checked; saveView(); renderControls(layoutCache); fillMenu(id); });
   on('#mParent', 'change', e => reparent(id, e.target.value));
+  const idBox = menu.querySelector('#mId');
+  if (idBox) {
+    const hint = menu.querySelector('#mIdHint');
+    const apply = () => { const v = idBox.value.trim(); if (v && layoutCache.E.nodes[id] && 'dungeontrain:' + v !== id) renameCreated(id, v); };
+    idBox.addEventListener('input', () => {
+      const why = badNewId(layoutCache, id, idBox.value.trim());
+      hint.textContent = why || 'Press Enter to apply. Once saved it never changes.';
+      hint.classList.toggle('err', !!why);
+    });
+    idBox.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); apply(); } });
+    idBox.addEventListener('change', apply);
+  }
   on('#mUnlock', 'change', e => setUnlock(id, e.target.value));
   on('#mVis', 'change', e => { const v = e.target.value; commit(ed => { ed.visibility = ed.visibility || {}; ed.visibility[id] = v; }, `Visibility: ${VIS_LABELS[v]}.`); });
   const capEdit = (key, label) => e => { const v = e.target.checked, owner = capOwner(layoutCache.E, id); commit(ed => capWrite(ed, owner, key, v), label(v)); };

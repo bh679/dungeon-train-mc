@@ -21,7 +21,8 @@ advancements to put them in or out of it; those that are out are faded, and fixe
 capstone pair) are hatched. The **All in / All out** button on the tab does the whole tab at once. Untick
 to go back to clicking for the menu. **Duplicate** (in an advancement's menu) makes a new advancement like it — same criteria, icon, text and
 Everything Burrito settings, titled "… (copy)" — as its child; rename it and change its value for a next tier.
-It is saved under an id taken from its title. **New tab** makes
+It is saved under an id taken from its title, unless you set one: a new advancement's id can be edited in the
+parent editor (click its id) until it is saved; after that it never changes. **New tab** makes
 a tab and opens it. You can also drag an advancement onto another one, or onto a tab. **Full screen** fills
 the window with the advancements screen, tabs included; Esc leaves it.
 

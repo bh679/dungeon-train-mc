@@ -253,6 +253,45 @@ const TAB_PREFIX = 'dungeontrain:dungeon_train/tab_';
 const uniqueId = (taken, base) => { let id = base, n = 2; while (taken(id)) id = `${base}_${n++}`; return id; };
 const tabIdFor = (L, name) => uniqueId(id => !!L.E.nodes[id], TAB_PREFIX + slugify(name));
 
+// ---------- ids of new advancements ----------
+const NEW_ID_RE = /^[a-z0-9_]+(\/[a-z0-9_]+){1,3}$/;
+/** Why {@code path} (the part after "dungeontrain:") can't be a new advancement's id, or null when it can. */
+function badNewId(L, oldId, path) {
+  if (!NEW_ID_RE.test(path)) return 'Use lower-case letters, digits and _, in a folder: dungeon_train/my_advancement.';
+  if (path.startsWith('editor/')) return 'The editor tab\u2019s ids are not edited here.';
+  const id = 'dungeontrain:' + path;
+  if (id !== oldId && (L.E.nodes[id] || M.nodes[id])) return 'That id is already used by another advancement.';
+  return null;
+}
+/** Give a new, unsaved advancement a different id: every edit that names it follows, in one undoable step. */
+function renameCreated(oldId, path) {
+  const L = layoutCache, newId = 'dungeontrain:' + path;
+  const why = badNewId(L, oldId, path);
+  if (why) { toast(why); return false; }
+  if (newId === oldId) return true;
+  const swap = v => (v === oldId ? newId : v);
+  commit(e => {
+    const created = {};
+    Object.entries(e.created).forEach(([k, c]) => {
+      created[swap(k)] = { ...c, ...(c.copyOf ? { copyOf: swap(c.copyOf) } : {}), ...(c.duplicateOf ? { duplicateOf: swap(c.duplicateOf) } : {}),
+                           ...(c.unlockedBy ? { unlockedBy: swap(c.unlockedBy) } : {}) };
+    });
+    e.created = created;
+    const parents = {};
+    Object.entries(e.parents).forEach(([k, p]) => { parents[swap(k)] = swap(p); });
+    e.parents = parents;
+    ['texts', 'values', 'icons', 'visibility', 'capstone', 'bgs', 'tabTitles'].forEach(key => {
+      if (e[key] && oldId in e[key]) { e[key] = { ...e[key], [newId]: e[key][oldId] }; delete e[key][oldId]; }
+    });
+    if (e.unlocks) e.unlocks = Object.fromEntries(Object.entries(e.unlocks).map(([k, v]) => [swap(k), swap(v)]));
+    if (e.order) e.order = e.order.map(swap);
+  }, `Id is now ${newId}.`);
+  if (view.tabId === oldId) { view.tabId = newId; saveView(); }
+  if (openSecFor === oldId) openSecFor = newId;
+  openMenu(newId);
+  return true;
+}
+
 /** Duplicate an advancement: a new one, earned the same way, placed as a child of the original. */
 function duplicate(id) {
   const L = layoutCache, n = L.E.nodes[id];
