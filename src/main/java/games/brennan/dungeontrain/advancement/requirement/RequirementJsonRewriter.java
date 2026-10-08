@@ -18,8 +18,9 @@ import java.util.Optional;
  * whose argument IS that number, so "Traverse %s carriages" always shows the value in force.
  *
  * <p>Pure functions over Gson trees, returning new objects — the input map that
- * {@code ServerAdvancementManager.apply} hands the mixin is never mutated. Only advancements under
- * {@code dungeontrain:dungeon_train/} are considered; everything else passes through untouched.</p>
+ * {@code ServerAdvancementManager.apply} hands the mixin is never mutated. Only {@code dungeontrain:}
+ * advancements outside the Editor tab are considered — on any tab, in any folder, since tabs get split
+ * and re-parented; everything else passes through untouched.</p>
  *
  * <p>The description is rewritten only when it is a bare {@code {"translate": key}} — a datapack
  * that already supplies {@code with}, or inlines a literal string, has made its own choice.</p>
@@ -28,8 +29,11 @@ public final class RequirementJsonRewriter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** The tab whose advancements can carry a requirement. Matches the relay's allowlist. */
-    public static final String PATH_PREFIX = "dungeon_train/";
+    /**
+     * The creative-mode Editor tab's folder — never a feat, so never edited. Everything else in our
+     * namespace may be. Matches the relay's allowlist (dp-relay advancement-requirements.js ID_RE).
+     */
+    public static final String EDITOR_PATH_PREFIX = "editor/";
 
     private RequirementJsonRewriter() {}
 
@@ -69,7 +73,7 @@ public final class RequirementJsonRewriter {
         // One line per datapack load: the operator's proof that a relay edit reached this server.
         java.util.List<String> overridden = found.entrySet().stream()
             .filter(e -> e.getValue().overridden())
-            .map(e -> e.getKey().getPath().substring(PATH_PREFIX.length()) + "="
+            .map(e -> e.getKey().getPath() + "="
                 + e.getValue().effective() + " (jar " + e.getValue().shipped() + ")")
             .toList();
         LOGGER.info("[DungeonTrain] Advancement requirements: {} loaded, {} overridden by relay{}",
@@ -77,9 +81,9 @@ public final class RequirementJsonRewriter {
         return out;
     }
 
-    /** True for {@code <modId>:dungeon_train/<name>}. */
+    /** True for any {@code <modId>:<path>} outside the Editor tab. */
     public static boolean isOurs(ResourceLocation id, String modId) {
-        return id != null && modId.equals(id.getNamespace()) && id.getPath().startsWith(PATH_PREFIX);
+        return id != null && modId.equals(id.getNamespace()) && !id.getPath().startsWith(EDITOR_PATH_PREFIX);
     }
 
     /**
@@ -100,7 +104,7 @@ public final class RequirementJsonRewriter {
         JsonObject conditions = out.getAsJsonObject("criteria")
             .getAsJsonObject(at.criterion()).getAsJsonObject("conditions");
         conditions.add(at.field().jsonKey(), new JsonPrimitive(effective));
-        rewriteDescription(out, at.field().descriptionArgument(effective));
+        rewriteDescription(out, at.field().descriptionArgument(effective), at.shipped());
         return new Rewritten(out, Optional.of(
             new AdvancementRequirements.Requirement(at.criterion(), at.field(), at.shipped(), effective)));
     }
@@ -132,19 +136,38 @@ public final class RequirementJsonRewriter {
 
     /**
      * {@code display.description: {"translate": k}} → {@code {"translate": k, "with": [arg]}}.
-     * Anything else (a literal, an existing {@code with}, no display) is left as it is.
+     * A datapack that already wrote the number itself — {@code "with": [<shipped value>]}, as the
+     * photo-count advancements do — has its argument swapped for the value in force, so an override
+     * never leaves the description quoting the old number. Anything else (a literal, any other
+     * {@code with}, no display) is left as it is.
      */
-    private static void rewriteDescription(JsonObject advancement, JsonElement argument) {
+    private static void rewriteDescription(JsonObject advancement, JsonElement argument, long shipped) {
         JsonElement displayEl = advancement.get("display");
         if (displayEl == null || !displayEl.isJsonObject()) return;
         JsonObject display = displayEl.getAsJsonObject();
         JsonElement descEl = display.get("description");
         if (descEl == null || !descEl.isJsonObject()) return;
         JsonObject desc = descEl.getAsJsonObject();
-        if (!desc.has("translate") || desc.has("with")) return;
+        if (!desc.has("translate")) return;
+        if (desc.has("with")) {
+            if (quotesShipped(desc.get("with"), shipped)) {
+                JsonArray swapped = new JsonArray();
+                swapped.add(argument);
+                desc.add("with", swapped);
+            }
+            return;
+        }
         JsonArray with = new JsonArray();
         with.add(argument);
         desc.add("with", with);
+    }
+
+    /** {@code [n]} where n is exactly the shipped requirement — the datapack's own copy of the number. */
+    private static boolean quotesShipped(JsonElement with, long shipped) {
+        if (with == null || !with.isJsonArray() || with.getAsJsonArray().size() != 1) return false;
+        JsonElement only = with.getAsJsonArray().get(0);
+        return only.isJsonPrimitive() && only.getAsJsonPrimitive().isNumber()
+            && only.getAsJsonPrimitive().getAsLong() == shipped;
     }
 
     private static JsonObject deepCopy(JsonObject o) {
