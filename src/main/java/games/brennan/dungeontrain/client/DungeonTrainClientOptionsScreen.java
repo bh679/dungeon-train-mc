@@ -359,14 +359,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             return;
         }
         if (!status.linked()) {
-            list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H,
-                    Component.translatable("gui.dungeontrain.options.account.not_linked"),
-                    Component.translatable("gui.dungeontrain.credits.community.link_action"), () -> {
-                        // Coming back re-runs init(); ask again then, so a fresh link shows at once.
-                        this.accountRequested = false;
-                        DiscordAccountState.invalidate();
-                        this.minecraft.setScreen(new DiscordLinkScreen(this, null));
-                    }), null);
+            // What linking does on its own line, then the button across the full width — the one
+            // thing to do on this tab until the account is linked.
+            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                    Component.translatable("gui.dungeontrain.options.account.not_linked")), null);
+            list.addSmall(withTip(Button.builder(Component.translatable("gui.dungeontrain.credits.community.link_action"),
+                                    b -> {
+                                        // Coming back re-runs init(); ask again then, so a fresh link shows at once.
+                                        this.accountRequested = false;
+                                        DiscordAccountState.invalidate();
+                                        this.minecraft.setScreen(new DiscordLinkScreen(this, null));
+                                    })
+                            .bounds(0, 0, WIDE_W, ROW_H).build(),
+                    "gui.dungeontrain.options.account.not_linked"), null);
             return;
         }
         list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
