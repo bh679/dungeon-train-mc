@@ -3,6 +3,7 @@
     "dungeontrain:dungeon_train/root",
     "dungeontrain:dungeon_train/tab_train_explorer",
     "dungeontrain:dungeon_train/tab_others",
+    "dungeontrain:dungeon_train/tab_challenges",
     "dungeontrain:dungeon_train/the_enchiridion",
     "dungeontrain:enchiridion/darkroom",
     "dungeontrain:secrete_menu/root",
@@ -18,5 +19,8 @@
     "dungeontrain:dungeon_train/tab_others": "dungeontrain:dungeon_train/im_not_alone",
     "dungeontrain:dungeon_train/gate_enchiridion": "dungeontrain:dungeon_train/the_enchiridion",
     "dungeontrain:dungeon_train/gate_darkroom": "dungeontrain:enchiridion/darkroom"
+  },
+  "unlockedBy": {
+    "dungeontrain:dungeon_train/tab_challenges": "dungeontrain:dungeon_train/carts_100"
   }
 }

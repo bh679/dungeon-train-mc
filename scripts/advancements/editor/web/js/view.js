@@ -2,11 +2,15 @@
 // ---------- rendering ----------
 function pickScale() {
   // The window stretches to the page width, like Better Advancements; pixel scale steps with the width.
-  const avail = document.querySelector('.stage').clientWidth || (window.innerWidth - 32);
+  // Full screen fills the viewport instead, less room for the tab rows (28 GUI px above, 28 below).
+  const full = document.body.classList.contains('full');
+  const vw = document.documentElement.clientWidth || window.innerWidth || 1024;
+  const vh = document.documentElement.clientHeight || window.innerHeight || 768;
+  const avail = full ? vw - 32 : (document.querySelector('.stage').clientWidth || (vw - 32));
   S = Math.max(1, Math.min(3, Math.floor(avail / 320 * 2) / 2));
   W = Math.max(252, Math.floor(avail / S));
-  const tallest = Math.floor((window.innerHeight * 0.72) / S) - 56;
-  H = Math.max(140, Math.min(Math.round(W * 0.6), tallest));
+  const tallest = full ? Math.floor((vh - 64) / S) - 56 : Math.floor((vh * 0.72) / S) - 56;
+  H = Math.max(140, full ? tallest : Math.min(Math.round(W * 0.6), tallest));
   IW = W - 18; IH = H - 27;
   PER_ROW = Math.max(1, Math.floor((W + 4) / 32));
   gui.style.setProperty('--s', S);
@@ -42,7 +46,7 @@ function render() {
     d.setAttribute('role', 'tab'); d.setAttribute('aria-label', t.title); d.tabIndex = 0;
     d.addEventListener('click', () => { view.tabId = t.id; saveView(); render(); });
     d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); d.click(); } });
-    d.addEventListener('mousemove', e => { if (!drag || !drag.active) showTip(e, t.title, t.kind === 'other' ? 'Hidden unless “Other mods’ tabs” is Shown' : `${t.nodes.length} advancements`); });
+    d.addEventListener('mousemove', e => { if (!drag || !drag.active) showTip(e, t.title, t.kind === 'other' ? 'Hidden unless “Other mods’ tabs” is Shown' : tabSubtitle(L, t)); });
     d.addEventListener('mouseleave', hideTip);
   });
 
@@ -200,3 +204,10 @@ function startPick(id) {
   document.getElementById('bCancelPick').addEventListener('click', () => { const w = picking; endPick(); openMenu(w); });
 }
 function endPick() { picking = null; document.getElementById('banner').hidden = true; }
+
+/** Tab tooltip's second line: its size, and what unlocks it when another advancement does. */
+function tabSubtitle(L, t) {
+  const root = L.E.nodes[t.id], src = root.unlockedBy || root.copyOf;
+  const by = src && L.E.nodes[src] ? ` \u00b7 unlocked by ${L.E.nodes[src].t}` : '';
+  return `${t.nodes.length} advancements${by}`;
+}

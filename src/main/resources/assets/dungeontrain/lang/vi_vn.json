@@ -2232,6 +2232,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Đã Khám Phá Dungeon Train",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "Đạt mọi thành tựu trong thẻ Nhà Thám Hiểm Đoàn Tàu.",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Mọi điểm dừng trên tuyến.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Thử Thách",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Chơi đoàn tàu theo luật khắt khe hơn.",
   "advancements.dungeontrain.editor.root.title": "Trình Chỉnh Sửa",
   "advancements.dungeontrain.editor.root.description": "Dựng đoàn tàu bạn cưỡi lên.",
   "advancements.dungeontrain.editor.made_carriage.title": "Kiến Trúc Sư",

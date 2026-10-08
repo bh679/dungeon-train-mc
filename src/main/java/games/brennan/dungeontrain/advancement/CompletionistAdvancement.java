@@ -80,7 +80,7 @@ public final class CompletionistAdvancement {
         if (rl.getPath().startsWith("editor/")) return false;             // editor tree excluded
         if (rl.equals(ID)) return false;                                  // never require itself
         if (rl.equals(StartAgainAdvancement.ID)) return false;            // downstream of the capstone, not a prerequisite
-        if (TabGateways.isCopy(rl)) return false;                          // a tab copy mirrors its original, which already counts
+        if (TabGateways.isLinked(rl)) return false;                        // a tab copy / unlocked tab head follows its source, which already counts
         Boolean override = TabGateways.layout().burrito().get(rl.toString()); // set per advancement in the advancement editor
         if (override != null) return override && !notRequired.contains(rl);
         if (BandAdvancements.isBackwards(rl.getPath())) return false;     // The Secrete Menu: optional, never required

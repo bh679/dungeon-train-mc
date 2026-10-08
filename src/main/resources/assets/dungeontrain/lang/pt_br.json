@@ -2279,6 +2279,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Dungeon Train explorado",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "Conquiste todos os progressos da aba Explorador do trem.",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Cada parada da linha.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Desafios",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Jogue o trem com regras mais duras.",
   "advancements.dungeontrain.editor.root.title": "Editor",
   "advancements.dungeontrain.editor.root.description": "Construa o trem em que você viaja.",
   "advancements.dungeontrain.editor.made_carriage.title": "Arquiteto",

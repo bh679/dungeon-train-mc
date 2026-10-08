@@ -2232,6 +2232,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "地牢列車全探索",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "達成「列車探索者」分頁中的所有進度。",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "沿線的每一站。",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "挑戰",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "用更嚴苛的規則挑戰列車。",
   "advancements.dungeontrain.editor.root.title": "編輯器",
   "advancements.dungeontrain.editor.root.description": "打造你所乘坐的列車。",
   "advancements.dungeontrain.editor.made_carriage.title": "建築師",

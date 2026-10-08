@@ -115,6 +115,10 @@ function describeChanges(L) {
     if (n.cap.reset !== base.reset) bits.push(n.cap.reset ? 'is now reset by It\u2019s Not That Simple' : 'is now kept by It\u2019s Not That Simple');
     if (bits.length) out.push({ id, html: `<em>${esc(name(id))}</em> ${bits.join(' and ')}` });
   });
+  Object.keys(edits.unlocks || {}).forEach(id => {
+    const n = E.nodes[id]; if (!n) return;
+    out.push({ id, html: n.unlockedBy ? `<em>${esc(tabTitle(L, id) || name(id))}</em> now unlocks with <em>${esc(name(n.unlockedBy))}</em>` : `<em>${esc(tabTitle(L, id) || name(id))}</em> no longer unlocks with another advancement` });
+  });
   Object.keys(edits.texts || {}).forEach(id => E.nodes[id] && out.push({ id, html: `Text of <em>${esc(name(id))}</em> changed` }));
   if (edits.order) out.push({ id: null, html: `Tab order: ${edits.order.filter(i => E.nodes[i] && !E.parents[i]).map(i => esc(tabTitle(L, i))).join(' · ')}` });
   return out;
@@ -161,7 +165,11 @@ document.getElementById('bCopy').addEventListener('click', async () => {
   }
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { if (picking) { const w = picking; endPick(); openMenu(w); } else closeMenu(); }
+  if (e.key === 'Escape') {
+    if (picking) { const w = picking; endPick(); openMenu(w); }
+    else if (!menu.hidden) closeMenu();
+    else if (document.body.classList.contains('full')) setFull(false);
+  }
   if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); undo(); }
 });
 document.addEventListener('pointerdown', e => {
@@ -171,6 +179,23 @@ document.addEventListener('pointerdown', e => {
 });
 window.addEventListener('scroll', () => { if (!menu.hidden && selected) { const a = document.querySelector(`#tree .node[data-node="${CSS.escape(selected)}"]`); if (a) { anchorRect = a.getBoundingClientRect(); placeMenu(); } } }, { passive: true });
 let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { render(); if (!menu.hidden) placeMenu(); }, 120); });
+// Full screen: a CSS overlay (works inside an embedded page too), plus the browser's own full screen
+// when it is allowed. Leaving either leaves both.
+function setFull(on) {
+  document.body.classList.toggle('full', on);
+  document.getElementById('bFull').setAttribute('aria-pressed', String(on));
+  if (on && document.documentElement.requestFullscreen && !document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  } else if (!on && document.fullscreenElement && document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
+  }
+  closeMenu();
+  render();
+  setTimeout(render, 350); // again once the browser's own full screen has settled its size
+}
+document.getElementById('bFull').addEventListener('click', () => setFull(true));
+document.getElementById('bExitFull').addEventListener('click', () => setFull(false));
+document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && document.body.classList.contains('full')) setFull(false); });
 const bSave = document.getElementById('bSave');
 bSave.hidden = !LOCAL;
 bSave.addEventListener('click', saveToRepo);

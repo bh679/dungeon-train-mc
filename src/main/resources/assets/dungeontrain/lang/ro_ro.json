@@ -2813,6 +2813,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Dungeon Train explorat",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "Obține fiecare progres din fila Explorator de tren.",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Fiecare oprire de pe linie.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Provocări",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Joacă trenul după reguli mai grele.",
   "advancements.dungeontrain.editor.root.title": "Editor",
   "advancements.dungeontrain.editor.root.description": "Construiește trenul în care călătorești.",
   "advancements.dungeontrain.editor.made_carriage.title": "Arhitect",

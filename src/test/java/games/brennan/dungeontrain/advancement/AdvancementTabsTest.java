@@ -93,8 +93,8 @@ class AdvancementTabsTest {
         Map<String, JsonObject> all = advancements();
         Map<String, String> expected = Map.ofEntries(
                 Map.entry(DT + "carts_100", DT + "root"),
-                Map.entry(DT + "no_container_100", DT + "root"),
-                Map.entry(DT + "chests_100_unique", DT + "root"),
+                Map.entry(DT + "no_container_100", DT + "tab_challenges"),
+                Map.entry(DT + "chests_100_unique", DT + "tab_challenges"),
                 Map.entry(DT + "drift_left_behind", DT + "root"),
                 Map.entry(DT + "secrete_menu", DT + "root"),
                 Map.entry(DT + "im_not_alone", DT + "root"),
@@ -207,7 +207,9 @@ class AdvancementTabsTest {
     @DisplayName("capstone overrides parse from the tabs file; Start Again follows the burrito unless set")
     void capstoneOverridesParse() {
         TabGateways.Layout l = TabGateways.Layout.parse(new StringReader(
-                "{\"burrito\":{\"dungeontrain:dungeon_train/a\":false},\"startAgainReset\":{\"dungeontrain:dungeon_train/b\":true,\"x\":\"no\"}}"));
+                "{\"burrito\":{\"dungeontrain:dungeon_train/a\":false},\"startAgainReset\":{\"dungeontrain:dungeon_train/b\":true,\"x\":\"no\"},"
+                + "\"copies\":{\"c\":\"src\"},\"unlockedBy\":{\"u\":\"src\"}}"));
+        assertEquals(List.of("c", "u"), l.followersOf("src"), "copies and unlock links both follow their source");
         assertEquals(Map.of("dungeontrain:dungeon_train/a", false), l.burrito());
         assertEquals(Map.of("dungeontrain:dungeon_train/b", true), l.startAgainReset(), "non-boolean values are ignored");
         ResourceLocation carts = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "carts_100");
@@ -240,6 +242,24 @@ class AdvancementTabsTest {
         assertFalse(TrainExploredAdvancement.isUnreachableBand(nether, reachable));
         assertTrue(TrainExploredAdvancement.isUnreachableBand(stacks, reachable));
         assertFalse(TrainExploredAdvancement.isUnreachableBand(carts, reachable), "not a band: always required");
+    }
+
+    @Test
+    @DisplayName("Challenges: its own head, unlocked by Dungeon Train Explorer, holding the five challenge trees")
+    void challengesTab() throws IOException {
+        Map<String, JsonObject> all = advancements();
+        String challenges = DT + "tab_challenges";
+        TabGateways.Layout layout = shippedLayout();
+        assertEquals("dungeontrain:" + DT + "carts_100", layout.unlockedBy().get("dungeontrain:" + challenges));
+        assertEquals(List.of("dungeontrain:" + challenges), layout.followersOf("dungeontrain:" + DT + "carts_100").stream()
+                .filter(f -> f.endsWith("tab_challenges")).toList());
+        for (String path : List.of("chests_100_unique", "leather_over_diamond", "no_break_1000", "contained_loop", "pacifist_1000")) {
+            assertEquals(challenges, tabOf(all, DT + path), path);
+        }
+        JsonObject d = all.get(challenges).getAsJsonObject("display");
+        assertTrue(d.get("hidden").getAsBoolean(), "locked until Dungeon Train Explorer");
+        assertFalse(CompletionistAdvancement.isRequiredId(
+                ResourceLocation.fromNamespaceAndPath("dungeontrain", challenges), Set.of()), "follows its source, never counts");
     }
 
     @Test

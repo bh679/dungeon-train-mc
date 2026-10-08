@@ -4,8 +4,10 @@ Edit Dungeon Train's advancement tabs on a copy of the real advancements screen:
 tab sprites and item icons, read straight out of the game jars. Click an advancement to change its
 **parent**, **tab**, **required value**, **icon**, and whether it **counts towards the Everything
 Burrito** and is **reset by It's Not That Simple**. On a tab's first advancement you can also change
-the **tab name**, **background** (any block texture, via **+**) and **tab order**. You can also drag
-an advancement onto another one, or onto a tab.
+the **tab name**, **background** (any block texture, via **+**), **tab order** and what it is
+**unlocked by**. **New tab** makes a tab and opens it with those fields first. You can also drag an
+advancement onto another one, or onto a tab. **Full screen** fills the window with the advancements
+screen, tabs included; Esc leaves it.
 
 ```bash
 python3 scripts/advancements/editor/serve.py        # → http://127.0.0.1:8833
@@ -28,6 +30,7 @@ Needs Pillow (`pip install pillow`) for the icons, and a workspace that has buil
 | Background | the tab root's `display.background` |
 | Tab name, tab order, tab copies | `src/main/resources/dungeontrain/advancement_tabs.json` (+ an `en_us` key for a name) |
 | "Open a copy as a new tab" | a new hidden, silent copy advancement, listed under `copies` |
+| Unlocked by | `advancement_tabs.json` → `unlockedBy` (tab head → the advancement that unlocks it) |
 | Everything Burrito / It's Not That Simple | `advancement_tabs.json` → `burrito` / `startAgainReset`, only where it differs from the default |
 
 The default for both comes from the mod (`CompletionistAdvancement.isRequiredId`; Start Again resets what
@@ -46,6 +49,13 @@ by play, and a hidden copy with a `minecraft:impossible` criterion. `TabGateways
 the original is earned, and re-syncs on login. The copy being hidden is what keeps its tab locked
 until then. Copies never count towards the Everything Burrito.
 
+## Unlocked tabs
+
+A tab head can instead be **unlocked by** another advancement and keep its own name and icon (Challenges
+is unlocked by Dungeon Train Explorer). `TabGateways` treats it like a copy: earned with its source,
+re-synced at login, never counted on its own. A new tab's id is named after the tab when you save
+(`dungeon_train/tab_challenges`); after that it never changes.
+
 ## Things a save cannot finish
 
 `apply.py` lists these as "todo" after a save:
@@ -53,8 +63,8 @@ until then. Copies never count towards the Everything Burrito.
 - **New text** (a new tab name, or a brand-new advancement's title) is written in English only.
   Translate it with `scripts/localization/merge-locale-keys.py`, then stamp provenance. CI's
   localization checks fail until every locale has the key.
-- **A brand-new advancement (not a copy)** is created with an `impossible` criterion. Give it a real
-  trigger.
+- **A brand-new advancement that is neither a copy nor unlocked by another** is created with an
+  `impossible` criterion. Give it a real trigger (or pick **Unlocked by** for a tab head).
 - **The band journey** (`reached_*` and friends) is re-parented in band order at load. Only the first
   band's parent (`reached_nether`) comes from its JSON, so moving that one moves the whole chain.
 

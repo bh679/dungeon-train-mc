@@ -2331,6 +2331,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Dungeon Train исследован",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "Получите все достижения на вкладке «Исследователь поезда».",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Каждая остановка на линии.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Испытания",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Играйте в поезд по более жёстким правилам.",
   "advancements.dungeontrain.editor.root.title": "Редактор",
   "advancements.dungeontrain.editor.root.description": "Постройте поезд, на котором едете.",
   "advancements.dungeontrain.editor.made_carriage.title": "Архитектор",

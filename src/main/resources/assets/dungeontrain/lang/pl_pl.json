@@ -2326,6 +2326,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Dungeon Train zbadany",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "Zdobądź każdy postęp z karty Odkrywca pociągu.",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Każdy przystanek na trasie.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Wyzwania",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Graj w pociąg według surowszych zasad.",
   "advancements.dungeontrain.editor.root.title": "Edytor",
   "advancements.dungeontrain.editor.root.description": "Zbuduj pociąg, którym jedziesz.",
   "advancements.dungeontrain.editor.made_carriage.title": "Architekt",

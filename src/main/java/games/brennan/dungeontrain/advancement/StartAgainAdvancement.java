@@ -169,7 +169,7 @@ public final class StartAgainAdvancement {
      */
     static boolean isWiped(ResourceLocation id, boolean requiredByCapstone) {
         if (CompletionistAdvancement.ID.equals(id) || ID.equals(id)) return true;
-        if (TabGateways.isCopy(id)) return false;
+        if (TabGateways.isLinked(id)) return false;
         Boolean override = TabGateways.layout().startAgainReset().get(id.toString());
         return override != null ? override : requiredByCapstone;
     }

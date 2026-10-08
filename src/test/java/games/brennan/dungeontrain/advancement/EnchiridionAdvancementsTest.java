@@ -87,9 +87,9 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
-    @DisplayName("Respect The Rules stayed on the Dungeon Train tab and still counts")
+    @DisplayName("Respect The Rules is on the Challenges tab, not The Enchiridion, and still counts")
     void chestsStillRequired() throws IOException {
-        assertEquals("dungeon_train/root", tabRoot(parents(), "dungeon_train/chests_100_unique"));
+        assertEquals("dungeon_train/tab_challenges", tabRoot(parents(), "dungeon_train/chests_100_unique"));
         assertTrue(CompletionistAdvancement.isRequiredId(rl("dungeon_train/chests_100_unique"), Set.of()));
     }
 

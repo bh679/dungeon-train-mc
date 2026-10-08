@@ -44,34 +44,39 @@ function fillMenuRaw(id) {
   if (!E.editable) h += `<div class="note">This is the layout as it is in the repo. Switch Layout to With my edits to edit.</div>`;
   else if (kind === 'other') h += `<div class="note">Vanilla advancement. Only Dungeon Train advancements can be edited.</div>`;
   if (editable) {
+    const sec = {};
     if (id !== DT_ROOT) {
       const tabsOpts = L.tabs.filter(t => t.kind !== 'other').map(t => `<option value="${esc(t.id)}" ${t.id === tabRoot ? 'selected' : ''}>${esc(t.title)}</option>`).join('');
-      h += `<div class="sec"><span>Move</span>
+      sec.move = `<div class="sec"><span>Move</span>
         ${below ? `<label class="check"><input type="checkbox" id="mKids" ${view.withChildren ? 'checked' : ''}> Bring its children (${below})</label>` : ''}
         <label for="mTab">Tab</label><select id="mTab">${tabsOpts}</select>
         <label for="mParent">Parent</label><select id="mParent">${parentOptions(L, id)}</select>
         <div class="row"><button class="mcbtn" type="button" data-act="pick">Pick parent on screen</button>${isRoot ? '' : '<button class="mcbtn" type="button" data-act="ownTab">Make it a tab</button>'}<button class="mcbtn" type="button" data-act="copyTab">Open a copy as a new tab</button></div>
-        <div class="hint">Moving to a tab puts it straight under that tab’s first advancement.</div></div>`;
+        <div class="hint">Moving to a tab puts it straight under that tab\u2019s first advancement.</div></div>`;
     }
     if (n.req && !n.copyOf) {
-      h += `<div class="sec"><span>Required</span><div class="req"><input type="number" id="mReq" min="1" step="${n.req.unit === 'ticks' ? 'any' : 1}" value="${reqToInput(n.req)}" aria-label="Value required"><span>${reqUnitLabel(n.req)}</span></div>
-        <div class="hint">Shows as “${esc(formatReq(n.req))}”. Shipped value ${esc(formatReq(M.nodes[id].req))}.</div></div>`;
+      sec.req = `<div class="sec"><span>Required</span><div class="req"><input type="number" id="mReq" min="1" step="${n.req.unit === 'ticks' ? 'any' : 1}" value="${reqToInput(n.req)}" aria-label="Value required"><span>${reqUnitLabel(n.req)}</span></div>
+        <div class="hint">Shows as \u201c${esc(formatReq(n.req))}\u201d. Shipped value ${esc(formatReq(M.nodes[id].req))}.</div></div>`;
     }
     if (isRoot) {
       const ord = L.tabs.filter(t => t.kind !== 'other').map(t => t.id), oi = ord.indexOf(id);
-      h += `<div class="sec"><span>Tab</span><label for="mTabTitle">Tab name (blank uses the advancement title)</label>
+      sec.tab = `<div class="sec"><span>Tab</span><label for="mTabTitle">Tab name (blank uses the advancement title)</label>
         <input type="text" id="mTabTitle" value="${esc(E.titles[id] || '')}" placeholder="${esc(n.t)}" maxlength="40">
         <label>Background</label><div class="bgs">${bgSwatches(n.bg)}<button type="button" class="more" data-act="moreBgs" aria-expanded="${moreBgsOpen}" title="More backgrounds" aria-label="More backgrounds">+</button></div>
           ${moreBgsOpen ? `<input type="text" id="mBgSearch" placeholder="Search ${Object.keys(M.moreBgs).length} block textures" value="${esc(bgQuery)}"><div class="bgs more-list" id="mBgMore">${moreBgButtons(n.bg)}</div>` : ''}
-        ${id === DT_ROOT ? '' : `<div class="row"><button class="mcbtn" type="button" data-act="tabLeft" ${oi <= 1 ? 'disabled' : ''}>← Move tab</button><button class="mcbtn" type="button" data-act="tabRight" ${oi >= ord.length - 1 ? 'disabled' : ''}>Move tab →</button></div>`}</div>`;
+        ${id === DT_ROOT ? '' : `<div class="row"><button class="mcbtn" type="button" data-act="tabLeft" ${oi <= 1 ? 'disabled' : ''}>\u2190 Move tab</button><button class="mcbtn" type="button" data-act="tabRight" ${oi >= ord.length - 1 ? 'disabled' : ''}>Move tab \u2192</button></div>`}</div>`;
+      if (id !== DT_ROOT) sec.unlock = unlockSection(L, id, n);
     }
-    if (n.cap) h += capstoneSection(n);
+    if (n.cap) sec.cap = capstoneSection(n);
     if (n.created && !n.copyOf) {
-      h += `<div class="sec"><span>Text</span><label for="mTitle">Title</label><input type="text" id="mTitle" value="${esc(n.t)}" maxlength="60">
+      sec.text = `<div class="sec"><span>Text</span><label for="mTitle">Title</label><input type="text" id="mTitle" value="${esc(n.t)}" maxlength="60">
         <label for="mDesc">Description</label><textarea id="mDesc" maxlength="200">${esc(n.d)}</textarea></div>`;
     }
-    h += `<div class="sec"><span>Icon</span><div class="icons" id="mIcons">${IC.map((u, i) => `<button type="button" data-icon="${i}" class="${i === n.i ? 'on' : ''}" title="${esc(M.iconNames[i])}" aria-label="${esc(M.iconNames[i])}"><i style="background-image:url(${u})"></i></button>`).join('')}</div></div>`;
-    const touched = ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone'].some(k => edits[k] && id in edits[k]) || id in edits.created;
+    sec.icon = `<div class="sec"><span>Icon</span><div class="icons" id="mIcons">${IC.map((u, i) => `<button type="button" data-icon="${i}" class="${i === n.i ? 'on' : ''}" title="${esc(M.iconNames[i])}" aria-label="${esc(M.iconNames[i])}"><i style="background-image:url(${u})"></i></button>`).join('')}</div></div>`;
+    // A tab's first advancement leads with what makes it a tab: its name, text and what unlocks it.
+    const order = isRoot ? ['tab', 'text', 'unlock', 'move', 'req', 'cap', 'icon'] : ['move', 'req', 'cap', 'text', 'icon'];
+    h += order.map(k => sec[k] || '').join('');
+    const touched = EDIT_KEYS.some(k => edits[k] && id in edits[k]) || id in edits.created;
     if (touched || n.created) h += `<div class="row">${touched ? '<button class="mcbtn" type="button" data-act="reset">Undo my edits to this</button>' : ''}${n.created ? '<button class="mcbtn" type="button" data-act="delete">Delete</button>' : ''}</div>`;
   }
   menu.innerHTML = h;
@@ -119,6 +124,7 @@ function wireMenu(id) {
   }));
   on('#mKids', 'change', e => { view.withChildren = e.target.checked; saveView(); renderControls(layoutCache); fillMenu(id); });
   on('#mParent', 'change', e => reparent(id, e.target.value));
+  on('#mUnlock', 'change', e => setUnlock(id, e.target.value));
   const capEdit = (key, label) => e => { const v = e.target.checked; commit(ed => { ed.capstone = ed.capstone || {}; ed.capstone[id] = { ...(ed.capstone[id] || {}), [key]: v }; }, label(v)); };
   on('#mCapReq', 'change', capEdit('req', v => v ? 'Now counts towards the Everything Burrito.' : 'No longer counts towards the Everything Burrito.'));
   on('#mCapReset', 'change', capEdit('reset', v => v ? 'Now reset by It\u2019s Not That Simple.' : 'Now kept by It\u2019s Not That Simple.'));
@@ -166,4 +172,33 @@ function capstoneSection(n) {
   return `<div class="sec"><span>Everything Burrito</span>
     <label class="check"><input type="checkbox" id="mCapReq"${c.req ? ' checked' : ''}${dis}> Counts towards Everything Burrito</label>
     <label class="check"><input type="checkbox" id="mCapReset"${c.reset ? ' checked' : ''}${dis}> Reset by It\u2019s Not That Simple</label>${why}</div>`;
+}
+
+// ---------- what unlocks a tab ----------
+function unlockSection(L, id, n) {
+  const E = L.E;
+  if (n.copyOf) return `<div class="sec"><span>Unlocked by</span><div class="hint">A copy unlocks with its original, ${esc(E.nodes[n.copyOf] ? E.nodes[n.copyOf].t : n.copyOf)}.</div></div>`;
+  const cur = n.unlockedBy || '';
+  let o = `<option value="" ${cur ? '' : 'selected'}>Nothing: its own trigger, or code</option>`;
+  L.tabs.filter(t => t.kind === 'dt').forEach(t => {
+    o += `<optgroup label="${esc(t.title)}">`;
+    t.nodes.slice().sort((a, b) => a.y - b.y || a.x - b.x).forEach(m => {
+      if (m.id === id || E.nodes[m.id].unlockedBy || E.nodes[m.id].copyOf) return;
+      o += `<option value="${esc(m.id)}" ${m.id === cur ? 'selected' : ''}>${'\u00a0\u00a0'.repeat(Math.min(m.x, 8))}${esc(m.t)}</option>`;
+    });
+    o += '</optgroup>';
+  });
+  let hint;
+  if (cur) hint = `Earned whenever ${esc(E.nodes[cur] ? E.nodes[cur].t : cur)} is earned. Hidden until then.`;
+  else if (n.trig && n.trig !== 'impossible') hint = `Earned by its own trigger (${esc(n.trig)}).`;
+  else hint = '<b>Nothing grants it yet.</b> Pick the advancement that should unlock this tab.';
+  return `<div class="sec"><span>Unlocked by</span><label for="mUnlock">Earned when this is earned</label><select id="mUnlock">${o}</select><div class="hint">${hint}</div></div>`;
+}
+
+function setUnlock(id, source) {
+  const n = layoutCache.E.nodes[id], src = layoutCache.E.nodes[source];
+  commit(ed => {
+    if (ed.created[id]) ed.created[id] = { ...ed.created[id], unlockedBy: source || '' };
+    else ed.unlocks[id] = source || null;
+  }, source ? `${n.t} now unlocks with ${src ? src.t : source}.` : `${n.t} no longer unlocks with another advancement.`);
 }

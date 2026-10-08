@@ -13,7 +13,9 @@ rootEl.style.setProperty('--titlebox', `url(${SP.title_box})`);
 
 const IX = 9, IY = 18;
 let W = 252, H = 140, IW = 234, IH = 113, PER_ROW = 8;
-const emptyEdits = () => ({ parents: {}, created: {}, deleted: [], icons: {}, tabTitles: {}, bgs: {}, texts: {}, values: {}, capstone: {}, order: null });
+const emptyEdits = () => ({ parents: {}, created: {}, deleted: [], icons: {}, tabTitles: {}, bgs: {}, texts: {}, values: {}, capstone: {}, unlocks: {}, order: null });
+/** Edit maps keyed by advancement id — what "Undo my edits to this" clears. */
+const EDIT_KEYS = ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone', 'unlocks'];
 const view = { layout: 'proposed', other: false, creative: false, earned: true, tabId: DT_ROOT, withChildren: true };
 try { Object.assign(view, JSON.parse(localStorage.getItem('dt-adv-view') || '{}')); } catch (e) {}
 const saveView = () => { try { localStorage.setItem('dt-adv-view', JSON.stringify(view)); } catch (e) {} };
@@ -66,7 +68,7 @@ function effective() {
     const c = created[id]; if (!c || seen.has(id)) return null; seen.add(id);
     let n;
     if (c.copyOf) { const src = resolve(c.copyOf, seen); if (!src) return null; n = { ...src, h: true, copyOf: c.copyOf, bg: c.bg || src.bg }; }
-    else n = { t: c.t, d: c.d || '', f: c.f || 'task', i: c.i, h: false, bg: c.bg, ...(texts[id] || {}) };
+    else n = { t: c.t, d: c.d || '', f: c.f || 'task', i: c.i, h: !!c.unlockedBy, bg: c.bg, unlockedBy: c.unlockedBy || undefined, trig: 'impossible', ...(texts[id] || {}) };
     n.created = true; nodes[id] = n; return n;
   };
   Object.keys(created).forEach(id => resolve(id, new Set()));
@@ -76,11 +78,14 @@ function effective() {
     const n = nodes[id]; if (!n.copyOf || !nodes[n.copyOf]) return;
     const s = nodes[n.copyOf]; n.t = s.t; n.d = s.d; n.f = s.f; n.req = s.req; n.hint = s.hint; if (!(id in icons) && !M.nodes[id]) n.i = s.i; // a saved copy keeps its own icon
   });
+  const unlocks = edits.unlocks || {};
+  Object.keys(unlocks).forEach(id => { if (nodes[id]) { nodes[id] = { ...nodes[id], unlockedBy: unlocks[id] || undefined }; } });
   // Everything Burrito / It's Not That Simple. Reset follows "counts" unless it was set on its own.
   const caps = edits.capstone || {};
   Object.keys(nodes).forEach(id => {
     const n = nodes[id];
-    if (n.created && !n.cap) n.cap = n.copyOf ? { req: false, reset: false, ed: false } : { req: true, reset: true, ed: true };
+    if (n.created && !n.cap) n.cap = n.copyOf || n.unlockedBy ? { req: false, reset: false, ed: false } : { req: true, reset: true, ed: true };
+    if (n.unlockedBy && n.cap) n.cap = { req: false, reset: false, ed: false }; // follows its source, never counts
     if (!n.cap) return;
     const e = caps[id] || {}, base = n.cap;
     const req = 'req' in e ? e.req : base.req;
@@ -171,11 +176,14 @@ function moveToTab(id, tabRoot) {
 }
 
 const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'tab';
-const uniqueId = (L, base) => { let id = base, n = 2; while (L.E.nodes[id]) id = base.replace(/\/root$/, '') + `_${n++}/root`; return id; };
+/** Tab heads live under dungeon_train/ so they get Dungeon Train's tab visibility rules. */
+const TAB_PREFIX = 'dungeontrain:dungeon_train/tab_';
+const uniqueId = (taken, base) => { let id = base, n = 2; while (taken(id)) id = `${base}_${n++}`; return id; };
+const tabIdFor = (L, name) => uniqueId(id => !!L.E.nodes[id], TAB_PREFIX + slugify(name));
 
 function openCopyAsTab(id) {
   const L = layoutCache, n = L.E.nodes[id];
-  const rootId = uniqueId(L, `dungeontrain:${slugify(n.t)}/root`);
+  const rootId = tabIdFor(L, n.t);
   commit(e => {
     e.created[rootId] = { copyOf: id, bg: STONE_BG };
     e.parents[rootId] = '';
@@ -187,13 +195,13 @@ function openCopyAsTab(id) {
 function newTab() {
   const L = layoutCache;
   if (!L.E.editable) { toast('Switch Layout to With my edits to edit.'); return; }
-  const rootId = uniqueId(L, 'dungeontrain:new_tab/root');
+  const rootId = tabIdFor(L, 'new');
   const icon = Math.max(0, M.iconNames.indexOf('knowledge book'));
   commit(e => {
-    e.created[rootId] = { t: 'New Tab', d: 'Describe how this tab unlocks', f: 'task', i: icon, bg: STONE_BG };
+    e.created[rootId] = { t: 'New Tab', d: 'Describe this tab', f: 'task', i: icon, bg: STONE_BG, unlockedBy: '' };
     e.parents[rootId] = '';
     e.order = [...(e.order || M.baseline.order), rootId];
-  }, 'Added a new tab. Name it, then move advancements into it.');
+  }, 'Added a new tab. Name it, pick what unlocks it, then move advancements into it.');
   view.tabId = rootId; saveView(); render(); openMenu(rootId);
 }
 
@@ -203,7 +211,7 @@ function deleteCreated(id) {
   if (Object.keys(L.E.nodes).some(k => L.E.nodes[k].copyOf === id)) { toast('Delete its copies first.'); return; }
   const t = L.E.nodes[id].t;
   commit(e => {
-    ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone'].forEach(k => { if (e[k]) delete e[k][id]; });
+    EDIT_KEYS.forEach(k => { if (e[k]) delete e[k][id]; });
     delete e.created[id];
     if (M.baseline.created[id] && !e.deleted.includes(id)) e.deleted.push(id);
     if (e.order) e.order = e.order.filter(x => x !== id);
@@ -222,7 +230,7 @@ function moveTab(id, dir) {
 
 function resetNode(id) {
   commit(e => {
-    ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone'].forEach(k => { if (e[k]) delete e[k][id]; });
+    EDIT_KEYS.forEach(k => { if (e[k]) delete e[k][id]; });
     if (e.created[id] && !M.baseline.created[id]) delete e.created[id];
     e.deleted = e.deleted.filter(x => x !== id);
   }, 'Undid your edits to this one.');
@@ -278,14 +286,14 @@ async function connect() {
 function exportChanges() {
   const saved = view.layout; view.layout = 'proposed';
   const L = computeLayout(); view.layout = saved;
-  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, capstone: {}, order: null };
+  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, capstone: {}, unlocks: {}, order: null };
   Object.keys(E.nodes).forEach(id => {
     const n = E.nodes[id], base = M.nodes[id];
     if (kindOf(id) === 'other') return;
     if (!base) {
       out.created[id] = n.copyOf
         ? { parent: E.parents[id] || null, copyOf: n.copyOf, icon: M.iconIds[n.i], background: n.bg || null }
-        : { parent: E.parents[id] || null, title: n.t, description: n.d, frame: n.f, icon: M.iconIds[n.i], background: n.bg || null };
+        : { parent: E.parents[id] || null, title: n.t, description: n.d, frame: n.f, icon: M.iconIds[n.i], background: n.bg || null, unlockedBy: n.unlockedBy || null };
       if (n.cap && n.cap.ed && (!n.cap.req || !n.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
       return;
     }
@@ -293,6 +301,7 @@ function exportChanges() {
     if (n.i !== base.i) out.icons[id] = M.iconIds[n.i];
     if (n.req && base.req && n.req.n !== base.req.n && !n.copyOf) out.values[id] = { field: base.req.field, from: base.req.n, to: n.req.n };
     if (!E.parents[id] && n.bg && n.bg !== base.bg) out.backgrounds[id] = n.bg;
+    if (!E.parents[id] && !n.copyOf && (n.unlockedBy || '') !== (base.unlockedBy || '')) out.unlocks[id] = n.unlockedBy || null;
     if (n.cap && base.cap && n.cap.ed && (n.cap.req !== base.cap.req || n.cap.reset !== base.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
   });
   const titles = E.titles;
@@ -303,7 +312,28 @@ function exportChanges() {
   });
   const order = L.tabs.filter(t => t.kind !== 'other').map(t => t.id);
   if (JSON.stringify(order) !== JSON.stringify(M.baseline.order)) out.order = order;
-  return out;
+  return renameNewTabs(out, L);
+}
+
+/**
+ * A new tab gets its id when it is made, before it has a name ("tab_new"). Ids are permanent once saved,
+ * so on export each placeholder is renamed after the tab's name or title (tab_challenges), everywhere
+ * the change set mentions it.
+ */
+function renameNewTabs(out, L) {
+  const taken = new Set(Object.keys(M.nodes));
+  const renames = {};
+  Object.keys(out.created).forEach(id => {
+    if (!/\/tab_new(_\d+)?$/.test(id)) return;
+    const name = L.E.titles[id] || L.E.nodes[id].t;
+    const target = uniqueId(x => taken.has(x), TAB_PREFIX + slugify(name));
+    taken.add(target);
+    if (target !== id) renames[id] = target;
+  });
+  if (!Object.keys(renames).length) return out;
+  let text = JSON.stringify(out);
+  Object.keys(renames).forEach(from => { text = text.split(`"${from}"`).join(`"${renames[from]}"`); });
+  return JSON.parse(text);
 }
 
 async function saveToRepo() {

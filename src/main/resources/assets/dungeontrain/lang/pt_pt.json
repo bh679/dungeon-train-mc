@@ -2279,6 +2279,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Dungeon Train explorado",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "Conquista todos os progressos do separador Explorador do comboio.",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Cada paragem da linha.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Desafios",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Joga o comboio com regras mais duras.",
   "advancements.dungeontrain.editor.root.title": "Editor",
   "advancements.dungeontrain.editor.root.description": "Constrói o comboio em que viajas.",
   "advancements.dungeontrain.editor.made_carriage.title": "Arquiteto",

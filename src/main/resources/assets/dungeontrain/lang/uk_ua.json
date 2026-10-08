@@ -2810,6 +2810,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Dungeon Train досліджено",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "Здобудь усі досягнення на вкладці «Дослідник потяга».",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Кожна зупинка на лінії.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Випробування",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Грай у потяг за суворішими правилами.",
   "advancements.dungeontrain.editor.root.title": "Редактор",
   "advancements.dungeontrain.editor.root.description": "Збудуй потяг, яким їздиш.",
   "advancements.dungeontrain.editor.made_carriage.title": "Архітект",

@@ -113,6 +113,16 @@ class Lang:
         return None
 
 
+def describe_criteria(adv: dict) -> str:
+    """How a tab head is earned, for the editor: "impossible" (code grants it) or its trigger and action."""
+    parts = []
+    for crit in (adv.get("criteria") or {}).values():
+        trigger = crit.get("trigger", "").split(":")[-1]
+        action = (crit.get("conditions") or {}).get("actionId")
+        parts.append(f"{trigger} {action}" if action else trigger)
+    return ", ".join(parts) or "impossible"
+
+
 def load_advancements(tex: Textures) -> dict[str, dict]:
     """id → raw advancement JSON, Dungeon Train's from the repo and vanilla's tab trees from the jar."""
     out = {}
@@ -131,6 +141,8 @@ def build_bundle() -> tuple[dict, list[str]]:
     lang = Lang(tex.mc_json("assets/minecraft/lang/en_us.json"), json.loads(LANG_FILE.read_text()))
     tabs_file = load_tabs_file()
     copies = tabs_file.get("copies", {})
+    unlocked = tabs_file.get("unlockedBy", {})
+    linked = capstone_rules.linked(tabs_file)
 
     icon_ids, icon_index = [], {}
 
@@ -156,9 +168,13 @@ def build_bundle() -> tuple[dict, list[str]]:
             node["req"] = req
         if aid in copies:
             node["copyOf"] = copies[aid]
+        if aid in unlocked:
+            node["unlockedBy"] = unlocked[aid]
+        if not adv.get("parent"):
+            node["trig"] = describe_criteria(adv)
         if aid.startswith("dungeontrain:"):
-            required, reset = capstone_rules.effective(aid, copies, books, tabs_file)
-            node["cap"] = {"req": required, "reset": reset, "ed": capstone_rules.is_editable(aid, copies)}
+            required, reset = capstone_rules.effective(aid, linked, books, tabs_file)
+            node["cap"] = {"req": required, "reset": reset, "ed": capstone_rules.is_editable(aid, linked)}
         if CHAIN.match(aid):
             node["chain"] = True
         if not adv.get("parent"):

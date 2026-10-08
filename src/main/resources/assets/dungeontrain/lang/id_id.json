@@ -2232,6 +2232,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Dungeon Train Terjelajahi",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "Raih setiap kemajuan di tab Penjelajah Kereta.",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "Setiap perhentian di jalur ini.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "Tantangan",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "Mainkan kereta dengan aturan yang lebih berat.",
   "advancements.dungeontrain.editor.root.title": "Editor",
   "advancements.dungeontrain.editor.root.description": "Bangun kereta yang kau tumpangi.",
   "advancements.dungeontrain.editor.made_carriage.title": "Arsitek",

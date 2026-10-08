@@ -2232,6 +2232,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "Dungeon Train 정복",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "열차 탐험가 탭의 모든 발전 과제를 달성합니다.",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "노선의 모든 정거장.",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "도전",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "더 엄격한 규칙으로 열차를 즐기세요.",
   "advancements.dungeontrain.editor.root.title": "편집기",
   "advancements.dungeontrain.editor.root.description": "당신이 타는 기차를 짓습니다.",
   "advancements.dungeontrain.editor.made_carriage.title": "건축가",

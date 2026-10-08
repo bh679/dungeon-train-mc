@@ -38,6 +38,11 @@ def book_paths(java: Path = ENCHIRIDION_JAVA) -> set[str]:
     return paths
 
 
+def linked(tabs: dict) -> dict[str, str]:
+    """Every advancement that follows another — tab copies and ``unlockedBy`` heads — to its source."""
+    return {**tabs.get("copies", {}), **tabs.get("unlockedBy", {})}
+
+
 def is_editable(adv_id: str, copies: dict[str, str]) -> bool:
     """Can the editor change this one's flags? Not vanilla, the editor tree, the capstone pair or a tab copy."""
     return (adv_id.startswith("dungeontrain:") and not adv_id.startswith("dungeontrain:editor/")
@@ -58,6 +63,7 @@ def default_required(adv_id: str, copies: dict[str, str], books: set[str]) -> bo
 
 
 def effective(adv_id: str, copies: dict[str, str], books: set[str], tabs: dict) -> tuple[bool, bool]:
+    """``copies`` here means every linked advancement — see :func:`linked`."""
     """(counts towards the burrito, reset by start-again) with the tabs file's overrides applied."""
     required = default_required(adv_id, copies, books)
     if is_editable(adv_id, copies):

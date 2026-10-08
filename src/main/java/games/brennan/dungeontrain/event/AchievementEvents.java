@@ -1247,10 +1247,10 @@ public final class AchievementEvents {
         ResourceLocation id = advancement.id();
         // An Enchiridion camera advancement remembers the photo that earned it (client keeps the copy).
         games.brennan.dungeontrain.compat.photo.AdvancementPhotoCapture.onEarn(player, id, replaying);
-        // An original that heads another tab earns its copy there, which unlocks the tab. Copies are
-        // mirrors, not achievements: no persistence, hint, accolade or capstone check of their own.
+        // An advancement that unlocks a tab earns that tab's head (a copy, or an unlockedBy link). Those
+        // heads follow their source, not achievements: no persistence, hint, accolade or capstone check.
         TabGateways.onEarned(player, id);
-        if (TabGateways.isCopy(id)) return;
+        if (TabGateways.isLinked(id)) return;
         // Persist across worlds: capture every GUI-visible advancement — vanilla,
         // Dungeon Train, and other mods alike — not just dungeontrain:*. The
         // hidden display-less recipe tree is filtered out by shouldPersist.

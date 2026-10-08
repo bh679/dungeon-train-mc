@@ -34,6 +34,10 @@ import java.util.Optional;
  * play, and a hidden, silent <b>copy</b> (criterion {@code minecraft:impossible}) that this class keeps
  * in step with it. A hidden root is invisible until earned, so the copy earning is what unlocks a tab.</p>
  *
+ * <p>A tab head can also be <b>unlocked by</b> another advancement without copying it
+ * ({@code unlockedBy}: head → source): it keeps its own title and icon ("Challenges", unlocked by
+ * Dungeon Train Explorer) and follows its source exactly as a copy does.</p>
+ *
  * <p>The same file carries the per-advancement capstone overrides the editor writes: {@code burrito}
  * (counts towards the Everything Burrito — {@link CompletionistAdvancement#isRequiredId}) and
  * {@code startAgainReset} (cleared by "It's Not That Simple" — {@link StartAgainAdvancement#isWiped}).</p>
@@ -60,19 +64,37 @@ public final class TabGateways {
      * Ids are kept as strings so the parse is testable without Minecraft's registries.
      */
     public record Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order,
-                         Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset) {
+                         Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset,
+                         Map<String, String> unlockedBy) {
 
-        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of());
+        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of());
 
-        /** A layout with copies, names and order only — no capstone overrides. */
+        /** A layout with copies, names and order only — no capstone overrides or unlock links. */
         public Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order) {
-            this(copies, tabNames, order, Map.of(), Map.of());
+            this(copies, tabNames, order, Map.of(), Map.of(), Map.of());
         }
 
         public static Layout parse(Reader reader) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
             return new Layout(stringMap(root, "copies"), stringMap(root, "tabNames"), stringList(root, "order"),
-                    boolMap(root, "burrito"), boolMap(root, "startAgainReset"));
+                    boolMap(root, "burrito"), boolMap(root, "startAgainReset"), stringMap(root, "unlockedBy"));
+        }
+
+        /**
+         * Every advancement that follows another — copies and unlock links alike — mapped to the one it
+         * follows. A follower is earned when its source is, and revoked at login when its source is not.
+         */
+        public Map<String, String> followers() {
+            Map<String, String> out = new LinkedHashMap<>(copies);
+            out.putAll(unlockedBy);
+            return out;
+        }
+
+        /** The advancements that follow {@code sourceId}. */
+        public List<String> followersOf(String sourceId) {
+            List<String> out = new ArrayList<>(1);
+            followers().forEach((follower, source) -> { if (source.equals(sourceId)) out.add(follower); });
+            return out;
         }
 
         private static Map<String, Boolean> boolMap(JsonObject root, String key) {
@@ -85,13 +107,6 @@ public final class TabGateways {
                 }
             }
             return Collections.unmodifiableMap(out);
-        }
-
-        /** The copies of {@code originalId}, usually one. */
-        public List<String> copiesOf(String originalId) {
-            List<String> out = new ArrayList<>(1);
-            copies.forEach((copy, original) -> { if (original.equals(originalId)) out.add(copy); });
-            return out;
         }
 
         private static Map<String, String> stringMap(JsonObject root, String key) {
@@ -142,6 +157,14 @@ public final class TabGateways {
     }
 
     /**
+     * Does {@code id} follow another advancement — a copy, or a tab head unlocked by another
+     * ({@code unlockedBy})? Either way it is never earned by play and never counts on its own.
+     */
+    public static boolean isLinked(ResourceLocation id) {
+        return layout().followers().containsKey(id.toString());
+    }
+
+    /**
      * Copies show their original's title and description. The original's description may have been
      * rewritten at load with its required value ({@code RequirementJsonRewriter}), so this runs after
      * that rewrite and copies the result. Pure: returns a new map, the input is never mutated.
@@ -172,13 +195,13 @@ public final class TabGateways {
         return d != null && d.isJsonObject() ? Optional.of(d.getAsJsonObject()) : Optional.empty();
     }
 
-    /** An original was just earned: earn its copies, which unlocks their tabs. */
+    /** An advancement was just earned: earn everything that follows it, which unlocks their tabs. */
     public static void onEarned(ServerPlayer player, ResourceLocation id) {
-        List<String> copies = layout().copiesOf(id.toString());
-        if (copies.isEmpty()) return;
+        List<String> followers = layout().followersOf(id.toString());
+        if (followers.isEmpty()) return;
         MinecraftServer server = player.getServer();
         if (server == null) return;
-        for (String copy : copies) setDone(player, server.getAdvancements(), copy, true);
+        for (String follower : followers) setDone(player, server.getAdvancements(), follower, true);
     }
 
     /**
@@ -190,10 +213,10 @@ public final class TabGateways {
         if (server == null) return;
         ServerAdvancementManager mgr = server.getAdvancements();
         PlayerAdvancements adv = player.getAdvancements();
-        layout().copies().forEach((copy, original) -> {
-            AdvancementHolder originalHolder = holder(mgr, original);
-            if (originalHolder == null) return;
-            setDone(player, mgr, copy, adv.getOrStartProgress(originalHolder).isDone());
+        layout().followers().forEach((follower, source) -> {
+            AdvancementHolder sourceHolder = holder(mgr, source);
+            if (sourceHolder == null) return;
+            setDone(player, mgr, follower, adv.getOrStartProgress(sourceHolder).isDone());
         });
     }
 

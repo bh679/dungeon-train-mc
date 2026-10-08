@@ -13,7 +13,11 @@ button posts to ``serve.py``. Shape (every section optional)::
      "order":       ["<tab root id>", ...],
      "created":     {"<id>": {"parent": ..., "copyOf": "<id>", "icon": ..., "background": ...}},
      "deleted":     ["<id>", ...],
-     "capstone":    {"<id>": {"required": true, "reset": false}}}  # Everything Burrito / It's Not That Simple
+     "capstone":    {"<id>": {"required": true, "reset": false}},  # Everything Burrito / It's Not That Simple
+     "unlocks":     {"<tab root id>": "<id that unlocks it>" | null}}
+
+A new tab (``created`` with no ``parent``) may carry ``"unlockedBy": "<id>"``: it is then earned whenever
+that advancement is, so it needs no trigger of its own.
 
 Ids never change: a move only rewrites ``parent``, so players keep everything they earned. Edits
 to existing files are text-level (the one value on its line), so the diff is one line per change.
@@ -199,9 +203,14 @@ def new_json(adv_id: str, spec: dict) -> dict:
                "frame": spec.get("frame") or "task"}
     if not spec.get("parent"):
         display["background"] = spec.get("background") or DEFAULT_BG
-    display.update(show_toast=True, announce_to_chat=True, hidden=False)
+    if spec.get("unlockedBy"):  # a tab head that follows another advancement: hidden until then, silent
+        display.update(show_toast=False, announce_to_chat=False, hidden=True)
+        criteria = {"unlocked": {"trigger": "minecraft:impossible"}}
+    else:
+        display.update(show_toast=True, announce_to_chat=True, hidden=False)
+        criteria = {"todo": {"trigger": "minecraft:impossible"}}
     out = {"parent": spec["parent"]} if spec.get("parent") else {}
-    out.update(display=display, criteria={"todo": {"trigger": "minecraft:impossible"}}, requirements=[["todo"]])
+    out.update(display=display, criteria=criteria, requirements=[list(criteria)])
     return out
 
 
@@ -215,7 +224,8 @@ def write_new(path: Path, data: dict) -> None:
 def load_tabs(tabs_file: Path) -> dict:
     data = json.loads(tabs_file.read_text()) if tabs_file.is_file() else {}
     return {"order": data.get("order", []), "tabNames": data.get("tabNames", {}), "copies": data.get("copies", {}),
-            **{k: v for k, v in data.items() if k not in ("order", "tabNames", "copies")}}
+            "unlockedBy": data.get("unlockedBy", {}),
+            **{k: v for k, v in data.items() if k not in ("order", "tabNames", "copies", "unlockedBy")}}
 
 
 def set_capstone(tabs: dict, adv_id: str, flags: dict, adv_dir: Path) -> None:
@@ -225,7 +235,7 @@ def set_capstone(tabs: dict, adv_id: str, flags: dict, adv_dir: Path) -> None:
     ``burrito`` against the default rule, ``startAgainReset`` against "reset what the burrito needs".
     """
     adv_path(adv_id, adv_dir)
-    copies = tabs["copies"]
+    copies = capstone_rules.linked(tabs)
     if not capstone_rules.is_editable(adv_id, copies):
         raise ApplyError(f"{adv_id}: its Everything Burrito / start-again settings are fixed")
     for key in ("required", "reset"):
@@ -246,6 +256,13 @@ def _store(table: dict, adv_id: str, value: bool, default: bool) -> None:
         table.pop(adv_id, None)
     else:
         table[adv_id] = value
+
+
+def check_source(source: str, adv_dir: Path, new_files: dict) -> None:
+    """An unlock source must be a Dungeon Train advancement that exists (or is made in the same save)."""
+    path = adv_path(source, adv_dir)
+    if not (path.is_file() or path in new_files):
+        raise ApplyError(f"unlock source {source} does not exist")
 
 
 def tab_lang_key(root_id: str) -> str:
@@ -291,7 +308,14 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
             new_files[path] = new_json(adv_id, spec)
             lang[lang_prefix(adv_id) + ".title"] = spec.get("title") or "New Tab"
             lang[lang_prefix(adv_id) + ".description"] = spec.get("description") or ""
-            report.todo.append(f"{adv_id} is granted by nothing yet: give it a real criterion in {shown(path)}.")
+            if spec.get("unlockedBy"):
+                if spec.get("parent"):
+                    raise ApplyError(f"{adv_id}: only a tab's first advancement can be unlocked by another")
+                check_source(spec["unlockedBy"], adv_dir, new_files)
+                tabs["unlockedBy"][adv_id] = spec["unlockedBy"]
+                tabs_dirty = True
+            else:
+                report.todo.append(f"{adv_id} is granted by nothing yet: give it a real criterion in {shown(path)}.")
 
     for adv_id, parent in (changes.get("parents") or {}).items():
         path = existing(adv_id, adv_dir)
@@ -342,6 +366,19 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
         set_capstone(tabs, adv_id, flags, adv_dir)
         tabs_dirty = True
 
+    for root, source in (changes.get("unlocks") or {}).items():
+        path = existing(root, adv_dir)
+        if '"parent"' in text_of(path):
+            raise ApplyError(f"{root}: only a tab's first advancement can be unlocked by another")
+        if root in tabs["copies"]:
+            raise ApplyError(f"{root}: a tab copy already follows its original")
+        if source:
+            check_source(source, adv_dir, new_files)
+            tabs["unlockedBy"][root] = source
+        else:
+            tabs["unlockedBy"].pop(root, None)
+        tabs_dirty = True
+
     if changes.get("order"):
         for root in changes["order"]:  # the Editor tab may be ordered, never edited
             if not re.match(r"^dungeontrain:[a-z0-9_]+(/[a-z0-9_]+)+$", root or ""):
@@ -351,9 +388,10 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
 
     for adv_id in changes.get("deleted") or []:
         path = adv_path(adv_id, adv_dir)
-        if adv_id not in tabs["copies"]:
-            raise ApplyError(f"{adv_id}: only tab copies can be deleted here; remove other advancements by hand")
+        if adv_id not in tabs["copies"] and adv_id not in tabs["unlockedBy"]:
+            raise ApplyError(f"{adv_id}: only tab copies and unlocked tab heads can be deleted here; remove others by hand")
         tabs["copies"].pop(adv_id, None)
+        tabs["unlockedBy"].pop(adv_id, None)
         tabs_dirty = True
         if not dry_run and path.is_file():
             path.unlink()
@@ -372,6 +410,8 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
             write_new(path, data)
         report.wrote(path)
     if tabs_dirty:
+        if not tabs["unlockedBy"]:
+            tabs.pop("unlockedBy")
         if not dry_run:
             tabs_file.parent.mkdir(parents=True, exist_ok=True)
             tabs_file.write_text(json.dumps(tabs, indent=2, ensure_ascii=False) + "\n")

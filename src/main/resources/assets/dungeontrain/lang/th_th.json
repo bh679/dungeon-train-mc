@@ -2232,6 +2232,8 @@
   "advancements.dungeontrain.dungeon_train.train_explored.title": "สำรวจ Dungeon Train ครบแล้ว",
   "advancements.dungeontrain.dungeon_train.train_explored.description": "ปลดล็อกความก้าวหน้าทุกอย่างในแท็บนักสำรวจขบวนรถไฟ",
   "advancements.dungeontrain.dungeon_train.train_explored.hint": "ทุกสถานีบนเส้นทาง",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.title": "ความท้าทาย",
+  "advancements.dungeontrain.dungeon_train.tab_challenges.description": "เล่นขบวนรถไฟด้วยกติกาที่ยากขึ้น",
   "advancements.dungeontrain.editor.root.title": "โปรแกรมแก้ไข",
   "advancements.dungeontrain.editor.root.description": "สร้างขบวนรถไฟที่คุณโดยสาร",
   "advancements.dungeontrain.editor.made_carriage.title": "สถาปนิก",

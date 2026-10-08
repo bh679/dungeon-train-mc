@@ -186,6 +186,32 @@ def test_capstone_refuses_fixed_advancements():
         raise AssertionError(f"accepted {bad}")
 
 
+def test_new_tab_unlocked_by_needs_no_trigger():
+    ws = Workspace()
+    tab = DT + "tab_challenges"
+    report = ws.apply({"created": {tab: {"parent": None, "title": "Challenges", "description": "Harder rules",
+                                         "icon": "minecraft:iron_sword", "unlockedBy": DT + "carts_100"}}})
+    data = json.loads(ws.text("dungeon_train/tab_challenges"))
+    assert data["display"]["hidden"] is True and data["display"]["show_toast"] is False
+    assert json.loads(ws.tabs.read_text())["unlockedBy"] == {tab: DT + "carts_100"}
+    assert not any("granted by nothing" in t for t in report.todo), report.todo
+
+
+def test_change_and_clear_a_tab_unlock():
+    ws = Workspace()
+    (ws.adv / "dungeon_train" / "tab_x.json").write_text(ROOT)
+    ws.apply({"unlocks": {DT + "tab_x": DT + "carts_100"}})
+    assert json.loads(ws.tabs.read_text())["unlockedBy"] == {DT + "tab_x": DT + "carts_100"}
+    ws.apply({"unlocks": {DT + "tab_x": None}})
+    assert "unlockedBy" not in json.loads(ws.tabs.read_text())
+    for bad in ({DT + "carts_100": DT + "root"}, {DT + "tab_x": DT + "missing"}):
+        try:
+            ws.apply({"unlocks": bad})
+        except MOD.ApplyError:
+            continue
+        raise AssertionError(f"accepted {bad}")
+
+
 GOLDEN = MOD.REPO / "src/test/resources/advancement/burrito_required.txt"
 
 
@@ -193,7 +219,7 @@ def burrito_set() -> str:
     tabs = MOD.load_tabs(MOD.TABS_FILE)
     books = capstone_rules.book_paths()
     ids = sorted("dungeontrain:" + f.relative_to(MOD.ADV_DIR).with_suffix("").as_posix() for f in MOD.ADV_DIR.rglob("*.json"))
-    return "\n".join(i for i in ids if capstone_rules.effective(i, tabs["copies"], books, tabs)[0]) + "\n"
+    return "\n".join(i for i in ids if capstone_rules.effective(i, capstone_rules.linked(tabs), books, tabs)[0]) + "\n"
 
 
 def test_book_paths_parse():
