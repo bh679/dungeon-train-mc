@@ -17,18 +17,9 @@
   },
   "criteria": {
     "album": {
-      "trigger": "minecraft:inventory_changed",
+      "trigger": "dungeontrain:gameplay_action",
       "conditions": {
-        "items": [
-          {
-            "items": [
-              "exposure:album",
-              "exposure:signed_album",
-              "dungeontrain:your_photoalbum",
-              "dungeontrain:random_playerphotoalbum"
-            ]
-          }
-        ]
+        "actionId": "found_album"
       }
     }
   },

@@ -11,8 +11,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AlbumAdvancementsTest {
@@ -38,12 +41,18 @@ class AlbumAdvancementsTest {
         assertEquals("dungeontrain:enchiridion/darkroom", adv("memory_lane").get("parent").getAsString());
         assertEquals("dungeontrain:enchiridion/memory_lane", adv("keepsake").get("parent").getAsString());
         assertEquals("dungeontrain:enchiridion/keepsake", adv("no_room_left").get("parent").getAsString());
-        String found = adv("memory_lane").getAsJsonObject("criteria").toString();
-        for (String item : List.of("exposure:album", "exposure:signed_album", "dungeontrain:your_photoalbum", "dungeontrain:random_playerphotoalbum")) {
-            assertTrue(found.contains(item), item);
-        }
+        assertEquals(EnchiridionAdvancements.FOUND_ALBUM, actionOf(adv("memory_lane")));
         assertEquals(EnchiridionAdvancements.ALBUM_PHOTO, actionOf(adv("keepsake")));
         assertEquals(EnchiridionAdvancements.ALBUM_FULL, actionOf(adv("no_room_left")));
+    }
+
+    @Test
+    @DisplayName("Memory Lane is someone else's album: not your own, not an ordinary one")
+    void someoneElsesAlbum() {
+        UUID me = UUID.randomUUID(), them = UUID.randomUUID();
+        assertTrue(AlbumAdvancements.isSomeoneElsesAlbum(Optional.of(them), me));
+        assertFalse(AlbumAdvancements.isSomeoneElsesAlbum(Optional.of(me), me));
+        assertFalse(AlbumAdvancements.isSomeoneElsesAlbum(Optional.empty(), me));
     }
 
     private static String actionOf(JsonObject adv) {

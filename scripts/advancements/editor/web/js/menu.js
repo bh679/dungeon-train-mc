@@ -34,14 +34,15 @@ function placeMenu() {
 // time; clicking the same part again closes it.
 let openSec = null, openSecFor = null;
 const OPEN_HINTS = {
-  icon: 'Click to change the icon', text: 'Click to change the text', vis: 'Click to change when it shows',
+  icon: 'Click to change the icon', text: 'Click to change the text', vis: 'Click to change when it shows and what it counts towards',
   tab: 'Click to change its tab', parent: 'Click to change its parent', req: 'Click to change the value needed',
-  cap: 'Click to change what it counts towards',
+  cap: 'Click to change what it counts towards and when it shows',
 };
 /** A clickable part of the card: opens section {@code key} when the advancement is editable. */
 function part(key, html, editable, tag = 'span', cls = '') {
   if (!editable) return `<${tag} class="${cls}">${html}</${tag}>`;
-  const on = openSec === key ? ' on' : '';
+  const pair = ['vis', 'cap'];
+  const on = openSec === key || (pair.includes(openSec) && pair.includes(key)) ? ' on' : '';
   return `<${tag} class="${cls} open${on}" data-open="${key}" role="button" tabindex="0" title="${OPEN_HINTS[key]}">${html}</${tag}>`;
 }
 function capLine(c) {
@@ -94,8 +95,9 @@ function openSection(L, id, n, { isRoot, tabRoot, below, tx }) {
   const kids = below ? `<label class="check"><input type="checkbox" id="mKids" ${view.withChildren ? 'checked' : ''}> Bring its children (${below})</label>` : '';
   switch (openSec) {
     case 'icon': return iconSection(n);
-    case 'vis': return n.vis ? visibilitySection(n, isRoot) : '';
-    case 'cap': return n.cap ? capstoneSection(n) : '';
+    // Visibility and the Everything Burrito open together: both say who sees it and what it counts towards.
+    case 'vis':
+    case 'cap': return (n.vis ? visibilitySection(n, isRoot) : '') + (n.cap ? capstoneSection(n) : '');
     case 'req':
       return `<div class="sec"><span>Required</span><div class="req"><input type="number" id="mReq" min="1" step="${n.req.unit === 'ticks' ? 'any' : 1}" value="${reqToInput(n.req)}" aria-label="Value required"><span>${reqUnitLabel(n.req)}</span></div>
         <div class="hint">Shows as “${esc(formatReq(n.req))}”. Shipped value ${esc(formatReq(M.nodes[id] ? M.nodes[id].req : n.req))}.</div></div>`;
@@ -163,7 +165,8 @@ function wireMenu(id) {
   const hover = menu.querySelector('#mHover');
   menu.querySelectorAll('[data-open]').forEach(p => {
     const toggle = () => {
-      openSec = openSec === p.dataset.open ? null : p.dataset.open;
+      const same = openSec === p.dataset.open || (['vis', 'cap'].includes(openSec) && ['vis', 'cap'].includes(p.dataset.open));
+      openSec = same ? null : p.dataset.open;
       fillMenu(id);
       const first = openSec && menu.querySelector('.sec input:not([type=checkbox]), .sec textarea, .sec select');
       if (first) first.focus();
