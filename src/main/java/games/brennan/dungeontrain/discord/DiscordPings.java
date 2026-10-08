@@ -23,10 +23,13 @@ public final class DiscordPings {
 
     private DiscordPings() {}
 
-    /** The webhook override for a post about {@code player}: {@code override} (or DP's default hook) + {@code ping=}. */
-    public static String forPlayer(String override, UUID player) {
+    /**
+     * The webhook override for a {@code type} post about {@code player}: {@code override} (or DP's default
+     * hook) + {@code ping=} + {@code ping_type=} — the player may have turned that kind off.
+     */
+    public static String forPlayer(String override, UUID player, PingType type) {
         String base = base(override);
-        return base == null || player == null ? override : withParam(base, "ping=" + undashed(player));
+        return base == null || player == null ? override : withParam(base, playerHint(player, type));
     }
 
     /** The webhook override for a post of found photo {@code photoId}, pinging whoever took it. */
@@ -34,7 +37,15 @@ public final class DiscordPings {
         String base = base(override);
         String cap = capSegment(DungeonTrain.relayBaseUrl());
         if (base == null || photoId <= 0 || cap.isEmpty()) return override;
-        return withParam(base, "ping_photo=" + photoId + "&photo_cap=" + cap);
+        return withParam(base, photoHint(photoId, cap));
+    }
+
+    static String playerHint(UUID player, PingType type) {
+        return "ping=" + undashed(player) + "&ping_type=" + type.wireId();
+    }
+
+    static String photoHint(int photoId, String cap) {
+        return "ping_photo=" + photoId + "&photo_cap=" + cap + "&ping_type=" + PingType.PHOTO_TRIBUTED.wireId();
     }
 
     /** {@code override} when set, else DP's own relay hook; {@code null} when posts don't go through the relay. */

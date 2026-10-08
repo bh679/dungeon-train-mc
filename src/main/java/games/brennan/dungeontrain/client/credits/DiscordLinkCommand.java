@@ -29,7 +29,8 @@ import java.util.concurrent.TimeUnit;
  *       code, plus an Open Discord link) and watches for the link to land. Only the code is copied:
  *       Discord runs a slash command only when it is picked from its list, so a pasted
  *       {@code /dtlink CODE} would post as a plain message.</li>
- *   <li>{@code /discord pings on|off} — keep the link but stop (or restart) the pings.</li>
+ *   <li>{@code /discord pings on|off} — keep the link but stop (or restart) the pings. Which kinds of
+ *       post ping is chosen in Options → Dungeon Train → Account.</li>
  * </ul>
  *
  * <p>A CLIENT command ({@link RegisterClientCommandsEvent}, the {@code FramerateThrottleCommand}
@@ -79,7 +80,10 @@ public final class DiscordLinkCommand {
                 CommunityLinkClient.Status status = asked.status();
                 CommunityLinkClient.Start start = asked.start();
                 boolean wasLinked = status != null && status.ok() && status.linked();
-                if (wasLinked) say(linkedLine(status.pings()));
+                if (wasLinked) {
+                    say(linkedLine(status.pings()));
+                    say(optionsHint());
+                }
                 if (!start.ok()) {
                     // Already linked and no new code is fine — the status line said what matters.
                     if (!wasLinked) say(error(start.error()));
@@ -93,6 +97,7 @@ public final class DiscordLinkCommand {
 
     private static int pings(boolean on) {
         CommunityLinkClient.setPings(on).whenComplete((r, err) -> onClient(() -> {
+            DiscordAccountState.invalidate(); // the Account tab asks again next time it opens
             if (err != null || r == null) say(error(CommunityLinkClient.Error.FAILED));
             else if (r.ok()) say(Component.translatable(r.on() ? "chat.dungeontrain.discord.pings_on"
                     : "chat.dungeontrain.discord.pings_off").withStyle(ChatFormatting.GREEN));
@@ -111,8 +116,11 @@ public final class DiscordLinkCommand {
             CommunityLinkClient.status().whenComplete((s, err) -> {
                 if (err == null && s != null && s.ok() && s.linked()) {
                     onClient(() -> {
-                        if (generation == watchGeneration) say(Component.translatable("chat.dungeontrain.discord.linked_now")
-                                .withStyle(ChatFormatting.GREEN));
+                        DiscordAccountState.invalidate();
+                        if (generation == watchGeneration) {
+                            say(Component.translatable("chat.dungeontrain.discord.linked_now").withStyle(ChatFormatting.GREEN));
+                            say(optionsHint());
+                        }
                     });
                     return;
                 }
@@ -152,6 +160,11 @@ public final class DiscordLinkCommand {
                         .withStyle(ChatFormatting.GREEN)
                 : Component.translatable("chat.dungeontrain.discord.linked_pings_off", command(COMMAND + " pings on"))
                         .withStyle(ChatFormatting.YELLOW);
+    }
+
+    /** Where to choose which kinds of post ping them. */
+    private static Component optionsHint() {
+        return Component.translatable("chat.dungeontrain.discord.options_hint").withStyle(ChatFormatting.GRAY);
     }
 
     /** A {@code /command} in chat that fills the chat box when clicked. */

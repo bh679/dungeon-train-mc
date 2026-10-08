@@ -68,7 +68,7 @@ public final class TributePhotoReporter {
             LOGGER.info("[DungeonTrain] {} paid tribute to their own photo — posting it to the tribute-photos channel.", name);
             DiscordService.get().postReportTopLevel(tributer, ownTitle(name), ownDescription(tributeNumber, cost),
                     List.of(), png, PHOTO_FILENAME, EMBED_COLOR,
-                    DiscordPings.forPlayer(DungeonTrain.tributeWebhookOverride(), tributer.getUUID()));
+                    DiscordPings.forPlayer(DungeonTrain.tributeWebhookOverride(), tributer.getUUID(), PingType.OWN_TRIBUTE));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] own tributed photo post failed: {}", t.toString());
         }

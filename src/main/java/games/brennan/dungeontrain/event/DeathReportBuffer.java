@@ -4,6 +4,7 @@ import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.DiscordPings;
+import games.brennan.dungeontrain.discord.PingType;
 import net.minecraft.Util;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -48,7 +49,7 @@ public final class DeathReportBuffer {
                              List<DeathField> fields, List<ItemStack> fallbackIcons, String webhookOverride) {
         PENDING.put(player.getUUID(),
                 new Pending(player, title, description, fields, fallbackIcons,
-                        DiscordPings.forPlayer(webhookOverride, player.getUUID()), // @-ping them if linked
+                        DiscordPings.forPlayer(webhookOverride, player.getUUID(), PingType.DEATH), // @-ping them if linked
                         Util.getMillis() + TIMEOUT_MS));
     }
 

@@ -6,6 +6,9 @@ import games.brennan.dungeontrain.client.bugresponse.BugIssue;
 import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
+import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
+import games.brennan.dungeontrain.client.credits.DiscordAccountState;
+import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
@@ -20,6 +23,7 @@ import games.brennan.dungeonbackup.client.BackupOptionsWidgets;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
+import games.brennan.dungeontrain.discord.PingType;
 import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
@@ -106,6 +110,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     /** Empty on a release en_us client, which is why the Translate row is conditional. */
     private String translateTarget = "";
+
+    /**
+     * Whether this screen has asked the relay for the Discord link yet. Per screen instance, and it
+     * survives {@code rebuildWidgets()} — the answer's own rebuild must not ask again.
+     */
+    private boolean accountRequested = false;
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
         // ".client." because gui.dungeontrain.options.title is already taken by the WORLD options screen.
@@ -239,6 +249,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 addPerformanceTips(list);
                 continue;
             }
+            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT) {
+                if (pending != null) {
+                    list.addSmall(pending, null);
+                    pending = null;
+                }
+                addDiscordAccount(list);
+                continue;
+            }
             // A group leader never shares a line with whatever came before it, so the rows that
             // belong together read as one block instead of being split across pair boundaries.
             if (ClientOptionsTab.startsGroup(row) && pending != null) {
@@ -306,6 +324,89 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     Component.translatable("gui.dungeontrain.bug_response.button.changes"),
                     () -> mc.setScreen(new VersionCompareScreen(this))), null);
         }
+    }
+
+    /**
+     * The Account tab: the player's Discord link as the relay last reported it ({@link DiscordAccountState}).
+     * Not linked → a line saying what linking does and a Link button (the Credits link screen). Linked →
+     * the master "All Discord pings" switch, then one toggle per {@link PingType}, greyed while the master
+     * is off. Every toggle writes straight to the relay and the tab redraws from its answer, so a failed
+     * write puts the toggle back and says so.
+     *
+     * <p>The first draw asks the relay once; its answer rebuilds the screen.</p>
+     */
+    private void addDiscordAccount(OptionsList list) {
+        if (!this.accountRequested) {
+            this.accountRequested = true;
+            DiscordAccountState.refresh(this::rebuildIfShown);
+        }
+        CommunityLinkClient.Status status = DiscordAccountState.status();
+        if (status == null) {
+            if (DiscordAccountState.phase() == DiscordAccountState.Phase.FAILED) {
+                CommunityLinkClient.Error error = DiscordAccountState.error();
+                Component why = Component.translatable(error == CommunityLinkClient.Error.NO_CONSENT
+                        ? "gui.dungeontrain.credits.link.no_consent" : "gui.dungeontrain.credits.link.failed");
+                list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H, why,
+                        Component.translatable("gui.dungeontrain.options.account.retry"), () -> {
+                            this.accountRequested = false;
+                            DiscordAccountState.invalidate();
+                            rebuildIfShown();
+                        }), null);
+            } else {
+                list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.account.checking")), null);
+            }
+            return;
+        }
+        if (!status.linked()) {
+            list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H,
+                    Component.translatable("gui.dungeontrain.options.account.not_linked"),
+                    Component.translatable("gui.dungeontrain.credits.community.link_action"), () -> {
+                        // Coming back re-runs init(); ask again then, so a fresh link shows at once.
+                        this.accountRequested = false;
+                        DiscordAccountState.invalidate();
+                        this.minecraft.setScreen(new DiscordLinkScreen(this, null));
+                    }), null);
+            return;
+        }
+        list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                Component.translatable("gui.dungeontrain.options.account.linked")), null);
+        if (DiscordAccountState.toggleFailed()) {
+            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                    Component.translatable("gui.dungeontrain.options.account.toggle_failed")), null);
+        }
+        list.addSmall(withTip(CycleButton.onOffBuilder(status.pings())
+                        .create(0, 0, WIDE_W, ROW_H, Component.translatable("gui.dungeontrain.options.account.pings_all"),
+                                (btn, on) -> DiscordAccountState.setMaster(on, this::rebuildIfShown)),
+                "gui.dungeontrain.options.account.pings_all.tip"), null);
+
+        boolean narrow = true;
+        for (PingType type : PingType.values()) {
+            for (Component c : onOffCandidates(pingKey(type))) {
+                if (this.font.width(c) > ROW_W - TEXT_PADDING) narrow = false;
+            }
+        }
+        AbstractWidget pending = null;
+        for (PingType type : PingType.values()) {
+            CycleButton<Boolean> toggle = CycleButton.onOffBuilder(status.types().getOrDefault(type, true))
+                    .create(0, 0, narrow ? ROW_W : WIDE_W, ROW_H, Component.translatable(pingKey(type)),
+                            (btn, on) -> DiscordAccountState.setType(type, on, this::rebuildIfShown));
+            toggle.active = status.pings();
+            withTip(toggle, pingKey(type) + ".tip");
+            if (!narrow) {
+                list.addSmall(toggle, null);
+            } else if (pending == null) {
+                pending = toggle;
+            } else {
+                list.addSmall(pending, toggle);
+                pending = null;
+            }
+        }
+        if (pending != null) list.addSmall(pending, null);
+    }
+
+    private static String pingKey(PingType type) {
+        return "gui.dungeontrain.options.account.pings." + type.key();
     }
 
     /** Rebuilds after a tip's action, unless that action already moved on to another screen. */
@@ -392,7 +493,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CREATIVE_MOD_BLOCKS_IN_SEARCH ->
                     onOffCandidates("gui.dungeontrain.editor_settings.mod_blocks_in_search");
             // Never measured: pack() expands it into full-width tip rows before asking.
-            case PERFORMANCE_TIPS -> List.of();
+            case PERFORMANCE_TIPS, DISCORD_ACCOUNT -> List.of();
         };
     }
 
@@ -639,6 +740,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
             // Expanded by pack() into several rows; there is no single widget for it.
             case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is packed, not built");
+            case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is packed, not built");
         };
     }
 

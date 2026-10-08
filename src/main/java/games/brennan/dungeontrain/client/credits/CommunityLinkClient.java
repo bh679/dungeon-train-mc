@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.chat.RelayChatClient;
+import games.brennan.dungeontrain.discord.PingType;
 import games.brennan.dungeontrain.net.relay.RelayTarget;
 import net.minecraft.client.Minecraft;
 import org.slf4j.Logger;
@@ -14,6 +15,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -60,20 +64,44 @@ public final class CommunityLinkClient {
     }
 
     /**
-     * Whether the relay has seen {@code /dtlink} for this uuid, and whether that link is @-pinged on the
-     * player's photos and death reports; {@code ok} false with an {@link Error} otherwise.
+     * Whether the relay has seen {@code /dtlink} for this uuid, whether that link is @-pinged at all
+     * ({@code pings}, the master switch) and on which kinds of post ({@code types} — every
+     * {@link PingType} present, on unless turned off); {@code ok} false with an {@link Error} otherwise.
      */
-    public record Status(boolean ok, boolean linked, boolean pings, Error error) {
+    public record Status(boolean ok, boolean linked, boolean pings, Map<PingType, Boolean> types, Error error) {
+        public Status {
+            types = Collections.unmodifiableMap(new EnumMap<>(withDefaults(types)));
+        }
+
         static Status of(Error error) {
-            return new Status(false, false, false, error);
+            return new Status(false, false, false, Map.of(), error);
+        }
+
+        /** Whether this kind of post pings — the master switch and the kind both on. */
+        public boolean pings(PingType type) {
+            return pings && types.getOrDefault(type, true);
         }
     }
 
-    /** The outcome of a pings toggle: {@code ok} with the new state, or an {@link Error}. */
-    public record Pings(boolean ok, boolean on, Error error) {
-        static Pings of(Error error) {
-            return new Pings(false, false, error);
+    /**
+     * The outcome of a pings toggle: {@code ok} with the master switch ({@code on}) and every kind as
+     * they now stand, or an {@link Error}.
+     */
+    public record Pings(boolean ok, boolean on, Map<PingType, Boolean> types, Error error) {
+        public Pings {
+            types = Collections.unmodifiableMap(new EnumMap<>(withDefaults(types)));
         }
+
+        static Pings of(Error error) {
+            return new Pings(false, false, Map.of(), error);
+        }
+    }
+
+    /** {@code types} with every {@link PingType} present — a kind the relay didn't mention is on. */
+    private static Map<PingType, Boolean> withDefaults(Map<PingType, Boolean> types) {
+        Map<PingType, Boolean> out = new EnumMap<>(PingType.class);
+        for (PingType t : PingType.values()) out.put(t, types == null || types.getOrDefault(t, true));
+        return out;
     }
 
     private CommunityLinkClient() {}
@@ -120,15 +148,24 @@ public final class CommunityLinkClient {
         }
     }
 
-    /** Turn the relay's @-pings on or off for this player's linked Discord account. Resolves off-thread. */
+    /** Turn the relay's @-pings on or off (the master switch) for this player's linked Discord. Resolves off-thread. */
     public static CompletableFuture<Pings> setPings(boolean on) {
+        return postPings(on, null);
+    }
+
+    /** Turn one kind of ping on or off for this player's linked Discord. Resolves off-thread. */
+    public static CompletableFuture<Pings> setPingType(PingType type, boolean on) {
+        return postPings(on, type);
+    }
+
+    private static CompletableFuture<Pings> postPings(boolean on, PingType type) {
         String uuid = ownUuid();
         if (uuid == null) return CompletableFuture.completedFuture(Pings.of(Error.NO_CONSENT));
         try {
             HttpRequest req = HttpRequest.newBuilder(URI.create(RelayTarget.live() + PINGS_PATH))
                 .timeout(REQUEST_TIMEOUT)
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(buildPingsPayload(uuid, on).toString()))
+                .POST(HttpRequest.BodyPublishers.ofString(buildPingsPayload(uuid, on, type).toString()))
                 .build();
             return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> parsePings(resp.statusCode(), resp.body()))
@@ -156,10 +193,11 @@ public final class CommunityLinkClient {
         return body;
     }
 
-    /** The {@code /community/link/pings} body. */
-    static JsonObject buildPingsPayload(String uuid, boolean on) {
+    /** The {@code /community/link/pings} body; {@code type} null for the master switch. */
+    static JsonObject buildPingsPayload(String uuid, boolean on, PingType type) {
         JsonObject body = buildStartPayload(uuid);
         body.addProperty("on", on);
+        if (type != null) body.addProperty("type", type.wireId());
         return body;
     }
 
@@ -185,7 +223,8 @@ public final class CommunityLinkClient {
             if (linked == null || !linked.isJsonPrimitive() || !linked.getAsJsonPrimitive().isBoolean()) {
                 return Status.of(Error.FAILED);
             }
-            return new Status(true, linked.getAsBoolean(), linked.getAsBoolean() && bool(o.get("pings")), Error.NONE);
+            return new Status(true, linked.getAsBoolean(), linked.getAsBoolean() && bool(o.get("pings")),
+                    types(o.get("types")), Error.NONE);
         }
         if (status == 429) return Status.of(Error.RATE_LIMITED);
         if (status == 503) return Status.of(Error.DISABLED);
@@ -199,7 +238,7 @@ public final class CommunityLinkClient {
             JsonObject o = object(body);
             JsonElement on = o == null ? null : o.get("pings");
             if (on == null || !on.isJsonPrimitive() || !on.getAsJsonPrimitive().isBoolean()) return Pings.of(Error.FAILED);
-            return new Pings(true, on.getAsBoolean(), Error.NONE);
+            return new Pings(true, on.getAsBoolean(), types(o.get("types")), Error.NONE);
         }
         if (status == 404) {
             JsonObject o = object(body);
@@ -209,6 +248,18 @@ public final class CommunityLinkClient {
         if (status == 503) return Pings.of(Error.DISABLED);
         if (ENDPOINT_MISSING.contains(status)) return Pings.of(Error.UNSUPPORTED);
         return Pings.of(Error.FAILED);
+    }
+
+    /** {@code {"death": false, ...}} → per-kind map; unknown kinds and non-booleans are ignored (left on). */
+    static Map<PingType, Boolean> types(JsonElement el) {
+        Map<PingType, Boolean> out = new EnumMap<>(PingType.class);
+        if (el == null || !el.isJsonObject()) return out;
+        for (Map.Entry<String, JsonElement> e : el.getAsJsonObject().entrySet()) {
+            JsonElement v = e.getValue();
+            if (v == null || !v.isJsonPrimitive() || !v.getAsJsonPrimitive().isBoolean()) continue;
+            PingType.byWireId(e.getKey()).ifPresent(t -> out.put(t, v.getAsBoolean()));
+        }
+        return out;
     }
 
     private static boolean bool(JsonElement el) {
