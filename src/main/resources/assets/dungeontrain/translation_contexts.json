@@ -5833,8 +5833,7 @@
   "screen"
  ],
  "gui.dungeontrain.prefab_delete.hint": [
-  "item",
-  "tooltip"
+  "item"
  ],
  "chat.dungeontrain.prefab_delete.needs_op": [
   "action_bar"

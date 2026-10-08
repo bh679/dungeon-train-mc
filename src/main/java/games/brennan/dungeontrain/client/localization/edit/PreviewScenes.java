@@ -86,13 +86,15 @@ final class PreviewScenes {
         g.pose().popPose();
     }
 
-    /** An item in an inventory slot mid-frame, hovered, its tooltip showing. */
+    /** An item in an inventory slot mid-frame, hovered, its tooltip showing; no item, the tooltip alone. */
     static void itemTooltip(GuiGraphics g, Font font, ItemStack stack, List<Component> lines, int width, int height) {
         int sx = width / 3;
         int sy = height / 3;
-        g.fill(sx - 1, sy - 1, sx + 17, sy + 17, 0xFF8B8B8B);
-        g.fill(sx, sy, sx + 16, sy + 16, 0x80FFFFFF);
-        g.renderItem(stack, sx, sy);
+        if (!stack.isEmpty()) {
+            g.fill(sx - 1, sy - 1, sx + 17, sy + 17, 0xFF8B8B8B);
+            g.fill(sx, sy, sx + 16, sy + 16, 0x80FFFFFF);
+            g.renderItem(stack, sx, sy);
+        }
         tooltip(g, font, lines.stream().map(Component::getVisualOrderText).toList(), sx + 8, sy + 8, width, height);
     }
 

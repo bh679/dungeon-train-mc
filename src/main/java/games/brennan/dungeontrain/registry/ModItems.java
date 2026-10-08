@@ -79,8 +79,8 @@ public final class ModItems {
     /**
      * Editor-only placeholder for someone else's photo album. Substituted at chest spawn time for a
      * read-only album another player filled (see {@code compat.photo.album.FoundAlbums#rollFound}),
-     * which burns once it has been looked through; with none to hand out, the slot rolls as a
-     * {@link #RANDOM_PLAYERPHOTO}.
+     * which burns once it has been looked through; with none to hand out, the slot holds the finder's
+     * own album ({@link #YOUR_PHOTOALBUM}) instead.
      */
     public static final DeferredItem<Item> RANDOM_PLAYERPHOTOALBUM = ITEMS.register(
         "random_playerphotoalbum",
