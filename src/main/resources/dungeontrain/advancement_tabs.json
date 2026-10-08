@@ -210,7 +210,8 @@
     "dungeontrain:enchiridion/shh": "always",
     "dungeontrain:enchiridion/wither_watcher": "always",
     "dungeontrain:dungeon_train/completionist": "always",
-    "dungeontrain:dungeon_train/train_explored": "always"
+    "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
+    "dungeontrain:dungeon_train/secrete_menu": "earned"
   },
   "complete": {
     "dungeontrain:dungeon_train/train_explored": "dungeontrain:dungeon_train/tab_train_explorer",
