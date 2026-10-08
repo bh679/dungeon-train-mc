@@ -50,7 +50,8 @@ class LifeChallengeAdvancementsTest {
     void disqualifiable() {
         assertTrue(LifeDisqualification.disqualifiableIds().containsAll(java.util.List.of(
                 LifeChallengeAdvancements.APPLE_A_DAY, LifeChallengeAdvancements.SELF_MEDICATED,
-                LifeChallengeAdvancements.LAST_MELON, LifeChallengeAdvancements.NAKED_AND_AFRAID,
+                LifeChallengeAdvancements.LAST_MELON, LifeChallengeAdvancements.THREE_MELONS,
+                LifeChallengeAdvancements.NAKED_AND_AFRAID,
                 LifeChallengeAdvancements.NAKED_AND_UNAFRAID)));
     }
 
@@ -58,7 +59,8 @@ class LifeChallengeAdvancementsTest {
     @DisplayName("JSON: in the Challenges tab, code-granted, thresholds 100 / 1000")
     void json() throws IOException {
         Object[][] want = {{"apple_a_day", "tab_challenges", 100}, {"self_medicated", "apple_a_day", 1000},
-                {"last_melon", "tab_challenges", 100}, {"naked_and_afraid", "tab_challenges", 100},
+                {"last_melon", "tab_challenges", 100}, {"three_melons", "last_melon", 1000},
+                {"naked_and_afraid", "tab_challenges", 100},
                 {"naked_and_unafraid", "naked_and_afraid", 1000}};
         for (Object[] w : want) {
             JsonObject adv = JsonParser.parseString(Files.readString(

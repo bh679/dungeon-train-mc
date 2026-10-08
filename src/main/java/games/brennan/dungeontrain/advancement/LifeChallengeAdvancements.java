@@ -23,7 +23,7 @@ import java.util.function.Supplier;
  * <ul>
  *   <li>"An apple a day keeps the doctor away." / "Self Medicated" — never an apple or an edible
  *       backpack in the inventory ({@link ModDataAttachments#HELD_APPLE_THIS_LIFE});</li>
- *   <li>The Last Melon — eat nothing but melon ({@link ModDataAttachments#ATE_NON_MELON_THIS_LIFE});</li>
+ *   <li>The Last Melon and So you got three melons? (100 / 1,000) — eat nothing but melon ({@link ModDataAttachments#ATE_NON_MELON_THIS_LIFE});</li>
  *   <li>Naked and Afraid / Naked and Unafraid — never wear armor; an elytra is allowed
  *       ({@link ModDataAttachments#WORE_ARMOR_THIS_LIFE}).</li>
  * </ul>
@@ -40,11 +40,13 @@ public final class LifeChallengeAdvancements {
     public static final ResourceLocation APPLE_A_DAY = dt("dungeon_train/apple_a_day");
     public static final ResourceLocation SELF_MEDICATED = dt("dungeon_train/self_medicated");
     public static final ResourceLocation LAST_MELON = dt("dungeon_train/last_melon");
+    /** "So you got three melons?" — The Last Melon's next tier. */
+    public static final ResourceLocation THREE_MELONS = dt("dungeon_train/three_melons");
     public static final ResourceLocation NAKED_AND_AFRAID = dt("dungeon_train/naked_and_afraid");
     public static final ResourceLocation NAKED_AND_UNAFRAID = dt("dungeon_train/naked_and_unafraid");
 
     public static final List<ResourceLocation> APPLE_TIERS = List.of(APPLE_A_DAY, SELF_MEDICATED);
-    public static final List<ResourceLocation> MELON_TIERS = List.of(LAST_MELON);
+    public static final List<ResourceLocation> MELON_TIERS = List.of(LAST_MELON, THREE_MELONS);
     public static final List<ResourceLocation> NAKED_TIERS = List.of(NAKED_AND_AFRAID, NAKED_AND_UNAFRAID);
 
     /** Apples: vanilla's three and BetterNether's black apples. The black apple seed is not an apple. */
@@ -65,6 +67,7 @@ public final class LifeChallengeAdvancements {
         new Tier(APPLE_A_DAY, 100, ModDataAttachments.HELD_APPLE_THIS_LIFE),
         new Tier(SELF_MEDICATED, 1000, ModDataAttachments.HELD_APPLE_THIS_LIFE),
         new Tier(LAST_MELON, 100, ModDataAttachments.ATE_NON_MELON_THIS_LIFE),
+        new Tier(THREE_MELONS, 1000, ModDataAttachments.ATE_NON_MELON_THIS_LIFE),
         new Tier(NAKED_AND_AFRAID, 100, ModDataAttachments.WORE_ARMOR_THIS_LIFE),
         new Tier(NAKED_AND_UNAFRAID, 1000, ModDataAttachments.WORE_ARMOR_THIS_LIFE));
 

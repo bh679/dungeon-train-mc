@@ -200,7 +200,8 @@
     "dungeontrain:enchiridion/voyeur": true,
     "dungeontrain:enchiridion/war_correspondent": true,
     "dungeontrain:enchiridion/wildlife_photographer": true,
-    "dungeontrain:enchiridion/wither_watcher": true
+    "dungeontrain:enchiridion/wither_watcher": true,
+    "dungeontrain:dungeon_train/three_melons": true
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",

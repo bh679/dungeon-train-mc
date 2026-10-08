@@ -247,10 +247,14 @@ def duplicate_json(adv_id: str, source: dict, spec: dict) -> dict:
     return {"parent": spec["parent"], **body}
 
 
+CODE_TRIGGERS = ("minecraft:impossible", "dungeontrain:code_granted")
+
+
 def is_code_granted(adv: dict) -> bool:
-    """Every criterion is minecraft:impossible: only code grants it (the burrito, tab-complete ones, copies)."""
+    """Every criterion is one only code satisfies: ``impossible`` (the burrito, tab-complete ones, copies) or
+    ``dungeontrain:code_granted`` (the per-life challenges, whose code lists each id)."""
     crits = (adv.get("criteria") or {}).values()
-    return bool(crits) and all(c.get("trigger") == "minecraft:impossible" for c in crits)
+    return bool(crits) and all(c.get("trigger") in CODE_TRIGGERS for c in crits)
 
 
 def new_json(adv_id: str, spec: dict) -> dict:
@@ -368,8 +372,9 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
                 elif f == "title":
                     raise ApplyError(f"{adv_id}: a duplicate needs a title")
             if is_code_granted(source):
-                report.todo.append(f"{adv_id} duplicates an advancement only code grants: it is granted by nothing "
-                                   f"yet — give it a real criterion in {shown(path)}, or have code grant it.")
+                report.todo.append(f"{adv_id} duplicates an advancement granted by code: nothing grants it yet — "
+                                   f"add it where its original is granted (e.g. LifeChallengeAdvancements), or give "
+                                   f"it a real criterion in {shown(path)}.")
         elif spec.get("copyOf"):
             src_path = adv_path(spec["copyOf"], adv_dir)
             source = new_files.get(src_path) or json.loads(existing(spec["copyOf"], adv_dir).read_text())

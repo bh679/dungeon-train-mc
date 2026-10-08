@@ -5714,6 +5714,15 @@
       ]
     }
   },
+  "advancements.dungeontrain.dungeon_train.three_melons.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1000",
+        "500"
+      ]
+    }
+  },
   "advancements.dungeontrain.dungeon_train.naked_and_afraid.description": {
     "1": {
       "label": "carriages to travel, from the requirement",

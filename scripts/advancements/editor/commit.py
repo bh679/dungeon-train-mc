@@ -28,7 +28,7 @@ import capstone_rules
 PROTECTED_BRANCHES = ("main", "master")
 VERSION_RE = re.compile(r"^(mod_version=)(\d+)\.(\d+)\.(\d+)[ \t]*$", re.M)
 #: Save todos that leave the repo unfinished (CI would fail): these stop the commit.
-BLOCKING_TODO = re.compile(r"^(Translate|Re-translate)\b|granted by nothing")
+BLOCKING_TODO = re.compile(r"^(Translate|Re-translate)\b|granted by nothing|granted by code")
 
 
 class CommitError(RuntimeError):

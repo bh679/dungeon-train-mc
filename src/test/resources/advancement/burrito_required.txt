@@ -116,6 +116,7 @@ dungeontrain:dungeon_train/the_long_run
 dungeontrain:dungeon_train/the_long_way_back
 dungeontrain:dungeon_train/the_same_but_different
 dungeontrain:dungeon_train/the_upside_down
+dungeontrain:dungeon_train/three_melons
 dungeontrain:dungeon_train/train_explored
 dungeontrain:dungeon_train/train_inside_a_train
 dungeontrain:dungeon_train/upgraded_backpack

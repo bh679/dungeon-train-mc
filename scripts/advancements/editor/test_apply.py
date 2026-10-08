@@ -196,7 +196,7 @@ def test_new_tab_unlocked_by_needs_no_trigger():
     data = json.loads(ws.text("dungeon_train/tab_challenges"))
     assert data["display"]["hidden"] is True and data["display"]["show_toast"] is False
     assert json.loads(ws.tabs.read_text())["unlockedBy"] == {tab: DT + "carts_100"}
-    assert not any("granted by nothing" in t for t in report.todo), report.todo
+    assert not any("granted by" in t for t in report.todo), report.todo
 
 
 def test_change_and_clear_a_tab_unlock():
@@ -263,7 +263,7 @@ def test_duplicate_is_a_child_earned_the_same_way():
     assert lang[key + "title"] == "A Thousand Carriages" and lang[key + "hint"] == "Keep going."
     assert ws.text("dungeon_train/carts_100") == CARTS, "the original is untouched"
     assert any("Translate the new" in t for t in report.todo)
-    assert not any("granted by nothing" in t for t in report.todo), report.todo
+    assert not any("granted by" in t for t in report.todo), report.todo
 
 
 def test_duplicate_of_a_code_granted_advancement_says_so():
@@ -274,8 +274,17 @@ def test_duplicate_of_a_code_granted_advancement_says_so():
         "criteria": {"explored": {"trigger": "minecraft:impossible"}}, "requirements": [["explored"]]}))
     report = ws.apply({"created": {DT + "explored_copy": {"parent": DT + "explored", "duplicateOf": DT + "explored",
                                                           "title": "Explored Again"}}})
-    assert any("granted by nothing" in t for t in report.todo), report.todo
+    assert any("granted by code" in t for t in report.todo), report.todo
     assert COMMIT.blocking(report.todo), "Save & commit stops for it"
+    ws2 = Workspace()
+    (ws2.adv / "dungeon_train" / "melon.json").write_text(json.dumps({
+        "parent": DT + "root", "display": {"icon": {"id": "minecraft:melon"}, "title": {"translate": "m.title"},
+                                           "description": {"translate": "m.description"}},
+        "criteria": {"challenge": {"trigger": "dungeontrain:code_granted", "conditions": {"threshold": 100}}},
+        "requirements": [["challenge"]]}))
+    report = ws2.apply({"created": {DT + "melons": {"parent": DT + "melon", "duplicateOf": DT + "melon",
+                                                    "title": "More Melons", "value": 1000}}})
+    assert any("granted by code" in t for t in report.todo), "a per-life challenge copy needs its code too"
 
 
 # ---------- Save & commit (commit.py) ----------
