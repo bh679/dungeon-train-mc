@@ -576,7 +576,7 @@ public final class SharedPhotos {
         int viewsLeft = viewsLeft(held);
         Optional<int[]> paper = PhotoPaperTextures.paper(WornPhotographs.forViewsLeft(viewsLeft, maxViews(held), photoId));
         encodeThen(server, data.get(), (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, paper), exposureId,
-                png -> TributePhotoReporter.post(player, photographer, tributeNumber, cost, hands, viewsLeft, png));
+                png -> TributePhotoReporter.post(player, photographer, photoId, tributeNumber, cost, hands, viewsLeft, png));
     }
 
     /** Registration only — no network, no game state. Called once at mod construction. */

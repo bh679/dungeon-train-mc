@@ -63,9 +63,9 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("Tab order is General, Backups, Train, Editor, Performance")
+    @DisplayName("Tab order is General, Account, Backups, Train, Editor, Performance")
     void tabOrder() {
-        assertEquals(List.of(ClientOptionsTab.GENERAL, ClientOptionsTab.BACKUPS,
+        assertEquals(List.of(ClientOptionsTab.GENERAL, ClientOptionsTab.ACCOUNT, ClientOptionsTab.BACKUPS,
                         ClientOptionsTab.TRAIN, ClientOptionsTab.EDITOR, ClientOptionsTab.PERFORMANCE),
                 List.of(ClientOptionsTab.values()));
     }
@@ -73,16 +73,18 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: twenty-five rows, none of the conditional rows present")
+    @DisplayName("Plain client: twenty-six rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(25, rows.size());
+        assertEquals(26, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
         // Unconditional: the page must be reachable even on the barest client.
         assertTrue(rows.contains(ClientOptionsTab.Row.AI_POLICY));
+        // The Discord account block is there for everyone — it is where an unlinked player links.
+        assertTrue(rows.contains(ClientOptionsTab.Row.DISCORD_ACCOUNT));
     }
 
     @Test
@@ -150,7 +152,7 @@ final class ClientOptionsTabTest {
     void allConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true, true);
 
-        assertEquals(28, rows.size());
+        assertEquals(29, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }

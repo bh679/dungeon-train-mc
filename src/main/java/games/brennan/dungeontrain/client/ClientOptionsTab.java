@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The five tabs {@link DungeonTrainClientOptionsScreen} files its rows under, and which one the
+ * The six tabs {@link DungeonTrainClientOptionsScreen} files its rows under, and which one the
  * player is currently looking at.
  *
  * <p>Same split-by-subject shape as the editor menu's {@link games.brennan.dungeontrain.client.menu.EditorMenuTab},
@@ -14,6 +14,8 @@ import java.util.List;
  * <ul>
  *   <li>{@link #GENERAL} — the client and the player: content rating, chat lines, the hotkey,
  *       the backpack button, translation.</li>
+ *   <li>{@link #ACCOUNT} — the player's linked Discord account: link it, and which posts @-ping them
+ *       there (their death report, their photos, their milestones).</li>
  *   <li>{@link #BACKUPS} — the restore points Dungeon Backup keeps of the player's builds and
  *       progress: where, how many, clear them, and whether to confirm build re-uploads.</li>
  *   <li>{@link #TRAIN} — the ride itself: engine volume, whether custom train content loads, and
@@ -34,6 +36,7 @@ import java.util.List;
 public enum ClientOptionsTab {
 
     GENERAL("general"),
+    ACCOUNT("account"),
     BACKUPS("backups"),
     TRAIN("train"),
     EDITOR("editor"),
@@ -87,6 +90,14 @@ public enum ClientOptionsTab {
         AI_POLICY,
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
         TRANSLATE,
+
+        // --- Account ---
+        /**
+         * Stands for the whole Discord-account block: the screen expands it into the link state plus,
+         * once linked, one toggle per kind of ping. What it shows comes from the relay at draw time
+         * ({@code DiscordAccountState}), so it cannot be fixed enum rows of its own.
+         */
+        DISCORD_ACCOUNT,
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
@@ -188,6 +199,7 @@ public enum ClientOptionsTab {
                     rows.add(Row.TRANSLATE);
                 }
             }
+            case ACCOUNT -> rows.add(Row.DISCORD_ACCOUNT);
             case BACKUPS -> {
                 // Its own tab: the block outgrew a heading on General once it had four rows and
                 // a sibling mod (Dungeon Backup) owning three of them.
