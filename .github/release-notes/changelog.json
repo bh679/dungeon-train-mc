@@ -24048,6 +24048,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "item-preview-empty-slot-fix",
+      "version": "0.1186.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Item previews in the translation editor show their text again",
+      "summary": "Previewing an item tooltip line in the translation editor \u2014 such as the prefab tab's \"Cmd/Ctrl-click to delete\" hint \u2014 no longer opens on an empty slot. The line now shows on its own, and once you've hovered the item in game, inside its real tooltip.",
+      "highlights": [
+        "Tooltip lines added while a tooltip is drawn are now recorded for the preview",
+        "The delete hint no longer offers a misleading widget-tooltip preview"
+      ],
+      "pr": 1872,
+      "date": "2026-10-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
