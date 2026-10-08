@@ -103,7 +103,7 @@ public final class SharedPhotos {
     public static final String SHARED_VIEWS_KEY = "dt_shared_photo_views";
 
     /** Views a photo starts with, and goes back to after a Tribute (the relay's PLAYER_PHOTOS_VIEWS). */
-    public static final int VIEWS_MAX = 10;
+    public static final int VIEWS_MAX = 5;
 
     /** A photographer's Tribute to their own print multiplies its views by this (the relay's BOOST_FACTOR). */
     public static final int OWN_BOOST_FACTOR = 2;
