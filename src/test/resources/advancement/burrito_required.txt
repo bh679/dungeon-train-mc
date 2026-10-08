@@ -83,7 +83,6 @@ dungeontrain:dungeon_train/seasoned_traveller
 dungeontrain:dungeon_train/settling_in
 dungeontrain:dungeon_train/summon_the_creator
 dungeontrain:dungeon_train/thats_what_friends_are_for
-dungeontrain:dungeon_train/the_creator_answers
 dungeontrain:dungeon_train/the_denamed
 dungeontrain:dungeon_train/the_great_beyond
 dungeontrain:dungeon_train/the_long_run

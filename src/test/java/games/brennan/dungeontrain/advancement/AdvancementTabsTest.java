@@ -219,12 +219,12 @@ class AdvancementTabsTest {
     }
 
     @Test
-    @DisplayName("Dungeon Train Explored sits in Dungeon Train under The Enchiridion's gateway, granted by code")
+    @DisplayName("Dungeon Train Explored sits in Dungeon Train under Dungeon Train Explorer, granted by code")
     void trainExploredPlacement() throws IOException {
         Map<String, JsonObject> all = advancements();
         JsonObject adv = all.get(DT + "train_explored");
         assertNotNull(adv);
-        assertEquals("dungeontrain:" + DT + "gate_enchiridion", adv.get("parent").getAsString());
+        assertEquals("dungeontrain:" + DT + "carts_100", adv.get("parent").getAsString());
         assertEquals(DT + "root", tabOf(all, DT + "train_explored"));
         for (JsonElement c : adv.getAsJsonObject("criteria").asMap().values()) {
             assertEquals("minecraft:impossible", c.getAsJsonObject().get("trigger").getAsString());

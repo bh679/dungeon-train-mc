@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/gate_enchiridion",
   "display": {
     "icon": { "id": "minecraft:minecart" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.carts_100.title" },

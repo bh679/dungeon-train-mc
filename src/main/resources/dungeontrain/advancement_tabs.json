@@ -22,5 +22,8 @@
   },
   "unlockedBy": {
     "dungeontrain:dungeon_train/tab_challenges": "dungeontrain:dungeon_train/carts_100"
+  },
+  "burrito": {
+    "dungeontrain:dungeon_train/the_creator_answers": false
   }
 }

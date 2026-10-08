@@ -1,7 +1,7 @@
 {
-  "parent": "dungeontrain:dungeon_train/gate_enchiridion",
+  "parent": "dungeontrain:dungeon_train/carts_100",
   "display": {
-    "icon": { "id": "minecraft:filled_map" },
+    "icon": { "id": "minecraft:furnace_minecart" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.train_explored.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.train_explored.description" },
     "frame": "challenge",
