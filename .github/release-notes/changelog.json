@@ -24087,9 +24087,9 @@
       ],
       "pr": 1873,
       "date": "2026-10-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
     },
     {
       "id": "books-arm-on-pickup",
@@ -24104,9 +24104,9 @@
       "highlights": [],
       "pr": 1875,
       "date": "2026-10-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
     },
     {
       "id": "camera-photo-trade-values",
@@ -24122,9 +24122,9 @@
       "highlights": [],
       "pr": 1877,
       "date": "2026-10-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
     },
     {
       "id": "edible-backpacks-are-food",
@@ -24138,9 +24138,9 @@
       "summary": "A backpack fills your hunger like an apple, and a golden one works like a golden apple.",
       "highlights": [],
       "date": "2026-10-08",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
     }
   ]
 }
