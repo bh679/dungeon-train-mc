@@ -15,6 +15,7 @@
     "LightningBoltVisualOnlyMixin",
     "FlowingFluidExternalWaterMixin",
     "AdvancementVisibilityEvaluatorMixin",
+    "AdvancementTreeOrderMixin",
     "PlayerAdvancementsRehomeMixin",
     "ServerAdvancementManagerRequirementsMixin",
     "BedBlockMixin",
