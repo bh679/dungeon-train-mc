@@ -80,14 +80,15 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
-    @DisplayName("books and photos stay out of the burrito; the start-again wipe follows the editor's per-advancement setting")
+    @DisplayName("books and photos stay out of the burrito by default; the editor's settings decide both lists")
     void outsideTheBurrito() {
-        // (The Enchiridion's own head was set into the burrito in the advancement editor; its books stay out.)
         for (String path : List.of("dungeon_train/taking_notes",
                 "dungeon_train/nothing_but_books", "enchiridion/say_cheese", "enchiridion/photo_stacks")) {
-            assertFalse(CompletionistAdvancement.isRequiredId(rl(path), Set.of(), true), path);
+            Boolean required = TabGateways.layout().burrito().get(rl(path).toString());
+            assertEquals(required != null && required, CompletionistAdvancement.isRequiredId(rl(path), Set.of(), true), path);
             Boolean reset = TabGateways.layout().startAgainReset().get(rl(path).toString());
-            assertEquals(reset != null && reset, StartAgainAdvancement.isWiped(rl(path), false), path);
+            boolean wiped = reset != null ? reset : CompletionistAdvancement.isRequiredId(rl(path), Set.of(), true);
+            assertEquals(wiped, StartAgainAdvancement.isWiped(rl(path), CompletionistAdvancement.isRequiredId(rl(path), Set.of(), true)), path);
         }
     }
 

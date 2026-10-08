@@ -194,7 +194,7 @@ final class BandAdvancementsTest {
         assertFalse(root.has("parent"));
         assertTrue(root.getAsJsonObject("display").has("background"));
         JsonObject twin = advancement("dungeon_train/secrete_menu");
-        assertEquals("dungeontrain:dungeon_train/gate_enchiridion", twin.get("parent").getAsString());
+        assertEquals("dungeontrain:dungeon_train/completionist", twin.get("parent").getAsString()); // under the Everything Burrito (editor)
         for (JsonObject json : List.of(root, twin)) {
             assertTrue(json.getAsJsonObject("display").get("hidden").getAsBoolean());
             assertEquals("challenge", json.getAsJsonObject("display").get("frame").getAsString());

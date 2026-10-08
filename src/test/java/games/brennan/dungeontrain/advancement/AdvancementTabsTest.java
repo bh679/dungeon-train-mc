@@ -328,24 +328,16 @@ class AdvancementTabsTest {
     }
 
     @Test
-    @DisplayName("the Everything Burrito needs the Dungeon Train tab only: other tabs count through their tab-complete advancements")
+    @DisplayName("by default the Everything Burrito needs the Dungeon Train tab only; the editor's per-advancement setting wins")
     void burritoIsTheDungeonTrainTab() throws IOException {
-        Map<String, JsonObject> all = advancements();
-        java.util.function.Predicate<String> required = path -> CompletionistAdvancement.isRequiredId(
-            ResourceLocation.fromNamespaceAndPath("dungeontrain", path), Set.of(), (DT + "root").equals(tabOf(all, path)));
-        for (String path : List.of(DT + "reached_nether", DT + "carts_1000", DT + "chests_100_unique", DT + "a_silent_friend")) {
-            assertFalse((DT + "root").equals(tabOf(all, path)), path + " is outside the Dungeon Train tab");
-            assertFalse(required.test(path), path + " counts through its tab-complete advancement, not directly");
-        }
-        for (String path : List.of(DT + "train_explored", DT + "all_others", DT + "challenge_complete", DT + "carts_100",
-                DT + "heros_handbook")) {
-            assertTrue(required.test(path), path);
-        }
-        for (String path : List.of(DT + "all_out_of_secrets", DT + "fully_developed")) {
-            assertFalse(required.test(path), path + " set out of the burrito in the editor");
-        }
-        assertTrue(required.test(DT + "the_enchiridion"), "set into the burrito in the editor, though it heads its own tab");
-        assertFalse(CompletionistAdvancement.isRequiredId(ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "all_out_of_secrets"),
-            Set.of(), true), "an editor override wins over the tab");
+        ResourceLocation probe = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "__no_override_probe");
+        assertTrue(CompletionistAdvancement.isRequiredId(probe, Set.of(), true), "in the Dungeon Train tab: counts by default");
+        assertFalse(CompletionistAdvancement.isRequiredId(probe, Set.of(), false), "another tab: not by default");
+        TabGateways.Layout layout = shippedLayout();
+        layout.burrito().forEach((id, required) -> {
+            ResourceLocation rl = ResourceLocation.parse(id);
+            if (TabGateways.isLinked(rl)) return;
+            assertEquals(required, CompletionistAdvancement.isRequiredId(rl, Set.of(), !required), id + ": the setting wins over the tab");
+        });
     }
 }

@@ -42,6 +42,7 @@ class CapstoneNeedsTest {
         add(all, DT + "tab_train_explorer", null);
         add(all, DT + "reached_nether", DT + "tab_train_explorer");
         add(all, DT + "train_explored_tab", DT + "tab_train_explorer");
+        add(all, DT + "te_probe", DT + "tab_train_explorer"); // no burrito setting in the editor: the tab rule decides
         tree = new AdvancementTree();
         tree.addAll(all);
         layout = new TabGateways.Layout(
@@ -86,7 +87,7 @@ class CapstoneNeedsTest {
     void burritoNeedsTheDungeonTrainTab() {
         ResourceLocation burrito = ResourceLocation.parse(DT + "completionist");
         assertTrue(CapstoneNeeds.needs(layout, burrito, node(DT + "carts_100")));
-        assertFalse(CapstoneNeeds.needs(layout, burrito, node(DT + "reached_nether")), "Train Explorer counts through Explored");
+        assertFalse(CapstoneNeeds.needs(layout, burrito, node(DT + "te_probe")), "Train Explorer counts through Explored by default");
         assertFalse(CapstoneNeeds.needs(layout, burrito, node(DT + "completionist")), "never itself");
         assertFalse(CapstoneNeeds.needs(layout, ResourceLocation.parse(DT + "carts_100"), node(DT + "root")), "not a capstone");
     }
