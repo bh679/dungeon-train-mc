@@ -24099,12 +24099,9 @@
         "fix",
         "books"
       ],
-      "title": "Found books are yours the moment you take them",
-      "summary": "Books you sweep straight from a chest or shelf into your pack now behave just like ones you've picked up in hand. They count as yours, and they burn if you let them go.",
-      "highlights": [
-        "Books carried in your pack burn when dropped, even if you never opened them.",
-        "Books left in chests and on shelves stay put."
-      ],
+      "title": "Book fixes",
+      "summary": "Books behave the same however they reach your inventory.",
+      "highlights": [],
       "pr": 1875,
       "date": "2026-10-08",
       "released": false,
