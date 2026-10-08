@@ -121,7 +121,6 @@ function wireMenu(id) {
     else if (a === 'tabRight') moveTab(id, 1);
     else if (a === 'reset') resetNode(id);
     else if (a === 'delete') deleteCreated(id);
-    else if (a === 'moreIcons') toggleMoreIcons(id);
     else if (a === 'moreBgs') { moreBgsOpen = !moreBgsOpen; fillMenu(id); if (moreBgsOpen) { const q = menu.querySelector('#mBgSearch'); q && q.focus(); } }
   }));
   on('#mKids', 'change', e => { view.withChildren = e.target.checked; saveView(); renderControls(layoutCache); fillMenu(id); });
@@ -146,7 +145,7 @@ function wireMenu(id) {
   });
   const wireIcons = root => root.querySelectorAll('[data-item]').forEach(b => b.addEventListener('click', () => setIcon(id, b.dataset.item)));
   wireIcons(menu);
-  on('#mIconSearch', 'input', e => { iconQuery = e.target.value; const box = menu.querySelector('#mIconMore'); box.innerHTML = moreIconButtons(layoutCache.E.nodes[id]); wireIcons(box); });
+  on('#mIconSearch', 'input', e => { iconQuery = e.target.value; const box = menu.querySelector('#mIcons'); box.innerHTML = iconButtons(layoutCache.E.nodes[id]); box.scrollTop = 0; wireIcons(box); loadAllIcons(); });
   const wireBgs = root => root.querySelectorAll('[data-bg]').forEach(b => b.addEventListener('click', () => commit(ed => { ed.bgs[id] = b.dataset.bg; }, `Background set to ${bgName(b.dataset.bg)}.`)));
   wireBgs(menu);
   on('#mBgSearch', 'input', e => { bgQuery = e.target.value; const box = menu.querySelector('#mBgMore'); box.innerHTML = moreBgButtons(layoutCache.E.nodes[id].bg); wireBgs(box); });
@@ -218,44 +217,29 @@ function visibilitySection(n, isRoot) {
 }
 
 // ---------- icons ----------
-let moreIconsOpen = false, iconQuery = '';
+// One grid: empty search shows the usual icons, typing searches every item in the game.
+let iconQuery = '';
+const ICON_CAP = 600;
 function iconButton(itemId, uri, current) {
   const name = esc(itemId.split(':')[1].replace(/_/g, ' '));
   return `<button type="button" data-item="${esc(itemId)}" class="${itemId === current ? 'on' : ''}" title="${name}" aria-label="${name}"><i style="background-image:url(${uri})"></i></button>`;
 }
 function iconSection(n) {
-  const current = M.iconIds[n.i];
-  const grid = M.iconIds.map((itemId, i) => iconButton(itemId, IC[i], current)).join('');
-  const more = moreIconsOpen
-    ? (MORE_ICONS ? `<input type="text" id="mIconSearch" placeholder="Search ${Object.keys(MORE_ICONS).length} items" value="${esc(iconQuery)}"><div class="icons more-list" id="mIconMore">${moreIconButtons(n)}</div>`
-                  : '<div class="hint">Loading every item\u2026</div>')
-    : '';
-  return `<div class="sec"><span>Icon</span><div class="icons" id="mIcons">${grid}<button type="button" class="more" data-act="moreIcons" aria-expanded="${moreIconsOpen}" title="More icons" aria-label="More icons">+</button></div>${more}</div>`;
+  const total = M.iconIds.length + Object.keys(MORE_ICONS || {}).filter(k => !(k in ICON_AT)).length;
+  const placeholder = MORE_ICONS ? `Search ${total} items` : 'Search every item';
+  return `<div class="sec"><span>Icon</span><input type="text" id="mIconSearch" placeholder="${placeholder}" value="${esc(iconQuery)}"><div class="icons" id="mIcons">${iconButtons(n)}</div></div>`;
 }
-function moreIconButtons(n) {
+function iconButtons(n) {
+  const current = M.iconIds[n.i];
   const q = iconQuery.trim().toLowerCase().replace(/ /g, '_');
-  const current = M.iconIds[n.i];
-  // Search covers every item, the ones already in the grid above included.
-  const all = { ...MORE_ICONS };
+  if (!q) return M.iconIds.map((itemId, i) => iconButton(itemId, IC[i], current)).join('');
+  const all = { ...(MORE_ICONS || {}) };
   M.iconIds.forEach((k, i) => { all[k] = IC[i]; });
-  const ids = Object.keys(all).sort().filter(k => q ? k.includes(q) : !(k in ICON_AT));
-  if (!ids.length) return '<span class="hint">No item matches.</span>';
-  return ids.slice(0, 600).map(k => iconButton(k, all[k], current)).join('')
-    + (ids.length > 600 ? `<span class="hint">${ids.length - 600} more: search to narrow.</span>` : '');
-}
-async function toggleMoreIcons(id) {
-  moreIconsOpen = !moreIconsOpen;
-  fillMenu(id);
-  if (!moreIconsOpen || MORE_ICONS) { const q = menu.querySelector('#mIconSearch'); q && q.focus(); return; }
-  try {
-    const res = await fetch('/api/icons');
-    if (!res.ok) throw new Error(res.statusText);
-    MORE_ICONS = await res.json();
-  } catch (err) {
-    MORE_ICONS = {};
-    toast(`Couldn\u2019t load more icons: ${err.message}`);
-  }
-  if (selected === id && !menu.hidden) fillMenu(id);
+  const ids = Object.keys(all).filter(k => k.includes(q)).sort();
+  const loading = !MORE_ICONS ? '<span class="hint">Loading every item\u2026</span>' : '';
+  if (!ids.length) return loading || '<span class="hint">No item matches.</span>';
+  return ids.slice(0, ICON_CAP).map(k => iconButton(k, all[k], current)).join('') + loading
+    + (ids.length > ICON_CAP ? `<span class="hint">${ids.length - ICON_CAP} more: keep typing to narrow.</span>` : '');
 }
 function setIcon(id, itemId) {
   iconIndex(itemId); // make sure the runtime table can draw it

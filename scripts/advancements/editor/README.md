@@ -2,7 +2,7 @@
 
 Edit Dungeon Train's advancement tabs on a copy of the real advancements screen: the vanilla window,
 tab sprites and item icons, read straight out of the game jars. Click an advancement to change its
-**parent**, **tab**, **required value**, **icon** (the **+** searches every item in the game), and whether it **counts towards the Everything
+**parent**, **tab**, **required value**, **icon** (its search box looks through every item in the game), and whether it **counts towards the Everything
 Burrito** and is **reset by It's Not That Simple**. On a tab's first advancement you can also change
 the **tab name**, **background** (any block texture, via **+**), **tab order** and what it is
 **unlocked by**. **New tab** makes a tab and opens it with those fields first. You can also drag an

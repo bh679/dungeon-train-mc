@@ -6,14 +6,33 @@ const M = window.MOCK, SP = M.sprites, IC = M.icons;
 // grows when the repo or the More icons list adds items, and a position would then point elsewhere.
 // IC / M.iconIds / M.iconNames stay the runtime lookup; extra items are appended as they are picked.
 const ICON_AT = {}; M.iconIds.forEach((id, i) => { ICON_AT[id] = i; });
-/** Every item the More icons list offers: {itemId: data URI}. Embedded, or fetched on first open. */
+/** Every item the icon search covers: {itemId: data URI}. Embedded, or fetched on first need. */
 let MORE_ICONS = M.moreIcons || null;
+let iconsLoading = null;
+/**
+ * The runtime index for an item id. An item outside the grid is always registered under its own id, so an
+ * edit keeps the id it was given even before its picture has loaded (it is drawn blank until then).
+ */
 function iconIndex(itemId) {
   if (itemId in ICON_AT) return ICON_AT[itemId];
   const uri = MORE_ICONS && MORE_ICONS[itemId];
-  if (!uri) return ICON_AT['minecraft:barrier'] !== undefined ? ICON_AT['minecraft:barrier'] : 0;
-  IC.push(uri); M.iconIds.push(itemId); M.iconNames.push(itemId.split(':')[1].replace(/_/g, ' '));
+  if (!uri) loadAllIcons();
+  IC.push(uri || ''); M.iconIds.push(itemId); M.iconNames.push(itemId.split(':')[1].replace(/_/g, ' '));
   return (ICON_AT[itemId] = IC.length - 1);
+}
+/** Fetches every item's picture once (local editor only; a shared page embeds them), then redraws. */
+function loadAllIcons() {
+  if (MORE_ICONS) return Promise.resolve();
+  if (iconsLoading) return iconsLoading;
+  iconsLoading = fetch('/api/icons')
+    .then(res => { if (!res.ok) throw new Error(res.statusText); return res.json(); })
+    .then(all => { MORE_ICONS = all; })
+    .catch(err => { MORE_ICONS = {}; setTimeout(() => toast(`Couldn\u2019t load every item: ${err.message}`)); })
+    .then(() => {
+      M.iconIds.forEach((id, i) => { if (!IC[i] && MORE_ICONS[id]) IC[i] = MORE_ICONS[id]; });
+      setTimeout(() => { render(); if (selected && !menu.hidden) fillMenu(selected); });
+    });
+  return iconsLoading;
 }
 /**
  * Saved edits from before icons were stored by id hold numbers — positions in a list that has since

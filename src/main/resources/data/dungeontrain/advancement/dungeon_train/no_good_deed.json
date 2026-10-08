@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/remote_echo_kill",
   "display": {
-    "icon": { "id": "minecraft:iron_sword" },
+    "icon": { "id": "minecraft:golden_sword" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.no_good_deed.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.no_good_deed.description" },
     "frame": "goal",
