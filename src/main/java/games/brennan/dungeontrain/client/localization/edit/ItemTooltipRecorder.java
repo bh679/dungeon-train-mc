@@ -4,16 +4,21 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.mojang.datafixers.util.Either;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RenderTooltipEvent;
 import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
 import org.slf4j.Logger;
 
@@ -58,17 +63,37 @@ public final class ItemTooltipRecorder {
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onTooltip(ItemTooltipEvent event) {
+        recordTooltip(event.getItemStack(), event.getToolTip());
+    }
+
+    /**
+     * Lines added while the tooltip is gathered for drawing — after {@link ItemTooltipEvent}, so
+     * {@link #onTooltip} never sees them (the prefab tab's delete hint, for one).
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onGatherComponents(RenderTooltipEvent.GatherComponents event) {
+        List<Component> lines = new ArrayList<>();
+        for (Either<FormattedText, TooltipComponent> element : event.getTooltipElements()) {
+            element.left().filter(Component.class::isInstance).map(Component.class::cast).ifPresent(lines::add);
+        }
+        recordTooltip(event.getItemStack(), lines);
+    }
+
+    private static void recordTooltip(ItemStack stack, List<Component> tooltip) {
+        if (stack.isEmpty()) {
+            return;
+        }
         Set<String> keys = new LinkedHashSet<>();
-        for (Component line : event.getToolTip()) {
+        for (Component line : tooltip) {
             collect(line, keys, 0);
         }
         if (keys.isEmpty() || !anyNew(keys)) {
             return;
         }
         JsonObject snapshot = new JsonObject();
-        snapshot.addProperty("item", BuiltInRegistries.ITEM.getKey(event.getItemStack().getItem()).toString());
+        snapshot.addProperty("item", BuiltInRegistries.ITEM.getKey(stack.getItem()).toString());
         JsonArray lines = new JsonArray();
-        for (Component line : event.getToolTip()) {
+        for (Component line : tooltip) {
             String json = RecordedComponents.toJson(line);
             if (json == null) {
                 return; // a tooltip we cannot keep whole is not kept at all
