@@ -194,6 +194,36 @@ class Textures:
         front = self.block(base, "_front", "_side", "")
         return cube(top, front or side, side) if top and side else None
 
+    def all_item_icons(self, skip: set[str]) -> dict[str, str]:
+        """Every item the jars can draw, for the editor's "More icons" list: {item id: data URI}.
+
+        Vanilla item models plus the mods whose textures are read here. An item that can't be drawn is
+        left out (never a magenta square), and nothing is added to ``missing``.
+        """
+        ids = []
+        for n in sorted(self.names):
+            m = re.fullmatch(r"assets/minecraft/models/item/([a-z0-9_]+)\.json", n)
+            if m:
+                ids.append("minecraft:" + m.group(1))
+        for ns, jar in self.mods.items():
+            if jar is None:
+                continue
+            for n in sorted(jar.namelist()):
+                m = re.fullmatch(rf"assets/{ns}/textures/item/([a-z0-9_]+)\.png", n)
+                if m:
+                    ids.append(f"{ns}:{m.group(1)}")
+        out = {}
+        for item_id in ids:
+            if item_id in skip or item_id in out:
+                continue
+            try:
+                img = self._render(item_id)
+            except Exception:  # an odd model or texture: leave it out
+                img = None
+            if img is not None:
+                out[item_id] = png_uri(img)
+        return out
+
     # --- backgrounds ---------------------------------------------------------
 
     def background(self, resource: str) -> str | None:

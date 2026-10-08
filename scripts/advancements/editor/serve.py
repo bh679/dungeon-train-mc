@@ -16,7 +16,7 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from apply import ApplyError, apply_changes
-from build import build_bundle, page_html
+from build import build_bundle, more_icons, page_html
 
 MAX_BODY = 2 * 1024 * 1024
 
@@ -36,6 +36,10 @@ class Handler(BaseHTTPRequestHandler):
         self._send(status, json.dumps(payload).encode(), "application/json; charset=utf-8")
 
     def do_GET(self) -> None:  # noqa: N802 (http.server's naming)
+        if self.path.split("?")[0] == "/api/icons":
+            bundle, _ = build_bundle()
+            self._json(more_icons(bundle))
+            return
         if self.path.split("?")[0] not in ("/", "/index.html"):
             self._send(404, b"not found", "text/plain")
             return

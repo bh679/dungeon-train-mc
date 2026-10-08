@@ -123,6 +123,8 @@ body.full .stage .exitfull { display: block; position: absolute; top: calc(6px +
 .bgs { display: flex; flex-wrap: wrap; gap: 4px; }
 .bgs button { width: 30px; height: 30px; border: 2px solid #000; background-size: 100% 100%; image-rendering: pixelated; cursor: pointer; padding: 0; }
 .bgs button.more { background: var(--slot); color: #fff; font: 600 20px var(--font-px); line-height: 1; text-shadow: 1px 1px 0 #3f3f3f; }
+.icons button.more { background: transparent; color: #fff; font: 600 20px var(--font-px); line-height: 1; text-shadow: 1px 1px 0 #3f3f3f; }
+.icons.more-list { margin-top: 6px; max-height: 240px; }
 .bgs.more-list { max-height: 180px; overflow: auto; padding: 3px; background: var(--slot); box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #fff; }
 .bgs button.on { border-color: #fff; outline: 2px solid #000; }
 

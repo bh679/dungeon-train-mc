@@ -225,6 +225,25 @@ def test_visibility_stored_only_when_not_default():
     raise AssertionError("accepted a bad mode")
 
 
+def test_more_icons_are_real_drawable_items():
+    """Needs Pillow and a built workspace (game jars in ~/.gradle); skipped where they are missing, as in CI."""
+    try:
+        import base64, io
+        from PIL import Image
+        import build
+        bundle, _ = build.build_bundle()
+    except (ImportError, SystemExit):
+        print("     (skipped: no Pillow or game jars)")
+        return
+    more = build.more_icons(bundle)
+    assert len(more) > 500, len(more)
+    for item_id, uri in more.items():
+        assert ":" in item_id and item_id not in bundle["iconIds"], item_id
+        img = Image.open(io.BytesIO(base64.b64decode(uri.split(",", 1)[1]))).convert("RGBA")
+        assert img.getextrema()[3][1] > 0, f"{item_id} draws nothing"
+        assert img.getpixel((16, 16)) != (180, 60, 200, 255), f"{item_id} drew the missing-icon square"
+
+
 GOLDEN = MOD.REPO / "src/test/resources/advancement/burrito_required.txt"
 
 

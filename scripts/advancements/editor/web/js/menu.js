@@ -73,7 +73,7 @@ function fillMenuRaw(id) {
       sec.text = `<div class="sec"><span>Text</span><label for="mTitle">Title</label><input type="text" id="mTitle" value="${esc(n.t)}" maxlength="60">
         <label for="mDesc">Description</label><textarea id="mDesc" maxlength="200">${esc(n.d)}</textarea></div>`;
     }
-    sec.icon = `<div class="sec"><span>Icon</span><div class="icons" id="mIcons">${IC.map((u, i) => `<button type="button" data-icon="${i}" class="${i === n.i ? 'on' : ''}" title="${esc(M.iconNames[i])}" aria-label="${esc(M.iconNames[i])}"><i style="background-image:url(${u})"></i></button>`).join('')}</div></div>`;
+    sec.icon = iconSection(n);
     // A tab's first advancement leads with what makes it a tab: its name, text and what unlocks it.
     const order = isRoot ? ['tab', 'text', 'unlock', 'vis', 'move', 'req', 'cap', 'icon'] : ['move', 'vis', 'req', 'cap', 'text', 'icon'];
     h += order.map(k => sec[k] || '').join('');
@@ -121,6 +121,7 @@ function wireMenu(id) {
     else if (a === 'tabRight') moveTab(id, 1);
     else if (a === 'reset') resetNode(id);
     else if (a === 'delete') deleteCreated(id);
+    else if (a === 'moreIcons') toggleMoreIcons(id);
     else if (a === 'moreBgs') { moreBgsOpen = !moreBgsOpen; fillMenu(id); if (moreBgsOpen) { const q = menu.querySelector('#mBgSearch'); q && q.focus(); } }
   }));
   on('#mKids', 'change', e => { view.withChildren = e.target.checked; saveView(); renderControls(layoutCache); fillMenu(id); });
@@ -143,7 +144,9 @@ function wireMenu(id) {
     const req = M.nodes[id].req;
     tt = setTimeout(() => commit(ed => { ed.values = ed.values || {}; const raw = inputToReq(req, v); if (raw === req.n) delete ed.values[id]; else ed.values[id] = raw; }), 450);
   });
-  menu.querySelectorAll('[data-icon]').forEach(b => b.addEventListener('click', () => commit(ed => { ed.icons[id] = +b.dataset.icon; }, `Icon set to ${M.iconNames[+b.dataset.icon]}.`)));
+  const wireIcons = root => root.querySelectorAll('[data-item]').forEach(b => b.addEventListener('click', () => setIcon(id, b.dataset.item)));
+  wireIcons(menu);
+  on('#mIconSearch', 'input', e => { iconQuery = e.target.value; const box = menu.querySelector('#mIconMore'); box.innerHTML = moreIconButtons(layoutCache.E.nodes[id]); wireIcons(box); });
   const wireBgs = root => root.querySelectorAll('[data-bg]').forEach(b => b.addEventListener('click', () => commit(ed => { ed.bgs[id] = b.dataset.bg; }, `Background set to ${bgName(b.dataset.bg)}.`)));
   wireBgs(menu);
   on('#mBgSearch', 'input', e => { bgQuery = e.target.value; const box = menu.querySelector('#mBgMore'); box.innerHTML = moreBgButtons(layoutCache.E.nodes[id].bg); wireBgs(box); });
@@ -212,4 +215,52 @@ function visibilitySection(n, isRoot) {
   const hint = isRoot ? 'A tab\u2019s first advancement: \u201cHidden until earned\u201d keeps the whole tab out of sight until then.'
     : 'Progress: Not earned shows what a new player sees; hidden ones are faded.';
   return `<div class="sec"><span>Visibility</span><label for="mVis">Shown on the advancements screen</label><select id="mVis">${opts}</select><div class="hint">${hint}</div></div>`;
+}
+
+// ---------- icons ----------
+let moreIconsOpen = false, iconQuery = '';
+function iconButton(itemId, uri, current) {
+  const name = esc(itemId.split(':')[1].replace(/_/g, ' '));
+  return `<button type="button" data-item="${esc(itemId)}" class="${itemId === current ? 'on' : ''}" title="${name}" aria-label="${name}"><i style="background-image:url(${uri})"></i></button>`;
+}
+function iconSection(n) {
+  const current = M.iconIds[n.i];
+  const grid = M.iconIds.map((itemId, i) => iconButton(itemId, IC[i], current)).join('');
+  const more = moreIconsOpen
+    ? (MORE_ICONS ? `<input type="text" id="mIconSearch" placeholder="Search ${Object.keys(MORE_ICONS).length} items" value="${esc(iconQuery)}"><div class="icons more-list" id="mIconMore">${moreIconButtons(n)}</div>`
+                  : '<div class="hint">Loading every item\u2026</div>')
+    : '';
+  return `<div class="sec"><span>Icon</span><div class="icons" id="mIcons">${grid}<button type="button" class="more" data-act="moreIcons" aria-expanded="${moreIconsOpen}" title="More icons" aria-label="More icons">+</button></div>${more}</div>`;
+}
+function moreIconButtons(n) {
+  const q = iconQuery.trim().toLowerCase().replace(/ /g, '_');
+  const current = M.iconIds[n.i];
+  // Search covers every item, the ones already in the grid above included.
+  const all = { ...MORE_ICONS };
+  M.iconIds.forEach((k, i) => { all[k] = IC[i]; });
+  const ids = Object.keys(all).sort().filter(k => q ? k.includes(q) : !(k in ICON_AT));
+  if (!ids.length) return '<span class="hint">No item matches.</span>';
+  return ids.slice(0, 600).map(k => iconButton(k, all[k], current)).join('')
+    + (ids.length > 600 ? `<span class="hint">${ids.length - 600} more: search to narrow.</span>` : '');
+}
+async function toggleMoreIcons(id) {
+  moreIconsOpen = !moreIconsOpen;
+  fillMenu(id);
+  if (!moreIconsOpen || MORE_ICONS) { const q = menu.querySelector('#mIconSearch'); q && q.focus(); return; }
+  try {
+    const res = await fetch('/api/icons');
+    if (!res.ok) throw new Error(res.statusText);
+    MORE_ICONS = await res.json();
+  } catch (err) {
+    MORE_ICONS = {};
+    toast(`Couldn\u2019t load more icons: ${err.message}`);
+  }
+  if (selected === id && !menu.hidden) fillMenu(id);
+}
+function setIcon(id, itemId) {
+  iconIndex(itemId); // make sure the runtime table can draw it
+  commit(ed => {
+    if (ed.created[id]) ed.created[id] = { ...ed.created[id], item: itemId };
+    else ed.icons[id] = itemId;
+  }, `Icon set to ${itemId.split(':')[1].replace(/_/g, ' ')}.`);
 }

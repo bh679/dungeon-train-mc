@@ -1,5 +1,34 @@
 // Advancement editor — model: data, the effective layout, edits and saving. Concatenated by build.py into one closure.
 const M = window.MOCK, SP = M.sprites, IC = M.icons;
+
+// ---------- icons ----------
+// Edits store an icon as its item id ("minecraft:chest_minecart"), never a list position: the list
+// grows when the repo or the More icons list adds items, and a position would then point elsewhere.
+// IC / M.iconIds / M.iconNames stay the runtime lookup; extra items are appended as they are picked.
+const ICON_AT = {}; M.iconIds.forEach((id, i) => { ICON_AT[id] = i; });
+/** Every item the More icons list offers: {itemId: data URI}. Embedded, or fetched on first open. */
+let MORE_ICONS = M.moreIcons || null;
+function iconIndex(itemId) {
+  if (itemId in ICON_AT) return ICON_AT[itemId];
+  const uri = MORE_ICONS && MORE_ICONS[itemId];
+  if (!uri) return ICON_AT['minecraft:barrier'] !== undefined ? ICON_AT['minecraft:barrier'] : 0;
+  IC.push(uri); M.iconIds.push(itemId); M.iconNames.push(itemId.split(':')[1].replace(/_/g, ' '));
+  return (ICON_AT[itemId] = IC.length - 1);
+}
+/**
+ * Saved edits from before icons were stored by id hold numbers — positions in a list that has since
+ * changed, so they can no longer be trusted. Drop them (the ones still wanted were committed to the repo).
+ */
+function migrateEdits(e) {
+  const out = { ...emptyEdits(), ...e, icons: {} };
+  Object.entries(e.icons || {}).forEach(([id, v]) => { if (typeof v === 'string') out.icons[id] = v; });
+  out.created = {};
+  Object.entries(e.created || {}).forEach(([id, c]) => {
+    const { i, ...rest } = c;
+    out.created[id] = typeof c.item === 'string' ? c : { ...rest, item: c.item || 'minecraft:knowledge_book' };
+  });
+  return out;
+}
 const DT_ROOT = 'dungeontrain:dungeon_train/root';
 const TICKS_PER_HOUR = 72000;
 /** Served by serve.py: edits are written to the working tree, not to an artifact database. */
@@ -68,12 +97,12 @@ function effective() {
     const c = created[id]; if (!c || seen.has(id)) return null; seen.add(id);
     let n;
     if (c.copyOf) { const src = resolve(c.copyOf, seen); if (!src) return null; n = { ...src, h: true, copyOf: c.copyOf, bg: c.bg || src.bg }; }
-    else n = { t: c.t, d: c.d || '', f: c.f || 'task', i: c.i, h: !!c.unlockedBy, bg: c.bg, unlockedBy: c.unlockedBy || undefined, trig: 'impossible', ...(texts[id] || {}) };
+    else n = { t: c.t, d: c.d || '', f: c.f || 'task', i: iconIndex(c.item || 'minecraft:knowledge_book'), h: !!c.unlockedBy, bg: c.bg, unlockedBy: c.unlockedBy || undefined, trig: 'impossible', ...(texts[id] || {}) };
     n.created = true; nodes[id] = n; return n;
   };
   Object.keys(created).forEach(id => resolve(id, new Set()));
   const icons = { ...B.icons, ...edits.icons };
-  Object.keys(icons).forEach(id => { if (nodes[id]) nodes[id].i = icons[id]; });
+  Object.keys(icons).forEach(id => { if (nodes[id]) nodes[id].i = typeof icons[id] === 'string' ? iconIndex(icons[id]) : icons[id]; });
   Object.keys(nodes).forEach(id => {
     const n = nodes[id]; if (!n.copyOf || !nodes[n.copyOf]) return;
     const s = nodes[n.copyOf]; n.t = s.t; n.d = s.d; n.f = s.f; n.req = s.req; n.hint = s.hint; if (!(id in icons) && !M.nodes[id]) n.i = s.i; // a saved copy keeps its own icon
@@ -207,9 +236,8 @@ function newTab() {
   const L = layoutCache;
   if (!L.E.editable) { toast('Switch Layout to With my edits to edit.'); return; }
   const rootId = tabIdFor(L, 'new');
-  const icon = Math.max(0, M.iconNames.indexOf('knowledge book'));
   commit(e => {
-    e.created[rootId] = { t: 'New Tab', d: 'Describe this tab', f: 'task', i: icon, bg: STONE_BG, unlockedBy: '' };
+    e.created[rootId] = { t: 'New Tab', d: 'Describe this tab', f: 'task', item: 'minecraft:knowledge_book', bg: STONE_BG, unlockedBy: '' };
     e.parents[rootId] = '';
     e.order = [...(e.order || M.baseline.order), rootId];
   }, 'Added a new tab. Name it, pick what unlocks it, then move advancements into it.');
@@ -268,7 +296,7 @@ function queueSave() {
   }, 600);
 }
 async function connect() {
-  try { const raw = localStorage.getItem(EDITS_KEY); if (raw) edits = { ...emptyEdits(), ...JSON.parse(raw) }; } catch (e) {}
+  try { const raw = localStorage.getItem(EDITS_KEY); if (raw) edits = migrateEdits(JSON.parse(raw)); } catch (e) {}
   render();
   setStatus(LOCAL ? 'Showing the repo as it is now' : 'Saved in this browser only');
   if (LOCAL || !window.claude || !window.claude.use) return;
@@ -282,7 +310,7 @@ async function connect() {
     const remote = data && data.edits ? JSON.stringify(data.edits) : null;
     if (remote) {
       lastSaved = remote;
-      if (remote !== JSON.stringify(edits)) { edits = { ...emptyEdits(), ...JSON.parse(remote) }; render(); }
+      if (remote !== JSON.stringify(edits)) { edits = migrateEdits(JSON.parse(remote)); render(); }
       setStatus('Saved');
     } else if (JSON.stringify(edits) !== JSON.stringify(emptyEdits())) queueSave();
     else setStatus('Saved');

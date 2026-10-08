@@ -2,7 +2,7 @@
 
 Edit Dungeon Train's advancement tabs on a copy of the real advancements screen: the vanilla window,
 tab sprites and item icons, read straight out of the game jars. Click an advancement to change its
-**parent**, **tab**, **required value**, **icon**, and whether it **counts towards the Everything
+**parent**, **tab**, **required value**, **icon** (the **+** searches every item in the game), and whether it **counts towards the Everything
 Burrito** and is **reset by It's Not That Simple**. On a tab's first advancement you can also change
 the **tab name**, **background** (any block texture, via **+**), **tab order** and what it is
 **unlocked by**. **New tab** makes a tab and opens it with those fields first. You can also drag an
@@ -26,7 +26,7 @@ Needs Pillow (`pip install pillow`) for the icons, and a workspace that has buil
 |---|---|
 | Parent / tab | the advancement's `"parent"` line in `data/dungeontrain/advancement/**.json` |
 | Required value | the `threshold*` number on its criterion |
-| Icon | `display.icon.id` |
+| Icon | `display.icon.id` (the page stores picks as item ids) |
 | Background | the tab root's `display.background` |
 | Tab name, tab order, tab copies | `src/main/resources/dungeontrain/advancement_tabs.json` (+ an `en_us` key for a name) |
 | "Open a copy as a new tab" | a new hidden, silent copy advancement, listed under `copies` |

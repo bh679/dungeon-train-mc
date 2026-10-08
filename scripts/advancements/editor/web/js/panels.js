@@ -105,7 +105,7 @@ function describeChanges(L) {
   });
   Object.keys(edits.values || {}).forEach(id => E.nodes[id] && out.push({ id, html: `<em>${esc(name(id))}</em> now needs ${esc(formatReq(E.nodes[id].req))} (was ${esc(formatReq(M.nodes[id].req))})` }));
   Object.keys(edits.tabTitles).forEach(id => E.nodes[id] && out.push({ id, html: `Tab renamed to <em>${esc(edits.tabTitles[id])}</em>` }));
-  Object.keys(edits.icons).forEach(id => E.nodes[id] && out.push({ id, html: `Icon of <em>${esc(name(id))}</em> is now ${esc(M.iconNames[edits.icons[id]])}` }));
+  Object.keys(edits.icons).forEach(id => E.nodes[id] && out.push({ id, html: `Icon of <em>${esc(name(id))}</em> is now ${esc(String(edits.icons[id]).split(':').pop().replace(/_/g, ' '))}` }));
   Object.keys(edits.bgs).forEach(id => E.nodes[id] && out.push({ id, html: `Background of <em>${esc(tabTitle(L, id))}</em> is now ${esc(bgName(edits.bgs[id]))}` }));
   Object.keys(edits.capstone || {}).forEach(id => {
     const n = E.nodes[id], base = M.nodes[id] && M.nodes[id].cap;

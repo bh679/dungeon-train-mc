@@ -218,6 +218,11 @@ def build_bundle() -> tuple[dict, list[str]]:
     return bundle, tex.missing
 
 
+def more_icons(bundle: dict) -> dict[str, str]:
+    """Every other drawable item, for the page's "More icons" list."""
+    return Textures(mc_version()).all_item_icons(set(bundle["iconIds"]))
+
+
 def page_html(bundle: dict, mode: str) -> str:
     """The editor as one self-contained page. ``mode`` is 'artifact' (saves to its own db) or 'local'."""
     html = (WEB / "index.html").read_text()
@@ -232,6 +237,7 @@ def main(argv=None) -> int:
     ap.add_argument("--artifact", type=Path, required=True, help="write a self-contained page here")
     args = ap.parse_args(argv)
     bundle, missing = build_bundle()
+    bundle["moreIcons"] = more_icons(bundle)  # a shared page has no server to fetch them from
     args.artifact.parent.mkdir(parents=True, exist_ok=True)
     args.artifact.write_text(page_html(bundle, "artifact"))
     print(f"wrote {args.artifact} ({args.artifact.stat().st_size // 1024} KB, {len(bundle['nodes'])} advancements)")
