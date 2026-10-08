@@ -88,10 +88,29 @@ final class AdvancementDisablerTest {
     }
 
     @Test
-    @DisplayName("A child whose every ancestor is gone is left as found rather than given a bogus parent")
-    void orphanLeftAlone() {
+    @DisplayName("A tab root is never disabled — on any tab — so its children still have somewhere to hang")
+    void tabRootNeverRemoved() {
         Map<ResourceLocation, JsonElement> out = AdvancementDisabler.removeAll(tree(), Set.of(id("root"), id("a")), MOD);
-        assertEquals(id("a").toString(), parentOf(out, "b"));
+        assertTrue(out.containsKey(id("root")), "the root survives");
+        assertFalse(out.containsKey(id("a")));
+        assertEquals(id("root").toString(), parentOf(out, "b"));
         assertEquals(id("root").toString(), parentOf(out, "d"));
+    }
+
+    @Test
+    @DisplayName("Advancements on any non-editor tab can be disabled; the editor tab never")
+    void anyTabButEditor() {
+        Map<ResourceLocation, JsonElement> m = new LinkedHashMap<>();
+        ResourceLocation photoRoot = ResourceLocation.fromNamespaceAndPath(MOD, "dungeon_train/the_enchiridion");
+        ResourceLocation photo = ResourceLocation.fromNamespaceAndPath(MOD, "enchiridion/say_cheese");
+        ResourceLocation editor = ResourceLocation.fromNamespaceAndPath(MOD, "editor/root");
+        ResourceLocation editorChild = ResourceLocation.fromNamespaceAndPath(MOD, "editor/used_tunnel_stairs");
+        m.put(photoRoot, adv(null));
+        m.put(photo, adv(photoRoot.toString()));
+        m.put(editor, adv(null));
+        m.put(editorChild, adv(editor.toString()));
+        Map<ResourceLocation, JsonElement> out = AdvancementDisabler.removeAll(m, Set.of(photo, editorChild), MOD);
+        assertFalse(out.containsKey(photo));
+        assertTrue(out.containsKey(editorChild));
     }
 }
