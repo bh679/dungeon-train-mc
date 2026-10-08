@@ -121,7 +121,6 @@ dungeontrain:dungeon_train/train_inside_a_train
 dungeontrain:dungeon_train/upgraded_backpack
 dungeontrain:dungeon_train/used_pillar_stairs
 dungeontrain:dungeon_train/used_tunnel_stairs
-dungeontrain:dungeon_train/welcome_back
 dungeontrain:enchiridion/appreciating_photos
 dungeontrain:enchiridion/best_friends_forever
 dungeontrain:enchiridion/big_spender

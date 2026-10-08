@@ -68,7 +68,8 @@ final class EnchiridionAdvancementsTest {
         }
         assertTrue(wrong.isEmpty(), "isEnchiridion disagrees with the JSON tree: " + wrong);
         for (String book : EnchiridionAdvancements.BOOK_PATHS) {
-            assertTrue(parents.containsKey(book), "BOOK_PATHS names a missing advancement: " + book);
+            assertTrue(parents.containsKey(book) || Files.exists(RepoPaths.advancements().resolve(book + ".json.disabled")),
+                "BOOK_PATHS names a missing advancement: " + book);
         }
     }
 

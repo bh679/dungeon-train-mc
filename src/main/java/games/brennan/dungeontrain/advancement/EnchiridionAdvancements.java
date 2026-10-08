@@ -45,7 +45,7 @@ public final class EnchiridionAdvancements {
             "dungeon_train/nothing_but_books",
             "dungeon_train/burned_unread",
             "dungeon_train/the_same_but_different",
-            "dungeon_train/welcome_back",
+            "dungeon_train/welcome_back", // switched off for now (welcome_back.json.disabled); kept so a rename re-enables it
             "dungeon_train/the_far_start");
 
     /** {@code gameplay_action} ids fired by the camera hooks. */
