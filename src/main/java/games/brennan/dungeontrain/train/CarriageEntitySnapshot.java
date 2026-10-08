@@ -280,10 +280,21 @@ public final class CarriageEntitySnapshot {
      * the tracks the moment the train pulls away.</p>
      */
     public static int spawn(ServerLevel level, BlockPos shipyardOrigin, ListTag ents, int carriagePIdx) {
+        return spawn(level, shipyardOrigin, ents, carriagePIdx, 1, 1);
+    }
+
+    /**
+     * {@link #spawn} for a build spanning {@code carriages} carriages of {@code carriageLength} — a
+     * drifting Group carriage. Each entity is tagged with the carriage it stands in, so the static
+     * contents carrier moves it with the right carriage rather than the group's first.
+     */
+    public static int spawn(ServerLevel level, BlockPos shipyardOrigin, ListTag ents, int firstCarriagePIdx,
+                            int carriageLength, int carriages) {
         if (ents == null || ents.isEmpty()) return 0;
         int spawned = 0;
         for (int i = 0; i < ents.size(); i++) {
             CompoundTag entry = ents.getCompound(i);
+            int carriagePIdx = firstCarriagePIdx + carriageSlotOf(entry, carriageLength, carriages);
             try {
                 if (spawnOne(level, shipyardOrigin, entry, carriagePIdx)) spawned++;
             } catch (Exception e) {
@@ -292,6 +303,15 @@ public final class CarriageEntitySnapshot {
             }
         }
         return spawned;
+    }
+
+    /** Which carriage of a {@code carriages}-long build the entity at {@code entry}'s offset stands in. */
+    static int carriageSlotOf(CompoundTag entry, int carriageLength, int carriages) {
+        if (carriages <= 1 || carriageLength <= 0) return 0;
+        ListTag p = entry.getList("p", Tag.TAG_DOUBLE);
+        if (p.size() < 1) return 0;
+        int slot = (int) Math.floor(p.getDouble(0) / carriageLength);
+        return Math.max(0, Math.min(carriages - 1, slot));
     }
 
     private static boolean spawnOne(ServerLevel level, BlockPos shipyardOrigin, CompoundTag entry, int carriagePIdx) {

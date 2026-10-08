@@ -1303,7 +1303,8 @@ public final class TrainCarriageAppender {
             if (p == null) continue;
             slots++;
             try {
-                spawned += CarriageEntitySnapshot.spawn(level, p.shipyardOrigin(), p.ents(), p.carriagePIdx());
+                spawned += CarriageEntitySnapshot.spawn(level, p.shipyardOrigin(), p.ents(), p.carriagePIdx(),
+                        p.carriageLength(), p.carriages());
                 // Standing in the world now, so uploads may read them live. A throw keeps the hold: the
                 // relay's copy stays the truth rather than being overwritten by a carriage left empty.
                 BlockPos o = p.shipyardOrigin();

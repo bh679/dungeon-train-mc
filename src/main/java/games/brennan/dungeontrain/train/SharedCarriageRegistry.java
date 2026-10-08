@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import net.minecraft.core.BlockPos;
@@ -54,6 +55,11 @@ public final class SharedCarriageRegistry {
         public final BlockPos shipyardOrigin;
         public final CarriageDims dims;
         public final String variantId;
+        /**
+         * The relay kind this build uploads and leases as — {@code carriage} for a one-carriage slot,
+         * {@code carriage_group} for a drifting Group carriage whose {@link #dims} span the whole group.
+         */
+        public final String kind;
         /** True once this carriage was leased from the relay pool (PR C); false for a fresh local build. */
         public final boolean leasedFromPool;
         /**
@@ -121,8 +127,10 @@ public final class SharedCarriageRegistry {
         Instance(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx, BlockPos shipyardOrigin,
                  CarriageDims dims, String variantId, boolean leasedFromPool, boolean authoredHere,
                  String authorUuid, Integer relayId, String leaseToken, int seqSeed, String stageId,
-                 Credits credits, Deaths deaths) {
+                 Credits credits, Deaths deaths, String kind) {
             this.level = level;
+            this.kind = kind == null || kind.isEmpty()
+                    ? SharedCarriageClient.PoolLease.KIND_CARRIAGE : kind;
             this.subLevelId = subLevelId;
             this.trainId = trainId;
             this.pIdx = pIdx;
@@ -400,8 +408,23 @@ public final class SharedCarriageRegistry {
                                     boolean leasedFromPool, boolean authoredHere, String authorUuid,
                                     Integer relayId, String leaseToken, int seqSeed,
                                     String stageId, Credits credits, Deaths deaths) {
+        return register(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId, leasedFromPool,
+                authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits, deaths,
+                SharedCarriageClient.PoolLease.KIND_CARRIAGE);
+    }
+
+    /**
+     * {@link #register} naming the relay kind — {@code carriage_group} for a drifting Group carriage,
+     * registered once at the group's first carriage with {@code dims} spanning the whole group.
+     */
+    public static Instance register(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx,
+                                    BlockPos shipyardOrigin, CarriageDims dims, String variantId,
+                                    boolean leasedFromPool, boolean authoredHere, String authorUuid,
+                                    Integer relayId, String leaseToken, int seqSeed,
+                                    String stageId, Credits credits, Deaths deaths, String kind) {
         Instance inst = new Instance(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId,
-                leasedFromPool, authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits, deaths);
+                leasedFromPool, authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits, deaths,
+                kind);
         BY_SUBLEVEL.computeIfAbsent(subLevelId, k -> new CopyOnWriteArrayList<>()).add(inst);
         LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={} own={} stage={}.",
                 variantId, pIdx, subLevelId, leasedFromPool, authoredHere, stageId);

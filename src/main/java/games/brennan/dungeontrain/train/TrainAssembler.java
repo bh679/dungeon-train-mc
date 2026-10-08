@@ -248,6 +248,18 @@ public final class TrainAssembler {
         }
     }
 
+    /** Register a leased Group carriage so later edits save back to the relay — one instance over the box. */
+    private static void registerLeasedGroup(ServerLevel level, UUID subLevelId, UUID trainId, int anchorPIdx,
+                                            BlockPos shipyardOrigin, CarriageDims box, CarriageVariant shell,
+                                            String stageId, SharedGroupDrift.Pick pick) {
+        SharedCarriageClient.PoolLease lease = pick.lease();
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(
+            level, subLevelId, trainId, anchorPIdx, shipyardOrigin, box, shell.id(), true,
+            pick.authoredHere(), lease.owner(), lease.id(), lease.token(), LeaseSnapshots.seqSeed(lease),
+            stageId, lease.credits(), lease.deaths(), SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+        inst.stampContact(System.currentTimeMillis()); // fresh lease → no immediate heartbeat needed
+    }
+
     private static final BlockState AIR = Blocks.AIR.defaultBlockState();
 
     private TrainAssembler() {}
@@ -521,12 +533,43 @@ public final class TrainAssembler {
         }
         final FullCarriageSelection.FullPick fullPick = wholeGroup ? null : drawnFull;
         final boolean fullGroup = fullPick != null;
+        // A drifting Group carriage: the whole group-long box travels the relay as one build. It either
+        // stamps another world's copy across the run, or stands as this Group carriage and uploads the
+        // first time someone changes it. See SharedGroupDrift.
+        final String fullStage = fullGroup
+            ? games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate) : null;
+        final CarriageDims groupBox = fullGroup
+            ? ContentsSize.FULL.shellDims(dims, groupSize).orElse(null) : null;
+        final boolean groupDrifts = groupBox != null
+            && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage);
+        SharedGroupDrift.Pick groupLease = null;
+        net.minecraft.nbt.ListTag groupLeaseEnts = null;
         if (fullGroup) {
             BlockPos runOrigin = origin.offset(enclosedStartOffset, 0, 0);
-            String anchorStage = games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate);
-            blocks.addAll(StagePlacementScope.with(anchorStage,
-                () -> FullCarriageSelection.place(level, runOrigin, fullPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
+            if (groupDrifts) {
+                SharedGroupDrift.Pick pick = SharedGroupDrift.lease(
+                    level, anchorPIdx, groupBox, fullStage, genCfg.seed(), onlineUuids);
+                if (pick != null) {
+                    // Stamped verbatim like a slot's lease, under the anchor's stage so a placeholder
+                    // block the author's world uploaded never reaches a live train.
+                    RelayPlacement placement = StagePlacementScope.with(fullStage,
+                        () -> placeRelayLease(level, runOrigin, pick.lease(), groupBox));
+                    if (placement == null) {
+                        SharedGroupPool.returnLease(pick.lease()); // failed → the Group carriage stands instead
+                    } else {
+                        blocks.addAll(placement.blocks());
+                        groupLease = pick;
+                        groupLeaseEnts = placement.ents();
+                    }
+                }
+                if (groupLease == null) SharedGroupDrift.logFresh(anchorPIdx);
+            }
+            if (groupLease == null) {
+                blocks.addAll(StagePlacementScope.with(fullStage,
+                    () -> FullCarriageSelection.place(level, runOrigin, fullPick, dims, groupSize, genCfg.seed(), anchorPIdx)));
+            }
         }
+        final SharedGroupDrift.Pick groupLeasePick = groupLease;
         // A Half pair: two Half shells end to end, each its own pick — see HalfCarriageSelection.
         HalfCarriageSelection.HalfPick halfPick = layout == CarriageLayout.HALVES && !wholeGroup
             ? HalfCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
@@ -560,7 +603,8 @@ public final class TrainAssembler {
                 // when they are laid after assembly; the rest are the same carriage.
                 PortalRegistry.get(level).noteStamped(carriagePIdx, false);
                 enclosedBySlot[slot] = fullPick.shell();
-                if (slot > 0) PlacedCarriageFacts.recordShellOnly(carriagePIdx, fullPick.shell());
+                if (groupLeasePick != null) PlacedCarriageFacts.recordRelayBuild(carriagePIdx, fullPick.shell());
+                else if (slot > 0) PlacedCarriageFacts.recordShellOnly(carriagePIdx, fullPick.shell());
                 continue;
             }
             if (halfGroup) {
@@ -726,6 +770,17 @@ public final class TrainAssembler {
                 // anchor slot, into the Full box; the shell's own decor goes back like a whole
                 // group's. The other slots are inside the same carriage and have nothing of their own.
                 pendingEntities[slot] = null;
+                if (slot == 0 && groupLeasePick != null) {
+                    // A leased Group carriage: its blocks and entities are the build as its world left it,
+                    // so nothing is generated. Registered once, at the first carriage, over the whole box.
+                    registerLeasedGroup(level, ship.subLevelId(), trainId, carriagePIdx, carriageShipyardOrigin,
+                        groupBox, fullPick.shell(), fullStage, groupLeasePick);
+                    if (groupLeaseEnts != null && !groupLeaseEnts.isEmpty()) {
+                        pendingRelayEntities[slot] = new PendingRelayEntitySpawn(
+                            carriageShipyardOrigin, groupLeaseEnts, carriagePIdx, length, groupSize);
+                    }
+                    continue;
+                }
                 if (slot == 0) {
                     CarriagePlacer.applyContentsBlocksAt(level, carriageShipyardOrigin, fullPick.shell(), dims,
                         genCfg, carriagePIdx, groupAnchorWorldX);
@@ -733,6 +788,15 @@ public final class TrainAssembler {
                         carriageShipyardOrigin, fullPick.shell(), dims, genCfg, carriagePIdx, groupAnchorWorldX);
                     pendingWholeDecor[slot] = new PendingWholeDecorSpawn(
                         carriageShipyardOrigin, fullPick.template(), carriagePIdx, groupSize);
+                    if (groupDrifts) {
+                        // A fresh drifting Group carriage: uploads whole the first time someone changes it.
+                        // Registered AFTER the contents pass, as a fresh shared slot is — registered before
+                        // it, every contents block would count as an edit and upload an untouched build.
+                        SharedCarriageRegistry.register(level, ship.subLevelId(), trainId, carriagePIdx,
+                            carriageShipyardOrigin, groupBox, fullPick.shell().id(), false, false, "", null, null, 0,
+                            fullStage, SharedCarriageClient.Credits.EMPTY, SharedCarriageClient.Deaths.EMPTY,
+                            SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+                    }
                 }
                 continue;
             }
