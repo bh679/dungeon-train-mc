@@ -101,14 +101,15 @@ function describeChanges(L) {
   const E = L.E, B = M.baseline, out = [];
   const name = id => (E.nodes[id] ? E.nodes[id].t : id.split(':')[1]);
   const place = p => p ? `under <em>${esc(name(p))}</em> (${esc(tabTitle(L, L.tabOf[p]))})` : '<em>its own tab</em>';
-  Object.keys(edits.created).forEach(id => { if (!B.created[id] && E.nodes[id]) out.push({ id, html: `New ${E.parents[id] ? 'advancement' : 'tab'} <em>${esc(tabTitle(L, id) || name(id))}</em>${E.nodes[id].copyOf ? `, a copy of ${esc(name(E.nodes[id].copyOf))}` : ''}` }); });
+  Object.keys(edits.created).forEach(id => { if (!B.created[id] && E.nodes[id]) out.push({ id, html: `New ${E.parents[id] ? 'advancement' : 'tab'} <em>${esc(tabTitle(L, id) || name(id))}</em>${E.nodes[id].copyOf ? `, a copy of ${esc(name(E.nodes[id].copyOf))}` : ''}${E.nodes[id].duplicateOf ? `, duplicated from ${esc(name(E.nodes[id].duplicateOf))}` : ''}` }); });
   edits.deleted.forEach(id => out.push({ id: null, html: `Removed <em>${esc(B.created[id] && B.created[id].copyOf ? 'the copy of ' + name(B.created[id].copyOf) : id.split(':')[1])}</em>` }));
   Object.keys(edits.parents).forEach(id => {
     if (!E.nodes[id] || (edits.created[id] && !B.created[id])) return;
     const base = id in B.parents ? B.parents[id] : (M.gameParents[id] || '');
     if ((edits.parents[id] || '') !== (base || '')) out.push({ id, html: `Moved <em>${esc(name(id))}</em> ${place(edits.parents[id])}` });
   });
-  Object.keys(edits.values || {}).forEach(id => E.nodes[id] && out.push({ id, html: `<em>${esc(name(id))}</em> now needs ${esc(formatReq(E.nodes[id].req))} (was ${esc(formatReq(M.nodes[id].req))})` }));
+  // A new advancement's value is part of it being new (listed above), so only existing ones are described here.
+  Object.keys(edits.values || {}).forEach(id => E.nodes[id] && M.nodes[id] && E.nodes[id].req && out.push({ id, html: `<em>${esc(name(id))}</em> now needs ${esc(formatReq(E.nodes[id].req))} (was ${esc(formatReq(M.nodes[id].req))})` }));
   Object.keys(edits.tabTitles).forEach(id => E.nodes[id] && out.push({ id, html: `Tab renamed to <em>${esc(edits.tabTitles[id])}</em>` }));
   Object.keys(edits.icons).forEach(id => E.nodes[id] && out.push({ id, html: `Icon of <em>${esc(name(id))}</em> is now ${esc(String(edits.icons[id]).split(':').pop().replace(/_/g, ' '))}` }));
   Object.keys(edits.bgs).forEach(id => E.nodes[id] && out.push({ id, html: `Background of <em>${esc(tabTitle(L, id))}</em> is now ${esc(bgName(edits.bgs[id]))}` }));

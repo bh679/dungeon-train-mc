@@ -12,6 +12,7 @@ button posts to ``serve.py``. Shape (every section optional)::
      "tabNames":    {"<tab root id>": "Train Explorer" | null},
      "order":       ["<tab root id>", ...],
      "created":     {"<id>": {"parent": ..., "copyOf": "<id>", "icon": ..., "background": ...}},
+                    # or a duplicate: {"parent", "duplicateOf": "<id>", "title", "description", "hint", "icon", "value"}
      "deleted":     ["<id>", ...],
      "capstone":    {"<id>": {"required": true, "reset": false}},  # Everything Burrito / It's Not That Simple
      "unlocks":     {"<tab root id>": "<id that unlocks it>" | null},
@@ -198,6 +199,60 @@ def copy_json(source: dict, parent: str | None, icon: str | None, background: st
     return out
 
 
+def creation_order(created: dict) -> list[str]:
+    """New advancements, each after any other new one it copies or duplicates."""
+    out, seen = [], set()
+
+    def visit(adv_id: str, depth: int = 0) -> None:
+        if adv_id in seen or depth > 50:
+            return
+        src = created[adv_id].get("copyOf") or created[adv_id].get("duplicateOf")
+        if src in created:
+            visit(src, depth + 1)
+        seen.add(adv_id)
+        out.append(adv_id)
+
+    for adv_id in created:
+        visit(adv_id)
+    return out
+
+
+def duplicate_json(adv_id: str, source: dict, spec: dict) -> dict:
+    """A duplicate: the source's whole advancement (criteria included, so it is earned the same way) under a new
+    parent, with its own title/description keys, icon and required value."""
+    import copy
+    body = {k: v for k, v in copy.deepcopy(source).items() if k != "parent"}
+    display = body.setdefault("display", {})
+    for f in ("title", "description"):
+        comp = display.get(f)
+        key = lang_prefix(adv_id) + "." + f
+        if isinstance(comp, dict) and "translate" in comp:
+            comp["translate"] = key  # keeps any "with" (the required value's argument)
+        else:
+            display[f] = {"translate": key}
+    if spec.get("icon"):
+        display["icon"] = {"id": spec["icon"]}
+    display.pop("background", None)  # it sits under a parent, so it is never a tab's head
+    value = spec.get("value")
+    if value is not None:
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            raise ApplyError(f"{adv_id}: value must be a whole number above 0")
+        done = False
+        for crit in (body.get("criteria") or {}).values():
+            cond = crit.get("conditions") or {}
+            for f in FIELDS:
+                if isinstance(cond.get(f), int) and not done:
+                    cond[f] = value
+                    done = True
+    return {"parent": spec["parent"], **body}
+
+
+def is_code_granted(adv: dict) -> bool:
+    """Every criterion is minecraft:impossible: only code grants it (the burrito, tab-complete ones, copies)."""
+    crits = (adv.get("criteria") or {}).values()
+    return bool(crits) and all(c.get("trigger") == "minecraft:impossible" for c in crits)
+
+
 def new_json(adv_id: str, spec: dict) -> dict:
     display = {"icon": {"id": spec.get("icon") or "minecraft:knowledge_book"},
                "title": {"translate": lang_prefix(adv_id) + ".title"},
@@ -292,15 +347,30 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
     new_files: dict[Path, dict] = {}
 
     created = changes.get("created") or {}
-    # Originals before their copies, so a copy can mirror an advancement made in the same save.
-    for adv_id in sorted(created, key=lambda i: bool(created[i].get("copyOf"))):
+    # Originals before their copies and duplicates, so either can follow one made in the same save.
+    for adv_id in creation_order(created):
         spec = created[adv_id]
         path = adv_path(adv_id, adv_dir)
         if path.exists():
             raise ApplyError(f"{adv_id} already exists")
         if spec.get("parent"):
             adv_path(spec["parent"], adv_dir)
-        if spec.get("copyOf"):
+        if spec.get("duplicateOf"):
+            if not spec.get("parent"):
+                raise ApplyError(f"{adv_id}: a duplicate sits under a parent")
+            src_path = adv_path(spec["duplicateOf"], adv_dir)
+            source = new_files.get(src_path) or json.loads(existing(spec["duplicateOf"], adv_dir).read_text())
+            new_files[path] = duplicate_json(adv_id, source, spec)
+            for f in ("title", "description", "hint"):
+                text = (spec.get(f) or "").strip()
+                if text:
+                    lang[lang_prefix(adv_id) + "." + f] = text
+                elif f == "title":
+                    raise ApplyError(f"{adv_id}: a duplicate needs a title")
+            if is_code_granted(source):
+                report.todo.append(f"{adv_id} duplicates an advancement only code grants: it is granted by nothing "
+                                   f"yet — give it a real criterion in {shown(path)}, or have code grant it.")
+        elif spec.get("copyOf"):
             src_path = adv_path(spec["copyOf"], adv_dir)
             source = new_files.get(src_path) or json.loads(existing(spec["copyOf"], adv_dir).read_text())
             new_files[path] = copy_json(source, spec.get("parent"), spec.get("icon"), spec.get("background"))

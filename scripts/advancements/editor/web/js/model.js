@@ -117,6 +117,14 @@ function effective() {
     const c = created[id]; if (!c || seen.has(id)) return null; seen.add(id);
     let n;
     if (c.copyOf) { const src = resolve(c.copyOf, seen); if (!src) return null; n = { ...src, h: true, copyOf: c.copyOf, bg: c.bg || src.bg }; }
+    else if (c.duplicateOf) {
+      // A duplicate: a new advancement earned by the same criteria, with its own text, icon and value.
+      const src = resolve(c.duplicateOf, seen); if (!src) return null;
+      const { copyOf, unlockedBy, chain, bg, ...rest } = src;
+      n = { ...rest, t: c.t, d: c.d || '', hint: c.hint || undefined, i: iconIndex(c.item || M.iconIds[src.i]), tx: 'tdh',
+            duplicateOf: c.duplicateOf, cap: { base: !!(src.cap && src.cap.base !== false), ed: true },
+            req: src.req ? { ...src.req, n: values[id] != null ? values[id] : src.req.n } : undefined, ...(texts[id] || {}) };
+    }
     else n = { t: c.t, d: c.d || '', f: c.f || 'task', i: iconIndex(c.item || 'minecraft:knowledge_book'), h: !!c.unlockedBy, bg: c.bg, unlockedBy: c.unlockedBy || undefined, trig: 'impossible', ...(texts[id] || {}) };
     n.created = true; nodes[id] = n; return n;
   };
@@ -245,6 +253,22 @@ const TAB_PREFIX = 'dungeontrain:dungeon_train/tab_';
 const uniqueId = (taken, base) => { let id = base, n = 2; while (taken(id)) id = `${base}_${n++}`; return id; };
 const tabIdFor = (L, name) => uniqueId(id => !!L.E.nodes[id], TAB_PREFIX + slugify(name));
 
+/** Duplicate an advancement: a new one, earned the same way, placed as a child of the original. */
+function duplicate(id) {
+  const L = layoutCache, n = L.E.nodes[id];
+  if (!L.E.editable) { toast('Switch Layout to With my edits to edit.'); return; }
+  const newId = uniqueId(x => !!L.E.nodes[x], id + '_copy');
+  commit(e => {
+    e.created[newId] = { duplicateOf: id, t: `${n.t} (copy)`, d: n.d || '', hint: n.hint || '', item: M.iconIds[n.i] };
+    e.parents[newId] = id;
+    // It starts with the original's Everything Burrito / It's Not That Simple settings, not its tab's default.
+    const own = n.cap && n.cap.ed ? n.cap : null;
+    if (own) e.capstone[newId] = { req: own.req, reset: own.reset };
+  }, `Duplicated \u201c${n.t}\u201d as its child. Rename it and set its value.`);
+  openSec = 'text'; openSecFor = newId;
+  openMenu(newId);
+}
+
 function openCopyAsTab(id) {
   const L = layoutCache, n = L.E.nodes[id];
   const rootId = tabIdFor(L, n.t);
@@ -356,6 +380,9 @@ function exportChanges() {
     if (!base) {
       out.created[id] = n.copyOf
         ? { parent: E.parents[id] || null, copyOf: n.copyOf, icon: M.iconIds[n.i], background: n.bg || null }
+        : n.duplicateOf
+        ? { parent: E.parents[id] || null, duplicateOf: n.duplicateOf, title: n.t, description: n.d, hint: n.hint || '',
+            icon: M.iconIds[n.i], value: n.req ? n.req.n : null }
         : { parent: E.parents[id] || null, title: n.t, description: n.d, frame: n.f, icon: M.iconIds[n.i], background: n.bg || null, unlockedBy: n.unlockedBy || null };
       if (n.cap && n.cap.ed && (n.cap.req !== n.cap.def || n.cap.reset !== n.cap.req)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
       if (n.vis && n.vis !== n.visDef) out.visibility[id] = n.vis;
@@ -393,6 +420,14 @@ function renameNewTabs(out, L) {
   const taken = new Set(Object.keys(M.nodes));
   const renames = {};
   Object.keys(out.created).forEach(id => {
+    if (/_copy(_\d+)?$/.test(id) && out.created[id].duplicateOf) {
+      // A duplicate is named after its title, in its original's folder: "Ten Thousand Carriages" → dungeon_train/ten_thousand_carriages.
+      const folder = id.slice(0, id.lastIndexOf('/') + 1);
+      const target = uniqueId(x => taken.has(x) || (x !== id && !!out.created[x]), folder + slugify(L.E.nodes[id].t));
+      taken.add(target);
+      if (target !== id) renames[id] = target;
+      return;
+    }
     if (!/\/tab_new(_\d+)?$/.test(id)) return;
     const name = L.E.titles[id] || L.E.nodes[id].t;
     const target = uniqueId(x => taken.has(x), TAB_PREFIX + slugify(name));

@@ -19,7 +19,9 @@ Clicking the **Everything Burrito**, or a tab-complete advancement (Dungeon Trai
 outlines everything it needs that a player can see, and marks the tabs holding any of it. **Paint mode:** tick **Everything Burrito** or **It's Not That Simple** above the tabs, then click
 advancements to put them in or out of it; those that are out are faded, and fixed ones (copies, the
 capstone pair) are hatched. The **All in / All out** button on the tab does the whole tab at once. Untick
-to go back to clicking for the menu. **New tab** makes
+to go back to clicking for the menu. **Duplicate** (in an advancement's menu) makes a new advancement like it — same criteria, icon, text and
+Everything Burrito settings, titled "… (copy)" — as its child; rename it and change its value for a next tier.
+It is saved under an id taken from its title. **New tab** makes
 a tab and opens it. You can also drag an advancement onto another one, or onto a tab. **Full screen** fills
 the window with the advancements screen, tabs included; Esc leaves it.
 

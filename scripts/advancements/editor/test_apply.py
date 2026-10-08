@@ -246,6 +246,38 @@ def test_reword_existing_text():
         raise AssertionError(f"accepted {bad}")
 
 
+def test_duplicate_is_a_child_earned_the_same_way():
+    ws = Workspace()
+    dup = DT + "a_thousand_carriages"
+    report = ws.apply({"created": {dup: {"parent": DT + "carts_100", "duplicateOf": DT + "carts_100",
+                                         "title": "A Thousand Carriages", "description": "Traverse %s carriages.",
+                                         "hint": "Keep going.", "icon": "minecraft:chest_minecart", "value": 1000}}})
+    data = json.loads(ws.text("dungeon_train/a_thousand_carriages"))
+    assert data["parent"] == DT + "carts_100"
+    assert data["criteria"]["milestone"]["trigger"] == "dungeontrain:carts_in_run"
+    assert data["criteria"]["milestone"]["conditions"]["threshold"] == 1000
+    assert data["display"]["icon"]["id"] == "minecraft:chest_minecart" and data["display"]["hidden"] is True
+    key = "advancements.dungeontrain.dungeon_train.a_thousand_carriages."
+    assert data["display"]["title"]["translate"] == key + "title"
+    lang = json.loads(ws.lang.read_text())
+    assert lang[key + "title"] == "A Thousand Carriages" and lang[key + "hint"] == "Keep going."
+    assert ws.text("dungeon_train/carts_100") == CARTS, "the original is untouched"
+    assert any("Translate the new" in t for t in report.todo)
+    assert not any("granted by nothing" in t for t in report.todo), report.todo
+
+
+def test_duplicate_of_a_code_granted_advancement_says_so():
+    ws = Workspace()
+    (ws.adv / "dungeon_train" / "explored.json").write_text(json.dumps({
+        "parent": DT + "root", "display": {"icon": {"id": "minecraft:map"}, "title": {"translate": "x.title"},
+                                           "description": {"translate": "x.description"}, "frame": "challenge"},
+        "criteria": {"explored": {"trigger": "minecraft:impossible"}}, "requirements": [["explored"]]}))
+    report = ws.apply({"created": {DT + "explored_copy": {"parent": DT + "explored", "duplicateOf": DT + "explored",
+                                                          "title": "Explored Again"}}})
+    assert any("granted by nothing" in t for t in report.todo), report.todo
+    assert COMMIT.blocking(report.todo), "Save & commit stops for it"
+
+
 # ---------- Save & commit (commit.py) ----------
 
 def test_commit_pieces():

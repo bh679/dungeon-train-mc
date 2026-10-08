@@ -58,7 +58,7 @@ function fillMenuRaw(id) {
   if (openSecFor !== id) { openSec = null; openSecFor = id; }
   const copies = Object.keys(E.nodes).filter(k => E.nodes[k].copyOf === id);
   const below = countDesc(L, id);
-  const tx = n.created ? 'td' : (n.tx || '');
+  const tx = n.created && !n.duplicateOf ? 'td' : (n.tx || '');
   const canText = editable && !n.copyOf && !!tx;
   const canReq = editable && n.req && !n.copyOf;
   let h = `<div class="head">${part('icon', `<i style="background-image:url(${IC[n.i]})"></i>`, editable, 'div', 'slot')}
@@ -84,7 +84,8 @@ function fillMenuRaw(id) {
   if (editable) {
     h += openSection(L, id, n, { isRoot, tabRoot, below, tx });
     const touched = EDIT_KEYS.some(k => edits[k] && id in edits[k]) || id in edits.created;
-    if (touched || n.created) h += `<div class="row">${touched ? '<button class="mcbtn" type="button" data-act="reset">Undo my edits to this</button>' : ''}${n.created ? '<button class="mcbtn" type="button" data-act="delete">Delete</button>' : ''}</div>`;
+    const canDup = kind === 'dt' && !n.copyOf && !n.unlockedBy && !['dungeontrain:dungeon_train/completionist', 'dungeontrain:dungeon_train/start_again'].includes(id);
+    h += `<div class="row">${canDup ? '<button class="mcbtn" type="button" data-act="duplicate" title="Make a new advancement like this one, as its child">Duplicate</button>' : ''}${touched ? '<button class="mcbtn" type="button" data-act="reset">Undo my edits to this</button>' : ''}${n.created ? '<button class="mcbtn" type="button" data-act="delete">Delete</button>' : ''}</div>`;
   }
   menu.innerHTML = h;
   wireMenu(id);
@@ -189,6 +190,7 @@ function wireMenu(id) {
     else if (a === 'tabRight') moveTab(id, 1);
     else if (a === 'reset') resetNode(id);
     else if (a === 'delete') deleteCreated(id);
+    else if (a === 'duplicate') duplicate(id);
     else if (a === 'moreBgs') { moreBgsOpen = !moreBgsOpen; fillMenu(id); if (moreBgsOpen) { const q = menu.querySelector('#mBgSearch'); q && q.focus(); } }
   }));
   on('#mKids', 'change', e => { view.withChildren = e.target.checked; saveView(); renderControls(layoutCache); fillMenu(id); });
@@ -209,7 +211,8 @@ function wireMenu(id) {
     clearTimeout(tt);
     const v = parseFloat(e.target.value);
     if (!(v > 0)) return;
-    const req = M.nodes[id].req;
+    const E = layoutCache.E, dupOf = E.nodes[id] && E.nodes[id].duplicateOf;
+    const req = M.nodes[id] ? M.nodes[id].req : E.nodes[dupOf].req; // a duplicate's value starts from its original's
     tt = setTimeout(() => commit(ed => { ed.values = ed.values || {}; const raw = inputToReq(req, v); if (raw === req.n) delete ed.values[id]; else ed.values[id] = raw; }), 450);
   });
   const wireIcons = root => root.querySelectorAll('[data-item]').forEach(b => b.addEventListener('click', () => setIcon(id, b.dataset.item)));
