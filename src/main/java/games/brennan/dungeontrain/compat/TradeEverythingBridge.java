@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.tradeeverything.api.TradeEverythingApi;
+import io.github.mortuusars.exposure.world.item.StackedPhotographsItem;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -113,7 +114,10 @@ public final class TradeEverythingBridge {
     /** Disposable camera (Polaroid's instant camera) — pays out 2 emeralds after the margin. */
     private static final int INSTANT_CAMERA_VALUE_SIXTEENTHS = EMERALD_PAYOUT_SIXTEENTHS * 2;
 
-    /** Exposure photographs trade like a written book. */
+    /** One Exposure photograph — half a written book. A stack pays this per photo inside. */
+    private static final int PHOTOGRAPH_VALUE_SIXTEENTHS = WRITTEN_BOOK_VALUE_SIXTEENTHS / 2;
+
+    /** Exposure's loose photographs, priced flat by {@link #PHOTOGRAPH_VALUE_SIXTEENTHS}. */
     private static final List<String> PHOTOGRAPH_IDS = List.of(
         "exposure:photograph", "exposure:aged_photograph");
 
@@ -181,7 +185,8 @@ public final class TradeEverythingBridge {
         TradeEverythingApi.setItemOverride(
             ResourceLocation.parse(DisabledModContent.INSTANT_CAMERA), INSTANT_CAMERA_VALUE_SIXTEENTHS);
         PHOTOGRAPH_IDS.forEach(id ->
-            TradeEverythingApi.setItemOverride(ResourceLocation.parse(id), WRITTEN_BOOK_VALUE_SIXTEENTHS));
+            TradeEverythingApi.setItemOverride(ResourceLocation.parse(id), PHOTOGRAPH_VALUE_SIXTEENTHS));
+        TradeEverythingApi.registerValueProvider(TradeEverythingBridge::stackedPhotographsValue);
     }
 
     /**
@@ -253,6 +258,13 @@ public final class TradeEverythingBridge {
     /** {@link #emeraldsToSixteenths} in 256ths, for {@link #VILLAGER_STOCK_VALUES_256THS}. */
     static int emeraldsTo256ths(int emeralds) {
         return emeraldsToSixteenths(emeralds) * SIXTEENTH_IN_256THS;
+    }
+
+    /** A stack of photographs sells for each photo in it, so stacking never loses value. */
+    private static OptionalInt stackedPhotographsValue(ItemStack stack) {
+        if (!(stack.getItem() instanceof StackedPhotographsItem stacked)) return OptionalInt.empty();
+        int photos = stacked.getPhotographs(stack).size();
+        return photos > 0 ? OptionalInt.of(PHOTOGRAPH_VALUE_SIXTEENTHS * photos) : OptionalInt.empty();
     }
 
     /** See {@link #OMINOUS_BANNER_NAME_KEY} for why the check is component-based. */
