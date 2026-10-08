@@ -11,6 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
 
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 
@@ -109,6 +110,13 @@ public final class TradeEverythingBridge {
     /** +9 slots, a 3×3 of edible backpacks — 45 emeralds, i.e. 9 × the plain one. */
     private static final int GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 720;
 
+    /** Disposable camera (Polaroid's instant camera) — pays out 2 emeralds after the margin. */
+    private static final int INSTANT_CAMERA_VALUE_SIXTEENTHS = EMERALD_PAYOUT_SIXTEENTHS * 2;
+
+    /** Exposure photographs trade like a written book. */
+    private static final List<String> PHOTOGRAPH_IDS = List.of(
+        "exposure:photograph", "exposure:aged_photograph");
+
     /**
      * The ominous banner is not its own item: vanilla stamps this translation
      * key into {@code ITEM_NAME} on a plain white banner
@@ -170,6 +178,10 @@ public final class TradeEverythingBridge {
         TradeEverythingApi.setItemOverride(
             ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "golden_edible_backpack"),
             GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS);
+        TradeEverythingApi.setItemOverride(
+            ResourceLocation.parse(DisabledModContent.INSTANT_CAMERA), INSTANT_CAMERA_VALUE_SIXTEENTHS);
+        PHOTOGRAPH_IDS.forEach(id ->
+            TradeEverythingApi.setItemOverride(ResourceLocation.parse(id), WRITTEN_BOOK_VALUE_SIXTEENTHS));
     }
 
     /**
@@ -185,7 +197,8 @@ public final class TradeEverythingBridge {
         }
         String s = id.toString();
         return s.equals("minecraft:bookshelf") || s.equals("minecraft:honey_block")
-            || s.equals("ediblebackpacks:edible_backpack") || s.equals("ediblebackpacks:golden_edible_backpack");
+            || s.equals("ediblebackpacks:edible_backpack") || s.equals("ediblebackpacks:golden_edible_backpack")
+            || s.equals(DisabledModContent.INSTANT_CAMERA) || PHOTOGRAPH_IDS.contains(s);
     }
 
     /**
