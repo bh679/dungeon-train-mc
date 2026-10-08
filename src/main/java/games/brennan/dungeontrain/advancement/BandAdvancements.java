@@ -218,6 +218,20 @@ public final class BandAdvancements {
         return List.copyOf(out);
     }
 
+    /**
+     * The band advancements {@code layout} actually visits on its first run — what a player can earn on
+     * the journey in this world — plus {@link #LATER_CYCLES}. {@link #chain} appends every other band
+     * after these; those stay in the tree but have no band to be earned in.
+     */
+    public static Set<String> reachable(CycleLayout layout) {
+        Set<String> out = new LinkedHashSet<>();
+        for (int i = 0; i < layout.count(); i++) {
+            addSlot(out, layout, i);
+        }
+        out.addAll(LATER_CYCLES);
+        return Set.copyOf(out);
+    }
+
     private static void addSlot(Set<String> out, CycleLayout layout, int i) {
         CycleLayout.Slot slot = layout.slot(i);
         // Only the first-run look: a first>later slot's later look is met from the second cycle on, so

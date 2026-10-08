@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.advancement.TabGateways;
+import games.brennan.dungeontrain.advancement.TrainExploredAdvancement;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.FirstEverAdvancements;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
@@ -999,6 +1000,7 @@ public final class AchievementEvents {
         replaySidecarAdvancements(player);
         // Tab copies follow their originals as restored above (or revoked by Start Again).
         TabGateways.sync(player);
+        TrainExploredAdvancement.checkAndGrant(player);
         CompletionistAdvancement.checkAndGrant(player);
         // Vanilla sent this player's command tree before any of the above ran. If they hold the
         // banked capstone — replayed just now, or granted just now — /advancement revoke @s
@@ -1286,6 +1288,10 @@ public final class AchievementEvents {
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the
             // needless re-entry (the award is idempotent once done regardless).
+            // "Dungeon Train Explored": every Train Explorer advancement. Before the burrito, which needs it.
+            if (!id.equals(TrainExploredAdvancement.ID)) {
+                TrainExploredAdvancement.checkAndGrant(player);
+            }
             if (!id.equals(CompletionistAdvancement.ID)) {
                 CompletionistAdvancement.checkAndGrant(player);
             }

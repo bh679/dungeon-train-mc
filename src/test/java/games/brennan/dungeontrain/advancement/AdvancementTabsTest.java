@@ -217,6 +217,32 @@ class AdvancementTabsTest {
     }
 
     @Test
+    @DisplayName("Dungeon Train Explored sits in Dungeon Train under The Enchiridion's gateway, granted by code")
+    void trainExploredPlacement() throws IOException {
+        Map<String, JsonObject> all = advancements();
+        JsonObject adv = all.get(DT + "train_explored");
+        assertNotNull(adv);
+        assertEquals("dungeontrain:" + DT + "gate_enchiridion", adv.get("parent").getAsString());
+        assertEquals(DT + "root", tabOf(all, DT + "train_explored"));
+        for (JsonElement c : adv.getAsJsonObject("criteria").asMap().values()) {
+            assertEquals("minecraft:impossible", c.getAsJsonObject().get("trigger").getAsString());
+        }
+        assertEquals(TrainExploredAdvancement.TAB_ROOT.getPath(), TRAIN_EXPLORER);
+    }
+
+    @Test
+    @DisplayName("Explored skips only band advancements the layout never visits")
+    void exploredSkipsUnreachableBands() {
+        Set<String> reachable = Set.of(BandAdvancements.NETHER, BandAdvancements.VOID);
+        ResourceLocation nether = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + BandAdvancements.NETHER);
+        ResourceLocation stacks = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + BandAdvancements.STACKS);
+        ResourceLocation carts = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "carts_1000");
+        assertFalse(TrainExploredAdvancement.isUnreachableBand(nether, reachable));
+        assertTrue(TrainExploredAdvancement.isUnreachableBand(stacks, reachable));
+        assertFalse(TrainExploredAdvancement.isUnreachableBand(carts, reachable), "not a band: always required");
+    }
+
+    @Test
     @DisplayName("copies never count towards the Everything Burrito")
     void copiesOutsideTheBurrito() throws IOException {
         for (String copy : shippedLayout().copies().keySet()) {
