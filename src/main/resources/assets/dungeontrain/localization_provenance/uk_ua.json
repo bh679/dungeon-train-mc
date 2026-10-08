@@ -4342,7 +4342,8 @@
       "advancements.dungeontrain.enchiridion.darkroom.title",
       "advancements.dungeontrain.enchiridion.darkroom.description",
       "advancements.dungeontrain.tab.train_explorer",
-      "advancements.dungeontrain.tab.others"
+      "advancements.dungeontrain.tab.others",
+      "advancements.dungeontrain.tab.secrete_menu"
     ],
     "adventureitemnames": "*",
     "playermob": "*",

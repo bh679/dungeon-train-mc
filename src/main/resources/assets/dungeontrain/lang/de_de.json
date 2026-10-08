@@ -3855,6 +3855,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "Mach, finde oder entrichte einen Tribut für ein Foto",
   "advancements.dungeontrain.tab.train_explorer": "Zug-Entdecker",
   "advancements.dungeontrain.tab.others": "Andere",
+  "advancements.dungeontrain.tab.secrete_menu": "Das Geheimmenü",
   "chat.dungeontrain.free_play.cause.portal_rate": "Wie oft dimensionale Waggons erscheinen, wurde in dieser Welt geändert.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Die Strecke, die diese Welt erzeugt, ist nicht mehr die, auf die Dungeon Train abgestimmt ist — deshalb bleibt diese Welt im Freien Spiel.",
   "chat.dungeontrain.free_play.cause.dt_config": "Die Schwierigkeitseinstellungen von Dungeon Train wurden geändert.",

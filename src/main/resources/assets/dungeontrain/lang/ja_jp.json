@@ -3803,6 +3803,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "写真を撮る、見つける、または貢ぎ物を捧げる",
   "advancements.dungeontrain.tab.train_explorer": "列車探検家",
   "advancements.dungeontrain.tab.others": "他の人たち",
+  "advancements.dungeontrain.tab.secrete_menu": "裏メニュー",
   "chat.dungeontrain.free_play.cause.portal_rate": "このワールドでは、次元車両の出現頻度が変更されています。",
   "chat.dungeontrain.free_play.portal_rate_changed": "このワールドが生成する線路は、もう Dungeon Train が調整対象としているものではありません。そのためこのワールドはフリープレイのままになります。",
   "chat.dungeontrain.free_play.cause.dt_config": "Dungeon Train の難易度設定が変更されています。",

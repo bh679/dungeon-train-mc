@@ -13,7 +13,7 @@
     "show_toast": false,
     "announce_to_chat": false,
     "hidden": true,
-    "background": "minecraft:textures/gui/advancements/backgrounds/husbandry.png"
+    "background": "minecraft:textures/block/white_terracotta.png"
   },
   "criteria": {
     "mirrored": {

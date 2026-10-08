@@ -3912,6 +3912,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "71c82d5363d55331"},
   "advancements.dungeontrain.tab.train_explorer": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "12298e7d4ea2455a"},
   "advancements.dungeontrain.tab.others": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ebdad9ba4c5e3ce0"},
+  "advancements.dungeontrain.tab.secrete_menu": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ea458fa813625ca2"},
   "chat.dungeontrain.free_play.cause.portal_rate": {"author": "helluvaboy", "reviewer": "SandRuin", "source_hash": "904c6067abd4d0e5"},
   "chat.dungeontrain.free_play.portal_rate_changed": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "db14541fde8a24ae"},
   "chat.dungeontrain.free_play.cause.dt_config": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "a18c5657dd0a162b"},

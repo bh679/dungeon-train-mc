@@ -10,7 +10,7 @@
       "translate": "advancements.dungeontrain.enchiridion.darkroom.description"
     },
     "frame": "task",
-    "background": "minecraft:textures/block/red_nether_bricks.png",
+    "background": "minecraft:textures/block/black_terracotta.png",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": true

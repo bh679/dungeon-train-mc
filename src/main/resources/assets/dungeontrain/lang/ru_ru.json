@@ -3912,6 +3912,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "Сделайте, найдите фото или сделайте ему Подношение",
   "advancements.dungeontrain.tab.train_explorer": "Исследователь поезда",
   "advancements.dungeontrain.tab.others": "Другие",
+  "advancements.dungeontrain.tab.secrete_menu": "Секретное меню",
   "chat.dungeontrain.free_play.cause.portal_rate": "В этом мире изменили, частоту появлявлений вагонов-порталов.",
   "chat.dungeontrain.free_play.portal_rate_changed": "Генерация пути теперь не та, под которую задумана Dungeon Train, поэтому будет включена Свободная игра.",
   "chat.dungeontrain.free_play.cause.dt_config": "Настройки сложности Dungeon Train изменены.",

@@ -10,7 +10,8 @@
   ],
   "tabNames": {
     "dungeontrain:dungeon_train/tab_train_explorer": "advancements.dungeontrain.tab.train_explorer",
-    "dungeontrain:dungeon_train/tab_others": "advancements.dungeontrain.tab.others"
+    "dungeontrain:dungeon_train/tab_others": "advancements.dungeontrain.tab.others",
+    "dungeontrain:secrete_menu/root": "advancements.dungeontrain.tab.secrete_menu"
   },
   "copies": {
     "dungeontrain:dungeon_train/tab_train_explorer": "dungeontrain:dungeon_train/carts_100",

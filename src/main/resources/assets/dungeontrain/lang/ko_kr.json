@@ -3803,6 +3803,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "사진을 찍거나, 찾거나, 공물을 바칩니다",
   "advancements.dungeontrain.tab.train_explorer": "열차 탐험가",
   "advancements.dungeontrain.tab.others": "다른 이들",
+  "advancements.dungeontrain.tab.secrete_menu": "비밀 메뉴",
   "chat.dungeontrain.free_play.cause.portal_rate": "이 세계에서는 차원 객차가 나타나는 빈도가 변경되었습니다.",
   "chat.dungeontrain.free_play.portal_rate_changed": "이 세계가 생성하는 선로는 더 이상 Dungeon Train이 맞춰 조정된 선로가 아니므로, 이 세계는 자유 플레이로 남습니다.",
   "chat.dungeontrain.free_play.cause.dt_config": "Dungeon Train의 난이도 설정이 변경되었습니다.",

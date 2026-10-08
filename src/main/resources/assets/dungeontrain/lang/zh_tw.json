@@ -3817,6 +3817,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "拍攝、找到一張照片，或為它獻上供奉",
   "advancements.dungeontrain.tab.train_explorer": "列車探索者",
   "advancements.dungeontrain.tab.others": "其他人",
+  "advancements.dungeontrain.tab.secrete_menu": "隱藏菜單",
   "chat.dungeontrain.free_play.cause.portal_rate": "本世界中維度車廂出現的頻率已被更改。",
   "chat.dungeontrain.free_play.portal_rate_changed": "本世界生成的軌道已不再是《地牢列車》所平衡的那一條，因此本世界將維持自由遊玩狀態。",
   "chat.dungeontrain.free_play.cause.dt_config": "《地牢列車》的難度設定已被更改。",
