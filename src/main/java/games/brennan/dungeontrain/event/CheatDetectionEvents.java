@@ -99,6 +99,9 @@ public final class CheatDetectionEvents {
         ServerPlayer player = source.getPlayer();
         if (player == null) return;                 // console / command block / function
         if (RunIntegrity.isPermanentlyCheated(player)) return; // already recorded — let it run (incl. re-dispatch)
+        // Unknown command (e.g. "/discord", a typo): no root node parsed, so it only prints
+        // "Unknown command" and cannot cheat — never prompt Free Play for it.
+        if (event.getParseResults().getContext().getNodes().isEmpty()) return;
         if (!CommandAllowlist.taints(event.getParseResults())) return;
 
         if (RunIntegrity.isVisiblySessionFreePlay()) {
