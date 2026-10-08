@@ -210,10 +210,10 @@ public final class PlayerAlbums {
             return;
         }
         // Normally rolled in the chest; a placeholder from the creative tab or /give is resolved
-        // here, and stays a placeholder while none is available.
+        // here — with no other player's album to hand out, it is the holder's own.
         if (held.is(ModItems.RANDOM_PLAYERPHOTOALBUM.get())) {
             ItemStack found = FoundAlbums.rollFound(player.getRandom().nextLong());
-            if (!found.isEmpty()) player.setItemSlot(slot, found);
+            player.setItemSlot(slot, found.isEmpty() ? newAlbum(player) : found);
             return;
         }
         if (!held.is(Exposure.Items.ALBUM.get())) return;
