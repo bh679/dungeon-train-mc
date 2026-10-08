@@ -60,6 +60,10 @@ public final class EnchiridionAdvancements {
     public static final String VIEWED_FOUND_PHOTO = "viewed_found_photo";
     /** A creature that was in a player's photo died within a second of the shot — "Final Moments". */
     public static final String PHOTO_FINAL_MOMENTS = "photo_final_moments";
+    /** Your album was saved holding at least one photo — "Keepsake". */
+    public static final String ALBUM_PHOTO = "album_photo";
+    /** Your album was saved with a photo on every page — "No Room Left". */
+    public static final String ALBUM_FULL = "album_full";
 
     /** Prefix of the per-dimension photo advancements: {@code enchiridion/photo_<dimension>}. */
     public static final String PHOTO_PREFIX = "photo_";
