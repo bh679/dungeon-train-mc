@@ -38,6 +38,17 @@ def book_paths(java: Path = ENCHIRIDION_JAVA) -> set[str]:
     return paths
 
 
+VISIBILITY_MODES = ("parent", "always", "earned")
+
+
+def visibility_default(adv: dict) -> str:
+    """The mode an advancement has with none set (AdvancementVisibilityRule): a tab head shows from the
+    start unless its JSON says hidden; everything else is hidden until its parent is earned."""
+    if not adv.get("parent"):
+        return "earned" if (adv.get("display") or {}).get("hidden") else "always"
+    return "parent"
+
+
 def linked(tabs: dict) -> dict[str, str]:
     """Every advancement that follows another — tab copies and ``unlockedBy`` heads — to its source."""
     return {**tabs.get("copies", {}), **tabs.get("unlockedBy", {})}

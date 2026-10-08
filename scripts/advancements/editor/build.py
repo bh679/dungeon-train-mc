@@ -173,6 +173,9 @@ def build_bundle() -> tuple[dict, list[str]]:
         if not adv.get("parent"):
             node["trig"] = describe_criteria(adv)
         if aid.startswith("dungeontrain:"):
+            node["visDef"] = capstone_rules.visibility_default(adv)
+            node["vis"] = tabs_file.get("visibility", {}).get(aid, node["visDef"])
+        if aid.startswith("dungeontrain:"):
             required, reset = capstone_rules.effective(aid, linked, books, tabs_file)
             node["cap"] = {"req": required, "reset": reset, "ed": capstone_rules.is_editable(aid, linked)}
         if CHAIN.match(aid):

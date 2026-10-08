@@ -62,6 +62,8 @@ body.full .stage .exitfull { display: block; position: absolute; top: calc(6px +
 .node:focus-visible { outline: calc(1px * var(--s)) solid #fff; }
 .node.drop, .tab.drop { outline: calc(1px * var(--s)) dashed var(--accent); outline-offset: calc(1px * var(--s)); }
 .node.moving { opacity: .35; }
+/* Progress: Not earned — what a new player would not see yet */
+.node.hid { opacity: .3; filter: grayscale(1); }
 #fade { background: #000; opacity: 0; pointer-events: none; transition: opacity .15s; }
 #fade.on { opacity: .3; }
 .gtitle { font-size: calc(8.5px * var(--s)); color: var(--gui-text); white-space: nowrap; line-height: 1; }

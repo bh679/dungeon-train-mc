@@ -119,6 +119,10 @@ function describeChanges(L) {
     const n = E.nodes[id]; if (!n) return;
     out.push({ id, html: n.unlockedBy ? `<em>${esc(tabTitle(L, id) || name(id))}</em> now unlocks with <em>${esc(name(n.unlockedBy))}</em>` : `<em>${esc(tabTitle(L, id) || name(id))}</em> no longer unlocks with another advancement` });
   });
+  Object.keys(edits.visibility || {}).forEach(id => {
+    const n = E.nodes[id]; if (!n || !n.vis) return;
+    out.push({ id, html: `<em>${esc(name(id))}</em>: ${esc(VIS_LABELS[n.vis] || n.vis)}` });
+  });
   Object.keys(edits.texts || {}).forEach(id => E.nodes[id] && out.push({ id, html: `Text of <em>${esc(name(id))}</em> changed` }));
   if (edits.order) out.push({ id: null, html: `Tab order: ${edits.order.filter(i => E.nodes[i] && !E.parents[i]).map(i => esc(tabTitle(L, i))).join(' · ')}` });
   return out;

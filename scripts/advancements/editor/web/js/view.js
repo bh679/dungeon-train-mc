@@ -80,6 +80,7 @@ function render() {
   tab.nodes.forEach(n => {
     const d = nodeEl(n, tree, n.px + 3, n.py);
     d.dataset.node = n.id;
+    if (!view.earned && !visibleWithNothingEarned(L.E, n.id)) d.classList.add('hid');
     if (n.id === selected) d.classList.add('sel');
     d.setAttribute('role', 'button'); d.setAttribute('aria-label', `Edit ${n.t}`); d.tabIndex = 0;
     d.addEventListener('mouseenter', () => { if (!drag || !drag.active) showHover(n); });

@@ -16,30 +16,39 @@
     "hidden": true
   },
   "criteria": {
-    "took_photo": {
-      "trigger": "dungeontrain:gameplay_action",
+    "camera": {
+      "trigger": "minecraft:inventory_changed",
       "conditions": {
-        "actionId": "took_photo"
+        "items": [
+          {
+            "items": [
+              "exposure_polaroid:instant_camera",
+              "exposure:camera"
+            ]
+          }
+        ]
       }
     },
-    "viewed_found_photo": {
-      "trigger": "dungeontrain:gameplay_action",
+    "photo": {
+      "trigger": "minecraft:inventory_changed",
       "conditions": {
-        "actionId": "viewed_found_photo"
-      }
-    },
-    "tributed_photo": {
-      "trigger": "dungeontrain:gameplay_action",
-      "conditions": {
-        "actionId": "tributed_photo"
+        "items": [
+          {
+            "items": [
+              "exposure:photograph",
+              "exposure:aged_photograph",
+              "exposure:stacked_photographs",
+              "dungeontrain:found_photograph"
+            ]
+          }
+        ]
       }
     }
   },
   "requirements": [
     [
-      "took_photo",
-      "viewed_found_photo",
-      "tributed_photo"
+      "camera",
+      "photo"
     ]
   ]
 }

@@ -31,6 +31,7 @@ Needs Pillow (`pip install pillow`) for the icons, and a workspace that has buil
 | Tab name, tab order, tab copies | `src/main/resources/dungeontrain/advancement_tabs.json` (+ an `en_us` key for a name) |
 | "Open a copy as a new tab" | a new hidden, silent copy advancement, listed under `copies` |
 | Unlocked by | `advancement_tabs.json` → `unlockedBy` (tab head → the advancement that unlocks it) |
+| Visibility | `advancement_tabs.json` → `visibility` (`parent` / `always` / `earned`), only where it differs from the default |
 | Everything Burrito / It's Not That Simple | `advancement_tabs.json` → `burrito` / `startAgainReset`, only where it differs from the default |
 
 The default for both comes from the mod (`CompletionistAdvancement.isRequiredId`; Start Again resets what
@@ -48,6 +49,14 @@ An advancement has one parent, so a tab headed by an advancement that also appea
 by play, and a hidden copy with a `minecraft:impossible` criterion. `TabGateways` earns the copy when
 the original is earned, and re-syncs on login. The copy being hidden is what keeps its tab locked
 until then. Copies never count towards the Everything Burrito.
+
+## Visibility
+
+Each advancement has a **Visibility**: *hidden until parent* (the default: shown once it or its
+parent is earned), *always visible* while its parent is (a whole branch shows with its head), or
+*hidden until earned*. A tab's first advancement defaults to hidden-until-earned when its JSON says
+hidden, otherwise always. `AdvancementVisibilityRule` applies it in game. **Progress: Not earned**
+fades what a player who has earned nothing would not see.
 
 ## Unlocked tabs
 

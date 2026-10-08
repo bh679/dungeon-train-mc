@@ -212,6 +212,19 @@ def test_change_and_clear_a_tab_unlock():
         raise AssertionError(f"accepted {bad}")
 
 
+def test_visibility_stored_only_when_not_default():
+    ws = Workspace()
+    ws.apply({"visibility": {DT + "carts_100": "always", DT + "root": "always"}})
+    assert json.loads(ws.tabs.read_text())["visibility"] == {DT + "carts_100": "always"}, "root defaults to always"
+    ws.apply({"visibility": {DT + "carts_100": "parent"}})
+    assert "visibility" not in json.loads(ws.tabs.read_text())
+    try:
+        ws.apply({"visibility": {DT + "carts_100": "sometimes"}})
+    except MOD.ApplyError:
+        return
+    raise AssertionError("accepted a bad mode")
+
+
 GOLDEN = MOD.REPO / "src/test/resources/advancement/burrito_required.txt"
 
 

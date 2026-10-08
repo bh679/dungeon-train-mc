@@ -14,7 +14,8 @@ button posts to ``serve.py``. Shape (every section optional)::
      "created":     {"<id>": {"parent": ..., "copyOf": "<id>", "icon": ..., "background": ...}},
      "deleted":     ["<id>", ...],
      "capstone":    {"<id>": {"required": true, "reset": false}},  # Everything Burrito / It's Not That Simple
-     "unlocks":     {"<tab root id>": "<id that unlocks it>" | null}}
+     "unlocks":     {"<tab root id>": "<id that unlocks it>" | null},
+     "visibility":  {"<id>": "parent" | "always" | "earned" | null}}  # null: back to the default
 
 A new tab (``created`` with no ``parent``) may carry ``"unlockedBy": "<id>"``: it is then earned whenever
 that advancement is, so it needs no trigger of its own.
@@ -328,6 +329,20 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
         if CHAIN.match(adv_id) and adv_id != CHAIN_ANCHOR_CARRIER:
             report.todo.append(f"{adv_id} is on the band journey: its parent is set by band order at load, "
                                "so this move only shows when no band layout is active.")
+
+    for adv_id, mode in (changes.get("visibility") or {}).items():
+        if mode is not None and mode not in capstone_rules.VISIBILITY_MODES:
+            raise ApplyError(f"{adv_id}: visibility must be one of {', '.join(capstone_rules.VISIBILITY_MODES)}")
+        path = adv_path(adv_id, adv_dir)
+        adv = new_files.get(path) or json.loads(text_of(existing(adv_id, adv_dir)))
+        table = tabs.setdefault("visibility", {})
+        if mode is None or mode == capstone_rules.visibility_default(adv):
+            table.pop(adv_id, None)
+        else:
+            table[adv_id] = mode
+        if not table:
+            del tabs["visibility"]
+        tabs_dirty = True
 
     for adv_id, item in (changes.get("icons") or {}).items():
         if not ITEM_RE.match(item or ""):

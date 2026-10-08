@@ -65,19 +65,20 @@ public final class TabGateways {
      */
     public record Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order,
                          Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset,
-                         Map<String, String> unlockedBy) {
+                         Map<String, String> unlockedBy, Map<String, String> visibility) {
 
-        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of());
+        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
         /** A layout with copies, names and order only — no capstone overrides or unlock links. */
         public Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order) {
-            this(copies, tabNames, order, Map.of(), Map.of(), Map.of());
+            this(copies, tabNames, order, Map.of(), Map.of(), Map.of(), Map.of());
         }
 
         public static Layout parse(Reader reader) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
             return new Layout(stringMap(root, "copies"), stringMap(root, "tabNames"), stringList(root, "order"),
-                    boolMap(root, "burrito"), boolMap(root, "startAgainReset"), stringMap(root, "unlockedBy"));
+                    boolMap(root, "burrito"), boolMap(root, "startAgainReset"), stringMap(root, "unlockedBy"),
+                    stringMap(root, "visibility"));
         }
 
         /**

@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reached_nether",
+  "parent": "dungeontrain:dungeon_train/reached_wwoo",
   "display": {
     "icon": { "id": "minecraft:obsidian" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_void.title" },

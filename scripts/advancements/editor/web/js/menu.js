@@ -67,6 +67,7 @@ function fillMenuRaw(id) {
         ${id === DT_ROOT ? '' : `<div class="row"><button class="mcbtn" type="button" data-act="tabLeft" ${oi <= 1 ? 'disabled' : ''}>\u2190 Move tab</button><button class="mcbtn" type="button" data-act="tabRight" ${oi >= ord.length - 1 ? 'disabled' : ''}>Move tab \u2192</button></div>`}</div>`;
       if (id !== DT_ROOT) sec.unlock = unlockSection(L, id, n);
     }
+    if (n.vis) sec.vis = visibilitySection(n, isRoot);
     if (n.cap) sec.cap = capstoneSection(n);
     if (n.created && !n.copyOf) {
       sec.text = `<div class="sec"><span>Text</span><label for="mTitle">Title</label><input type="text" id="mTitle" value="${esc(n.t)}" maxlength="60">
@@ -74,7 +75,7 @@ function fillMenuRaw(id) {
     }
     sec.icon = `<div class="sec"><span>Icon</span><div class="icons" id="mIcons">${IC.map((u, i) => `<button type="button" data-icon="${i}" class="${i === n.i ? 'on' : ''}" title="${esc(M.iconNames[i])}" aria-label="${esc(M.iconNames[i])}"><i style="background-image:url(${u})"></i></button>`).join('')}</div></div>`;
     // A tab's first advancement leads with what makes it a tab: its name, text and what unlocks it.
-    const order = isRoot ? ['tab', 'text', 'unlock', 'move', 'req', 'cap', 'icon'] : ['move', 'req', 'cap', 'text', 'icon'];
+    const order = isRoot ? ['tab', 'text', 'unlock', 'vis', 'move', 'req', 'cap', 'icon'] : ['move', 'vis', 'req', 'cap', 'text', 'icon'];
     h += order.map(k => sec[k] || '').join('');
     const touched = EDIT_KEYS.some(k => edits[k] && id in edits[k]) || id in edits.created;
     if (touched || n.created) h += `<div class="row">${touched ? '<button class="mcbtn" type="button" data-act="reset">Undo my edits to this</button>' : ''}${n.created ? '<button class="mcbtn" type="button" data-act="delete">Delete</button>' : ''}</div>`;
@@ -125,6 +126,7 @@ function wireMenu(id) {
   on('#mKids', 'change', e => { view.withChildren = e.target.checked; saveView(); renderControls(layoutCache); fillMenu(id); });
   on('#mParent', 'change', e => reparent(id, e.target.value));
   on('#mUnlock', 'change', e => setUnlock(id, e.target.value));
+  on('#mVis', 'change', e => { const v = e.target.value; commit(ed => { ed.visibility = ed.visibility || {}; ed.visibility[id] = v; }, `Visibility: ${VIS_LABELS[v]}.`); });
   const capEdit = (key, label) => e => { const v = e.target.checked; commit(ed => { ed.capstone = ed.capstone || {}; ed.capstone[id] = { ...(ed.capstone[id] || {}), [key]: v }; }, label(v)); };
   on('#mCapReq', 'change', capEdit('req', v => v ? 'Now counts towards the Everything Burrito.' : 'No longer counts towards the Everything Burrito.'));
   on('#mCapReset', 'change', capEdit('reset', v => v ? 'Now reset by It\u2019s Not That Simple.' : 'Now kept by It\u2019s Not That Simple.'));
@@ -201,4 +203,13 @@ function setUnlock(id, source) {
     if (ed.created[id]) ed.created[id] = { ...ed.created[id], unlockedBy: source || '' };
     else ed.unlocks[id] = source || null;
   }, source ? `${n.t} now unlocks with ${src ? src.t : source}.` : `${n.t} no longer unlocks with another advancement.`);
+}
+
+// ---------- visibility ----------
+function visibilitySection(n, isRoot) {
+  const modes = isRoot ? ['always', 'earned'] : ['parent', 'always', 'earned'];
+  const opts = modes.map(m => `<option value="${m}" ${m === n.vis ? 'selected' : ''}>${VIS_LABELS[m]}${m === n.visDef ? ' (default)' : ''}</option>`).join('');
+  const hint = isRoot ? 'A tab\u2019s first advancement: \u201cHidden until earned\u201d keeps the whole tab out of sight until then.'
+    : 'Progress: Not earned shows what a new player sees; hidden ones are faded.';
+  return `<div class="sec"><span>Visibility</span><label for="mVis">Shown on the advancements screen</label><select id="mVis">${opts}</select><div class="hint">${hint}</div></div>`;
 }

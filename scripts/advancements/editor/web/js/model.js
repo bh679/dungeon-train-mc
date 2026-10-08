@@ -13,9 +13,9 @@ rootEl.style.setProperty('--titlebox', `url(${SP.title_box})`);
 
 const IX = 9, IY = 18;
 let W = 252, H = 140, IW = 234, IH = 113, PER_ROW = 8;
-const emptyEdits = () => ({ parents: {}, created: {}, deleted: [], icons: {}, tabTitles: {}, bgs: {}, texts: {}, values: {}, capstone: {}, unlocks: {}, order: null });
+const emptyEdits = () => ({ parents: {}, created: {}, deleted: [], icons: {}, tabTitles: {}, bgs: {}, texts: {}, values: {}, capstone: {}, unlocks: {}, visibility: {}, order: null });
 /** Edit maps keyed by advancement id — what "Undo my edits to this" clears. */
-const EDIT_KEYS = ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone', 'unlocks'];
+const EDIT_KEYS = ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone', 'unlocks', 'visibility'];
 const view = { layout: 'proposed', other: false, creative: false, earned: true, tabId: DT_ROOT, withChildren: true };
 try { Object.assign(view, JSON.parse(localStorage.getItem('dt-adv-view') || '{}')); } catch (e) {}
 const saveView = () => { try { localStorage.setItem('dt-adv-view', JSON.stringify(view)); } catch (e) {} };
@@ -97,6 +97,17 @@ function effective() {
   const parents = { ...M.gameParents, ...B.parents, ...edits.parents };
   Object.keys(parents).forEach(id => { if (!nodes[id]) delete parents[id]; else if (parents[id] && !nodes[parents[id]]) parents[id] = ''; });
   Object.keys(nodes).forEach(id => { if (!(id in parents)) parents[id] = ''; });
+  // Visibility: the editor's mode, else the one saved in the repo, else the default for where it sits now.
+  const visEdits = edits.visibility || {};
+  Object.keys(nodes).forEach(id => {
+    if (kindOf(id) === 'other') return;
+    const n = nodes[id], base = M.nodes[id];
+    const visDef = parents[id] ? 'parent' : (n.h ? 'earned' : 'always');
+    const saved = base && base.vis && base.vis !== base.visDef ? base.vis : null;
+    let vis = visEdits[id] || saved || visDef;
+    if (!parents[id] && vis === 'parent') vis = visDef; // a tab head has no parent to wait for
+    nodes[id] = { ...n, visDef, vis };
+  });
   const order = (edits.order || B.order).filter(id => nodes[id] && !parents[id]);
   return { nodes, parents, order, titles: { ...B.tabTitles, ...edits.tabTitles }, editable: true };
 }
@@ -286,7 +297,7 @@ async function connect() {
 function exportChanges() {
   const saved = view.layout; view.layout = 'proposed';
   const L = computeLayout(); view.layout = saved;
-  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, capstone: {}, unlocks: {}, order: null };
+  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, capstone: {}, unlocks: {}, visibility: {}, order: null };
   Object.keys(E.nodes).forEach(id => {
     const n = E.nodes[id], base = M.nodes[id];
     if (kindOf(id) === 'other') return;
@@ -295,6 +306,7 @@ function exportChanges() {
         ? { parent: E.parents[id] || null, copyOf: n.copyOf, icon: M.iconIds[n.i], background: n.bg || null }
         : { parent: E.parents[id] || null, title: n.t, description: n.d, frame: n.f, icon: M.iconIds[n.i], background: n.bg || null, unlockedBy: n.unlockedBy || null };
       if (n.cap && n.cap.ed && (!n.cap.req || !n.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
+      if (n.vis && n.vis !== n.visDef) out.visibility[id] = n.vis;
       return;
     }
     if ((E.parents[id] || '') !== (M.gameParents[id] || '')) out.parents[id] = E.parents[id] || null;
@@ -302,6 +314,8 @@ function exportChanges() {
     if (n.req && base.req && n.req.n !== base.req.n && !n.copyOf) out.values[id] = { field: base.req.field, from: base.req.n, to: n.req.n };
     if (!E.parents[id] && n.bg && n.bg !== base.bg) out.backgrounds[id] = n.bg;
     if (!E.parents[id] && !n.copyOf && (n.unlockedBy || '') !== (base.unlockedBy || '')) out.unlocks[id] = n.unlockedBy || null;
+    const wantVis = n.vis === n.visDef ? null : n.vis, savedVis = base.vis !== base.visDef ? base.vis : null;
+    if (wantVis !== savedVis) out.visibility[id] = wantVis;
     if (n.cap && base.cap && n.cap.ed && (n.cap.req !== base.cap.req || n.cap.reset !== base.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
   });
   const titles = E.titles;
@@ -349,4 +363,16 @@ async function saveToRepo() {
   } catch (err) {
     setStatus(`Couldn\u2019t save to the repo: ${err.message}. Your edits are still here.`, true);
   }
+}
+
+// ---------- visibility ----------
+const VIS_LABELS = { parent: 'Hidden until parent', always: 'Always visible (while its parent is)', earned: 'Hidden until earned' };
+
+/** Would the game show this advancement to a player who has earned nothing? (AdvancementVisibilityRule) */
+function visibleWithNothingEarned(E, id) {
+  const n = E.nodes[id];
+  if (!n || !n.vis) return true;
+  const parent = E.parents[id];
+  if (!parent) return n.vis === 'always';
+  return n.vis === 'always' && visibleWithNothingEarned(E, parent);
 }

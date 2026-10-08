@@ -263,6 +263,19 @@ class AdvancementTabsTest {
     }
 
     @Test
+    @DisplayName("The Darkroom is earned by having a camera or a photo in the inventory")
+    void darkroomOnPickup() throws IOException {
+        JsonObject criteria = advancements().get(DARKROOM).getAsJsonObject("criteria");
+        assertEquals(Set.of("camera", "photo"), criteria.keySet());
+        for (String key : criteria.keySet()) {
+            assertEquals("minecraft:inventory_changed", criteria.getAsJsonObject(key).get("trigger").getAsString(), key);
+        }
+        String photos = criteria.getAsJsonObject("photo").toString();
+        assertTrue(photos.contains("exposure:photograph") && photos.contains("dungeontrain:found_photograph"), photos);
+        assertTrue(criteria.getAsJsonObject("camera").toString().contains("exposure_polaroid:instant_camera"));
+    }
+
+    @Test
     @DisplayName("copies never count towards the Everything Burrito")
     void copiesOutsideTheBurrito() throws IOException {
         for (String copy : shippedLayout().copies().keySet()) {
