@@ -5,10 +5,12 @@
   "fillMin": 1,
   "fillMax": 3,
   "entries": [
-    { "id": "minecraft:writable_book", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
-    { "id": "minecraft:ink_sac", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "minecraft:paper", "count": 11, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
-    { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+    { "id": "minecraft:writable_book", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:book", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": false, "enchChance": 25 },
+    { "id": "minecraft:ink_sac", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "minecraft:paper", "count": 11, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+    { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 },
+    { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 1, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
   ]
 }

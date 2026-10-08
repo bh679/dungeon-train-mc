@@ -1048,12 +1048,12 @@ public final class ContainerContentsRoller {
         // A community photo; when the relay has none left to hand out, sometimes a disposable camera
         // instead — likelier the fewer photos the relay holds — so players go and take more. Otherwise
         // a player book, so the slot is never wasted.
-        // Someone else's album; with none to hand out, the slot is a community photo instead.
+        // Someone else's album; with none to hand out, the finder's own album instead.
         if (item == ModItems.RANDOM_PLAYERPHOTOALBUM.get()) {
             ItemStack album = FoundAlbums.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
-            if (!album.isEmpty()) return album;
+            return album.isEmpty() ? new ItemStack(ModItems.YOUR_PHOTOALBUM.get()) : album;
         }
-        if (item == ModItems.RANDOM_PLAYERPHOTO.get() || item == ModItems.RANDOM_PLAYERPHOTOALBUM.get()) {
+        if (item == ModItems.RANDOM_PLAYERPHOTO.get()) {
             ItemStack found = SharedPhotos.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
             if (!found.isEmpty()) return found;
             return rollPerMille(SharedPhotos.cameraFallbackPerMille(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
