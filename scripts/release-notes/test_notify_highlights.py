@@ -37,23 +37,28 @@ def test_majors_for_picks_only_this_tags_majors():
     assert [e["id"] for e in nh.majors_for([MAJOR, MINOR, OLD_MAJOR], "v1.2.0")] == ["release-x"]
 
 
-def test_payload_has_title_link_description_and_photo():
-    embed = nh.build_payload(MAJOR, "v1.2.0")["embeds"][0]
-    assert embed["title"] == "X"
-    assert embed["url"].endswith("/update/#v1.2.0")
-    assert embed["description"] == "d"
-    assert embed["image"] == {"url": "https://example.com/x.jpg"}
+def test_message_is_markdown_heading_description_link_then_photo():
+    payload = nh.build_payload(MAJOR, "v1.2.0")
+    assert "embeds" not in payload
+    assert payload["content"] == (
+        "# X\n\nd\n\n"
+        "[Read the full update](<https://brennan.games/dungeontrain/update/#v1.2.0>)\n"
+        "https://example.com/x.jpg"
+    )
+    assert payload["allowed_mentions"] == {"parse": []}
 
 
-def test_payload_falls_back_to_summary_and_omits_missing_image():
-    embed = nh.build_payload({"title": "Z", "summary": "only summary"}, "v1")["embeds"][0]
-    assert embed["description"] == "only summary"
-    assert "image" not in embed
+def test_message_falls_back_to_summary_and_omits_missing_image():
+    content = nh.build_content({"title": "Z", "summary": "only summary"}, "v1")
+    assert content.startswith("# Z\n\nonly summary\n\n[Read the full update]")
+    assert "example.com" not in content
 
 
-def test_long_description_truncated_to_discord_cap():
-    embed = nh.build_payload({**MAJOR, "description": "a" * 5000}, "v1")["embeds"][0]
-    assert len(embed["description"]) == nh.DESCRIPTION_LIMIT
+def test_long_description_fits_discord_cap_and_keeps_photo():
+    content = nh.build_content({**MAJOR, "description": "a" * 5000}, "v1")
+    assert len(content) <= nh.CONTENT_LIMIT
+    assert content.endswith("https://example.com/x.jpg")
+    assert "…" in content
 
 
 def test_no_major_posts_nothing():
@@ -64,7 +69,7 @@ def test_no_major_posts_nothing():
 def test_dry_run_prints_payload():
     r = _run([MAJOR, MINOR], "--tag", "v1.2.0", env_extra={"DRY_RUN": "1"})
     assert r.returncode == 0
-    assert [p["embeds"][0]["title"] for p in json.loads(r.stdout)] == ["X"]
+    assert [p["content"].splitlines()[0] for p in json.loads(r.stdout)] == ["# X"]
 
 
 def test_missing_webhook_skips_green():
@@ -74,7 +79,7 @@ def test_missing_webhook_skips_green():
 
 def test_entry_flag_posts_a_released_major_by_id():
     r = _run([OLD_MAJOR], "--tag", "v1.2.0", "--entry", "release-old", env_extra={"DRY_RUN": "1"})
-    assert r.returncode == 0 and json.loads(r.stdout)[0]["embeds"][0]["title"] == "X"
+    assert r.returncode == 0 and json.loads(r.stdout)[0]["content"].startswith("# X")
 
 
 def test_unknown_entry_errors():

@@ -556,8 +556,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/notify-discord.sh
 
-      # A release that ships a major changelog entry (major: true) also posts it to #highlights:
-      # title, description and photo. Reads the entries "Mark changelog entries released" stamped
+      # A release that ships a major changelog entry (major: true) also posts it to #highlights as
+      # a plain markdown message (# title, description, photo). Reads the entries "Mark changelog entries released" stamped
       # with this tag in the local checkout — so it works even if that step lost its push race.
       # Real releases only, and only when Discord is being notified at all. Skips (green) when
       # the secret is unset. Re-post or preview one entry by hand:

@@ -3,8 +3,9 @@
 
 Run by release.yml after "Mark changelog entries released", so every entry the
 release shipped carries `released_in == <tag>`. Each of those marked `major`
-becomes one embed: its title (linking to the update page), description (or
-summary), and photo. A release with no major entry posts nothing.
+becomes one plain markdown message (no embed card): `# title`, its description
+(or summary), a link to the update page, and its photo. A release with no major
+entry posts nothing.
 
 Env:
   DISCORD_HIGHLIGHTS_WEBHOOK_URL  #highlights channel webhook (secret). Unset → skip, exit 0.
@@ -28,8 +29,7 @@ import changelog_io
 
 UPDATE_PAGE_URL = "https://brennan.games/dungeontrain/update/"
 LOGO_URL = "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/src/main/resources/logo.png"
-COLOR = 5763719  # 0x57F287, matches the stable-release embed in notify-discord.sh
-DESCRIPTION_LIMIT = 4096  # Discord embed description cap
+CONTENT_LIMIT = 2000  # Discord message content cap
 USER_AGENT = "DiscordBot (https://github.com/bh679/dungeon-train-mc, 1)"  # Python-urllib is blocked
 
 
@@ -41,19 +41,28 @@ def _truncate(text: str, limit: int) -> str:
     return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
 
 
-def build_payload(entry: dict, tag: str) -> dict:
-    body = (entry.get("description") or entry.get("summary") or "").strip()
-    embed = {
-        "title": entry["title"],
-        "url": f"{UPDATE_PAGE_URL}#{tag}",
-        "description": _truncate(body, DESCRIPTION_LIMIT),
-        "color": COLOR,
-        "footer": {"text": f"Dungeon Train {tag}"},
-    }
+def build_content(entry: dict, tag: str) -> str:
+    """The message as plain Discord markdown: `# title`, the description, a link to the update
+    page (angle brackets stop it unfurling), then the photo URL last so Discord shows the image
+    beneath the text. The description is trimmed so the whole message fits Discord's cap."""
+    head = f"# {entry['title']}"
+    tail = [f"[Read the full update](<{UPDATE_PAGE_URL}#{tag}>)"]
     image = (entry.get("image") or "").strip()
     if image:
-        embed["image"] = {"url": image}
-    return {"username": "Dungeon Train", "avatar_url": LOGO_URL, "embeds": [embed]}
+        tail.append(image)
+    tail_text = "\n".join(tail)
+    room = CONTENT_LIMIT - len(head) - len(tail_text) - len("\n\n") * 2
+    body = (entry.get("description") or entry.get("summary") or "").strip()
+    return "\n\n".join(p for p in (head, _truncate(body, room), tail_text) if p)
+
+
+def build_payload(entry: dict, tag: str) -> dict:
+    return {
+        "username": "Dungeon Train",
+        "avatar_url": LOGO_URL,
+        "content": build_content(entry, tag),
+        "allowed_mentions": {"parse": []},
+    }
 
 
 def post(webhook: str, payload: dict) -> None:
