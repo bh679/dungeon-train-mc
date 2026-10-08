@@ -3085,6 +3085,8 @@
   "gui.dungeontrain.options.custom_content.disable": "Always disable",
   "gui.dungeontrain.options.custom_content.dev_ignore": "Dev: ignore",
   "gui.dungeontrain.options.custom_content.tip": "What to do when a world starts with your own train designs active. Continuing plays them but makes the run Free Play. %s Disabling uses the built-in designs instead. Ask each world shows the prompt every time.",
+  "gui.dungeontrain.options.other_advancement_tabs": "Other Advancement Tabs",
+  "gui.dungeontrain.options.other_advancement_tabs.tip": "Show Minecraft's and other mods' tabs on the advancements screen. Off by default, so only Dungeon Train's tabs show. Their advancements are still earned either way.",
   "commands.dungeontrain.customcontent.none": "There's no custom train content installed.",
   "commands.dungeontrain.customcontent.status.on": "Custom train content is ON for this world, from: %s",
   "commands.dungeontrain.customcontent.status.off": "Custom train content is OFF for this world. Installed but not loading: %s",

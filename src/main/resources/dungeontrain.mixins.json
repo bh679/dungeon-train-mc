@@ -155,6 +155,7 @@
     "client.AdvancementsScreenAccessor",
     "client.AdvancementsScreenClickMixin",
     "client.AdvancementsScreenEditorTabMixin",
+    "client.AdvancementTabTitleMixin",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",
     "client.DeathScreenMoveTextMixin",

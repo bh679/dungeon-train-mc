@@ -3132,6 +3132,8 @@
   "gui.dungeontrain.options.custom_content.disable": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "5ae55599a971d18d"},
   "gui.dungeontrain.options.custom_content.dev_ignore": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "138fa974e6c9beb8"},
   "gui.dungeontrain.options.custom_content.tip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "589cf52f0476fe01"},
+  "gui.dungeontrain.options.other_advancement_tabs": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "88a30ab39ae3bd03"},
+  "gui.dungeontrain.options.other_advancement_tabs.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1ea6bae4c36e7119"},
   "commands.dungeontrain.customcontent.none": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "5770d7125f775eb4"},
   "commands.dungeontrain.customcontent.status.on": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "3975b4bdf6e3f297"},
   "commands.dungeontrain.customcontent.status.off": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "e68a4ea759670a81"},
@@ -4478,5 +4480,9 @@
   "advancements.dungeontrain.enchiridion.war_correspondent.hint": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "d5a058711bfb0ed1"},
   "advancements.dungeontrain.enchiridion.final_moments.description": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "83e9023f264dec0b"},
   "advancements.dungeontrain.enchiridion.final_moments.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "e24040482aaa4f2c"},
-  "advancements.dungeontrain.enchiridion.final_moments.hint": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5bfb4b98d231613e"}
+  "advancements.dungeontrain.enchiridion.final_moments.hint": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5bfb4b98d231613e"},
+  "advancements.dungeontrain.enchiridion.darkroom.title": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3d80bc30cb128efd"},
+  "advancements.dungeontrain.enchiridion.darkroom.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "71c82d5363d55331"},
+  "advancements.dungeontrain.tab.train_explorer": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "12298e7d4ea2455a"},
+  "advancements.dungeontrain.tab.others": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ebdad9ba4c5e3ce0"}
 }

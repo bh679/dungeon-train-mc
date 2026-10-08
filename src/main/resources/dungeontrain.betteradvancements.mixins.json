@@ -11,7 +11,8 @@
     "betteradvancements.BetterAdvancementsCriteriaMixin",
     "betteradvancements.BetterAdvancementTabScrollMixin",
     "betteradvancements.BetterAdvancementsScreenEditorTabMixin",
-    "betteradvancements.BetterAdvancementsScreenClickMixin"
+    "betteradvancements.BetterAdvancementsScreenClickMixin",
+    "betteradvancements.BetterAdvancementTabTitleMixin"
   ],
   "server": [],
   "injectors": {

@@ -286,6 +286,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
+    /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
+    public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_TABS;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -411,6 +413,7 @@ public final class ClientDisplayConfig {
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
+        HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
@@ -792,6 +795,14 @@ public final class ClientDisplayConfig {
                 .define("lowMemoryNoticeChat", true);
         b.pop();
 
+        b.push("advancements");
+        ModConfigSpec.BooleanValue hideOtherAdvancementTabs = b
+                .comment("Show only Dungeon Train's tabs on the advancements screen (L). Minecraft's own tabs and",
+                         "every other mod's are hidden; their advancements are still earned and still pop up.",
+                         "Toggle in-game via Options > Dungeon Train. On by default.")
+                .define("hideOtherTabs", true);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -810,7 +821,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
-                lowMemoryNoticeChat,
+                lowMemoryNoticeChat, hideOtherAdvancementTabs,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
@@ -1228,6 +1239,21 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         UPDATE_NOTICE_CHAT.set(value);
         UPDATE_NOTICE_CHAT.save();
+    }
+
+    /**
+     * Whether the advancements screen hides every tab outside the {@code dungeontrain} namespace. On
+     * by default, pre-load included, so the screen never flashes the vanilla tabs before the config
+     * loads. Read each time the screen is opened — see {@code AdvancementTabGate}.
+     */
+    public static boolean isHideOtherAdvancementTabs() {
+        return !isLoaded() || HIDE_OTHER_ADVANCEMENT_TABS.get();
+    }
+
+    public static void setHideOtherAdvancementTabs(boolean value) {
+        if (!isLoaded()) return;
+        HIDE_OTHER_ADVANCEMENT_TABS.set(value);
+        HIDE_OTHER_ADVANCEMENT_TABS.save();
     }
 
     public static boolean isLowMemoryNoticeChatEnabled() {
@@ -1909,6 +1935,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
+            ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,

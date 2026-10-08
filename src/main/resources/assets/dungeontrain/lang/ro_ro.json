@@ -2774,7 +2774,7 @@
   "advancements.dungeontrain.dungeon_train.im_not_alone.description": "Apropie-te la 4 blocuri de altcineva din tren.",
   "advancements.dungeontrain.dungeon_train.the_enchiridion.title": "Enchiridionul",
   "advancements.dungeontrain.dungeon_train.the_enchiridion.hint": "Știi să citești?",
-  "advancements.dungeontrain.dungeon_train.the_enchiridion.description": "Citește o carte sau fă o fotografie. Tot ce citești și fiecare fotografie pe care o faci sunt păstrate aici.",
+  "advancements.dungeontrain.dungeon_train.the_enchiridion.description": "Citește o carte. Tot ce citești este păstrat aici.",
   "advancements.dungeontrain.dungeon_train.summon_the_creator.title": "Cheamă-l pe creator",
   "advancements.dungeontrain.dungeon_train.summon_the_creator.hint": "E în chat dacă îl strigi",
   "advancements.dungeontrain.dungeon_train.summon_the_creator.description": "Menționează @dev sau @brennanhatton în chat",
@@ -3135,6 +3135,8 @@
   "gui.dungeontrain.options.custom_content.disable": "Dezactivează mereu",
   "gui.dungeontrain.options.custom_content.dev_ignore": "Dev: ignoră",
   "gui.dungeontrain.options.custom_content.tip": "Ce se întâmplă când o lume pornește cu propriile tale designuri de tren active. Dacă le folosești, cursa devine Joc Liber. %s Dezactivarea folosește în schimb designurile încorporate. „Întreabă la fiecare lume” arată de fiecare dată întrebarea.",
+  "gui.dungeontrain.options.other_advancement_tabs": "Alte file de progrese",
+  "gui.dungeontrain.options.other_advancement_tabs.tip": "Afișează filele Minecraft și ale altor moduri pe ecranul de progrese. Dezactivat implicit, așa că apar doar filele Dungeon Train. Progresele lor se obțin oricum.",
   "commands.dungeontrain.customcontent.none": "Nu există conținut personalizat pentru tren instalat.",
   "commands.dungeontrain.customcontent.status.on": "Conținutul personalizat pentru tren este PORNIT în această lume, din: %s",
   "commands.dungeontrain.customcontent.status.off": "Conținutul personalizat pentru tren este OPRIT în această lume. Instalat, dar neîncărcat: %s",
@@ -4481,5 +4483,9 @@
   "advancements.dungeontrain.enchiridion.war_correspondent.hint": "Prinde o luptă care nu e a ta.",
   "advancements.dungeontrain.enchiridion.final_moments.description": "Fă o fotografie unei creaturi cu o secundă înainte să moară.",
   "advancements.dungeontrain.enchiridion.final_moments.title": "Ultimele clipe",
-  "advancements.dungeontrain.enchiridion.final_moments.hint": "Totul ține de sincronizare."
+  "advancements.dungeontrain.enchiridion.final_moments.hint": "Totul ține de sincronizare.",
+  "advancements.dungeontrain.enchiridion.darkroom.title": "Camera obscură",
+  "advancements.dungeontrain.enchiridion.darkroom.description": "Fă, găsește sau plătește un tribut pentru o fotografie",
+  "advancements.dungeontrain.tab.train_explorer": "Explorator de tren",
+  "advancements.dungeontrain.tab.others": "Alții"
 }

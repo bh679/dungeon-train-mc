@@ -2995,6 +2995,8 @@
       "gui.dungeontrain.options.custom_content.disable",
       "gui.dungeontrain.options.custom_content.dev_ignore",
       "gui.dungeontrain.options.custom_content.tip",
+      "gui.dungeontrain.options.other_advancement_tabs",
+      "gui.dungeontrain.options.other_advancement_tabs.tip",
       "commands.dungeontrain.customcontent.none",
       "commands.dungeontrain.customcontent.status.on",
       "commands.dungeontrain.customcontent.status.off",
@@ -4336,7 +4338,11 @@
       "advancements.dungeontrain.enchiridion.war_correspondent.hint",
       "advancements.dungeontrain.enchiridion.final_moments.description",
       "advancements.dungeontrain.enchiridion.final_moments.title",
-      "advancements.dungeontrain.enchiridion.final_moments.hint"
+      "advancements.dungeontrain.enchiridion.final_moments.hint",
+      "advancements.dungeontrain.enchiridion.darkroom.title",
+      "advancements.dungeontrain.enchiridion.darkroom.description",
+      "advancements.dungeontrain.tab.train_explorer",
+      "advancements.dungeontrain.tab.others"
     ],
     "adventureitemnames": "*",
     "playermob": "*",

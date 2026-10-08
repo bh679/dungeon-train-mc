@@ -28,14 +28,16 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.slf4j.Logger;
 
 import java.util.WeakHashMap;
+import java.util.function.Predicate;
 
 /**
  * Picks the tab the advancements screen opens on. Vanilla falls back to whichever tab the network sync
  * happened to list first, which is not deterministic across loads or worlds, so Dungeon Train chooses:
  *
  * <ul>
- *   <li><b>The Enchiridion</b> when the player has a camera, photo or book in hand, or took a photo or
- *       read or wrote something in the last {@link #RECENT_MILLIS} — and has the tab at all;</li>
+ *   <li><b>The Darkroom</b> when the player has a camera or photo in hand, or took or looked at a photo
+ *       in the last {@link #RECENT_MILLIS} — and has the tab at all;</li>
+ *   <li><b>The Enchiridion</b> likewise for a book in hand, or one read or written a moment ago;</li>
  *   <li>otherwise <b>Dungeon Train</b>.</li>
  * </ul>
  *
@@ -53,16 +55,20 @@ public final class DefaultAdvancementsTab {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/root");
     private static final ResourceLocation ENCHIRIDION_ROOT_ID =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/the_enchiridion");
+    private static final ResourceLocation DARKROOM_ROOT_ID =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "enchiridion/darkroom");
     private static final String BETTER_ADVANCEMENTS_SCREEN = "betteradvancements.common.gui.BetterAdvancementsScreen";
 
-    /** How long after a photo, a read or a write the advancements screen still opens on The Enchiridion. */
+    /** How long after a photo, a read or a write the advancements screen still opens on its tab. */
     static final long RECENT_MILLIS = 30_000L;
 
     /** Screen instances already set — reopening makes a fresh instance, which gets its pick on first render. */
     private static final WeakHashMap<Screen, Boolean> ADJUSTED = new WeakHashMap<>();
 
-    /** When the player last took a photo, or read or wrote a book or photo. */
-    private static long lastEnchiridionMoment = Long.MIN_VALUE / 2;
+    /** When the player last read or wrote a book. */
+    private static long lastBookMoment = Long.MIN_VALUE / 2;
+    /** When the player last took or looked at a photo. */
+    private static long lastPhotoMoment = Long.MIN_VALUE / 2;
 
     private DefaultAdvancementsTab() {}
 
@@ -75,41 +81,60 @@ public final class DefaultAdvancementsTab {
         ClientAdvancements advancements = connection.getAdvancements();
         AdvancementHolder dungeonTrain = advancements.get(DUNGEON_TRAIN_ROOT_ID);
         if (dungeonTrain == null) return; // Tabs not synced yet — try again next frame.
+        AdvancementHolder darkroom = advancements.get(DARKROOM_ROOT_ID);
         AdvancementHolder enchiridion = advancements.get(ENCHIRIDION_ROOT_ID);
-        AdvancementHolder pick = enchiridion != null && wantsEnchiridion() ? enchiridion : dungeonTrain;
+        AdvancementHolder pick = darkroom != null && wantsDarkroom() ? darkroom
+                : enchiridion != null && wantsEnchiridion() ? enchiridion
+                : dungeonTrain;
         advancements.setSelectedTab(pick, true);
         ADJUSTED.put(screen, Boolean.TRUE);
         LOGGER.debug("[DungeonTrain] Advancements screen opened on {}", pick.id());
     }
 
-    /** A camera, photo or book is in hand, or one was used a moment ago. */
-    static boolean wantsEnchiridion() {
-        if (Util.getMillis() - lastEnchiridionMoment <= RECENT_MILLIS) return true;
-        LocalPlayer player = Minecraft.getInstance().player;
-        return player != null && (isEnchiridionItem(player.getMainHandItem()) || isEnchiridionItem(player.getOffhandItem()));
+    /** A camera or photo is in hand, or a photo was taken or looked at a moment ago. */
+    static boolean wantsDarkroom() {
+        return recent(lastPhotoMoment) || inHand(DefaultAdvancementsTab::isPhotoItem);
     }
 
-    private static boolean isEnchiridionItem(ItemStack stack) {
-        if (stack.isEmpty()) return false;
-        return stack.getItem() instanceof CameraItem
+    /** A book is in hand, or one was read or written a moment ago. */
+    static boolean wantsEnchiridion() {
+        return recent(lastBookMoment) || inHand(DefaultAdvancementsTab::isBookItem);
+    }
+
+    private static boolean recent(long moment) {
+        return Util.getMillis() - moment <= RECENT_MILLIS;
+    }
+
+    private static boolean inHand(Predicate<ItemStack> test) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        return player != null && (test.test(player.getMainHandItem()) || test.test(player.getOffhandItem()));
+    }
+
+    private static boolean isPhotoItem(ItemStack stack) {
+        return !stack.isEmpty() && (stack.getItem() instanceof CameraItem
                 || stack.getItem() instanceof PhotographItem
-                || stack.getItem() instanceof StackedPhotographsItem
-                || stack.is(Items.BOOK) || stack.is(Items.WRITABLE_BOOK) || stack.is(Items.WRITTEN_BOOK)
-                || BurnableBookTag.isBurnable(stack);
+                || stack.getItem() instanceof StackedPhotographsItem);
+    }
+
+    private static boolean isBookItem(ItemStack stack) {
+        return !stack.isEmpty() && (stack.is(Items.BOOK) || stack.is(Items.WRITABLE_BOOK) || stack.is(Items.WRITTEN_BOOK)
+                || BurnableBookTag.isBurnable(stack));
     }
 
     /** A photo is being taken: remember the moment. */
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (ExposureCaptureState.captureInFlight()) lastEnchiridionMoment = Util.getMillis();
+        if (ExposureCaptureState.captureInFlight()) lastPhotoMoment = Util.getMillis();
     }
 
-    /** A book or photo was just read, or a book written: remember the moment. */
+    /** A photo was just looked at, or a book read or written: remember the moment. */
     @SubscribeEvent
     public static void onScreenClosing(ScreenEvent.Closing event) {
         Screen screen = event.getScreen();
-        if (screen instanceof BookViewScreen || screen instanceof BookEditScreen || screen instanceof PhotographScreen) {
-            lastEnchiridionMoment = Util.getMillis();
+        if (screen instanceof PhotographScreen) {
+            lastPhotoMoment = Util.getMillis();
+        } else if (screen instanceof BookViewScreen || screen instanceof BookEditScreen) {
+            lastBookMoment = Util.getMillis();
         }
     }
 

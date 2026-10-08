@@ -3132,6 +3132,8 @@
   "gui.dungeontrain.options.custom_content.disable": "Завжди вимикати",
   "gui.dungeontrain.options.custom_content.dev_ignore": "Розробка: ігнорувати",
   "gui.dungeontrain.options.custom_content.tip": "Що робити, коли світ починається з увімкненими твоїми власними дизайнами потяга. Продовження грає з ними, але робить забіг Вільною грою. %s Вимкнення натомість використовує вбудовані дизайни. «Питати в кожному світі» показує запит щоразу.",
+  "gui.dungeontrain.options.other_advancement_tabs": "Інші вкладки досягнень",
+  "gui.dungeontrain.options.other_advancement_tabs.tip": "Показувати вкладки Minecraft та інших модів на екрані досягнень. Типово вимкнено, тож видно лише вкладки Dungeon Train. Їхні досягнення все одно здобуваються.",
   "commands.dungeontrain.customcontent.none": "Користувацького контенту потяга не встановлено.",
   "commands.dungeontrain.customcontent.status.on": "Користувацький контент потяга УВІМКНЕНО для цього світу, з: %s",
   "commands.dungeontrain.customcontent.status.off": "Користувацький контент потяга ВИМКНЕНО для цього світу. Встановлено, але не завантажується: %s",
@@ -4478,5 +4480,9 @@
   "advancements.dungeontrain.enchiridion.war_correspondent.hint": "Злови чужу бійку.",
   "advancements.dungeontrain.enchiridion.final_moments.description": "Сфотографуй істоту за секунду до її смерті.",
   "advancements.dungeontrain.enchiridion.final_moments.title": "Останні миті",
-  "advancements.dungeontrain.enchiridion.final_moments.hint": "Усе вирішує момент."
+  "advancements.dungeontrain.enchiridion.final_moments.hint": "Усе вирішує момент.",
+  "advancements.dungeontrain.enchiridion.darkroom.title": "Фотолабораторія",
+  "advancements.dungeontrain.enchiridion.darkroom.description": "Зроби, знайди світлину або принеси за неї Данину",
+  "advancements.dungeontrain.tab.train_explorer": "Дослідник потяга",
+  "advancements.dungeontrain.tab.others": "Інші"
 }
