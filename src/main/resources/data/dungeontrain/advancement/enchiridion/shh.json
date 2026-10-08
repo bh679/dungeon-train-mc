@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:enchiridion/say_cheese",
+  "parent": "dungeontrain:enchiridion/most_wanted",
   "display": {
     "icon": {
       "id": "minecraft:sculk_shrieker"

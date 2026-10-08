@@ -25,5 +25,12 @@
   },
   "burrito": {
     "dungeontrain:dungeon_train/the_creator_answers": false
+  },
+  "visibility": {
+    "dungeontrain:enchiridion/cave_painting": "always",
+    "dungeontrain:enchiridion/never_dies": "always",
+    "dungeontrain:enchiridion/run_away": "always",
+    "dungeontrain:enchiridion/shh": "always",
+    "dungeontrain:enchiridion/wither_watcher": "always"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:enchiridion/nature_documentary",
+  "parent": "dungeontrain:enchiridion/wildlife_photographer",
   "display": {
     "icon": {
       "id": "minecraft:golden_helmet"

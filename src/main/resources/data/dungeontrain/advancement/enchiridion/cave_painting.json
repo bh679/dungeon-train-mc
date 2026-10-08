@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:enchiridion/say_cheese",
+  "parent": "dungeontrain:enchiridion/scenic_route",
   "display": {
     "icon": {
       "id": "minecraft:pointed_dripstone"

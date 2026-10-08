@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/travel_brochure",
   "display": {
     "icon": {
-      "id": "minecraft:filled_map"
+      "id": "minecraft:oak_boat"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.coffee_table_book.title"
