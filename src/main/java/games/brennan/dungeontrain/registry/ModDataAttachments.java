@@ -266,6 +266,42 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-life flag: has an apple or edible backpack been in this player's inventory this life? Rules out the apple challenges. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> HELD_APPLE_THIS_LIFE =
+        TYPES.register("held_apple_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player eaten anything but melon this life? Rules out The Last Melon. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> ATE_NON_MELON_THIS_LIFE =
+        TYPES.register("ate_non_melon_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player worn armor (an elytra aside) this life? Rules out the naked challenges. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> WORE_ARMOR_THIS_LIFE =
+        TYPES.register("wore_armor_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
      * Travelled-carriage reading (the same {@code effectiveTravelled} value the carts tiers use) at
      * the moment this player last broke a block this life. The "no block broken" streak is
      * {@code effectiveTravelled - this}, driving the {@code no_break_100} / {@code no_break_1000}

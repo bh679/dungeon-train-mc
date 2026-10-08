@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.LeatherOverDiamondAdvancement;
+import games.brennan.dungeontrain.advancement.LifeChallengeAdvancements;
 import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
@@ -349,6 +350,8 @@ public final class AchievementEvents {
         // "Pacifist" chain — same travelled-carriage counter as carts_100 but
         // requires zero damage dealt this life at each threshold.
         PacifistAdvancement.checkAndGrant(player, effectiveTravelled, run.damageDealt());
+        // Apple / melon / naked challenges: same counter, each gated by its per-life flag.
+        LifeChallengeAdvancements.checkAndGrant(player, effectiveTravelled);
         // "Not My Chest" / "Still Not My Chest" — carriages travelled since the
         // last chest/barrel open this life. The admin difficulty offset is in
         // both terms, so it cancels in the subtraction.
@@ -915,6 +918,7 @@ public final class AchievementEvents {
         player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
         player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.FALSE);
+        LifeChallengeAdvancements.resetForNewLife(player);
         // A fresh life rules nothing out yet — clear the client's greyed-out mirror.
         LifeDisqualification.sync(player);
         // Per-life travelled-carriage-index is now 0; push the HUD packet

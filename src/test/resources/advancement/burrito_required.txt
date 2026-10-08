@@ -1,5 +1,6 @@
 dungeontrain:dungeon_train/a_new_way_out
 dungeontrain:dungeon_train/a_silent_friend
+dungeontrain:dungeon_train/apple_a_day
 dungeontrain:dungeon_train/assassination_attempt
 dungeontrain:dungeon_train/ate_edible_backpack
 dungeontrain:dungeon_train/carts_100
@@ -25,6 +26,7 @@ dungeontrain:dungeon_train/help_i_cant_get_off
 dungeontrain:dungeon_train/i_live_here_now
 dungeontrain:dungeon_train/im_not_alone
 dungeontrain:dungeon_train/landed_on_tracks
+dungeontrain:dungeon_train/last_melon
 dungeontrain:dungeon_train/leather_over_diamond
 dungeontrain:dungeon_train/left_train
 dungeontrain:dungeon_train/loved_back
@@ -32,6 +34,8 @@ dungeontrain:dungeon_train/marathon_passenger
 dungeontrain:dungeon_train/maxed_backpack_slots
 dungeontrain:dungeon_train/million_metre_club
 dungeontrain:dungeon_train/murderous_intent
+dungeontrain:dungeon_train/naked_and_afraid
+dungeontrain:dungeon_train/naked_and_unafraid
 dungeontrain:dungeon_train/no_break_100
 dungeontrain:dungeon_train/no_break_1000
 dungeontrain:dungeon_train/no_container_100
@@ -80,6 +84,7 @@ dungeontrain:dungeon_train/roof_run_1
 dungeontrain:dungeon_train/roof_runner
 dungeontrain:dungeon_train/root
 dungeontrain:dungeon_train/seasoned_traveller
+dungeontrain:dungeon_train/self_medicated
 dungeontrain:dungeon_train/settling_in
 dungeontrain:dungeon_train/summon_the_creator
 dungeontrain:dungeon_train/thats_what_friends_are_for

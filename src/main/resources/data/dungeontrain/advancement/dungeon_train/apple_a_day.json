@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "display": {
+    "icon": {
+      "id": "minecraft:apple"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.apple_a_day.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.apple_a_day.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "challenge": {
+      "trigger": "dungeontrain:code_granted",
+      "conditions": {
+        "threshold": 100
+      }
+    }
+  },
+  "requirements": [
+    [
+      "challenge"
+    ]
+  ]
+}
