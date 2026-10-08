@@ -20,11 +20,13 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * The relay half of tying this player's Discord account to their Minecraft uuid, so their line on
- * the Credits page's Community card gets an Edit button ({@link DiscordLinkScreen}).
+ * the Credits page's Community card gets an Edit button ({@link DiscordLinkScreen}) and the relay
+ * @-pings them on their own photos and death reports ({@code /discord}, {@link DiscordLinkCommand}).
  *
- * <p>Two calls. {@link #start} asks {@code POST /community/link/start} for a short code the player
+ * <p>Three calls. {@link #start} asks {@code POST /community/link/start} for a short code the player
  * types into Discord as {@code /dtlink <code>}; {@link #status} asks
- * {@code GET /community/link/status?uuid=} whether that has happened yet. The relay is the only
+ * {@code GET /community/link/status?uuid=} whether that has happened yet (and whether pings are on);
+ * {@link #setPings} is {@code POST /community/link/pings}, the {@code /discord pings} toggle. The relay is the only
  * party that can see the Discord side (the command reaches it as an interaction from that user),
  * so the mod never learns a Discord id — only "linked" or not.</p>
  *
@@ -43,11 +45,12 @@ public final class CommunityLinkClient {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
     static final String START_PATH = "/community/link/start";
     static final String STATUS_PATH = "/community/link/status";
+    static final String PINGS_PATH = "/community/link/pings";
     /** An older relay (or one without the feature): 404/405/501 on the path. */
     private static final Set<Integer> ENDPOINT_MISSING = Set.of(404, 405, 501);
 
     /** Why a call did not do what was asked. {@code NONE} on success. */
-    public enum Error { NONE, NO_CONSENT, RATE_LIMITED, UNSUPPORTED, DISABLED, FAILED }
+    public enum Error { NONE, NO_CONSENT, RATE_LIMITED, UNSUPPORTED, DISABLED, NOT_LINKED, FAILED }
 
     /** A minted code and how long it lives; {@code ok} false with an {@link Error} otherwise. */
     public record Start(boolean ok, String code, int expiresInSec, Error error) {
@@ -56,10 +59,20 @@ public final class CommunityLinkClient {
         }
     }
 
-    /** Whether the relay has seen {@code /dtlink} for this uuid; {@code ok} false with an {@link Error} otherwise. */
-    public record Status(boolean ok, boolean linked, Error error) {
+    /**
+     * Whether the relay has seen {@code /dtlink} for this uuid, and whether that link is @-pinged on the
+     * player's photos and death reports; {@code ok} false with an {@link Error} otherwise.
+     */
+    public record Status(boolean ok, boolean linked, boolean pings, Error error) {
         static Status of(Error error) {
-            return new Status(false, false, error);
+            return new Status(false, false, false, error);
+        }
+    }
+
+    /** The outcome of a pings toggle: {@code ok} with the new state, or an {@link Error}. */
+    public record Pings(boolean ok, boolean on, Error error) {
+        static Pings of(Error error) {
+            return new Pings(false, false, error);
         }
     }
 
@@ -107,6 +120,27 @@ public final class CommunityLinkClient {
         }
     }
 
+    /** Turn the relay's @-pings on or off for this player's linked Discord account. Resolves off-thread. */
+    public static CompletableFuture<Pings> setPings(boolean on) {
+        String uuid = ownUuid();
+        if (uuid == null) return CompletableFuture.completedFuture(Pings.of(Error.NO_CONSENT));
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(RelayTarget.live() + PINGS_PATH))
+                .timeout(REQUEST_TIMEOUT)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(buildPingsPayload(uuid, on).toString()))
+                .build();
+            return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
+                .thenApply(resp -> parsePings(resp.statusCode(), resp.body()))
+                .exceptionally(t -> {
+                    LOGGER.debug("[DungeonTrain] Discord: pings toggle failed — {}", t.toString());
+                    return Pings.of(Error.FAILED);
+                });
+        } catch (Throwable t) {
+            return CompletableFuture.completedFuture(Pings.of(Error.FAILED));
+        }
+    }
+
     /** This player's undashed profile uuid, or {@code null} without a signed-in user or consent. */
     private static String ownUuid() {
         Minecraft mc = Minecraft.getInstance();
@@ -119,6 +153,13 @@ public final class CommunityLinkClient {
     static JsonObject buildStartPayload(String uuid) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid == null ? "" : uuid);
+        return body;
+    }
+
+    /** The {@code /community/link/pings} body. */
+    static JsonObject buildPingsPayload(String uuid, boolean on) {
+        JsonObject body = buildStartPayload(uuid);
+        body.addProperty("on", on);
         return body;
     }
 
@@ -144,12 +185,34 @@ public final class CommunityLinkClient {
             if (linked == null || !linked.isJsonPrimitive() || !linked.getAsJsonPrimitive().isBoolean()) {
                 return Status.of(Error.FAILED);
             }
-            return new Status(true, linked.getAsBoolean(), Error.NONE);
+            return new Status(true, linked.getAsBoolean(), linked.getAsBoolean() && bool(o.get("pings")), Error.NONE);
         }
         if (status == 429) return Status.of(Error.RATE_LIMITED);
         if (status == 503) return Status.of(Error.DISABLED);
         if (ENDPOINT_MISSING.contains(status)) return Status.of(Error.UNSUPPORTED);
         return Status.of(Error.FAILED);
+    }
+
+    /** 2xx with a readable {@code pings} succeeds; 404 is a uuid with no linked Discord account. */
+    static Pings parsePings(int status, String body) {
+        if (status / 100 == 2) {
+            JsonObject o = object(body);
+            JsonElement on = o == null ? null : o.get("pings");
+            if (on == null || !on.isJsonPrimitive() || !on.getAsJsonPrimitive().isBoolean()) return Pings.of(Error.FAILED);
+            return new Pings(true, on.getAsBoolean(), Error.NONE);
+        }
+        if (status == 404) {
+            JsonObject o = object(body);
+            // A relay that predates the toggle 404s the path too — only its own error means unlinked.
+            return Pings.of(o != null && "not_linked".equals(str(o.get("error"))) ? Error.NOT_LINKED : Error.UNSUPPORTED);
+        }
+        if (status == 503) return Pings.of(Error.DISABLED);
+        if (ENDPOINT_MISSING.contains(status)) return Pings.of(Error.UNSUPPORTED);
+        return Pings.of(Error.FAILED);
+    }
+
+    private static boolean bool(JsonElement el) {
+        return el != null && el.isJsonPrimitive() && el.getAsJsonPrimitive().isBoolean() && el.getAsBoolean();
     }
 
     private static JsonObject object(String body) {

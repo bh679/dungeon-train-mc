@@ -87,7 +87,8 @@ public final class MilestonePostBuffer {
             byte[] png = image == null || image.length == 0 ? null : image;
             DiscordService.get().postReportTopLevel(p.player(), p.title(), p.description(), List.of(),
                     png, png == null ? null : PHOTO_FILENAME, MilestoneAdvancementReporter.EMBED_COLOR,
-                    p.webhookOverride(), List.of(DungeonTrain.BRENNAN_DISCORD_ID));
+                    DiscordPings.forPlayer(p.webhookOverride(), p.player().getUUID()),
+                    List.of(DungeonTrain.BRENNAN_DISCORD_ID));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] milestone advancement announcement failed: {}", t.toString());
         }

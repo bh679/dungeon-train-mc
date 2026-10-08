@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.credits;
 
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient.Error;
+import games.brennan.dungeontrain.client.credits.CommunityLinkClient.Pings;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient.Start;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient.Status;
 import org.junit.jupiter.api.DisplayName;
@@ -36,13 +37,28 @@ final class CommunityLinkClientTest {
     @Test
     @DisplayName("linked is read only from a boolean; anything unreadable is a failure, never a link")
     void status() {
-        assertEquals(new Status(true, true, Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true}"));
-        assertEquals(new Status(true, false, Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false}"));
+        assertEquals(new Status(true, true, false, Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true}"));
+        assertEquals(new Status(true, true, true, Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"pings\":true}"));
+        assertEquals(new Status(true, false, false, Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false,\"pings\":true}"));
+        assertEquals(new Status(true, false, false, Error.NONE), CommunityLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false}"));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "{\"linked\":\"true\"}"));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "{}"));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(200, "junk"));
         assertEquals(Status.of(Error.UNSUPPORTED), CommunityLinkClient.parseStatus(404, ""));
         assertEquals(Status.of(Error.DISABLED), CommunityLinkClient.parseStatus(503, ""));
         assertEquals(Status.of(Error.FAILED), CommunityLinkClient.parseStatus(502, ""));
+    }
+
+    @Test
+    @DisplayName("pings toggle: body, new state, and a real not-linked told apart from an older relay")
+    void pings() {
+        assertEquals("{\"uuid\":\"abc\",\"on\":false}", CommunityLinkClient.buildPingsPayload("abc", false).toString());
+        assertEquals(new Pings(true, true, Error.NONE), CommunityLinkClient.parsePings(200, "{\"ok\":true,\"pings\":true}"));
+        assertEquals(new Pings(true, false, Error.NONE), CommunityLinkClient.parsePings(200, "{\"ok\":true,\"pings\":false}"));
+        assertEquals(Pings.of(Error.FAILED), CommunityLinkClient.parsePings(200, "{\"ok\":true}"));
+        assertEquals(Pings.of(Error.NOT_LINKED), CommunityLinkClient.parsePings(404, "{\"error\":\"not_linked\"}"));
+        assertEquals(Pings.of(Error.UNSUPPORTED), CommunityLinkClient.parsePings(404, "{\"error\":\"not_found\"}"));
+        assertEquals(Pings.of(Error.DISABLED), CommunityLinkClient.parsePings(503, ""));
+        assertEquals(Pings.of(Error.FAILED), CommunityLinkClient.parsePings(400, ""));
     }
 }

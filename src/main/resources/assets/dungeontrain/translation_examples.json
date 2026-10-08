@@ -15135,5 +15135,53 @@
         "26"
       ]
     }
+  },
+  "chat.dungeontrain.discord.code": {
+    "1": {
+      "label": "the 6-character link code, shown as a clickable code",
+      "examples": [
+        "K7QX2M"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.relink_code": {
+    "1": {
+      "label": "the 6-character link code, shown as a clickable code",
+      "examples": [
+        "K7QX2M"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.instructions": {
+    "1": {
+      "label": "the Discord slash command to type, with the code",
+      "examples": [
+        "/dtlink K7QX2M"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.linked_pings_on": {
+    "1": {
+      "label": "the in-game command that turns pings off",
+      "examples": [
+        "/discord pings off"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.linked_pings_off": {
+    "1": {
+      "label": "the in-game command that turns pings back on",
+      "examples": [
+        "/discord pings on"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.not_linked": {
+    "1": {
+      "label": "the in-game command that gives a link code",
+      "examples": [
+        "/discord"
+      ]
+    }
   }
 }
