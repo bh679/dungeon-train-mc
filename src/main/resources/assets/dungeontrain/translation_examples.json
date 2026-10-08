@@ -15154,9 +15154,9 @@
   },
   "chat.dungeontrain.discord.instructions": {
     "1": {
-      "label": "the Discord slash command to type, with the code",
+      "label": "the Discord slash command to type and pick from the list",
       "examples": [
-        "/dtlink K7QX2M"
+        "/dtlink"
       ]
     }
   },

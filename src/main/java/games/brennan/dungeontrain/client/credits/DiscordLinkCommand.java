@@ -25,8 +25,10 @@ import java.util.concurrent.TimeUnit;
  * Discord account whenever one of the player's photos is posted, or their death is reported.
  *
  * <ul>
- *   <li>{@code /discord} — says whether this player is linked, then mints a code (click to copy
- *       {@code /dtlink CODE}, plus an Open Discord link) and watches for the link to land.</li>
+ *   <li>{@code /discord} — says whether this player is linked, then mints a code (click to copy the
+ *       code, plus an Open Discord link) and watches for the link to land. Only the code is copied:
+ *       Discord runs a slash command only when it is picked from its list, so a pasted
+ *       {@code /dtlink CODE} would post as a plain message.</li>
  *   <li>{@code /discord pings on|off} — keep the link but stop (or restart) the pings.</li>
  * </ul>
  *
@@ -119,17 +121,16 @@ public final class DiscordLinkCommand {
         });
     }
 
-    /** "Your code: ABC234 [Copy] [Open Discord]" then how to use it. */
+    /** "Your code: ABC234 [Copy code] [Open Discord]" then how to use it. */
     private static Component codeLines(String code, boolean relink) {
-        String dtlink = "/dtlink " + code;
         MutableComponent codeText = Component.literal(code).withStyle(s -> s.withColor(ChatFormatting.AQUA).withBold(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, dtlink))
+                .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, code))
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                         Component.translatable("gui.dungeontrain.credits.link.copy"))));
         MutableComponent copy = Component.literal("[").append(Component.translatable("gui.dungeontrain.credits.link.copy"))
                 .append("]").withStyle(s -> s.withColor(ChatFormatting.GREEN)
-                        .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, dtlink))
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(dtlink))));
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, code))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(code))));
         String url = OfficialLinks.discord();
         MutableComponent open = Component.literal("[").append(Component.translatable("gui.dungeontrain.credits.link.open_discord"))
                 .append("]").withStyle(s -> s.withColor(ChatFormatting.BLUE)
@@ -140,7 +141,8 @@ public final class DiscordLinkCommand {
                 .withStyle(ChatFormatting.WHITE)
                 .append(" ").append(copy).append(" ").append(open)
                 .append("\n")
-                .append(Component.translatable("chat.dungeontrain.discord.instructions", command("dtlink " + code))
+                .append(Component.translatable("chat.dungeontrain.discord.instructions",
+                                Component.literal("/dtlink").withStyle(ChatFormatting.AQUA))
                         .withStyle(ChatFormatting.GRAY));
     }
 
