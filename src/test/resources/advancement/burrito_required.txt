@@ -8,7 +8,6 @@ dungeontrain:dungeon_train/drift_came_back
 dungeontrain:dungeon_train/drift_first_marks
 dungeontrain:dungeon_train/drift_left_behind
 dungeontrain:dungeon_train/drift_rearranged
-dungeontrain:dungeon_train/fully_developed
 dungeontrain:dungeon_train/heros_handbook
 dungeontrain:dungeon_train/im_not_alone
 dungeontrain:dungeon_train/landed_on_tracks

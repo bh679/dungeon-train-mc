@@ -32,7 +32,8 @@
   "burrito": {
     "dungeontrain:dungeon_train/the_creator_answers": false,
     "dungeontrain:dungeon_train/all_out_of_secrets": false,
-    "dungeontrain:dungeon_train/the_enchiridion": true
+    "dungeontrain:dungeon_train/the_enchiridion": true,
+    "dungeontrain:dungeon_train/fully_developed": false
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",
