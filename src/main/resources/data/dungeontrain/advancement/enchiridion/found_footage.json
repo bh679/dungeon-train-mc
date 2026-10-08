@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/the_enchiridion",
+  "parent": "dungeontrain:enchiridion/darkroom",
   "display": {
     "icon": {
       "id": "dungeontrain:found_photograph"

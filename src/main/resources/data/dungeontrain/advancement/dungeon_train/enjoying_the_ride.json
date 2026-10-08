@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_100",
+  "parent": "dungeontrain:dungeon_train/tab_train_explorer",
   "display": {
     "icon": { "id": "minecraft:clock" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.enjoying_the_ride.title" },

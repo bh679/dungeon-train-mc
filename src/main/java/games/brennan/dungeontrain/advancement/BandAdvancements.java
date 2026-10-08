@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.advancement;
 
+import com.google.gson.JsonElement;
+import games.brennan.dungeontrain.DungeonTrain;
+
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.ChuncksBand;
 import games.brennan.dungeontrain.worldgen.CycleLayout;
@@ -13,12 +16,14 @@ import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
 import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.legacy.LegacySpan;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -71,8 +76,28 @@ public final class BandAdvancements {
      */
     public static final List<String> LATER_CYCLES = List.of(OVERWORLD_AGAIN, NETHER_RETURN);
 
-    /** The advancement the chain hangs from: the first band advancement's parent. */
-    public static final String ANCHOR = "carts_100";
+    /**
+     * The advancement the chain hangs from when the datapack doesn't say: the Train Explorer tab's
+     * first advancement. The datapack says through {@link #NETHER}'s own {@code parent}, which is what
+     * {@link #anchorFrom} reads, so the advancement editor can move the whole journey.
+     */
+    public static final String ANCHOR = "tab_train_explorer";
+
+    /**
+     * The chain's anchor as the datapack declares it: the {@code parent} of {@link #NETHER}'s JSON, when
+     * that is another advancement in the journey's tab folder; otherwise {@link #ANCHOR}. Every chain
+     * member's parent is rewritten at load, so this one JSON field is the only place the anchor lives.
+     */
+    public static String anchorFrom(Map<ResourceLocation, JsonElement> loaded) {
+        String prefix = DungeonTrain.MOD_ID + ":" + BandAdvancementChainRewriter.PATH_PREFIX;
+        JsonElement nether = loaded.get(ResourceLocation.fromNamespaceAndPath(
+            DungeonTrain.MOD_ID, BandAdvancementChainRewriter.PATH_PREFIX + NETHER));
+        if (nether == null || !nether.isJsonObject()) return ANCHOR;
+        JsonElement parent = nether.getAsJsonObject().get("parent");
+        if (parent == null || !parent.isJsonPrimitive()) return ANCHOR;
+        String p = parent.getAsString();
+        return p.startsWith(prefix) && p.length() > prefix.length() ? p.substring(prefix.length()) : ANCHOR;
+    }
 
     /**
      * Every band advancement, in the order the shipped {@link CycleLayout#DEFAULT_ORDER} visits them.

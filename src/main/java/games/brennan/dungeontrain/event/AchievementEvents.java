@@ -5,6 +5,7 @@ import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
+import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.FirstEverAdvancements;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
@@ -996,6 +997,8 @@ public final class AchievementEvents {
         // place that backfill can happen. It reads this world's restored
         // (post-replay) progress and grants normally (replaying is false here).
         replaySidecarAdvancements(player);
+        // Tab copies follow their originals as restored above (or revoked by Start Again).
+        TabGateways.sync(player);
         CompletionistAdvancement.checkAndGrant(player);
         // Vanilla sent this player's command tree before any of the above ran. If they hold the
         // banked capstone — replayed just now, or granted just now — /advancement revoke @s
@@ -1242,6 +1245,10 @@ public final class AchievementEvents {
         ResourceLocation id = advancement.id();
         // An Enchiridion camera advancement remembers the photo that earned it (client keeps the copy).
         games.brennan.dungeontrain.compat.photo.AdvancementPhotoCapture.onEarn(player, id, replaying);
+        // An original that heads another tab earns its copy there, which unlocks the tab. Copies are
+        // mirrors, not achievements: no persistence, hint, accolade or capstone check of their own.
+        TabGateways.onEarned(player, id);
+        if (TabGateways.isCopy(id)) return;
         // Persist across worlds: capture every GUI-visible advancement — vanilla,
         // Dungeon Train, and other mods alike — not just dungeontrain:*. The
         // hidden display-less recipe tree is filtered out by shouldPersist.

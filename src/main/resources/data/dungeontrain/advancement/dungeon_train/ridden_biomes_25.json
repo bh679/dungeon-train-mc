@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/tab_train_explorer",
   "display": {
     "icon": { "id": "minecraft:map" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.biomes_10.title" },

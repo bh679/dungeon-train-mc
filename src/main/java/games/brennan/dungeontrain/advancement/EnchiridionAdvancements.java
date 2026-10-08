@@ -3,14 +3,14 @@ package games.brennan.dungeontrain.advancement;
 import java.util.Set;
 
 /**
- * <b>The Enchiridion</b> — the advancement tab for books and photos.
+ * <b>The Enchiridion</b> — the advancement tab for books. Photos have their own tab, The Darkroom
+ * ({@code enchiridion/darkroom}), whose advancements keep this class's {@link #PATH_PREFIX}.
  *
- * <p>Its root is {@code dungeon_train/the_enchiridion} (earned by reading any book or taking any
- * photo). The book advancements kept their original {@code dungeon_train/} ids when they moved here —
+ * <p>Its root is {@code dungeon_train/the_enchiridion} (earned by reading any book). The book advancements kept their original {@code dungeon_train/} ids when they moved here —
  * so banked cross-world progress, relay overrides and hardcoded ids still line up — and only their
  * parent chain changed. Everything added for the camera lives under {@link #PATH_PREFIX}.</p>
  *
- * <p>The tab is a collection of its own, like The Secrete Menu: none of it counts towards the
+ * <p>Both tabs are collections of their own, like The Secrete Menu: none of it counts towards the
  * Everything Burrito ({@link CompletionistAdvancement}), so the start-again wipe
  * ({@link StartAgainAdvancement}) leaves all of it earned.</p>
  */
@@ -42,7 +42,8 @@ public final class EnchiridionAdvancements {
             "dungeon_train/nothing_but_books",
             "dungeon_train/burned_unread",
             "dungeon_train/the_same_but_different",
-            "dungeon_train/welcome_back");
+            "dungeon_train/welcome_back",
+            "dungeon_train/the_far_start");
 
     /** {@code gameplay_action} ids fired by the camera hooks. */
     public static final String TOOK_PHOTO = "took_photo";

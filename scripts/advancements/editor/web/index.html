@@ -1,0 +1,52 @@
+<meta charset="utf-8">
+<title>Dungeon Train Advancement Tabs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400;600&display=swap">
+<style>/*__CSS__*/</style>
+
+<div class="ground"></div>
+<header>
+  <h1>Dungeon Train advancement tabs</h1>
+  <p class="lede">Click an advancement to edit it: its parent, its tab, the value it needs and its icon. You can also drag one onto another advancement or onto a tab. Your edits are kept until you save them.</p>
+</header>
+
+<div class="controls">
+  <button class="mcbtn" id="bLayout" type="button"></button>
+  <button class="mcbtn" id="bOther" type="button"></button>
+  <button class="mcbtn" id="bMode" type="button"></button>
+  <button class="mcbtn" id="bEarned" type="button"></button>
+</div>
+<div class="controls">
+  <button class="mcbtn" id="bKids" type="button"></button>
+  <button class="mcbtn" id="bUndo" type="button">Undo</button>
+  <button class="mcbtn" id="bNewTab" type="button">New tab</button>
+  <button class="mcbtn" id="bCopy" type="button">Copy changes</button>
+  <button class="mcbtn" id="bSave" type="button" hidden><b>Save to repo</b></button>
+  <button class="mcbtn" id="bReset" type="button">Discard edits</button>
+  <span class="status" id="status" role="status">Loading…</span>
+</div>
+
+<div class="stage"><div id="gui"></div></div>
+
+<section class="summary" id="report" hidden></section>
+<section class="summary">
+  <h2>Tabs</h2>
+  <div class="chips" id="chips"></div>
+  <h2>Your edits</h2>
+  <ul class="changes" id="changes"></ul>
+  <h2>Notes</h2>
+  <ul class="notes">
+    <li><b>Ids never change.</b> Advancements move tabs by parent only, so nobody loses progress.</li>
+    <li><b>Copies:</b> a tab can be headed by a copy of an advancement in another tab. Earning either earns both, and that unlocks the tab. "Open a copy as a new tab" makes a new pair.</li>
+    <li><b>Band journey:</b> the reached-a-band advancements chain in band order when the game loads. Moving the first one moves the whole chain; the others follow the band order.</li>
+    <li><b>Required values</b> are the ones shipped in the mod. A relay override can still change them on a live server.</li>
+    <li>Every advancement is drawn, hidden ones included. In game, hidden ones stay hidden until earned.</li>
+  </ul>
+</section>
+
+<div class="menu" id="menu" hidden role="dialog" aria-label="Edit advancement"></div>
+<div class="tip" id="tip"></div>
+<div class="banner" id="banner" hidden></div>
+
+<script>/*__DATA__*/</script>
+<script>/*__JS__*/</script>

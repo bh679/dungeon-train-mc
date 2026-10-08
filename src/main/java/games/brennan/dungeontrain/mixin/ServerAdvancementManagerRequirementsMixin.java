@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.BandAdvancementChainRewriter;
 import games.brennan.dungeontrain.advancement.BandAdvancements;
+import games.brennan.dungeontrain.advancement.TabGateways;
 import games.brennan.dungeontrain.advancement.requirement.AdvancementDisabler;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import games.brennan.dungeontrain.advancement.requirement.AdvancementFlag;
@@ -47,11 +48,13 @@ public abstract class ServerAdvancementManagerRequirementsMixin {
         Map<ResourceLocation, JsonElement> enabled =
             AdvancementDisabler.removeAll(rewritten, payload.with(AdvancementFlag.DISABLED), DungeonTrain.MOD_ID);
         AdvancementRequirementOverrides.markApplied(payload);
+        // Tab copies show their original's text, with the required value just written into it.
+        enabled = TabGateways.mirrorText(enabled, TabGateways.layout());
         // Journey chain: with an ordered band layout the parents follow the layout, not the jar JSON.
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         if (!cycle.hasLayout()) return enabled;
         Map<ResourceLocation, JsonElement> forward = BandAdvancementChainRewriter.rewriteParents(enabled,
-            BandAdvancements.chain(cycle.layout()), BandAdvancements.ANCHOR, DungeonTrain.MOD_ID);
+            BandAdvancements.chain(cycle.layout()), BandAdvancements.anchorFrom(enabled), DungeonTrain.MOD_ID);
         // Reverse journey (behind spawn): the layout walked last-first, on The Secrete Menu tab.
         return BandAdvancementChainRewriter.rewriteParents(forward, BandAdvancements.reverseChain(cycle.layout()),
             BandAdvancements.REVERSE_ANCHOR, DungeonTrain.MOD_ID, BandAdvancements.SECRETE_MENU_PREFIX);

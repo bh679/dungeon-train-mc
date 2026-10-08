@@ -2724,7 +2724,7 @@
   "advancements.dungeontrain.dungeon_train.im_not_alone.description": "Come within 4 blocks of another on the train.",
   "advancements.dungeontrain.dungeon_train.the_enchiridion.title": "The Enchiridion",
   "advancements.dungeontrain.dungeon_train.the_enchiridion.hint": "Can you read?",
-  "advancements.dungeontrain.dungeon_train.the_enchiridion.description": "Read a book or take a photo. Everything you read and every picture you take is kept here.",
+  "advancements.dungeontrain.dungeon_train.the_enchiridion.description": "Read a book. Everything you read is kept here.",
   "advancements.dungeontrain.dungeon_train.summon_the_creator.title": "Summon The Creator",
   "advancements.dungeontrain.dungeon_train.summon_the_creator.hint": "He is in chat if you call",
   "advancements.dungeontrain.dungeon_train.summon_the_creator.description": "Tag @dev or @brennanhatton in chat",
@@ -4426,5 +4426,9 @@
   "advancements.dungeontrain.enchiridion.war_correspondent.hint": "Catch a fight that isn't yours.",
   "advancements.dungeontrain.enchiridion.final_moments.description": "Take a photo of a creature in the second before it dies.",
   "advancements.dungeontrain.enchiridion.final_moments.title": "Final Moments",
-  "advancements.dungeontrain.enchiridion.final_moments.hint": "Timing is everything."
+  "advancements.dungeontrain.enchiridion.final_moments.hint": "Timing is everything.",
+  "advancements.dungeontrain.enchiridion.darkroom.title": "The Darkroom",
+  "advancements.dungeontrain.enchiridion.darkroom.description": "Take, find or pay Tribute to a photo",
+  "advancements.dungeontrain.tab.train_explorer": "Train Explorer",
+  "advancements.dungeontrain.tab.others": "Others"
 }

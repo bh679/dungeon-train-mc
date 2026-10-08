@@ -12,7 +12,7 @@
   "criteria": {
     "milestone": {
       "trigger": "dungeontrain:carts_in_run",
-      "conditions": { "threshold": 100 }
+      "conditions": { "threshold": 50 }
     }
   },
   "requirements": [["milestone"]]

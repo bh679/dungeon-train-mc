@@ -1,4 +1,5 @@
 {
+  "parent": "dungeontrain:dungeon_train/root",
   "display": {
     "icon": {
       "id": "minecraft:book"
@@ -10,22 +11,18 @@
       "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.description"
     },
     "frame": "task",
-    "background": "minecraft:textures/block/chiseled_bookshelf_top.png",
-    "show_toast": true,
-    "announce_to_chat": true,
+    "show_toast": false,
+    "announce_to_chat": false,
     "hidden": true
   },
   "criteria": {
-    "read_any_book": {
-      "trigger": "dungeontrain:gameplay_action",
-      "conditions": {
-        "actionId": "read_any_book"
-      }
+    "mirrored": {
+      "trigger": "minecraft:impossible"
     }
   },
   "requirements": [
     [
-      "read_any_book"
+      "mirrored"
     ]
   ]
 }

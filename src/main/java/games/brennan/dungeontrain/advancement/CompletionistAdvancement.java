@@ -82,6 +82,7 @@ public final class CompletionistAdvancement {
         if (rl.equals(StartAgainAdvancement.ID)) return false;            // downstream of the capstone, not a prerequisite
         if (BandAdvancements.isBackwards(rl.getPath())) return false;     // The Secrete Menu: optional, never required
         if (EnchiridionAdvancements.isEnchiridion(rl.getPath())) return false; // The Enchiridion: books + photos, a collection of its own
+        if (TabGateways.isCopy(rl)) return false;                          // a tab copy mirrors its original, which already counts
         return !notRequired.contains(rl);                                 // the operator dropped it from the capstone (relay)
     }
 
