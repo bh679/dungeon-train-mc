@@ -157,3 +157,11 @@ body.full .stage .exitfull { display: block; position: absolute; top: calc(6px +
 /* what the selected capstone needs */
 #tree .node.need::after { content: ''; position: absolute; inset: calc(-2px * var(--s)); border: calc(2px * var(--s)) solid #ffd83d; box-shadow: 0 0 calc(6px * var(--s)) #ffd83d; pointer-events: none; }
 #gui .tab.need::after { content: ''; position: absolute; right: calc(3px * var(--s)); top: calc(3px * var(--s)); width: calc(5px * var(--s)); height: calc(5px * var(--s)); background: #ffd83d; box-shadow: 0 0 0 calc(1px * var(--s)) #3f3f3f; pointer-events: none; }
+/* paint mode */
+.controls.paint label.check { display: flex; gap: 6px; align-items: center; color: #fff; font-size: 14px; cursor: pointer; text-shadow: 1px 1px 0 #3f3f3f; }
+.controls.paint label.check input { width: 18px; height: 18px; margin: 0; accent-color: #5a8a3a; }
+.controls.paint .hint { color: #bdbdbd; font-size: 13px; }
+#tree .node.off { opacity: .5; }
+#tree .node.fixed { opacity: .5; }
+#tree .node.fixed::before { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(0,0,0,.35) 0 calc(2px * var(--s)), transparent calc(2px * var(--s)) calc(4px * var(--s))); pointer-events: none; z-index: 1; }
+#gui .tabpaint { position: absolute; z-index: 5; font-size: calc(7px * var(--s)); padding: calc(1px * var(--s)) calc(4px * var(--s)); min-height: 0; line-height: 1.2; }

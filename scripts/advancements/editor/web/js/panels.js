@@ -73,6 +73,11 @@ function renderControls(L) {
   set('bMode', 'Game mode', view.creative ? 'Creative' : 'Survival');
   set('bEarned', 'Progress', view.earned ? 'Earned' : 'Not earned');
   set('bKids', 'Moves bring children', view.withChildren ? 'Yes' : 'No');
+  document.getElementById('pReq').checked = view.paint === 'req';
+  document.getElementById('pReset').checked = view.paint === 'reset';
+  document.getElementById('pHint').textContent = view.paint
+    ? `Click an advancement to put it in or out of ${PAINT_NAMES[view.paint]}. Faded ones are out.`
+    : 'Tick one, then click advancements to put them in or out of it.';
   document.getElementById('bUndo').disabled = !history.length || !L.E.editable;
   document.getElementById('bNewTab').disabled = !L.E.editable;
 }
@@ -150,6 +155,10 @@ toggle('bLayout', () => { view.layout = view.layout === 'proposed' ? 'current' :
 toggle('bOther', () => { view.other = !view.other; });
 toggle('bMode', () => { view.creative = !view.creative; });
 toggle('bEarned', () => { view.earned = !view.earned; });
+[['pReq', 'req'], ['pReset', 'reset']].forEach(([elId, key]) => document.getElementById(elId).addEventListener('change', e => {
+  view.paint = e.target.checked ? key : null; // one at a time: a click changes exactly one thing
+  saveView(); closeMenu(); render();
+}));
 document.getElementById('bKids').addEventListener('click', () => { view.withChildren = !view.withChildren; saveView(); renderControls(layoutCache); if (selected && !menu.hidden) fillMenu(selected); });
 document.getElementById('bUndo').addEventListener('click', undo);
 document.getElementById('bNewTab').addEventListener('click', newTab);

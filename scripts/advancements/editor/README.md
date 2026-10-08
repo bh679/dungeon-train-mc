@@ -16,7 +16,10 @@ Everything Burrito line. **Click the part you want to change** and only that edi
 | The Everything Burrito line | whether it **counts towards the Everything Burrito** and is **reset by It's Not That Simple** |
 
 Clicking the **Everything Burrito**, or a tab-complete advancement (Dungeon Train Explored and friends),
-outlines everything it needs that a player can see, and marks the tabs holding any of it. **New tab** makes
+outlines everything it needs that a player can see, and marks the tabs holding any of it. **Paint mode:** tick **Everything Burrito** or **It's Not That Simple** above the tabs, then click
+advancements to put them in or out of it; those that are out are faded, and fixed ones (copies, the
+capstone pair) are hatched. The **All in / All out** button on the tab does the whole tab at once. Untick
+to go back to clicking for the menu. **New tab** makes
 a tab and opens it. You can also drag an advancement onto another one, or onto a tab. **Full screen** fills
 the window with the advancements screen, tabs included; Esc leaves it.
 

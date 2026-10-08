@@ -82,6 +82,7 @@ function render() {
     d.dataset.node = n.id;
     if (!view.earned && !visibleWithNothingEarned(L.E, n.id)) d.classList.add('hid');
     if (n.id === selected) d.classList.add('sel');
+    if (view.paint) { if (paintBlocked(n)) d.classList.add('fixed'); else if (!n.cap[view.paint]) d.classList.add('off'); }
     d.setAttribute('role', 'button'); d.setAttribute('aria-label', `Edit ${n.t}`); d.tabIndex = 0;
     d.addEventListener('mouseenter', () => { if (!drag || !drag.active) showHover(n); });
     d.addEventListener('mouseleave', hideHover);
@@ -94,6 +95,16 @@ function render() {
   el('abs', { left: 0, top: px(top), width: px(W), height: px(H), boxSizing: 'border-box', borderStyle: 'solid', borderWidth: `${18 * S}px ${9 * S}px ${9 * S}px ${9 * S}px`, borderImage: `url(${SP.window}) 18 9 9 9 stretch`, zIndex: 3, pointerEvents: 'none' }, gui);
   const title = el('abs gtitle', { left: px(8), top: px(top + 6), zIndex: 4 }, gui);
   title.textContent = tab.title;
+  if (view.paint && tab.kind !== 'other' && L.E.editable) {
+    const { ids, putIn } = tabPaint(L, tab);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'mcbtn tabpaint'; b.disabled = !ids.length;
+    b.textContent = putIn ? 'All in' : 'All out';
+    b.title = `${putIn ? 'Put' : 'Take'} every advancement in this tab ${putIn ? 'in' : 'out of'} ${PAINT_NAMES[view.paint]}`;
+    b.style.top = px(top + 3); b.style.right = px(8);
+    b.addEventListener('click', () => paintTab(tab));
+    gui.appendChild(b);
+  }
 
   if (!scrolls[tab.id]) scrolls[tab.id] = { x: -minX, y: -minY };
   clampScroll(); applyScroll();
@@ -165,6 +176,7 @@ function dropTargetAt(x, y) {
 function onDragMove(e) {
   if (!drag) return;
   if (!drag.active) {
+    if (view.paint) return; // painting: a press is always a click
     if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 6) return;
     if (!layoutCache.E.editable || kindOf(drag.id) === 'other' || drag.id === DT_ROOT) return;
     drag.active = true; hideHover(); hideTip();
@@ -200,6 +212,7 @@ function onDragEnd(e) {
 }
 
 function nodeClicked(id, anchorEl) {
+  if (view.paint && !picking) { if (layoutCache.E.editable) toggleCap(id); else toast('Switch Layout to With my edits to edit.'); return; }
   if (picking) {
     const who = picking; endPick();
     if (id !== who) reparent(who, id);

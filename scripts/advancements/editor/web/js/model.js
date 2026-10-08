@@ -64,7 +64,7 @@ let W = 252, H = 140, IW = 234, IH = 113, PER_ROW = 8;
 const emptyEdits = () => ({ parents: {}, created: {}, deleted: [], icons: {}, tabTitles: {}, bgs: {}, texts: {}, values: {}, capstone: {}, unlocks: {}, visibility: {}, order: null });
 /** Edit maps keyed by advancement id — what "Undo my edits to this" clears. */
 const EDIT_KEYS = ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone', 'unlocks', 'visibility'];
-const view = { layout: 'proposed', other: false, creative: false, earned: true, tabId: DT_ROOT, withChildren: true };
+const view = { layout: 'proposed', other: false, creative: false, earned: true, tabId: DT_ROOT, withChildren: true, paint: null };
 try { Object.assign(view, JSON.parse(localStorage.getItem('dt-adv-view') || '{}')); } catch (e) {}
 const saveView = () => { try { localStorage.setItem('dt-adv-view', JSON.stringify(view)); } catch (e) {} };
 
@@ -418,6 +418,36 @@ async function saveToRepo() {
   } catch (err) {
     setStatus(`Couldn\u2019t save to the repo: ${err.message}. Your edits are still here.`, true);
   }
+}
+
+// ---------- paint mode: click to put advancements in or out of the burrito / It's Not That Simple ----------
+const PAINT_NAMES = { req: 'the Everything Burrito', reset: 'It\u2019s Not That Simple' };
+const capWrite = (ed, id, key, v) => { ed.capstone = ed.capstone || {}; ed.capstone[id] = { ...(ed.capstone[id] || {}), [key]: v }; };
+/** Why an advancement can't be painted, or null when it can. */
+function paintBlocked(n) {
+  if (!n || !n.cap) return 'Vanilla advancements never count.';
+  if (n.cap.ed) return null;
+  if (n.copyOf) return 'A tab copy follows its original: change that one instead.';
+  if (n.unlockedBy) return 'It follows the advancement that unlocks it.';
+  return 'Fixed: the Everything Burrito, its reward and the Editor tab can\u2019t change.';
+}
+function toggleCap(id) {
+  const key = view.paint, n = layoutCache.E.nodes[id], why = paintBlocked(n);
+  if (why) { toast(why); return; }
+  const v = !n.cap[key];
+  const verb = key === 'req' ? (v ? 'now counts towards' : 'no longer counts towards') : (v ? 'now reset by' : 'now kept by');
+  commit(ed => capWrite(ed, id, key, v), `${n.t}: ${verb} ${PAINT_NAMES[key]}.`);
+}
+/** The tab's paintable advancements, and whether its button puts them all in (true) or takes them all out. */
+function tabPaint(L, tab) {
+  const ids = tab.nodes.map(m => m.id).filter(id => !paintBlocked(L.E.nodes[id]));
+  return { ids, putIn: ids.some(id => !L.E.nodes[id].cap[view.paint]) };
+}
+function paintTab(tab) {
+  const key = view.paint, { ids, putIn } = tabPaint(layoutCache, tab);
+  if (!ids.length) { toast('Nothing in this tab can change.'); return; }
+  commit(ed => ids.forEach(id => capWrite(ed, id, key, putIn)),
+    `${tab.title}: all ${ids.length} ${putIn ? 'in' : 'out of'} ${PAINT_NAMES[key]}.`);
 }
 
 // ---------- what a capstone needs ----------
