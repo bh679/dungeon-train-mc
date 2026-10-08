@@ -166,6 +166,7 @@ topical tags.
 | `set-tags.py` | Correction pass | Replace the topical tags of listed entries from a reviewed `{id: [tags]}` mapping. `--dry-run` reports, `--show-changes` lists moves, `--report` prints current counts. |
 | `render-unreleased.py` | Release (agent) | Print Markdown of all `released:false` entries, grouped by version (newest first). Empty output when nothing is unreleased. |
 | `mark-released.py` | Release (CI) | Flip every `released:false` entry to released; stamp the tag + timestamp. |
+| `notify-highlights.py` | Release (CI) | Post each `major` entry the tag shipped to Discord #highlights (title, description, photo) via the `DISCORD_HIGHLIGHTS_WEBHOOK_URL` secret. Real releases only; skips when unset. `--entry <id>` re-posts one; `DRY_RUN=1` prints the payload. |
 
 ```bash
 # Gate 3 — log what was built (run on the feature branch before merging):
