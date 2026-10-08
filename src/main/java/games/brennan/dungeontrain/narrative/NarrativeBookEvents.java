@@ -296,9 +296,14 @@ public final class NarrativeBookEvents {
      *       {@link RandomBookTag#NBT_HELD} "has been held" marker so the
      *       burn flow (see {@link games.brennan.dungeontrain.narrative.BurnableBookTag})
      *       can fire on subsequent drops. Random books that have never
-     *       reached a held hand slot stay non-burnable, so chest / pot
+     *       been in a player's inventory stay non-burnable, so chest / pot
      *       drops don't ignite on the floor.</li>
      * </ul>
+     *
+     * <p>A hand slot is only the IMMEDIATE path. Most books never touch one on the way in —
+     * shift-clicking out of a chest, taking from a chiseled bookshelf and walking over a dropped book
+     * all go through {@code Inventory#add} — so {@link #onPlayerTick}'s sweep arms every book in the
+     * inventory too. "Held" therefore means "has been in a player's inventory".</p>
      */
     @SubscribeEvent
     public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
@@ -307,6 +312,18 @@ public final class NarrativeBookEvents {
         if (slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) return;
         ItemStack stack = event.getTo();
         if (stack.isEmpty()) return;
+        armHeld(player, stack, true);
+    }
+
+    /**
+     * Resolve and arm one book now in {@code player}'s inventory — the body of
+     * {@link #onEquipmentChange}, shared with the inventory sweep in {@link #onPlayerTick}.
+     *
+     * @param inHand true on the equip path. Only then does a discovered community book greet its
+     *               author ({@link FamiliarBookGreeter#maybeGreet} asks the relay), so the
+     *               once-a-second sweep never sends a request per book.
+     */
+    private static void armHeld(ServerPlayer player, ItemStack stack, boolean inHand) {
 
         // Pending community-book placeholder — resolve it PER-PLAYER now that a hand is holding it, then
         // fall through to the shared-found branch for the same held-marker + author greeting a natively
@@ -363,7 +380,7 @@ public final class NarrativeBookEvents {
                     player.getName().getString());
             }
             // If the holder authored this community book, greet them with how it's doing in the wild.
-            FamiliarBookGreeter.maybeGreet(player, stack);
+            if (inHand) FamiliarBookGreeter.maybeGreet(player, stack);
             return;
         }
 
@@ -453,6 +470,14 @@ public final class NarrativeBookEvents {
                 // whenever the count has not moved (RunStatBookFactory.refresh compares the RENDERED
                 // value, so a steady book costs a comparison and never touches the stack).
                 RunStatBookFactory.refresh(stack, player);
+            }
+            // Arm the burn on every book that arrived without passing through a hand, so "held" means
+            // "has been in a player's inventory" — what Nothing But Books and the drop-burn both rely
+            // on. Already-armed and always-burnable books skip it, so a settled inventory costs one
+            // predicate per book.
+            if (!BurnableBookTag.isBurnable(stack)) {
+                armHeld(player, stack, false);
+                if (RunStatBookTag.is(stack)) RunStatBookTag.markHeld(stack);
             }
         }
     }
