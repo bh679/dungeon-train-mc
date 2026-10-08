@@ -24071,8 +24071,29 @@
       "released_at": null
     },
     {
+      "id": "photo-views-five-ten",
+      "version": "0.1187.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Photos are seen by fewer people",
+      "summary": "A shared photo now reaches 5 other players before it fades. Pay Tribute to your own photo and it reaches 10.",
+      "highlights": [
+        "Shared photos: 5 views, or 10 after you pay Tribute to your own",
+        "Paying Tribute to someone else's photo now tells you the right number of views it gets back"
+      ],
+      "pr": 1873,
+      "date": "2026-10-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "camera-photo-trade-values",
-      "version": "0.1188.0",
+      "version": "0.1189.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24082,6 +24103,7 @@
       "title": "Cameras and photos now sell to villagers",
       "summary": "Cameras and photos now sell to villagers",
       "highlights": [],
+      "pr": 1877,
       "date": "2026-10-08",
       "released": false,
       "released_in": null,
