@@ -24069,6 +24069,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "camera-photo-trade-values",
+      "version": "0.1188.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Cameras and photos now sell to villagers",
+      "summary": "Cameras and photos now sell to villagers",
+      "highlights": [],
+      "date": "2026-10-08",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
