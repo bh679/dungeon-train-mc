@@ -171,7 +171,8 @@ def build_bundle() -> tuple[dict, list[str]]:
 
     books = capstone_rules.book_paths()
     nodes, parents = {}, {}
-    for aid, adv in load_advancements(tex).items():
+    adv_json = load_advancements(tex)
+    for aid, adv in adv_json.items():
         d = adv.get("display")
         if not d:
             continue  # display-less advancements never show
@@ -193,8 +194,13 @@ def build_bundle() -> tuple[dict, list[str]]:
             node["visDef"] = capstone_rules.visibility_default(adv)
             node["vis"] = tabs_file.get("visibility", {}).get(aid, node["visDef"])
         if aid.startswith("dungeontrain:"):
-            required, reset = capstone_rules.effective(aid, linked, books, tabs_file)
-            node["cap"] = {"req": required, "reset": reset, "ed": capstone_rules.is_editable(aid, linked)}
+            in_dt = capstone_rules.tab_root(aid, lambda a: (adv_json.get(a) or {}).get("parent")) == capstone_rules.DT_ROOT
+            required, reset = capstone_rules.effective(aid, linked, books, tabs_file, in_dt)
+            node["cap"] = {"req": required, "reset": reset, "ed": capstone_rules.is_editable(aid, linked),
+                           # what the page needs to redo the rule as advancements move between tabs
+                           "base": capstone_rules.default_required(aid, linked, books),
+                           "ovReq": tabs_file.get("burrito", {}).get(aid),
+                           "ovReset": tabs_file.get("startAgainReset", {}).get(aid)}
         if aid.startswith("dungeontrain:") and aid not in copies:
             node["tx"] = editable_text(d, req)
         if CHAIN.match(aid):

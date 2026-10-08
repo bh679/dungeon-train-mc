@@ -237,7 +237,7 @@ function moreBgButtons(current) {
 // ---------- Everything Burrito ----------
 function capstoneSection(n) {
   const c = n.cap, dis = c.ed ? '' : ' disabled';
-  const why = c.ed ? '' : `<div class="hint">${n.copyOf ? 'A tab copy never counts: its original does.' : 'Fixed for the capstone itself, its reward and the Editor tab.'}</div>`;
+  const why = c.ed ? `<div class="hint">${!c.base ? 'Never counts by default.' : c.def ? 'Counts by default: it is in the Dungeon Train tab.' : 'Doesn\u2019t count by default: only the Dungeon Train tab does (other tabs count through their tab-complete advancement).'}</div>` : `<div class="hint">${n.copyOf ? 'A tab copy never counts: its original does.' : 'Fixed for the capstone itself, its reward and the Editor tab.'}</div>`;
   return `<div class="sec"><span>Everything Burrito</span>
     <label class="check"><input type="checkbox" id="mCapReq"${c.req ? ' checked' : ''}${dis}> Counts towards Everything Burrito</label>
     <label class="check"><input type="checkbox" id="mCapReset"${c.reset ? ' checked' : ''}${dis}> Reset by It\u2019s Not That Simple</label>${why}</div>`;

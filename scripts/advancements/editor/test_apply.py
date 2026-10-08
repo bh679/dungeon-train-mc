@@ -269,8 +269,11 @@ GOLDEN = MOD.REPO / "src/test/resources/advancement/burrito_required.txt"
 def burrito_set() -> str:
     tabs = MOD.load_tabs(MOD.TABS_FILE)
     books = capstone_rules.book_paths()
-    ids = sorted("dungeontrain:" + f.relative_to(MOD.ADV_DIR).with_suffix("").as_posix() for f in MOD.ADV_DIR.rglob("*.json"))
-    return "\n".join(i for i in ids if capstone_rules.effective(i, capstone_rules.linked(tabs), books, tabs)[0]) + "\n"
+    files = {"dungeontrain:" + f.relative_to(MOD.ADV_DIR).with_suffix("").as_posix(): f for f in MOD.ADV_DIR.rglob("*.json")}
+    parent_of = lambda a: json.loads(files[a].read_text()).get("parent") if a in files else None
+    in_dt = lambda a: capstone_rules.tab_root(a, parent_of) == capstone_rules.DT_ROOT
+    return "\n".join(i for i in sorted(files)
+                     if capstone_rules.effective(i, capstone_rules.linked(tabs), books, tabs, in_dt(i))[0]) + "\n"
 
 
 def test_book_paths_parse():

@@ -129,23 +129,27 @@ function effective() {
   });
   const unlocks = edits.unlocks || {};
   Object.keys(unlocks).forEach(id => { if (nodes[id]) { nodes[id] = { ...nodes[id], unlockedBy: unlocks[id] || undefined }; } });
-  // Everything Burrito / It's Not That Simple. Reset follows "counts" unless it was set on its own.
-  const caps = edits.capstone || {};
-  Object.keys(nodes).forEach(id => {
-    const n = nodes[id];
-    if (n.created && !n.cap) n.cap = n.copyOf || n.unlockedBy ? { req: false, reset: false, ed: false } : { req: true, reset: true, ed: true };
-    if (n.unlockedBy && n.cap) n.cap = { req: false, reset: false, ed: false }; // follows its source, never counts
-    if (!n.cap) return;
-    const e = caps[id] || {}, base = n.cap;
-    const req = 'req' in e ? e.req : base.req;
-    const reset = 'reset' in e ? e.reset : (base.reset === base.req ? req : base.reset);
-    n.cap = { ...base, req, reset };
-  });
   const bgs = { ...B.bgs, ...edits.bgs };
   Object.keys(bgs).forEach(id => { if (nodes[id]) nodes[id].bg = bgs[id]; });
   const parents = { ...M.gameParents, ...B.parents, ...edits.parents };
   Object.keys(parents).forEach(id => { if (!nodes[id]) delete parents[id]; else if (parents[id] && !nodes[parents[id]]) parents[id] = ''; });
   Object.keys(nodes).forEach(id => { if (!(id in parents)) parents[id] = ''; });
+  // Everything Burrito / It's Not That Simple, as CompletionistAdvancement.isRequiredId: by default an advancement
+  // counts only in the Dungeon Train tab, so moving one between tabs flips its default live. An override (the repo's,
+  // or a checkbox ticked here) wins; reset follows "counts" unless it was set on its own.
+  const caps = edits.capstone || {};
+  const tabRootOf = id => { let a = id; for (let g = 0; parents[a] && g < 500; g++) a = parents[a]; return a; };
+  Object.keys(nodes).forEach(id => {
+    const n = nodes[id];
+    if (n.created && !n.cap) n.cap = n.copyOf || n.unlockedBy ? { req: false, reset: false, ed: false } : { base: true, ed: true };
+    if (n.unlockedBy && n.cap) n.cap = { req: false, reset: false, ed: false }; // follows its source, never counts
+    if (!n.cap || !n.cap.ed) return; // the capstone pair and copies keep what the repo says
+    const c = n.cap, e = caps[id] || {};
+    const def = !!c.base && tabRootOf(id) === DT_ROOT;
+    const req = 'req' in e ? e.req : (c.ovReq != null ? c.ovReq : def);
+    const reset = 'reset' in e ? e.reset : (c.ovReset != null ? c.ovReset : req);
+    nodes[id] = { ...n, cap: { ...c, req, reset, def } };
+  });
   // Visibility: the editor's mode, else the one saved in the repo, else the default for where it sits now.
   const visEdits = edits.visibility || {};
   Object.keys(nodes).forEach(id => {
@@ -353,7 +357,7 @@ function exportChanges() {
       out.created[id] = n.copyOf
         ? { parent: E.parents[id] || null, copyOf: n.copyOf, icon: M.iconIds[n.i], background: n.bg || null }
         : { parent: E.parents[id] || null, title: n.t, description: n.d, frame: n.f, icon: M.iconIds[n.i], background: n.bg || null, unlockedBy: n.unlockedBy || null };
-      if (n.cap && n.cap.ed && (!n.cap.req || !n.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
+      if (n.cap && n.cap.ed && (n.cap.req !== n.cap.def || n.cap.reset !== n.cap.req)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
       if (n.vis && n.vis !== n.visDef) out.visibility[id] = n.vis;
       return;
     }
@@ -364,7 +368,7 @@ function exportChanges() {
     if (!E.parents[id] && !n.copyOf && (n.unlockedBy || '') !== (base.unlockedBy || '')) out.unlocks[id] = n.unlockedBy || null;
     const wantVis = n.vis === n.visDef ? null : n.vis, savedVis = base.vis !== base.visDef ? base.vis : null;
     if (wantVis !== savedVis) out.visibility[id] = wantVis;
-    if (n.cap && base.cap && n.cap.ed && (n.cap.req !== base.cap.req || n.cap.reset !== base.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
+    if (n.cap && n.cap.ed && (edits.capstone || {})[id]) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset }; // apply.py stores it only where it beats the default
     const tx = {};
     [['t', 'title'], ['d', 'description'], ['hint', 'hint']].forEach(([k, f]) => { if ((n[k] || '') !== (base[k] || '') && n[k]) tx[f] = n[k]; });
     if (Object.keys(tx).length && !n.copyOf) out.texts[id] = tx;

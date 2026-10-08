@@ -84,7 +84,7 @@ final class EnchiridionAdvancementsTest {
     void outsideTheBurrito() {
         for (String path : List.of(EnchiridionAdvancements.ROOT, "dungeon_train/taking_notes",
                 "dungeon_train/nothing_but_books", "enchiridion/say_cheese", "enchiridion/photo_stacks")) {
-            assertFalse(CompletionistAdvancement.isRequiredId(rl(path), Set.of()), path);
+            assertFalse(CompletionistAdvancement.isRequiredId(rl(path), Set.of(), true), path);
             assertFalse(StartAgainAdvancement.isWiped(rl(path), false), path);
         }
     }
@@ -93,7 +93,7 @@ final class EnchiridionAdvancementsTest {
     @DisplayName("Respect The Rules is on the Challenges tab, not The Enchiridion, and still counts")
     void chestsStillRequired() throws IOException {
         assertEquals("dungeon_train/tab_challenges", tabRoot(parents(), "dungeon_train/chests_100_unique"));
-        assertTrue(CompletionistAdvancement.isRequiredId(rl("dungeon_train/chests_100_unique"), Set.of()));
+        assertTrue(CompletionistAdvancement.isRequiredId(rl("dungeon_train/chests_100_unique"), Set.of(), true), "counts were it in the Dungeon Train tab");
     }
 
     @Test

@@ -47,7 +47,8 @@ Needs Pillow (`pip install pillow`) for the icons, and a workspace that has buil
 | Everything Burrito / It's Not That Simple | `advancement_tabs.json` → `burrito` / `startAgainReset`, only where it differs from the default |
 
 The default for both comes from the mod (`CompletionistAdvancement.isRequiredId`; Start Again resets what
-the burrito needs). `capstone_rules.py` mirrors it for the page, and a golden list
+the burrito needs): only advancements in the **Dungeon Train tab** count, so the other tabs count through
+their tab-complete advancement there, and moving one between tabs changes its default live. `capstone_rules.py` mirrors it for the page, and a golden list
 (`src/test/resources/advancement/burrito_required.txt`) checked by both a Java and a Python test keeps the
 two in step. After changing the rule, run `test_apply.py --regen-golden`.
 

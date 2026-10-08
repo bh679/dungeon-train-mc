@@ -66,9 +66,9 @@ public final class TabCompleteAdvancements {
 
     /**
      * The copies of tab-complete advancements: never members of any tab, or a tab's own copy would need
-     * itself. Pure over the layout; package-private for tests.
+     * itself. Pure over the layout; also read by the client's "what you still need" halo.
      */
-    static Set<String> completeCopies(TabGateways.Layout layout) {
+    public static Set<String> completeCopies(TabGateways.Layout layout) {
         Set<String> out = new HashSet<>();
         layout.copies().forEach((copy, original) -> { if (layout.complete().containsKey(original)) out.add(copy); });
         return out;

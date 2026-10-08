@@ -139,7 +139,7 @@ public final class StartAgainAdvancement {
         Set<ResourceLocation> notRequired = AdvancementRequirementOverrides.notRequired();
         List<AdvancementHolder> targets = new ArrayList<>();
         for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
-            if (isWiped(holder.id(), CompletionistAdvancement.isRequired(holder, notRequired))) targets.add(holder);
+            if (isWiped(holder.id(), CompletionistAdvancement.isRequired(server.getAdvancements(), holder, notRequired))) targets.add(holder);
         }
         int cleared = 0;
         for (AdvancementHolder holder : targets) {

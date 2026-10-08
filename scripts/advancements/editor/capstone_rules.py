@@ -3,7 +3,8 @@
 Python mirror of the mod's default rule, so the editor can show it and know when an edit is an
 override. The Java is the authority:
 
-* required — ``CompletionistAdvancement.isRequiredId``
+* required — ``CompletionistAdvancement.isRequiredId``: by default only advancements in the Dungeon Train
+  tab count (the other tabs count through their tab-complete advancements there)
 * reset    — ``StartAgainAdvancement.isWiped`` (by default: exactly the required set)
 
 Overrides live in ``advancement_tabs.json`` (``burrito`` / ``startAgainReset``: id → bool) and are
@@ -19,6 +20,8 @@ REPO = Path(__file__).resolve().parents[3]
 ENCHIRIDION_JAVA = REPO / "src/main/java/games/brennan/dungeontrain/advancement/EnchiridionAdvancements.java"
 
 COMPLETIONIST = "dungeontrain:dungeon_train/completionist"
+#: The Dungeon Train tab's root: by default only advancements under it count towards the burrito.
+DT_ROOT = "dungeontrain:dungeon_train/root"
 START_AGAIN = "dungeontrain:dungeon_train/start_again"
 #: Never editable: the capstone, its reward, and the creative-only editor tree.
 FIXED = {COMPLETIONIST, START_AGAIN}
@@ -73,10 +76,25 @@ def default_required(adv_id: str, copies: dict[str, str], books: set[str]) -> bo
     return True
 
 
-def effective(adv_id: str, copies: dict[str, str], books: set[str], tabs: dict) -> tuple[bool, bool]:
-    """``copies`` here means every linked advancement — see :func:`linked`."""
-    """(counts towards the burrito, reset by start-again) with the tabs file's overrides applied."""
-    required = default_required(adv_id, copies, books)
+def tab_root(adv_id: str, parent_of) -> str:
+    """The tab ``adv_id`` is drawn in: the root at the end of its parent chain (``parent_of(id)`` → parent or None)."""
+    at = adv_id
+    for _ in range(500):
+        parent = parent_of(at)
+        if not parent:
+            return at
+        at = parent
+    raise ValueError(f"parent cycle at {adv_id}")
+
+
+def effective(adv_id: str, copies: dict[str, str], books: set[str], tabs: dict,
+              in_dt_tab: bool = True) -> tuple[bool, bool]:
+    """(counts towards the burrito, reset by start-again) with the tabs file's overrides applied.
+
+    ``copies`` here means every linked advancement — see :func:`linked`. ``in_dt_tab``: is it drawn in
+    the Dungeon Train tab (:func:`tab_root` is :data:`DT_ROOT`)?
+    """
+    required = default_required(adv_id, copies, books) and in_dt_tab
     if is_editable(adv_id, copies):
         required = tabs.get("burrito", {}).get(adv_id, required)
     reset = required or adv_id in FIXED

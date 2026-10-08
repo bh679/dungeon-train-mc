@@ -230,7 +230,7 @@ def load_tabs(tabs_file: Path) -> dict:
             **{k: v for k, v in data.items() if k not in ("order", "tabNames", "copies", "unlockedBy")}}
 
 
-def set_capstone(tabs: dict, adv_id: str, flags: dict, adv_dir: Path) -> None:
+def set_capstone(tabs: dict, adv_id: str, flags: dict, adv_dir: Path, in_dt_tab: bool = True) -> None:
     """Record "counts towards the Everything Burrito" / "reset by It's Not That Simple" for one advancement.
 
     Only a value that differs from the mod's default is stored, so the tabs file lists the exceptions:
@@ -244,7 +244,7 @@ def set_capstone(tabs: dict, adv_id: str, flags: dict, adv_dir: Path) -> None:
         if key in flags and not isinstance(flags[key], bool):
             raise ApplyError(f"{adv_id}: {key} must be true or false")
     burrito, reset = tabs.setdefault("burrito", {}), tabs.setdefault("startAgainReset", {})
-    default_req = capstone_rules.default_required(adv_id, copies, capstone_rules.book_paths())
+    default_req = capstone_rules.default_required(adv_id, copies, capstone_rules.book_paths()) and in_dt_tab
     required = flags.get("required", burrito.get(adv_id, default_req))
     _store(burrito, adv_id, required, default_req)
     _store(reset, adv_id, flags.get("reset", reset.get(adv_id, required)), required)
@@ -378,8 +378,19 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
             tabs["tabNames"].pop(root, None)
         tabs_dirty = True
 
+    def parent_of(adv_id: str) -> str | None:
+        """Its parent after this save's moves, for which tab it ends up in."""
+        try:
+            path = adv_path(adv_id, adv_dir)
+        except ApplyError:
+            return None
+        if path in new_files:
+            return new_files[path].get("parent")
+        return json.loads(text_of(path)).get("parent") if path in files or path.is_file() else None
+
     for adv_id, flags in (changes.get("capstone") or {}).items():
-        set_capstone(tabs, adv_id, flags, adv_dir)
+        in_dt = capstone_rules.tab_root(adv_id, parent_of) == capstone_rules.DT_ROOT
+        set_capstone(tabs, adv_id, flags, adv_dir, in_dt)
         tabs_dirty = True
 
     for root, source in (changes.get("unlocks") or {}).items():

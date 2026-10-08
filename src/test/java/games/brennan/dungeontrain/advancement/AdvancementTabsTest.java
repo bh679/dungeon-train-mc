@@ -190,9 +190,10 @@ class AdvancementTabsTest {
     @DisplayName("the Everything Burrito set matches the editor's golden list (keeps capstone_rules.py honest)")
     void burritoSetMatchesGolden() throws IOException {
         List<String> required = new ArrayList<>();
-        for (String path : advancements().keySet()) {
+        Map<String, JsonObject> all = advancements();
+        for (String path : all.keySet()) {
             ResourceLocation id = ResourceLocation.fromNamespaceAndPath("dungeontrain", path);
-            if (CompletionistAdvancement.isRequiredId(id, Set.of())) required.add(id.toString());
+            if (CompletionistAdvancement.isRequiredId(id, Set.of(), (DT + "root").equals(tabOf(all, path)))) required.add(id.toString());
         }
         required.sort(null);
         String golden;
@@ -300,7 +301,7 @@ class AdvancementTabsTest {
         JsonObject d = all.get(challenges).getAsJsonObject("display");
         assertTrue(d.get("hidden").getAsBoolean(), "locked until Dungeon Train Explorer");
         assertFalse(CompletionistAdvancement.isRequiredId(
-                ResourceLocation.fromNamespaceAndPath("dungeontrain", challenges), Set.of()), "follows its source, never counts");
+                ResourceLocation.fromNamespaceAndPath("dungeontrain", challenges), Set.of(), false), "follows its source, never counts");
     }
 
     @Test
@@ -320,9 +321,29 @@ class AdvancementTabsTest {
     @DisplayName("copies never count towards the Everything Burrito")
     void copiesOutsideTheBurrito() throws IOException {
         for (String copy : shippedLayout().copies().keySet()) {
-            assertFalse(CompletionistAdvancement.isRequiredId(ResourceLocation.parse(copy), Set.of()), copy);
+            assertFalse(CompletionistAdvancement.isRequiredId(ResourceLocation.parse(copy), Set.of(), true), copy);
         }
         assertTrue(CompletionistAdvancement.isRequiredId(
-                ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "carts_100"), Set.of()), "the original still counts");
+                ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "carts_100"), Set.of(), true), "the original still counts");
+    }
+
+    @Test
+    @DisplayName("the Everything Burrito needs the Dungeon Train tab only: other tabs count through their tab-complete advancements")
+    void burritoIsTheDungeonTrainTab() throws IOException {
+        Map<String, JsonObject> all = advancements();
+        java.util.function.Predicate<String> required = path -> CompletionistAdvancement.isRequiredId(
+            ResourceLocation.fromNamespaceAndPath("dungeontrain", path), Set.of(), (DT + "root").equals(tabOf(all, path)));
+        for (String path : List.of(DT + "reached_nether", DT + "carts_1000", DT + "chests_100_unique", DT + "a_silent_friend")) {
+            assertFalse((DT + "root").equals(tabOf(all, path)), path + " is outside the Dungeon Train tab");
+            assertFalse(required.test(path), path + " counts through its tab-complete advancement, not directly");
+        }
+        for (String path : List.of(DT + "train_explored", DT + "all_others", DT + "challenge_complete", DT + "carts_100")) {
+            assertTrue(required.test(path), path);
+        }
+        for (String path : List.of(DT + "heros_handbook", DT + "fully_developed", DT + "all_out_of_secrets")) {
+            assertFalse(required.test(path), path + " stays out, as its tab is not part of the burrito");
+        }
+        assertFalse(CompletionistAdvancement.isRequiredId(ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "heros_handbook"),
+            Set.of(), true), "an editor override wins over the tab");
     }
 }
