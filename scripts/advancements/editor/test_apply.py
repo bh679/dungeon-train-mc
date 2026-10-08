@@ -225,6 +225,25 @@ def test_visibility_stored_only_when_not_default():
     raise AssertionError("accepted a bad mode")
 
 
+def test_reword_existing_text():
+    ws = Workspace()
+    key = "advancements.dungeontrain.dungeon_train.carts_100."
+    ws.lang.write_text('{\n  %s: "Dungeon Train Explorer",\n  %s: "Traverse %%s carriages.",\n  "gui.dungeontrain.other": "x"\n}'
+                       % (json.dumps(key + "title"), json.dumps(key + "description")))
+    report = ws.apply({"texts": {DT + "carts_100": {"description": "Ride %s carriages.", "hint": "Keep going."}}})
+    lang = json.loads(ws.lang.read_text())
+    assert lang[key + "description"] == "Ride %s carriages." and lang[key + "hint"] == "Keep going."
+    assert lang[key + "title"] == "Dungeon Train Explorer"
+    assert any("Re-translate" in t and key + "description" in t for t in report.todo), report.todo
+    assert any("Translate the new" in t for t in report.todo), report.todo  # the hint is new
+    for bad in ({"description": "Ride carriages."}, {"title": "  "}, {"colour": "red"}):
+        try:
+            ws.apply({"texts": {DT + "carts_100": bad}})
+        except MOD.ApplyError:
+            continue
+        raise AssertionError(f"accepted {bad}")
+
+
 def test_more_icons_are_real_drawable_items():
     """Needs Pillow and a built workspace (game jars in ~/.gradle); skipped where they are missing, as in CI."""
     try:

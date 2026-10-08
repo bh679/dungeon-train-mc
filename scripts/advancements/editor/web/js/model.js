@@ -111,6 +111,7 @@ function effective() {
   const values = edits.values || {};
   Object.keys(values).forEach(id => { if (nodes[id] && nodes[id].req) nodes[id].req = { ...nodes[id].req, n: values[id] }; });
   const texts = edits.texts || {};
+  Object.keys(texts).forEach(id => { if (nodes[id]) Object.assign(nodes[id], texts[id]); });
   const resolve = (id, seen) => {
     if (nodes[id]) return nodes[id];
     const c = created[id]; if (!c || seen.has(id)) return null; seen.add(id);
@@ -344,7 +345,7 @@ async function connect() {
 function exportChanges() {
   const saved = view.layout; view.layout = 'proposed';
   const L = computeLayout(); view.layout = saved;
-  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, capstone: {}, unlocks: {}, visibility: {}, order: null };
+  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, capstone: {}, unlocks: {}, visibility: {}, texts: {}, order: null };
   Object.keys(E.nodes).forEach(id => {
     const n = E.nodes[id], base = M.nodes[id];
     if (kindOf(id) === 'other') return;
@@ -364,6 +365,9 @@ function exportChanges() {
     const wantVis = n.vis === n.visDef ? null : n.vis, savedVis = base.vis !== base.visDef ? base.vis : null;
     if (wantVis !== savedVis) out.visibility[id] = wantVis;
     if (n.cap && base.cap && n.cap.ed && (n.cap.req !== base.cap.req || n.cap.reset !== base.cap.reset)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
+    const tx = {};
+    [['t', 'title'], ['d', 'description'], ['hint', 'hint']].forEach(([k, f]) => { if ((n[k] || '') !== (base[k] || '') && n[k]) tx[f] = n[k]; });
+    if (Object.keys(tx).length && !n.copyOf) out.texts[id] = tx;
   });
   const titles = E.titles;
   Object.keys({ ...titles, ...M.baseline.tabTitles }).forEach(id => {
@@ -410,6 +414,25 @@ async function saveToRepo() {
   } catch (err) {
     setStatus(`Couldn\u2019t save to the repo: ${err.message}. Your edits are still here.`, true);
   }
+}
+
+// ---------- what a capstone needs ----------
+const BURRITO = 'dungeontrain:dungeon_train/completionist';
+/**
+ * The advancements the selected capstone needs, for highlighting: the Everything Burrito's (those that count
+ * towards it), or a tab-complete advancement's (its tab, less the tab-complete copies). Hidden-until-earned
+ * ones are left out, as a player can't see them. Null when the selection is neither.
+ */
+function neededBy(L, id) {
+  const E = L.E;
+  if (E.nodes[id] && E.nodes[id].copyOf && M.complete && M.complete[E.nodes[id].copyOf]) id = E.nodes[id].copyOf; // its in-tab copy
+  let ids;
+  if (id === BURRITO) ids = Object.keys(E.nodes).filter(k => E.nodes[k].cap && E.nodes[k].cap.req);
+  else if (M.complete && M.complete[id]) {
+    const root = M.complete[id], skip = new Set(Object.keys(M.complete));
+    ids = Object.keys(E.nodes).filter(k => isDescendant(L, root, k) && !(E.nodes[k].copyOf && skip.has(E.nodes[k].copyOf)));
+  } else return null;
+  return new Set(ids.filter(k => E.nodes[k].vis !== 'earned'));
 }
 
 // ---------- visibility ----------

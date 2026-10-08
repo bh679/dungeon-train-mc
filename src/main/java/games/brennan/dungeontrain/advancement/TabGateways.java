@@ -40,7 +40,9 @@ import java.util.Optional;
  *
  * <p>The same file carries the per-advancement capstone overrides the editor writes: {@code burrito}
  * (counts towards the Everything Burrito — {@link CompletionistAdvancement#isRequiredId}) and
- * {@code startAgainReset} (cleared by "It's Not That Simple" — {@link StartAgainAdvancement#isWiped}).</p>
+ * {@code startAgainReset} (cleared by "It's Not That Simple" — {@link StartAgainAdvancement#isWiped}),
+ * and {@code complete}: each tab's "tab complete" advancement → the tab root it needs in full
+ * ({@link TabCompleteAdvancements}).</p>
  *
  * <p>The pairs live in {@code /dungeontrain/advancement_tabs.json} (also read by the advancement editor,
  * {@code scripts/advancements/editor}), so a new pair is a data change. Copies are mirrors, never
@@ -65,20 +67,21 @@ public final class TabGateways {
      */
     public record Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order,
                          Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset,
-                         Map<String, String> unlockedBy, Map<String, String> visibility) {
+                         Map<String, String> unlockedBy, Map<String, String> visibility,
+                         Map<String, String> complete) {
 
-        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of(), Map.of());
+        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
 
         /** A layout with copies, names and order only — no capstone overrides or unlock links. */
         public Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order) {
-            this(copies, tabNames, order, Map.of(), Map.of(), Map.of(), Map.of());
+            this(copies, tabNames, order, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
 
         public static Layout parse(Reader reader) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
             return new Layout(stringMap(root, "copies"), stringMap(root, "tabNames"), stringList(root, "order"),
                     boolMap(root, "burrito"), boolMap(root, "startAgainReset"), stringMap(root, "unlockedBy"),
-                    stringMap(root, "visibility"));
+                    stringMap(root, "visibility"), stringMap(root, "complete"));
         }
 
         /**

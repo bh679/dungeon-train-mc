@@ -12,10 +12,12 @@ function openMenu(id, anchorEl) {
   menu.hidden = false;
   menu.scrollTop = 0;
   placeMenu();
+  markNeeded();
 }
 function closeMenu(keepSel) {
   menu.hidden = true;
   if (!keepSel) { selected = null; document.querySelectorAll('#tree .node.sel').forEach(x => x.classList.remove('sel')); }
+  markNeeded();
 }
 function placeMenu() {
   const vw = document.documentElement.clientWidth, vh = window.innerHeight;
@@ -28,61 +30,108 @@ function placeMenu() {
   menu.style.left = x + 'px'; menu.style.top = y + 'px';
 }
 
+// The menu shows the advancement as the game does. Each part of that card opens the editor for it, one at a
+// time; clicking the same part again closes it.
+let openSec = null, openSecFor = null;
+const OPEN_HINTS = {
+  icon: 'Click to change the icon', text: 'Click to change the text', vis: 'Click to change when it shows',
+  tab: 'Click to change its tab', parent: 'Click to change its parent', req: 'Click to change the value needed',
+  cap: 'Click to change what it counts towards',
+};
+/** A clickable part of the card: opens section {@code key} when the advancement is editable. */
+function part(key, html, editable, tag = 'span', cls = '') {
+  if (!editable) return `<${tag} class="${cls}">${html}</${tag}>`;
+  const on = openSec === key ? ' on' : '';
+  return `<${tag} class="${cls} open${on}" data-open="${key}" role="button" tabindex="0" title="${OPEN_HINTS[key]}">${html}</${tag}>`;
+}
+function capLine(c) {
+  const a = c.req ? 'Counts towards Everything Burrito' : 'Doesn’t count towards Everything Burrito';
+  const b = c.reset ? 'reset by It’s Not That Simple' : 'kept by It’s Not That Simple';
+  return `${a} · ${b}`;
+}
+
 function fillMenuRaw(id) {
   const L = layoutCache, E = L.E, n = E.nodes[id];
   const isRoot = !E.parents[id], tabRoot = L.tabOf[id], kind = kindOf(id);
   const editable = E.editable && kind !== 'other';
+  if (openSecFor !== id) { openSec = null; openSecFor = id; }
   const copies = Object.keys(E.nodes).filter(k => E.nodes[k].copyOf === id);
   const below = countDesc(L, id);
-  let h = `<div class="head"><div class="slot"><i style="background-image:url(${IC[n.i]})"></i></div>
-    <div><h3>${esc(n.t)}</h3><div class="id">${esc(id)}</div></div>
+  const tx = n.created ? 'td' : (n.tx || '');
+  const canText = editable && !n.copyOf && !!tx;
+  const canReq = editable && n.req && !n.copyOf;
+  let h = `<div class="head">${part('icon', `<i style="background-image:url(${IC[n.i]})"></i>`, editable, 'div', 'slot')}
+    <div>${part('text', esc(n.t), canText && tx.includes('t'), 'h3')}${part('parent', esc(id), editable && id !== DT_ROOT, 'div', 'id')}</div>
     <button class="x" type="button" data-act="close" aria-label="Close">×</button></div>`;
-  h += `<div class="note">${n.d ? esc(descOf(n)) + '<br>' : ''}${n.hint ? `<span style="color:#6b6b6b">Hint: ${esc(n.hint)}</span><br>` : ''}Tab: <b>${esc(tabTitle(L, tabRoot))}</b>${below ? ` · ${below} below it` : ''}${n.h ? ' · hidden until earned' : ''}</div>`;
-  if (n.chain) h += `<div class="note">Band journey: when the game loads, this chain is put in band order. Only the first band\u2019s parent comes from here.</div>`;
-  if (n.copyOf) h += `<div class="note">Copy of <b>${esc(E.nodes[n.copyOf] ? E.nodes[n.copyOf].t : n.copyOf)}</b> in ${esc(tabTitle(L, L.tabOf[n.copyOf]))}. Earning either earns both. Edit its value on the original.</div>`;
-  if (copies.length) h += `<div class="note">A copy heads ${copies.map(c => `<b>${esc(tabTitle(L, L.tabOf[c]))}</b>`).join(', ')}. Earning this unlocks that tab.</div>`;
+  const lines = [];
+  if (n.vis) lines.push(part('vis', `<span class="vis">${esc(VIS_LABELS[n.vis])}</span>`, editable));
+  if (n.d) lines.push(part('text', esc(descOf(n)), canText && tx.includes('d')));
+  if (n.hint || (canText && tx.includes('h'))) lines.push(part('text', n.hint ? `<span class="grey">Hint: ${esc(n.hint)}</span>` : '<span class="grey">No hint</span>', canText && tx.includes('h')));
+  lines.push(part('tab', `Tab: <b>${esc(tabTitle(L, tabRoot))}</b>`, editable && id !== DT_ROOT) + (below ? ` · ${below} below it` : ''));
+  if (n.req && !n.copyOf) lines.push(part('req', `Required: ${esc(formatReq(n.req))}`, canReq));
+  if (n.cap) lines.push(part('cap', esc(capLine(n.cap)), editable && n.cap.ed));
+  h += `<div class="note card">${lines.join('<br>')}</div>`;
+  if (editable) h += `<div class="hint" id="mHover">${openSec ? '' : 'Click any part above to change it.'}</div>`;
+  const need = neededBy(L, id);
+  if (need) h += `<div class="note">Highlighted: the ${need.size} advancements it needs that a player can see.</div>`;
+  if (n.chain) h += `<div class="note">Band journey: when the game loads, this chain is put in band order. Only the first band’s parent comes from here.</div>`;
+  if (n.copyOf) h += `<div class="note">Copy of <b>${esc(E.nodes[n.copyOf] ? E.nodes[n.copyOf].t : n.copyOf)}</b> in ${esc(tabTitle(L, L.tabOf[n.copyOf]))}. Earning either earns both. Edit its text and value on the original.</div>`;
+  if (copies.length) h += `<div class="note">A copy is in ${copies.map(c => `<b>${esc(tabTitle(L, L.tabOf[c]))}</b>`).join(', ')}. Earning this earns it too.</div>`;
   if (!E.editable) h += `<div class="note">This is the layout as it is in the repo. Switch Layout to With my edits to edit.</div>`;
   else if (kind === 'other') h += `<div class="note">Vanilla advancement. Only Dungeon Train advancements can be edited.</div>`;
   if (editable) {
-    const sec = {};
-    if (id !== DT_ROOT) {
-      const tabsOpts = L.tabs.filter(t => t.kind !== 'other').map(t => `<option value="${esc(t.id)}" ${t.id === tabRoot ? 'selected' : ''}>${esc(t.title)}</option>`).join('');
-      sec.move = `<div class="sec"><span>Move</span>
-        ${below ? `<label class="check"><input type="checkbox" id="mKids" ${view.withChildren ? 'checked' : ''}> Bring its children (${below})</label>` : ''}
-        <label for="mTab">Tab</label><select id="mTab">${tabsOpts}</select>
-        <label for="mParent">Parent</label><select id="mParent">${parentOptions(L, id)}</select>
-        <div class="row"><button class="mcbtn" type="button" data-act="pick">Pick parent on screen</button>${isRoot ? '' : '<button class="mcbtn" type="button" data-act="ownTab">Make it a tab</button>'}<button class="mcbtn" type="button" data-act="copyTab">Open a copy as a new tab</button></div>
-        <div class="hint">Moving to a tab puts it straight under that tab\u2019s first advancement.</div></div>`;
-    }
-    if (n.req && !n.copyOf) {
-      sec.req = `<div class="sec"><span>Required</span><div class="req"><input type="number" id="mReq" min="1" step="${n.req.unit === 'ticks' ? 'any' : 1}" value="${reqToInput(n.req)}" aria-label="Value required"><span>${reqUnitLabel(n.req)}</span></div>
-        <div class="hint">Shows as \u201c${esc(formatReq(n.req))}\u201d. Shipped value ${esc(formatReq(M.nodes[id].req))}.</div></div>`;
-    }
-    if (isRoot) {
-      const ord = L.tabs.filter(t => t.kind !== 'other').map(t => t.id), oi = ord.indexOf(id);
-      sec.tab = `<div class="sec"><span>Tab</span><label for="mTabTitle">Tab name (blank uses the advancement title)</label>
-        <input type="text" id="mTabTitle" value="${esc(E.titles[id] || '')}" placeholder="${esc(n.t)}" maxlength="40">
-        <label>Background</label><div class="bgs">${bgSwatches(n.bg)}<button type="button" class="more" data-act="moreBgs" aria-expanded="${moreBgsOpen}" title="More backgrounds" aria-label="More backgrounds">+</button></div>
-          ${moreBgsOpen ? `<input type="text" id="mBgSearch" placeholder="Search ${Object.keys(M.moreBgs).length} block textures" value="${esc(bgQuery)}"><div class="bgs more-list" id="mBgMore">${moreBgButtons(n.bg)}</div>` : ''}
-        ${id === DT_ROOT ? '' : `<div class="row"><button class="mcbtn" type="button" data-act="tabLeft" ${oi <= 1 ? 'disabled' : ''}>\u2190 Move tab</button><button class="mcbtn" type="button" data-act="tabRight" ${oi >= ord.length - 1 ? 'disabled' : ''}>Move tab \u2192</button></div>`}</div>`;
-      if (id !== DT_ROOT) sec.unlock = unlockSection(L, id, n);
-    }
-    if (n.vis) sec.vis = visibilitySection(n, isRoot);
-    if (n.cap) sec.cap = capstoneSection(n);
-    if (n.created && !n.copyOf) {
-      sec.text = `<div class="sec"><span>Text</span><label for="mTitle">Title</label><input type="text" id="mTitle" value="${esc(n.t)}" maxlength="60">
-        <label for="mDesc">Description</label><textarea id="mDesc" maxlength="200">${esc(n.d)}</textarea></div>`;
-    }
-    sec.icon = iconSection(n);
-    // A tab's first advancement leads with what makes it a tab: its name, text and what unlocks it.
-    const order = isRoot ? ['tab', 'text', 'unlock', 'vis', 'move', 'req', 'cap', 'icon'] : ['move', 'vis', 'req', 'cap', 'text', 'icon'];
-    h += order.map(k => sec[k] || '').join('');
+    h += openSection(L, id, n, { isRoot, tabRoot, below, tx });
     const touched = EDIT_KEYS.some(k => edits[k] && id in edits[k]) || id in edits.created;
     if (touched || n.created) h += `<div class="row">${touched ? '<button class="mcbtn" type="button" data-act="reset">Undo my edits to this</button>' : ''}${n.created ? '<button class="mcbtn" type="button" data-act="delete">Delete</button>' : ''}</div>`;
   }
   menu.innerHTML = h;
   wireMenu(id);
 }
+
+/** The one open editor, if any. */
+function openSection(L, id, n, { isRoot, tabRoot, below, tx }) {
+  const E = L.E;
+  const kids = below ? `<label class="check"><input type="checkbox" id="mKids" ${view.withChildren ? 'checked' : ''}> Bring its children (${below})</label>` : '';
+  switch (openSec) {
+    case 'icon': return iconSection(n);
+    case 'vis': return n.vis ? visibilitySection(n, isRoot) : '';
+    case 'cap': return n.cap ? capstoneSection(n) : '';
+    case 'req':
+      return `<div class="sec"><span>Required</span><div class="req"><input type="number" id="mReq" min="1" step="${n.req.unit === 'ticks' ? 'any' : 1}" value="${reqToInput(n.req)}" aria-label="Value required"><span>${reqUnitLabel(n.req)}</span></div>
+        <div class="hint">Shows as “${esc(formatReq(n.req))}”. Shipped value ${esc(formatReq(M.nodes[id] ? M.nodes[id].req : n.req))}.</div></div>`;
+    case 'text': {
+      const args = (n.d || '').match(/%(\d+\$)?s/g);
+      return `<div class="sec"><span>Text</span>
+        ${tx.includes('t') ? `<label for="mTitle">Title</label><input type="text" id="mTitle" value="${esc(n.t)}" maxlength="60">` : ''}
+        ${tx.includes('d') ? `<label for="mDesc">Description</label><textarea id="mDesc" maxlength="200">${esc(n.d)}</textarea>` : ''}
+        ${args ? `<div class="hint">Keep the ${args.length > 1 ? `${args.length} %s` : '%s'}: the game puts the required value there.</div>` : ''}
+        ${tx.includes('h') ? `<label for="mHint">Hint</label><textarea id="mHint" maxlength="200">${esc(n.hint || '')}</textarea>` : ''}
+        ${n.created ? '' : '<div class="hint">English only. Saving lists the other languages to re-translate.</div>'}</div>`;
+    }
+    case 'parent':
+      return `<div class="sec"><span>Parent</span>${kids}
+        <label for="mParent">Parent</label><select id="mParent">${parentOptions(L, id)}</select>
+        <div class="row"><button class="mcbtn" type="button" data-act="pick">Pick parent on screen</button>${isRoot ? '' : '<button class="mcbtn" type="button" data-act="ownTab">Make it a tab</button>'}<button class="mcbtn" type="button" data-act="copyTab">Open a copy as a new tab</button></div></div>`;
+    case 'tab': {
+      const tabsOpts = L.tabs.filter(t => t.kind !== 'other').map(t => `<option value="${esc(t.id)}" ${t.id === tabRoot ? 'selected' : ''}>${esc(t.title)}</option>`).join('');
+      let out = `<div class="sec"><span>Tab</span>${kids}<label for="mTab">Move to tab</label><select id="mTab">${tabsOpts}</select>
+        <div class="hint">Moving to a tab puts it straight under that tab’s first advancement.</div>`;
+      if (isRoot) {
+        const ord = L.tabs.filter(t => t.kind !== 'other').map(t => t.id), oi = ord.indexOf(id);
+        out += `<label for="mTabTitle">Tab name (blank uses the advancement title)</label>
+          <input type="text" id="mTabTitle" value="${esc(E.titles[id] || '')}" placeholder="${esc(n.t)}" maxlength="40">
+          <label>Background</label><div class="bgs">${bgSwatches(n.bg)}<button type="button" class="more" data-act="moreBgs" aria-expanded="${moreBgsOpen}" title="More backgrounds" aria-label="More backgrounds">+</button></div>
+          ${moreBgsOpen ? `<input type="text" id="mBgSearch" placeholder="Search ${Object.keys(M.moreBgs).length} block textures" value="${esc(bgQuery)}"><div class="bgs more-list" id="mBgMore">${moreBgButtons(n.bg)}</div>` : ''}
+          <div class="row"><button class="mcbtn" type="button" data-act="tabLeft" ${oi <= 1 ? 'disabled' : ''}>← Move tab</button><button class="mcbtn" type="button" data-act="tabRight" ${oi >= ord.length - 1 ? 'disabled' : ''}>Move tab →</button></div>`;
+      }
+      out += '</div>';
+      if (isRoot) out += unlockSection(L, id, n);
+      return out;
+    }
+    default: return '';
+  }
+}
+
 function fillMenu(id) {
   const a = document.activeElement, fid = a && menu.contains(a) ? a.id : null;
   const sel = a && a.tagName !== 'SELECT' && typeof a.selectionStart === 'number' ? [a.selectionStart, a.selectionEnd] : null;
@@ -111,6 +160,21 @@ function parentOptions(L, id) {
 
 function wireMenu(id) {
   const on = (sel, ev, fn) => { const x = menu.querySelector(sel); x && x.addEventListener(ev, fn); };
+  const hover = menu.querySelector('#mHover');
+  menu.querySelectorAll('[data-open]').forEach(p => {
+    const toggle = () => {
+      openSec = openSec === p.dataset.open ? null : p.dataset.open;
+      fillMenu(id);
+      const first = openSec && menu.querySelector('.sec input:not([type=checkbox]), .sec textarea, .sec select');
+      if (first) first.focus();
+    };
+    p.addEventListener('click', toggle);
+    p.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+    if (hover) {
+      p.addEventListener('mouseenter', () => { hover.textContent = openSec === p.dataset.open ? 'Click to close' : OPEN_HINTS[p.dataset.open]; });
+      p.addEventListener('mouseleave', () => { hover.textContent = openSec ? '' : 'Click any part above to change it.'; });
+    }
+  });
   menu.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => {
     const a = b.dataset.act;
     if (a === 'close') closeMenu();
@@ -136,6 +200,7 @@ function wireMenu(id) {
   const textEdit = field => e => { clearTimeout(tt); const v = e.target.value; tt = setTimeout(() => commit(ed => { ed.texts = ed.texts || {}; ed.texts[id] = { ...(ed.texts[id] || {}), [field]: v }; }), 400); };
   on('#mTitle', 'input', textEdit('t'));
   on('#mDesc', 'input', textEdit('d'));
+  on('#mHint', 'input', textEdit('hint'));
   on('#mReq', 'input', e => {
     clearTimeout(tt);
     const v = parseFloat(e.target.value);

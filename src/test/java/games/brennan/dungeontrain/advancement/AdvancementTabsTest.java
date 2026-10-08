@@ -128,8 +128,10 @@ class AdvancementTabsTest {
     void copiesAreSilentMirrors() throws IOException {
         Map<String, JsonObject> all = advancements();
         TabGateways.Layout layout = shippedLayout();
-        assertEquals(Set.of("dungeontrain:" + TRAIN_EXPLORER, "dungeontrain:" + OTHERS,
-                "dungeontrain:" + DT + "gate_enchiridion", "dungeontrain:" + DT + "gate_darkroom"), layout.copies().keySet());
+        Set<String> expected = new java.util.HashSet<>(Set.of("dungeontrain:" + TRAIN_EXPLORER, "dungeontrain:" + OTHERS,
+                "dungeontrain:" + DT + "gate_enchiridion", "dungeontrain:" + DT + "gate_darkroom"));
+        layout.complete().keySet().forEach(self -> expected.add(self + "_tab")); // each tab-complete's in-tab copy
+        assertEquals(expected, layout.copies().keySet());
         layout.copies().forEach((copyId, originalId) -> {
             JsonObject copy = all.get(copyId.replaceFirst("^dungeontrain:", ""));
             JsonObject original = all.get(originalId.replaceFirst("^dungeontrain:", ""));
@@ -229,7 +231,46 @@ class AdvancementTabsTest {
         for (JsonElement c : adv.getAsJsonObject("criteria").asMap().values()) {
             assertEquals("minecraft:impossible", c.getAsJsonObject().get("trigger").getAsString());
         }
-        assertEquals(TrainExploredAdvancement.TAB_ROOT.getPath(), TRAIN_EXPLORER);
+        assertEquals("dungeontrain:" + TRAIN_EXPLORER,
+            shippedLayout().complete().get(TabCompleteAdvancements.TRAIN_EXPLORED.toString()));
+    }
+
+    @Test
+    @DisplayName("every player tab has a tab-complete advancement in Dungeon Train, with a copy under its tab's head")
+    void everyTabHasATabComplete() throws IOException {
+        Map<String, JsonObject> all = advancements();
+        TabGateways.Layout layout = shippedLayout();
+        Set<String> tabsWithOne = new java.util.HashSet<>();
+        layout.complete().forEach((self, tabRoot) -> {
+            String selfPath = self.replaceFirst("^dungeontrain:", ""), rootPath = tabRoot.replaceFirst("^dungeontrain:", "");
+            JsonObject adv = all.get(selfPath);
+            assertNotNull(adv, self);
+            assertEquals(DT + "root", tabOf(all, selfPath), self + " sits in the Dungeon Train tab");
+            assertEquals(rootPath, tabOf(all, rootPath), tabRoot + " is a tab root");
+            for (JsonElement c : adv.getAsJsonObject("criteria").asMap().values()) {
+                assertEquals("minecraft:impossible", c.getAsJsonObject().get("trigger").getAsString(), self + " is granted by code");
+            }
+            List<String> copies = layout.copies().entrySet().stream().filter(e -> e.getValue().equals(self)).map(Map.Entry::getKey).toList();
+            assertEquals(1, copies.size(), self + " has one copy");
+            String copyPath = copies.get(0).replaceFirst("^dungeontrain:", "");
+            assertEquals(rootPath, parentPath(all.get(copyPath)), "the copy sits right under its tab's head");
+            tabsWithOne.add(rootPath);
+        });
+        for (String tab : layout.order()) {
+            String path = tab.replaceFirst("^dungeontrain:", "");
+            if (path.equals(DT + "root") || path.startsWith("editor/")) continue;
+            assertTrue(tabsWithOne.contains(path), tab + " has a tab-complete advancement");
+        }
+    }
+
+    @Test
+    @DisplayName("a tab-complete copy never counts as a member of its own tab")
+    void tabCompleteCopiesAreSkipped() throws IOException {
+        TabGateways.Layout layout = shippedLayout();
+        Set<String> skipped = TabCompleteAdvancements.completeCopies(layout);
+        assertEquals(layout.complete().size(), skipped.size());
+        assertTrue(skipped.contains("dungeontrain:" + DT + "train_explored_tab"));
+        assertFalse(skipped.contains("dungeontrain:" + TRAIN_EXPLORER), "the tab head copy is still a member");
     }
 
     @Test
@@ -239,9 +280,9 @@ class AdvancementTabsTest {
         ResourceLocation nether = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + BandAdvancements.NETHER);
         ResourceLocation stacks = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + BandAdvancements.STACKS);
         ResourceLocation carts = ResourceLocation.fromNamespaceAndPath("dungeontrain", DT + "carts_1000");
-        assertFalse(TrainExploredAdvancement.isUnreachableBand(nether, reachable));
-        assertTrue(TrainExploredAdvancement.isUnreachableBand(stacks, reachable));
-        assertFalse(TrainExploredAdvancement.isUnreachableBand(carts, reachable), "not a band: always required");
+        assertFalse(TabCompleteAdvancements.isUnreachableBand(nether, reachable));
+        assertTrue(TabCompleteAdvancements.isUnreachableBand(stacks, reachable));
+        assertFalse(TabCompleteAdvancements.isUnreachableBand(carts, reachable), "not a band: always required");
     }
 
     @Test

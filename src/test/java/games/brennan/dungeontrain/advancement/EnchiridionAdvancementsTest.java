@@ -58,7 +58,10 @@ final class EnchiridionAdvancementsTest {
     void setMatchesTheTree() throws IOException {
         Map<String, String> parents = parents();
         List<String> wrong = new ArrayList<>();
+        // Tab copies (the in-tab Hero's Handbook and Fully Developed) are mirrors that never count on their own.
+        Set<String> copies = TabGateways.layout().copies().keySet();
         for (String path : parents.keySet()) {
+            if (copies.contains("dungeontrain:" + path)) continue;
             String tab = tabRoot(parents, path);
             boolean onTab = EnchiridionAdvancements.ROOT.equals(tab) || EnchiridionAdvancements.DARKROOM_ROOT.equals(tab);
             if (onTab != EnchiridionAdvancements.isEnchiridion(path)) wrong.add(path + (onTab ? " (on tab)" : " (off tab)"));

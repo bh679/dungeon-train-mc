@@ -100,6 +100,18 @@ function render() {
   wirePan(inside);
   renderControls(L); renderChips(L, tabs); renderChanges(L);
   if (selected && !menu.hidden) { if (L.E.nodes[selected]) fillMenu(selected); else closeMenu(); }
+  markNeeded();
+}
+
+/** Outline what the selected capstone needs (neededBy), and mark the tabs that hold any of it. */
+function markNeeded() {
+  const L = layoutCache; if (!L) return;
+  const need = selected && !menu.hidden ? neededBy(L, selected) : null;
+  document.querySelectorAll('#tree .node').forEach(d => d.classList.toggle('need', !!need && need.has(d.dataset.node)));
+  document.querySelectorAll('#gui .tab').forEach(d => {
+    const t = L.tabs.find(x => x.id === d.dataset.tab);
+    d.classList.toggle('need', !!need && !!t && t.nodes.some(m => need.has(m.id)));
+  });
 }
 
 const curScroll = () => scrolls[view.tabId];

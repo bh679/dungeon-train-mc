@@ -144,3 +144,16 @@ body.full .stage .exitfull { display: block; position: absolute; top: calc(6px +
 .notes b { color: var(--ink); font-weight: 400; }
 @media (prefers-reduced-motion: reduce) { #fade { transition: none; } }
 #mIconSearch { margin-bottom: 6px; }
+/* the menu card: each part opens its own editor */
+.menu .head .slot.open { cursor: pointer; }
+.menu .head .slot.open:hover, .menu .head .slot.open.on { box-shadow: inset 2px 2px 0 #373737, inset -2px -2px 0 #fff, 0 0 0 2px #fff; }
+.menu .open { cursor: pointer; }
+.menu span.open:hover, .menu h3.open:hover, .menu div.id.open:hover { text-decoration: underline; }
+.menu .open.on:not(.slot) { background: rgba(255,255,255,.45); outline: 1px solid #fff; }
+.menu .open:focus-visible { outline: 2px solid #fff; }
+.menu .grey { color: #6b6b6b; }
+.menu .vis { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: #5a5a5a; }
+.menu #mHover { min-height: 1.2em; margin-top: -4px; }
+/* what the selected capstone needs */
+#tree .node.need::after { content: ''; position: absolute; inset: calc(-2px * var(--s)); border: calc(2px * var(--s)) solid #ffd83d; box-shadow: 0 0 calc(6px * var(--s)) #ffd83d; pointer-events: none; }
+#gui .tab.need::after { content: ''; position: absolute; right: calc(3px * var(--s)); top: calc(3px * var(--s)); width: calc(5px * var(--s)); height: calc(5px * var(--s)); background: #ffd83d; box-shadow: 0 0 0 calc(1px * var(--s)) #3f3f3f; pointer-events: none; }

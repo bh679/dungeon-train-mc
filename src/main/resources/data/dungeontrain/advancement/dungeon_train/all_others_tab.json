@@ -1,0 +1,22 @@
+{
+  "parent": "dungeontrain:dungeon_train/tab_others",
+  "display": {
+    "icon": { "id": "minecraft:player_head" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.all_others.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.all_others.description" },
+    "frame": "challenge",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "mirrored": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "mirrored"
+    ]
+  ]
+}

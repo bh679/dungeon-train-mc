@@ -15,7 +15,8 @@ button posts to ``serve.py``. Shape (every section optional)::
      "deleted":     ["<id>", ...],
      "capstone":    {"<id>": {"required": true, "reset": false}},  # Everything Burrito / It's Not That Simple
      "unlocks":     {"<tab root id>": "<id that unlocks it>" | null},
-     "visibility":  {"<id>": "parent" | "always" | "earned" | null}}  # null: back to the default
+     "visibility":  {"<id>": "parent" | "always" | "earned" | null},  # null: back to the default
+     "texts":       {"<id>": {"title": "...", "description": "...", "hint": "..."}}}  # English, existing advancements
 
 A new tab (``created`` with no ``parent``) may carry ``"unlockedBy": "<id>"``: it is then earned whenever
 that advancement is, so it needs no trigger of its own.
@@ -412,7 +413,11 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
             path.unlink()
         report.wrote(path)
 
-    if lang and any(k.endswith((".title", ".description")) for k in lang):
+    reworded = apply_texts(changes.get("texts") or {}, created, tabs, adv_dir, lang_file, text_of, lang)
+    if reworded:
+        report.todo.append("Re-translate the reworded English in every locale (the old translations stay until "
+                           "then), then restamp provenance (stamp-provenance.py --sync): " + ", ".join(reworded))
+    if any(k.endswith((".title", ".description", ".hint")) and k not in reworded for k in lang):
         report.todo.append("Translate the new advancement text into the other locales (merge-locale-keys.py).")
 
     for path, text in files.items():
@@ -435,6 +440,53 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
         if dry_run or add_lang_keys(lang_file, lang):
             report.wrote(lang_file)
     return report
+
+
+TEXT_FIELDS = ("title", "description", "hint")
+ARG_RE = re.compile(r"%(?:\d+\$)?s")
+
+
+def text_keys(display: dict) -> dict[str, str]:
+    """The en_us keys behind an advancement's title, description and hint (the hint sits beside the title)."""
+    out = {}
+    for f in ("title", "description"):
+        comp = display.get(f)
+        if isinstance(comp, dict) and isinstance(comp.get("translate"), str):
+            out[f] = comp["translate"]
+    if out.get("title", "").endswith(".title"):
+        out["hint"] = out["title"][: -len(".title")] + ".hint"
+    return out
+
+
+def apply_texts(texts: dict, created: dict, tabs: dict, adv_dir: Path, lang_file: Path, text_of, lang: dict) -> list[str]:
+    """English rewording of existing advancements, into ``lang``. Returns the keys whose English changed."""
+    current = json.loads(lang_file.read_text())
+    reworded = []
+    for adv_id, fields in texts.items():
+        if adv_id in created:
+            continue  # a new advancement's text travels in ``created``
+        if adv_id in tabs["copies"]:
+            raise ApplyError(f"{adv_id}: a tab copy shows its original's text; edit {tabs['copies'][adv_id]} instead")
+        if not isinstance(fields, dict):
+            raise ApplyError(f"{adv_id}: texts must be an object")
+        keys = text_keys(json.loads(text_of(existing(adv_id, adv_dir))).get("display") or {})
+        for f, value in fields.items():
+            if f not in TEXT_FIELDS or not isinstance(value, str):
+                raise ApplyError(f"{adv_id}: bad text field {f!r}")
+            if f not in keys:
+                raise ApplyError(f"{adv_id}: its {f} is not a translated text, so it cannot be edited here")
+            value, key = value.strip(), keys[f]
+            if not value:
+                raise ApplyError(f"{adv_id}: the {f} cannot be blank")
+            old = current.get(key)
+            if old == value:
+                continue
+            if old is not None and len(ARG_RE.findall(old)) != len(ARG_RE.findall(value)):
+                raise ApplyError(f"{adv_id}: the {f} must keep its {len(ARG_RE.findall(old))} %s (the number shown in game)")
+            lang[key] = value
+            if old is not None:
+                reworded.append(key)
+    return reworded
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -1,11 +1,13 @@
 dungeontrain:dungeon_train/a_new_way_out
 dungeontrain:dungeon_train/a_silent_friend
+dungeontrain:dungeon_train/all_others
 dungeontrain:dungeon_train/apple_a_day
 dungeontrain:dungeon_train/assassination_attempt
 dungeontrain:dungeon_train/ate_edible_backpack
 dungeontrain:dungeon_train/carts_100
 dungeontrain:dungeon_train/carts_1000
 dungeontrain:dungeon_train/carts_10000
+dungeontrain:dungeon_train/challenge_complete
 dungeontrain:dungeon_train/changed_engine_volume
 dungeontrain:dungeon_train/chests_100_unique
 dungeontrain:dungeon_train/contained_loop

@@ -1,13 +1,24 @@
 # Advancement editor
 
 Edit Dungeon Train's advancement tabs on a copy of the real advancements screen: the vanilla window,
-tab sprites and item icons, read straight out of the game jars. Click an advancement to change its
-**parent**, **tab**, **required value**, **icon** (its search box looks through every item in the game), and whether it **counts towards the Everything
-Burrito** and is **reset by It's Not That Simple**. On a tab's first advancement you can also change
-the **tab name**, **background** (any block texture, via **+**), **tab order** and what it is
-**unlocked by**. **New tab** makes a tab and opens it with those fields first. You can also drag an
-advancement onto another one, or onto a tab. **Full screen** fills the window with the advancements
-screen, tabs included; Esc leaves it.
+tab sprites and item icons, read straight out of the game jars. Click an advancement and its menu shows it
+the way the game does: icon, title, id, then its visibility, description, hint, tab, required value and
+Everything Burrito line. **Click the part you want to change** and only that editor opens:
+
+| Click | Changes |
+|---|---|
+| Icon | the icon (its search box looks through every item in the game) |
+| Title, description or hint | the English text |
+| The visibility line (*Hidden until earned*…) | when it shows |
+| *Tab: …* | which tab it is in; on a tab's first advancement also the tab's **name**, **background** (any block texture, via **+**), **order** and what it is **unlocked by** |
+| The id | its **parent** (or pick one on screen, make it a tab, or open a copy as a new tab) |
+| *Required: …* | the value it needs |
+| The Everything Burrito line | whether it **counts towards the Everything Burrito** and is **reset by It's Not That Simple** |
+
+Clicking the **Everything Burrito**, or a tab-complete advancement (Dungeon Train Explored and friends),
+outlines everything it needs that a player can see, and marks the tabs holding any of it. **New tab** makes
+a tab and opens it. You can also drag an advancement onto another one, or onto a tab. **Full screen** fills
+the window with the advancements screen, tabs included; Esc leaves it.
 
 ```bash
 python3 scripts/advancements/editor/serve.py        # → http://127.0.0.1:8833
@@ -28,6 +39,7 @@ Needs Pillow (`pip install pillow`) for the icons, and a workspace that has buil
 | Required value | the `threshold*` number on its criterion |
 | Icon | `display.icon.id` (the page stores picks as item ids) |
 | Background | the tab root's `display.background` |
+| Title / description / hint | `en_us.json`, at the advancement's own lang keys (other locales: see below) |
 | Tab name, tab order, tab copies | `src/main/resources/dungeontrain/advancement_tabs.json` (+ an `en_us` key for a name) |
 | "Open a copy as a new tab" | a new hidden, silent copy advancement, listed under `copies` |
 | Unlocked by | `advancement_tabs.json` → `unlockedBy` (tab head → the advancement that unlocks it) |
@@ -58,6 +70,13 @@ parent is earned), *always visible* while its parent is (a whole branch shows wi
 hidden, otherwise always. `AdvancementVisibilityRule` applies it in game. **Progress: Not earned**
 fades what a player who has earned nothing would not see.
 
+## Tab complete
+
+Each player tab has a "tab complete" advancement (Dungeon Train Explored, All Others, Challenge Complete,
+The Hero's Handbook, Fully Developed, All Out Of Secrets): earned by having every advancement in that tab,
+it sits in Dungeon Train under the tab's entry, with a copy in the tab under its first advancement.
+`advancement_tabs.json` → `complete` maps each to its tab; `TabCompleteAdvancements` grants them.
+
 ## Unlocked tabs
 
 A tab head can instead be **unlocked by** another advancement and keep its own name and icon (Challenges
@@ -69,7 +88,10 @@ re-synced at login, never counted on its own. A new tab's id is named after the 
 
 `apply.py` lists these as "todo" after a save:
 
-- **New text** (a new tab name, or a brand-new advancement's title) is written in English only.
+- **Reworded text** is written in English only; the other locales keep the old wording until it is
+  re-translated. The save lists the keys; re-translate them and restamp provenance
+  (`stamp-provenance.py --sync`).
+- **New text** (a new tab name, a new hint, or a brand-new advancement's title) is written in English only.
   Translate it with `scripts/localization/merge-locale-keys.py`, then stamp provenance. CI's
   localization checks fail until every locale has the key.
 - **A brand-new advancement that is neither a copy nor unlocked by another** is created with an

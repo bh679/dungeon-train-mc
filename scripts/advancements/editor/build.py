@@ -113,6 +113,23 @@ class Lang:
         return None
 
 
+def editable_text(display: dict, req) -> str:
+    """Which of title (t), description (d) and hint (h) the editor can reword: those backed by a lang key.
+    A description whose arguments are not the required value is shown filled in, so it is left alone."""
+    def key(f):
+        comp = display.get(f)
+        return comp.get("translate") if isinstance(comp, dict) else None
+    out = ""
+    if key("title"):
+        out += "t"
+    desc = display.get("description")
+    if key("description") and (req or not desc.get("with")):
+        out += "d"
+    if (key("title") or "").endswith(".title"):
+        out += "h"
+    return out
+
+
 def describe_criteria(adv: dict) -> str:
     """How a tab head is earned, for the editor: "impossible" (code grants it) or its trigger and action."""
     parts = []
@@ -178,6 +195,8 @@ def build_bundle() -> tuple[dict, list[str]]:
         if aid.startswith("dungeontrain:"):
             required, reset = capstone_rules.effective(aid, linked, books, tabs_file)
             node["cap"] = {"req": required, "reset": reset, "ed": capstone_rules.is_editable(aid, linked)}
+        if aid.startswith("dungeontrain:") and aid not in copies:
+            node["tx"] = editable_text(d, req)
         if CHAIN.match(aid):
             node["chain"] = True
         if not adv.get("parent"):
@@ -214,6 +233,7 @@ def build_bundle() -> tuple[dict, list[str]]:
         "icons": [tex.icon(i) for i in icon_ids], "iconIds": icon_ids,
         "iconNames": [i.split(":", 1)[1].replace("_", " ") for i in icon_ids],
         "bgs": bgs, "moreBgs": more, "sprites": sprites,
+        "complete": tabs_file.get("complete", {}),
     }
     return bundle, tex.missing
 

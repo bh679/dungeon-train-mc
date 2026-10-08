@@ -18,13 +18,22 @@
     "dungeontrain:dungeon_train/tab_train_explorer": "dungeontrain:dungeon_train/carts_100",
     "dungeontrain:dungeon_train/tab_others": "dungeontrain:dungeon_train/im_not_alone",
     "dungeontrain:dungeon_train/gate_enchiridion": "dungeontrain:dungeon_train/the_enchiridion",
-    "dungeontrain:dungeon_train/gate_darkroom": "dungeontrain:enchiridion/darkroom"
+    "dungeontrain:dungeon_train/gate_darkroom": "dungeontrain:enchiridion/darkroom",
+    "dungeontrain:dungeon_train/train_explored_tab": "dungeontrain:dungeon_train/train_explored",
+    "dungeontrain:dungeon_train/all_others_tab": "dungeontrain:dungeon_train/all_others",
+    "dungeontrain:dungeon_train/challenge_complete_tab": "dungeontrain:dungeon_train/challenge_complete",
+    "dungeontrain:dungeon_train/heros_handbook_tab": "dungeontrain:dungeon_train/heros_handbook",
+    "dungeontrain:dungeon_train/fully_developed_tab": "dungeontrain:dungeon_train/fully_developed",
+    "dungeontrain:dungeon_train/all_out_of_secrets_tab": "dungeontrain:dungeon_train/all_out_of_secrets"
   },
   "unlockedBy": {
     "dungeontrain:dungeon_train/tab_challenges": "dungeontrain:dungeon_train/carts_100"
   },
   "burrito": {
-    "dungeontrain:dungeon_train/the_creator_answers": false
+    "dungeontrain:dungeon_train/the_creator_answers": false,
+    "dungeontrain:dungeon_train/heros_handbook": false,
+    "dungeontrain:dungeon_train/fully_developed": false,
+    "dungeontrain:dungeon_train/all_out_of_secrets": false
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",
@@ -32,5 +41,13 @@
     "dungeontrain:enchiridion/run_away": "always",
     "dungeontrain:enchiridion/shh": "always",
     "dungeontrain:enchiridion/wither_watcher": "always"
+  },
+  "complete": {
+    "dungeontrain:dungeon_train/train_explored": "dungeontrain:dungeon_train/tab_train_explorer",
+    "dungeontrain:dungeon_train/all_others": "dungeontrain:dungeon_train/tab_others",
+    "dungeontrain:dungeon_train/challenge_complete": "dungeontrain:dungeon_train/tab_challenges",
+    "dungeontrain:dungeon_train/heros_handbook": "dungeontrain:dungeon_train/the_enchiridion",
+    "dungeontrain:dungeon_train/fully_developed": "dungeontrain:enchiridion/darkroom",
+    "dungeontrain:dungeon_train/all_out_of_secrets": "dungeontrain:secrete_menu/root"
   }
 }
