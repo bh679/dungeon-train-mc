@@ -58,12 +58,20 @@ class Report:
     todo: list[str] = field(default_factory=list)
 
     def wrote(self, path: Path) -> None:
-        rel = path.relative_to(REPO).as_posix()
+        rel = shown(path)
         if rel not in self.written:
             self.written.append(rel)
 
 
 # ---------- paths ----------------------------------------------------------------------------
+
+def shown(path: Path) -> str:
+    """``path`` relative to the repo when it is inside it (it always is, outside tests)."""
+    try:
+        return path.relative_to(REPO).as_posix()
+    except ValueError:
+        return path.as_posix()
+
 
 def adv_path(adv_id: str, adv_dir: Path = ADV_DIR) -> Path:
     m = ID_RE.match(adv_id or "")
@@ -75,7 +83,7 @@ def adv_path(adv_id: str, adv_dir: Path = ADV_DIR) -> Path:
 def existing(adv_id: str, adv_dir: Path) -> Path:
     path = adv_path(adv_id, adv_dir)
     if not path.is_file():
-        raise ApplyError(f"no advancement file for {adv_id} ({path.relative_to(REPO)})")
+        raise ApplyError(f"no advancement file for {adv_id} ({shown(path)})")
     return path
 
 
@@ -250,7 +258,7 @@ def apply_changes(changes: dict, *, adv_dir: Path = ADV_DIR, tabs_file: Path = T
             new_files[path] = new_json(adv_id, spec)
             lang[lang_prefix(adv_id) + ".title"] = spec.get("title") or "New Tab"
             lang[lang_prefix(adv_id) + ".description"] = spec.get("description") or ""
-            report.todo.append(f"{adv_id} is granted by nothing yet: give it a real criterion in {path.relative_to(REPO)}.")
+            report.todo.append(f"{adv_id} is granted by nothing yet: give it a real criterion in {shown(path)}.")
 
     for adv_id, parent in (changes.get("parents") or {}).items():
         path = existing(adv_id, adv_dir)

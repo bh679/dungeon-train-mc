@@ -188,13 +188,13 @@ final class BandAdvancementsTest {
     }
 
     @Test
-    @DisplayName("The Secrete Menu: a hidden tab root and a hidden twin under Dungeon Train Explorer, on one action")
+    @DisplayName("The Secrete Menu: a hidden tab root and a hidden twin under The Enchiridion's gateway, on one action")
     void secreteMenuPair() throws IOException {
         JsonObject root = advancement("secrete_menu/root");
         assertFalse(root.has("parent"));
         assertTrue(root.getAsJsonObject("display").has("background"));
         JsonObject twin = advancement("dungeon_train/secrete_menu");
-        assertEquals("dungeontrain:dungeon_train/" + BandAdvancements.ANCHOR, twin.get("parent").getAsString());
+        assertEquals("dungeontrain:dungeon_train/gate_enchiridion", twin.get("parent").getAsString());
         for (JsonObject json : List.of(root, twin)) {
             assertTrue(json.getAsJsonObject("display").get("hidden").getAsBoolean());
             assertEquals("challenge", json.getAsJsonObject("display").get("frame").getAsString());

@@ -54,12 +54,13 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
-    @DisplayName("isEnchiridion matches exactly the advancements whose chain ends at The Enchiridion")
+    @DisplayName("isEnchiridion matches exactly the advancements whose chain ends at The Enchiridion or The Darkroom")
     void setMatchesTheTree() throws IOException {
         Map<String, String> parents = parents();
         List<String> wrong = new ArrayList<>();
         for (String path : parents.keySet()) {
-            boolean onTab = EnchiridionAdvancements.ROOT.equals(tabRoot(parents, path));
+            String tab = tabRoot(parents, path);
+            boolean onTab = EnchiridionAdvancements.ROOT.equals(tab) || EnchiridionAdvancements.DARKROOM_ROOT.equals(tab);
             if (onTab != EnchiridionAdvancements.isEnchiridion(path)) wrong.add(path + (onTab ? " (on tab)" : " (off tab)"));
         }
         assertTrue(wrong.isEmpty(), "isEnchiridion disagrees with the JSON tree: " + wrong);
@@ -69,9 +70,10 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
-    @DisplayName("The Enchiridion is a tab root earned by a book or a photo")
+    @DisplayName("The Enchiridion and The Darkroom are tab roots")
     void rootIsATab() throws IOException {
         assertNull(parents().get(EnchiridionAdvancements.ROOT));
+        assertNull(parents().get(EnchiridionAdvancements.DARKROOM_ROOT));
     }
 
     @Test

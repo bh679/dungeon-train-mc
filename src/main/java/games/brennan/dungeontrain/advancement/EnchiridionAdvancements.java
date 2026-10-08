@@ -19,6 +19,9 @@ public final class EnchiridionAdvancements {
     /** Path prefix of the camera advancements: {@code dungeontrain:enchiridion/…}. */
     public static final String PATH_PREFIX = "enchiridion/";
 
+    /** The Darkroom: the photo tab's root, earned by taking, looking at or paying Tribute to a photo. */
+    public static final String DARKROOM_ROOT = PATH_PREFIX + "darkroom";
+
     /** The tab root (also the original book-tree root, so its id is unchanged). */
     public static final String ROOT = "dungeon_train/the_enchiridion";
 
