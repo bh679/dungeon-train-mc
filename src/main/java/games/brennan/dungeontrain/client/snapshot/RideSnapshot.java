@@ -8,6 +8,8 @@ import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * One captured third-person ride photo for the death screen.
@@ -45,6 +47,7 @@ public final class RideSnapshot {
     private ResourceLocation textureId;   // registered id for liveTexture; null once released without a reload
     private Path diskPath;                 // non-null once flushed to disk
     private boolean loadFailed;            // a disk reload that failed — don't retry every frame
+    private CompletableFuture<NativeImage> preload; // off-thread disk decode awaiting its GPU upload in texture()
 
     /** Live (in-memory) capture: keeps the {@link DynamicTexture} so its pixels can be flushed later. */
     public RideSnapshot(DynamicTexture texture, ResourceLocation textureId,
@@ -130,6 +133,65 @@ public final class RideSnapshot {
     }
 
     /**
+     * {@link #photoBytes(int)} without blocking the client thread: the PNG decode and the JPEG encode
+     * (a per-pixel copy plus a quality ladder — hundreds of ms for a full-size shot) run on
+     * {@code worker}. An in-memory shot's pixels belong to its live texture, so they are copied here
+     * first (a memcpy) and the worker encodes the copy it owns. Completes with {@code null} when there
+     * are no pixels or the encode fails, exactly like the blocking form. Client thread only.
+     */
+    public CompletableFuture<byte[]> photoBytesAsync(int maxBytes, Executor worker) {
+        Path path = diskPath;
+        if (path != null) {
+            return CompletableFuture.supplyAsync(() -> encodeOwned(RideSnapshotDisk.read(path), maxBytes), worker);
+        }
+        NativeImage px = liveTexture != null ? liveTexture.getPixels() : null;
+        if (px == null) return CompletableFuture.completedFuture(null);
+        NativeImage copy;
+        try {
+            copy = new NativeImage(px.format(), px.getWidth(), px.getHeight(), false);
+            copy.copyFrom(px);
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Ride snapshot pixel copy failed", e);
+            return CompletableFuture.completedFuture(null);
+        }
+        return CompletableFuture.supplyAsync(() -> encodeOwned(copy, maxBytes), worker);
+    }
+
+    /** JPEG-encode an image this call owns, closing it afterwards; {@code null} in → {@code null} out. */
+    private static byte[] encodeOwned(NativeImage img, int maxBytes) {
+        if (img == null) return null;
+        try {
+            return SnapshotJpegEncoder.encode(img, maxBytes);
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Ride snapshot JPEG encode failed", e);
+            return null;
+        } finally {
+            img.close();
+        }
+    }
+
+    /**
+     * Start decoding a disk-backed shot's PNG on {@code worker} so the {@link #texture()} call that
+     * follows only has the GPU upload left to do. No-op when the texture is already live, the shot
+     * was never flushed, a reload already failed, or a preload is in flight. Client thread only.
+     */
+    public void preloadAsync(Executor worker) {
+        if (textureId != null || diskPath == null || loadFailed || preload != null) return;
+        Path path = diskPath;
+        preload = CompletableFuture.supplyAsync(() -> RideSnapshotDisk.read(path), worker);
+    }
+
+    /** True when the texture is uploaded and {@link #texture()} just returns its id. */
+    public boolean isTextureLive() {
+        return textureId != null;
+    }
+
+    /** True when {@link #texture()} would not have to wait on (or start) a disk decode. */
+    public boolean isTextureReady() {
+        return textureId != null || diskPath == null || loadFailed || (preload != null && preload.isDone());
+    }
+
+    /**
      * The texture to blit. Returns the live id when in memory; when flushed, lazily reloads the PNG
      * into a fresh {@link DynamicTexture} (caching success <em>and</em> failure so it never retries
      * every frame). Returns {@code null} when there is nothing to draw (load failed, or it never had
@@ -138,7 +200,8 @@ public final class RideSnapshot {
     public ResourceLocation texture() {
         if (textureId != null) return textureId;
         if (diskPath == null || loadFailed) return null;
-        NativeImage img = RideSnapshotDisk.read(diskPath);
+        NativeImage img = takePreload();
+        if (img == null) img = RideSnapshotDisk.read(diskPath);
         if (img == null) {
             loadFailed = true;
             return null;
@@ -178,8 +241,28 @@ public final class RideSnapshot {
         return true;
     }
 
+    /** The finished preload's image (waiting for it if still decoding), or {@code null} if none ran. */
+    private NativeImage takePreload() {
+        CompletableFuture<NativeImage> job = preload;
+        preload = null;
+        if (job == null) return null;
+        try {
+            return job.join();
+        } catch (Exception e) {
+            return null; // fall back to a synchronous read
+        }
+    }
+
+    /** Drop an in-flight or unused preload, closing its image whenever the decode lands. */
+    private void dropPreload() {
+        CompletableFuture<NativeImage> job = preload;
+        preload = null;
+        if (job != null) job.thenAccept(img -> { if (img != null) img.close(); });
+    }
+
     /** Release the live GPU texture (memory only); keeps any disk file so {@link #texture()} can reload. */
     public void releaseTexture() {
+        dropPreload();
         if (textureId != null) {
             try {
                 Minecraft.getInstance().getTextureManager().release(textureId);

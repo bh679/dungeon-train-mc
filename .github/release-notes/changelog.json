@@ -24314,6 +24314,31 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-moment-no-lag-spike",
+      "version": "0.1198.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "ui"
+      ],
+      "title": "No more lag spike the moment you die",
+      "summary": "Dying used to hitch for a split second just before the death screen, which made it feel like lag had killed you. That stutter is gone. Now the world keeps rolling for a breath after you fall \u2014 the train still moving under a red fade \u2014 before the recap rises in from black.",
+      "highlights": [
+        "No stutter on the frame you die",
+        "A brief death moment over the still-moving train before the recap",
+        "The recap now opens from black and fades in"
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1888,
+      "date": "2026-10-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
