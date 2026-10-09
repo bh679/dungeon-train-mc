@@ -23834,6 +23834,25 @@
       "released_at": "2026-10-07T04:23:09Z"
     },
     {
+      "id": "release-public-credits-page",
+      "version": "0.1181.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Public Credits Page",
+      "summary": "The Credits now have a home on the website \u2014 everyone who translated, wrote, built, funded and grew Dungeon Train.",
+      "highlights": [],
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1181.0",
+      "released_at": "2026-10-07T04:23:09Z",
+      "major": true,
+      "milestone": true,
+      "description": "The Credits now have a home on the website \u2014 every translator, writer, builder, funder and community member who has helped make Dungeon Train, with each list's top contributor standing beside it in their own skin.\n\n[https://brennan.games/dungeontrain/credits/](https://brennan.games/dungeontrain/credits/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/public-credits-page.jpg"
+    },
+    {
       "id": "trash-own-photos",
       "version": "0.1180.0",
       "type": "feat",
