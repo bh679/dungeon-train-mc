@@ -14,12 +14,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <p>A mixin rather than a GUI layer: Exposure's {@code GuiMixin} draws this overlay at the head of
  * {@code Gui.render} and then cancels the rest of the HUD (its "hide HUD while in viewfinder" option,
- * on by default), so no DT layer would ever be drawn while looking through the camera.</p>
+ * on by default), so no DT layer would ever be drawn while looking through the camera. It runs just
+ * before the overlay pops its pose, so the hint is drawn in the viewfinder's own moving space.</p>
  */
 @Mixin(value = ViewfinderOverlay.class, remap = false)
 public abstract class ViewfinderOverlaySelfieHintMixin {
 
-    @Inject(method = "render", at = @At("TAIL"))
+    /** Inside Exposure's pushed pose (bob, sway, open/close scale), so the hint moves with the frame. */
+    @Inject(method = "render",
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;popPose()V"))
     private void dungeontrain$drawSelfieHint(GuiGraphics graphics, DeltaTracker deltaTracker, CallbackInfo ci) {
         ViewfinderSelfieHint.render(graphics, (ViewfinderOverlay) (Object) this);
     }

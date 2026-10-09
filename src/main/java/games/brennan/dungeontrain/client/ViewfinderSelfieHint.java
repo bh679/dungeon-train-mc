@@ -23,15 +23,18 @@ public final class ViewfinderSelfieHint {
     private static final Component SELFIE = Component.translatable("gui.dungeontrain.viewfinder.selfie");
     private static final Component FRONT = Component.translatable("gui.dungeontrain.viewfinder.front");
 
-    private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int KEY_TEXT_COLOR = 0xFF202020;
-    private static final int KEY_FACE_COLOR = 0xFFE0E0E0;
-    private static final int KEY_EDGE_COLOR = 0xFF808080;
+    /** Muted greys picked from the viewfinder frame, so the key cap reads as part of the camera. */
+    private static final int TEXT_COLOR = 0xFFA8A69F;
+    private static final int KEY_TEXT_COLOR = 0xFFC9C7C0;
+    private static final int KEY_FACE_COLOR = 0xFF3B3A36;
+    private static final int KEY_EDGE_COLOR = 0xFF151513;
     private static final int KEY_PAD_X = 3;
     private static final int KEY_PAD_Y = 2;
     private static final int GAP = 4;
     /** Space between the bottom of the viewfinder opening and the hint. */
     private static final int BELOW_OPENING = 6;
+    /** Half the camera tab's width plus a gap, as a share of the viewfinder opening's width. */
+    private static final float TAB_CLEARANCE = 0.07f;
     /** Closest the hint may sit to the bottom of the screen. */
     private static final int BOTTOM_MARGIN = 4;
 
@@ -61,18 +64,19 @@ public final class ViewfinderSelfieHint {
         graphics.fill(x, y, x + keyWidth, y + keyHeight, KEY_EDGE_COLOR);
         graphics.fill(x + 1, y, x + keyWidth - 1, y + keyHeight - 1, KEY_FACE_COLOR);
         HudText.drawScaled(graphics, font, keyName, x + KEY_PAD_X, y + KEY_PAD_Y, KEY_TEXT_COLOR, false);
-        HudText.drawScaled(graphics, font, label, x + keyWidth + GAP, y + KEY_PAD_Y, TEXT_COLOR, true);
+        HudText.drawScaled(graphics, font, label, x + keyWidth + GAP, y + KEY_PAD_Y, TEXT_COLOR, false);
     }
 
     /**
-     * Right-aligned to the viewfinder opening — the bottom centre is taken by the instant camera's own
-     * body tab — or bottom-centre of the screen if there is no opening yet.
+     * Just right of the screen centre, clear of the instant camera's body tab that hangs from the middle of
+     * the frame's bottom edge. The tab scales with the opening, so the offset is a share of its width.
      */
     private static int hintLeft(GuiGraphics graphics, Rect2f opening, int width) {
+        int centre = graphics.guiWidth() / 2;
         if (opening == null) {
-            return (graphics.guiWidth() - width) / 2;
+            return centre - width / 2;
         }
-        return Math.max(0, Math.round(opening.x + opening.width) - width);
+        return centre + Math.round(opening.width * TAB_CLEARANCE);
     }
 
     /** Just under the viewfinder opening, pulled up if that would run off the bottom of the screen. */
