@@ -14,7 +14,8 @@ import java.util.List;
  * channel ({@link DungeonTrain#tributeWebhookOverride()}) — naming who paid and whose photo it is.
  *
  * <p>A Tribute is one player saying "this one is worth keeping", which is exactly the photo worth
- * showing everyone. No @-mention: tributes are an everyday event, not a milestone. Best-effort,
+ * showing everyone. The photo's photographer is @-pinged if they linked their Discord
+ * ({@link DiscordPings}); nobody else is — tributes are an everyday event, not a milestone. Best-effort,
  * like every other reporter here — Discord can never disturb the Tribute.</p>
  */
 public final class TributePhotoReporter {
@@ -31,13 +32,14 @@ public final class TributePhotoReporter {
      * Post the tributed photo. Server thread.
      *
      * @param photographer who took the photo, as the found photo names them ({@code ""} if unknown)
+     * @param photoId the found photo's relay id — the relay @-pings whoever uploaded it, if they linked Discord
      * @param tributeNumber which Tribute this is for the photo, counting this one (1 = its first)
      * @param cost emeralds this Tribute cost
      * @param hands how many people have held the photo, counting the tributer
      * @param viewsLeft views the photo had left when the tributer opened it, counting theirs
      * @param png the photo on its paper, encoded
      */
-    public static void post(ServerPlayer tributer, String photographer, int tributeNumber, int cost,
+    public static void post(ServerPlayer tributer, String photographer, int photoId, int tributeNumber, int cost,
                             int hands, int viewsLeft, byte[] png) {
         if (png == null || png.length == 0) return;
         try {
@@ -46,7 +48,7 @@ public final class TributePhotoReporter {
                     name, photographer == null || photographer.isBlank() ? "an unknown passenger" : photographer);
             DiscordService.get().postReportTopLevel(tributer, title(name, photographer),
                     description(tributeNumber, cost, hands, viewsLeft), List.of(), png, PHOTO_FILENAME, EMBED_COLOR,
-                    DungeonTrain.tributeWebhookOverride());
+                    DiscordPings.forFoundPhoto(DungeonTrain.tributeWebhookOverride(), photoId));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] tributed photo post failed: {}", t.toString());
         }
@@ -65,7 +67,8 @@ public final class TributePhotoReporter {
             String name = tributer.getGameProfile().getName();
             LOGGER.info("[DungeonTrain] {} paid tribute to their own photo — posting it to the tribute-photos channel.", name);
             DiscordService.get().postReportTopLevel(tributer, ownTitle(name), ownDescription(tributeNumber, cost),
-                    List.of(), png, PHOTO_FILENAME, EMBED_COLOR, DungeonTrain.tributeWebhookOverride());
+                    List.of(), png, PHOTO_FILENAME, EMBED_COLOR,
+                    DiscordPings.forPlayer(DungeonTrain.tributeWebhookOverride(), tributer.getUUID(), PingType.OWN_TRIBUTE));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] own tributed photo post failed: {}", t.toString());
         }

@@ -41,7 +41,8 @@ public final class PlayerMobPhotoReporter {
             String name = subject.getGameProfile().getName();
             LOGGER.info("[DungeonTrain] {} photographed {} — posting it to the passenger log.", photographer, name);
             DiscordService.get().postReportTopLevel(subject, title(photographer, name), description(photographer, name),
-                    List.of(), png, PHOTO_FILENAME, EMBED_COLOR, DungeonTrain.manifestWebhookOverride());
+                    List.of(), png, PHOTO_FILENAME, EMBED_COLOR,
+                    DiscordPings.forPlayer(DungeonTrain.manifestWebhookOverride(), subject.getUUID(), PingType.MOB_PHOTO));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] PlayerMob photo post failed: {}", t.toString());
         }

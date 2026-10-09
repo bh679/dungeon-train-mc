@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.compat;
 
 import games.brennan.tradeeverything.api.TradeEverythingApi;
+import io.github.mortuusars.exposure.world.item.StackedPhotographsItem;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -11,6 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.PotionContents;
 
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalInt;
 
@@ -109,6 +111,16 @@ public final class TradeEverythingBridge {
     /** +9 slots, a 3×3 of edible backpacks — 45 emeralds, i.e. 9 × the plain one. */
     private static final int GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS = 720;
 
+    /** Disposable camera (Polaroid's instant camera) — pays out 2 emeralds after the margin. */
+    private static final int INSTANT_CAMERA_VALUE_SIXTEENTHS = EMERALD_PAYOUT_SIXTEENTHS * 2;
+
+    /** One Exposure photograph — half a written book. A stack pays this per photo inside. */
+    private static final int PHOTOGRAPH_VALUE_SIXTEENTHS = WRITTEN_BOOK_VALUE_SIXTEENTHS / 2;
+
+    /** Exposure's loose photographs, priced flat by {@link #PHOTOGRAPH_VALUE_SIXTEENTHS}. */
+    private static final List<String> PHOTOGRAPH_IDS = List.of(
+        "exposure:photograph", "exposure:aged_photograph");
+
     /**
      * The ominous banner is not its own item: vanilla stamps this translation
      * key into {@code ITEM_NAME} on a plain white banner
@@ -170,6 +182,11 @@ public final class TradeEverythingBridge {
         TradeEverythingApi.setItemOverride(
             ResourceLocation.fromNamespaceAndPath("ediblebackpacks", "golden_edible_backpack"),
             GOLDEN_EDIBLE_BACKPACK_VALUE_SIXTEENTHS);
+        TradeEverythingApi.setItemOverride(
+            ResourceLocation.parse(DisabledModContent.INSTANT_CAMERA), INSTANT_CAMERA_VALUE_SIXTEENTHS);
+        PHOTOGRAPH_IDS.forEach(id ->
+            TradeEverythingApi.setItemOverride(ResourceLocation.parse(id), PHOTOGRAPH_VALUE_SIXTEENTHS));
+        TradeEverythingApi.registerValueProvider(TradeEverythingBridge::stackedPhotographsValue);
     }
 
     /**
@@ -185,7 +202,8 @@ public final class TradeEverythingBridge {
         }
         String s = id.toString();
         return s.equals("minecraft:bookshelf") || s.equals("minecraft:honey_block")
-            || s.equals("ediblebackpacks:edible_backpack") || s.equals("ediblebackpacks:golden_edible_backpack");
+            || s.equals("ediblebackpacks:edible_backpack") || s.equals("ediblebackpacks:golden_edible_backpack")
+            || s.equals(DisabledModContent.INSTANT_CAMERA) || PHOTOGRAPH_IDS.contains(s);
     }
 
     /**
@@ -240,6 +258,13 @@ public final class TradeEverythingBridge {
     /** {@link #emeraldsToSixteenths} in 256ths, for {@link #VILLAGER_STOCK_VALUES_256THS}. */
     static int emeraldsTo256ths(int emeralds) {
         return emeraldsToSixteenths(emeralds) * SIXTEENTH_IN_256THS;
+    }
+
+    /** A stack of photographs sells for each photo in it, so stacking never loses value. */
+    private static OptionalInt stackedPhotographsValue(ItemStack stack) {
+        if (!(stack.getItem() instanceof StackedPhotographsItem stacked)) return OptionalInt.empty();
+        int photos = stacked.getPhotographs(stack).size();
+        return photos > 0 ? OptionalInt.of(PHOTOGRAPH_VALUE_SIXTEENTHS * photos) : OptionalInt.empty();
     }
 
     /** See {@link #OMINOUS_BANNER_NAME_KEY} for why the check is component-based. */

@@ -556,6 +556,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/notify-discord.sh
 
+      # A release that ships a major changelog entry (major: true) also posts it to #highlights as
+      # a plain markdown message (# title, description, photo). Reads the entries "Mark changelog entries released" stamped
+      # with this tag in the local checkout — so it works even if that step lost its push race.
+      # Real releases only, and only when Discord is being notified at all. Skips (green) when
+      # the secret is unset. Re-post or preview one entry by hand:
+      #   DRY_RUN=1 python3 scripts/release-notes/notify-highlights.py --tag vX --entry <id>
+      - name: Post major release to #highlights
+        if: ${{ always() && env.RELEASE_TAG != '' && inputs.notify_discord && inputs.auto == false && inputs.test_release == false }}
+        continue-on-error: true
+        env:
+          DISCORD_HIGHLIGHTS_WEBHOOK_URL: ${{ secrets.DISCORD_HIGHLIGHTS_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: python3 scripts/release-notes/notify-highlights.py --tag "$RELEASE_TAG"
+
       # ---- Nothing below here is player-facing: it runs AFTER every publish so it can't delay one.
 
       # Teach the relay which builds are unmodified copies of the templates this release ships, so
