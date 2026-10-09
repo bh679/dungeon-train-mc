@@ -86,6 +86,7 @@ public final class LiveStreamController {
     // ---- lifecycle ----------------------------------------------------------------------------
 
     private void start() {
+        LOGGER.info("[DungeonTrain] live stream requested by the server (ffmpeg {})", FfmpegSupport.state());
         if (state != State.IDLE) stop(null);
         if (!LiveFeedClientConfig.streamingEnabled()) {
             say(Component.translatable("chat.dungeontrain.live.disabled").withStyle(ChatFormatting.GRAY));
@@ -162,6 +163,8 @@ public final class LiveStreamController {
             claim = c;
             dir = d;
             state = State.STREAMING;
+            LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps, playlist {}", c.session(), w, h,
+                LiveFeedClientConfig.captureFps(), c.playlistUrl());
             say(Component.translatable("chat.dungeontrain.live.started").withStyle(ChatFormatting.GREEN));
             if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
         } catch (Exception e) {
@@ -185,6 +188,8 @@ public final class LiveStreamController {
     private void stop(@Nullable Component why, boolean clean) {
         if (state == State.IDLE) return;
         generation++;
+        LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
+            uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
         teardown(clean);
         state = State.IDLE;

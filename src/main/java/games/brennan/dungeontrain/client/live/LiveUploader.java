@@ -44,7 +44,9 @@ public final class LiveUploader implements AutoCloseable {
     private final Map<String, Integer> failures = new java.util.HashMap<>();
     private volatile boolean running = true;
     private volatile long lastPlaylistMtime = -1;
+    private volatile long notBeforeMs;
     private volatile int segmentsUploaded;
+    private static final long FAIL_BACKOFF_MS = 3000;
 
     public LiveUploader(Path dir, String token, Consumer<String> onCutOff) {
         this.dir = dir;
@@ -80,6 +82,7 @@ public final class LiveUploader implements AutoCloseable {
 
     /** One pass; also called once more on clean stop so the ENDLIST playlist goes out. */
     void pass() throws IOException, CutOff {
+        if (System.currentTimeMillis() < notBeforeMs) return;
         Path playlist = dir.resolve(LivePlaylist.FILE_NAME);
         if (!Files.exists(playlist)) return;
         long mtime = Files.getLastModifiedTime(playlist).toMillis();
@@ -108,6 +111,7 @@ public final class LiveUploader implements AutoCloseable {
                 segmentsUploaded++;
             } else {
                 allOk = false;
+                notBeforeMs = System.currentTimeMillis() + FAIL_BACKOFF_MS;
                 failures.merge(seg, 1, Integer::sum);
                 LOGGER.warn("[DungeonTrain] live segment {} upload → {} {}", seg, put.status(), put.error() == null ? "" : put.error().toString());
             }
@@ -115,8 +119,14 @@ public final class LiveUploader implements AutoCloseable {
         SignedPut pl = urls.get(LivePlaylist.FILE_NAME);
         if (pl != null) {
             Result put = await(LiveFeedClient.upload(pl, playlist));
-            if (put.status() >= 200 && put.status() < 300 && allOk) lastPlaylistMtime = mtime;
-            else LOGGER.warn("[DungeonTrain] live playlist upload → {}", put.status());
+            if (put.status() >= 200 && put.status() < 300 && allOk) {
+                lastPlaylistMtime = mtime;
+            } else {
+                // Storage said no (or the network did): wait before asking the relay to sign again,
+                // or a dead bucket turns into two presign calls a second.
+                notBeforeMs = System.currentTimeMillis() + FAIL_BACKOFF_MS;
+                LOGGER.warn("[DungeonTrain] live playlist upload → {} (retry in {} s)", put.status(), FAIL_BACKOFF_MS / 1000);
+            }
         }
     }
 

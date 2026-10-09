@@ -6,8 +6,6 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.opengl.GL11C;
-import org.lwjgl.opengl.GL15C;
-import org.lwjgl.opengl.GL21C;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.system.MemoryUtil;
 
@@ -19,10 +17,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * Copies the finished frame out of the main render target into a small buffer for the encoder.
  *
  * <p>Render thread only. Each grab blits the main target (what the player sees, HUD included —
- * whatever Iris/Sodium/Veil drew into it) down to a {@code width×height} target, then reads that
- * back through two ping-pong pixel buffers: this frame's {@code glReadPixels} goes into one PBO
- * asynchronously while the previous frame's PBO is mapped and copied out, so the GPU is never
- * stalled on a synchronous read. Frames arrive one grab late, which the encoder cannot tell.</p>
+ * whatever Iris/Sodium/Veil drew into it) down to a {@code width×height} target and reads that
+ * back into a pooled direct buffer. The read is synchronous; at 720p it is a millisecond or two.</p>
  *
  * <p>Pixels are RGBA, bottom-up (GL order); the encoder's {@code -vf vflip} turns them over.
  * {@link #latest()} hands out the newest buffer and nulls it — a frame the encoder did not take
@@ -34,9 +30,6 @@ public final class LiveFrameGrabber implements AutoCloseable {
 
     private final int width, height, frameBytes;
     private final TextureTarget target;
-    private final int[] pbo = new int[2];
-    private final boolean[] pboFilled = new boolean[2];
-    private int cur = 0;
     private final ArrayBlockingQueue<ByteBuffer> pool = new ArrayBlockingQueue<>(POOL);
     private final AtomicReference<ByteBuffer> latest = new AtomicReference<>();
     private boolean closed;
@@ -46,19 +39,13 @@ public final class LiveFrameGrabber implements AutoCloseable {
         this.height = height;
         this.frameBytes = width * height * 4;
         this.target = new TextureTarget(width, height, false, Minecraft.ON_OSX);
-        for (int i = 0; i < 2; i++) {
-            pbo[i] = GL15C.glGenBuffers();
-            GL15C.glBindBuffer(GL21C.GL_PIXEL_PACK_BUFFER, pbo[i]);
-            GL15C.glBufferData(GL21C.GL_PIXEL_PACK_BUFFER, frameBytes, GL15C.GL_STREAM_READ);
-        }
-        GL15C.glBindBuffer(GL21C.GL_PIXEL_PACK_BUFFER, 0);
         for (int i = 0; i < POOL; i++) pool.add(MemoryUtil.memAlloc(frameBytes));
     }
 
     public int width() { return width; }
     public int height() { return height; }
 
-    /** Render thread: blit + async read of this frame, copy-out of the previous one. */
+    /** Render thread: blit the finished frame down, then read the small target back. */
     public void grab(RenderTarget main) {
         if (closed || main == null) return;
         GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, main.frameBufferId);
@@ -66,28 +53,19 @@ public final class LiveFrameGrabber implements AutoCloseable {
         GL30C.glBlitFramebuffer(0, 0, main.width, main.height, 0, 0, width, height,
             GL11C.GL_COLOR_BUFFER_BIT, GL11C.GL_LINEAR);
 
-        GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, target.frameBufferId);
-        GL15C.glBindBuffer(GL21C.GL_PIXEL_PACK_BUFFER, pbo[cur]);
-        GL11C.glReadPixels(0, 0, width, height, GL11C.GL_RGBA, GL11C.GL_UNSIGNED_BYTE, 0L);
-        pboFilled[cur] = true;
-
-        int prev = cur ^ 1;
-        if (pboFilled[prev]) {
-            GL15C.glBindBuffer(GL21C.GL_PIXEL_PACK_BUFFER, pbo[prev]);
-            ByteBuffer mapped = GL15C.glMapBuffer(GL21C.GL_PIXEL_PACK_BUFFER, GL15C.GL_READ_ONLY, frameBytes, null);
-            if (mapped != null) {
-                ByteBuffer out = pool.poll();
-                if (out != null) {
-                    MemoryUtil.memCopy(MemoryUtil.memAddress(mapped), MemoryUtil.memAddress(out), frameBytes);
-                    out.position(0).limit(frameBytes);
-                    ByteBuffer dropped = latest.getAndSet(out);
-                    if (dropped != null) pool.offer(dropped);
-                }
-                GL15C.glUnmapBuffer(GL21C.GL_PIXEL_PACK_BUFFER);
-            }
+        ByteBuffer out = pool.poll();
+        if (out != null) {
+            // Synchronous read of a 720p RGBA target: ~1-2 ms on a desktop GPU. A PBO ping-pong was
+            // tried first and SIGBUSed inside memCopy on Apple Silicon (mapped pixel-pack memory is
+            // not plain readable there), so the simple path stays.
+            GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, target.frameBufferId);
+            GlStateManager._pixelStore(GL11C.GL_PACK_ALIGNMENT, 4);
+            out.clear();
+            GL11C.glReadPixels(0, 0, width, height, GL11C.GL_RGBA, GL11C.GL_UNSIGNED_BYTE, out);
+            out.position(0).limit(frameBytes);
+            ByteBuffer dropped = latest.getAndSet(out);
+            if (dropped != null) pool.offer(dropped);
         }
-        GL15C.glBindBuffer(GL21C.GL_PIXEL_PACK_BUFFER, 0);
-        cur = prev;
         main.bindWrite(true);
     }
 
@@ -106,7 +84,6 @@ public final class LiveFrameGrabber implements AutoCloseable {
     public void close() {
         if (closed) return;
         closed = true;
-        GL15C.glDeleteBuffers(pbo);
         target.destroyBuffers();
         ByteBuffer l = latest.getAndSet(null);
         if (l != null) MemoryUtil.memFree(l);
