@@ -24220,12 +24220,9 @@
         "compatibility",
         "train"
       ],
-      "title": "Distant Horizons no longer leaves ghost terrain in dimensional carriages under shaders",
-      "summary": "With Distant Horizons and a shader pack on, stepping into a dimensional carriage could leave dark, frozen terrain shapes smeared across the room's fog. The room now wipes them away the moment you are inside, and they come back as normal distant terrain the moment you step out.",
-      "highlights": [
-        "Fixes the frozen dark silhouettes in dimensional carriages with Distant Horizons and shaders",
-        "Distant water and glass no longer show through the room under a shader pack either"
-      ],
+      "title": "Shader rendering fix inside dimensional carriages",
+      "summary": "Fixed a visual glitch inside dimensional carriages for players running shaders with Distant Horizons.",
+      "highlights": [],
       "pr": 1884,
       "date": "2026-10-09",
       "released": false,
