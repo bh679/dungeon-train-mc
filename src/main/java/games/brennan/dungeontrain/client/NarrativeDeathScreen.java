@@ -330,6 +330,7 @@ public final class NarrativeDeathScreen extends Screen {
     // photoBlack a transition inherits at its start; if it's > 0 (advancing mid-rise)
     // the photo finishes rising in during the fade-out instead of snapping to full.
     private float dipStartBlack = 0.0f;
+    private boolean initialRise = false;   // first open: the backdrop rises from full black, not a page switch
 
     // One ride photo per page, assigned up-front (unused-first) so pages don't
     // repeat a shot. Empty when the feature is off / no photos were captured.
@@ -623,6 +624,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (!opened) {
             opened = true;
             pendingInitialFade = true;
+            initialRise = true;
             swapped = true;
             pendingPage = -1;
             fromShot = bgFor(currentPage);
@@ -766,6 +768,10 @@ public final class NarrativeDeathScreen extends Screen {
             // No photo to reveal — keep the solid overlay fully opaque (don't lay
             // bare the frozen world); the chrome still fades out/in against it.
             g.fill(0, 0, this.width, this.height, OVERLAY);
+            if (photoBlack > 0.0f) {
+                int a = Math.min(255, Math.round(photoBlack * 255.0f));
+                g.fill(0, 0, this.width, this.height, a << 24);
+            }
         }
         // The donation page (only) gets a cold dark-blue wash over its backdrop.
         if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE) {
@@ -973,6 +979,7 @@ public final class NarrativeDeathScreen extends Screen {
             openPageAnalytics(pages.get(target));
         }
         imgFinishMs = 0L;               // cancel any in-flight fast reveal
+        initialRise = false;
         dipStartBlack = photoBlack;     // carry current darkness (advancing mid-rise won't snap)
         fromShot = bgFor(currentPage);
         toShot = bgFor(target);
@@ -1039,8 +1046,11 @@ public final class NarrativeDeathScreen extends Screen {
         // black slowly (T_DIP_UP). With no switch (initial open / same photo) there's
         // no dip and the fade-in just tracks the UI.
         boolean switching = toShot != null && toShot != fromShot; // identity: every capture is distinct
+        // The first open rises from full black too — the screen must be opaque the frame it
+        // appears over the live world — just with no old photo to dim first.
         long total = switching
                 ? (T_FADE + T_HOLD + T_DIP_DOWN + T_DIP_UP)
+                : initialRise ? (T_FADE + T_HOLD + T_DIP_UP)
                 : (T_FADE + T_HOLD + T_FADE);
         // Busy through fade-out + hold + fade-in; the slow image rise after that is
         // settled, so a click then advances instead of skipping.
@@ -1061,6 +1071,7 @@ public final class NarrativeDeathScreen extends Screen {
             pendingPage = -1;
             fromShot = null;
             toShot = null;
+            initialRise = false;
             uiAlpha = 1.0f;
             photoBlack = 0.0f;
             photoNew = false;
@@ -1086,8 +1097,12 @@ public final class NarrativeDeathScreen extends Screen {
             // T_DIP_UP; it swaps under full black at the bottom, so the cut isn't seen.
             long inMs = elapsed - T_FADE - T_HOLD;
             uiAlpha = smooth(Math.min(1.0f, (float) inMs / (float) T_FADE));
-            if (!switching) {
-                // No real switch (initial open / same photo) — never dip.
+            if (initialRise) {
+                // First open: start fully black and rise slowly, like a switched-in photo.
+                photoBlack = smooth(1.0f - Math.min(1.0f, (float) inMs / (float) T_DIP_UP));
+                photoNew = false;
+            } else if (!switching) {
+                // No real switch (same photo) — never dip.
                 photoBlack = 0.0f;
                 photoNew = false;
             } else if (inMs < T_DIP_DOWN) {
