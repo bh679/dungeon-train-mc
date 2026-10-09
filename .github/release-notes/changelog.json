@@ -24210,6 +24210,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dh-ghost-terrain-dimensional-carriages-shaders",
+      "version": "0.1194.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "train"
+      ],
+      "title": "Shader rendering fix inside dimensional carriages",
+      "summary": "Fixed a visual glitch inside dimensional carriages for players running shaders with Distant Horizons.",
+      "highlights": [],
+      "pr": 1884,
+      "date": "2026-10-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
