@@ -24192,6 +24192,24 @@
       "released": true,
       "released_in": "v0.1193.0",
       "released_at": "2026-10-08T14:48:27Z"
+    },
+    {
+      "id": "group-carriages-drift-more",
+      "version": "0.1194.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train"
+      ],
+      "title": "Shared Group carriages turn up more often",
+      "summary": "Group carriages are now five times as likely to be shared. About one in ten arrives as a build from another player's world, or carries your changes out to theirs, instead of one in fifty.",
+      "highlights": [],
+      "pr": 1882,
+      "date": "2026-10-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
