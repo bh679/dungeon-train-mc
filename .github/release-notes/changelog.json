@@ -24311,9 +24311,9 @@
       ],
       "pr": 1887,
       "date": "2026-10-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1198.0",
+      "released_at": "2026-10-09T15:35:14Z"
     },
     {
       "id": "death-moment-no-lag-spike",
@@ -24336,9 +24336,9 @@
       ],
       "pr": 1888,
       "date": "2026-10-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1198.0",
+      "released_at": "2026-10-09T15:35:14Z"
     }
   ]
 }
