@@ -228,6 +228,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "Semua naik!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Tekan Spasi untuk Mulai",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Tekan Spasi untuk melewati",
+  "gui.dungeontrain.viewfinder.selfie": "Swafoto",
+  "gui.dungeontrain.viewfinder.front": "Depan",
   "gui.dungeontrain.loading.title": "Memuat dunia…",
   "gui.dungeontrain.loading.phase.assembling": "Merakit kereta",
   "gui.dungeontrain.loading.phase.spawning_train": "Memunculkan Dungeon Train…",

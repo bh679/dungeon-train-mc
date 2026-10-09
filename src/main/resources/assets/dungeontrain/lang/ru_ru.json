@@ -279,6 +279,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "Все на борт!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Нажмите Пробел, чтобы начать",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Нажмите Пробел, чтобы пропустить",
+  "gui.dungeontrain.viewfinder.selfie": "Селфи",
+  "gui.dungeontrain.viewfinder.front": "Вперёд",
   "gui.dungeontrain.loading.title": "Загрузка мира…",
   "gui.dungeontrain.loading.phase.assembling": "Сборка поезда",
   "gui.dungeontrain.loading.phase.spawning_train": "Появление Dungeon Train…",

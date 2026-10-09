@@ -24274,6 +24274,26 @@
       "major": true,
       "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.\n- Group carriages built in other players' worlds turn up more often.\n- Bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
+    },
+    {
+      "id": "viewfinder-selfie-hint",
+      "version": "0.1196.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Selfie hint on the camera viewfinder",
+      "summary": "Raising a camera now shows which key flips it round for a selfie, and which key turns it back.",
+      "highlights": [
+        "A small key hint sits under the viewfinder: Selfie, or Front while you're in selfie mode",
+        "It shows your own key for Toggle Perspective and moves with the viewfinder"
+      ],
+      "pr": 1886,
+      "date": "2026-10-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

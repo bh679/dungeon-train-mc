@@ -125,6 +125,7 @@
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
+    "client.ViewfinderOverlaySelfieHintMixin",
     "client.BiomeColorsTwinMixin",
     "client.LocalPlayerFlyDoubleTapSprintMixin",
     "client.DebugScreenOverlayDepthMixin",

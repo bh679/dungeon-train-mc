@@ -330,6 +330,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "Усі на борт!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Натисніть Пробіл що б почати",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Натисніть Пробіл що б пропустити",
+  "gui.dungeontrain.viewfinder.selfie": "Селфі",
+  "gui.dungeontrain.viewfinder.front": "Вперед",
   "gui.dungeontrain.loading.title": "Завантажуємо світ...",
   "gui.dungeontrain.loading.phase.assembling": "Збираємо потяг",
   "gui.dungeontrain.loading.phase.spawning_train": "Спавнимо Потяг-Підземелля...",

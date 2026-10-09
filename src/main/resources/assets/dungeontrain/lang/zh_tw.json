@@ -228,6 +228,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "全員上車！",
   "gui.dungeontrain.cinematic.press_space_to_start": "按空白鍵開始",
   "gui.dungeontrain.cinematic.press_space_to_skip": "按空白鍵跳過",
+  "gui.dungeontrain.viewfinder.selfie": "自拍",
+  "gui.dungeontrain.viewfinder.front": "前方",
   "gui.dungeontrain.loading.title": "正在載入世界……",
   "gui.dungeontrain.loading.phase.assembling": "正在組裝列車",
   "gui.dungeontrain.loading.phase.spawning_train": "正在生成地牢列車……",
