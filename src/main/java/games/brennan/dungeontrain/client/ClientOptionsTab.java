@@ -86,6 +86,8 @@ public enum ClientOptionsTab {
         /** Minecraft's and other mods' tabs on the advancements screen — hidden by default, see {@code AdvancementTabGate}. */
         OTHER_ADVANCEMENT_TABS,
         CINEMATIC_HOTKEY,
+        /** Replay Mod playback: the free camera follows the recorded player into dimensional carriages. */
+        REPLAY_FOLLOW,
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
         BACKPACK_BUTTON,
         /** Opens the AI Policy page. Unconditional — every client can reach it. */
@@ -193,6 +195,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.LOW_MEMORY_NOTICE_CHAT);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.CINEMATIC_HOTKEY);
+                rows.add(Row.REPLAY_FOLLOW);
                 rows.add(Row.BACKPACK_BUTTON);
                 // The two rows that open a page rather than change a setting, led by the
                 // unconditional one so they pair on a line of their own — put TRANSLATE in the

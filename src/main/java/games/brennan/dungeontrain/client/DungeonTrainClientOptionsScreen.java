@@ -463,6 +463,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case LOW_MEMORY_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.low_memory_notice_chat");
             case OTHER_ADVANCEMENT_TABS -> onOffCandidates("gui.dungeontrain.options.other_advancement_tabs");
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
+            case REPLAY_FOLLOW -> onOffCandidates("gui.dungeontrain.options.replay_follow");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
             case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
             // Every mode, because the row must fit its LONGEST value — the button shows the
@@ -629,6 +630,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     Component.translatable("gui.dungeontrain.options.cinematic_hotkey"),
                                     (btn, on) -> ClientDisplayConfig.setCinematicHotkeyEnabled(on)),
                     "gui.dungeontrain.options.cinematic_hotkey.tip");
+
+            // Replay Mod playback only: whether the free camera jumps with the recorded player into
+            // and out of dimensional carriages. The G hotkey flips the same setting mid-replay.
+            case REPLAY_FOLLOW -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isReplayFollowIntoCarriages())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.replay_follow"),
+                                    (btn, on) -> ClientDisplayConfig.setReplayFollowIntoCarriages(on)),
+                    "gui.dungeontrain.options.replay_follow.tip");
 
             // "Was any of this made by AI?" answered in full. Unconditional, and deliberately a
             // page rather than a tooltip: the honest answer is longer than a row can carry. Also

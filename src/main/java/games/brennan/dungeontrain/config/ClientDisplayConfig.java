@@ -235,6 +235,7 @@ public final class ClientDisplayConfig {
     /** Whether BetterX's title-screen popups and version check are skipped. See {@link #isBetterXStartupScreensSuppressed()}. */
     public static final ModConfigSpec.BooleanValue BETTERX_SUPPRESS_STARTUP_SCREENS;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
+    public static final ModConfigSpec.BooleanValue REPLAY_FOLLOW_INTO_CARRIAGES;
     public static final ModConfigSpec.BooleanValue CREATIVE_SHIFT_CLICK_TO_HOTBAR;
     /** Whether the biome mods' creative tabs are drawn. See {@link #isCreativeModBlockTabs()}. */
     public static final ModConfigSpec.BooleanValue CREATIVE_MOD_BLOCK_TABS;
@@ -395,6 +396,7 @@ public final class ClientDisplayConfig {
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
         BETTERX_SUPPRESS_STARTUP_SCREENS = pair.getLeft().betterXSuppressStartupScreens;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
+        REPLAY_FOLLOW_INTO_CARRIAGES = pair.getLeft().replayFollowIntoCarriages;
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
         CREATIVE_MOD_BLOCK_TABS = pair.getLeft().creativeModBlockTabs;
         CREATIVE_MOD_BLOCKS_IN_SEARCH = pair.getLeft().creativeModBlocksInSearch;
@@ -585,6 +587,12 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue cinematicHotkeyEnabled = b
                 .comment("Let the cinematographer hotkey (C by default, rebindable under Controls > Dungeon Train) replay the intro cinematic while you are in spectator mode. Turn this off to reclaim the key for something else without unbinding it. Only the hotkey is affected - /dungeontrain cinematic still works either way.")
                 .define("hotkeyEnabled", true);
+        b.pop();
+
+        b.push("replay");
+        ModConfigSpec.BooleanValue replayFollowIntoCarriages = b
+                .comment("While a Replay Mod (ReForgedPlay) recording plays back, move the free camera along with the recorded player when they step into or out of a dimensional carriage. The G hotkey (rebindable under Controls > Dungeon Train) flips this during playback.")
+                .define("followIntoCarriages", true);
         b.pop();
 
         b.push("creative");
@@ -811,7 +819,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, replayFollowIntoCarriages, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1498,6 +1506,19 @@ public final class ClientDisplayConfig {
         CINEMATIC_HOTKEY_ENABLED.save();
     }
 
+    /** Does the Replay Mod free camera follow the recorded player into dimensional carriages? Default on. */
+    public static boolean isReplayFollowIntoCarriages() {
+        return !isLoaded() || REPLAY_FOLLOW_INTO_CARRIAGES.get();
+    }
+
+    /** Persist the replay-follow toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setReplayFollowIntoCarriages(boolean value) {
+        if (!isLoaded()) return;
+        if (REPLAY_FOLLOW_INTO_CARRIAGES.get() == value) return;
+        REPLAY_FOLLOW_INTO_CARRIAGES.set(value);
+        REPLAY_FOLLOW_INTO_CARRIAGES.save();
+    }
+
     /**
      * Does a repeat shift-click in the creative menu send the stack to the hotbar? Defaults to
      * {@code true}, and to {@code true} pre-load as well — the creative menu can be open before
@@ -1915,6 +1936,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
             ModConfigSpec.BooleanValue betterXSuppressStartupScreens,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
+            ModConfigSpec.BooleanValue replayFollowIntoCarriages,
             ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
             ModConfigSpec.BooleanValue creativeModBlockTabs,
             ModConfigSpec.BooleanValue creativeModBlocksInSearch,
