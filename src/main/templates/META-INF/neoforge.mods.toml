@@ -127,6 +127,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Vista — third-party, REQUIRED. The TVs the Live Feed plays on; DT's antenna block implements its
+# broadcast seam and the viewer carriage template carries its blocks, so both sides need it.
+[[dependencies.${mod_id}]]
+    modId="vista"
+    type="required"
+    versionRange="[${vista_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Second-lap overworld mods — third-party, REQUIRED. On odd laps the overworld gap before the
 # Nether band is William Wythers' Overhauled Overworld and the gap after it is Biomes O' Plenty
 # (worldgen/SecondLapOverworld). Floors only; Cristel Lib and GlitchCore are declared by the mods

@@ -1,0 +1,19 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "particle": "dungeontrain:block/live_antenna",
+    "all": "dungeontrain:block/live_antenna"
+  },
+  "elements": [
+    { "from": [4, 0, 4], "to": [12, 2, 12],
+      "faces": { "down": {"texture": "#all", "cullface": "down"}, "up": {"texture": "#all"}, "north": {"texture": "#all"}, "south": {"texture": "#all"}, "west": {"texture": "#all"}, "east": {"texture": "#all"} } },
+    { "from": [7, 2, 7], "to": [9, 13, 9],
+      "faces": { "up": {"texture": "#all"}, "north": {"texture": "#all"}, "south": {"texture": "#all"}, "west": {"texture": "#all"}, "east": {"texture": "#all"} } },
+    { "from": [2, 11, 7.5], "to": [14, 12, 8.5],
+      "faces": { "down": {"texture": "#all"}, "up": {"texture": "#all"}, "north": {"texture": "#all"}, "south": {"texture": "#all"}, "west": {"texture": "#all"}, "east": {"texture": "#all"} } },
+    { "from": [7.5, 11, 2], "to": [8.5, 12, 14],
+      "faces": { "down": {"texture": "#all"}, "up": {"texture": "#all"}, "north": {"texture": "#all"}, "south": {"texture": "#all"}, "west": {"texture": "#all"}, "east": {"texture": "#all"} } },
+    { "from": [6.5, 13, 6.5], "to": [9.5, 16, 9.5],
+      "faces": { "up": {"texture": "#all", "uv": [0, 0, 3, 3]}, "north": {"texture": "#all", "uv": [0, 0, 3, 3]}, "south": {"texture": "#all", "uv": [0, 0, 3, 3]}, "west": {"texture": "#all", "uv": [0, 0, 3, 3]}, "east": {"texture": "#all", "uv": [0, 0, 3, 3]} } }
+  ]
+}

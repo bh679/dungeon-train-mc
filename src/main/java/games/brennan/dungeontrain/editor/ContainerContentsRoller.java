@@ -102,6 +102,13 @@ public final class ContainerContentsRoller {
     private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
     /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
     private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
+    private static final long SALT_LIVE_HEADPIECE = 0x11FEFEED5EA7B0A7L;
+    /**
+     * Per-mille of {@code random_live_headpiece} slots that hold the headpiece (the rest a player
+     * book). A constant rather than a config value: loot odds are fair-play governed, and the
+     * headpiece's whole point is that it is scarce — ~one per couple of runs.
+     */
+    static final int LIVE_HEADPIECE_PER_MILLE = 20;
 
     /**
      * Which of the two kinds a {@code stats_book} slot comes up. Its own salt, so the flip does not
@@ -1058,6 +1065,13 @@ public final class ContainerContentsRoller {
             if (!found.isEmpty()) return found;
             return rollPerMille(SharedPhotos.cameraFallbackPerMille(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
                 ? DisposableCamera.create() : rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
+        }
+
+        // The Live Feed headpiece: rare, because one wearer silences whoever is streaming now. The
+        // slot falls through to a player book so it is never empty.
+        if (item == ModItems.RANDOM_LIVE_HEADPIECE.get()) {
+            return rollPerMille(LIVE_HEADPIECE_PER_MILLE, localPos, worldSeed, carriageIndex, slot, SALT_LIVE_HEADPIECE)
+                ? new ItemStack(ModItems.LIVE_HEADPIECE.get()) : rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
         }
 
         // Polaroid's plain instant camera is hidden (DisabledModContent); a loot entry for it is the
