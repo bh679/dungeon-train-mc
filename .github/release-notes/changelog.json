@@ -24203,7 +24203,7 @@
         "ui"
       ],
       "title": "Advancement Tabs",
-      "summary": "Dungeon Train's advancements now have tabs of their own, each with its own final advancement. Finish a whole tab and it turns gold.",
+      "summary": "Dungeon Train's advancements have been reorganised into tabs, each with its own final advancement to earn. Finish a whole tab and it turns gold.",
       "highlights": [
         "Click a tab's final advancement to see everything you still need for it.",
         "New challenges, and advancements for photo albums.",
@@ -24215,7 +24215,7 @@
       "released_in": null,
       "released_at": null,
       "major": true,
-      "description": "## Advancement Tabs\nDungeon Train's advancements now have tabs of their own: Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.",
+      "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
     }
   ]
