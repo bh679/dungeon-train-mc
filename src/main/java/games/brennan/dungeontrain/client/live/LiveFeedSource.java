@@ -49,9 +49,15 @@ public final class LiveFeedSource implements IVideoSource {
             return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
         }
         Status status = LiveStatusPoller.wanted();
-        if (!status.live() || !status.slot() || status.playlistUrl() == null) {
-            // Keep the last picture briefly under the switch animation? No — static is the honest
-            // signal that the broadcast is over.
+        boolean replay = false;
+        String url;
+        if (status.live() && status.slot() && status.playlistUrl() != null) {
+            url = status.playlistUrl();
+        } else if (!status.live() && status.replayUrl() != null) {
+            // Nobody is on: the last ten seconds of the previous broadcast, looped, in black and white.
+            url = status.replayUrl();
+            replay = true;
+        } else {
             return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
         }
         switch (FfmpegSupport.state()) {
@@ -69,7 +75,7 @@ public final class LiveFeedSource implements IVideoSource {
         FFmpeg ffmpeg = FfmpegSupport.get();
         if (ffmpeg == null) return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
 
-        LiveHlsSession s = sessionFor(status.playlistUrl());
+        LiveHlsSession s = sessionFor(url, replay);
         s.touch(ffmpeg);
         LiveFeedTexture tex = texture;
         if (tex == null) return TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
@@ -82,13 +88,13 @@ public final class LiveFeedSource implements IVideoSource {
     }
 
     /** Render thread. */
-    private LiveHlsSession sessionFor(String playlistUrl) {
+    private LiveHlsSession sessionFor(String url, boolean replay) {
         LiveHlsSession s = session;
-        if (s != null && s.playlistUrl().equals(playlistUrl)) return s;
+        if (s != null && s.playlistUrl().equals(url) && s.isReplay() == replay) return s;
         dropSession();
         int w = LiveFeedClientConfig.viewerWidth();
         int h = LiveFeedClientConfig.heightFor(w);
-        s = new LiveHlsSession(playlistUrl, w, h);
+        s = new LiveHlsSession(url, w, h, replay);
         LiveFeedTexture t = (LiveFeedTexture) s.createTextureView(TEXTURE);
         t.register();
         session = s;

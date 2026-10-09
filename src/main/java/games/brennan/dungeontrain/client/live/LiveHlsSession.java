@@ -33,6 +33,7 @@ public final class LiveHlsSession implements IMediaSession {
     private static final long IDLE_KILL_MS = 30_000;
 
     private final String playlistUrl;
+    private final boolean replay;
     private final int width, height;
     private final NativeImage back;
     private final Object lock = new Object();
@@ -44,7 +45,16 @@ public final class LiveHlsSession implements IMediaSession {
     private Thread reader;
 
     public LiveHlsSession(String playlistUrl, int width, int height) {
+        this(playlistUrl, width, height, false);
+    }
+
+    /**
+     * {@code replay}: the URL is one finished segment of the last stream, looped forever in black
+     * and white with a little noise — what a dark channel shows between broadcasts.
+     */
+    public LiveHlsSession(String playlistUrl, int width, int height, boolean replay) {
         this.playlistUrl = playlistUrl;
+        this.replay = replay;
         this.width = width;
         this.height = height;
         this.back = new NativeImage(NativeImage.Format.RGBA, width, height, false);
@@ -107,14 +117,21 @@ public final class LiveHlsSession implements IMediaSession {
     }
 
     private String[] args() {
-        List<String> a = new ArrayList<>(List.of(
-            "-hide_banner", "-loglevel", "error", "-nostdin",
-            "-re", "-live_start_index", "-1",
-            "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
-            "-i", playlistUrl,
-            "-an", "-vf", "scale=" + width + ":" + height,
-            "-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgb24", "-"));
+        List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin", "-re"));
+        if (replay) {
+            a.addAll(List.of("-stream_loop", "-1", "-i", playlistUrl, "-an",
+                "-vf", "scale=" + width + ":" + height + ",format=gray,noise=alls=18:allf=t+u,format=rgb24"));
+        } else {
+            a.addAll(List.of("-live_start_index", "-1",
+                "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
+                "-i", playlistUrl, "-an", "-vf", "scale=" + width + ":" + height));
+        }
+        a.addAll(List.of("-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgb24", "-"));
         return a.toArray(new String[0]);
+    }
+
+    public boolean isReplay() {
+        return replay;
     }
 
     private static boolean readFully(InputStream in, byte[] buf) throws IOException {

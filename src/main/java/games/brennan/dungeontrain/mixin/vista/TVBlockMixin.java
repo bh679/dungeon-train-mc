@@ -14,7 +14,12 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
+import games.brennan.dungeontrain.registry.ModItems;
+import net.mehvahdjukaar.vista.common.connection.IConnectedBlock;
+import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
+import net.minecraft.world.level.block.Block;
 
 /**
  * Vista TVs as latches: a redstone pulse or an empty-hand click toggles them, a steady signal is not
@@ -24,6 +29,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>Click rules: empty hand → toggle power. Sneak + empty hand keeps Vista's behaviour (pause while
  * playing, eject the cassette while off). A cassette in hand still inserts.</p>
+ *
+ * <p>A TV that comes on with an empty slot tunes itself: the server puts a Live Feed Cassette in, so
+ * switching any TV on shows the broadcast (or the replay) with no setup at all.</p>
  */
 @Mixin(value = TVBlock.class, remap = false)
 public abstract class TVBlockMixin {
@@ -43,5 +51,19 @@ public abstract class TVBlockMixin {
         if (!stack.isEmpty() || player.isSecondaryUseActive()) return;
         TvPowerToggle.toggle(level, pos);
         cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+    }
+
+    @Inject(method = "neighborChanged", at = @At("TAIL"))
+    private void dungeontrain$autoTune(BlockState state, Level level, BlockPos pos, Block neighborBlock, BlockPos neighborPos,
+                                       boolean movedByPiston, CallbackInfo ci) {
+        if (level.isClientSide) return;
+        BlockState now = level.getBlockState(pos);
+        if (!now.is(state.getBlock()) || !now.getValue(TVBlock.POWER_STATE).isOn()) return;
+        if (((IConnectedBlock) (Object) this).findMasterBlockEntity(level, pos, now) instanceof TVBlockEntity tv
+                && tv.getItem(0).isEmpty()) {
+            tv.setItem(0, new ItemStack(ModItems.LIVE_CASSETTE.get()));
+            tv.setChanged();
+            level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
+        }
     }
 }
