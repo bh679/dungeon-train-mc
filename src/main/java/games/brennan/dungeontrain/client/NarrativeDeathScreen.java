@@ -41,11 +41,11 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.RideGalleryPacket;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
+import games.brennan.dungeontrain.client.snapshot.DeathPhotoUploads;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
 import games.brennan.dungeontrain.client.snapshot.RideGalleryScreen;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
-import games.brennan.dungeontrain.client.snapshot.SnapshotMeta;
 import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
@@ -78,7 +78,6 @@ import org.slf4j.Logger;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -646,36 +645,36 @@ public final class NarrativeDeathScreen extends Screen {
     private void maybeSendRidePhoto() {
         if (photoSent) return;
         photoSent = true;
-        RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
-        // Kept safely under DeathPhotoPacket's 1 MB codec cap — a hi-res (DH+shaders) shot is shrunk to fit.
-        byte[] jpeg = fall != null ? fall.photoBytes(1_000_000) : null;
-        DungeonTrainNet.sendToServer(new DeathPhotoPacket(jpeg != null ? jpeg : new byte[0]));
+        DeathPhotoUploads.sendFallPhoto(bgFor(0)); // page 0 is FALL, assigned a SCENIC shot
     }
 
     /**
      * Once per death, upload the full tagged death-screen gallery to the relay's Photos page
-     * ({@link RideGalleryPacket} → the server's {@code ShotUploadClient}). This is the whole set of
-     * photos shown across the death pages — deduped by identity, since the assigner reuses a shot when
-     * there are more pages than photos — each carrying its {@code SnapshotTag} and the biome/band/
-     * difficulty/cart sampled at capture. Separate from {@link #maybeSendRidePhoto()} (the single
-     * Discord-embed photo). Inherits the ride-snapshot config gate: {@link #assignBackgrounds()}
-     * leaves {@code pageBackgrounds} empty when snapshots are off, so this sends nothing then.
+     * ({@link RideGalleryPacket} → the server's {@code ShotUploadClient}): every photo shown across
+     * the death pages, each carrying its {@code SnapshotTag} and capture-time context. Encoded off the
+     * client thread by {@link DeathPhotoUploads}. Inherits the ride-snapshot config gate:
+     * {@link #assignBackgrounds()} leaves {@code pageBackgrounds} empty when snapshots are off.
      */
     private void maybeSendRideGallery() {
         if (gallerySent) return;
         gallerySent = true;
-        Set<RideSnapshot> seen = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
-        List<RideGalleryPacket.Photo> photos = new ArrayList<>();
-        for (RideSnapshot s : pageBackgrounds) {
-            if (s == null || !seen.add(s)) continue; // skip nulls + reused-across-pages duplicates
-            // Kept safely under RideGalleryPacket's 2 MB per-photo codec cap (hi-res shots may ride the top of this range).
-            byte[] jpeg = s.photoBytes(1_950_000);
-            if (jpeg == null || jpeg.length == 0) continue;
-            SnapshotMeta m = s.meta();
-            String tag = s.tag() != null ? s.tag().name() : "";
-            photos.add(new RideGalleryPacket.Photo(tag, m.biome(), m.band(), m.difficulty(), m.cart(), m.gfx(), m.shaderpack(), s.photoId(), jpeg));
-        }
-        if (!photos.isEmpty()) DungeonTrainNet.sendToServer(new RideGalleryPacket(photos));
+        DeathPhotoUploads.sendGallery(pageBackgrounds);
+    }
+
+    /**
+     * The photos this screen will most likely assign, worked out before it exists so the death
+     * moment ({@link DeathMomentScreen}) can start decoding them. Uses the page deck as it stands at
+     * death; later pages (a late survey, the mod page) only ever add wildcard pages, so page 0 —
+     * the fall photo — always matches what {@link #assignBackgrounds()} will pick.
+     */
+    static RideSnapshot[] provisionalBackgrounds() {
+        if (!ClientDisplayConfig.isRideSnapshotsEnabled() || RideSnapshotGallery.isEmpty()) return NO_BACKGROUNDS;
+        List<List<SnapshotTag>> chains = new ArrayList<>();
+        for (Kind k : List.of(Kind.FALL, Kind.DEEDS, Kind.GEAR, Kind.LIVES)) chains.add(chainFor(k));
+        for (int i = 0; i < SurveyClientState.questions().size(); i++) chains.add(chainFor(Kind.SURVEY));
+        chains.add(chainFor(Kind.DONATE));
+        chains.add(chainFor(Kind.PLATFORM));
+        return DeathBackgroundAssigner.assign(chains, RideSnapshotGallery.all());
     }
 
     @Override
