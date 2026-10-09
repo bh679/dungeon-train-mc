@@ -27,7 +27,7 @@ public final class LiveFeedClientInit {
         @SubscribeEvent
         public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
             Minecraft.getInstance().execute(() -> {
-                LiveFeedSource.MAIN.dropSession();
+                LiveFeedSource.MAIN.dropAll();
                 LiveStatusPoller.reset();
             });
         }

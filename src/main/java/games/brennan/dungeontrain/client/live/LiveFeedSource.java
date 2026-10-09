@@ -36,6 +36,11 @@ public final class LiveFeedSource implements IVideoSource {
 
     @Nullable private LiveHlsSession session;
     @Nullable private LiveFeedTexture texture;
+    /** The next session, decoding in the background; it replaces {@link #session} at its first frame. */
+    @Nullable private LiveHlsSession pending;
+    @Nullable private LiveFeedTexture pendingTexture;
+    private static final ResourceLocation PENDING_TEXTURE =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live/main_next");
 
     private LiveFeedSource() {}
 
@@ -75,7 +80,7 @@ public final class LiveFeedSource implements IVideoSource {
         FFmpeg ffmpeg = FfmpegSupport.get();
         if (ffmpeg == null) return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
 
-        LiveHlsSession s = sessionFor(url, replay);
+        LiveHlsSession s = sessionFor(url, replay, ffmpeg);
         s.touch(ffmpeg);
         LiveFeedTexture tex = texture;
         if (tex == null) return TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
@@ -87,19 +92,59 @@ public final class LiveFeedSource implements IVideoSource {
         return TvScreenVertexConsumers.getSingleTextureVC(buffer, TEXTURE, overlay, pixelEffectRes, switchAnim, staticAnim);
     }
 
-    /** Render thread. */
-    private LiveHlsSession sessionFor(String url, boolean replay) {
+    /**
+     * Render thread. A source change (takeover, replay ↔ live) does not cut straight over: the new
+     * session decodes alongside the old one and takes the screen at its first frame, so a viewer
+     * never sees "waiting" between two pictures. With no picture yet, the switch is immediate.
+     */
+    private LiveHlsSession sessionFor(String url, boolean replay, FFmpeg ffmpeg) {
         LiveHlsSession s = session;
-        if (s != null && s.playlistUrl().equals(url) && s.isReplay() == replay) return s;
-        dropSession();
+        if (s != null && s.playlistUrl().equals(url) && s.isReplay() == replay) {
+            dropPending();
+            return s;
+        }
+        if (s == null || texture == null || !texture.hasPicture()) {
+            dropSession();
+            session = newSession(url, replay);
+            texture = (LiveFeedTexture) session.createTextureView(TEXTURE);
+            texture.register();
+            return session;
+        }
+        LiveHlsSession p = pending;
+        if (p == null || !p.playlistUrl().equals(url) || p.isReplay() != replay) {
+            dropPending();
+            pending = newSession(url, replay);
+            pendingTexture = (LiveFeedTexture) pending.createTextureView(PENDING_TEXTURE);
+            pendingTexture.register();
+            p = pending;
+        }
+        p.touch(ffmpeg);
+        if (p.frameSequence() > 0) {
+            // The new picture is here: promote it. The texture id the TV draws stays TEXTURE.
+            dropSession();
+            session = p;
+            texture = (LiveFeedTexture) p.createTextureView(TEXTURE);
+            texture.register();
+            LiveFeedTexture pt = pendingTexture;
+            if (pt != null) { pt.unregister(); pt.close(); }
+            pending = null;
+            pendingTexture = null;
+            return session;
+        }
+        return s; // keep showing the old picture meanwhile
+    }
+
+    private static LiveHlsSession newSession(String url, boolean replay) {
         int w = LiveFeedClientConfig.viewerWidth();
         int h = LiveFeedClientConfig.heightFor(w);
-        s = new LiveHlsSession(url, w, h, replay);
-        LiveFeedTexture t = (LiveFeedTexture) s.createTextureView(TEXTURE);
-        t.register();
-        session = s;
-        texture = t;
-        return s;
+        return new LiveHlsSession(url, w, h, replay);
+    }
+
+    private void dropPending() {
+        LiveFeedTexture pt = pendingTexture;
+        if (pt != null) { pt.unregister(); pt.close(); pendingTexture = null; }
+        LiveHlsSession p = pending;
+        if (p != null) { p.close(); pending = null; }
     }
 
     /** Render thread: forget the current session and its texture (world unload, takeover). */
@@ -108,5 +153,11 @@ public final class LiveFeedSource implements IVideoSource {
         if (t != null) { t.unregister(); t.close(); texture = null; }
         LiveHlsSession s = session;
         if (s != null) { s.close(); session = null; }
+    }
+
+    /** Render thread: everything, including a pending switch (world unload). */
+    public void dropAll() {
+        dropPending();
+        dropSession();
     }
 }
