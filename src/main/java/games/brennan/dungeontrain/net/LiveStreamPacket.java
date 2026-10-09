@@ -11,8 +11,8 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 /**
  * Server → client: you are (or are no longer) the Live Feed streamer.
  *
- * <p>The server is the only authority on who wears the broadcast headpiece — it consumes the item
- * and sends {@link Action#START} to that one player. Everything relay-facing (claiming the channel,
+ * <p>The server is the only authority on who wears the broadcast camcorder — it sees the head slot
+ * change and sends {@link Action#START} to that one player. Everything relay-facing (claiming the channel,
  * encoding, uploading) happens on the streamer's own client, which is why this is a packet even in
  * single-player: a dedicated server works with no extra code, and the integrated server is just the
  * case where both halves share a JVM.</p>
@@ -30,7 +30,9 @@ public record LiveStreamPacket(Action action, String by) implements CustomPacket
         /** The streamer died. */
         STOP_DIED,
         /** The streamer left the world (sent before the connection closes; the client also stops itself). */
-        STOP_LEFT
+        STOP_LEFT,
+        /** The streamer took the camcorder off. */
+        STOP_REMOVED
     }
 
     private static final int MAX_NAME = 48;

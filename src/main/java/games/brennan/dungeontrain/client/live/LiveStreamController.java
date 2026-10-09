@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
+import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
@@ -16,6 +17,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import net.neoforged.neoforge.event.GameShuttingDownEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -80,6 +82,7 @@ public final class LiveStreamController {
             case STOP_REPLACED -> stop(Component.translatable("chat.dungeontrain.live.replaced_here", packet.by()));
             case STOP_DIED -> stop(Component.translatable("chat.dungeontrain.live.ended_death"));
             case STOP_LEFT -> stop(null);
+            case STOP_REMOVED -> stop(Component.translatable("chat.dungeontrain.live.removed"));
         }
     }
 
@@ -90,6 +93,7 @@ public final class LiveStreamController {
         if (state != State.IDLE) stop(null);
         if (!LiveFeedClientConfig.streamingEnabled()) {
             say(Component.translatable("chat.dungeontrain.live.disabled").withStyle(ChatFormatting.GRAY));
+            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
             return;
         }
         generation++;
@@ -99,6 +103,7 @@ public final class LiveStreamController {
             case OFF, FAILED -> {
                 say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
                 state = State.IDLE;
+                tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
             }
             case DOWNLOADING -> say(Component.translatable("chat.dungeontrain.live.preparing").withStyle(ChatFormatting.GRAY));
             case READY -> claimChannel();
@@ -119,11 +124,13 @@ public final class LiveStreamController {
                 case OFF, FAILED -> {
                     say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
                     state = State.IDLE;
+                    tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
                 }
                 default -> { /* still downloading */ }
             }
         } else if (state == State.STREAMING && encoder != null && encoder.died()) {
             stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
+            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         }
     }
 
@@ -140,6 +147,7 @@ public final class LiveStreamController {
             if (c == null) {
                 say(Component.translatable("chat.dungeontrain.live.unreachable").withStyle(ChatFormatting.RED));
                 state = State.IDLE;
+                tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
                 return;
             }
             beginStreaming(c);
@@ -172,12 +180,20 @@ public final class LiveStreamController {
             say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
             teardown(false);
             state = State.IDLE;
+            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         }
     }
 
     private void cutOff(String by) {
         if (state != State.STREAMING) return;
         stop(Component.translatable(by == null || by.isBlank() ? "chat.dungeontrain.live.cut_off" : "chat.dungeontrain.live.cut_off_by", by).withStyle(ChatFormatting.YELLOW), false);
+        tellServerEnded(LiveStreamEndedPacket.Reason.CUT_OFF);
+    }
+
+    /** The server owns the camcorder on our head; it needs to know when the stream ended without its say-so. */
+    private static void tellServerEnded(LiveStreamEndedPacket.Reason reason) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveStreamEndedPacket(reason));
     }
 
     /** Clean stop: flush the ENDLIST playlist, tell the relay, say why. */

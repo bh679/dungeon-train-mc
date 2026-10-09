@@ -16,12 +16,14 @@ import net.minecraft.world.InteractionResultHolder;
 import java.util.List;
 
 /**
- * The broadcast headpiece: wear it and everyone watching the Live Feed sees through your eyes.
+ * The broadcast camcorder: wear it on your head and everyone watching the Live Feed sees through
+ * your eyes.
  *
- * <p>Head slot, no armour value, consumed the instant it is equipped — the server-side
- * {@code LiveFeedEvents} sees the equipment change, burns the item away and tells this client to
- * start streaming, cutting off whoever was streaming before. Found in chests
- * ({@code ContainerContentsRoller}); nothing renders on the head because it never stays there.</p>
+ * <p>Head slot, no armour value. It stays on while you stream — vanilla's {@code CustomHeadLayer}
+ * draws any non-armour head item with the model's {@code head} display, so the camcorder model is
+ * visible to other players. The server-side {@code LiveFeedEvents} sees the equipment change and
+ * tells this client to start streaming; taking it off stops the stream and keeps the item; being
+ * cut off by another streamer burns it away. Found in chests ({@code ContainerContentsRoller}).</p>
  */
 public class LiveHeadpieceItem extends Item implements Equipable {
 
