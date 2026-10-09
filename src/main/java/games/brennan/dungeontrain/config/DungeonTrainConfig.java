@@ -218,8 +218,13 @@ public final class DungeonTrainConfig {
     public static final double DEFAULT_SHARED_ROOM_CHANCE = 1.0 / 15.0;
     public static final double MIN_SHARED_ROOM_CHANCE = 0.0;
     public static final double MAX_SHARED_ROOM_CHANCE = 1.0;
-    /** One Group carriage in fifty drifts — one group-long build travelling the relay whole. */
-    public static final double DEFAULT_SHARED_GROUP_CHANCE = 0.02;
+    /** One Group carriage in ten drifts — one group-long build travelling the relay whole. */
+    public static final double DEFAULT_SHARED_GROUP_CHANCE = 0.10;
+    /**
+     * The Group drift chance shipped before {@link #CURRENT_CONFIG_VERSION} 5 (one in fifty). Read by the
+     * v4 -> v5 step of {@link #runPendingMigrations()} to tell a stale shipped default from an operator's pick.
+     */
+    public static final double LEGACY_SHARED_GROUP_CHANCE = 0.02;
     public static final double MIN_SHARED_GROUP_CHANCE = 0.0;
     public static final double MAX_SHARED_GROUP_CHANCE = 1.0;
     public static final double DEFAULT_SHARED_CARRIAGE_POOL_CHANCE = 0.65;
@@ -326,7 +331,7 @@ public final class DungeonTrainConfig {
      *
      * <p>0 = pre-versioning (any file written before this mechanism existed).</p>
      */
-    public static final int CURRENT_CONFIG_VERSION = 4;
+    public static final int CURRENT_CONFIG_VERSION = 5;
     public static final int DEFAULT_CONFIG_VERSION = 0;
     public static final int MIN_CONFIG_VERSION = 0;
     public static final int MAX_CONFIG_VERSION = 1_000_000;
@@ -734,7 +739,7 @@ public final class DungeonTrainConfig {
                 .comment("The probability a Group carriage (one carriage spanning the whole group) DRIFTS — travels the relay",
                         "as one group-long build. A drifting one uploads whole when a player edits it and rolls the",
                         "pool/own/fresh split above for whether it arrives as another world's copy; the rest are the plain",
-                        "Group template and never touch the relay. Rolled deterministically per group. Default 0.02.")
+                        "Group template and never touch the relay. Rolled deterministically per group. Default 0.10.")
                 .defineInRange("sharedGroupChance", DEFAULT_SHARED_GROUP_CHANCE,
                         MIN_SHARED_GROUP_CHANCE, MAX_SHARED_GROUP_CHANCE);
         ModConfigSpec.IntValue sharedCarriageMaxEntities = b
@@ -1287,6 +1292,15 @@ public final class DungeonTrainConfig {
             LOGGER.info("[DungeonTrain] Config migration v{}->v{}: onboarding stages now {} + {} carriages.",
                     from, CURRENT_CONFIG_VERSION,
                     FIRST_LEVEL_NO_HOSTILES_CARRIAGES.get(), FIRST_LEVEL_EASY_MOBS_CARRIAGES.get());
+        }
+
+        // v4 -> v5: Group carriages drift one in ten instead of one in fifty. Every install that has
+        // launched holds the old 0.02 on disk, so the new default would otherwise reach fresh installs
+        // only. Moves only a value still at the old shipped default — an operator's own pick is kept.
+        if (from < 5 && Math.abs(SHARED_GROUP_CHANCE.get() - LEGACY_SHARED_GROUP_CHANCE) < 1e-9) {
+            SHARED_GROUP_CHANCE.set(DEFAULT_SHARED_GROUP_CHANCE);
+            LOGGER.info("[DungeonTrain] Config migration v{}->v{}: Group carriage drift chance now {}.",
+                    from, CURRENT_CONFIG_VERSION, DEFAULT_SHARED_GROUP_CHANCE);
         }
 
         CONFIG_VERSION.set(CURRENT_CONFIG_VERSION);
