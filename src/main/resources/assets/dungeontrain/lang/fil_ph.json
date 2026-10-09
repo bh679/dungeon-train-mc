@@ -228,6 +228,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "Lahat sumakay!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Pindutin ang Space para Magsimula",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Pindutin ang Space para laktawan",
+  "gui.dungeontrain.viewfinder.selfie": "Selfie",
+  "gui.dungeontrain.viewfinder.front": "Harap",
   "gui.dungeontrain.loading.title": "Nilo-load ang mundo…",
   "gui.dungeontrain.loading.phase.assembling": "Binubuo ang tren",
   "gui.dungeontrain.loading.phase.spawning_train": "Isinisibol ang Dungeon Train…",

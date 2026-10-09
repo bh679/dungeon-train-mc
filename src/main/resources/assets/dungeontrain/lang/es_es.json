@@ -251,6 +251,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "¡Todos a bordo!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Pulsa Espacio para empezar",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Pulsa Espacio para saltar",
+  "gui.dungeontrain.viewfinder.selfie": "Selfi",
+  "gui.dungeontrain.viewfinder.front": "Frontal",
   "gui.dungeontrain.loading.title": "Cargando el mundo…",
   "gui.dungeontrain.loading.phase.assembling": "Ensamblando el tren",
   "gui.dungeontrain.loading.phase.spawning_train": "Generando el Dungeon Train…",

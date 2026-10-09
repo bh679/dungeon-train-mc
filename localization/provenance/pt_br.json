@@ -251,6 +251,8 @@
   "gui.dungeontrain.cinematic.loading.ready": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "e7ab7362e4977925"},
   "gui.dungeontrain.cinematic.press_space_to_start": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "d83d2382719226eb"},
   "gui.dungeontrain.cinematic.press_space_to_skip": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "d4c5a5886a77909b"},
+  "gui.dungeontrain.viewfinder.selfie": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "7891f3b3726e9bf6"},
+  "gui.dungeontrain.viewfinder.front": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a617590202898821"},
   "gui.dungeontrain.loading.title": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "f8b33176b16c511c"},
   "gui.dungeontrain.loading.phase.assembling": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "7127e5e8260dabad"},
   "gui.dungeontrain.loading.phase.spawning_train": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "dc9c5d13e3fc3364"},

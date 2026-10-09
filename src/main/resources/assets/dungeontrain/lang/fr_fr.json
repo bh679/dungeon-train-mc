@@ -251,6 +251,8 @@
   "gui.dungeontrain.cinematic.loading.ready": "En voiture !",
   "gui.dungeontrain.cinematic.press_space_to_start": "Appuie sur Espace pour commencer",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Appuie sur Espace pour passer",
+  "gui.dungeontrain.viewfinder.selfie": "Selfie",
+  "gui.dungeontrain.viewfinder.front": "Face",
   "gui.dungeontrain.loading.title": "Chargement du monde…",
   "gui.dungeontrain.loading.phase.assembling": "Assemblage du train",
   "gui.dungeontrain.loading.phase.spawning_train": "Apparition du Dungeon Train…",
