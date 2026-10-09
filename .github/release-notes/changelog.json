@@ -24212,6 +24212,24 @@
       "released_at": null
     },
     {
+      "id": "dh-ghost-terrain-dimensional-carriages-shaders",
+      "version": "0.1194.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "train"
+      ],
+      "title": "Shader rendering fix inside dimensional carriages",
+      "summary": "Fixed a visual glitch inside dimensional carriages for players running shaders with Distant Horizons.",
+      "highlights": [],
+      "pr": 1884,
+      "date": "2026-10-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "advancement-tabs",
       "version": "0.1195.0",
       "type": "feat",
@@ -24226,7 +24244,8 @@
         "Click a tab's final advancement to see everything you still need for it.",
         "New challenges, and advancements for photo albums.",
         "Other mods' advancement tabs are tucked away by default; switch them back on in Options.",
-        "Group carriages built in other players' worlds turn up more often."
+        "Group carriages built in other players' worlds turn up more often.",
+        "Bug fixes"
       ],
       "pr": 1883,
       "date": "2026-10-09",
@@ -24234,7 +24253,7 @@
       "released_in": null,
       "released_at": null,
       "major": true,
-      "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.\n- Group carriages built in other players' worlds turn up more often.",
+      "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.\n- Group carriages built in other players' worlds turn up more often.\n- Bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
     }
   ]
