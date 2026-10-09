@@ -19,8 +19,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Vista {@link IVideoSource} that is the Live Feed: the picture every TV linked to a
- * {@code LiveAntennaBlockEntity} shows.
+ * Vista {@link IVideoSource} that is the Live Feed: the picture every TV holding a Live Feed Cassette
+ * ({@code compat/vista/LiveBroadcastLocation} → {@code LiveBroadcastSource}) shows.
  *
  * <p>Static when nobody is live (or the viewer cap is full), Vista's "downloading" bars while its
  * ffmpeg is fetched, the waiting pattern while the first frames decode, then the stream. One

@@ -140,7 +140,7 @@ public final class ModCreativeTabs {
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
                 output.accept(ModItems.LIVE_HEADPIECE.get());
                 output.accept(ModItems.RANDOM_LIVE_HEADPIECE.get());
-                output.accept(ModBlocks.LIVE_ANTENNA_ITEM.get());
+                output.accept(ModItems.LIVE_CASSETTE.get());
                 output.accept(ModItems.RANDOM_PLAYERPHOTO.get());
                 output.accept(ModItems.RANDOM_PLAYERPHOTOALBUM.get());
                 output.accept(ModItems.YOUR_PHOTOALBUM.get());

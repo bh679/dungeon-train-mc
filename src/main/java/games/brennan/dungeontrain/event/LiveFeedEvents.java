@@ -18,6 +18,8 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.UUID;
@@ -36,6 +38,12 @@ import java.util.UUID;
 public final class LiveFeedEvents {
 
     private LiveFeedEvents() {}
+
+    /** Every server level learns that the feed id lives at the block-less live location. */
+    @SubscribeEvent
+    public static void onLevelLoad(LevelEvent.Load event) {
+        if (event.getLevel() instanceof ServerLevel level) LiveBroadcastLocation.link(level);
+    }
 
     @SubscribeEvent
     public static void onEquipmentChange(LivingEquipmentChangeEvent event) {

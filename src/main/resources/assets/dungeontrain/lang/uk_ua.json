@@ -2399,7 +2399,6 @@
   "block.dungeontrain.stage_glass_secondary": "Фарбоване скло етапу (додаткове)",
   "block.dungeontrain.stage_glass_pane_primary": "Фарбована шибка етапу (основна)",
   "block.dungeontrain.stage_glass_pane_secondary": "Фарбована шибка етапу (додаткова)",
-  "block.dungeontrain.live_antenna": "Антена Прямого ефіру",
   "gui.dungeontrain.developer_popup.title": "Повідомлення від розробника",
   "gui.dungeontrain.developer_popup.author": "Бреннан — розробник",
   "gui.dungeontrain.developer_popup.message": "Привіт! Що думаєш про гру? Я б із радістю поговорив із тобою в Discord про те, чого їй бракує :)",
@@ -4580,5 +4579,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "Знайди фотоапарат або світлину.",
   "advancements.dungeontrain.tab.train_explorer": "Дослідник потяга",
   "advancements.dungeontrain.tab.others": "Інші",
-  "advancements.dungeontrain.tab.secrete_menu": "Секретне меню"
+  "advancements.dungeontrain.tab.secrete_menu": "Секретне меню",
+  "item.dungeontrain.live_cassette": "Касета Прямого ефіру",
+  "item.dungeontrain.live_cassette.tooltip": "Налаштована на Прямий ефір. Встав у будь-який телевізор, щоб дивитися того, хто зараз в ефірі."
 }

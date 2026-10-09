@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": "Kính màu chặng (Phụ)",
   "block.dungeontrain.stage_glass_pane_primary": "Tấm kính màu chặng (Chính)",
   "block.dungeontrain.stage_glass_pane_secondary": "Tấm kính màu chặng (Phụ)",
-  "block.dungeontrain.live_antenna": "Ăng-ten Phát trực tiếp",
   "gui.dungeontrain.developer_popup.title": "Một tin nhắn từ nhà phát triển",
   "gui.dungeontrain.developer_popup.author": "Brennan — Nhà phát triển",
   "gui.dungeontrain.developer_popup.message": "Chào bạn! Bạn thấy trò chơi thế nào? Tôi rất muốn trò chuyện với bạn trên Discord về những gì bạn nghĩ nó cần thêm :)",
@@ -4479,5 +4478,7 @@
   "gui.dungeontrain.low_memory.ok": "Đã hiểu",
   "gui.dungeontrain.low_memory.dont_show": "Không hiện lại",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Thế giới này đang bật \"Giữ hành trang\".",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train được cân bằng quanh việc cái chết phải lấy đi của bạn thứ gì đó, nên từ đây thế giới này giữ thống kê của riêng nó. Tắt lại luật chơi cũng không đổi được điều đó — số đồ bạn mang qua một lần chết thì đã là của bạn rồi."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train được cân bằng quanh việc cái chết phải lấy đi của bạn thứ gì đó, nên từ đây thế giới này giữ thống kê của riêng nó. Tắt lại luật chơi cũng không đổi được điều đó — số đồ bạn mang qua một lần chết thì đã là của bạn rồi.",
+  "item.dungeontrain.live_cassette": "Băng Phát trực tiếp",
+  "item.dungeontrain.live_cassette.tooltip": "Đã dò sẵn Phát trực tiếp. Cho vào bất kỳ TV nào để xem ai đang phát sóng."
 }

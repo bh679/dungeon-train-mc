@@ -1915,7 +1915,6 @@
   "block.dungeontrain.stage_glass_secondary": "Barwione szkło etapu (Drugorzędny)",
   "block.dungeontrain.stage_glass_pane_primary": "Barwiona szyba etapu (Główny)",
   "block.dungeontrain.stage_glass_pane_secondary": "Barwiona szyba etapu (Drugorzędny)",
-  "block.dungeontrain.live_antenna": "Antena Przekazu na żywo",
   "gui.dungeontrain.developer_popup.title": "Wiadomość od dewelopera",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "Cześć! Co sądzisz o grze? Chętnie pogadam z tobą na Discordzie o tym, czego twoim zdaniem jej brakuje :)",
@@ -4583,5 +4582,7 @@
   "gui.dungeontrain.low_memory.ok": "Rozumiem",
   "gui.dungeontrain.low_memory.dont_show": "Nie pokazuj więcej",
   "chat.dungeontrain.free_play.cause.keep_inventory": "W tym świecie włączone jest „Zachowaj ekwipunek”.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train jest wyważony wokół tego, że śmierć coś cię kosztuje, więc od tej chwili ten świat zatrzymuje swoje statystyki dla siebie. Ponowne wyłączenie reguły gry tego nie zmieni — sprzęt, który przeniosłeś przez śmierć, już jest twój."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train jest wyważony wokół tego, że śmierć coś cię kosztuje, więc od tej chwili ten świat zatrzymuje swoje statystyki dla siebie. Ponowne wyłączenie reguły gry tego nie zmieni — sprzęt, który przeniosłeś przez śmierć, już jest twój.",
+  "item.dungeontrain.live_cassette": "Kaseta Przekazu na żywo",
+  "item.dungeontrain.live_cassette.tooltip": "Nastrojona na Przekaz na żywo. Włóż ją do dowolnego telewizora, by zobaczyć, kto transmituje."
 }

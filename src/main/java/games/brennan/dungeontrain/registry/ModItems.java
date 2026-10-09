@@ -2,11 +2,14 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.photo.WornPhotographItem;
+import games.brennan.dungeontrain.compat.vista.LiveBroadcastSource;
+import games.brennan.dungeontrain.item.LiveCassetteItem;
 import games.brennan.dungeontrain.item.LiveHeadpieceItem;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.mehvahdjukaar.vista.VistaMod;
 import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
@@ -80,6 +83,16 @@ public final class ModItems {
     public static final DeferredItem<Item> LIVE_HEADPIECE = ITEMS.register(
         "live_headpiece",
         () -> new LiveHeadpieceItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE))
+    );
+
+    /**
+     * A Vista cassette already tuned to the Live Feed ({@code item.LiveCassetteItem}): its default
+     * {@code vista:linked_feed} component is the feed id, so any TV it goes into shows the stream.
+     */
+    public static final DeferredItem<Item> LIVE_CASSETTE = ITEMS.register(
+        "live_cassette",
+        () -> new LiveCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
+            .component(VistaMod.LINKED_FEED_COMPONENT.get(), LiveBroadcastSource.MAIN_FEED_UUID))
     );
 
     /**

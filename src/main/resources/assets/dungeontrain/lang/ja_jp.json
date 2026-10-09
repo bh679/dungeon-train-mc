@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": "ステージの色付きガラス（サブ）",
   "block.dungeontrain.stage_glass_pane_primary": "ステージの色付きガラス板（メイン）",
   "block.dungeontrain.stage_glass_pane_secondary": "ステージの色付きガラス板（サブ）",
-  "block.dungeontrain.live_antenna": "ライブ配信アンテナ",
   "gui.dungeontrain.developer_popup.title": "開発者からのメッセージ",
   "gui.dungeontrain.developer_popup.author": "Brennan — 開発者",
   "gui.dungeontrain.developer_popup.message": "やあ！ このゲームどう思う？ どんな要素が必要か、Discordで君と語り合えたら嬉しいな :)",
@@ -4479,5 +4478,7 @@
   "gui.dungeontrain.low_memory.ok": "わかった",
   "gui.dungeontrain.low_memory.dont_show": "今後表示しない",
   "chat.dungeontrain.free_play.cause.keep_inventory": "このワールドでは「インベントリを保持」が有効です。",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train は、死ぬことに代償があることを前提に調整されています。そのため、このワールドはここから先の統計を自分の中だけに留めます。ゲームルールを戻しても変わりません — 死をくぐり抜けて持ち越した装備は、もうあなたのものです。"
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train は、死ぬことに代償があることを前提に調整されています。そのため、このワールドはここから先の統計を自分の中だけに留めます。ゲームルールを戻しても変わりません — 死をくぐり抜けて持ち越した装備は、もうあなたのものです。",
+  "item.dungeontrain.live_cassette": "ライブ配信カセット",
+  "item.dungeontrain.live_cassette.tooltip": "ライブ配信に合わせてある。どのテレビに入れても、今放送している人の映像が見られる。"
 }

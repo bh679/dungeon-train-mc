@@ -1150,7 +1150,6 @@
       "block.dungeontrain.stage_glass_secondary",
       "block.dungeontrain.stage_glass_pane_primary",
       "block.dungeontrain.stage_glass_pane_secondary",
-      "block.dungeontrain.live_antenna",
       "chat.dungeontrain.editor_welcome.title",
       "chat.dungeontrain.editor_welcome.line1",
       "chat.dungeontrain.editor_welcome.line2",
@@ -3465,7 +3464,9 @@
       "gui.dungeontrain.low_memory.ok",
       "gui.dungeontrain.low_memory.dont_show",
       "chat.dungeontrain.free_play.cause.keep_inventory",
-      "chat.dungeontrain.free_play.keep_inventory_on"
+      "chat.dungeontrain.free_play.keep_inventory_on",
+      "item.dungeontrain.live_cassette",
+      "item.dungeontrain.live_cassette.tooltip"
     ],
     "adventureitemnames": [
       "screen.adventureitemnames.action.delete",

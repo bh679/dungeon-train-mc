@@ -2402,7 +2402,6 @@
   "block.dungeontrain.stage_glass_secondary": "Sticlă colorată de etapă (Secundar)",
   "block.dungeontrain.stage_glass_pane_primary": "Panou de sticlă colorată de etapă (Principal)",
   "block.dungeontrain.stage_glass_pane_secondary": "Panou de sticlă colorată de etapă (Secundar)",
-  "block.dungeontrain.live_antenna": "Antenă pentru Fluxul în direct",
   "gui.dungeontrain.developer_popup.title": "Un mesaj de la dezvoltator",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "Salut! Ce părere ai despre joc? Mi-ar plăcea să vorbim pe Discord despre ce crezi că îi lipsește :)",
@@ -4583,5 +4582,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": "Găsește un aparat foto sau o fotografie.",
   "advancements.dungeontrain.tab.train_explorer": "Explorator de tren",
   "advancements.dungeontrain.tab.others": "Alții",
-  "advancements.dungeontrain.tab.secrete_menu": "Meniul secret"
+  "advancements.dungeontrain.tab.secrete_menu": "Meniul secret",
+  "item.dungeontrain.live_cassette": "Casetă pentru Fluxul în direct",
+  "item.dungeontrain.live_cassette.tooltip": "Acordată pe Fluxul în direct. Pune-o în orice televizor ca să vezi cine transmite."
 }

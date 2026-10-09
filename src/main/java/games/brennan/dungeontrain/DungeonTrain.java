@@ -322,6 +322,8 @@ public class DungeonTrain {
         // BlockEntityType.LECTERN's valid blocks.
         ModBlocks.register(modBus);
         ModBlockEntities.register(modBus);
+        // Live Feed: a block-less Vista broadcast location (compat/vista/LiveBroadcastLocation).
+        games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation.register(modBus);
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);

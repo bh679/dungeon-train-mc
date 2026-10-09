@@ -2402,7 +2402,6 @@
   "block.dungeontrain.stage_glass_secondary": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5dbce5099299368b"},
   "block.dungeontrain.stage_glass_pane_primary": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "abbfa21bfa9b9f32"},
   "block.dungeontrain.stage_glass_pane_secondary": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "76d673cdf328f3f0"},
-  "block.dungeontrain.live_antenna": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "eccfbbe557e1c1e0"},
   "gui.dungeontrain.developer_popup.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "e0d1d766a16b7abc"},
   "gui.dungeontrain.developer_popup.author": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "9c5161c6d8011ed5"},
   "gui.dungeontrain.developer_popup.message": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "781cbb9694ea137e"},
@@ -4583,5 +4582,7 @@
   "advancements.dungeontrain.enchiridion.darkroom.description": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2531550dac3a4c05"},
   "advancements.dungeontrain.tab.train_explorer": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "12298e7d4ea2455a"},
   "advancements.dungeontrain.tab.others": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ebdad9ba4c5e3ce0"},
-  "advancements.dungeontrain.tab.secrete_menu": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ea458fa813625ca2"}
+  "advancements.dungeontrain.tab.secrete_menu": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "ea458fa813625ca2"},
+  "item.dungeontrain.live_cassette": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "2462ea58f8512b98"},
+  "item.dungeontrain.live_cassette.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "359a4a07b85b72e0"}
 }

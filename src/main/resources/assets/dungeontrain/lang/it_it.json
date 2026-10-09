@@ -1875,7 +1875,6 @@
   "block.dungeontrain.stage_glass_secondary": "Vetro colorato di tappa (Secondario)",
   "block.dungeontrain.stage_glass_pane_primary": "Pannello di vetro colorato di tappa (Primario)",
   "block.dungeontrain.stage_glass_pane_secondary": "Pannello di vetro colorato di tappa (Secondario)",
-  "block.dungeontrain.live_antenna": "Antenna della Diretta",
   "gui.dungeontrain.developer_popup.title": "Un messaggio dallo sviluppatore",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "Ehi! Cosa ne pensi del gioco? Mi piacerebbe parlarne con te su Discord e sapere cosa credi gli manchi :)",
@@ -4531,5 +4530,7 @@
   "gui.dungeontrain.low_memory.ok": "Ho capito",
   "gui.dungeontrain.low_memory.dont_show": "Non mostrare più",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In questo mondo «Mantieni inventario» è attivo.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train è bilanciato sul fatto che morire ti costi qualcosa, quindi da qui in poi questo mondo si tiene le proprie statistiche. Rimettere la regola di gioco su off non cambierà le cose — l'equipaggiamento che ti sei portato attraverso una morte è già tuo."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train è bilanciato sul fatto che morire ti costi qualcosa, quindi da qui in poi questo mondo si tiene le proprie statistiche. Rimettere la regola di gioco su off non cambierà le cose — l'equipaggiamento che ti sei portato attraverso una morte è già tuo.",
+  "item.dungeontrain.live_cassette": "Cassetta della Diretta",
+  "item.dungeontrain.live_cassette.tooltip": "Sintonizzata sulla Diretta. Inseriscila in qualsiasi TV per guardare chi sta trasmettendo."
 }

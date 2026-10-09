@@ -1920,7 +1920,6 @@
   "block.dungeontrain.stage_glass_secondary": "Окрашенное стекло этапа (Вторичный)",
   "block.dungeontrain.stage_glass_pane_primary": "Окрашенная стеклянная панель этапа (Основной)",
   "block.dungeontrain.stage_glass_pane_secondary": "Окрашенная стеклянная панель этапа (Вторичный)",
-  "block.dungeontrain.live_antenna": "Антенна Прямого эфира",
   "gui.dungeontrain.developer_popup.title": "Сообщение от разработчика",
   "gui.dungeontrain.developer_popup.author": "Бреннан, разработчик",
   "gui.dungeontrain.developer_popup.message": "Привет! Как тебе игра? Буду рад пообщаться с тобой в Discord о том, чего ей, по-твоему, не хватает :)",
@@ -4583,5 +4582,7 @@
   "gui.dungeontrain.low_memory.ok": "Понятно",
   "gui.dungeontrain.low_memory.dont_show": "Больше не показывать",
   "chat.dungeontrain.free_play.cause.keep_inventory": "В мире включено сохранение инвентаря.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train сбалансирован вокруг того, что смерть чего-то стоит, поэтому теперь этот мир хранит свою статистику отдельно. Выключение ничего не изменит — снаряжение, которое вы пронесли через смерть, уже ваше."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train сбалансирован вокруг того, что смерть чего-то стоит, поэтому теперь этот мир хранит свою статистику отдельно. Выключение ничего не изменит — снаряжение, которое вы пронесли через смерть, уже ваше.",
+  "item.dungeontrain.live_cassette": "Кассета Прямого эфира",
+  "item.dungeontrain.live_cassette.tooltip": "Настроена на Прямой эфир. Вставь в любой телевизор, чтобы смотреть того, кто сейчас в эфире."
 }

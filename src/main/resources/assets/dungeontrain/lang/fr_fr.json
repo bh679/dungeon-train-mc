@@ -1875,7 +1875,6 @@
   "block.dungeontrain.stage_glass_secondary": "Verre teinté d'étape (Secondaire)",
   "block.dungeontrain.stage_glass_pane_primary": "Vitre teintée d'étape (Primaire)",
   "block.dungeontrain.stage_glass_pane_secondary": "Vitre teintée d'étape (Secondaire)",
-  "block.dungeontrain.live_antenna": "Antenne du Flux en direct",
   "gui.dungeontrain.developer_popup.title": "Un message du développeur",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "Salut ! Que penses-tu du jeu ? J'adorerais discuter avec toi sur Discord de ce qu'il lui manque selon toi :)",
@@ -4531,5 +4530,7 @@
   "gui.dungeontrain.low_memory.ok": "Compris",
   "gui.dungeontrain.low_memory.dont_show": "Ne plus afficher",
   "chat.dungeontrain.free_play.cause.keep_inventory": "« Conserver l'inventaire » est activé dans ce monde.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train est équilibré autour de l'idée que mourir te coûte quelque chose, alors à partir d'ici ce monde garde ses statistiques pour lui. Redésactiver la règle de jeu n'y changera rien — l'équipement que tu as emporté à travers une mort est déjà à toi."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train est équilibré autour de l'idée que mourir te coûte quelque chose, alors à partir d'ici ce monde garde ses statistiques pour lui. Redésactiver la règle de jeu n'y changera rien — l'équipement que tu as emporté à travers une mort est déjà à toi.",
+  "item.dungeontrain.live_cassette": "Cassette du Flux en direct",
+  "item.dungeontrain.live_cassette.tooltip": "Réglée sur le Flux en direct. Insérez-la dans n'importe quelle télé pour regarder qui diffuse."
 }

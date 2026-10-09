@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": "스테이지 색유리 (보조)",
   "block.dungeontrain.stage_glass_pane_primary": "스테이지 색유리판 (주)",
   "block.dungeontrain.stage_glass_pane_secondary": "스테이지 색유리판 (보조)",
-  "block.dungeontrain.live_antenna": "라이브 피드 안테나",
   "gui.dungeontrain.developer_popup.title": "개발자의 메시지",
   "gui.dungeontrain.developer_popup.author": "Brennan — 개발자",
   "gui.dungeontrain.developer_popup.message": "안녕하세요! 게임 어떠세요? 무엇이 더 필요할지 Discord에서 이야기 나누고 싶어요 :)",
@@ -4479,5 +4478,7 @@
   "gui.dungeontrain.low_memory.ok": "확인",
   "gui.dungeontrain.low_memory.dont_show": "다시 표시 안 함",
   "chat.dungeontrain.free_play.cause.keep_inventory": "이 세계에서는 '인벤토리 유지'가 켜져 있습니다.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train은 죽음이 무언가를 앗아간다는 전제로 맞춰져 있습니다. 그래서 이 세계는 지금부터의 통계를 자기 안에만 남깁니다. 게임 규칙을 다시 끈다고 달라지지 않습니다 — 죽음을 지나 들고 온 장비는 이미 당신의 것입니다."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train은 죽음이 무언가를 앗아간다는 전제로 맞춰져 있습니다. 그래서 이 세계는 지금부터의 통계를 자기 안에만 남깁니다. 게임 규칙을 다시 끈다고 달라지지 않습니다 — 죽음을 지나 들고 온 장비는 이미 당신의 것입니다.",
+  "item.dungeontrain.live_cassette": "라이브 피드 카세트",
+  "item.dungeontrain.live_cassette.tooltip": "라이브 피드에 맞춰져 있습니다. 아무 TV에나 넣으면 지금 방송 중인 사람을 볼 수 있습니다."
 }

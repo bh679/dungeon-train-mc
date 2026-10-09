@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5dbce5099299368b"},
   "block.dungeontrain.stage_glass_pane_primary": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "abbfa21bfa9b9f32"},
   "block.dungeontrain.stage_glass_pane_secondary": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "76d673cdf328f3f0"},
-  "block.dungeontrain.live_antenna": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "eccfbbe557e1c1e0"},
   "gui.dungeontrain.developer_popup.title": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "e0d1d766a16b7abc"},
   "gui.dungeontrain.developer_popup.author": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "9c5161c6d8011ed5"},
   "gui.dungeontrain.developer_popup.message": {"author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "781cbb9694ea137e"},
@@ -4493,5 +4492,7 @@
   "gui.dungeontrain.low_memory.ok": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "5ad3dbd1242a4cea"},
   "gui.dungeontrain.low_memory.dont_show": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "d16d035f63448e2e"},
   "chat.dungeontrain.free_play.cause.keep_inventory": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0988ef903197ebe7"},
-  "chat.dungeontrain.free_play.keep_inventory_on": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c177d33aba2cfa3e"}
+  "chat.dungeontrain.free_play.keep_inventory_on": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c177d33aba2cfa3e"},
+  "item.dungeontrain.live_cassette": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "2462ea58f8512b98"},
+  "item.dungeontrain.live_cassette.tooltip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "359a4a07b85b72e0"}
 }

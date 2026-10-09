@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": "กระจกสีด่าน (รอง)",
   "block.dungeontrain.stage_glass_pane_primary": "บานกระจกสีด่าน (หลัก)",
   "block.dungeontrain.stage_glass_pane_secondary": "บานกระจกสีด่าน (รอง)",
-  "block.dungeontrain.live_antenna": "เสาอากาศฟีดสด",
   "gui.dungeontrain.developer_popup.title": "ข้อความจากนักพัฒนา",
   "gui.dungeontrain.developer_popup.author": "Brennan — นักพัฒนา",
   "gui.dungeontrain.developer_popup.message": "สวัสดี! คุณคิดยังไงกับเกมนี้บ้าง? ผมอยากคุยกับคุณใน Discord ว่าคุณคิดว่าเกมนี้ต้องการอะไร :)",
@@ -4479,5 +4478,7 @@
   "gui.dungeontrain.low_memory.ok": "เข้าใจแล้ว",
   "gui.dungeontrain.low_memory.dont_show": "ไม่ต้องแสดงอีก",
   "chat.dungeontrain.free_play.cause.keep_inventory": "โลกนี้เปิด \"เก็บของในกระเป๋าไว้\" อยู่",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ปรับสมดุลไว้บนพื้นฐานที่ว่าการตายต้องแลกด้วยอะไรบางอย่าง โลกนี้จึงเก็บสถิติของตัวเองไว้นับจากนี้ไป การปิดกฎของเกมกลับไม่ได้เปลี่ยนเรื่องนั้น — ของที่คุณถือข้ามความตายมาแล้วนั้นเป็นของคุณไปแล้ว"
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train ปรับสมดุลไว้บนพื้นฐานที่ว่าการตายต้องแลกด้วยอะไรบางอย่าง โลกนี้จึงเก็บสถิติของตัวเองไว้นับจากนี้ไป การปิดกฎของเกมกลับไม่ได้เปลี่ยนเรื่องนั้น — ของที่คุณถือข้ามความตายมาแล้วนั้นเป็นของคุณไปแล้ว",
+  "item.dungeontrain.live_cassette": "เทปฟีดสด",
+  "item.dungeontrain.live_cassette.tooltip": "ปรับจูนกับฟีดสดแล้ว ใส่ในทีวีเครื่องไหนก็ได้เพื่อดูว่าใครกำลังถ่ายทอด"
 }

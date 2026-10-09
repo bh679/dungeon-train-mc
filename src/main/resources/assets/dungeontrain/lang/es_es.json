@@ -1875,7 +1875,6 @@
   "block.dungeontrain.stage_glass_secondary": "Cristal tintado de etapa (Secundario)",
   "block.dungeontrain.stage_glass_pane_primary": "Panel de cristal tintado de etapa (Primario)",
   "block.dungeontrain.stage_glass_pane_secondary": "Panel de cristal tintado de etapa (Secundario)",
-  "block.dungeontrain.live_antenna": "Antena de Señal en directo",
   "gui.dungeontrain.developer_popup.title": "Un mensaje del desarrollador",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "¡Hola! ¿Qué te parece el juego? Me encantaría charlar contigo en Discord sobre lo que crees que le hace falta :)",
@@ -4531,5 +4530,7 @@
   "gui.dungeontrain.low_memory.ok": "Entendido",
   "gui.dungeontrain.low_memory.dont_show": "No volver a mostrar",
   "chat.dungeontrain.free_play.cause.keep_inventory": "En este mundo está activado «Conservar inventario».",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train está equilibrado para que morir te cueste algo, así que a partir de ahora este mundo se queda con sus propias estadísticas. Volver a desactivar la regla de juego no cambiará eso: el equipo que llevaste contigo a través de una muerte ya es tuyo."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train está equilibrado para que morir te cueste algo, así que a partir de ahora este mundo se queda con sus propias estadísticas. Volver a desactivar la regla de juego no cambiará eso: el equipo que llevaste contigo a través de una muerte ya es tuyo.",
+  "item.dungeontrain.live_cassette": "Cinta de Señal en directo",
+  "item.dungeontrain.live_cassette.tooltip": "Sintonizada con la Señal en directo. Ponla en cualquier televisor para ver a quien esté emitiendo."
 }

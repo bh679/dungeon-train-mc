@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": "Kinulayang Salamin ng Yugto (Pangalawa)",
   "block.dungeontrain.stage_glass_pane_primary": "Kinulayang Panel ng Salamin ng Yugto (Pangunahin)",
   "block.dungeontrain.stage_glass_pane_secondary": "Kinulayang Panel ng Salamin ng Yugto (Pangalawa)",
-  "block.dungeontrain.live_antenna": "Antena ng Live Feed",
   "gui.dungeontrain.developer_popup.title": "Isang mensahe mula sa developer",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "Uy! Ano sa tingin mo sa laro? Gusto kitang makausap sa Discord tungkol sa sa tingin mong kailangan nito :)",
@@ -4479,5 +4478,7 @@
   "gui.dungeontrain.low_memory.ok": "Sige",
   "gui.dungeontrain.low_memory.dont_show": "Huwag nang ipakita",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Naka-on ang \"Keep Inventory\" sa mundong ito.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Nakabalanse ang Dungeon Train sa palagay na may kapalit ang pagkamatay, kaya mula ngayon ay sa mundong ito na lang mananatili ang sarili nitong estadistika. Hindi mababago iyon ng pag-off muli sa game rule — ang gamit na dala mo sa kabila ng isang kamatayan ay sa iyo na."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Nakabalanse ang Dungeon Train sa palagay na may kapalit ang pagkamatay, kaya mula ngayon ay sa mundong ito na lang mananatili ang sarili nitong estadistika. Hindi mababago iyon ng pag-off muli sa game rule — ang gamit na dala mo sa kabila ng isang kamatayan ay sa iyo na.",
+  "item.dungeontrain.live_cassette": "Cassette ng Live Feed",
+  "item.dungeontrain.live_cassette.tooltip": "Nakatutok sa Live Feed. Ilagay sa kahit anong TV para panoorin kung sino ang nagbo-brodkast."
 }

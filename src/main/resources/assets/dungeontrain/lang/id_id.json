@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": "Kaca Berwarna Tahap (Sekunder)",
   "block.dungeontrain.stage_glass_pane_primary": "Panel Kaca Berwarna Tahap (Utama)",
   "block.dungeontrain.stage_glass_pane_secondary": "Panel Kaca Berwarna Tahap (Sekunder)",
-  "block.dungeontrain.live_antenna": "Antena Siaran Langsung",
   "gui.dungeontrain.developer_popup.title": "Pesan dari pengembang",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "Hai! Bagaimana pendapatmu tentang permainan ini? Aku ingin sekali mengobrol denganmu di Discord tentang apa yang menurutmu perlu ditambahkan :)",
@@ -4479,5 +4478,7 @@
   "gui.dungeontrain.low_memory.ok": "Mengerti",
   "gui.dungeontrain.low_memory.dont_show": "Jangan tampilkan lagi",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Di dunia ini \"Simpan Inventaris\" sedang menyala.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diseimbangkan dengan anggapan bahwa mati itu memakan sesuatu darimu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan kembali aturan permainannya tidak akan mengubah itu — perlengkapan yang kamu bawa melewati sebuah kematian sudah jadi milikmu."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diseimbangkan dengan anggapan bahwa mati itu memakan sesuatu darimu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan kembali aturan permainannya tidak akan mengubah itu — perlengkapan yang kamu bawa melewati sebuah kematian sudah jadi milikmu.",
+  "item.dungeontrain.live_cassette": "Kaset Siaran Langsung",
+  "item.dungeontrain.live_cassette.tooltip": "Disetel ke Siaran Langsung. Masukkan ke TV mana pun untuk menonton siapa yang sedang siaran."
 }

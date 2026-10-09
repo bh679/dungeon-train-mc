@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": "階段染色玻璃（副色）",
   "block.dungeontrain.stage_glass_pane_primary": "階段染色玻璃片（主色）",
   "block.dungeontrain.stage_glass_pane_secondary": "階段染色玻璃片（副色）",
-  "block.dungeontrain.live_antenna": "直播訊號天線",
   "gui.dungeontrain.developer_popup.title": "來自開發者的訊息",
   "gui.dungeontrain.developer_popup.author": "Brennan — 開發者",
   "gui.dungeontrain.developer_popup.message": "嗨！你覺得這個遊戲如何？我很想在 Discord 上跟你聊聊，聽聽你認為它還需要什麼 :)",
@@ -4493,5 +4492,7 @@
   "gui.dungeontrain.low_memory.ok": "知道了",
   "gui.dungeontrain.low_memory.dont_show": "不再顯示",
   "chat.dungeontrain.free_play.cause.keep_inventory": "本世界開啟了「保留物品欄」。",
-  "chat.dungeontrain.free_play.keep_inventory_on": "《地牢列車》是以死亡要付出代價為前提來平衡的，因此從現在起本世界的統計只留在自己這裡。把遊戲規則再關掉也無濟於事——你帶著穿過一次死亡的裝備，已經是你的了。"
+  "chat.dungeontrain.free_play.keep_inventory_on": "《地牢列車》是以死亡要付出代價為前提來平衡的，因此從現在起本世界的統計只留在自己這裡。把遊戲規則再關掉也無濟於事——你帶著穿過一次死亡的裝備，已經是你的了。",
+  "item.dungeontrain.live_cassette": "直播訊號磁帶",
+  "item.dungeontrain.live_cassette.tooltip": "已調到直播訊號。放進任何電視，就能看到正在直播的人。"
 }

@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.block.LiveAntennaBlock;
 import games.brennan.dungeontrain.block.PhotographFrameBlock;
 import games.brennan.dungeontrain.block.SkyboxBlock;
 import games.brennan.dungeontrain.block.SkyboxSky;
@@ -159,23 +158,6 @@ public final class ModBlocks {
 
     public static final DeferredItem<BlockItem> VARIANT_PLACEHOLDER_ITEM = BLOCK_ITEMS.register(
         "variant_placeholder", () -> new BlockItem(VARIANT_PLACEHOLDER.get(), new Item.Properties()));
-
-    /**
-     * The Live Feed antenna — a Vista broadcast source whose picture is the live stream
-     * ({@link LiveAntennaBlock}). Has a BlockItem so the viewer carriage can be authored in the editor.
-     */
-    public static final DeferredBlock<LiveAntennaBlock> LIVE_ANTENNA = BLOCKS.register(
-        "live_antenna",
-        () -> new LiveAntennaBlock(
-            BlockBehaviour.Properties.of()
-                .mapColor(MapColor.METAL)
-                .strength(1.5f)
-                .noOcclusion()
-                .sound(SoundType.METAL)
-        )
-    );
-    public static final DeferredItem<BlockItem> LIVE_ANTENNA_ITEM = BLOCK_ITEMS.register(
-        "live_antenna", () -> new BlockItem(LIVE_ANTENNA.get(), new Item.Properties()));
 
     /**
      * Exposure's hanging photo frame as blocks, so it rides the train — see {@link PhotographFrameBlock}.

@@ -1835,7 +1835,6 @@
   "block.dungeontrain.stage_glass_secondary": "Kaca Berwarna Peringkat (Sekunder)",
   "block.dungeontrain.stage_glass_pane_primary": "Panel Kaca Berwarna Peringkat (Utama)",
   "block.dungeontrain.stage_glass_pane_secondary": "Panel Kaca Berwarna Peringkat (Sekunder)",
-  "block.dungeontrain.live_antenna": "Antena Suapan Langsung",
   "gui.dungeontrain.developer_popup.title": "Mesej daripada pembangun",
   "gui.dungeontrain.developer_popup.author": "Brennan — Pembangun",
   "gui.dungeontrain.developer_popup.message": "Hai! Apa pendapat anda tentang permainan ini? Saya ingin sekali berbual dengan anda di Discord tentang apa yang ia perlukan :)",
@@ -4479,5 +4478,7 @@
   "gui.dungeontrain.low_memory.ok": "Faham",
   "gui.dungeontrain.low_memory.dont_show": "Jangan tunjuk lagi",
   "chat.dungeontrain.free_play.cause.keep_inventory": "Dalam dunia ini \"Simpan Inventori\" sedang dihidupkan.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train diimbangi atas dasar bahawa kematian merugikan anda sesuatu, jadi mulai sekarang dunia ini menyimpan statistiknya sendiri. Mematikan semula peraturan permainan itu tidak akan mengubahnya — kelengkapan yang anda bawa merentasi satu kematian sudah pun menjadi milik anda.",
+  "item.dungeontrain.live_cassette": "Kaset Suapan Langsung",
+  "item.dungeontrain.live_cassette.tooltip": "Ditala ke Suapan Langsung. Masukkan ke mana-mana TV untuk menonton siapa yang sedang bersiaran."
 }

@@ -2292,7 +2292,6 @@
       "block.dungeontrain.stage_glass_secondary",
       "block.dungeontrain.stage_glass_pane_primary",
       "block.dungeontrain.stage_glass_pane_secondary",
-      "block.dungeontrain.live_antenna",
       "gui.dungeontrain.developer_popup.title",
       "gui.dungeontrain.developer_popup.author",
       "gui.dungeontrain.developer_popup.message",
@@ -4438,7 +4437,9 @@
       "advancements.dungeontrain.enchiridion.darkroom.description",
       "advancements.dungeontrain.tab.train_explorer",
       "advancements.dungeontrain.tab.others",
-      "advancements.dungeontrain.tab.secrete_menu"
+      "advancements.dungeontrain.tab.secrete_menu",
+      "item.dungeontrain.live_cassette",
+      "item.dungeontrain.live_cassette.tooltip"
     ],
     "adventureitemnames": "*",
     "playermob": "*",

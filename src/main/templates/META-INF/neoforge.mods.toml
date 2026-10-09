@@ -409,6 +409,11 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.tradeeverything.mixins.json"
 
+# Vista (required dep) — TVs toggle on a redstone pulse or an empty-hand click instead of
+# following a steady signal (see compat/vista/TvPowerToggle).
+[[mixins]]
+    config="${mod_id}.vista.mixins.json"
+
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"
 

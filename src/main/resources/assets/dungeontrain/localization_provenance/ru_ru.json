@@ -1421,7 +1421,6 @@
       "block.dungeontrain.stage_glass_secondary",
       "block.dungeontrain.stage_glass_pane_primary",
       "block.dungeontrain.stage_glass_pane_secondary",
-      "block.dungeontrain.live_antenna",
       "gui.dungeontrain.developer_popup.title",
       "gui.dungeontrain.developer_popup.message",
       "gui.dungeontrain.developer_popup.discord",
@@ -3595,7 +3594,9 @@
       "gui.dungeontrain.low_memory.footnote",
       "gui.dungeontrain.low_memory.how",
       "gui.dungeontrain.low_memory.ok",
-      "gui.dungeontrain.low_memory.dont_show"
+      "gui.dungeontrain.low_memory.dont_show",
+      "item.dungeontrain.live_cassette",
+      "item.dungeontrain.live_cassette.tooltip"
     ],
     "adventureitemnames": [
       "key.categories.adventureitemnames",

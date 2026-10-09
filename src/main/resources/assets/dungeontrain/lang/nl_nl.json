@@ -1875,7 +1875,6 @@
   "block.dungeontrain.stage_glass_secondary": "Gekleurd etappeglas (Secundair)",
   "block.dungeontrain.stage_glass_pane_primary": "Gekleurd etappeglaspaneel (Primair)",
   "block.dungeontrain.stage_glass_pane_secondary": "Gekleurd etappeglaspaneel (Secundair)",
-  "block.dungeontrain.live_antenna": "Live Feed-antenne",
   "gui.dungeontrain.developer_popup.title": "Een bericht van de ontwikkelaar",
   "gui.dungeontrain.developer_popup.author": "Brennan — Dev",
   "gui.dungeontrain.developer_popup.message": "Hé! Wat vind je van het spel? Ik zou graag in Discord met je kletsen over wat het volgens jou nodig heeft :)",
@@ -4531,5 +4530,7 @@
   "gui.dungeontrain.low_memory.ok": "Begrepen",
   "gui.dungeontrain.low_memory.dont_show": "Niet meer tonen",
   "chat.dungeontrain.free_play.cause.keep_inventory": "In deze wereld staat \"Inventaris behouden\" aan.",
-  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train is erop afgestemd dat doodgaan je iets kost, dus vanaf hier houdt deze wereld haar statistieken voor zichzelf. De spelregel weer uitzetten verandert daar niets aan — de spullen die je door een dood heen meedroeg zijn al van jou."
+  "chat.dungeontrain.free_play.keep_inventory_on": "Dungeon Train is erop afgestemd dat doodgaan je iets kost, dus vanaf hier houdt deze wereld haar statistieken voor zichzelf. De spelregel weer uitzetten verandert daar niets aan — de spullen die je door een dood heen meedroeg zijn al van jou.",
+  "item.dungeontrain.live_cassette": "Live Feed-cassette",
+  "item.dungeontrain.live_cassette.tooltip": "Afgestemd op de Live Feed. Stop hem in een willekeurige tv om te zien wie er uitzendt."
 }
