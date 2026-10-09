@@ -54,13 +54,25 @@ public final class ViewfinderSelfieHint {
         int keyHeight = lineHeight + KEY_PAD_Y * 2;
         int totalWidth = keyWidth + GAP + HudText.scaledWidth(font, label);
 
-        int x = (graphics.guiWidth() - totalWidth) / 2;
-        int y = hintTop(graphics, overlay.getOpening(), keyHeight);
+        Rect2f opening = overlay.getOpening();
+        int x = hintLeft(graphics, opening, totalWidth);
+        int y = hintTop(graphics, opening, keyHeight);
 
         graphics.fill(x, y, x + keyWidth, y + keyHeight, KEY_EDGE_COLOR);
         graphics.fill(x + 1, y, x + keyWidth - 1, y + keyHeight - 1, KEY_FACE_COLOR);
         HudText.drawScaled(graphics, font, keyName, x + KEY_PAD_X, y + KEY_PAD_Y, KEY_TEXT_COLOR, false);
         HudText.drawScaled(graphics, font, label, x + keyWidth + GAP, y + KEY_PAD_Y, TEXT_COLOR, true);
+    }
+
+    /**
+     * Right-aligned to the viewfinder opening — the bottom centre is taken by the instant camera's own
+     * body tab — or bottom-centre of the screen if there is no opening yet.
+     */
+    private static int hintLeft(GuiGraphics graphics, Rect2f opening, int width) {
+        if (opening == null) {
+            return (graphics.guiWidth() - width) / 2;
+        }
+        return Math.max(0, Math.round(opening.x + opening.width) - width);
     }
 
     /** Just under the viewfinder opening, pulled up if that would run off the bottom of the screen. */
