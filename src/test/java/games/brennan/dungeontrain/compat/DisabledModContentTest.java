@@ -105,6 +105,18 @@ final class DisabledModContentTest {
     }
 
     @Test
+    @DisplayName("Vista's viewfinder, wave gate and cassettes are hidden; the TV, mirror, picture tape and DT's live cassette stay")
+    void vistaContentHidden() {
+        for (String hidden : new String[] {"viewfinder", "wave_gate", "cassette", "hollow_cassette"}) {
+            assertTrue(DisabledModContent.isDisabledItem(id("vista:" + hidden), false), hidden);
+        }
+        for (String kept : new String[] {"vista:television", "vista:mirror", "vista:picture_tape",
+                "vista:music_disc_sojourn", "vista:crystalline", "dungeontrain:live_cassette"}) {
+            assertFalse(DisabledModContent.isDisabledItem(id(kept), false), kept);
+        }
+    }
+
+    @Test
     @DisplayName("the reloadable instant camera is hidden; the disposable camera on the same item is kept")
     void plainInstantCameraHidden() {
         assertTrue(DisabledModContent.isPlainInstantCamera(id("exposure_polaroid:instant_camera"), false));

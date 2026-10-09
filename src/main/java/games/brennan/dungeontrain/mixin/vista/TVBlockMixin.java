@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin.vista;
 
+import games.brennan.dungeontrain.compat.DisabledModContent;
 import games.brennan.dungeontrain.compat.vista.TvPowerToggle;
 import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.minecraft.core.BlockPos;
@@ -48,6 +49,11 @@ public abstract class TVBlockMixin {
     private void dungeontrain$clickToggles(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
                                            InteractionHand hand, BlockHitResult hit,
                                            CallbackInfoReturnable<ItemInteractionResult> cir) {
+        if (DisabledModContent.isDisabledItem(stack)) {
+            // Vista's own cassettes are hidden content; a TV never takes one, even from /give.
+            cir.setReturnValue(ItemInteractionResult.FAIL);
+            return;
+        }
         if (!stack.isEmpty() || player.isSecondaryUseActive()) return;
         TvPowerToggle.toggle(level, pos);
         cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
