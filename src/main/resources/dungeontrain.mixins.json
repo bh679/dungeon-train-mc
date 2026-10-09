@@ -202,7 +202,8 @@
     "client.ViewAreaPrewarmInvoker",
     "client.LanguageSelectEntryAccessor",
     "client.I18nAccessor",
-    "client.LanguageManagerReapplyMixin"
+    "client.LanguageManagerReapplyMixin",
+    "client.NetworkRegistryReplayPlaybackMixin"
   ],
   "server": [
     "DedicatedServerPropertiesLevelTypeMixin"
