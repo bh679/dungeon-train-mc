@@ -24294,6 +24294,26 @@
       "released": true,
       "released_in": "v0.1196.0",
       "released_at": "2026-10-09T08:54:47Z"
+    },
+    {
+      "id": "replay-mod-moving-train",
+      "version": "0.1197.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Replay Mod now captures the moving train",
+      "summary": "Filming with Replay Mod (ReForgedPlay) works. Record a ride and the train moves in the replay exactly as it did when you rode it, with you aboard \u2014 instead of standing still while your recorded self drifts away. Replay Mod's Quick Mode loads too, and Replay Mod is on the approved mod list, so recording never puts a run into Free Play.",
+      "highlights": [
+        "Record a fresh replay \u2014 recordings made before this version hold no train movement and cannot be repaired",
+        "Works in singleplayer and on servers running this version"
+      ],
+      "pr": 1887,
+      "date": "2026-10-09",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
