@@ -232,6 +232,8 @@
       "gui.dungeontrain.cinematic.loading.ready",
       "gui.dungeontrain.cinematic.press_space_to_start",
       "gui.dungeontrain.cinematic.press_space_to_skip",
+      "gui.dungeontrain.viewfinder.selfie",
+      "gui.dungeontrain.viewfinder.front",
       "gui.dungeontrain.loading.title",
       "gui.dungeontrain.loading.phase.assembling",
       "gui.dungeontrain.loading.phase.spawning_train",

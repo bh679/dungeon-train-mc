@@ -258,6 +258,8 @@
       "gui.dungeontrain.content_mode.label",
       "gui.dungeontrain.cinematic.loading",
       "gui.dungeontrain.cinematic.loading.ready",
+      "gui.dungeontrain.viewfinder.selfie",
+      "gui.dungeontrain.viewfinder.front",
       "gui.dungeontrain.loading.phase.spawning_seed",
       "gui.dungeontrain.loading.phase.anchoring_spawn",
       "gui.dungeontrain.loading.story.1.line.1",
