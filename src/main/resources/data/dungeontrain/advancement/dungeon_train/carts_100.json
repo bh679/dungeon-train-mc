@@ -1,7 +1,7 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/gate_enchiridion",
   "display": {
-    "icon": { "id": "minecraft:minecart" },
+    "icon": { "id": "minecraft:chest_minecart" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.carts_100.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.carts_100.description" },
     "frame": "task",
@@ -12,7 +12,7 @@
   "criteria": {
     "milestone": {
       "trigger": "dungeontrain:carts_in_run",
-      "conditions": { "threshold": 100 }
+      "conditions": { "threshold": 50 }
     }
   },
   "requirements": [["milestone"]]

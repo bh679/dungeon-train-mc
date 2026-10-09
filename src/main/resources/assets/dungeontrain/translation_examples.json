@@ -5687,6 +5687,60 @@
       ]
     }
   },
+  "advancements.dungeontrain.dungeon_train.apple_a_day.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.self_medicated.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.last_melon.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.three_melons.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.naked_and_afraid.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.naked_and_unafraid.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
   "advancements.dungeontrain.dungeon_train.pacifist_100.description": {
     "1": {
       "label": "carriages to traverse, from the requirement",

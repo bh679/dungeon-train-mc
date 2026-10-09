@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirementOverrides;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerAdvancementManager;
@@ -51,6 +52,12 @@ import java.util.Set;
  * {@link games.brennan.dungeontrain.cheat.RunIntegrity#isEditorAdvancement}
  * uses to tell DT gameplay advancements (gated by run integrity) from editor
  * ones (which always persist).</p>
+ *
+ * <p><b>The Dungeon Train tab only.</b> By default only advancements drawn in the Dungeon Train tab
+ * count (read from the live tree, so a move in the advancement editor is followed). The other tabs
+ * are covered by their tab-complete advancements in that tab — Dungeon Train Explored, All Others,
+ * Challenge Complete ({@link TabCompleteAdvancements}) — rather than one by one. The editor's per-advancement
+ * {@code burrito} override still wins either way.</p>
  */
 public final class CompletionistAdvancement {
 
@@ -59,6 +66,10 @@ public final class CompletionistAdvancement {
     /** Stable id of the capstone; referenced by the wiring in {@code AchievementEvents}. */
     public static final ResourceLocation ID =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/completionist");
+
+    /** The Dungeon Train tab's root: by default only advancements under it count. */
+    public static final ResourceLocation DUNGEON_TRAIN_ROOT =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "dungeon_train/root");
 
     private CompletionistAdvancement() {}
 
@@ -69,17 +80,29 @@ public final class CompletionistAdvancement {
      *
      * @param notRequired the relay's live {@code notRequired} set ({@link AdvancementRequirementOverrides#notRequired()})
      */
-    public static boolean isRequired(AdvancementHolder holder, Set<ResourceLocation> notRequired) {
-        return isRequiredId(holder.id(), notRequired)
+    public static boolean isRequired(ServerAdvancementManager mgr, AdvancementHolder holder, Set<ResourceLocation> notRequired) {
+        return isRequiredId(holder.id(), notRequired, inDungeonTrainTab(mgr.tree().get(holder.id())))
             && holder.value().display().isPresent();                      // skip recipe/display-less
     }
 
-    /** The id half of {@link #isRequired} — everything but the display check. Package-private for tests. */
-    static boolean isRequiredId(ResourceLocation rl, Set<ResourceLocation> notRequired) {
+    /** Is {@code node} drawn in the Dungeon Train tab? Shared with the client's "what you still need" halo. */
+    public static boolean inDungeonTrainTab(AdvancementNode node) {
+        return node != null && DUNGEON_TRAIN_ROOT.equals(node.root().holder().id());
+    }
+
+    /**
+     * The id half of {@link #isRequired} — everything but the display check, with the advancement's tab
+     * passed in. Public for the client's "what you still need" halo ({@code client/CapstoneNeeds}).
+     */
+    public static boolean isRequiredId(ResourceLocation rl, Set<ResourceLocation> notRequired, boolean inDungeonTrainTab) {
         if (!DungeonTrain.MOD_ID.equals(rl.getNamespace())) return false; // other mods / vanilla
         if (rl.getPath().startsWith("editor/")) return false;             // editor tree excluded
         if (rl.equals(ID)) return false;                                  // never require itself
         if (rl.equals(StartAgainAdvancement.ID)) return false;            // downstream of the capstone, not a prerequisite
+        if (TabGateways.isLinked(rl)) return false;                        // a tab copy / unlocked tab head follows its source, which already counts
+        Boolean override = TabGateways.layout().burrito().get(rl.toString()); // set per advancement in the advancement editor
+        if (override != null) return override && !notRequired.contains(rl);
+        if (!inDungeonTrainTab) return false;                             // the other tabs count through their tab-complete advancements
         if (BandAdvancements.isBackwards(rl.getPath())) return false;     // The Secrete Menu: optional, never required
         if (EnchiridionAdvancements.isEnchiridion(rl.getPath())) return false; // The Enchiridion: books + photos, a collection of its own
         return !notRequired.contains(rl);                                 // the operator dropped it from the capstone (relay)
@@ -105,7 +128,7 @@ public final class CompletionistAdvancement {
 
         Set<ResourceLocation> notRequired = AdvancementRequirementOverrides.notRequired();
         for (AdvancementHolder holder : mgr.getAllAdvancements()) {
-            if (!isRequired(holder, notRequired)) continue;
+            if (!isRequired(mgr, holder, notRequired)) continue;
             if (!player.getAdvancements().getOrStartProgress(holder).isDone()) return; // not complete yet
         }
 

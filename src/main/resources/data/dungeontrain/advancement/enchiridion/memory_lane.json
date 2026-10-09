@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/darkroom",
+  "display": {
+    "icon": {
+      "id": "exposure:album"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.memory_lane.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.memory_lane.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "album": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "found_album"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "album"
+    ]
+  ]
+}

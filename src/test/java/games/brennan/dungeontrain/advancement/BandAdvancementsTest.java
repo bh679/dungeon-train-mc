@@ -188,13 +188,13 @@ final class BandAdvancementsTest {
     }
 
     @Test
-    @DisplayName("The Secrete Menu: a hidden tab root and a hidden twin under Dungeon Train Explorer, on one action")
+    @DisplayName("The Secrete Menu: a hidden tab root and a hidden twin under The Enchiridion's gateway, on one action")
     void secreteMenuPair() throws IOException {
         JsonObject root = advancement("secrete_menu/root");
         assertFalse(root.has("parent"));
         assertTrue(root.getAsJsonObject("display").has("background"));
         JsonObject twin = advancement("dungeon_train/secrete_menu");
-        assertEquals("dungeontrain:dungeon_train/" + BandAdvancements.ANCHOR, twin.get("parent").getAsString());
+        assertEquals("dungeontrain:dungeon_train/completionist", twin.get("parent").getAsString()); // under the Everything Burrito (editor)
         for (JsonObject json : List.of(root, twin)) {
             assertTrue(json.getAsJsonObject("display").get("hidden").getAsBoolean());
             assertEquals("challenge", json.getAsJsonObject("display").get("frame").getAsString());
@@ -202,6 +202,39 @@ final class BandAdvancementsTest {
             assertEquals("advancements.dungeontrain.dungeon_train.secrete_menu.title",
                     json.getAsJsonObject("display").getAsJsonObject("title").get("translate").getAsString());
         }
+    }
+
+    @Test
+    @DisplayName("the band journey's JSON parents follow band order, as the game rewrites them at load")
+    void jsonChainInBandOrder() throws IOException {
+        List<String> chain = BandAdvancements.chain(null);
+        String previous = BandAdvancements.anchorFrom(java.util.Map.of(
+                net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("dungeontrain", "dungeon_train/" + BandAdvancements.NETHER),
+                advancement("dungeon_train/" + BandAdvancements.NETHER)));
+        List<String> wrong = new java.util.ArrayList<>();
+        for (String name : chain) {
+            java.nio.file.Path f = RepoPaths.advancements().resolve("dungeon_train/" + name + ".json");
+            if (!Files.exists(f)) { continue; }
+            String parent = advancement("dungeon_train/" + name).get("parent").getAsString();
+            if (!parent.equals("dungeontrain:dungeon_train/" + previous)) wrong.add(name + " under " + parent + " (want " + previous + ")");
+            previous = name;
+        }
+        assertTrue(wrong.isEmpty(), "band chain out of order in the JSON: " + wrong);
+    }
+
+    @Test
+    @DisplayName("The Secrete Menu's reversed chain follows the reverse band order in the JSON too")
+    void jsonReverseChainInOrder() throws IOException {
+        String previous = BandAdvancements.REVERSE_ANCHOR;
+        List<String> wrong = new java.util.ArrayList<>();
+        for (String name : BandAdvancements.reverseChain(null)) {
+            java.nio.file.Path f = RepoPaths.advancements().resolve("secrete_menu/" + name + ".json");
+            if (!Files.exists(f)) { continue; }
+            String parent = advancement("secrete_menu/" + name).get("parent").getAsString();
+            if (!parent.equals("dungeontrain:secrete_menu/" + previous)) wrong.add(name + " under " + parent + " (want " + previous + ")");
+            previous = name;
+        }
+        assertTrue(wrong.isEmpty(), "reversed chain out of order in the JSON: " + wrong);
     }
 
     private static JsonObject advancement(String path) throws IOException {

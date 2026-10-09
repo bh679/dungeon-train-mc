@@ -83,11 +83,11 @@ final class StartAgainAdvancementTest {
         assertKept("secrete_menu/root");
         assertKept("dungeon_train/secrete_menu");
         ResourceLocation forward = ResourceLocation.parse("dungeontrain:dungeon_train/reached_nether");
-        assertTrue(StartAgainAdvancement.isWiped(forward, CompletionistAdvancement.isRequiredId(forward, java.util.Set.of())));
+        assertTrue(StartAgainAdvancement.isWiped(forward, CompletionistAdvancement.isRequiredId(forward, java.util.Set.of(), true)));
     }
 
     private static void assertKept(String path) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath("dungeontrain", path);
-        assertFalse(StartAgainAdvancement.isWiped(id, CompletionistAdvancement.isRequiredId(id, java.util.Set.of())), path);
+        assertFalse(StartAgainAdvancement.isWiped(id, CompletionistAdvancement.isRequiredId(id, java.util.Set.of(), true)), path);
     }
 }

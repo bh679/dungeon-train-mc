@@ -3,14 +3,14 @@ package games.brennan.dungeontrain.advancement;
 import java.util.Set;
 
 /**
- * <b>The Enchiridion</b> — the advancement tab for books and photos.
+ * <b>The Enchiridion</b> — the advancement tab for books. Photos have their own tab, The Darkroom
+ * ({@code enchiridion/darkroom}), whose advancements keep this class's {@link #PATH_PREFIX}.
  *
- * <p>Its root is {@code dungeon_train/the_enchiridion} (earned by reading any book or taking any
- * photo). The book advancements kept their original {@code dungeon_train/} ids when they moved here —
+ * <p>Its root is {@code dungeon_train/the_enchiridion} (earned by reading any book). The book advancements kept their original {@code dungeon_train/} ids when they moved here —
  * so banked cross-world progress, relay overrides and hardcoded ids still line up — and only their
  * parent chain changed. Everything added for the camera lives under {@link #PATH_PREFIX}.</p>
  *
- * <p>The tab is a collection of its own, like The Secrete Menu: none of it counts towards the
+ * <p>Both tabs are collections of their own, like The Secrete Menu: none of it counts towards the
  * Everything Burrito ({@link CompletionistAdvancement}), so the start-again wipe
  * ({@link StartAgainAdvancement}) leaves all of it earned.</p>
  */
@@ -18,6 +18,9 @@ public final class EnchiridionAdvancements {
 
     /** Path prefix of the camera advancements: {@code dungeontrain:enchiridion/…}. */
     public static final String PATH_PREFIX = "enchiridion/";
+
+    /** The Darkroom: the photo tab's root, earned by taking, looking at or paying Tribute to a photo. */
+    public static final String DARKROOM_ROOT = PATH_PREFIX + "darkroom";
 
     /** The tab root (also the original book-tree root, so its id is unchanged). */
     public static final String ROOT = "dungeon_train/the_enchiridion";
@@ -42,7 +45,8 @@ public final class EnchiridionAdvancements {
             "dungeon_train/nothing_but_books",
             "dungeon_train/burned_unread",
             "dungeon_train/the_same_but_different",
-            "dungeon_train/welcome_back");
+            "dungeon_train/welcome_back", // switched off for now (welcome_back.json.disabled); kept so a rename re-enables it
+            "dungeon_train/the_far_start");
 
     /** {@code gameplay_action} ids fired by the camera hooks. */
     public static final String TOOK_PHOTO = "took_photo";
@@ -56,6 +60,12 @@ public final class EnchiridionAdvancements {
     public static final String VIEWED_FOUND_PHOTO = "viewed_found_photo";
     /** A creature that was in a player's photo died within a second of the shot — "Final Moments". */
     public static final String PHOTO_FINAL_MOMENTS = "photo_final_moments";
+    /** Someone else's album, found on the train, is in your inventory — "Memory Lane". */
+    public static final String FOUND_ALBUM = "found_album";
+    /** Your album was saved holding at least one photo — "Keepsake". */
+    public static final String ALBUM_PHOTO = "album_photo";
+    /** Your album was saved with a photo on every page — "No Room Left". */
+    public static final String ALBUM_FULL = "album_full";
 
     /** Prefix of the per-dimension photo advancements: {@code enchiridion/photo_<dimension>}. */
     public static final String PHOTO_PREFIX = "photo_";

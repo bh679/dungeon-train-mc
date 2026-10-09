@@ -461,6 +461,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case UPDATE_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.update_notice_chat");
             case LOW_MEMORY_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.low_memory_notice_chat");
+            case OTHER_ADVANCEMENT_TABS -> onOffCandidates("gui.dungeontrain.options.other_advancement_tabs");
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
             case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
@@ -596,6 +597,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     Component.translatable("gui.dungeontrain.options.low_memory_notice_chat"),
                                     (btn, on) -> ClientDisplayConfig.setLowMemoryNoticeChat(on)),
                     "gui.dungeontrain.options.low_memory_notice_chat.tip");
+
+            // Minecraft's and other mods' advancement tabs. ON shows them; the config stores the inverse
+            // (hideOtherTabs) because hiding is the default.
+            case OTHER_ADVANCEMENT_TABS -> withTip(
+                    CycleButton.onOffBuilder(!ClientDisplayConfig.isHideOtherAdvancementTabs())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.other_advancement_tabs"),
+                                    (btn, on) -> ClientDisplayConfig.setHideOtherAdvancementTabs(!on)),
+                    "gui.dungeontrain.options.other_advancement_tabs.tip");
 
             // How fast the train may re-extend once an end has fallen behind the carriages a nearby
             // player needs. One global value, not a per-world one — set it here or at the title

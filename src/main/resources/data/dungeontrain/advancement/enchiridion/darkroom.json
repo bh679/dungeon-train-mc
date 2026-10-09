@@ -1,0 +1,54 @@
+{
+  "display": {
+    "icon": {
+      "id": "exposure_polaroid:instant_camera"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.darkroom.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.darkroom.description"
+    },
+    "frame": "task",
+    "background": "minecraft:textures/block/black_terracotta.png",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "camera": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "exposure_polaroid:instant_camera",
+              "exposure:camera"
+            ]
+          }
+        ]
+      }
+    },
+    "photo": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "exposure:photograph",
+              "exposure:aged_photograph",
+              "exposure:stacked_photographs",
+              "dungeontrain:found_photograph"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "camera",
+      "photo"
+    ]
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/drift_rearranged",
   "display": {
-    "icon": { "id": "minecraft:chest" },
+    "icon": { "id": "minecraft:oak_chest_boat" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.drift_left_behind.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.drift_left_behind.description" },
     "frame": "task",

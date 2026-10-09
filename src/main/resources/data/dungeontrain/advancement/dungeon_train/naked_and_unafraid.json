@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:dungeon_train/naked_and_afraid",
+  "display": {
+    "icon": {
+      "id": "minecraft:iron_chestplate"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.naked_and_unafraid.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.naked_and_unafraid.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "challenge": {
+      "trigger": "dungeontrain:code_granted",
+      "conditions": {
+        "threshold": 1000
+      }
+    }
+  },
+  "requirements": [
+    [
+      "challenge"
+    ]
+  ]
+}

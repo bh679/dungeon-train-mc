@@ -255,6 +255,7 @@ public final class PlayerAlbums {
         long rev = AlbumSavePayload.nextRev(store.entry(owner, kind).rev(), System.currentTimeMillis());
         store.put(owner, kind, new AlbumStore.Entry(rev,
                 snapshot.pages().stream().map(AlbumWorldBridge.SavedPage::page).toList()));
+        AlbumAdvancements.onSaved(player, content);
 
         boolean upload = kind == AlbumKind.LIVE && SharedBookGate.canContribute(player);
         // What the relay may show: a private page keeps its place and note, not its picture.

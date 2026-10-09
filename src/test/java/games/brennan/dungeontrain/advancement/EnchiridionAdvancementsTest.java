@@ -54,41 +54,50 @@ final class EnchiridionAdvancementsTest {
     }
 
     @Test
-    @DisplayName("isEnchiridion matches exactly the advancements whose chain ends at The Enchiridion")
+    @DisplayName("isEnchiridion matches exactly the advancements whose chain ends at The Enchiridion or The Darkroom")
     void setMatchesTheTree() throws IOException {
         Map<String, String> parents = parents();
         List<String> wrong = new ArrayList<>();
+        // Tab copies (the in-tab Hero's Handbook and Fully Developed) are mirrors that never count on their own.
+        Set<String> copies = TabGateways.layout().copies().keySet();
         for (String path : parents.keySet()) {
-            boolean onTab = EnchiridionAdvancements.ROOT.equals(tabRoot(parents, path));
+            if (copies.contains("dungeontrain:" + path)) continue;
+            String tab = tabRoot(parents, path);
+            boolean onTab = EnchiridionAdvancements.ROOT.equals(tab) || EnchiridionAdvancements.DARKROOM_ROOT.equals(tab);
             if (onTab != EnchiridionAdvancements.isEnchiridion(path)) wrong.add(path + (onTab ? " (on tab)" : " (off tab)"));
         }
         assertTrue(wrong.isEmpty(), "isEnchiridion disagrees with the JSON tree: " + wrong);
         for (String book : EnchiridionAdvancements.BOOK_PATHS) {
-            assertTrue(parents.containsKey(book), "BOOK_PATHS names a missing advancement: " + book);
+            assertTrue(parents.containsKey(book) || Files.exists(RepoPaths.advancements().resolve(book + ".json.disabled")),
+                "BOOK_PATHS names a missing advancement: " + book);
         }
     }
 
     @Test
-    @DisplayName("The Enchiridion is a tab root earned by a book or a photo")
+    @DisplayName("The Enchiridion and The Darkroom are tab roots")
     void rootIsATab() throws IOException {
         assertNull(parents().get(EnchiridionAdvancements.ROOT));
+        assertNull(parents().get(EnchiridionAdvancements.DARKROOM_ROOT));
     }
 
     @Test
-    @DisplayName("not required by the burrito, so the start-again wipe keeps it")
+    @DisplayName("books and photos stay out of the burrito by default; the editor's settings decide both lists")
     void outsideTheBurrito() {
-        for (String path : List.of(EnchiridionAdvancements.ROOT, "dungeon_train/taking_notes",
+        for (String path : List.of("dungeon_train/taking_notes",
                 "dungeon_train/nothing_but_books", "enchiridion/say_cheese", "enchiridion/photo_stacks")) {
-            assertFalse(CompletionistAdvancement.isRequiredId(rl(path), Set.of()), path);
-            assertFalse(StartAgainAdvancement.isWiped(rl(path), false), path);
+            Boolean required = TabGateways.layout().burrito().get(rl(path).toString());
+            assertEquals(required != null && required, CompletionistAdvancement.isRequiredId(rl(path), Set.of(), true), path);
+            Boolean reset = TabGateways.layout().startAgainReset().get(rl(path).toString());
+            boolean wiped = reset != null ? reset : CompletionistAdvancement.isRequiredId(rl(path), Set.of(), true);
+            assertEquals(wiped, StartAgainAdvancement.isWiped(rl(path), CompletionistAdvancement.isRequiredId(rl(path), Set.of(), true)), path);
         }
     }
 
     @Test
-    @DisplayName("Respect The Rules stayed on the Dungeon Train tab and still counts")
+    @DisplayName("Respect The Rules is on the Challenges tab, not The Enchiridion, and still counts")
     void chestsStillRequired() throws IOException {
-        assertEquals("dungeon_train/root", tabRoot(parents(), "dungeon_train/chests_100_unique"));
-        assertTrue(CompletionistAdvancement.isRequiredId(rl("dungeon_train/chests_100_unique"), Set.of()));
+        assertEquals("dungeon_train/tab_challenges", tabRoot(parents(), "dungeon_train/chests_100_unique"));
+        assertTrue(CompletionistAdvancement.isRequiredId(rl("dungeon_train/chests_100_unique"), Set.of(), true), "counts were it in the Dungeon Train tab");
     }
 
     @Test

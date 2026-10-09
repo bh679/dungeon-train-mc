@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:enchiridion/say_cheese",
+  "parent": "dungeontrain:enchiridion/wildlife_photographer",
   "display": {
     "icon": {
       "id": "minecraft:golden_helmet"

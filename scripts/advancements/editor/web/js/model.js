@@ -1,0 +1,620 @@
+// Advancement editor — model: data, the effective layout, edits and saving. Concatenated by build.py into one closure.
+const M = window.MOCK, SP = M.sprites, IC = M.icons;
+
+// ---------- icons ----------
+// Edits store an icon as its item id ("minecraft:chest_minecart"), never a list position: the list
+// grows when the repo or the More icons list adds items, and a position would then point elsewhere.
+// IC / M.iconIds / M.iconNames stay the runtime lookup; extra items are appended as they are picked.
+const ICON_AT = {}; M.iconIds.forEach((id, i) => { ICON_AT[id] = i; });
+/** Every item the icon search covers: {itemId: data URI}. Embedded, or fetched on first need. */
+let MORE_ICONS = M.moreIcons || null;
+let iconsLoading = null;
+/**
+ * The runtime index for an item id. An item outside the grid is always registered under its own id, so an
+ * edit keeps the id it was given even before its picture has loaded (it is drawn blank until then).
+ */
+function iconIndex(itemId) {
+  if (itemId in ICON_AT) return ICON_AT[itemId];
+  const uri = MORE_ICONS && MORE_ICONS[itemId];
+  if (!uri) loadAllIcons();
+  IC.push(uri || ''); M.iconIds.push(itemId); M.iconNames.push(itemId.split(':')[1].replace(/_/g, ' '));
+  return (ICON_AT[itemId] = IC.length - 1);
+}
+/** Fetches every item's picture once (local editor only; a shared page embeds them), then redraws. */
+function loadAllIcons() {
+  if (MORE_ICONS) return Promise.resolve();
+  if (iconsLoading) return iconsLoading;
+  iconsLoading = fetch('/api/icons')
+    .then(res => { if (!res.ok) throw new Error(res.statusText); return res.json(); })
+    .then(all => { MORE_ICONS = all; })
+    .catch(err => { MORE_ICONS = {}; setTimeout(() => toast(`Couldn\u2019t load every item: ${err.message}`)); })
+    .then(() => {
+      M.iconIds.forEach((id, i) => { if (!IC[i] && MORE_ICONS[id]) IC[i] = MORE_ICONS[id]; });
+      setTimeout(() => { render(); if (selected && !menu.hidden) fillMenu(selected); });
+    });
+  return iconsLoading;
+}
+/**
+ * Saved edits from before icons were stored by id hold numbers — positions in a list that has since
+ * changed, so they can no longer be trusted. Drop them (the ones still wanted were committed to the repo).
+ */
+function migrateEdits(e) {
+  const out = { ...emptyEdits(), ...e, icons: {} };
+  Object.entries(e.icons || {}).forEach(([id, v]) => { if (typeof v === 'string') out.icons[id] = v; });
+  out.created = {};
+  Object.entries(e.created || {}).forEach(([id, c]) => {
+    const { i, ...rest } = c;
+    out.created[id] = typeof c.item === 'string' ? c : { ...rest, item: c.item || 'minecraft:knowledge_book' };
+  });
+  return out;
+}
+const DT_ROOT = 'dungeontrain:dungeon_train/root';
+const TICKS_PER_HOUR = 72000;
+/** Served by serve.py: edits are written to the working tree, not to an artifact database. */
+const LOCAL = window.EDITOR_MODE === 'local';
+const EDITS_KEY = LOCAL ? 'dt-adv-edits-local' : 'dt-adv-edits';
+const rootEl = document.documentElement;
+rootEl.style.setProperty('--dirt', `url(${SP.dirt})`);
+rootEl.style.setProperty('--btn', `url(${SP.button})`);
+rootEl.style.setProperty('--btn-hi', `url(${SP.button_highlighted})`);
+rootEl.style.setProperty('--titlebox', `url(${SP.title_box})`);
+
+const IX = 9, IY = 18;
+let W = 252, H = 140, IW = 234, IH = 113, PER_ROW = 8;
+const emptyEdits = () => ({ parents: {}, created: {}, deleted: [], icons: {}, tabTitles: {}, bgs: {}, texts: {}, values: {}, capstone: {}, unlocks: {}, visibility: {}, order: null });
+/** Edit maps keyed by advancement id — what "Undo my edits to this" clears. */
+const EDIT_KEYS = ['parents', 'icons', 'tabTitles', 'bgs', 'texts', 'values', 'capstone', 'unlocks', 'visibility'];
+const view = { layout: 'proposed', other: false, creative: false, earned: true, tabId: DT_ROOT, withChildren: true, paint: null };
+try { Object.assign(view, JSON.parse(localStorage.getItem('dt-adv-view') || '{}')); } catch (e) {}
+const saveView = () => { try { localStorage.setItem('dt-adv-view', JSON.stringify(view)); } catch (e) {} };
+
+let edits = emptyEdits(), history = [], selected = null, picking = null;
+let S = 3, scrolls = {}, bounds = null, layoutCache = null;
+const gui = document.getElementById('gui'), tip = document.getElementById('tip'), menu = document.getElementById('menu');
+const px = v => `${v * S}px`;
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+const el = (cls, css, parent) => { const d = document.createElement('div'); d.className = cls; Object.assign(d.style, css || {}); parent && parent.appendChild(d); return d; };
+const clone = o => JSON.parse(JSON.stringify(o));
+const kindOf = id => id.startsWith('dungeontrain:editor') ? 'editor' : (id.startsWith('dungeontrain:') ? 'dt' : 'other');
+const STONE_BG = 'minecraft:textures/gui/advancements/backgrounds/stone.png';
+/** Data URI for a background resource path, from the swatches or the full block list. */
+const bgUri = k => M.bgs[k] || M.moreBgs[k] || M.bgs[STONE_BG];
+/** "stone bricks" from "minecraft:textures/block/stone_bricks.png". */
+const bgName = k => (k || '').split('/').pop().replace(/\.png$/, '').replace(/_/g, ' ');
+const grouped = n => Number(n).toLocaleString('en-US');
+
+// ---------- required values ----------
+function formatReq(req) {
+  if (req.unit !== 'ticks') return grouped(req.n);
+  const hours = req.n / TICKS_PER_HOUR;
+  if (hours >= 24 && hours % 24 === 0) { const d = hours / 24; return `${grouped(d)} ${d === 1 ? 'day' : 'days'}`; }
+  const h = Math.round(hours * 100) / 100;
+  return `${grouped(h)} ${h === 1 ? 'hour' : 'hours'}`;
+}
+const descOf = n => n.req ? (n.d || '').replace(/%(\d+\$)?s/g, formatReq(n.req)) : (n.d || '');
+const reqUnitLabel = req => ({ count: 'needed', metres: 'metres', ticks: 'hours' })[req.unit];
+const reqToInput = req => req.unit === 'ticks' ? req.n / TICKS_PER_HOUR : req.n;
+const inputToReq = (req, v) => req.unit === 'ticks' ? Math.round(v * TICKS_PER_HOUR) : Math.round(v);
+
+// ---------- model ----------
+function effective() {
+  if (view.layout === 'current') {
+    const nodes = {}; Object.keys(M.nodes).forEach(id => { nodes[id] = { ...M.nodes[id] }; });
+    return { nodes, parents: { ...M.gameParents }, order: M.gameOrder.slice(), titles: {}, editable: false };
+  }
+  const B = M.baseline;
+  const deleted = new Set(edits.deleted);
+  const created = { ...B.created, ...edits.created };
+  Object.keys(created).forEach(k => { if (deleted.has(k)) delete created[k]; });
+  const nodes = {};
+  Object.keys(M.nodes).forEach(id => { nodes[id] = { ...M.nodes[id] }; });
+  const values = edits.values || {};
+  Object.keys(values).forEach(id => { if (nodes[id] && nodes[id].req) nodes[id].req = { ...nodes[id].req, n: values[id] }; });
+  const texts = edits.texts || {};
+  Object.keys(texts).forEach(id => { if (nodes[id]) Object.assign(nodes[id], texts[id]); });
+  const resolve = (id, seen) => {
+    if (nodes[id]) return nodes[id];
+    const c = created[id]; if (!c || seen.has(id)) return null; seen.add(id);
+    let n;
+    if (c.copyOf) { const src = resolve(c.copyOf, seen); if (!src) return null; n = { ...src, h: true, copyOf: c.copyOf, bg: c.bg || src.bg }; }
+    else if (c.duplicateOf) {
+      // A duplicate: a new advancement earned by the same criteria, with its own text, icon and value.
+      const src = resolve(c.duplicateOf, seen); if (!src) return null;
+      const { copyOf, unlockedBy, chain, bg, ...rest } = src;
+      n = { ...rest, t: c.t, d: c.d || '', hint: c.hint || undefined, i: iconIndex(c.item || M.iconIds[src.i]), tx: 'tdh',
+            duplicateOf: c.duplicateOf, cap: { base: !!(src.cap && src.cap.base !== false), ed: true },
+            req: src.req ? { ...src.req, n: values[id] != null ? values[id] : src.req.n } : undefined, ...(texts[id] || {}) };
+    }
+    else n = { t: c.t, d: c.d || '', f: c.f || 'task', i: iconIndex(c.item || 'minecraft:knowledge_book'), h: !!c.unlockedBy, bg: c.bg, unlockedBy: c.unlockedBy || undefined, trig: 'impossible', ...(texts[id] || {}) };
+    n.created = true; nodes[id] = n; return n;
+  };
+  Object.keys(created).forEach(id => resolve(id, new Set()));
+  const icons = { ...B.icons, ...edits.icons };
+  Object.keys(icons).forEach(id => { if (nodes[id]) nodes[id].i = typeof icons[id] === 'string' ? iconIndex(icons[id]) : icons[id]; });
+  Object.keys(nodes).forEach(id => {
+    const n = nodes[id]; if (!n.copyOf || !nodes[n.copyOf]) return;
+    const s = nodes[n.copyOf]; n.t = s.t; n.d = s.d; n.f = s.f; n.req = s.req; n.hint = s.hint; if (!(id in icons) && !M.nodes[id]) n.i = s.i; // a saved copy keeps its own icon
+  });
+  const unlocks = edits.unlocks || {};
+  Object.keys(unlocks).forEach(id => { if (nodes[id]) { nodes[id] = { ...nodes[id], unlockedBy: unlocks[id] || undefined }; } });
+  const bgs = { ...B.bgs, ...edits.bgs };
+  Object.keys(bgs).forEach(id => { if (nodes[id]) nodes[id].bg = bgs[id]; });
+  const parents = { ...M.gameParents, ...B.parents, ...edits.parents };
+  Object.keys(parents).forEach(id => { if (!nodes[id]) delete parents[id]; else if (parents[id] && !nodes[parents[id]]) parents[id] = ''; });
+  Object.keys(nodes).forEach(id => { if (!(id in parents)) parents[id] = ''; });
+  // Everything Burrito / It's Not That Simple, as CompletionistAdvancement.isRequiredId: by default an advancement
+  // counts only in the Dungeon Train tab, so moving one between tabs flips its default live. An override (the repo's,
+  // or a checkbox ticked here) wins; reset follows "counts" unless it was set on its own.
+  const caps = edits.capstone || {};
+  const tabRootOf = id => { let a = id; for (let g = 0; parents[a] && g < 500; g++) a = parents[a]; return a; };
+  Object.keys(nodes).forEach(id => {
+    const n = nodes[id];
+    if (n.created && !n.cap) n.cap = n.copyOf || n.unlockedBy ? { req: false, reset: false, ed: false } : { base: true, ed: true };
+    if (n.unlockedBy && n.cap) n.cap = { req: false, reset: false, ed: false }; // follows its source, never counts
+    if (!n.cap || !n.cap.ed) return; // the capstone pair and copies keep what the repo says
+    const c = n.cap, e = caps[id] || {};
+    const def = !!c.base && tabRootOf(id) === DT_ROOT;
+    const req = 'req' in e ? e.req : (c.ovReq != null ? c.ovReq : def);
+    const reset = 'reset' in e ? e.reset : (c.ovReset != null ? c.ovReset : req);
+    nodes[id] = { ...n, cap: { ...c, req, reset, def } };
+  });
+  // Visibility: the editor's mode, else the one saved in the repo, else the default for where it sits now.
+  const visEdits = edits.visibility || {};
+  Object.keys(nodes).forEach(id => {
+    if (kindOf(id) === 'other') return;
+    const n = nodes[id], base = M.nodes[id];
+    const visDef = parents[id] ? 'parent' : (n.h ? 'earned' : 'always');
+    const saved = base && base.vis && base.vis !== base.visDef ? base.vis : null;
+    let vis = visEdits[id] || saved || visDef;
+    if (!parents[id] && vis === 'parent') vis = visDef; // a tab head has no parent to wait for
+    nodes[id] = { ...n, visDef, vis };
+  });
+  const order = (edits.order || B.order).filter(id => nodes[id] && !parents[id]);
+  return { nodes, parents, order, titles: { ...B.tabTitles, ...edits.tabTitles }, editable: true };
+}
+
+function computeLayout() {
+  const E = effective();
+  const kids = {};
+  Object.keys(E.parents).forEach(id => { const p = E.parents[id]; (kids[p] = kids[p] || []).push(id); });
+  Object.values(kids).forEach(a => a.sort());
+  const roots = (kids[''] || []).slice();
+  const dtExtra = roots.filter(r => kindOf(r) !== 'other' && !E.order.includes(r)).sort();
+  const vanilla = M.gameOrder.filter(r => kindOf(r) === 'other' && roots.includes(r));
+  const allRoots = [...E.order.filter(r => roots.includes(r)), ...dtExtra, ...vanilla];
+  const tabOf = {};
+  const tabs = allRoots.map(r => {
+    const nodes = []; let row = 0;
+    const place = (id, depth) => {
+      const ys = (kids[id] || []).map(c => place(c, depth + 1));
+      const y = ys.length ? ys[0] : row; if (!ys.length) row++;
+      nodes.push({ ...E.nodes[id], id, p: E.parents[id], x: depth, y });
+      tabOf[id] = r;
+      return y;
+    };
+    place(r, 0);
+    const rn = E.nodes[r];
+    return { id: r, title: E.titles[r] || rn.t, icon: rn.i, bg: rn.bg || STONE_BG, nodes, kind: kindOf(r) };
+  });
+  return { E, tabs, tabOf, kids };
+}
+const visibleTabs = L => L.tabs.filter(t => t.kind === 'dt' || (t.kind === 'editor' && view.creative) || (t.kind === 'other' && view.other));
+const tabTitle = (L, rootId) => { const t = L.tabs.find(t => t.id === rootId); return t ? t.title : ''; };
+const countDesc = (L, id) => { let c = 0; (L.kids[id] || []).forEach(k => { c += 1 + countDesc(L, k); }); return c; };
+
+// ---------- edits ----------
+function commit(fn, message) {
+  history.push(clone(edits));
+  if (history.length > 100) history.shift();
+  fn(edits);
+  queueSave();
+  render();
+  if (message) toast(message);
+}
+function isDescendant(L, id, maybeChild) { let p = maybeChild; while (p) { if (p === id) return true; p = L.E.parents[p]; } return false; }
+
+function canReparent(L, id, parent, withChildren) {
+  if (!L.E.editable) return 'Switch Layout to With my edits to edit.';
+  if (id === DT_ROOT) return 'Dungeon Train stays the first tab.';
+  if (kindOf(id) === 'other') return 'Vanilla advancements can’t be edited.';
+  if (parent && kindOf(parent) === 'other') return 'Dungeon Train advancements can’t go into a vanilla tab.';
+  if (parent === id) return 'It can’t sit under itself.';
+  if (parent && withChildren && isDescendant(L, id, parent)) return 'That is one of its own children. Untick “Bring its children” to move it there alone.';
+  if (!withChildren && !L.E.parents[id] && (L.kids[id] || []).length) return 'This heads a tab, so its children need it. Tick “Bring its children”.';
+  return null;
+}
+
+function reparent(id, parent, withChildren) {
+  if (withChildren === undefined) withChildren = view.withChildren;
+  const L = layoutCache, err = canReparent(L, id, parent, withChildren);
+  if (err) { toast(err); return; }
+  if ((L.E.parents[id] || '') === (parent || '')) return;
+  const n = L.E.nodes[id], oldParent = L.E.parents[id] || '';
+  const kids = (L.kids[id] || []).slice();
+  const where = parent ? `under “${L.E.nodes[parent].t}” in ${tabTitle(L, L.tabOf[parent])}` : 'into its own tab';
+  const extra = kids.length ? (withChildren ? ` with ${countDesc(L, id)} below it` : `; its ${kids.length} ${kids.length === 1 ? 'child stays' : 'children stay'} behind`) : '';
+  commit(e => {
+    if (!withChildren) kids.forEach(k => { e.parents[k] = (k === parent) ? oldParent : oldParent; });
+    // moving it under its own child without the children: that child first steps up to the old parent
+    e.parents[id] = parent || '';
+    if (!parent) { const ord = (e.order || M.baseline.order).slice(); if (!ord.includes(id)) ord.push(id); e.order = ord; }
+  }, `Moved “${n.t}” ${where}${extra}.`);
+}
+
+function moveToTab(id, tabRoot) {
+  if (!tabRoot) return;
+  if (layoutCache.tabOf[id] === tabRoot) { toast('It is already in that tab.'); return; }
+  reparent(id, tabRoot);
+}
+
+const slugify = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'tab';
+/** Tab heads live under dungeon_train/ so they get Dungeon Train's tab visibility rules. */
+const TAB_PREFIX = 'dungeontrain:dungeon_train/tab_';
+const uniqueId = (taken, base) => { let id = base, n = 2; while (taken(id)) id = `${base}_${n++}`; return id; };
+const tabIdFor = (L, name) => uniqueId(id => !!L.E.nodes[id], TAB_PREFIX + slugify(name));
+
+// ---------- ids of new advancements ----------
+const NEW_ID_RE = /^[a-z0-9_]+(\/[a-z0-9_]+){1,3}$/;
+/** Why {@code path} (the part after "dungeontrain:") can't be a new advancement's id, or null when it can. */
+function badNewId(L, oldId, path) {
+  if (!NEW_ID_RE.test(path)) return 'Use lower-case letters, digits and _, in a folder: dungeon_train/my_advancement.';
+  if (path.startsWith('editor/')) return 'The editor tab\u2019s ids are not edited here.';
+  const id = 'dungeontrain:' + path;
+  if (id !== oldId && (L.E.nodes[id] || M.nodes[id])) return 'That id is already used by another advancement.';
+  return null;
+}
+/** Give a new, unsaved advancement a different id: every edit that names it follows, in one undoable step. */
+function renameCreated(oldId, path) {
+  const L = layoutCache, newId = 'dungeontrain:' + path;
+  const why = badNewId(L, oldId, path);
+  if (why) { toast(why); return false; }
+  if (newId === oldId) return true;
+  const swap = v => (v === oldId ? newId : v);
+  commit(e => {
+    const created = {};
+    Object.entries(e.created).forEach(([k, c]) => {
+      created[swap(k)] = { ...c, ...(c.copyOf ? { copyOf: swap(c.copyOf) } : {}), ...(c.duplicateOf ? { duplicateOf: swap(c.duplicateOf) } : {}),
+                           ...(c.unlockedBy ? { unlockedBy: swap(c.unlockedBy) } : {}) };
+    });
+    e.created = created;
+    const parents = {};
+    Object.entries(e.parents).forEach(([k, p]) => { parents[swap(k)] = swap(p); });
+    e.parents = parents;
+    ['texts', 'values', 'icons', 'visibility', 'capstone', 'bgs', 'tabTitles'].forEach(key => {
+      if (e[key] && oldId in e[key]) { e[key] = { ...e[key], [newId]: e[key][oldId] }; delete e[key][oldId]; }
+    });
+    if (e.unlocks) e.unlocks = Object.fromEntries(Object.entries(e.unlocks).map(([k, v]) => [swap(k), swap(v)]));
+    if (e.order) e.order = e.order.map(swap);
+  }, `Id is now ${newId}.`);
+  if (view.tabId === oldId) { view.tabId = newId; saveView(); }
+  if (openSecFor === oldId) openSecFor = newId;
+  openMenu(newId);
+  return true;
+}
+
+/** Duplicate an advancement: a new one, earned the same way, placed as a child of the original. */
+function duplicate(id) {
+  const L = layoutCache, n = L.E.nodes[id];
+  if (!L.E.editable) { toast('Switch Layout to With my edits to edit.'); return; }
+  const newId = uniqueId(x => !!L.E.nodes[x], id + '_copy');
+  commit(e => {
+    e.created[newId] = { duplicateOf: id, t: `${n.t} (copy)`, d: n.d || '', hint: n.hint || '', item: M.iconIds[n.i] };
+    e.parents[newId] = id;
+    // It starts with the original's Everything Burrito / It's Not That Simple settings, not its tab's default.
+    const own = n.cap && n.cap.ed ? n.cap : null;
+    if (own) e.capstone[newId] = { req: own.req, reset: own.reset };
+  }, `Duplicated \u201c${n.t}\u201d as its child. Rename it and set its value.`);
+  openSec = 'text'; openSecFor = newId;
+  openMenu(newId);
+}
+
+function openCopyAsTab(id) {
+  const L = layoutCache, n = L.E.nodes[id];
+  const rootId = tabIdFor(L, n.t);
+  commit(e => {
+    e.created[rootId] = { copyOf: id, bg: STONE_BG };
+    e.parents[rootId] = '';
+    e.order = [...(e.order || M.baseline.order).filter(x => x !== rootId), rootId];
+  }, `Made a tab headed by a copy of “${n.t}”. Move advancements into it.`);
+  view.tabId = rootId; saveView(); render(); openMenu(rootId);
+}
+
+function newTab() {
+  const L = layoutCache;
+  if (!L.E.editable) { toast('Switch Layout to With my edits to edit.'); return; }
+  const rootId = tabIdFor(L, 'new');
+  commit(e => {
+    e.created[rootId] = { t: 'New Tab', d: 'Describe this tab', f: 'task', item: 'minecraft:knowledge_book', bg: STONE_BG, unlockedBy: '' };
+    e.parents[rootId] = '';
+    e.order = [...(e.order || M.baseline.order), rootId];
+  }, 'Added a new tab. Name it, pick what unlocks it, then move advancements into it.');
+  view.tabId = rootId; saveView(); render(); openMenu(rootId);
+}
+
+function deleteCreated(id) {
+  const L = layoutCache;
+  if ((L.kids[id] || []).length) { toast('Move its advancements somewhere else first.'); return; }
+  if (Object.keys(L.E.nodes).some(k => L.E.nodes[k].copyOf === id)) { toast('Delete its copies first.'); return; }
+  const t = L.E.nodes[id].t;
+  commit(e => {
+    EDIT_KEYS.forEach(k => { if (e[k]) delete e[k][id]; });
+    delete e.created[id];
+    if (M.baseline.created[id] && !e.deleted.includes(id)) e.deleted.push(id);
+    if (e.order) e.order = e.order.filter(x => x !== id);
+  }, `Deleted “${t}”.`);
+  closeMenu();
+}
+
+function moveTab(id, dir) {
+  const L = layoutCache;
+  const ord = L.tabs.filter(t => t.kind !== 'other').map(t => t.id);
+  const i = ord.indexOf(id), j = i + dir;
+  if (i < 1 || j < 1 || j >= ord.length) return;
+  [ord[i], ord[j]] = [ord[j], ord[i]];
+  commit(e => { e.order = ord; });
+}
+
+function resetNode(id) {
+  commit(e => {
+    EDIT_KEYS.forEach(k => { if (e[k]) delete e[k][id]; });
+    if (e.created[id] && !M.baseline.created[id]) delete e.created[id];
+    e.deleted = e.deleted.filter(x => x !== id);
+  }, 'Undid your edits to this one.');
+}
+
+// ---------- saving ----------
+let docRef = null, saveTimer = null, lastSaved = '', writable = true;
+const setStatus = (t, err) => { const s = document.getElementById('status'); s.textContent = t; s.classList.toggle('err', !!err); };
+function queueSave() {
+  try { localStorage.setItem(EDITS_KEY, JSON.stringify(edits)); } catch (e) {}
+  if (!docRef) { setStatus(LOCAL ? 'Unsaved edits in this browser. Save to repo writes them.' : 'Saved in this browser only'); return; }
+  if (!writable) { setStatus('View only: your edits are not saved', true); return; }
+  setStatus('Saving…');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    const body = JSON.stringify(edits);
+    if (body === lastSaved) { setStatus('Saved'); return; }
+    try { await docRef.set({ edits: JSON.parse(body), savedAt: new Date().toISOString() }); lastSaved = body; setStatus('Saved'); }
+    catch (err) {
+      const code = err && err.code;
+      if (code === 'permission_denied' || code === 'not_granted') { writable = false; setStatus('View only: your edits are not saved', true); }
+      else setStatus('Couldn’t save. Your next edit will try again.', true);
+    }
+  }, 600);
+}
+async function connect() {
+  try { const raw = localStorage.getItem(EDITS_KEY); if (raw) edits = migrateEdits(JSON.parse(raw)); } catch (e) {}
+  render();
+  setStatus(LOCAL ? 'Showing the repo as it is now' : 'Saved in this browser only');
+  if (LOCAL || !window.claude || !window.claude.use) return;
+  const db = await window.claude.use('db');
+  if (!db) return;
+  docRef = db.doc('layouts/main');
+  setStatus('Connected');
+  docRef.onSnapshot(snap => {
+    if (snap.metadata && snap.metadata.hasPendingWrites) return;
+    const data = snap.exists ? snap.data() : null;
+    const remote = data && data.edits ? JSON.stringify(data.edits) : null;
+    if (remote) {
+      lastSaved = remote;
+      if (remote !== JSON.stringify(edits)) { edits = migrateEdits(JSON.parse(remote)); render(); }
+      setStatus('Saved');
+    } else if (JSON.stringify(edits) !== JSON.stringify(emptyEdits())) queueSave();
+    else setStatus('Saved');
+  }, () => setStatus('Lost the connection. Edits stay in this browser.', true));
+}
+
+// ---------- export ----------
+/**
+ * Every edit as the change set apply.py writes into the repo: only what differs from the files as
+ * they are. Icons are item ids and backgrounds resource paths, exactly as the JSON stores them.
+ */
+function exportChanges() {
+  const saved = view.layout; view.layout = 'proposed';
+  const L = computeLayout(); view.layout = saved;
+  const E = L.E, out = { version: 1, parents: {}, created: {}, deleted: edits.deleted.slice(), icons: {}, values: {}, backgrounds: {}, tabNames: {}, capstone: {}, unlocks: {}, visibility: {}, texts: {}, order: null };
+  Object.keys(E.nodes).forEach(id => {
+    const n = E.nodes[id], base = M.nodes[id];
+    if (kindOf(id) === 'other') return;
+    if (!base) {
+      out.created[id] = n.copyOf
+        ? { parent: E.parents[id] || null, copyOf: n.copyOf, icon: M.iconIds[n.i], background: n.bg || null }
+        : n.duplicateOf
+        ? { parent: E.parents[id] || null, duplicateOf: n.duplicateOf, title: n.t, description: n.d, hint: n.hint || '',
+            icon: M.iconIds[n.i], value: n.req ? n.req.n : null }
+        : { parent: E.parents[id] || null, title: n.t, description: n.d, frame: n.f, icon: M.iconIds[n.i], background: n.bg || null, unlockedBy: n.unlockedBy || null };
+      if (n.cap && n.cap.ed && (n.cap.req !== n.cap.def || n.cap.reset !== n.cap.req)) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset };
+      if (n.vis && n.vis !== n.visDef) out.visibility[id] = n.vis;
+      return;
+    }
+    if ((E.parents[id] || '') !== (M.gameParents[id] || '')) out.parents[id] = E.parents[id] || null;
+    if (n.i !== base.i) out.icons[id] = M.iconIds[n.i];
+    if (n.req && base.req && n.req.n !== base.req.n && !n.copyOf) out.values[id] = { field: base.req.field, from: base.req.n, to: n.req.n };
+    if (!E.parents[id] && n.bg && n.bg !== base.bg) out.backgrounds[id] = n.bg;
+    if (!E.parents[id] && !n.copyOf && (n.unlockedBy || '') !== (base.unlockedBy || '')) out.unlocks[id] = n.unlockedBy || null;
+    const wantVis = n.vis === n.visDef ? null : n.vis, savedVis = base.vis !== base.visDef ? base.vis : null;
+    if (wantVis !== savedVis) out.visibility[id] = wantVis;
+    if (n.cap && n.cap.ed && (edits.capstone || {})[id]) out.capstone[id] = { required: n.cap.req, reset: n.cap.reset }; // apply.py stores it only where it beats the default
+    const tx = {};
+    [['t', 'title'], ['d', 'description'], ['hint', 'hint']].forEach(([k, f]) => { if ((n[k] || '') !== (base[k] || '') && n[k]) tx[f] = n[k]; });
+    if (Object.keys(tx).length && !n.copyOf) out.texts[id] = tx;
+  });
+  const titles = E.titles;
+  Object.keys({ ...titles, ...M.baseline.tabTitles }).forEach(id => {
+    if (!E.nodes[id] || E.parents[id]) return;
+    const now = titles[id] || null, was = M.baseline.tabTitles[id] || null;
+    if (now !== was) out.tabNames[id] = now;
+  });
+  const order = L.tabs.filter(t => t.kind !== 'other').map(t => t.id);
+  if (JSON.stringify(order) !== JSON.stringify(M.baseline.order)) out.order = order;
+  return renameNewTabs(out, L);
+}
+
+/**
+ * A new tab gets its id when it is made, before it has a name ("tab_new"). Ids are permanent once saved,
+ * so on export each placeholder is renamed after the tab's name or title (tab_challenges), everywhere
+ * the change set mentions it.
+ */
+function renameNewTabs(out, L) {
+  const taken = new Set(Object.keys(M.nodes));
+  const renames = {};
+  Object.keys(out.created).forEach(id => {
+    if (/_copy(_\d+)?$/.test(id) && out.created[id].duplicateOf) {
+      // A duplicate is named after its title, in its original's folder: "Ten Thousand Carriages" → dungeon_train/ten_thousand_carriages.
+      const folder = id.slice(0, id.lastIndexOf('/') + 1);
+      const target = uniqueId(x => taken.has(x) || (x !== id && !!out.created[x]), folder + slugify(L.E.nodes[id].t));
+      taken.add(target);
+      if (target !== id) renames[id] = target;
+      return;
+    }
+    if (!/\/tab_new(_\d+)?$/.test(id)) return;
+    const name = L.E.titles[id] || L.E.nodes[id].t;
+    const target = uniqueId(x => taken.has(x), TAB_PREFIX + slugify(name));
+    taken.add(target);
+    if (target !== id) renames[id] = target;
+  });
+  if (!Object.keys(renames).length) return out;
+  let text = JSON.stringify(out);
+  Object.keys(renames).forEach(from => { text = text.split(`"${from}"`).join(`"${renames[from]}"`); });
+  return JSON.parse(text);
+}
+
+async function saveToRepo() {
+  const changes = exportChanges();
+  setStatus('Writing to the repo…');
+  try {
+    const res = await fetch('/api/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes) });
+    const report = await res.json();
+    if (!res.ok) throw new Error(report.error || res.statusText);
+    try { localStorage.removeItem(EDITS_KEY); } catch (e) {}
+    sessionStorage.setItem('dt-adv-report', JSON.stringify(report));
+    location.reload();
+  } catch (err) {
+    setStatus(`Couldn\u2019t save to the repo: ${err.message}. Your edits are still here.`, true);
+  }
+}
+
+/** Write any pending edit to the page's database now (the shared page saves on a 600 ms debounce). */
+async function flushSave() {
+  if (!docRef || !writable) return false;
+  clearTimeout(saveTimer);
+  const body = JSON.stringify(edits);
+  if (body !== lastSaved) { await docRef.set({ edits: JSON.parse(body), savedAt: new Date().toISOString() }); lastSaved = body; }
+  setStatus('Saved');
+  return true;
+}
+
+/**
+ * Save & commit. Locally serve.py does it all (commit.py: apply, tests, version bump, commit, push). On the
+ * shared page there is no repo to reach, so the edits are saved to the page's database and a comment asks the
+ * Claude session watching this page to commit them; Claude replies in that thread with the commit.
+ */
+async function saveAndCommit(button) {
+  if (LOCAL) {
+    const changes = exportChanges();
+    setStatus('Saving, testing and committing…');
+    try {
+      const res = await fetch('/api/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(changes) });
+      const report = await res.json();
+      if (!res.ok) throw new Error(report.error || res.statusText);
+      try { localStorage.removeItem(EDITS_KEY); } catch (e) {}
+      sessionStorage.setItem('dt-adv-report', JSON.stringify(report));
+      location.reload();
+    } catch (err) {
+      setStatus(`Not committed: ${err.message}`, true);
+    }
+    return;
+  }
+  const comments = await commentsApi();
+  if (!comments) { setStatus('This view can\u2019t reach Claude to commit.', true); return; }
+  try {
+    if (!(await flushSave())) { setStatus('View only: nothing to commit from here.', true); return; }
+    const state = await comments.canSendToClaude();
+    if (state !== 'available') { setStatus(COMMIT_WHY[state] || COMMIT_WHY.off, true); return; }
+    const anchor = await comments.anchorFor(button);
+    await comments.sendToClaude({ anchor, text: `Save & commit: please commit the editor changes (saved ${new Date().toISOString()}).` });
+    setStatus('Sent to Claude to commit. The reply with the commit appears in the comment thread.');
+  } catch (err) {
+    setStatus(`Couldn\u2019t send it to Claude: ${(err && (err.message || err.code)) || err}`, true);
+  }
+}
+const COMMIT_WHY = {
+  no_session: 'No Claude session is open on this page to commit it.',
+  writers_only: 'Only the page\u2019s editors can ask Claude to commit.',
+  off: 'Sending to Claude isn\u2019t available in this view.',
+};
+let commentsPromise = null;
+const commentsApi = () => (commentsPromise = commentsPromise ||
+  (window.claude && window.claude.use ? window.claude.use('comments').catch(() => null) : Promise.resolve(null)));
+
+// ---------- paint mode: click to put advancements in or out of the burrito / It's Not That Simple ----------
+const PAINT_NAMES = { req: 'the Everything Burrito', reset: 'It\u2019s Not That Simple' };
+const capWrite = (ed, id, key, v) => { ed.capstone = ed.capstone || {}; ed.capstone[id] = { ...(ed.capstone[id] || {}), [key]: v }; };
+/**
+ * Whose Everything Burrito / It's Not That Simple flags an advancement shows and changes: its own, or — for a tab
+ * copy or a tab head unlocked by another — its original's, so the two always move together.
+ */
+function capOwner(E, id) {
+  const n = E.nodes[id], src = n && (n.copyOf || n.unlockedBy);
+  const s = src && E.nodes[src];
+  return s && s.cap && s.cap.ed ? src : id;
+}
+/** Why an advancement can't be painted, or null when it can. */
+function paintBlocked(E, id) {
+  const n = E.nodes[capOwner(E, id)];
+  if (!n || !n.cap) return 'Vanilla advancements never count.';
+  if (n.cap.ed) return null;
+  return 'Fixed: the Everything Burrito, its reward and the Editor tab can\u2019t change.';
+}
+/** Is it in (counts / is reset) for the paint key — through its original for a copy. */
+const paintIn = (E, id, key) => !!E.nodes[capOwner(E, id)].cap[key];
+function toggleCap(id) {
+  const E = layoutCache.E, key = view.paint, why = paintBlocked(E, id);
+  if (why) { toast(why); return; }
+  const owner = capOwner(E, id), n = E.nodes[owner], v = !n.cap[key];
+  const verb = key === 'req' ? (v ? 'now counts towards' : 'no longer counts towards') : (v ? 'now reset by' : 'now kept by');
+  const via = owner !== id ? ' (and its copy)' : '';
+  commit(ed => capWrite(ed, owner, key, v), `${n.t}${via}: ${verb} ${PAINT_NAMES[key]}.`);
+}
+/** The tab's paintable originals (a copy counts through its original, once), and whether the button puts them in. */
+function tabPaint(L, tab) {
+  const ids = [...new Set(tab.nodes.map(m => m.id).filter(id => !paintBlocked(L.E, id)).map(id => capOwner(L.E, id)))];
+  return { ids, putIn: ids.some(id => !L.E.nodes[id].cap[view.paint]) };
+}
+function paintTab(tab) {
+  const key = view.paint, { ids, putIn } = tabPaint(layoutCache, tab);
+  if (!ids.length) { toast('Nothing in this tab can change.'); return; }
+  commit(ed => ids.forEach(id => capWrite(ed, id, key, putIn)),
+    `${tab.title}: all ${ids.length} ${putIn ? 'in' : 'out of'} ${PAINT_NAMES[key]}.`);
+}
+
+// ---------- what a capstone needs ----------
+const BURRITO = 'dungeontrain:dungeon_train/completionist';
+/**
+ * The advancements the selected capstone needs, for highlighting: the Everything Burrito's (those that count
+ * towards it), or a tab-complete advancement's (its tab, less the tab-complete copies). Hidden-until-earned
+ * ones are left out, as a player can't see them. Null when the selection is neither.
+ */
+function neededBy(L, id) {
+  const E = L.E;
+  if (E.nodes[id] && E.nodes[id].copyOf && M.complete && M.complete[E.nodes[id].copyOf]) id = E.nodes[id].copyOf; // its in-tab copy
+  let ids;
+  if (id === BURRITO) ids = Object.keys(E.nodes).filter(k => E.nodes[k].cap && E.nodes[k].cap.req);
+  else if (M.complete && M.complete[id]) {
+    const root = M.complete[id], skip = new Set(Object.keys(M.complete));
+    ids = Object.keys(E.nodes).filter(k => isDescendant(L, root, k) && !(E.nodes[k].copyOf && skip.has(E.nodes[k].copyOf)));
+  } else return null;
+  return new Set(ids.filter(k => E.nodes[k].vis !== 'earned'));
+}
+
+// ---------- visibility ----------
+const VIS_LABELS = { parent: 'Hidden until parent', always: 'Always visible (while its parent is)', earned: 'Hidden until earned' };
+
+/** Would the game show this advancement to a player who has earned nothing? (AdvancementVisibilityRule) */
+function visibleWithNothingEarned(E, id) {
+  const n = E.nodes[id];
+  if (!n || !n.vis) return true;
+  const parent = E.parents[id];
+  if (!parent) return n.vis === 'always';
+  return n.vis === 'always' && visibleWithNothingEarned(E, parent);
+}

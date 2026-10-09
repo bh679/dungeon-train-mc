@@ -5,6 +5,8 @@ import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
+import games.brennan.dungeontrain.advancement.TabGateways;
+import games.brennan.dungeontrain.advancement.TabCompleteAdvancements;
 import games.brennan.dungeontrain.advancement.FarStartAdvancement;
 import games.brennan.dungeontrain.advancement.FirstEverAdvancements;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
@@ -12,6 +14,7 @@ import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.LeatherOverDiamondAdvancement;
+import games.brennan.dungeontrain.advancement.LifeChallengeAdvancements;
 import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.advancement.NothingButBooksAdvancement;
 import games.brennan.dungeontrain.advancement.PacifistAdvancement;
@@ -347,6 +350,8 @@ public final class AchievementEvents {
         // "Pacifist" chain — same travelled-carriage counter as carts_100 but
         // requires zero damage dealt this life at each threshold.
         PacifistAdvancement.checkAndGrant(player, effectiveTravelled, run.damageDealt());
+        // Apple / melon / naked challenges: same counter, each gated by its per-life flag.
+        LifeChallengeAdvancements.checkAndGrant(player, effectiveTravelled);
         // "Not My Chest" / "Still Not My Chest" — carriages travelled since the
         // last chest/barrel open this life. The admin difficulty offset is in
         // both terms, so it cancels in the subtraction.
@@ -913,6 +918,7 @@ public final class AchievementEvents {
         player.setData(ModDataAttachments.CARTS_AT_LAST_CONTAINER_OPEN.get(), 0);
         player.setData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get(), Boolean.FALSE);
+        LifeChallengeAdvancements.resetForNewLife(player);
         // A fresh life rules nothing out yet — clear the client's greyed-out mirror.
         LifeDisqualification.sync(player);
         // Per-life travelled-carriage-index is now 0; push the HUD packet
@@ -996,6 +1002,9 @@ public final class AchievementEvents {
         // place that backfill can happen. It reads this world's restored
         // (post-replay) progress and grants normally (replaying is false here).
         replaySidecarAdvancements(player);
+        // Tab copies follow their originals as restored above (or revoked by Start Again).
+        TabGateways.sync(player);
+        TabCompleteAdvancements.checkAndGrant(player);
         CompletionistAdvancement.checkAndGrant(player);
         // Vanilla sent this player's command tree before any of the above ran. If they hold the
         // banked capstone — replayed just now, or granted just now — /advancement revoke @s
@@ -1242,6 +1251,10 @@ public final class AchievementEvents {
         ResourceLocation id = advancement.id();
         // An Enchiridion camera advancement remembers the photo that earned it (client keeps the copy).
         games.brennan.dungeontrain.compat.photo.AdvancementPhotoCapture.onEarn(player, id, replaying);
+        // An advancement that unlocks a tab earns that tab's head (a copy, or an unlockedBy link). Those
+        // heads follow their source, not achievements: no persistence, hint, accolade or capstone check.
+        TabGateways.onEarned(player, id);
+        if (TabGateways.isLinked(id)) return;
         // Persist across worlds: capture every GUI-visible advancement — vanilla,
         // Dungeon Train, and other mods alike — not just dungeontrain:*. The
         // hidden display-less recipe tree is filtered out by shouldPersist.
@@ -1279,6 +1292,11 @@ public final class AchievementEvents {
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the
             // needless re-entry (the award is idempotent once done regardless).
+            // Each tab's "tab complete" advancement (Dungeon Train Explored and friends): every advancement
+            // in that tab. Before the burrito, which needs them. Skip their own earns, as for the burrito.
+            if (!TabCompleteAdvancements.isTabComplete(id)) {
+                TabCompleteAdvancements.checkAndGrant(player);
+            }
             if (!id.equals(CompletionistAdvancement.ID)) {
                 CompletionistAdvancement.checkAndGrant(player);
             }

@@ -36,6 +36,13 @@ public final class AdvancementTrackClick {
     public static boolean handle(int button) {
         if (button != LEFT_BUTTON) return false;
         ResourceLocation id = HoveredAdvancement.current();
+        // The Everything Burrito or a tab-complete advancement pins "what you still need"; any other advancement
+        // clicked clears the pin and goes on to its own click behaviour below.
+        if (id != null && CapstoneNeeds.onClick(id)) {
+            Minecraft.getInstance().getSoundManager().play(
+                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+            return true;
+        }
         // A camera advancement opens what this computer kept: a collection's album as it fills, or the
         // photo that earned it once earned.
         if (id != null && EarnedPhotos.tryOpen(id, titleOf(id), HoveredAdvancement.currentProgress())) {

@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/drift_first_marks",
   "display": {
-    "icon": { "id": "minecraft:piston" },
+    "icon": { "id": "minecraft:tnt_minecart" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.drift_rearranged.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.drift_rearranged.description" },
     "frame": "task",

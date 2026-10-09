@@ -21,25 +21,11 @@
       "conditions": {
         "actionId": "read_any_book"
       }
-    },
-    "took_photo": {
-      "trigger": "dungeontrain:gameplay_action",
-      "conditions": {
-        "actionId": "took_photo"
-      }
-    },
-    "viewed_found_photo": {
-      "trigger": "dungeontrain:gameplay_action",
-      "conditions": {
-        "actionId": "viewed_found_photo"
-      }
     }
   },
   "requirements": [
     [
-      "read_any_book",
-      "took_photo",
-      "viewed_found_photo"
+      "read_any_book"
     ]
   ]
 }
