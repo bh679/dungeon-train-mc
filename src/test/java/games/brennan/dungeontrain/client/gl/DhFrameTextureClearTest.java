@@ -29,7 +29,7 @@ final class DhFrameTextureClearTest {
     @DisplayName("DH has not rendered yet (depth texture 0) → nothing is touched")
     void noDepthTexture_noGlCalls() {
         RecordingOps gl = new RecordingOps(true);
-        DhFrameTextureClear.clear(gl, NONE, DH_COLOR, IRIS_DEPTH);
+        assertFalse(DhFrameTextureClear.clear(gl, NONE, DH_COLOR, IRIS_DEPTH));
         assertTrue(gl.calls.isEmpty(), gl.calls.toString());
     }
 
@@ -41,7 +41,7 @@ final class DhFrameTextureClearTest {
         gl.colorMask = new boolean[] {true, false, true, false};
         gl.scissor = true;
 
-        DhFrameTextureClear.clear(gl, DH_DEPTH, DH_COLOR, IRIS_DEPTH);
+        assertTrue(DhFrameTextureClear.clear(gl, DH_DEPTH, DH_COLOR, IRIS_DEPTH));
 
         assertEquals(List.of(
                 "depthMask(true)", "colorMask(true,true,true,true)", "scissor(false)",
@@ -72,7 +72,7 @@ final class DhFrameTextureClearTest {
     void incompleteFramebuffer_noClearButRestored() {
         RecordingOps gl = new RecordingOps(false);
 
-        DhFrameTextureClear.clear(gl, DH_DEPTH, DH_COLOR, IRIS_DEPTH);
+        assertFalse(DhFrameTextureClear.clear(gl, DH_DEPTH, DH_COLOR, IRIS_DEPTH));
 
         assertFalse(gl.calls.stream().anyMatch(c -> c.startsWith("clear(")), gl.calls.toString());
         assertEquals(2, gl.calls.stream().filter(c -> c.startsWith("incomplete")).count(), gl.calls.toString());

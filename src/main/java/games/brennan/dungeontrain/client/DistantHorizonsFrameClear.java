@@ -47,6 +47,7 @@ public final class DistantHorizonsFrameClear {
      */
     private static final boolean ENABLED = Boolean.parseBoolean(System.getProperty("dungeontrain.dh_frame_clear", "true"));
 
+    private static boolean firstClearLogged;
     private static boolean irisResolved;
     private static Method irisGetInstance;
     private static Field irisDepthField;
@@ -62,7 +63,14 @@ public final class DistantHorizonsFrameClear {
         int depth = textureId(proxy.getDhDepthTextureId());
         int color = textureId(proxy.getDhColorTextureId());
         int iris = GraphicsCapabilities.shaderPackActive() ? irisNoTranslucentDepth() : NO_TEXTURE;
-        DhFrameTextureClear.clear(DhFrameTextureClear.lwjgl(), depth, color, iris);
+        boolean cleared = DhFrameTextureClear.clear(DhFrameTextureClear.lwjgl(), depth, color, iris);
+        if (cleared && !firstClearLogged) {
+            // Once per session, so a player's log shows the path is live (and whether Iris's copy
+            // was reachable) without a line per frame.
+            firstClearLogged = true;
+            LOGGER.info("[DungeonTrain] Cleared Distant Horizons' frame textures on a suppressed frame "
+                    + "(depth={}, colour={}, irisNoTranslucentDepth={})", depth, color, iris);
+        }
     }
 
     private static int textureId(DhApiResult<Integer> result) {

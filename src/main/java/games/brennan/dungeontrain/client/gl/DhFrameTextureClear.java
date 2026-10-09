@@ -34,9 +34,13 @@ public final class DhFrameTextureClear {
      * The testable core: clears {@code depthTex} to the far plane and {@code colorTex} to transparent
      * black, then {@code irisDepthTex} (when non-zero) to the far plane, restoring every piece of GL
      * state it touched. A zero DH depth texture means DH has not rendered yet — nothing to clear.
+     *
+     * @return whether DH's own textures were cleared (false when there was nothing to clear or the
+     *         scratch framebuffer would not complete)
      */
-    public static void clear(GlOps gl, int depthTex, int colorTex, int irisDepthTex) {
-        if (depthTex == NO_TEXTURE) return;
+    public static boolean clear(GlOps gl, int depthTex, int colorTex, int irisDepthTex) {
+        if (depthTex == NO_TEXTURE) return false;
+        boolean cleared = false;
 
         int previousFramebuffer = gl.drawFramebufferBinding();
         boolean previousDepthMask = gl.depthMask();
@@ -57,6 +61,7 @@ public final class DhFrameTextureClear {
                 gl.clear(colorTex == NO_TEXTURE
                         ? GL11.GL_DEPTH_BUFFER_BIT
                         : GL11.GL_DEPTH_BUFFER_BIT | GL11.GL_COLOR_BUFFER_BIT);
+                cleared = true;
             } else {
                 gl.logIncomplete("DH frame");
             }
@@ -79,6 +84,7 @@ public final class DhFrameTextureClear {
             gl.colorMask(previousColorMask[0], previousColorMask[1], previousColorMask[2], previousColorMask[3]);
             gl.depthMask(previousDepthMask);
         }
+        return cleared;
     }
 
     /** The GL calls {@link #clear} needs, so the sequence can be recorded in a test. */
