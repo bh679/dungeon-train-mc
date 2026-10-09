@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Notes which tab is being drawn, so {@link AdvancementTabTypeHaloMixin} can halo a tab that holds what the
+ * Notes which tab is being drawn, so {@link AdvancementTabTypeDecorMixin} can halo (or gild) a tab that holds what the
  * pinned capstone still needs ({@link CapstoneNeeds}). Better Advancements twin: {@code BetterAdvancementTabHaloMixin}.
  */
 @Mixin(AdvancementTab.class)

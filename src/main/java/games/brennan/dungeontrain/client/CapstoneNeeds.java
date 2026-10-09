@@ -100,6 +100,11 @@ public final class CapstoneNeeds {
         drawingTab = tabRoot;
     }
 
+    /** The tab whose tab sprite or icon is being drawn right now, or null. */
+    public static ResourceLocation drawingTab() {
+        return drawingTab;
+    }
+
     /** Is the tab being drawn one that holds an unearned advancement the pinned capstone needs? */
     public static boolean currentTabMarked() {
         return drawingTab != null && pinned != null && tabsNeeding().contains(drawingTab);
