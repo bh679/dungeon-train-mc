@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 import games.brennan.dungeontrain.client.snapshot.DeathPhotoUploads;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
-import games.brennan.dungeontrain.net.DeathStatsPacket;
 import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -13,7 +12,7 @@ import net.minecraft.util.Mth;
 
 /**
  * The beat between dying and the death recap: the live world keeps drawing — the train still
- * rolling past — while a red wash rises and "You Died!" fades in over it.
+ * rolling past — while a red wash rises over it — no text, just the moment.
  *
  * <p>It exists to keep the frame of death smooth. {@link NarrativeDeathScreen} needs this run's
  * ride photos decoded and uploaded to the GPU, and opening it straight away did that work on the
@@ -31,16 +30,13 @@ public final class DeathMomentScreen extends Screen {
     static final int MOMENT_TICKS = 30;
     /** Hand over regardless after this long; the recap waits out any decode still in flight. */
     static final int MAX_TICKS = 100;
-    /** Ticks for the wash and title to rise to full. */
+    /** Ticks for the wash to rise to full. */
     private static final int FADE_TICKS = 20;
     /** Ignore clicks this early so one already in flight at death can't skip the moment. */
     private static final int MIN_SKIP_TICKS = 10;
-    /** Below this the font renderer would draw text fully opaque — skip it instead. */
-    private static final float TEXT_EPS = 0.02f;
     /** Vanilla DeathScreen's wash, top and bottom (ARGB); alpha scales with the fade. */
     private static final int WASH_TOP = 0x60500000;
     private static final int WASH_BOTTOM = 0xA0803030;
-    private static final int CAUSE_COLOR = 0xD0D0D0;
 
     private RideSnapshot[] prewarm = new RideSnapshot[0];
     private boolean started;
@@ -128,35 +124,11 @@ public final class DeathMomentScreen extends Screen {
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         float fade = Mth.clamp((ticks + partialTick) / FADE_TICKS, 0.0f, 1.0f);
         g.fillGradient(0, 0, this.width, this.height, scaleAlpha(WASH_TOP, fade), scaleAlpha(WASH_BOTTOM, fade));
-        if (fade < TEXT_EPS) return;
-        int textAlpha = Math.round(fade * 255.0f) << 24;
-
-        g.pose().pushPose();
-        g.pose().scale(2.0f, 2.0f, 2.0f);
-        g.drawCenteredString(this.font, title(), this.width / 4, this.height / 8, textAlpha | 0xFFFFFF);
-        g.pose().popPose();
-
-        String cause = deathCause();
-        if (cause != null) {
-            g.drawCenteredString(this.font, Component.literal(cause), this.width / 2,
-                    this.height / 4 + 28, textAlpha | CAUSE_COLOR);
-        }
     }
 
     /** The world shows through untouched — no menu blur or dim. */
     @Override
     public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-    }
-
-    private Component title() {
-        boolean hardcore = minecraft != null && minecraft.level != null
-                && minecraft.level.getLevelData().isHardcore();
-        return Component.translatable(hardcore ? "deathScreen.title.hardcore" : "deathScreen.title");
-    }
-
-    private static String deathCause() {
-        DeathStatsPacket s = DeathStatsCache.get();
-        return s != null && s.deathCause() != null && !s.deathCause().isEmpty() ? s.deathCause() : null;
     }
 
     private static int scaleAlpha(int argb, float f) {
