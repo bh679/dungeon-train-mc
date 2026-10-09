@@ -169,13 +169,8 @@ public final class InstantRespawnReboard {
         return false;
     }
 
-    /**
-     * True when an "Abandon This Run" click is armed and still inside its window. Also read by
-     * {@code DeathScreenLayoutHandler}: an abandon closes the pause menu to let the kill through,
-     * and the integrated server's resume makes the train's sub-levels snap and rebuild on the
-     * client, so that death skips the live-world death moment and opens the recap straight away.
-     */
-    static boolean abandonArmed() {
+    /** True when an "Abandon This Run" click is armed and still inside its window. */
+    private static boolean abandonArmed() {
         long stamp = abandonRequestedAtMillis;
         return stamp != 0L && System.currentTimeMillis() - stamp <= ABANDON_WINDOW_MILLIS;
     }

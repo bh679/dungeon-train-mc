@@ -26,12 +26,13 @@ import net.minecraft.util.Mth;
  */
 public final class DeathMomentScreen extends Screen {
 
-    /** How long the moment plays before the recap may open (1 s). */
-    static final int MOMENT_TICKS = 20;
-    /** Hand over regardless after this long; the recap waits out any decode still in flight. */
-    static final int MAX_TICKS = 100;
+    /** How long the moment plays before the recap may open (0.75 s). Vanilla removes the dead player at death tick 20 — which drops the train
+     *  — so the recap's opaque backdrop must be up before then; see MAX_TICKS. */
+    static final int MOMENT_TICKS = 15;
+    /** Hand over regardless on this tick — one short of the player's removal; the recap waits out any decode still in flight. */
+    static final int MAX_TICKS = 19;
     /** Ticks for the wash to rise to full. */
-    private static final int FADE_TICKS = 12;
+    private static final int FADE_TICKS = 10;
     /** Ignore clicks this early so one already in flight at death can't skip the moment. */
     private static final int MIN_SKIP_TICKS = 10;
     /** Vanilla DeathScreen's wash, top and bottom (ARGB); alpha scales with the fade. */

@@ -146,13 +146,8 @@ public final class DeathScreenLayoutHandler {
         // while sitting on this screen doesn't offer to reload a world the player is dead in.
         CrashRunTracker.runEnded();
         // A brief death moment over the live world first; it readies the recap's photos off the
-        // frame of death and then opens NarrativeDeathScreen itself. Not for a pause-menu abandon:
-        // that run was just resumed to let the kill through, and the resume makes the train snap
-        // and rebuild on screen, so the recap's opaque backdrop goes up at once as it always did.
-        if (InstantRespawnReboard.abandonArmed()) {
-            event.setNewScreen(new NarrativeDeathScreen());
-            return;
-        }
+        // frame of death and then opens NarrativeDeathScreen itself — before vanilla removes the
+        // dead player at death tick 20, which takes the train with it.
         event.setNewScreen(new DeathMomentScreen());
     }
 
