@@ -141,7 +141,8 @@
         "polymorph",
         "visual_health",
         "imblocker",
-        "reforgedplaymod"
+        "reforgedplaymod",
+        "replaymod"
       ]
     },
     "maps": {
