@@ -24291,9 +24291,9 @@
       ],
       "pr": 1886,
       "date": "2026-10-09",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1196.0",
+      "released_at": "2026-10-09T08:54:47Z"
     }
   ]
 }
