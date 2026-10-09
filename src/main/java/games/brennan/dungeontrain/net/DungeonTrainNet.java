@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "118";
+    public static final String PROTOCOL_VERSION = "119";
 
     private DungeonTrainNet() {}
 
@@ -78,6 +78,8 @@ public final class DungeonTrainNet {
         registrar.playToClient(CarriageNextSpawnPacket.TYPE, CarriageNextSpawnPacket.STREAM_CODEC, CarriageNextSpawnPacket::handle);
         registrar.playToClient(CarriageSpawnCollisionPacket.TYPE, CarriageSpawnCollisionPacket.STREAM_CODEC, CarriageSpawnCollisionPacket::handle);
         registrar.playToServer(ManualSpawnRequestPacket.TYPE, ManualSpawnRequestPacket.STREAM_CODEC, ManualSpawnRequestPacket::handle);
+        // Replay Mod: the client says whether ReForgedPlay is recording, so Sable snapshots take the ordered connection.
+        registrar.playToServer(ReplayRecordingStatePacket.TYPE, ReplayRecordingStatePacket.STREAM_CODEC, ReplayRecordingStatePacket::handle);
         registrar.playToClient(DebugFlagsPacket.TYPE, DebugFlagsPacket.STREAM_CODEC, DebugFlagsPacket::handle);
         registrar.playToClient(BoardingProgressPacket.TYPE, BoardingProgressPacket.STREAM_CODEC, BoardingProgressPacket::handle);
         // Dev-HUD read-out: is this player's movement being booked as travel on the train, and if
