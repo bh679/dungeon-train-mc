@@ -41,6 +41,11 @@ public final class DistantHorizonsFrameClear {
     private static final String IRIS_EVENTS_CLASS = "net.irisshaders.iris.compat.dh.LodRendererEvents";
     private static final String IRIS_DEPTH_FIELD = "depthTexNoTranslucent";
     private static final int NO_TEXTURE = 0;
+    /**
+     * Dev A/B seam: {@code ./gradlew runClient -PdhFrameClear=false} skips the clear so the ghost
+     * terrain can be photographed on the same build that fixes it. Never set in a shipped install.
+     */
+    private static final boolean ENABLED = Boolean.parseBoolean(System.getProperty("dungeontrain.dh_frame_clear", "true"));
 
     private static boolean irisResolved;
     private static Method irisGetInstance;
@@ -51,6 +56,7 @@ public final class DistantHorizonsFrameClear {
 
     /** Clear DH's frame textures (and Iris's copy, if a pack is active) after a suppressed frame. */
     public static void clearSuppressedFrame() {
+        if (!ENABLED) return;
         IDhApiRenderProxy proxy = DhApi.Delayed.renderProxy;
         if (proxy == null) return;
         int depth = textureId(proxy.getDhDepthTextureId());

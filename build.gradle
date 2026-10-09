@@ -262,6 +262,12 @@ neoForge {
             if (project.hasProperty('shaderSweepSites')) {
                 systemProperty 'dungeontrain.shader_sweep_sites', project.property('shaderSweepSites').toString()
             }
+            // -PdhFrameClear=false leaves Distant Horizons' frame textures stale on suppressed frames
+            // (the pre-fix behaviour) so the ghost-terrain bug can be photographed against the fix on
+            // one build. See client/DistantHorizonsFrameClear.
+            if (project.hasProperty('dhFrameClear')) {
+                systemProperty 'dungeontrain.dh_frame_clear', project.property('dhFrameClear').toString()
+            }
             // -PshaderPreview="<world folder name>" runs the same harness for the Shaders menu's
             // preview frame instead: one site, the train stopped, no diagnostics panel, written to
             // run/screenshots/preview-<pack>.png. One launch per pack, same world and same camera —
