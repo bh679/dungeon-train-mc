@@ -83,7 +83,10 @@ public final class ReplayCarriageFollow {
             reset();
             return;
         }
-        Vec3 now = subject.position();
+        // The replay's player is a remote entity: a teleport arrives as a lerp target and the
+        // position creeps there over several ticks. Reading the target sees the whole jump at
+        // once (one follow of the full height) instead of two partial follows and a stall.
+        Vec3 now = new Vec3(subject.lerpTargetX(), subject.lerpTargetY(), subject.lerpTargetZ());
         if (subject.getId() != subjectId) {
             subjectId = subject.getId();
             lastPos = now;
@@ -96,7 +99,7 @@ public final class ReplayCarriageFollow {
         boolean jump = ReplayFollowRule.isCarriageJump(prev, now)
             || (ClientPortalRoomDepth.isInsideStructure(prev.x, prev.y, prev.z)
                 != ClientPortalRoomDepth.isInsideStructure(now.x, now.y, now.z)
-                && prev.distanceToSqr(now) >= 16.0);
+                && prev.distanceToSqr(now) >= 64.0);
         if (!jump) return;
 
         Vec3 delta = now.subtract(prev);
