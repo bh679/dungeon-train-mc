@@ -19,9 +19,10 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>A writer thread paces at exactly {@code fps}: every tick it sends the newest frame the
  * {@link LiveFrameGrabber} produced, or the previous one again if the game rendered nothing new,
- * so ffmpeg's raw-video input is genuinely constant-rate however the frame rate wobbles. One GOP
- * per segment ({@code -g fps*segment}) keeps every segment independently decodable, which is what
- * lets a viewer join at any segment boundary.</p>
+ * so ffmpeg's raw-video input is genuinely constant-rate however the frame rate wobbles. A keyframe
+ * every {@value #KEYFRAME_SECONDS} s ({@code -g fps*2}, five per 10 s segment) is what Twitch's RTMP
+ * ingest requires of a stream the relay forwards with {@code -c:v copy}; because the segment length is
+ * a multiple of it, every segment still opens on a keyframe and a viewer can join at any boundary.</p>
  *
  * <p>Output: {@code seg00000.ts, seg00001.ts, …} and {@code live.m3u8} in {@code dir}; ffmpeg
  * deletes segments that fall out of the 6-entry window itself, writes each segment to a temp name
@@ -32,6 +33,8 @@ public final class LiveEncoder implements AutoCloseable {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final int LIST_SIZE = 6;
+    /** Keyframe cadence in seconds. Twitch accepts at most 4 s; 2 s is its recommendation. */
+    static final int KEYFRAME_SECONDS = 2;
 
     private final LiveFrameGrabber grabber;
     private final Process process;
@@ -52,7 +55,7 @@ public final class LiveEncoder implements AutoCloseable {
     }
 
     static String[] args(int w, int h, int fps, int bitrateKbps, int segmentSeconds, Path dir) {
-        int gop = fps * segmentSeconds;
+        int gop = fps * KEYFRAME_SECONDS;
         List<String> a = new ArrayList<>(List.of(
             "-hide_banner", "-loglevel", "error", "-nostdin",
             "-f", "rawvideo", "-pix_fmt", "rgba", "-s", w + "x" + h, "-r", String.valueOf(fps), "-i", "-",
@@ -60,6 +63,7 @@ public final class LiveEncoder implements AutoCloseable {
             "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-pix_fmt", "yuv420p",
             "-b:v", bitrateKbps + "k", "-maxrate", bitrateKbps + "k", "-bufsize", (bitrateKbps * 2) + "k",
             "-g", String.valueOf(gop), "-keyint_min", String.valueOf(gop), "-sc_threshold", "0",
+            "-force_key_frames", "expr:gte(t,n_forced*" + KEYFRAME_SECONDS + ")",
             "-f", "hls", "-hls_time", String.valueOf(segmentSeconds), "-hls_list_size", String.valueOf(LIST_SIZE),
             "-hls_flags", "delete_segments+independent_segments+temp_file",
             "-hls_segment_filename", dir.resolve("seg%05d.ts").toString(),

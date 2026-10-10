@@ -41,11 +41,11 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.RideGalleryPacket;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
+import games.brennan.dungeontrain.client.snapshot.DeathPhotoUploads;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
 import games.brennan.dungeontrain.client.snapshot.RideGalleryScreen;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
-import games.brennan.dungeontrain.client.snapshot.SnapshotMeta;
 import games.brennan.dungeontrain.client.snapshot.SnapshotTag;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
@@ -78,7 +78,6 @@ import org.slf4j.Logger;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.IdentityHashMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -331,6 +330,7 @@ public final class NarrativeDeathScreen extends Screen {
     // photoBlack a transition inherits at its start; if it's > 0 (advancing mid-rise)
     // the photo finishes rising in during the fade-out instead of snapping to full.
     private float dipStartBlack = 0.0f;
+    private boolean initialRise = false;   // first open: the backdrop rises from full black, not a page switch
 
     // One ride photo per page, assigned up-front (unused-first) so pages don't
     // repeat a shot. Empty when the feature is off / no photos were captured.
@@ -624,6 +624,7 @@ public final class NarrativeDeathScreen extends Screen {
         if (!opened) {
             opened = true;
             pendingInitialFade = true;
+            initialRise = true;
             swapped = true;
             pendingPage = -1;
             fromShot = bgFor(currentPage);
@@ -646,36 +647,36 @@ public final class NarrativeDeathScreen extends Screen {
     private void maybeSendRidePhoto() {
         if (photoSent) return;
         photoSent = true;
-        RideSnapshot fall = bgFor(0); // page 0 is FALL, assigned a SCENIC shot
-        // Kept safely under DeathPhotoPacket's 1 MB codec cap — a hi-res (DH+shaders) shot is shrunk to fit.
-        byte[] jpeg = fall != null ? fall.photoBytes(1_000_000) : null;
-        DungeonTrainNet.sendToServer(new DeathPhotoPacket(jpeg != null ? jpeg : new byte[0]));
+        DeathPhotoUploads.sendFallPhoto(bgFor(0)); // page 0 is FALL, assigned a SCENIC shot
     }
 
     /**
      * Once per death, upload the full tagged death-screen gallery to the relay's Photos page
-     * ({@link RideGalleryPacket} → the server's {@code ShotUploadClient}). This is the whole set of
-     * photos shown across the death pages — deduped by identity, since the assigner reuses a shot when
-     * there are more pages than photos — each carrying its {@code SnapshotTag} and the biome/band/
-     * difficulty/cart sampled at capture. Separate from {@link #maybeSendRidePhoto()} (the single
-     * Discord-embed photo). Inherits the ride-snapshot config gate: {@link #assignBackgrounds()}
-     * leaves {@code pageBackgrounds} empty when snapshots are off, so this sends nothing then.
+     * ({@link RideGalleryPacket} → the server's {@code ShotUploadClient}): every photo shown across
+     * the death pages, each carrying its {@code SnapshotTag} and capture-time context. Encoded off the
+     * client thread by {@link DeathPhotoUploads}. Inherits the ride-snapshot config gate:
+     * {@link #assignBackgrounds()} leaves {@code pageBackgrounds} empty when snapshots are off.
      */
     private void maybeSendRideGallery() {
         if (gallerySent) return;
         gallerySent = true;
-        Set<RideSnapshot> seen = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
-        List<RideGalleryPacket.Photo> photos = new ArrayList<>();
-        for (RideSnapshot s : pageBackgrounds) {
-            if (s == null || !seen.add(s)) continue; // skip nulls + reused-across-pages duplicates
-            // Kept safely under RideGalleryPacket's 2 MB per-photo codec cap (hi-res shots may ride the top of this range).
-            byte[] jpeg = s.photoBytes(1_950_000);
-            if (jpeg == null || jpeg.length == 0) continue;
-            SnapshotMeta m = s.meta();
-            String tag = s.tag() != null ? s.tag().name() : "";
-            photos.add(new RideGalleryPacket.Photo(tag, m.biome(), m.band(), m.difficulty(), m.cart(), m.gfx(), m.shaderpack(), s.photoId(), jpeg));
-        }
-        if (!photos.isEmpty()) DungeonTrainNet.sendToServer(new RideGalleryPacket(photos));
+        DeathPhotoUploads.sendGallery(pageBackgrounds);
+    }
+
+    /**
+     * The photos this screen will most likely assign, worked out before it exists so the death
+     * moment ({@link DeathMomentScreen}) can start decoding them. Uses the page deck as it stands at
+     * death; later pages (a late survey, the mod page) only ever add wildcard pages, so page 0 —
+     * the fall photo — always matches what {@link #assignBackgrounds()} will pick.
+     */
+    static RideSnapshot[] provisionalBackgrounds() {
+        if (!ClientDisplayConfig.isRideSnapshotsEnabled() || RideSnapshotGallery.isEmpty()) return NO_BACKGROUNDS;
+        List<List<SnapshotTag>> chains = new ArrayList<>();
+        for (Kind k : List.of(Kind.FALL, Kind.DEEDS, Kind.GEAR, Kind.LIVES)) chains.add(chainFor(k));
+        for (int i = 0; i < SurveyClientState.questions().size(); i++) chains.add(chainFor(Kind.SURVEY));
+        chains.add(chainFor(Kind.DONATE));
+        chains.add(chainFor(Kind.PLATFORM));
+        return DeathBackgroundAssigner.assign(chains, RideSnapshotGallery.all());
     }
 
     @Override
@@ -767,6 +768,10 @@ public final class NarrativeDeathScreen extends Screen {
             // No photo to reveal — keep the solid overlay fully opaque (don't lay
             // bare the frozen world); the chrome still fades out/in against it.
             g.fill(0, 0, this.width, this.height, OVERLAY);
+            if (photoBlack > 0.0f) {
+                int a = Math.min(255, Math.round(photoBlack * 255.0f));
+                g.fill(0, 0, this.width, this.height, a << 24);
+            }
         }
         // The donation page (only) gets a cold dark-blue wash over its backdrop.
         if (!pages.isEmpty() && pages.get(currentPage).kind() == Kind.DONATE) {
@@ -974,6 +979,7 @@ public final class NarrativeDeathScreen extends Screen {
             openPageAnalytics(pages.get(target));
         }
         imgFinishMs = 0L;               // cancel any in-flight fast reveal
+        initialRise = false;
         dipStartBlack = photoBlack;     // carry current darkness (advancing mid-rise won't snap)
         fromShot = bgFor(currentPage);
         toShot = bgFor(target);
@@ -1040,8 +1046,11 @@ public final class NarrativeDeathScreen extends Screen {
         // black slowly (T_DIP_UP). With no switch (initial open / same photo) there's
         // no dip and the fade-in just tracks the UI.
         boolean switching = toShot != null && toShot != fromShot; // identity: every capture is distinct
+        // The first open rises from full black too — the screen must be opaque the frame it
+        // appears over the live world — just with no old photo to dim first.
         long total = switching
                 ? (T_FADE + T_HOLD + T_DIP_DOWN + T_DIP_UP)
+                : initialRise ? (T_FADE + T_HOLD + T_DIP_UP)
                 : (T_FADE + T_HOLD + T_FADE);
         // Busy through fade-out + hold + fade-in; the slow image rise after that is
         // settled, so a click then advances instead of skipping.
@@ -1062,6 +1071,7 @@ public final class NarrativeDeathScreen extends Screen {
             pendingPage = -1;
             fromShot = null;
             toShot = null;
+            initialRise = false;
             uiAlpha = 1.0f;
             photoBlack = 0.0f;
             photoNew = false;
@@ -1087,8 +1097,12 @@ public final class NarrativeDeathScreen extends Screen {
             // T_DIP_UP; it swaps under full black at the bottom, so the cut isn't seen.
             long inMs = elapsed - T_FADE - T_HOLD;
             uiAlpha = smooth(Math.min(1.0f, (float) inMs / (float) T_FADE));
-            if (!switching) {
-                // No real switch (initial open / same photo) — never dip.
+            if (initialRise) {
+                // First open: start fully black and rise slowly, like a switched-in photo.
+                photoBlack = smooth(1.0f - Math.min(1.0f, (float) inMs / (float) T_DIP_UP));
+                photoNew = false;
+            } else if (!switching) {
+                // No real switch (same photo) — never dip.
                 photoBlack = 0.0f;
                 photoNew = false;
             } else if (inMs < T_DIP_DOWN) {

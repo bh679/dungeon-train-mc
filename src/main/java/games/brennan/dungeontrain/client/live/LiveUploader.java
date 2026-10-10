@@ -46,6 +46,7 @@ public final class LiveUploader implements AutoCloseable {
     private volatile long lastPlaylistMtime = -1;
     private volatile long notBeforeMs;
     private volatile int segmentsUploaded;
+    private volatile int viewers = -1;
     private static final long FAIL_BACKOFF_MS = 3000;
 
     public LiveUploader(Path dir, String token, Consumer<String> onCutOff) {
@@ -59,6 +60,11 @@ public final class LiveUploader implements AutoCloseable {
 
     public int segmentsUploaded() {
         return segmentsUploaded;
+    }
+
+    /** Viewers as of the last heartbeat; −1 until the relay has said. */
+    public int viewers() {
+        return viewers;
     }
 
     private void loop() {
@@ -80,9 +86,17 @@ public final class LiveUploader implements AutoCloseable {
         }
     }
 
-    /** One pass; also called once more on clean stop so the ENDLIST playlist goes out. */
     void pass() throws IOException, CutOff {
-        if (System.currentTimeMillis() < notBeforeMs) return;
+        pass(false);
+    }
+
+    /**
+     * One pass; also called once more on clean stop ({@code last}) so the final segments and the
+     * ENDLIST playlist go out — viewers behind real time play right up to it, so the last pass
+     * ignores a failure backoff.
+     */
+    void pass(boolean last) throws IOException, CutOff {
+        if (!last && System.currentTimeMillis() < notBeforeMs) return;
         Path playlist = dir.resolve(LivePlaylist.FILE_NAME);
         if (!Files.exists(playlist)) return;
         long mtime = Files.getLastModifiedTime(playlist).toMillis();
@@ -97,6 +111,8 @@ public final class LiveUploader implements AutoCloseable {
         Result r = await(LiveFeedClient.presign(token, ask));
         if (r.forbidden()) throw new CutOff(r.str("takenBy"));
         Map<String, SignedPut> urls = LiveFeedClient.parsePresign(r);
+        int count = LiveFeedClient.parseViewerCount(r);
+        if (count >= 0) viewers = count;
         if (urls.isEmpty()) {
             LOGGER.debug("[DungeonTrain] live presign unanswered (status {}), retrying next poll", r.status());
             return;
@@ -141,12 +157,16 @@ public final class LiveUploader implements AutoCloseable {
         }
     }
 
-    /** Stop polling. {@code flush} = run one final pass first (clean stop: ships the ENDLIST playlist). */
+    /**
+     * Stop polling. {@code flush} = run one final pass first (clean stop: ships the last segments and
+     * the ENDLIST playlist), after the polling thread has let go so the two never upload at once.
+     */
     public void close(boolean flush) {
         running = false;
         thread.interrupt();
         if (flush) {
-            try { pass(); } catch (Exception ignored) { /* best effort */ }
+            try { thread.join(TimeUnit.SECONDS.toMillis(CALL_TIMEOUT_S)); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            try { pass(true); } catch (Exception e) { LOGGER.warn("[DungeonTrain] live final upload failed: {}", e.toString()); }
         }
     }
 

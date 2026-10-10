@@ -24276,8 +24276,106 @@
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
     },
     {
-      "id": "camera-helmet-headpiece",
+      "id": "viewfinder-selfie-hint",
+      "version": "0.1196.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Selfie hint on the camera viewfinder",
+      "summary": "Raising a camera now shows which key flips it round for a selfie, and which key turns it back.",
+      "highlights": [
+        "A small key hint sits under the viewfinder: Selfie, or Front while you're in selfie mode",
+        "It shows your own key for Toggle Perspective and moves with the viewfinder"
+      ],
+      "pr": 1886,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1196.0",
+      "released_at": "2026-10-09T08:54:47Z"
+    },
+    {
+      "id": "replay-mod-moving-train",
       "version": "0.1197.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Replay Mod now captures the moving train",
+      "summary": "Filming with Replay Mod (ReForgedPlay) works. Record a ride and the train moves in the replay exactly as it did when you rode it, with you aboard \u2014 instead of standing still while your recorded self drifts away. Replay Mod's Quick Mode loads too, and Replay Mod is on the approved mod list, so recording never puts a run into Free Play.",
+      "highlights": [
+        "Record a fresh replay \u2014 recordings made before this version hold no train movement and cannot be repaired",
+        "Works in singleplayer and on servers running this version"
+      ],
+      "pr": 1887,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1198.0",
+      "released_at": "2026-10-09T15:35:14Z"
+    },
+    {
+      "id": "death-moment-no-lag-spike",
+      "version": "0.1198.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "ui"
+      ],
+      "title": "No more lag spike the moment you die",
+      "summary": "Dying used to hitch for a split second just before the death screen, which made it feel like lag had killed you. That stutter is gone. Now the world keeps rolling for a breath after you fall \u2014 the train still moving under a red fade \u2014 before the recap rises in from black.",
+      "highlights": [
+        "No stutter on the frame you die",
+        "A brief death moment over the still-moving train before the recap",
+        "The recap now opens from black and fades in"
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1888,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1198.0",
+      "released_at": "2026-10-09T15:35:14Z"
+    },
+    {
+      "id": "run-summary-life-clock",
+      "version": "0.1199.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Leaderboard records carry their life's clock",
+      "summary": "Each run summary now tells the relay how long the life lasted on the clock, not just how long you were active on the train. That lets the one-life leaderboards tell an impossible record from an honest one without ever doubting a real player; nothing changes for you in-game.",
+      "highlights": [],
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-end-portal-fixes",
+      "version": "0.1200.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether and End portal fixes",
+      "summary": "A few portal oddities around the Nether and the End have been tidied up.",
+      "highlights": [],
+      "pr": 1897,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "camera-helmet-headpiece",
+      "version": "0.1201.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24294,7 +24392,7 @@
     },
     {
       "id": "live-feed-tvs-tune-themselves",
-      "version": "0.1197.0",
+      "version": "0.1201.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24304,6 +24402,57 @@
       "summary": "Televisions find the broadcast on their own, so there is nothing to slot in or carry around.",
       "highlights": [],
       "pr": 1896,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-viewer-count",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "See how many are watching your stream",
+      "summary": "While you broadcast, a count under LIVE shows how many are watching, and the pinned feed now tucks behind your menus and changes size with a click.",
+      "highlights": [],
+      "pr": 1891,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-twitch-mirror",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed on Twitch",
+      "summary": "When someone goes live, the feed now also plays on the Dungeon Train Twitch channel, and goes quiet again when they stop.",
+      "highlights": [],
+      "pr": 1894,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed",
+      "summary": "Put on the broadcast camcorder and every television, everywhere, starts showing what you see.",
+      "highlights": [],
       "date": "2026-10-10",
       "released": false,
       "released_in": null,

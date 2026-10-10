@@ -60,7 +60,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 /**
- * Replaces the vanilla {@link DeathScreen} with {@link NarrativeDeathScreen} —
+ * Replaces the vanilla {@link DeathScreen} with {@link NarrativeDeathScreen} (by way of the
+ * short {@link DeathMomentScreen}) —
  * the paginated "the Dungeon Train asks" recap — on Dungeon Train worlds. In
  * singleplayer, dying ends the run: the narrative screen offers "Board anew" (a
  * fresh world) and "Leave the line" (the title screen), with no respawn-in-place,
@@ -144,7 +145,10 @@ public final class DeathScreenLayoutHandler {
         // The run is over. Forget the crash-recovery record now rather than at logout, so a crash
         // while sitting on this screen doesn't offer to reload a world the player is dead in.
         CrashRunTracker.runEnded();
-        event.setNewScreen(new NarrativeDeathScreen());
+        // A brief death moment over the live world first; it readies the recap's photos off the
+        // frame of death and then opens NarrativeDeathScreen itself — before vanilla removes the
+        // dead player at death tick 20, which takes the train with it.
+        event.setNewScreen(new DeathMomentScreen());
     }
 
     /**

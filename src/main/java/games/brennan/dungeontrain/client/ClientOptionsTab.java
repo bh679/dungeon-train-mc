@@ -76,6 +76,10 @@ public enum ClientOptionsTab {
     public enum Row {
         // --- General ---
         CONTENT_MODE,
+        /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
+        LIVESTREAM,
+        /** Chat with the developer, both ways — the consent card's Developer chat switch (Adult only). */
+        DEV_CHAT,
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
         POLITICAL_FILTER,
         BOOK_AUTHOR_CHAT,
@@ -188,6 +192,9 @@ public enum ClientOptionsTab {
                 if (chineseLocale) {
                     rows.add(Row.POLITICAL_FILTER);
                 }
+                // The consent card's two switches, next to the content mode they default from.
+                rows.add(Row.LIVESTREAM);
+                rows.add(Row.DEV_CHAT);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
                 rows.add(Row.LOW_MEMORY_NOTICE_CHAT);

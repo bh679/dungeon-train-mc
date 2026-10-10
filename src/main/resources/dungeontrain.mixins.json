@@ -6,6 +6,8 @@
   "refmap": "dungeontrain.refmap.json",
   "plugin": "games.brennan.dungeontrain.mixin.CoreMixinPlugin",
   "mixins": [
+    "NetherPortalBlockBandJumpMixin",
+    "NetherPortalBlockInvoker",
     "PhotographFrameItemPlaceMixin",
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
@@ -125,6 +127,7 @@
   ],
   "client": [
     "client.KeyboardHandlerDebugChordMixin",
+    "client.ViewfinderOverlaySelfieHintMixin",
     "client.BiomeColorsTwinMixin",
     "client.LocalPlayerFlyDoubleTapSprintMixin",
     "client.DebugScreenOverlayDepthMixin",
@@ -201,7 +204,8 @@
     "client.ViewAreaPrewarmInvoker",
     "client.LanguageSelectEntryAccessor",
     "client.I18nAccessor",
-    "client.LanguageManagerReapplyMixin"
+    "client.LanguageManagerReapplyMixin",
+    "client.NetworkRegistryReplayPlaybackMixin"
   ],
   "server": [
     "DedicatedServerPropertiesLevelTypeMixin"

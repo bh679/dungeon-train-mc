@@ -6,6 +6,7 @@ import dev.ryanhcode.sable.network.udp.SableUDPServer;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelTrackingSystem;
 import games.brennan.dungeontrain.ship.sable.RecentFullSyncTracker;
+import games.brennan.dungeontrain.ship.sable.ReplayRecordingPlayers;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
@@ -29,6 +30,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * groups. Reporting "not connected" for {@link RecentFullSyncTracker#ORDERED_SNAPSHOT_WINDOW_TICKS}
  * after a full sync makes Sable use its own non-UDP fallback — a bundle on the same ordered
  * connection, so it is handled after the full sync. Poses and timing are untouched.</p>
+ *
+ * <p>The same answer is given for the whole time a player is recording with ReForgedPlay
+ * ({@link ReplayRecordingPlayers}): Replay Mod records only the ordered connection, so on the UDP
+ * path a replay keeps the train's first pose and nothing after. Idempotent next to the standalone
+ * Sable Replay Compat addon, which forces the same 'not connected' answer from inside
+ * {@code isConnectedTo}.</p>
  *
  * <p>Bytecode-verified against {@code sable-2.0.5+mc1.21.1}: {@code sendFullSync} is the only
  * start-tracking send, and {@code isConnectedTo} is called once, in {@code sendMovementUpdates}.
@@ -60,6 +67,9 @@ public abstract class SubLevelTrackingOrderedSnapshotMixin {
     private boolean dungeontrain$orderedAfterFullSync(SableUDPServer udp, ServerPlayer player,
                                                       Operation<Boolean> original) {
         if (RecentFullSyncTracker.needsOrderedSnapshots(player.getUUID(), player.server.getTickCount())) {
+            return false;
+        }
+        if (ReplayRecordingPlayers.isRecording(player)) {
             return false;
         }
         return original.call(udp, player);
