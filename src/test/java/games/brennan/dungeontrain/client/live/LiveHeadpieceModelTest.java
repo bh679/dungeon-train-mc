@@ -22,12 +22,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Pins the live headpiece's model files to {@link AntennaTarget}: the overrides' thresholds fall
- * between neighbouring property values, every variant hangs off the base model, every texture the
- * models name exists, and the geometry stays inside what vanilla's item-model loader accepts.
+ * between neighbouring property values, every variant wraps the 3D base model in a
+ * {@code neoforge:separate_transforms} loader whose gui/fixed/ground perspectives are the flat
+ * sprite, every texture the models name exists, and the geometry stays inside what vanilla's
+ * item-model loader accepts.
  */
 class LiveHeadpieceModelTest {
 
     private static final String PREDICATE = "dungeontrain:antenna_target";
+    private static final String LOADER = "neoforge:separate_transforms";
+    private static final String BASE = "dungeontrain:item/live_headpiece_base";
     private static final Map<AntennaTarget, String> VARIANTS = Map.of(
         AntennaTarget.HOSTILE, "dungeontrain:item/live_headpiece_red",
         AntennaTarget.FRIENDLY, "dungeontrain:item/live_headpiece_green",
@@ -42,6 +46,19 @@ class LiveHeadpieceModelTest {
         try (Reader r = Files.newBufferedReader(models().resolve(name + ".json"))) {
             return JsonParser.parseReader(r).getAsJsonObject();
         }
+    }
+
+    /** Every texture reference in a model: its own {@code textures}, plus those of a separate_transforms {@code base} and {@code perspectives}. */
+    private static List<String> textureRefs(JsonObject model) {
+        List<String> refs = new ArrayList<>();
+        if (model.has("textures")) {
+            for (Map.Entry<String, JsonElement> t : model.getAsJsonObject("textures").entrySet()) refs.add(t.getValue().getAsString());
+        }
+        if (model.has("base")) refs.addAll(textureRefs(model.getAsJsonObject("base")));
+        if (model.has("perspectives")) {
+            for (Map.Entry<String, JsonElement> p : model.getAsJsonObject("perspectives").entrySet()) refs.addAll(textureRefs(p.getValue().getAsJsonObject()));
+        }
+        return refs;
     }
 
     @Test
@@ -71,19 +88,38 @@ class LiveHeadpieceModelTest {
     void variantsOnlyRetintTheTip() throws IOException {
         for (String variant : VARIANTS.values()) {
             JsonObject m = model(variant.substring(variant.lastIndexOf('/') + 1));
-            assertEquals("dungeontrain:item/live_headpiece_base", m.get("parent").getAsString(), variant);
-            JsonObject textures = m.getAsJsonObject("textures");
+            assertEquals(LOADER, m.get("loader").getAsString(), variant);
+            JsonObject base = m.getAsJsonObject("base");
+            assertEquals(BASE, base.get("parent").getAsString(), variant);
+            JsonObject textures = base.getAsJsonObject("textures");
             assertEquals(Set.of("tip"), textures.keySet(), variant + " overrides exactly the tip texture");
         }
-        assertEquals("dungeontrain:item/live_headpiece_base", model("live_headpiece").get("parent").getAsString());
+        JsonObject top = model("live_headpiece");
+        assertEquals(LOADER, top.get("loader").getAsString());
+        assertEquals(BASE, top.getAsJsonObject("base").get("parent").getAsString());
+    }
+
+    @Test
+    void everyPerspectiveShowsTheFlatSprite() throws IOException {
+        for (String name : List.of("live_headpiece", "live_headpiece_red", "live_headpiece_green", "live_headpiece_blue")) {
+            JsonObject m = model(name);
+            assertEquals("front", m.get("gui_light").getAsString(), name + " must be flat-lit like item/generated, or the sprite renders half-dark");
+            JsonObject perspectives = m.getAsJsonObject("perspectives");
+            assertEquals(Set.of("gui", "fixed", "ground"), perspectives.keySet(), name);
+            for (Map.Entry<String, JsonElement> p : perspectives.entrySet()) {
+                JsonObject flat = p.getValue().getAsJsonObject();
+                assertEquals("minecraft:item/generated", flat.get("parent").getAsString(), name + "." + p.getKey());
+                assertTrue(flat.getAsJsonObject("textures").get("layer0").getAsString().startsWith("dungeontrain:item/live_headpiece_icon"),
+                    name + "." + p.getKey() + " sprite");
+            }
+        }
     }
 
     @Test
     void everyDungeonTrainTextureExists() throws IOException {
         List<String> missing = new ArrayList<>();
         for (String name : List.of("live_headpiece_base", "live_headpiece_red", "live_headpiece_green", "live_headpiece_blue")) {
-            for (Map.Entry<String, JsonElement> t : model(name).getAsJsonObject("textures").entrySet()) {
-                String ref = t.getValue().getAsString();
+            for (String ref : textureRefs(model(name))) {
                 if (!ref.startsWith("dungeontrain:")) continue;
                 Path png = RepoPaths.resources().resolve("assets/dungeontrain/textures/" + ref.substring("dungeontrain:".length()) + ".png");
                 if (!Files.isRegularFile(png)) missing.add(name + " -> " + ref);
