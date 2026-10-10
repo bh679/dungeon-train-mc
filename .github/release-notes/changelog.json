@@ -24291,6 +24291,40 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "consent-livestreaming-switch",
+      "version": "0.1197.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Livestreaming on the consent card",
+      "summary": "The first-launch card now asks about livestreaming, and the broadcast headpiece listens to your answer.",
+      "highlights": [],
+      "pr": 1903,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "options-tab-bar-stacking",
+      "version": "0.1197.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Options tabs stay in one row",
+      "summary": "The Dungeon Train options tabs stay in one neat row however many times you open them.",
+      "highlights": [],
+      "pr": 1903,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
