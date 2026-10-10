@@ -17,6 +17,8 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.IntValue SEGMENT_SECONDS;
     public static final ModConfigSpec.BooleanValue VIEWING_ENABLED;
     public static final ModConfigSpec.IntValue VIEWER_WIDTH;
+    public static final ModConfigSpec.BooleanValue HEAD_VIEWER_ENABLED;
+    public static final ModConfigSpec.IntValue HEAD_VIEWER_WIDTH;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -42,6 +44,12 @@ public final class LiveFeedClientConfig {
         VIEWER_WIDTH = b
             .comment("Width the feed is decoded at for your TVs (16:9). 640 is plenty for a block screen; higher costs CPU.")
             .defineInRange("viewerWidth", 640, 160, 1280);
+        HEAD_VIEWER_ENABLED = b
+            .comment("Pin the live feed to the top-right of your screen while you wear the camcorder or a TV. The Live Viewer hotkey flips this.")
+            .define("headViewerEnabled", true);
+        HEAD_VIEWER_WIDTH = b
+            .comment("Width of the pinned live feed, in GUI pixels (16:9).")
+            .defineInRange("headViewerWidth", 160, 80, 480);
         b.pop();
         SPEC = b.build();
     }
@@ -59,6 +67,18 @@ public final class LiveFeedClientConfig {
     public static int segmentSeconds() { return loaded() ? SEGMENT_SECONDS.get() : 10; }
     public static boolean viewingEnabled() { return !loaded() || VIEWING_ENABLED.get(); }
     public static int viewerWidth() { return loaded() ? VIEWER_WIDTH.get() : 640; }
+    public static boolean headViewerEnabled() { return !loaded() || HEAD_VIEWER_ENABLED.get(); }
+    public static int headViewerWidth() { return loaded() ? HEAD_VIEWER_WIDTH.get() : 160; }
+
+    /** Hotkey: flip the pinned viewer and persist it. Returns the new value. */
+    public static boolean toggleHeadViewer() {
+        boolean next = !headViewerEnabled();
+        if (loaded()) {
+            HEAD_VIEWER_ENABLED.set(next);
+            HEAD_VIEWER_ENABLED.save();
+        }
+        return next;
+    }
 
     /** 16:9 height for a width, rounded to an even number (yuv420p needs even dimensions). */
     public static int heightFor(int width) {

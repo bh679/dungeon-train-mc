@@ -58,6 +58,7 @@ public final class LiveStreamController {
     @Nullable private Claim claim;
     @Nullable private Path dir;
     private long lastGrabNs;
+    private long streamStartedMs;
     private int waitTicks;
 
     private LiveStreamController() {}
@@ -72,6 +73,18 @@ public final class LiveStreamController {
 
     public boolean streaming() {
         return state == State.STREAMING;
+    }
+
+    /** Wall-clock start of the current broadcast; meaningful only while {@link #streaming()}. */
+    public long streamStartedMs() {
+        return streamStartedMs;
+    }
+
+    /** The playlist viewers load for this client's broadcast, or null when not streaming. */
+    @Nullable
+    public String playlistUrl() {
+        Claim c = claim;
+        return state == State.STREAMING && c != null ? c.playlistUrl() : null;
     }
 
     // ---- server packets -----------------------------------------------------------------------
@@ -170,6 +183,7 @@ public final class LiveStreamController {
             uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
             claim = c;
             dir = d;
+            streamStartedMs = System.currentTimeMillis();
             state = State.STREAMING;
             LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps, playlist {}", c.session(), w, h,
                 LiveFeedClientConfig.captureFps(), c.playlistUrl());

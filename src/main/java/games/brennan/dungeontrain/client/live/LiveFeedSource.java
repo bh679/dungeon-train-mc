@@ -44,15 +44,47 @@ public final class LiveFeedSource implements IVideoSource {
 
     private LiveFeedSource() {}
 
+    /** What the feed has to show this frame, for a TV screen or the pinned head viewer. */
+    public enum Kind { STATIC, DOWNLOADING, WAITING, PICTURE }
+
+    /**
+     * One frame's answer. {@code url} is the playlist being shown (null for static); {@code progress}
+     * is the ffmpeg download percentage while {@link Kind#DOWNLOADING} (or -1 when unknown);
+     * {@code buffering} is true while a picture is stalled on the next segment.
+     */
+    public record Frame(Kind kind, @Nullable String url, boolean replay, int progress, boolean buffering) {
+        static final Frame STATIC = new Frame(Kind.STATIC, null, false, -1, false);
+    }
+
     @Override
     public @NotNull VertexConsumer getVideoFrameBuilder(TVBlockEntity tv, float partialTick, MultiBufferSource buffer,
                                                         boolean shouldUpdate, Vec2i screenSize, Vec2i pixelEffectRes,
                                                         int videoAnimationTick, boolean paused,
                                                         IntAnimationState switchAnim, IntAnimationState staticAnim,
                                                         boolean showsTime) {
-        if (!LiveFeedClientConfig.viewingEnabled()) {
-            return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
-        }
+        Frame f = frame(videoAnimationTick, partialTick, paused);
+        return switch (f.kind()) {
+            case STATIC -> TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
+            case DOWNLOADING -> f.progress() >= 0
+                ? TvScreenVertexConsumers.getDownloadingVc(buffer, pixelEffectRes, f.progress(), switchAnim)
+                : TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
+            case WAITING -> TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
+            case PICTURE -> TvScreenVertexConsumers.getSingleTextureVC(buffer, TEXTURE,
+                f.buffering() ? CrtOverlay.LOADING : CrtOverlay.NONE, pixelEffectRes, switchAnim, staticAnim);
+        };
+    }
+
+    /** The texture a {@link Kind#PICTURE} frame is in — the same one every TV draws. */
+    public static ResourceLocation texture() {
+        return TEXTURE;
+    }
+
+    /**
+     * Render thread: decide what the feed shows now, keeping the shared decode alive and copying in
+     * its newest frame. TVs and the head viewer both call this; they share one session.
+     */
+    public Frame frame(int animationTick, float partialTick, boolean paused) {
+        if (!LiveFeedClientConfig.viewingEnabled()) return Frame.STATIC;
         Status status = LiveStatusPoller.wanted();
         boolean replay = false;
         String url;
@@ -63,33 +95,30 @@ public final class LiveFeedSource implements IVideoSource {
             url = status.replayUrl();
             replay = true;
         } else {
-            return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
+            return Frame.STATIC;
         }
         switch (FfmpegSupport.state()) {
             case DOWNLOADING -> {
-                int pct = VistaModClient.getFFmpegDownloadProgress();
-                return pct >= 0
-                    ? TvScreenVertexConsumers.getDownloadingVc(buffer, pixelEffectRes, pct, switchAnim)
-                    : TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
+                return new Frame(Kind.DOWNLOADING, url, replay, VistaModClient.getFFmpegDownloadProgress(), false);
             }
             case OFF, FAILED -> {
-                return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
+                return Frame.STATIC;
             }
             default -> { /* ready */ }
         }
         FFmpeg ffmpeg = FfmpegSupport.get();
-        if (ffmpeg == null) return TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
-
+        if (ffmpeg == null) return Frame.STATIC;
         LiveHlsSession s = sessionFor(url, replay, ffmpeg);
         s.touch(ffmpeg);
         LiveFeedTexture tex = texture;
-        if (tex == null) return TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
-        MediaStatus st = tex.uploadFrameAtTime(videoAnimationTick, partialTick, paused);
-        if (!tex.hasPicture()) {
-            return TvScreenVertexConsumers.getWaitingVc(buffer, pixelEffectRes, videoAnimationTick, switchAnim);
-        }
-        CrtOverlay overlay = st == MediaStatus.BUFFERING ? CrtOverlay.LOADING : CrtOverlay.NONE;
-        return TvScreenVertexConsumers.getSingleTextureVC(buffer, TEXTURE, overlay, pixelEffectRes, switchAnim, staticAnim);
+        if (tex == null) return new Frame(Kind.WAITING, url, replay, -1, false);
+        MediaStatus st = tex.uploadFrameAtTime(animationTick, partialTick, paused);
+        if (!tex.hasPicture()) return new Frame(Kind.WAITING, url, replay, -1, false);
+        // The texture may still hold the previous source while the new one decodes behind it.
+        LiveHlsSession shown = session;
+        String shownUrl = shown != null ? shown.playlistUrl() : url;
+        boolean shownReplay = shown != null ? shown.isReplay() : replay;
+        return new Frame(Kind.PICTURE, shownUrl, shownReplay, -1, st == MediaStatus.BUFFERING);
     }
 
     /**

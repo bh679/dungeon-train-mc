@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
-    "vista.TVBlockMixin"
+    "vista.TVBlockMixin",
+    "vista.LivingEntityTvHeadMixin"
   ],
   "client": [],
   "server": [],

@@ -15,6 +15,8 @@ import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
+import java.util.function.Consumer;
+
 /**
  * The streamer's viewfinder: while the camcorder is broadcasting, two thick rounded frame corners
  * sit top-left and bottom-right and, inside that frame in the top-right, a red record dot blinks
@@ -55,6 +57,16 @@ public final class LiveRecOverlay {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !LiveStreamController.get().streaming()) return;
         if (mc.screen == null && mc.options.hideGui) return;
+        guiPass(LiveRecOverlay::draw);
+    }
+
+    /**
+     * Draw {@code painter} straight onto the main target after the frame is finished, with the same
+     * orthographic setup vanilla uses for the HUD (so GUI pixels are GUI pixels), and restore the
+     * matrices afterwards. Shared with {@link LiveHeadViewer}.
+     */
+    static void guiPass(Consumer<GuiGraphics> painter) {
+        Minecraft mc = Minecraft.getInstance();
         int w = mc.getWindow().getGuiScaledWidth();
         int h = mc.getWindow().getGuiScaledHeight();
         Matrix4f savedProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
@@ -62,20 +74,29 @@ public final class LiveRecOverlay {
         Matrix4fStack modelView = RenderSystem.getModelViewStack();
         modelView.pushMatrix();
         try {
-            // The same orthographic setup vanilla uses for the HUD, so GUI pixels are GUI pixels.
             RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(0f, w, h, 0f, 1000f, ClientHooks.getGuiFarPlane()),
                 VertexSorting.ORTHOGRAPHIC_Z);
             modelView.translation(0f, 0f, 10000f - ClientHooks.getGuiFarPlane());
             RenderSystem.applyModelViewMatrix();
             mc.getMainRenderTarget().bindWrite(true);
             GuiGraphics g = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-            draw(g);
+            painter.accept(g);
             g.flush();
         } finally {
             modelView.popMatrix();
             RenderSystem.applyModelViewMatrix();
             RenderSystem.setProjectionMatrix(savedProjection, savedSorting);
         }
+    }
+
+    /** Right edge of the space inside the viewfinder frame, where the badge is right-aligned. */
+    static int innerRight(int guiWidth) {
+        return guiWidth - MARGIN - LINE - BADGE_PAD;
+    }
+
+    /** Bottom of the LIVE badge, in GUI pixels; anything stacked under it starts below this. */
+    static int badgeBottom(int fontLineHeight) {
+        return MARGIN + LINE + BADGE_PAD + Math.round(fontLineHeight * BADGE_SCALE);
     }
 
     private static void draw(GuiGraphics g) {
