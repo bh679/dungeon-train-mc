@@ -102,7 +102,9 @@ class LiveHeadpieceModelTest {
     @Test
     void everyPerspectiveShowsTheFlatSprite() throws IOException {
         for (String name : List.of("live_headpiece", "live_headpiece_red", "live_headpiece_green", "live_headpiece_blue")) {
-            JsonObject perspectives = model(name).getAsJsonObject("perspectives");
+            JsonObject m = model(name);
+            assertEquals("front", m.get("gui_light").getAsString(), name + " must be flat-lit like item/generated, or the sprite renders half-dark");
+            JsonObject perspectives = m.getAsJsonObject("perspectives");
             assertEquals(Set.of("gui", "fixed", "ground"), perspectives.keySet(), name);
             for (Map.Entry<String, JsonElement> p : perspectives.entrySet()) {
                 JsonObject flat = p.getValue().getAsJsonObject();

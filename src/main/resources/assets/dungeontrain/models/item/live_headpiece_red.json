@@ -1,6 +1,7 @@
 {
   "_comment": "Worn/held: the 3D helmet in live_headpiece_base. Inventory, item frames and dropped: the flat 16x16 sprite, so it sits with vanilla's hand-drawn icons (client/live/LiveHeadpieceAntenna swaps the lit variant).",
   "loader": "neoforge:separate_transforms",
+  "gui_light": "front",
   "base": { "parent": "dungeontrain:item/live_headpiece_base", "textures": { "tip": "dungeontrain:item/live_headpiece_tip_red" } },
   "perspectives": {
     "gui": { "parent": "minecraft:item/generated", "textures": { "layer0": "dungeontrain:item/live_headpiece_icon_red" } },
