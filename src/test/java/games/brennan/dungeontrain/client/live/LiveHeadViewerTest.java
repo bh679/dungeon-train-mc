@@ -33,6 +33,25 @@ class LiveHeadViewerTest {
     }
 
     @Test
+    void everySizeStaysInTheTopRightCorner() {
+        for (int w : new int[] {80, 120, 160, 240}) {
+            LiveHeadViewer.Box b = LiveHeadViewer.layout(480, w);
+            assertEquals(480 - LiveHeadViewer.EDGE, b.x() + b.w(), "flush right at " + w);
+            assertEquals(LiveHeadViewer.EDGE, b.y());
+        }
+    }
+
+    @Test
+    void aClickCountsInsideTheBoxAndItsBorderOnly() {
+        LiveHeadViewer.Box b = LiveHeadViewer.layout(480, 160); // x 312..472, y 8..98
+        assertTrue(LiveHeadViewer.contains(b, 312, 8));
+        assertTrue(LiveHeadViewer.contains(b, 400, 50));
+        assertTrue(LiveHeadViewer.contains(b, 311, 7), "the 1-pixel border counts");
+        assertFalse(LiveHeadViewer.contains(b, 310, 50));
+        assertFalse(LiveHeadViewer.contains(b, 400, 99 + LiveHeadViewer.BORDER));
+    }
+
+    @Test
     void countdownClearsOnlyOnOwnLivePicture() {
         String mine = "https://cdn/live/abc/live.m3u8";
         var own = new LiveFeedSource.Frame(LiveFeedSource.Kind.PICTURE, mine, false, -1, false);
