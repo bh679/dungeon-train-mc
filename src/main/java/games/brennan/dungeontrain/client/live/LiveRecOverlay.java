@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
@@ -19,9 +20,12 @@ import java.util.function.Consumer;
 
 /**
  * The streamer's viewfinder: while the camcorder is broadcasting, two thick rounded frame corners
- * sit top-left and bottom-right and, inside that frame in the top-right, a red record dot blinks
+ * sit top-left and bottom-right and, inside the top-left corner, a red record dot blinks
  * next to a large steady "LIVE" — the
- * way a camera's own screen looks. Only the wearer sees it.
+ * way a camera's own screen looks. Under LIVE, smaller, an eye and how many are watching (players at
+ * a TV or wearing one, plus website viewers — {@link LiveStreamController#viewerCount()}); it
+ * appears with the relay's first heartbeat reply. The top-right stays clear for the pinned live
+ * viewer ({@link LiveHeadViewer}). Only the wearer sees it.
  *
  * <p>Drawn once the whole frame is finished ({@link RenderFrameEvent.Post}, at high priority so it
  * lands before {@link LiveStreamController} grabs the frame for the stream): above the HUD, above
@@ -41,6 +45,19 @@ public final class LiveRecOverlay {
     static final float BADGE_SCALE = 2f;
     static final long BLINK_MS = 500;
     static final int LABEL_GAP = 5;
+    /** The viewer count row under LIVE: normal-size text, this far below the badge. */
+    static final int COUNT_GAP = 4;
+    static final int GLYPH_GAP = 3;
+    /** An open eye with its pupil, one cell per GUI pixel; 7 tall like a digit. */
+    static final String[] EYE = {
+        "....###....",
+        "..##...##..",
+        ".#..###..#.",
+        "#..#####..#",
+        ".#..###..#.",
+        "..##...##..",
+        "....###....",
+    };
     private static final Component LABEL = Component.translatable("gui.dungeontrain.live.badge");
     private static final int WHITE = 0xF0FFFFFF;
     private static final int RED = 0xFFE62E2E;
@@ -89,14 +106,14 @@ public final class LiveRecOverlay {
         }
     }
 
-    /** Right edge of the space inside the viewfinder frame, where the badge is right-aligned. */
-    static int innerRight(int guiWidth) {
-        return guiWidth - MARGIN - LINE - BADGE_PAD;
+    /** Left edge of the space inside the viewfinder's top-left corner, where the badge starts. */
+    static int innerLeft() {
+        return MARGIN + LINE + BADGE_PAD;
     }
 
-    /** Bottom of the LIVE badge, in GUI pixels; anything stacked under it starts below this. */
-    static int badgeBottom(int fontLineHeight) {
-        return MARGIN + LINE + BADGE_PAD + Math.round(fontLineHeight * BADGE_SCALE);
+    /** Top of the viewer count row, just under LIVE. */
+    static int countTop(int fontLineHeight) {
+        return MARGIN + LINE + BADGE_PAD + Math.round(fontLineHeight * BADGE_SCALE) + COUNT_GAP;
     }
 
     private static void draw(GuiGraphics g) {
@@ -104,21 +121,32 @@ public final class LiveRecOverlay {
         int h = g.guiHeight();
         corner(g, MARGIN, MARGIN, 1, 1);                 // top-left, arms go right and down
         corner(g, w - MARGIN, h - MARGIN, -1, -1);       // bottom-right, arms go left and up
-        // Inside the frame, tucked into the top-right: the dot blinks, the label does not.
+        // Inside the top-left corner: the dot blinks, the label does not.
         var font = Minecraft.getInstance().font;
-        int innerRight = w - MARGIN - LINE - BADGE_PAD;
+        int left = innerLeft();
         int innerTop = MARGIN + LINE + BADGE_PAD;
         int textH = Math.round(font.lineHeight * BADGE_SCALE);
         int cy = innerTop + textH / 2;
-        int dotX = innerRight - DOT_RADIUS;
+        int dotX = left + DOT_RADIUS;
         if (dotOn(System.currentTimeMillis())) disc(g, dotX, cy, DOT_RADIUS, RED);
-        int textW = Math.round(font.width(LABEL) * BADGE_SCALE);
-        int tx = dotX - DOT_RADIUS - LABEL_GAP - textW;
+        int tx = dotX + DOT_RADIUS + LABEL_GAP;
         g.pose().pushPose();
         g.pose().translate(tx, innerTop, 0);
         g.pose().scale(BADGE_SCALE, BADGE_SCALE, 1f);
         g.drawString(font, LABEL, 0, 0, 0xFFFFFFFF, true);
         g.pose().popPose();
+        int viewers = LiveStreamController.get().viewerCount();
+        if (viewers >= 0) viewerCount(g, font, left, countTop(font.lineHeight), viewers);
+    }
+
+    /** From {@code left}: the eye, then the number, both at normal GUI size. */
+    private static void viewerCount(GuiGraphics g, Font font, int left, int top, int viewers) {
+        for (int row = 0; row < EYE.length; row++) {
+            for (int col = 0; col < EYE[row].length(); col++) {
+                if (EYE[row].charAt(col) == '#') g.fill(left + col, top + row, left + col + 1, top + row + 1, WHITE);
+            }
+        }
+        g.drawString(font, Integer.toString(viewers), left + EYE[0].length() + GLYPH_GAP, top, 0xFFFFFFFF, true);
     }
 
     /**

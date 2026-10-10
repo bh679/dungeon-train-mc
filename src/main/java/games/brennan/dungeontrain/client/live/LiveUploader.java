@@ -46,6 +46,7 @@ public final class LiveUploader implements AutoCloseable {
     private volatile long lastPlaylistMtime = -1;
     private volatile long notBeforeMs;
     private volatile int segmentsUploaded;
+    private volatile int viewers = -1;
     private static final long FAIL_BACKOFF_MS = 3000;
 
     public LiveUploader(Path dir, String token, Consumer<String> onCutOff) {
@@ -59,6 +60,11 @@ public final class LiveUploader implements AutoCloseable {
 
     public int segmentsUploaded() {
         return segmentsUploaded;
+    }
+
+    /** Viewers as of the last heartbeat; −1 until the relay has said. */
+    public int viewers() {
+        return viewers;
     }
 
     private void loop() {
@@ -97,6 +103,8 @@ public final class LiveUploader implements AutoCloseable {
         Result r = await(LiveFeedClient.presign(token, ask));
         if (r.forbidden()) throw new CutOff(r.str("takenBy"));
         Map<String, SignedPut> urls = LiveFeedClient.parsePresign(r);
+        int count = LiveFeedClient.parseViewerCount(r);
+        if (count >= 0) viewers = count;
         if (urls.isEmpty()) {
             LOGGER.debug("[DungeonTrain] live presign unanswered (status {}), retrying next poll", r.status());
             return;
