@@ -12,22 +12,24 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Nether portals on the overworld ride jump the train to the next (or, from inside one, the
- * previous) Nether band instead of opening the real Nether — see {@link NetherPortalBandJump}.
+ * Nether portals on the overworld ride lead to another Nether portal in the next (or, from inside one,
+ * the previous) Nether band instead of the real Nether — see {@link NetherPortalBandJump}.
  *
- * <p>Hooked at the head of {@code getPortalDestination} rather than at
- * {@code EntityTravelToDimensionEvent}: vanilla resolves the destination <em>first</em>, and that
- * step searches for / builds an exit portal in the Nether (generating its chunks) before the
- * cancellable event ever fires. Returning {@code null} here is vanilla's own "no destination"
- * path ({@code Entity#handlePortal} skips the dimension change), and the portal cooldown has
- * already been armed, so nothing retries.</p>
+ * <p>Hooked at the head of {@code getPortalDestination}: that is where vanilla decides the destination
+ * (and searches / builds the exit portal there), so replacing its answer with a same-level
+ * {@link DimensionTransition} built by vanilla's own {@code getExitPortal}
+ * ({@link NetherPortalBlockInvoker}) keeps every other step — portal timing, cooldown, teleport, sound,
+ * chunk ticket — exactly vanilla. A {@code null} answer is vanilla's own "no destination" path.</p>
  */
 @Mixin(NetherPortalBlock.class)
 public abstract class NetherPortalBlockBandJumpMixin {
 
     @Inject(method = "getPortalDestination", at = @At("HEAD"), cancellable = true)
-    private void dungeontrain$jumpAlongTheRide(ServerLevel level, Entity entity, BlockPos pos,
-                                                CallbackInfoReturnable<DimensionTransition> cir) {
-        if (NetherPortalBandJump.handle(level, entity)) cir.setReturnValue(null);
+    private void dungeontrain$portalAlongTheRide(ServerLevel level, Entity entity, BlockPos pos,
+                                                  CallbackInfoReturnable<DimensionTransition> cir) {
+        NetherPortalBlockInvoker self = (NetherPortalBlockInvoker) this;
+        NetherPortalBandJump.Outcome outcome = NetherPortalBandJump.destination(level, entity, pos,
+            self::dungeontrain$getExitPortal);
+        if (outcome.handled()) cir.setReturnValue(outcome.transition());
     }
 }
