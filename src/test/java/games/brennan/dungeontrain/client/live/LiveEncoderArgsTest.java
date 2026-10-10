@@ -12,12 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LiveEncoderArgsTest {
 
     @Test
-    void oneGopPerSegmentAndSessionScopedOutputs() {
+    void twoSecondKeyframesAndSessionScopedOutputs() {
         List<String> a = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, Path.of("/tmp/live/abc")));
         int g = a.indexOf("-g");
-        assertEquals("200", a.get(g + 1), "GOP = fps * segment seconds so every segment starts on a keyframe");
-        assertEquals("200", a.get(a.indexOf("-keyint_min") + 1));
-        assertEquals("10", a.get(a.indexOf("-hls_time") + 1));
+        assertEquals("40", a.get(g + 1), "GOP = fps * 2 s: Twitch needs a keyframe every <= 4 s on a copied stream");
+        assertEquals("40", a.get(a.indexOf("-keyint_min") + 1));
+        assertEquals("expr:gte(t,n_forced*2)", a.get(a.indexOf("-force_key_frames") + 1));
+        assertEquals("10", a.get(a.indexOf("-hls_time") + 1), "segments stay 10 s (a multiple of the keyframe cadence)");
         assertEquals("1280x720", a.get(a.indexOf("-s") + 1));
         assertTrue(a.contains("vflip"), "GL frames are bottom-up");
         assertTrue(a.get(a.size() - 1).endsWith("abc/live.m3u8"));
