@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
-import games.brennan.dungeontrain.client.HudText;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
@@ -18,8 +17,8 @@ import org.joml.Matrix4fStack;
 
 /**
  * The streamer's viewfinder: while the camcorder is broadcasting, two thick rounded frame corners
- * sit top-left and bottom-right and a red record dot blinks top-right next to a steady "LIVE", level
- * with the frame — the
+ * sit top-left and bottom-right and, inside that frame in the top-right, a red record dot blinks
+ * next to a large steady "LIVE" — the
  * way a camera's own screen looks. Only the wearer sees it.
  *
  * <p>Drawn once the whole frame is finished ({@link RenderFrameEvent.Post}, at high priority so it
@@ -34,7 +33,10 @@ public final class LiveRecOverlay {
     static final int CORNER_LEN = 40;
     static final int LINE = 5;
     static final int RADIUS = 12;
-    static final int DOT_RADIUS = 5;
+    static final int DOT_RADIUS = 7;
+    /** The badge sits inside the frame, this far in from the corner arms. */
+    static final int BADGE_PAD = 10;
+    static final float BADGE_SCALE = 2f;
     static final long BLINK_MS = 500;
     static final int LABEL_GAP = 5;
     private static final Component LABEL = Component.translatable("gui.dungeontrain.live.badge");
@@ -81,15 +83,21 @@ public final class LiveRecOverlay {
         int h = g.guiHeight();
         corner(g, MARGIN, MARGIN, 1, 1);                 // top-left, arms go right and down
         corner(g, w - MARGIN, h - MARGIN, -1, -1);       // bottom-right, arms go left and up
-        // Level with the top frame bar: the dot is centred on its middle line, flush with the right
-        // margin; the label sits to its left and does not blink.
-        int cy = MARGIN + LINE / 2;
-        int dotX = w - MARGIN - DOT_RADIUS;
-        if (dotOn(System.currentTimeMillis())) disc(g, dotX, cy, DOT_RADIUS, RED);
+        // Inside the frame, tucked into the top-right: the dot blinks, the label does not.
         var font = Minecraft.getInstance().font;
-        int tx = dotX - DOT_RADIUS - LABEL_GAP - HudText.scaledWidth(font, LABEL);
-        int ty = cy - HudText.scaledLineHeight(font) / 2;
-        HudText.drawScaled(g, font, LABEL, tx, ty, 0xFFFFFFFF, true);
+        int innerRight = w - MARGIN - LINE - BADGE_PAD;
+        int innerTop = MARGIN + LINE + BADGE_PAD;
+        int textH = Math.round(font.lineHeight * BADGE_SCALE);
+        int cy = innerTop + textH / 2;
+        int dotX = innerRight - DOT_RADIUS;
+        if (dotOn(System.currentTimeMillis())) disc(g, dotX, cy, DOT_RADIUS, RED);
+        int textW = Math.round(font.width(LABEL) * BADGE_SCALE);
+        int tx = dotX - DOT_RADIUS - LABEL_GAP - textW;
+        g.pose().pushPose();
+        g.pose().translate(tx, innerTop, 0);
+        g.pose().scale(BADGE_SCALE, BADGE_SCALE, 1f);
+        g.drawString(font, LABEL, 0, 0, 0xFFFFFFFF, true);
+        g.pose().popPose();
     }
 
     /**
