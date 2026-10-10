@@ -108,6 +108,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private final List<OptionsTab> tabs = new ArrayList<>();
     private TabNavigationBar tabNavigationBar;
+    /**
+     * Added to {@link #layout}'s footer once. The layout is a per-screen field that outlives
+     * {@code rebuildWidgets()}, and {@code HeaderAndFooterLayout} has no remove, so adding a fresh
+     * button on every {@code init()} stacked one Done per rebuild.
+     */
+    private Button doneButton;
 
     /** Empty on a release en_us client, which is why the Translate row is conditional. */
     private String translateTarget = "";
@@ -147,7 +153,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 .build();
         addRenderableWidget(this.tabNavigationBar);
 
-        this.layout.addToFooter(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).width(200).build());
+        if (this.doneButton == null) {
+            this.doneButton = Button.builder(CommonComponents.GUI_DONE, b -> onClose()).width(200).build();
+            this.layout.addToFooter(this.doneButton);
+        }
         this.layout.visitWidgets(this::addRenderableWidget);
 
         // Reopen (and re-init after a resize) on whichever tab the player last chose.
