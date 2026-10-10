@@ -24457,6 +24457,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui"
+      ],
+      "title": "Live Eye",
+      "summary": "The broadcast headpiece is now the Live Eye, and it looks the part in your inventory.",
+      "highlights": [],
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
