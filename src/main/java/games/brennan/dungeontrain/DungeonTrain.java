@@ -322,6 +322,8 @@ public class DungeonTrain {
         // BlockEntityType.LECTERN's valid blocks.
         ModBlocks.register(modBus);
         ModBlockEntities.register(modBus);
+        // Live Feed: a block-less Vista broadcast location (compat/vista/LiveBroadcastLocation).
+        games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation.register(modBus);
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);
@@ -354,6 +356,12 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 ClientDisplayConfig.SPEC,
                 "dungeontrain-client.toml");
+        // Live Feed capture/playback knobs — its own file so the (already huge) display config
+        // record stays untouched and the knobs can be edited mid-run without any fair-play meaning.
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                games.brennan.dungeontrain.config.LiveFeedClientConfig.SPEC,
+                "dungeontrain-live-client.toml");
 
         // Common gameplay defaults readable on the title screen (no world) and
         // on a dedicated server. Holds the global DEFAULT PlayerMob spawn rate;

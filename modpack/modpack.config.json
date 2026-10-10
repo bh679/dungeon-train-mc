@@ -372,6 +372,22 @@
       "modrinth_version": "WfVyzdJL"
     },
     {
+      "name": "Vista",
+      "slug": "vista",
+      "mod_ids": [
+        "mixinsquared",
+        "sablecompanion",
+        "vista"
+      ],
+      "project_id": 1368607,
+      "file_id": 8966027,
+      "required": true,
+      "dependency_type": "required",
+      "version": "1.21.1-5.5.7",
+      "modrinth_project": "vista_tv",
+      "modrinth_version": "mrDh5q89"
+    },
+    {
       "name": "Dungeon Backup",
       "slug": "dungeon-train-backup",
       "mod_ids": [
