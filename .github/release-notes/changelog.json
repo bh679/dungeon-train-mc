@@ -24357,6 +24357,23 @@
       "released_at": null
     },
     {
+      "id": "nether-end-portal-fixes",
+      "version": "0.1200.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether and End portal fixes",
+      "summary": "A few portal oddities around the Nether and the End have been tidied up.",
+      "highlights": [],
+      "pr": 1897,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "camera-helmet-headpiece",
       "version": "0.1200.0",
       "type": "feat",
