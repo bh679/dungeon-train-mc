@@ -99,6 +99,11 @@ public final class DungeonTrainCommonConfig {
      * End band always wins any overlap (the nether band yields those columns).
      */
     public static final boolean DEFAULT_NETHER_TRANSITION_ENABLED = true;
+    /**
+     * Nether portals on the overworld ride jump the train to the next Nether band (or, from inside
+     * one, back to the previous) instead of opening the real Nether dimension.
+     */
+    public static final boolean DEFAULT_NETHER_PORTAL_BAND_JUMP = true;
     /** Length (blocks) of EACH mountain stage — stage 1 (×1), stage 2 (×s2), stage 3 (×s3). ~80 = 5 chunks. */
     public static final int MIN_NETHER_STAGE_BLOCKS = 0;
     public static final int MAX_NETHER_STAGE_BLOCKS = 100_000_000;
@@ -579,6 +584,7 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.IntValue NETHER_CORE_FADE_BLOCKS;
     public static final ModConfigSpec.IntValue NETHER_CORE_HOLD_BLOCKS;
     public static final ModConfigSpec.BooleanValue NETHER_STRUCTURES;
+    public static final ModConfigSpec.BooleanValue NETHER_PORTAL_BAND_JUMP;
     public static final ModConfigSpec.IntValue DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
     public static final ModConfigSpec.IntValue DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS;
     public static final ModConfigSpec.BooleanValue UPSIDE_DOWN_ENABLED;
@@ -656,6 +662,7 @@ public final class DungeonTrainCommonConfig {
         NETHER_CORE_FADE_BLOCKS = pair.getLeft().netherCoreFadeBlocks;
         NETHER_CORE_HOLD_BLOCKS = pair.getLeft().netherCoreHoldBlocks;
         NETHER_STRUCTURES = pair.getLeft().netherStructures;
+        NETHER_PORTAL_BAND_JUMP = pair.getLeft().netherPortalBandJump;
         DISINTEGRATION_FIRST_OVERWORLD_BLOCKS = pair.getLeft().disintegrationFirstOverworldBlocks;
         DISINTEGRATION_SKY_FADE_OFFSET_BLOCKS = pair.getLeft().disintegrationSkyFadeOffsetBlocks;
         UPSIDE_DOWN_ENABLED = pair.getLeft().upsideDownEnabled;
@@ -901,6 +908,12 @@ public final class DungeonTrainCommonConfig {
                         "ruined portals, with their own mobs and loot. Turn off for a bare Nether crossing.",
                         "Default true.")
                 .define("netherStructures", DEFAULT_NETHER_STRUCTURES);
+        ModConfigSpec.BooleanValue netherPortalBandJump = b
+                .comment("Nether portals on the overworld ride are a travel device along the track: stepping through",
+                        "one takes the player (and the train) to the NEXT Nether band, or — from inside a Nether band —",
+                        "back to the PREVIOUS one. Set false for vanilla portals (into the real Nether dimension).",
+                        "Portals in other dimensions, and non-player entities, are always vanilla.")
+                .define("netherPortalBandJump", DEFAULT_NETHER_PORTAL_BAND_JUMP);
 
         ModConfigSpec.BooleanValue upsideDownEnabled = b
                 .comment("Upside-down phase — part of the single repeating world-gen cycle, appended after the End",
@@ -1186,7 +1199,7 @@ public final class DungeonTrainCommonConfig {
                 disintegrationOverworldHoldBlocks,
                 netherTransitionEnabled, netherStageBlocks, netherStageMultipliers, netherBaseReliefBlocks,
                 netherBeachBlocks, netherMountainHoldBlocks, netherCoreFadeBlocks, netherCoreHoldBlocks,
-                netherStructures,
+                netherStructures, netherPortalBandJump,
                 disintegrationFirstOverworldBlocks, disintegrationSkyFadeOffsetBlocks,
                 upsideDownEnabled, upsideDownFadeBlocks, upsideDownHoldBlocks, upsideDownExitGapBlocks,
                 upsideDownExitFadeBlocks, upsideDownMirrorPlaneOffset, upsideDownCeilingGap, upsideDownFloorGap,
@@ -1575,6 +1588,11 @@ public final class DungeonTrainCommonConfig {
         return isLoaded() ? NETHER_STRUCTURES.get() : DEFAULT_NETHER_STRUCTURES;
     }
 
+    /** Nether portals on the overworld ride jump between Nether bands; falls back to the default pre-load. */
+    public static boolean isNetherPortalBandJumpEnabled() {
+        return isLoaded() ? NETHER_PORTAL_BAND_JUMP.get() : DEFAULT_NETHER_PORTAL_BAND_JUMP;
+    }
+
     /** Overworld stretch (blocks) before the first band; falls back to the hardcoded default pre-load. */
     public static int getDisintegrationFirstOverworldBlocks() {
         return isLoaded() ? DISINTEGRATION_FIRST_OVERWORLD_BLOCKS.get() : DEFAULT_DISINTEGRATION_FIRST_OVERWORLD_BLOCKS;
@@ -1842,6 +1860,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.IntValue netherCoreFadeBlocks,
                           ModConfigSpec.IntValue netherCoreHoldBlocks,
                           ModConfigSpec.BooleanValue netherStructures,
+                          ModConfigSpec.BooleanValue netherPortalBandJump,
                           ModConfigSpec.IntValue disintegrationFirstOverworldBlocks,
                           ModConfigSpec.IntValue disintegrationSkyFadeOffsetBlocks,
                           ModConfigSpec.BooleanValue upsideDownEnabled,

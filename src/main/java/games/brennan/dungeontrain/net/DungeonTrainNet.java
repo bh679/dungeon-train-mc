@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "119";
+    public static final String PROTOCOL_VERSION = "120";
 
     private DungeonTrainNet() {}
 
@@ -228,6 +228,7 @@ public final class DungeonTrainNet {
         // On-train spawn deck-hold: server → joining/respawning player to keep
         // the client from free-falling off the deck during the spawn-storm stall.
         registrar.playToClient(SpawnDeckHoldPacket.TYPE, SpawnDeckHoldPacket.STREAM_CODEC, SpawnDeckHoldPacket::handle);
+        registrar.playToClient(PortalLoadScreenPacket.TYPE, PortalLoadScreenPacket.STREAM_CODEC, PortalLoadScreenPacket::handle);
         registrar.playToClient(PortalTestSessionPacket.TYPE, PortalTestSessionPacket.STREAM_CODEC, PortalTestSessionPacket::handle);
 
         // Advancements keybind hint: server → the earning player on a gameplay
