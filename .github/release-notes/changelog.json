@@ -24374,23 +24374,6 @@
       "released_at": null
     },
     {
-      "id": "camera-helmet-headpiece",
-      "version": "0.1201.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "loot"
-      ],
-      "title": "Camera-helmet broadcast headpiece",
-      "summary": "The broadcast headpiece has a new look, and its aerial has opinions about whatever you point it at.",
-      "highlights": [],
-      "pr": 1893,
-      "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
       "id": "live-feed-tvs-tune-themselves",
       "version": "0.1201.0",
       "type": "feat",
@@ -24451,7 +24434,7 @@
         "community"
       ],
       "title": "Live Feed",
-      "summary": "Put on the broadcast camcorder and every television, everywhere, starts showing what you see.",
+      "summary": "Put on the broadcast camcorder and every television, everywhere, starts showing what you see. Its aerial has opinions about whatever you point it at.",
       "highlights": [],
       "date": "2026-10-10",
       "released": false,
@@ -24460,7 +24443,7 @@
     },
     {
       "id": "live-eye",
-      "version": "0.1201.0",
+      "version": "0.1202.0",
       "type": "feat",
       "tags": [
         "feature",
