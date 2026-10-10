@@ -1,0 +1,649 @@
+{
+  "_comment": "Live-feed headpiece: Exposure Polaroid's instant camera (mortuusars, MIT) scaled to a full-face helmet, square lens on the eye line, eject wedge at the nape, aerial on the crown. Body faces sample Polaroid's own texture; aerial/tip are DT's. The tip texture is swapped by the overrides in live_headpiece.json (client/live/LiveHeadpieceAntenna). UVs are in 16ths of each texture. Worn via vanilla CustomHeadLayer's 'head' display.",
+  "gui_light": "front",
+  "textures": {
+    "particle": "exposure_polaroid:item/instant_camera",
+    "camera": "exposure_polaroid:item/instant_camera",
+    "aerial": "dungeontrain:item/live_headpiece_antenna",
+    "tip": "dungeontrain:item/live_headpiece_tip_off"
+  },
+  "elements": [
+    {
+      "name": "bottom",
+      "from": [
+        0,
+        0.0,
+        0.0
+      ],
+      "to": [
+        16,
+        5.3333,
+        16.0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            2.0,
+            11.5,
+            6.0,
+            12.99
+          ],
+          "texture": "#camera"
+        },
+        "east": {
+          "uv": [
+            2.0,
+            11.5,
+            0.5,
+            6.5
+          ],
+          "texture": "#camera",
+          "rotation": 90
+        },
+        "south": {
+          "uv": [
+            2.0,
+            5.0,
+            6.0,
+            6.5
+          ],
+          "texture": "#camera",
+          "rotation": 180
+        },
+        "west": {
+          "uv": [
+            6.0,
+            6.5,
+            7.5,
+            11.5
+          ],
+          "texture": "#camera",
+          "rotation": 90
+        },
+        "up": {
+          "uv": [
+            2.0,
+            6.5,
+            6.0,
+            11.5
+          ],
+          "texture": "#camera",
+          "rotation": 180
+        },
+        "down": {
+          "uv": [
+            7.5,
+            6.5,
+            11.5,
+            11.5
+          ],
+          "texture": "#camera"
+        }
+      }
+    },
+    {
+      "name": "slope",
+      "from": [
+        0.04,
+        3.84,
+        8.96
+      ],
+      "to": [
+        15.96,
+        9.1733,
+        17.36
+      ],
+      "faces": {
+        "east": {
+          "uv": [
+            5.5,
+            12.975,
+            7.0,
+            16.0
+          ],
+          "texture": "#camera",
+          "rotation": 90
+        },
+        "west": {
+          "uv": [
+            4.0,
+            12.975,
+            5.5,
+            16.0
+          ],
+          "texture": "#camera",
+          "rotation": 90
+        },
+        "up": {
+          "uv": [
+            0.0,
+            12.975,
+            3.98,
+            16.0
+          ],
+          "texture": "#camera"
+        }
+      },
+      "rotation": {
+        "angle": 45,
+        "axis": "x",
+        "origin": [
+          8,
+          9.0667,
+          12.48
+        ]
+      }
+    },
+    {
+      "name": "top",
+      "from": [
+        0,
+        5.3333,
+        0
+      ],
+      "to": [
+        16,
+        16.0,
+        16
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            2.0,
+            2.0,
+            6.0,
+            5.0
+          ],
+          "texture": "#camera"
+        },
+        "east": {
+          "uv": [
+            0.0,
+            2.01,
+            2.0,
+            4.99
+          ],
+          "texture": "#camera"
+        },
+        "south": {
+          "uv": [
+            8.0,
+            2.0,
+            12.0,
+            5.0
+          ],
+          "texture": "#camera"
+        },
+        "west": {
+          "uv": [
+            6.0,
+            2.01,
+            7.99,
+            4.99
+          ],
+          "texture": "#camera"
+        },
+        "up": {
+          "uv": [
+            2.01,
+            0.0,
+            5.99,
+            1.99
+          ],
+          "texture": "#camera",
+          "rotation": 180
+        }
+      }
+    },
+    {
+      "name": "lens",
+      "from": [
+        5.0,
+        3.5,
+        -2
+      ],
+      "to": [
+        11.0,
+        9.5,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            13.0,
+            13.0,
+            15.0,
+            15.0
+          ],
+          "texture": "#camera"
+        },
+        "east": {
+          "uv": [
+            12.0,
+            13.0,
+            13.0,
+            15.0
+          ],
+          "texture": "#camera"
+        },
+        "west": {
+          "uv": [
+            15.0,
+            13.0,
+            16.0,
+            15.0
+          ],
+          "texture": "#camera"
+        },
+        "up": {
+          "uv": [
+            13.0,
+            12.0,
+            15.0,
+            13.0
+          ],
+          "texture": "#camera",
+          "rotation": 180
+        },
+        "down": {
+          "uv": [
+            13.0,
+            15.0,
+            15.0,
+            16.0
+          ],
+          "texture": "#camera",
+          "rotation": 180
+        }
+      }
+    },
+    {
+      "name": "glass",
+      "from": [
+        6.35,
+        4.85,
+        -1.98
+      ],
+      "to": [
+        9.65,
+        8.15,
+        -1.98
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            15.0,
+            15.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#camera"
+        }
+      }
+    },
+    {
+      "name": "photo_slot",
+      "from": [
+        3,
+        1.5,
+        -0.1
+      ],
+      "to": [
+        13,
+        2.5,
+        0
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            2.0,
+            11.5,
+            6.0,
+            13.0
+          ],
+          "texture": "#camera"
+        }
+      }
+    },
+    {
+      "name": "antenna_base",
+      "from": [
+        12.5,
+        16,
+        11.5
+      ],
+      "to": [
+        14.5,
+        17,
+        13.5
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "east": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "south": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "west": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "up": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "down": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        }
+      }
+    },
+    {
+      "name": "antenna_mast",
+      "from": [
+        13.2,
+        17,
+        12.2
+      ],
+      "to": [
+        13.8,
+        24,
+        12.8
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "east": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "south": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "west": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "up": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        },
+        "down": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#aerial"
+        }
+      }
+    },
+    {
+      "name": "antenna_tip",
+      "from": [
+        12.8,
+        24,
+        11.8
+      ],
+      "to": [
+        14.2,
+        25.4,
+        13.2
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#tip"
+        },
+        "east": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#tip"
+        },
+        "south": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#tip"
+        },
+        "west": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#tip"
+        },
+        "up": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#tip"
+        },
+        "down": {
+          "uv": [
+            0.0,
+            0.0,
+            16.0,
+            16.0
+          ],
+          "texture": "#tip"
+        }
+      }
+    }
+  ],
+  "display": {
+    "head": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ]
+    },
+    "gui": {
+      "rotation": [
+        30,
+        225,
+        0
+      ],
+      "translation": [
+        0,
+        -1.5,
+        0
+      ],
+      "scale": [
+        0.55,
+        0.55,
+        0.55
+      ]
+    },
+    "ground": {
+      "translation": [
+        0,
+        3,
+        0
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "fixed": {
+      "rotation": [
+        0,
+        180,
+        0
+      ],
+      "translation": [
+        0,
+        -1,
+        0
+      ],
+      "scale": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    "thirdperson_righthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        3,
+        1
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "translation": [
+        0,
+        3,
+        1
+      ],
+      "scale": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    "firstperson_righthand": {
+      "rotation": [
+        0,
+        -20,
+        0
+      ],
+      "translation": [
+        1,
+        2,
+        0
+      ],
+      "scale": [
+        0.45,
+        0.45,
+        0.45
+      ]
+    },
+    "firstperson_lefthand": {
+      "rotation": [
+        0,
+        20,
+        0
+      ],
+      "translation": [
+        -1,
+        2,
+        0
+      ],
+      "scale": [
+        0.45,
+        0.45,
+        0.45
+      ]
+    }
+  }
+}

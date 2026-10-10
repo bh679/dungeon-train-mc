@@ -24372,6 +24372,74 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-feed-tvs-tune-themselves",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Televisions tune themselves",
+      "summary": "Televisions find the broadcast on their own, so there is nothing to slot in or carry around.",
+      "highlights": [],
+      "pr": 1896,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-viewer-count",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "See how many are watching your stream",
+      "summary": "While you broadcast, a count under LIVE shows how many are watching, and the pinned feed now tucks behind your menus and changes size with a click.",
+      "highlights": [],
+      "pr": 1891,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-twitch-mirror",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed on Twitch",
+      "summary": "When someone goes live, the feed now also plays on the Dungeon Train Twitch channel, and goes quiet again when they stop.",
+      "highlights": [],
+      "pr": 1894,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed",
+      "summary": "Put on the broadcast camcorder and every television, everywhere, starts showing what you see. Its aerial has opinions about whatever you point it at.",
+      "highlights": [],
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -1,0 +1,6 @@
+{
+  "parent": "dungeontrain:item/live_headpiece_base",
+  "textures": {
+    "tip": "dungeontrain:item/live_headpiece_tip_red"
+  }
+}

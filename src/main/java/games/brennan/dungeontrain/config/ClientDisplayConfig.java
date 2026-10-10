@@ -267,6 +267,7 @@ public final class ClientDisplayConfig {
      * state above; the server learns it per-player via {@code ContentModeSyncPacket}.
      */
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
+    public static final ModConfigSpec.BooleanValue DEV_CHAT_ENABLED;
     /**
      * The config deviation the player last chose to keep, as a stable signature (see
      * {@code ConfigDeviationPromptHandler}). Empty when they have never dismissed the launch
@@ -406,6 +407,7 @@ public final class ClientDisplayConfig {
         CONFIRM_BUILD_RESTORE = pair.getLeft().confirmBuildRestore;
         HUMAN_ONLY_TRANSLATIONS = pair.getLeft().humanOnlyTranslations;
         CONTENT_MODE = pair.getLeft().contentMode;
+        DEV_CHAT_ENABLED = pair.getLeft().devChatEnabled;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
@@ -680,6 +682,10 @@ public final class ClientDisplayConfig {
                          "narratives and shared carriages are world-shared and follow the host's.",
                          "Asked once on the first-launch consent card; changeable in Options -> Dungeon Train...")
                 .defineEnum("mode", ContentMode.ADULT);
+        ModConfigSpec.BooleanValue devChatEnabled = b
+                .comment("Chat with the developer in-game, both ways. A switch on the first-launch consent card",
+                         "(Adult only) and an Options row. Kid mode keeps developer chat off regardless.")
+                .define("devChat", true);
         b.pop();
 
         b.push("customContent");
@@ -818,7 +824,7 @@ public final class ClientDisplayConfig {
                 editorPlotLighting,
                 sharedBooksRead,
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
-                politicalFilter, contentMode, customContentPreference,
+                politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
                 lowMemoryNoticeChat, hideOtherAdvancementTabs,
@@ -1731,6 +1737,22 @@ public final class ClientDisplayConfig {
         CONTENT_MODE.save();
     }
 
+    /**
+     * The Developer chat switch (consent card, Options row). A preference layered under the Kid rule:
+     * {@code RelayChatClient.canConnect} and the inbound sync both still require Adult mode.
+     * Defaults on, including pre-load, so an unanswered install behaves as before.
+     */
+    public static boolean isDevChatEnabled() {
+        return !isLoaded() || DEV_CHAT_ENABLED.get();
+    }
+
+    /** Persist the Developer chat switch. Idempotent; no-op pre-load. */
+    public static void setDevChatEnabled(boolean value) {
+        if (!isLoaded() || DEV_CHAT_ENABLED.get() == value) return;
+        DEV_CHAT_ENABLED.set(value);
+        DEV_CHAT_ENABLED.save();
+    }
+
     // ----- Custom Train Editor content prompt (see CustomContentPromptClient) -----
 
     /**
@@ -1928,6 +1950,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<List<? extends String>> deathFormMutedIds,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
+            ModConfigSpec.BooleanValue devChatEnabled,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,

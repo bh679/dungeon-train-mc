@@ -16,8 +16,12 @@ import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
+import games.brennan.dungeontrain.client.ContentModeSyncClient;
+import games.brennan.dungeontrain.client.DevMessageConsentClient;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.ConsentDraft;
 import games.brennan.dungeontrain.config.ContentMode;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.SurveyTag;
@@ -322,6 +326,8 @@ public class DungeonTrain {
         // BlockEntityType.LECTERN's valid blocks.
         ModBlocks.register(modBus);
         ModBlockEntities.register(modBus);
+        // Live Feed: a block-less Vista broadcast location (compat/vista/LiveBroadcastLocation).
+        games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation.register(modBus);
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);
@@ -354,6 +360,12 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 ClientDisplayConfig.SPEC,
                 "dungeontrain-client.toml");
+        // Live Feed capture/playback knobs — its own file so the (already huge) display config
+        // record stays untouched and the knobs can be edited mid-run without any fair-play meaning.
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                games.brennan.dungeontrain.config.LiveFeedClientConfig.SPEC,
+                "dungeontrain-live-client.toml");
 
         // Common gameplay defaults readable on the title screen (no world) and
         // on a dedicated server. Holds the global DEFAULT PlayerMob spawn rate;
@@ -532,6 +544,12 @@ public class DungeonTrain {
                             ContentMode[] modes = ContentMode.values();
                             ContentMode picked = index >= 0 && index < modes.length ? modes[index] : ContentMode.ADULT;
                             ClientDisplayConfig.setContentMode(picked);
+                            // The switches land here, after the mode, so an untouched switch takes the
+                            // default of the mode actually confirmed. Esc lands here too: the master
+                            // consent is DENIED then, and every gate also checks that, so a stored
+                            // "on" is inert until the player grants the connection.
+                            LIVESTREAM_DRAFT.commit(livestreamDefault(picked));
+                            DEV_CHAT_DRAFT.commit(devChatDefault(picked));
                             // Which tier players actually choose, and how that moves when the card is
                             // shown again. Fires on every exit path, because the card records the answer
                             // on every exit path — including Esc, where consent lands DENIED and the
@@ -707,7 +725,33 @@ public class DungeonTrain {
      *
      * <p>1 — first version to carry the Adult / Kid content-mode question.</p>
      */
-    private static final int CONSENT_VERSION = 1;
+    // 2: the card gained the Livestreaming line (and the Developer chat switch), so everyone who
+    // answered version 1 sees it once more and gets the Livestreaming default for their mode.
+    private static final int CONSENT_VERSION = 2;
+
+    /**
+     * The card's two switches, held across one showing. Discord Presence reports a click the moment
+     * it happens and the chosen mode only at close; {@link ConsentDraft} turns that into "last click
+     * wins, else the mode's default" when the card closes. One instance each — the card is modal.
+     */
+    private static final ConsentDraft LIVESTREAM_DRAFT = new ConsentDraft(value -> {
+        LiveFeedClientConfig.setStreamingEnabled(value);
+        ContentModeSyncClient.syncNow(); // the server's loot gate reads it with the content mode
+    });
+    private static final ConsentDraft DEV_CHAT_DRAFT = new ConsentDraft(value -> {
+        ClientDisplayConfig.setDevChatEnabled(value);
+        DevMessageConsentClient.resync();
+    });
+
+    /** Livestreaming default per mode: on for Adult, off for Kid. */
+    static boolean livestreamDefault(ContentMode mode) {
+        return !mode.isKid();
+    }
+
+    /** Developer chat default per mode: on for Adult; Kid has no switch and is always off. */
+    static boolean devChatDefault(ContentMode mode) {
+        return !mode.isKid();
+    }
 
     /** A localized string for the consent card — DP takes raw Strings, not Components, on these seams. */
     private static String tr(String key) {
@@ -727,6 +771,10 @@ public class DungeonTrain {
      */
     private static List<ConsentBullet> consentBullets(ContentMode mode) {
         boolean kid = mode.isKid();
+        // Built once per mode when the card opens; the card re-reads the list (and resets its pills)
+        // when the player picks the other mode, so clicks made under the previous mode are dropped.
+        LIVESTREAM_DRAFT.reset();
+        DEV_CHAT_DRAFT.reset();
         return List.of(
                 new ConsentBullet(
                         tr(kid ? "gui.dungeontrain.consent.content.kid" : "gui.dungeontrain.consent.content.adult"),
@@ -739,10 +787,22 @@ public class DungeonTrain {
                         tr("gui.dungeontrain.consent.reincarnations"), true,
                         tr(kid ? "gui.dungeontrain.consent.reincarnations.kid.tip"
                                : "gui.dungeontrain.consent.reincarnations.adult.tip")),
-                new ConsentBullet(
-                        tr("gui.dungeontrain.consent.dev_chat"), !kid,
-                        tr(kid ? "gui.dungeontrain.consent.dev_chat.kid.tip"
-                               : "gui.dungeontrain.consent.dev_chat.adult.tip")),
+                // Livestreaming: a switch in both modes, on for adults and off for kids by default.
+                ConsentBullet.toggle(
+                        tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                        tr(kid ? "gui.dungeontrain.consent.livestream.kid.tip"
+                               : "gui.dungeontrain.consent.livestream.adult.tip"),
+                        LIVESTREAM_DRAFT::touch),
+                // Developer chat: a switch for adults; for kids a fixed off line, because the Kid block
+                // (RelayChatClient.canConnect, ContentModeMirror) is a safety rule, not a preference.
+                kid
+                        ? new ConsentBullet(
+                                tr("gui.dungeontrain.consent.dev_chat"), false,
+                                tr("gui.dungeontrain.consent.dev_chat.kid.tip"))
+                        : ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.dev_chat"), devChatDefault(mode),
+                                tr("gui.dungeontrain.consent.dev_chat.adult.tip"),
+                                DEV_CHAT_DRAFT::touch),
                 // The soul line is the one whose marker flips the "wrong" way — off for adults, on for
                 // kids — which is the joke. Its hovers carry it, in the developer's own first person.
                 new ConsentBullet(

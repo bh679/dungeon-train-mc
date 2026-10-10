@@ -15253,5 +15253,40 @@
         "Brennan"
       ]
     }
+  },
+  "chat.dungeontrain.live.took_over": {
+    "1": {
+      "label": "the player name of the broadcaster who was cut off",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.disabled": {
+    "1": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live.disabled.path)",
+      "examples": [
+        "Options / Dungeon Train / General / Livestreaming"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.cut_off_by": {
+    "1": {
+      "label": "the player name of the broadcaster who was cut off",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.replaced_here": {
+    "1": {
+      "label": "the player name of the broadcaster who was cut off",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    }
   }
 }
