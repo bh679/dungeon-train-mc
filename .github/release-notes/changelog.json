@@ -24309,6 +24309,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-feed-plays-to-end",
+      "version": "0.1197.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Streams play to the end",
+      "summary": "When a streamer stops, everyone watching still sees the rest of what they recorded before the feed goes quiet.",
+      "highlights": [],
+      "pr": 1899,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
