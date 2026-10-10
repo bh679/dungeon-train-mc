@@ -8,8 +8,10 @@ import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.NetherPortalLinks;
 import games.brennan.dungeontrain.worldgen.BandLabel;
+import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherPortalJump;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -101,6 +103,10 @@ public final class NetherPortalBandJump {
         }
         BlockPos arrived = NetherPortalLinks.frameKey(level, BlockPos.containing(transition.pos()));
         if (partner == null) links.link(origin, arrived);
+        // The band counts as the real Nether: fire the criterion vanilla fires on a dimension change, so
+        // "We Need to Go Deeper" and the Nether tab open just as they would through a real portal.
+        NetherPortalAdvancements.crossing(NetherBand.isInNetherBand(level, fromX), NetherBand.isInNetherBand(level, arrived.getX()))
+            .ifPresent(c -> CriteriaTriggers.CHANGED_DIMENSION.trigger(player, c.from(), c.to()));
         LOGGER.info("[DungeonTrain] nether portal: {} x={} ({}) → {} ({}), frames {} ↔ {}",
             who, fromX, BandLabel.bandAt(level, fromX), exit, why, origin, arrived);
         DungeonTrainNet.sendTo(player, new PortalLoadScreenPacket());
