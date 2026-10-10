@@ -80,6 +80,12 @@ public final class LiveStreamController {
         return streamStartedMs;
     }
 
+    /** How many are watching this broadcast, or −1 when not streaming or not yet known. */
+    public int viewerCount() {
+        LiveUploader u = uploader;
+        return state == State.STREAMING && u != null ? u.viewers() : -1;
+    }
+
     /** The playlist viewers load for this client's broadcast, or null when not streaming. */
     @Nullable
     public String playlistUrl() {

@@ -5,6 +5,13 @@ import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
+import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -15,7 +22,10 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import org.lwjgl.glfw.GLFW;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
@@ -30,17 +40,20 @@ import java.util.Random;
  * reaches the channel a segment or two later, so until it does the box is blacked out with a
  * "Live in" countdown over whatever the channel is still playing.</p>
  *
- * <p>Drawn at {@link EventPriority#LOWEST} on {@link RenderFrameEvent.Post}: after
- * {@link LiveStreamController} has grabbed the frame for the stream, so the box is on the wearer's
- * screen but never in the broadcast (no picture-in-picture echo).</p>
+ * <p>Where it is drawn depends on who is wearing it. A viewer's box is a HUD layer, so the
+ * inventory, the pause menu and advancement toasts all sit on top of it. The streamer's box is
+ * drawn at {@link EventPriority#LOWEST} on {@link RenderFrameEvent.Post}, after
+ * {@link LiveStreamController} has grabbed the frame, so it stays on top for them but never reaches
+ * the broadcast (no picture-in-picture echo).</p>
+ *
+ * <p>Clicking the box in the inventory or chat cycles its size ({@link LiveFeedClientConfig#cycleHeadViewerSize});
+ * the streamer and the viewer each keep their own size, the streamer's smaller by default.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveHeadViewer {
 
-    /** Gap from the screen edge when there is no viewfinder to tuck under. */
+    /** Gap from the screen edge; the viewfinder's badge is top-left, so the top-right is free. */
     static final int EDGE = 8;
-    /** Gap between the LIVE badge and the box when streaming. */
-    static final int BADGE_GAP = 6;
     static final int BORDER = 1;
     /** Viewers run one to two segments behind; this is the far end, plus upload slack. */
     static final int SEGMENTS_BEHIND = 2;
@@ -59,13 +72,8 @@ public final class LiveHeadViewer {
     /** Where the box goes, in GUI pixels (border excluded). */
     record Box(int x, int y, int w, int h) {}
 
-    static Box layout(int guiWidth, int boxWidth, boolean underBadge, int fontLineHeight) {
-        int h = LiveFeedClientConfig.heightFor(boxWidth);
-        if (underBadge) {
-            int right = LiveRecOverlay.innerRight(guiWidth);
-            return new Box(right - boxWidth, LiveRecOverlay.badgeBottom(fontLineHeight) + BADGE_GAP, boxWidth, h);
-        }
-        return new Box(guiWidth - EDGE - boxWidth, EDGE, boxWidth, h);
+    static Box layout(int guiWidth, int boxWidth) {
+        return new Box(guiWidth - EDGE - boxWidth, EDGE, boxWidth, LiveFeedClientConfig.heightFor(boxWidth));
     }
 
     /** Whole seconds until this client's broadcast should be on the channel; never below 1. */
@@ -82,23 +90,68 @@ public final class LiveHeadViewer {
         return head.getItem() instanceof BlockItem bi && bi.getBlock() instanceof TVBlock;
     }
 
+    /** Wearing a viewer hat with the box switched on — the box is shown in one of the two passes. */
+    private static boolean shown(Minecraft mc) {
+        return mc.level != null && mc.player != null && LiveFeedClientConfig.headViewerEnabled()
+            && isViewerHat(mc.player.getItemBySlot(EquipmentSlot.HEAD));
+    }
+
+    /** Watching: a HUD layer, under every screen and toast. */
+    @SubscribeEvent
+    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_head_viewer"), (g, delta) -> {
+            Minecraft mc = Minecraft.getInstance();
+            if (!shown(mc) || LiveStreamController.get().streaming() || mc.options.hideGui) return;
+            draw(g, LiveFeedSource.MAIN.frame(mc.player.tickCount, delta.getGameTimeDeltaPartialTick(false), false));
+        });
+    }
+
+    /** Streaming: after the frame grab, on top of everything, never in the broadcast. */
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public static void onFrameEnd(RenderFrameEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || mc.player == null) return;
-        if (!LiveFeedClientConfig.headViewerEnabled()) return;
+        if (!shown(mc) || !LiveStreamController.get().streaming()) return;
         if (mc.screen == null && mc.options.hideGui) return;
-        if (!isViewerHat(mc.player.getItemBySlot(EquipmentSlot.HEAD))) return;
         LiveFeedSource.Frame frame = LiveFeedSource.MAIN.frame(mc.player.tickCount,
             event.getPartialTick().getGameTimeDeltaPartialTick(false), false);
         LiveRecOverlay.guiPass(g -> draw(g, frame));
+    }
+
+    /** In the inventory or chat, a left click on the box cycles its size and goes no further. */
+    @SubscribeEvent
+    public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT || !isResizeScreen(event.getScreen())) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!shown(mc)) return;
+        boolean streaming = LiveStreamController.get().streaming();
+        Box b = layout(mc.getWindow().getGuiScaledWidth(), LiveFeedClientConfig.headViewerWidth(streaming));
+        if (!contains(b, event.getMouseX(), event.getMouseY())) return;
+        event.setCanceled(true);
+        LiveFeedClientConfig.cycleHeadViewerSize(streaming);
+        mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));
+    }
+
+    /** The screens the box can be resized from: the inventory (survival or creative) and chat. */
+    static boolean isResizeScreen(@Nullable Screen screen) {
+        return screen != null && resizesFrom(screen.getClass());
+    }
+
+    static boolean resizesFrom(Class<?> screen) {
+        return InventoryScreen.class.isAssignableFrom(screen)
+            || CreativeModeInventoryScreen.class.isAssignableFrom(screen)
+            || ChatScreen.class.isAssignableFrom(screen);
+    }
+
+    /** Inside the box or on its border. */
+    static boolean contains(Box b, double x, double y) {
+        return x >= b.x() - BORDER && x < b.x() + b.w() + BORDER && y >= b.y() - BORDER && y < b.y() + b.h() + BORDER;
     }
 
     private static void draw(GuiGraphics g, LiveFeedSource.Frame frame) {
         LiveStreamController streamer = LiveStreamController.get();
         boolean streaming = streamer.streaming();
         Font font = Minecraft.getInstance().font;
-        Box b = layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(), streaming, font.lineHeight);
+        Box b = layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(streaming));
 
         g.fill(b.x() - BORDER, b.y() - BORDER, b.x() + b.w() + BORDER, b.y() + b.h() + BORDER, BORDER_COLOR);
         switch (frame.kind()) {

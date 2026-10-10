@@ -119,6 +119,20 @@ public final class LiveFeedClient {
         return out;
     }
 
+    /**
+     * How many are watching, from a presign reply's {@code viewers.total} — players at TVs or wearing
+     * one plus website viewers, never the streamer. −1 when the relay sent no count (an older relay).
+     */
+    public static int parseViewerCount(Result r) {
+        if (!r.ok() || !r.body().has("viewers") || !r.body().get("viewers").isJsonObject()) return -1;
+        JsonObject v = r.body().getAsJsonObject("viewers");
+        try {
+            return v.has("total") ? Math.max(0, v.get("total").getAsInt()) : -1;
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
     public static CompletableFuture<Result> stop(String token) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
