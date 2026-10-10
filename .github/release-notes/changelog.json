@@ -24357,15 +24357,15 @@
       "released_at": null
     },
     {
-      "id": "nether-portals-along-the-ride",
+      "id": "nether-end-portal-fixes",
       "version": "0.1200.0",
-      "type": "feat",
+      "type": "fix",
       "tags": [
-        "feature",
+        "fix",
         "world"
       ],
-      "title": "Nether portals travel along the ride",
-      "summary": "Step through a Nether portal and the ride takes you somewhere else along the track \u2014 and back again through the same one.",
+      "title": "Nether and End portal fixes",
+      "summary": "A few portal oddities around the Nether and the End have been tidied up.",
       "highlights": [],
       "pr": 1897,
       "date": "2026-10-10",
