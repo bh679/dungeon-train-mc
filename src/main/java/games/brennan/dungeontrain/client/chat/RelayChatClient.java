@@ -54,7 +54,9 @@ public final class RelayChatClient {
      * what "cannot chat with the dev" has to mean in both directions.</p>
      */
     public static boolean canConnect() {
-        return DiscordPresenceClientConfig.isGranted() && !ClientDisplayConfig.isKidMode();
+        return DiscordPresenceClientConfig.isGranted()
+            && !ClientDisplayConfig.isKidMode()
+            && ClientDisplayConfig.isDevChatEnabled();
     }
 
     /**
