@@ -24358,7 +24358,7 @@
     },
     {
       "id": "camera-helmet-headpiece",
-      "version": "0.1197.0",
+      "version": "0.1200.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24375,7 +24375,7 @@
     },
     {
       "id": "live-feed-tvs-tune-themselves",
-      "version": "0.1197.0",
+      "version": "0.1200.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24392,7 +24392,7 @@
     },
     {
       "id": "live-viewer-count",
-      "version": "0.1197.0",
+      "version": "0.1200.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24410,7 +24410,7 @@
     },
     {
       "id": "live-feed-twitch-mirror",
-      "version": "0.1197.0",
+      "version": "0.1200.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24420,6 +24420,22 @@
       "summary": "When someone goes live, the feed now also plays on the Dungeon Train Twitch channel, and goes quiet again when they stop.",
       "highlights": [],
       "pr": 1894,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed",
+      "version": "0.1200.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed",
+      "summary": "Put on the broadcast camcorder and every television, everywhere, starts showing what you see.",
+      "highlights": [],
       "date": "2026-10-10",
       "released": false,
       "released_in": null,
