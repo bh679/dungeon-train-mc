@@ -34,8 +34,10 @@ import java.util.UUID;
  * client then claims the channel from the relay — which is where cross-world takeover is decided;
  * two single-player worlds each have a "streamer", and the relay's last claim wins.</p>
  *
- * <p>The camcorder stays on while the stream runs. Which exits burn it and which hand it back is
- * one rule, {@link #burnsOn(Exit)}: it is consumed only when the feed is taken from you.</p>
+ * <p>The camcorder stays on while the stream runs and burns away the moment it comes off — taken
+ * off, swapped for a helmet, replaced by another streamer, death or a relay cut-off
+ * ({@link #burnsOn(Exit)}). Only a stream that never started hands it back, and a logout leaves it
+ * on so logging back in resumes.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LiveFeedEvents {
@@ -45,9 +47,9 @@ public final class LiveFeedEvents {
 
     private LiveFeedEvents() {}
 
-    /** The camcorder burns away only when the feed was taken from the wearer. */
+    /** Everything burns the camcorder except a failed start (handed back) and a logout (stays on). */
     static boolean burnsOn(Exit exit) {
-        return exit == Exit.REPLACED || exit == Exit.DIED || exit == Exit.CUT_OFF;
+        return exit != Exit.FAILED && exit != Exit.LEFT;
     }
 
     /** Every server level learns that the feed id lives at the block-less live location. */
@@ -132,10 +134,18 @@ public final class LiveFeedEvents {
         }
     }
 
-    /** The camcorder flares and is gone: flame, smoke, a hiss, empty head slot. */
+    /**
+     * The camcorder flares and is gone: flame, smoke, a hiss. It is taken from the head slot, or —
+     * when the player has just pulled it off — from the cursor or the inventory slot it landed in.
+     */
     private static void burn(ServerPlayer player) {
-        if (!isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) return;
-        player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+        if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) {
+            player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
+        } else if (isCamcorder(player.containerMenu.getCarried())) {
+            player.containerMenu.setCarried(ItemStack.EMPTY);
+        } else if (player.getInventory().clearOrCountMatchingItems(LiveFeedEvents::isCamcorder, 1, player.inventoryMenu.getCraftSlots()) == 0) {
+            return;
+        }
         ServerLevel level = player.serverLevel();
         level.sendParticles(ParticleTypes.FLAME, player.getX(), player.getEyeY() + 0.3, player.getZ(), 24, 0.3, 0.2, 0.3, 0.02);
         level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getEyeY() + 0.4, player.getZ(), 8, 0.2, 0.1, 0.2, 0.01);

@@ -10,12 +10,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class LiveFeedEventsTest {
 
     @Test
-    @DisplayName("replaced, died and cut off burn the camcorder; removed, left and failed keep it")
+    @DisplayName("taking it off, replacement, death and cut-off burn the camcorder; a failed start or a logout keeps it")
     void whichExitsBurn() {
+        assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.REMOVED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.REPLACED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.DIED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.CUT_OFF));
-        assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.REMOVED));
         assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.LEFT));
         assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.FAILED));
     }
