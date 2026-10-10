@@ -22,9 +22,11 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>ffmpeg reads the HLS directly ({@code -live_start_index -1} joins at the newest segment,
  * {@code -re} plays it at real speed instead of bursting a whole segment), scales to the viewer
- * width, and pipes raw RGB frames. When the stream ends — the playlist 404s after the relay deletes
- * it, or carries ENDLIST — ffmpeg exits and the reader backs off (2 s → 30 s) before trying again,
- * keeping the last frame on screen meanwhile. {@link #release()} after 30 s with no viewer kills
+ * width, and pipes raw RGB frames. When the streamer stops, their last playlist carries ENDLIST:
+ * ffmpeg plays the tail out and exits cleanly, and the session is {@link #finished()} — never
+ * restarted, since rejoining a finished playlist would play it again from its first segment. Any
+ * other exit (a 404, a network drop) backs off (2 s → 30 s) before trying again, keeping the last
+ * frame on screen meanwhile. {@link #release()} after 30 s with no viewer kills
  * the process; the texture survives.</p>
  */
 public final class LiveHlsSession implements IMediaSession {
@@ -41,6 +43,7 @@ public final class LiveHlsSession implements IMediaSession {
     private volatile MediaStatus status = MediaStatus.LOADING;
     private volatile long lastWantedMs = System.currentTimeMillis();
     private volatile boolean closed;
+    private volatile boolean finished;
     private volatile Process process;
     private Thread reader;
 
@@ -64,10 +67,21 @@ public final class LiveHlsSession implements IMediaSession {
     public long frameSequence() { return frameSeq; }
     public MediaStatus status() { return status; }
 
+    /** True once a live playlist was played to its ENDLIST: the stream is over and this session is done. */
+    public boolean finished() { return finished; }
+
+    /**
+     * Whether an ffmpeg run that just ended reached the end of the stream: a clean exit (0) after at
+     * least one frame on a live playlist. Errors (404, network) exit non-zero; a replay loops forever.
+     */
+    static boolean reachedEnd(int exitCode, long framesThisRun, boolean replay) {
+        return !replay && exitCode == 0 && framesThisRun > 0;
+    }
+
     /** A TV wants this feed right now; (re)start decoding if idle. */
     public synchronized void touch(FFmpeg ffmpeg) {
         lastWantedMs = System.currentTimeMillis();
-        if (closed || (reader != null && reader.isAlive())) return;
+        if (closed || finished || (reader != null && reader.isAlive())) return;
         reader = new Thread(() -> readLoop(ffmpeg), "dt-live-decoder");
         reader.setDaemon(true);
         reader.start();
@@ -84,6 +98,7 @@ public final class LiveHlsSession implements IMediaSession {
                 FfmpegSupport.drain(p.getErrorStream(), "decoder");
                 int frameBytes = width * height * 3;
                 byte[] buf = new byte[frameBytes];
+                long framesThisRun = 0;
                 try (InputStream in = p.getInputStream()) {
                     while (!closed) {
                         if (System.currentTimeMillis() - lastWantedMs >= IDLE_KILL_MS) break;
@@ -98,17 +113,25 @@ public final class LiveHlsSession implements IMediaSession {
                             }
                             frameSeq++;
                         }
+                        framesThisRun++;
                         status = MediaStatus.READY;
                         backoffMs = 2000;
                     }
                 }
+                if (!closed && p.waitFor(2, TimeUnit.SECONDS) && reachedEnd(p.exitValue(), framesThisRun, replay)) {
+                    finished = true;
+                    LOGGER.debug("[DungeonTrain] live decoder: {} played to its end", playlistUrl);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
             } catch (IOException e) {
                 LOGGER.debug("[DungeonTrain] live decoder: {}", e.toString());
             } finally {
                 if (p != null) p.destroyForcibly();
                 process = null;
             }
-            if (closed) break;
+            if (closed || finished) break;
             status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
             try { Thread.sleep(backoffMs); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
             backoffMs = Math.min(backoffMs * 2, 30_000);
