@@ -12139,6 +12139,22 @@
       ]
     }
   },
+  "chat.dungeontrain.portal.band_jump": {
+    "1": {
+      "label": "the name of the band the player stepped into the portal from",
+      "examples": [
+        "Overworld",
+        "Nether"
+      ]
+    },
+    "2": {
+      "label": "the name of the band the portal takes the player to",
+      "examples": [
+        "Nether",
+        "Nether (Better Nether)"
+      ]
+    }
+  },
   "chat.dungeontrain.package.dtp_next_band": {
     "1": {
       "label": "the name of the band the player is in now",
