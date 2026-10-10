@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.train.CatchUpBurstAuto;
 import games.brennan.dungeontrain.train.CatchUpBurstMode;
 import games.brennan.dungeonbackup.client.BackupOptionsWidgets;
@@ -457,6 +458,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CONTENT_MODE -> List.of(
                     value("gui.dungeontrain.options.content_mode", contentModeLabel(ContentMode.ADULT)),
                     value("gui.dungeontrain.options.content_mode", contentModeLabel(ContentMode.KID)));
+            case LIVESTREAM -> onOffCandidates("gui.dungeontrain.options.livestream");
+            case DEV_CHAT -> onOffCandidates("gui.dungeontrain.options.dev_chat");
             case POLITICAL_FILTER -> onOffCandidates("gui.dungeontrain.political_filter.option");
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case UPDATE_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.update_notice_chat");
@@ -564,6 +567,32 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     // only place outside the one-time card that says what Kid mode actually does, and
                     // it is where a parent comes to change it.
                     "gui.dungeontrain.options.content_mode.tip");
+
+            // The consent card's Livestreaming switch, findable again — the card's footnote promises
+            // "change anytime in options".
+            case LIVESTREAM -> withTip(
+                    CycleButton.onOffBuilder(LiveFeedClientConfig.streamingEnabled())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.livestream"),
+                                    (btn, on) -> {
+                                        LiveFeedClientConfig.setStreamingEnabled(on);
+                                        ContentModeSyncClient.syncNow();
+                                    }),
+                    "gui.dungeontrain.options.livestream.tip");
+
+            // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
+            // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
+            case DEV_CHAT -> {
+                CycleButton<Boolean> devChat = CycleButton.onOffBuilder(ClientDisplayConfig.isDevChatEnabled())
+                        .create(0, 0, width, ROW_H,
+                                Component.translatable("gui.dungeontrain.options.dev_chat"),
+                                (btn, on) -> {
+                                    ClientDisplayConfig.setDevChatEnabled(on);
+                                    DevMessageConsentClient.resync();
+                                });
+                devChat.active = !ClientDisplayConfig.isKidMode();
+                yield withTip(devChat, "gui.dungeontrain.options.dev_chat.tip");
+            }
 
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.

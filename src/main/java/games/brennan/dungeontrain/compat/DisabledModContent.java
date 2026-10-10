@@ -19,7 +19,8 @@ import java.util.regex.Pattern;
  * The armour, weapons, tools, gear metals and ores of the biome mods DT depends on — Biomes O' Plenty, BetterEnd and
  * BetterNether. DT keeps their biomes and blocks but not their parallel gear progression, which would
  * bypass DT's own loot and difficulty balance. Also Exposure's original camera, film and lightroom
- * ({@link #HIDDEN_ITEMS}), replaced by the Polaroid add-on's instant camera.
+ * ({@link #HIDDEN_ITEMS}), replaced by the Polaroid add-on's instant camera, and Vista's Viewfinder, Wave Gate and
+ * cassettes — DT's Television shows only the Live Feed.
  *
  * <p>Single source of truth for five enforcement points: recipes ({@code RecipeManagerDisableMixin}),
  * loot ({@link StripDisabledItemsLootModifier}), ore placement ({@code ChunkGeneratorDecorationMixin})
@@ -62,6 +63,11 @@ public final class DisabledModContent {
      * <p>Also the add-on's four instant slides. Players never hold a plain instant camera — only
      * {@link DisposableCamera}, which comes with its slide loaded as data and can't be topped up — so
      * the slide items have nothing to feed and are hidden with their recipes.</p>
+     *
+     * <p>And Vista's Viewfinder, Wave Gate, pre-recorded Cassette and Hollow Cassette: a Television's only job in
+     * DT is the Live Feed, which it tunes to by itself. Hiding the two cassettes also strips Vista's own chest and
+     * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Mirrors, Picture
+     * Tape and the music disc are left as Vista ships them.</p>
      */
     static final Set<String> HIDDEN_ITEMS = Set.of(
         "exposure:camera",
@@ -76,7 +82,11 @@ public final class DisabledModContent {
         "exposure_polaroid:instant_color_slide",
         "exposure_polaroid:instant_black_and_white_slide",
         "exposure_polaroid:high_sensitivity_instant_color_slide",
-        "exposure_polaroid:high_sensitivity_instant_black_and_white_slide");
+        "exposure_polaroid:high_sensitivity_instant_black_and_white_slide",
+        "vista:viewfinder",
+        "vista:wave_gate",
+        "vista:cassette",
+        "vista:hollow_cassette");
 
     static final String INSTANT_CAMERA = "exposure_polaroid:instant_camera";
 
