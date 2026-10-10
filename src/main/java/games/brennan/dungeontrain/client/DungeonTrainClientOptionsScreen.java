@@ -108,6 +108,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private final List<OptionsTab> tabs = new ArrayList<>();
     private TabNavigationBar tabNavigationBar;
+    /**
+     * Added to {@link #layout}'s footer once. The layout is a per-screen field that outlives
+     * {@code rebuildWidgets()}, and {@code HeaderAndFooterLayout} has no remove, so adding a fresh
+     * button on every {@code init()} stacked one Done per rebuild.
+     */
+    private Button doneButton;
 
     /** Empty on a release en_us client, which is why the Translate row is conditional. */
     private String translateTarget = "";
@@ -147,7 +153,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 .build();
         addRenderableWidget(this.tabNavigationBar);
 
-        this.layout.addToFooter(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).width(200).build());
+        if (this.doneButton == null) {
+            this.doneButton = Button.builder(CommonComponents.GUI_DONE, b -> onClose()).width(200).build();
+            this.layout.addToFooter(this.doneButton);
+        }
         this.layout.visitWidgets(this::addRenderableWidget);
 
         // Reopen (and re-init after a resize) on whichever tab the player last chose.
@@ -425,11 +434,21 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return "gui.dungeontrain.options.account.pings." + type.key();
     }
 
-    /** Rebuilds after a tip's action, unless that action already moved on to another screen. */
+    /**
+     * Rebuilds after a tip's action, unless that action already moved on to another screen.
+     *
+     * <p>Always deferred to the next client tick. The account refresh in {@link #addDiscordAccount}
+     * is requested from inside {@code init()}, and when the relay's answer is already cached its
+     * future is complete, so the callback ran synchronously — a {@code rebuildWidgets()} nested inside
+     * the very {@code init()} that was still adding its own tab bar, Done button and list. The outer
+     * init then finished on top of the rebuilt screen, and every reopen stacked another tab bar.</p>
+     */
     private void rebuildIfShown() {
-        if (this.minecraft.screen == this) {
-            rebuildWidgets();
-        }
+        this.minecraft.tell(() -> {
+            if (this.minecraft.screen == this) {
+                rebuildWidgets();
+            }
+        });
     }
 
     /**
