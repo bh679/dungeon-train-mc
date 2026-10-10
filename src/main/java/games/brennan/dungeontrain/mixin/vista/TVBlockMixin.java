@@ -29,10 +29,12 @@ import net.minecraft.world.level.block.Block;
  * the latch instead of the wire.
  *
  * <p>Click rules: empty hand → toggle power. Sneak + empty hand keeps Vista's behaviour (pause while
- * playing, eject the cassette while off). A cassette in hand still inserts.</p>
+ * playing, eject the cassette while off) — except that a Live Feed Cassette never ejects. A cassette in
+ * hand still inserts.</p>
  *
  * <p>A TV that comes on with an empty slot tunes itself: the server puts a Live Feed Cassette in, so
- * switching any TV on shows the broadcast (or the replay) with no setup at all.</p>
+ * switching any TV on shows the broadcast (or the replay) with no setup at all. That cassette is never
+ * a player's item — see {@code event.UnobtainableLiveItems} and {@link TVBlockEntityMixin}.</p>
  */
 @Mixin(value = TVBlock.class, remap = false)
 public abstract class TVBlockMixin {
@@ -54,9 +56,20 @@ public abstract class TVBlockMixin {
             cir.setReturnValue(ItemInteractionResult.FAIL);
             return;
         }
+        if (stack.isEmpty() && player.isSecondaryUseActive() && !state.getValue(TVBlock.POWER_STATE).isOn()
+                && dungeontrain$holdsLiveCassette(level, pos, state)) {
+            // Vista would eject the cassette of a TV that is off; the Live Feed one stays put.
+            cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+            return;
+        }
         if (!stack.isEmpty() || player.isSecondaryUseActive()) return;
         TvPowerToggle.toggle(level, pos);
         cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+    }
+
+    private boolean dungeontrain$holdsLiveCassette(Level level, BlockPos pos, BlockState state) {
+        return ((IConnectedBlock) (Object) this).findMasterBlockEntity(level, pos, state) instanceof TVBlockEntity tv
+            && tv.getItem(0).is(ModItems.LIVE_CASSETTE.get());
     }
 
     @Inject(method = "neighborChanged", at = @At("TAIL"))

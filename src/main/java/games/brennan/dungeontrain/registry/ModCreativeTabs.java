@@ -139,8 +139,8 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
                 output.accept(ModItems.LIVE_HEADPIECE.get());
-                output.accept(ModItems.RANDOM_LIVE_HEADPIECE.get());
-                output.accept(ModItems.LIVE_CASSETTE.get());
+                // No Live Feed Cassette or camcorder placeholder: TVs tune themselves, and neither is
+                // ever a player's item (event.UnobtainableLiveItems).
                 output.accept(ModItems.RANDOM_PLAYERPHOTO.get());
                 output.accept(ModItems.RANDOM_PLAYERPHOTOALBUM.get());
                 output.accept(ModItems.YOUR_PHOTOALBUM.get());
