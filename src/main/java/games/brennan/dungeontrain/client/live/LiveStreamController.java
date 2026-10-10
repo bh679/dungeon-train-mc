@@ -104,6 +104,7 @@ public final class LiveStreamController {
             case STOP_DIED -> stop(Component.translatable("chat.dungeontrain.live.ended_death"));
             case STOP_LEFT -> stop(null);
             case STOP_REMOVED -> stop(Component.translatable("chat.dungeontrain.live.removed"));
+            case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
         }
     }
 

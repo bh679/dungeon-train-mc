@@ -661,6 +661,7 @@
   "chat.dungeontrain.familiar_photo.3": "Ваше собственное фото вернулось к вам.",
   "chat.dungeontrain.live.headpiece_burns": "Видеокамера на твоей голове вспыхивает и сгорает.",
   "chat.dungeontrain.live.headpiece_on": "Видеокамера на твоей голове мигает красным. Теперь ты — эфир.",
+  "chat.dungeontrain.live.free_play": "В свободной игре нельзя выйти в прямой эфир.",
   "chat.dungeontrain.live.removed": "Ты снял видеокамеру. Она сгорает; твой эфир окончен.",
   "chat.dungeontrain.live.started": "Ты в эфире. Зрители видят твой экран с задержкой около пятнадцати секунд.",
   "chat.dungeontrain.live.took_over": "Трансляция %s прервана.",

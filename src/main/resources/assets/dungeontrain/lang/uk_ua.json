@@ -712,6 +712,7 @@
   "chat.dungeontrain.familiar_photo.3": "Твоє власне фото повернулося по колу.",
   "chat.dungeontrain.live.headpiece_burns": "Відеокамера на твоїй голові спалахує і згоряє.",
   "chat.dungeontrain.live.headpiece_on": "Відеокамера на твоїй голові блимає червоним. Тепер ти — ефір.",
+  "chat.dungeontrain.live.free_play": "У вільній грі не можна вийти в прямий ефір.",
   "chat.dungeontrain.live.removed": "Ти зняв відеокамеру. Вона згоряє; твій ефір завершено.",
   "chat.dungeontrain.live.started": "Ти в ефірі. Глядачі бачать твій екран із затримкою близько п'ятнадцяти секунд.",
   "chat.dungeontrain.live.took_over": "Трансляцію %s перервано.",

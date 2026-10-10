@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
 import games.brennan.dungeontrain.player.LiveStreamers;
 import games.brennan.dungeontrain.registry.ModItems;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -21,6 +23,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import java.util.UUID;
@@ -43,7 +46,10 @@ import java.util.UUID;
 public final class LiveFeedEvents {
 
     /** Why a stream ended, from the server's point of view. */
-    public enum Exit { REMOVED, REPLACED, DIED, LEFT, CUT_OFF, FAILED, DISABLED }
+    public enum Exit { REMOVED, REPLACED, DIED, LEFT, CUT_OFF, FAILED, DISABLED, FREE_PLAY }
+
+    /** How often (server ticks) the streamer's Free Play state is rechecked mid-stream. */
+    private static final int FREE_PLAY_CHECK_TICKS = 20;
 
     private LiveFeedEvents() {}
 
@@ -107,9 +113,39 @@ public final class LiveFeedEvents {
         endStream(player, exit);
     }
 
+    /**
+     * A Free Play run never goes live: the camcorder burns on the way on, and a stream already
+     * running ends the moment the run turns Free Play (creative, an op online, a changed config…).
+     * Dev builds are exempt so streaming can be tested in creative — the same carve-out as
+     * {@code FreePlayBridge#enforceMatch}.
+     */
+    static boolean streamBlocked(boolean devBuild, boolean freePlay) {
+        return !devBuild && freePlay;
+    }
+
+    private static boolean streamBlocked(ServerPlayer player) {
+        return streamBlocked(DungeonTrain.isDevBuild(), RunIntegrity.isCheated(player));
+    }
+
+    /** Once a second, end the stream of a streamer whose run has turned Free Play. */
+    @SubscribeEvent
+    public static void onServerTick(ServerTickEvent.Post event) {
+        MinecraftServer server = event.getServer();
+        if (server.getTickCount() % FREE_PLAY_CHECK_TICKS != 0) return;
+        UUID streamer = LiveStreamers.get(server);
+        if (streamer == null) return;
+        ServerPlayer player = server.getPlayerList().getPlayer(streamer);
+        if (player != null && streamBlocked(player)) endStream(player, Exit.FREE_PLAY);
+    }
+
     private static void startStreaming(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
+        if (streamBlocked(player)) {
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
+            burn(player);
+            return;
+        }
         UUID previous = LiveStreamers.setStreamer(server, player.getUUID());
         if (previous != null && !previous.equals(player.getUUID())) {
             ServerPlayer old = server.getPlayerList().getPlayer(previous);
@@ -139,6 +175,7 @@ public final class LiveFeedEvents {
             case REMOVED -> PacketDistributor.sendToPlayer(player, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_REMOVED, ""));
             case DIED -> PacketDistributor.sendToPlayer(player, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_DIED, ""));
             case LEFT -> PacketDistributor.sendToPlayer(player, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_LEFT, ""));
+            case FREE_PLAY -> PacketDistributor.sendToPlayer(player, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_FREE_PLAY, ""));
             default -> { /* REPLACED is sent by the new streamer's start; CUT_OFF and FAILED came from the client */ }
         }
     }

@@ -602,6 +602,7 @@
   "chat.dungeontrain.familiar_photo.3": "你自己的照片，又绕了回来。",
   "chat.dungeontrain.live.headpiece_burns": "你头上的摄像机闪了一下，烧成了灰。",
   "chat.dungeontrain.live.headpiece_on": "你头上的摄像机闪着红光。现在你就是直播。",
+  "chat.dungeontrain.live.free_play": "自由模式的游戏无法直播。",
   "chat.dungeontrain.live.removed": "你摘下了摄像机。它烧毁了，你的直播结束了。",
   "chat.dungeontrain.live.started": "你已上线。观众看到的画面比你慢大约十五秒。",
   "chat.dungeontrain.live.took_over": "%s 的直播被切断了。",

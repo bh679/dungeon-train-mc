@@ -629,6 +629,7 @@
   "chat.dungeontrain.familiar_photo.3": "Tu propia foto, de vuelta a ti.",
   "chat.dungeontrain.live.headpiece_burns": "La videocámara en tu cabeza chispea y se consume.",
   "chat.dungeontrain.live.headpiece_on": "La videocámara en tu cabeza parpadea en rojo. Ahora tú eres la transmisión.",
+  "chat.dungeontrain.live.free_play": "Las partidas de Juego Libre no pueden transmitir en vivo.",
   "chat.dungeontrain.live.removed": "Te quitaste la videocámara. Se consume; tu transmisión terminó.",
   "chat.dungeontrain.live.started": "Estás en vivo. Los espectadores ven tu pantalla unos quince segundos después.",
   "chat.dungeontrain.live.took_over": "%s fue cortado.",

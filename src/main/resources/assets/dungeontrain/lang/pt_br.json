@@ -629,6 +629,7 @@
   "chat.dungeontrain.familiar_photo.3": "Sua própria foto, de volta para você.",
   "chat.dungeontrain.live.headpiece_burns": "A filmadora na sua cabeça faísca e queima até sumir.",
   "chat.dungeontrain.live.headpiece_on": "A filmadora na sua cabeça pisca em vermelho. Agora a transmissão é você.",
+  "chat.dungeontrain.live.free_play": "Partidas em Jogo Livre não podem transmitir ao vivo.",
   "chat.dungeontrain.live.removed": "Você tirou a filmadora. Ela queima até sumir; sua transmissão terminou.",
   "chat.dungeontrain.live.started": "Você está ao vivo. Os espectadores veem sua tela com cerca de quinze segundos de atraso.",
   "chat.dungeontrain.live.took_over": "%s foi cortado.",

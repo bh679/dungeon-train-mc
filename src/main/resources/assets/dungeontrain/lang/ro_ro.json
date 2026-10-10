@@ -712,6 +712,7 @@
   "chat.dungeontrain.familiar_photo.3": "Propria ta fotografie, întoarsă la tine.",
   "chat.dungeontrain.live.headpiece_burns": "Camera video de pe capul tău scapără și arde complet.",
   "chat.dungeontrain.live.headpiece_on": "Camera video de pe capul tău clipește roșu. Acum tu ești transmisia.",
+  "chat.dungeontrain.live.free_play": "Rundele de Joc Liber nu pot transmite live.",
   "chat.dungeontrain.live.removed": "Ți-ai dat jos camera video. Arde complet; transmisia ta s-a încheiat.",
   "chat.dungeontrain.live.started": "Ești în direct. Spectatorii văd ecranul tău cu aproximativ cincisprezece secunde întârziere.",
   "chat.dungeontrain.live.took_over": "%s a fost întrerupt.",

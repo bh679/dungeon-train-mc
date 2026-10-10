@@ -629,6 +629,7 @@
   "chat.dungeontrain.familiar_photo.3": "Ta propre photo, revenue jusqu'à toi.",
   "chat.dungeontrain.live.headpiece_burns": "Le caméscope sur ta tête crépite et se consume.",
   "chat.dungeontrain.live.headpiece_on": "Le caméscope sur ta tête clignote en rouge. Tu es la diffusion maintenant.",
+  "chat.dungeontrain.live.free_play": "Les parties en Jeu Libre ne peuvent pas passer en direct.",
   "chat.dungeontrain.live.removed": "Tu as retiré le caméscope. Il se consume ; ta diffusion est terminée.",
   "chat.dungeontrain.live.started": "Vous êtes en direct. Les spectateurs voient votre écran avec environ quinze secondes de retard.",
   "chat.dungeontrain.live.took_over": "%s a été coupé.",

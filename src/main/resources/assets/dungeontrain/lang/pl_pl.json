@@ -656,6 +656,7 @@
   "chat.dungeontrain.familiar_photo.3": "Twoje własne zdjęcie, które zatoczyło koło.",
   "chat.dungeontrain.live.headpiece_burns": "Kamera na twojej głowie rozbłyska i spala się.",
   "chat.dungeontrain.live.headpiece_on": "Kamera na twojej głowie miga na czerwono. Teraz ty jesteś transmisją.",
+  "chat.dungeontrain.live.free_play": "Rozgrywki w Trybie Swobodnym nie mogą nadawać na żywo.",
   "chat.dungeontrain.live.removed": "Zdjąłeś kamerę. Spłonęła; twoja transmisja dobiegła końca.",
   "chat.dungeontrain.live.started": "Jesteś na żywo. Widzowie widzą twój ekran z około piętnastosekundowym opóźnieniem.",
   "chat.dungeontrain.live.took_over": "%s został odcięty.",
