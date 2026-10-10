@@ -24274,6 +24274,23 @@
       "major": true,
       "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.\n- Group carriages built in other players' worlds turn up more often.\n- Bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
+    },
+    {
+      "id": "live-feed-twitch-mirror",
+      "version": "0.1197.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed on Twitch",
+      "summary": "When someone goes live, the feed now also plays on the Dungeon Train Twitch channel, and goes quiet again when they stop.",
+      "highlights": [],
+      "pr": 1894,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
