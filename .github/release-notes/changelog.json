@@ -24375,7 +24375,7 @@
     },
     {
       "id": "camera-helmet-headpiece",
-      "version": "0.1200.0",
+      "version": "0.1201.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24392,7 +24392,7 @@
     },
     {
       "id": "live-feed-tvs-tune-themselves",
-      "version": "0.1200.0",
+      "version": "0.1201.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24409,7 +24409,7 @@
     },
     {
       "id": "live-viewer-count",
-      "version": "0.1200.0",
+      "version": "0.1201.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24427,7 +24427,7 @@
     },
     {
       "id": "live-feed-twitch-mirror",
-      "version": "0.1200.0",
+      "version": "0.1201.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24444,7 +24444,7 @@
     },
     {
       "id": "live-feed",
-      "version": "0.1200.0",
+      "version": "0.1201.0",
       "type": "feat",
       "tags": [
         "feature",
