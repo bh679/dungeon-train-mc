@@ -26,8 +26,12 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -59,6 +63,9 @@ public final class LiveStreamController {
     @Nullable private LiveUploader uploader;
     @Nullable private Claim claim;
     @Nullable private Path dir;
+    /** Stream directories a background teardown is still uploading from; the start-up sweep leaves them. */
+    private static final Set<Path> TEARING_DOWN = ConcurrentHashMap.newKeySet();
+    private volatile boolean shuttingDown;
     private long lastGrabNs;
     private long streamStartedMs;
     private int waitTicks;
@@ -234,18 +241,61 @@ public final class LiveStreamController {
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
+        long startNs = System.nanoTime();
         teardown(clean);
+        LOGGER.info("[DungeonTrain] live stream stop took {} ms on the render thread", (System.nanoTime() - startNs) / 1_000_000L);
         state = State.IDLE;
         if (why != null) say(why);
     }
 
+    /**
+     * Hand the stream's parts to a background thread and return at once. Closing the encoder waits for
+     * ffmpeg's last segment (up to 3 s) and a clean stop uploads the tail and the ENDLIST playlist, so
+     * doing it here froze the game for seconds whenever the headpiece came off. The fields are cleared
+     * first so a new stream can start while the old one finishes; the grabber's GL buffers still go back
+     * to the render thread, after the encoder has stopped reading them.
+     */
     private void teardown(boolean clean) {
-        if (encoder != null) { encoder.close(); encoder = null; }
-        if (uploader != null) { uploader.close(clean); uploader = null; }
-        if (grabber != null) { grabber.close(); grabber = null; }
-        if (clean && claim != null) LiveFeedClient.stop(claim.token());
+        LiveEncoder enc = encoder;
+        LiveUploader up = uploader;
+        LiveFrameGrabber grab = grabber;
+        String token = clean && claim != null ? claim.token() : null;
+        Path d = dir;
+        encoder = null;
+        uploader = null;
+        grabber = null;
         claim = null;
-        if (dir != null) { deleteTree(dir); dir = null; }
+        dir = null;
+        if (d != null) TEARING_DOWN.add(d);
+        Minecraft mc = Minecraft.getInstance();
+        List<Runnable> steps = new ArrayList<>();
+        if (enc != null) steps.add(enc::close);
+        if (grab != null) steps.add(() -> mc.execute(grab::close));
+        if (up != null) steps.add(() -> up.close(clean));
+        if (token != null) steps.add(() -> LiveFeedClient.stop(token));
+        if (d != null) steps.add(() -> { deleteTree(d); TEARING_DOWN.remove(d); });
+        if (steps.isEmpty()) return;
+        long handedOffNs = System.nanoTime();
+        Thread t = new Thread(() -> {
+            runTeardown(steps);
+            LOGGER.info("[DungeonTrain] live stream teardown finished in {} ms (off the render thread)",
+                (System.nanoTime() - handedOffNs) / 1_000_000L);
+        }, "DungeonTrain-LiveTeardown");
+        // Quitting: keep the JVM up until the tail and ENDLIST are uploaded (bounded by the encoder's
+        // 3 s and the uploader's 20 s timeouts) so the replay is not cut short.
+        t.setDaemon(!shuttingDown);
+        t.start();
+    }
+
+    /** Run every step in order; one failing step is logged and the rest still run. */
+    static void runTeardown(List<Runnable> steps) {
+        for (Runnable step : steps) {
+            try {
+                step.run();
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] live stream teardown step failed: {}", e.toString());
+            }
+        }
     }
 
     // ---- capture ------------------------------------------------------------------------------
@@ -279,6 +329,7 @@ public final class LiveStreamController {
 
     @SubscribeEvent
     public static void onGameShuttingDown(GameShuttingDownEvent event) {
+        INSTANCE.shuttingDown = true;
         INSTANCE.stop(null);
     }
 
@@ -297,7 +348,7 @@ public final class LiveStreamController {
         Path root = liveRoot();
         if (!Files.isDirectory(root)) return;
         try (Stream<Path> kids = Files.list(root)) {
-            kids.forEach(LiveStreamController::deleteTree);
+            kids.filter(k -> !TEARING_DOWN.contains(k)).forEach(LiveStreamController::deleteTree);
         } catch (IOException ignored) {
             // best effort
         }
