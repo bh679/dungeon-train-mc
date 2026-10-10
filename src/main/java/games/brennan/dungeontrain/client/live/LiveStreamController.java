@@ -11,6 +11,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
@@ -237,7 +238,12 @@ public final class LiveStreamController {
 
     // ---- capture ------------------------------------------------------------------------------
 
-    @SubscribeEvent
+    /**
+     * NORMAL priority on purpose: the frame is grabbed here, so whatever draws on
+     * {@link RenderFrameEvent.Post} at LOW/LOWEST ({@link LiveRecOverlay}, {@link LiveHeadViewer})
+     * is on the streamer's screen only and never in the broadcast. Pinned by {@code LiveFrameOrderTest}.
+     */
+    @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onRenderFrameEnd(RenderFrameEvent.Post event) {
         INSTANCE.grabFrame();
     }

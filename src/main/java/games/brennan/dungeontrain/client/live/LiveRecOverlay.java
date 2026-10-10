@@ -20,13 +20,14 @@ import java.util.function.Consumer;
 /**
  * The streamer's viewfinder: while the camcorder is broadcasting, two thick rounded frame corners
  * sit top-left and bottom-right and, inside that frame in the top-right, a red record dot blinks
- * next to a large steady "LIVE" — the
- * way a camera's own screen looks. Only the wearer sees it.
+ * next to a large steady "LIVE" — the way a camera's own screen looks. Only the wearer sees it:
+ * viewers get the plain game picture.
  *
- * <p>Drawn once the whole frame is finished ({@link RenderFrameEvent.Post}, at high priority so it
- * lands before {@link LiveStreamController} grabs the frame for the stream): above the HUD, above
- * any open screen such as the inventory, and above other mods' corner widgets, exactly as the
- * recording shows them. F1 hides it with the rest of the HUD only while no screen is open.</p>
+ * <p>Drawn once the whole frame is finished ({@link RenderFrameEvent.Post}) at {@link EventPriority#LOW},
+ * i.e. after {@link LiveStreamController} has grabbed the frame for the stream (NORMAL), so the
+ * viewfinder never reaches the broadcast. On screen it still sits above the HUD, above any open
+ * screen such as the inventory, and above other mods' corner widgets; {@link LiveHeadViewer}
+ * (LOWEST) layers over it. F1 hides it with the rest of the HUD only while no screen is open.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveRecOverlay {
@@ -52,7 +53,7 @@ public final class LiveRecOverlay {
         return (nowMs / BLINK_MS) % 2 == 0;
     }
 
-    @SubscribeEvent(priority = EventPriority.HIGH)
+    @SubscribeEvent(priority = EventPriority.LOW)
     public static void onFrameEnd(RenderFrameEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || !LiveStreamController.get().streaming()) return;
