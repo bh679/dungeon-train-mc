@@ -163,4 +163,25 @@ final class DeathBackgroundAssignerTest {
         assertSame(scenic, out[2], "page 2 reuses SCENIC to avoid repeating page 1's COMBAT");
         assertNoAdjacentRepeats(out);
     }
+
+    @Test
+    @DisplayName("fall page's photo is unchanged by wildcard pages added after death (early death-photo send)")
+    void fallPhotoStableWhenWildcardPagesArriveLater() {
+        for (int photos = 1; photos <= 8; photos++) {
+            List<RideSnapshot> gallery = new ArrayList<>();
+            SnapshotTag[] tags = {SnapshotTag.SCENIC, SnapshotTag.COMBAT, SnapshotTag.GEAR, SnapshotTag.SOCIAL};
+            for (int i = 0; i < photos; i++) gallery.add(shot(tags[i % tags.length]));
+            RideSnapshot early = DeathBackgroundAssigner.assign(withWildcards(1), gallery)[0];
+            for (int extra = 2; extra <= 8; extra++) {
+                assertSame(early, DeathBackgroundAssigner.assign(withWildcards(extra), gallery)[0],
+                        photos + " photos, " + extra + " wildcard pages");
+            }
+        }
+    }
+
+    private static List<List<SnapshotTag>> withWildcards(int n) {
+        List<List<SnapshotTag>> chains = new ArrayList<>(standardChains().subList(0, 4));
+        for (int i = 0; i < n; i++) chains.add(List.of());
+        return chains;
+    }
 }
