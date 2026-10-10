@@ -24338,42 +24338,6 @@
       "summary": "The Dungeon Train options tabs stay in one neat row however many times you open them.",
       "highlights": [],
       "pr": 1903,
-      "version": "0.1197.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-<<<<<<< HEAD
-        "ui"
-      ],
-      "title": "Livestreaming on the consent card",
-      "summary": "The first-launch card now asks about livestreaming, and the broadcast headpiece listens to your answer.",
-      "highlights": [],
-      "pr": 1903,
-      "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
-      "id": "options-tab-bar-stacking",
-      "version": "0.1197.0",
-      "type": "fix",
-      "tags": [
-        "fix",
-        "ui"
-      ],
-      "title": "Options tabs stay in one row",
-      "summary": "The Dungeon Train options tabs stay in one neat row however many times you open them.",
-      "highlights": [],
-      "pr": 1903,
-=======
-        "community"
-      ],
-      "title": "Televisions tune themselves",
-      "summary": "Televisions find the broadcast on their own, so there is nothing to slot in or carry around.",
-      "highlights": [],
-      "pr": 1896,
->>>>>>> origin/dev/viewfinder-off-stream
       "date": "2026-10-10",
       "released": false,
       "released_in": null,
