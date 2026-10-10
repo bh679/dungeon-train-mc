@@ -63,6 +63,7 @@ import games.brennan.dungeontrain.narrative.PlayerBookPendingTag;
 import games.brennan.dungeontrain.narrative.SharedBookPool;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import games.brennan.dungeontrain.item.LiveHeadpiecePendingTag;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
 
@@ -1070,8 +1071,14 @@ public final class ContainerContentsRoller {
         // The Live Feed headpiece: rare, because one wearer silences whoever is streaming now. The
         // slot falls through to a player book so it is never empty.
         if (item == ModItems.RANDOM_LIVE_HEADPIECE.get()) {
-            return rollPerMille(LIVE_HEADPIECE_PER_MILLE, localPos, worldSeed, carriageIndex, slot, SALT_LIVE_HEADPIECE)
-                ? new ItemStack(ModItems.LIVE_HEADPIECE.get()) : rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
+            if (rollPerMille(LIVE_HEADPIECE_PER_MILLE, localPos, worldSeed, carriageIndex, slot, SALT_LIVE_HEADPIECE)) {
+                // Baked with no player in sight: event/LiveHeadpieceLootGate checks the finder (a Kid
+                // with Livestreaming off gets a book instead) the first time it reaches a hand.
+                ItemStack headpiece = new ItemStack(ModItems.LIVE_HEADPIECE.get());
+                LiveHeadpiecePendingTag.markPending(headpiece);
+                return headpiece;
+            }
+            return rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
         }
 
         // Polaroid's plain instant camera is hidden (DisabledModContent); a loot entry for it is the

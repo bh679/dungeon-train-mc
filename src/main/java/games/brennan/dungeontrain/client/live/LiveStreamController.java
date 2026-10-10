@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
@@ -111,9 +112,14 @@ public final class LiveStreamController {
     private void start() {
         LOGGER.info("[DungeonTrain] live stream requested by the server (ffmpeg {})", FfmpegSupport.state());
         if (state != State.IDLE) stop(null);
-        if (!LiveFeedClientConfig.streamingEnabled()) {
-            say(Component.translatable("chat.dungeontrain.live.disabled").withStyle(ChatFormatting.GRAY));
-            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+        // Livestreaming is a line on the first-launch consent card: the master "use the internet?"
+        // switch and the Livestreaming switch both have to be on. Either off → the server hands the
+        // headpiece back (FAILED is the no-burn exit) and nothing is sent.
+        if (!LiveFeedClientConfig.streamingEnabled() || !DiscordPresenceClientConfig.isGranted()) {
+            say(Component.translatable("chat.dungeontrain.live.disabled",
+                    LiveOptionsCommand.pathLink("chat.dungeontrain.live.disabled.path"))
+                .withStyle(ChatFormatting.GRAY));
+            tellServerEnded(LiveStreamEndedPacket.Reason.DISABLED);
             return;
         }
         generation++;

@@ -24,7 +24,9 @@ public record LiveStreamEndedPacket(Reason reason) implements CustomPacketPayloa
         /** The relay gave the feed to someone else: the camcorder burns away. */
         CUT_OFF,
         /** The stream could not start or the encoder died: the camcorder goes back in the inventory. */
-        FAILED
+        FAILED,
+        /** Livestreaming is switched off on this client (consent card / Options): the camcorder burns. */
+        DISABLED
     }
 
     public static final Type<LiveStreamEndedPacket> TYPE =

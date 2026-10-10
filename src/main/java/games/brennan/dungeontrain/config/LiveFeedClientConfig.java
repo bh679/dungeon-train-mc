@@ -82,6 +82,16 @@ public final class LiveFeedClientConfig {
     public static boolean headViewerEnabled() { return !loaded() || HEAD_VIEWER_ENABLED.get(); }
     public static int headViewerWidth() { return loaded() ? HEAD_VIEWER_WIDTH.get() : 160; }
 
+    /**
+     * Persist whether this client broadcasts when the headpiece goes on. Driven by the first-launch
+     * consent card's Livestreaming switch and the Options row; idempotent, no-op pre-load.
+     */
+    public static void setStreamingEnabled(boolean value) {
+        if (!loaded() || STREAMING_ENABLED.get() == value) return;
+        STREAMING_ENABLED.set(value);
+        STREAMING_ENABLED.save();
+    }
+
     /** Hotkey: flip the pinned viewer and persist it. Returns the new value. */
     public static boolean toggleHeadViewer() {
         boolean next = !headViewerEnabled();
