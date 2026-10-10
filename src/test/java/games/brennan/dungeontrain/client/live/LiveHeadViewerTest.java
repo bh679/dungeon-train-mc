@@ -52,6 +52,15 @@ class LiveHeadViewerTest {
     }
 
     @Test
+    void resizesFromInventoryCreativeAndChatOnly() {
+        assertTrue(LiveHeadViewer.resizesFrom(net.minecraft.client.gui.screens.inventory.InventoryScreen.class));
+        assertTrue(LiveHeadViewer.resizesFrom(net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen.class));
+        assertTrue(LiveHeadViewer.resizesFrom(net.minecraft.client.gui.screens.ChatScreen.class));
+        assertFalse(LiveHeadViewer.resizesFrom(net.minecraft.client.gui.screens.PauseScreen.class));
+        assertFalse(LiveHeadViewer.isResizeScreen(null));
+    }
+
+    @Test
     void countdownClearsOnlyOnOwnLivePicture() {
         String mine = "https://cdn/live/abc/live.m3u8";
         var own = new LiveFeedSource.Frame(LiveFeedSource.Kind.PICTURE, mine, false, -1, false);

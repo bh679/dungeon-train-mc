@@ -54,10 +54,10 @@ public final class LiveFeedClientConfig {
             .comment("Pin the live feed to the top-right of your screen while you wear the camcorder or a TV. The Live Viewer hotkey flips this.")
             .define("headViewerEnabled", true);
         HEAD_VIEWER_WIDTH = b
-            .comment("Width of the pinned live feed at its normal size, in GUI pixels (16:9). Clicking the feed in the inventory cycles half, three-quarter, normal and one-and-a-half of this.")
+            .comment("Width of the pinned live feed at its normal size, in GUI pixels (16:9). Clicking the feed in the inventory or chat cycles half, three-quarter, normal and one-and-a-half of this.")
             .defineInRange("headViewerWidth", 160, 80, 480);
         HEAD_VIEWER_SIZE_WATCHING = b
-            .comment("Pinned feed size while you watch (wearing a TV): 0 = half, 1 = three-quarter, 2 = normal, 3 = one-and-a-half. Set by clicking the feed in the inventory.")
+            .comment("Pinned feed size while you watch (wearing a TV): 0 = half, 1 = three-quarter, 2 = normal, 3 = one-and-a-half. Set by clicking the feed in the inventory or chat.")
             .defineInRange("headViewerSizeWatching", NORMAL_SIZE, 0, HEAD_VIEWER_SIZES.length - 1);
         HEAD_VIEWER_SIZE_STREAMING = b
             .comment("Pinned feed size while you stream (wearing the camcorder) — smaller by default, since it covers your own view. Same scale as headViewerSizeWatching.")
@@ -103,7 +103,7 @@ public final class LiveFeedClientConfig {
         return sizeWidth(headViewerWidth(), headViewerSize(streaming));
     }
 
-    /** Click in the inventory: step this mode's size up, wrapping from the biggest to the smallest; persisted. */
+    /** Click in the inventory or chat: step this mode's size up, wrapping from the biggest to the smallest; persisted. */
     public static int cycleHeadViewerSize(boolean streaming) {
         int next = nextSize(headViewerSize(streaming));
         if (loaded()) {

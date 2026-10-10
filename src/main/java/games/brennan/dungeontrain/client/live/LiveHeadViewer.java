@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -45,7 +46,7 @@ import java.util.Random;
  * {@link LiveStreamController} has grabbed the frame, so it stays on top for them but never reaches
  * the broadcast (no picture-in-picture echo).</p>
  *
- * <p>Clicking the box in the inventory cycles its size ({@link LiveFeedClientConfig#cycleHeadViewerSize});
+ * <p>Clicking the box in the inventory or chat cycles its size ({@link LiveFeedClientConfig#cycleHeadViewerSize});
  * the streamer and the viewer each keep their own size, the streamer's smaller by default.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -116,10 +117,10 @@ public final class LiveHeadViewer {
         LiveRecOverlay.guiPass(g -> draw(g, frame));
     }
 
-    /** In the inventory, a left click on the box cycles its size and goes no further. */
+    /** In the inventory or chat, a left click on the box cycles its size and goes no further. */
     @SubscribeEvent
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT || !isInventory(event.getScreen())) return;
+        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT || !isResizeScreen(event.getScreen())) return;
         Minecraft mc = Minecraft.getInstance();
         if (!shown(mc)) return;
         boolean streaming = LiveStreamController.get().streaming();
@@ -130,8 +131,15 @@ public final class LiveHeadViewer {
         mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));
     }
 
-    static boolean isInventory(Screen screen) {
-        return screen instanceof InventoryScreen || screen instanceof CreativeModeInventoryScreen;
+    /** The screens the box can be resized from: the inventory (survival or creative) and chat. */
+    static boolean isResizeScreen(@Nullable Screen screen) {
+        return screen != null && resizesFrom(screen.getClass());
+    }
+
+    static boolean resizesFrom(Class<?> screen) {
+        return InventoryScreen.class.isAssignableFrom(screen)
+            || CreativeModeInventoryScreen.class.isAssignableFrom(screen)
+            || ChatScreen.class.isAssignableFrom(screen);
     }
 
     /** Inside the box or on its border. */
