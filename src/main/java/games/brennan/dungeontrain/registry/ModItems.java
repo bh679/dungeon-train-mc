@@ -88,6 +88,8 @@ public final class ModItems {
     /**
      * A Vista cassette already tuned to the Live Feed ({@code item.LiveCassetteItem}): its default
      * {@code vista:linked_feed} component is the feed id, so any TV it goes into shows the stream.
+     * Only a TV ever holds one ({@code mixin.vista.TVBlockMixin} auto-tune); it is never a player's
+     * item — see {@code event.UnobtainableLiveItems}.
      */
     public static final DeferredItem<Item> LIVE_CASSETTE = ITEMS.register(
         "live_cassette",
@@ -98,7 +100,8 @@ public final class ModItems {
     /**
      * Editor-only placeholder: at chest spawn time {@code ContainerContentsRoller.rollItemStack}
      * rolls it into a {@link #LIVE_HEADPIECE} a few times per thousand and a player book otherwise,
-     * so a slot that names it is never empty.
+     * so a slot that names it is never empty. Not in any creative tab, and never a player's item —
+     * see {@code event.UnobtainableLiveItems}.
      */
     public static final DeferredItem<Item> RANDOM_LIVE_HEADPIECE = ITEMS.register(
         "random_live_headpiece",
