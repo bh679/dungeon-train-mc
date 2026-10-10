@@ -20,17 +20,16 @@ class LiveHeadViewerTest {
 
     @Test
     void boxIsSixteenByNineInTheTopRightCorner() {
-        LiveHeadViewer.Box b = LiveHeadViewer.layout(480, 160, false, 9);
+        LiveHeadViewer.Box b = LiveHeadViewer.layout(480, 160);
         assertEquals(90, b.h());
         assertEquals(480 - LiveHeadViewer.EDGE, b.x() + b.w(), "flush to the right margin");
         assertEquals(LiveHeadViewer.EDGE, b.y());
     }
 
     @Test
-    void whileStreamingTheBoxSitsUnderTheLiveBadge() {
-        LiveHeadViewer.Box b = LiveHeadViewer.layout(480, 160, true, 9);
-        assertEquals(LiveRecOverlay.innerRight(480), b.x() + b.w(), "right-aligned with the badge");
-        assertTrue(b.y() >= LiveRecOverlay.badgeBottom(9) + 1, "starts below the badge, not over it");
+    void theBoxStaysClearOfTheTopLeftBadge() {
+        LiveHeadViewer.Box b = LiveHeadViewer.layout(480, 160);
+        assertTrue(b.x() > LiveRecOverlay.innerLeft() + 120, "the badge is top-left; the box is top-right");
     }
 
     @Test

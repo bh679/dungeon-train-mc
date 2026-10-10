@@ -37,10 +37,8 @@ import java.util.Random;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveHeadViewer {
 
-    /** Gap from the screen edge when there is no viewfinder to tuck under. */
+    /** Gap from the screen edge; the viewfinder's badge is top-left, so the top-right is free. */
     static final int EDGE = 8;
-    /** Gap between the LIVE badge and the box when streaming. */
-    static final int BADGE_GAP = 6;
     static final int BORDER = 1;
     /** Viewers run one to two segments behind; this is the far end, plus upload slack. */
     static final int SEGMENTS_BEHIND = 2;
@@ -59,13 +57,8 @@ public final class LiveHeadViewer {
     /** Where the box goes, in GUI pixels (border excluded). */
     record Box(int x, int y, int w, int h) {}
 
-    static Box layout(int guiWidth, int boxWidth, boolean underBadge, int fontLineHeight) {
-        int h = LiveFeedClientConfig.heightFor(boxWidth);
-        if (underBadge) {
-            int right = LiveRecOverlay.innerRight(guiWidth);
-            return new Box(right - boxWidth, LiveRecOverlay.badgeBottom(fontLineHeight) + BADGE_GAP, boxWidth, h);
-        }
-        return new Box(guiWidth - EDGE - boxWidth, EDGE, boxWidth, h);
+    static Box layout(int guiWidth, int boxWidth) {
+        return new Box(guiWidth - EDGE - boxWidth, EDGE, boxWidth, LiveFeedClientConfig.heightFor(boxWidth));
     }
 
     /** Whole seconds until this client's broadcast should be on the channel; never below 1. */
@@ -98,7 +91,7 @@ public final class LiveHeadViewer {
         LiveStreamController streamer = LiveStreamController.get();
         boolean streaming = streamer.streaming();
         Font font = Minecraft.getInstance().font;
-        Box b = layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(), streaming, font.lineHeight);
+        Box b = layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth());
 
         g.fill(b.x() - BORDER, b.y() - BORDER, b.x() + b.w() + BORDER, b.y() + b.h() + BORDER, BORDER_COLOR);
         switch (frame.kind()) {
