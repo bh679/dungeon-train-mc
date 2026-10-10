@@ -24355,6 +24355,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-portals-along-the-ride",
+      "version": "0.1200.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "world"
+      ],
+      "title": "Nether portals travel along the ride",
+      "summary": "Step through a Nether portal and the ride takes you somewhere else along the track \u2014 and back again through the same one.",
+      "highlights": [],
+      "pr": 1897,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
