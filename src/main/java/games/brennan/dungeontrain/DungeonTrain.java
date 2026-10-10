@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
+import games.brennan.dungeontrain.client.ContentModeSyncClient;
 import games.brennan.dungeontrain.client.DevMessageConsentClient;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ConsentDraft;
@@ -733,7 +734,10 @@ public class DungeonTrain {
      * it happens and the chosen mode only at close; {@link ConsentDraft} turns that into "last click
      * wins, else the mode's default" when the card closes. One instance each — the card is modal.
      */
-    private static final ConsentDraft LIVESTREAM_DRAFT = new ConsentDraft(LiveFeedClientConfig::setStreamingEnabled);
+    private static final ConsentDraft LIVESTREAM_DRAFT = new ConsentDraft(value -> {
+        LiveFeedClientConfig.setStreamingEnabled(value);
+        ContentModeSyncClient.syncNow(); // the server's loot gate reads it with the content mode
+    });
     private static final ConsentDraft DEV_CHAT_DRAFT = new ConsentDraft(value -> {
         ClientDisplayConfig.setDevChatEnabled(value);
         DevMessageConsentClient.resync();

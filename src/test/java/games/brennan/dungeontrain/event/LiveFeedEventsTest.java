@@ -16,6 +16,7 @@ final class LiveFeedEventsTest {
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.REPLACED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.DIED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.CUT_OFF));
+        assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.DISABLED));
         assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.LEFT));
         assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.FAILED));
     }

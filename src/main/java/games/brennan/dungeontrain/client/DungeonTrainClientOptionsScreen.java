@@ -574,7 +574,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     CycleButton.onOffBuilder(LiveFeedClientConfig.streamingEnabled())
                             .create(0, 0, width, ROW_H,
                                     Component.translatable("gui.dungeontrain.options.livestream"),
-                                    (btn, on) -> LiveFeedClientConfig.setStreamingEnabled(on)),
+                                    (btn, on) -> {
+                                        LiveFeedClientConfig.setStreamingEnabled(on);
+                                        ContentModeSyncClient.syncNow();
+                                    }),
                     "gui.dungeontrain.options.livestream.tip");
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule

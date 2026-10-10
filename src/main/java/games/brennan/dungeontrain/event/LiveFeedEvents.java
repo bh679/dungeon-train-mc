@@ -43,11 +43,15 @@ import java.util.UUID;
 public final class LiveFeedEvents {
 
     /** Why a stream ended, from the server's point of view. */
-    public enum Exit { REMOVED, REPLACED, DIED, LEFT, CUT_OFF, FAILED }
+    public enum Exit { REMOVED, REPLACED, DIED, LEFT, CUT_OFF, FAILED, DISABLED }
 
     private LiveFeedEvents() {}
 
-    /** Everything burns the camcorder except a failed start (handed back) and a logout (stays on). */
+    /**
+     * Everything burns the camcorder except a failed start (handed back) and a logout (stays on).
+     * Putting it on with Livestreaming switched off ({@link Exit#DISABLED}) burns it too: the switch
+     * is on the consent card and in Options, and the client says so in chat.
+     */
     static boolean burnsOn(Exit exit) {
         return exit != Exit.FAILED && exit != Exit.LEFT;
     }
@@ -95,7 +99,12 @@ public final class LiveFeedEvents {
 
     /** The streamer's client says its stream ended on its own ({@link LiveStreamEndedPacket}). */
     public static void onClientEnded(ServerPlayer player, LiveStreamEndedPacket.Reason reason) {
-        endStream(player, reason == LiveStreamEndedPacket.Reason.CUT_OFF ? Exit.CUT_OFF : Exit.FAILED);
+        Exit exit = switch (reason) {
+            case CUT_OFF -> Exit.CUT_OFF;
+            case DISABLED -> Exit.DISABLED;
+            case FAILED -> Exit.FAILED;
+        };
+        endStream(player, exit);
     }
 
     private static void startStreaming(ServerPlayer player) {

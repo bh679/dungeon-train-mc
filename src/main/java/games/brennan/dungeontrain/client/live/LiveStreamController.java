@@ -110,8 +110,10 @@ public final class LiveStreamController {
         // switch and the Livestreaming switch both have to be on. Either off → the server hands the
         // headpiece back (FAILED is the no-burn exit) and nothing is sent.
         if (!LiveFeedClientConfig.streamingEnabled() || !DiscordPresenceClientConfig.isGranted()) {
-            say(Component.translatable("chat.dungeontrain.live.disabled").withStyle(ChatFormatting.GRAY));
-            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+            say(Component.translatable("chat.dungeontrain.live.disabled",
+                    LiveOptionsCommand.pathLink("chat.dungeontrain.live.disabled.path"))
+                .withStyle(ChatFormatting.GRAY));
+            tellServerEnded(LiveStreamEndedPacket.Reason.DISABLED);
             return;
         }
         generation++;
