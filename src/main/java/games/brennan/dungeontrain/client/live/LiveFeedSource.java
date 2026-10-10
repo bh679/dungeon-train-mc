@@ -41,6 +41,8 @@ public final class LiveFeedSource implements IVideoSource {
     @Nullable private LiveFeedTexture pendingTexture;
     /** The stopped stream's playlist this viewer already played to its ENDLIST; never rejoined. */
     @Nullable private String finishedUrl;
+    /** The last playlist the relay called ended (stopped, its tail playing out). */
+    @Nullable private String endedUrl;
     private static final ResourceLocation PENDING_TEXTURE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live/main_next");
 
@@ -88,9 +90,13 @@ public final class LiveFeedSource implements IVideoSource {
     public Frame frame(int animationTick, float partialTick, boolean paused) {
         if (!LiveFeedClientConfig.viewingEnabled()) return Frame.STATIC;
         Status status = LiveStatusPoller.wanted();
+        if (status.ended() && status.playlistUrl() != null) endedUrl = status.playlistUrl();
         boolean replay = false;
         String url;
-        if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {
+        if (playingOutTail(status)) {
+            // A stopped stream already on screen runs on to its ENDLIST, past the relay's drain window.
+            url = endedUrl;
+        } else if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {
             url = status.playlistUrl();
         } else if (status.ended() && playedToEnd(status.playlistUrl())) {
             // The streamer stopped and this viewer has seen everything they recorded: the dark channel.
@@ -126,6 +132,13 @@ public final class LiveFeedSource implements IVideoSource {
         String shownUrl = shown != null ? shown.playlistUrl() : url;
         boolean shownReplay = shown != null ? shown.isReplay() : replay;
         return new Frame(Kind.PICTURE, shownUrl, shownReplay, -1, st == MediaStatus.BUFFERING);
+    }
+
+    /** True while the live session on screen is the stopped stream, not yet at its end, and nothing newer is on. */
+    private boolean playingOutTail(Status status) {
+        LiveHlsSession s = session;
+        if (endedUrl == null || s == null || s.isReplay() || !s.playlistUrl().equals(endedUrl) || playedToEnd(endedUrl)) return false;
+        return !status.live() || endedUrl.equals(status.playlistUrl());
     }
 
     /** This viewer played {@code url} to its ENDLIST (the stopped stream's tail is done). */
