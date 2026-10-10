@@ -2,22 +2,30 @@ package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import net.minecraft.client.Minecraft;
+import games.brennan.dungeontrain.client.HudText;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RenderGuiEvent;
-import net.neoforged.neoforge.client.event.ScreenEvent;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.VertexSorting;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.neoforge.client.ClientHooks;
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import org.joml.Matrix4f;
+import org.joml.Matrix4fStack;
 
 /**
  * The streamer's viewfinder: while the camcorder is broadcasting, two thick rounded frame corners
- * sit top-left and bottom-right and a red record dot blinks top-right, level with the frame — the
+ * sit top-left and bottom-right and a red record dot blinks top-right next to a steady "LIVE", level
+ * with the frame — the
  * way a camera's own screen looks. Only the wearer sees it.
  *
- * <p>Drawn after everything else: after the whole HUD ({@link RenderGuiEvent.Post}) and, when a
- * screen such as the inventory is open, after that screen ({@link ScreenEvent.Render.Post}), so it
- * stays on top of menus exactly as the recording shows them. F1 hides it with the rest of the HUD
- * only while no screen is open.</p>
+ * <p>Drawn once the whole frame is finished ({@link RenderFrameEvent.Post}, at high priority so it
+ * lands before {@link LiveStreamController} grabs the frame for the stream): above the HUD, above
+ * any open screen such as the inventory, and above other mods' corner widgets, exactly as the
+ * recording shows them. F1 hides it with the rest of the HUD only while no screen is open.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveRecOverlay {
@@ -28,6 +36,8 @@ public final class LiveRecOverlay {
     static final int RADIUS = 12;
     static final int DOT_RADIUS = 5;
     static final long BLINK_MS = 500;
+    static final int LABEL_GAP = 5;
+    private static final Component LABEL = Component.translatable("gui.dungeontrain.live.badge");
     private static final int WHITE = 0xF0FFFFFF;
     private static final int RED = 0xFFE62E2E;
 
@@ -38,28 +48,48 @@ public final class LiveRecOverlay {
         return (nowMs / BLINK_MS) % 2 == 0;
     }
 
-    @SubscribeEvent
-    public static void onHud(RenderGuiEvent.Post event) {
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onFrameEnd(RenderFrameEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen != null || mc.options.hideGui) return;
-        draw(event.getGuiGraphics());
-    }
-
-    @SubscribeEvent
-    public static void onScreen(ScreenEvent.Render.Post event) {
-        draw(event.getGuiGraphics());
+        if (mc.level == null || !LiveStreamController.get().streaming()) return;
+        if (mc.screen == null && mc.options.hideGui) return;
+        int w = mc.getWindow().getGuiScaledWidth();
+        int h = mc.getWindow().getGuiScaledHeight();
+        Matrix4f savedProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
+        VertexSorting savedSorting = RenderSystem.getVertexSorting();
+        Matrix4fStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushMatrix();
+        try {
+            // The same orthographic setup vanilla uses for the HUD, so GUI pixels are GUI pixels.
+            RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(0f, w, h, 0f, 1000f, ClientHooks.getGuiFarPlane()),
+                VertexSorting.ORTHOGRAPHIC_Z);
+            modelView.translation(0f, 0f, 10000f - ClientHooks.getGuiFarPlane());
+            RenderSystem.applyModelViewMatrix();
+            mc.getMainRenderTarget().bindWrite(true);
+            GuiGraphics g = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
+            draw(g);
+            g.flush();
+        } finally {
+            modelView.popMatrix();
+            RenderSystem.applyModelViewMatrix();
+            RenderSystem.setProjectionMatrix(savedProjection, savedSorting);
+        }
     }
 
     private static void draw(GuiGraphics g) {
-        if (!LiveStreamController.get().streaming()) return;
         int w = g.guiWidth();
         int h = g.guiHeight();
         corner(g, MARGIN, MARGIN, 1, 1);                 // top-left, arms go right and down
         corner(g, w - MARGIN, h - MARGIN, -1, -1);       // bottom-right, arms go left and up
-        if (dotOn(System.currentTimeMillis())) {
-            // Level with the top frame bar: centre on its middle line, flush with the right margin.
-            disc(g, w - MARGIN - DOT_RADIUS, MARGIN + LINE / 2, DOT_RADIUS, RED);
-        }
+        // Level with the top frame bar: the dot is centred on its middle line, flush with the right
+        // margin; the label sits to its left and does not blink.
+        int cy = MARGIN + LINE / 2;
+        int dotX = w - MARGIN - DOT_RADIUS;
+        if (dotOn(System.currentTimeMillis())) disc(g, dotX, cy, DOT_RADIUS, RED);
+        var font = Minecraft.getInstance().font;
+        int tx = dotX - DOT_RADIUS - LABEL_GAP - HudText.scaledWidth(font, LABEL);
+        int ty = cy - HudText.scaledLineHeight(font) / 2;
+        HudText.drawScaled(g, font, LABEL, tx, ty, 0xFFFFFFFF, true);
     }
 
     /**

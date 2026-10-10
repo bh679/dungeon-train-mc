@@ -228,6 +228,7 @@
   "gui.dungeontrain.cinematic.loading.ready": "모두 탑승!",
   "gui.dungeontrain.cinematic.press_space_to_start": "스페이스를 눌러 시작",
   "gui.dungeontrain.cinematic.press_space_to_skip": "스페이스를 눌러 건너뛰기",
+  "gui.dungeontrain.live.badge": "LIVE",
   "gui.dungeontrain.loading.title": "세계를 불러오는 중…",
   "gui.dungeontrain.loading.phase.assembling": "기차 조립 중",
   "gui.dungeontrain.loading.phase.spawning_train": "Dungeon Train 생성 중…",

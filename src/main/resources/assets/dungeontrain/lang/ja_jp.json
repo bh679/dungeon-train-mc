@@ -228,6 +228,7 @@
   "gui.dungeontrain.cinematic.loading.ready": "ご乗車ください！",
   "gui.dungeontrain.cinematic.press_space_to_start": "スペースキーで開始",
   "gui.dungeontrain.cinematic.press_space_to_skip": "スペースキーでスキップ",
+  "gui.dungeontrain.live.badge": "LIVE",
   "gui.dungeontrain.loading.title": "ワールドを読み込み中…",
   "gui.dungeontrain.loading.phase.assembling": "列車を組み立て中",
   "gui.dungeontrain.loading.phase.spawning_train": "Dungeon Trainを生成中…",

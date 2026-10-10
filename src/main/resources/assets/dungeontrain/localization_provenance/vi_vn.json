@@ -202,6 +202,7 @@
       "gui.dungeontrain.content_mode.kid",
       "gui.dungeontrain.cinematic.loading",
       "gui.dungeontrain.cinematic.loading.ready",
+      "gui.dungeontrain.live.badge",
       "gui.dungeontrain.loading.title",
       "gui.dungeontrain.loading.phase.assembling",
       "gui.dungeontrain.loading.phase.spawning_train",

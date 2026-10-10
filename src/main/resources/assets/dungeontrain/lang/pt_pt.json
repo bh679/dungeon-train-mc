@@ -251,6 +251,7 @@
   "gui.dungeontrain.cinematic.loading.ready": "Todos a bordo!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Prime Espaço para Começar",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Prime Espaço para saltar",
+  "gui.dungeontrain.live.badge": "EM DIRETO",
   "gui.dungeontrain.loading.title": "A carregar o mundo…",
   "gui.dungeontrain.loading.phase.assembling": "A montar o comboio",
   "gui.dungeontrain.loading.phase.spawning_train": "A gerar o Dungeon Train…",

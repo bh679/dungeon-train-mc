@@ -228,6 +228,7 @@
   "gui.dungeontrain.cinematic.loading.ready": "ขึ้นรถได้แล้ว!",
   "gui.dungeontrain.cinematic.press_space_to_start": "กดสเปซเพื่อเริ่ม",
   "gui.dungeontrain.cinematic.press_space_to_skip": "กดสเปซเพื่อข้าม",
+  "gui.dungeontrain.live.badge": "สด",
   "gui.dungeontrain.loading.title": "กำลังโหลดโลก…",
   "gui.dungeontrain.loading.phase.assembling": "กำลังประกอบขบวนรถไฟ",
   "gui.dungeontrain.loading.phase.spawning_train": "กำลังสร้าง Dungeon Train…",

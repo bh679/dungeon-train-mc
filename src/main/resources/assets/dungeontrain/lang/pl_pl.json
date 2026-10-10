@@ -274,6 +274,7 @@
   "gui.dungeontrain.cinematic.loading.ready": "Wszyscy na pokład!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Naciśnij Spację, aby zacząć",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Naciśnij Spację, aby pominąć",
+  "gui.dungeontrain.live.badge": "NA ŻYWO",
   "gui.dungeontrain.loading.title": "Wczytywanie świata…",
   "gui.dungeontrain.loading.phase.assembling": "Składanie pociągu",
   "gui.dungeontrain.loading.phase.spawning_train": "Tworzenie Dungeon Train…",

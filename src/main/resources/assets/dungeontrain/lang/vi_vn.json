@@ -228,6 +228,7 @@
   "gui.dungeontrain.cinematic.loading.ready": "Lên tàu nào!",
   "gui.dungeontrain.cinematic.press_space_to_start": "Nhấn Space để Bắt đầu",
   "gui.dungeontrain.cinematic.press_space_to_skip": "Nhấn Space để bỏ qua",
+  "gui.dungeontrain.live.badge": "TRỰC TIẾP",
   "gui.dungeontrain.loading.title": "Đang tải thế giới…",
   "gui.dungeontrain.loading.phase.assembling": "Đang lắp ráp đoàn tàu",
   "gui.dungeontrain.loading.phase.spawning_train": "Đang sinh Dungeon Train…",
