@@ -94,4 +94,14 @@ class RunSummaryReporterTest {
         assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 10L, 0, 0, NO_POS, false, "unknown").has("modVersion"));
         assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 10L, 0, 0, NO_POS, false).has("modVersion"));
     }
+
+    @Test
+    void lifeSecRidesAlongWhenKnownAndIsOmittedWhenNot() {
+        JsonObject known = RunSummaryReporter.buildPayload(UUID, "x", 900L, 12, 2400, NO_POS, false, "0.1197.1", 1234L);
+        assertEquals(1234L, known.get("lifeSec").getAsLong());
+        JsonObject unknown = RunSummaryReporter.buildPayload(UUID, "x", 900L, 12, 2400, NO_POS, false, "0.1197.1", -1L);
+        assertFalse(unknown.has("lifeSec"));
+        // the 8-arg overload every existing caller uses sends no life clock
+        assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 900L, 12, 2400, NO_POS, false, "0.1197.1").has("lifeSec"));
+    }
 }

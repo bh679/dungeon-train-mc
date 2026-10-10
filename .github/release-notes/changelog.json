@@ -24339,6 +24339,22 @@
       "released": true,
       "released_in": "v0.1198.0",
       "released_at": "2026-10-09T15:35:14Z"
+    },
+    {
+      "id": "run-summary-life-clock",
+      "version": "0.1199.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Leaderboard records carry their life's clock",
+      "summary": "Each run summary now tells the relay how long the life lasted on the clock, not just how long you were active on the train. That lets the one-life leaderboards tell an impossible record from an honest one without ever doubting a real player; nothing changes for you in-game.",
+      "highlights": [],
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
