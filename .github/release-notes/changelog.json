@@ -24389,6 +24389,41 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-viewer-count",
+      "version": "0.1197.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "See how many are watching your stream",
+      "summary": "While you broadcast, a count under LIVE shows how many are watching, and the pinned feed now tucks behind your menus and changes size with a click.",
+      "highlights": [],
+      "pr": 1891,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-twitch-mirror",
+      "version": "0.1197.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed on Twitch",
+      "summary": "When someone goes live, the feed now also plays on the Dungeon Train Twitch channel, and goes quiet again when they stop.",
+      "highlights": [],
+      "pr": 1894,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

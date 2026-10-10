@@ -39,6 +39,8 @@ public final class LiveFeedSource implements IVideoSource {
     /** The next session, decoding in the background; it replaces {@link #session} at its first frame. */
     @Nullable private LiveHlsSession pending;
     @Nullable private LiveFeedTexture pendingTexture;
+    /** The stopped stream's playlist this viewer already played to its ENDLIST; never rejoined. */
+    @Nullable private String finishedUrl;
     private static final ResourceLocation PENDING_TEXTURE =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live/main_next");
 
@@ -88,8 +90,13 @@ public final class LiveFeedSource implements IVideoSource {
         Status status = LiveStatusPoller.wanted();
         boolean replay = false;
         String url;
-        if (status.live() && status.slot() && status.playlistUrl() != null) {
+        if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {
             url = status.playlistUrl();
+        } else if (status.ended() && playedToEnd(status.playlistUrl())) {
+            // The streamer stopped and this viewer has seen everything they recorded: the dark channel.
+            if (status.replayUrl() == null) return Frame.STATIC;
+            url = status.replayUrl();
+            replay = true;
         } else if (!status.live() && status.replayUrl() != null) {
             // Nobody is on: the last ten seconds of the previous broadcast, looped, in black and white.
             url = status.replayUrl();
@@ -119,6 +126,13 @@ public final class LiveFeedSource implements IVideoSource {
         String shownUrl = shown != null ? shown.playlistUrl() : url;
         boolean shownReplay = shown != null ? shown.isReplay() : replay;
         return new Frame(Kind.PICTURE, shownUrl, shownReplay, -1, st == MediaStatus.BUFFERING);
+    }
+
+    /** This viewer played {@code url} to its ENDLIST (the stopped stream's tail is done). */
+    private boolean playedToEnd(@Nullable String url) {
+        LiveHlsSession s = session;
+        if (s != null && !s.isReplay() && s.finished()) finishedUrl = s.playlistUrl();
+        return url != null && url.equals(finishedUrl);
     }
 
     /**

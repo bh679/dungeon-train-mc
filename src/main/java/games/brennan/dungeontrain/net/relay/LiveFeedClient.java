@@ -66,8 +66,8 @@ public final class LiveFeedClient {
     /** What a viewer sees. */
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
-                         @Nullable String replayUrl) {
-        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null);
+                         @Nullable String replayUrl, boolean ended) {
+        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false);
     }
 
     private static String base() {
@@ -119,6 +119,20 @@ public final class LiveFeedClient {
         return out;
     }
 
+    /**
+     * How many are watching, from a presign reply's {@code viewers.total} — players at TVs or wearing
+     * one plus website viewers, never the streamer. −1 when the relay sent no count (an older relay).
+     */
+    public static int parseViewerCount(Result r) {
+        if (!r.ok() || !r.body().has("viewers") || !r.body().get("viewers").isJsonObject()) return -1;
+        JsonObject v = r.body().getAsJsonObject("viewers");
+        try {
+            return v.has("total") ? Math.max(0, v.get("total").getAsInt()) : -1;
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
     public static CompletableFuture<Result> stop(String token) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
@@ -140,8 +154,13 @@ public final class LiveFeedClient {
         int cap = b.has("cap") ? b.get("cap").getAsInt() : 0;
         boolean slot = !b.has("slot") || b.get("slot").getAsBoolean();
         String replay = r.str("replayUrl");
-        if (!live) return new Status(false, null, null, null, viewers, cap, slot, replay.isEmpty() ? null : replay);
-        return new Status(true, r.str("session"), r.str("playlistUrl"), r.str("streamer"), viewers, cap, slot, null);
+        String replayUrl = replay.isEmpty() ? null : replay;
+        if (!live) return new Status(false, null, null, null, viewers, cap, slot, replayUrl, false);
+        // Ended: the streamer stopped and the relay keeps the stream on air while viewers play out its
+        // tail; replayUrl is where a TV goes once it has reached the end.
+        boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
+        return new Status(true, r.str("session"), r.str("playlistUrl"), r.str("streamer"), viewers, cap, slot,
+            ended ? replayUrl : null, ended);
     }
 
     /** PUT a local file to a signed URL with exactly the signed headers. */
