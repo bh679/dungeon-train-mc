@@ -64,26 +64,29 @@ public final class LiveRecOverlay {
 
     /**
      * A thick L with a rounded elbow at ({@code ox},{@code oy}); {@code sx}/{@code sy} are ±1 and say
-     * which way the two arms run. Straight arms are two fills; the elbow is a ring quadrant.
+     * which way the two arms run. The shape is a pixel mask in top-left orientation, mirrored into
+     * place pixel by pixel so every orientation seams exactly the same way.
      */
     private static void corner(GuiGraphics g, int ox, int oy, int sx, int sy) {
-        bar(g, ox + sx * RADIUS, oy, ox + sx * CORNER_LEN, oy + sy * LINE);
-        bar(g, ox, oy + sy * RADIUS, ox + sx * LINE, oy + sy * CORNER_LEN);
-        int cx = ox + sx * RADIUS, cy = oy + sy * RADIUS; // elbow centre
-        int inner = RADIUS - LINE;
-        for (int dx = 0; dx < RADIUS; dx++) {
-            for (int dy = 0; dy < RADIUS; dy++) {
-                double d = Math.hypot(dx + 0.5, dy + 0.5);
-                if (d <= RADIUS && d >= inner) {
-                    int px = cx - sx * (dx + 1), py = cy - sy * (dy + 1);
-                    g.fill(Math.min(px, px + 1), Math.min(py, py + 1), Math.max(px, px + 1), Math.max(py, py + 1), WHITE);
-                }
+        for (int lx = 0; lx < CORNER_LEN; lx++) {
+            for (int ly = 0; ly < CORNER_LEN; ly++) {
+                if (!inCorner(lx, ly)) continue;
+                int x0 = sx > 0 ? ox + lx : ox - lx - 1;
+                int y0 = sy > 0 ? oy + ly : oy - ly - 1;
+                g.fill(x0, y0, x0 + 1, y0 + 1, WHITE);
             }
         }
     }
 
-    private static void bar(GuiGraphics g, int x0, int y0, int x1, int y1) {
-        g.fill(Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1), WHITE);
+    /** Local-space membership: the two straight arms past the elbow, plus the quarter ring of the elbow. */
+    static boolean inCorner(int lx, int ly) {
+        if (ly < LINE && lx >= RADIUS) return true;
+        if (lx < LINE && ly >= RADIUS) return true;
+        if (lx < RADIUS && ly < RADIUS) {
+            double d = Math.hypot(RADIUS - (lx + 0.5), RADIUS - (ly + 0.5));
+            return d <= RADIUS && d >= RADIUS - LINE;
+        }
+        return false;
     }
 
     private static void disc(GuiGraphics g, int cx, int cy, int r, int color) {
