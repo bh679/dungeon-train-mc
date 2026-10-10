@@ -425,11 +425,21 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return "gui.dungeontrain.options.account.pings." + type.key();
     }
 
-    /** Rebuilds after a tip's action, unless that action already moved on to another screen. */
+    /**
+     * Rebuilds after a tip's action, unless that action already moved on to another screen.
+     *
+     * <p>Always deferred to the next client tick. The account refresh in {@link #addDiscordAccount}
+     * is requested from inside {@code init()}, and when the relay's answer is already cached its
+     * future is complete, so the callback ran synchronously — a {@code rebuildWidgets()} nested inside
+     * the very {@code init()} that was still adding its own tab bar, Done button and list. The outer
+     * init then finished on top of the rebuilt screen, and every reopen stacked another tab bar.</p>
+     */
     private void rebuildIfShown() {
-        if (this.minecraft.screen == this) {
-            rebuildWidgets();
-        }
+        this.minecraft.tell(() -> {
+            if (this.minecraft.screen == this) {
+                rebuildWidgets();
+            }
+        });
     }
 
     /**
