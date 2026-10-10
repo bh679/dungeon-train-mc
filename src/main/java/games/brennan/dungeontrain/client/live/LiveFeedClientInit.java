@@ -9,7 +9,10 @@ import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraft.client.Minecraft;
 
-/** Hands the (common) live broadcast source its client-only video source; tidies up on logout. */
+/**
+ * Hands the (common) live broadcast source its client-only video source, registers the headpiece's
+ * aerial predicate ({@link LiveHeadpieceAntenna}); tidies up on logout.
+ */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
 public final class LiveFeedClientInit {
 
@@ -18,6 +21,8 @@ public final class LiveFeedClientInit {
     @SubscribeEvent
     static void onClientSetup(FMLClientSetupEvent event) {
         LiveBroadcastSource.setClientSource(() -> LiveFeedSource.MAIN);
+        // ItemProperties is not thread-safe; registration belongs on the main thread like the rest
+        event.enqueueWork(LiveHeadpieceAntenna::register);
     }
 
     @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
@@ -29,6 +34,7 @@ public final class LiveFeedClientInit {
             Minecraft.getInstance().execute(() -> {
                 LiveFeedSource.MAIN.dropAll();
                 LiveStatusPoller.reset();
+                LiveHeadpieceAntenna.reset();
             });
         }
     }
