@@ -251,13 +251,27 @@ PKG_MAX = 64
 
 # ---- the whitelist ---------------------------------------------------------------------------
 
+CURATED = REPO_ROOT / "src" / "main" / "whitelist" / "approved_mods.curated.json"
+
+
 def approved_ids():
-    if not GENERATED.exists():
-        sys.exit(f"missing {GENERATED} — run ./gradlew generateApprovedMods first")
-    data = json.loads(GENERATED.read_text(encoding="utf-8"))
+    """Every approved id, from the sources themselves (curated groups + modpack mod_ids) plus the
+    generated whitelist when it exists — so a freshly approved id can be pulled BEFORE the build,
+    which refuses to generate while that id has no record."""
     ids = []
-    for group in data.get("groups", {}).values():
-        ids += [i.lower() for i in group.get("ids", [])]
+    if CURATED.exists():
+        for group in json.loads(CURATED.read_text(encoding="utf-8")).get("groups", {}).values():
+            ids += [i.lower() for i in group.get("ids", [])]
+    if MODPACK_CONFIG.exists():
+        cfg = json.loads(MODPACK_CONFIG.read_text(encoding="utf-8"))
+        for entry in [cfg.get("sable", {})] + cfg.get("optional_mods", []):
+            if entry.get("whitelist", True) is not False:
+                ids += [i.lower() for i in entry.get("mod_ids", [])]
+    if GENERATED.exists():
+        for group in json.loads(GENERATED.read_text(encoding="utf-8")).get("groups", {}).values():
+            ids += [i.lower() for i in group.get("ids", [])]
+    if not ids:
+        sys.exit("no approved ids found — expected src/main/whitelist/approved_mods.curated.json")
     return sorted(set(i for i in ids if i not in SKIP_IDS and not i.startswith(SKIP_PREFIXES)))
 
 

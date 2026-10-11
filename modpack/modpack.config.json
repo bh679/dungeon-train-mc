@@ -505,6 +505,12 @@
         "sablecompanion",
         "vista"
       ],
+      "sha1": "29543f7d287f3927f04d06d376696970e4408123",
+      "packages": [
+        "com.bawnorton",
+        "dev.ryanhcode",
+        "net.mehvahdjukaar"
+      ],
       "project_id": 1368607,
       "file_id": 8966027,
       "required": true,
