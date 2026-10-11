@@ -24818,6 +24818,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photos-show-what-they-earned",
+      "version": "0.1227.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Photos show what they earned",
+      "summary": "Opening a photo now shows the advancements it earned its photographer \u2014 the ones you haven't found yet keep their secrets.",
+      "highlights": [],
+      "pr": 1930,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
