@@ -2411,7 +2411,7 @@
   "gui.dungeontrain.consent.reincarnations.kid.tip": "Skins und Spielverhalten anderer Spieler, in deinem Spiel als botgesteuerter Mob nachgebildet. Kein Chat, keine Nachrichten.",
   "gui.dungeontrain.consent.livestream": "Livestreaming",
   "gui.dungeontrain.consent.livestream.adult.tip": "Du kannst das Livestreaming (ohne Ton) im Spiel über einen Gegenstand aktivieren.",
-  "gui.dungeontrain.consent.livestream.kid.tip": "Aus, bis ein Elternteil es einschaltet: Mit dem Sende-Camcorder auf dem Kopf sehen alle, die den Live-Feed schauen, was du siehst.",
+  "gui.dungeontrain.consent.livestream.kid.tip": "Standardmäßig aus - teilt immer nur den Minecraft-Bildschirm im Spiel. Niemals Stimme oder Chat.",
   "gui.dungeontrain.consent.dev_chat": "Entwickler-Chat",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "Du kannst den Entwickler im Spiel kontaktieren",
   "gui.dungeontrain.consent.dev_chat.kid.tip": "Der Entwickler kann dich nicht kontaktieren",

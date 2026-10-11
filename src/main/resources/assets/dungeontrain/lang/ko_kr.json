@@ -2364,7 +2364,7 @@
   "gui.dungeontrain.consent.reincarnations.kid.tip": "다른 플레이어의 스킨과 게임 내 행동을 봇이 조종하는 몹으로 당신의 게임에 재현합니다. 채팅이나 메시지는 없습니다.",
   "gui.dungeontrain.consent.livestream": "라이브 방송",
   "gui.dungeontrain.consent.livestream.adult.tip": "게임 안의 아이템으로 라이브 방송(소리 없음)을 켤 수 있습니다.",
-  "gui.dungeontrain.consent.livestream.kid.tip": "보호자가 켜지 않는 한 꺼져 있음: 방송 캠코더를 쓰면 라이브 피드를 보는 모두가 당신이 보는 것을 봅니다.",
+  "gui.dungeontrain.consent.livestream.kid.tip": "기본값은 꺼짐 - 게임 속 마인크래프트 화면만 공유합니다. 음성이나 채팅은 절대 공유하지 않습니다.",
   "gui.dungeontrain.consent.dev_chat": "개발자 채팅",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "게임 안에서 개발자에게 연락할 수 있습니다",
   "gui.dungeontrain.consent.dev_chat.kid.tip": "개발자는 당신에게 연락할 수 없습니다",

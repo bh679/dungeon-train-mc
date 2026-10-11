@@ -2364,7 +2364,7 @@
   "gui.dungeontrain.consent.reincarnations.kid.tip": "Skin dan perlakuan pemain lain dalam permainan dicipta semula sebagai mob dikawal bot dalam permainan anda. Tiada sembang atau mesej.",
   "gui.dungeontrain.consent.livestream": "Penstriman langsung",
   "gui.dungeontrain.consent.livestream.adult.tip": "Anda boleh mengaktifkan penstriman langsung (tanpa audio) daripada satu item dalam permainan.",
-  "gui.dungeontrain.consent.livestream.kid.tip": "Mati melainkan ibu bapa menghidupkannya: apabila Camcorder Siaran dipakai, semua yang menonton Suapan Langsung nampak apa yang anda nampak.",
+  "gui.dungeontrain.consent.livestream.kid.tip": "Dimatikan secara lalai - hanya berkongsi skrin Minecraft dalam permainan. Tidak sekali-kali suara atau sembang.",
   "gui.dungeontrain.consent.dev_chat": "Sembang dengan pembangun",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "Anda boleh menghubungi pembangun dalam permainan",
   "gui.dungeontrain.consent.dev_chat.kid.tip": "Pembangun tidak boleh menghubungi anda",

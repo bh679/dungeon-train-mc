@@ -2364,7 +2364,7 @@
   "gui.dungeontrain.consent.reincarnations.kid.tip": "Skin và hành vi trong game của người chơi khác được tái tạo thành một mob do bot điều khiển trong game của bạn. Không có trò chuyện hay tin nhắn.",
   "gui.dungeontrain.consent.livestream": "Phát trực tiếp",
   "gui.dungeontrain.consent.livestream.adult.tip": "Bạn có thể bật phát trực tiếp (không có âm thanh) từ một vật phẩm trong game.",
-  "gui.dungeontrain.consent.livestream.kid.tip": "Tắt trừ khi phụ huynh bật: khi đội máy quay phát sóng, mọi người đang xem Nguồn trực tiếp sẽ thấy những gì bạn thấy.",
+  "gui.dungeontrain.consent.livestream.kid.tip": "Mặc định tắt - chỉ chia sẻ màn hình Minecraft trong game. Không bao giờ chia sẻ giọng nói hay trò chuyện.",
   "gui.dungeontrain.consent.dev_chat": "Trò chuyện với nhà phát triển",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "Bạn có thể liên hệ nhà phát triển trong game",
   "gui.dungeontrain.consent.dev_chat.kid.tip": "Nhà phát triển không thể liên hệ với bạn",

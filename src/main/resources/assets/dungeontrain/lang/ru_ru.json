@@ -2463,7 +2463,7 @@
   "gui.dungeontrain.consent.reincarnations.kid.tip": "Скины и поведение других игроков, воссозданные в забеге как моб под управлением бота. Без чата и сообщений.",
   "gui.dungeontrain.consent.livestream": "Прямая трансляция",
   "gui.dungeontrain.consent.livestream.adult.tip": "Ты можешь включить прямую трансляцию (без звука) с помощью предмета в игре.",
-  "gui.dungeontrain.consent.livestream.kid.tip": "Выключено, пока родитель не включит: с вещательной видеокамерой на голове все, кто смотрит Прямой эфир, видят то, что видишь ты.",
+  "gui.dungeontrain.consent.livestream.kid.tip": "По умолчанию выключено - показывает только экран Minecraft в игре. Никогда не передаёт голос или чат.",
   "gui.dungeontrain.consent.dev_chat": "Чат с разработчиком",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "Вы можете связаться с разработчиком в игре",
   "gui.dungeontrain.consent.dev_chat.kid.tip": "Разработчик не сможет связаться с вами",
