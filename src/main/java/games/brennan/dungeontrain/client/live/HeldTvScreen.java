@@ -36,9 +36,12 @@ public final class HeldTvScreen {
         public static final Pose NONE = new Pose(0, 0, 0, 0, 0);
     }
 
-    /** The model yaws the right hand 45° and the left 225°; the front faces the viewer at 180°. */
-    static final Pose FIRST_PERSON_RIGHT = new Pose(135f, -12f, -0.08f, 0.06f, 0.05f);
-    static final Pose FIRST_PERSON_LEFT = new Pose(-45f, -12f, 0.08f, 0.06f, 0.05f);
+    /**
+     * Picked by eye from a ten-pose sheet (2026-10-11): the main hand close and a touch outward, the
+     * offhand square-on and lifted. Translations are in item units (the model scales them by 0.4).
+     */
+    static final Pose FIRST_PERSON_RIGHT = new Pose(105f, -15f, -0.2f, 0.8f, -0.3f);
+    static final Pose FIRST_PERSON_LEFT = mirrored(new Pose(120f, -10f, 0f, 0.7f, -0.4f));
     /** Third person lays the set down (pitch 75°); a half turn shows the screen to onlookers. */
     static final Pose THIRD_PERSON = new Pose(135f, 0f, 0f, 0f, 0f);
 

@@ -24,24 +24,29 @@ final class HeldTvScreenTest {
     }
 
     @Test
-    @DisplayName("hand contexts spin the set so the model's 45°/225° yaw ends up facing the viewer; others keep NONE")
+    @DisplayName("hand contexts turn and lift the set; other contexts keep NONE")
     void poses() {
-        float modelRight = 45f, modelLeft = 225f;
-        assertEquals(180f, modelRight + HeldTvScreen.poseFor(ItemDisplayContext.FIRST_PERSON_RIGHT_HAND).yaw(), 1e-4);
-        assertEquals(180f, modelLeft + HeldTvScreen.poseFor(ItemDisplayContext.FIRST_PERSON_LEFT_HAND).yaw(), 1e-4);
-        assertNotEquals(HeldTvScreen.Pose.NONE, HeldTvScreen.poseFor(ItemDisplayContext.THIRD_PERSON_LEFT_HAND));
+        for (ItemDisplayContext c : ItemDisplayContext.values()) {
+            HeldTvScreen.Pose p = HeldTvScreen.poseFor(c);
+            if (HeldTvScreen.isHandContext(c)) {
+                assertNotEquals(HeldTvScreen.Pose.NONE, p, c.name());
+                assertTrue(p.yaw() > 0, c.name());
+            } else {
+                assertEquals(HeldTvScreen.Pose.NONE, p, c.name());
+            }
+        }
+        assertTrue(HeldTvScreen.poseFor(ItemDisplayContext.FIRST_PERSON_RIGHT_HAND).dy() > 0);
+        assertTrue(HeldTvScreen.poseFor(ItemDisplayContext.FIRST_PERSON_LEFT_HAND).dy() > 0);
         assertEquals(HeldTvScreen.poseFor(ItemDisplayContext.THIRD_PERSON_LEFT_HAND),
             HeldTvScreen.poseFor(ItemDisplayContext.THIRD_PERSON_RIGHT_HAND));
-        for (ItemDisplayContext c : ItemDisplayContext.values()) {
-            if (!HeldTvScreen.isHandContext(c)) assertEquals(HeldTvScreen.Pose.NONE, HeldTvScreen.poseFor(c), c.name());
-        }
     }
 
     @Test
-    @DisplayName("the two first-person poses mirror each other across the hand")
-    void firstPersonMirrors() {
-        HeldTvScreen.Pose r = HeldTvScreen.poseFor(ItemDisplayContext.FIRST_PERSON_RIGHT_HAND);
-        HeldTvScreen.Pose l = HeldTvScreen.poseFor(ItemDisplayContext.FIRST_PERSON_LEFT_HAND);
+    @DisplayName("mirroring keeps yaw, pitch, lift and distance and flips only the sideways nudge")
+    void mirrorRule() {
+        HeldTvScreen.Pose r = new HeldTvScreen.Pose(120f, -10f, 0.3f, 0.7f, -0.4f);
+        HeldTvScreen.Pose l = HeldTvScreen.mirrored(r);
+        assertEquals(r.yaw(), l.yaw());
         assertEquals(r.pitch(), l.pitch());
         assertEquals(-r.dx(), l.dx(), 1e-6);
         assertEquals(r.dy(), l.dy());
