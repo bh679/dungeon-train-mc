@@ -269,6 +269,8 @@ public final class PortalRoomLibrarian {
             int placed = PortalRoomLibrary.stock(level, pending.origin(), pending.size(),
                 shelvable(AuthorBookPool.booksFor(author.token(), owner != null), players.size()),
                 pairKey, author.name(), author.mine());
+            // The room's player heads wear the face of the author whose shelves these are.
+            PortalRoomAuthorHeads.dress(level, pending.origin(), pending.size(), author, reader);
             if (placed <= 0 && !PortalRoomLibrary.hasShelves(level, pending.origin(), pending.size())) {
                 // No shelves to stock: the room is set to stock an author but was never built to hold
                 // books. Drop it rather than asking again forever.
