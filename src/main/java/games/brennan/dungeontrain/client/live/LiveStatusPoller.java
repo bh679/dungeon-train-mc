@@ -5,8 +5,10 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.Channel;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Status;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.client.Minecraft;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -14,10 +16,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * showing the feed (a TV rendered the antenna's source recently). The poll also counts this client
  * as a viewer, which is how the relay's viewer cap works — there is no lease to hold.
  *
- * <p>Which channel: a Free Play run's TVs show the dev channel (the one dev builds stream to, and
- * brennan.games/dungeontrain/livedev), every other run's the public feed — on every build. The
- * answer comes from the Free Play badge, the client-visible half of {@code RunIntegrity}; when it
- * flips, the old status is dropped and the new channel is polled at once.</p>
+ * <p>Which channel: every run watches the public feed — except that while a dev is streaming (the
+ * dev channel, also at brennan.games/dungeontrain/livedev), a Free Play run's TVs show that instead.
+ * So a Free Play poll first asks the dev channel, uncounted, whether it is live, then polls (and is
+ * counted on) whichever channel it will show. Free Play comes from the badge, the client-visible
+ * half of {@code RunIntegrity}; when it flips, the old status is dropped and re-polled at once.</p>
  */
 public final class LiveStatusPoller {
 
@@ -25,7 +28,7 @@ public final class LiveStatusPoller {
     private static final long INTEREST_MS = 15_000;
 
     private static volatile Status current = Status.OFFLINE;
-    private static volatile Channel channel = Channel.LIVE;
+    private static volatile boolean freePlay;
     private static volatile long lastInterestMs;
     private static volatile long lastPollMs;
     private static final AtomicBoolean inFlight = new AtomicBoolean();
@@ -37,22 +40,31 @@ public final class LiveStatusPoller {
         long now = System.currentTimeMillis();
         lastInterestMs = now;
         Minecraft mc = Minecraft.getInstance();
-        Channel want = LiveFeedClient.viewerChannel(mc.player != null && mc.player.hasEffect(ModMobEffects.FREE_PLAY));
-        if (want != channel) {
-            channel = want;
+        boolean fp = mc.player != null && mc.player.hasEffect(ModMobEffects.FREE_PLAY);
+        if (fp != freePlay) {
+            freePlay = fp;
             reset();
         }
         if (now - lastPollMs >= INTERVAL_MS && inFlight.compareAndSet(false, true)) {
             lastPollMs = now;
             UUID me = mc.getUser() != null ? mc.getUser().getProfileId() : null;
-            Channel polled = want;
-            LiveFeedClient.status(me, polled).whenComplete((r, t) -> {
-                // A reply from the channel we just left must not land on the new one.
-                if (r != null && polled == channel) current = LiveFeedClient.parseStatus(r);
-                inFlight.set(false);
-            });
+            CompletableFuture<Status> devLive = fp
+                ? poll(null, Channel.DEV)
+                : CompletableFuture.completedFuture(Status.OFFLINE);
+            devLive.thenCompose(dev -> poll(me, LiveFeedClient.viewerChannel(fp, dev.live())))
+                .whenComplete((status, t) -> {
+                    // A reply begun before Free Play flipped must not land on the other side.
+                    if (status != null && fp == freePlay) current = status;
+                    inFlight.set(false);
+                });
         }
         return current;
+    }
+
+    /** One status poll; a failed request reads as offline. */
+    private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel) {
+        return LiveFeedClient.status(viewer, channel)
+            .handle((r, t) -> r == null ? Status.OFFLINE : LiveFeedClient.parseStatus(r));
     }
 
     public static Status current() {

@@ -142,9 +142,12 @@ public final class LiveFeedClient {
     /** Which Live Feed channel a viewer watches: the public one, or the dev one Free Play TVs show. */
     public enum Channel { LIVE, DEV }
 
-    /** Free Play TVs show the dev channel, on every build; everyone else watches the public feed. */
-    public static Channel viewerChannel(boolean freePlay) {
-        return freePlay ? Channel.DEV : Channel.LIVE;
+    /**
+     * Everyone watches the public feed, except a Free Play run while a dev is streaming: then its TVs
+     * show the dev channel. On every build.
+     */
+    public static Channel viewerChannel(boolean freePlay, boolean devLive) {
+        return freePlay && devLive ? Channel.DEV : Channel.LIVE;
     }
 
     private static String viewerBase(Channel channel) {

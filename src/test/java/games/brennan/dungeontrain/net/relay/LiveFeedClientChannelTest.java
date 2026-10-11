@@ -5,13 +5,15 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-/** Free Play TVs watch the dev channel; everyone else the public feed. */
+/** Everyone watches the public feed; Free Play switches to the dev channel only while a dev streams. */
 final class LiveFeedClientChannelTest {
 
     @Test
-    @DisplayName("a Free Play run's TVs show the dev channel, any other run's the public feed")
-    void freePlayWatchesDev() {
-        assertEquals(LiveFeedClient.Channel.DEV, LiveFeedClient.viewerChannel(true));
-        assertEquals(LiveFeedClient.Channel.LIVE, LiveFeedClient.viewerChannel(false));
+    @DisplayName("Free Play shows the dev channel only while a dev streams; otherwise everyone sees the public feed")
+    void freePlayWatchesDevOnlyWhileLive() {
+        assertEquals(LiveFeedClient.Channel.DEV, LiveFeedClient.viewerChannel(true, true));
+        assertEquals(LiveFeedClient.Channel.LIVE, LiveFeedClient.viewerChannel(true, false));
+        assertEquals(LiveFeedClient.Channel.LIVE, LiveFeedClient.viewerChannel(false, true));
+        assertEquals(LiveFeedClient.Channel.LIVE, LiveFeedClient.viewerChannel(false, false));
     }
 }
