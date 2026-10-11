@@ -633,6 +633,7 @@
   "chat.dungeontrain.live.headpiece_burns": "Le caméscope sur ta tête crépite et se consume.",
   "chat.dungeontrain.live.burns_removed": "Le caméscope se consume quand vous le retirez",
   "chat.dungeontrain.live.burns_next_streamer": "Le caméscope passe au streamer suivant",
+  "chat.dungeontrain.live.no_longer_live": "Vous n'êtes plus en direct",
   "chat.dungeontrain.live.now_live.one": "Vous êtes en direct, %s personne regarde",
   "chat.dungeontrain.live.now_live.other": "Vous êtes en direct, %s personnes regardent",
   "chat.dungeontrain.live.viewers.one": "Vous avez %s spectateur",

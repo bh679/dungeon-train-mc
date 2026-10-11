@@ -660,6 +660,7 @@
   "chat.dungeontrain.live.headpiece_burns": "Kamera na twojej głowie rozbłyska i spala się.",
   "chat.dungeontrain.live.burns_removed": "Kamera spala się, gdy ją zdejmujesz",
   "chat.dungeontrain.live.burns_next_streamer": "Kamera przechodzi do następnego streamera",
+  "chat.dungeontrain.live.no_longer_live": "Nie jesteś już na żywo",
   "chat.dungeontrain.live.now_live.one": "Jesteś na żywo, ogląda %s osoba",
   "chat.dungeontrain.live.now_live.few": "Jesteś na żywo, oglądają %s osoby",
   "chat.dungeontrain.live.now_live.many": "Jesteś na żywo, ogląda %s osób",

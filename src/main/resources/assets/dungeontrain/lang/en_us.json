@@ -689,6 +689,7 @@
   "chat.dungeontrain.live.headpiece_burns": "The Live Eye on your head flares and burns away.",
   "chat.dungeontrain.live.burns_removed": "The Live Eye burns away as you take it off",
   "chat.dungeontrain.live.burns_next_streamer": "The Live Eye moves onto the next streamer",
+  "chat.dungeontrain.live.no_longer_live": "You are no longer live",
   "chat.dungeontrain.live.now_live.one": "You are now live, %s person watching",
   "chat.dungeontrain.live.now_live.other": "You are now live, %s people watching",
   "chat.dungeontrain.live.viewers.one": "You have %s viewer",

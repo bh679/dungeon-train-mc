@@ -606,6 +606,7 @@
   "chat.dungeontrain.live.headpiece_burns": "Chiếc máy quay trên đầu bạn lóe sáng rồi cháy rụi.",
   "chat.dungeontrain.live.burns_removed": "Chiếc máy quay cháy rụi khi bạn tháo nó ra",
   "chat.dungeontrain.live.burns_next_streamer": "Chiếc máy quay chuyển sang người phát sóng tiếp theo",
+  "chat.dungeontrain.live.no_longer_live": "Bạn không còn phát trực tiếp nữa",
   "chat.dungeontrain.live.now_live.other": "Bạn đang phát trực tiếp, %s người đang xem",
   "chat.dungeontrain.live.viewers.other": "Bạn có %s người xem",
   "chat.dungeontrain.live.free_play": "Lượt chơi Tự Do không thể phát trực tiếp.",

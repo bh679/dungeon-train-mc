@@ -606,6 +606,7 @@
   "chat.dungeontrain.live.headpiece_burns": "머리 위의 캠코더가 번쩍이며 타 버렸다.",
   "chat.dungeontrain.live.burns_removed": "캠코더를 벗자 타 버렸다",
   "chat.dungeontrain.live.burns_next_streamer": "캠코더가 다음 방송인에게 넘어갔다",
+  "chat.dungeontrain.live.no_longer_live": "방송이 종료되었습니다",
   "chat.dungeontrain.live.now_live.other": "방송 중, %s명이 시청 중",
   "chat.dungeontrain.live.viewers.other": "시청자 %s명",
   "chat.dungeontrain.live.free_play": "자유 플레이 런에서는 라이브 방송을 할 수 없습니다.",

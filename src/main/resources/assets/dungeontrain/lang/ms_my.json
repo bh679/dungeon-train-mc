@@ -606,6 +606,7 @@
   "chat.dungeontrain.live.headpiece_burns": "Camcorder di kepala anda bercahaya lalu terbakar habis.",
   "chat.dungeontrain.live.burns_removed": "Camcorder terbakar habis apabila anda menanggalkannya",
   "chat.dungeontrain.live.burns_next_streamer": "Camcorder berpindah kepada penyiar seterusnya",
+  "chat.dungeontrain.live.no_longer_live": "Anda tidak lagi bersiaran langsung",
   "chat.dungeontrain.live.now_live.other": "Anda kini bersiaran langsung, %s orang menonton",
   "chat.dungeontrain.live.viewers.other": "Anda ada %s penonton",
   "chat.dungeontrain.live.free_play": "Larian Main Bebas tidak boleh bersiaran langsung.",

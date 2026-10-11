@@ -42,4 +42,14 @@ final class LiveFeedEventsTest {
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.FREE_PLAY));
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.DISABLED));
     }
+
+    @Test
+    @DisplayName("\"no longer live\" follows every burn that ended a broadcast, not one that never started")
+    void noLongerLiveOnlyAfterABroadcast() {
+        assertTrue(LiveFeedEvents.wasLiveOn(LiveFeedEvents.Exit.REMOVED));
+        assertTrue(LiveFeedEvents.wasLiveOn(LiveFeedEvents.Exit.CUT_OFF));
+        assertTrue(LiveFeedEvents.wasLiveOn(LiveFeedEvents.Exit.DIED));
+        assertTrue(LiveFeedEvents.wasLiveOn(LiveFeedEvents.Exit.FREE_PLAY));
+        assertFalse(LiveFeedEvents.wasLiveOn(LiveFeedEvents.Exit.DISABLED));
+    }
 }

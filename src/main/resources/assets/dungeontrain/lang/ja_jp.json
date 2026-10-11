@@ -606,6 +606,7 @@
   "chat.dungeontrain.live.headpiece_burns": "頭のカムコーダーが閃光を放ち、燃え尽きた。",
   "chat.dungeontrain.live.burns_removed": "外したカムコーダーが燃え尽きた",
   "chat.dungeontrain.live.burns_next_streamer": "カムコーダーは次の配信者へ移った",
+  "chat.dungeontrain.live.no_longer_live": "ライブ配信は終了した",
   "chat.dungeontrain.live.now_live.other": "ライブ配信中、%s人が視聴中",
   "chat.dungeontrain.live.viewers.other": "視聴者は%s人",
   "chat.dungeontrain.live.free_play": "フリープレイのランではライブ配信できません。",

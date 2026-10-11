@@ -716,6 +716,7 @@
   "chat.dungeontrain.live.headpiece_burns": "Camera video de pe capul tău scapără și arde complet.",
   "chat.dungeontrain.live.burns_removed": "Camera video arde complet când o scoți",
   "chat.dungeontrain.live.burns_next_streamer": "Camera video trece la următorul streamer",
+  "chat.dungeontrain.live.no_longer_live": "Nu mai ești în direct",
   "chat.dungeontrain.live.now_live.one": "Ești în direct, %s persoană urmărește",
   "chat.dungeontrain.live.now_live.few": "Ești în direct, %s persoane urmăresc",
   "chat.dungeontrain.live.now_live.other": "Ești în direct, %s de persoane urmăresc",

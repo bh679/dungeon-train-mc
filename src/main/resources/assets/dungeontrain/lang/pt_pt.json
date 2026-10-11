@@ -633,6 +633,7 @@
   "chat.dungeontrain.live.headpiece_burns": "A câmara de filmar na tua cabeça faísca e arde até desaparecer.",
   "chat.dungeontrain.live.burns_removed": "A câmara de filmar arde até desaparecer quando a tiras",
   "chat.dungeontrain.live.burns_next_streamer": "A câmara de filmar passa para o próximo streamer",
+  "chat.dungeontrain.live.no_longer_live": "Já não estás em direto",
   "chat.dungeontrain.live.now_live.one": "Estás em direto, %s pessoa a ver",
   "chat.dungeontrain.live.now_live.other": "Estás em direto, %s pessoas a ver",
   "chat.dungeontrain.live.viewers.one": "Tens %s espetador",

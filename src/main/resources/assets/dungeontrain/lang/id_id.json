@@ -606,6 +606,7 @@
   "chat.dungeontrain.live.headpiece_burns": "Camcorder di kepalamu berkilat lalu terbakar habis.",
   "chat.dungeontrain.live.burns_removed": "Camcorder terbakar habis saat kamu melepasnya",
   "chat.dungeontrain.live.burns_next_streamer": "Camcorder berpindah ke penyiar berikutnya",
+  "chat.dungeontrain.live.no_longer_live": "Kamu tidak lagi siaran langsung",
   "chat.dungeontrain.live.now_live.other": "Kamu sedang siaran langsung, %s orang menonton",
   "chat.dungeontrain.live.viewers.other": "Kamu punya %s penonton",
   "chat.dungeontrain.live.free_play": "Permainan Free Play tidak bisa siaran langsung.",

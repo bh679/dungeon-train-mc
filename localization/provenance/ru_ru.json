@@ -665,6 +665,7 @@
   "chat.dungeontrain.live.headpiece_burns": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "d39e8a2f3a630cc5"},
   "chat.dungeontrain.live.burns_removed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "444a08ae2fe193fa"},
   "chat.dungeontrain.live.burns_next_streamer": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b93caa6058253041"},
+  "chat.dungeontrain.live.no_longer_live": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "d948f5069f0b5252"},
   "chat.dungeontrain.live.now_live.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "622888455b46f1a7"},
   "chat.dungeontrain.live.now_live.few": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},
   "chat.dungeontrain.live.now_live.many": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": ""},

@@ -633,6 +633,7 @@
   "chat.dungeontrain.live.headpiece_burns": "A filmadora na sua cabeça faísca e queima até sumir.",
   "chat.dungeontrain.live.burns_removed": "A filmadora queima até sumir quando você a tira",
   "chat.dungeontrain.live.burns_next_streamer": "A filmadora passa para o próximo streamer",
+  "chat.dungeontrain.live.no_longer_live": "Você não está mais ao vivo",
   "chat.dungeontrain.live.now_live.one": "Você está ao vivo, %s pessoa assistindo",
   "chat.dungeontrain.live.now_live.other": "Você está ao vivo, %s pessoas assistindo",
   "chat.dungeontrain.live.viewers.one": "Você tem %s espectador",

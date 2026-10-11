@@ -606,6 +606,7 @@
   "chat.dungeontrain.live.headpiece_burns": "กล้องวิดีโอบนหัวของคุณลุกวาบแล้วไหม้หายไป",
   "chat.dungeontrain.live.burns_removed": "กล้องวิดีโอไหม้หายไปเมื่อคุณถอดออก",
   "chat.dungeontrain.live.burns_next_streamer": "กล้องวิดีโอย้ายไปยังผู้ถ่ายทอดคนถัดไป",
+  "chat.dungeontrain.live.no_longer_live": "คุณไม่ได้ถ่ายทอดสดแล้ว",
   "chat.dungeontrain.live.now_live.other": "คุณกำลังถ่ายทอดสด มีผู้ชม %s คน",
   "chat.dungeontrain.live.viewers.other": "คุณมีผู้ชม %s คน",
   "chat.dungeontrain.live.free_play": "การเล่นแบบเล่นอิสระไม่สามารถถ่ายทอดสดได้",
