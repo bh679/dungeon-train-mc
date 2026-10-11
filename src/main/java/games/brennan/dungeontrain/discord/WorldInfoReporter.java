@@ -45,7 +45,7 @@ public final class WorldInfoReporter {
 
     /**
      * A single installed mod as reported to the relay: its id and version string, plus — when the
-     * {@link games.brennan.dungeontrain.cheat.ModFileScanner} has finished — the file it came
+     * {@code dtmodverify} engine's scan has finished ({@link games.brennan.dungeontrain.compat.DtModVerifyBridge}) — the file it came
      * from: {@code sha1}, {@code size} and {@code fileName}. The relay keeps those so the Approved
      * Mods page can show which files ship under which ids (hash-verified whitelist). Null when
      * unknown; they are then simply omitted from the payload.
@@ -196,7 +196,7 @@ public final class WorldInfoReporter {
         for (var info : ModList.get().getMods()) {
             // Non-blocking: the scan has long finished by the time a player joins a world; if it
             // has not, this record simply carries no file facts and the next one will.
-            var file = games.brennan.dungeontrain.cheat.ModFileScanner.fileOf(info.getModId());
+            var file = games.brennan.dungeontrain.compat.DtModVerifyBridge.fileOf(info.getModId());
             out.add(file == null
                 ? new ModEntry(info.getModId(), info.getVersion().toString())
                 : new ModEntry(info.getModId(), info.getVersion().toString(), file.sha1(), file.size(), file.fileName()));

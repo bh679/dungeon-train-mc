@@ -88,13 +88,13 @@ public final class ApprovedModList {
      * The hash-verified half (2026-10): every jar SHA-1 the relay currently approves, plus the
      * ones baked in for the modpack's pinned files. A mod id is a line in mods.toml anyone can
      * edit; a file's hash is not — so {@link UnapprovedModIntegrity} also asks whether each
-     * installed FILE is one of these. See {@link ModFileScanner}.
+     * installed FILE is one of these, as the {@code dtmodverify} engine fingerprints them.
      */
     private static volatile Set<String> bakedHashes = Set.of();
     private static volatile Set<String> relayHashes = Set.of();
     /**
      * What each approved mod's code looks like: id → the package fingerprint of its published
-     * jars ({@link PackageFingerprint}). The second half of the file check: a jar whose hash is
+     * jars (top-level package names, as the {@code dtmodverify} engine fingerprints them). The second half of the file check: a jar whose hash is
      * unknown (a fresh release, a GitHub build) is still fine when its packages are that mod's;
      * a cheat jar that merely claims the id is not. Baked by generateApprovedMods, refreshed by
      * the relay.
@@ -184,6 +184,16 @@ public final class ApprovedModList {
         java.util.Map<String, Set<String>> out = new java.util.HashMap<>(bakedPackages);
         out.putAll(relayPackages);
         return java.util.Map.copyOf(out);
+    }
+
+    /** A package-fingerprint key: 2–3 dotted Java identifiers, at most 120 chars (the engine's own rule). */
+    private static final java.util.regex.Pattern PACKAGE_KEY =
+        java.util.regex.Pattern.compile("[A-Za-z_$][\\w$]*(\\.[A-Za-z_$][\\w$]*){1,2}");
+    private static final int MAX_PACKAGE_KEY = 120;
+
+    /** Pure: does {@code s} look like a package-fingerprint key the engine would produce? */
+    static boolean isPackageKey(String s) {
+        return s != null && s.length() <= MAX_PACKAGE_KEY && PACKAGE_KEY.matcher(s).matches();
     }
 
     /** Pure: is this file's hash on the approved-file list? */
@@ -336,7 +346,7 @@ public final class ApprovedModList {
             for (JsonElement p : e.getValue().getAsJsonArray()) {
                 if (p.isJsonPrimitive() && p.getAsJsonPrimitive().isString()) {
                     String s = p.getAsString().trim();
-                    if (PackageFingerprint.isValid(s)) pk.add(s);
+                    if (isPackageKey(s)) pk.add(s);
                 }
             }
             out.put(id, Set.copyOf(pk)); // an empty set is knowledge too: a resource-only mod has no classes

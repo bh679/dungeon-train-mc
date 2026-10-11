@@ -5,7 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.ApprovedModList;
 import games.brennan.dungeontrain.cheat.ApprovedModListFetcher;
 import games.brennan.dungeontrain.cheat.ModFileFingerprint;
-import games.brennan.dungeontrain.cheat.ModFileScanner;
+import games.brennan.dungeontrain.compat.DtModVerifyBridge;
 import games.brennan.dungeontrain.cheat.UnapprovedModIntegrity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -56,6 +56,8 @@ public final class UnsupportedModsPopupHandler {
     public static void onScreenInit(ScreenEvent.Init.Post event) {
         if (done || armed || !(event.getScreen() instanceof TitleScreen)) return;
         armed = true;
+        // The file scan first, so the fetch can send the hash-verified POST (no-op without the engine).
+        DtModVerifyBridge.scan(UnapprovedModIntegrity.EXEMPT_IDS);
         ApprovedModListFetcher.ensureFetched();
     }
 
@@ -70,7 +72,7 @@ public final class UnsupportedModsPopupHandler {
         }
         onTitle++;
         if (onTitle < SETTLE_TICKS) return;
-        if ((!ApprovedModListFetcher.isSettled() || !ModFileScanner.isDone()) && waited < FETCH_WAIT_TICKS) return;
+        if ((!ApprovedModListFetcher.isSettled() || !DtModVerifyBridge.isDone()) && waited < FETCH_WAIT_TICKS) return;
 
         armed = false;
         done = true;
@@ -93,7 +95,7 @@ public final class UnsupportedModsPopupHandler {
     private static List<UnsupportedModsScreen.UnsupportedMod> unsupported() {
         List<UnsupportedModsScreen.UnsupportedMod> out = new ArrayList<>();
         boolean ids = ApprovedModList.enforce();
-        boolean files = ApprovedModList.enforceHashes();
+        boolean files = ApprovedModList.enforceHashes() && DtModVerifyBridge.isPresent();
         try {
             for (var info : ModList.get().getMods()) {
                 String name = info.getDisplayName();

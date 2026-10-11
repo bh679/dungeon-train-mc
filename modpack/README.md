@@ -109,7 +109,8 @@ flag straight into the manifest:
   CurseForge only (`curseforge_only: true`): they are also jarJar'd inside the DT jar, so the
   Modrinth pack leaves them out and Modrinth players get them built in, while the CurseForge pack
   ships them as Includes so the CF app installs them from their own pages (NeoForge drops the
-  nested copy when a top-level one is present).
+  nested copy when a top-level one is present). **DT Mod Verify** (`dtmodverify`, the Free Play
+  file-verification engine) is jarJar'd the same way but has no CurseForge listing or modpack entry yet.
 - **Enabled by default (`required:true`)** — AppleSkin, FerriteCore, ModernFix, **Sodium**
   (rendering perf, works standalone), **Iris** (shader loader, shipped with no shaderpack so it's
   perf-neutral until a player adds one — Iris requires Sodium, which ships enabled above,

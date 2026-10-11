@@ -1,18 +1,17 @@
 package games.brennan.dungeontrain.cheat;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
 import java.util.List;
 
 /**
  * One installed mod <b>file</b> as the hash-verified whitelist sees it: the jar's name and size,
- * its SHA-1 (the identity the relay and Modrinth key on), its CurseForge fingerprint
- * ({@link CurseForgeFingerprint}), and every mod id that file declares — its own {@code [[mods]]}
- * plus those of any jar it embeds under {@code META-INF/jarjar/}, since NeoForge loads those as
- * mods but the player installed exactly one file.
+ * its SHA-1 (the identity the relay and Modrinth key on), its CurseForge fingerprint, and every mod
+ * id that file declares — its own {@code [[mods]]} plus those of any jar it embeds under
+ * {@code META-INF/jarjar/}, since NeoForge loads those as mods but the player installed exactly one
+ * file.
  *
- * <p>Immutable; produced by {@link ModFileScanner}, sent to the relay by
+ * <p>DT's own thin copy of the engine's record: produced by the optional {@code dtmodverify}
+ * sibling and converted in {@link games.brennan.dungeontrain.compat.DtModVerifyBridge} (this record
+ * never references the engine's classes), sent to the relay through the bridge by
  * {@link ApprovedModListFetcher} and judged by {@link UnapprovedModIntegrity}.</p>
  *
  * @param fileName the jar's file name, e.g. {@code jei-1.21.1-neoforge-19.21.0.247.jar}
@@ -20,8 +19,8 @@ import java.util.List;
  * @param sha1     lowercase 40-hex SHA-1 of the file
  * @param murmur2  CurseForge fingerprint, unsigned 32-bit
  * @param modIds   lowercase mod ids the file declares, in discovery order
- * @param packages the jar's package fingerprint — see {@link PackageFingerprint} — outer jar and
- *                 embedded jars together, sorted, at most {@link PackageFingerprint#MAX}
+ * @param packages the jar's package fingerprint (top-level package names, outer jar and embedded
+ *                 jars together, sorted)
  */
 public record ModFileFingerprint(String fileName, long size, String sha1, long murmur2, List<String> modIds,
                                  List<String> packages) {
@@ -34,22 +33,6 @@ public record ModFileFingerprint(String fileName, long size, String sha1, long m
     /** The pre-package shape, for tests and callers that only have a hash. */
     public ModFileFingerprint(String fileName, long size, String sha1, long murmur2, List<String> modIds) {
         this(fileName, size, sha1, murmur2, modIds, List.of());
-    }
-
-    /** The wire form for {@code POST /approved-mods/verify}: {@code {sha1, murmur2, size, fileName, modIds}}. */
-    public JsonObject toJson() {
-        JsonObject o = new JsonObject();
-        o.addProperty("sha1", sha1);
-        o.addProperty("murmur2", murmur2);
-        o.addProperty("size", size);
-        o.addProperty("fileName", fileName);
-        JsonArray ids = new JsonArray();
-        for (String id : modIds) ids.add(id);
-        o.add("modIds", ids);
-        JsonArray pk = new JsonArray();
-        for (String p : packages) pk.add(p);
-        o.add("packages", pk);
-        return o;
     }
 
     /** {@code "<file> (id1, id2)"} — how the login notice and the cause tooltip name this file. */

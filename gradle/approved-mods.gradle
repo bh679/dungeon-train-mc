@@ -196,7 +196,8 @@ tasks.register('generateApprovedMods') {
         // the same contract check-mod-ids.py enforces for the modpack roster.
         def pulled = hashesFile.exists() ? slurper.parse(hashesFile) : [byMod: [:], unmatched: []]
         def pulledIds = (pulled.byMod?.keySet() ?: []) + (pulled.unmatched ?: [])
-        def exemptIds = ['minecraft', 'neoforge', 'forge', selfId] as Set
+        // Mirrors UnapprovedModIntegrity.EXEMPT_IDS: judged by id alone, never hashed (dtmodverify is the engine itself).
+        def exemptIds = ['minecraft', 'neoforge', 'forge', selfId, 'dtmodverify'] as Set
         def noRecord = seen.findAll { id -> !(id in exemptIds) && !id.startsWith('fabric_') && !(id in pulledIds) }
         if (noRecord) {
             throw new GradleException("Approved ids with no file-hash record: ${noRecord.sort().join(', ')}. "

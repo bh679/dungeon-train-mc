@@ -69,8 +69,8 @@ CF_NEOFORGE_LOADER = 6
 CF_MINECRAFT_CLASS = 6
 SHA1 = re.compile(r"^[0-9a-f]{40}$")
 TOML_NAMES = ("META-INF/neoforge.mods.toml", "META-INF/mods.toml")
-# Ids the jar judges by id alone (ModFileScanner.EXEMPT_IDS) plus Sinytra's prefix rule: nothing to bake.
-SKIP_IDS = {"minecraft", "neoforge", "forge", "dungeontrain"}
+# Ids the jar judges by id alone (UnapprovedModIntegrity.EXEMPT_IDS) plus Sinytra's prefix rule: nothing to bake.
+SKIP_IDS = {"minecraft", "neoforge", "forge", "dungeontrain", "dtmodverify"}
 SKIP_PREFIXES = ("fabric_",)
 CANDIDATES = 5
 RETRIES = 3
@@ -291,7 +291,7 @@ def pinned_ids(packages=False):
 # Ids embedded in Dungeon Train's own jar get their package knowledge from the jarJar jars at
 # build time (gradle/approved-mods.gradle), so --check does not call them blind.
 EMBEDDED_IDS_HINT = {"keeptrim", "dungeonbackup", "sable_fence_trapdoor_fix", "streamdetect", "dpibypassdetect",
-                     "pigmanvillagers", "lostcityterrainfit", "discordpresence", "ediblebackpacks"}
+                     "pigmanvillagers", "lostcityterrainfit", "discordpresence", "ediblebackpacks", "dtmodverify"}
 
 
 def load_output():

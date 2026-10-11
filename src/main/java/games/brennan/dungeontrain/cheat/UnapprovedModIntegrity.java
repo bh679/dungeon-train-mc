@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.cheat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.DtModVerifyBridge;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -65,7 +66,13 @@ public final class UnapprovedModIntegrity {
      */
     private static volatile List<String> unverified = List.of();
 
-    /** How long the boot-time scan waits for {@link ModFileScanner} before judging without it. */
+    /**
+     * Mod ids whose file is judged by id elsewhere and so is never hashed: the game, the loader,
+     * DT's own jar (with everything it embeds) and the verification engine itself.
+     */
+    public static final Set<String> EXEMPT_IDS = Set.of("minecraft", "neoforge", "forge", "dungeontrain", "dtmodverify");
+
+    /** How long the boot-time scan waits for the engine's file scan before judging without it. */
     static final long SCAN_WAIT_MS = 5000;
     /**
      * How long server start waits for an in-flight relay verify before judging from the cache. A
@@ -118,7 +125,8 @@ public final class UnapprovedModIntegrity {
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
         // Best-effort: refresh the relay overlay for next boot (async; current boot uses the cache).
-        // On a dedicated server this is also what starts the file scan.
+        // On a dedicated server this is what starts the file scan (no-op without the engine).
+        DtModVerifyBridge.scan(EXEMPT_IDS);
         ApprovedModListFetcher.ensureFetched();
         serverRunning = true;
         detected = scan();
@@ -179,7 +187,7 @@ public final class UnapprovedModIntegrity {
      */
     static List<String> scanFiles() {
         try {
-            return unverifiedFrom(ModFileScanner.current(SCAN_WAIT_MS), ApprovedModList.approvedHashes(),
+            return unverifiedFrom(DtModVerifyBridge.current(SCAN_WAIT_MS), ApprovedModList.approvedHashes(),
                 ApprovedModList.knownPackages());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — assuming every file is "
@@ -203,7 +211,8 @@ public final class UnapprovedModIntegrity {
     }
 
     /**
-     * Pure: which tier is this file in?
+     * Which tier is this file in? The rule itself lives in the {@code dtmodverify} engine
+     * ({@link DtModVerifyBridge#tierOf}); without it every file is {@link Tier#UNKNOWN}, never suspect.
      * <ul>
      *   <li>{@link Tier#VERIFIED} — its hash is approved.</li>
      *   <li>{@link Tier#PLAUSIBLE} — hash unknown, but every id it declares has known packages
@@ -219,17 +228,7 @@ public final class UnapprovedModIntegrity {
      * is suspect, one without is plausible.
      */
     static Tier tierOf(ModFileFingerprint f, Set<String> approvedSha1s, Map<String, Set<String>> knownPackages) {
-        if (ApprovedModList.isFileApproved(f, approvedSha1s)) return Tier.VERIFIED;
-        if (f.modIds().isEmpty()) return Tier.SUSPECT;
-        Set<String> jar = Set.copyOf(f.packages());
-        boolean unknown = false;
-        for (String id : f.modIds()) {
-            if (ModFileScanner.EXEMPT_IDS.contains(id)) continue;
-            Set<String> known = knownPackages.get(id);
-            if (known == null) { unknown = true; continue; }
-            if (known.isEmpty() ? !jar.isEmpty() : java.util.Collections.disjoint(jar, known)) return Tier.SUSPECT;
-        }
-        return unknown ? Tier.UNKNOWN : Tier.PLAUSIBLE;
+        return DtModVerifyBridge.tierOf(f, approvedSha1s, knownPackages, EXEMPT_IDS);
     }
 
     /**
@@ -237,7 +236,7 @@ public final class UnapprovedModIntegrity {
      * that file is unverified right now; null when it is verified, unknown, or the scan is not done.
      */
     public static ModFileFingerprint unverifiedFileOf(String modId) {
-        ModFileFingerprint f = ModFileScanner.fileOf(modId);
+        ModFileFingerprint f = DtModVerifyBridge.fileOf(modId);
         return f != null && tierOf(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages()) == Tier.SUSPECT
             ? f : null;
     }

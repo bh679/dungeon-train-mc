@@ -138,8 +138,10 @@ to the relay's `public/dungeontrain/items/catalog.json`. For the icons, `./gradl
 
 ### Approved-mod file hashes (hash-verified whitelist)
 
-Free Play judges installed mods by their jar's SHA-1 as well as by mod id (`cheat/ModFileScanner`,
-relay `POST /approved-mods/verify`). The jar bakes the hashes it can know offline:
+Free Play judges installed mods by their jar's SHA-1 as well as by mod id. The scanning and
+verify-call ENGINE is the jarJar'd optional sibling `dtmodverify` (`bh679/dtmodverify-mc`, bumped by
+hand via `dtmodverify_version`; DT reaches it through `compat/DtModVerifyBridge` and falls back to the
+id-only check without it — relay `POST /approved-mods/verify`). The jar bakes the hashes it can know offline:
 `generateApprovedMods` merges the modpack's pinned-file `sha1`s (`check-mod-ids.py --fill` records
 them), the embedded jars', and `src/main/whitelist/approved_hashes.json` — every published 1.21.1
 NeoForge file of every approved mod, pulled by hand with
