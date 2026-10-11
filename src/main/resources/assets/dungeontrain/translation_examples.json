@@ -15288,21 +15288,37 @@
       ]
     }
   },
-  "chat.dungeontrain.live.cut_off_by": {
+  "chat.dungeontrain.live.now_live.one": {
     "1": {
-      "label": "the player name of the broadcaster who was cut off",
+      "label": "how many are watching (always 1)",
       "examples": [
-        "Steve",
-        "brennan_hatton"
+        "1"
       ]
     }
   },
-  "chat.dungeontrain.live.replaced_here": {
+  "chat.dungeontrain.live.now_live.other": {
     "1": {
-      "label": "the player name of the broadcaster who was cut off",
+      "label": "how many are watching",
       "examples": [
-        "Steve",
-        "brennan_hatton"
+        "0",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.viewers.one": {
+    "1": {
+      "label": "how many are watching (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.viewers.other": {
+    "1": {
+      "label": "how many are watching",
+      "examples": [
+        "11",
+        "101"
       ]
     }
   }

@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.ClientLanguage;
+import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
@@ -76,6 +78,10 @@ public final class LiveStreamController {
     private boolean grabbedThisFrame; // render thread: this frame was already read at an earlier point
     private long streamStartedMs;
     private int waitTicks;
+    /** How long the going-live line waits for the relay's first viewer count before saying 0. */
+    private static final long LIVE_LINE_FALLBACK_MS = 10_000L;
+    private final LiveViewerBands bands = new LiveViewerBands();
+    private boolean announcedLive; // render thread: this stream's going-live line has been said
 
     private LiveStreamController() {}
 
@@ -114,10 +120,11 @@ public final class LiveStreamController {
     public void onServerSaid(LiveStreamPacket packet) {
         switch (packet.action()) {
             case START -> start();
-            case STOP_REPLACED -> stop(Component.translatable("chat.dungeontrain.live.replaced_here", packet.by()));
+            // The server's burn line already says why for these two.
+            case STOP_REPLACED -> stop(null);
             case STOP_DIED -> stop(Component.translatable("chat.dungeontrain.live.ended_death"));
             case STOP_LEFT -> stop(null);
-            case STOP_REMOVED -> stop(Component.translatable("chat.dungeontrain.live.removed"));
+            case STOP_REMOVED -> stop(null);
             case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
         }
     }
@@ -172,6 +179,30 @@ public final class LiveStreamController {
         } else if (state == State.STREAMING && encoder != null && encoder.died()) {
             stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+        } else if (state == State.STREAMING) {
+            announceViewers(System.currentTimeMillis());
+        }
+    }
+
+    /**
+     * "You are now live, N watching" once the relay's first viewer count lands (or after
+     * {@link #LIVE_LINE_FALLBACK_MS} with none, as 0), then a line each time the count settles in a
+     * new band ({@link LiveViewerBands}).
+     */
+    private void announceViewers(long nowMs) {
+        int viewers = viewerCount();
+        if (!announcedLive) {
+            if (viewers < 0 && nowMs - streamStartedMs < LIVE_LINE_FALLBACK_MS) return;
+            int shown = Math.max(0, viewers);
+            announcedLive = true;
+            bands.start(shown);
+            say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.now_live", shown)
+                .withStyle(ChatFormatting.GREEN));
+            return;
+        }
+        if (bands.update(viewers, nowMs)) {
+            say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.viewers", viewers)
+                .withStyle(ChatFormatting.GRAY));
         }
     }
 
@@ -215,7 +246,7 @@ public final class LiveStreamController {
             state = State.STREAMING;
             LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps, playlist {}", c.session(), w, h,
                 LiveFeedClientConfig.captureFps(), c.playlistUrl());
-            say(Component.translatable("chat.dungeontrain.live.started").withStyle(ChatFormatting.GREEN));
+            announcedLive = false;
             if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] live stream could not start", e);
@@ -228,7 +259,8 @@ public final class LiveStreamController {
 
     private void cutOff(String by) {
         if (state != State.STREAMING) return;
-        stop(Component.translatable(by == null || by.isBlank() ? "chat.dungeontrain.live.cut_off" : "chat.dungeontrain.live.cut_off_by", by).withStyle(ChatFormatting.YELLOW), false);
+        // Silent here: the server burns the Live Eye on CUT_OFF and its burn line says why.
+        stop(null, false);
         tellServerEnded(LiveStreamEndedPacket.Reason.CUT_OFF);
     }
 
