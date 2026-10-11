@@ -9,6 +9,8 @@ import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
+import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
+import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
@@ -123,6 +125,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * survives {@code rebuildWidgets()} — the answer's own rebuild must not ask again.
      */
     private boolean accountRequested = false;
+    private boolean donationPrefsRequested = false;
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
         // ".client." because gui.dungeontrain.options.title is already taken by the WORLD options screen.
@@ -392,6 +395,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     })
                             .bounds(0, 0, WIDE_W, ROW_H).build(),
                     "gui.dungeontrain.options.account.not_linked"), null);
+            addDonationPrefs(list); // works without a Discord link — it is keyed by the Minecraft account
             return;
         }
         list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
@@ -428,6 +432,80 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             }
         }
         if (pending != null) list.addSmall(pending, null);
+        addDonationPrefs(list);
+    }
+
+    /**
+     * "Donation messages": how the developer hears about this player's donations on Discord —
+     * {@link DonationPrefsClient.Visibility} public / anonymous / private / off, and whether their Discord
+     * is tagged. Stored on the relay ({@link DonationPrefsState}); shown linked or not, since it is keyed
+     * by the Minecraft account. The tag switch greys out where it has no effect (anonymous, off).
+     */
+    private void addDonationPrefs(OptionsList list) {
+        if (!this.donationPrefsRequested) {
+            this.donationPrefsRequested = true;
+            DonationPrefsState.refresh(this::rebuildIfShown);
+        }
+        list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                Component.translatable("gui.dungeontrain.options.account.donation.header")), null);
+        DonationPrefsClient.Prefs prefs = DonationPrefsState.prefs();
+        if (prefs == null) {
+            if (DonationPrefsState.phase() == DonationPrefsState.Phase.FAILED) {
+                list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.account.donation.failed"),
+                        Component.translatable("gui.dungeontrain.options.account.retry"), () -> {
+                            this.donationPrefsRequested = false;
+                            DonationPrefsState.invalidate();
+                            rebuildIfShown();
+                        }), null);
+            } else {
+                list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.account.checking")), null);
+            }
+            return;
+        }
+        if (DonationPrefsState.saveFailed()) {
+            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                    Component.translatable("gui.dungeontrain.options.account.toggle_failed")), null);
+        }
+        // Side by side when every label fits a half-width button, otherwise one per row — "Developer only"
+        // and most translations don't fit half a row.
+        String visKey = "gui.dungeontrain.options.account.donation.visibility";
+        boolean narrow = true;
+        for (DonationPrefsClient.Visibility v : DonationPrefsClient.Visibility.values()) {
+            if (this.font.width(value(visKey, donationVisibilityLabel(v))) > ROW_W - TEXT_PADDING) narrow = false;
+        }
+        for (Component c : onOffCandidates("gui.dungeontrain.options.account.donation.tag")) {
+            if (this.font.width(c) > ROW_W - TEXT_PADDING) narrow = false;
+        }
+        int w = narrow ? ROW_W : WIDE_W;
+        CycleButton<DonationPrefsClient.Visibility> visibility =
+                CycleButton.<DonationPrefsClient.Visibility>builder(DungeonTrainClientOptionsScreen::donationVisibilityLabel)
+                        .withValues(List.of(DonationPrefsClient.Visibility.values()))
+                        .withInitialValue(prefs.visibility())
+                        .withTooltip(v -> Tooltip.create(Component.translatable(donationKey(v) + ".tip")))
+                        .create(0, 0, w, ROW_H, Component.translatable(visKey),
+                                (btn, v) -> DonationPrefsState.setVisibility(v, this::rebuildIfShown));
+        CycleButton<Boolean> tag = CycleButton.onOffBuilder(prefs.tag())
+                .create(0, 0, w, ROW_H, Component.translatable("gui.dungeontrain.options.account.donation.tag"),
+                        (btn, on) -> DonationPrefsState.setTag(on, this::rebuildIfShown));
+        tag.active = prefs.visibility() == DonationPrefsClient.Visibility.PUBLIC
+                || prefs.visibility() == DonationPrefsClient.Visibility.PRIVATE;
+        withTip(tag, "gui.dungeontrain.options.account.donation.tag.tip");
+        if (narrow) {
+            list.addSmall(visibility, tag);
+        } else {
+            list.addSmall(visibility, null);
+            list.addSmall(tag, null);
+        }
+    }
+
+    private static Component donationVisibilityLabel(DonationPrefsClient.Visibility v) {
+        return Component.translatable(donationKey(v));
+    }
+
+    private static String donationKey(DonationPrefsClient.Visibility v) {
+        return "gui.dungeontrain.options.account.donation.visibility." + v.key();
     }
 
     private static String pingKey(PingType type) {
