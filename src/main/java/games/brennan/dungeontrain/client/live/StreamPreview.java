@@ -98,6 +98,7 @@ public final class StreamPreview {
         if (target == null || target.width != w || target.height != h) {
             release();
             target = new TextureTarget(w, h, false, Minecraft.ON_OSX);
+            target.setFilterMode(GL11C.GL_NEAREST); // show the broadcast's pixels, not a smoothed upscale
         }
         RenderTarget main = Minecraft.getInstance().getMainRenderTarget();
         GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, main.frameBufferId);
