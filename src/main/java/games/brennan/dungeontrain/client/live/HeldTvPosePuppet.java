@@ -38,6 +38,8 @@ public final class HeldTvPosePuppet {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final boolean ACTIVE = Boolean.getBoolean("dungeontrain.tvPoseShots");
+    private static final boolean SWAP_TRACE = Boolean.getBoolean("dungeontrain.tvPoseSwap");
+    private static int swapTick = -1;
     private static final int SETTLE_TICKS = 20;
     private static final ResourceLocation TV_ITEM = ResourceLocation.fromNamespaceAndPath("vista", "television");
 
@@ -85,6 +87,7 @@ public final class HeldTvPosePuppet {
             return;
         }
         int settle = SETTLE_TICKS * 13; // items arrive, hands settle, the Free Play chat lines fade
+        if (SWAP_TRACE) { swapTrace(mc, settle); return; }
         if (ticks < settle || (ticks - settle) % SETTLE_TICKS != 0) return;
         if (shot > 0) grab(mc, shot - 1);
         if (shot < CANDIDATES.size()) {
@@ -97,13 +100,36 @@ public final class HeldTvPosePuppet {
         LOGGER.info("[tvpose] all {} shots written to screenshots/", CANDIDATES.size());
     }
 
+    /** Press F once the hands have settled, then log both hands every tick and grab a frame every other tick. */
+    private static void swapTrace(Minecraft mc, int settle) {
+        if (ticks < settle) return;
+        if (swapTick < 0) {
+            swapTick = ticks;
+            net.minecraft.client.KeyMapping.click(mc.options.keySwapOffhand.getKey());
+            LOGGER.info("[tvpose] swap pressed at tick {}", ticks);
+        }
+        int since = ticks - swapTick;
+        if (since <= 40) {
+            LOGGER.info("[tvpose] +{} main={} on={} off={} on={}", since, mc.player.getMainHandItem(),
+                TvItems.isOn(mc.player.getMainHandItem()), mc.player.getOffhandItem(), TvItems.isOn(mc.player.getOffhandItem()));
+            if (since % 2 == 0) {
+                String name = String.format("tvswap-%02d.png", since);
+                Screenshot.grab(mc.gameDirectory, name, mc.getMainRenderTarget(), msg -> {});
+            }
+            return;
+        }
+        done = true;
+        LOGGER.info("[tvpose] swap trace done");
+    }
+
     /** Space for DT's "Press Space to Start", Escape for anything else. */
     private static void dismiss(Minecraft mc) {
-        if (mc.screen == null) return;
+        net.minecraft.client.gui.screens.Screen screen = mc.screen;
+        if (screen == null) return;
         boolean odd = (ticks / SETTLE_TICKS) % 2 == 1;
         int key = odd ? GLFW.GLFW_KEY_ESCAPE : GLFW.GLFW_KEY_SPACE;
-        mc.screen.keyPressed(key, 0, 0);
-        LOGGER.info("[tvpose] dismissing {} with key {}", mc.screen.getClass().getSimpleName(), key);
+        LOGGER.info("[tvpose] dismissing {} with key {}", screen.getClass().getSimpleName(), key);
+        screen.keyPressed(key, 0, 0);
     }
 
     /** An on TV in both hands, set on the server side of the integrated server. */
@@ -128,7 +154,7 @@ public final class HeldTvPosePuppet {
             p.setYRot(0); p.setXRot(10);
             ItemStack on = TvItems.withOn(new ItemStack(tv), true);
             p.setItemInHand(InteractionHand.MAIN_HAND, on.copy());
-            p.setItemInHand(InteractionHand.OFF_HAND, on.copy());
+            p.setItemInHand(InteractionHand.OFF_HAND, SWAP_TRACE ? ItemStack.EMPTY : on.copy());
             LOGGER.info("[tvpose] armed both hands with an on TV");
         });
     }

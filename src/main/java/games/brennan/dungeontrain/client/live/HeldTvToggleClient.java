@@ -6,6 +6,9 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.TvHeldTogglePacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.HitResult;
@@ -56,6 +59,29 @@ public final class HeldTvToggleClient {
     private static boolean aimingAtSomething(Minecraft mc) {
         HitResult hit = mc.hitResult;
         return hit != null && hit.getType() != HitResult.Type.MISS;
+    }
+
+    /**
+     * F with a TV in either hand swaps at once. Vanilla sends the swap and waits for the server's
+     * inventory echo (several ticks) before the hands change, and only then lowers and raises them;
+     * with a lifted, lit set in view that wait reads as lag. Here the click is taken before vanilla
+     * sees it, the two stacks are swapped on the client, and the same packet vanilla would send goes
+     * out, so the echo matches what is already shown. Any other item keeps vanilla's path.
+     */
+    @SubscribeEvent
+    public static void onClientTickPre(ClientTickEvent.Pre event) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player == null || mc.screen != null || player.isSpectator()) return;
+        if (!TvItems.isTv(player.getMainHandItem()) && !TvItems.isTv(player.getOffhandItem())) return;
+        boolean pressed = false;
+        while (mc.options.keySwapOffhand.consumeClick()) pressed = true;
+        if (!pressed) return;
+        ItemStack main = player.getMainHandItem();
+        player.setItemInHand(InteractionHand.MAIN_HAND, player.getOffhandItem());
+        player.setItemInHand(InteractionHand.OFF_HAND, main);
+        player.connection.send(new ServerboundPlayerActionPacket(
+            ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND, BlockPos.ZERO, Direction.DOWN));
     }
 
     @SubscribeEvent

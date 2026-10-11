@@ -207,6 +207,9 @@ neoForge {
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
             }
+            if (project.hasProperty('tvPoseSwap')) {
+                systemProperty 'dungeontrain.tvPoseSwap', 'true'
+            }
             // Item-icon dump for the relay's item-values page: ./gradlew runClient -PtradeValueIcons
             // renders every item to run/trade-values-icons/<ns>/<path>.png at the title screen and
             // quits (client/TradeValueIconDump).
@@ -360,6 +363,9 @@ neoForge {
             }
             if (project.hasProperty('tvPoseShots')) {
                 systemProperty 'dungeontrain.tvPoseShots', 'true'
+            }
+            if (project.hasProperty('tvPoseSwap')) {
+                systemProperty 'dungeontrain.tvPoseSwap', 'true'
             }
         }
 
