@@ -8,10 +8,16 @@ import net.mehvahdjukaar.vista.client.web.MediaError;
 import net.mehvahdjukaar.vista.client.web.MediaStatus;
 import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -26,7 +32,8 @@ import java.util.concurrent.TimeUnit;
  * <p>ffmpeg reads the HLS directly ({@code -live_start_index -1} joins at the newest segment,
  * {@code -re} plays it at real speed instead of bursting a whole segment), scales to the viewer
  * width, and pipes raw RGBA frames. When the streamer stops, their last playlist carries ENDLIST:
- * ffmpeg plays the tail out and exits cleanly, and the session is {@link #finished()} — never
+ * ffmpeg plays the tail out and exits cleanly, and once a fetch of the playlist confirms the ENDLIST
+ * (ffmpeg exits cleanly on a vanished one too) the session is {@link #finished()} — never
  * restarted, since rejoining a finished playlist would play it again from its first segment. Any
  * other exit (a 404, a network drop) backs off (2 s → 30 s) before trying again, keeping the last
  * frame on screen meanwhile. A playlist that vanishes without ENDLIST leaves ffmpeg waiting forever
@@ -51,6 +58,8 @@ public final class LiveHlsSession implements IMediaSession {
      * up to one for the next.
      */
     static final long STALL_MS = 20_000;
+    private static final HttpClient ENDLIST_CHECK = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(5)).followRedirects(HttpClient.Redirect.NORMAL).build();
 
     private final String playlistUrl;
     private final boolean replay;
@@ -99,10 +108,30 @@ public final class LiveHlsSession implements IMediaSession {
 
     /**
      * Whether an ffmpeg run that just ended reached the end of the stream: a clean exit (0) after at
-     * least one frame on a live playlist. Errors (404, network) exit non-zero; a replay loops forever.
+     * least one frame on a live playlist that really carries ENDLIST. ffmpeg also exits 0 when a live
+     * playlist starts answering 404 — a vanished stream, not a finished one — so the exit code alone
+     * is not enough. A replay loops forever.
      */
-    static boolean reachedEnd(int exitCode, long framesThisRun, boolean replay) {
-        return !replay && exitCode == 0 && framesThisRun > 0;
+    static boolean reachedEnd(int exitCode, long framesThisRun, boolean replay, boolean playlistEnded) {
+        return !replay && exitCode == 0 && framesThisRun > 0 && playlistEnded;
+    }
+
+    /** A playlist fetch shows the stream is over: it is there and closed with ENDLIST. */
+    static boolean isEndlist(int httpStatus, @Nullable String body) {
+        return httpStatus == 200 && body != null && body.contains("#EXT-X-ENDLIST");
+    }
+
+    /** Reader thread: fetch the playlist once and check it for ENDLIST; any failure reads as "not ended". */
+    private boolean playlistEnded() throws InterruptedException {
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(playlistUrl))
+                .timeout(Duration.ofSeconds(5)).GET().build();
+            HttpResponse<String> r = ENDLIST_CHECK.send(req, HttpResponse.BodyHandlers.ofString());
+            return isEndlist(r.statusCode(), r.body());
+        } catch (IOException | IllegalArgumentException e) {
+            LOGGER.debug("[DungeonTrain] live decoder: ENDLIST check for {} failed: {}", playlistUrl, e.toString());
+            return false;
+        }
     }
 
     /**
@@ -171,9 +200,14 @@ public final class LiveHlsSession implements IMediaSession {
                         backoffMs = 2000;
                     }
                 }
-                if (!closed && p.waitFor(2, TimeUnit.SECONDS) && reachedEnd(p.exitValue(), framesThisRun, replay)) {
-                    finished = true;
-                    LOGGER.debug("[DungeonTrain] live decoder: {} played to its end", playlistUrl);
+                if (!closed && p.waitFor(2, TimeUnit.SECONDS) && reachedEnd(p.exitValue(), framesThisRun, replay, true)) {
+                    // A clean exit: the end of the stream, or its playlist vanished. Only ENDLIST is the end.
+                    if (playlistEnded()) {
+                        finished = true;
+                        LOGGER.debug("[DungeonTrain] live decoder: {} played to its end", playlistUrl);
+                    } else {
+                        LOGGER.info("[DungeonTrain] live decoder: {} stopped without ENDLIST, retrying", playlistUrl);
+                    }
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

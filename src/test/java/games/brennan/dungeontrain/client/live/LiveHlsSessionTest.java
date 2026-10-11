@@ -15,19 +15,34 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class LiveHlsSessionTest {
 
     @Test
-    void aCleanExitAfterFramesIsTheEndOfTheStream() {
-        assertTrue(LiveHlsSession.reachedEnd(0, 120, false), "ffmpeg played the playlist to its ENDLIST");
+    void aCleanExitAfterFramesOnAnEndlistPlaylistIsTheEndOfTheStream() {
+        assertTrue(LiveHlsSession.reachedEnd(0, 120, false, true), "ffmpeg played the playlist to its ENDLIST");
+    }
+
+    @Test
+    void aCleanExitOnAVanishedPlaylistIsRetried() {
+        // ffmpeg exits 0 after a live playlist starts answering 404: the stream vanished, it did not end.
+        assertFalse(LiveHlsSession.reachedEnd(0, 120, false, false));
     }
 
     @Test
     void errorsAndEmptyRunsAreRetried() {
-        assertFalse(LiveHlsSession.reachedEnd(8, 120, false), "a 404 or network drop exits non-zero");
-        assertFalse(LiveHlsSession.reachedEnd(0, 0, false), "nothing decoded: try again");
+        assertFalse(LiveHlsSession.reachedEnd(8, 120, false, true), "a 404 or network drop exits non-zero");
+        assertFalse(LiveHlsSession.reachedEnd(0, 0, false, true), "nothing decoded: try again");
     }
 
     @Test
     void aReplayLoopNeverEnds() {
-        assertFalse(LiveHlsSession.reachedEnd(0, 120, true));
+        assertFalse(LiveHlsSession.reachedEnd(0, 120, true, true));
+    }
+
+    @Test
+    void onlyAPresentPlaylistWithEndlistMeansEnded() {
+        String live = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXTINF:10.0,\nseg00041.ts\n";
+        assertTrue(LiveHlsSession.isEndlist(200, live + "#EXT-X-ENDLIST\n"));
+        assertFalse(LiveHlsSession.isEndlist(200, live), "still live, just between segments");
+        assertFalse(LiveHlsSession.isEndlist(404, null), "deleted, expired or never uploaded");
+        assertFalse(LiveHlsSession.isEndlist(403, "#EXT-X-ENDLIST"), "an error page is not a playlist");
     }
 
     @Test
