@@ -502,6 +502,11 @@ stay in `src/main/whitelist/approved_mods.curated.json`.
   `python3 scripts/modpack/check-mod-ids.py --fill`, which reads the pinned jar.
 - After bumping a pin, run `check-mod-ids.py --verify` (CI does too) — a new version can add or
   rename a module.
+- `sha1` is the pinned jar's file hash, also written by `--fill` and checked by `--verify`. The
+  hash-verified whitelist bakes it into `approved_mods.json` `hashes`, so a stock install passes the
+  FILE check offline (a mod id is a line in mods.toml anyone can edit; the hash is not). Every
+  other approved mod's published files come from `python3 scripts/modpack/pull-approved-hashes.py`
+  → `src/main/whitelist/approved_hashes.json`; the build fails on an approved id with no record.
 - `"whitelist": false` opts an entry out (it then needs no `mod_ids`). That's Brennan's call, asked
   at Gate 3 (step 3b) whenever an entry is added — creative-focused mods are the usual candidates.
 

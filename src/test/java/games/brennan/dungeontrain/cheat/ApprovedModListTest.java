@@ -187,6 +187,19 @@ class ApprovedModListTest {
         Set<String> hashes = ApprovedModList.parseHashes(root);
         assertFalse(hashes.isEmpty(), "generateApprovedMods must bake the modpack's pinned-file hashes");
         for (String h : hashes) assertTrue(h.matches("[0-9a-f]{40}"), h);
+        // And every hash pull-approved-hashes.py recorded for an approved id is baked too.
+        JsonObject pulled = JsonParser.parseString(Files.readString(
+            RepoPaths.root().resolve("src/main/whitelist/approved_hashes.json"))).getAsJsonObject();
+        Set<String> approved = ApprovedModList.parseBaked(root);
+        int pulledCount = 0;
+        for (var e : pulled.getAsJsonObject("byMod").entrySet()) {
+            if (!approved.contains(e.getKey())) continue;
+            for (var h : e.getValue().getAsJsonObject().getAsJsonArray("sha1")) {
+                assertTrue(hashes.contains(h.getAsString()), e.getKey() + " " + h.getAsString());
+                pulledCount++;
+            }
+        }
+        assertTrue(pulledCount > 0, "the pulled catalogue must contribute hashes");
     }
 
     @Test
