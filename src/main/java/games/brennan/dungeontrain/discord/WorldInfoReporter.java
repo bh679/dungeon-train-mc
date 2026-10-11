@@ -43,8 +43,18 @@ public final class WorldInfoReporter {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** A single installed mod as reported to the relay: its id and version string. */
-    record ModEntry(String modId, String version) {}
+    /**
+     * A single installed mod as reported to the relay: its id and version string, plus — when the
+     * {@code dtmodverify} engine's scan has finished ({@link games.brennan.dungeontrain.compat.DtModVerifyBridge}) — the file it came
+     * from: {@code sha1}, {@code size} and {@code fileName}. The relay keeps those so the Approved
+     * Mods page can show which files ship under which ids (hash-verified whitelist). Null when
+     * unknown; they are then simply omitted from the payload.
+     */
+    record ModEntry(String modId, String version, String sha1, Long size, String fileName) {
+        ModEntry(String modId, String version) {
+            this(modId, version, null, null, null);
+        }
+    }
 
     private WorldInfoReporter() {}
 
@@ -145,6 +155,9 @@ public final class WorldInfoReporter {
             JsonObject mo = new JsonObject();
             mo.addProperty("modId", m.modId());
             mo.addProperty("version", m.version());
+            if (m.sha1() != null) mo.addProperty("sha1", m.sha1());
+            if (m.size() != null) mo.addProperty("size", m.size());
+            if (m.fileName() != null) mo.addProperty("fileName", m.fileName());
             modsArr.add(mo);
         }
         body.add("mods", modsArr);
@@ -181,7 +194,12 @@ public final class WorldInfoReporter {
     static List<ModEntry> installedMods() {
         List<ModEntry> out = new ArrayList<>();
         for (var info : ModList.get().getMods()) {
-            out.add(new ModEntry(info.getModId(), info.getVersion().toString()));
+            // Non-blocking: the scan has long finished by the time a player joins a world; if it
+            // has not, this record simply carries no file facts and the next one will.
+            var file = games.brennan.dungeontrain.compat.DtModVerifyBridge.fileOf(info.getModId());
+            out.add(file == null
+                ? new ModEntry(info.getModId(), info.getVersion().toString())
+                : new ModEntry(info.getModId(), info.getVersion().toString(), file.sha1(), file.size(), file.fileName()));
         }
         out.sort(Comparator.comparing(ModEntry::modId));
         return out;

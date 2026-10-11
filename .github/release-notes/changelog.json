@@ -24681,6 +24681,92 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "painting-variant-options",
+      "version": "0.1219.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Painting variants",
+      "summary": "Paintings in the builder can now be varied by size and picture, and a variant swaps the whole painting.",
+      "highlights": [],
+      "pr": 1924,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photos-remember-advancements",
+      "version": "0.1220.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Photos remember what they earned",
+      "summary": "Photos you share now carry the advancements they earned you, shown beside them in the Live Gallery on the website.",
+      "highlights": [],
+      "pr": 1923,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tv-in-creative-tab",
+      "version": "0.1221.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Television in the creative tab",
+      "summary": "The Television now sits in the Dungeon Train creative tab, ready to place.",
+      "highlights": [],
+      "pr": 1925,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "hash-verified-mod-whitelist",
+      "version": "0.1216.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "A closer look at installed mods",
+      "summary": "Free Play now takes a closer look at the mods you have installed. Anything on the approved list, from CurseForge, Modrinth or your own build, plays as normal.",
+      "highlights": [],
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "variant-clipboard-icon-badges",
+      "version": "0.1223.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Clipboard icons show what they hold",
+      "summary": "Copied block variants now show their group and their blocks right on the icon.",
+      "highlights": [],
+      "pr": 1927,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

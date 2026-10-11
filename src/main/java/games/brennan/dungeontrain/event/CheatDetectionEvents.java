@@ -242,7 +242,21 @@ public final class CheatDetectionEvents {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.cheat_mods_fix")
                 .withStyle(ChatFormatting.GRAY));
         }
-        if (UnapprovedModIntegrity.isSessionFreePlay()) {
+        if (UnapprovedModIntegrity.isFileFreePlay()) {
+            // The hash-verified half: a mod FILE the relay could not match to a published build of an
+            // approved mod. Named by file, since that is the thing to reinstall or remove — the id it
+            // claims may be a perfectly good mod's.
+            RunIntegrity.applyFreePlayEffect(player);
+            RunIntegrity.sendFreePlayNotice(player,
+                Component.translatable("chat.dungeontrain.free_play.cause.unverified_mod"));
+            player.sendSystemMessage(Component.translatable(
+                    "chat.dungeontrain.free_play.unverified_mods",
+                    String.join(", ", UnapprovedModIntegrity.unverified()))
+                .withStyle(ChatFormatting.GRAY));
+            player.sendSystemMessage(Component.translatable("chat.dungeontrain.free_play.unverified_mods_fix")
+                .withStyle(ChatFormatting.GRAY));
+        }
+        if (UnapprovedModIntegrity.isIdFreePlay()) {
             // The whitelist's half of the same story (parallel to the cheat-mod block above): a mod
             // is installed that we haven't approved. Deliberately worded as "not on the approved
             // list" rather than as an accusation — most of these are ordinary mods nobody has got
