@@ -109,8 +109,9 @@ public final class EditorMirror {
      * {@link BlockState#mirror}, vertical via {@link #verticalFlip}.
      */
     public static BlockState reflect(BlockState s, boolean flipX, boolean flipY, boolean flipZ) {
-        if (flipX) s = s.mirror(Mirror.FRONT_BACK); // X: EAST ↔ WEST
-        if (flipZ) s = s.mirror(Mirror.LEFT_RIGHT);  // Z: NORTH ↔ SOUTH
+        // PaintingPass.mirror = BlockState.mirror, plus the facing of a Fast Paintings painting.
+        if (flipX) s = PaintingPass.mirror(s, Mirror.FRONT_BACK); // X: EAST ↔ WEST
+        if (flipZ) s = PaintingPass.mirror(s, Mirror.LEFT_RIGHT);  // Z: NORTH ↔ SOUTH
         if (flipY) s = verticalFlip(s);
         return s;
     }
@@ -243,7 +244,7 @@ public final class EditorMirror {
             reflectRotation(v.rotation(), v.state(), flipX, flipY, flipZ),
             v.linkedLootPrefabId(), v.entityId(),
             reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active(), v.connect(),
-            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth());
+            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth(), v.painting(), v.hung());
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */
