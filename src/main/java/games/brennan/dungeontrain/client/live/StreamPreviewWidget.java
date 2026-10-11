@@ -19,13 +19,18 @@ import org.joml.Matrix4f;
 
 /**
  * The Stream tab's preview: what viewers would see right now, given the tab's settings. Fits the
- * largest 16:9 picture into its box under a one-line caption. Not interactive.
+ * largest 16:9 picture into its box under a caption naming the video size. The frame is held at
+ * that size and drawn unsmoothed, so a smaller size looks as blocky here as it will to viewers.
+ * The live feed pinned top-right is outlined at its chosen size: it is on your screen, not theirs.
+ * Not interactive.
  */
 public final class StreamPreviewWidget extends AbstractWidget {
 
     private static final int BORDER = 0xFF5A5A5A;
     private static final int EMPTY = 0xFF101010;
     private static final int DIM = 0xB0000000;
+    private static final int OUTLINE = 0xFFFFFFFF;
+    private static final int OUTLINE_FILL = 0x50000000;
 
     public StreamPreviewWidget() {
         super(0, 0, 0, 0, Component.translatable("gui.dungeontrain.options.stream.preview"));
@@ -45,7 +50,7 @@ public final class StreamPreviewWidget extends AbstractWidget {
         int x0 = getX() + (availW - w) / 2;
         int y0 = getY() + captionH;
 
-        g.drawCenteredString(font, getMessage(), getX() + availW / 2, getY(), 0xFFFFFF);
+        g.drawCenteredString(font, caption(), getX() + availW / 2, getY(), 0xFFFFFF);
         g.fill(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, BORDER);
 
         TextureTarget frame = StreamPreview.frame();
@@ -55,10 +60,34 @@ public final class StreamPreviewWidget extends AbstractWidget {
             return;
         }
         drawFrame(g, frame, x0, y0, w, h);
+        headViewerOutline(g, x0, y0, w);
         if (!LiveFeedClientConfig.streamingEnabled()) {
             g.fill(x0, y0, x0 + w, y0 + h, DIM);
             centred(g, font, Component.translatable("gui.dungeontrain.options.stream.preview.off"), x0, y0, w, h);
         }
+    }
+
+    /**
+     * Where the live feed pinned top-right sits on your screen, at its chosen size, scaled into the
+     * preview. An outline only: the real box is never in the broadcast.
+     */
+    private static void headViewerOutline(GuiGraphics g, int x0, int y0, int w) {
+        int guiW = g.guiWidth();
+        if (guiW <= 0) return;
+        LiveHeadViewer.Box b = LiveHeadViewer.layout(guiW, LiveFeedClientConfig.headViewerWidth(false));
+        float s = (float) w / guiW;
+        int bx = x0 + Math.round(b.x() * s);
+        int by = y0 + Math.round(b.y() * s);
+        int bw = Math.max(2, Math.round(b.w() * s));
+        int bh = Math.max(2, Math.round(b.h() * s));
+        g.fill(bx, by, bx + bw, by + bh, OUTLINE_FILL);
+        g.renderOutline(bx, by, bw, bh, OUTLINE);
+    }
+
+    /** "What viewers see · 1280×720": the size the broadcast is sent at, which the picture shows. */
+    private Component caption() {
+        int w = LiveFeedClientConfig.captureWidth();
+        return getMessage().copy().append(" · " + w + "×" + LiveFeedClientConfig.heightFor(w));
     }
 
     private static void centred(GuiGraphics g, Font font, Component text, int x0, int y0, int w, int h) {

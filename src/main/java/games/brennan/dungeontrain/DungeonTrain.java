@@ -803,12 +803,18 @@ public class DungeonTrain {
                         tr("gui.dungeontrain.consent.reincarnations"), true,
                         tr(kid ? "gui.dungeontrain.consent.reincarnations.kid.tip"
                                : "gui.dungeontrain.consent.reincarnations.adult.tip")),
-                // Livestreaming: a switch in both modes, on for adults and off for kids by default.
-                ConsentBullet.toggle(
-                        tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
-                        tr(kid ? "gui.dungeontrain.consent.livestream.kid.tip"
-                               : "gui.dungeontrain.consent.livestream.adult.tip"),
-                        LIVESTREAM_DRAFT::touch),
+                // Livestreaming: a switch in both modes, on for adults and off for kids by default. The
+                // Kid hover says what a stream shares only once the switch is on; off, it just says so.
+                kid
+                        ? ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                                tr("gui.dungeontrain.consent.livestream.kid.tip"),
+                                tr("gui.dungeontrain.consent.livestream.kid.tip_off"),
+                                LIVESTREAM_DRAFT::touch)
+                        : ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                                tr("gui.dungeontrain.consent.livestream.adult.tip"),
+                                LIVESTREAM_DRAFT::touch),
                 // Developer chat: a switch for adults; for kids a fixed off line, because the Kid block
                 // (RelayChatClient.canConnect, ContentModeMirror) is a safety rule, not a preference.
                 kid
