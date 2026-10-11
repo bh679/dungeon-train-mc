@@ -1340,6 +1340,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "Ping me when a passenger I gave a camera takes a photo of me.",
   "gui.dungeontrain.options.account.pings.milestone": "Milestones",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Ping me when one of my milestone advancements is posted.",
+  "gui.dungeontrain.options.account.pings.translation_review": "Translation reviews",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "Ping me when a translation I sent in needs a closer look.",
   "chat.dungeontrain.discord.options_hint": "Choose which posts ping you in Options → Dungeon Train… → Account.",
   "gui.dungeontrain.ai_policy.title": "AI Policy",
   "gui.dungeontrain.ai_policy.subtitle": "What in Dungeon Train is — and is not — made by AI.",
