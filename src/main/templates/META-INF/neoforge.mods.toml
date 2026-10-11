@@ -323,6 +323,17 @@ logoFile="logo.png"
     ordering="NONE"
     side="CLIENT"
 
+# DT Mod Verify — the Free Play file-verification engine (hashes + package fingerprints of the
+# installed jars, and the relay verify call). jarJar'd inside this jar like Stream Detect; `optional`
+# so DT degrades to the id-only whitelist check without it (compat/DtModVerifyBridge). Both sides:
+# a dedicated server scans its own mods/ too.
+[[dependencies.${mod_id}]]
+    modId="dtmodverify"
+    type="optional"
+    versionRange="[${dtmodverify_min_version},)"
+    ordering="NONE"
+    side="BOTH"
+
 [[dependencies.${mod_id}]]
     modId="dpibypassdetect"
     type="optional"

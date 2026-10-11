@@ -15,6 +15,13 @@
       "sable",
       "sablecompanion",
       "veil"
+    ],
+    "sha1": "05f666e973d32baaaf405acb9bbed6615b909971",
+    "packages": [
+      "dev.ryanhcode",
+      "foundry.veil",
+      "gg.moonflower",
+      "io.github.ocelot"
     ]
   },
   "optional_mods": [
@@ -23,6 +30,10 @@
       "slug": "adventure-item-names",
       "mod_ids": [
         "adventureitemnames"
+      ],
+      "sha1": "ac6a68676ea9bd451a4b72b004bf86222878f88c",
+      "packages": [
+        "games.brennan"
       ],
       "project_id": 1546573,
       "file_id": 8760632,
@@ -39,6 +50,10 @@
       "mod_ids": [
         "adventureitemstats"
       ],
+      "sha1": "3ddee34e3ecc92e81283d2caefafc193b38c0b03",
+      "packages": [
+        "games.brennan"
+      ],
       "project_id": 1554362,
       "file_id": 8465206,
       "required": true,
@@ -53,6 +68,10 @@
       "slug": "interactive-player-mobs",
       "mod_ids": [
         "playermob"
+      ],
+      "sha1": "2b55b9354a0afc71c69eba69ca7e35ba7d36757e",
+      "packages": [
+        "games.brennan"
       ],
       "project_id": 1559379,
       "file_id": 9062380,
@@ -69,6 +88,10 @@
       "mod_ids": [
         "enderchestpersistence"
       ],
+      "sha1": "46d7fee5eca4a95485102bbb30d502621b0f2017",
+      "packages": [
+        "games.brennan"
+      ],
       "project_id": 1579341,
       "file_id": 8885474,
       "required": true,
@@ -83,6 +106,10 @@
       "slug": "trade-everything",
       "mod_ids": [
         "tradeeverything"
+      ],
+      "sha1": "0402c2085b46514ed01796764bd970f43663b4ee",
+      "packages": [
+        "games.brennan"
       ],
       "project_id": 1622962,
       "file_id": 9055709,
@@ -99,6 +126,10 @@
       "mod_ids": [
         "keeptrim"
       ],
+      "sha1": "ee38f7061ade72d2fbc4bd0c91aae98e4d4f863a",
+      "packages": [
+        "games.brennan"
+      ],
       "project_id": 1691315,
       "file_id": 9054814,
       "required": true,
@@ -113,6 +144,10 @@
       "mod_ids": [
         "ediblebackpacks"
       ],
+      "sha1": "dfec603ea70b4011344c45a48797bef9897e175e",
+      "packages": [
+        "games.brennan"
+      ],
       "project_id": 1662311,
       "file_id": 9096608,
       "required": true,
@@ -126,6 +161,10 @@
       "slug": "fast-paintings",
       "mod_ids": [
         "fastpaintings"
+      ],
+      "sha1": "6df81c4fe659eaee718cb0856c79e4cfa272e9ea",
+      "packages": [
+        "net.mehvahdjukaar"
       ],
       "project_id": 883287,
       "file_id": 7305762,
@@ -142,6 +181,10 @@
         "codecui",
         "moonlight"
       ],
+      "sha1": "04a9656a7085dcc751ac58ff0e7faadee5c2def9",
+      "packages": [
+        "net.mehvahdjukaar"
+      ],
       "project_id": 499980,
       "file_id": 8850087,
       "required": true,
@@ -155,6 +198,10 @@
       "slug": "william-wythers-overhauled-overworld",
       "mod_ids": [
         "wwoo"
+      ],
+      "sha1": "bfc20e94b4a8ad630654993d5799bcca36fe238d",
+      "packages": [
+        "de.cristelknight"
       ],
       "project_id": 921022,
       "file_id": 8160022,
@@ -171,6 +218,10 @@
       "mod_ids": [
         "cristellib"
       ],
+      "sha1": "d250804b7ecea365bc736ec36ec6fc3f933917f1",
+      "packages": [
+        "de.cristelknight"
+      ],
       "project_id": 856996,
       "file_id": 8241767,
       "required": true,
@@ -184,6 +235,22 @@
       "slug": "biomes-o-plenty",
       "mod_ids": [
         "biomesoplenty"
+      ],
+      "sha1": "294ae397c011980623bf155f9dfce82bb81865a0",
+      "packages": [
+        "biomesoplenty.api",
+        "biomesoplenty.biome",
+        "biomesoplenty.block",
+        "biomesoplenty.client",
+        "biomesoplenty.config",
+        "biomesoplenty.core",
+        "biomesoplenty.entity",
+        "biomesoplenty.init",
+        "biomesoplenty.item",
+        "biomesoplenty.neoforge",
+        "biomesoplenty.particle",
+        "biomesoplenty.util",
+        "biomesoplenty.worldgen"
       ],
       "project_id": 220318,
       "file_id": 8288121,
@@ -199,6 +266,16 @@
       "mod_ids": [
         "terrablender"
       ],
+      "sha1": "744394d979b422be560babf9df7a6800ede9ac5b",
+      "packages": [
+        "terrablender.api",
+        "terrablender.config",
+        "terrablender.core",
+        "terrablender.handler",
+        "terrablender.mixin",
+        "terrablender.util",
+        "terrablender.worldgen"
+      ],
       "project_id": 940057,
       "file_id": 6054947,
       "required": true,
@@ -212,6 +289,16 @@
       "slug": "glitchcore",
       "mod_ids": [
         "glitchcore"
+      ],
+      "sha1": "e3d4bb80a06f619be989ab529d0cd4e33e076943",
+      "packages": [
+        "glitchcore.config",
+        "glitchcore.core",
+        "glitchcore.event",
+        "glitchcore.mixin",
+        "glitchcore.neoforge",
+        "glitchcore.network",
+        "glitchcore.util"
       ],
       "project_id": 955399,
       "file_id": 8109792,
@@ -227,6 +314,8 @@
       "mod_ids": [
         "big_lost_city"
       ],
+      "sha1": "c742f011c995c681b3497312d77a50a287fa49f0",
+      "packages": [],
       "project_id": 1472594,
       "file_id": 8110093,
       "required": true,
@@ -241,6 +330,10 @@
       "slug": "betterend-neoforge",
       "mod_ids": [
         "betterend"
+      ],
+      "sha1": "54663bd8027873ece43744495fc46456ffa0178a",
+      "packages": [
+        "org.betterx"
       ],
       "project_id": 1422294,
       "file_id": 8896285,
@@ -257,6 +350,10 @@
       "mod_ids": [
         "betternether"
       ],
+      "sha1": "b1c9824301896c1c7472011e7ee816830522eb20",
+      "packages": [
+        "org.betterx"
+      ],
       "project_id": 1422293,
       "file_id": 8896389,
       "required": true,
@@ -271,6 +368,11 @@
       "slug": "bclib-neoforge",
       "mod_ids": [
         "bclib"
+      ],
+      "sha1": "06cc971fd149d7dae65c75792798b98be7439141",
+      "packages": [
+        "com.llamalad7",
+        "org.betterx"
       ],
       "project_id": 1422283,
       "file_id": 8608827,
@@ -287,6 +389,10 @@
       "mod_ids": [
         "wover"
       ],
+      "sha1": "b274b0bb221739d52a0f52bc969bd64d691f8bbc",
+      "packages": [
+        "org.betterx"
+      ],
       "project_id": 1422284,
       "file_id": 8594162,
       "required": true,
@@ -301,6 +407,10 @@
       "slug": "wunderlib-neoforge",
       "mod_ids": [
         "wunderlib"
+      ],
+      "sha1": "330ab9d6d8d92a9337e97ef22e64f83fe2d4bf2a",
+      "packages": [
+        "de.ambertation"
       ],
       "project_id": 1422273,
       "file_id": 7469725,
@@ -317,6 +427,10 @@
       "mod_ids": [
         "vanillabackport"
       ],
+      "sha1": "eb30efe569cbd5186abf9e5d1e64d4a84895b346",
+      "packages": [
+        "com.blackgear"
+      ],
       "project_id": 417430,
       "file_id": 8229724,
       "required": true,
@@ -331,6 +445,10 @@
       "slug": "platform",
       "mod_ids": [
         "platform"
+      ],
+      "sha1": "4132ad6809008698b7f489a878e5a33a3879bbfd",
+      "packages": [
+        "com.blackgear"
       ],
       "project_id": 997634,
       "file_id": 8075942,
@@ -347,6 +465,10 @@
       "mod_ids": [
         "exposure"
       ],
+      "sha1": "181d328a0328523fa99dd310937c40d917e91029",
+      "packages": [
+        "io.github.mortuusars"
+      ],
       "project_id": 871755,
       "file_id": 8957000,
       "required": true,
@@ -361,6 +483,10 @@
       "slug": "exposure-polaroid",
       "mod_ids": [
         "exposure_polaroid"
+      ],
+      "sha1": "141ea133aff47e1655bd4a4937688bede22ebe58",
+      "packages": [
+        "io.github.mortuusars"
       ],
       "project_id": 1207005,
       "file_id": 8533496,
@@ -379,6 +505,12 @@
         "sablecompanion",
         "vista"
       ],
+      "sha1": "29543f7d287f3927f04d06d376696970e4408123",
+      "packages": [
+        "com.bawnorton",
+        "dev.ryanhcode",
+        "net.mehvahdjukaar"
+      ],
       "project_id": 1368607,
       "file_id": 8966027,
       "required": true,
@@ -392,6 +524,10 @@
       "slug": "dungeon-train-backup",
       "mod_ids": [
         "dungeonbackup"
+      ],
+      "sha1": "4213811dadc07344c9870458c9475b7b83aa963a",
+      "packages": [
+        "games.brennan"
       ],
       "project_id": 1694135,
       "file_id": 8871323,
@@ -407,6 +543,10 @@
       "mod_ids": [
         "sable_fence_trapdoor_fix"
       ],
+      "sha1": "d377d73b8252010e3f058cc57f9436a837de0892",
+      "packages": [
+        "games.brennan"
+      ],
       "project_id": 1694049,
       "file_id": 8871004,
       "required": true,
@@ -420,6 +560,10 @@
       "slug": "stream-detect",
       "mod_ids": [
         "streamdetect"
+      ],
+      "sha1": "7b0cae453c340a5e990a7511bc4741f27fad0357",
+      "packages": [
+        "games.brennan"
       ],
       "project_id": 1711267,
       "file_id": 8971929,
@@ -435,6 +579,10 @@
       "mod_ids": [
         "dpibypassdetect"
       ],
+      "sha1": "841854e83f5f9d9c56dca7c0001d944b87dcb410",
+      "packages": [
+        "games.brennan"
+      ],
       "project_id": 1711272,
       "file_id": 8971954,
       "required": true,
@@ -448,6 +596,10 @@
       "slug": "pigman-villagers",
       "mod_ids": [
         "pigmanvillagers"
+      ],
+      "sha1": "feee0437ad0756e8d8dbbba358f14a3cfddbd73c",
+      "packages": [
+        "games.brennan"
       ],
       "project_id": 1713315,
       "file_id": 8984083,
@@ -463,6 +615,10 @@
       "mod_ids": [
         "lostcityterrainfit"
       ],
+      "sha1": "f555d8e35311f5fe9058ce7cb8cb6e53bc43f5d0",
+      "packages": [
+        "games.brennan"
+      ],
       "project_id": 1717775,
       "file_id": 9009664,
       "required": true,
@@ -477,6 +633,10 @@
       "mod_ids": [
         "appleskin"
       ],
+      "sha1": "81cf0e668f991f83ac8820c386fbd6c9c3602246",
+      "packages": [
+        "squeek.appleskin"
+      ],
       "project_id": 248787,
       "file_id": 7854442,
       "required": true,
@@ -489,6 +649,10 @@
       "mod_ids": [
         "ferritecore"
       ],
+      "sha1": "9563692efb708b6b568df27a01ec52f6311928ef",
+      "packages": [
+        "malte0811.ferritecore"
+      ],
       "project_id": 429235,
       "file_id": 7524151,
       "required": true,
@@ -500,6 +664,10 @@
       "slug": "modernfix",
       "mod_ids": [
         "modernfix"
+      ],
+      "sha1": "b8cebae6ea55ed472d5fa55e428a894e296523f1",
+      "packages": [
+        "org.embeddedt"
       ],
       "project_id": 790626,
       "file_id": 8255560,
@@ -517,6 +685,11 @@
         "fabric_rendering_data_attachment_v1",
         "sodium"
       ],
+      "sha1": "762251ab3d6825d5accfd89c3f02f1145376105e",
+      "packages": [
+        "net.caffeinemc",
+        "org.sinytra"
+      ],
       "project_id": 394468,
       "file_id": 8382328,
       "required": true,
@@ -533,6 +706,15 @@
         "fabric_rendering_data_attachment_v1",
         "iris"
       ],
+      "sha1": "1bd129cf7bce65d6b1c0543045f0620c98a0f885",
+      "packages": [
+        "de.odysseus",
+        "io.github.douira",
+        "kroppeb.stareval",
+        "net.irisshaders",
+        "org.anarres",
+        "org.sinytra"
+      ],
       "project_id": 455508,
       "file_id": 8242804,
       "required": true,
@@ -544,6 +726,10 @@
       "slug": "ambientsounds",
       "mod_ids": [
         "ambientsounds"
+      ],
+      "sha1": "c79ab328b2c46068effebdcb3f26e98dc4404cb0",
+      "packages": [
+        "team.creative"
       ],
       "project_id": 254284,
       "file_id": 8043019,
@@ -557,6 +743,10 @@
       "mod_ids": [
         "creativecore"
       ],
+      "sha1": "4b666b4668b77fdc1ac34a183aae58a432999970",
+      "packages": [
+        "team.creative"
+      ],
       "project_id": 257814,
       "file_id": 8190065,
       "required": true,
@@ -568,6 +758,10 @@
       "slug": "advancement-plaques",
       "mod_ids": [
         "advancementplaques"
+      ],
+      "sha1": "829d33e71b30e9158d772f5963bb6020f6026d78",
+      "packages": [
+        "com.anthonyhilyard"
       ],
       "project_id": 499826,
       "file_id": 5905995,
@@ -581,6 +775,11 @@
       "mod_ids": [
         "betteradvancements"
       ],
+      "sha1": "870521cfaa1a4cb6c830e2409e8b9e4cf179aff2",
+      "packages": [
+        "betteradvancements.common",
+        "betteradvancements.neoforge"
+      ],
       "project_id": 272515,
       "file_id": 5850587,
       "required": true,
@@ -592,6 +791,10 @@
       "slug": "iceberg",
       "mod_ids": [
         "iceberg"
+      ],
+      "sha1": "f6014d198be9503573cd9cb41cc789d282768ad8",
+      "packages": [
+        "com.anthonyhilyard"
       ],
       "project_id": 520110,
       "file_id": 6423863,
@@ -605,6 +808,10 @@
       "mod_ids": [
         "nemos_inventory_sorting"
       ],
+      "sha1": "7da5cfba7dc968ee0587b375328acb124f655776",
+      "packages": [
+        "com.nemonotfound"
+      ],
       "project_id": 1148320,
       "file_id": 6487633,
       "required": false,
@@ -616,6 +823,10 @@
       "slug": "mouse-tweaks",
       "mod_ids": [
         "mousetweaks"
+      ],
+      "sha1": "6dae57f4f50f7808d2ed9a18f6cd1c0d4640c6bc",
+      "packages": [
+        "yalter.mousetweaks"
       ],
       "project_id": 60089,
       "file_id": 5637846,
@@ -629,6 +840,10 @@
       "mod_ids": [
         "jade"
       ],
+      "sha1": "d5bf134b3dbde9f5258666823900e21341dc0a50",
+      "packages": [
+        "snownee.jade"
+      ],
       "project_id": 324717,
       "file_id": 7545219,
       "required": true,
@@ -640,6 +855,10 @@
       "slug": "jade-sable-compat",
       "mod_ids": [
         "sablejade"
+      ],
+      "sha1": "c85373671363d2396914de321e0a9afb4429fb68",
+      "packages": [
+        "dev.mgcode"
       ],
       "project_id": 1530988,
       "file_id": 8269260,
@@ -653,6 +872,21 @@
       "mod_ids": [
         "distanthorizons"
       ],
+      "sha1": "ed4dcd8363226bcaf7cbad9233e41d8e61805c50",
+      "packages": [
+        "DistantHorizons.libraries",
+        "com.seibel",
+        "dh_sqlite.core",
+        "dh_sqlite.date",
+        "dh_sqlite.javax",
+        "dh_sqlite.jdbc3",
+        "dh_sqlite.jdbc4",
+        "dh_sqlite.util",
+        "dhcomgithubluben.zstd",
+        "loaderCommon.fabric",
+        "loaderCommon.neoforge",
+        "org.tukaani"
+      ],
       "project_id": 508933,
       "file_id": 7350266,
       "required": false,
@@ -664,6 +898,10 @@
       "slug": "controlling",
       "mod_ids": [
         "controlling"
+      ],
+      "sha1": "8a34424fc1428778be2fdbfa4da67b21b70bcbfe",
+      "packages": [
+        "com.blamejared"
       ],
       "project_id": 250398,
       "file_id": 6368976,
@@ -677,6 +915,10 @@
       "mod_ids": [
         "searchables"
       ],
+      "sha1": "5b8a0b43a474c066371b2e16f9bfb88622552a74",
+      "packages": [
+        "com.blamejared"
+      ],
       "project_id": 858542,
       "file_id": 5831692,
       "required": true,
@@ -688,6 +930,10 @@
       "slug": "equipment-compare",
       "mod_ids": [
         "equipmentcompare"
+      ],
+      "sha1": "fff2c71ff62d7c74bf9e73754536706cdf4893d1",
+      "packages": [
+        "com.anthonyhilyard"
       ],
       "project_id": 502561,
       "file_id": 6375501,
@@ -701,6 +947,10 @@
       "mod_ids": [
         "highlighter"
       ],
+      "sha1": "22d29eba774530b40a540fdf5ce2d14d89bbe036",
+      "packages": [
+        "com.anthonyhilyard"
+      ],
       "project_id": 521590,
       "file_id": 5591015,
       "required": true,
@@ -712,6 +962,10 @@
       "slug": "pick-up-notifier",
       "mod_ids": [
         "pickupnotifier"
+      ],
+      "sha1": "90d3fe207c95a3a5d849ebf8d70ffa885694e30f",
+      "packages": [
+        "fuzs.pickupnotifier"
       ],
       "project_id": 351441,
       "file_id": 6409785,
@@ -725,6 +979,10 @@
       "mod_ids": [
         "puzzleslib"
       ],
+      "sha1": "66182c3affb9f99624d1d770ca168d2a63af83f6",
+      "packages": [
+        "fuzs.puzzleslib"
+      ],
       "project_id": 495476,
       "file_id": 8251525,
       "required": true,
@@ -736,6 +994,10 @@
       "slug": "smooth-swapping",
       "mod_ids": [
         "smoothswapping"
+      ],
+      "sha1": "00338f16b360d6b24b53fc8f92b76256729aee75",
+      "packages": [
+        "dev.shwg"
       ],
       "project_id": 513689,
       "file_id": 7274625,
@@ -749,6 +1011,10 @@
       "mod_ids": [
         "khi"
       ],
+      "sha1": "1e95b6bbb1fae829aaa8014c2caed1abed9dd3e2",
+      "packages": [
+        "net.kinetichosting"
+      ],
       "project_id": 1048150,
       "file_id": 8188461,
       "required": true,
@@ -760,6 +1026,11 @@
       "slug": "overloaded-armor-bar",
       "mod_ids": [
         "overloadedarmorbar"
+      ],
+      "sha1": "33a6dbbea1941697c81fc4ad56e3184ed1f6ab12",
+      "packages": [
+        "tfar.overloadedarmorbar",
+        "tfar.overpoweredarmorbar"
       ],
       "project_id": 314002,
       "file_id": 5537850,
@@ -773,6 +1044,11 @@
       "mod_ids": [
         "effortlessbuilding"
       ],
+      "sha1": "34af0d5e57f771fa9a37e6b1b5e59c38a03afd01",
+      "packages": [
+        "fabric.nl",
+        "neoforge.nl"
+      ],
       "project_id": 302113,
       "file_id": 8515718,
       "required": false,
@@ -784,6 +1060,16 @@
       "slug": "punchy",
       "mod_ids": [
         "punchy"
+      ],
+      "sha1": "9d95177d470f81b2bfc4ada5088fd0908fb21c97",
+      "packages": [
+        "punchy.client",
+        "punchy.compat",
+        "punchy.config",
+        "punchy.mixin",
+        "punchy.neoforge",
+        "punchy.platform",
+        "punchy.util"
       ],
       "project_id": 1374153,
       "file_id": 8697205,
@@ -797,6 +1083,12 @@
       "mod_ids": [
         "worldedit"
       ],
+      "sha1": "924fe181a29bd66be6783f6d589968ab0ee02250",
+      "packages": [
+        "com.sk89q",
+        "org.enginehub",
+        "org.mozilla"
+      ],
       "project_id": 225608,
       "file_id": 5830452,
       "required": false,
@@ -808,6 +1100,11 @@
       "slug": "jei",
       "mod_ids": [
         "jei"
+      ],
+      "sha1": "6e703a82a229d269855c3e0260c38aebc7f01abb",
+      "packages": [
+        "mezz.jei",
+        "net.mezzdev"
       ],
       "project_id": 238222,
       "file_id": 8512040,
@@ -821,6 +1118,10 @@
       "mod_ids": [
         "clumps"
       ],
+      "sha1": "fa2576297c7bd12b28aa7070e8141792bd66da4c",
+      "packages": [
+        "com.blamejared"
+      ],
       "project_id": 256717,
       "file_id": 5623731,
       "required": true,
@@ -832,6 +1133,10 @@
       "slug": "scribble",
       "mod_ids": [
         "scribble"
+      ],
+      "sha1": "e713547a837a80791f76fa92f21fc1ba41b6759e",
+      "packages": [
+        "me.chrr"
       ],
       "project_id": 1051344,
       "file_id": 6240188,
@@ -845,6 +1150,10 @@
       "mod_ids": [
         "shulkerboxtooltip"
       ],
+      "sha1": "bddbccd689529f7f7ab04479e62c5e09b0be6be5",
+      "packages": [
+        "com.misterpemodder"
+      ],
       "project_id": 315811,
       "file_id": 7768285,
       "required": true,
@@ -856,6 +1165,10 @@
       "slug": "trashslot",
       "mod_ids": [
         "trashslot"
+      ],
+      "sha1": "ce09d0128e6a7d225e731e1307f9c1deddac209a",
+      "packages": [
+        "net.blay09"
       ],
       "project_id": 235577,
       "file_id": 8163135,
@@ -869,6 +1182,10 @@
       "mod_ids": [
         "enchdesc"
       ],
+      "sha1": "e4fa515c5deab3165f250f2a1297ac836d496064",
+      "packages": [
+        "net.darkhax"
+      ],
       "project_id": 250419,
       "file_id": 7039849,
       "required": true,
@@ -881,6 +1198,10 @@
       "mod_ids": [
         "bookshelf"
       ],
+      "sha1": "efc4cda6da4dd879f24d057ed0a6413764c9ba40",
+      "packages": [
+        "net.darkhax"
+      ],
       "project_id": 228525,
       "file_id": 7606240,
       "required": true,
@@ -892,6 +1213,10 @@
       "slug": "prickle",
       "mod_ids": [
         "prickle"
+      ],
+      "sha1": "5174059ecf97340a0de5ef211b938de26c4eaa36",
+      "packages": [
+        "net.darkhax"
       ],
       "project_id": 1023259,
       "file_id": 6961457,
@@ -906,6 +1231,10 @@
         "balm",
         "kuma_api"
       ],
+      "sha1": "69e0b3b69dd23c132e85b7e82310f45ae96b263d",
+      "packages": [
+        "net.blay09"
+      ],
       "project_id": 531761,
       "file_id": 8645517,
       "required": true,
@@ -917,6 +1246,10 @@
       "slug": "durability-tooltip",
       "mod_ids": [
         "durabilitytooltip"
+      ],
+      "sha1": "59a567402d894b46d6abe45831f39dcad5c93342",
+      "packages": [
+        "com.supermartijn642"
       ],
       "project_id": 511040,
       "file_id": 6833316,
@@ -930,6 +1263,10 @@
       "mod_ids": [
         "supermartijn642configlib"
       ],
+      "sha1": "07452242e389975e8a88b97066f4bae6a4ebe574",
+      "packages": [
+        "com.supermartijn642"
+      ],
       "project_id": 438332,
       "file_id": 5546996,
       "required": true,
@@ -941,6 +1278,15 @@
       "slug": "crash-assistant",
       "mod_ids": [
         "crash_assistant"
+      ],
+      "sha1": "ec9e35065ce3a49ecec6bd6ff7fec6992476f7bb",
+      "packages": [
+        "com.formdev",
+        "crash_assistant_relocated_libs.jexl3",
+        "crash_assistant_relocated_libs.logging",
+        "crash_assistant_relocated_libs.nightconfig",
+        "dev.kostromdan",
+        "org.quiltmc"
       ],
       "project_id": 1154099,
       "file_id": 8636685,
@@ -954,6 +1300,10 @@
       "mod_ids": [
         "particle_effects"
       ],
+      "sha1": "cda7f6d1f8e164525b41fbb0899eb645c75fe3b9",
+      "packages": [
+        "net.lopymine"
+      ],
       "project_id": 1120746,
       "file_id": 8325471,
       "required": true,
@@ -965,6 +1315,10 @@
       "slug": "what-are-they-up-to",
       "mod_ids": [
         "watut"
+      ],
+      "sha1": "07cfb8fb1269f1eae1056492912e3544be979f62",
+      "packages": [
+        "com.corosus"
       ],
       "project_id": 945479,
       "file_id": 6418577,
@@ -978,6 +1332,10 @@
       "mod_ids": [
         "coroutil"
       ],
+      "sha1": "b044c51d00d60b5645a0c0890812935cd933555f",
+      "packages": [
+        "com.corosus"
+      ],
       "project_id": 237749,
       "file_id": 5622966,
       "required": true,
@@ -989,6 +1347,10 @@
       "slug": "sable-pathfinder",
       "mod_ids": [
         "sable_pathfinder"
+      ],
+      "sha1": "1c3a333ae444e2117903344d4630af64d4660ab4",
+      "packages": [
+        "b34tingh34rt.sable_pathfinder"
       ],
       "required": true,
       "dependency_type": "required",
@@ -1003,6 +1365,10 @@
       "slug": "advanced-shulkerboxes",
       "mod_ids": [
         "shulkerbox"
+      ],
+      "sha1": "1cc9f12e1f34f391ad3b0bb93d17ead0831a1c8e",
+      "packages": [
+        "de.maxhenkel"
       ],
       "project_id": 253861,
       "file_id": 5610975,

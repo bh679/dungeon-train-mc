@@ -40,8 +40,21 @@ import java.util.Map;
 @OnlyIn(Dist.CLIENT)
 public final class UnsupportedModsScreen extends Screen {
 
-    /** One installed, unsupported mod. */
-    public record UnsupportedMod(String modId, String displayName) {}
+    /**
+     * One installed, unsupported mod. {@code fileName} is set when the problem is the FILE rather
+     * than the id — the jar is not a published build of an approved mod (hash-verified whitelist)
+     * — and null for a plain unapproved id.
+     */
+    public record UnsupportedMod(String modId, String displayName, String fileName) {
+        public UnsupportedMod(String modId, String displayName) {
+            this(modId, displayName, null);
+        }
+
+        /** Is this row here because its file could not be verified (rather than its id)? */
+        public boolean unverifiedFile() {
+            return fileName != null;
+        }
+    }
 
     private static final int PANEL_W = 340;
     private static final int ROW_H = 24;
@@ -231,9 +244,10 @@ public final class UnsupportedModsScreen extends Screen {
                 int x = cellX(c);
                 g.drawString(this.font, trim("• " + mod.displayName(), textW), x, rowY + 3, NAME_COLOUR, false);
                 ModSuggestClient.Result r = results.get(mod.modId());
-                Component sub = r == null
-                    ? Component.literal(mod.modId())
-                    : ModSuggestScreen.resultMessage(r);
+                Component sub = r != null ? ModSuggestScreen.resultMessage(r)
+                    : mod.unverifiedFile()
+                        ? Component.translatable("gui.dungeontrain.unsupported_mods.unverified_file", mod.fileName())
+                        : Component.literal(mod.modId());
                 int subColour = r == null ? ID_COLOUR : ModSuggestScreen.resultColour(r);
                 g.drawString(this.font, trim(sub.getString(), textW - 8), x + 8, rowY + 3 + this.font.lineHeight + 1,
                     subColour, false);

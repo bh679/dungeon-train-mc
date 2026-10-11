@@ -9,9 +9,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import games.brennan.dungeontrain.compat.DtModVerifyBridge;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Off-thread reader for the relay's {@code GET /approved-mods} endpoint — the updatable overlay for
@@ -39,6 +42,12 @@ public final class ApprovedModListFetcher {
             .build();
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
+    /**
+     * How long to wait for the engine's file scan before giving up on the hash-verified POST and
+     * sending the plain GET instead. The scan is a few seconds for a 150-jar modpack; past this the
+     * launch should not keep waiting on it, and the cached hash list stands for this session.
+     */
+    static final long SCAN_WAIT_SECONDS = 20;
 
     private static volatile boolean attempted;
     private static volatile boolean failed;
@@ -64,6 +73,19 @@ public final class ApprovedModListFetcher {
         return settled || !attempted;
     }
 
+    /** Block (briefly) until the in-flight attempt settles, or {@code maxMs} pass. Never throws. */
+    public static void awaitSettled(long maxMs) {
+        long deadline = System.currentTimeMillis() + maxMs;
+        while (!isSettled() && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
     /**
      * {@code <base>/approved-mods?dt=<version>}, or without the parameter when the version is
      * unknown (the relay then treats this jar as older than every floor). Pure, for tests.
@@ -76,8 +98,42 @@ public final class ApprovedModListFetcher {
         return url + "?dt=" + URLEncoder.encode(v, StandardCharsets.UTF_8);
     }
 
-    /** Fetch the approved-mod list off-thread; results land in {@link ApprovedModList}. No-throw. */
+    /**
+     * Fetch the approved-mod list off-thread; results land in {@link ApprovedModList}. No-throw.
+     *
+     * <p>Two shapes. When the {@code dtmodverify} engine has fingerprinted the installed jars, they go up in
+     * a {@code POST /approved-mods/verify}, whose answer is the GET's payload plus the approved
+     * file hashes and a per-file verdict. When the scan is empty or late, or the relay predates the
+     * route (404/405), it is the plain GET — the id list still refreshes, and the cached hash list
+     * stands. Without the engine it is always the GET — exactly the pre-hash behaviour.</p>
+     */
     static void fetchAsync() {
+        if (!DtModVerifyBridge.isPresent()) {
+            sendGet();
+            return;
+        }
+        try {
+            DtModVerifyBridge.scan(UnapprovedModIntegrity.EXEMPT_IDS);
+            CompletableFuture.supplyAsync(() -> DtModVerifyBridge.current(SCAN_WAIT_SECONDS * 1000))
+                .thenAccept(files -> {
+                    if (files.isEmpty()) sendGet();
+                    else sendVerify(files);
+                })
+                .exceptionally(t -> {
+                    LOGGER.debug("[DungeonTrain] approved-mod list request failed to start: {}", t.toString());
+                    failed = true;
+                    settled = true;
+                    return null;
+                });
+        } catch (Throwable t) {
+            // Building the request failed synchronously — swallow; baked ∪ cache stay in force.
+            LOGGER.debug("[DungeonTrain] approved-mod list request failed to start: {}", t.toString());
+            failed = true;
+            settled = true;
+        }
+    }
+
+    private static void sendGet() {
         try {
             String url = requestUrl(DungeonTrain.relayBaseUrl(), VersionInfo.VERSION);
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
@@ -94,26 +150,56 @@ public final class ApprovedModListFetcher {
                         }
                     });
         } catch (Throwable t) {
-            // Building the request failed synchronously — swallow; baked ∪ cache stay in force.
             LOGGER.debug("[DungeonTrain] approved-mod list request failed to start: {}", t.toString());
             failed = true;
             settled = true;
         }
     }
 
+    private static void sendVerify(List<ModFileFingerprint> files) {
+        try {
+            DtModVerifyBridge.verify(DungeonTrain.relayBaseUrl(), VersionInfo.VERSION, files)
+                    .whenComplete((answer, err) -> {
+                        int status = err == null && answer != null ? answer.status() : 0;
+                        String body = err == null && answer != null ? answer.body() : "";
+                        // A relay from before the route answers 404 (or 405): fall back to the GET so
+                        // the id list still refreshes. Everything else settles here.
+                        if (status == 404 || status == 405) {
+                            LOGGER.debug("[DungeonTrain] approved-mod verify -> HTTP {} — relay predates it, using GET",
+                                status);
+                            sendGet();
+                            return;
+                        }
+                        try {
+                            settle(status, body, err);
+                            if (err == null && status / 100 == 2) DtModVerifyBridge.logVerdicts(body, files.size());
+                        } finally {
+                            settled = true;
+                        }
+                    });
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] approved-mod verify failed to start, using GET: {}", t.toString());
+            sendGet();
+        }
+    }
+
     private static void settle(HttpResponse<String> resp, Throwable err) {
+        settle(err == null ? resp.statusCode() : 0, err == null ? resp.body() : "", err);
+    }
+
+    private static void settle(int status, String body, Throwable err) {
         try {
             if (err != null) {
                 LOGGER.debug("[DungeonTrain] approved-mod list fetch failed: {}", err.toString());
                 failed = true;
                 return;
             }
-            if (resp.statusCode() / 100 != 2) {
-                LOGGER.debug("[DungeonTrain] approved-mod list fetch -> HTTP {}", resp.statusCode());
+            if (status / 100 != 2) {
+                LOGGER.debug("[DungeonTrain] approved-mod list fetch -> HTTP {}", status);
                 failed = true;
                 return;
             }
-            ApprovedModList.Payload payload = ApprovedModList.parse(resp.body());
+            ApprovedModList.Payload payload = ApprovedModList.parse(body);
             if (payload == null) {
                 // Unreadable body: keep baked ∪ cache, including the enforce flag.
                 LOGGER.debug("[DungeonTrain] approved-mod list fetch -> unreadable body");
@@ -122,8 +208,9 @@ public final class ApprovedModListFetcher {
             }
             ApprovedModList.accept(payload);
             LOGGER.info("[DungeonTrain] approved-mod list updated from relay "
-                    + "({} approval(s), {} revocation(s), enforce={})",
-                payload.approved().size(), payload.revoked().size(), payload.enforce());
+                    + "({} approval(s), {} revocation(s), enforce={}, {} file hash(es), enforceHashes={})",
+                payload.approved().size(), payload.revoked().size(), payload.enforce(),
+                payload.hashes().size(), payload.enforceHashes());
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] approved-mod list parse failed: {}", t.toString());
             failed = true;
