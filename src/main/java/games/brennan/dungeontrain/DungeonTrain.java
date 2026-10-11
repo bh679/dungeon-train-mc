@@ -34,6 +34,7 @@ import games.brennan.dungeontrain.registry.ModBlockEntities;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.registry.ModDataComponents;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
@@ -356,6 +357,8 @@ public class DungeonTrain {
         // + per-player run-state attachment.
         ModAdvancementTriggers.register(modBus);
         ModDataAttachments.register(modBus);
+        // Item data components: the hand-held TV's on/off switch (compat/vista/TvItems).
+        ModDataComponents.register(modBus);
         // The relay's live milestone values (e.g. carts_1000's threshold), fetched once per
         // session and applied at datapack load. Kicked off here rather than at client init so
         // dedicated servers — where advancements are actually evaluated — get them too.

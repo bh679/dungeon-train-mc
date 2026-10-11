@@ -24767,6 +24767,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "held-tv-live-screen",
+      "version": "0.1224.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Carry a television",
+      "summary": "A television in your hand can now be switched on with a tap of the attack button and watched as you go; it flips to the other hand without a pause, and one placed while on comes on.",
+      "highlights": [],
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

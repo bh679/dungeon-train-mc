@@ -196,6 +196,20 @@ neoForge {
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
+            // Pose-sheet seam: ./gradlew runClient -PquickWorld="<save folder>" -PtvPoseShots opens that
+            // singleplayer world and client/live/HeldTvPosePuppet screenshots the hand-held TV in ten
+            // candidate poses to run/screenshots/tvpose-NN.png. Dev only; neither flag exists in production.
+            def quickWorld = project.findProperty('quickWorld')
+            if (quickWorld) {
+                programArgument '--quickPlaySingleplayer'
+                programArgument quickWorld.toString()
+            }
+            if (project.hasProperty('tvPoseShots')) {
+                systemProperty 'dungeontrain.tvPoseShots', 'true'
+            }
+            if (project.hasProperty('tvPoseSwap')) {
+                systemProperty 'dungeontrain.tvPoseSwap', 'true'
+            }
             // Item-icon dump for the relay's item-values page: ./gradlew runClient -PtradeValueIcons
             // renders every item to run/trade-values-icons/<ns>/<path>.png at the title screen and
             // quits (client/TradeValueIconDump).
@@ -338,6 +352,20 @@ neoForge {
             }
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
+            }
+            // Pose-sheet seam: ./gradlew runClient -PquickWorld="<save folder>" -PtvPoseShots opens that
+            // singleplayer world and client/live/HeldTvPosePuppet screenshots the hand-held TV in ten
+            // candidate poses to run/screenshots/tvpose-NN.png. Dev only; neither flag exists in production.
+            def quickWorld = project.findProperty('quickWorld')
+            if (quickWorld) {
+                programArgument '--quickPlaySingleplayer'
+                programArgument quickWorld.toString()
+            }
+            if (project.hasProperty('tvPoseShots')) {
+                systemProperty 'dungeontrain.tvPoseShots', 'true'
+            }
+            if (project.hasProperty('tvPoseSwap')) {
+                systemProperty 'dungeontrain.tvPoseSwap', 'true'
             }
         }
 
