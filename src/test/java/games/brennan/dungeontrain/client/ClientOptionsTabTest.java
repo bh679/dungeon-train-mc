@@ -106,13 +106,21 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.DEV_CHAT,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.UPDATE_NOTICE_CHAT,
-                        ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT,
                         ClientOptionsTab.Row.OTHER_ADVANCEMENT_TABS,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
                         ClientOptionsTab.Row.BACKPACK_BUTTON,
                         ClientOptionsTab.Row.AI_POLICY),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
+    }
+
+    @Test
+    @DisplayName("The low-memory notice leads the Performance tab, above the tips")
+    void lowMemoryNoticeLeadsPerformance() {
+        assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT, ClientOptionsTab.Row.PERFORMANCE_TIPS),
+                ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true));
+        assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, true, true)
+                .contains(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT));
     }
 
     @Test

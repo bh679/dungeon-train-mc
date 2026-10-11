@@ -24,8 +24,8 @@ import java.util.List;
  *       viewers see the HUD and chat — with a preview of what they would see.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
  *       render at, plus where each of the four editor menus (X/V/C/Z) draws itself.</li>
- *   <li>{@link #PERFORMANCE} — the lag tips the death screen's bug-report card offers, checked
- *       against this player's setup, each with a button to where the setting lives.</li>
+ *   <li>{@link #PERFORMANCE} — the low-memory notice, then the lag tips the death screen's bug-report
+ *       card offers, checked against this player's setup, each with a button to where the setting lives.</li>
  * </ul>
  *
  * <p>Kept free of Minecraft types on purpose. Three rows are conditional — {@link Row#POLITICAL_FILTER}
@@ -226,7 +226,6 @@ public enum ClientOptionsTab {
                 rows.add(Row.DEV_CHAT);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
-                rows.add(Row.LOW_MEMORY_NOTICE_CHAT);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 rows.add(Row.BACKPACK_BUTTON);
@@ -285,7 +284,12 @@ public enum ClientOptionsTab {
                 rows.add(Row.CREATIVE_MOD_BLOCK_TABS);
                 rows.add(Row.CREATIVE_MOD_BLOCKS_IN_SEARCH);
             }
-            case PERFORMANCE -> rows.add(Row.PERFORMANCE_TIPS);
+            case PERFORMANCE -> {
+                // The one performance NOTICE sits above the tips: it is about this machine's setup,
+                // not about the client or the player, so it reads as part of this tab's subject.
+                rows.add(Row.LOW_MEMORY_NOTICE_CHAT);
+                rows.add(Row.PERFORMANCE_TIPS);
+            }
         }
         return List.copyOf(rows);
     }

@@ -54,7 +54,7 @@ final class ClientOptionsIcons {
             case LOW_MEMORY_NOTICE_CHAT -> Icon.item(Items.REDSTONE);
             case OTHER_ADVANCEMENT_TABS -> Icon.item(Items.EXPERIENCE_BOTTLE);
             case CINEMATIC_HOTKEY -> Icon.item(Items.SPYGLASS);
-            case BACKPACK_BUTTON -> Icon.item(Items.BUNDLE);
+            case BACKPACK_BUTTON -> Icon.item(games.brennan.ediblebackpacks.registry.ModItems.EDIBLE_BACKPACK.get());
             case AI_POLICY -> Icon.item(Items.PAPER); // the same paper AiPolicyIconButton carries
             case TRANSLATE -> LANGUAGE;
 

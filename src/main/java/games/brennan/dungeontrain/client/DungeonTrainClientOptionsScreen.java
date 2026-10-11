@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.cheat.FreePlayText;
 import games.brennan.dungeontrain.client.bugresponse.BugIssue;
 import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
@@ -452,10 +451,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                         .displayOnlyValue()
                         .create(0, 0, CONTROL_W, ROW_H, Component.translatable(visKey),
                                 (btn, v) -> DonationPrefsState.setVisibility(v, this::rebuildIfShown));
-        // The row's tooltip is the CURRENT value's explanation; the control's own cycles with it.
+        // The row's tooltip says what the setting is; the control's own explains the current value.
         list.addSetting(ClientOptionsIcons.DONATION, Component.translatable(visKey),
-                Component.translatable(visKey + ".hint"), visibility,
-                Component.translatable(donationKey(prefs.visibility()) + ".tip"));
+                Component.translatable(visKey + ".hint"), visibility, Component.translatable(visKey + ".tip"));
 
         String tagKey = "gui.dungeontrain.options.account.donation.tag";
         Component tagTip = Component.translatable(tagKey + ".tip");
@@ -637,9 +635,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // Literally the same control vanilla's Music & Sounds screen carries (put there by
             // SoundOptionsScreenTrainVolumeMixin) — one OptionInstance definition over one config
             // accessor, so a player who came looking here rather than there finds the same control at
-            // the same value. Its tooltip is baked into the option; the row repeats it.
-            case TRAIN_VOLUME -> new Setting(slider(TrainVolumeOption.valueOnly()),
-                    Component.translatable("gui.dungeontrain.sound.train_engine.tip"));
+            // the same value. The slider carries the sound screen's long tooltip; the row has its own short one.
+            case TRAIN_VOLUME -> Setting.of(slider(TrainVolumeOption.valueOnly()), key + ".tip");
 
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
             // edits or an imported dtpack. This is the "can be changed in options" half of that
@@ -651,7 +648,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                             .displayOnlyValue()
                             .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                     (btn, pref) -> ClientDisplayConfig.setCustomContentPreference(pref)),
-                    FreePlayText.withExplanation(key + ".tip"));
+                    Component.translatable(key + ".tip"));
 
             // The three backup settings are Dungeon Backup's: it owns the setting
             // (config/dungeonbackup-client.toml) and the archives. Its own widgets carry their caption
@@ -671,10 +668,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     mode.setTooltip(Tooltip.create(Component.translatable(BackupOptionsWidgets.KEY_MODE + ".overridden",
                             BackupSettings.operatorOverride().name().toLowerCase(Locale.ROOT))));
                 }
-                yield new Setting(mode, Component.translatable(BackupOptionsWidgets.KEY_MODE + ".tip"));
+                // No row tooltip: the control's per-value tip is the explanation that matters here.
+                yield new Setting(mode, null);
             }
-            case BACKUPS_PER_VERSION -> new Setting(slider(backupsPerVersionOption()),
-                    Component.translatable(BackupOptionsWidgets.KEY_PER_VERSION + ".tip"));
+            case BACKUPS_PER_VERSION -> Setting.of(slider(backupsPerVersionOption()), key + ".tip");
 
             // The label carries the size on disk, so after a clear the widgets are rebuilt —
             // rebuildWidgets() is what re-runs init(); merely returning to the screen only
@@ -684,7 +681,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 // the size is the hint, so the label fits the value column.
                 Button clear = BackupOptionsWidgets.clearButton(CONTROL_W, ROW_H, this, this::rebuildWidgets);
                 clear.setMessage(Component.translatable("gui.dungeontrain.options.clear"));
-                yield new Setting(clear, Component.translatable(BackupOptionsWidgets.KEY_CLEAR + ".tip"),
+                yield new Setting(clear, Component.translatable(key + ".tip"),
                         Component.translatable(key + ".hint", BackupArchiver.formatBytes(BackupSettings.totalSize())));
             }
 
