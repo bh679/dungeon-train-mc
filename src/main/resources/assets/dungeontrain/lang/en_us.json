@@ -685,6 +685,7 @@
   "chat.dungeontrain.familiar_photo.3": "Your own photo, come back around.",
   "chat.dungeontrain.live.headpiece_burns": "The Live Eye on your head flares and burns away.",
   "chat.dungeontrain.live.headpiece_on": "The Live Eye on your head blinks red. You are the broadcast now.",
+  "chat.dungeontrain.live.free_play": "Free Play runs can't go live.",
   "chat.dungeontrain.live.removed": "You took the Live Eye off. It burns away; your broadcast ended.",
   "chat.dungeontrain.live.started": "You are live. Viewers see your screen about fifteen seconds behind you.",
   "chat.dungeontrain.live.took_over": "%s was cut off.",

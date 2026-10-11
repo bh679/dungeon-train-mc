@@ -629,6 +629,7 @@
   "chat.dungeontrain.familiar_photo.3": "La tua stessa foto, tornata indietro.",
   "chat.dungeontrain.live.headpiece_burns": "La videocamera sulla tua testa sfrigola e brucia via.",
   "chat.dungeontrain.live.headpiece_on": "La videocamera sulla tua testa lampeggia di rosso. Ora la trasmissione sei tu.",
+  "chat.dungeontrain.live.free_play": "Le partite in Gioco Libero non possono andare in diretta.",
   "chat.dungeontrain.live.removed": "Hai tolto la videocamera. Brucia via; la tua trasmissione è finita.",
   "chat.dungeontrain.live.started": "Sei in diretta. Gli spettatori vedono il tuo schermo con circa quindici secondi di ritardo.",
   "chat.dungeontrain.live.took_over": "%s è stato interrotto.",

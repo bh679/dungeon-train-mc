@@ -602,6 +602,7 @@
   "chat.dungeontrain.familiar_photo.3": "君自身の写真が、巡って戻ってきた。",
   "chat.dungeontrain.live.headpiece_burns": "頭のカムコーダーが閃光を放ち、燃え尽きた。",
   "chat.dungeontrain.live.headpiece_on": "頭のカムコーダーが赤く点滅する。今はあなたが放送だ。",
+  "chat.dungeontrain.live.free_play": "フリープレイのランではライブ配信できません。",
   "chat.dungeontrain.live.removed": "カムコーダーを外した。燃え尽き、あなたの放送は終了した。",
   "chat.dungeontrain.live.started": "ライブ配信中。視聴者にはあなたの画面が約15秒遅れて届く。",
   "chat.dungeontrain.live.took_over": "%s の放送は打ち切られた。",

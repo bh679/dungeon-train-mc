@@ -629,6 +629,7 @@
   "chat.dungeontrain.familiar_photo.3": "Dein eigenes Foto, wieder zu dir zurückgekehrt.",
   "chat.dungeontrain.live.headpiece_burns": "Der Camcorder auf deinem Kopf flackert auf und verbrennt.",
   "chat.dungeontrain.live.headpiece_on": "Der Camcorder auf deinem Kopf blinkt rot. Du bist jetzt die Übertragung.",
+  "chat.dungeontrain.live.free_play": "Freies-Spiel-Runden können nicht live gehen.",
   "chat.dungeontrain.live.removed": "Du hast den Camcorder abgenommen. Er verbrennt; deine Übertragung ist beendet.",
   "chat.dungeontrain.live.started": "Du bist live. Zuschauer sehen deinen Bildschirm etwa fünfzehn Sekunden verzögert.",
   "chat.dungeontrain.live.took_over": "%s wurde abgeschnitten.",
