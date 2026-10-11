@@ -11,6 +11,8 @@ public final class LiveFeedClientConfig {
 
     public static final ModConfigSpec SPEC;
     public static final ModConfigSpec.BooleanValue STREAMING_ENABLED;
+    public static final ModConfigSpec.BooleanValue STREAM_GUI;
+    public static final ModConfigSpec.BooleanValue STREAM_CHAT;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
@@ -32,6 +34,12 @@ public final class LiveFeedClientConfig {
         STREAMING_ENABLED = b
             .comment("Allow this client to broadcast when you put the headpiece on. Off = the headpiece still burns away and takes the channel, but nothing is sent (the feed shows static).")
             .define("streamingEnabled", true);
+        STREAM_GUI = b
+            .comment("Show your HUD and open menus to viewers. Off = viewers see only the world and your hand.")
+            .define("streamGui", true);
+        STREAM_CHAT = b
+            .comment("Show chat to viewers. Always off in Kid mode, whatever this says.")
+            .define("streamChat", true);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")
             .defineInRange("captureWidth", 1280, 320, 1920);
@@ -90,6 +98,24 @@ public final class LiveFeedClientConfig {
         if (!loaded() || STREAMING_ENABLED.get() == value) return;
         STREAMING_ENABLED.set(value);
         STREAMING_ENABLED.save();
+    }
+
+    /** Whether viewers see the HUD and open menus. */
+    public static boolean streamGui() { return !loaded() || STREAM_GUI.get(); }
+
+    /** The chat switch as set; {@code StreamCapture} still forces chat off in Kid mode. */
+    public static boolean streamChat() { return !loaded() || STREAM_CHAT.get(); }
+
+    public static void setStreamGui(boolean value) {
+        if (!loaded() || STREAM_GUI.get() == value) return;
+        STREAM_GUI.set(value);
+        STREAM_GUI.save();
+    }
+
+    public static void setStreamChat(boolean value) {
+        if (!loaded() || STREAM_CHAT.get() == value) return;
+        STREAM_CHAT.set(value);
+        STREAM_CHAT.save();
     }
 
     /** Hotkey: flip the pinned viewer and persist it. Returns the new value. */

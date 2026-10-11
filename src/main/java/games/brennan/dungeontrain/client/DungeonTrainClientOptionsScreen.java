@@ -18,6 +18,8 @@ import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
+import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
+import org.jetbrains.annotations.Nullable;
 import games.brennan.dungeontrain.train.CatchUpBurstAuto;
 import games.brennan.dungeontrain.train.CatchUpBurstMode;
 import games.brennan.dungeonbackup.client.BackupOptionsWidgets;
@@ -216,14 +218,22 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     /** One tab: a title on the bar, and its own scrolling list of rows. */
     private final class OptionsTab implements Tab {
 
+        /** Height of one packed line in an {@link OptionsList}, plus the list's top and bottom padding. */
+        private static final int LIST_LINE_H = 25;
+        private static final int LIST_PAD = 8;
+        private static final int PREVIEW_MARGIN = 20;
+
         private final ClientOptionsTab id;
         private final OptionsList list;
+        /** Stream tab only: what viewers would see, under the rows that change it. */
+        @Nullable private final StreamPreviewWidget preview;
 
         OptionsTab(ClientOptionsTab id, List<ClientOptionsTab.Row> rows) {
             this.id = id;
             this.list = new OptionsList(DungeonTrainClientOptionsScreen.this.minecraft,
                     DungeonTrainClientOptionsScreen.this.width, DungeonTrainClientOptionsScreen.this);
             pack(this.list, rows);
+            this.preview = id == ClientOptionsTab.STREAM ? new StreamPreviewWidget() : null;
         }
 
         @Override
@@ -234,11 +244,23 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         @Override
         public void visitChildren(Consumer<AbstractWidget> consumer) {
             consumer.accept(this.list);
+            if (this.preview != null) consumer.accept(this.preview);
         }
 
         @Override
         public void doLayout(ScreenRectangle rectangle) {
-            this.list.updateSizeAndPosition(rectangle.width(), rectangle.height(), rectangle.top());
+            if (this.preview == null) {
+                this.list.updateSizeAndPosition(rectangle.width(), rectangle.height(), rectangle.top());
+                return;
+            }
+            // The list shrinks to its rows; the preview takes the rest (the widget hides itself
+            // when that is too small to show a picture).
+            int listH = Math.min(rectangle.height(), this.list.children().size() * LIST_LINE_H + LIST_PAD);
+            this.list.updateSizeAndPosition(rectangle.width(), listH, rectangle.top());
+            this.preview.setX(rectangle.left() + PREVIEW_MARGIN);
+            this.preview.setY(rectangle.top() + listH + 4);
+            this.preview.setWidth(Math.max(0, rectangle.width() - 2 * PREVIEW_MARGIN));
+            this.preview.setHeight(Math.max(0, rectangle.height() - listH - 8));
         }
     }
 
@@ -479,6 +501,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     value("gui.dungeontrain.options.content_mode", contentModeLabel(ContentMode.KID)));
             case LIVESTREAM -> onOffCandidates("gui.dungeontrain.options.livestream");
             case DEV_CHAT -> onOffCandidates("gui.dungeontrain.options.dev_chat");
+            case STREAM_GUI -> onOffCandidates("gui.dungeontrain.options.stream_gui");
+            case STREAM_CHAT -> onOffCandidates("gui.dungeontrain.options.stream_chat");
             case POLITICAL_FILTER -> onOffCandidates("gui.dungeontrain.political_filter.option");
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case UPDATE_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.update_notice_chat");
@@ -598,6 +622,26 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                         ContentModeSyncClient.syncNow();
                                     }),
                     "gui.dungeontrain.options.livestream.tip");
+
+            // What viewers see; the preview under the rows follows both switches live.
+            case STREAM_GUI -> withTip(
+                    CycleButton.onOffBuilder(LiveFeedClientConfig.streamGui())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.stream_gui"),
+                                    (btn, on) -> LiveFeedClientConfig.setStreamGui(on)),
+                    "gui.dungeontrain.options.stream_gui.tip");
+
+            // Kid mode never streams chat: the switch shows Off and is greyed, whatever is stored.
+            case STREAM_CHAT -> {
+                boolean kid = ClientDisplayConfig.isKidMode();
+                CycleButton<Boolean> streamChat = CycleButton.onOffBuilder(!kid && LiveFeedClientConfig.streamChat())
+                        .create(0, 0, width, ROW_H,
+                                Component.translatable("gui.dungeontrain.options.stream_chat"),
+                                (btn, on) -> LiveFeedClientConfig.setStreamChat(on));
+                streamChat.active = !kid;
+                yield withTip(streamChat, kid ? "gui.dungeontrain.options.stream_chat.kid_tip"
+                                              : "gui.dungeontrain.options.stream_chat.tip");
+            }
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
             // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
