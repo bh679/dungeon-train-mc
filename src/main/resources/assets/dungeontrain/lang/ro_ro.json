@@ -2978,6 +2978,8 @@
   "gui.dungeontrain.options.stream_chat.kid_tip": "Mereu oprit în modul Copil: chatul nu ajunge niciodată în transmisiune.",
   "gui.dungeontrain.options.stream_size": "Dimensiune video",
   "gui.dungeontrain.options.stream_size.tip": "Dimensiunea imaginii trimise spectatorilor. Mai mică încarcă mai puțin FPS-ul. Se aplică de la următorul live.",
+  "gui.dungeontrain.options.head_viewer_size": "Mărime fereastră live",
+  "gui.dungeontrain.options.head_viewer_size.tip": "Mărimea transmisiunii fixate în dreapta sus cât porți camera video sau un televizor. Conturul din previzualizare o arată.",
   "gui.dungeontrain.options.stream.preview": "Ce văd spectatorii",
   "gui.dungeontrain.options.stream.preview.no_world": "Intră într-o lume pentru previzualizare",
   "gui.dungeontrain.options.stream.preview.off": "Transmisiunea live este oprită",

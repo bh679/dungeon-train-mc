@@ -2396,6 +2396,8 @@
   "gui.dungeontrain.options.stream_chat.kid_tip": "兒童模式下始終關閉:聊天永遠不會出現在直播中。",
   "gui.dungeontrain.options.stream_size": "影片尺寸",
   "gui.dungeontrain.options.stream_size.tip": "傳送給觀眾的畫面尺寸。越小對影格率的負擔越輕。下次直播時生效。",
+  "gui.dungeontrain.options.head_viewer_size": "直播視窗大小",
+  "gui.dungeontrain.options.head_viewer_size.tip": "戴著攝影機或電視時，右上角固定的直播畫面大小。預覽中的方框顯示它。",
   "gui.dungeontrain.options.stream.preview": "觀眾看到的畫面",
   "gui.dungeontrain.options.stream.preview.no_world": "進入世界後即可預覽",
   "gui.dungeontrain.options.stream.preview.off": "直播已關閉",

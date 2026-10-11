@@ -2396,6 +2396,8 @@
   "gui.dungeontrain.options.stream_chat.kid_tip": "Luôn tắt ở chế độ Trẻ em: trò chuyện không bao giờ lên sóng.",
   "gui.dungeontrain.options.stream_size": "Kích thước video",
   "gui.dungeontrain.options.stream_size.tip": "Kích thước hình ảnh gửi tới người xem. Càng nhỏ càng nhẹ cho tốc độ khung hình. Áp dụng từ lần phát trực tiếp sau.",
+  "gui.dungeontrain.options.head_viewer_size": "Kích thước khung trực tiếp",
+  "gui.dungeontrain.options.head_viewer_size.tip": "Kích thước khung phát trực tiếp ghim ở góc trên bên phải khi bạn đội máy quay hoặc TV. Viền trong bản xem trước cho thấy kích thước.",
   "gui.dungeontrain.options.stream.preview": "Những gì người xem thấy",
   "gui.dungeontrain.options.stream.preview.no_world": "Vào một thế giới để xem trước",
   "gui.dungeontrain.options.stream.preview.off": "Phát trực tiếp đang tắt",

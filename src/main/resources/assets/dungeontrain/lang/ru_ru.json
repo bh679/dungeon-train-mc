@@ -2495,6 +2495,8 @@
   "gui.dungeontrain.options.stream_chat.kid_tip": "В детском режиме всегда выключено: чат никогда не попадает в трансляцию.",
   "gui.dungeontrain.options.stream_size": "Размер видео",
   "gui.dungeontrain.options.stream_size.tip": "Размер картинки, которую видят зрители. Меньше — легче для FPS. Применится со следующей трансляции.",
+  "gui.dungeontrain.options.head_viewer_size": "Размер окна трансляции",
+  "gui.dungeontrain.options.head_viewer_size.tip": "Размер окна трансляции в правом верхнем углу, пока на вас камера или телевизор. Рамка в превью показывает его.",
   "gui.dungeontrain.options.stream.preview": "Что видят зрители",
   "gui.dungeontrain.options.stream.preview.no_world": "Зайди в мир, чтобы увидеть превью",
   "gui.dungeontrain.options.stream.preview.off": "Трансляция выключена",

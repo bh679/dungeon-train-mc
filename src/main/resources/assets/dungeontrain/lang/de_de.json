@@ -2443,6 +2443,8 @@
   "gui.dungeontrain.options.stream_chat.kid_tip": "Im Kindermodus immer aus: der Chat kommt nie in den Stream.",
   "gui.dungeontrain.options.stream_size": "Videogröße",
   "gui.dungeontrain.options.stream_size.tip": "Bildgröße, die an Zuschauer gesendet wird. Kleiner schont deine Bildrate. Gilt ab dem nächsten Livegang.",
+  "gui.dungeontrain.options.head_viewer_size": "Live-Fenstergröße",
+  "gui.dungeontrain.options.head_viewer_size.tip": "Größe des oben rechts angehefteten Live-Bilds, wenn du den Camcorder oder einen Fernseher trägst. Der Rahmen in der Vorschau zeigt sie.",
   "gui.dungeontrain.options.stream.preview": "Das sehen Zuschauer",
   "gui.dungeontrain.options.stream.preview.no_world": "Betritt eine Welt für die Vorschau",
   "gui.dungeontrain.options.stream.preview.off": "Livestreaming ist aus",

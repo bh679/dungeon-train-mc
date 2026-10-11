@@ -2396,6 +2396,8 @@
   "gui.dungeontrain.options.stream_chat.kid_tip": "キッズモードでは常にオフ:チャットは配信に一切映りません。",
   "gui.dungeontrain.options.stream_size": "映像サイズ",
   "gui.dungeontrain.options.stream_size.tip": "視聴者に送る映像の大きさ。小さいほどフレームレートへの負担が軽くなります。次の配信から反映されます。",
+  "gui.dungeontrain.options.head_viewer_size": "ライブ表示サイズ",
+  "gui.dungeontrain.options.head_viewer_size.tip": "カムコーダーかテレビをかぶっている間、右上に固定されるライブ映像の大きさ。プレビューの枠がその大きさです。",
   "gui.dungeontrain.options.stream.preview": "視聴者に見えるもの",
   "gui.dungeontrain.options.stream.preview.no_world": "プレビューするにはワールドに入ってください",
   "gui.dungeontrain.options.stream.preview.off": "ライブ配信はオフです",

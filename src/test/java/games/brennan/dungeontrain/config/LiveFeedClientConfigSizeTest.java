@@ -55,4 +55,13 @@ class LiveFeedClientConfigSizeTest {
         assertEquals(LiveFeedClientConfig.CAPTURE_SIZES, LiveFeedClientConfig.captureSizeValues(1280));
         assertEquals(List.of(640, 854, 960, 1100, 1280, 1920), LiveFeedClientConfig.captureSizeValues(1100));
     }
+
+    @Test
+    void liveViewerSizeRowOffersEveryClickSizeAsAPercent() {
+        assertEquals(List.of(0, 1, 2, 3), LiveFeedClientConfig.headViewerSizeIndexes());
+        assertEquals(List.of(50, 75, 100, 150),
+            LiveFeedClientConfig.headViewerSizeIndexes().stream().map(LiveFeedClientConfig::headViewerSizePercent).toList());
+        assertEquals(0, LiveFeedClientConfig.clampSize(-3));
+        assertEquals(3, LiveFeedClientConfig.clampSize(7));
+    }
 }

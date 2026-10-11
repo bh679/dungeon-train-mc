@@ -584,6 +584,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_SIZE -> LiveFeedClientConfig.captureSizeValues(LiveFeedClientConfig.captureWidth()).stream()
                     .map(w -> value("gui.dungeontrain.options.stream_size", streamSizeLabel(w)))
                     .toList();
+            case HEAD_VIEWER_SIZE -> LiveFeedClientConfig.headViewerSizeIndexes().stream()
+                    .map(i -> value("gui.dungeontrain.options.head_viewer_size", headViewerSizeLabel(i)))
+                    .toList();
             case POLITICAL_FILTER -> onOffCandidates("gui.dungeontrain.political_filter.option");
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case UPDATE_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.update_notice_chat");
@@ -736,6 +739,16 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                         (btn, w) -> LiveFeedClientConfig.setCaptureWidth(w)),
                         "gui.dungeontrain.options.stream_size.tip");
             }
+
+            // The pinned top-right feed; the preview outlines it at the chosen size.
+            case HEAD_VIEWER_SIZE -> withTip(
+                    CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)
+                            .withValues(LiveFeedClientConfig.headViewerSizeIndexes())
+                            .withInitialValue(LiveFeedClientConfig.headViewerSize(false))
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.head_viewer_size"),
+                                    (btn, i) -> LiveFeedClientConfig.setHeadViewerSize(i)),
+                    "gui.dungeontrain.options.head_viewer_size.tip");
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
             // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
@@ -1028,6 +1041,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         values.add(current);
         values.sort(null);
         return List.copyOf(values);
+    }
+
+    /** A pinned-feed size index as a percentage of its normal width: "150%". */
+    private static Component headViewerSizeLabel(int index) {
+        return Component.literal(LiveFeedClientConfig.headViewerSizePercent(index) + "%");
     }
 
     /** A broadcast width as its picture height: {@code 1280} reads "720p". */

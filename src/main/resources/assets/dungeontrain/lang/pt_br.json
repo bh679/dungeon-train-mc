@@ -2443,6 +2443,8 @@
   "gui.dungeontrain.options.stream_chat.kid_tip": "Sempre desligado no modo Criança: o chat nunca chega à transmissão.",
   "gui.dungeontrain.options.stream_size": "Tamanho do vídeo",
   "gui.dungeontrain.options.stream_size.tip": "Tamanho da imagem enviada aos espectadores. Menor pesa menos no seu FPS. Vale a partir da próxima live.",
+  "gui.dungeontrain.options.head_viewer_size": "Tamanho do visor ao vivo",
+  "gui.dungeontrain.options.head_viewer_size.tip": "Tamanho da transmissão fixada no canto superior direito enquanto você usa a filmadora ou uma TV. O contorno na prévia mostra.",
   "gui.dungeontrain.options.stream.preview": "O que os espectadores veem",
   "gui.dungeontrain.options.stream.preview.no_world": "Entre em um mundo para ver a prévia",
   "gui.dungeontrain.options.stream.preview.off": "A transmissão ao vivo está desligada",

@@ -179,13 +179,42 @@ public final class LiveFeedClientConfig {
         return next;
     }
 
+    /**
+     * Options → Stream → Live viewer size: one size for the pinned feed whether you watch or stream.
+     * Clicking the feed still steps each mode on its own afterwards. Persisted; no-op pre-load.
+     */
+    public static void setHeadViewerSize(int index) {
+        int i = clampSize(index);
+        if (!loaded()) return;
+        for (ModConfigSpec.IntValue v : List.of(HEAD_VIEWER_SIZE_WATCHING, HEAD_VIEWER_SIZE_STREAMING)) {
+            if (v.get() != i) {
+                v.set(i);
+                v.save();
+            }
+        }
+    }
+
+    /** The pinned feed's size indexes, smallest first. */
+    public static List<Integer> headViewerSizeIndexes() {
+        return java.util.stream.IntStream.range(0, HEAD_VIEWER_SIZES.length).boxed().toList();
+    }
+
+    /** Size {@code index} as a percentage of the normal width: 50, 75, 100, 150. */
+    public static int headViewerSizePercent(int index) {
+        return Math.round(HEAD_VIEWER_SIZES[clampSize(index)] * 100);
+    }
+
+    static int clampSize(int index) {
+        return Math.max(0, Math.min(HEAD_VIEWER_SIZES.length - 1, index));
+    }
+
     static int nextSize(int index) {
         return (Math.floorMod(index, HEAD_VIEWER_SIZES.length) + 1) % HEAD_VIEWER_SIZES.length;
     }
 
     /** {@code base} scaled to size {@code index}, rounded to an even width. */
     static int sizeWidth(int base, int index) {
-        int i = Math.max(0, Math.min(HEAD_VIEWER_SIZES.length - 1, index));
+        int i = clampSize(index);
         int w = Math.round(base * HEAD_VIEWER_SIZES[i]);
         return w % 2 == 0 ? w : w + 1;
     }

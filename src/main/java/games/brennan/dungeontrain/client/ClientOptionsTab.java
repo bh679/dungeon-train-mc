@@ -139,6 +139,8 @@ public enum ClientOptionsTab {
         STREAM_CHAT,
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE,
+        /** The live feed pinned top-right on the HUD; the preview outlines it. */
+        HEAD_VIEWER_SIZE,
 
         // --- Editor ---
         SCALE_ALL,
@@ -252,6 +254,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_GUI);
                 rows.add(Row.STREAM_CHAT);
                 rows.add(Row.STREAM_SIZE);
+                rows.add(Row.HEAD_VIEWER_SIZE);
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);

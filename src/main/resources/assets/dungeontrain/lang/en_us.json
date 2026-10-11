@@ -2930,6 +2930,8 @@
   "gui.dungeontrain.options.stream_chat.kid_tip": "Always off in Kid mode: chat never reaches the stream.",
   "gui.dungeontrain.options.stream_size": "Video size",
   "gui.dungeontrain.options.stream_size.tip": "Picture size sent to viewers. Smaller is lighter on your frame rate. Takes effect next time you go live.",
+  "gui.dungeontrain.options.head_viewer_size": "Live viewer size",
+  "gui.dungeontrain.options.head_viewer_size.tip": "Size of the live feed pinned top-right while you wear the camcorder or a TV. The outline in the preview shows it.",
   "gui.dungeontrain.options.stream.preview": "What viewers see",
   "gui.dungeontrain.options.stream.preview.no_world": "Join a world to preview",
   "gui.dungeontrain.options.stream.preview.off": "Livestreaming is off",
