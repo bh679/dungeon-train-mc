@@ -4527,6 +4527,8 @@
       "chat.dungeontrain.live.replaced_here",
       "key.dungeontrain.live_head_viewer",
       "item.dungeontrain.live_headpiece",
+      "item.dungeontrain.live_headpiece.tooltip",
+      "item.dungeontrain.live_headpiece.tooltip.warning",
       "item.dungeontrain.random_live_headpiece",
       "advancements.dungeontrain.dungeon_train.the_enchiridion.description"
     ],

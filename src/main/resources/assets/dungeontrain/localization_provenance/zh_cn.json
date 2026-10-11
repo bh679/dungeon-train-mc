@@ -3578,6 +3578,8 @@
       "gui.dungeontrain.editor_screen.disabled.builtin",
       "gui.dungeontrain.options.catch_up_burst.tip",
       "item.dungeontrain.live_headpiece",
+      "item.dungeontrain.live_headpiece.tooltip",
+      "item.dungeontrain.live_headpiece.tooltip.warning",
       "item.dungeontrain.random_live_headpiece",
       "advancements.dungeontrain.disqualified_this_life",
       "advancements.dungeontrain.track.click",
