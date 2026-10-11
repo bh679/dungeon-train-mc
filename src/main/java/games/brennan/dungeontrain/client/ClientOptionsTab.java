@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The six tabs {@link DungeonTrainClientOptionsScreen} files its rows under, and which one the
+ * The seven tabs {@link DungeonTrainClientOptionsScreen} files its rows under, and which one the
  * player is currently looking at.
  *
  * <p>Same split-by-subject shape as the editor menu's {@link games.brennan.dungeontrain.client.menu.EditorMenuTab},
@@ -20,6 +20,8 @@ import java.util.List;
  *       progress: where, how many, clear them, and whether to confirm build re-uploads.</li>
  *   <li>{@link #TRAIN} — the ride itself: engine volume, whether custom train content loads, and
  *       the ride-photo settings.</li>
+ *   <li>{@link #STREAM} — the Live Feed: whether wearing the Live Eye broadcasts, and whether
+ *       viewers see the HUD and chat — with a preview of what they would see.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
  *       render at, plus where each of the four editor menus (X/V/C/Z) draws itself.</li>
  *   <li>{@link #PERFORMANCE} — the lag tips the death screen's bug-report card offers, checked
@@ -39,6 +41,7 @@ public enum ClientOptionsTab {
     ACCOUNT("account"),
     BACKUPS("backups"),
     TRAIN("train"),
+    STREAM("stream"),
     EDITOR("editor"),
     PERFORMANCE("performance");
 
@@ -76,8 +79,6 @@ public enum ClientOptionsTab {
     public enum Row {
         // --- General ---
         CONTENT_MODE,
-        /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
-        LIVESTREAM,
         /** Chat with the developer, both ways — the consent card's Developer chat switch (Adult only). */
         DEV_CHAT,
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
@@ -128,6 +129,14 @@ public enum ClientOptionsTab {
          * player can see — the row is absent rather than a control that lies about what it did.
          */
         CATCH_UP_BURST,
+
+        // --- Stream (the screen adds the viewer preview under these rows) ---
+        /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
+        LIVESTREAM,
+        /** Whether viewers see the HUD and open menus. Everyone. */
+        STREAM_GUI,
+        /** Whether viewers see chat. Locked off in Kid mode. */
+        STREAM_CHAT,
 
         // --- Editor ---
         SCALE_ALL,
@@ -192,8 +201,8 @@ public enum ClientOptionsTab {
                 if (chineseLocale) {
                     rows.add(Row.POLITICAL_FILTER);
                 }
-                // The consent card's two switches, next to the content mode they default from.
-                rows.add(Row.LIVESTREAM);
+                // The consent card's Developer chat switch, next to the content mode it defaults
+                // from. Its Livestreaming switch lives on the Stream tab.
                 rows.add(Row.DEV_CHAT);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
@@ -235,6 +244,11 @@ public enum ClientOptionsTab {
                 if (trainSettingsWritable) {
                     rows.add(Row.CATCH_UP_BURST);
                 }
+            }
+            case STREAM -> {
+                rows.add(Row.LIVESTREAM);
+                rows.add(Row.STREAM_GUI);
+                rows.add(Row.STREAM_CHAT);
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);

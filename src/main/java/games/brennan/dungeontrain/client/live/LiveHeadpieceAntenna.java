@@ -32,11 +32,17 @@ import java.util.Map;
  * <p>One ray-cast per wearer per client tick, cached by entity id — the head layer renders the hat
  * once per frame per pass, and the look only changes between ticks anyway. In a hand, on the
  * ground or in a slot the tip stays unlit.</p>
+ *
+ * <p>A second predicate, {@link #LIVE_PROPERTY}, is 1 while the headpiece sits on its wearer's head:
+ * wearing it is what makes that player the streamer ({@code event/LiveFeedEvents}), so the model
+ * swaps the lens window from the idle Ender Pearl to the live Eye of Ender.</p>
  */
 public final class LiveHeadpieceAntenna {
 
     public static final ResourceLocation PROPERTY =
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "antenna_target");
+    public static final ResourceLocation LIVE_PROPERTY =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live");
 
     /** How far the aerial "sees", in blocks. */
     static final double REACH = 32.0;
@@ -49,10 +55,12 @@ public final class LiveHeadpieceAntenna {
 
     private LiveHeadpieceAntenna() {}
 
-    /** Registers the predicate; call from client setup's {@code enqueueWork}. */
+    /** Registers the predicates; call from client setup's {@code enqueueWork}. */
     public static void register() {
         ItemProperties.register(ModItems.LIVE_HEADPIECE.get(), PROPERTY,
             (stack, level, entity, seed) -> targetFor(stack, level, entity).propertyValue());
+        ItemProperties.register(ModItems.LIVE_HEADPIECE.get(), LIVE_PROPERTY,
+            (stack, level, entity, seed) -> isWorn(stack, level, entity) ? 1f : 0f);
     }
 
     /** Forget every wearer, on logout. */
@@ -61,7 +69,7 @@ public final class LiveHeadpieceAntenna {
     }
 
     static AntennaTarget targetFor(ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity) {
-        if (level == null || entity == null || entity.getItemBySlot(EquipmentSlot.HEAD) != stack) {
+        if (!isWorn(stack, level, entity)) {
             return AntennaTarget.OFF;
         }
         long tick = level.getGameTime();
@@ -75,6 +83,11 @@ public final class LiveHeadpieceAntenna {
         }
         READINGS.put(entity.getId(), new Reading(tick, target));
         return target;
+    }
+
+    /** {@code stack} is on {@code entity}'s head — not in a hand, a slot, a frame or on the ground. */
+    static boolean isWorn(ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity) {
+        return level != null && entity != null && entity.getItemBySlot(EquipmentSlot.HEAD) == stack;
     }
 
     /** Blocks first, then any living thing in front of the block hit; nearest wins. */

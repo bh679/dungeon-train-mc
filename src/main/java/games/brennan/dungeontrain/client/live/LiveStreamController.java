@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
@@ -10,6 +11,9 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -18,6 +22,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.event.GameShuttingDownEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
@@ -60,6 +67,7 @@ public final class LiveStreamController {
     @Nullable private Claim claim;
     @Nullable private Path dir;
     private long lastGrabNs;
+    private boolean grabbedThisFrame; // render thread: this frame was already read at an earlier point
     private long streamStartedMs;
     private int waitTicks;
 
@@ -258,7 +266,58 @@ public final class LiveStreamController {
      */
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onRenderFrameEnd(RenderFrameEvent.Post event) {
-        INSTANCE.grabFrame();
+        boolean handled = INSTANCE.grabbedThisFrame;
+        INSTANCE.grabbedThisFrame = false;
+        if (handled) return;
+        // An earlier point that never fired (no GUI pass this frame, or another mod removed the chat
+        // layer) drops the frame: reading the finished frame instead could send what was kept back.
+        StreamCapture.Point point = INSTANCE.capturePoint();
+        if (point == StreamCapture.Point.FRAME_END || point == StreamCapture.Point.FRAME_END_HIDE_CHAT) {
+            INSTANCE.grabFrame();
+        }
+    }
+
+    /**
+     * Stream GUI off: read the frame before any GUI layer draws (see {@link StreamCapture}). Receives
+     * cancelled events, so a mod cancelling the GUI pass cannot push the read to the finished frame.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public static void onGuiStart(RenderGuiEvent.Pre event) {
+        if (INSTANCE.capturePoint() == StreamCapture.Point.BEFORE_GUI) INSTANCE.grabNow(event.getGuiGraphics());
+    }
+
+    /**
+     * Stream chat off (always, in Kid mode): read just before chat draws, or skip the chat layer
+     * while a menu is open. Receives cancelled events for the same reason as {@link #onGuiStart}.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public static void onGuiLayer(RenderGuiLayerEvent.Pre event) {
+        if (!VanillaGuiLayers.CHAT.equals(event.getName())) return;
+        switch (INSTANCE.capturePoint()) {
+            case BEFORE_CHAT -> INSTANCE.grabNow(event.getGuiGraphics());
+            case FRAME_END_HIDE_CHAT -> event.setCanceled(true);
+            default -> { }
+        }
+    }
+
+    private void grabNow(GuiGraphics graphics) {
+        if (grabbedThisFrame) return;
+        graphics.flush(); // the HUD drawn so far is still batched; put it in the framebuffer first
+        grabFrame();
+        grabbedThisFrame = true;
+    }
+
+    private StreamCapture.Point capturePoint() {
+        if (state != State.STREAMING) return StreamCapture.Point.SKIP;
+        Minecraft mc = Minecraft.getInstance();
+        Screen screen = mc.screen;
+        return StreamCapture.point(LiveFeedClientConfig.streamGui(), streamChatShown(),
+            screen != null, screen instanceof ChatScreen, mc.options.hideGui);
+    }
+
+    /** The Stream chat switch as it applies to this player — always off in Kid mode. */
+    public static boolean streamChatShown() {
+        return StreamCapture.chatShown(LiveFeedClientConfig.streamChat(), ClientDisplayConfig.getContentMode().isKid());
     }
 
     private void grabFrame() {
