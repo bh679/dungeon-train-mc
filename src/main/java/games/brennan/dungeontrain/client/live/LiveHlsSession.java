@@ -29,7 +29,9 @@ import java.util.concurrent.TimeUnit;
  * ffmpeg plays the tail out and exits cleanly, and the session is {@link #finished()} — never
  * restarted, since rejoining a finished playlist would play it again from its first segment. Any
  * other exit (a 404, a network drop) backs off (2 s → 30 s) before trying again, keeping the last
- * frame on screen meanwhile. {@link #release()} after 30 s with no viewer kills
+ * frame on screen meanwhile. A playlist that vanishes without ENDLIST leaves ffmpeg waiting forever
+ * instead of exiting, so a live run with no frame for {@link #STALL_MS} is killed from {@link #touch}
+ * into that same backoff. {@link #release()} after 30 s with no viewer kills
  * the process; the texture survives.</p>
  *
  * <p>Frames arrive as RGBA, whose little-endian ints are already {@link NativeImage}'s pixel values.
@@ -43,6 +45,12 @@ public final class LiveHlsSession implements IMediaSession {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final long IDLE_KILL_MS = 30_000;
+    /**
+     * A live run with no new frame for this long is stuck — its playlist vanished without an ENDLIST
+     * and ffmpeg stopped refetching but never exits. About two segments: a viewer legitimately waits
+     * up to one for the next.
+     */
+    static final long STALL_MS = 20_000;
 
     private final String playlistUrl;
     private final boolean replay;
@@ -60,6 +68,10 @@ public final class LiveHlsSession implements IMediaSession {
     private volatile boolean finished;
     private volatile Process process;
     private volatile Thread reader;
+    /** The newest frame, or the start of the current ffmpeg run if later: what {@link #stalled} measures from. */
+    private volatile long lastProgressMs = System.currentTimeMillis();
+    /** The run the stall watchdog already killed, so it is killed (and logged) once. */
+    private volatile Process stallKilled;
 
     public LiveHlsSession(String playlistUrl, int width, int height) {
         this(playlistUrl, width, height, false);
@@ -93,6 +105,15 @@ public final class LiveHlsSession implements IMediaSession {
         return !replay && exitCode == 0 && framesThisRun > 0;
     }
 
+    /**
+     * Whether a live run has gone quiet for good: frames were decoded, then none for {@link #STALL_MS}.
+     * A replay loops a local-length segment and never stalls this way; before the first frame the
+     * waiting pattern is already showing.
+     */
+    static boolean stalled(long lastProgressMs, long nowMs, boolean replay, long framesSeen) {
+        return !replay && framesSeen > 0 && nowMs - lastProgressMs >= STALL_MS;
+    }
+
     /** Whether the decoder thread is still running. */
     boolean decoding() {
         Thread r = reader;
@@ -102,10 +123,28 @@ public final class LiveHlsSession implements IMediaSession {
     /** A TV wants this feed right now; (re)start decoding if idle. */
     public synchronized void touch(FFmpeg ffmpeg) {
         lastWantedMs = System.currentTimeMillis();
-        if (closed || finished || (reader != null && reader.isAlive())) return;
+        if (closed || finished) return;
+        if (reader != null && reader.isAlive()) {
+            killIfStalled(lastWantedMs);
+            return;
+        }
         reader = new Thread(() -> readLoop(ffmpeg), "dt-live-decoder");
         reader.setDaemon(true);
         reader.start();
+    }
+
+    /**
+     * Render thread: a stalled run shows buffering and its ffmpeg is killed — a signal, never a wait —
+     * so the reader's blocked read ends and {@link #readLoop} falls into its backoff and retries.
+     */
+    private void killIfStalled(long nowMs) {
+        Process p = process;
+        if (p == null || p == stallKilled || !stalled(lastProgressMs, nowMs, replay, frameSeq)) return;
+        stallKilled = p;
+        status = MediaStatus.BUFFERING;
+        LOGGER.info("[DungeonTrain] live decoder: no frame for {} s, restarting {}",
+            (nowMs - lastProgressMs) / 1000, playlistUrl);
+        p.destroyForcibly();
     }
 
     private void readLoop(FFmpeg ffmpeg) {
@@ -115,6 +154,7 @@ public final class LiveHlsSession implements IMediaSession {
             try {
                 status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
                 p = ffmpeg.runFFmpeg(args(playlistUrl, width, height, replay));
+                lastProgressMs = System.currentTimeMillis(); // a fresh run gets a whole stall window
                 process = p;
                 if (closed) break;
                 FfmpegSupport.drain(p.getErrorStream(), "decoder");
@@ -166,6 +206,7 @@ public final class LiveHlsSession implements IMediaSession {
                 back = fill;
                 frameSeq++;
             }
+            lastProgressMs = System.currentTimeMillis();
         }
         return true;
     }

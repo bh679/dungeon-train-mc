@@ -31,6 +31,27 @@ class LiveHlsSessionTest {
     }
 
     @Test
+    void aLiveRunWithNoFrameForTheStallWindowIsStalled() {
+        long last = 1_000_000L;
+        assertFalse(LiveHlsSession.stalled(last, last + LiveHlsSession.STALL_MS - 1, false, 300),
+            "waiting on the next segment is normal");
+        assertTrue(LiveHlsSession.stalled(last, last + LiveHlsSession.STALL_MS, false, 300));
+        assertTrue(LiveHlsSession.stalled(last, last + 120_000, false, 300));
+    }
+
+    @Test
+    void noFrameYetOrAReplayIsNeverStalled() {
+        long last = 1_000_000L;
+        assertFalse(LiveHlsSession.stalled(last, last + 120_000, false, 0), "the waiting pattern is already up");
+        assertFalse(LiveHlsSession.stalled(last, last + 120_000, true, 300), "a replay loops a finished segment");
+    }
+
+    @Test
+    void theStallWindowCoversMoreThanOneSegment() {
+        assertTrue(LiveHlsSession.STALL_MS >= 2 * 10_000L, "a viewer buffers up to one 10 s segment legitimately");
+    }
+
+    @Test
     void ffmpegPipesRgbaSoFramesNeedNoConversion() {
         List<String> live = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false));
         assertTrue(live.contains("rgba"), "live frames arrive as RGBA");
