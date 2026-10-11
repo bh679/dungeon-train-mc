@@ -63,21 +63,21 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("Tab order is General, Account, Backups, Train, Editor, Performance")
+    @DisplayName("Tab order is General, Account, Backups, Train, Stream, Editor, Performance")
     void tabOrder() {
         assertEquals(List.of(ClientOptionsTab.GENERAL, ClientOptionsTab.ACCOUNT, ClientOptionsTab.BACKUPS,
-                        ClientOptionsTab.TRAIN, ClientOptionsTab.EDITOR, ClientOptionsTab.PERFORMANCE),
+                        ClientOptionsTab.TRAIN, ClientOptionsTab.STREAM, ClientOptionsTab.EDITOR, ClientOptionsTab.PERFORMANCE),
                 List.of(ClientOptionsTab.values()));
     }
 
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: twenty-seven rows, none of the conditional rows present")
+    @DisplayName("Plain client: thirty-three rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(27, rows.size());
+        assertEquals(33, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -95,6 +95,7 @@ final class ClientOptionsTabTest {
 
         assertEquals(List.of(ClientOptionsTab.Row.CONTENT_MODE,
                         ClientOptionsTab.Row.POLITICAL_FILTER,
+                        ClientOptionsTab.Row.DEV_CHAT,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.UPDATE_NOTICE_CHAT,
                         ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT,
@@ -153,9 +154,20 @@ final class ClientOptionsTabTest {
     void allConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true, true);
 
-        assertEquals(30, rows.size());
+        assertEquals(36, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
+    }
+
+    @Test
+    @DisplayName("The Stream tab holds Livestreaming and the two what-viewers-see switches; General no longer does")
+    void streamTabRows() {
+        assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
+                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_SIZE,
+                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE),
+                ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
+        assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
+                .contains(ClientOptionsTab.Row.LIVESTREAM));
     }
 
     @Test

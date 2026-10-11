@@ -106,6 +106,19 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Overworld game time at which the player last saw a Live Eye in a container (0 = never). Starts the
+     * 15-minute window in which loot Live Eyes become TVs for them ({@code event/LiveEyeLootResolver}).
+     * {@code copyOnDeath} so dying doesn't reset it.
+     */
+    public static final Supplier<AttachmentType<Long>> LIVE_EYE_SEEN_AT =
+        TYPES.register("live_eye_seen_at",
+            () -> AttachmentType.<Long>builder(() -> 0L)
+                .serialize(Codec.LONG)
+                .copyOnDeath()
+                .build()
+        );
+
+    /**
      * Per-player flag: has this player already seen the fly-up spawn intro
      * cinematic in this world? Set once on first login and serialized so it
      * survives logout / world reload. {@code copyOnDeath} preserves it across

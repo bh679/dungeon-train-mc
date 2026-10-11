@@ -6,6 +6,8 @@
   "refmap": "dungeontrain.refmap.json",
   "plugin": "games.brennan.dungeontrain.mixin.CoreMixinPlugin",
   "mixins": [
+    "NetherPortalBlockBandJumpMixin",
+    "NetherPortalBlockInvoker",
     "PhotographFrameItemPlaceMixin",
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",

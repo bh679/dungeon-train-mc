@@ -9,6 +9,8 @@ import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
+import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
+import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
@@ -17,6 +19,9 @@ import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
 import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
+import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
+import org.jetbrains.annotations.Nullable;
 import games.brennan.dungeontrain.train.CatchUpBurstAuto;
 import games.brennan.dungeontrain.train.CatchUpBurstMode;
 import games.brennan.dungeonbackup.client.BackupOptionsWidgets;
@@ -107,6 +112,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private final List<OptionsTab> tabs = new ArrayList<>();
     private TabNavigationBar tabNavigationBar;
+    /**
+     * Added to {@link #layout}'s footer once. The layout is a per-screen field that outlives
+     * {@code rebuildWidgets()}, and {@code HeaderAndFooterLayout} has no remove, so adding a fresh
+     * button on every {@code init()} stacked one Done per rebuild.
+     */
+    private Button doneButton;
 
     /** Empty on a release en_us client, which is why the Translate row is conditional. */
     private String translateTarget = "";
@@ -116,6 +127,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * survives {@code rebuildWidgets()} — the answer's own rebuild must not ask again.
      */
     private boolean accountRequested = false;
+    private boolean donationPrefsRequested = false;
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
         // ".client." because gui.dungeontrain.options.title is already taken by the WORLD options screen.
@@ -146,7 +158,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 .build();
         addRenderableWidget(this.tabNavigationBar);
 
-        this.layout.addToFooter(Button.builder(CommonComponents.GUI_DONE, b -> onClose()).width(200).build());
+        if (this.doneButton == null) {
+            this.doneButton = Button.builder(CommonComponents.GUI_DONE, b -> onClose()).width(200).build();
+            this.layout.addToFooter(this.doneButton);
+        }
         this.layout.visitWidgets(this::addRenderableWidget);
 
         // Reopen (and re-init after a resize) on whichever tab the player last chose.
@@ -206,14 +221,22 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     /** One tab: a title on the bar, and its own scrolling list of rows. */
     private final class OptionsTab implements Tab {
 
+        /** Height of one packed line in an {@link OptionsList}, plus the list's top and bottom padding. */
+        private static final int LIST_LINE_H = 25;
+        private static final int LIST_PAD = 8;
+        private static final int PREVIEW_MARGIN = 20;
+
         private final ClientOptionsTab id;
         private final OptionsList list;
+        /** Stream tab only: what viewers would see, under the rows that change it. */
+        @Nullable private final StreamPreviewWidget preview;
 
         OptionsTab(ClientOptionsTab id, List<ClientOptionsTab.Row> rows) {
             this.id = id;
             this.list = new OptionsList(DungeonTrainClientOptionsScreen.this.minecraft,
                     DungeonTrainClientOptionsScreen.this.width, DungeonTrainClientOptionsScreen.this);
             pack(this.list, rows);
+            this.preview = id == ClientOptionsTab.STREAM ? new StreamPreviewWidget() : null;
         }
 
         @Override
@@ -224,11 +247,23 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         @Override
         public void visitChildren(Consumer<AbstractWidget> consumer) {
             consumer.accept(this.list);
+            if (this.preview != null) consumer.accept(this.preview);
         }
 
         @Override
         public void doLayout(ScreenRectangle rectangle) {
-            this.list.updateSizeAndPosition(rectangle.width(), rectangle.height(), rectangle.top());
+            if (this.preview == null) {
+                this.list.updateSizeAndPosition(rectangle.width(), rectangle.height(), rectangle.top());
+                return;
+            }
+            // The list shrinks to its rows; the preview takes the rest (the widget hides itself
+            // when that is too small to show a picture).
+            int listH = Math.min(rectangle.height(), this.list.children().size() * LIST_LINE_H + LIST_PAD);
+            this.list.updateSizeAndPosition(rectangle.width(), listH, rectangle.top());
+            this.preview.setX(rectangle.left() + PREVIEW_MARGIN);
+            this.preview.setY(rectangle.top() + listH + 4);
+            this.preview.setWidth(Math.max(0, rectangle.width() - 2 * PREVIEW_MARGIN));
+            this.preview.setHeight(Math.max(0, rectangle.height() - listH - 8));
         }
     }
 
@@ -382,6 +417,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     })
                             .bounds(0, 0, WIDE_W, ROW_H).build(),
                     "gui.dungeontrain.options.account.not_linked"), null);
+            addDonationPrefs(list); // works without a Discord link — it is keyed by the Minecraft account
             return;
         }
         list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
@@ -418,17 +454,101 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             }
         }
         if (pending != null) list.addSmall(pending, null);
+        addDonationPrefs(list);
+    }
+
+    /**
+     * "Donation messages": how the developer hears about this player's donations on Discord —
+     * {@link DonationPrefsClient.Visibility} public / anonymous / private / off, and whether their Discord
+     * is tagged. Stored on the relay ({@link DonationPrefsState}); shown linked or not, since it is keyed
+     * by the Minecraft account. The tag switch greys out where it has no effect (anonymous, off).
+     */
+    private void addDonationPrefs(OptionsList list) {
+        if (!this.donationPrefsRequested) {
+            this.donationPrefsRequested = true;
+            DonationPrefsState.refresh(this::rebuildIfShown);
+        }
+        list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                Component.translatable("gui.dungeontrain.options.account.donation.header")), null);
+        DonationPrefsClient.Prefs prefs = DonationPrefsState.prefs();
+        if (prefs == null) {
+            if (DonationPrefsState.phase() == DonationPrefsState.Phase.FAILED) {
+                list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.account.donation.failed"),
+                        Component.translatable("gui.dungeontrain.options.account.retry"), () -> {
+                            this.donationPrefsRequested = false;
+                            DonationPrefsState.invalidate();
+                            rebuildIfShown();
+                        }), null);
+            } else {
+                list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                        Component.translatable("gui.dungeontrain.options.account.checking")), null);
+            }
+            return;
+        }
+        if (DonationPrefsState.saveFailed()) {
+            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
+                    Component.translatable("gui.dungeontrain.options.account.toggle_failed")), null);
+        }
+        // Side by side when every label fits a half-width button, otherwise one per row — "Developer only"
+        // and most translations don't fit half a row.
+        String visKey = "gui.dungeontrain.options.account.donation.visibility";
+        boolean narrow = true;
+        for (DonationPrefsClient.Visibility v : DonationPrefsClient.Visibility.values()) {
+            if (this.font.width(value(visKey, donationVisibilityLabel(v))) > ROW_W - TEXT_PADDING) narrow = false;
+        }
+        for (Component c : onOffCandidates("gui.dungeontrain.options.account.donation.tag")) {
+            if (this.font.width(c) > ROW_W - TEXT_PADDING) narrow = false;
+        }
+        int w = narrow ? ROW_W : WIDE_W;
+        CycleButton<DonationPrefsClient.Visibility> visibility =
+                CycleButton.<DonationPrefsClient.Visibility>builder(DungeonTrainClientOptionsScreen::donationVisibilityLabel)
+                        .withValues(List.of(DonationPrefsClient.Visibility.values()))
+                        .withInitialValue(prefs.visibility())
+                        .withTooltip(v -> Tooltip.create(Component.translatable(donationKey(v) + ".tip")))
+                        .create(0, 0, w, ROW_H, Component.translatable(visKey),
+                                (btn, v) -> DonationPrefsState.setVisibility(v, this::rebuildIfShown));
+        CycleButton<Boolean> tag = CycleButton.onOffBuilder(prefs.tag())
+                .create(0, 0, w, ROW_H, Component.translatable("gui.dungeontrain.options.account.donation.tag"),
+                        (btn, on) -> DonationPrefsState.setTag(on, this::rebuildIfShown));
+        tag.active = prefs.visibility() == DonationPrefsClient.Visibility.PUBLIC
+                || prefs.visibility() == DonationPrefsClient.Visibility.PRIVATE;
+        withTip(tag, "gui.dungeontrain.options.account.donation.tag.tip");
+        if (narrow) {
+            list.addSmall(visibility, tag);
+        } else {
+            list.addSmall(visibility, null);
+            list.addSmall(tag, null);
+        }
+    }
+
+    private static Component donationVisibilityLabel(DonationPrefsClient.Visibility v) {
+        return Component.translatable(donationKey(v));
+    }
+
+    private static String donationKey(DonationPrefsClient.Visibility v) {
+        return "gui.dungeontrain.options.account.donation.visibility." + v.key();
     }
 
     private static String pingKey(PingType type) {
         return "gui.dungeontrain.options.account.pings." + type.key();
     }
 
-    /** Rebuilds after a tip's action, unless that action already moved on to another screen. */
+    /**
+     * Rebuilds after a tip's action, unless that action already moved on to another screen.
+     *
+     * <p>Always deferred to the next client tick. The account refresh in {@link #addDiscordAccount}
+     * is requested from inside {@code init()}, and when the relay's answer is already cached its
+     * future is complete, so the callback ran synchronously — a {@code rebuildWidgets()} nested inside
+     * the very {@code init()} that was still adding its own tab bar, Done button and list. The outer
+     * init then finished on top of the rebuilt screen, and every reopen stacked another tab bar.</p>
+     */
     private void rebuildIfShown() {
-        if (this.minecraft.screen == this) {
-            rebuildWidgets();
-        }
+        this.minecraft.tell(() -> {
+            if (this.minecraft.screen == this) {
+                rebuildWidgets();
+            }
+        });
     }
 
     /**
@@ -457,6 +577,16 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CONTENT_MODE -> List.of(
                     value("gui.dungeontrain.options.content_mode", contentModeLabel(ContentMode.ADULT)),
                     value("gui.dungeontrain.options.content_mode", contentModeLabel(ContentMode.KID)));
+            case LIVESTREAM -> onOffCandidates("gui.dungeontrain.options.livestream");
+            case DEV_CHAT -> onOffCandidates("gui.dungeontrain.options.dev_chat");
+            case STREAM_GUI -> onOffCandidates("gui.dungeontrain.options.stream_gui");
+            case STREAM_CHAT -> onOffCandidates("gui.dungeontrain.options.stream_chat");
+            case STREAM_SIZE -> LiveFeedClientConfig.captureSizeValues(LiveFeedClientConfig.captureWidth()).stream()
+                    .map(w -> value("gui.dungeontrain.options.stream_size", streamSizeLabel(w)))
+                    .toList();
+            case HEAD_VIEWER_SIZE -> LiveFeedClientConfig.headViewerSizeIndexes().stream()
+                    .map(i -> value("gui.dungeontrain.options.head_viewer_size", headViewerSizeLabel(i)))
+                    .toList();
             case POLITICAL_FILTER -> onOffCandidates("gui.dungeontrain.political_filter.option");
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case UPDATE_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.update_notice_chat");
@@ -564,6 +694,75 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     // only place outside the one-time card that says what Kid mode actually does, and
                     // it is where a parent comes to change it.
                     "gui.dungeontrain.options.content_mode.tip");
+
+            // The consent card's Livestreaming switch, findable again — the card's footnote promises
+            // "change anytime in options".
+            case LIVESTREAM -> withTip(
+                    CycleButton.onOffBuilder(LiveFeedClientConfig.streamingEnabled())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.livestream"),
+                                    (btn, on) -> {
+                                        LiveFeedClientConfig.setStreamingEnabled(on);
+                                        ContentModeSyncClient.syncNow();
+                                    }),
+                    "gui.dungeontrain.options.livestream.tip");
+
+            // What viewers see; the preview under the rows follows both switches live.
+            case STREAM_GUI -> withTip(
+                    CycleButton.onOffBuilder(LiveFeedClientConfig.streamGui())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.stream_gui"),
+                                    (btn, on) -> LiveFeedClientConfig.setStreamGui(on)),
+                    "gui.dungeontrain.options.stream_gui.tip");
+
+            // Kid mode never streams chat: the switch shows Off and is greyed, whatever is stored.
+            case STREAM_CHAT -> {
+                boolean kid = ClientDisplayConfig.isKidMode();
+                CycleButton<Boolean> streamChat = CycleButton.onOffBuilder(!kid && LiveFeedClientConfig.streamChat())
+                        .create(0, 0, width, ROW_H,
+                                Component.translatable("gui.dungeontrain.options.stream_chat"),
+                                (btn, on) -> LiveFeedClientConfig.setStreamChat(on));
+                streamChat.active = !kid;
+                yield withTip(streamChat, kid ? "gui.dungeontrain.options.stream_chat.kid_tip"
+                                              : "gui.dungeontrain.options.stream_chat.tip");
+            }
+
+            // Broadcast width; the preview re-captures at it on the next frame.
+            case STREAM_SIZE -> {
+                int current = LiveFeedClientConfig.captureWidth();
+                yield withTip(
+                        CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::streamSizeLabel)
+                                .withValues(LiveFeedClientConfig.captureSizeValues(current))
+                                .withInitialValue(current)
+                                .create(0, 0, width, ROW_H,
+                                        Component.translatable("gui.dungeontrain.options.stream_size"),
+                                        (btn, w) -> LiveFeedClientConfig.setCaptureWidth(w)),
+                        "gui.dungeontrain.options.stream_size.tip");
+            }
+
+            // The pinned top-right feed; the preview outlines it at the chosen size.
+            case HEAD_VIEWER_SIZE -> withTip(
+                    CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)
+                            .withValues(LiveFeedClientConfig.headViewerSizeIndexes())
+                            .withInitialValue(LiveFeedClientConfig.headViewerSize(false))
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.head_viewer_size"),
+                                    (btn, i) -> LiveFeedClientConfig.setHeadViewerSize(i)),
+                    "gui.dungeontrain.options.head_viewer_size.tip");
+
+            // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
+            // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
+            case DEV_CHAT -> {
+                CycleButton<Boolean> devChat = CycleButton.onOffBuilder(ClientDisplayConfig.isDevChatEnabled())
+                        .create(0, 0, width, ROW_H,
+                                Component.translatable("gui.dungeontrain.options.dev_chat"),
+                                (btn, on) -> {
+                                    ClientDisplayConfig.setDevChatEnabled(on);
+                                    DevMessageConsentClient.resync();
+                                });
+                devChat.active = !ClientDisplayConfig.isKidMode();
+                yield withTip(devChat, "gui.dungeontrain.options.dev_chat.tip");
+            }
 
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.
@@ -842,6 +1041,16 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         values.add(current);
         values.sort(null);
         return List.copyOf(values);
+    }
+
+    /** A pinned-feed size index as a percentage of its normal width: "150%". */
+    private static Component headViewerSizeLabel(int index) {
+        return Component.literal(LiveFeedClientConfig.headViewerSizePercent(index) + "%");
+    }
+
+    /** A broadcast width as its picture height: {@code 1280} reads "720p". */
+    private static Component streamSizeLabel(int width) {
+        return Component.literal(LiveFeedClientConfig.heightFor(width) + "p"); // a unit, not prose
     }
 
     private static Component resolutionLabel(int value) {

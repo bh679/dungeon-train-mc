@@ -621,6 +621,18 @@ dependencies {
     implementation "maven.modrinth:exposure:${exposure_version}"
     implementation "maven.modrinth:exposure-polaroid:${exposurepolaroid_version}"
 
+    // Vista — REQUIRED third-party dep (see gradle.properties). DT compiles against its broadcast
+    // seam (IBroadcastSource / IVideoSource / IWebTexture) and its downloaded ffmpeg wrapper for
+    // the Live Feed (block/LiveAntenna*, client/live/*). Never jarJar'd: its licence forbids it.
+    implementation "maven.modrinth:vista_tv:${vista_version}"
+
+    // Jade — OPTIONAL (an on-by-default modpack companion, never a declared dependency). Compile-only for
+    // compat/jade/LiveEyeJadePlugin, which Jade discovers by its @WailaPlugin annotation, so nothing
+    // loads a Jade class when Jade is absent. localRuntime puts it in runClient/runServer for testing.
+    // Pinned to the modpack's Jade build (modpack.config.json → jade.modrinth_version).
+    compileOnly "maven.modrinth:jade:${jade_version}"
+    localRuntime "maven.modrinth:jade:${jade_version}"
+
     // Big Lost City — REQUIRED third-party dep (see gradle.properties). Structures only; on the dev
     // classpath so runClient/runServer generate the Lost City era's cities.
     implementation "maven.modrinth:big-lost-city:${biglostcity_version}"
@@ -942,6 +954,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         // Exposure + its Polaroid add-on — floors only.
         exposure_min_version              : exposure_min_version,
         exposurepolaroid_min_version      : exposurepolaroid_min_version,
+        // Vista — floor only.
+        vista_min_version                 : vista_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

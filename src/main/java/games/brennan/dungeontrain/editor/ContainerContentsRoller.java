@@ -63,6 +63,7 @@ import games.brennan.dungeontrain.narrative.PlayerBookPendingTag;
 import games.brennan.dungeontrain.narrative.SharedBookPool;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import games.brennan.dungeontrain.item.LiveHeadpiecePendingTag;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
 
@@ -1058,6 +1059,15 @@ public final class ContainerContentsRoller {
             if (!found.isEmpty()) return found;
             return rollPerMille(SharedPhotos.cameraFallbackPerMille(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
                 ? DisposableCamera.create() : rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
+        }
+
+        // The Live Eye slot. Baked with no player in sight, so it always bakes a pending Live Eye;
+        // event/LiveEyeLootResolver decides — when a player first sees it (open, Jade look, or
+        // arrival in their inventory) — whether it stays a Live Eye or becomes a TV.
+        if (item == ModItems.RANDOM_LIVE_HEADPIECE.get()) {
+            ItemStack headpiece = new ItemStack(ModItems.LIVE_HEADPIECE.get());
+            LiveHeadpiecePendingTag.markPending(headpiece);
+            return headpiece;
         }
 
         // Polaroid's plain instant camera is hidden (DisabledModContent); a loot entry for it is the

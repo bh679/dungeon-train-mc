@@ -41,7 +41,7 @@ DEFAULT_CONFIG = REPO_ROOT / "modpack" / "modpack.config.json"
 DEFAULT_RELEASE_YML = REPO_ROOT / ".github" / "workflows" / "release.yml"
 
 # A single mc-publish relation, e.g. "appleskin(optional)" or "sable(required)".
-_RELATION_RE = re.compile(r"^([a-z0-9][a-z0-9-]*)\(([a-z-]+)\)$")
+_RELATION_RE = re.compile(r"^([a-z0-9][a-z0-9_-]*)\(([a-z-]+)\)$")
 
 
 def extract_block_scalar(text: str, key: str) -> list[str]:
