@@ -134,6 +134,7 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_CONNECT_MODE = "cn";
     /** Per-entry column growth, packed ({@code VariantGrowth#toInt}). Absent when off. */
     private static final String NBT_GROWTH = "gr";
+    private static final String NBT_PAINTING = "pt";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -444,6 +445,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.growth().isDefault()) {
                 entry.putInt(NBT_GROWTH, s.growth().toInt());
             }
+            if (!s.painting().isDefault()) {
+                entry.putString(NBT_PAINTING, s.painting().id());
+            }
             list.add(entry);
         }
         root.put(NBT_ROOT_KEY, list);
@@ -606,8 +610,12 @@ public final class VariantClipboardItem extends Item {
             games.brennan.dungeontrain.editor.VariantGrowth growth = entry.contains(NBT_GROWTH, Tag.TAG_INT)
                 ? games.brennan.dungeontrain.editor.VariantGrowth.fromInt(entry.getInt(NBT_GROWTH))
                 : games.brennan.dungeontrain.editor.VariantGrowth.NONE;
+            games.brennan.dungeontrain.editor.VariantPainting painting = entry.contains(NBT_PAINTING, Tag.TAG_STRING)
+                ? games.brennan.dungeontrain.editor.VariantPainting.parse(entry.getString(NBT_PAINTING))
+                : null;
             out.add(new VariantState(state, beNbt, weight, rotation, lootPrefab, null, half,
-                difficulty, groupRef, active, connect, growth));
+                difficulty, groupRef, active, connect, growth,
+                painting == null ? games.brennan.dungeontrain.editor.VariantPainting.NONE : painting));
         }
         return out;
     }

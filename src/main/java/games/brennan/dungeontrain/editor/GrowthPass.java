@@ -3,12 +3,14 @@ package games.brennan.dungeontrain.editor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.ScaffoldingBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
@@ -42,6 +44,21 @@ public final class GrowthPass {
         LevelReader reader();
 
         void set(BlockPos pos, BlockState state);
+
+        /**
+         * Load {@code tag} into the block entity just written at {@code pos} (a hung painting's
+         * picture — {@link PaintingPass}). No-op when the block has none.
+         */
+        default void loadBlockEntity(BlockPos pos, CompoundTag tag) {
+            BlockEntity be = reader().getBlockEntity(pos);
+            if (be == null) return;
+            be.loadCustomOnly(tag, reader().registryAccess());
+            be.setChanged();
+            if (reader() instanceof ServerLevel server) {
+                BlockState state = server.getBlockState(pos);
+                server.sendBlockUpdated(pos, state, state, Block.UPDATE_CLIENTS);
+            }
+        }
     }
 
     /** Runtime stamps (carriages, portal rooms, frames): silent, no neighbour shape cascade. */
@@ -80,6 +97,7 @@ public final class GrowthPass {
     private static final class Frame {
         int depth;
         final List<Pending> pending = new ArrayList<>();
+        final List<PaintingPass.Pending> paintings = new ArrayList<>();
     }
 
     private static final ThreadLocal<Frame> FRAME = ThreadLocal.withInitial(Frame::new);
@@ -98,8 +116,13 @@ public final class GrowthPass {
             closed = true;
             Frame frame = FRAME.get();
             if (--frame.depth > 0) return;
+            List<PaintingPass.Pending> toHang = List.copyOf(frame.paintings);
+            frame.paintings.clear();
             List<Pending> toFlush = List.copyOf(frame.pending);
             frame.pending.clear();
+            // Paintings first: they only take free space, and a column grown afterwards then
+            // stops at the painting instead of the painting finding its wall space taken.
+            for (PaintingPass.Pending p : toHang) PaintingPass.hang(p);
             for (Pending p : toFlush) grow(p);
         }
     }
@@ -134,6 +157,13 @@ public final class GrowthPass {
                             BlockPos localPos, long seed, int index, Predicate<BlockPos> within) {
         if (!wantsGrowth(entry, placed)) return;
         if (index == games.brennan.dungeontrain.train.CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) return;
+        if (PaintingPass.wants(entry, placed)) {
+            PaintingPass.Pending p = PaintingPass.pending(target, world, entry, placed, localPos, seed, index, within);
+            Frame frame = FRAME.get();
+            if (frame.depth > 0) frame.paintings.add(p);
+            else PaintingPass.hang(p);
+            return;
+        }
         int length = entry.growth().rollLength(seed, localPos.asLong(), index);
         if (length < 2) return;
         Pending p = new Pending(target, world.immutable(), placed, entry.growth(), length, within);
@@ -142,9 +172,13 @@ public final class GrowthPass {
         else grow(p);
     }
 
-    /** Cheap pre-check so placers can skip building a {@link Target} for the common no-growth cell. */
+    /**
+     * Cheap pre-check so placers can skip building a {@link Target} for the common no-growth cell.
+     * Also true for a painting row with a size / picture set — {@link PaintingPass} rides this pass.
+     */
     public static boolean wantsGrowth(VariantState entry, BlockState placed) {
-        return entry != null && !entry.growth().isDefault() && GrowthShapes.canGrow(placed);
+        return entry != null
+            && ((!entry.growth().isDefault() && GrowthShapes.canGrow(placed)) || PaintingPass.wants(entry, placed));
     }
 
     /**
