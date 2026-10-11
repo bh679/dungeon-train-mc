@@ -33,8 +33,12 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -56,6 +60,8 @@ public final class LiveStreamController {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final LiveStreamController INSTANCE = new LiveStreamController();
+    /** Session dirs a {@link LiveTeardown} is still flushing; the next stream's sweep leaves them be. */
+    private static final Set<Path> TEARING_DOWN = ConcurrentHashMap.newKeySet();
 
     public enum State { IDLE, WAIT_FFMPEG, CLAIMING, STREAMING, STOPPING }
 
@@ -214,7 +220,7 @@ public final class LiveStreamController {
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] live stream could not start", e);
             say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
-            teardown(false);
+            teardown(false, false);
             state = State.IDLE;
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         }
@@ -238,23 +244,57 @@ public final class LiveStreamController {
     }
 
     private void stop(@Nullable Component why, boolean clean) {
+        stop(why, clean, false);
+    }
+
+    private void stop(@Nullable Component why, boolean clean, boolean wait) {
         if (state == State.IDLE) return;
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
-        teardown(clean);
+        teardown(clean, wait);
         state = State.IDLE;
         if (why != null) say(why);
     }
 
-    private void teardown(boolean clean) {
-        if (encoder != null) { encoder.close(); encoder = null; }
-        if (uploader != null) { uploader.close(clean); uploader = null; }
-        if (grabber != null) { grabber.close(); grabber = null; }
-        if (clean && claim != null) LiveFeedClient.stop(claim.token());
+    /**
+     * Hands this stream's encoder, uploader, relay claim and directory to {@link LiveTeardown} and
+     * clears them, so the controller is IDLE at once. The steps block for seconds — ffmpeg's last
+     * segment, the final upload pass, the relay stop — and on the render thread that froze the game
+     * every time the Live Eye came off, so they run on their own thread. {@code wait} runs them here
+     * instead: game shutdown only, where a daemon thread would die before the ENDLIST went out.
+     */
+    private void teardown(boolean clean, boolean wait) {
+        LiveEncoder enc = encoder;
+        LiveUploader up = uploader;
+        LiveFrameGrabber grab = grabber;
+        Claim c = claim;
+        Path d = dir;
+        encoder = null;
+        uploader = null;
+        grabber = null;
         claim = null;
-        if (dir != null) { deleteTree(dir); dir = null; }
+        dir = null;
+
+        List<LiveTeardown.Step> steps = new ArrayList<>();
+        if (enc != null) steps.add(new LiveTeardown.Step("encoder", enc::close));
+        if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean)));
+        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> LiveFeedClient.stop(c.token())));
+        if (d != null) steps.add(new LiveTeardown.Step("delete session dir", () -> deleteTree(d)));
+        // GL buffers belong to the render thread; freed only once the encoder has stopped reading them.
+        if (grab != null) steps.add(new LiveTeardown.Step("frame grabber",
+            () -> { if (wait) grab.close(); else Minecraft.getInstance().execute(grab::close); }));
+        if (steps.isEmpty()) return;
+
+        if (d != null) TEARING_DOWN.add(d);
+        Runnable done = () -> { if (d != null) TEARING_DOWN.remove(d); };
+        if (wait) {
+            LiveTeardown.runAll(steps);
+            done.run();
+        } else {
+            LiveTeardown.runAsync(steps, done);
+        }
     }
 
     // ---- capture ------------------------------------------------------------------------------
@@ -339,7 +379,7 @@ public final class LiveStreamController {
 
     @SubscribeEvent
     public static void onGameShuttingDown(GameShuttingDownEvent event) {
-        INSTANCE.stop(null);
+        INSTANCE.stop(null, true, true);
     }
 
     // ---- helpers ------------------------------------------------------------------------------
@@ -357,7 +397,7 @@ public final class LiveStreamController {
         Path root = liveRoot();
         if (!Files.isDirectory(root)) return;
         try (Stream<Path> kids = Files.list(root)) {
-            kids.forEach(LiveStreamController::deleteTree);
+            kids.filter(kid -> !TEARING_DOWN.contains(kid)).forEach(LiveStreamController::deleteTree);
         } catch (IOException ignored) {
             // best effort
         }
