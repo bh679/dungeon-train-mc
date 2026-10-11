@@ -1,19 +1,32 @@
 package games.brennan.dungeontrain.client;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.Mth;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import org.joml.Vector2i;
+import org.joml.Vector2ic;
+
+import java.util.List;
 
 /**
  * The small "i" button above Scribble's bold button on the book-writing screen. Hovering it lists
  * what the shared-book content filter holds back, so a writer knows the rules before signing.
  * Clicking does nothing — it is a tooltip anchor, not an action.
+ *
+ * <p>The tooltip is pinned to the right of the button rather than following the cursor, so it reads
+ * as a panel beside the book instead of covering the page. It wraps to the space between the button
+ * and the screen edge; when that is too narrow (large GUI scales) it keeps {@link #MIN_WRAP} and is
+ * pushed left onto the screen.</p>
  *
  * <p>The list mirrors the relay's moderation categories in broad strokes only (dp-relay
  * {@code moderation.js} / {@code moderation-routing.js}); it is deliberately general so it does
@@ -29,22 +42,28 @@ public final class BookFilterInfoButton extends AbstractWidget {
     public static final int SIZE = 12;
 
     /** Lines of the tooltip after the title, as {@code gui.dungeontrain.book_filter_info.<n>}. */
-    static final int LINE_COUNT = 11;
+    static final int LINE_COUNT = 10;
 
     private static final int BORDER = 0xFF6B3B1F;
     private static final int FACE = 0xFFF4EBD3;
     private static final int FACE_HOVER = 0xFFFFF8E6;
     private static final int INK = 0xFF3F2A14;
 
+    /** Vanilla pads a tooltip's background 3px around its text. */
+    private static final int PAD = 3;
+    /** Air between the button and the tooltip's background. */
+    private static final int AIR = 4;
+    /** Narrowest the text is wrapped to, however little room there is to the right. */
+    private static final int MIN_WRAP = 120;
+    private static final int MAX_WRAP = 220;
+
     public BookFilterInfoButton(int x, int y) {
         super(x, y, SIZE, SIZE, Component.translatable("gui.dungeontrain.book_filter_info.title"));
-        setTooltip(Tooltip.create(tooltipText()));
     }
 
-    /** Title in bold, then one line per rule. */
+    /** Title, then one line per rule, all in the plain tooltip font. */
     static Component tooltipText() {
-        MutableComponent text = Component.translatable("gui.dungeontrain.book_filter_info.title")
-                .withStyle(s -> s.withBold(true));
+        MutableComponent text = Component.translatable("gui.dungeontrain.book_filter_info.title");
         for (int i = 1; i <= LINE_COUNT; i++) {
             text.append("\n").append(Component.translatable("gui.dungeontrain.book_filter_info." + i));
         }
@@ -63,6 +82,30 @@ public final class BookFilterInfoButton extends AbstractWidget {
         g.fill(x0 + 5, y0 + 5, x0 + 7, y0 + 10, INK);
         g.fill(x0 + 4, y0 + 5, x0 + 5, y0 + 6, INK);
         g.fill(x0 + 4, y0 + 9, x0 + 8, y0 + 10, INK);
+
+        if (isHovered()) showPinnedTooltip();
+    }
+
+    /** Queues the tooltip for the screen's tooltip pass (drawn on top), anchored right of the button. */
+    private void showPinnedTooltip() {
+        Minecraft mc = Minecraft.getInstance();
+        Screen screen = mc.screen;
+        if (screen == null) return;
+        int textX = getX() + SIZE + AIR + PAD;
+        int wrap = Mth.clamp(screen.width - textX - PAD, MIN_WRAP, MAX_WRAP);
+        List<FormattedCharSequence> lines = mc.font.split(tooltipText(), wrap);
+        screen.setTooltipForNextRenderPass(lines, new RightOfWidgetPositioner(textX, getY()), true);
+    }
+
+    /** Puts the tooltip's text at a fixed point right of the button, kept on screen. */
+    private record RightOfWidgetPositioner(int textX, int topY) implements ClientTooltipPositioner {
+        @Override
+        public Vector2ic positionTooltip(int screenWidth, int screenHeight, int mouseX, int mouseY,
+                                         int tooltipWidth, int tooltipHeight) {
+            int x = Mth.clamp(textX, PAD, Math.max(PAD, screenWidth - tooltipWidth - PAD));
+            int y = Mth.clamp(topY + PAD, PAD, Math.max(PAD, screenHeight - tooltipHeight - PAD));
+            return new Vector2i(x, y);
+        }
     }
 
     /** Silent: the button has no action, so a click sound would promise one. */
