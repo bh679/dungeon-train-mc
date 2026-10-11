@@ -140,6 +140,9 @@ public final class HeldTvPosePuppet {
             return;
         }
         UUID id = mc.player.getUUID();
+        // Both sides on hotbar slot 0, so "main hand" means the same stack on the client and the server.
+        mc.player.getInventory().selected = 0;
+        mc.player.connection.send(new net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket(0));
         server.execute(() -> {
             ServerPlayer p = server.getPlayerList().getPlayer(id);
             Item tv = BuiltInRegistries.ITEM.get(TV_ITEM);
@@ -153,7 +156,9 @@ public final class HeldTvPosePuppet {
             p.teleportTo(p.getX(), 200, p.getZ() + 60);
             p.setYRot(0); p.setXRot(10);
             ItemStack on = TvItems.withOn(new ItemStack(tv), true);
-            p.setItemInHand(InteractionHand.MAIN_HAND, on.copy());
+            p.getInventory().selected = 0;
+            for (int i = 1; i < 9; i++) p.getInventory().setItem(i, ItemStack.EMPTY); // no stray TVs from the save
+            p.getInventory().setItem(0, on.copy());
             p.setItemInHand(InteractionHand.OFF_HAND, SWAP_TRACE ? ItemStack.EMPTY : on.copy());
             LOGGER.info("[tvpose] armed both hands with an on TV");
         });
