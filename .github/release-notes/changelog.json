@@ -24474,6 +24474,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "author-room-heads",
+      "version": "0.1206.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books"
+      ],
+      "title": "A writer's face",
+      "summary": "A library's heads now look like the one who wrote its books.",
+      "highlights": [],
+      "pr": 1909,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

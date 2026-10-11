@@ -7,6 +7,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -149,5 +150,40 @@ class BookAuthorsClientTest {
         // only the request that produced it can, which is why `mine` is stamped here and nowhere else.
         assertTrue(BookAuthorsClient.parse(body, true).authors().get(0).mine());
         assertFalse(BookAuthorsClient.parse(body, false).authors().get(0).mine());
+    }
+
+    private static final String SKIN = "http://textures.minecraft.net/texture/" + "ab".repeat(32);
+
+    private static BookAuthorsClient.Author onlyAuthor(String skinJson) {
+        String body = "{\"ok\":true,\"authors\":[{\"token\":\"p1\",\"name\":\"Wren\",\"count\":3"
+            + (skinJson == null ? "" : ",\"skin\":" + skinJson) + "}]}";
+        return BookAuthorsClient.parse(body, false).authors().get(0);
+    }
+
+    @Test
+    @DisplayName("An author's skin is read, slim model included")
+    void skinIsParsed() {
+        BookAuthorsClient.Author a = onlyAuthor("{\"url\":\"" + SKIN + "\",\"model\":\"slim\"}");
+        assertEquals(SKIN, a.skinUrl());
+        assertTrue(a.slim());
+        assertFalse(onlyAuthor("{\"url\":\"" + SKIN + "\",\"model\":\"wide\"}").slim());
+    }
+
+    @Test
+    @DisplayName("No skin — an older relay, or a signature — is an author without a face, not a dropped one")
+    void missingSkinIsNull() {
+        BookAuthorsClient.Author a = onlyAuthor(null);
+        assertEquals("p1", a.token());
+        assertNull(a.skinUrl());
+    }
+
+    @Test
+    @DisplayName("A skin URL off Mojang's CDN is refused at the boundary, and the author still stands")
+    void foreignSkinUrlIsDropped() {
+        BookAuthorsClient.Author a = onlyAuthor("{\"url\":\"https://evil.example/x.png\",\"model\":\"slim\"}");
+        assertEquals("p1", a.token());
+        assertNull(a.skinUrl());
+        assertFalse(a.slim());
+        assertNull(onlyAuthor("\"not-an-object\"").skinUrl());
     }
 }
