@@ -112,7 +112,9 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      OPEN_LINKED_CONTAINER, SET_HALF_MODE, BUMP_DIFF_MIN, BUMP_DIFF_MAX,
                      SET_WEIGHT, CYCLE_COPY_ROLL, CYCLE_COPY_SCOPE,
                      REPLACE_WITH_HELD, SET_ACTIVE_MODE, SET_SPAN_MODE, SET_CONNECT_MODE, SET_CONNECT_ARMS,
-                     SET_GROWTH }
+                     SET_GROWTH,
+                     // Painting row: stateString = VariantPainting token ("2x1 random"); "" turns it off.
+                     SET_PAINTING }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
