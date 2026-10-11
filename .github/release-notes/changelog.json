@@ -24836,6 +24836,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-watch-links",
+      "version": "0.1228.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye points the way",
+      "summary": "Going live now tells you where your audience can find you.",
+      "highlights": [],
+      "pr": 1932,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
