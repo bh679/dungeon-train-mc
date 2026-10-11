@@ -24751,8 +24751,26 @@
       "released_at": null
     },
     {
-      "id": "held-tv-live-screen",
+      "id": "variant-clipboard-icon-badges",
       "version": "0.1223.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Clipboard icons show what they hold",
+      "summary": "Copied block variants now show their group and their blocks right on the icon.",
+      "highlights": [],
+      "pr": 1927,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "held-tv-live-screen",
+      "version": "0.1224.0",
       "type": "feat",
       "tags": [
         "feature",
