@@ -24629,6 +24629,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "hash-verified-mod-whitelist",
+      "version": "0.1216.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Mods are checked by their files",
+      "summary": "Free Play now looks at the mod files you have installed, not only their names, so a mod pretending to be an approved one no longer passes. Mods from CurseForge, Modrinth or your own build of an approved mod are fine.",
+      "highlights": [],
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
