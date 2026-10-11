@@ -112,10 +112,17 @@ public final class LiveHeadViewer {
         if (mc.screen == null && mc.options.hideGui) return;
         LiveFeedSource.Frame frame = LiveFeedSource.MAIN.frame(mc.player.tickCount,
             event.getPartialTick().getGameTimeDeltaPartialTick(false), false);
-        LiveRecOverlay.guiPass(g -> draw(g, frame));
+        LiveRecOverlay.guiPass(g -> {
+            draw(g, frame);
+            LiveStreamSettingsButton.draw(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(true)));
+        });
     }
 
-    /** In the inventory or chat, a left click on the box cycles its size and goes no further. */
+    /**
+     * In the inventory or chat, a left click on the box cycles its size and goes no further. While
+     * streaming, a click on the settings button under it ({@link LiveStreamSettingsButton}) opens the
+     * Stream options page instead.
+     */
     @SubscribeEvent
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT || !isResizeScreen(event.getScreen())) return;
@@ -123,6 +130,10 @@ public final class LiveHeadViewer {
         if (!shown(mc)) return;
         boolean streaming = LiveStreamController.get().streaming();
         Box b = layout(mc.getWindow().getGuiScaledWidth(), LiveFeedClientConfig.headViewerWidth(streaming));
+        if (streaming && LiveStreamSettingsButton.click(event.getScreen(), b, event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            return;
+        }
         if (!contains(b, event.getMouseX(), event.getMouseY())) return;
         event.setCanceled(true);
         LiveFeedClientConfig.cycleHeadViewerSize(streaming);

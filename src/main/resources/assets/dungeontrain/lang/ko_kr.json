@@ -235,6 +235,7 @@
   "gui.dungeontrain.viewfinder.front": "정면",
   "gui.dungeontrain.live.badge": "LIVE",
   "gui.dungeontrain.live.countdown": "라이브까지",
+  "gui.dungeontrain.live.stream_settings": "방송 설정",
   "gui.dungeontrain.live.viewer_on": "라이브 뷰어 켜짐",
   "gui.dungeontrain.live.viewer_off": "라이브 뷰어 꺼짐",
   "gui.dungeontrain.loading.title": "세계를 불러오는 중…",

@@ -235,6 +235,7 @@
   "gui.dungeontrain.viewfinder.front": "ด้านหน้า",
   "gui.dungeontrain.live.badge": "สด",
   "gui.dungeontrain.live.countdown": "ถ่ายทอดสดใน",
+  "gui.dungeontrain.live.stream_settings": "ตั้งค่าการสตรีม",
   "gui.dungeontrain.live.viewer_on": "เปิดจอถ่ายทอดสด",
   "gui.dungeontrain.live.viewer_off": "ปิดจอถ่ายทอดสด",
   "gui.dungeontrain.loading.title": "กำลังโหลดโลก…",

@@ -235,6 +235,7 @@
   "gui.dungeontrain.viewfinder.front": "Phía trước",
   "gui.dungeontrain.live.badge": "TRỰC TIẾP",
   "gui.dungeontrain.live.countdown": "Phát trực tiếp sau",
+  "gui.dungeontrain.live.stream_settings": "Cài đặt phát trực tiếp",
   "gui.dungeontrain.live.viewer_on": "Đã bật màn hình trực tiếp",
   "gui.dungeontrain.live.viewer_off": "Đã tắt màn hình trực tiếp",
   "gui.dungeontrain.loading.title": "Đang tải thế giới…",

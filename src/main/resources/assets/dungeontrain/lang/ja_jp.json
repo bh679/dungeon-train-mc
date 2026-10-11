@@ -235,6 +235,7 @@
   "gui.dungeontrain.viewfinder.front": "前方",
   "gui.dungeontrain.live.badge": "LIVE",
   "gui.dungeontrain.live.countdown": "ライブまで",
+  "gui.dungeontrain.live.stream_settings": "配信設定",
   "gui.dungeontrain.live.viewer_on": "ライブビューア オン",
   "gui.dungeontrain.live.viewer_off": "ライブビューア オフ",
   "gui.dungeontrain.loading.title": "ワールドを読み込み中…",

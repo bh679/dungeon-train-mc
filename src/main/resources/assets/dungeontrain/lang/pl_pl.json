@@ -281,6 +281,7 @@
   "gui.dungeontrain.viewfinder.front": "Przód",
   "gui.dungeontrain.live.badge": "NA ŻYWO",
   "gui.dungeontrain.live.countdown": "Na żywo za",
+  "gui.dungeontrain.live.stream_settings": "Ustawienia transmisji",
   "gui.dungeontrain.live.viewer_on": "Podgląd na żywo włączony",
   "gui.dungeontrain.live.viewer_off": "Podgląd na żywo wyłączony",
   "gui.dungeontrain.loading.title": "Wczytywanie świata…",

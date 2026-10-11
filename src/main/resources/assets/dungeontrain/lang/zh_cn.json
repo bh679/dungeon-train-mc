@@ -235,6 +235,7 @@
   "gui.dungeontrain.viewfinder.front": "前方",
   "gui.dungeontrain.live.badge": "直播中",
   "gui.dungeontrain.live.countdown": "距离直播",
+  "gui.dungeontrain.live.stream_settings": "直播设置",
   "gui.dungeontrain.live.viewer_on": "直播画面已开启",
   "gui.dungeontrain.live.viewer_off": "直播画面已关闭",
   "gui.dungeontrain.loading.title": "正在加载世界……",
