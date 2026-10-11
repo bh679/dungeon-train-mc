@@ -1,10 +1,39 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 2,
   "variants": [
     {
       "id": "bedroom",
+      "weight": 2,
+      "maxLevel": 0
+    },
+    {
+      "id": "tv",
+      "weight": 2
+    },
+    {
+      "id": "twotvs",
+      "weight": 2
+    },
+    {
+      "id": "tv2",
       "weight": 1
+    },
+    {
+      "id": "tv3",
+      "weight": 1
+    },
+    {
+      "id": "tv4",
+      "weight": 1
+    },
+    {
+      "id": "tv5",
+      "weight": 1
+    },
+    {
+      "id": "watchtv2",
+      "weight": 2
     }
   ]
 }
