@@ -1,5 +1,9 @@
 {
   "armor": 1,
+  "bedroom": {
+    "weight": 1,
+    "optIn": true
+  },
   "books": 11,
   "cargocontents": 5,
   "cows": 15,
@@ -35,6 +39,10 @@
   "icefeature": {
     "weight": 1,
     "name": "ice"
+  },
+  "livestream": {
+    "weight": 1,
+    "optIn": true
   },
   "maze": 4,
   "mild_1": {
