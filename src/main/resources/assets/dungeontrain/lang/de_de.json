@@ -1214,6 +1214,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "Erwähne mich, wenn ein Passagier, dem ich eine Kamera gegeben habe, ein Foto von mir macht.",
   "gui.dungeontrain.options.account.pings.milestone": "Meilensteine",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Erwähne mich, wenn einer meiner Meilenstein-Fortschritte gepostet wird.",
+  "gui.dungeontrain.options.account.pings.translation_review": "Übersetzungsprüfungen",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "Erwähne mich, wenn eine von mir eingereichte Übersetzung genauer geprüft werden muss.",
   "chat.dungeontrain.discord.options_hint": "Wähle unter Optionen → Dungeon Train… → Konto, bei welchen Beiträgen du erwähnt wirst.",
   "gui.dungeontrain.ai_policy.title": "KI-Richtlinie",
   "gui.dungeontrain.ai_policy.subtitle": "Was in Dungeon Train von KI gemacht ist — und was nicht.",

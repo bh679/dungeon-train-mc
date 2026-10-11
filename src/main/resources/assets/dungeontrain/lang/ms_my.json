@@ -1174,6 +1174,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "Ping saya apabila penumpang yang saya beri kamera mengambil foto saya.",
   "gui.dungeontrain.options.account.pings.milestone": "Pencapaian",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Ping saya apabila salah satu kemajuan pencapaian saya disiarkan.",
+  "gui.dungeontrain.options.account.pings.translation_review": "Semakan terjemahan",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "Sebut saya apabila terjemahan yang saya hantar perlu disemak dengan lebih teliti.",
   "chat.dungeontrain.discord.options_hint": "Pilih siaran yang akan ping anda di Pilihan → Dungeon Train… → Akaun.",
   "gui.dungeontrain.ai_policy.title": "Dasar AI",
   "gui.dungeontrain.ai_policy.subtitle": "Apa dalam Dungeon Train yang dibuat oleh AI — dan yang tidak.",

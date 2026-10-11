@@ -1214,6 +1214,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "Mencióname cuando un pasajero al que le di una cámara me tome una foto.",
   "gui.dungeontrain.options.account.pings.milestone": "Hitos",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Mencióname cuando se publique uno de mis logros importantes.",
+  "gui.dungeontrain.options.account.pings.translation_review": "Revisiones de traducción",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "Mencióname cuando una traducción que envié necesite una revisión más detallada.",
   "chat.dungeontrain.discord.options_hint": "Elige qué publicaciones te mencionan en Opciones → Dungeon Train… → Cuenta.",
   "gui.dungeontrain.ai_policy.title": "Política de IA",
   "gui.dungeontrain.ai_policy.subtitle": "Qué está hecho con IA en Dungeon Train, y qué no.",

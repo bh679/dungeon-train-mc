@@ -1174,6 +1174,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "แท็กฉันเมื่อผู้โดยสารที่ฉันให้กล้องไปถ่ายรูปฉัน",
   "gui.dungeontrain.options.account.pings.milestone": "หมุดหมาย",
   "gui.dungeontrain.options.account.pings.milestone.tip": "แท็กฉันเมื่อความก้าวหน้าหมุดหมายของฉันถูกโพสต์",
+  "gui.dungeontrain.options.account.pings.translation_review": "การตรวจคำแปล",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "แท็กฉันเมื่อคำแปลที่ฉันส่งไปต้องตรวจสอบอย่างละเอียด",
   "chat.dungeontrain.discord.options_hint": "เลือกโพสต์ที่จะแท็กคุณได้ที่ ตัวเลือก → Dungeon Train… → บัญชี",
   "gui.dungeontrain.ai_policy.title": "นโยบาย AI",
   "gui.dungeontrain.ai_policy.subtitle": "อะไรใน Dungeon Train ที่สร้างด้วย AI — และอะไรที่ไม่ใช่",
