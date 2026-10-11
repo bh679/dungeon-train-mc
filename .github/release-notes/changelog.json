@@ -24681,6 +24681,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tv-in-creative-tab",
+      "version": "0.1219.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Television in the creative tab",
+      "summary": "The Television now sits in the Dungeon Train creative tab, ready to place.",
+      "highlights": [],
+      "pr": 1925,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
