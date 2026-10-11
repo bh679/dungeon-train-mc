@@ -24629,6 +24629,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-review-ping-toggle",
+      "version": "0.1216.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Translation review pings",
+      "summary": "Translators can now choose whether Discord pings them when a submission of theirs needs a closer look.",
+      "highlights": [],
+      "pr": 1921,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
