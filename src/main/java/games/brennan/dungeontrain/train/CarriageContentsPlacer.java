@@ -23,6 +23,7 @@ import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import games.brennan.dungeontrain.template.FlipOptions;
 import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
+import games.brennan.dungeontrain.compat.vista.TvTemplateJoin;
 import games.brennan.dungeontrain.train.ContentsFlip.Flip;
 import games.brennan.dungeontrain.train.CarriageContents.ContentsType;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -277,7 +278,19 @@ public final class CarriageContentsPlacer {
                 contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 seed, carriageIndex, mask, flip);
+            joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
+    }
+
+    /**
+     * Joins the stamped Vista TVs into whole screens — see {@link TvTemplateJoin}. Last, so it sees the
+     * template, variant and pool cells together. Not in the editor: an author's plot keeps exactly the
+     * screens they built, and the editor never flips, so they are already right there.
+     */
+    private static void joinTvs(ServerLevel level, BlockPos origin, Vec3i size, int carriageIndex) {
+        if (carriageIndex == EDITOR_SENTINEL_PIDX) return;
+        if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
+        TvTemplateJoin.rejoin(level, origin, size);
     }
 
     /**
@@ -360,6 +373,7 @@ public final class CarriageContentsPlacer {
                 contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 seed, carriageIndex, mask, flip);
+            joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
     }
 
@@ -399,6 +413,7 @@ public final class CarriageContentsPlacer {
             clearBakedNarrativeLecternBooks(level, anchor, box);
             applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
             applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+            joinTvs(level, anchor, box, carriageIndex);
         });
         LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=portal_room",
             contents.id(), anchor, box.getX(), box.getY(), box.getZ());

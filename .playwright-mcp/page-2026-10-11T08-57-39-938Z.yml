@@ -1,0 +1,575 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - text: 🚂
+      - strong [ref=e4]: Dungeon Train
+    - generic [ref=e5]:
+      - navigation "Primary" [ref=e6]:
+        - link "Dashboard" [ref=e7] [cursor=pointer]:
+          - /url: "#/"
+        - link "Live" [ref=e8] [cursor=pointer]:
+          - /url: "#/live"
+        - button "Gameplay ▾" [ref=e11] [cursor=pointer]
+        - button "Books ▾" [ref=e13] [cursor=pointer]
+        - link "Carriages" [ref=e14] [cursor=pointer]:
+          - /url: "#/carriages"
+        - link "Builds" [ref=e15] [cursor=pointer]:
+          - /url: "#/builds"
+        - link "Advancements" [ref=e16] [cursor=pointer]:
+          - /url: "#/advancements"
+        - link "Surveys" [ref=e17] [cursor=pointer]:
+          - /url: "#/surveys"
+        - link "Feedback" [ref=e18] [cursor=pointer]:
+          - /url: "#/feedback"
+        - button "Text & Links ▾" [ref=e21] [cursor=pointer]
+        - link "Chat" [ref=e22] [cursor=pointer]:
+          - /url: "#/chats"
+        - button "Server ▾" [ref=e25] [cursor=pointer]
+        - link "Finances" [ref=e26] [cursor=pointer]:
+          - /url: "#/costs"
+        - button "Pages ▾" [ref=e28] [cursor=pointer]
+      - search [ref=e29]:
+        - button "Search" [ref=e30] [cursor=pointer]
+      - button "Hide dev-build telemetry (cap=dev) from every view" [ref=e34] [cursor=pointer]
+      - button "Toggle the live-data side panel" [ref=e36] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e37]: 📊
+      - button "Forget the access key and lock the explorer" [ref=e38] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e39]: 🔒
+  - main [ref=e40]:
+    - generic [ref=e59]:
+      - heading "Approved mods" [level=1] [ref=e60]
+      - paragraph [ref=e61]: Which mods a run may have installed and still count. Anything installed and not approved makes the session Free Play — but only while enforcement is on. Changes reach every copy of the mod that is already out there on its next launch (the endpoint is edge-cached for 5 minutes).
+      - generic [ref=e62]:
+        - heading "Enforcement" [level=2] [ref=e63]
+        - paragraph [ref=e64]:
+          - generic [ref=e65]: ENFORCING — unapproved mods cost players their progress
+        - paragraph [ref=e66]:
+          - strong [ref=e67]: 0 of 0 players (0%)
+          - text: run at least one unapproved mod and would be in Free Play if this were on. 0 of 0 attributed sessions. 0 sessions come from players who never reported a mod list, so this is a floor, not a total.
+        - paragraph [ref=e68]:
+          - button "Stop enforcing" [ref=e69] [cursor=pointer]
+      - generic [ref=e70]:
+        - heading "Verified files" [level=2] [ref=e71]
+        - paragraph [ref=e72]: Mod ids can be edited; a jar’s hash cannot. Each file players run is matched to a published Modrinth or CurseForge build of a mod on the list above. A file that matches nothing — a renamed cheat jar, a self-built mod, a release the platforms have not indexed yet — is unverified, and costs the run its progress only while this switch is on.
+        - paragraph [ref=e73]:
+          - generic [ref=e74]: ENFORCING — unverified files cost players their progress
+        - paragraph [ref=e75]:
+          - strong [ref=e76]: 135 approved
+          - text: · 10 plausible · 3 unknown ·
+          - strong [ref=e77]: 39 suspect
+          - text: "· 0 revoked of 187 files reported. packages: 10, platform: 135, id_not_approved: 3, packages_mismatch: 39"
+        - paragraph [ref=e78]: approved = a published build of an approved mod, or approved by hand · plausible = not a build we can place, but the code inside is that mod’s (a fresh release, a GitHub build) · unknown = we have no package knowledge for one of its ids yet · suspect = the code is NOT the mod it claims, a cheat project, or no mod ids. Only suspect and revoked cost a run.
+        - paragraph [ref=e79]:
+          - strong [ref=e80]: 0 of 0 players
+          - text: who report file hashes carry a suspect file and would be in Free Play if this were on. 0 players run a jar that does not report file hashes yet. Flip only at zero, or when every file below is a known bad actor.
+        - paragraph [ref=e81]:
+          - button "Stop enforcing files" [ref=e82] [cursor=pointer]
+        - heading "Review queue (42)" [level=3] [ref=e83]
+        - paragraph [ref=e84]: Suspect first, then most-reported. “packages_mismatch” = the code is not the claimed mod’s; “cheat_project” / “cheat_id” = a known cheat; “no_mod_ids” = declares nothing; “no_package_knowledge” = run pull-approved-hashes.py for that id; “no_fingerprint” = an older jar sent no packages; “id_not_approved” = a real published file of a mod not on the list above.
+        - table [ref=e86]:
+          - rowgroup [ref=e87]:
+            - row [ref=e88]:
+              - columnheader "File" [ref=e89]
+              - columnheader "Ids" [ref=e90]
+              - columnheader "Reports" [ref=e91]
+              - columnheader "Why" [ref=e92]
+              - columnheader [ref=e93]
+          - rowgroup [ref=e94]:
+            - row [ref=e95]:
+              - cell "appleskin.jar 7f79525868ce5f95e08eb6580b0f6d60a1bc8220" [ref=e96]:
+                - generic [ref=e97]: appleskin.jar
+                - code [ref=e98]: 7f79525868ce5f95e08eb6580b0f6d60a1bc8220
+              - cell [ref=e99]:
+                - code [ref=e101]: appleskin
+              - cell "1" [ref=e102]
+              - cell "suspect · packages_mismatch" [ref=e103]
+              - cell [ref=e105]:
+                - button "Approve file" [ref=e106] [cursor=pointer]
+                - button "Revoke file" [ref=e107] [cursor=pointer]
+            - row [ref=e108]:
+              - cell "impostor-moonlight-1.21.1-3.7.2-neoforge.jar 9687ba064ab732b94d0c3cf8d6b0fc09be024334" [ref=e109]:
+                - generic [ref=e110]: impostor-moonlight-1.21.1-3.7.2-neoforge.jar
+                - code [ref=e111]: 9687ba064ab732b94d0c3cf8d6b0fc09be024334
+              - cell [ref=e112]:
+                - code [ref=e114]: jei
+              - cell "1" [ref=e115]
+              - cell "suspect · packages_mismatch" [ref=e116]
+              - cell [ref=e118]:
+                - button "Approve file" [ref=e119] [cursor=pointer]
+                - button "Revoke file" [ref=e120] [cursor=pointer]
+            - row [ref=e121]:
+              - cell "impostor-jei-1.21.1-neoforge-19.57.0.451.jar 1c7ae16c4a7ef57d28bfe31231ee8a450578125b" [ref=e122]:
+                - generic [ref=e123]: impostor-jei-1.21.1-neoforge-19.57.0.451.jar
+                - code [ref=e124]: 1c7ae16c4a7ef57d28bfe31231ee8a450578125b
+              - cell [ref=e125]:
+                - code [ref=e127]: creativecore
+              - cell "1" [ref=e128]
+              - cell "suspect · packages_mismatch" [ref=e129]
+              - cell [ref=e131]:
+                - button "Approve file" [ref=e132] [cursor=pointer]
+                - button "Revoke file" [ref=e133] [cursor=pointer]
+            - row [ref=e134]:
+              - cell "impostor-CreativeCore_NEOFORGE_v2.13.51_mc1.21.1.jar 8d4fa6620c4476cffdfcc1a613cdff6f64a47bfb" [ref=e135]:
+                - generic [ref=e136]: impostor-CreativeCore_NEOFORGE_v2.13.51_mc1.21.1.jar
+                - code [ref=e137]: 8d4fa6620c4476cffdfcc1a613cdff6f64a47bfb
+              - cell [ref=e138]:
+                - code [ref=e140]: crash_assistant
+              - cell "1" [ref=e141]
+              - cell "suspect · packages_mismatch" [ref=e142]
+              - cell [ref=e144]:
+                - button "Approve file" [ref=e145] [cursor=pointer]
+                - button "Revoke file" [ref=e146] [cursor=pointer]
+            - row [ref=e147]:
+              - cell "impostor-CrashAssistant-neoforge-1.20.6-1.21.4-1.11.12.jar 33e4ba7f87afa4e3031f974084ca0f7601f45f31" [ref=e148]:
+                - generic [ref=e149]: impostor-CrashAssistant-neoforge-1.20.6-1.21.4-1.11.12.jar
+                - code [ref=e150]: 33e4ba7f87afa4e3031f974084ca0f7601f45f31
+              - cell [ref=e151]:
+                - code [ref=e153]: veil
+              - cell "1" [ref=e154]
+              - cell "suspect · packages_mismatch" [ref=e155]
+              - cell [ref=e157]:
+                - button "Approve file" [ref=e158] [cursor=pointer]
+                - button "Revoke file" [ref=e159] [cursor=pointer]
+            - row [ref=e160]:
+              - cell "impostor-veil-neoforge-1.21.1-4.5.2.jar 987a859e44098508f7292cf2cb5d2a8cf6b3d99d" [ref=e161]:
+                - generic [ref=e162]: impostor-veil-neoforge-1.21.1-4.5.2.jar
+                - code [ref=e163]: 987a859e44098508f7292cf2cb5d2a8cf6b3d99d
+              - cell [ref=e164]:
+                - code [ref=e166]: balm
+              - cell "1" [ref=e167]
+              - cell "suspect · packages_mismatch" [ref=e168]
+              - cell [ref=e170]:
+                - button "Approve file" [ref=e171] [cursor=pointer]
+                - button "Revoke file" [ref=e172] [cursor=pointer]
+            - row [ref=e173]:
+              - cell "impostor-balm-neoforge-1.21.1-21.0.66.jar 3cac14a8bb7425afc32f37246c008d988848881c" [ref=e174]:
+                - generic [ref=e175]: impostor-balm-neoforge-1.21.1-21.0.66.jar
+                - code [ref=e176]: 3cac14a8bb7425afc32f37246c008d988848881c
+              - cell [ref=e177]:
+                - code [ref=e179]: journeymap
+              - cell "1" [ref=e180]
+              - cell "suspect · packages_mismatch" [ref=e181]
+              - cell [ref=e183]:
+                - button "Approve file" [ref=e184] [cursor=pointer]
+                - button "Revoke file" [ref=e185] [cursor=pointer]
+            - row [ref=e186]:
+              - cell "impostor-journeymap-neoforge-1.21.1-6.0.9.jar 1fcf3067437d07d21597fcfad27805f8dc2d1e6b" [ref=e187]:
+                - generic [ref=e188]: impostor-journeymap-neoforge-1.21.1-6.0.9.jar
+                - code [ref=e189]: 1fcf3067437d07d21597fcfad27805f8dc2d1e6b
+              - cell [ref=e190]:
+                - code [ref=e192]: bookshelf
+              - cell "1" [ref=e193]
+              - cell "suspect · packages_mismatch" [ref=e194]
+              - cell [ref=e196]:
+                - button "Approve file" [ref=e197] [cursor=pointer]
+                - button "Revoke file" [ref=e198] [cursor=pointer]
+            - row [ref=e199]:
+              - cell "impostor-bookshelf-neoforge-1.21.1-21.1.81.jar 99152503ec6993a9081e7e362e485fbca815a9c3" [ref=e200]:
+                - generic [ref=e201]: impostor-bookshelf-neoforge-1.21.1-21.1.81.jar
+                - code [ref=e202]: 99152503ec6993a9081e7e362e485fbca815a9c3
+              - cell [ref=e203]:
+                - code [ref=e205]: fzzy_config
+              - cell "1" [ref=e206]
+              - cell "suspect · packages_mismatch" [ref=e207]
+              - cell [ref=e209]:
+                - button "Approve file" [ref=e210] [cursor=pointer]
+                - button "Revoke file" [ref=e211] [cursor=pointer]
+            - row [ref=e212]:
+              - cell "impostor-fzzy_config-0.7.7+1.21+neoforge.jar 1d54269230be69b6b76455322e0e987c773cfea6" [ref=e213]:
+                - generic [ref=e214]: impostor-fzzy_config-0.7.7+1.21+neoforge.jar
+                - code [ref=e215]: 1d54269230be69b6b76455322e0e987c773cfea6
+              - cell [ref=e216]:
+                - code [ref=e218]: adventureitemnames
+              - cell "1" [ref=e219]
+              - cell "suspect · packages_mismatch" [ref=e220]
+              - cell [ref=e222]:
+                - button "Approve file" [ref=e223] [cursor=pointer]
+                - button "Revoke file" [ref=e224] [cursor=pointer]
+            - row [ref=e225]:
+              - cell "impostor-adventureitemnames-neoforge-0.52.0+1.21.1.jar b09b9820afa7cd3a61a4eae49d9503bfcb24d806" [ref=e226]:
+                - generic [ref=e227]: impostor-adventureitemnames-neoforge-0.52.0+1.21.1.jar
+                - code [ref=e228]: b09b9820afa7cd3a61a4eae49d9503bfcb24d806
+              - cell [ref=e229]:
+                - code [ref=e231]: lithostitched
+              - cell "1" [ref=e232]
+              - cell "suspect · packages_mismatch" [ref=e233]
+              - cell [ref=e235]:
+                - button "Approve file" [ref=e236] [cursor=pointer]
+                - button "Revoke file" [ref=e237] [cursor=pointer]
+            - row [ref=e238]:
+              - cell "impostor-lithostitched-1.8.0-neoforge-21.1.jar 443f9be45c605d6026f30fec1c32786122260c17" [ref=e239]:
+                - generic [ref=e240]: impostor-lithostitched-1.8.0-neoforge-21.1.jar
+                - code [ref=e241]: 443f9be45c605d6026f30fec1c32786122260c17
+              - cell [ref=e242]:
+                - code [ref=e244]: ambientsounds
+              - cell "1" [ref=e245]
+              - cell "suspect · packages_mismatch" [ref=e246]
+              - cell [ref=e248]:
+                - button "Approve file" [ref=e249] [cursor=pointer]
+                - button "Revoke file" [ref=e250] [cursor=pointer]
+            - row [ref=e251]:
+              - cell "impostor-AmbientSounds_NEOFORGE_v6.3.10_mc1.21.1.jar 592116600df27af3e607fbc300f9dec85a7936fb" [ref=e252]:
+                - generic [ref=e253]: impostor-AmbientSounds_NEOFORGE_v6.3.10_mc1.21.1.jar
+                - code [ref=e254]: 592116600df27af3e607fbc300f9dec85a7936fb
+              - cell [ref=e255]:
+                - code [ref=e257]: e4mc
+              - cell "1" [ref=e258]
+              - cell "suspect · packages_mismatch" [ref=e259]
+              - cell [ref=e261]:
+                - button "Approve file" [ref=e262] [cursor=pointer]
+                - button "Revoke file" [ref=e263] [cursor=pointer]
+            - row [ref=e264]:
+              - cell "impostor-e4mc-neoforge-6.2.3.jar 8a59155a55f63b2fd77f2a444576354e522697fa" [ref=e265]:
+                - generic [ref=e266]: impostor-e4mc-neoforge-6.2.3.jar
+                - code [ref=e267]: 8a59155a55f63b2fd77f2a444576354e522697fa
+              - cell [ref=e268]:
+                - code [ref=e270]: mafglib
+              - cell "1" [ref=e271]
+              - cell "suspect · packages_mismatch" [ref=e272]
+              - cell [ref=e274]:
+                - button "Approve file" [ref=e275] [cursor=pointer]
+                - button "Revoke file" [ref=e276] [cursor=pointer]
+            - row [ref=e277]:
+              - cell "impostor-mafglib-0.4.3+mc1.21.1.jar 68ef4eb94dc2cbc9dcff61ddd0f438bafe60240b" [ref=e278]:
+                - generic [ref=e279]: impostor-mafglib-0.4.3+mc1.21.1.jar
+                - code [ref=e280]: 68ef4eb94dc2cbc9dcff61ddd0f438bafe60240b
+              - cell [ref=e281]:
+                - code [ref=e283]: fusion
+                - code [ref=e285]: malilib
+              - cell "1" [ref=e286]
+              - cell "suspect · packages_mismatch" [ref=e287]
+              - cell [ref=e289]:
+                - button "Approve file" [ref=e290] [cursor=pointer]
+                - button "Revoke file" [ref=e291] [cursor=pointer]
+            - row [ref=e292]:
+              - cell "impostor-fusion-1.3.16-neoforge-mc1.21.1.jar 3b203fe648602208321027044b98c6d0daa6687c" [ref=e293]:
+                - generic [ref=e294]: impostor-fusion-1.3.16-neoforge-mc1.21.1.jar
+                - code [ref=e295]: 3b203fe648602208321027044b98c6d0daa6687c
+              - cell [ref=e296]:
+                - code [ref=e298]: fancymenu
+              - cell "1" [ref=e299]
+              - cell "suspect · packages_mismatch" [ref=e300]
+              - cell [ref=e302]:
+                - button "Approve file" [ref=e303] [cursor=pointer]
+                - button "Revoke file" [ref=e304] [cursor=pointer]
+            - row [ref=e305]:
+              - cell "impostor-fancymenu_neoforge_3.9.14_MC_1.21.1.jar dee029df4896f3b414848802b627a71be14609bc" [ref=e306]:
+                - generic [ref=e307]: impostor-fancymenu_neoforge_3.9.14_MC_1.21.1.jar
+                - code [ref=e308]: dee029df4896f3b414848802b627a71be14609bc
+              - cell [ref=e309]:
+                - code [ref=e311]: euphoria_patcher
+              - cell "1" [ref=e312]
+              - cell "suspect · packages_mismatch" [ref=e313]
+              - cell [ref=e315]:
+                - button "Approve file" [ref=e316] [cursor=pointer]
+                - button "Revoke file" [ref=e317] [cursor=pointer]
+            - row [ref=e318]:
+              - cell "impostor-EuphoriaPatcher-1.10.5-r5.9.3-neoforge.jar b00b4cadd0f6a59d34dfe8abc6d028dec9dd4e93" [ref=e319]:
+                - generic [ref=e320]: impostor-EuphoriaPatcher-1.10.5-r5.9.3-neoforge.jar
+                - code [ref=e321]: b00b4cadd0f6a59d34dfe8abc6d028dec9dd4e93
+              - cell [ref=e322]:
+                - code [ref=e324]: voicechat
+              - cell "1" [ref=e325]
+              - cell "suspect · packages_mismatch" [ref=e326]
+              - cell [ref=e328]:
+                - button "Approve file" [ref=e329] [cursor=pointer]
+                - button "Revoke file" [ref=e330] [cursor=pointer]
+            - row [ref=e331]:
+              - cell "impostor-voicechat-neoforge-1.21.1-2.6.24.jar 5c73f2d162df9f7ddfe31d9104055b9df70f0341" [ref=e332]:
+                - generic [ref=e333]: impostor-voicechat-neoforge-1.21.1-2.6.24.jar
+                - code [ref=e334]: 5c73f2d162df9f7ddfe31d9104055b9df70f0341
+              - cell [ref=e335]:
+                - code [ref=e337]: collective
+                - code [ref=e339]: voicechat_api
+              - cell "1" [ref=e340]
+              - cell "suspect · packages_mismatch" [ref=e341]
+              - cell [ref=e343]:
+                - button "Approve file" [ref=e344] [cursor=pointer]
+                - button "Revoke file" [ref=e345] [cursor=pointer]
+            - row [ref=e346]:
+              - cell "impostor-collective-1.21.1-8.44.jar 8ed500330c0e6146170d5d0539b947183ab802df" [ref=e347]:
+                - generic [ref=e348]: impostor-collective-1.21.1-8.44.jar
+                - code [ref=e349]: 8ed500330c0e6146170d5d0539b947183ab802df
+              - cell [ref=e350]:
+                - code [ref=e352]: sounds
+              - cell "1" [ref=e353]
+              - cell "suspect · packages_mismatch" [ref=e354]
+              - cell [ref=e356]:
+                - button "Approve file" [ref=e357] [cursor=pointer]
+                - button "Revoke file" [ref=e358] [cursor=pointer]
+            - row [ref=e359]:
+              - cell "impostor-sounds-2.4.22+lts+1.21.1-neoforge.jar ee7ae51b36de0ba7eeb2665201d41671d8e9a30d" [ref=e360]:
+                - generic [ref=e361]: impostor-sounds-2.4.22+lts+1.21.1-neoforge.jar
+                - code [ref=e362]: ee7ae51b36de0ba7eeb2665201d41671d8e9a30d
+              - cell [ref=e363]:
+                - code [ref=e365]: puzzleslib
+              - cell "1" [ref=e366]
+              - cell "suspect · packages_mismatch" [ref=e367]
+              - cell [ref=e369]:
+                - button "Approve file" [ref=e370] [cursor=pointer]
+                - button "Revoke file" [ref=e371] [cursor=pointer]
+            - row [ref=e372]:
+              - cell "impostor-puzzleslib-v21.1.63-mc1.21.1+neoforge.jar 8a660094f1ea3796e37958c903810a3ac1254cf2" [ref=e373]:
+                - generic [ref=e374]: impostor-puzzleslib-v21.1.63-mc1.21.1+neoforge.jar
+                - code [ref=e375]: 8a660094f1ea3796e37958c903810a3ac1254cf2
+              - cell [ref=e376]:
+                - code [ref=e378]: entity_model_features
+              - cell "1" [ref=e379]
+              - cell "suspect · packages_mismatch" [ref=e380]
+              - cell [ref=e382]:
+                - button "Approve file" [ref=e383] [cursor=pointer]
+                - button "Revoke file" [ref=e384] [cursor=pointer]
+            - row [ref=e385]:
+              - cell "impostor-entity_model_features-3.3.11-1.21-neoforge.jar b4515aee191caad71c69b38ea395cceb71879dc4" [ref=e386]:
+                - generic [ref=e387]: impostor-entity_model_features-3.3.11-1.21-neoforge.jar
+                - code [ref=e388]: b4515aee191caad71c69b38ea395cceb71879dc4
+              - cell [ref=e389]:
+                - code [ref=e391]: modernfix
+              - cell "1" [ref=e392]
+              - cell "suspect · packages_mismatch" [ref=e393]
+              - cell [ref=e395]:
+                - button "Approve file" [ref=e396] [cursor=pointer]
+                - button "Revoke file" [ref=e397] [cursor=pointer]
+            - row [ref=e398]:
+              - cell "impostor-modernfix-neoforge-5.27.26+mc1.21.1.jar c1c1b18fb0aa5d6180b239f024491d876f958f48" [ref=e399]:
+                - generic [ref=e400]: impostor-modernfix-neoforge-5.27.26+mc1.21.1.jar
+                - code [ref=e401]: c1c1b18fb0aa5d6180b239f024491d876f958f48
+              - cell [ref=e402]:
+                - code [ref=e404]: punchy
+              - cell "1" [ref=e405]
+              - cell "suspect · packages_mismatch" [ref=e406]
+              - cell [ref=e408]:
+                - button "Approve file" [ref=e409] [cursor=pointer]
+                - button "Revoke file" [ref=e410] [cursor=pointer]
+            - row [ref=e411]:
+              - cell "impostor-punchy-2.8e-neoforge-1.21.1.jar 8b645ad54467bb570f2891dbc798ca0b589df3cf" [ref=e412]:
+                - generic [ref=e413]: impostor-punchy-2.8e-neoforge-1.21.1.jar
+                - code [ref=e414]: 8b645ad54467bb570f2891dbc798ca0b589df3cf
+              - cell [ref=e415]:
+                - code [ref=e417]: forgified_fabric_api
+              - cell "1" [ref=e418]
+              - cell "suspect · packages_mismatch" [ref=e419]
+              - cell [ref=e421]:
+                - button "Approve file" [ref=e422] [cursor=pointer]
+                - button "Revoke file" [ref=e423] [cursor=pointer]
+            - row [ref=e424]:
+              - cell "impostor-forgified-fabric-api-0.116.15+2.3.5+1.21.1.jar 8ed0fcb3e2b384d1e2e7e502c5dbd972bf18d477" [ref=e425]:
+                - generic [ref=e426]: impostor-forgified-fabric-api-0.116.15+2.3.5+1.21.1.jar
+                - code [ref=e427]: 8ed0fcb3e2b384d1e2e7e502c5dbd972bf18d477
+              - cell [ref=e428]:
+                - code [ref=e430]: forgified_fabric_api
+                - code [ref=e432]: mru
+              - cell "1" [ref=e433]
+              - cell "suspect · packages_mismatch" [ref=e434]
+              - cell [ref=e436]:
+                - button "Approve file" [ref=e437] [cursor=pointer]
+                - button "Revoke file" [ref=e438] [cursor=pointer]
+            - row [ref=e439]:
+              - cell "impostor-mru-1.0.41+1.21.1-neoforge.jar 1d6a48408dca5791ac0fe18fa3b7748a87925714" [ref=e440]:
+                - generic [ref=e441]: impostor-mru-1.0.41+1.21.1-neoforge.jar
+                - code [ref=e442]: 1d6a48408dca5791ac0fe18fa3b7748a87925714
+              - cell [ref=e443]:
+                - code [ref=e445]: exposure
+              - cell "1" [ref=e446]
+              - cell "suspect · packages_mismatch" [ref=e447]
+              - cell [ref=e449]:
+                - button "Approve file" [ref=e450] [cursor=pointer]
+                - button "Revoke file" [ref=e451] [cursor=pointer]
+            - row [ref=e452]:
+              - cell "impostor-exposure-neoforge-1.21.1-1.9.19.jar cd06111d43cd61e55a4d3d4015a398f69ba5980e" [ref=e453]:
+                - generic [ref=e454]: impostor-exposure-neoforge-1.21.1-1.9.19.jar
+                - code [ref=e455]: cd06111d43cd61e55a4d3d4015a398f69ba5980e
+              - cell [ref=e456]:
+                - code [ref=e458]: curios
+              - cell "1" [ref=e459]
+              - cell "suspect · packages_mismatch" [ref=e460]
+              - cell [ref=e462]:
+                - button "Approve file" [ref=e463] [cursor=pointer]
+                - button "Revoke file" [ref=e464] [cursor=pointer]
+            - row [ref=e465]:
+              - cell "impostor-curios-neoforge-9.5.1+1.21.1.jar 2fc779df56c7689c970fcea0e9fa1cf482e54b8a" [ref=e466]:
+                - generic [ref=e467]: impostor-curios-neoforge-9.5.1+1.21.1.jar
+                - code [ref=e468]: 2fc779df56c7689c970fcea0e9fa1cf482e54b8a
+              - cell [ref=e469]:
+                - code [ref=e471]: subtle_effects
+              - cell "1" [ref=e472]
+              - cell "suspect · packages_mismatch" [ref=e473]
+              - cell [ref=e475]:
+                - button "Approve file" [ref=e476] [cursor=pointer]
+                - button "Revoke file" [ref=e477] [cursor=pointer]
+            - row [ref=e478]:
+              - cell "impostor-SubtleEffects-neoforge-1.21.1-1.15.0.jar 80907fecb94b097d864e04514f0fd429a8117ee8" [ref=e479]:
+                - generic [ref=e480]: impostor-SubtleEffects-neoforge-1.21.1-1.15.0.jar
+                - code [ref=e481]: 80907fecb94b097d864e04514f0fd429a8117ee8
+              - cell [ref=e482]:
+                - code [ref=e484]: tectonic
+              - cell "1" [ref=e485]
+              - cell "suspect · packages_mismatch" [ref=e486]
+              - cell [ref=e488]:
+                - button "Approve file" [ref=e489] [cursor=pointer]
+                - button "Revoke file" [ref=e490] [cursor=pointer]
+            - row [ref=e491]:
+              - cell "impostor-tectonic-3.0.28-neoforge-21.1.jar d49044b6ea163aec863cd39013d72e1451f5b890" [ref=e492]:
+                - generic [ref=e493]: impostor-tectonic-3.0.28-neoforge-21.1.jar
+                - code [ref=e494]: d49044b6ea163aec863cd39013d72e1451f5b890
+              - cell [ref=e495]:
+                - code [ref=e497]: dynamic_fps
+              - cell "1" [ref=e498]
+              - cell "suspect · packages_mismatch" [ref=e499]
+              - cell [ref=e501]:
+                - button "Approve file" [ref=e502] [cursor=pointer]
+                - button "Revoke file" [ref=e503] [cursor=pointer]
+            - row [ref=e504]:
+              - cell "impostor-dynamic-fps-3.11.4+minecraft-1.21.0-neoforge.jar 0d293f3d935091b7b2411abda2c8c4f028526eed" [ref=e505]:
+                - generic [ref=e506]: impostor-dynamic-fps-3.11.4+minecraft-1.21.0-neoforge.jar
+                - code [ref=e507]: 0d293f3d935091b7b2411abda2c8c4f028526eed
+              - cell [ref=e508]:
+                - code [ref=e510]: imblocker
+              - cell "1" [ref=e511]
+              - cell "suspect · packages_mismatch" [ref=e512]
+              - cell [ref=e514]:
+                - button "Approve file" [ref=e515] [cursor=pointer]
+                - button "Revoke file" [ref=e516] [cursor=pointer]
+            - row [ref=e517]:
+              - cell "impostor-IMBlocker-5.6.2.1-neoforge+1.20.6-1.21.8.jar 617939293af68f7af9547b4448bc70391be3d312" [ref=e518]:
+                - generic [ref=e519]: impostor-IMBlocker-5.6.2.1-neoforge+1.20.6-1.21.8.jar
+                - code [ref=e520]: 617939293af68f7af9547b4448bc70391be3d312
+              - cell [ref=e521]:
+                - code [ref=e523]: player_animation_library
+              - cell "1" [ref=e524]
+              - cell "suspect · packages_mismatch" [ref=e525]
+              - cell [ref=e527]:
+                - button "Approve file" [ref=e528] [cursor=pointer]
+                - button "Revoke file" [ref=e529] [cursor=pointer]
+            - row [ref=e530]:
+              - cell "impostor-PlayerAnimationLibNeoforge-1.1.6+mc.1.21.1.jar ce032ec599809294e318a30055142fa09b0b8a25" [ref=e531]:
+                - generic [ref=e532]: impostor-PlayerAnimationLibNeoforge-1.1.6+mc.1.21.1.jar
+                - code [ref=e533]: ce032ec599809294e318a30055142fa09b0b8a25
+              - cell [ref=e534]:
+                - code [ref=e536]: distanthorizons
+              - cell "1" [ref=e537]
+              - cell "suspect · packages_mismatch" [ref=e538]
+              - cell [ref=e540]:
+                - button "Approve file" [ref=e541] [cursor=pointer]
+                - button "Revoke file" [ref=e542] [cursor=pointer]
+            - row [ref=e543]:
+              - cell "impostor-DistantHorizons-3.3.3-1.21.1-fabric-neoforge.jar 1ea23a8f9e7e2c7ea95ff94f791697570d64e7bb" [ref=e544]:
+                - generic [ref=e545]: impostor-DistantHorizons-3.3.3-1.21.1-fabric-neoforge.jar
+                - code [ref=e546]: 1ea23a8f9e7e2c7ea95ff94f791697570d64e7bb
+              - cell [ref=e547]:
+                - code [ref=e549]: geckolib
+              - cell "1" [ref=e550]
+              - cell "suspect · packages_mismatch" [ref=e551]
+              - cell [ref=e553]:
+                - button "Approve file" [ref=e554] [cursor=pointer]
+                - button "Revoke file" [ref=e555] [cursor=pointer]
+            - row [ref=e556]:
+              - cell "impostor-geckolib-neoforge-1.21.1-4.9.3.jar 996e292630b33d1b036758a64625ac0bfb04383a" [ref=e557]:
+                - generic [ref=e558]: impostor-geckolib-neoforge-1.21.1-4.9.3.jar
+                - code [ref=e559]: 996e292630b33d1b036758a64625ac0bfb04383a
+              - cell [ref=e560]:
+                - code [ref=e562]: notenoughanimations
+              - cell "1" [ref=e563]
+              - cell "suspect · packages_mismatch" [ref=e564]
+              - cell [ref=e566]:
+                - button "Approve file" [ref=e567] [cursor=pointer]
+                - button "Revoke file" [ref=e568] [cursor=pointer]
+            - row [ref=e569]:
+              - cell "impostor-notenoughanimations-neoforge-1.12.6-mc1.21.1.jar d69c35bdaefe1625184aed112791d80891c0fc61" [ref=e570]:
+                - generic [ref=e571]: impostor-notenoughanimations-neoforge-1.12.6-mc1.21.1.jar
+                - code [ref=e572]: d69c35bdaefe1625184aed112791d80891c0fc61
+              - cell [ref=e573]:
+                - code [ref=e575]: vanillabackport
+              - cell "1" [ref=e576]
+              - cell "suspect · packages_mismatch" [ref=e577]
+              - cell [ref=e579]:
+                - button "Approve file" [ref=e580] [cursor=pointer]
+                - button "Revoke file" [ref=e581] [cursor=pointer]
+            - row [ref=e582]:
+              - cell "impostor-VanillaBackport-neoforge-1.21.1-1.1.7.10.jar 454b866c974d817424533eed66d79cf8e68bf0b2" [ref=e583]:
+                - generic [ref=e584]: impostor-VanillaBackport-neoforge-1.21.1-1.1.7.10.jar
+                - code [ref=e585]: 454b866c974d817424533eed66d79cf8e68bf0b2
+              - cell [ref=e586]:
+                - code [ref=e588]: toucanlib
+              - cell "1" [ref=e589]
+              - cell "suspect · packages_mismatch" [ref=e590]
+              - cell [ref=e592]:
+                - button "Approve file" [ref=e593] [cursor=pointer]
+                - button "Revoke file" [ref=e594] [cursor=pointer]
+            - row [ref=e595]:
+              - cell "impostor-toucanlib-neoforge-1.21.1-0.5.0.jar 112c1c646beb94da7d228abfdc00d6786b591a49" [ref=e596]:
+                - generic [ref=e597]: impostor-toucanlib-neoforge-1.21.1-0.5.0.jar
+                - code [ref=e598]: 112c1c646beb94da7d228abfdc00d6786b591a49
+              - cell [ref=e599]:
+                - code [ref=e601]: moonlight
+              - cell "1" [ref=e602]
+              - cell "suspect · packages_mismatch" [ref=e603]
+              - cell [ref=e605]:
+                - button "Approve file" [ref=e606] [cursor=pointer]
+                - button "Revoke file" [ref=e607] [cursor=pointer]
+            - row [ref=e608]:
+              - 'cell "jei-1.21.1-neoforge-19.57.0.451.jar d639d83bf108b258e722a53f40a41a69e83f8ca6 modrinth: Just Enough Items (JEI)" [ref=e609]':
+                - generic [ref=e610]: jei-1.21.1-neoforge-19.57.0.451.jar
+                - code [ref=e611]: d639d83bf108b258e722a53f40a41a69e83f8ca6
+                - generic [ref=e612]: "modrinth: Just Enough Items (JEI)"
+              - cell [ref=e613]:
+                - code [ref=e615]: jei
+                - code [ref=e617]: mezz_config
+              - cell "1" [ref=e618]
+              - cell "unknown · id_not_approved" [ref=e619]
+              - cell [ref=e621]:
+                - button "Approve file" [ref=e622] [cursor=pointer]
+                - button "Revoke file" [ref=e623] [cursor=pointer]
+            - row [ref=e624]:
+              - 'cell "jei-1.21.1-neoforge-19.57.0.450.jar 129a0aa982cd520ef8a35abddf592dc4d5655bd9 modrinth: Just Enough Items (JEI)" [ref=e625]':
+                - generic [ref=e626]: jei-1.21.1-neoforge-19.57.0.450.jar
+                - code [ref=e627]: 129a0aa982cd520ef8a35abddf592dc4d5655bd9
+                - generic [ref=e628]: "modrinth: Just Enough Items (JEI)"
+              - cell [ref=e629]:
+                - code [ref=e631]: jei
+                - code [ref=e633]: mezz_config
+              - cell "1" [ref=e634]
+              - cell "unknown · id_not_approved" [ref=e635]
+              - cell [ref=e637]:
+                - button "Approve file" [ref=e638] [cursor=pointer]
+                - button "Revoke file" [ref=e639] [cursor=pointer]
+            - row [ref=e640]:
+              - 'cell "jei-1.21.1-neoforge-19.57.0.449.jar e93a639ccaf91f5f59be8e65ee8c66db31ef474f modrinth: Just Enough Items (JEI)" [ref=e641]':
+                - generic [ref=e642]: jei-1.21.1-neoforge-19.57.0.449.jar
+                - code [ref=e643]: e93a639ccaf91f5f59be8e65ee8c66db31ef474f
+                - generic [ref=e644]: "modrinth: Just Enough Items (JEI)"
+              - cell [ref=e645]:
+                - code [ref=e647]: jei
+                - code [ref=e649]: mezz_config
+              - cell "1" [ref=e650]
+              - cell "unknown · id_not_approved" [ref=e651]
+              - cell [ref=e653]:
+                - button "Approve file" [ref=e654] [cursor=pointer]
+                - button "Revoke file" [ref=e655] [cursor=pointer]
+      - generic [ref=e656]:
+        - heading "Mods players are running" [level=2] [ref=e657]
+        - paragraph [ref=e658]: Ranked by how many players run each one — approving from the top is the fastest way to shrink the number above. Ids are what the mod reports, not store slugs. Sinytra Connector’s fabric_* modules are approved by a rule inside the mod and show as not approved here; they are fine, and revoking one is still the way to override that rule.
+        - generic [ref=e659]:
+          - searchbox "Filter mods" [ref=e660]
+          - generic [ref=e661]:
+            - checkbox "hide approved" [checked] [ref=e662]
+            - text: hide approved
+        - table [ref=e664]:
+          - rowgroup [ref=e665]:
+            - row [ref=e666]:
+              - columnheader "Mod" [ref=e667]
+              - columnheader "Players" [ref=e668]
+              - columnheader "Status" [ref=e669]
+              - columnheader [ref=e670]
+          - rowgroup [ref=e671]:
+            - row [ref=e672]:
+              - cell "Nothing unapproved in this view." [ref=e673]
+  - complementary [aria-hidden] [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]: Live
+      - button [ref=e52] [cursor=pointer]: ⏸
+      - button [ref=e53] [cursor=pointer]: ✕
+    - generic [ref=e54]: waiting for events…
+    - link [ref=e57] [cursor=pointer]:
+      - /url: "#/live"
+      - text: Open full view →
