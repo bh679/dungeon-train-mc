@@ -22,7 +22,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Pins the live headpiece's model files to {@link AntennaTarget}: the overrides' thresholds fall
- * between neighbouring property values, every variant wraps the 3D base model in a
+ * between neighbouring property values, wearing it swaps the lens window from the Ender Pearl to the
+ * Eye of Ender, every variant wraps the 3D base model in a
  * {@code neoforge:separate_transforms} loader whose gui/fixed/ground perspectives are the flat
  * sprite, every texture the models name exists, and the geometry stays inside what vanilla's
  * item-model loader accepts.
@@ -30,6 +31,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 class LiveHeadpieceModelTest {
 
     private static final String PREDICATE = "dungeontrain:antenna_target";
+    private static final String LIVE_PREDICATE = "dungeontrain:live";
+    private static final String LIVE_MODEL = "dungeontrain:item/live_headpiece_live";
+    private static final String IDLE_LENS = "minecraft:item/ender_pearl";
+    private static final String LIVE_LENS = "minecraft:item/ender_eye";
     private static final String LOADER = "neoforge:separate_transforms";
     private static final String BASE = "dungeontrain:item/live_headpiece_base";
     private static final Map<AntennaTarget, String> VARIANTS = Map.of(
@@ -63,8 +68,11 @@ class LiveHeadpieceModelTest {
 
     @Test
     void overridesSelectEachColourBetweenNeighbouringPropertyValues() throws IOException {
-        JsonArray overrides = model("live_headpiece").getAsJsonArray("overrides");
-        assertEquals(VARIANTS.size(), overrides.size(), "one override per lit colour");
+        JsonArray overrides = new JsonArray();
+        for (JsonElement e : model("live_headpiece").getAsJsonArray("overrides")) {
+            if (e.getAsJsonObject().getAsJsonObject("predicate").has(PREDICATE)) overrides.add(e);
+        }
+        assertEquals(VARIANTS.size(), overrides.size(), "one antenna override per lit colour");
         AntennaTarget[] targets = AntennaTarget.values();
         for (int i = 1; i < targets.length; i++) {
             AntennaTarget target = targets[i];
@@ -85,14 +93,30 @@ class LiveHeadpieceModelTest {
     }
 
     @Test
-    void variantsOnlyRetintTheTip() throws IOException {
-        for (String variant : VARIANTS.values()) {
+    void wearingItSelectsTheLiveModelBeforeAnyColour() throws IOException {
+        JsonArray overrides = model("live_headpiece").getAsJsonArray("overrides");
+        JsonObject first = overrides.get(0).getAsJsonObject();
+        JsonObject predicate = first.getAsJsonObject("predicate");
+        assertEquals(Set.of(LIVE_PREDICATE), predicate.keySet(), "the live override comes first, so a lit colour wins over it");
+        assertEquals(1.0, predicate.get(LIVE_PREDICATE).getAsDouble());
+        assertEquals(LIVE_MODEL, first.get("model").getAsString());
+        assertEquals(IDLE_LENS, model("live_headpiece_base").getAsJsonObject("textures").get("lens").getAsString(),
+            "unworn, the lens shows the Ender Pearl");
+    }
+
+    @Test
+    void wornVariantsShowTheEyeAndOnlyRetintTheTip() throws IOException {
+        List<String> worn = new ArrayList<>(VARIANTS.values());
+        worn.add(LIVE_MODEL);
+        for (String variant : worn) {
             JsonObject m = model(variant.substring(variant.lastIndexOf('/') + 1));
             assertEquals(LOADER, m.get("loader").getAsString(), variant);
             JsonObject base = m.getAsJsonObject("base");
             assertEquals(BASE, base.get("parent").getAsString(), variant);
             JsonObject textures = base.getAsJsonObject("textures");
-            assertEquals(Set.of("tip"), textures.keySet(), variant + " overrides exactly the tip texture");
+            assertEquals(LIVE_LENS, textures.get("lens").getAsString(), variant + " is worn, so live");
+            Set<String> expected = variant.equals(LIVE_MODEL) ? Set.of("lens") : Set.of("tip", "lens");
+            assertEquals(expected, textures.keySet(), variant + " overrides only the lens and its tip colour");
         }
         JsonObject top = model("live_headpiece");
         assertEquals(LOADER, top.get("loader").getAsString());
@@ -101,7 +125,7 @@ class LiveHeadpieceModelTest {
 
     @Test
     void everyPerspectiveShowsTheFlatSprite() throws IOException {
-        for (String name : List.of("live_headpiece", "live_headpiece_red", "live_headpiece_green", "live_headpiece_blue")) {
+        for (String name : List.of("live_headpiece", "live_headpiece_live", "live_headpiece_red", "live_headpiece_green", "live_headpiece_blue")) {
             JsonObject m = model(name);
             assertEquals("front", m.get("gui_light").getAsString(), name + " must be flat-lit like item/generated, or the sprite renders half-dark");
             JsonObject perspectives = m.getAsJsonObject("perspectives");
@@ -118,7 +142,7 @@ class LiveHeadpieceModelTest {
     @Test
     void everyDungeonTrainTextureExists() throws IOException {
         List<String> missing = new ArrayList<>();
-        for (String name : List.of("live_headpiece_base", "live_headpiece_red", "live_headpiece_green", "live_headpiece_blue")) {
+        for (String name : List.of("live_headpiece_base", "live_headpiece_live", "live_headpiece_red", "live_headpiece_green", "live_headpiece_blue")) {
             for (String ref : textureRefs(model(name))) {
                 if (!ref.startsWith("dungeontrain:")) continue;
                 Path png = RepoPaths.resources().resolve("assets/dungeontrain/textures/" + ref.substring("dungeontrain:".length()) + ".png");

@@ -9,6 +9,7 @@
     "ground": { "parent": "minecraft:item/generated", "textures": { "layer0": "dungeontrain:item/live_headpiece_icon" } }
   },
   "overrides": [
+    { "predicate": { "dungeontrain:live": 1 }, "model": "dungeontrain:item/live_headpiece_live" },
     { "predicate": { "dungeontrain:antenna_target": 0.3 }, "model": "dungeontrain:item/live_headpiece_red" },
     { "predicate": { "dungeontrain:antenna_target": 0.6 }, "model": "dungeontrain:item/live_headpiece_green" },
     { "predicate": { "dungeontrain:antenna_target": 0.9 }, "model": "dungeontrain:item/live_headpiece_blue" }
