@@ -12,6 +12,9 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -22,12 +25,19 @@ import java.util.concurrent.TimeUnit;
  *
  * <p>ffmpeg reads the HLS directly ({@code -live_start_index -1} joins at the newest segment,
  * {@code -re} plays it at real speed instead of bursting a whole segment), scales to the viewer
- * width, and pipes raw RGB frames. When the streamer stops, their last playlist carries ENDLIST:
+ * width, and pipes raw RGBA frames. When the streamer stops, their last playlist carries ENDLIST:
  * ffmpeg plays the tail out and exits cleanly, and the session is {@link #finished()} — never
  * restarted, since rejoining a finished playlist would play it again from its first segment. Any
  * other exit (a 404, a network drop) backs off (2 s → 30 s) before trying again, keeping the last
  * frame on screen meanwhile. {@link #release()} after 30 s with no viewer kills
  * the process; the texture survives.</p>
+ *
+ * <p>Frames arrive as RGBA, whose little-endian ints are already {@link NativeImage}'s pixel values.
+ * The reader fills a staging image under {@code fillLock} and swaps it with {@code back} under
+ * {@code lock}, so the render thread's {@link #copyLatestInto} only ever waits for a swap. {@link
+ * #close()} never waits for the reader: it interrupts it (ending a backoff sleep) and kills ffmpeg
+ * (ending a blocked read), then frees both images under both locks — the reader checks {@code closed}
+ * under {@code fillLock} before it touches one.</p>
  */
 public final class LiveHlsSession implements IMediaSession {
 
@@ -37,15 +47,19 @@ public final class LiveHlsSession implements IMediaSession {
     private final String playlistUrl;
     private final boolean replay;
     private final int width, height;
-    private final NativeImage back;
+    /** Guarded by {@code lock}: the newest whole frame. */
+    private NativeImage back;
+    /** Guarded by {@code fillLock}: the frame being decoded. */
+    private NativeImage staging;
     private final Object lock = new Object();
+    private final Object fillLock = new Object();
     private volatile long frameSeq;
     private volatile MediaStatus status = MediaStatus.LOADING;
     private volatile long lastWantedMs = System.currentTimeMillis();
     private volatile boolean closed;
     private volatile boolean finished;
     private volatile Process process;
-    private Thread reader;
+    private volatile Thread reader;
 
     public LiveHlsSession(String playlistUrl, int width, int height) {
         this(playlistUrl, width, height, false);
@@ -61,6 +75,7 @@ public final class LiveHlsSession implements IMediaSession {
         this.width = width;
         this.height = height;
         this.back = new NativeImage(NativeImage.Format.RGBA, width, height, false);
+        this.staging = new NativeImage(NativeImage.Format.RGBA, width, height, false);
     }
 
     public String playlistUrl() { return playlistUrl; }
@@ -78,6 +93,12 @@ public final class LiveHlsSession implements IMediaSession {
         return !replay && exitCode == 0 && framesThisRun > 0;
     }
 
+    /** Whether the decoder thread is still running. */
+    boolean decoding() {
+        Thread r = reader;
+        return r != null && r.isAlive();
+    }
+
     /** A TV wants this feed right now; (re)start decoding if idle. */
     public synchronized void touch(FFmpeg ffmpeg) {
         lastWantedMs = System.currentTimeMillis();
@@ -93,26 +114,18 @@ public final class LiveHlsSession implements IMediaSession {
             Process p = null;
             try {
                 status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
-                p = ffmpeg.runFFmpeg(args());
+                p = ffmpeg.runFFmpeg(args(playlistUrl, width, height, replay));
                 process = p;
+                if (closed) break;
                 FfmpegSupport.drain(p.getErrorStream(), "decoder");
-                int frameBytes = width * height * 3;
-                byte[] buf = new byte[frameBytes];
+                byte[] buf = new byte[width * height * 4];
+                IntBuffer pixels = ByteBuffer.wrap(buf).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
                 long framesThisRun = 0;
                 try (InputStream in = p.getInputStream()) {
                     while (!closed) {
                         if (System.currentTimeMillis() - lastWantedMs >= IDLE_KILL_MS) break;
                         if (!readFully(in, buf)) break;
-                        synchronized (lock) {
-                            int i = 0;
-                            for (int y = 0; y < height; y++) {
-                                for (int x = 0; x < width; x++) {
-                                    int r = buf[i++] & 0xFF, g = buf[i++] & 0xFF, b = buf[i++] & 0xFF;
-                                    back.setPixelRGBA(x, y, 0xFF000000 | (b << 16) | (g << 8) | r);
-                                }
-                            }
-                            frameSeq++;
-                        }
+                        if (!publish(pixels)) break;
                         framesThisRun++;
                         status = MediaStatus.READY;
                         backoffMs = 2000;
@@ -139,17 +152,35 @@ public final class LiveHlsSession implements IMediaSession {
         status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
     }
 
-    private String[] args() {
+    /** Fills the staging image from one RGBA frame and swaps it in; false once the session is closed. */
+    private boolean publish(IntBuffer pixels) {
+        synchronized (fillLock) {
+            if (closed) return false;
+            NativeImage fill = staging;
+            int i = 0;
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) fill.setPixelRGBA(x, y, pixels.get(i++));
+            }
+            synchronized (lock) {
+                staging = back;
+                back = fill;
+                frameSeq++;
+            }
+        }
+        return true;
+    }
+
+    static String[] args(String playlistUrl, int width, int height, boolean replay) {
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin", "-re"));
         if (replay) {
             a.addAll(List.of("-stream_loop", "-1", "-i", playlistUrl, "-an",
-                "-vf", "scale=" + width + ":" + height + ",format=gray,noise=alls=18:allf=t+u,format=rgb24"));
+                "-vf", "scale=" + width + ":" + height + ",format=gray,noise=alls=18:allf=t+u,format=rgba"));
         } else {
             a.addAll(List.of("-live_start_index", "-1",
                 "-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5",
                 "-i", playlistUrl, "-an", "-vf", "scale=" + width + ":" + height));
         }
-        a.addAll(List.of("-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgb24", "-"));
+        a.addAll(List.of("-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgba", "-"));
         return a.toArray(new String[0]);
     }
 
@@ -200,15 +231,17 @@ public final class LiveHlsSession implements IMediaSession {
 
     @Override
     public void close() {
+        if (closed) return;
         closed = true;
         Process p = process;
         if (p != null) p.destroyForcibly();
         Thread r = reader;
-        if (r != null) {
-            try { r.join(TimeUnit.SECONDS.toMillis(2)); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-        }
-        synchronized (lock) {
-            back.close();
+        if (r != null) r.interrupt();
+        synchronized (fillLock) {
+            synchronized (lock) {
+                back.close();
+                staging.close();
+            }
         }
     }
 }
