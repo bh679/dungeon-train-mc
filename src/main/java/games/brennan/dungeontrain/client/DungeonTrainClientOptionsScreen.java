@@ -468,21 +468,36 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
                     Component.translatable("gui.dungeontrain.options.account.toggle_failed")), null);
         }
+        // Side by side when every label fits a half-width button, otherwise one per row — "Developer only"
+        // and most translations don't fit half a row.
+        String visKey = "gui.dungeontrain.options.account.donation.visibility";
+        boolean narrow = true;
+        for (DonationPrefsClient.Visibility v : DonationPrefsClient.Visibility.values()) {
+            if (this.font.width(value(visKey, donationVisibilityLabel(v))) > ROW_W - TEXT_PADDING) narrow = false;
+        }
+        for (Component c : onOffCandidates("gui.dungeontrain.options.account.donation.tag")) {
+            if (this.font.width(c) > ROW_W - TEXT_PADDING) narrow = false;
+        }
+        int w = narrow ? ROW_W : WIDE_W;
         CycleButton<DonationPrefsClient.Visibility> visibility =
                 CycleButton.<DonationPrefsClient.Visibility>builder(DungeonTrainClientOptionsScreen::donationVisibilityLabel)
                         .withValues(List.of(DonationPrefsClient.Visibility.values()))
                         .withInitialValue(prefs.visibility())
                         .withTooltip(v -> Tooltip.create(Component.translatable(donationKey(v) + ".tip")))
-                        .create(0, 0, ROW_W, ROW_H,
-                                Component.translatable("gui.dungeontrain.options.account.donation.visibility"),
+                        .create(0, 0, w, ROW_H, Component.translatable(visKey),
                                 (btn, v) -> DonationPrefsState.setVisibility(v, this::rebuildIfShown));
         CycleButton<Boolean> tag = CycleButton.onOffBuilder(prefs.tag())
-                .create(0, 0, ROW_W, ROW_H, Component.translatable("gui.dungeontrain.options.account.donation.tag"),
+                .create(0, 0, w, ROW_H, Component.translatable("gui.dungeontrain.options.account.donation.tag"),
                         (btn, on) -> DonationPrefsState.setTag(on, this::rebuildIfShown));
         tag.active = prefs.visibility() == DonationPrefsClient.Visibility.PUBLIC
                 || prefs.visibility() == DonationPrefsClient.Visibility.PRIVATE;
         withTip(tag, "gui.dungeontrain.options.account.donation.tag.tip");
-        list.addSmall(visibility, tag);
+        if (narrow) {
+            list.addSmall(visibility, tag);
+        } else {
+            list.addSmall(visibility, null);
+            list.addSmall(tag, null);
+        }
     }
 
     private static Component donationVisibilityLabel(DonationPrefsClient.Visibility v) {
