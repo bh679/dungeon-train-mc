@@ -1393,6 +1393,7 @@
       "gui.dungeontrain.consent.livestream",
       "gui.dungeontrain.consent.livestream.adult.tip",
       "gui.dungeontrain.consent.livestream.kid.tip",
+      "gui.dungeontrain.consent.livestream.kid.tip_off",
       "gui.dungeontrain.options.livestream",
       "gui.dungeontrain.options.livestream.tip",
       "gui.dungeontrain.options.tab.stream",

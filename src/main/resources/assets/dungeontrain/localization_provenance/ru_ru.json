@@ -1774,6 +1774,7 @@
       "gui.dungeontrain.consent.livestream",
       "gui.dungeontrain.consent.livestream.adult.tip",
       "gui.dungeontrain.consent.livestream.kid.tip",
+      "gui.dungeontrain.consent.livestream.kid.tip_off",
       "gui.dungeontrain.consent.dev_chat",
       "gui.dungeontrain.consent.dev_chat.adult.tip",
       "gui.dungeontrain.consent.footnote",
