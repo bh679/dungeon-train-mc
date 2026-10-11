@@ -9,6 +9,7 @@
     "featurefancy",
     "features",
     "fire",
+    "livestream",
     "nature",
     "pigs",
     "portal",
@@ -16,8 +17,5 @@
     "sheep",
     "shop",
     "traps"
-  ],
-  "included": [
-    "livestream"
   ]
 }

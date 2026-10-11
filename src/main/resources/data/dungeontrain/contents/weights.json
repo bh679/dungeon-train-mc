@@ -41,7 +41,7 @@
     "name": "ice"
   },
   "livestream": {
-    "weight": 1,
+    "weight": 2,
     "optIn": true
   },
   "maze": 4,
