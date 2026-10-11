@@ -24664,6 +24664,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "consent-kid-livestream-tooltip",
+      "version": "0.1217.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Livestreaming note follows its switch",
+      "summary": "On the first-launch card in Kid mode, the Livestreaming note now changes when you flip its switch.",
+      "highlights": [],
+      "pr": 1916,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
