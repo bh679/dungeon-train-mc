@@ -24783,6 +24783,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-chat-lines",
+      "version": "0.1225.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye speaks up",
+      "summary": "The Live Eye now tells you when you're live, how many are watching, and when it's over.",
+      "highlights": [],
+      "pr": 1929,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
