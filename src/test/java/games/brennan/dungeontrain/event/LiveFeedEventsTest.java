@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,5 +30,16 @@ final class LiveFeedEventsTest {
         assertFalse(LiveFeedEvents.streamBlocked(false, false));
         assertFalse(LiveFeedEvents.streamBlocked(true, true));
         assertFalse(LiveFeedEvents.streamBlocked(true, false));
+    }
+
+    @Test
+    @DisplayName("the burn line says why: taken off, moved to the next streamer, or the generic flare")
+    void burnLineSaysWhy() {
+        assertEquals("chat.dungeontrain.live.burns_removed", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.REMOVED));
+        assertEquals("chat.dungeontrain.live.burns_next_streamer", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.REPLACED));
+        assertEquals("chat.dungeontrain.live.burns_next_streamer", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.CUT_OFF));
+        assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.DIED));
+        assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.FREE_PLAY));
+        assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.DISABLED));
     }
 }

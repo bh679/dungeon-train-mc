@@ -144,21 +144,21 @@ public final class LiveFeedEvents {
         if (server == null) return;
         if (streamBlocked(player)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
-            burn(player);
+            burn(player, Exit.FREE_PLAY);
             return;
         }
         UUID previous = LiveStreamers.setStreamer(server, player.getUUID());
         if (previous != null && !previous.equals(player.getUUID())) {
             ServerPlayer old = server.getPlayerList().getPlayer(previous);
             if (old != null) {
-                burn(old);
+                burn(old, Exit.REPLACED);
                 PacketDistributor.sendToPlayer(old, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_REPLACED,
                     player.getGameProfile().getName()));
             }
         }
         ServerLevel level = player.serverLevel();
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.5f, 1.6f);
-        player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.headpiece_on"));
+        // No chat line here: the client says "You are now live" once the relay has a viewer count.
         PacketDistributor.sendToPlayer(player, LiveStreamPacket.start());
     }
 
@@ -168,7 +168,7 @@ public final class LiveFeedEvents {
         if (server == null) return;
         if (!LiveStreamers.clearIf(server, player.getUUID())) return;
         if (burnsOn(exit)) {
-            burn(player);
+            burn(player, exit);
         } else if (exit == Exit.FAILED) {
             handBack(player);
         }
@@ -184,8 +184,9 @@ public final class LiveFeedEvents {
     /**
      * The camcorder flares and is gone: flame, smoke, a hiss. It is taken from the head slot, or —
      * when the player has just pulled it off — from the cursor or the inventory slot it landed in.
+     * The chat line says why ({@link #burnLineKey}).
      */
-    private static void burn(ServerPlayer player) {
+    private static void burn(ServerPlayer player, Exit why) {
         if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) {
             player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
         } else if (isCamcorder(player.containerMenu.getCarried())) {
@@ -197,7 +198,16 @@ public final class LiveFeedEvents {
         level.sendParticles(ParticleTypes.FLAME, player.getX(), player.getEyeY() + 0.3, player.getZ(), 24, 0.3, 0.2, 0.3, 0.02);
         level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getEyeY() + 0.4, player.getZ(), 8, 0.2, 0.1, 0.2, 0.01);
         level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.8f, 0.9f);
-        player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.headpiece_burns"));
+        player.sendSystemMessage(Component.translatable(burnLineKey(why)));
+    }
+
+    /** Taken off, handed to the next streamer, or anything else (death, Free Play, Livestreaming off). */
+    static String burnLineKey(Exit why) {
+        return switch (why) {
+            case REMOVED -> "chat.dungeontrain.live.burns_removed";
+            case REPLACED, CUT_OFF -> "chat.dungeontrain.live.burns_next_streamer";
+            default -> "chat.dungeontrain.live.headpiece_burns";
+        };
     }
 
     /** Nothing to broadcast: the camcorder comes off and goes back in the inventory. */
