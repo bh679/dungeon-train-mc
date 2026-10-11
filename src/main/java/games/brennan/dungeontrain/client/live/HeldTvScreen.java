@@ -12,6 +12,7 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * The screen of a hand-held Vista TV that is switched on ({@link TvItems#isOn}): the live feed drawn
@@ -41,9 +42,9 @@ public final class HeldTvScreen {
     /** Third person lays the set down (pitch 75°); a half turn shows the screen to onlookers. */
     static final Pose THIRD_PERSON = new Pose(135f, 0f, 0f, 0f, 0f);
 
-    /** Where Vista paints the head smile: the north face, inset to the bezel, a hair in front of it. */
+    /** Where Vista paints the head smile: the north face (z = −0.5 from the centre), inset to the bezel, a hair in front. */
     static final float HALF = 0.375f;
-    static final float FACE_Z = -0.005f;
+    static final float FACE_Z = -0.505f;
 
     private HeldTvScreen() {}
 
@@ -58,7 +59,27 @@ public final class HeldTvScreen {
         return isHandContext(context) && TvItems.isOn(stack);
     }
 
+    /** Dev seam: a right-hand pose that replaces the constants while set ({@code HeldTvPosePuppet}). */
+    @Nullable private static volatile Pose override;
+
+    public static void setOverride(@Nullable Pose rightHand) {
+        override = rightHand;
+    }
+
+    /**
+     * The left hand is the right hand mirrored: vanilla already flips the model for the left hand, so
+     * the same yaw turns that screen to the viewer too; only the sideways nudge flips (seen in-game:
+     * a 45° yaw sweep put both screens square-on at the same angle).
+     */
+    static Pose mirrored(Pose right) {
+        return new Pose(right.yaw(), right.pitch(), -right.dx(), right.dy(), right.dz());
+    }
+
     public static Pose poseFor(ItemDisplayContext context) {
+        Pose o = override;
+        if (o != null && context.firstPerson()) {
+            return context == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND ? o : mirrored(o);
+        }
         return switch (context) {
             case FIRST_PERSON_RIGHT_HAND -> FIRST_PERSON_RIGHT;
             case FIRST_PERSON_LEFT_HAND -> FIRST_PERSON_LEFT;
