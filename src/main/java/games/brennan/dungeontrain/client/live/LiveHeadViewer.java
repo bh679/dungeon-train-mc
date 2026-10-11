@@ -1,9 +1,9 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.registry.ModItems;
-import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,7 +16,6 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -86,8 +85,7 @@ public final class LiveHeadViewer {
     /** True for the camcorder and for any Vista TV worn as a hat. */
     static boolean isViewerHat(ItemStack head) {
         if (head.isEmpty()) return false;
-        if (head.is(ModItems.LIVE_HEADPIECE.get())) return true;
-        return head.getItem() instanceof BlockItem bi && bi.getBlock() instanceof TVBlock;
+        return head.is(ModItems.LIVE_HEADPIECE.get()) || TvItems.isTv(head);
     }
 
     /** Wearing a viewer hat with the box switched on — the box is shown in one of the two passes. */

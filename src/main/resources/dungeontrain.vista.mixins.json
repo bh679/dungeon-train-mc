@@ -9,7 +9,9 @@
     "vista.TVBlockEntityMixin",
     "vista.LivingEntityTvHeadMixin"
   ],
-  "client": [],
+  "client": [
+    "vista.TvItemRendererMixin"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1

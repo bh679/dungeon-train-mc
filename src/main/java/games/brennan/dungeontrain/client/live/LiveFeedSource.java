@@ -64,6 +64,16 @@ public final class LiveFeedSource implements IVideoSource {
                                                         int videoAnimationTick, boolean paused,
                                                         IntAnimationState switchAnim, IntAnimationState staticAnim,
                                                         boolean showsTime) {
+        return screenConsumer(buffer, pixelEffectRes, videoAnimationTick, partialTick, paused, switchAnim, staticAnim);
+    }
+
+    /**
+     * What to draw a screen with this frame — a TV block's or a hand-held TV's
+     * ({@code HeldTvScreen}): Vista's snow, download bars, waiting pattern or the picture itself.
+     */
+    public VertexConsumer screenConsumer(MultiBufferSource buffer, Vec2i pixelEffectRes, int videoAnimationTick,
+                                         float partialTick, boolean paused,
+                                         IntAnimationState switchAnim, IntAnimationState staticAnim) {
         Frame f = frame(videoAnimationTick, partialTick, paused);
         return switch (f.kind()) {
             case STATIC -> TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
