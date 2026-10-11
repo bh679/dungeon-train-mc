@@ -185,7 +185,8 @@ public final class LiveStreamController {
     }
 
     /**
-     * "You are now live, N watching" once the relay's first viewer count lands (or after
+     * "You are now live on [Twitch] &amp; [DungeonTrain TV]" ({@link LiveWatchLinks}) then "N people
+     * watching" once the relay's first viewer count lands (or after
      * {@link #LIVE_LINE_FALLBACK_MS} with none, as 0), then a line each time the count settles in a
      * new band ({@link LiveViewerBands}).
      */
@@ -196,7 +197,8 @@ public final class LiveStreamController {
             int shown = Math.max(0, viewers);
             announcedLive = true;
             bands.start(shown);
-            say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.now_live", shown)
+            say(LiveWatchLinks.line());
+            say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.watching", shown)
                 .withStyle(ChatFormatting.GREEN));
             return;
         }
