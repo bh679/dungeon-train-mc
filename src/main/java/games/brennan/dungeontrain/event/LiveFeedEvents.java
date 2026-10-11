@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
 import games.brennan.dungeontrain.player.LiveStreamers;
+import games.brennan.dungeontrain.item.LiveHeadpiecePendingTag;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
@@ -207,7 +208,12 @@ public final class LiveFeedEvents {
         player.getInventory().placeItemBackInInventory(head);
     }
 
+    /**
+     * A real Live Eye. A loot-rolled one still awaiting its finder check is not — it may yet become a
+     * TV ({@link LiveEyeLootResolver}); the real one it resolves into starts the stream instead.
+     */
     private static boolean isCamcorder(ItemStack stack) {
-        return !stack.isEmpty() && stack.is(ModItems.LIVE_HEADPIECE.get());
+        return !stack.isEmpty() && stack.is(ModItems.LIVE_HEADPIECE.get())
+            && !LiveHeadpiecePendingTag.isPending(stack);
     }
 }
