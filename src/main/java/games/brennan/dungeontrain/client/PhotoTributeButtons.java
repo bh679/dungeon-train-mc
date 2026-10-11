@@ -1,6 +1,20 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import com.mojang.blaze3d.systems.RenderSystem;
+import games.brennan.dungeontrain.compat.photo.PhotoAdvancementBadges;
+import games.brennan.dungeontrain.mixin.client.ClientAdvancementsAccessor;
+import io.github.mortuusars.exposure.Exposure;
+import io.github.mortuusars.exposure.world.camera.frame.Frame;
+import net.minecraft.ChatFormatting;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.advancements.AdvancementType;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import games.brennan.dungeontrain.compat.DisposableCamera;
 import games.brennan.dungeontrain.compat.photo.OwnPhotoTribute;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
@@ -52,11 +66,15 @@ public final class PhotoTributeButtons {
     private static final int CAN_AFFORD_COLOUR = 0x55AAFF;
     private static final int CANNOT_AFFORD_COLOUR = 0xFF5555;
     private static final String CLOSE_MARK = "X";
+    private static final int BADGES_PER_ROW = 10;
+    private static final int BADGE_GAP = 4;
 
     /** The viewer the buttons were last added to, and those buttons. Render thread only. */
     private static Screen shownOn;
     private static List<Button> shown = List.of();
     private static ViewCounter viewsShown;
+    /** The photo's advancement badges, drawn above the buttons (see {@link PhotoAdvancementBadges}). */
+    private static List<AdvancementBadge> badgesShown = List.of();
 
     private PhotoTributeButtons() {}
 
@@ -72,6 +90,7 @@ public final class PhotoTributeButtons {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null) return;
+        addBadges(event, screen, player);
         ItemStack photo = heldFoundPhoto(player);
         Font font = minecraft.font;
         Component closeLabel = Component.translatable("gui.dungeontrain.photo_tribute.close");
@@ -165,6 +184,9 @@ public final class PhotoTributeButtons {
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (event.getScreen() != shownOn) return;
         if (viewsShown != null) viewsShown.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
+        for (AdvancementBadge badge : badgesShown) {
+            badge.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
+        }
         for (Button button : shown) {
             button.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
         }
@@ -184,6 +206,40 @@ public final class PhotoTributeButtons {
         shownOn = null;
         shown = List.of();
         viewsShown = null;
+        badgesShown = List.of();
+    }
+
+    /** The photograph in hand (main hand first), or an empty stack. */
+    private static ItemStack heldPhotograph(LocalPlayer player) {
+        if (player.getMainHandItem().has(Exposure.DataComponents.PHOTOGRAPH_FRAME)) return player.getMainHandItem();
+        return player.getOffhandItem().has(Exposure.DataComponents.PHOTOGRAPH_FRAME) ? player.getOffhandItem() : ItemStack.EMPTY;
+    }
+
+    /**
+     * A centred row (wrapping past {@link #BADGES_PER_ROW}) of the advancements the held photo earned
+     * its photographer, just above the button row. Spoiler-safe: see {@link AdvancementBadge#tooltip}.
+     */
+    private static void addBadges(ScreenEvent.Init.Post event, Screen screen, LocalPlayer player) {
+        ItemStack held = heldPhotograph(player);
+        Frame frame = held.isEmpty() ? null : held.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        List<PhotoAdvancementBadges.Badge> badges = frame == null ? List.of() : PhotoAdvancementBadges.read(frame.extraData());
+        if (badges.isEmpty()) return;
+        int rows = (badges.size() + BADGES_PER_ROW - 1) / BADGES_PER_ROW;
+        int pitch = AdvancementBadge.SIZE + BADGE_GAP;
+        int top = screen.height - HEIGHT - BOTTOM_MARGIN - GAP - rows * pitch + BADGE_GAP;
+        List<AdvancementBadge> widgets = new java.util.ArrayList<>();
+        for (int row = 0; row < rows; row++) {
+            int from = row * BADGES_PER_ROW;
+            int count = Math.min(BADGES_PER_ROW, badges.size() - from);
+            int left = (screen.width - (count * pitch - BADGE_GAP)) / 2;
+            for (int i = 0; i < count; i++) {
+                AdvancementBadge badge = new AdvancementBadge(badges.get(from + i), left + i * pitch, top + row * pitch);
+                event.addListener(badge);
+                widgets.add(badge);
+            }
+        }
+        shownOn = screen;
+        badgesShown = List.copyOf(widgets);
     }
 
     /** "You're the First." / "You're the 4th." — where this viewer comes in the photo's life. */
@@ -309,6 +365,94 @@ public final class PhotoTributeButtons {
         @Override
         protected MutableComponent createNarrationMessage() {
             return Component.translatable("gui.narrate.button", Component.empty().append(LABEL).append(" " + cost));
+        }
+    }
+
+    /**
+     * One advancement the photo earned its photographer: its tier frame with the icon inside (resolved on
+     * the server when the photo was made, so it draws even for advancements this player hasn't been
+     * sent). The tooltip keeps the photo advancements' secrets — see {@link #tooltip}.
+     */
+    private static final class AdvancementBadge extends AbstractWidget {
+
+        static final int SIZE = 26;
+        private static final int ICON_INSET = 5;
+        private static final String UNKNOWN = "?";
+        private static final int TITLE_COLOUR = 0x55FF55;
+        private static final int CHALLENGE_TITLE_COLOUR = 0xFF55FF;
+
+        private final ItemStack icon;
+        private final AdvancementType type;
+        private final boolean earned;
+
+        AdvancementBadge(PhotoAdvancementBadges.Badge badge, int x, int y) {
+            super(x, y, SIZE, SIZE, Component.literal(badge.id()));
+            ResourceLocation iconId = ResourceLocation.tryParse(badge.icon());
+            Item item = iconId == null ? Items.AIR : BuiltInRegistries.ITEM.get(iconId);
+            this.icon = new ItemStack(item);
+            this.type = typeOf(badge.frame());
+            ResourceLocation id = ResourceLocation.tryParse(badge.id());
+            Visibility seen = visibility(id);
+            this.earned = seen == Visibility.EARNED;
+            setTooltip(Tooltip.create(tooltip(id, seen, type)));
+        }
+
+        /** What this player knows of an advancement: earned it, can see it (their next step), or neither. */
+        enum Visibility { EARNED, VISIBLE, HIDDEN }
+
+        static Visibility visibility(ResourceLocation id) {
+            var connection = Minecraft.getInstance().getConnection();
+            if (id == null || connection == null) return Visibility.HIDDEN;
+            AdvancementHolder holder = connection.getAdvancements().get(id);
+            if (holder == null) return Visibility.HIDDEN; // not sent: still hidden from this player
+            AdvancementProgress progress = ((ClientAdvancementsAccessor) connection.getAdvancements()).dungeontrain$progress().get(holder);
+            return progress != null && progress.isDone() ? Visibility.EARNED : Visibility.VISIBLE;
+        }
+
+        /**
+         * Earned: title + description. Visible but not earned: title + its hint (or "?"). Not yet
+         * visible to this player: "?" + "?" — the icon alone says what kind of thing it was.
+         */
+        static Component tooltip(ResourceLocation id, Visibility seen, AdvancementType type) {
+            String base = id == null ? "" : "advancements." + id.getNamespace() + "." + id.getPath().replace('/', '.');
+            int titleColour = type == AdvancementType.CHALLENGE ? CHALLENGE_TITLE_COLOUR : TITLE_COLOUR;
+            MutableComponent title = seen == Visibility.HIDDEN
+                    ? Component.literal(UNKNOWN)
+                    : Component.translatable(base + ".title");
+            Component detail = switch (seen) {
+                case EARNED -> Component.translatable(base + ".description");
+                case VISIBLE -> I18n.exists(base + ".hint") ? Component.translatable(base + ".hint") : Component.literal(UNKNOWN);
+                case HIDDEN -> Component.literal(UNKNOWN);
+            };
+            return title.withStyle(Style.EMPTY.withColor(titleColour))
+                    .append("\n").append(detail.copy().withStyle(ChatFormatting.GRAY));
+        }
+
+        private static AdvancementType typeOf(String frame) {
+            for (AdvancementType t : AdvancementType.values()) if (t.getSerializedName().equals(frame)) return t;
+            return AdvancementType.TASK;
+        }
+
+        private ResourceLocation frameTexture() {
+            String tier = switch (type) {
+                case CHALLENGE -> "challenge";
+                case GOAL -> "goal";
+                default -> "task";
+            };
+            return ResourceLocation.withDefaultNamespace("textures/gui/sprites/advancements/" + tier
+                    + (earned ? "_frame_obtained" : "_frame_unobtained") + ".png");
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            RenderSystem.enableBlend();
+            graphics.blit(frameTexture(), getX(), getY(), 0.0f, 0.0f, SIZE, SIZE, SIZE, SIZE);
+            if (!icon.isEmpty()) graphics.renderFakeItem(icon, getX() + ICON_INSET, getY() + ICON_INSET);
+        }
+
+        @Override
+        protected void updateWidgetNarration(NarrationElementOutput output) {
+            defaultButtonNarrationText(output);
         }
     }
 }

@@ -155,7 +155,8 @@ public final class SharedPhotos {
     }
 
     /** One photo from the relay, decoded. {@code tributedBy} is set on a photographer's own tributed photo. */
-    private record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews, PhotoPngCodec.Decoded image) {}
+    private record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
+                             List<String> advancements, PhotoPngCodec.Decoded image) {}
 
     /** Server thread only. */
     private static List<PendingUpload> pendingUploads = List.of();
@@ -205,11 +206,17 @@ public final class SharedPhotos {
 
     /** Called the tick a disposable camera prints: queue the photograph for the relay if it may be shared. */
     public static void queueUpload(ServerPlayer player, ItemStack photograph) {
-        if (photograph.isEmpty() || !SharedBookGate.canContribute(player)) return;
-        Frame frame = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        if (photograph.isEmpty()) return;
+        Frame printed = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         // Projected frames are images from outside the game — never shared.
-        if (frame == null || frame.isProjected() || !frame.identifier().isId()) return;
-        PhotoSubjectTally.Shot shot = PhotoSubjectTally.takeShot(frame.identifier().id());
+        if (printed == null || printed.isProjected() || !printed.identifier().isId()) return;
+        PhotoSubjectTally.Shot shot = PhotoSubjectTally.takeShot(printed.identifier().id());
+        // The advancements this shot earned ride on the print, so the viewer shows them — shared or not.
+        List<PhotoAdvancementBadges.Badge> badges = PhotoAdvancementBadges.forIds(player.server, shot.advancements());
+        Frame frame = badges.isEmpty() ? printed
+                : printed.toMutable().updateExtraData(tag -> PhotoAdvancementBadges.write(tag, badges)).toImmutable();
+        if (frame != printed) photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
+        if (!SharedBookGate.canContribute(player)) return;
         PhotoSubjectTally.Subjects subjects = shot.subjects();
         // This life's tally, for the Faulthurst note that twins the one-life photo boards.
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
@@ -707,7 +714,11 @@ public final class SharedPhotos {
                 int viewsLeft = row.has("viewsLeft") ? row.get("viewsLeft").getAsInt() : VIEWS_MAX;
                 int views = row.has("views") ? row.get("views").getAsInt() : 0;
                 int maxViews = row.has("maxViews") ? row.get("maxViews").getAsInt() : VIEWS_MAX;
-                fetched.add(new PoolPhoto(id, author, tributedBy, tributes, viewsLeft, views, maxViews, PhotoPngCodec.decode(bytes.body())));
+                // What the photo earned its photographer — shown under it in the viewer (older relays send none).
+                List<String> advancements = PhotoAdvancementBadges.idsFrom(
+                        row.has("advancements") && row.get("advancements").isJsonArray() ? row.getAsJsonArray("advancements") : null);
+                fetched.add(new PoolPhoto(id, author, tributedBy, tributes, viewsLeft, views, maxViews, advancements,
+                        PhotoPngCodec.decode(bytes.body())));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -798,9 +809,12 @@ public final class SharedPhotos {
                 repository.save(exposureId, new ExposureData(image.width(), image.height(), image.pixels(),
                         ColorPalettes.DEFAULT.location(), ExposureData.Tag.EMPTY));
             }
+            List<PhotoAdvancementBadges.Badge> badges = PhotoAdvancementBadges.forIds(
+                    ServerLifecycleHooks.getCurrentServer(), photo.advancements());
             Frame frame = Frame.create()
                     .setIdentifier(ExposureIdentifier.id(exposureId))
                     .updateExtraData(tag -> {
+                        PhotoAdvancementBadges.write(tag, badges);
                         tag.putInt(SHARED_ID_KEY, photo.id());
                         tag.putString(SHARED_AUTHOR_KEY, photo.author());
                         tag.putInt(SHARED_TRIBUTES_KEY, photo.tributes());
