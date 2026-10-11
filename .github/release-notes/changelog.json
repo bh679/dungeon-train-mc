@@ -24492,6 +24492,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "donation-message-options",
+      "version": "0.1208.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Choose how your support is announced",
+      "summary": "You can now choose how your support is announced, under Options \u2192 Account.",
+      "highlights": [],
+      "pr": 1911,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
