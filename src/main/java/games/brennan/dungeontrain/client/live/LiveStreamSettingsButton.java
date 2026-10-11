@@ -1,10 +1,10 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.blaze3d.platform.Window;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientOptionsTab;
 import games.brennan.dungeontrain.client.DungeonTrainClientOptionsScreen;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
@@ -16,7 +16,7 @@ import net.minecraft.sounds.SoundEvents;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * A "Stream settings" button under the streamer's live preview box, shown in the inventory only,
+ * A cog button under the streamer's live preview box, shown in the inventory only,
  * that opens Options / Dungeon Train / Stream.
  *
  * <p>Like the box, it is drawn in the streamer's post-frame pass ({@link LiveHeadViewer#onFrameEnd}),
@@ -25,24 +25,25 @@ import org.jetbrains.annotations.Nullable;
  */
 final class LiveStreamSettingsButton {
 
-    static final int HEIGHT = 20;
+    /** A square vanilla-height button. */
+    static final int SIZE = 20;
+    static final int ICON = 16;
     /** Space between the preview's bottom border and the button. */
     static final int GAP = 2;
-    /** Label padding on each side, as on a vanilla button. */
-    static final int PADDING = 6;
 
+    /** Hover tooltip; the button itself is just the cog. */
     private static final Component LABEL = Component.translatable("gui.dungeontrain.live.stream_settings");
     private static final ResourceLocation SPRITE = ResourceLocation.withDefaultNamespace("widget/button");
     private static final ResourceLocation SPRITE_HOVER = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
+    private static final ResourceLocation COG = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/stream_settings");
 
     private LiveStreamSettingsButton() {}
 
-    /** Under the preview's bottom border, flush with its right edge; never narrower than the label. */
-    static LiveHeadViewer.Box layout(LiveHeadViewer.Box preview, int labelWidth) {
-        int w = Math.max(preview.w(), labelWidth + 2 * PADDING);
+    /** Under the preview's bottom border, flush with its right edge. */
+    static LiveHeadViewer.Box layout(LiveHeadViewer.Box preview) {
         int right = preview.x() + preview.w();
         int top = preview.y() + preview.h() + LiveHeadViewer.BORDER + GAP;
-        return new LiveHeadViewer.Box(right - w, top, w, HEIGHT);
+        return new LiveHeadViewer.Box(right - SIZE, top, SIZE, SIZE);
     }
 
     /** The E menu only — survival or creative inventory. Not chat, not other containers. */
@@ -59,10 +60,6 @@ final class LiveStreamSettingsButton {
         return x >= b.x() && x < b.x() + b.w() && y >= b.y() && y < b.y() + b.h();
     }
 
-    static LiveHeadViewer.Box layout(LiveHeadViewer.Box preview) {
-        return layout(preview, Minecraft.getInstance().font.width(LABEL));
-    }
-
     /** Called from the streamer pass, after the box is drawn. */
     static void draw(GuiGraphics g, LiveHeadViewer.Box preview) {
         Minecraft mc = Minecraft.getInstance();
@@ -73,8 +70,9 @@ final class LiveStreamSettingsButton {
         double my = mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight();
         boolean hover = contains(b, mx, my);
         g.blitSprite(hover ? SPRITE_HOVER : SPRITE, b.x(), b.y(), b.w(), b.h());
-        Font font = mc.font;
-        g.drawCenteredString(font, LABEL, b.x() + b.w() / 2, b.y() + (b.h() - font.lineHeight + 1) / 2, 0xFFFFFFFF);
+        int inset = (SIZE - ICON) / 2;
+        g.blitSprite(COG, b.x() + inset, b.y() + inset, ICON, ICON);
+        if (hover) g.renderTooltip(mc.font, LABEL, (int) mx, (int) my);
     }
 
     /** True (and the settings page opened) if the click landed on the button. */
