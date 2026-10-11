@@ -239,7 +239,7 @@ public final class CarriagePartPlacer {
                     // passes through unchanged — vanilla StructureTemplate
                     // does the same. Asymmetric BE content (sign text,
                     // banner patterns) reads forward on both sides.
-                    BlockState toPlace = w.state().mirror(p.mirror());
+                    BlockState toPlace = games.brennan.dungeontrain.editor.PaintingPass.mirror(w.state(), p.mirror());
                     games.brennan.dungeontrain.editor.ContainerContentsPlacement.place(
                         level, world, toPlace, w.entry().blockEntityNbt(),
                         "part:" + kind.id() + ":" + name, w.localPos(), seed, carriageIndex,

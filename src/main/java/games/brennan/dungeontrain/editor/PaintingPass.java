@@ -15,6 +15,7 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
@@ -75,6 +76,17 @@ public final class PaintingPass {
         if (state == null || facing.getAxis().isVertical()) return state;
         DirectionProperty facingProp = property(state, FACING, DirectionProperty.class);
         return facingProp == null ? state : state.setValue(facingProp, facing);
+    }
+
+    /**
+     * {@code state.mirror(mirror)}, except that a painting's {@code facing} is mirrored too —
+     * Fast Paintings' block overrides no {@code mirror()}, so a mirrored carriage would otherwise
+     * hang the picture facing into the wall it should be on.
+     */
+    public static BlockState mirror(BlockState state, Mirror mirror) {
+        if (mirror == Mirror.NONE || !isPainting(state)) return state.mirror(mirror);
+        DirectionProperty facingProp = property(state, FACING, DirectionProperty.class);
+        return facingProp == null ? state : state.setValue(facingProp, mirror.mirror(state.getValue(facingProp)));
     }
 
     /** A painting block's facing, or {@code null} for anything that is not a painting. */

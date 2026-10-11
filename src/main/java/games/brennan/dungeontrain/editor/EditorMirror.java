@@ -109,8 +109,9 @@ public final class EditorMirror {
      * {@link BlockState#mirror}, vertical via {@link #verticalFlip}.
      */
     public static BlockState reflect(BlockState s, boolean flipX, boolean flipY, boolean flipZ) {
-        if (flipX) s = s.mirror(Mirror.FRONT_BACK); // X: EAST ↔ WEST
-        if (flipZ) s = s.mirror(Mirror.LEFT_RIGHT);  // Z: NORTH ↔ SOUTH
+        // PaintingPass.mirror = BlockState.mirror, plus the facing of a Fast Paintings painting.
+        if (flipX) s = PaintingPass.mirror(s, Mirror.FRONT_BACK); // X: EAST ↔ WEST
+        if (flipZ) s = PaintingPass.mirror(s, Mirror.LEFT_RIGHT);  // Z: NORTH ↔ SOUTH
         if (flipY) s = verticalFlip(s);
         return s;
     }
