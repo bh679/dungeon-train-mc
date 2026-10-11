@@ -74,6 +74,19 @@ public final class MultiBlockVariants {
     public static List<Write> expand(List<VariantState> cell, VariantSpan span, @Nullable VariantState picked,
                                      BlockPos localPos, long worldSeed, int index, Rotator rotator) {
         if (picked == null) return List.of();
+        // A cell captured from a hung painting owns the whole painting: clear its other blocks
+        // first, so whatever was rolled replaces the painting rather than one square of it (a
+        // painting pick is hung afresh into the cleared space by PaintingPass).
+        List<BlockPos> painting = PaintingPass.capturedFootprint(cell, localPos);
+        if (painting.isEmpty()) return expandCell(cell, span, picked, localPos, worldSeed, index, rotator);
+        List<Write> out = new ArrayList<>(painting.size() + 2);
+        for (BlockPos pos : painting) out.add(Write.air(pos));
+        out.addAll(expandCell(cell, span, picked, localPos, worldSeed, index, rotator));
+        return out;
+    }
+
+    private static List<Write> expandCell(List<VariantState> cell, VariantSpan span, VariantState picked,
+                                          BlockPos localPos, long worldSeed, int index, Rotator rotator) {
         BlockPos footprint = MultiBlockFootprint.cellFootprint(cell);
         boolean empty = picked.isMob() || CarriageVariantBlocks.isEmptyPlaceholder(picked.state());
 

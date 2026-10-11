@@ -91,6 +91,9 @@ public final class VariantBlockInteractions {
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockPos clicked = event.getPos();
+        // Any square of a hung painting is the whole painting: vary the cell it hangs from.
+        PaintingPass.Whole painting = PaintingPass.whole(level, clicked);
+        if (painting != null) clicked = painting.anchor();
 
         ItemStack held = event.getItemStack();
         if (held.isEmpty()) return;
@@ -100,6 +103,8 @@ public final class VariantBlockInteractions {
             newVariant = captureVariant(event, level, player, blockItem, held, clicked);
         } else if (held.getItem() instanceof SpawnEggItem egg) {
             newVariant = captureMobVariant(egg, held, player);
+        } else if (held.is(net.minecraft.world.item.Items.PAINTING)) {
+            newVariant = capturePaintingVariant(event, level, held);
         } else {
             return;
         }
@@ -374,6 +379,24 @@ public final class VariantBlockInteractions {
     }
 
     /**
+     * Build a painting {@link VariantState} from a held {@code minecraft:painting}: a Fast Paintings
+     * painting facing out of the clicked face, hung whole at spawn by {@link PaintingPass}. The
+     * stack's picture, if it names one, becomes the row's picture (and size). {@code null} without
+     * Fast Paintings, or on a floor / ceiling face.
+     */
+    private static @Nullable VariantState capturePaintingVariant(PlayerInteractEvent.RightClickBlock event,
+                                                                  ServerLevel level, ItemStack held) {
+        // Varying a painting already in the cell keeps its facing; otherwise face out of the click.
+        net.minecraft.core.Direction face = PaintingPass.facingOf(level.getBlockState(event.getPos()));
+        if (face == null) face = event.getFace();
+        if (face == null || face.getAxis().isVertical()) return null;
+        BlockState state = PaintingPass.paintingState(face);
+        if (state == null) return null;
+        return new VariantState(state, null, 1, RotationApplier.lockToCurrent(state))
+            .withPainting(PaintingPass.fromItem(held, level.registryAccess()));
+    }
+
+    /**
      * Build a mob {@link VariantState} from a held vanilla spawn egg. The
      * resulting entry's {@code state} is auto-stamped to the empty-placeholder
      * sentinel by the canonical constructor, so existing applier branches
@@ -432,7 +455,20 @@ public final class VariantBlockInteractions {
             BlockEntity be = level.getBlockEntity(clicked);
             if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
-        return new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+        VariantState base = new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+        return withWholePainting(level, clicked, base);
+    }
+
+    /**
+     * {@code base} captured at a hung painting's anchor, marked as that whole painting (its picture
+     * and size): at spawn the cell then owns every block of the painting, and keeping the captured
+     * block itself means the editor preview restores the template exactly. Unchanged otherwise.
+     */
+    static VariantState withWholePainting(ServerLevel level, BlockPos pos, VariantState base) {
+        PaintingPass.Whole whole = PaintingPass.whole(level, pos);
+        if (whole == null || !whole.anchor().equals(pos)) return base;
+        return base.withPainting(whole.option())
+            .withHung(new HungPainting(whole.picture().width(), whole.picture().height()));
     }
 
     /**
