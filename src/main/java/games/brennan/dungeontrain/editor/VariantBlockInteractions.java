@@ -466,7 +466,9 @@ public final class VariantBlockInteractions {
      */
     static VariantState withWholePainting(ServerLevel level, BlockPos pos, VariantState base) {
         PaintingPass.Whole whole = PaintingPass.whole(level, pos);
-        return whole != null && whole.anchor().equals(pos) ? base.withPainting(whole.option()) : base;
+        if (whole == null || !whole.anchor().equals(pos)) return base;
+        return base.withPainting(whole.option())
+            .withHung(new HungPainting(whole.picture().width(), whole.picture().height()));
     }
 
     /**

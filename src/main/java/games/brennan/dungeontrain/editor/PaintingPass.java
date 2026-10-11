@@ -133,24 +133,26 @@ public final class PaintingPass {
     }
 
     /**
-     * The other blocks of the painting a cell was captured from — its first entry is a whole
-     * painting (a painting block with a fixed size and picture) — as local positions around
+     * The other blocks of the painting a cell was captured from — the entry carrying a
+     * {@link HungPainting}, whatever its rows were edited to since — as local positions around
      * {@code localPos}. Every roll clears these first, so whatever the cell picks replaces the whole
-     * painting rather than one square of it. Empty for any other cell.
+     * painting rather than hanging over it. Empty for any other cell.
      */
     public static List<BlockPos> capturedFootprint(List<VariantState> cell, BlockPos localPos) {
-        if (cell == null || cell.isEmpty()) return List.of();
-        VariantState base = cell.get(0);
-        VariantPainting p = base.painting();
-        if (p.isDefault() || p.anySize() || p.image() == null || base.isMob() || base.isGroupRef()) return List.of();
-        Direction facing = facingOf(base.state());
-        if (facing == null || facing.getAxis().isVertical()) return List.of();
-        if (p.width() == 1 && p.height() == 1) return List.of();
-        List<BlockPos> out = new ArrayList<>(p.width() * p.height() - 1);
-        for (Cell c : layout(localPos, facing, p.width(), p.height())) {
-            if (!c.pos().equals(localPos)) out.add(c.pos());
+        if (cell == null) return List.of();
+        for (VariantState entry : cell) {
+            HungPainting hung = entry.hung();
+            if (hung.isDefault() || entry.isMob() || entry.isGroupRef()) continue;
+            Direction facing = facingOf(entry.state());
+            if (facing == null || facing.getAxis().isVertical()) continue;
+            if (hung.width() == 1 && hung.height() == 1) return List.of();
+            List<BlockPos> out = new ArrayList<>(hung.width() * hung.height() - 1);
+            for (Cell c : layout(localPos, facing, hung.width(), hung.height())) {
+                if (!c.pos().equals(localPos)) out.add(c.pos());
+            }
+            return out;
         }
-        return out;
+        return List.of();
     }
 
     /** A painting block's facing, or {@code null} for anything that is not a painting. */

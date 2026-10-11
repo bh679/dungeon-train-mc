@@ -673,8 +673,12 @@ public final class CarriageVariantBlocks {
             // Additive painting size / picture. Absent → off (the captured
             // block, cell by cell), so older files spawn unchanged.
             VariantPainting painting = parsePainting(obj.get("painting"), contextId, contextPos);
+            // Additive: the size of the painting this cell was captured from, cleared at every spawn.
+            JsonElement hungEl = obj.get("hung");
+            HungPainting hung = hungEl != null && hungEl.isJsonPrimitive()
+                ? HungPainting.parse(hungEl.getAsString()) : HungPainting.NONE;
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, connect, growth, painting);
+                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -1407,6 +1411,9 @@ public final class CarriageVariantBlocks {
         }
         if (!s.painting().isDefault()) {
             sb.append(", \"painting\": \"").append(s.painting().id()).append("\"");
+        }
+        if (!s.hung().isDefault()) {
+            sb.append(", \"hung\": \"").append(s.hung().id()).append("\"");
         }
         sb.append("}");
     }
