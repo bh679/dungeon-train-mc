@@ -670,8 +670,15 @@ public final class CarriageVariantBlocks {
             // Additive column growth. Absent → off (a single block), so older
             // files spawn unchanged.
             VariantGrowth growth = parseGrowth(obj.get("growth"), contextId, contextPos);
+            // Additive painting size / picture. Absent → off (the captured
+            // block, cell by cell), so older files spawn unchanged.
+            VariantPainting painting = parsePainting(obj.get("painting"), contextId, contextPos);
+            // Additive: the size of the painting this cell was captured from, cleared at every spawn.
+            JsonElement hungEl = obj.get("hung");
+            HungPainting hung = hungEl != null && hungEl.isJsonPrimitive()
+                ? HungPainting.parse(hungEl.getAsString()) : HungPainting.NONE;
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, connect, growth);
+                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -1402,6 +1409,12 @@ public final class CarriageVariantBlocks {
         if (!s.growth().isDefault()) {
             sb.append(", \"growth\": \"").append(s.growth().id()).append("\"");
         }
+        if (!s.painting().isDefault()) {
+            sb.append(", \"painting\": \"").append(s.painting().id()).append("\"");
+        }
+        if (!s.hung().isDefault()) {
+            sb.append(", \"hung\": \"").append(s.hung().id()).append("\"");
+        }
         sb.append("}");
     }
 
@@ -1517,6 +1530,22 @@ public final class CarriageVariantBlocks {
             return VariantGrowth.NONE;
         }
         return growth;
+    }
+
+    /**
+     * Parse an optional {@code "painting"} token ({@code "any random"}, {@code "2x1 minecraft:kebab"}).
+     * Absent → off; malformed → off with a warning.
+     */
+    private static VariantPainting parsePainting(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantPainting.NONE;
+        String token = el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
+        VariantPainting painting = token == null ? null : VariantPainting.parse(token);
+        if (painting == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown painting '{}', using off.",
+                contextId, contextPos, el);
+            return VariantPainting.NONE;
+        }
+        return painting;
     }
 
     private static VariantActive parseActive(JsonElement el, String contextId, BlockPos contextPos) {
