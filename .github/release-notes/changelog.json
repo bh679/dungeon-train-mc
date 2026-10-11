@@ -24783,6 +24783,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-tv-weighting",
+      "version": "0.1225.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "TVs follow the stream",
+      "summary": "TVs turn up more often on the train while someone is streaming, and less often when nobody is.",
+      "highlights": [],
+      "pr": 1928,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
