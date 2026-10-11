@@ -24,5 +24,8 @@ class LiveEncoderArgsTest {
         assertTrue(a.get(a.size() - 1).endsWith("abc/live.m3u8"));
         assertTrue(a.get(a.indexOf("-hls_segment_filename") + 1).endsWith("abc/seg%05d.ts"));
         assertTrue(a.get(a.indexOf("-hls_flags") + 1).contains("temp_file"), "the playlist must only ever name finished segments");
+        int t = a.indexOf("-threads");
+        assertEquals("2", a.get(t + 1), "libx264's default thread army competes with the game for cores");
+        assertTrue(t > a.indexOf("-i"), "-threads must be an output (encoder) option, not an input one");
     }
 }

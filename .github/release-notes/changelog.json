@@ -24836,6 +24836,60 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-frame-stalls",
+      "version": "0.1228.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "community"
+      ],
+      "title": "Smoother Live Eye and TVs",
+      "summary": "Streaming with the Live Eye and watching it on a TV now runs smoother.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1931,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-watch-links",
+      "version": "0.1229.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye points the way",
+      "summary": "Going live now tells you where your audience can find you.",
+      "highlights": [],
+      "pr": 1932,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-encoder-thread-cap",
+      "version": "0.1230.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye is lighter on your computer.",
+      "highlights": [],
+      "pr": 1933,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
