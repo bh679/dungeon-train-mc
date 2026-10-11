@@ -1254,6 +1254,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "Oznacz mnie, gdy pasażer, któremu dałem aparat, zrobi mi zdjęcie.",
   "gui.dungeontrain.options.account.pings.milestone": "Kamienie milowe",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Oznacz mnie, gdy zostanie opublikowane jedno z moich osiągnięć kamieni milowych.",
+  "gui.dungeontrain.options.account.pings.translation_review": "Przeglądy tłumaczeń",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "Oznacz mnie, gdy przesłane przeze mnie tłumaczenie wymaga dokładniejszego sprawdzenia.",
   "chat.dungeontrain.discord.options_hint": "Wybierz, które posty Cię oznaczają, w Opcje → Dungeon Train… → Konto.",
   "gui.dungeontrain.ai_policy.title": "Zasady AI",
   "gui.dungeontrain.ai_policy.subtitle": "Co w Dungeon Train jest — a co nie jest — dziełem AI.",

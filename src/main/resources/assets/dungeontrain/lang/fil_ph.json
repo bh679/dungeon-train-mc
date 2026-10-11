@@ -1174,6 +1174,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "I-ping ako kapag kinunan ako ng larawan ng isang pasaherong binigyan ko ng camera.",
   "gui.dungeontrain.options.account.pings.milestone": "Mga milestone",
   "gui.dungeontrain.options.account.pings.milestone.tip": "I-ping ako kapag na-post ang isa sa aking mga milestone na advancement.",
+  "gui.dungeontrain.options.account.pings.translation_review": "Pagsusuri ng salin",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "I-mention ako kapag kailangang suriing mabuti ang isang salin na ipinadala ko.",
   "chat.dungeontrain.discord.options_hint": "Piliin kung aling mga post ang magpi-ping sa iyo sa Options → Dungeon Train… → Account.",
   "gui.dungeontrain.ai_policy.title": "Patakaran sa AI",
   "gui.dungeontrain.ai_policy.subtitle": "Ano sa Dungeon Train ang gawa ng AI — at ano ang hindi.",
