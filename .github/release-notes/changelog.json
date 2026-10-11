@@ -24681,6 +24681,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photos-remember-advancements",
+      "version": "0.1219.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Photos remember what they earned",
+      "summary": "Photos you share now carry the advancements they earned you, shown beside them in the Live Gallery on the website.",
+      "highlights": [],
+      "pr": 1923,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
