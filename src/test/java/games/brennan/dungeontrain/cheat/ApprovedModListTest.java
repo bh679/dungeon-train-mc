@@ -123,6 +123,73 @@ class ApprovedModListTest {
     }
 
     @Test
+    @DisplayName("The payload carries the approved file hashes and the hash switch; junk hashes are dropped")
+    void parsesHashes() {
+        String good = "0123456789abcdef0123456789abcdef01234567";
+        ApprovedModList.Payload p = ApprovedModList.parse("{\"ok\":true,\"approved\":[],\"revoked\":[],"
+            + "\"enforce\":true,\"hashes\":[\"" + good.toUpperCase() + "\",\"nope\",\"\",7],\"enforceHashes\":true}");
+        assertNotNull(p);
+        assertEquals(Set.of(good), p.hashes(), "lowercased, junk dropped");
+        assertEquals(Boolean.TRUE, p.enforceHashes());
+        assertTrue(ApprovedModList.isFileApproved(new ModFileFingerprint("a.jar", 1, good, 1L, List.of("a")), p.hashes()));
+        assertFalse(ApprovedModList.isFileApproved(new ModFileFingerprint("a.jar", 1, "f".repeat(40), 1L, List.of("a")), p.hashes()));
+        assertFalse(ApprovedModList.isFileApproved(null, p.hashes()));
+    }
+
+    @Test
+    @DisplayName("A relay that predates hashes leaves the hash switch unsaid and the list empty")
+    void hashesUnsaidWhenMissing() {
+        ApprovedModList.Payload p = ApprovedModList.parse("{\"ok\":true,\"approved\":[\"sodium\"],\"revoked\":[]}");
+        assertNotNull(p);
+        assertEquals(Set.of(), p.hashes());
+        assertNull(p.enforceHashes());
+        ApprovedModList.setRelayForTest(p);
+        try {
+            assertFalse(ApprovedModList.enforceHashes(), "unsaid keeps the baked default, which is OFF");
+        } finally {
+            ApprovedModList.setRelayForTest(null);
+        }
+    }
+
+    @Test
+    @DisplayName("Hashes and the hash switch round-trip through the disk-cache JSON")
+    void hashesRoundTrip() {
+        String h = "0123456789abcdef0123456789abcdef01234567";
+        ApprovedModList.Payload p = new ApprovedModList.Payload(Set.of("a"), Set.of(), true, Set.of(h), true);
+        ApprovedModList.Payload back = ApprovedModList.parse(ApprovedModList.toJson(p));
+        assertNotNull(back);
+        assertEquals(Set.of(h), back.hashes());
+        assertEquals(Boolean.TRUE, back.enforceHashes());
+        assertFalse(ApprovedModList.toJson(new ApprovedModList.Payload(Set.of(), Set.of(), null)).contains("enforceHashes"),
+            "an unsaid hash switch is not written as said");
+    }
+
+    @Test
+    @DisplayName("The hash switch is baked OFF and the relay can turn it on")
+    void hashEnforcementIsBakedOff() {
+        assertFalse(ApprovedModList.BAKED_ENFORCE_HASHES);
+        ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), null, Set.of(), true));
+        try {
+            assertTrue(ApprovedModList.enforceHashes());
+        } finally {
+            ApprovedModList.setRelayForTest(null);
+        }
+    }
+
+    @Test
+    @DisplayName("The baked resource carries a file hash for every modpack entry and embedded jar")
+    void bakedResourceCarriesHashes() throws Exception {
+        JsonObject root;
+        try (var in = ApprovedModList.class.getResourceAsStream(ApprovedModList.RESOURCE)) {
+            assertNotNull(in);
+            root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        Set<String> hashes = ApprovedModList.parseHashes(root);
+        assertFalse(hashes.isEmpty(), "generateApprovedMods must bake the modpack's pinned-file hashes");
+        for (String h : hashes) assertTrue(h.matches("[0-9a-f]{40}"), h);
+    }
+
+    @Test
     @DisplayName("Enforcement is baked ON; only an explicit relay value changes it")
     void enforcementIsBakedOn() {
         assertTrue(ApprovedModList.BAKED_ENFORCE);

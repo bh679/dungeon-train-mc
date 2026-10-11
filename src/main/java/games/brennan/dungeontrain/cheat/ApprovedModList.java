@@ -85,12 +85,31 @@ public final class ApprovedModList {
     private static volatile Set<String> relayApproved = Set.of();
     private static volatile Set<String> relayRevoked = Set.of();
     /**
+     * The hash-verified half (2026-10): every jar SHA-1 the relay currently approves, plus the
+     * ones baked in for the modpack's pinned files. A mod id is a line in mods.toml anyone can
+     * edit; a file's hash is not — so {@link UnapprovedModIntegrity} also asks whether each
+     * installed FILE is one of these. See {@link ModFileScanner}.
+     */
+    private static volatile Set<String> bakedHashes = Set.of();
+    private static volatile Set<String> relayHashes = Set.of();
+    /** A lowercase 40-hex SHA-1, as the relay serves and the scanner computes them. */
+    private static final java.util.regex.Pattern SHA1 = java.util.regex.Pattern.compile("[0-9a-f]{40}");
+    private static final int MAX_HASHES = 200000;
+    /**
      * Enforcement as this jar ships it: ON. A run with an unapproved mod installed is Free Play from
      * the very first launch, offline included. The relay can only turn it OFF (or back on) with an
      * explicit value, which is then cached so the kill switch also holds on offline boots.
      */
     static final boolean BAKED_ENFORCE = true;
     private static volatile boolean enforce = BAKED_ENFORCE;
+    /**
+     * The HASH check's own switch, and it ships OFF: the relay fills its catalogue from what
+     * players report while this is off, and flips it on once coverage is good. The failure
+     * direction is the same as {@link #enforce} — a file the relay has not placed yet free-plays
+     * an honest player — so a payload that does not mention it leaves the current value alone.
+     */
+    static final boolean BAKED_ENFORCE_HASHES = false;
+    private static volatile boolean enforceHashes = BAKED_ENFORCE_HASHES;
 
     /**
      * True once the disk cache has been consulted OR a network fetch has landed — either way the
@@ -127,6 +146,30 @@ public final class ApprovedModList {
     public static boolean enforce() {
         loadDiskCacheOnce();
         return enforce;
+    }
+
+    /** The effective approved-FILE set: baked ∪ relay SHA-1s, lowercase hex. */
+    public static Set<String> approvedHashes() {
+        loadBakedOnce();
+        loadDiskCacheOnce();
+        Set<String> out = new HashSet<>(bakedHashes);
+        out.addAll(relayHashes);
+        return Set.copyOf(out);
+    }
+
+    /**
+     * Is the hash check enforced — does an installed file the relay could not verify flip the run
+     * to Free Play? Ships false ({@link #BAKED_ENFORCE_HASHES}); only an explicit relay value
+     * (live or cached) turns it on.
+     */
+    public static boolean enforceHashes() {
+        loadDiskCacheOnce();
+        return enforceHashes;
+    }
+
+    /** Pure: is this file's hash on the approved-file list? */
+    static boolean isFileApproved(ModFileFingerprint file, Set<String> approvedSha1s) {
+        return file != null && file.sha1() != null && approvedSha1s.contains(file.sha1());
     }
 
     /**
@@ -167,15 +210,29 @@ public final class ApprovedModList {
         relayApproved = payload.approved();
         relayRevoked = payload.revoked();
         if (payload.enforce() != null) enforce = payload.enforce();
+        relayHashes = payload.hashes();
+        if (payload.enforceHashes() != null) enforceHashes = payload.enforceHashes();
         saveDiskCache(payload);
     }
 
     /**
-     * What the relay serves, and what the disk cache holds: two lists and the enforcement flag.
-     * {@code enforce} is {@code null} when the payload did not say — the current value (baked or
-     * cached) then stands, so a relay that has never been told cannot switch enforcement off.
+     * What the relay serves, and what the disk cache holds: two id lists and the enforcement flag,
+     * plus (since the hash-verified whitelist) the approved file hashes and their own flag.
+     * {@code enforce} / {@code enforceHashes} are {@code null} when the payload did not say — the
+     * current value (baked or cached) then stands, so a relay that has never been told cannot
+     * switch enforcement off, and a relay too old to know about hashes cannot switch THAT on.
      */
-    record Payload(Set<String> approved, Set<String> revoked, Boolean enforce) {}
+    record Payload(Set<String> approved, Set<String> revoked, Boolean enforce,
+                   Set<String> hashes, Boolean enforceHashes) {
+        Payload {
+            hashes = hashes == null ? Set.of() : Set.copyOf(hashes);
+        }
+
+        /** The pre-hash shape: no file hashes, hash enforcement unsaid. */
+        Payload(Set<String> approved, Set<String> revoked, Boolean enforce) {
+            this(approved, revoked, enforce, Set.of(), null);
+        }
+    }
 
     /** Read the baked resource once per JVM. Best-effort — a missing/corrupt file means "empty". */
     static synchronized void loadBakedOnce() {
@@ -191,8 +248,9 @@ public final class ApprovedModList {
                 new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
             baked = parseBaked(root);
             prefixes = parsePrefixes(root);
-            LOGGER.debug("[DungeonTrain] approved-mod list: {} baked id(s), {} prefix(es)",
-                baked.size(), prefixes.size());
+            bakedHashes = parseHashes(root);
+            LOGGER.debug("[DungeonTrain] approved-mod list: {} baked id(s), {} prefix(es), {} file hash(es)",
+                baked.size(), prefixes.size(), bakedHashes.size());
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] approved-mod list: could not read {} — "
                 + "no mod is approved from the jar: {}", RESOURCE, e.toString());
@@ -218,6 +276,23 @@ public final class ApprovedModList {
             }
         }
         return ModIds.sanitize(ids, MAX_IDS);
+    }
+
+    /**
+     * The {@code hashes} array — lowercase 40-hex SHA-1s — of a baked resource or a relay payload.
+     * Anything that is not a SHA-1 is dropped: a malformed entry can only ever fail to approve a
+     * file, never approve the wrong one, but there is no reason to carry junk.
+     */
+    static Set<String> parseHashes(JsonObject root) {
+        if (!root.has("hashes") || !root.get("hashes").isJsonArray()) return Set.of();
+        Set<String> out = new HashSet<>();
+        for (JsonElement e : root.getAsJsonArray("hashes")) {
+            if (!e.isJsonPrimitive() || !e.getAsJsonPrimitive().isString()) continue;
+            String h = e.getAsString().trim().toLowerCase(java.util.Locale.ROOT);
+            if (SHA1.matcher(h).matches()) out.add(h);
+            if (out.size() >= MAX_HASHES) break;
+        }
+        return Set.copyOf(out);
     }
 
     /** The resource's raw-ID prefixes, lowercased and validated as ID fragments. */
@@ -246,8 +321,11 @@ public final class ApprovedModList {
             relayApproved = p.approved();
             relayRevoked = p.revoked();
             if (p.enforce() != null) enforce = p.enforce();
+            relayHashes = p.hashes();
+            if (p.enforceHashes() != null) enforceHashes = p.enforceHashes();
             LOGGER.debug("[DungeonTrain] approved-mod list: loaded {} approval(s), {} revocation(s), "
-                + "enforce={} from {}", relayApproved.size(), relayRevoked.size(), enforce, file);
+                + "enforce={}, {} file hash(es), enforceHashes={} from {}", relayApproved.size(),
+                relayRevoked.size(), enforce, relayHashes.size(), enforceHashes, file);
         } catch (Exception e) {
             LOGGER.debug("[DungeonTrain] approved-mod list: could not read {} — using baked only: {}",
                 file, e.toString());
@@ -268,13 +346,17 @@ public final class ApprovedModList {
             JsonObject o = root.getAsJsonObject();
             Set<String> approvedIds = ModIds.sanitize(stringsAt(o, "approved"), MAX_IDS);
             Set<String> revokedIds = ModIds.sanitize(stringsAt(o, "revoked"), MAX_IDS);
-            Boolean on = o.has("enforce") && o.get("enforce").isJsonPrimitive()
-                && o.getAsJsonPrimitive("enforce").isBoolean()
-                ? o.get("enforce").getAsBoolean() : null;
-            return new Payload(approvedIds, revokedIds, on);
+            Boolean on = boolAt(o, "enforce");
+            return new Payload(approvedIds, revokedIds, on, parseHashes(o), boolAt(o, "enforceHashes"));
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /** A boolean field, or {@code null} when missing or not a boolean — "the relay did not say". */
+    private static Boolean boolAt(JsonObject o, String key) {
+        return o.has(key) && o.get(key).isJsonPrimitive() && o.getAsJsonPrimitive(key).isBoolean()
+            ? o.get(key).getAsBoolean() : null;
     }
 
     private static List<String> stringsAt(JsonObject o, String key) {
@@ -294,6 +376,8 @@ public final class ApprovedModList {
         obj.add("approved", arrayOf(payload.approved()));
         obj.add("revoked", arrayOf(payload.revoked()));
         if (payload.enforce() != null) obj.addProperty("enforce", payload.enforce());
+        obj.add("hashes", arrayOf(new java.util.TreeSet<>(payload.hashes())));
+        if (payload.enforceHashes() != null) obj.addProperty("enforceHashes", payload.enforceHashes());
         return obj.toString();
     }
 
@@ -335,11 +419,15 @@ public final class ApprovedModList {
             relayApproved = Set.of();
             relayRevoked = Set.of();
             enforce = BAKED_ENFORCE;
+            relayHashes = Set.of();
+            enforceHashes = BAKED_ENFORCE_HASHES;
             loaded = false;
         } else {
             relayApproved = payload.approved();
             relayRevoked = payload.revoked();
             enforce = payload.enforce() != null ? payload.enforce() : BAKED_ENFORCE;
+            relayHashes = payload.hashes();
+            enforceHashes = payload.enforceHashes() != null ? payload.enforceHashes() : BAKED_ENFORCE_HASHES;
             loaded = true;
         }
     }

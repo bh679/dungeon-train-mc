@@ -15,6 +15,11 @@ brings Veil and Sable Companion that way — NeoForge loads them as mods, so pla
 Opt out of auto-approval with ``"whitelist": false`` on an entry (Brennan's call, asked at Gate 3
 whenever an entry is added). Such an entry needs no ``mod_ids``.
 
+Since the hash-verified whitelist (2026-10) each entry also carries the pinned jar's ``sha1``: the
+Gradle task bakes those into ``approved_mods.json`` ``hashes`` so a stock modpack install passes
+the file check offline, before the relay has ever been asked. ``--fill`` records it, ``--verify``
+checks it; the offline check only requires it where ``mod_ids`` is present.
+
 Modes:
   (default)   offline: every entry (except whitelist:false) has a non-empty, well-formed mod_ids.
   --verify    network: download each pinned jar and require mod_ids == the jar's modIds.
@@ -26,6 +31,7 @@ CurseForge file (``project_id`` + ``file_id``). Downloads are cached under ``--c
 Run: python3 scripts/modpack/check-mod-ids.py [--verify | --fill]   (exit 0 = clean, 1 = drift)
 """
 import argparse
+import hashlib
 import io
 import json
 import re
@@ -43,6 +49,7 @@ DEFAULT_CACHE = Path.home() / ".cache" / "dungeontrain-modpack-jars"
 
 # FML's own modId rule. A hyphen means a store slug was pasted in.
 MOD_ID = re.compile(r"^[a-z][a-z0-9_]{1,63}$")
+SHA1 = re.compile(r"^[0-9a-f]{40}$")
 TOML_NAMES = ("META-INF/neoforge.mods.toml", "META-INF/mods.toml")
 USER_AGENT = "bh679/dungeon-train-mc check-mod-ids (github.com/bh679/dungeon-train-mc)"
 RETRIES = 3
@@ -101,6 +108,9 @@ def check_presence(config):
         bad = [i for i in ids if not isinstance(i, str) or not MOD_ID.match(i)]
         if bad:
             problems.append(f"{label}: mod_ids {bad} are not modIds (slug pasted in?)")
+        sha1 = entry.get("sha1")
+        if not isinstance(sha1, str) or not SHA1.match(sha1):
+            problems.append(f"{label}: no sha1 (run check-mod-ids.py --fill)")
     return problems
 
 
@@ -150,6 +160,11 @@ def actual_ids(label, entry, cache):
     return ids
 
 
+def actual_sha1(entry, cache):
+    """Lowercase hex SHA-1 of the pinned jar — the file identity the hash whitelist keys on."""
+    return hashlib.sha1(cached_jar(entry, cache)).hexdigest()
+
+
 def verify(config, cache):
     problems = []
     for label, entry in entries(config):
@@ -163,25 +178,37 @@ def verify(config, cache):
         have = sorted(set(entry.get("mod_ids") or []))
         if have != want:
             problems.append(f"{label}: mod_ids {have} != jar {want}")
+        sha1 = actual_sha1(entry, cache)
+        if entry.get("sha1") != sha1:
+            problems.append(f"{label}: sha1 {entry.get('sha1')} != jar {sha1}")
     return problems
 
 
 def fill(config, cache):
-    """Set mod_ids (inserted after slug) on whitelisted entries lacking them. Returns labels filled."""
+    """Set mod_ids and sha1 (inserted after slug) on whitelisted entries lacking them. Returns labels filled."""
     filled = []
     for label, entry in entries(config):
-        if not whitelisted(entry) or entry.get("mod_ids"):
+        if not whitelisted(entry):
             continue
-        ids = actual_ids(label, entry, cache)
+        need_ids = not entry.get("mod_ids")
+        need_sha = not entry.get("sha1")
+        if not need_ids and not need_sha:
+            continue
+        ids = entry.get("mod_ids") if not need_ids else actual_ids(label, entry, cache)
+        sha1 = entry.get("sha1") if not need_sha else actual_sha1(entry, cache)
         rebuilt = {}
         for k, v in entry.items():
+            if k in ("mod_ids", "sha1"):
+                continue
             rebuilt[k] = v
             if k == "slug":
                 rebuilt["mod_ids"] = ids
+                rebuilt["sha1"] = sha1
         rebuilt.setdefault("mod_ids", ids)
+        rebuilt.setdefault("sha1", sha1)
         entry.clear()
         entry.update(rebuilt)
-        filled.append(f"{label} -> {ids}")
+        filled.append(f"{label} -> {ids if need_ids else 'ids kept'}, sha1 {sha1[:8]}…")
     return filled
 
 

@@ -56,14 +56,44 @@ public final class UnapprovedModIntegrity {
      */
     private static volatile List<String> detected = List.of();
 
+    /**
+     * Installed mod FILES the relay could not verify at this session's boot — the hash-verified
+     * half (2026-10), as {@link ModFileFingerprint#display()} strings. A file is unverified when its
+     * SHA-1 is not on {@link ApprovedModList#approvedHashes()}: not a published build of an
+     * approved mod, or one the relay has not placed yet. Costs the run only while
+     * {@link ApprovedModList#enforceHashes()} is on. Immutable, replaced whole.
+     */
+    private static volatile List<String> unverified = List.of();
+
+    /** How long the boot-time scan waits for {@link ModFileScanner} before judging without it. */
+    static final long SCAN_WAIT_MS = 5000;
+
     private UnapprovedModIntegrity() {}
 
     /**
-     * Is the current server session Free Play because an unapproved mod is installed? False while
-     * the relay's enforcement switch is off, however many unapproved mods were found.
+     * Is the current server session Free Play because of the whitelist — an unapproved mod ID
+     * (while id enforcement is on) or an unverified mod file (while hash enforcement is on)?
      */
     public static boolean isSessionFreePlay() {
+        return isIdFreePlay() || isFileFreePlay();
+    }
+
+    /** The id half alone: an unapproved mod ID is installed and the relay's enforcement switch is on. */
+    public static boolean isIdFreePlay() {
         return ApprovedModList.enforce() && !detected.isEmpty();
+    }
+
+    /** The file half alone: an unverified mod file is installed and hash enforcement is on. */
+    public static boolean isFileFreePlay() {
+        return ApprovedModList.enforceHashes() && !unverified.isEmpty();
+    }
+
+    /**
+     * The unverified mod files found at this session's boot, e.g. {@code "xray.jar (jei)"} — the
+     * file name and the ids it claims, so the player sees WHICH jar to reinstall or remove.
+     */
+    public static List<String> unverified() {
+        return unverified;
     }
 
     /**
@@ -78,8 +108,19 @@ public final class UnapprovedModIntegrity {
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
         // Best-effort: refresh the relay overlay for next boot (async; current boot uses the cache).
+        // On a dedicated server this is also what starts the file scan.
         ApprovedModListFetcher.ensureFetched();
         detected = scan();
+        unverified = scanFiles();
+        if (!unverified.isEmpty()) {
+            if (ApprovedModList.enforceHashes()) {
+                LOGGER.warn("[DungeonTrain] Unverified mod file(s) installed — this session runs in Free Play: {}",
+                    String.join(", ", unverified));
+            } else {
+                LOGGER.info("[DungeonTrain] Unverified mod file(s) installed, but the hash check is not "
+                    + "enforcing — this session plays normally: {}", String.join(", ", unverified));
+            }
+        }
         if (detected.isEmpty()) return;
         if (ApprovedModList.enforce()) {
             LOGGER.warn("[DungeonTrain] Unapproved mod(s) installed — this session runs in Free Play: {}",
@@ -96,6 +137,45 @@ public final class UnapprovedModIntegrity {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         detected = List.of();
+        unverified = List.of();
+    }
+
+    /**
+     * The hash half of the boot scan: every installed file whose SHA-1 is not approved. Waits
+     * briefly for the scanner; an empty scan (not finished, or failed) means "nothing unverified"
+     * — the same defensive direction as {@link #scan()}, because a scan that could not see the
+     * files must not conclude that every file is fake.
+     */
+    static List<String> scanFiles() {
+        try {
+            return unverifiedFrom(ModFileScanner.current(SCAN_WAIT_MS), ApprovedModList.approvedHashes());
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — assuming every file is "
+                + "verified: {}", t.toString());
+            return List.of();
+        }
+    }
+
+    /**
+     * Pure: which installed files are NOT on the approved-hash list, as display strings (sorted).
+     * Package-visible for unit tests — no live scanner needed.
+     */
+    static List<String> unverifiedFrom(List<ModFileFingerprint> files, Set<String> approvedSha1s) {
+        List<String> found = new ArrayList<>();
+        for (ModFileFingerprint f : files) {
+            if (!ApprovedModList.isFileApproved(f, approvedSha1s)) found.add(f.display());
+        }
+        found.sort(String::compareTo);
+        return List.copyOf(found);
+    }
+
+    /**
+     * Live-state convenience for the client popup: the installed file declaring {@code modId}, if
+     * that file is unverified right now; null when it is verified, unknown, or the scan is not done.
+     */
+    public static ModFileFingerprint unverifiedFileOf(String modId) {
+        ModFileFingerprint f = ModFileScanner.fileOf(modId);
+        return f != null && !ApprovedModList.isFileApproved(f, ApprovedModList.approvedHashes()) ? f : null;
     }
 
     /**

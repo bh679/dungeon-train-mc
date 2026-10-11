@@ -4,6 +4,8 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.ApprovedModList;
 import games.brennan.dungeontrain.cheat.ApprovedModListFetcher;
+import games.brennan.dungeontrain.cheat.ModFileFingerprint;
+import games.brennan.dungeontrain.cheat.ModFileScanner;
 import games.brennan.dungeontrain.cheat.UnapprovedModIntegrity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -35,8 +37,11 @@ public final class UnsupportedModsPopupHandler {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** ~5 s for the relay fetch; after that the baked list plus the last cached relay list decide. */
-    static final int FETCH_WAIT_TICKS = 100;
+    /**
+     * ~10 s for the file scan + relay verify; after that the baked list plus the last cached relay
+     * list (ids and hashes) decide.
+     */
+    static final int FETCH_WAIT_TICKS = 200;
     /** ~1 s on the title screen before opening, so the menu has visibly loaded. */
     static final int SETTLE_TICKS = 20;
 
@@ -65,11 +70,11 @@ public final class UnsupportedModsPopupHandler {
         }
         onTitle++;
         if (onTitle < SETTLE_TICKS) return;
-        if (!ApprovedModListFetcher.isSettled() && waited < FETCH_WAIT_TICKS) return;
+        if ((!ApprovedModListFetcher.isSettled() || !ModFileScanner.isDone()) && waited < FETCH_WAIT_TICKS) return;
 
         armed = false;
         done = true;
-        if (!ApprovedModList.enforce()) {
+        if (!ApprovedModList.enforce() && !ApprovedModList.enforceHashes()) {
             LOGGER.info("[DungeonTrain] Unsupported Mods popup: whitelist enforcement is off — not shown");
             return;
         }
@@ -80,15 +85,28 @@ public final class UnsupportedModsPopupHandler {
         mc.setScreen(new UnsupportedModsScreen(title, mods));
     }
 
-    /** Installed mods that are neither approved nor on the cheat blacklist, by display name. */
+    /**
+     * Installed mods that would cost this launch its progress: not approved by id (while id
+     * enforcement is on), or shipped in a file the relay could not verify (while hash enforcement
+     * is on). Neither includes known cheat mods, which keep their own notice. By display name.
+     */
     private static List<UnsupportedModsScreen.UnsupportedMod> unsupported() {
         List<UnsupportedModsScreen.UnsupportedMod> out = new ArrayList<>();
+        boolean ids = ApprovedModList.enforce();
+        boolean files = ApprovedModList.enforceHashes();
         try {
             for (var info : ModList.get().getMods()) {
-                if (!UnapprovedModIntegrity.isUnsupported(info.getModId())) continue;
                 String name = info.getDisplayName();
-                out.add(new UnsupportedModsScreen.UnsupportedMod(info.getModId(),
-                    name == null || name.isBlank() ? info.getModId() : name));
+                String display = name == null || name.isBlank() ? info.getModId() : name;
+                if (ids && UnapprovedModIntegrity.isUnsupported(info.getModId())) {
+                    out.add(new UnsupportedModsScreen.UnsupportedMod(info.getModId(), display));
+                    continue;
+                }
+                if (!files) continue;
+                ModFileFingerprint file = UnapprovedModIntegrity.unverifiedFileOf(info.getModId());
+                if (file != null) {
+                    out.add(new UnsupportedModsScreen.UnsupportedMod(info.getModId(), display, file.fileName()));
+                }
             }
         } catch (Throwable t) {
             // Same posture as the server-side scan: can't read the list ⇒ show nothing.

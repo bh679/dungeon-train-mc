@@ -36,6 +36,25 @@ class UnapprovedModIntegrityTest {
             APPROVED, PREFIXES, NO_REVOCATIONS, CHEATS, installed);
     }
 
+    private static ModFileFingerprint file(String name, String sha1, String... ids) {
+        return new ModFileFingerprint(name, 100, sha1, 1L, List.of(ids));
+    }
+
+    @Test
+    @DisplayName("A file whose SHA-1 is on the approved-file list is verified; any other is not, whatever id it claims")
+    void unverifiedFilesByHash() {
+        String good = "a".repeat(40);
+        String renamed = "b".repeat(40); // a cheat jar whose mods.toml now says "jei"
+        List<ModFileFingerprint> files = List.of(
+            file("jei-19.jar", good, "jei"),
+            file("totally-jei.jar", renamed, "jei"),
+            file("bundle.jar", "c".repeat(40), "alpha", "beta"));
+        assertEquals(List.of("bundle.jar (alpha, beta)", "totally-jei.jar (jei)"),
+            UnapprovedModIntegrity.unverifiedFrom(files, Set.of(good)));
+        assertEquals(List.of(), UnapprovedModIntegrity.unverifiedFrom(List.of(), Set.of()),
+            "no files scanned means nothing unverified — never 'everything is fake'");
+    }
+
     @Test
     @DisplayName("An all-approved mod list is clean")
     void approvedListIsClean() {
