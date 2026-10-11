@@ -163,6 +163,22 @@ final class BlockVariantSyncPacketTest {
         assertEquals(-1, entry.maxDiff());
     }
 
+    @Test
+    @DisplayName("round-trip preserves the painting token; the short ctor defaults it to off (blank)")
+    void roundTrip_painting() {
+        BlockVariantSyncPacket.Entry painting = new BlockVariantSyncPacket.Entry(
+            "fastpaintings:painting[facing=north]", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "2x1 minecraft:kebab");
+        BlockVariantSyncPacket.Entry plain = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0);
+        BlockVariantSyncPacket decoded = roundTrip(new BlockVariantSyncPacket(
+            "carriage:flatbed", new BlockPos(1, 2, 3), List.of(painting, plain), 0,
+            new Vec3(0.5, 0.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0)));
+        assertEquals("2x1 minecraft:kebab", decoded.entries().get(0).painting());
+        assertEquals("", decoded.entries().get(1).painting());
+    }
+
     private static BlockVariantSyncPacket roundTrip(BlockVariantSyncPacket original) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         original.encode(buf);

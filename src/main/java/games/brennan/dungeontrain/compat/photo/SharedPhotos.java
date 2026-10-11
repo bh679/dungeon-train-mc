@@ -209,7 +209,8 @@ public final class SharedPhotos {
         Frame frame = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         // Projected frames are images from outside the game — never shared.
         if (frame == null || frame.isProjected() || !frame.identifier().isId()) return;
-        PhotoSubjectTally.Subjects subjects = PhotoSubjectTally.take(frame.identifier().id());
+        PhotoSubjectTally.Shot shot = PhotoSubjectTally.takeShot(frame.identifier().id());
+        PhotoSubjectTally.Subjects subjects = shot.subjects();
         // This life's tally, for the Faulthurst note that twins the one-life photo boards.
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
                 .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals());
@@ -220,7 +221,7 @@ public final class SharedPhotos {
         photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable().updateExtraData(tag -> tag.putString(UPLOAD_KEY, key)).toImmutable());
         List<PendingUpload> next = new ArrayList<>(pendingUploads);
         next.add(new PendingUpload(player.getUUID(), player.getGameProfile().getName(),
-                frame.identifier().id(), key, buildMeta(player, frame.extraData(), subjects), PIXEL_WAIT_TICKS));
+                frame.identifier().id(), key, buildMeta(player, frame.extraData(), shot), PIXEL_WAIT_TICKS));
         pendingUploads = List.copyOf(next);
     }
 
@@ -306,10 +307,12 @@ public final class SharedPhotos {
     }
 
     /** Where and when the photo was taken: the frame's own details plus the photographer's run. */
-    private static JsonObject buildMeta(ServerPlayer player, CompoundTag extraData, PhotoSubjectTally.Subjects subjects) {
+    private static JsonObject buildMeta(ServerPlayer player, CompoundTag extraData, PhotoSubjectTally.Shot shot) {
         JsonObject meta = frameMeta(extraData);
         // Who or what was in the shot, for the relay's passenger / monster / animal photo boards.
-        if (subjects.any()) meta.add("subjects", subjects.toJson());
+        if (shot.subjects().any()) meta.add("subjects", shot.subjects().toJson());
+        // The Enchiridion advancements this shot earned its photographer, for the website's Tributes page.
+        if (!shot.advancements().isEmpty()) meta.add("advancements", advancementsJson(shot.advancements()));
         lifeFields(player, meta, false);
         meta.addProperty("takenTs", System.currentTimeMillis());
         ModList.get().getModContainerById(DungeonTrain.MOD_ID)
@@ -325,6 +328,12 @@ public final class SharedPhotos {
             LOGGER.debug("[DungeonTrain] Photo run details unavailable: {}", e.toString());
         }
         return meta;
+    }
+
+    static JsonArray advancementsJson(List<String> advancements) {
+        JsonArray out = new JsonArray();
+        advancements.forEach(out::add);
+        return out;
     }
 
     static JsonObject frameMeta(CompoundTag extraData) {
