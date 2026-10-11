@@ -152,6 +152,39 @@ public final class PaintingPass {
             }
             return out;
         }
+        return legacyFootprint(cell, localPos);
+    }
+
+    /**
+     * Cells captured before {@link HungPainting} existed: a row holding the template painting's
+     * master block (offsets 0/0, its picture in the block entity) still names the painting, so
+     * its blocks — running from the master along the run and down — are cleared the same way.
+     */
+    private static List<BlockPos> legacyFootprint(List<VariantState> cell, BlockPos localPos) {
+        net.minecraft.server.MinecraftServer server =
+            net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return List.of();
+        for (VariantState entry : cell) {
+            if (entry.isMob() || entry.isGroupRef() || entry.blockEntityNbt() == null) continue;
+            if (!isPainting(entry.state())) continue;
+            IntegerProperty xProp = property(entry.state(), X_OFFSET, IntegerProperty.class);
+            IntegerProperty yProp = property(entry.state(), Y_OFFSET, IntegerProperty.class);
+            Direction facing = facingOf(entry.state());
+            if (xProp == null || yProp == null || facing == null || facing.getAxis().isVertical()) continue;
+            if (entry.state().getValue(xProp) != 0 || entry.state().getValue(yProp) != 0) continue;
+            ResourceLocation id = ResourceLocation.tryParse(entry.blockEntityNbt().getString(NBT_VARIANT));
+            Picture pic = id == null ? null : PaintingCatalog.byId(server.registryAccess(), id);
+            if (pic == null) continue;
+            Direction run = facing.getCounterClockWise();
+            List<BlockPos> out = new ArrayList<>(pic.width() * pic.height());
+            for (int a = 0; a < pic.width(); a++) {
+                for (int d = 0; d < pic.height(); d++) {
+                    BlockPos pos = localPos.relative(run, a).below(d);
+                    if (!pos.equals(localPos)) out.add(pos);
+                }
+            }
+            return out;
+        }
         return List.of();
     }
 
