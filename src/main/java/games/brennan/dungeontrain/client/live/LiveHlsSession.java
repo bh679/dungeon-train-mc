@@ -100,6 +100,9 @@ public final class LiveHlsSession implements IMediaSession {
     }
 
     public String playlistUrl() { return playlistUrl; }
+
+    /** The decode width, in pixels. */
+    public int width() { return width; }
     public long frameSequence() { return frameSeq; }
     public MediaStatus status() { return status; }
 

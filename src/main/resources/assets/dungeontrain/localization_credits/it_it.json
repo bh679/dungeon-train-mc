@@ -2,8 +2,8 @@
   "locale": "it_it",
   "name": "IA senza revisione umana",
   "human_reviewed": false,
-  "total_keys": 4595,
-  "ai_authored": 4595,
-  "ai_unreviewed": 4595,
-  "counted_keys": 2840
+  "total_keys": 4610,
+  "ai_authored": 4610,
+  "ai_unreviewed": 4610,
+  "counted_keys": 2855
 }

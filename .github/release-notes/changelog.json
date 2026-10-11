@@ -24890,6 +24890,41 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-screen-info-button",
+      "version": "0.1231.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "A tidier book and quill",
+      "summary": "Writing a book is less cluttered, and a small info button now shows what the train won't take.",
+      "highlights": [],
+      "pr": 1934,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "streamer-head-viewer-decode-size",
+      "version": "0.1232.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye now asks a little less of your computer.",
+      "highlights": [],
+      "pr": 1935,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
