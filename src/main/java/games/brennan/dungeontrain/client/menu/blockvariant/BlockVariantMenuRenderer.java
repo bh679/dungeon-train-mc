@@ -388,8 +388,11 @@ public final class BlockVariantMenuRenderer {
                 && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
             double armsCellR = connectCellL;
             double armsCellL = showArms ? armsCellR - ARMS_CELL_WIDTH : armsCellR;
-            boolean growable = parsed != null && concrete && BlockVariantMenu.growthSupported()
-                && GrowthShapes.canGrow(parsed);
+            // A painting row puts its Painting pill in the Grow slot (a painting never grows).
+            boolean painting = concrete && BlockVariantMenu.growthSupported()
+                && BlockVariantMenu.isPaintingRow(entry, parsed);
+            boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
+                && GrowthShapes.canGrow(parsed)) || painting;
             double growthCellR = armsCellL;
             double growthCellL = growable ? growthCellR - GROWTH_CELL_WIDTH : growthCellR;
             // Difficulty min/max cells (mob rows only) sit between the name and
@@ -462,6 +465,13 @@ public final class BlockVariantMenuRenderer {
                 } else {
                     labelColour = nameHover ? 0xFF000000 : 0xFFFFD477;
                 }
+            } else if (painting && BlockVariantMenu.painting(entry).on()) {
+                // "painting · kebab" / "painting · random" — the pill already shows the size.
+                games.brennan.dungeontrain.editor.VariantPainting p = BlockVariantMenu.painting(entry);
+                String picture = p.image() == null
+                    ? MenuLang.t("block_variant.painting_random") : p.image().getPath();
+                label = MenuLang.t("common.name_value", shortenStateLabel(entry.stateString()), picture);
+                labelColour = nameHover ? 0xFF000000 : 0xFFFFFFFF;
             } else {
                 label = shortenStateLabel(entry.stateString());
                 labelColour = nameHover ? 0xFF000000 : 0xFFFFFFFF;
@@ -500,7 +510,10 @@ public final class BlockVariantMenuRenderer {
             }
 
             // Grow pill (vines / ladders / bamboo / dripstone …)
-            if (growable) {
+            if (painting) {
+                drawPaintingCell(ps, buffer, font, i, entry,
+                    growthCellL, growthCellR, rowBottom, rowTop, rowCY, hovered);
+            } else if (growable) {
                 drawGrowthCell(ps, buffer, font, i, entry, parsed,
                     growthCellL, growthCellR, rowBottom, rowTop, rowCY, hovered);
             }
@@ -543,7 +556,11 @@ public final class BlockVariantMenuRenderer {
         int growthRow = BlockVariantMenu.growthPopupRow();
         if (growthRow >= 0) {
             BlockState growthState = BlockVariantMenu.parseState(entries.get(growthRow).stateString());
-            if (growthState != null) {
+            if (growthState != null && BlockVariantMenu.isPaintingRow(entries.get(growthRow), growthState)) {
+                drawPopupRows(ps, buffer, font,
+                    PaintingPopupLayout.rows(BlockVariantMenu.painting(entries.get(growthRow)), panelW, halfH),
+                    BlockVariantMenu.CellKind.PAINTING_OPTION, hovered);
+            } else if (growthState != null) {
                 drawGrowthPopup(ps, buffer, font, entries.get(growthRow), growthState, panelW, halfH, hovered);
             }
         }
@@ -606,12 +623,39 @@ public final class BlockVariantMenuRenderer {
             (cellL + cellR) / 2.0, rowCY, growth.on() || hover ? 0xFFFFFFFF : 0xFF888888);
     }
 
+    /**
+     * The Painting pill: "Painting" when off, the size ({@code 2×1} / {@code Any}) in green when on,
+     * lit while its popup is open — the Grow pill's look, in the Grow slot.
+     */
+    private static void drawPaintingCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                         int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                         double cellL, double cellR,
+                                         double rowBottom, double rowTop, double rowCY,
+                                         BlockVariantMenu.Hit hovered) {
+        games.brennan.dungeontrain.editor.VariantPainting painting = BlockVariantMenu.painting(entry);
+        boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_GROWTH && hovered.index() == rowIndex;
+        boolean open = BlockVariantMenu.growthPopupRow() == rowIndex;
+        int tint = painting.on()
+            ? (hover || open ? 0xC055CC66 : 0x80338844)
+            : (hover || open ? 0x60AAAAAA : 0x30777777);
+        drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
+        drawCenteredText(ps, buffer, font, PaintingPopupLayout.shortLabel(painting),
+            (cellL + cellR) / 2.0, rowCY, painting.on() || hover ? 0xFFFFFFFF : 0xFF888888);
+    }
+
     /** The Grow popup: the visible sections of {@link GrowthPopupLayout} for one row. */
     private static void drawGrowthPopup(PoseStack ps, MultiBufferSource buffer, Font font,
                                         BlockVariantSyncPacket.Entry entry, BlockState state,
                                         double panelW, double halfH, BlockVariantMenu.Hit hovered) {
-        List<GrowthPopupLayout.Row> rows = GrowthPopupLayout.rows(
-            VariantGrowth.fromInt(entry.growth()), state, panelW, halfH);
+        drawPopupRows(ps, buffer, font,
+            GrowthPopupLayout.rows(VariantGrowth.fromInt(entry.growth()), state, panelW, halfH),
+            BlockVariantMenu.CellKind.GROWTH_OPTION, hovered);
+    }
+
+    /** A Grow-style popup: labelled rows of toggle buttons / {@code − n +} steppers above the panel. */
+    private static void drawPopupRows(PoseStack ps, MultiBufferSource buffer, Font font,
+                                      List<GrowthPopupLayout.Row> rows, BlockVariantMenu.CellKind optionKind,
+                                      BlockVariantMenu.Hit hovered) {
         double[] r = GrowthPopupLayout.rect(rows);
         drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
         for (GrowthPopupLayout.Row row : rows) {
@@ -625,7 +669,7 @@ public final class BlockVariantMenuRenderer {
                 double bR = bL + row.buttonWidth();
                 boolean value = stepper && i == GrowthPopupLayout.STEPPER_VALUE;
                 boolean selected = i == row.selected();
-                boolean hover = !value && hovered.kind() == BlockVariantMenu.CellKind.GROWTH_OPTION
+                boolean hover = !value && hovered.kind() == optionKind
                     && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);
                 int tint = value ? 0x00000000
                     : selected ? (hover ? 0xC0D98CFF : 0x808A4FB3)
@@ -1103,6 +1147,8 @@ public final class BlockVariantMenuRenderer {
         BlockState state = BlockVariantMenu.parseState(stateString);
         if (state == null) return;
         Item item = state.getBlock().asItem();
+        // Fast Paintings' block has no item of its own — it is placed with the vanilla painting.
+        if (games.brennan.dungeontrain.editor.PaintingPass.isPainting(state)) item = Items.PAINTING;
         // Liquids have no item form at all (WATER.asItem() is AIR), so without
         // this they would every one of them read as the BARRIER fallback. The
         // fluid's own bucket is the icon players already associate with it.

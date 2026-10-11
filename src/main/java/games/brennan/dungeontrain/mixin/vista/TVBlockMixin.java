@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.mixin.vista;
 
 import games.brennan.dungeontrain.compat.DisabledModContent;
+import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.compat.vista.TvPowerToggle;
 import net.mehvahdjukaar.vista.common.tv.TVBlock;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -35,6 +37,9 @@ import net.minecraft.world.level.block.Block;
  * <p>A TV that comes on with an empty slot tunes itself: the server puts a Live Feed Cassette in, so
  * switching any TV on shows the broadcast (or the replay) with no setup at all. That cassette is never
  * a player's item — see {@code event.UnobtainableLiveItems} and {@link TVBlockEntityMixin}.</p>
+ *
+ * <p>A hand-held TV that was switched on ({@code compat/vista/TvItems}) is placed switched on, through
+ * the same latch, so it comes up tuned like any other TV that comes on.</p>
  */
 @Mixin(value = TVBlock.class, remap = false)
 public abstract class TVBlockMixin {
@@ -84,5 +89,11 @@ public abstract class TVBlockMixin {
             tv.setChanged();
             level.sendBlockUpdated(tv.getBlockPos(), tv.getBlockState(), tv.getBlockState(), Block.UPDATE_CLIENTS);
         }
+    }
+
+    @Inject(method = "setPlacedBy", at = @At("TAIL"))
+    private void dungeontrain$placeOn(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack,
+                                      CallbackInfo ci) {
+        if (TvItems.isOn(stack)) TvPowerToggle.toggle(level, pos);
     }
 }

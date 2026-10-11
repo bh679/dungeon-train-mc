@@ -71,6 +71,14 @@
       ]
     }
   },
+  "gui.dungeontrain.unsupported_mods.unverified_file": {
+    "1": {
+      "label": "the jar file name",
+      "examples": [
+        "somemod-1.2.3.jar"
+      ]
+    }
+  },
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": {
     "1": {
       "label": "the mod's display name",
@@ -86,6 +94,15 @@
       "examples": [
         "somemod v1.2.3",
         "somemod v1.2.3, anothermod v4.5"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.unverified_mods": {
+    "1": {
+      "label": "the installed mod files that could not be verified, as file name plus the mod ids it declares, comma-separated",
+      "examples": [
+        "somemod-1.2.3.jar (somemod)",
+        "somemod-1.2.3.jar (somemod), bundle-4.5.jar (alpha, beta)"
       ]
     }
   },

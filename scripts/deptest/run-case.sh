@@ -106,6 +106,7 @@ resolve() {
     # Present (Case A) they model the CurseForge-app install (nested copy skipped); absent they
     # model Modrinth/manual, loading from the nested copy.
     sd)       cached "bh679/streamdetect"            "$(prop streamdetect_version)" ;;
+    dmv)      cached "bh679/dtmodverify"             "$(prop dtmodverify_version)" ;;
     dbd)      cached "bh679/dpibypassdetect"         "$(prop dpibypassdetect_version)" ;;
     # Pigman Villagers — hybrid like sd/dbd: jarJar'd inside the DT jar; present (Case A) models the
     # CurseForge-app install (nested copy skipped in favour of the top-level one).

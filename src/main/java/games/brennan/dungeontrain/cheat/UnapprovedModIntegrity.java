@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.cheat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.DtModVerifyBridge;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -56,14 +57,60 @@ public final class UnapprovedModIntegrity {
      */
     private static volatile List<String> detected = List.of();
 
+    /**
+     * Installed mod FILES the relay could not verify at this session's boot — the hash-verified
+     * half (2026-10), as {@link ModFileFingerprint#display()} strings. A file is unverified when its
+     * SHA-1 is not on {@link ApprovedModList#approvedHashes()}: not a published build of an
+     * approved mod, or one the relay has not placed yet. Costs the run only while
+     * {@link ApprovedModList#enforceHashes()} is on. Immutable, replaced whole.
+     */
+    private static volatile List<String> unverified = List.of();
+
+    /**
+     * Mod ids whose file is judged by id elsewhere and so is never hashed: the game, the loader,
+     * DT's own jar (with everything it embeds) and the verification engine itself.
+     */
+    public static final Set<String> EXEMPT_IDS = Set.of("minecraft", "neoforge", "forge", "dungeontrain", "dtmodverify");
+
+    /** How long the boot-time scan waits for the engine's file scan before judging without it. */
+    static final long SCAN_WAIT_MS = 5000;
+    /**
+     * How long server start waits for an in-flight relay verify before judging from the cache. A
+     * client's fetch started at the title screen and is long done; a dedicated server's starts
+     * here, and a few seconds is cheap next to a session judged a launch late.
+     */
+    static final long FETCH_WAIT_MS = 8000;
+    private static volatile boolean serverRunning;
+
+    /** The verdict tiers of the file check — only {@link #SUSPECT} costs the run (see {@link #tierOf}). */
+    public enum Tier { VERIFIED, PLAUSIBLE, UNKNOWN, SUSPECT }
+
     private UnapprovedModIntegrity() {}
 
     /**
-     * Is the current server session Free Play because an unapproved mod is installed? False while
-     * the relay's enforcement switch is off, however many unapproved mods were found.
+     * Is the current server session Free Play because of the whitelist — an unapproved mod ID
+     * (while id enforcement is on) or an unverified mod file (while hash enforcement is on)?
      */
     public static boolean isSessionFreePlay() {
+        return isIdFreePlay() || isFileFreePlay();
+    }
+
+    /** The id half alone: an unapproved mod ID is installed and the relay's enforcement switch is on. */
+    public static boolean isIdFreePlay() {
         return ApprovedModList.enforce() && !detected.isEmpty();
+    }
+
+    /** The file half alone: an unverified mod file is installed and hash enforcement is on. */
+    public static boolean isFileFreePlay() {
+        return ApprovedModList.enforceHashes() && !unverified.isEmpty();
+    }
+
+    /**
+     * The unverified mod files found at this session's boot, e.g. {@code "xray.jar (jei)"} — the
+     * file name and the ids it claims, so the player sees WHICH jar to reinstall or remove.
+     */
+    public static List<String> unverified() {
+        return unverified;
     }
 
     /**
@@ -78,8 +125,24 @@ public final class UnapprovedModIntegrity {
     @SubscribeEvent
     public static void onServerAboutToStart(ServerAboutToStartEvent event) {
         // Best-effort: refresh the relay overlay for next boot (async; current boot uses the cache).
+        // On a dedicated server this is what starts the file scan (no-op without the engine).
+        DtModVerifyBridge.scan(EXEMPT_IDS);
         ApprovedModListFetcher.ensureFetched();
+        serverRunning = true;
         detected = scan();
+        // Never a session late: give the relay's answer a moment to land before judging, so a mod
+        // updated this launch is judged against what the relay knows now, not last launch's cache.
+        ApprovedModListFetcher.awaitSettled(FETCH_WAIT_MS);
+        unverified = scanFiles();
+        if (!unverified.isEmpty()) {
+            if (ApprovedModList.enforceHashes()) {
+                LOGGER.warn("[DungeonTrain] Unverified mod file(s) installed — this session runs in Free Play: {}",
+                    String.join(", ", unverified));
+            } else {
+                LOGGER.info("[DungeonTrain] Unverified mod file(s) installed, but the hash check is not "
+                    + "enforcing — this session plays normally: {}", String.join(", ", unverified));
+            }
+        }
         if (detected.isEmpty()) return;
         if (ApprovedModList.enforce()) {
             LOGGER.warn("[DungeonTrain] Unapproved mod(s) installed — this session runs in Free Play: {}",
@@ -95,7 +158,87 @@ public final class UnapprovedModIntegrity {
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
+        serverRunning = false;
         detected = List.of();
+        unverified = List.of();
+    }
+
+    /**
+     * Re-judge the running session's files against freshly-landed relay knowledge — the second
+     * half of "never a session late": a verify answer that arrives after boot (slow relay, slow
+     * scan) still clears a taint before, or even after, the player logs in. No-op without a server.
+     */
+    public static void rejudge() {
+        if (!serverRunning) return;
+        List<String> before = unverified;
+        List<String> after = scanFiles();
+        if (!before.equals(after)) {
+            unverified = after;
+            LOGGER.info("[DungeonTrain] Mod files re-judged with fresh relay knowledge: {} -> {}",
+                before.isEmpty() ? "clean" : before, after.isEmpty() ? "clean" : after);
+        }
+    }
+
+    /**
+     * The hash half of the boot scan: every installed file whose SHA-1 is not approved. Waits
+     * briefly for the scanner; an empty scan (not finished, or failed) means "nothing unverified"
+     * — the same defensive direction as {@link #scan()}, because a scan that could not see the
+     * files must not conclude that every file is fake.
+     */
+    static List<String> scanFiles() {
+        try {
+            return unverifiedFrom(DtModVerifyBridge.current(SCAN_WAIT_MS), ApprovedModList.approvedHashes(),
+                ApprovedModList.knownPackages());
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — assuming every file is "
+                + "verified: {}", t.toString());
+            return List.of();
+        }
+    }
+
+    /**
+     * Pure: which installed files are NOT on the approved-hash list, as display strings (sorted).
+     * Package-visible for unit tests — no live scanner needed.
+     */
+    static List<String> unverifiedFrom(List<ModFileFingerprint> files, Set<String> approvedSha1s,
+                                       Map<String, Set<String>> knownPackages) {
+        List<String> found = new ArrayList<>();
+        for (ModFileFingerprint f : files) {
+            if (tierOf(f, approvedSha1s, knownPackages) == Tier.SUSPECT) found.add(f.display());
+        }
+        found.sort(String::compareTo);
+        return List.copyOf(found);
+    }
+
+    /**
+     * Which tier is this file in? The rule itself lives in the {@code dtmodverify} engine
+     * ({@link DtModVerifyBridge#tierOf}); without it every file is {@link Tier#UNKNOWN}, never suspect.
+     * <ul>
+     *   <li>{@link Tier#VERIFIED} — its hash is approved.</li>
+     *   <li>{@link Tier#PLAUSIBLE} — hash unknown, but every id it declares has known packages
+     *       and the jar's packages intersect each id's — a fresh release or a GitHub build of a
+     *       mod we approve. Not Free Play.</li>
+     *   <li>{@link Tier#UNKNOWN} — hash unknown and some declared id has no package knowledge at
+     *       all. Not Free Play (the player did nothing wrong; the catalogue is behind), but the
+     *       relay queues it and the build refuses an approved id without knowledge.</li>
+     *   <li>{@link Tier#SUSPECT} — it declares no ids, or its packages share nothing with a
+     *       declared id's known set: code that is not the mod it claims to be. Free Play.</li>
+     * </ul>
+     * A resource-only mod (no classes) is known as an empty set: a jar with classes claiming it
+     * is suspect, one without is plausible.
+     */
+    static Tier tierOf(ModFileFingerprint f, Set<String> approvedSha1s, Map<String, Set<String>> knownPackages) {
+        return DtModVerifyBridge.tierOf(f, approvedSha1s, knownPackages, EXEMPT_IDS);
+    }
+
+    /**
+     * Live-state convenience for the client popup: the installed file declaring {@code modId}, if
+     * that file is unverified right now; null when it is verified, unknown, or the scan is not done.
+     */
+    public static ModFileFingerprint unverifiedFileOf(String modId) {
+        ModFileFingerprint f = DtModVerifyBridge.fileOf(modId);
+        return f != null && tierOf(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages()) == Tier.SUSPECT
+            ? f : null;
     }
 
     /**
