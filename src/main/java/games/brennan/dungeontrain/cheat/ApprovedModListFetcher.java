@@ -46,6 +46,12 @@ public final class ApprovedModListFetcher {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
     /**
+     * The verify POST may make the relay ask Modrinth/CurseForge about every file it has never seen
+     * — a modpack's first launch is ~150 of them — so it gets longer than the GET. Nothing waits on
+     * it: the current boot judges from the cache either way.
+     */
+    private static final Duration VERIFY_TIMEOUT = Duration.ofSeconds(45);
+    /**
      * How long to wait for {@link ModFileScanner} before giving up on the hash-verified POST and
      * sending the plain GET instead. The scan is a few seconds for a 150-jar modpack; past this the
      * launch should not keep waiting on it, and the cached hash list stands for this session.
@@ -166,7 +172,7 @@ public final class ApprovedModListFetcher {
         try {
             String body = verifyBody(VersionInfo.VERSION, files);
             HttpRequest req = HttpRequest.newBuilder(URI.create(verifyUrl(DungeonTrain.relayBaseUrl())))
-                    .timeout(REQUEST_TIMEOUT)
+                    .timeout(VERIFY_TIMEOUT)
                     .header("Accept", "application/json")
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
