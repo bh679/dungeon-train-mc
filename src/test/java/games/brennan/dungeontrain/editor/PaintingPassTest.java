@@ -70,6 +70,20 @@ final class PaintingPassTest {
     }
 
     @Test
+    @DisplayName("anchorOf undoes layout: any square's master leads back to the one anchor")
+    void anchorOfInvertsLayout() {
+        for (Direction facing : Direction.Plane.HORIZONTAL) {
+            for (int w = 1; w <= 4; w++) {
+                for (int h = 1; h <= 4; h++) {
+                    BlockPos master = PaintingPass.layout(ANCHOR, facing, w, h).stream()
+                        .filter(PaintingPass.Cell::master).findFirst().orElseThrow().pos();
+                    assertEquals(ANCHOR, PaintingPass.anchorOf(master, facing, w, h), facing + " " + w + "x" + h);
+                }
+            }
+        }
+    }
+
+    @Test
     @DisplayName("Any size keeps only the largest pictures that fit, as vanilla does")
     void anyKeepsLargest() {
         List<Picture> fitting = List.of(pic("a", 1, 1), pic("b", 2, 2), pic("c", 2, 1), pic("d", 2, 2));

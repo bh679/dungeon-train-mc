@@ -91,6 +91,9 @@ public final class VariantBlockInteractions {
 
         CarriageDims dims = DungeonTrainWorldData.get(level).dims();
         BlockPos clicked = event.getPos();
+        // Any square of a hung painting is the whole painting: vary the cell it hangs from.
+        PaintingPass.Whole painting = PaintingPass.whole(level, clicked);
+        if (painting != null) clicked = painting.anchor();
 
         ItemStack held = event.getItemStack();
         if (held.isEmpty()) return;
@@ -452,7 +455,18 @@ public final class VariantBlockInteractions {
             BlockEntity be = level.getBlockEntity(clicked);
             if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
-        return new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+        VariantState base = new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+        return withWholePainting(level, clicked, base);
+    }
+
+    /**
+     * {@code base} captured at a hung painting's anchor, marked as that whole painting (its picture
+     * and size): at spawn the cell then owns every block of the painting, and keeping the captured
+     * block itself means the editor preview restores the template exactly. Unchanged otherwise.
+     */
+    static VariantState withWholePainting(ServerLevel level, BlockPos pos, VariantState base) {
+        PaintingPass.Whole whole = PaintingPass.whole(level, pos);
+        return whole != null && whole.anchor().equals(pos) ? base.withPainting(whole.option()) : base;
     }
 
     /**

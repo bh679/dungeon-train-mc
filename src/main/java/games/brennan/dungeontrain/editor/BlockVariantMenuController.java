@@ -173,9 +173,10 @@ public final class BlockVariantMenuController {
             return;
         }
         // Either space of a door / bed / tall-plant cell opens that cell's menu, but the panel
-        // hangs off the half the player actually aimed at.
+        // hangs off the half the player actually aimed at. Any square of a hung painting opens
+        // the cell it hangs from, so its variants cover the whole painting.
         BlockPos lookedLocal = clampToFootprint(localPos, plot);
-        BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, lookedLocal);
+        BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, paintingCell(level, plot, lookedLocal));
         BlockPos anchorWorld = plot.origin().offset(lookedLocal);
 
         Direction face = bhit.getDirection();
@@ -1299,8 +1300,8 @@ public final class BlockVariantMenuController {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.block_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
-        // Copying from a door's top half copies the door's cell, as the menu opens on it.
-        localPos = MultiBlockFootprint.ownerCell(plot, localPos);
+        // Copying from a door's top half (or any square of a painting) copies the cell the menu opens on.
+        localPos = MultiBlockFootprint.ownerCell(plot, paintingCell(level, plot, localPos));
 
         Clipboard clip = buildClipboardStack(player, plot, localPos);
         if (clip == null) return;
@@ -1473,7 +1474,20 @@ public final class BlockVariantMenuController {
             BlockEntity be = level.getBlockEntity(clicked);
             if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
-        return new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+        VariantState base = new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+        return VariantBlockInteractions.withWholePainting(level, clicked, base);
+    }
+
+    /**
+     * The cell a hung painting's square belongs to — the painting's anchor, when that lies inside
+     * the plot — so every square of a painting opens (and copies) the one cell that varies the whole
+     * painting. {@code local} unchanged for anything else.
+     */
+    private static BlockPos paintingCell(ServerLevel level, BlockVariantPlot plot, BlockPos local) {
+        PaintingPass.Whole whole = PaintingPass.whole(level, plot.origin().offset(local));
+        if (whole == null) return local;
+        BlockPos anchor = whole.anchor().subtract(plot.origin());
+        return plot.inBounds(anchor) ? anchor : local;
     }
 
     /**

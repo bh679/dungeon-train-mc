@@ -1,5 +1,6 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 10,
   "variants": {
+    "4,2,4": [{"state": "fastpaintings:painting[facing=north,waterlogged=false,x_offset=1,y_offset=2]", "rotation": {"mode": "lock", "dirs": ["north"]}, "painting": "any random"}, {"state": "fastpaintings:painting[facing=north,waterlogged=false,x_offset=0,y_offset=0]", "rotation": {"mode": "lock", "dirs": ["north"]}, "painting": "2x1 minecraft:sea"}]
   }
 }

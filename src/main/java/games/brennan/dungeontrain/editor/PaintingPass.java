@@ -16,6 +16,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
@@ -87,6 +88,69 @@ public final class PaintingPass {
         if (mirror == Mirror.NONE || !isPainting(state)) return state.mirror(mirror);
         DirectionProperty facingProp = property(state, FACING, DirectionProperty.class);
         return facingProp == null ? state : state.setValue(facingProp, mirror.mirror(state.getValue(facingProp)));
+    }
+
+    /** A hung painting as one thing: the cell a variant of it lives in, its facing and its picture. */
+    public record Whole(BlockPos anchor, Direction facing, Picture picture) {
+        /** The painting option that hangs exactly this picture again. */
+        public VariantPainting option() {
+            return VariantPainting.of(picture.width(), picture.height(), picture.id());
+        }
+    }
+
+    /**
+     * The whole painting {@code cell} is one block of, or {@code null} when {@code cell} is not a
+     * painting or its master / picture can't be read. Any block of a painting resolves to the same
+     * {@link Whole#anchor} — the block vanilla would have hung it from — so a variant added on any
+     * square of a painting varies the whole painting.
+     */
+    @Nullable
+    public static Whole whole(LevelReader level, BlockPos cell) {
+        BlockState state = level.getBlockState(cell);
+        if (!isPainting(state)) return null;
+        DirectionProperty facingProp = property(state, FACING, DirectionProperty.class);
+        IntegerProperty xProp = property(state, X_OFFSET, IntegerProperty.class);
+        IntegerProperty yProp = property(state, Y_OFFSET, IntegerProperty.class);
+        if (facingProp == null || xProp == null || yProp == null) return null;
+        Direction facing = state.getValue(facingProp);
+        if (facing.getAxis().isVertical()) return null;
+        int xo = state.getValue(xProp);
+        int yo = state.getValue(yProp);
+        BlockPos master = cell.above(yo).relative(facing.getClockWise(), xo);
+        BlockEntity be = level.getBlockEntity(master);
+        if (be == null) return null;
+        ResourceLocation id = ResourceLocation.tryParse(
+            be.saveWithoutMetadata(level.registryAccess()).getString(NBT_VARIANT));
+        Picture pic = id == null ? null : PaintingCatalog.byId(level.registryAccess(), id);
+        if (pic == null || xo >= pic.width() || yo >= pic.height()) return null;
+        return new Whole(anchorOf(master, facing, pic.width(), pic.height()), facing, pic);
+    }
+
+    /** The {@link #layout} anchor of a {@code width × height} painting whose master is {@code master}. */
+    public static BlockPos anchorOf(BlockPos master, Direction facing, int width, int height) {
+        int up = height - 1 - (height - 1) / 2;
+        return master.relative(facing.getCounterClockWise(), (width - 1) / 2).below(up);
+    }
+
+    /**
+     * The other blocks of the painting a cell was captured from — its first entry is a whole
+     * painting (a painting block with a fixed size and picture) — as local positions around
+     * {@code localPos}. Every roll clears these first, so whatever the cell picks replaces the whole
+     * painting rather than one square of it. Empty for any other cell.
+     */
+    public static List<BlockPos> capturedFootprint(List<VariantState> cell, BlockPos localPos) {
+        if (cell == null || cell.isEmpty()) return List.of();
+        VariantState base = cell.get(0);
+        VariantPainting p = base.painting();
+        if (p.isDefault() || p.anySize() || p.image() == null || base.isMob() || base.isGroupRef()) return List.of();
+        Direction facing = facingOf(base.state());
+        if (facing == null || facing.getAxis().isVertical()) return List.of();
+        if (p.width() == 1 && p.height() == 1) return List.of();
+        List<BlockPos> out = new ArrayList<>(p.width() * p.height() - 1);
+        for (Cell c : layout(localPos, facing, p.width(), p.height())) {
+            if (!c.pos().equals(localPos)) out.add(c.pos());
+        }
+        return out;
     }
 
     /** A painting block's facing, or {@code null} for anything that is not a painting. */
