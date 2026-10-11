@@ -111,6 +111,9 @@
       "advancements.dungeontrain.dungeon_train.no_break_1000.description",
       "advancements.dungeontrain.dungeon_train.contained_loop.description",
       "gui.dungeontrain.options.editor_settings.tip",
+      "gui.dungeontrain.options.train_volume",
+      "gui.dungeontrain.options.snapshot_chat_log",
+      "gui.dungeontrain.options.snapshot_max_res",
       "gui.dungeontrain.editor_settings.command_menu.tip",
       "gui.dungeontrain.editor_settings.template_blocks_menu.tip",
       "gui.dungeontrain.editor_settings.container_contents_menu.tip",
@@ -149,6 +152,7 @@
       "gui.dungeontrain.builder.open.tiles_per_row.tooltip",
       "key.dungeontrain.live_head_viewer",
       "gui.dungeontrain.custom_content.card.custom.tag",
+      "gui.dungeontrain.options.other_advancement_tabs",
       "gui.dungeontrain.options.low_memory_notice_chat",
       "gui.dungeontrain.options.low_memory_notice_chat.tip"
     ],

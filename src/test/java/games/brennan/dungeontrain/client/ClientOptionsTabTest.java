@@ -1,8 +1,14 @@
 package games.brennan.dungeontrain.client;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import games.brennan.dungeontrain.RepoPaths;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -10,6 +16,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -311,5 +319,38 @@ final class ClientOptionsTabTest {
         List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, true, true, true);
         assertThrows(UnsupportedOperationException.class,
                 () -> rows.add(ClientOptionsTab.Row.SCALE_HUD));
+    }
+
+    // ---- Every row names itself, and has the one-line hint the settings list draws under the name ----
+
+    @Test
+    @DisplayName("every setting row has a caption key and a .hint in en_us; the expanded rows have neither")
+    void everyRowHasCaptionAndHint() throws IOException {
+        JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
+            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT || row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
+                assertNull(row.captionKey(), row + " stands for several rows and has no caption of its own");
+                continue;
+            }
+            String key = row.captionKey();
+            assertNotNull(key, row + " has no caption key");
+            assertTrue(en.has(key), row + ": en_us lacks its name " + key);
+            assertTrue(en.has(key + ".hint"), row + ": en_us lacks its hint " + key + ".hint");
+        }
+    }
+
+    @Test
+    @DisplayName("hints are one short line — the list cuts anything longer with an ellipsis")
+    void hintsAreShort() throws IOException {
+        JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
+            if (row.captionKey() == null) continue;
+            String hint = en.get(row.captionKey() + ".hint").getAsString();
+            // ~180px of 5-6px glyphs at GUI scale 1 beside a 100px control; longer reads as cut.
+            assertTrue(hint.length() <= 40, row + ": hint too long to fit the row: \"" + hint + "\"");
+            assertFalse(hint.endsWith("."), row + ": a hint is a fragment, not a sentence: \"" + hint + "\"");
+        }
     }
 }

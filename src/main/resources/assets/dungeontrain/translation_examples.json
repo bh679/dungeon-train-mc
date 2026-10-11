@@ -15321,5 +15321,14 @@
         "101"
       ]
     }
+  },
+  "gui.dungeontrain.options.clear_backups.hint": {
+    "1": {
+      "label": "how much disk space every backup archive takes together",
+      "examples": [
+        "12 MB",
+        "1.4 GB"
+      ]
+    }
   }
 }
