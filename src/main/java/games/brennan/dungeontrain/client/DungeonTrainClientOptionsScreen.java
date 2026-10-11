@@ -595,6 +595,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
             case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
             case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
+            case BOOK_FILE_BUTTONS -> onOffCandidates("gui.dungeontrain.options.book_file_buttons");
+            case BOOK_INSERT_PAGE_BUTTON -> onOffCandidates("gui.dungeontrain.options.book_insert_page_button");
             // Every mode, because the row must fit its LONGEST value — the button shows the
             // caption and the value together, and "Fill all" is not the longest in every locale.
             // AUTO is the longest of all: it names the mode it resolved to inside its own label.
@@ -828,6 +830,20 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                                     Component.translatable("gui.dungeontrain.options.cinematic_hotkey"),
                                     (btn, on) -> ClientDisplayConfig.setCinematicHotkeyEnabled(on)),
                     "gui.dungeontrain.options.cinematic_hotkey.tip");
+            // Scribble's book-screen buttons. Applied when the book is next opened —
+            // ScribbleBookButtonsToggle reads these in ScreenEvent.Init.Post.
+            case BOOK_FILE_BUTTONS -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isScribbleFileButtonsVisible())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.book_file_buttons"),
+                                    (btn, on) -> ClientDisplayConfig.setScribbleFileButtonsVisible(on)),
+                    "gui.dungeontrain.options.book_file_buttons.tip");
+            case BOOK_INSERT_PAGE_BUTTON -> withTip(
+                    CycleButton.onOffBuilder(ClientDisplayConfig.isScribbleInsertPageButtonVisible())
+                            .create(0, 0, width, ROW_H,
+                                    Component.translatable("gui.dungeontrain.options.book_insert_page_button"),
+                                    (btn, on) -> ClientDisplayConfig.setScribbleInsertPageButtonVisible(on)),
+                    "gui.dungeontrain.options.book_insert_page_button.tip");
 
             // "Was any of this made by AI?" answered in full. Unconditional, and deliberately a
             // page rather than a tooltip: the honest answer is longer than a row can carry. Also
