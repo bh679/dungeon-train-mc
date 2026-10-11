@@ -24612,6 +24612,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stream-video-and-viewer-size",
+      "version": "0.1215.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Stream size settings",
+      "summary": "Options \u2192 Stream now lets you pick your broadcast's video size and how big the live feed sits on your screen, with the preview showing both.",
+      "highlights": [],
+      "pr": 1918,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
