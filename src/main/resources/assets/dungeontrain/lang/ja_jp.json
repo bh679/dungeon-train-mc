@@ -2363,7 +2363,7 @@
   "gui.dungeontrain.consent.reincarnations.adult.tip": "他のプレイヤーのスキンとゲーム内の振る舞いを、ボットが操作するMobとして君のゲームに再現します",
   "gui.dungeontrain.consent.reincarnations.kid.tip": "他のプレイヤーのスキンとゲーム内の振る舞いを、ボットが操作するMobとして君のゲームに再現します。チャットやメッセージはありません。",
   "gui.dungeontrain.consent.livestream": "ライブ配信",
-  "gui.dungeontrain.consent.livestream.adult.tip": "配信ヘッドピースをかぶると、フィードを見ている全員にあなたの視界が映ります。オフ = かぶった瞬間にヘッドピースが燃え尽きます。",
+  "gui.dungeontrain.consent.livestream.adult.tip": "ゲーム内のアイテムからライブ配信(音声なし)を開始できます。",
   "gui.dungeontrain.consent.livestream.kid.tip": "保護者がオンにしない限りオフ：放送カムコーダーを着けると、ライブフィードを見ている全員にあなたの視界が映ります。",
   "gui.dungeontrain.consent.dev_chat": "開発者チャット",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "ゲーム内で開発者に連絡できます",

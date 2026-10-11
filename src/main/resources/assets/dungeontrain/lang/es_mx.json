@@ -2410,7 +2410,7 @@
   "gui.dungeontrain.consent.reincarnations.adult.tip": "Las skins y los comportamientos de otros jugadores recreados como un mob controlado por un bot en tu partida",
   "gui.dungeontrain.consent.reincarnations.kid.tip": "Las skins y los comportamientos de otros jugadores recreados como un mob controlado por un bot en tu partida. Sin chat ni mensajes.",
   "gui.dungeontrain.consent.livestream": "Transmisión en vivo",
-  "gui.dungeontrain.consent.livestream.adult.tip": "Ponte el casco transmisor y todos los que vean la señal verán lo que tú ves. Apagado = el casco se quema al ponértelo.",
+  "gui.dungeontrain.consent.livestream.adult.tip": "Puedes activar la transmisión en vivo (sin audio) desde un objeto en el juego.",
   "gui.dungeontrain.consent.livestream.kid.tip": "Desactivado a menos que un adulto lo active: con la videocámara de transmisión puesta, todos los que vean la Señal en Vivo verán lo que ves.",
   "gui.dungeontrain.consent.dev_chat": "Chat con el desarrollador",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "Puedes contactar con el desarrollador dentro del juego",

@@ -2410,7 +2410,7 @@
   "gui.dungeontrain.consent.reincarnations.adult.tip": "Skins en speelgedrag van andere spelers, nagebouwd als een botgestuurde mob in jouw spel",
   "gui.dungeontrain.consent.reincarnations.kid.tip": "Skins en speelgedrag van andere spelers, nagebouwd als een botgestuurde mob in jouw spel. Geen chat of berichten.",
   "gui.dungeontrain.consent.livestream": "Livestreamen",
-  "gui.dungeontrain.consent.livestream.adult.tip": "Zet de uitzendhoofdband op en iedereen die de feed kijkt ziet wat jij ziet. Uit = de hoofdband verbrandt zodra je hem opzet.",
+  "gui.dungeontrain.consent.livestream.adult.tip": "Je kunt livestreamen (zonder geluid) inschakelen met een voorwerp in het spel.",
   "gui.dungeontrain.consent.livestream.kid.tip": "Uit, tenzij een ouder het aanzet: met de uitzendcamcorder op ziet iedereen die de Live Feed kijkt wat jij ziet.",
   "gui.dungeontrain.consent.dev_chat": "Ontwikkelaarschat",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "Je kunt de ontwikkelaar in het spel bereiken",

@@ -2363,7 +2363,7 @@
   "gui.dungeontrain.consent.reincarnations.adult.tip": "把其他玩家的外觀和遊戲內行為，在你的遊戲裡重現為由機器人驅動的生物",
   "gui.dungeontrain.consent.reincarnations.kid.tip": "把其他玩家的外觀和遊戲內行為，在你的遊戲裡重現為由機器人驅動的生物。沒有聊天或私訊。",
   "gui.dungeontrain.consent.livestream": "直播",
-  "gui.dungeontrain.consent.livestream.adult.tip": "戴上直播頭飾，所有觀看訊號的人都會看到你所看到的。關閉 = 一戴上頭飾就會燒毀。",
+  "gui.dungeontrain.consent.livestream.adult.tip": "你可以透過遊戲內的一件物品開啟直播(無聲音)。",
   "gui.dungeontrain.consent.livestream.kid.tip": "除非家長開啟，否則保持關閉：戴上直播攝影機後，所有觀看即時訊號的人都能看到你看到的畫面。",
   "gui.dungeontrain.consent.dev_chat": "開發者聊天",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "你可以在遊戲中聯絡開發者",
