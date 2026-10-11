@@ -15288,7 +15288,7 @@
       ]
     }
   },
-  "chat.dungeontrain.live.now_live.one": {
+  "chat.dungeontrain.live.watching.one": {
     "1": {
       "label": "how many are watching (always 1)",
       "examples": [
@@ -15296,7 +15296,7 @@
       ]
     }
   },
-  "chat.dungeontrain.live.now_live.other": {
+  "chat.dungeontrain.live.watching.other": {
     "1": {
       "label": "how many are watching",
       "examples": [
