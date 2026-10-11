@@ -1174,6 +1174,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "カメラを渡した乗客が自分の写真を撮ったときにメンションする。",
   "gui.dungeontrain.options.account.pings.milestone": "マイルストーン",
   "gui.dungeontrain.options.account.pings.milestone.tip": "自分のマイルストーン進捗が投稿されたときにメンションする。",
+  "gui.dungeontrain.options.account.pings.translation_review": "翻訳レビュー",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "自分が送った翻訳を詳しく確認する必要があるときにメンションする。",
   "chat.dungeontrain.discord.options_hint": "メンションを受け取る投稿は オプション → Dungeon Train… → アカウント で選べます。",
   "gui.dungeontrain.ai_policy.title": "AIポリシー",
   "gui.dungeontrain.ai_policy.subtitle": "Dungeon Train の何がAIで作られていて、何がそうでないか。",

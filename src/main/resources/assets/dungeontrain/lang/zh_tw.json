@@ -1174,6 +1174,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "我給了相機的乘客幫我拍照時提及我。",
   "gui.dungeontrain.options.account.pings.milestone": "里程碑",
   "gui.dungeontrain.options.account.pings.milestone.tip": "我的里程碑進度被發布時提及我。",
+  "gui.dungeontrain.options.account.pings.translation_review": "翻譯審核",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "當我提交的翻譯需要仔細查看時提及我。",
   "chat.dungeontrain.discord.options_hint": "在 選項 → Dungeon Train… → 帳戶 中選擇哪些貼文會提及你。",
   "gui.dungeontrain.ai_policy.title": "AI 政策",
   "gui.dungeontrain.ai_policy.subtitle": "地牢列車中哪些是、哪些不是由 AI 製作的。",
