@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Whether anyone, in any world, is broadcasting on the Live Feed — as the server sees it.
  *
  * <p>The relay holds the one Live Feed for every world, so "someone is live" is the relay's
- * {@code /live/status}. Polled every {@link #POLL_TICKS} while players are online (an idle server
+ * {@code /live/status} on the public ({@code LIVE}) channel. Polled every {@link #POLL_TICKS} while players are online (an idle server
  * asks nothing); the answer goes stale after {@link #STALE_MS}, and a stale or failed answer reads
  * as not live. A streamer on this server ({@link LiveStreamers}) counts even if the relay is
  * unreachable. Read by {@code event/LiveEyeLootResolver} to make Live Eyes rare while someone is live.</p>
@@ -48,7 +48,7 @@ public final class ServerLiveStatus {
         if (server.getTickCount() % POLL_TICKS != 0) return;
         if (server.getPlayerCount() == 0) return;
         if (!IN_FLIGHT.compareAndSet(false, true)) return;
-        LiveFeedClient.status(null).whenComplete((result, error) -> {
+        LiveFeedClient.status(null, LiveFeedClient.Channel.LIVE).whenComplete((result, error) -> {
             try {
                 if (error == null && result != null && result.ok()) {
                     relayLive = LiveFeedClient.parseStatus(result).live();
