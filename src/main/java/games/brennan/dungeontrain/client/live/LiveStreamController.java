@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
@@ -10,6 +11,9 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ChatScreen;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -18,6 +22,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.event.GameShuttingDownEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
@@ -26,8 +33,12 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -49,6 +60,8 @@ public final class LiveStreamController {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final LiveStreamController INSTANCE = new LiveStreamController();
+    /** Session dirs a {@link LiveTeardown} is still flushing; the next stream's sweep leaves them be. */
+    private static final Set<Path> TEARING_DOWN = ConcurrentHashMap.newKeySet();
 
     public enum State { IDLE, WAIT_FFMPEG, CLAIMING, STREAMING, STOPPING }
 
@@ -60,6 +73,7 @@ public final class LiveStreamController {
     @Nullable private Claim claim;
     @Nullable private Path dir;
     private long lastGrabNs;
+    private boolean grabbedThisFrame; // render thread: this frame was already read at an earlier point
     private long streamStartedMs;
     private int waitTicks;
 
@@ -104,6 +118,7 @@ public final class LiveStreamController {
             case STOP_DIED -> stop(Component.translatable("chat.dungeontrain.live.ended_death"));
             case STOP_LEFT -> stop(null);
             case STOP_REMOVED -> stop(Component.translatable("chat.dungeontrain.live.removed"));
+            case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
         }
     }
 
@@ -205,7 +220,7 @@ public final class LiveStreamController {
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] live stream could not start", e);
             say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
-            teardown(false);
+            teardown(false, false);
             state = State.IDLE;
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         }
@@ -229,23 +244,57 @@ public final class LiveStreamController {
     }
 
     private void stop(@Nullable Component why, boolean clean) {
+        stop(why, clean, false);
+    }
+
+    private void stop(@Nullable Component why, boolean clean, boolean wait) {
         if (state == State.IDLE) return;
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
-        teardown(clean);
+        teardown(clean, wait);
         state = State.IDLE;
         if (why != null) say(why);
     }
 
-    private void teardown(boolean clean) {
-        if (encoder != null) { encoder.close(); encoder = null; }
-        if (uploader != null) { uploader.close(clean); uploader = null; }
-        if (grabber != null) { grabber.close(); grabber = null; }
-        if (clean && claim != null) LiveFeedClient.stop(claim.token());
+    /**
+     * Hands this stream's encoder, uploader, relay claim and directory to {@link LiveTeardown} and
+     * clears them, so the controller is IDLE at once. The steps block for seconds — ffmpeg's last
+     * segment, the final upload pass, the relay stop — and on the render thread that froze the game
+     * every time the Live Eye came off, so they run on their own thread. {@code wait} runs them here
+     * instead: game shutdown only, where a daemon thread would die before the ENDLIST went out.
+     */
+    private void teardown(boolean clean, boolean wait) {
+        LiveEncoder enc = encoder;
+        LiveUploader up = uploader;
+        LiveFrameGrabber grab = grabber;
+        Claim c = claim;
+        Path d = dir;
+        encoder = null;
+        uploader = null;
+        grabber = null;
         claim = null;
-        if (dir != null) { deleteTree(dir); dir = null; }
+        dir = null;
+
+        List<LiveTeardown.Step> steps = new ArrayList<>();
+        if (enc != null) steps.add(new LiveTeardown.Step("encoder", enc::close));
+        if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean)));
+        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> LiveFeedClient.stop(c.token())));
+        if (d != null) steps.add(new LiveTeardown.Step("delete session dir", () -> deleteTree(d)));
+        // GL buffers belong to the render thread; freed only once the encoder has stopped reading them.
+        if (grab != null) steps.add(new LiveTeardown.Step("frame grabber",
+            () -> { if (wait) grab.close(); else Minecraft.getInstance().execute(grab::close); }));
+        if (steps.isEmpty()) return;
+
+        if (d != null) TEARING_DOWN.add(d);
+        Runnable done = () -> { if (d != null) TEARING_DOWN.remove(d); };
+        if (wait) {
+            LiveTeardown.runAll(steps);
+            done.run();
+        } else {
+            LiveTeardown.runAsync(steps, done);
+        }
     }
 
     // ---- capture ------------------------------------------------------------------------------
@@ -257,7 +306,58 @@ public final class LiveStreamController {
      */
     @SubscribeEvent(priority = EventPriority.NORMAL)
     public static void onRenderFrameEnd(RenderFrameEvent.Post event) {
-        INSTANCE.grabFrame();
+        boolean handled = INSTANCE.grabbedThisFrame;
+        INSTANCE.grabbedThisFrame = false;
+        if (handled) return;
+        // An earlier point that never fired (no GUI pass this frame, or another mod removed the chat
+        // layer) drops the frame: reading the finished frame instead could send what was kept back.
+        StreamCapture.Point point = INSTANCE.capturePoint();
+        if (point == StreamCapture.Point.FRAME_END || point == StreamCapture.Point.FRAME_END_HIDE_CHAT) {
+            INSTANCE.grabFrame();
+        }
+    }
+
+    /**
+     * Stream GUI off: read the frame before any GUI layer draws (see {@link StreamCapture}). Receives
+     * cancelled events, so a mod cancelling the GUI pass cannot push the read to the finished frame.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public static void onGuiStart(RenderGuiEvent.Pre event) {
+        if (INSTANCE.capturePoint() == StreamCapture.Point.BEFORE_GUI) INSTANCE.grabNow(event.getGuiGraphics());
+    }
+
+    /**
+     * Stream chat off (always, in Kid mode): read just before chat draws, or skip the chat layer
+     * while a menu is open. Receives cancelled events for the same reason as {@link #onGuiStart}.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
+    public static void onGuiLayer(RenderGuiLayerEvent.Pre event) {
+        if (!VanillaGuiLayers.CHAT.equals(event.getName())) return;
+        switch (INSTANCE.capturePoint()) {
+            case BEFORE_CHAT -> INSTANCE.grabNow(event.getGuiGraphics());
+            case FRAME_END_HIDE_CHAT -> event.setCanceled(true);
+            default -> { }
+        }
+    }
+
+    private void grabNow(GuiGraphics graphics) {
+        if (grabbedThisFrame) return;
+        graphics.flush(); // the HUD drawn so far is still batched; put it in the framebuffer first
+        grabFrame();
+        grabbedThisFrame = true;
+    }
+
+    private StreamCapture.Point capturePoint() {
+        if (state != State.STREAMING) return StreamCapture.Point.SKIP;
+        Minecraft mc = Minecraft.getInstance();
+        Screen screen = mc.screen;
+        return StreamCapture.point(LiveFeedClientConfig.streamGui(), streamChatShown(),
+            screen != null, screen instanceof ChatScreen, mc.options.hideGui);
+    }
+
+    /** The Stream chat switch as it applies to this player — always off in Kid mode. */
+    public static boolean streamChatShown() {
+        return StreamCapture.chatShown(LiveFeedClientConfig.streamChat(), ClientDisplayConfig.getContentMode().isKid());
     }
 
     private void grabFrame() {
@@ -279,7 +379,7 @@ public final class LiveStreamController {
 
     @SubscribeEvent
     public static void onGameShuttingDown(GameShuttingDownEvent event) {
-        INSTANCE.stop(null);
+        INSTANCE.stop(null, true, true);
     }
 
     // ---- helpers ------------------------------------------------------------------------------
@@ -297,7 +397,7 @@ public final class LiveStreamController {
         Path root = liveRoot();
         if (!Files.isDirectory(root)) return;
         try (Stream<Path> kids = Files.list(root)) {
-            kids.forEach(LiveStreamController::deleteTree);
+            kids.filter(kid -> !TEARING_DOWN.contains(kid)).forEach(LiveStreamController::deleteTree);
         } catch (IOException ignored) {
             // best effort
         }

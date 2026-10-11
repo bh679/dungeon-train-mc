@@ -185,6 +185,19 @@ public class DungeonTrain {
         return RELAY_LIVE_BASE_URL;
     }
 
+    /**
+     * The DEV relay capability, whatever branch this is — the dev twin of {@link #liveRelayBaseUrl()}.
+     * Free Play TVs watch the dev Live Feed channel on every build (see {@code LiveStatusPoller}).
+     * Honours the same {@code DUNGEONTRAIN_RELAY_BASE_URL} override as {@link #relayBaseUrl()}.
+     */
+    public static String devRelayBaseUrl() {
+        String override = System.getenv("DUNGEONTRAIN_RELAY_BASE_URL");
+        if (override != null && !override.isBlank()) {
+            return override;
+        }
+        return RELAY_DEV_BASE_URL;
+    }
+
     /** The relay capability this build reports through: the dev channel for dev builds, live on main. */
     private static String discordRelayBaseUrl() {
         return relayBaseUrlForBranch(VersionInfo.BRANCH);

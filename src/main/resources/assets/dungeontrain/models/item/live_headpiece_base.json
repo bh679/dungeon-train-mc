@@ -1,11 +1,12 @@
 {
-  "_comment": "Live-feed headpiece: Exposure Polaroid's instant camera (mortuusars, MIT) scaled to a full-face helmet, square lens on the eye line, eject wedge at the nape, aerial on the crown. Body faces sample Polaroid's own texture; aerial/tip are DT's. The tip texture is swapped by the overrides in live_headpiece.json (client/live/LiveHeadpieceAntenna). UVs are in 16ths of each texture. Worn via vanilla CustomHeadLayer's 'head' display.",
+  "_comment": "Live-feed headpiece: Exposure Polaroid's instant camera (mortuusars, MIT) scaled to a full-face helmet, big square lens (10x10 of the 16 face) whose window shows a zoomed-in Ender Pearl (idle) or Eye of Ender (worn = live; live_headpiece_live and the colour variants swap the lens texture), eject wedge at the nape (no photo slot on the front), aerial on the crown. Body faces sample Polaroid's own texture; aerial/tip are DT's. The tip texture is swapped by the overrides in live_headpiece.json (client/live/LiveHeadpieceAntenna). UVs are in 16ths of each texture. Worn via vanilla CustomHeadLayer's 'head' display.",
   "gui_light": "front",
   "textures": {
     "particle": "exposure_polaroid:item/instant_camera",
     "camera": "exposure_polaroid:item/instant_camera",
     "aerial": "dungeontrain:item/live_headpiece_antenna",
-    "tip": "dungeontrain:item/live_headpiece_tip_off"
+    "tip": "dungeontrain:item/live_headpiece_tip_off",
+    "lens": "minecraft:item/ender_pearl"
   },
   "elements": [
     {
@@ -24,9 +25,9 @@
         "north": {
           "uv": [
             2.0,
-            11.5,
+            6.5,
             6.0,
-            12.99
+            7.99
           ],
           "texture": "#camera"
         },
@@ -198,13 +199,13 @@
     {
       "name": "lens",
       "from": [
-        5.0,
-        3.5,
+        3.0,
+        2.0,
         -2
       ],
       "to": [
-        11.0,
-        9.5,
+        13.0,
+        12.0,
         0
       ],
       "faces": {
@@ -260,48 +261,24 @@
     {
       "name": "glass",
       "from": [
-        6.35,
-        4.85,
+        5.25,
+        4.25,
         -1.98
       ],
       "to": [
-        9.65,
-        8.15,
+        10.75,
+        9.75,
         -1.98
       ],
       "faces": {
         "north": {
           "uv": [
-            15.0,
-            15.0,
-            16.0,
-            16.0
-          ],
-          "texture": "#camera"
-        }
-      }
-    },
-    {
-      "name": "photo_slot",
-      "from": [
-        3,
-        1.5,
-        -0.1
-      ],
-      "to": [
-        13,
-        2.5,
-        0
-      ],
-      "faces": {
-        "north": {
-          "uv": [
-            2.0,
-            11.5,
-            6.0,
+            4.0,
+            4.0,
+            13.0,
             13.0
           ],
-          "texture": "#camera"
+          "texture": "#lens"
         }
       }
     },

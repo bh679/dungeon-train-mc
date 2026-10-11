@@ -32,7 +32,9 @@ public record LiveStreamPacket(Action action, String by) implements CustomPacket
         /** The streamer left the world (sent before the connection closes; the client also stops itself). */
         STOP_LEFT,
         /** The streamer took the camcorder off. */
-        STOP_REMOVED
+        STOP_REMOVED,
+        /** The streamer's run turned Free Play, which can't go live. */
+        STOP_FREE_PLAY
     }
 
     private static final int MAX_NAME = 48;
