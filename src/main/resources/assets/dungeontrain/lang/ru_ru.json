@@ -1259,6 +1259,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "Упоминать меня, когда пассажир, которому я дал камеру, фотографирует меня.",
   "gui.dungeontrain.options.account.pings.milestone": "Вехи",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Упоминать меня, когда публикуется одно из моих достижений-вех.",
+  "gui.dungeontrain.options.account.pings.translation_review": "Проверка переводов",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "Упоминать меня, когда присланный мной перевод нужно проверить внимательнее.",
   "chat.dungeontrain.discord.options_hint": "Выберите, какие публикации вас упоминают, в Настройки → Dungeon Train… → Аккаунт.",
   "gui.dungeontrain.ai_policy.title": "Политика об ИИ",
   "gui.dungeontrain.ai_policy.subtitle": "Что в Dungeon Train сделано и не сделано ИИ.",

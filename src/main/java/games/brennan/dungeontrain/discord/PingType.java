@@ -17,7 +17,9 @@ public enum PingType {
     /** A PlayerMob took a photo of them. */
     MOB_PHOTO("mob_photo"),
     /** A milestone advancement of theirs, with its screenshot. */
-    MILESTONE("milestone");
+    MILESTONE("milestone"),
+    /** The review thread opened when a translation they submitted needs a look. */
+    TRANSLATION_REVIEW("translation_review");
 
     private final String wireId;
 

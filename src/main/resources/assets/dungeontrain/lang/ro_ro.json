@@ -1394,6 +1394,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": "Menționează-mă când un pasager căruia i-am dat un aparat foto mă fotografiază.",
   "gui.dungeontrain.options.account.pings.milestone": "Repere",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Menționează-mă când unul dintre progresele mele de reper este publicat.",
+  "gui.dungeontrain.options.account.pings.translation_review": "Revizuiri de traduceri",
+  "gui.dungeontrain.options.account.pings.translation_review.tip": "Menționează-mă când o traducere trimisă de mine trebuie verificată mai atent.",
   "chat.dungeontrain.discord.options_hint": "Alege ce postări te menționează în Opțiuni → Dungeon Train… → Cont.",
   "gui.dungeontrain.ai_policy.title": "Politica AI",
   "gui.dungeontrain.ai_policy.subtitle": "Ce este — și ce nu este — făcut de AI în Dungeon Train.",

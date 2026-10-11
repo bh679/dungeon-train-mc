@@ -1259,6 +1259,8 @@
   "gui.dungeontrain.options.account.pings.mob_photo.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "bed8e6a417903201"},
   "gui.dungeontrain.options.account.pings.milestone": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "39c33dc2375ffc56"},
   "gui.dungeontrain.options.account.pings.milestone.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "92c77546c8d9685b"},
+  "gui.dungeontrain.options.account.pings.translation_review": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8f5abf12130e0ea2"},
+  "gui.dungeontrain.options.account.pings.translation_review.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6e19b58a3e62ab39"},
   "chat.dungeontrain.discord.options_hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "715278d69585a723"},
   "gui.dungeontrain.ai_policy.title": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "680f91c8ecf5d2fb"},
   "gui.dungeontrain.ai_policy.subtitle": {"author": "helluvaboy", "reviewer": "helluvaboy", "source_hash": "f45a61f30b3f69ba"},

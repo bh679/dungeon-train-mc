@@ -43,7 +43,8 @@ class DiscordPingsTest {
     @Test
     @DisplayName("wire ids match the relay's PING_TYPES and round-trip")
     void wireIds() {
-        assertEquals(java.util.List.of("death", "own_tribute", "photo_tributed", "mob_photo", "milestone"),
+        assertEquals(java.util.List.of("death", "own_tribute", "photo_tributed", "mob_photo", "milestone",
+                        "translation_review"),
                 java.util.Arrays.stream(PingType.values()).map(PingType::wireId).toList());
         for (PingType t : PingType.values()) assertEquals(t, PingType.byWireId(t.wireId()).orElseThrow());
         assertEquals(java.util.Optional.empty(), PingType.byWireId("nope"));
