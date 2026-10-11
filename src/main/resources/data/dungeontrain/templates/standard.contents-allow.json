@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "excluded": [
     "chest",
     "cows",
@@ -16,5 +16,8 @@
     "sheep",
     "shop",
     "traps"
+  ],
+  "included": [
+    "livestream"
   ]
 }
