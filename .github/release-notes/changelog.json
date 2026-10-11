@@ -24508,6 +24508,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-bigger-lens",
+      "version": "0.1209.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "The Live Eye opens wider",
+      "summary": "The Live Eye's lens takes up more of its face, and the front is tidier.",
+      "highlights": [],
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
