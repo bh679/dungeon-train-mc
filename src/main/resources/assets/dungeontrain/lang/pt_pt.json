@@ -629,6 +629,7 @@
   "chat.dungeontrain.familiar_photo.3": "A tua própria foto, de volta a ti.",
   "chat.dungeontrain.live.headpiece_burns": "A câmara de filmar na tua cabeça faísca e arde até desaparecer.",
   "chat.dungeontrain.live.headpiece_on": "A câmara de filmar na tua cabeça pisca a vermelho. Agora a emissão és tu.",
+  "chat.dungeontrain.live.free_play": "Partidas em Jogo Livre não podem transmitir em direto.",
   "chat.dungeontrain.live.removed": "Tiraste a câmara de filmar. Arde até desaparecer; a tua emissão terminou.",
   "chat.dungeontrain.live.started": "Estás em direto. Os espetadores veem o teu ecrã com cerca de quinze segundos de atraso.",
   "chat.dungeontrain.live.took_over": "%s foi cortado.",

@@ -629,6 +629,7 @@
   "chat.dungeontrain.familiar_photo.3": "Je eigen foto, weer bij je teruggekomen.",
   "chat.dungeontrain.live.headpiece_burns": "De camcorder op je hoofd flakkert op en brandt weg.",
   "chat.dungeontrain.live.headpiece_on": "De camcorder op je hoofd knippert rood. Jij bent nu de uitzending.",
+  "chat.dungeontrain.live.free_play": "Vrij Spel-runs kunnen niet live gaan.",
   "chat.dungeontrain.live.removed": "Je hebt de camcorder afgezet. Hij brandt weg; je uitzending is gestopt.",
   "chat.dungeontrain.live.started": "Je bent live. Kijkers zien je scherm met ongeveer vijftien seconden vertraging.",
   "chat.dungeontrain.live.took_over": "%s is afgesneden.",

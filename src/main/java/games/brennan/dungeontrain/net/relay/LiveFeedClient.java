@@ -139,9 +139,24 @@ public final class LiveFeedClient {
         return post("/live/stop", body);
     }
 
-    public static CompletableFuture<Result> status(@Nullable UUID viewer) {
+    /** Which Live Feed channel a viewer watches: the public one, or the dev one Free Play TVs show. */
+    public enum Channel { LIVE, DEV }
+
+    /**
+     * Everyone watches the public feed, except a Free Play run while a dev is streaming: then its TVs
+     * show the dev channel. On every build.
+     */
+    public static Channel viewerChannel(boolean freePlay, boolean devLive) {
+        return freePlay && devLive ? Channel.DEV : Channel.LIVE;
+    }
+
+    private static String viewerBase(Channel channel) {
+        return channel == Channel.DEV ? DungeonTrain.devRelayBaseUrl() : DungeonTrain.liveRelayBaseUrl();
+    }
+
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel) {
         String path = "/live/status" + (viewer == null ? "" : "?viewer=" + viewer);
-        HttpRequest req = HttpRequest.newBuilder(URI.create(base() + path))
+        HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
     }

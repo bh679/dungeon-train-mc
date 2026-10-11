@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -121,6 +122,41 @@ class LiveHeadpieceModelTest {
         JsonObject top = model("live_headpiece");
         assertEquals(LOADER, top.get("loader").getAsString());
         assertEquals(BASE, top.getAsJsonObject("base").get("parent").getAsString());
+    }
+
+    @Test
+    void theLensIsBigAndTheFrontHasNoPhotoStrip() throws IOException {
+        JsonArray elements = model("live_headpiece_base").getAsJsonArray("elements");
+        Map<String, JsonObject> byName = new java.util.HashMap<>();
+        for (JsonElement e : elements) {
+            JsonObject el = e.getAsJsonObject();
+            byName.put(el.get("name").getAsString(), el);
+        }
+        assertFalse(byName.containsKey("photo_slot"), "the Polaroid's photo exit no longer sits on the front");
+        double[] lensFrom = xyz(byName.get("lens").getAsJsonArray("from"));
+        double[] lensTo = xyz(byName.get("lens").getAsJsonArray("to"));
+        assertEquals(10.0, lensTo[0] - lensFrom[0], 1e-6, "lens width");
+        assertEquals(10.0, lensTo[1] - lensFrom[1], 1e-6, "lens height");
+        double[] glassFrom = xyz(byName.get("glass").getAsJsonArray("from"));
+        double[] glassTo = xyz(byName.get("glass").getAsJsonArray("to"));
+        assertTrue(glassFrom[0] > lensFrom[0] && glassTo[0] < lensTo[0] && glassFrom[1] > lensFrom[1] && glassTo[1] < lensTo[1],
+            "the eye sits inside the bezel");
+        for (JsonObject el : byName.values()) {
+            JsonObject north = el.getAsJsonObject("faces").getAsJsonObject("north");
+            if (north == null || !"#camera".equals(north.get("texture").getAsString())) continue;
+            JsonArray uv = north.getAsJsonArray("uv");
+            double u1 = Math.min(uv.get(0).getAsDouble(), uv.get(2).getAsDouble());
+            double u2 = Math.max(uv.get(0).getAsDouble(), uv.get(2).getAsDouble());
+            double v1 = Math.min(uv.get(1).getAsDouble(), uv.get(3).getAsDouble());
+            double v2 = Math.max(uv.get(1).getAsDouble(), uv.get(3).getAsDouble());
+            boolean overlapsStrip = u2 > 2.0 && u1 < 6.0 && v2 > 11.5 && v1 < 13.0;
+            assertFalse(overlapsStrip,
+                el.get("name").getAsString() + " front face samples the camera's cream photo strip (uv 2–6 × 11.5–13)");
+        }
+    }
+
+    private static double[] xyz(JsonArray a) {
+        return new double[] {a.get(0).getAsDouble(), a.get(1).getAsDouble(), a.get(2).getAsDouble()};
     }
 
     @Test
