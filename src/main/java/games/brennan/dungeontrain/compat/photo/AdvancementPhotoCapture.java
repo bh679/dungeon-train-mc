@@ -26,8 +26,11 @@ import net.minecraft.world.item.ItemStack;
 public final class AdvancementPhotoCapture {
 
     private static final org.slf4j.Logger LOGGER = com.mojang.logging.LogUtils.getLogger();
-    /** The photo behind the triggers now running: its exposure, and the paper it is printed on. */
-    private record Photo(String exposureId, ResourceLocation type) {}
+    /**
+     * The photo behind the triggers now running: its exposure, the paper it is printed on, and whether
+     * it is a fresh shot (its advancements then ride along with its upload — see PhotoSubjectTally).
+     */
+    private record Photo(String exposureId, ResourceLocation type, boolean shot) {}
 
     private static final ThreadLocal<Photo> CURRENT = new ThreadLocal<>();
 
@@ -35,7 +38,7 @@ public final class AdvancementPhotoCapture {
 
     /** Run {@code triggers} with {@code frame}'s exposure as the current photo — a fresh shot, on regular paper. */
     public static void during(Frame frame, Runnable triggers) {
-        during(frame, PhotographType.REGULAR, triggers);
+        during(frame, PhotographType.REGULAR, true, triggers);
     }
 
     /**
@@ -49,17 +52,17 @@ public final class AdvancementPhotoCapture {
         }
         Frame frame = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         PhotographType type = photograph.getItem() instanceof PhotographItem item ? item.getType(photograph) : null;
-        during(frame, type, triggers);
+        during(frame, type, false, triggers);
     }
 
-    private static void during(Frame frame, PhotographType type, Runnable triggers) {
+    private static void during(Frame frame, PhotographType type, boolean shot, Runnable triggers) {
         String exposureId = exposureId(frame);
         if (exposureId == null) {
             triggers.run();
             return;
         }
         Photo previous = CURRENT.get();
-        CURRENT.set(new Photo(exposureId, (type == null ? PhotographType.REGULAR : type).id()));
+        CURRENT.set(new Photo(exposureId, (type == null ? PhotographType.REGULAR : type).id(), shot));
         try {
             triggers.run();
         } finally {
@@ -68,9 +71,17 @@ public final class AdvancementPhotoCapture {
         }
     }
 
-    /** Called for every advancement earn: sends the earning photo when one is current. */
+    /**
+     * Called for every advancement earn: sends the earning photo when one is current, and — when that
+     * photo is a fresh shot — notes the advancement for the shot's upload, so the website can show what
+     * each photo earned its photographer.
+     */
     public static void onEarn(ServerPlayer player, ResourceLocation advancement, boolean replaying) {
         send(player, advancement, "", replaying);
+        Photo photo = CURRENT.get();
+        if (photo != null && photo.shot() && shouldSend(advancement, photo.exposureId(), replaying)) {
+            PhotoSubjectTally.recordAdvancement(photo.exposureId(), advancement.toString());
+        }
     }
 
     /**
