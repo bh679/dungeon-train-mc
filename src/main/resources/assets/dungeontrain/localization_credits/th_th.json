@@ -2,15 +2,8 @@
   "locale": "th_th",
   "name": "AI ที่ไม่มีการตรวจสอบโดยมนุษย์",
   "human_reviewed": false,
-<<<<<<< HEAD
-  "total_keys": 4533,
-  "ai_authored": 4533,
-  "ai_unreviewed": 4533,
+  "total_keys": 4538,
+  "ai_authored": 4538,
+  "ai_unreviewed": 4538,
   "counted_keys": 2788
-=======
-  "total_keys": 4534,
-  "ai_authored": 4534,
-  "ai_unreviewed": 4534,
-  "counted_keys": 2784
->>>>>>> origin/main
 }
