@@ -67,6 +67,16 @@ public final class UnapprovedModIntegrity {
 
     /** How long the boot-time scan waits for {@link ModFileScanner} before judging without it. */
     static final long SCAN_WAIT_MS = 5000;
+    /**
+     * How long server start waits for an in-flight relay verify before judging from the cache. A
+     * client's fetch started at the title screen and is long done; a dedicated server's starts
+     * here, and a few seconds is cheap next to a session judged a launch late.
+     */
+    static final long FETCH_WAIT_MS = 8000;
+    private static volatile boolean serverRunning;
+
+    /** The verdict tiers of the file check — only {@link #SUSPECT} costs the run (see {@link #tierOf}). */
+    public enum Tier { VERIFIED, PLAUSIBLE, UNKNOWN, SUSPECT }
 
     private UnapprovedModIntegrity() {}
 
@@ -110,7 +120,11 @@ public final class UnapprovedModIntegrity {
         // Best-effort: refresh the relay overlay for next boot (async; current boot uses the cache).
         // On a dedicated server this is also what starts the file scan.
         ApprovedModListFetcher.ensureFetched();
+        serverRunning = true;
         detected = scan();
+        // Never a session late: give the relay's answer a moment to land before judging, so a mod
+        // updated this launch is judged against what the relay knows now, not last launch's cache.
+        ApprovedModListFetcher.awaitSettled(FETCH_WAIT_MS);
         unverified = scanFiles();
         if (!unverified.isEmpty()) {
             if (ApprovedModList.enforceHashes()) {
@@ -136,8 +150,25 @@ public final class UnapprovedModIntegrity {
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
+        serverRunning = false;
         detected = List.of();
         unverified = List.of();
+    }
+
+    /**
+     * Re-judge the running session's files against freshly-landed relay knowledge — the second
+     * half of "never a session late": a verify answer that arrives after boot (slow relay, slow
+     * scan) still clears a taint before, or even after, the player logs in. No-op without a server.
+     */
+    public static void rejudge() {
+        if (!serverRunning) return;
+        List<String> before = unverified;
+        List<String> after = scanFiles();
+        if (!before.equals(after)) {
+            unverified = after;
+            LOGGER.info("[DungeonTrain] Mod files re-judged with fresh relay knowledge: {} -> {}",
+                before.isEmpty() ? "clean" : before, after.isEmpty() ? "clean" : after);
+        }
     }
 
     /**
@@ -148,7 +179,8 @@ public final class UnapprovedModIntegrity {
      */
     static List<String> scanFiles() {
         try {
-            return unverifiedFrom(ModFileScanner.current(SCAN_WAIT_MS), ApprovedModList.approvedHashes());
+            return unverifiedFrom(ModFileScanner.current(SCAN_WAIT_MS), ApprovedModList.approvedHashes(),
+                ApprovedModList.knownPackages());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not judge the installed mod files — assuming every file is "
                 + "verified: {}", t.toString());
@@ -160,13 +192,44 @@ public final class UnapprovedModIntegrity {
      * Pure: which installed files are NOT on the approved-hash list, as display strings (sorted).
      * Package-visible for unit tests — no live scanner needed.
      */
-    static List<String> unverifiedFrom(List<ModFileFingerprint> files, Set<String> approvedSha1s) {
+    static List<String> unverifiedFrom(List<ModFileFingerprint> files, Set<String> approvedSha1s,
+                                       Map<String, Set<String>> knownPackages) {
         List<String> found = new ArrayList<>();
         for (ModFileFingerprint f : files) {
-            if (!ApprovedModList.isFileApproved(f, approvedSha1s)) found.add(f.display());
+            if (tierOf(f, approvedSha1s, knownPackages) == Tier.SUSPECT) found.add(f.display());
         }
         found.sort(String::compareTo);
         return List.copyOf(found);
+    }
+
+    /**
+     * Pure: which tier is this file in?
+     * <ul>
+     *   <li>{@link Tier#VERIFIED} — its hash is approved.</li>
+     *   <li>{@link Tier#PLAUSIBLE} — hash unknown, but every id it declares has known packages
+     *       and the jar's packages intersect each id's — a fresh release or a GitHub build of a
+     *       mod we approve. Not Free Play.</li>
+     *   <li>{@link Tier#UNKNOWN} — hash unknown and some declared id has no package knowledge at
+     *       all. Not Free Play (the player did nothing wrong; the catalogue is behind), but the
+     *       relay queues it and the build refuses an approved id without knowledge.</li>
+     *   <li>{@link Tier#SUSPECT} — it declares no ids, or its packages share nothing with a
+     *       declared id's known set: code that is not the mod it claims to be. Free Play.</li>
+     * </ul>
+     * A resource-only mod (no classes) is known as an empty set: a jar with classes claiming it
+     * is suspect, one without is plausible.
+     */
+    static Tier tierOf(ModFileFingerprint f, Set<String> approvedSha1s, Map<String, Set<String>> knownPackages) {
+        if (ApprovedModList.isFileApproved(f, approvedSha1s)) return Tier.VERIFIED;
+        if (f.modIds().isEmpty()) return Tier.SUSPECT;
+        Set<String> jar = Set.copyOf(f.packages());
+        boolean unknown = false;
+        for (String id : f.modIds()) {
+            if (ModFileScanner.EXEMPT_IDS.contains(id)) continue;
+            Set<String> known = knownPackages.get(id);
+            if (known == null) { unknown = true; continue; }
+            if (known.isEmpty() ? !jar.isEmpty() : java.util.Collections.disjoint(jar, known)) return Tier.SUSPECT;
+        }
+        return unknown ? Tier.UNKNOWN : Tier.PLAUSIBLE;
     }
 
     /**
@@ -175,7 +238,8 @@ public final class UnapprovedModIntegrity {
      */
     public static ModFileFingerprint unverifiedFileOf(String modId) {
         ModFileFingerprint f = ModFileScanner.fileOf(modId);
-        return f != null && !ApprovedModList.isFileApproved(f, ApprovedModList.approvedHashes()) ? f : null;
+        return f != null && tierOf(f, ApprovedModList.approvedHashes(), ApprovedModList.knownPackages()) == Tier.SUSPECT
+            ? f : null;
     }
 
     /**

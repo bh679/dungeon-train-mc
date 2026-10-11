@@ -60,6 +60,37 @@ class CurseForgeFingerprintTest {
             CurseForgeFingerprint.hash("\thello\r\n world\n".getBytes()));
     }
 
+    /**
+     * The live check: with {@code CURSEFORGE_API_KEY} in the environment (the read key, see
+     * run/curseforge-api-key.txt), download Dungeon Train's three newest CurseForge files and compare
+     * our fingerprint with the one CurseForge computed. Skipped without the key, so CI stays offline;
+     * run it by hand before a release that touches the fingerprint. Verified 3/3 on 2026-10-11.
+     */
+    @Test
+    @DisplayName("Live: matches CurseForge's own fileFingerprint for Dungeon Train's published files")
+    void matchesCurseForgeLive() throws Exception {
+        String key = System.getenv("CURSEFORGE_API_KEY");
+        org.junit.jupiter.api.Assumptions.assumeTrue(key != null && !key.isBlank(), "no CURSEFORGE_API_KEY: live check skipped");
+        var http = java.net.http.HttpClient.newBuilder().followRedirects(java.net.http.HttpClient.Redirect.NORMAL).build();
+        var listReq = java.net.http.HttpRequest.newBuilder(java.net.URI.create("https://api.curseforge.com/v1/mods/1527512/files?pageSize=3"))
+            .header("x-api-key", key).header("Accept", "application/json").header("User-Agent", "dungeon-train-mc test").build();
+        var files = com.google.gson.JsonParser.parseString(http.send(listReq, java.net.http.HttpResponse.BodyHandlers.ofString()).body())
+            .getAsJsonObject().getAsJsonArray("data");
+        int checked = 0;
+        for (var e : files) {
+            var f = e.getAsJsonObject();
+            String url = f.has("downloadUrl") && !f.get("downloadUrl").isJsonNull() ? f.get("downloadUrl").getAsString()
+                : "https://www.curseforge.com/api/v1/mods/1527512/files/" + f.get("id").getAsLong() + "/download";
+            var dl = http.send(java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+                .header("User-Agent", "dungeon-train-mc test").build(), java.net.http.HttpResponse.BodyHandlers.ofByteArray());
+            assertEquals(200, dl.statusCode(), "download " + url);
+            byte[] data = dl.body();
+            assertEquals(f.get("fileFingerprint").getAsLong(), CurseForgeFingerprint.hash(data), f.get("fileName").getAsString());
+            checked++;
+        }
+        assertEquals(3, checked);
+    }
+
     @Test
     @DisplayName("The streaming form agrees with the byte-array form across buffer boundaries")
     void streamingMatches() throws Exception {

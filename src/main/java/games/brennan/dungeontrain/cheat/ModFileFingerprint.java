@@ -20,11 +20,20 @@ import java.util.List;
  * @param sha1     lowercase 40-hex SHA-1 of the file
  * @param murmur2  CurseForge fingerprint, unsigned 32-bit
  * @param modIds   lowercase mod ids the file declares, in discovery order
+ * @param packages the jar's package fingerprint — see {@link PackageFingerprint} — outer jar and
+ *                 embedded jars together, sorted, at most {@link PackageFingerprint#MAX}
  */
-public record ModFileFingerprint(String fileName, long size, String sha1, long murmur2, List<String> modIds) {
+public record ModFileFingerprint(String fileName, long size, String sha1, long murmur2, List<String> modIds,
+                                 List<String> packages) {
 
     public ModFileFingerprint {
         modIds = List.copyOf(modIds);
+        packages = packages == null ? List.of() : List.copyOf(packages);
+    }
+
+    /** The pre-package shape, for tests and callers that only have a hash. */
+    public ModFileFingerprint(String fileName, long size, String sha1, long murmur2, List<String> modIds) {
+        this(fileName, size, sha1, murmur2, modIds, List.of());
     }
 
     /** The wire form for {@code POST /approved-mods/verify}: {@code {sha1, murmur2, size, fileName, modIds}}. */
@@ -37,6 +46,9 @@ public record ModFileFingerprint(String fileName, long size, String sha1, long m
         JsonArray ids = new JsonArray();
         for (String id : modIds) ids.add(id);
         o.add("modIds", ids);
+        JsonArray pk = new JsonArray();
+        for (String p : packages) pk.add(p);
+        o.add("packages", pk);
         return o;
     }
 

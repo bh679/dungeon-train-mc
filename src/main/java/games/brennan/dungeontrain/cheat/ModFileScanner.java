@@ -189,8 +189,16 @@ public final class ModFileScanner {
         try (InputStream in = Files.newInputStream(jar)) {
             murmur2 = CurseForgeFingerprint.hash(in, normalized);
         }
+        List<String> packages;
+        try {
+            packages = PackageFingerprint.ofJar(jar);
+        } catch (Exception e) {
+            // No package knowledge is "unknown", never "suspect" — see UnapprovedModIntegrity.tierOf.
+            LOGGER.debug("[DungeonTrain] mod file scan: could not read packages of {}: {}", jar, e.toString());
+            packages = List.of();
+        }
         return new ModFileFingerprint(jar.getFileName().toString(), size,
-            HexFormat.of().formatHex(sha1.digest()), murmur2, modIds);
+            HexFormat.of().formatHex(sha1.digest()), murmur2, modIds, packages);
     }
 
     /** Test seam: forget the memoised scan. */

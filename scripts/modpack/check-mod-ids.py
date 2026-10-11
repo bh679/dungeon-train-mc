@@ -111,6 +111,8 @@ def check_presence(config):
         sha1 = entry.get("sha1")
         if not isinstance(sha1, str) or not SHA1.match(sha1):
             problems.append(f"{label}: no sha1 (run check-mod-ids.py --fill)")
+        if not isinstance(entry.get("packages"), list):
+            problems.append(f"{label}: no packages (run check-mod-ids.py --fill)")
     return problems
 
 
@@ -142,6 +144,56 @@ def download_url(entry):
     raise ValueError("no modrinth_version and no project_id/file_id to download")
 
 
+# ---- package fingerprint (twin of cheat/PackageFingerprint.java; the two must agree) ----------
+
+# Libraries mods commonly shade or that every jar on the classpath shares. A match on one of these
+# says nothing about which mod a jar is, so they never count.
+PKG_DROP = ("org.apache", "org.slf4j", "org.jetbrains", "org.intellij", "org.objectweb", "org.lwjgl", "org.joml",
+            "org.spongepowered", "org.yaml", "org.json", "org.checkerframework", "org.jspecify", "org.codehaus",
+            "com.google", "com.mojang", "com.sun", "com.electronwill", "com.fasterxml", "io.netty", "kotlin",
+            "kotlinx", "javax", "jakarta", "java", "sun", "net.minecraft", "net.neoforged", "net.minecraftforge",
+            "net.fabricmc", "scala", "groovy", "it.unimi", "cpw.mods", "mixin", "META-INF")
+# Hosting-style roots where the second segment is the host, not the author: take three segments.
+PKG_HOSTS = ("com.github", "io.github", "org.github", "dev.github", "com.gitlab", "io.gitlab")
+PKG_MAX = 64
+
+
+def package_of(entry_name):
+    """The package key for one zip entry name, or None when it does not count."""
+    if not entry_name.endswith(".class") or entry_name.startswith("META-INF/"):
+        return None
+    parts = entry_name.split("/")[:-1]
+    if len(parts) < 2:
+        return None  # default package, or a single-segment package: too generic to mean anything
+    key = ".".join(parts[:2])
+    if key in PKG_HOSTS and len(parts) >= 3:
+        key = ".".join(parts[:3])
+    if key.startswith(PKG_DROP) and any(key == d or key.startswith(d + ".") for d in PKG_DROP):
+        return None
+    if not re.match(r"^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*){1,2}$", key):
+        return None
+    return key
+
+
+def jar_packages(data, depth=0):
+    """Sorted, capped package fingerprint of a jar's bytes, embedded jars included."""
+    out = set()
+    with zipfile.ZipFile(io.BytesIO(data)) as z:
+        names = z.namelist()
+        for name in names:
+            key = package_of(name)
+            if key:
+                out.add(key)
+        if depth < 2:
+            for name in names:
+                if name.startswith("META-INF/jarjar/") and name.endswith(".jar"):
+                    try:
+                        out.update(jar_packages(z.read(name), depth + 1))
+                    except zipfile.BadZipFile:
+                        pass
+    return sorted(out)[:PKG_MAX]
+
+
 def cached_jar(entry, cache):
     key = entry.get("modrinth_version") or f"cf-{entry.get('project_id')}-{entry.get('file_id')}"
     path = cache / f"{key}.jar"
@@ -165,6 +217,11 @@ def actual_sha1(entry, cache):
     return hashlib.sha1(cached_jar(entry, cache)).hexdigest()
 
 
+def actual_packages(entry, cache):
+    """The pinned jar's package fingerprint — what the mod's code looks like (hash whitelist, tier 2)."""
+    return jar_packages(cached_jar(entry, cache))
+
+
 def verify(config, cache):
     problems = []
     for label, entry in entries(config):
@@ -181,6 +238,9 @@ def verify(config, cache):
         sha1 = actual_sha1(entry, cache)
         if entry.get("sha1") != sha1:
             problems.append(f"{label}: sha1 {entry.get('sha1')} != jar {sha1}")
+        pk = actual_packages(entry, cache)
+        if entry.get("packages") != pk:
+            problems.append(f"{label}: packages differ from the jar's ({len(entry.get('packages') or [])} vs {len(pk)})")
     return problems
 
 
@@ -192,20 +252,24 @@ def fill(config, cache):
             continue
         need_ids = not entry.get("mod_ids")
         need_sha = not entry.get("sha1")
-        if not need_ids and not need_sha:
+        need_pk = not isinstance(entry.get("packages"), list)
+        if not need_ids and not need_sha and not need_pk:
             continue
         ids = entry.get("mod_ids") if not need_ids else actual_ids(label, entry, cache)
         sha1 = entry.get("sha1") if not need_sha else actual_sha1(entry, cache)
+        packages = entry.get("packages") if not need_pk else actual_packages(entry, cache)
         rebuilt = {}
         for k, v in entry.items():
-            if k in ("mod_ids", "sha1"):
+            if k in ("mod_ids", "sha1", "packages"):
                 continue
             rebuilt[k] = v
             if k == "slug":
                 rebuilt["mod_ids"] = ids
                 rebuilt["sha1"] = sha1
+                rebuilt["packages"] = packages
         rebuilt.setdefault("mod_ids", ids)
         rebuilt.setdefault("sha1", sha1)
+        rebuilt.setdefault("packages", packages)
         entry.clear()
         entry.update(rebuilt)
         filled.append(f"{label} -> {ids if need_ids else 'ids kept'}, sha1 {sha1[:8]}…")

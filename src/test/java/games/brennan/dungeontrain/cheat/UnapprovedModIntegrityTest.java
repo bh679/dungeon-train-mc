@@ -36,23 +36,54 @@ class UnapprovedModIntegrityTest {
             APPROVED, PREFIXES, NO_REVOCATIONS, CHEATS, installed);
     }
 
-    private static ModFileFingerprint file(String name, String sha1, String... ids) {
-        return new ModFileFingerprint(name, 100, sha1, 1L, List.of(ids));
+    private static ModFileFingerprint file(String name, String sha1, List<String> packages, String... ids) {
+        return new ModFileFingerprint(name, 100, sha1, 1L, List.of(ids), packages);
+    }
+
+    private static final Map<String, Set<String>> KNOWN = Map.of(
+        "jei", Set.of("mezz.jei"),
+        "alpha", Set.of("dev.alpha"),
+        "beta", Set.of("dev.beta"),
+        "datapackmod", Set.of());
+
+    @Test
+    @DisplayName("Only a SUSPECT file is reported: the renamed cheat jar, not an honest unplaced build")
+    void onlySuspectFilesAreReported() {
+        String good = "a".repeat(40);
+        List<ModFileFingerprint> files = List.of(
+            file("jei-19.jar", good, List.of("mezz.jei"), "jei"),                          // verified by hash
+            file("jei-20-fresh.jar", "b".repeat(40), List.of("mezz.jei", "org.apache"), "jei"), // plausible: fresh release
+            file("totally-jei.jar", "c".repeat(40), List.of("net.xray"), "jei"),            // suspect: xray's code
+            file("bundle.jar", "d".repeat(40), List.of("dev.alpha"), "alpha", "beta"),      // suspect: beta's code missing
+            file("newmod.jar", "e".repeat(40), List.of("a.b"), "newmod"),                   // unknown: no knowledge
+            file("resource.jar", "f".repeat(40), List.of(), "datapackmod"));               // plausible: no classes, known []
+        assertEquals(List.of("bundle.jar (alpha, beta)", "totally-jei.jar (jei)"),
+            UnapprovedModIntegrity.unverifiedFrom(files, Set.of(good), KNOWN));
+        assertEquals(List.of(), UnapprovedModIntegrity.unverifiedFrom(List.of(), Set.of(), Map.of()),
+            "no files scanned means nothing suspect — never 'everything is fake'");
     }
 
     @Test
-    @DisplayName("A file whose SHA-1 is on the approved-file list is verified; any other is not, whatever id it claims")
-    void unverifiedFilesByHash() {
-        String good = "a".repeat(40);
-        String renamed = "b".repeat(40); // a cheat jar whose mods.toml now says "jei"
-        List<ModFileFingerprint> files = List.of(
-            file("jei-19.jar", good, "jei"),
-            file("totally-jei.jar", renamed, "jei"),
-            file("bundle.jar", "c".repeat(40), "alpha", "beta"));
-        assertEquals(List.of("bundle.jar (alpha, beta)", "totally-jei.jar (jei)"),
-            UnapprovedModIntegrity.unverifiedFrom(files, Set.of(good)));
-        assertEquals(List.of(), UnapprovedModIntegrity.unverifiedFrom(List.of(), Set.of()),
-            "no files scanned means nothing unverified — never 'everything is fake'");
+    @DisplayName("tierOf: verified > suspect (no ids / wrong code) > unknown > plausible, exempt ids ignored")
+    void tiers() {
+        Set<String> hashes = Set.of("a".repeat(40));
+        assertEquals(UnapprovedModIntegrity.Tier.VERIFIED,
+            UnapprovedModIntegrity.tierOf(file("x.jar", "a".repeat(40), List.of("net.xray"), "jei"), hashes, KNOWN),
+            "an approved hash is verified whatever the packages say");
+        assertEquals(UnapprovedModIntegrity.Tier.SUSPECT,
+            UnapprovedModIntegrity.tierOf(file("x.jar", "b".repeat(40), List.of("mezz.jei")), hashes, KNOWN), "no ids");
+        assertEquals(UnapprovedModIntegrity.Tier.SUSPECT,
+            UnapprovedModIntegrity.tierOf(file("x.jar", "b".repeat(40), List.of("net.xray"), "datapackmod"), hashes, KNOWN),
+            "classes in a jar claiming a resource-only mod");
+        assertEquals(UnapprovedModIntegrity.Tier.UNKNOWN,
+            UnapprovedModIntegrity.tierOf(file("x.jar", "b".repeat(40), List.of("mezz.jei"), "jei", "newmod"), hashes, KNOWN),
+            "one id without knowledge makes the file unknown, not suspect");
+        assertEquals(UnapprovedModIntegrity.Tier.PLAUSIBLE,
+            UnapprovedModIntegrity.tierOf(file("x.jar", "b".repeat(40), List.of("mezz.jei"), "jei", "minecraft"), hashes, KNOWN),
+            "exempt ids are skipped");
+        assertEquals(UnapprovedModIntegrity.Tier.UNKNOWN,
+            UnapprovedModIntegrity.tierOf(file("x.jar", "b".repeat(40), List.of(), "jei"), Set.of(), Map.of()),
+            "no knowledge at all is unknown");
     }
 
     @Test

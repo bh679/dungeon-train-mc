@@ -52,6 +52,10 @@ import zipfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from importlib import import_module  # noqa: E402
+_cmi = import_module("check-mod-ids")  # the package-fingerprint twin lives there (shared with --fill)
+jar_packages = _cmi.jar_packages
 GENERATED = REPO_ROOT / "build" / "generated" / "sources" / "approvedMods" / "assets" / "dungeontrain" / "cheat" / "approved_mods.json"
 OUTPUT = REPO_ROOT / "src" / "main" / "whitelist" / "approved_hashes.json"
 MODPACK_CONFIG = REPO_ROOT / "modpack" / "modpack.config.json"
@@ -192,7 +196,8 @@ def match_modrinth(mod_id, hint=None):
         if data is None or mod_id not in jar_mod_ids(data):
             continue
         sha1s = sorted({f["hashes"]["sha1"] for f in files if f.get("hashes", {}).get("sha1") and SHA1.match(f["hashes"]["sha1"])})
-        return {"platform": "modrinth", "project": pid, "slug": hit.get("slug"), "name": hit.get("title"), "sha1": sha1s}
+        return {"platform": "modrinth", "project": pid, "slug": hit.get("slug"), "name": hit.get("title"),
+                "sha1": sha1s, "packages": jar_packages(data)}
     return None
 
 
@@ -221,8 +226,27 @@ def match_curseforge(mod_id):
         if data is None or mod_id not in jar_mod_ids(data):
             continue
         sha1s = sorted({h["value"].lower() for f in files for h in (f.get("hashes") or []) if h.get("algo") == 1 and SHA1.match(str(h.get("value", "")).lower())})
-        return {"platform": "curseforge", "project": str(cid), "slug": hit.get("slug"), "name": hit.get("name"), "sha1": sha1s}
+        return {"platform": "curseforge", "project": str(cid), "slug": hit.get("slug"), "name": hit.get("name"),
+                "sha1": sha1s, "packages": jar_packages(data)}
     return None
+
+
+def merge_platforms(mr, cf):
+    """One record carrying BOTH stores' files. The CurseForge app installs CurseForge's upload,
+    which is often but not always byte-identical to Modrinth's, so a mod matched on Modrinth still
+    gets its CurseForge hashes (and vice versa). Packages come from whichever jar was read."""
+    if not mr and not cf:
+        return None
+    if not mr or not cf:
+        return mr or cf
+    rec = dict(mr)
+    rec["sha1"] = sorted(set(mr["sha1"]) | set(cf["sha1"]))
+    rec["packages"] = sorted(set(mr.get("packages", [])) | set(cf.get("packages", [])))[:PKG_MAX]
+    rec["curseforge"] = {"project": cf["project"], "slug": cf["slug"]}
+    return rec
+
+
+PKG_MAX = 64
 
 
 # ---- the whitelist ---------------------------------------------------------------------------
@@ -237,16 +261,23 @@ def approved_ids():
     return sorted(set(i for i in ids if i not in SKIP_IDS and not i.startswith(SKIP_PREFIXES)))
 
 
-def pinned_ids():
-    """Ids whose file the modpack already pins (hash comes from modpack.config.json)."""
+def pinned_ids(packages=False):
+    """Ids whose file the modpack already pins (hash — or, with packages=True, package fingerprint —
+    comes from modpack.config.json)."""
     if not MODPACK_CONFIG.exists():
         return set()
     cfg = json.loads(MODPACK_CONFIG.read_text(encoding="utf-8"))
     out = set()
     for entry in [cfg.get("sable", {})] + cfg.get("optional_mods", []):
-        if entry.get("sha1"):
+        if (isinstance(entry.get("packages"), list) if packages else entry.get("sha1")):
             out.update(i.lower() for i in entry.get("mod_ids", []))
     return out
+
+
+# Ids embedded in Dungeon Train's own jar get their package knowledge from the jarJar jars at
+# build time (gradle/approved-mods.gradle), so --check does not call them blind.
+EMBEDDED_IDS_HINT = {"keeptrim", "dungeonbackup", "sable_fence_trapdoor_fix", "streamdetect", "dpibypassdetect",
+                     "pigmanvillagers", "lostcityterrainfit", "discordpresence", "ediblebackpacks"}
 
 
 def load_output():
@@ -277,6 +308,12 @@ def check():
         for m in missing:
             print(f"  - {m}", file=sys.stderr)
         return 1
+    # Package knowledge is what keeps an honest player out of Free Play when a hash is unknown, so
+    # an approved id with none anywhere (pulled, pinned, or embedded in our jar) is a release risk.
+    known = {k for k, v in doc.get("byMod", {}).items() if isinstance(v.get("packages"), list)} | pinned_ids(packages=True)
+    blind = sorted(i for i in ids if i not in known and i not in EMBEDDED_IDS_HINT)
+    if blind:
+        print("WARN: approved ids with no package knowledge (unknown-tier until pulled or pinned): " + ", ".join(blind), file=sys.stderr)
     n = sum(len(v.get("sha1", [])) for v in doc.get("byMod", {}).values())
     print(f"OK: {len(doc.get('byMod', {}))} approved ids carry {n} file hashes; {len(doc.get('unmatched', []))} unmatched (id-only).")
     return 0
@@ -306,7 +343,7 @@ def main(argv=None):
           + ("" if cf_headers() else " (no CURSEFORGE_API_KEY: Modrinth only)"))
     for n, mod_id in enumerate(todo, 1):
         try:
-            rec = match_modrinth(mod_id, slugs.get(mod_id)) or match_curseforge(mod_id)
+            rec = merge_platforms(match_modrinth(mod_id, slugs.get(mod_id)), match_curseforge(mod_id))
         except Exception as e:
             print(f"  ! {mod_id}: {e}", file=sys.stderr)
             rec = None

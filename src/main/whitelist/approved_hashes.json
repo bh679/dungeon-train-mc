@@ -71,6 +71,9 @@
       "name": "Advancement Plaques",
       "sha1": [
         "829d33e71b30e9158d772f5963bb6020f6026d78"
+      ],
+      "packages": [
+        "com.anthonyhilyard"
       ]
     },
     "adventureitemnames": {
@@ -138,6 +141,71 @@
         "e65ff1cf4cd1b1e20a932c1598ca8cc70e1f1f1b",
         "f202a08f6c58302388cdfb1c92ccd91e8f78ac75",
         "faaf00fe551977fb4fbb7f24bfb56871025fd8d9"
+      ],
+      "packages": [
+        "games.brennan"
+      ]
+    },
+    "alltheleaks": {
+      "platform": "curseforge",
+      "project": "1091339",
+      "slug": "alltheleaks",
+      "name": "AllTheLeaks (Memory Leak Fix)",
+      "sha1": [
+        "00bf99e3a09204a555dc219a9648423c93f529d4",
+        "0b99c3241468036022f54888ea00d4d35ed5bd3e",
+        "0d2d688910603688f19486f95003cc8f8e420552",
+        "1621f1bff2b96f8a20c6085ce1af52f7044f8f36",
+        "1e3078c9826f16b8b4f69f60bbe7097ec4fd5a68",
+        "256e23955c5f12ee112b535027d8ac4957fda686",
+        "26fa2800a24c0bb39835dce15961d5be508c1092",
+        "29c80d93f5ab0f7196b707802f4eee6b3d5b2c39",
+        "2bf6a4b2a11d12c3e0d55b0f99f08c71a77207f9",
+        "2e9d1bc9bb9801af070f59a808db232c2a6526dd",
+        "2ea478d2cf372018c290b34ba80a7fb0bf28455b",
+        "30f86c5a08c60515361c5ad1f8c752d7167f1cbe",
+        "31ec5abc2fe556ee3b12e883d3826853fbe152e0",
+        "43bad02e2a15a13f39ef43856e7668619294d8ed",
+        "450a5f7dccbbe73315d92c30a8be9225ba6ab5c3",
+        "469cdd30089421f4f25b4b283faee0956e7740ea",
+        "48e3445a905a8a609a36b4e403a007abd52d45cf",
+        "4a434fa917a3a138b86a8339051705c8dd14bb11",
+        "5174dd06e89d2befb68f0c5009215fe15b4b7d84",
+        "5ab90723241e6225add16a479e8b8311a8a5fec1",
+        "6fe732eb211e1fe1c5044358e1f40b7b598761ce",
+        "740367eb153c7445c35791d60f0b60eef8255aed",
+        "758e70845c30ee4ee3fb0371ad188ef3c0cfd0b8",
+        "76a7be888d7e845098a409c399909d53bfc83382",
+        "800386d4cbd6f12ee39644811959f8bb3500bed3",
+        "81755b7a9a97cc19f66a17c0655c78bb5e473157",
+        "829677dcaf8cc04d144f04d47965daad2148a4ad",
+        "84aa0291eccb1c6bed1fdb0a4bc65c28ef0d9080",
+        "968e919c7e4d1fda73121cafeb1f295599168f5b",
+        "96caf3b5c380482cbeb0e6fef011b0efe8365c9b",
+        "975237f5670e4f9e0356418d85cf4cf8662cc142",
+        "9dae91bb4caddbe184591929d0b3fd568eea97f0",
+        "a36da3b274d7612f3696788434cb5a717e065d70",
+        "a54d71e3354c6d67b91040a29e7a86cf0046a409",
+        "a5c15fbe50c0fc1f5d0d40d008d7981289405484",
+        "a657db0e67c53ba9968b94985a9f4c4f81c66f51",
+        "a690843bdf51692867377d1747296f1f52fcade8",
+        "b33fc1e5cb8c22b968fa762bf7c788b5f9b22c9a",
+        "b7eac268c126cd69a9633ff8d7afcf70eb7d5b4f",
+        "b9036cc5de9348af437b6a4c17f8212e4c94ed8f",
+        "cd7ffbc4289495fdf52e5d66c176aadc349f73d5",
+        "d15dc8adeec516040180b78c6a8ef91c439602b4",
+        "d69b9e98e957418ca0ab768b79983e68ffbfcd49",
+        "ea11d23e0f8c48544a269dc7c56f6593cb1cafe2",
+        "f389b0913b9b6e5c019a1fe71a307d6b3efc8fe0",
+        "f91b11a1cfa718b9291fbe7b80356f17a572577e",
+        "f94d617b2e887e4bee6f54377c0a931bae823032",
+        "fccfbe6fea0b42cac6d53f638c8dd26885e830e9",
+        "ff1e239445d4cb301a58be5c96e9f6a354cd9b87",
+        "ff7021a85ba2859e44c5dbfad35647b071b5d4dc"
+      ],
+      "packages": [
+        "com.bawnorton",
+        "dev.uncandango"
       ]
     },
     "ambientsounds": {
@@ -146,17 +214,21 @@
       "slug": "ambientsounds",
       "name": "AmbientSounds",
       "sha1": [
+        "023db8937233fe793044b576af410a3f307a73b4",
         "05d179a8ed9cb493b83b72fe8c1cb953126337ea",
         "10a17691bcdf38860b5a7cf2c32021491b57b148",
         "10e4fbb2da01933b226be9859898d24418c10ff7",
         "18c4dcab6a23f267303c8e28b03dc38c5fc3f3ee",
         "1eb9b04957160dce3b0240c55d8c27cc3dc3fc26",
+        "26fefc1e78af65380572e42f603c5f26783f88e9",
+        "2e86e5a752389d6b04d6494607ca9f071e3e12bf",
         "3c7ce40637267e4ec3864713c62e1f76240aed53",
         "3d88e0e8d987706edf645b2e1617612d3e666358",
         "3e2f5987af11eb86ee6349a488d82a7b3d2bee4d",
         "41a972c109742e9ecf75d24e6ca53dc81da6b3d3",
         "49a494c0e4039d1c47417a485ef4a5175ca56e2c",
         "5198a9f9582823bb9c543636e1cde1445d15ec04",
+        "539af2d1e7a921c7c3d72fc609f814df6c7c6b66",
         "5b1bc36fc8e2a2e4f8df3f9dbb167e2b1275e194",
         "5b87943eae44057bc2f276e4d7024bf1ff29db2d",
         "5c8ab84431bccf3945e778783ebbcf0c701e3a0b",
@@ -166,10 +238,13 @@
         "6b636e22b4092906860e41c954910ee3926b1c75",
         "6dddb4da4b8bd82f3ec3ba147faac08c4affccea",
         "70c2bbd4906c919a8c6613d742ed41b761760a3d",
+        "719823336fcac107f8c928141e39b645346d7092",
+        "77e42798bb92c3aa2b17c16a04029c44ea6df2e2",
         "7947e759d7cff5768e2e0b0b26ea5fbc4b59cc84",
         "79fc70c269af67ae79eddd5d8363f50e8d4af4ec",
         "8205f3330831bbcb0a6233d2fc6b09f3b8ce56f5",
         "8a07e2f4fe44cd1560c254250412b12967c1ada6",
+        "939878240a05f4d7c132d0fda78d3c44dc7a431a",
         "9c37775f875322643a8da189a0927d48403e97d9",
         "9c77832cb614dbaf4ce03c7d7be3c00ded39deaa",
         "9f42a0237e94d549771161c9cea2ec827709e72f",
@@ -190,11 +265,19 @@
         "d98c1c4b7b8bc88b610ee94b54ef5e395438a532",
         "e33cafa5922fc0995c36a104e4a49d1259d5019a",
         "e6a80d613c0209db3427bed414a74035e96df9ff",
+        "eb25fe9bee51c5db8b7f03e0c2c7d4758def77fc",
         "ee343473e60f00261c1c6669038a57e834a7aa78",
         "f0402962605ee0f4673b6e546214b64cfb3a723e",
         "f2c0ba1476a1819727c6118b126cb242aacf7492",
         "feb8d64970cb95097129c24366dbb1d486fb88a4"
-      ]
+      ],
+      "packages": [
+        "team.creative"
+      ],
+      "curseforge": {
+        "project": "254284",
+        "slug": "ambientsounds"
+      }
     },
     "apollib": {
       "platform": "modrinth",
@@ -214,6 +297,10 @@
         "e4180e3031d4c12c3f81f20d8c1e10a8bae0c3b5",
         "eb2c7ad3fa6f669cf1a40a6243a1fe6780fe0e4b",
         "f6e8898937de2ff692ca2a59bad3c61678dbb597"
+      ],
+      "packages": [
+        "de.marhali",
+        "dev.worldgen"
       ]
     },
     "appleskin": {
@@ -226,7 +313,14 @@
         "32be58815905e472016b6413175a27e6cbf05b90",
         "81cf0e668f991f83ac8820c386fbd6c9c3602246",
         "8f76d97a7f61f8d61db6d84a83baf29a3bb56330"
-      ]
+      ],
+      "packages": [
+        "squeek.appleskin"
+      ],
+      "curseforge": {
+        "project": "248787",
+        "slug": "appleskin"
+      }
     },
     "architectury": {
       "platform": "modrinth",
@@ -237,6 +331,9 @@
         "008656a0702801174b8ec245ed7aad1921d6e9f1",
         "6ca11d3cc136bf69bb8f4d56982481eb85b5100b",
         "e8716c02a9221cf567d46cdb7d43885bb7e80860"
+      ],
+      "packages": [
+        "dev.architectury"
       ]
     },
     "badoptimizations": {
@@ -254,7 +351,17 @@
         "888488898628016d421bc6b4fe2ae998aba2b522",
         "a50dbf3cd82821e92a6db81fa893d9373c3b5447",
         "c841c531363595d039f5821a92d074ab9c5d3da2"
-      ]
+      ],
+      "packages": [
+        "fabric.architectury_inject_BadOptimizations_common_eb5c47e6319548229146508c5f408a97_af96b778c42ab1a2a1d9c0959e02c73664b70db6fbff3d4c9d8801593c52c234BadOptimizationscommon241devjar",
+        "fabric.me",
+        "forge.architectury_inject_BadOptimizations_common_eb5c47e6319548229146508c5f408a97_af96b778c42ab1a2a1d9c0959e02c73664b70db6fbff3d4c9d8801593c52c234BadOptimizationscommon241devjar",
+        "forge.me"
+      ],
+      "curseforge": {
+        "project": "949555",
+        "slug": "badoptimizations"
+      }
     },
     "balm": {
       "platform": "modrinth",
@@ -262,41 +369,76 @@
       "slug": "balm",
       "name": "Balm",
       "sha1": [
+        "02033033329f11c74afaa7c20345b0ee9c3eacd4",
         "02aac0a0941cf33ac2f7fff1214cd61400b70f64",
+        "02b3c589ccc4588333dd1d2c2fd2f19a5572cb0c",
         "04ddb17c26422228538b0cd23c6cc42bb49f740c",
         "07409cbf0aba9ffc6db1dbfbd2455f6a6ef6f167",
         "0a134aee7ca0a43a5396923e849ff84ec34f7efd",
         "0cc472bda87c9a9f61441916c38127eab6245909",
         "101adf6dcd48327249da5ccc64ad718bfe080ef0",
+        "15648921510789d4cb3308ef46f6b8770323e3a8",
         "1811a33d470a3a0a863ea454cce1311a2d2097d2",
+        "1d9ba232990ca6235df7fca9e6131fc985c97915",
+        "2170074df4005160c4b57bdb22908dc0564c4afa",
         "21c5a69d59d1dde948426a6bb8afe93640f22694",
+        "288003dfab9ef7d4aa600c9325cb64ce861c3d4d",
         "29f25043857009fde6c4a2953c081a53f7e81ccf",
         "30decabca584877b5c0ccc48a9a5cb89951df90b",
         "3290e328f7527cf9d985d50ce0ef5c5c89921bd2",
         "3403732c8e2b0f2146454de7b61adf5cca990df7",
         "386186cee3bbc72196bd59931276dffb2a781bfb",
+        "38ffb63702e662910580c0bf33587290551da08c",
+        "3d329366d5347c202f108d9702004b0e69f54d3f",
+        "424252de3bfe6b678896bb6036a1667971026600",
         "471e60cbd2ce9753315e763772a8c55fccf843b8",
+        "47b2a575be4ddcb386819eb1873ed955336ef6da",
         "47b6dbe51693d5a2b3eac15c6322f357de365f15",
         "4836185d2a101428c0053a4f17c476972b3d00f5",
         "4a38f72acfdbbbb822391a76ddc5e93a867b1089",
         "4adbae79ac4efcb2de5dcd79bdb4488c2df598aa",
+        "4b45fd0daabbce944667c87612d2aa6d893d9f6c",
+        "4ffa5f0e776435383866eb747af81e894aef12fa",
+        "52915d422730fac50641489c15b0caf8156d8885",
         "544405778814b5290b04c360159c5bb6ca15bb94",
+        "5868aec699239168996eee4217fbfb9f859dc7e3",
         "5960afe09ee882d88a19e0e5bf8cfea4c2df4e95",
+        "5bf648526ed519d254e02a60604a521ccb8d2cd1",
+        "5cb186967fa8eebd0baec3df61e2326bbdd3bf55",
         "635e706136bb228e6a72d41d86dec495f812ccb5",
+        "671cfac6e2254fea586df88dbc2907aa0bc03534",
         "686d6550c4629a9113d076cdb97072c56c4b1d96",
         "69e0b3b69dd23c132e85b7e82310f45ae96b263d",
+        "6b39bef0d2d2539f340146e871e80907080c2d66",
+        "6e7fd4cdb56e0eb673740efc6fc6f8b58ee513e5",
         "7179cd0f53226735608d5f605babd5cfa15e5502",
+        "7d05cda04931d6737afdd0bb19f9711e2c587f1a",
+        "85f594772a76414ff79da7a88d0c037ee18d2a94",
         "8749b81dabde19268f4b8ed1097581615421393f",
+        "8dadbffaaeec2177c8a24fca668ea871c5ef22c1",
         "8eb94a0d803a5b980bfe2d08a2ddd6e73a4c32d7",
         "8ecc2f016baa409c90b2bf488d4529f6a3d7dc91",
         "935338985f1e51628b02c55c4174ccef1b469c09",
+        "9536ae04f523fcb191ad1056988661bb8900ea7b",
+        "961d9a661f13a6bcdf8ba7110152dcf8ad6802f0",
         "9c752e8dd8040eba09916da9317c5f17854c1268",
         "9fc581c0290ce88b8cc5f24278bcca2462582b3c",
         "a32f1a931d87bc15d83df4b7d132faf23b2587e6",
+        "a6b7bdeed737b86ee9751bf3e8ff27254104480c",
         "a6dff75214ade7e268a490a91aec2945c17f7eaa",
+        "a6ed48bf81f87cd89a5c6c2922345bdc3f679f07",
+        "a8467c9e97722b0d2602082785e8e890da54c7b4",
+        "a904b6244c647ffd2d852a5f9c5ab5b12e0a8893",
         "a9e83086150b465624274155655de0d73879542c",
         "ac118e4185211ff8609f31c9addc0a7d770259d7",
         "b038be4909937f9427a27b55c25858608394cb20",
+        "b0aa2e66cb09507bafce2fdfc186a4e1613bf6c4",
+        "b0bf4bed336237bfbe35879c33f30357b53e8664",
+        "b27703f3b98e4130482f26351f9fa4c8c353f4b3",
+        "b5d32c9f7529ed74ac90b29513fffcbc2f337a39",
+        "b5fc1ff15ad9445f0583f4f1fcc33a091b75abb0",
+        "b9b14a27f9fdb64cfc9475f1f5d477cc8a849491",
+        "c1c1d4859c7943c7d1c181c07fa7273a1d56df15",
         "c8d521e8375a5bbbdb120f98754f29191e831b68",
         "ca14c1610f21857c8243ddb3dd123c302b0f4f84",
         "cc09386f985a2f854418a6bb56ed9e958a464edd",
@@ -304,13 +446,27 @@
         "ceadd9513dce387880c46ada83b1de98bf0be4d0",
         "cff23de48199bb975e9cc8c5a2ca198fa586716e",
         "d3d458e2c22a4dce39e1f04598fb6fb6b3819f5d",
+        "d452e71d4ff81a047f6e22f9a3ddb3c72632751e",
+        "d643b35a615da26151692d8aafe0963a0f42d7ba",
+        "d68f345cbe4aef33a4b8f19fb5b749225831ad0f",
+        "d747b7751c191bf3227c12b6b6464397390588ca",
         "db544a4fb95f7847cd4b1de9479c39cfa31fd529",
+        "db842023f51431cbfd7cb511e795621def159fd7",
         "dd3606a349f4a3c8fb5bd0ab22905675c02b0d74",
+        "dd720dad9a416e07dce1ef5e6a6ba0e29b5ac211",
         "e64db1af56d8e64f4c9c905bb036d5110c3dc68b",
         "f0b85246a422373cc724affeaedbe2c08e88d67f",
         "f5bc51cdc072c58c9e1d39574535ac76c5793ab0",
-        "f6a16626890644544c1f6d345f6df9bba808ea52"
-      ]
+        "f6a16626890644544c1f6d345f6df9bba808ea52",
+        "f7ed2be5f60c85cfce66c853e3baeb10d93d7e23"
+      ],
+      "packages": [
+        "net.blay09"
+      ],
+      "curseforge": {
+        "project": "531761",
+        "slug": "balm"
+      }
     },
     "bclib": {
       "platform": "modrinth",
@@ -331,7 +487,15 @@
         "bd446e5a28c887334ccb473d0984c07f784d938c",
         "c221c0e74ff4b7fc2c6c4e527536413966f7d8e0",
         "ddeb239d00fe5ece6352778726e4f599c7f20b49"
-      ]
+      ],
+      "packages": [
+        "com.llamalad7",
+        "org.betterx"
+      ],
+      "curseforge": {
+        "project": "1422283",
+        "slug": "bclib-neoforge"
+      }
     },
     "betteradvancedtooltips": {
       "platform": "modrinth",
@@ -340,6 +504,9 @@
       "name": "Better Advanced Tooltips",
       "sha1": [
         "5b73537b908764f2d3fd593a0f56a8b1b034bc50"
+      ],
+      "packages": [
+        "dev.latvian"
       ]
     },
     "betteradvancements": {
@@ -351,6 +518,10 @@
         "35a5d27a977e2dbf14820f228f84d4e5fef03f05",
         "870521cfaa1a4cb6c830e2409e8b9e4cf179aff2",
         "c9ffd189dddb54d55ea44aaab1aa4222913387b2"
+      ],
+      "packages": [
+        "betteradvancements.common",
+        "betteradvancements.neoforge"
       ]
     },
     "betterend": {
@@ -383,6 +554,9 @@
         "da3eaa50912eff9ab897f897136bb3da1de7f9e9",
         "eda9121dbe09e8c72a50e1b0753110011c84bcc3",
         "f715d81892313da8b524e6d4fa1d6a4a4feb6bf1"
+      ],
+      "packages": [
+        "org.betterx"
       ]
     },
     "betterf3": {
@@ -394,7 +568,15 @@
         "06c9335754a37caa29223c200958e3333c68d2c1",
         "8fa17df26d3650416bc124be7a264bc1566a3b26",
         "fef098144c7714eb5187e5e313b4aa3168fe2b31"
-      ]
+      ],
+      "packages": [
+        "me.cominixo",
+        "me.treyruffy"
+      ],
+      "curseforge": {
+        "project": "401648",
+        "slug": "betterf3"
+      }
     },
     "betternether": {
       "platform": "modrinth",
@@ -418,7 +600,14 @@
         "e2565e79519f2f8f7688ec3a81fd1f060426dfb5",
         "e73aa16930ae447a0fa004d8b209e1fdef27e8dc",
         "f263645e8b7754fc53855b30435fbc23c2fa9953"
-      ]
+      ],
+      "packages": [
+        "org.betterx"
+      ],
+      "curseforge": {
+        "project": "1422293",
+        "slug": "betternether-neoforge"
+      }
     },
     "big_lost_city": {
       "platform": "modrinth",
@@ -428,7 +617,8 @@
       "sha1": [
         "c742f011c995c681b3497312d77a50a287fa49f0",
         "e2ccb390164f32b13bd595363aa1bbccef62bc68"
-      ]
+      ],
+      "packages": []
     },
     "biolith": {
       "platform": "modrinth",
@@ -456,7 +646,14 @@
         "e04f50b55f1a917956a038c10066118264e4e170",
         "e63aad42216b6a35023b7c93a8da154d84c07c7b",
         "f59e6729f238b706c56992d4e0cdd073eeddf1b5"
-      ]
+      ],
+      "packages": [
+        "com.terraformersmc"
+      ],
+      "curseforge": {
+        "project": "852512",
+        "slug": "biolith"
+      }
     },
     "biomesoplenty": {
       "platform": "modrinth",
@@ -475,6 +672,21 @@
         "a2f6bc9e51f3f8b51413ca59763124ea9ad6566a",
         "cbf12deb29a50a50a2d66f4ee2cc4e98aed8ffde",
         "e277fba0c94fea3c3f58d23bfa53d2eb457555f6"
+      ],
+      "packages": [
+        "biomesoplenty.api",
+        "biomesoplenty.biome",
+        "biomesoplenty.block",
+        "biomesoplenty.client",
+        "biomesoplenty.config",
+        "biomesoplenty.core",
+        "biomesoplenty.entity",
+        "biomesoplenty.init",
+        "biomesoplenty.item",
+        "biomesoplenty.neoforge",
+        "biomesoplenty.particle",
+        "biomesoplenty.util",
+        "biomesoplenty.worldgen"
       ]
     },
     "bookshelf": {
@@ -549,6 +761,9 @@
         "f50449cd485265a8d961e1d3593335bf51c87492",
         "f694982b08ef05561ee7f0a9d6c795d24ad737c0",
         "f6cc9fad16b2851e66827970612aa4da9e970cc1"
+      ],
+      "packages": [
+        "net.darkhax"
       ]
     },
     "cameraoverhaul": {
@@ -566,7 +781,14 @@
         "ae47f61145977d6d753164e454b4cbcd8b104552",
         "bffa09a609a1c59efe976e00e8c83dd484fc7ba8",
         "e67cdb834cf3c2f6855d435b0b65412b9476c7b5"
-      ]
+      ],
+      "packages": [
+        "mirsario.cameraoverhaul"
+      ],
+      "curseforge": {
+        "project": "423602",
+        "slug": "cameraoverhaul"
+      }
     },
     "cirrus": {
       "platform": "modrinth",
@@ -583,7 +805,14 @@
         "ea46e001552c6a6f9f16575bef8c5bc360ba5f5e",
         "ed267ec1b565f5ec549c4d408970287e732c6143",
         "f8417102e51aee8149a2c1f24d44642837aeecdc"
-      ]
+      ],
+      "packages": [
+        "com.jvn"
+      ],
+      "curseforge": {
+        "project": "1572354",
+        "slug": "cirrus"
+      }
     },
     "cloth_config": {
       "platform": "modrinth",
@@ -593,6 +822,9 @@
       "sha1": [
         "4ff6b51cfb5c6cac437b18067d991a0f5f8743a7",
         "c3e5733ba4503b102589a026000fd5ce0212f6f2"
+      ],
+      "packages": [
+        "me.shedaniel"
       ]
     },
     "clumps": {
@@ -602,7 +834,14 @@
       "name": "Clumps",
       "sha1": [
         "fa2576297c7bd12b28aa7070e8141792bd66da4c"
-      ]
+      ],
+      "packages": [
+        "com.blamejared"
+      ],
+      "curseforge": {
+        "project": "256717",
+        "slug": "clumps"
+      }
     },
     "collective": {
       "platform": "modrinth",
@@ -651,7 +890,14 @@
         "f32e8ccf56cbd8f9f64f265364fd3d255489d2e9",
         "f3f8b8baf461ea8e8664cf1f8fe6593f8073f36d",
         "fe964e0cdfb574f9fbd81ac5bdd8780ee8275a21"
-      ]
+      ],
+      "packages": [
+        "com.natamus"
+      ],
+      "curseforge": {
+        "project": "342584",
+        "slug": "collective"
+      }
     },
     "connector": {
       "platform": "modrinth",
@@ -675,6 +921,11 @@
         "ed56f01129252a7e70600950ed1101c74cd323db",
         "f4f0902ec24590c4ef123514be527204d67ec60d",
         "f874627f9b3f8c33c8ef7f904a0084742aad48e5"
+      ],
+      "packages": [
+        "org.sinytra",
+        "reloc.net",
+        "reloc.org"
       ]
     },
     "continuity": {
@@ -684,8 +935,22 @@
       "name": "Continuity",
       "sha1": [
         "0aecd2d043ac25299254623fafdd9129ab2ba9c2",
-        "4f01919047fb5eea8bb79881a24cc41172196b5e"
-      ]
+        "11b72fef85ac37575cfec0674259f92ec82658b5",
+        "4cb2f1b9318fe72207eef6fa88638478fb5499e0",
+        "4f01919047fb5eea8bb79881a24cc41172196b5e",
+        "5dd645d502b815a26079d444bd793d545829ff4d",
+        "6114233ae186a2e4b5c73e8b600796ccf53f1213",
+        "6d8db6f8ee86a24f90e8f740866e4c28ea68dd68",
+        "9c0c31c5e8108f5d89389687ec07d5241fc8352e",
+        "e4116690bf8325862d41d371d1fb5587151913bb"
+      ],
+      "packages": [
+        "me.pepperbell"
+      ],
+      "curseforge": {
+        "project": "1679396",
+        "slug": "continuity-neoforged"
+      }
     },
     "controlling": {
       "platform": "modrinth",
@@ -698,6 +963,9 @@
         "8f95ead9e42ea4cd1fc6b4ca9e922df5398b8a5c",
         "99edb1b4e4f611c7e48dbca8ee90de66628606e7",
         "b13d7cb3b7f9f294dcc1756be42100fdbd7bfd78"
+      ],
+      "packages": [
+        "com.blamejared"
       ]
     },
     "corgilib": {
@@ -712,10 +980,19 @@
         "79e3685a27a93dbc3f8becece4bfb68b3f70c3d1",
         "8ec98ba3c1397dcfc46b55d1e41c395c952f1934",
         "9a2a250ff7d607a2631e8b35cb3c44b40c0c5fe6",
+        "a72aff17cf0474238017bec0cac0805712819f05",
         "a84b16272a6cd1b3fec0ff0e2ffdd05cf92dc02a",
         "ce80cad3d6b2dc21c802c5a24025bc1f04eae278",
         "e276e8d195bf605d2b92087e268e4c03e402cefb"
-      ]
+      ],
+      "packages": [
+        "corgitaco.corgilib",
+        "dev.corgitaco"
+      ],
+      "curseforge": {
+        "project": "693313",
+        "slug": "corgilib"
+      }
     },
     "coroutil": {
       "platform": "modrinth",
@@ -723,8 +1000,17 @@
       "slug": "coroutil",
       "name": "CoroUtil",
       "sha1": [
+        "0f5a6309ce8394721b97740e6f3e45665f13b8de",
+        "2a88946bc344e0daad83c862a4c380e1ce084758",
         "b044c51d00d60b5645a0c0890812935cd933555f"
-      ]
+      ],
+      "packages": [
+        "com.corosus"
+      ],
+      "curseforge": {
+        "project": "237749",
+        "slug": "coroutil"
+      }
     },
     "crash_assistant": {
       "platform": "modrinth",
@@ -846,6 +1132,14 @@
         "fac7edb48e94ab46839dc810d4347c58f43652ec",
         "fea9f9f531210d9d8d7a5d8ea0c3600c677637af",
         "fee7352373b8dcf2ec6c73eb96d83afec578ef66"
+      ],
+      "packages": [
+        "com.formdev",
+        "crash_assistant_relocated_libs.jexl3",
+        "crash_assistant_relocated_libs.logging",
+        "crash_assistant_relocated_libs.nightconfig",
+        "dev.kostromdan",
+        "org.quiltmc"
       ]
     },
     "creativecore": {
@@ -994,7 +1288,14 @@
         "f984a9e749ae6d527d50b2c9999c285cc4f36e1e",
         "fb2092178940b710dd29acf656fc9d4f1f85dee0",
         "fed3a1627aab8d8b2588e607a9678601e1eaf356"
-      ]
+      ],
+      "packages": [
+        "team.creative"
+      ],
+      "curseforge": {
+        "project": "257814",
+        "slug": "creativecore"
+      }
     },
     "cristellib": {
       "platform": "modrinth",
@@ -1011,6 +1312,9 @@
         "d250804b7ecea365bc736ec36ec6fc3f933917f1",
         "d8a165d5826209cb4802aa60fb050bf9fdcb67df",
         "e35d8fd602ed89228e7cf9ef2ff47da7a37833de"
+      ],
+      "packages": [
+        "de.cristelknight"
       ]
     },
     "cucumber": {
@@ -1036,6 +1340,34 @@
         "e0a7ca2c875067bf540d7e6b4f4f9b085422ef64",
         "e286e4037971107bc3f591318172041bbd21fdd0",
         "e2928961f305d0a48e43a03b0a668ee123270f69"
+      ],
+      "packages": [
+        "com.blakebr0"
+      ],
+      "curseforge": {
+        "project": "272335",
+        "slug": "cucumber"
+      }
+    },
+    "cupboard": {
+      "platform": "curseforge",
+      "project": "326652",
+      "slug": "cupboard",
+      "name": "Cupboard",
+      "sha1": [
+        "0bf6b1ce728a9eca74127371d453e57c61f8eba5",
+        "13b3bc42d2514f53acea0c52c91e7800a297f408",
+        "39952f4de65df780cf68ab0fd2f3d44a53d855f2",
+        "39df849e5a338dfe9ccb7632b1849c20357e597b",
+        "428c992f2c01bb84f3da14db244728695117b0a0",
+        "458d1feda02900ac5e1e1220e6e34cbab61f1e75",
+        "6c2d786a161f49470dad92b2edaefdac38a1e79b",
+        "8f6eb497f60fb6a2cf2b276113d33e61b9a5c2a5",
+        "c9632e29158447d514663f230a734bed1aec0068",
+        "e5f55c8f9d172048fe6f8b919cda1dbe3cbfbc70"
+      ],
+      "packages": [
+        "com.cupboard"
       ]
     },
     "curios": {
@@ -1074,6 +1406,9 @@
         "e4d9d8de0582d77407842ef89f9c64e109d0b934",
         "e54b8127bc80f4e6f7a59e05a8be9db284542c7a",
         "f02930d4cc03586b101479b06f422cbb4702cca6"
+      ],
+      "packages": [
+        "top.theillusivec4"
       ]
     },
     "cuttingdelight": {
@@ -1093,6 +1428,9 @@
         "d5c36f59d87abf9e515b65552173a3379365b8fe",
         "dad8d75521fe850ade39fd16d43b4b216995e135",
         "e2c98dbc6dae230b6451804678bec4802493fb86"
+      ],
+      "packages": [
+        "dev.jaronline"
       ]
     },
     "distanthorizons": {
@@ -1128,6 +1466,17 @@
         "e8b9df7959aaa08a2926c9bdce5725a90e1c6d50",
         "ecca5d56243ac5996a9dcbd1ceb56ed7fecac98f",
         "ed4dcd8363226bcaf7cbad9233e41d8e61805c50"
+      ],
+      "packages": [
+        "DistantHorizons.libraries",
+        "com.seibel",
+        "dh_sqlite.core",
+        "dh_sqlite.date",
+        "dh_sqlite.javax",
+        "dh_sqlite.jdbc3",
+        "dh_sqlite.jdbc4",
+        "dh_sqlite.util",
+        "dhcomgithubluben.zstd"
       ]
     },
     "drippyloadingscreen": {
@@ -1149,6 +1498,9 @@
         "d2f85712bdcf7ae87e3cb56a11d46ab83a81a38e",
         "d54a81ceeb1df321dbb0cbc22fc8c9fa96f9be55",
         "f4df2f32a5e90e5cb9ead793dff0b61c9d74a501"
+      ],
+      "packages": [
+        "de.keksuccino"
       ]
     },
     "durabilitytooltip": {
@@ -1160,6 +1512,9 @@
         "27015a66698570f06e5fa164433e4d80e7506ac7",
         "2a2f3ad2815d9d394aeb17709e4bc3f4468a4284",
         "59a567402d894b46d6abe45831f39dcad5c93342"
+      ],
+      "packages": [
+        "com.supermartijn642"
       ]
     },
     "dynamic_fps": {
@@ -1196,6 +1551,10 @@
         "d005752e4a196c2e27f1ed0283de15b04ec67744",
         "deb3492ae62299b0fd2a07c39e672b4cb439c6d0",
         "f32328e76e99c0bf4f83d92028618500a2efd3e9"
+      ],
+      "packages": [
+        "dynamic_fps.impl",
+        "net.lostluma"
       ]
     },
     "dynamiccrosshair": {
@@ -1220,6 +1579,9 @@
         "eb21eeaae80fcb065e89a686909e0a70c16c207e",
         "f59255b83e625339fa8c53ba2d47a2e197e67a2d",
         "fc3f0fccd2f320fac561378406fffc0b0fcd4ae2"
+      ],
+      "packages": [
+        "mod.crend"
       ]
     },
     "dynamiclights": {
@@ -1236,6 +1598,9 @@
         "5a93379aea413209731701f7c2ee2c4961766479",
         "df4303deb02246cde9c3a9b82c165bec3f37dada",
         "f3ee321b91b805c6558ce40498f344a60fe7a57f"
+      ],
+      "packages": [
+        "net.tschipcraft"
       ]
     },
     "e4all": {
@@ -1269,6 +1634,10 @@
         "ec5b6f95afa67216ddadcc1b063dbb09ce2763e2",
         "f12f688fd5be70351345331a5bc0046f1ef0aa8e",
         "fa9cd59443fb4813572b4c3e5e6564565734cf4c"
+      ],
+      "packages": [
+        "link.e4all",
+        "link.e4mc"
       ]
     },
     "e4mc": {
@@ -1329,7 +1698,14 @@
         "e8eb39d93f08883217818ab62e74211f84454cba",
         "f477c093a0a1ec8fcd7223cf84ecce4532f1a73c",
         "f7dea0df280942ae2e8722b6b55f5549e68a7c5b"
-      ]
+      ],
+      "packages": [
+        "link.e4mc"
+      ],
+      "curseforge": {
+        "project": "849519",
+        "slug": "e4mc"
+      }
     },
     "effortlessbuilding": {
       "platform": "modrinth",
@@ -1340,6 +1716,10 @@
         "10188c088c3e32d21275fd02d1aa31ffb6dd9f86",
         "34af0d5e57f771fa9a37e6b1b5e59c38a03afd01",
         "d0c881ba08b06bc43e8fad7c8e0f71ce3d8a9712"
+      ],
+      "packages": [
+        "fabric.nl",
+        "neoforge.nl"
       ]
     },
     "emi": {
@@ -1361,6 +1741,9 @@
         "c13c2d1bfa8a8be27805f46c5a2f6dd668fab0c4",
         "cbbd038194cd63249db185c53b1d50a1767f80a3",
         "ddb797e157945da409ad7219076a7dd677baf359"
+      ],
+      "packages": [
+        "dev.emi"
       ]
     },
     "enchdesc": {
@@ -1380,6 +1763,9 @@
         "c044725f02c08f630365fbb7b217399ea35a5b92",
         "c5b3b4392c05426ebc672174c9357fa1e3803588",
         "e4fa515c5deab3165f250f2a1297ac836d496064"
+      ],
+      "packages": [
+        "net.darkhax"
       ]
     },
     "entity_model_features": {
@@ -1426,6 +1812,9 @@
         "fbd4bf10d424b49b5669652d20f5c14d8d03fd10",
         "fc551f0a284a5864fbc1a11fde5e27ab0ac95f43",
         "fcc0d7cfee5ace4dba159225edd151d90dd924b9"
+      ],
+      "packages": [
+        "traben.entity_model_features"
       ]
     },
     "entity_texture_features": {
@@ -1459,6 +1848,10 @@
         "ee46349aa6ed53733a54752888c26c0350698a28",
         "fcf2df8ede6007d4ab8ae86013fe29b2d09f6682",
         "ff64169456a25cc21acbcd31d31f9c18a73f7bf7"
+      ],
+      "packages": [
+        "traben.entity_texture_features",
+        "traben.tconfig"
       ]
     },
     "entityculling": {
@@ -1492,7 +1885,15 @@
         "d265fdd6f8c052873f098b7acd5db7617f6d7bc0",
         "dffecdb172ec6fefb27e68ebd7192b2416d56da9",
         "f122f84f329793675b2625d51b77f990d7de3579"
-      ]
+      ],
+      "packages": [
+        "com.logisticscraft",
+        "dev.tr7zw"
+      ],
+      "curseforge": {
+        "project": "448233",
+        "slug": "entityculling"
+      }
     },
     "equipmentcompare": {
       "platform": "modrinth",
@@ -1502,6 +1903,9 @@
       "sha1": [
         "86c182e64c73e3cc2fac0e4e219facf32522f928",
         "fff2c71ff62d7c74bf9e73754536706cdf4893d1"
+      ],
+      "packages": [
+        "com.anthonyhilyard"
       ]
     },
     "euphoria_patcher": {
@@ -1553,6 +1957,21 @@
         "f2f4ccfb18b65149be0bf7ab6e822fd6f3069f46",
         "f43515af79b14a5de8d260829042761bfcdf9a06",
         "f4c5bab8209d153d1fc46d5acc8dbbf86283b7fd"
+      ],
+      "packages": [
+        "com.euphoriapatches"
+      ]
+    },
+    "expandability": {
+      "platform": "curseforge",
+      "project": "465066",
+      "slug": "expandability",
+      "name": "ExpandAbility",
+      "sha1": [
+        "70cf454b1217a350f1789fabb39b6622aac8be12"
+      ],
+      "packages": [
+        "be.florens"
       ]
     },
     "exposure": {
@@ -1594,6 +2013,9 @@
         "e84b3c4844500717c769b9a162130be64535ab09",
         "f3766ad515bf5791eb3d01c2e4713da9962962bf",
         "f905849a4fbb98aca4f0d33a61879f372d39b120"
+      ],
+      "packages": [
+        "io.github.mortuusars"
       ]
     },
     "exposure_polaroid": {
@@ -1613,6 +2035,9 @@
         "998acac213b5910e2218e944ad5ea7d7cd2d1344",
         "9bc9d782ee6a68e4b4c7916bf6c8a087459daf57",
         "bf0ab4bcb5880420c5894c69d324acdf609681ac"
+      ],
+      "packages": [
+        "io.github.mortuusars"
       ]
     },
     "fancymenu": {
@@ -1665,6 +2090,11 @@
         "e6b8efc33db1bba272e857c5dd59c5469f038514",
         "eca4121cd6778f54428d1269fbde38e177e030e3",
         "f95ad39bb4304ba33cfcfefd2113075291f470b3"
+      ],
+      "packages": [
+        "com.madgag",
+        "de.keksuccino",
+        "net.ellerton"
       ]
     },
     "farmersdelight": {
@@ -1687,6 +2117,9 @@
         "bf7e7dede99e832de20e191b1f6c11f7a9b9a622",
         "d4205362f00c78bbc28fa2ce230bd50f807d3156",
         "f77488e2b8b145867b9d5c6094abc84d662e76c9"
+      ],
+      "packages": [
+        "vectorwing.farmersdelight"
       ]
     },
     "fastpaintings": {
@@ -1707,6 +2140,9 @@
         "e2cf74928a5d9d8ff3aacda7621ef73902a97cf4",
         "f6f92e17f50e151882f9518e576428e2708e1446",
         "fed85ac00bdfbb186dd7645954abbfe594b6e82d"
+      ],
+      "packages": [
+        "net.mehvahdjukaar"
       ]
     },
     "ferritecore": {
@@ -1719,7 +2155,14 @@
         "85806e7bf1ff235ac46a0ba66bc6694dc2fccb94",
         "9563692efb708b6b568df27a01ec52f6311928ef",
         "b82ff769aca2b8c542ce09b633bfa4ffd03c06d8"
-      ]
+      ],
+      "packages": [
+        "malte0811.ferritecore"
+      ],
+      "curseforge": {
+        "project": "429235",
+        "slug": "ferritecore"
+      }
     },
     "firstperson": {
       "platform": "modrinth",
@@ -1741,6 +2184,9 @@
         "b7ec6a1b5132c70eed509e86a4907b6bf91e53c3",
         "c09ed12658cbfe95187774b6cbecca641140187a",
         "d6daa08284e7ada0442e482844bf2bac9016bb1a"
+      ],
+      "packages": [
+        "dev.tr7zw"
       ]
     },
     "forgified_fabric_api": {
@@ -1785,7 +2231,8 @@
         "f03504497d29c72a4a7747515d7aa06bbc78c93d",
         "f3b5ff6e2ca338d8d9338acc5a1e47393e7b1ad2",
         "f98335548ab3d6592912535c5703f18ab153c10d"
-      ]
+      ],
+      "packages": []
     },
     "fusion": {
       "platform": "modrinth",
@@ -1839,6 +2286,9 @@
         "f843132088a8b8da6442fa4c4a19ab4e767e0d06",
         "fac062d152aa979a57dc5336bb5261f248d97a61",
         "fb3b5a24e3235fd2d2c9d30e67c8008d9f48589e"
+      ],
+      "packages": [
+        "com.supermartijn642"
       ]
     },
     "fzzy_config": {
@@ -1913,6 +2363,9 @@
         "f8bba0bf8d651737611dbca7625a9ee3efa7c7de",
         "f9e104a17539f2de9f3c17ac84b40a3d370ce02c",
         "fe0b74be22b22ecadac33658a63bd15f3a39cd0e"
+      ],
+      "packages": [
+        "me.fzzyhmstrs"
       ]
     },
     "geckolib": {
@@ -1948,6 +2401,9 @@
         "e36b5506ad6a0e6c5c9bc4a3230906117088ef8e",
         "eb854c8ec53ef922a5f3877a1aa4c1ce1352e0ce",
         "fb0ac6ad63dc5f401c15c66a037c08e9709d1c42"
+      ],
+      "packages": [
+        "software.bernie"
       ]
     },
     "glitchcore": {
@@ -1957,9 +2413,39 @@
       "name": "GlitchCore",
       "sha1": [
         "3af1d2192ec13dc80e7ebd88b842604c311e3cef",
+        "56e0395633d243c53c0194942ab72585308e4691",
+        "8bce11b0b5233146051bb7b7a227247e03fe88b2",
         "a22b1bb9100a9ba764d1287136dc80ddf5220d80",
+        "a31c3f36330f19aa538add3d727782a62c9c30ad",
         "b95318c14ef20bd24886480d7640a5eca6aa6cec",
+        "d0cfe1aa92969511e964080c1f3bbc8e378f3fb0",
         "e3d4bb80a06f619be989ab529d0cd4e33e076943"
+      ],
+      "packages": [
+        "glitchcore.config",
+        "glitchcore.core",
+        "glitchcore.event",
+        "glitchcore.mixin",
+        "glitchcore.neoforge",
+        "glitchcore.network",
+        "glitchcore.util"
+      ],
+      "curseforge": {
+        "project": "955399",
+        "slug": "glitchcore"
+      }
+    },
+    "gml": {
+      "platform": "curseforge",
+      "project": "661517",
+      "slug": "gml",
+      "name": "GroovyModLoader (GML)",
+      "sha1": [
+        "29a8153c54b9b03a3b4b42be7d77fe4ac2459720",
+        "675568b5d96bc260a4a7b312306ca72474418149"
+      ],
+      "packages": [
+        "org.groovymc"
       ]
     },
     "handycam": {
@@ -1971,7 +2457,14 @@
         "436ad52e589e7c42064341a1cda6c86a2afc1259",
         "47c92defdc58624456d449df1867dd4dbca192c9",
         "897e750261b6512e48ce0a55669d23c4760732d9"
-      ]
+      ],
+      "packages": [
+        "dev.vercim"
+      ],
+      "curseforge": {
+        "project": "1588734",
+        "slug": "handycam"
+      }
     },
     "highlighter": {
       "platform": "modrinth",
@@ -1980,7 +2473,14 @@
       "name": "Item Highlighter",
       "sha1": [
         "22d29eba774530b40a540fdf5ce2d14d89bbe036"
-      ]
+      ],
+      "packages": [
+        "com.anthonyhilyard"
+      ],
+      "curseforge": {
+        "project": "521590",
+        "slug": "item-highlighter"
+      }
     },
     "iceberg": {
       "platform": "modrinth",
@@ -1997,7 +2497,14 @@
         "a3e5059d37136372b5107f2e4e21835690ae2212",
         "f6014d198be9503573cd9cb41cc789d282768ad8",
         "f89e9812c7c789c8313dbe659e731c95e739c3fc"
-      ]
+      ],
+      "packages": [
+        "com.anthonyhilyard"
+      ],
+      "curseforge": {
+        "project": "520110",
+        "slug": "iceberg"
+      }
     },
     "imblocker": {
       "platform": "modrinth",
@@ -2033,7 +2540,14 @@
         "f45876fd802815a84ec0da777c8f1f93079969da",
         "f691c06da3250553889a04d0447c3a2b33ea98cb",
         "fd60cb640e76f061da092608a31eae0b1952692a"
-      ]
+      ],
+      "packages": [
+        "io.github.reserveword"
+      ],
+      "curseforge": {
+        "project": "483760",
+        "slug": "imblocker"
+      }
     },
     "immediatelyfast": {
       "platform": "modrinth",
@@ -2066,7 +2580,14 @@
         "f1f5cccd7cb59d875f44566b2e557ccecc8c33fb",
         "f48c0fc6eba2f753315d02cb402b865471864556",
         "fee59af2f39c66d09c4c09f441c799e76af70f97"
-      ]
+      ],
+      "packages": [
+        "net.raphimc"
+      ],
+      "curseforge": {
+        "project": "686911",
+        "slug": "immediatelyfast"
+      }
     },
     "integrated_api": {
       "platform": "modrinth",
@@ -2081,6 +2602,9 @@
         "d224f01f8a575a4eecac4de088d18eb5f8e7c5af",
         "e0a0e44235b98f21a05ebbe0171fe8487319a173",
         "ee32b272da021db09f64c2df48caba6c1a0c5378"
+      ],
+      "packages": [
+        "com.craisinlord"
       ]
     },
     "inventoryprofilesnext": {
@@ -2114,6 +2638,9 @@
         "f2975061bdfc438549a7850eec0bef2c922d2326",
         "f93a8d6653e519adc666b35de18e4fa382ebac71",
         "fa62619530ede22e3225f839bb8538dfc8931724"
+      ],
+      "packages": [
+        "org.anti_ad"
       ]
     },
     "iris": {
@@ -2136,6 +2663,14 @@
         "d51e2a112be67858ac9678bb1df218b243615d55",
         "deed764abc2d8c7dfdfcdd3fdedccc01af08af83",
         "ebd9f1e013af0bc972bbc2a59a94ce22499f21dc"
+      ],
+      "packages": [
+        "de.odysseus",
+        "io.github.douira",
+        "kroppeb.stareval",
+        "net.irisshaders",
+        "org.anarres",
+        "org.sinytra"
       ]
     },
     "irons_lib": {
@@ -2151,6 +2686,9 @@
         "b66a7a841a3d9d697df1d897b9da6c6a94e24dc6",
         "ef92f362a352a30f927c30c2be72a2d843c41342",
         "f1f8c5338b24eb1a614cd73cf1ec8c16172115aa"
+      ],
+      "packages": [
+        "io.redspace"
       ]
     },
     "jade": {
@@ -2184,6 +2722,9 @@
         "f92ea5e1055714d535c7f94256badc7d93887570",
         "fb58311a1815a10d0551af2b31478df0a7d889ae",
         "ff2c8667634f4414ca5061c54962262f0c8ee3fe"
+      ],
+      "packages": [
+        "snownee.jade"
       ]
     },
     "jei": {
@@ -2415,6 +2956,10 @@
         "fb25d43125b80a8456433c3eb8b132e6f24e9c8c",
         "fc41d348687fc912517a512d77ee75c24bdbd6ed",
         "fcfead94385f65070ca59e675f8b033bddcea5ce"
+      ],
+      "packages": [
+        "mezz.jei",
+        "net.mezzdev"
       ]
     },
     "journeymap": {
@@ -2504,6 +3049,15 @@
         "f0c2bad01884520269c0dbdcbd05507e3225cdc5",
         "f6391570006b1e971007553b03c4119f03a57a29",
         "fc82d6483d4f61ae13eaded7ee19b1d53a67e5b9"
+      ],
+      "packages": [
+        "ar.com",
+        "commonnetwork.api",
+        "commonnetwork.networking",
+        "journeymap.api",
+        "journeymap.client",
+        "journeymap.common",
+        "journeymap.compat"
       ]
     },
     "journeymap_api": {
@@ -2593,6 +3147,15 @@
         "f0c2bad01884520269c0dbdcbd05507e3225cdc5",
         "f6391570006b1e971007553b03c4119f03a57a29",
         "fc82d6483d4f61ae13eaded7ee19b1d53a67e5b9"
+      ],
+      "packages": [
+        "ar.com",
+        "commonnetwork.api",
+        "commonnetwork.networking",
+        "journeymap.api",
+        "journeymap.client",
+        "journeymap.common",
+        "journeymap.compat"
       ]
     },
     "justzoom": {
@@ -2607,6 +3170,9 @@
         "7fdeb6936884e4dda83123d1dc29dd3a42520c93",
         "a8db848474503ef4f6e5abedc5f52fece0f89187",
         "bf4ef20354586663cc4ab8d32cb220e8e036b471"
+      ],
+      "packages": [
+        "de.keksuccino"
       ]
     },
     "konkrete": {
@@ -2617,7 +3183,14 @@
       "sha1": [
         "97771eb287d5ac7fe667d1df9493d5e54c8ca1fa",
         "a3cb1afce3efd4a484d8ce25a2293ad4814fe424"
-      ]
+      ],
+      "packages": [
+        "de.keksuccino"
+      ],
+      "curseforge": {
+        "project": "410295",
+        "slug": "konkrete"
+      }
     },
     "kotlinforforge": {
       "platform": "modrinth",
@@ -2634,6 +3207,9 @@
         "d979656ab0cc395cb0819378eff839c5070a0ef9",
         "e957180f97dda61f88ad88e06503c64f1515a353",
         "f276d27f2930a44e7224080b5ccdcae4029b4d9a"
+      ],
+      "packages": [
+        "thedarkcolour.kotlinforforge"
       ]
     },
     "lambdynlights": {
@@ -2657,6 +3233,9 @@
         "cf7c70bdad3347067a5e7b7080f03558842e22ee",
         "d0ab30eebffdb999c07964c5775b199792b5cf46",
         "ff6b59d58cbd88c812a27267e3338b201132ccac"
+      ],
+      "packages": [
+        "dev.lambdaurora"
       ]
     },
     "lanserverproperties": {
@@ -2666,6 +3245,9 @@
       "name": "LAN Server Properties",
       "sha1": [
         "96fa378bcfb822f753366fded4991f1eeba78e21"
+      ],
+      "packages": [
+        "rikka.lanserverproperties"
       ]
     },
     "libipn": {
@@ -2678,17 +3260,27 @@
         "043023ed6675fb5cde4b0b5581fc95ad8e7bea36",
         "330c0609e43888133a6200209f1bef1507a65dee",
         "50e52d8879aeeb811da00b79e31e4e4855a9bb54",
+        "5fdb4b8b50cf3ba0d247789766058e51f996ca2b",
         "60709f69be5b2680001a2aea3196d79b44a8c848",
+        "6a52aee59e456ad13a8f99671e9c6077baff083d",
         "6d644e4da2799eaf39423f7ff61cb0b37b53e38a",
         "7a048459e478d429b4945c72e5606fdadfdad5be",
         "7e06f3fd77e63388ee46f2b0a3e7258c36d582e6",
+        "948e3b2c3f0d41446e6c311a9f66289878032711",
         "9f7b91e2e8c729bff6eaac0c1c4123160ca4b7f5",
         "b67f700bb76d44fbc7161a3466e1db85d60edec7",
         "baab9e8cae3d2b77b5e172b5694e465ee9f30d4a",
         "c439afa90ca14a4a790a4e2ba0d98c78c0b27f27",
         "d29cb1c5126efc254660ae5a5a7d5f0396dd8007",
         "d50510ccc9c67f7518a57ab931b1289ca5c64b2c"
-      ]
+      ],
+      "packages": [
+        "org.anti_ad"
+      ],
+      "curseforge": {
+        "project": "679177",
+        "slug": "libipn"
+      }
     },
     "lithium": {
       "platform": "modrinth",
@@ -2708,7 +3300,14 @@
         "d6b55fed1004716f81d2929a26c086d0d06f6375",
         "d6bbbdae2d8e94551606c32e75fded04605811ee",
         "e72f983955c36f6c3e2ccd09d41659310241344a"
-      ]
+      ],
+      "packages": [
+        "net.caffeinemc"
+      ],
+      "curseforge": {
+        "project": "360438",
+        "slug": "lithium"
+      }
     },
     "lithostitched": {
       "platform": "modrinth",
@@ -2722,6 +3321,7 @@
         "0a332da63a3b63ca9b8f0f11a3e882b232b7d64d",
         "0c265c278441e7e6034402734ac953a0938a15a6",
         "0edda78ec8500143cca898881c476b2b04dac75a",
+        "102f7fb6e2b6d2266ad5de99acc88819fd6f923e",
         "10b12e2b1e89717c3c3e641bf9452f76b8eb78ec",
         "1233ea733dc503658376a70e28d665e0651827cc",
         "142081ea196dee3052394ef822fc5211aae9d2d9",
@@ -2773,7 +3373,18 @@
         "ebaa90fb9893adec03cff52bd75c1155a72f7dd9",
         "ee6a92eccf144f462f00a15c36bcd441c0b0e09f",
         "fe7eb612a0fa0c41ce94d914162d298755bb25a3"
-      ]
+      ],
+      "packages": [
+        "de.marhali",
+        "dev.worldgen",
+        "nomansland.nsassetcompat",
+        "terrablender.api",
+        "terrablender.worldgen"
+      ],
+      "curseforge": {
+        "project": "1652368",
+        "slug": "terrabridge"
+      }
     },
     "lmft": {
       "platform": "modrinth",
@@ -2783,7 +3394,14 @@
       "sha1": [
         "492d597ca216f9d099be112e77a9a5c7ed138770",
         "5eaff991e132659b9c04041da3a54d9c0dec2c3f"
-      ]
+      ],
+      "packages": [
+        "io.wispforest"
+      ],
+      "curseforge": {
+        "project": "656346",
+        "slug": "lmft"
+      }
     },
     "mafglib": {
       "platform": "modrinth",
@@ -2812,6 +3430,7 @@
         "44048fd51651668ecf7199a46f6b52cb757bb595",
         "48f61904f7f76e216d5b14e99c017a3e08c82ee6",
         "49c219e5ce15f2c54b2409c3e4ce4fd4e5535d43",
+        "58c3383de2dacb6aef8410719543a4c6bd74fc6c",
         "5f649285d404c7bf29e8531889b6b051502404db",
         "606870f838da04d49c6081842ae71f47e97d0e04",
         "6fe72eff66eed645b88b912fb05583fc0fccc826",
@@ -2841,7 +3460,16 @@
         "f35a125cc1842da90ea4bf8cf4ac2175bab9917d",
         "f9477c369ca55365e61a2496b970068be13c1f01",
         "fdec2ab7db72f8bb737c8e48f2fb4fa2143ac2c7"
-      ]
+      ],
+      "packages": [
+        "fi.dy",
+        "org.thinkingstudio",
+        "team.cagayakegirls"
+      ],
+      "curseforge": {
+        "project": "910766",
+        "slug": "mafglib"
+      }
     },
     "malilib": {
       "platform": "modrinth",
@@ -2870,6 +3498,7 @@
         "44048fd51651668ecf7199a46f6b52cb757bb595",
         "48f61904f7f76e216d5b14e99c017a3e08c82ee6",
         "49c219e5ce15f2c54b2409c3e4ce4fd4e5535d43",
+        "58c3383de2dacb6aef8410719543a4c6bd74fc6c",
         "5f649285d404c7bf29e8531889b6b051502404db",
         "606870f838da04d49c6081842ae71f47e97d0e04",
         "6fe72eff66eed645b88b912fb05583fc0fccc826",
@@ -2899,7 +3528,16 @@
         "f35a125cc1842da90ea4bf8cf4ac2175bab9917d",
         "f9477c369ca55365e61a2496b970068be13c1f01",
         "fdec2ab7db72f8bb737c8e48f2fb4fa2143ac2c7"
-      ]
+      ],
+      "packages": [
+        "fi.dy",
+        "org.thinkingstudio",
+        "team.cagayakegirls"
+      ],
+      "curseforge": {
+        "project": "910766",
+        "slug": "mafglib"
+      }
     },
     "melody": {
       "platform": "modrinth",
@@ -2908,8 +3546,17 @@
       "name": "Melody",
       "sha1": [
         "68adee81b16975e0f61073442199e55822326920",
+        "a8d9d2cc4ac19c1244a70ff0bf90b9ddb98d6cdb",
         "e83052a92c4ca0016bcfe7f0207273983dc84698"
-      ]
+      ],
+      "packages": [
+        "de.keksuccino",
+        "net.mcreator"
+      ],
+      "curseforge": {
+        "project": "1517809",
+        "slug": "melodyrpg"
+      }
     },
     "midnightlib": {
       "platform": "modrinth",
@@ -2931,7 +3578,14 @@
         "ecf3a67372750fcb45a911a951f7b21c6ac309e3",
         "f241b1077403ea4639c3a7c1b99557bb6ab18b67",
         "f91cfeb927feab9cc31a09f7d64184f431114371"
-      ]
+      ],
+      "packages": [
+        "eu.midnightdust"
+      ],
+      "curseforge": {
+        "project": "488090",
+        "slug": "midnightlib"
+      }
     },
     "mod_menu": {
       "platform": "modrinth",
@@ -2942,6 +3596,10 @@
         "075a0d5f30d1228f998e50c79e703bbd3037a836",
         "d2640c810a74fb4cba47f19f1ba7596b86e8e7ce",
         "f3a84c69ab8d0ad9aefef970f6d68fd479778a4a"
+      ],
+      "packages": [
+        "com.terraformersmc",
+        "eu.pb4"
       ]
     },
     "modelfix": {
@@ -2951,6 +3609,9 @@
       "name": "Model Gap Fix",
       "sha1": [
         "9608b1bff92e075ad8c2feb07f7ef095f6887117"
+      ],
+      "packages": [
+        "net.mehvahdjukaar"
       ]
     },
     "modernfix": {
@@ -2997,7 +3658,14 @@
         "eb7a14dd6024d694d56d38297be208cf3d91f1a9",
         "f07e00ee3b7118c7374e01b3e2450a5db1719892",
         "f64b9458eea9c637a973f8319d5456e4961ea481"
-      ]
+      ],
+      "packages": [
+        "org.embeddedt"
+      ],
+      "curseforge": {
+        "project": "790626",
+        "slug": "modernfix"
+      }
     },
     "moonlight": {
       "platform": "modrinth",
@@ -3029,6 +3697,7 @@
         "0da45e6bc941f4b9b18dda24f8d047431ddc7226",
         "0f0e065d6966d57593c57ea0cc92d889bbfe45cd",
         "100339839fce7009fa646562cd9ae0438c64cb1c",
+        "10707417c39c88aae77e03e92ad775e8fecfafd4",
         "12304a3cc228e9376c81473d91de7c9dea07ba79",
         "1269cf1cc82ab77b24897895b2a753ab2c6a3c58",
         "14806ec43a35c3cf200bb018fe6884a4eb225664",
@@ -3057,6 +3726,8 @@
         "29da91bfa9528d6d248b3c769f7ee536b4fc1c5a",
         "2b07408a31f57f0934d921d760109f2508f3fccf",
         "2b37f41b50bb3eccdd01f73a36b2cfae43ecd6e2",
+        "2bdcc1376e18ecb9561c6c3b06a7e59dc734a377",
+        "2d0740ae3460903a701c94546fe5ce7607bdb413",
         "2d2ba025845a58cf0865e30163132bf8bc7daf27",
         "2ee2562297de0a554a24b7b0d0020c1745b7d0ca",
         "2f62fc5047b5148e270afd76181ee6c3c5708c6c",
@@ -3114,6 +3785,7 @@
         "554326f48062a258f7dd9d49861f42f45a453fd8",
         "55b606b94c3c6bad0d45bae51e9fc49d6375535f",
         "55ea47a966555510fb38d732d511f1f2c9659dbe",
+        "56156cccc45fbff595e658024f56fa3ede279a63",
         "57d855104efd67612c1a989197ee33e92ef894cb",
         "597a3d2af6e104979ef84f2bf870fa6dbdb97d22",
         "598a6abae89176ef2c7df92f78751ec42fcc56ae",
@@ -3143,6 +3815,7 @@
         "69e0c7ec61cef9f73cc837bcda98afd956e74280",
         "6a99f961fd6bf4964791e8c474dae1dcb2910ad4",
         "6b6054e25e9ee3b33db0f4221498e2d828371536",
+        "6c04d95d6aaa38ae756d35e3585b70acd471f751",
         "6cd6801865e94f69a330a70d2d049b9367379b79",
         "6f2b1b85ca5d2d48fc534d1bcfe7b4bd6352379f",
         "7009635c4763ad8c35d89bee12fb0f856feda7d4",
@@ -3322,6 +3995,7 @@
         "f58d48e56bcf350e819567edb8c983718e2fa231",
         "f5c9fc91041a73595f9a8d3128140cf8483d1dae",
         "f5df3ac37ea814730e0f9811aae0246e59666b4e",
+        "f625f9195e98d694b0501c20d659c2d281fbe7f2",
         "f71ab1483fb39200981b45efa99658325b301da3",
         "f75d17502bfe17ddc9b03b8fd312c9c168815713",
         "f7a720181a654e560adcd7fdda2c94849cb2fdc2",
@@ -3340,7 +4014,15 @@
         "ff5271f871e4a0a1122407f71c7a9ea71bf43122",
         "ff62eaa8bfd72e73cf83f6c28d2cd42e8d29c11f",
         "ff79c9e84d3191908019a14716266e13558b0794"
-      ]
+      ],
+      "packages": [
+        "net.mehvahdjukaar",
+        "org.hp"
+      ],
+      "curseforge": {
+        "project": "1685707",
+        "slug": "target-dummy-dependency-fix"
+      }
     },
     "moreculling": {
       "platform": "modrinth",
@@ -3359,9 +4041,19 @@
         "ae55b17d7257dbc52616899198545dc219c132af",
         "b6acbe1272353a7113a39b640a4d6de883098340",
         "dbf599507147431ff710fb4fd6a0d6a0fdf7a5b8",
+        "ecb17db0d8ef34d1b04e8d2eb388f519484ac2b7",
         "f6f43344e0622ac05ad7aca5378ec35aad31ac30",
         "fdbfaa5d6d93a11d44020301199dac68de231649"
-      ]
+      ],
+      "packages": [
+        "ca.fxco",
+        "com.bawnorton",
+        "me.fallenbreath"
+      ],
+      "curseforge": {
+        "project": "630104",
+        "slug": "moreculling"
+      }
     },
     "mousetweaks": {
       "platform": "modrinth",
@@ -3372,6 +4064,9 @@
         "2a0cf468086f488407482969a79e8136e782f80e",
         "40eb564254d7a7bd23e045bdd959f906207b661f",
         "6dae57f4f50f7808d2ed9a18f6cd1c0d4640c6bc"
+      ],
+      "packages": [
+        "yalter.mousetweaks"
       ]
     },
     "mru": {
@@ -3415,7 +4110,15 @@
         "f4b275c6758c010a03b378fd39de60ab4cd1bb8b",
         "fc628d6e27924b4fed0a4eae5012ae6090735acd",
         "fd7ac611eda11582327808c138fdc8e8cd30455d"
-      ]
+      ],
+      "packages": [
+        "cc.cassian",
+        "dev.imb11"
+      ],
+      "curseforge": {
+        "project": "669659",
+        "slug": "mru"
+      }
     },
     "nemos_inventory_sorting": {
       "platform": "modrinth",
@@ -3432,6 +4135,9 @@
         "7baea78b5bf9cf0790f6ff956fff5dbafb467948",
         "7da5cfba7dc968ee0587b375328acb124f655776",
         "d5654e7d96fc931f3be6d8009308db21f93c12d3"
+      ],
+      "packages": [
+        "com.nemonotfound"
       ]
     },
     "notenoughanimations": {
@@ -3467,6 +4173,9 @@
         "d78b8d18b4218d8178af88e4ff5ac29368d86f98",
         "db669341eb2c594e96eafb741a8fd12cc0370c9e",
         "e6beacbae500e36cfb20f9be1e44ce4ce1ea1d1e"
+      ],
+      "packages": [
+        "dev.tr7zw"
       ]
     },
     "octolib": {
@@ -3484,7 +4193,14 @@
         "b812053a1907a4ffb2c6c0a0e24050b1eafe4bf4",
         "e85ff956af410a7d761bec1ee1a56a39c0861869",
         "f4f66d677b104c6af7f5c0f7e3c08d8e4370ecad"
-      ]
+      ],
+      "packages": [
+        "it.hurts"
+      ],
+      "curseforge": {
+        "project": "916747",
+        "slug": "shatterbyte-lib"
+      }
     },
     "oracle_index": {
       "platform": "modrinth",
@@ -3508,6 +4224,9 @@
         "d3040a378ad4d61fb635c3ff86db4555cec6e41e",
         "f11179852aa2958d9d90c27b4b38ffdcefb04959",
         "f7b690419be615fc5065d05a3c356b518bd8780f"
+      ],
+      "packages": [
+        "rearth.oracle"
       ]
     },
     "owo": {
@@ -3540,6 +4259,9 @@
         "ea0a4d78c63358b04400e2648c8f86c265a59e0f",
         "f58392fa41845f377084be3e34f9818a5f672179",
         "f75d6e6de8548ce205a6dd961feeb0696af98320"
+      ],
+      "packages": [
+        "io.wispforest"
       ]
     },
     "particle_effects": {
@@ -3554,6 +4276,9 @@
         "c25e8a75900521762ab077b3821335c1a1ad0708",
         "cda7f6d1f8e164525b41fbb0899eb645c75fe3b9",
         "ebd55d4a790628bc00c241c69756537217246479"
+      ],
+      "packages": [
+        "net.lopymine"
       ]
     },
     "particlerain": {
@@ -3578,6 +4303,9 @@
         "df2800c721e8a588dde48bc4b426707eccf712b6",
         "ebeceac4c1797a55c15e7ccd191ef0a90a2050c3",
         "ef4251f6454cf2485918c51f3b363da6161dc637"
+      ],
+      "packages": [
+        "pigcart.particlerain"
       ]
     },
     "particular": {
@@ -3596,10 +4324,20 @@
         "6d240e1189db514b8607abbb32eb8153983abc84",
         "9651910afaedefa816b620fcb3b2e033f2ba3f05",
         "ae12a64a5763c701325b8ca5bf6729f645a427e7",
+        "d363d2c5a1a535ad961dcbea01031c2d5a4c843e",
         "d386500f19c1b9c020f4563628b4ba2ea42c0c7d",
         "d6d33e8233481ad8fc6f8c351f52783ed431a800",
-        "dc35166ca95828196358c0ae19225f2e226ac81f"
-      ]
+        "d866fa7f3823243678ab0002cdb1250a23422c7e",
+        "dc35166ca95828196358c0ae19225f2e226ac81f",
+        "e8691281d0129c4c9756043b77798492d13d7168"
+      ],
+      "packages": [
+        "com.leclowndu93150"
+      ],
+      "curseforge": {
+        "project": "1219053",
+        "slug": "particular-reforged"
+      }
     },
     "patchouli": {
       "platform": "modrinth",
@@ -3612,6 +4350,9 @@
         "b3837a9242e96f43c22586d1e01e911441c0d782",
         "cf0f16567d22588eaa75415bb5a5d1d91d414a42",
         "f23c589a7cd0106930f840f2878cc32525fdf41c"
+      ],
+      "packages": [
+        "vazkii.patchouli"
       ]
     },
     "perception": {
@@ -3625,6 +4366,7 @@
         "4156b8ca3f5125feb81a894e2bc8aecd79fc39a2",
         "5894b16c9504d25c607b06f50f6d1ebe113d517f",
         "7cec421cdb8eff3f18f46580bb3a8329a98aae8c",
+        "8681033d3901c412c0a442a05e1578514715a8f8",
         "a9f29f9a8ca29ca4c8f294a46e97dae1a8a504fc",
         "c50ce78eef04e77841f17991dfa87a7df7c40032",
         "c9a762ebf4e4cb6708eada71d559793b5f1bf781",
@@ -3632,7 +4374,14 @@
         "dbe64b14b57bbe2c4b1563c9baccb8dae9455f3e",
         "df2de0a599e03e73a97c32d0ba445a29d34a948a",
         "ea6d1403c8bc5cdda2727c1a90b29284c0ed653a"
-      ]
+      ],
+      "packages": [
+        "it.hurts"
+      ],
+      "curseforge": {
+        "project": "1112793",
+        "slug": "perception"
+      }
     },
     "pickupnotifier": {
       "platform": "modrinth",
@@ -3642,6 +4391,9 @@
       "sha1": [
         "22e4a9dedf6a2e3b16b6eedb2c4b33aab3866d74",
         "90d3fe207c95a3a5d849ebf8d70ffa885694e30f"
+      ],
+      "packages": [
+        "fuzs.pickupnotifier"
       ]
     },
     "placebo": {
@@ -3651,13 +4403,38 @@
       "name": "Placebo",
       "sha1": [
         "008fde54c96826da319e0613769f528a52914e72",
+        "095ca0f4a76d1448f4273e1189605192c029f074",
         "0ba7ed1933343de721a90fb74083abb37701eae5",
+        "103be10e89824a4bfea9f5ebbe490bf924acf509",
+        "12a42568e12e6682e14248abde807fad3143cf40",
         "1591b566555dffb7da58b0f8ac87cec942c5663f",
         "1c2b8c38066d6f36209c5dadee25c184ef65202e",
+        "1e477ce74a6c114c5afb40c328f54e867beffab2",
+        "2108c119e1ce04a2a293cc41c67600351ba725c7",
+        "29cd944eab3c03e1b224958319da226fa3a8852c",
+        "31637f17e7724591dcadc53599abf4b4f7effa46",
         "37b1cf95c23a72caafc5d5c9671bbf1fa62bee14",
+        "3af8e13252cbde428b35d96b663665ab45da3572",
+        "3b580dc6a49c16c20cc1a30ea4ed1c2e4347d5fa",
         "40d33020762f4e03e5375acb6c6067aa76add7bb",
-        "d44335094cf2db64998cb3ee31e58d8c01e80b4a"
-      ]
+        "543b01e26b49ef9e03e5ccfa305b149ebe3e2a72",
+        "683bcc0711ee7f0929b2a2a71323d427185ba1e6",
+        "82cc2e8480e1edd93c741067fbf92eeee6de402b",
+        "832e2f32e6e3d2939c394a5d230202486b4b93b1",
+        "83668130b48ec07cc34ee7cb9df8222736f1ca33",
+        "9dc42ce59f334f17b9552218b2a2ea3117dda4a9",
+        "b1e893bf30efc21390f7df8cf8af00050f0cace1",
+        "c8ad4d7057b60943cd6b500215c633f81bf2ca56",
+        "d44335094cf2db64998cb3ee31e58d8c01e80b4a",
+        "dd07e121d8b26f00c0b7aa5517698753a997638f"
+      ],
+      "packages": [
+        "dev.shadowsoffire"
+      ],
+      "curseforge": {
+        "project": "283644",
+        "slug": "placebo"
+      }
     },
     "platform": {
       "platform": "modrinth",
@@ -3681,6 +4458,9 @@
         "b0483ed55e581ee6dac4f4cb610cc314154ced57",
         "b33452ab3a003fb12271b5b8c51f93c1c3c5559e",
         "d2507231eb0bc6e88c14da034a39617deb48c138"
+      ],
+      "packages": [
+        "com.blackgear"
       ]
     },
     "player_animation_library": {
@@ -3717,6 +4497,9 @@
         "eaf5ce53657330b18dd15262419e2f434e71c981",
         "eccfdf7216f9e6930ebc9f37414001120f24c4cf",
         "f8fa366ab2af5ea6c64e0d5d341c28d38ee07648"
+      ],
+      "packages": [
+        "com.zigythebird"
       ]
     },
     "playeranimator": {
@@ -3728,7 +4511,14 @@
         "05be8ddcc78532b9a5520c718edc6c971cd0057c",
         "3ea94b427570b72d421ee9ff4fd5f68c60d7b60d",
         "c0a3d0cf0569b61302e17f35dc158ee75813f80f"
-      ]
+      ],
+      "packages": [
+        "dev.kosmx"
+      ],
+      "curseforge": {
+        "project": "658587",
+        "slug": "playeranimator"
+      }
     },
     "polymorph": {
       "platform": "modrinth",
@@ -3750,6 +4540,9 @@
         "e5d18dda2a65544eca533d824bc3e8fbf4d77f98",
         "f0bf06bc93fe72051fb530aa10b609931d1e0c5d",
         "fa6c5fa8a21229c85d564b47c73df7160b3bd4df"
+      ],
+      "packages": [
+        "com.illusivesoulworks"
       ]
     },
     "prickle": {
@@ -3769,7 +4562,14 @@
         "be1772b863a6f3e141e2d587977e2c83fc0b0b43",
         "cf64bfdd764500d4fa270de578eb0ccabb2706c1",
         "ee796d676a462ac4cc3f4e4a469989604630b1cd"
-      ]
+      ],
+      "packages": [
+        "net.darkhax"
+      ],
+      "curseforge": {
+        "project": "1023259",
+        "slug": "prickle"
+      }
     },
     "pride": {
       "platform": "modrinth",
@@ -3779,6 +4579,9 @@
       "sha1": [
         "c1003e8656393417d8d36a795fb89250c8c2412e",
         "c967687c38135b9999162c1e94c5a20e5cfc921c"
+      ],
+      "packages": [
+        "com.natsu"
       ]
     },
     "punchy": {
@@ -3825,6 +4628,15 @@
         "faf0c1f33a7ea7a4c5f31b32ca90059cc4f2e37c",
         "fbd2b93e8b3901ad743c00f638a8a7611e0e6d78",
         "fd18374243b3cb476d0a38374809f4949c28af59"
+      ],
+      "packages": [
+        "punchy.client",
+        "punchy.compat",
+        "punchy.config",
+        "punchy.mixin",
+        "punchy.neoforge",
+        "punchy.platform",
+        "punchy.util"
       ]
     },
     "puzzleslib": {
@@ -3872,6 +4684,9 @@
         "e4056839fefd0d16f019d73fe965730a43901fb8",
         "ef1fafd7e2f00f64d56b455dd60efc205e4c5460",
         "f99b3fa8c41a7f2efa72a0de088ec2f5c9b86288"
+      ],
+      "packages": [
+        "fuzs.puzzleslib"
       ]
     },
     "ragdoll_reactions": {
@@ -3890,6 +4705,9 @@
         "cec10f73bbb9d8310103e642c3ba86212a0db6b1",
         "ebe0361eb3eed3b5dd6b0098ebeb5171d9ea9066",
         "ef0c1c12e7a03ff5778a99ed781707ce2e328f2a"
+      ],
+      "packages": [
+        "dev.leo"
       ]
     },
     "reeses_sodium_options": {
@@ -3913,6 +4731,9 @@
         "d7f6829a4679c883c7f5247e0b4b1f3637d11f24",
         "dbd78e9bbcbee8bc305b0faefb8e7649ea18ee31",
         "e9e6d101b31acb51539141937ad5b069ff2ccc4d"
+      ],
+      "packages": [
+        "me.flashyreese"
       ]
     },
     "resourcefulconfig": {
@@ -3928,6 +4749,9 @@
         "6bf2b6ea9c071c00a2abcdc552667fb6f7d21031",
         "7d099334fe6fd10465f49f9d180b846bc4906f18",
         "d02aacff89b45a4b63d3e2ea19ba835666ba7b43"
+      ],
+      "packages": [
+        "com.teamresourceful"
       ]
     },
     "rhino": {
@@ -3936,19 +4760,31 @@
       "slug": "rhino",
       "name": "Rhino",
       "sha1": [
+        "370598a1d2321c8a705ce539eb970375f20150c3",
+        "385b95ab5fb177dfa4f2868ef7b88a2d766bffeb",
         "3c8d34c7efe9e42fc90506acbf9fc842d36f9a42",
         "480235a9f7749f68ce6fec3b9c3cac3428b92a4a",
         "56eab1d464ed0811c64040c64bd047df5cbc3aad",
+        "5dcc80079095706645d567353095297948a41eea",
+        "6542b1434417bc456191a4c76463d2ab954d9396",
         "710a167c6bed5ec7339c380b669afa281a65c9a4",
         "7844e38ff936429083a84001f1aae542b0c5f9e0",
         "a894499d888709a19ad08bf2913ff25b3fc2bc31",
         "ab96914d663738497044d189869ef2d9d4162000",
         "b04a93cb9d0c8d1356730c0990ea01073e98719a",
         "bd2652b47431bda7d567f9fd1af77b7ed700ae9a",
+        "cebf182732d3d3675f12c9e9631f0b3b88acf4bd",
         "d645d2a81cbafe0ac8ab5efdb11c077aab586c5d",
         "d82e3263652302d0b2a4dd3b8cefc72cfc7175fd",
         "db6aa291c90328611d5e202e71fdbaf1ab227dc0"
-      ]
+      ],
+      "packages": [
+        "dev.latvian"
+      ],
+      "curseforge": {
+        "project": "416294",
+        "slug": "rhino"
+      }
     },
     "roughlyenoughitems": {
       "platform": "modrinth",
@@ -3962,6 +4798,9 @@
         "c4a91f9dae7f8725e22da007aa7ab5e162a99862",
         "d432f949cbe21bf9bb239969e3ce070b47aa0a72",
         "f834d3ad0ab9f4d8b1f48d28c0fd606d5131e4aa"
+      ],
+      "packages": [
+        "me.shedaniel"
       ]
     },
     "ryoamiclights": {
@@ -3974,7 +4813,14 @@
         "8b76dd50a5de9c6e1ad5e1e87f6711251aa8ec7c",
         "bc495fbe8fb0958e94746ad5c94062cabc631cd1",
         "e9bfca4383704f2e9166c8528c6bd68dc7793ea0"
-      ]
+      ],
+      "packages": [
+        "org.thinkingstudio"
+      ],
+      "curseforge": {
+        "project": "913587",
+        "slug": "ryoamiclights"
+      }
     },
     "sable": {
       "platform": "modrinth",
@@ -3996,6 +4842,12 @@
         "dd3fbe5565bffc3700a1a3e63af168c6898aa1e5",
         "f3ba9a497122ba29d9e94ebe6f9a3a3aaa5fa756",
         "f40c6be0932fd02ad002c57493bdcfb9bbb974fb"
+      ],
+      "packages": [
+        "dev.ryanhcode",
+        "foundry.veil",
+        "gg.moonflower",
+        "io.github.ocelot"
       ]
     },
     "sable_pathfinder": {
@@ -4009,6 +4861,9 @@
         "be5a26ca209e9fe8be8e809dfa24d3ed7c15f4c8",
         "d044c5aede3665aca0f34cf23c6b15bcabaa396a",
         "fdb2f8d493d3e02ded1c5fb26d03c6270d3c8fc9"
+      ],
+      "packages": [
+        "b34tingh34rt.sable_pathfinder"
       ]
     },
     "scribble": {
@@ -4022,7 +4877,14 @@
         "8d89e6e094c4543b5c042bb54232974c6a5b986e",
         "cb22e7484e1650acfcccc285e42207280575f3d3",
         "e713547a837a80791f76fa92f21fc1ba41b6759e"
-      ]
+      ],
+      "packages": [
+        "me.chrr"
+      ],
+      "curseforge": {
+        "project": "1051344",
+        "slug": "scribble"
+      }
     },
     "searchables": {
       "platform": "modrinth",
@@ -4032,7 +4894,14 @@
       "sha1": [
         "5b8a0b43a474c066371b2e16f9bfb88622552a74",
         "e9e24d903f265017b87c46b39db0ee4a4aa856c7"
-      ]
+      ],
+      "packages": [
+        "com.blamejared"
+      ],
+      "curseforge": {
+        "project": "858542",
+        "slug": "searchables"
+      }
     },
     "shulkerbox": {
       "platform": "modrinth",
@@ -4040,8 +4909,16 @@
       "slug": "advanced-shulkerboxes",
       "name": "Advanced Shulkerboxes",
       "sha1": [
-        "1cc9f12e1f34f391ad3b0bb93d17ead0831a1c8e"
-      ]
+        "1cc9f12e1f34f391ad3b0bb93d17ead0831a1c8e",
+        "4aa6bb569c618e63c97381685efa9d6eadb60595"
+      ],
+      "packages": [
+        "de.maxhenkel"
+      ],
+      "curseforge": {
+        "project": "253861",
+        "slug": "advanced-shulkerboxes"
+      }
     },
     "shulkerboxtooltip": {
       "platform": "modrinth",
@@ -4049,15 +4926,29 @@
       "slug": "shulkerboxtooltip",
       "name": "Shulker Box Tooltip",
       "sha1": [
+        "1648c689fefb7cf40c919c3ab4b59ed8f950bfb4",
+        "40042b29c1db8835cdd8194a36ae60502d84f229",
         "5166fe6ba7807f1b164f2a06f982c6c902837aa9",
         "5693ad113f43ec427a90be6ecd5a15d455e92fea",
+        "698aa563b6ecee5a30ab2ff2cf0d3ac5e8b26085",
         "7c46dd452d8195287d3acec87f5d1ca779319691",
+        "88ed9e525cb345f2197b44b5d077a062a15f87f2",
         "b8b383c404ca0325042472a9483d7852bc6530b9",
         "bddbccd689529f7f7ab04479e62c5e09b0be6be5",
         "d6c03c5ae1d0ec3362599ff395dcdce3346b05b3",
         "d708b1153749dacf6b8b62d98ee4ee562d481cfc",
-        "ef58f11a7cfb810ca2a427686d978c45523b837b"
-      ]
+        "e15fb37b7e5ee68c3fd1aad867b3151ab49a95c3",
+        "e28f49094665d41e329be4e2b1c9308bd30acf7a",
+        "ef58f11a7cfb810ca2a427686d978c45523b837b",
+        "f1e2a0c66399977030350c16b17a76a3e402d38c"
+      ],
+      "packages": [
+        "com.misterpemodder"
+      ],
+      "curseforge": {
+        "project": "315811",
+        "slug": "shulkerboxtooltip"
+      }
     },
     "simplebedrockmodel": {
       "platform": "modrinth",
@@ -4071,6 +4962,10 @@
         "c2c866114017d3e2accf8810df4a6e27d8230814",
         "cb4c3828f1e7e4d75c2c5073775f4b0bf42205e1",
         "ebf29147b9efea1a8d5fccbb22b370269a895877"
+      ],
+      "packages": [
+        "com.github.mcmodderanchor",
+        "com.maydaymemory"
       ]
     },
     "simplytooltips": {
@@ -4083,6 +4978,9 @@
         "2bbc2c8b5eb0fcc7ece66e336639a4fd554fd746",
         "6227453d5b628b1009d6ec516a0da5b588849744",
         "8cb9f93726124123319da430085dab553526905b"
+      ],
+      "packages": [
+        "net.sweenus"
       ]
     },
     "smartbrainlib": {
@@ -4102,7 +5000,14 @@
         "ac0ad029385b2149430b3a71593d92484b374b6e",
         "ae63c6200ce5486b9741b30a710a5af445f4c4f8",
         "e05949d72484a9086a97a1a291fe47600ca6f634"
-      ]
+      ],
+      "packages": [
+        "net.tslat"
+      ],
+      "curseforge": {
+        "project": "661293",
+        "slug": "smartbrainlib"
+      }
     },
     "smoothswapping": {
       "platform": "modrinth",
@@ -4113,6 +5018,9 @@
         "00338f16b360d6b24b53fc8f92b76256729aee75",
         "8a237bfa56adf858184296f803d0cbffbc5306de",
         "de297d805de1745f04188ae887b8cecefdb37d52"
+      ],
+      "packages": [
+        "dev.shwg"
       ]
     },
     "sodium": {
@@ -4141,6 +5049,10 @@
         "d59103545378e3650ec33b1489bb8d9f4e380fb1",
         "efc5edffe91596779a1ad3586e50a00126dc3341",
         "f868ab0a037d1211fabd31b2f42a2862b8e6c669"
+      ],
+      "packages": [
+        "net.caffeinemc",
+        "org.sinytra"
       ]
     },
     "sodium_extra": {
@@ -4160,6 +5072,10 @@
         "75f9c202e8384cb5de039cdcc47d5e1c8fde8fe5",
         "af462fb82fb1f565397aa2709076413382578bc7",
         "ea6e2e6c7ed8be4d57fbf8715898a6fa6faa2d3a"
+      ],
+      "packages": [
+        "me.flashyreese",
+        "net.caffeinemc"
       ]
     },
     "sodiumdynamiclights": {
@@ -4186,6 +5102,10 @@
         "e04329c9fa443476f85e79be33fc2c6f2439b605",
         "fb6f353946f27a1abd695a2e60858f158d849591",
         "ff5ad3be8e06d0275d2ee90d2c108088b40df6fb"
+      ],
+      "packages": [
+        "dev.lambdaurora",
+        "toni.sodiumdynamiclights"
       ]
     },
     "sound_physics_remastered": {
@@ -4203,6 +5123,10 @@
         "7d61c92b3a5081b0b8f0b3d02f124393fe188d49",
         "a5ac35ccb902231047709530a5708fb71dc3e3b5",
         "dc2eb92c94861279ad2c235925f975e2efd31087"
+      ],
+      "packages": [
+        "com.sonicether",
+        "de.maxhenkel"
       ]
     },
     "sounds": {
@@ -4252,7 +5176,15 @@
         "edfea63cc48a5767d83388eefc4f31c1f402a25f",
         "f48570a09379fbaca583a9e6d471a50b4c26e7f7",
         "f8c48e38e28cb999a7ad678c960b34da570c2b10"
-      ]
+      ],
+      "packages": [
+        "com.llamalad7",
+        "dev.imb11"
+      ],
+      "curseforge": {
+        "project": "925889",
+        "slug": "sound"
+      }
     },
     "subtle_effects": {
       "platform": "modrinth",
@@ -4290,6 +5222,10 @@
         "e80e1e6ba406e435412f81d918442f0ea2da8516",
         "ecc750d6764ce42b80344f7e878877ce620c4e26",
         "f0c846484bd7c769b88f38ab31429457f52552d7"
+      ],
+      "packages": [
+        "com.moulberry",
+        "einstein.subtle_effects"
       ]
     },
     "supermartijn642configlib": {
@@ -4299,6 +5235,9 @@
       "name": "SuperMartijn642's Config Lib",
       "sha1": [
         "07452242e389975e8a88b97066f4bae6a4ebe574"
+      ],
+      "packages": [
+        "com.supermartijn642"
       ]
     },
     "tectonic": {
@@ -4336,7 +5275,15 @@
         "e7d10a270c86b373d61a53f1d4877642cc7e86a2",
         "f2b7b95e597d6c9b8b4557ad9bf5e561de8b5179",
         "f8e3db3960c94502729c87a942ff385c0de5c17c"
-      ]
+      ],
+      "packages": [
+        "de.marhali",
+        "dev.worldgen"
+      ],
+      "curseforge": {
+        "project": "686836",
+        "slug": "tectonic"
+      }
     },
     "terrablender": {
       "platform": "modrinth",
@@ -4344,6 +5291,7 @@
       "slug": "terrablender",
       "name": "TerraBlender",
       "sha1": [
+        "102f7fb6e2b6d2266ad5de99acc88819fd6f923e",
         "20f9c92556b0654ba55c2d7ed3bbaa8618ab805e",
         "24f32105cbf328147ac085a0c2c7d99c7b4d29bd",
         "34620c7be27c9835a910f1f7a74c82f7dbe1e94f",
@@ -4354,7 +5302,22 @@
         "925e301faec7cfc801a71576b578edf24d26a700",
         "ab994e8c38b762a9a8c7552930f8e3242b232ec1",
         "f4c31b66c35576b4805224a1bbcf97895bcebcd0"
-      ]
+      ],
+      "packages": [
+        "dev.worldgen",
+        "nomansland.nsassetcompat",
+        "terrablender.api",
+        "terrablender.config",
+        "terrablender.core",
+        "terrablender.handler",
+        "terrablender.mixin",
+        "terrablender.util",
+        "terrablender.worldgen"
+      ],
+      "curseforge": {
+        "project": "1652368",
+        "slug": "terrabridge"
+      }
     },
     "tiny_config": {
       "platform": "modrinth",
@@ -4365,6 +5328,9 @@
         "08309421b1376cf4e4bfeee0eb2e89fbb67786ff",
         "5f011b7d0bbbeae6701b247c2220c05db687ae33",
         "c7ffd77418b69d76708bdb5b64f7f068e0ea9740"
+      ],
+      "packages": [
+        "net.tiny_config"
       ]
     },
     "toucanlib": {
@@ -4382,12 +5348,14 @@
         "63f38f79ca9b111b06266bb53572d3b3060eb579",
         "6d2324ef489e9e49b732770800f40b9c3235233f",
         "77b7a6425301990ace6d3b5070b3248e5bccb471",
+        "7889db1e55b3be0c5e825d0a36a79370ad15cd2e",
         "8a9e06a28950b3fccb284c72a1931e37adf3567e",
         "8d2254b90326aac56425faaa118499dc41a01eef",
         "8f06b8014bbba3dceaf951ee6f7763829492d536",
         "9856659f1186c70bbedd29af575a98fe0c37af9d",
         "997a1bd1801d407693e13100e52382d381afcd23",
         "9f5b093691b5101b779c9caaa30044cd1bf0e49b",
+        "a24edeed098a063556bb7765f34e0e053a9be623",
         "a5d0d79d56d1e33b153b2d0a82e33232ac25e035",
         "aab70e8143e1d76373a40f5eca78bf5c126bc6ee",
         "b15ab2b7dd4733146ebf51cfd8b444c7a0b3dd0a",
@@ -4397,7 +5365,14 @@
         "ef6392b388d15d1bf9b59239cb91c74ccd08771d",
         "f30a40a781350143e5346826268fb3eb0540eb58",
         "fa2a2655e9b800caa12c40f566954968db86b91e"
-      ]
+      ],
+      "packages": [
+        "com.jvn"
+      ],
+      "curseforge": {
+        "project": "1542666",
+        "slug": "toucanlib"
+      }
     },
     "trashslot": {
       "platform": "modrinth",
@@ -4405,12 +5380,28 @@
       "slug": "trashslot",
       "name": "TrashSlot",
       "sha1": [
+        "0b7004a166834ae9a33cc37d769947436bb3f956",
+        "1585b28e44e998a54ca46fc05aa59c259d8f90ab",
         "20aff6abd9db6c662e8e8c98fe98d87208338ca6",
+        "7343e4b563feb79122c8373a0d5416182ca436a8",
         "a5ab31c7da8b5688a7ff5f579f5af904c441b3b7",
+        "b1c4bb8ebe9c186719e2d31326370ec485b04c6c",
+        "b977a4df7de826ac7a56aeb10fbd4185394e6ae7",
+        "ba534887309f6ff9edd8985edd51972513aa9cf6",
         "ce09d0128e6a7d225e731e1307f9c1deddac209a",
         "d1bded1ef984ed63d47a475b05134abcabb9a71f",
+        "d73aaf52f00ab2656451b0608ffcf224c1560839",
+        "ee869412c35848757ced95b1ac84f4c132ebbe7b",
+        "f6d53bab7fa71a2efe3159ae28767111d5ad7a7f",
         "f701ce3b897ca8485eb28697f0690c44492cea46"
-      ]
+      ],
+      "packages": [
+        "net.blay09"
+      ],
+      "curseforge": {
+        "project": "235577",
+        "slug": "trashslot"
+      }
     },
     "txnilib": {
       "platform": "modrinth",
@@ -4430,7 +5421,14 @@
         "afa83faf6a67b8df3349e45a92f623e3e88c984f",
         "d8913ff0ddafd9bdf4c5a17af377ce4146106ee2",
         "dc46784006bac394cf3237e9091457447549fcb1"
-      ]
+      ],
+      "packages": [
+        "toni.lib"
+      ],
+      "curseforge": {
+        "project": "1104882",
+        "slug": "txnilib"
+      }
     },
     "vanillabackport": {
       "platform": "modrinth",
@@ -4465,7 +5463,14 @@
         "eb30efe569cbd5186abf9e5d1e64d4a84895b346",
         "f2c22126173751696117d142a948b47deb79b72e",
         "fad9dc68d74e8b6bf368a21a9b82bfd0a60a2921"
-      ]
+      ],
+      "packages": [
+        "com.blackgear"
+      ],
+      "curseforge": {
+        "project": "417430",
+        "slug": "vanillabackport"
+      }
     },
     "veil": {
       "platform": "modrinth",
@@ -4582,6 +5587,11 @@
         "fa63270f61f3970a41b445719763e96fb9b055d2",
         "fe6700600f8a8fa1ed0c366ef2967630ba754774",
         "fe901599a7d83f0e117936e0f8219bda576db6d8"
+      ],
+      "packages": [
+        "foundry.veil",
+        "gg.moonflower",
+        "io.github.ocelot"
       ]
     },
     "vintage_animations": {
@@ -4593,6 +5603,9 @@
         "35f855a2aa6158e18c033b58a82a04993ab3cba4",
         "d9f635b4a2b625b254de922c05e6af2e8657793f",
         "e5b23c516c5a7e32349772fa8819f676595d7e9d"
+      ],
+      "packages": [
+        "net.pixeldreamstudios"
       ]
     },
     "visual_health": {
@@ -4608,6 +5621,9 @@
         "8c7b37d045a8579bcb0128f307f7c715473a31fa",
         "b73b29c81933d3891a76361d8da949413c57fc3e",
         "d55cc329c50961e7f87702a43e784754d60b80ca"
+      ],
+      "packages": [
+        "win.demistorm"
       ]
     },
     "vivecraft": {
@@ -4639,6 +5655,9 @@
         "eab5944eb53b7058116ad692dcb9ee345319f81b",
         "f9867cdfca181cc6dd7ff2aaf1c5ff8a0daa2f5e",
         "ff5509cbd6c22d83dc0bf57c547fd6ebd9546a11"
+      ],
+      "packages": [
+        "org.vivecraft"
       ]
     },
     "voicechat": {
@@ -4690,6 +5709,9 @@
         "f72eff26b1156fdce12ef18c5792c48a54340142",
         "f9960efe1a8cc31802d6d136d105d1c1cc9d67d6",
         "fef58cb01069f4df7b6585207cea8fbbd94016c0"
+      ],
+      "packages": [
+        "de.maxhenkel"
       ]
     },
     "watut": {
@@ -4699,10 +5721,18 @@
       "name": "What Are They Up To (Watut)",
       "sha1": [
         "07cfb8fb1269f1eae1056492912e3544be979f62",
+        "3e36b72fc47465e3f72dcc43f37d08752c7076e6",
         "73ada80af4541952ca113a93a823e7bda033bac3",
         "9b3c00a93632adf61730f6036e8747a6021294ed",
         "e3c09c34f1246284a4cdfd0e30ee470591ea8e56"
-      ]
+      ],
+      "packages": [
+        "com.corosus"
+      ],
+      "curseforge": {
+        "project": "945479",
+        "slug": "what-are-they-up-to"
+      }
     },
     "worldedit": {
       "platform": "modrinth",
@@ -4714,6 +5744,11 @@
         "7db7b24ac777aedf3319ef14a79c93399e620308",
         "89d3d1a5b6d4d400adf5fc64ccc3f10add3ed7c3",
         "924fe181a29bd66be6783f6d589968ab0ee02250"
+      ],
+      "packages": [
+        "com.sk89q",
+        "org.enginehub",
+        "org.mozilla"
       ]
     },
     "wunderlib": {
@@ -4722,9 +5757,17 @@
       "slug": "wunderlib-neoforge",
       "name": "WunderLib: New Dawn",
       "sha1": [
+        "1501dc33f21cff317edc1487370cc47a34bd92d7",
         "330ab9d6d8d92a9337e97ef22e64f83fe2d4bf2a",
         "d78e56fa30e789f58cdbf363be4a74441e13ff9b"
-      ]
+      ],
+      "packages": [
+        "de.ambertation"
+      ],
+      "curseforge": {
+        "project": "1422273",
+        "slug": "wunderlib-neoforge"
+      }
     },
     "wwoo": {
       "platform": "modrinth",
@@ -4737,6 +5780,9 @@
         "455ee0ec7b1d9007291c046b86c496e1ba81cac1",
         "bfc20e94b4a8ad630654993d5799bcca36fe238d",
         "cc6c1d0fcc4564d695228438e0d8834c35d85a09"
+      ],
+      "packages": [
+        "de.cristelknight"
       ]
     },
     "xaerominimap": {
@@ -4771,6 +5817,12 @@
         "b662f97a58d88d56780487a89bf65d9d0330869d",
         "c671bd1d33e551c74f0157c9678549e566c5368e",
         "d4828332dd831455429156b6cfa24aa9bd99dd77"
+      ],
+      "packages": [
+        "xaero.common",
+        "xaero.hud",
+        "xaero.lib",
+        "xaero.minimap"
       ]
     },
     "xaeroworldmap": {
@@ -4801,6 +5853,10 @@
         "cee176ccb1dce03b92e0d78dcbbcae963f89bb4a",
         "d0865b6153c4d0feaf1551fb5309884ec3568c03",
         "f243d6877ab32333f27bf27ad1e9eb600361e6aa"
+      ],
+      "packages": [
+        "xaero.lib",
+        "xaero.map"
       ]
     },
     "yes_steve_model": {
@@ -4824,6 +5880,9 @@
         "e1bde96e20280b09e095f101ba5519c45ce17c0d",
         "edce94e336507f8bfdb317c78fa049852624b1aa",
         "f453ab390ed402da04c59c61c102772dfc9ffefe"
+      ],
+      "packages": [
+        "com.elfmcys"
       ]
     },
     "yet_another_config_lib_v3": {
@@ -4844,6 +5903,11 @@
         "fb169516f39dba60a40845f7eb72b9576a362f5b",
         "fd1bd25614d7119e44e3779d7de693d5fb1a7f6e",
         "fe270c9f6e0a8142cf316944087f5109cef08bbb"
+      ],
+      "packages": [
+        "com.twelvemonkeys",
+        "dev.isxander",
+        "org.quiltmc"
       ]
     },
     "yungsapi": {
@@ -4861,19 +5925,20 @@
         "eb5757e5cb387553ed4d342e7aecf5b7dcb384a0",
         "f9a97da544b5a981c9a903e9cbe6fa703b3fee0c",
         "fc03b96541b527eda086864ceef5cad57ee87086"
+      ],
+      "packages": [
+        "com.yungnickyoung"
       ]
     }
   },
   "unmatched": [
     "adventureitemstats",
-    "alltheleaks",
     "catalogue",
     "codecui",
     "commongroovylibrary",
     "commonnetworking",
     "conditional_mixin",
     "cosmeticarmorreworked",
-    "cupboard",
     "customskinloader",
     "discordpresence",
     "dpibypassdetect",
@@ -4884,9 +5949,7 @@
     "ediblebackpacks",
     "enderchestpersistence",
     "essential",
-    "expandability",
     "framework",
-    "gml",
     "keeptrim",
     "khi",
     "kuma_api",

@@ -82,6 +82,19 @@ public final class ApprovedModListFetcher {
         return settled || !attempted;
     }
 
+    /** Block (briefly) until the in-flight attempt settles, or {@code maxMs} pass. Never throws. */
+    public static void awaitSettled(long maxMs) {
+        long deadline = System.currentTimeMillis() + maxMs;
+        while (!isSettled() && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+
     /**
      * {@code <base>/approved-mods?dt=<version>}, or without the parameter when the version is
      * unknown (the relay then treats this jar as older than every floor). Pure, for tests.
@@ -210,15 +223,16 @@ public final class ApprovedModListFetcher {
                 if (!e.isJsonObject()) continue;
                 JsonObject f = e.getAsJsonObject();
                 String status = f.has("status") ? f.get("status").getAsString() : "";
-                if (!"approved".equals(status)) {
+                // plausible/unknown never cost a run; only suspect/revoked are worth a player's attention.
+                if ("suspect".equals(status) || "revoked".equals(status)) {
                     unverified.add((f.has("sha1") ? f.get("sha1").getAsString().substring(0, 8) : "?")
                         + ":" + status + (f.has("reason") ? "/" + f.get("reason").getAsString() : ""));
                 }
             }
             if (unverified.isEmpty()) {
-                LOGGER.info("[DungeonTrain] approved-mod verify: all {} installed file(s) verified", sent);
+                LOGGER.info("[DungeonTrain] approved-mod verify: none of {} installed file(s) suspect", sent);
             } else {
-                LOGGER.info("[DungeonTrain] approved-mod verify: {} of {} file(s) not verified: {}",
+                LOGGER.info("[DungeonTrain] approved-mod verify: {} of {} file(s) suspect: {}",
                     unverified.size(), sent, String.join(", ", unverified));
             }
         } catch (Throwable t) {

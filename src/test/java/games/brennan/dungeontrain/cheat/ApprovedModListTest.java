@@ -137,6 +137,35 @@ class ApprovedModListTest {
     }
 
     @Test
+    @DisplayName("knownPackages parse and round-trip; junk keys dropped, an empty set kept as knowledge")
+    void knownPackagesRoundTrip() {
+        ApprovedModList.Payload p = ApprovedModList.parse("{\"ok\":true,\"approved\":[],\"revoked\":[],"
+            + "\"knownPackages\":{\"JEI\":[\"mezz.jei\",\"bad key!\",7],\"datapackmod\":[],\"\":[\"x.y\"]}}");
+        assertNotNull(p);
+        assertEquals(Set.of("mezz.jei"), p.knownPackages().get("jei"));
+        assertEquals(Set.of(), p.knownPackages().get("datapackmod"));
+        assertEquals(2, p.knownPackages().size());
+        ApprovedModList.Payload back = ApprovedModList.parse(ApprovedModList.toJson(p));
+        assertNotNull(back);
+        assertEquals(p.knownPackages(), back.knownPackages());
+        assertFalse(ApprovedModList.toJson(new ApprovedModList.Payload(Set.of(), Set.of(), null)).contains("knownPackages"));
+    }
+
+    @Test
+    @DisplayName("The baked resource carries package knowledge for most approved ids")
+    void bakedResourceCarriesPackages() throws Exception {
+        JsonObject root;
+        try (var in = ApprovedModList.class.getResourceAsStream(ApprovedModList.RESOURCE)) {
+            assertNotNull(in);
+            root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        var known = ApprovedModList.parseKnownPackages(root);
+        Set<String> approved = ApprovedModList.parseBaked(root);
+        assertTrue(known.size() * 10 >= approved.size() * 7,
+            "package knowledge for " + known.size() + " of " + approved.size() + " approved ids — below 70%, run pull-approved-hashes.py");
+    }
+
+    @Test
     @DisplayName("A relay that predates hashes leaves the hash switch unsaid and the list empty")
     void hashesUnsaidWhenMissing() {
         ApprovedModList.Payload p = ApprovedModList.parse("{\"ok\":true,\"approved\":[\"sodium\"],\"revoked\":[]}");
