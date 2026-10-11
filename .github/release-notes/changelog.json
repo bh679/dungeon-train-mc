@@ -24546,8 +24546,24 @@
       "released_at": null
     },
     {
-      "id": "freeplay-live-feed",
+      "id": "live-eye-bigger-lens",
       "version": "0.1211.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "The Live Eye opens wider",
+      "summary": "The Live Eye's lens takes up more of its face, and the front is tidier.",
+      "highlights": [],
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1913
+    },
+    {
+      "id": "freeplay-live-feed",
+      "version": "0.1212.0",
       "type": "feat",
       "tags": [
         "feature",
