@@ -24909,6 +24909,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "streamer-head-viewer-decode-size",
+      "version": "0.1232.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye now asks a little less of your computer.",
+      "highlights": [],
+      "pr": 1935,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

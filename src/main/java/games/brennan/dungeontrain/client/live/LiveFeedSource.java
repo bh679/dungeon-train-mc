@@ -13,6 +13,7 @@ import net.mehvahdjukaar.vista.client.web.MediaStatus;
 import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import net.mehvahdjukaar.vista.common.tv.IntAnimationState;
 import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
@@ -64,7 +65,8 @@ public final class LiveFeedSource implements IVideoSource {
                                                         int videoAnimationTick, boolean paused,
                                                         IntAnimationState switchAnim, IntAnimationState staticAnim,
                                                         boolean showsTime) {
-        return screenConsumer(buffer, pixelEffectRes, videoAnimationTick, partialTick, paused, switchAnim, staticAnim);
+        return screenConsumer(frame(videoAnimationTick, partialTick, paused, true),
+            buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
     }
 
     /**
@@ -74,7 +76,13 @@ public final class LiveFeedSource implements IVideoSource {
     public VertexConsumer screenConsumer(MultiBufferSource buffer, Vec2i pixelEffectRes, int videoAnimationTick,
                                          float partialTick, boolean paused,
                                          IntAnimationState switchAnim, IntAnimationState staticAnim) {
-        Frame f = frame(videoAnimationTick, partialTick, paused);
+        return screenConsumer(frame(videoAnimationTick, partialTick, paused),
+            buffer, pixelEffectRes, videoAnimationTick, switchAnim, staticAnim);
+    }
+
+    private static VertexConsumer screenConsumer(Frame f, MultiBufferSource buffer, Vec2i pixelEffectRes,
+                                                 int videoAnimationTick,
+                                                 IntAnimationState switchAnim, IntAnimationState staticAnim) {
         return switch (f.kind()) {
             case STATIC -> TvScreenVertexConsumers.getNoiseVC(buffer, pixelEffectRes, switchAnim);
             case DOWNLOADING -> f.progress() >= 0
@@ -96,8 +104,13 @@ public final class LiveFeedSource implements IVideoSource {
      * its newest frame. TVs and the head viewer both call this; they share one session.
      */
     public Frame frame(int animationTick, float partialTick, boolean paused) {
+        return frame(animationTick, partialTick, paused, false);
+    }
+
+    /** {@code tvBlock}: a TV block is asking, which keeps the decode at full width for a streamer too. */
+    private Frame frame(int animationTick, float partialTick, boolean paused, boolean tvBlock) {
         if (!LiveFeedClientConfig.viewingEnabled()) return Frame.STATIC;
-        Status status = LiveStatusPoller.wanted();
+        Status status = tvBlock ? LiveStatusPoller.tvWanted() : LiveStatusPoller.wanted();
         boolean replay = false;
         String url;
         if (status.live() && status.slot() && status.playlistUrl() != null && !playedToEnd(status.playlistUrl())) {
@@ -149,24 +162,26 @@ public final class LiveFeedSource implements IVideoSource {
      * Render thread. A source change (takeover, replay ↔ live) does not cut straight over: the new
      * session decodes alongside the old one and takes the screen at its first frame, so a viewer
      * never sees "waiting" between two pictures. With no picture yet, the switch is immediate.
+     * A change of decode width ({@link #decodeWidth()}) is a source change too.
      */
     private LiveHlsSession sessionFor(String url, boolean replay, FFmpeg ffmpeg) {
+        int width = decodeWidth();
         LiveHlsSession s = session;
-        if (s != null && s.playlistUrl().equals(url) && s.isReplay() == replay) {
+        if (s != null && matches(s, url, replay, width)) {
             dropPending();
             return s;
         }
         if (s == null || texture == null || !texture.hasPicture()) {
             dropSession();
-            session = newSession(url, replay);
+            session = newSession(url, replay, width);
             texture = (LiveFeedTexture) session.createTextureView(TEXTURE);
             texture.register();
             return session;
         }
         LiveHlsSession p = pending;
-        if (p == null || !p.playlistUrl().equals(url) || p.isReplay() != replay) {
+        if (p == null || !matches(p, url, replay, width)) {
             dropPending();
-            pending = newSession(url, replay);
+            pending = newSession(url, replay, width);
             pendingTexture = (LiveFeedTexture) pending.createTextureView(PENDING_TEXTURE);
             pendingTexture.register();
             p = pending;
@@ -187,10 +202,22 @@ public final class LiveFeedSource implements IVideoSource {
         return s; // keep showing the old picture meanwhile
     }
 
-    private static LiveHlsSession newSession(String url, boolean replay) {
-        int w = LiveFeedClientConfig.viewerWidth();
-        int h = LiveFeedClientConfig.heightFor(w);
-        return new LiveHlsSession(url, w, h, replay);
+    private static boolean matches(LiveHlsSession s, String url, boolean replay, int width) {
+        return s.playlistUrl().equals(url) && s.isReplay() == replay && s.width() == width;
+    }
+
+    /**
+     * The width to decode at now: the viewer width, except for a streamer whose own pinned box is
+     * the only thing showing the feed — then the box's real pixel size ({@link LiveDecodeWidth}).
+     */
+    private static int decodeWidth() {
+        return LiveDecodeWidth.forConsumer(LiveStreamController.get().streaming(),
+            LiveStatusPoller.tvInterested(), LiveFeedClientConfig.headViewerWidth(true),
+            Minecraft.getInstance().getWindow().getGuiScale(), LiveFeedClientConfig.viewerWidth());
+    }
+
+    private static LiveHlsSession newSession(String url, boolean replay, int width) {
+        return new LiveHlsSession(url, width, LiveFeedClientConfig.heightFor(width), replay);
     }
 
     private void dropPending() {
