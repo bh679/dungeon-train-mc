@@ -119,6 +119,7 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 ./gradlew test            # Run JUnit tests (if present)
 ./gradlew --stop          # Stop the gradle daemon if dev client hangs
 ./gradlew pullTradeValues # Refresh data/dungeontrain/trade_values.json from the relay (see below)
+python3 scripts/modpack/pull-approved-hashes.py  # Refresh src/main/whitelist/approved_hashes.json (see below)
 ```
 
 ### Community item trade values
@@ -134,6 +135,21 @@ review the diff, commit. To refresh the page's item list, run
 to the relay's `public/dungeontrain/items/catalog.json`. For the icons, `./gradlew runClient
 -PtradeValueIcons` renders every item at the title screen to `run/trade-values-icons/` and quits
 (`client/TradeValueIconDump`); copy that folder to `public/dungeontrain/items/icons/`.
+
+### Approved-mod file hashes (hash-verified whitelist)
+
+Free Play judges installed mods by their jar's SHA-1 as well as by mod id. The scanning and
+verify-call ENGINE is the jarJar'd optional sibling `dtmodverify` (`bh679/dtmodverify-mc`, bumped by
+hand via `dtmodverify_version`; DT reaches it through `compat/DtModVerifyBridge` and falls back to the
+id-only check without it — relay `POST /approved-mods/verify`). The jar bakes the hashes it can know offline:
+`generateApprovedMods` merges the modpack's pinned-file `sha1`s (`check-mod-ids.py --fill` records
+them), the embedded jars', and `src/main/whitelist/approved_hashes.json` — every published 1.21.1
+NeoForge file of every approved mod, pulled by hand with
+`python3 scripts/modpack/pull-approved-hashes.py` (Modrinth; CurseForge too with
+`CURSEFORGE_API_KEY`) and committed. **Approving a new id means running it again**: the build
+fails on an approved id with no record. Ids the script cannot place are listed in `unmatched` and
+stay id-only approved; the relay verifies their files live and the Approved Mods page's review
+queue shows what it could not place. The relay's `enforceHashes` switch ships OFF.
 
 ### In-Game Manual Testing
 

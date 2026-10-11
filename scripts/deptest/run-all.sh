@@ -10,7 +10,7 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # Positive control first: if A fails, every later "failed" result is meaningless.
-"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dbd pv lctf eb sp blc vb pf exp expp
+"$HERE/run-case.sh" "A - full set (positive control)"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv dbd pv lctf eb sp blc vb pf exp expp
 "$HERE/run-case.sh" "B - missing AIN only"                             dt sable ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf exp expp
 "$HERE/run-case.sh" "C - missing all five siblings (upgrade path)"      dt sable fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf exp expp
 "$HERE/run-case.sh" "D - PlayerMob above floor (cascade tolerance)"    dt sable ain ais pmob-new ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sp blc vb pf exp expp
@@ -33,7 +33,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "N - missing Big Lost City"                        dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch vb pf exp expp
 # What Are They Up To + CoroUtil are modpack companions (on by default), needed on client AND
 # server. O = a server that runs the pack's set; P = WATUT without its library.
-"$HERE/run-case.sh" "O - modpack companions WATUT + CoroUtil"          dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dbd pv lctf sp blc vb pf exp expp watut coro
+"$HERE/run-case.sh" "O - modpack companions WATUT + CoroUtil"          dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv dbd pv lctf sp blc vb pf exp expp watut coro
 "$HERE/run-case.sh" "P - WATUT without CoroUtil"                       dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf exp expp watut
 # Exposure and its Polaroid add-on are required with `[x,)` floors; Q is the only case without them.
 "$HERE/run-case.sh" "Q - missing Exposure + Polaroid"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf

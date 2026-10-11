@@ -123,6 +123,115 @@ class ApprovedModListTest {
     }
 
     @Test
+    @DisplayName("The payload carries the approved file hashes and the hash switch; junk hashes are dropped")
+    void parsesHashes() {
+        String good = "0123456789abcdef0123456789abcdef01234567";
+        ApprovedModList.Payload p = ApprovedModList.parse("{\"ok\":true,\"approved\":[],\"revoked\":[],"
+            + "\"enforce\":true,\"hashes\":[\"" + good.toUpperCase() + "\",\"nope\",\"\",7],\"enforceHashes\":true}");
+        assertNotNull(p);
+        assertEquals(Set.of(good), p.hashes(), "lowercased, junk dropped");
+        assertEquals(Boolean.TRUE, p.enforceHashes());
+        assertTrue(ApprovedModList.isFileApproved(new ModFileFingerprint("a.jar", 1, good, 1L, List.of("a")), p.hashes()));
+        assertFalse(ApprovedModList.isFileApproved(new ModFileFingerprint("a.jar", 1, "f".repeat(40), 1L, List.of("a")), p.hashes()));
+        assertFalse(ApprovedModList.isFileApproved(null, p.hashes()));
+    }
+
+    @Test
+    @DisplayName("knownPackages parse and round-trip; junk keys dropped, an empty set kept as knowledge")
+    void knownPackagesRoundTrip() {
+        ApprovedModList.Payload p = ApprovedModList.parse("{\"ok\":true,\"approved\":[],\"revoked\":[],"
+            + "\"knownPackages\":{\"JEI\":[\"mezz.jei\",\"bad key!\",7],\"datapackmod\":[],\"\":[\"x.y\"]}}");
+        assertNotNull(p);
+        assertEquals(Set.of("mezz.jei"), p.knownPackages().get("jei"));
+        assertEquals(Set.of(), p.knownPackages().get("datapackmod"));
+        assertEquals(2, p.knownPackages().size());
+        ApprovedModList.Payload back = ApprovedModList.parse(ApprovedModList.toJson(p));
+        assertNotNull(back);
+        assertEquals(p.knownPackages(), back.knownPackages());
+        assertFalse(ApprovedModList.toJson(new ApprovedModList.Payload(Set.of(), Set.of(), null)).contains("knownPackages"));
+    }
+
+    @Test
+    @DisplayName("The baked resource carries package knowledge for most approved ids")
+    void bakedResourceCarriesPackages() throws Exception {
+        JsonObject root;
+        try (var in = ApprovedModList.class.getResourceAsStream(ApprovedModList.RESOURCE)) {
+            assertNotNull(in);
+            root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        var known = ApprovedModList.parseKnownPackages(root);
+        Set<String> approved = ApprovedModList.parseBaked(root);
+        assertTrue(known.size() * 10 >= approved.size() * 7,
+            "package knowledge for " + known.size() + " of " + approved.size() + " approved ids — below 70%, run pull-approved-hashes.py");
+    }
+
+    @Test
+    @DisplayName("A relay that predates hashes leaves the hash switch unsaid and the list empty")
+    void hashesUnsaidWhenMissing() {
+        ApprovedModList.Payload p = ApprovedModList.parse("{\"ok\":true,\"approved\":[\"sodium\"],\"revoked\":[]}");
+        assertNotNull(p);
+        assertEquals(Set.of(), p.hashes());
+        assertNull(p.enforceHashes());
+        ApprovedModList.setRelayForTest(p);
+        try {
+            assertFalse(ApprovedModList.enforceHashes(), "unsaid keeps the baked default, which is OFF");
+        } finally {
+            ApprovedModList.setRelayForTest(null);
+        }
+    }
+
+    @Test
+    @DisplayName("Hashes and the hash switch round-trip through the disk-cache JSON")
+    void hashesRoundTrip() {
+        String h = "0123456789abcdef0123456789abcdef01234567";
+        ApprovedModList.Payload p = new ApprovedModList.Payload(Set.of("a"), Set.of(), true, Set.of(h), true);
+        ApprovedModList.Payload back = ApprovedModList.parse(ApprovedModList.toJson(p));
+        assertNotNull(back);
+        assertEquals(Set.of(h), back.hashes());
+        assertEquals(Boolean.TRUE, back.enforceHashes());
+        assertFalse(ApprovedModList.toJson(new ApprovedModList.Payload(Set.of(), Set.of(), null)).contains("enforceHashes"),
+            "an unsaid hash switch is not written as said");
+    }
+
+    @Test
+    @DisplayName("The hash switch is baked OFF and the relay can turn it on")
+    void hashEnforcementIsBakedOff() {
+        assertFalse(ApprovedModList.BAKED_ENFORCE_HASHES);
+        ApprovedModList.setRelayForTest(new ApprovedModList.Payload(Set.of(), Set.of(), null, Set.of(), true));
+        try {
+            assertTrue(ApprovedModList.enforceHashes());
+        } finally {
+            ApprovedModList.setRelayForTest(null);
+        }
+    }
+
+    @Test
+    @DisplayName("The baked resource carries a file hash for every modpack entry and embedded jar")
+    void bakedResourceCarriesHashes() throws Exception {
+        JsonObject root;
+        try (var in = ApprovedModList.class.getResourceAsStream(ApprovedModList.RESOURCE)) {
+            assertNotNull(in);
+            root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+        }
+        Set<String> hashes = ApprovedModList.parseHashes(root);
+        assertFalse(hashes.isEmpty(), "generateApprovedMods must bake the modpack's pinned-file hashes");
+        for (String h : hashes) assertTrue(h.matches("[0-9a-f]{40}"), h);
+        // And every hash pull-approved-hashes.py recorded for an approved id is baked too.
+        JsonObject pulled = JsonParser.parseString(Files.readString(
+            RepoPaths.root().resolve("src/main/whitelist/approved_hashes.json"))).getAsJsonObject();
+        Set<String> approved = ApprovedModList.parseBaked(root);
+        int pulledCount = 0;
+        for (var e : pulled.getAsJsonObject("byMod").entrySet()) {
+            if (!approved.contains(e.getKey())) continue;
+            for (var h : e.getValue().getAsJsonObject().getAsJsonArray("sha1")) {
+                assertTrue(hashes.contains(h.getAsString()), e.getKey() + " " + h.getAsString());
+                pulledCount++;
+            }
+        }
+        assertTrue(pulledCount > 0, "the pulled catalogue must contribute hashes");
+    }
+
+    @Test
     @DisplayName("Enforcement is baked ON; only an explicit relay value changes it")
     void enforcementIsBakedOn() {
         assertTrue(ApprovedModList.BAKED_ENFORCE);
@@ -219,7 +328,7 @@ class ApprovedModListTest {
     void bakedResourceCoversSiblings() {
         Set<String> baked = ApprovedModList.approved();
         for (String id : List.of("keeptrim", "dungeonbackup", "sable_fence_trapdoor_fix",
-            "sable_pathfinder", "pigmanvillagers", "streamdetect", "dpibypassdetect")) {
+            "sable_pathfinder", "pigmanvillagers", "streamdetect", "dpibypassdetect", "dtmodverify")) {
             assertTrue(baked.contains(id), id + " ships with Dungeon Train, so it must be approved");
         }
     }

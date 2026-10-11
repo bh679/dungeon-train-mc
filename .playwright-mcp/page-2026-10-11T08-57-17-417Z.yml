@@ -1,0 +1,53 @@
+- generic [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - text: 🚂
+      - strong [ref=e4]: Dungeon Train
+    - generic [ref=e5]:
+      - navigation "Primary" [ref=e6]:
+        - link "Dashboard" [ref=e7] [cursor=pointer]:
+          - /url: "#/"
+        - link "Live" [ref=e8] [cursor=pointer]:
+          - /url: "#/live"
+        - button "Gameplay ▾" [ref=e11] [cursor=pointer]
+        - button "Books ▾" [ref=e13] [cursor=pointer]
+        - link "Carriages" [ref=e14] [cursor=pointer]:
+          - /url: "#/carriages"
+        - link "Builds" [ref=e15] [cursor=pointer]:
+          - /url: "#/builds"
+        - link "Advancements" [ref=e16] [cursor=pointer]:
+          - /url: "#/advancements"
+        - link "Surveys" [ref=e17] [cursor=pointer]:
+          - /url: "#/surveys"
+        - link "Feedback" [ref=e18] [cursor=pointer]:
+          - /url: "#/feedback"
+        - button "Text & Links ▾" [ref=e21] [cursor=pointer]
+        - link "Chat" [ref=e22] [cursor=pointer]:
+          - /url: "#/chats"
+        - button "Server ▾" [ref=e25] [cursor=pointer]
+        - link "Finances" [ref=e26] [cursor=pointer]:
+          - /url: "#/costs"
+        - button "Pages ▾" [ref=e28] [cursor=pointer]
+      - search [ref=e29]:
+        - button "Search" [ref=e30] [cursor=pointer]
+      - button "Hide dev-build telemetry (cap=dev) from every view" [ref=e34] [cursor=pointer]
+      - button "Toggle the live-data side panel" [ref=e36] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e37]: 📊
+      - button "Forget the access key and lock the explorer" [ref=e38] [cursor=pointer]:
+        - generic [aria-hidden] [ref=e39]: 🔒
+  - main [ref=e40]
+  - generic [ref=e42]:
+    - heading "🚂 Dungeon Train" [level=1] [ref=e43]
+    - paragraph [ref=e44]: Data Explorer — admin access required
+    - generic [ref=e45]: Access key
+    - textbox "Access key" [active] [ref=e46]
+    - button "Unlock" [ref=e47] [cursor=pointer]
+  - complementary [aria-hidden] [ref=e48]:
+    - generic [ref=e49]:
+      - generic [ref=e50]: Live
+      - button [ref=e52] [cursor=pointer]: ⏸
+      - button [ref=e53] [cursor=pointer]: ✕
+    - generic [ref=e54]: waiting for events…
+    - link [ref=e57] [cursor=pointer]:
+      - /url: "#/live"
+      - text: Open full view →

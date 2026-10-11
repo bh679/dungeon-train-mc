@@ -66,18 +66,28 @@ class JarTest(unittest.TestCase):
         self.assertEqual(cmi.jar_mod_ids(outer), ["moonlight"])
 
 
+SHA = "a" * 40
+
+
 class PresenceTest(unittest.TestCase):
     def cfg(self, *mods):
-        return {"sable": {"mod_ids": ["sable"]}, "optional_mods": list(mods)}
+        return {"sable": {"mod_ids": ["sable"], "sha1": SHA, "packages": ["dev.sable"]}, "optional_mods": list(mods)}
 
     def test_clean(self):
-        self.assertEqual(cmi.check_presence(self.cfg({"name": "A", "mod_ids": ["appleskin"]})), [])
+        self.assertEqual(cmi.check_presence(self.cfg({"name": "A", "mod_ids": ["appleskin"], "sha1": SHA, "packages": []})), [])
 
     def test_missing_fails(self):
-        self.assertEqual(len(cmi.check_presence(self.cfg({"name": "A"}))), 1)
+        # mod_ids, sha1 and packages are each their own problem (the hash whitelist needs all three)
+        problems = cmi.check_presence(self.cfg({"name": "A"}))
+        self.assertEqual(len(problems), 1, "no mod_ids is reported once; sha1/packages follow once ids exist")
+        self.assertIn("no mod_ids", problems[0])
+
+    def test_hash_and_packages_required(self):
+        problems = cmi.check_presence(self.cfg({"name": "A", "mod_ids": ["appleskin"]}))
+        self.assertEqual([p.split(": ")[1].split(" ")[1] for p in problems], ["sha1", "packages"])
 
     def test_slug_fails(self):
-        problems = cmi.check_presence(self.cfg({"name": "A", "mod_ids": ["simple-voice-chat"]}))
+        problems = cmi.check_presence(self.cfg({"name": "A", "mod_ids": ["simple-voice-chat"], "sha1": SHA, "packages": []}))
         self.assertIn("slug", problems[0])
 
     def test_whitelist_false_needs_nothing(self):
@@ -86,15 +96,41 @@ class PresenceTest(unittest.TestCase):
 
 class FillTest(unittest.TestCase):
     def test_inserts_after_slug_and_skips_opt_out(self):
-        cfg = {"sable": {"mod_ids": ["sable"]}, "optional_mods": [
+        cfg = {"sable": {"mod_ids": ["sable"], "sha1": SHA, "packages": ["dev.sable"]}, "optional_mods": [
             {"name": "M", "slug": "selene", "project_id": 1},
             {"name": "X", "slug": "x", "whitelist": False},
         ]}
         cmi.actual_ids = lambda label, entry, cache: ["codecui", "moonlight"]
+        cmi.actual_sha1 = lambda entry, cache: SHA
+        cmi.actual_packages = lambda entry, cache: ["net.mehvahdjukaar"]
         filled = cmi.fill(cfg, None)
         self.assertEqual(len(filled), 1)
-        self.assertEqual(list(cfg["optional_mods"][0]), ["name", "slug", "mod_ids", "project_id"])
+        self.assertEqual(list(cfg["optional_mods"][0]), ["name", "slug", "mod_ids", "sha1", "packages", "project_id"])
         self.assertNotIn("mod_ids", cfg["optional_mods"][1])
+
+
+class PackageFingerprintTest(unittest.TestCase):
+    """The Python twin of cheat/PackageFingerprint.java — the same fixtures PackageFingerprintTest pins."""
+
+    def test_keys(self):
+        cases = {
+            "mezz/jei/common/Foo.class": "mezz.jei", "Foo.class": None, "net/Baz.class": None,
+            "org/apache/commons/X.class": None, "com/github/alice/mod/Y.class": "com.github.alice",
+            "io/github/bob/Z.class": "io.github.bob", "com/google/gson/G.class": None,
+            "net/minecraft/client/C.class": None, "kotlin/Unit.class": None, "META-INF/jarjar/inner.jar": None,
+            "assets/x/y.json": None, "dev/alpha/A.class": "dev.alpha", "org/violetmoon/quark/Q.class": "org.violetmoon",
+        }
+        for name, want in cases.items():
+            self.assertEqual(cmi.package_of(name), want, name)
+
+    def test_jar_packages_include_embedded_and_cap(self):
+        inner = jar({"net/xray/Cheat.class": b"\0", "org/apache/Shaded.class": b"\0"})
+        outer = jar({"mezz/jei/A.class": b"\0", "dev/alpha/C.class": b"\0", "META-INF/jarjar/inner.jar": inner})
+        self.assertEqual(cmi.jar_packages(outer), ["dev.alpha", "mezz.jei", "net.xray"])
+        many = jar({f"p{i:03d}/q/C.class": b"\0" for i in range(cmi.PKG_MAX + 20)})
+        caps = cmi.jar_packages(many)
+        self.assertEqual(len(caps), cmi.PKG_MAX)
+        self.assertEqual(caps[0], "p000.q")
 
 
 class CliTest(unittest.TestCase):

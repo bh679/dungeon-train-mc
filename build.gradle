@@ -549,6 +549,8 @@ dependencies {
     // NeoForge's JarSelector drops the nested copy when the CF app installs a top-level one.
     implementation "bh679:streamdetect:${streamdetect_version}"
     jarJar(group: 'bh679', name: 'streamdetect', version: streamdetect_version)
+    implementation "bh679:dtmodverify:${dtmodverify_version}"
+    jarJar(group: 'bh679', name: 'dtmodverify', version: dtmodverify_version)
     implementation "bh679:dpibypassdetect:${dpibypassdetect_version}"
     jarJar(group: 'bh679', name: 'dpibypassdetect', version: dpibypassdetect_version)
 
@@ -947,6 +949,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         keeptrim_min_version             : keeptrim_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,
         streamdetect_min_version         : streamdetect_min_version,
+        dtmodverify_min_version          : dtmodverify_min_version,
         dpibypassdetect_min_version      : dpibypassdetect_min_version,
         dungeonbackup_min_version        : dungeonbackup_min_version,
         sablefencetrapdoorfix_min_version : sablefencetrapdoorfix_min_version,
