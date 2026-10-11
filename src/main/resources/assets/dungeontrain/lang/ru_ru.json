@@ -2462,7 +2462,7 @@
   "gui.dungeontrain.consent.reincarnations.adult.tip": "Скины и поведение других игроков, воссозданные в забеге как моб под управлением бота",
   "gui.dungeontrain.consent.reincarnations.kid.tip": "Скины и поведение других игроков, воссозданные в забеге как моб под управлением бота. Без чата и сообщений.",
   "gui.dungeontrain.consent.livestream": "Прямая трансляция",
-  "gui.dungeontrain.consent.livestream.adult.tip": "Надень вещательный шлем — и все, кто смотрит эфир, увидят то же, что и ты. Выкл = шлем сгорает, как только ты его наденешь.",
+  "gui.dungeontrain.consent.livestream.adult.tip": "Ты можешь включить прямую трансляцию (без звука) с помощью предмета в игре.",
   "gui.dungeontrain.consent.livestream.kid.tip": "Выключено, пока родитель не включит: с вещательной видеокамерой на голове все, кто смотрит Прямой эфир, видят то, что видишь ты.",
   "gui.dungeontrain.consent.dev_chat": "Чат с разработчиком",
   "gui.dungeontrain.consent.dev_chat.adult.tip": "Вы можете связаться с разработчиком в игре",
