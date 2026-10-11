@@ -61,13 +61,15 @@ public final class PhotoTributeButtons {
     private static final int HEIGHT = 20;
     private static final int PADDING = 6;
     private static final int GAP = 6;
-    private static final int BOTTOM_MARGIN = 8;
     private static final int ICON_SIZE = 16;
     private static final int CAN_AFFORD_COLOUR = 0x55AAFF;
     private static final int CANNOT_AFFORD_COLOUR = 0xFF5555;
     private static final String CLOSE_MARK = "X";
-    private static final int BADGES_PER_ROW = 10;
     private static final int BADGE_GAP = 4;
+    /** Exposure's {@code PhotographScreen} draws the photo this fraction of the screen height square, centred. */
+    private static final float PHOTO_FRACTION = 0.8f;
+    /** Space kept between the photo's edge and what DT draws beside it. */
+    private static final int PHOTO_CLEARANCE = 2;
 
     /** The viewer the buttons were last added to, and those buttons. Render thread only. */
     private static Screen shownOn;
@@ -95,7 +97,7 @@ public final class PhotoTributeButtons {
         Font font = minecraft.font;
         Component closeLabel = Component.translatable("gui.dungeontrain.photo_tribute.close");
         int closeWidth = font.width(CLOSE_MARK) + 2 * PADDING;
-        int y = screen.height - HEIGHT - BOTTOM_MARGIN;
+        int y = buttonRowY(screen);
         if (photo.isEmpty()) {
             if (!DisposableCamera.holdsBurnAfterViewing(player.getMainHandItem())
                 && !DisposableCamera.holdsBurnAfterViewing(player.getOffhandItem())) return;
@@ -215,28 +217,38 @@ public final class PhotoTributeButtons {
         return player.getOffhandItem().has(Exposure.DataComponents.PHOTOGRAPH_FRAME) ? player.getOffhandItem() : ItemStack.EMPTY;
     }
 
+    /** The photo's bottom edge at Exposure's default zoom. */
+    private static int photoBottom(Screen screen) {
+        return (int) Math.ceil(screen.height * (0.5f + PHOTO_FRACTION / 2));
+    }
+
+    /** The button row: just below the photo so it never covers it, but always on screen. */
+    private static int buttonRowY(Screen screen) {
+        return Math.min(screen.height - HEIGHT - 1, photoBottom(screen) + PHOTO_CLEARANCE);
+    }
+
     /**
-     * A centred row (wrapping past {@link #BADGES_PER_ROW}) of the advancements the held photo earned
-     * its photographer, just above the button row. Spoiler-safe: see {@link AdvancementBadge#tooltip}.
+     * The advancements the held photo earned its photographer, as a column down the photo's left side
+     * (more columns further left when they don't fit). Spoiler-safe: see {@link AdvancementBadge#tooltip}.
      */
     private static void addBadges(ScreenEvent.Init.Post event, Screen screen, LocalPlayer player) {
         ItemStack held = heldPhotograph(player);
         Frame frame = held.isEmpty() ? null : held.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         List<PhotoAdvancementBadges.Badge> badges = frame == null ? List.of() : PhotoAdvancementBadges.read(frame.extraData());
         if (badges.isEmpty()) return;
-        int rows = (badges.size() + BADGES_PER_ROW - 1) / BADGES_PER_ROW;
         int pitch = AdvancementBadge.SIZE + BADGE_GAP;
-        int top = screen.height - HEIGHT - BOTTOM_MARGIN - GAP - rows * pitch + BADGE_GAP;
+        int photoSize = Math.round(screen.height * PHOTO_FRACTION);
+        int photoTop = (screen.height - photoSize) / 2;
+        int photoLeft = (screen.width - photoSize) / 2;
+        int perColumn = Math.max(1, (photoSize + BADGE_GAP) / pitch);
         List<AdvancementBadge> widgets = new java.util.ArrayList<>();
-        for (int row = 0; row < rows; row++) {
-            int from = row * BADGES_PER_ROW;
-            int count = Math.min(BADGES_PER_ROW, badges.size() - from);
-            int left = (screen.width - (count * pitch - BADGE_GAP)) / 2;
-            for (int i = 0; i < count; i++) {
-                AdvancementBadge badge = new AdvancementBadge(badges.get(from + i), left + i * pitch, top + row * pitch);
-                event.addListener(badge);
-                widgets.add(badge);
-            }
+        for (int i = 0; i < badges.size(); i++) {
+            int column = i / perColumn;
+            int x = photoLeft - PHOTO_CLEARANCE - BADGE_GAP - AdvancementBadge.SIZE - column * pitch;
+            int y = photoTop + (i % perColumn) * pitch;
+            AdvancementBadge badge = new AdvancementBadge(badges.get(i), Math.max(0, x), y);
+            event.addListener(badge);
+            widgets.add(badge);
         }
         shownOn = screen;
         badgesShown = List.copyOf(widgets);
