@@ -23,10 +23,9 @@ import java.util.List;
  * what the shared-book content filter holds back, so a writer knows the rules before signing.
  * Clicking does nothing — it is a tooltip anchor, not an action.
  *
- * <p>The tooltip is pinned to the right of the button rather than following the cursor, so it reads
- * as a panel beside the book instead of covering the page. It wraps to the space between the button
- * and the screen edge; when that is too narrow (large GUI scales) it keeps {@link #MIN_WRAP} and is
- * pushed left onto the screen.</p>
+ * <p>The tooltip is pinned beside the book rather than following the cursor: right of the button
+ * when it fits, otherwise left of the book (large GUI scales / narrow windows), so it never covers
+ * the page or the formatting buttons.</p>
  *
  * <p>The list mirrors the relay's moderation categories in broad strokes only (dp-relay
  * {@code moderation.js} / {@code moderation-routing.js}); it is deliberately general so it does
@@ -53,9 +52,12 @@ public final class BookFilterInfoButton extends AbstractWidget {
     private static final int PAD = 3;
     /** Air between the button and the tooltip's background. */
     private static final int AIR = 4;
-    /** Narrowest the text is wrapped to, however little room there is to the right. */
-    private static final int MIN_WRAP = 120;
+    /** Widest the text is wrapped to. */
     private static final int MAX_WRAP = 220;
+    /** Narrowest the text is wrapped to on the left of the book. */
+    private static final int MIN_LEFT_WRAP = 80;
+    /** Scribble's undo/redo column starts {@code width/2 - 97}; the left-hand tooltip ends before it. */
+    private static final int LEFT_COLUMN_FROM_CENTRE = 97;
 
     public BookFilterInfoButton(int x, int y) {
         super(x, y, SIZE, SIZE, Component.translatable("gui.dungeontrain.book_filter_info.title"));
@@ -86,15 +88,38 @@ public final class BookFilterInfoButton extends AbstractWidget {
         if (isHovered()) showPinnedTooltip();
     }
 
-    /** Queues the tooltip for the screen's tooltip pass (drawn on top), anchored right of the button. */
+    /**
+     * Queues the tooltip for the screen's tooltip pass (drawn on top). It goes right of the button
+     * when its natural width fits there; otherwise it moves to the empty space left of the book,
+     * beside Scribble's undo/redo column, so it never covers the formatting buttons.
+     */
     private void showPinnedTooltip() {
         Minecraft mc = Minecraft.getInstance();
         Screen screen = mc.screen;
         if (screen == null) return;
         int textX = getX() + SIZE + AIR + PAD;
-        int wrap = Mth.clamp(screen.width - textX - PAD, MIN_WRAP, MAX_WRAP);
+        int roomRight = screen.width - textX - PAD;
+        List<FormattedCharSequence> natural = mc.font.split(tooltipText(), MAX_WRAP);
+        int naturalWidth = natural.stream().mapToInt(mc.font::width).max().orElse(0);
+        if (naturalWidth <= roomRight) {
+            screen.setTooltipForNextRenderPass(natural, new RightOfWidgetPositioner(textX, getY()), true);
+            return;
+        }
+        int rightEdge = screen.width / 2 - LEFT_COLUMN_FROM_CENTRE - AIR - PAD;
+        int wrap = Mth.clamp(rightEdge - PAD * 2, MIN_LEFT_WRAP, MAX_WRAP);
         List<FormattedCharSequence> lines = mc.font.split(tooltipText(), wrap);
-        screen.setTooltipForNextRenderPass(lines, new RightOfWidgetPositioner(textX, getY()), true);
+        screen.setTooltipForNextRenderPass(lines, new LeftOfBookPositioner(rightEdge, getY()), true);
+    }
+
+    /** Ends the tooltip's text at {@code rightEdge}, left of the book. */
+    private record LeftOfBookPositioner(int rightEdge, int topY) implements ClientTooltipPositioner {
+        @Override
+        public Vector2ic positionTooltip(int screenWidth, int screenHeight, int mouseX, int mouseY,
+                                         int tooltipWidth, int tooltipHeight) {
+            int x = Math.max(PAD, rightEdge - tooltipWidth);
+            int y = Mth.clamp(topY + PAD, PAD, Math.max(PAD, screenHeight - tooltipHeight - PAD));
+            return new Vector2i(x, y);
+        }
     }
 
     /** Puts the tooltip's text at a fixed point right of the button, kept on screen. */
