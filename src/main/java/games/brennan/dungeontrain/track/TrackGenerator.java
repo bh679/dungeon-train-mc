@@ -464,7 +464,7 @@ public final class TrackGenerator {
             BlockPos local = new BlockPos(xMod, y, zOff);
             if (!sidecar.growsAt(local)) return null;
             games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(local, worldSeed, (int) tileIndex);
-            return picked != null && !picked.growth().isDefault() ? picked : null;
+            return picked != null && (!picked.growth().isDefault() || !picked.painting().isDefault()) ? picked : null;
         }
 
         private BlockState resolveSidecar(TrackVariantBlocks sc, BlockState base, int xMod, int y, int zOff) {
@@ -765,7 +765,7 @@ public final class TrackGenerator {
             BlockPos local = new BlockPos(0, row, zIdx);
             if (!sidecar.growsAt(local)) return null;
             games.brennan.dungeontrain.editor.VariantState picked = sidecar.resolve(local, worldSeed, pillarIndex);
-            return picked != null && !picked.growth().isDefault() ? picked : null;
+            return picked != null && (!picked.growth().isDefault() || !picked.painting().isDefault()) ? picked : null;
         }
 
         /** Note a written pillar cell for {@link games.brennan.dungeontrain.editor.GrowthPass}, if it grows. */

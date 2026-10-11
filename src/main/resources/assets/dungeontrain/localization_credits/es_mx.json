@@ -2,8 +2,15 @@
   "locale": "es_mx",
   "name": "IA sin revisión humana",
   "human_reviewed": false,
+<<<<<<< HEAD
   "total_keys": 4585,
   "ai_authored": 4585,
   "ai_unreviewed": 4585,
   "counted_keys": 2835
+=======
+  "total_keys": 4586,
+  "ai_authored": 4586,
+  "ai_unreviewed": 4586,
+  "counted_keys": 2831
+>>>>>>> origin/main
 }

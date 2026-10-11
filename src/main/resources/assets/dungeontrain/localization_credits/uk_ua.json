@@ -2,8 +2,15 @@
   "locale": "uk_ua",
   "name": "ШІ без перевірки людиною",
   "human_reviewed": false,
+<<<<<<< HEAD
   "total_keys": 4634,
   "ai_authored": 4488,
   "ai_unreviewed": 4488,
   "counted_keys": 2882
+=======
+  "total_keys": 4635,
+  "ai_authored": 4489,
+  "ai_unreviewed": 4489,
+  "counted_keys": 2878
+>>>>>>> origin/main
 }

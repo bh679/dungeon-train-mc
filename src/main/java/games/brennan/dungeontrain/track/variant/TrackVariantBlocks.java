@@ -428,14 +428,14 @@ public final class TrackVariantBlocks {
     }
 
     /**
-     * True when any candidate at {@code localPos} has growth on — the cheap gate the hot worldgen
+     * True when any candidate at {@code localPos} has growth or a painting option on — the cheap gate the hot worldgen
      * paths check before re-rolling a cell for {@link games.brennan.dungeontrain.editor.GrowthPass}.
      */
     public boolean growsAt(BlockPos localPos) {
         List<VariantState> states = entries.get(localPos);
         if (states == null) return false;
         for (VariantState s : states) {
-            if (!s.growth().isDefault()) return true;
+            if (!s.growth().isDefault() || !s.painting().isDefault()) return true;
         }
         return false;
     }
