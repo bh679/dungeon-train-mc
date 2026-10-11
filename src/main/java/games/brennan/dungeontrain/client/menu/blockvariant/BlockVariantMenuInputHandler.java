@@ -205,6 +205,24 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_GROWTH, variantId, local, hit.index(), "", next.toInt()));
             }
+            case PAINTING_OPTION -> {
+                // Same modal rules as GROWTH_OPTION: -2 closes, -1 is the popup's own margin.
+                int code = hit.secondary();
+                if (code == -1) return;
+                if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+                    BlockVariantMenu.closeGrowthPopup();
+                    return;
+                }
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                if (code / 10 != PaintingPopupLayout.SECTION_ON && code % 10 == PaintingPopupLayout.STEPPER_VALUE) return;
+                games.brennan.dungeontrain.editor.VariantPainting current = BlockVariantMenu.painting(e);
+                games.brennan.dungeontrain.editor.VariantPainting next = PaintingPopupLayout.apply(
+                    current, BlockVariantMenu.pictures(), code / 10, code % 10);
+                if (next.equals(current)) return;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_PAINTING, variantId, local, hit.index(),
+                    next.isDefault() ? "" : next.id(), 0));
+            }
             case SPAN_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.

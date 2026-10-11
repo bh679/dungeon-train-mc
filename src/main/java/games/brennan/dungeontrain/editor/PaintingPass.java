@@ -6,6 +6,12 @@ import games.brennan.dungeontrain.compat.PaintingCatalog.Picture;
 import games.brennan.dungeontrain.compat.PaintingTransformProcessor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Blocks;
@@ -42,6 +48,7 @@ public final class PaintingPass {
     private static final String X_OFFSET = "x_offset";
     private static final String Y_OFFSET = "y_offset";
     private static final String NBT_VARIANT = "variant";
+    private static final ResourceLocation PAINTING_BLOCK = ResourceLocation.fromNamespaceAndPath("fastpaintings", "painting");
 
     private PaintingPass() {}
 
@@ -58,6 +65,50 @@ public final class PaintingPass {
     /** True for a Fast Paintings painting (DT's photo frame shares the properties but is not one). */
     public static boolean isPainting(BlockState state) {
         return !(state.getBlock() instanceof PhotographFrameBlock) && PaintingTransformProcessor.isPaintingBlock(state);
+    }
+
+    /** The Fast Paintings painting block's default state, facing {@code facing}; {@code null} without the mod. */
+    @Nullable
+    public static BlockState paintingState(Direction facing) {
+        BlockState state = BuiltInRegistries.BLOCK.getOptional(PAINTING_BLOCK)
+            .map(b -> b.defaultBlockState()).orElse(null);
+        if (state == null || facing.getAxis().isVertical()) return state;
+        DirectionProperty facingProp = property(state, FACING, DirectionProperty.class);
+        return facingProp == null ? state : state.setValue(facingProp, facing);
+    }
+
+    /** A painting block's facing, or {@code null} for anything that is not a painting. */
+    @Nullable
+    public static Direction facingOf(BlockState state) {
+        if (!isPainting(state)) return null;
+        DirectionProperty facingProp = property(state, FACING, DirectionProperty.class);
+        return facingProp == null ? null : state.getValue(facingProp);
+    }
+
+    /**
+     * The painting option a held {@code minecraft:painting} stack asks for: its picture (and that
+     * picture's size) when the stack names one, else Any size, Random picture.
+     */
+    public static VariantPainting fromItem(ItemStack stack, RegistryAccess access) {
+        CustomData data = stack.get(DataComponents.ENTITY_DATA);
+        if (data != null) {
+            ResourceLocation id = ResourceLocation.tryParse(data.copyTag().getString(NBT_VARIANT));
+            if (id != null) return normalise(VariantPainting.ANY.withImage(id), access);
+        }
+        return VariantPainting.ANY;
+    }
+
+    /**
+     * Keep size and picture consistent: a fixed picture with Any size takes the picture's size;
+     * a fixed picture of the wrong size is dropped back to Random. Unknown ids (a removed mod's
+     * picture) are left as authored — they simply never fit at spawn.
+     */
+    public static VariantPainting normalise(VariantPainting painting, RegistryAccess access) {
+        if (painting.isDefault() || painting.image() == null) return painting;
+        Picture pic = PaintingCatalog.byId(access, painting.image());
+        if (pic == null) return painting;
+        if (painting.anySize()) return painting.withSize(pic.width(), pic.height());
+        return painting.sizeMatches(pic.width(), pic.height()) ? painting : painting.withImage(null);
     }
 
     /** True when {@code entry} wants a whole painting hung at a cell that was placed as {@code placed}. */

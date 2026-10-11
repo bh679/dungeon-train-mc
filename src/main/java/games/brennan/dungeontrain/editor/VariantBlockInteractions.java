@@ -100,6 +100,8 @@ public final class VariantBlockInteractions {
             newVariant = captureVariant(event, level, player, blockItem, held, clicked);
         } else if (held.getItem() instanceof SpawnEggItem egg) {
             newVariant = captureMobVariant(egg, held, player);
+        } else if (held.is(net.minecraft.world.item.Items.PAINTING)) {
+            newVariant = capturePaintingVariant(event, level, held);
         } else {
             return;
         }
@@ -371,6 +373,24 @@ public final class VariantBlockInteractions {
             }
         }
         return new VariantState(newState, beNbt, 1, RotationApplier.lockToCurrent(newState));
+    }
+
+    /**
+     * Build a painting {@link VariantState} from a held {@code minecraft:painting}: a Fast Paintings
+     * painting facing out of the clicked face, hung whole at spawn by {@link PaintingPass}. The
+     * stack's picture, if it names one, becomes the row's picture (and size). {@code null} without
+     * Fast Paintings, or on a floor / ceiling face.
+     */
+    private static @Nullable VariantState capturePaintingVariant(PlayerInteractEvent.RightClickBlock event,
+                                                                  ServerLevel level, ItemStack held) {
+        // Varying a painting already in the cell keeps its facing; otherwise face out of the click.
+        net.minecraft.core.Direction face = PaintingPass.facingOf(level.getBlockState(event.getPos()));
+        if (face == null) face = event.getFace();
+        if (face == null || face.getAxis().isVertical()) return null;
+        BlockState state = PaintingPass.paintingState(face);
+        if (state == null) return null;
+        return new VariantState(state, null, 1, RotationApplier.lockToCurrent(state))
+            .withPainting(PaintingPass.fromItem(held, level.registryAccess()));
     }
 
     /**
