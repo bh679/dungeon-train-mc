@@ -24595,6 +24595,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-take-off-freeze",
+      "version": "0.1214.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Live Eye comes off smoothly",
+      "summary": "Taking off the Live Eye is smooth now.",
+      "highlights": [],
+      "pr": 1917,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
