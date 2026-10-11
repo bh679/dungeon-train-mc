@@ -198,6 +198,7 @@ public final class LiveStreamController {
             bands.start(shown);
             say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.now_live", shown)
                 .withStyle(ChatFormatting.GREEN));
+            say(LiveWatchLinks.line());
             return;
         }
         if (bands.update(viewers, nowMs)) {

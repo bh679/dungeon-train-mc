@@ -15321,5 +15321,27 @@
         "101"
       ]
     }
+  },
+  "chat.dungeontrain.live.watch_links": {
+    "1": {
+      "label": "the clickable word Twitch, already translated (chat.dungeontrain.live.link.twitch)",
+      "examples": [
+        "Twitch"
+      ]
+    },
+    "2": {
+      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "examples": [
+        "DungeonTrain TV"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watch_link": {
+    "1": {
+      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "examples": [
+        "DungeonTrain TV"
+      ]
+    }
   }
 }
