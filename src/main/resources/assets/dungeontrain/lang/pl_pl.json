@@ -2488,6 +2488,8 @@
   "gui.dungeontrain.options.stream_chat": "Pokazuj czat widzom",
   "gui.dungeontrain.options.stream_chat.tip": "Widzowie widzą czat i to, co piszesz. Wył. = czat nigdy nie trafia do transmisji.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Zawsze wyłączone w trybie dziecka: czat nigdy nie trafia do transmisji.",
+  "gui.dungeontrain.options.stream_size": "Rozmiar wideo",
+  "gui.dungeontrain.options.stream_size.tip": "Rozmiar obrazu wysyłanego widzom. Mniejszy mniej obciąża twój FPS. Działa od następnej transmisji.",
   "gui.dungeontrain.options.stream.preview": "Co widzą widzowie",
   "gui.dungeontrain.options.stream.preview.no_world": "Wejdź do świata, aby zobaczyć podgląd",
   "gui.dungeontrain.options.stream.preview.off": "Transmisja na żywo jest wyłączona",

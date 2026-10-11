@@ -2394,6 +2394,8 @@
   "gui.dungeontrain.options.stream_chat": "แสดงแชตให้ผู้ชมเห็น",
   "gui.dungeontrain.options.stream_chat.tip": "ผู้ชมจะเห็นแชตและสิ่งที่คุณพิมพ์ ปิด = แชตจะไม่ขึ้นในสตรีมเลย",
   "gui.dungeontrain.options.stream_chat.kid_tip": "ปิดเสมอในโหมดเด็ก: แชตจะไม่ขึ้นในสตรีมเลย",
+  "gui.dungeontrain.options.stream_size": "ขนาดวิดีโอ",
+  "gui.dungeontrain.options.stream_size.tip": "ขนาดภาพที่ส่งไปให้ผู้ชม ยิ่งเล็กยิ่งเบาต่อเฟรมเรต มีผลในการไลฟ์ครั้งถัดไป",
   "gui.dungeontrain.options.stream.preview": "สิ่งที่ผู้ชมเห็น",
   "gui.dungeontrain.options.stream.preview.no_world": "เข้าโลกก่อนเพื่อดูตัวอย่าง",
   "gui.dungeontrain.options.stream.preview.off": "การไลฟ์สตรีมปิดอยู่",

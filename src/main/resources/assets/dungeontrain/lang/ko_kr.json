@@ -2394,6 +2394,8 @@
   "gui.dungeontrain.options.stream_chat": "시청자에게 채팅 보이기",
   "gui.dungeontrain.options.stream_chat.tip": "시청자에게 채팅과 입력 중인 글이 보입니다. 꺼짐 = 채팅은 방송에 절대 나오지 않습니다.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "키즈 모드에서는 항상 꺼짐: 채팅은 방송에 절대 나오지 않습니다.",
+  "gui.dungeontrain.options.stream_size": "영상 크기",
+  "gui.dungeontrain.options.stream_size.tip": "시청자에게 보내는 화면 크기입니다. 작을수록 프레임 부담이 줄어듭니다. 다음 방송부터 적용됩니다.",
   "gui.dungeontrain.options.stream.preview": "시청자에게 보이는 화면",
   "gui.dungeontrain.options.stream.preview.no_world": "미리 보려면 월드에 들어가세요",
   "gui.dungeontrain.options.stream.preview.off": "라이브 방송이 꺼져 있습니다",

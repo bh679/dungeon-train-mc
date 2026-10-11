@@ -19,7 +19,9 @@ import org.joml.Matrix4f;
 
 /**
  * The Stream tab's preview: what viewers would see right now, given the tab's settings. Fits the
- * largest 16:9 picture into its box under a one-line caption. Not interactive.
+ * largest 16:9 picture into its box under a caption naming the video size. The frame is held at
+ * that size and drawn unsmoothed, so a smaller size looks as blocky here as it will to viewers.
+ * Not interactive.
  */
 public final class StreamPreviewWidget extends AbstractWidget {
 
@@ -45,7 +47,7 @@ public final class StreamPreviewWidget extends AbstractWidget {
         int x0 = getX() + (availW - w) / 2;
         int y0 = getY() + captionH;
 
-        g.drawCenteredString(font, getMessage(), getX() + availW / 2, getY(), 0xFFFFFF);
+        g.drawCenteredString(font, caption(), getX() + availW / 2, getY(), 0xFFFFFF);
         g.fill(x0 - 1, y0 - 1, x0 + w + 1, y0 + h + 1, BORDER);
 
         TextureTarget frame = StreamPreview.frame();
@@ -59,6 +61,12 @@ public final class StreamPreviewWidget extends AbstractWidget {
             g.fill(x0, y0, x0 + w, y0 + h, DIM);
             centred(g, font, Component.translatable("gui.dungeontrain.options.stream.preview.off"), x0, y0, w, h);
         }
+    }
+
+    /** "What viewers see · 1280×720": the size the broadcast is sent at, which the picture shows. */
+    private Component caption() {
+        int w = LiveFeedClientConfig.captureWidth();
+        return getMessage().copy().append(" · " + w + "×" + LiveFeedClientConfig.heightFor(w));
     }
 
     private static void centred(GuiGraphics g, Font font, Component text, int x0, int y0, int w, int h) {

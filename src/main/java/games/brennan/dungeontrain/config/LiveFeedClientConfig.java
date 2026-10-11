@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.config;
 
 import net.neoforged.neoforge.common.ModConfigSpec;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Client-side Live Feed settings ({@code config/dungeontrain-live-client.toml}): how the streamer's
  * view is captured and encoded, and how a viewer's TVs decode it. None of this is fair-play
@@ -28,6 +31,11 @@ public final class LiveFeedClientConfig {
     static final float[] HEAD_VIEWER_SIZES = {0.5f, 0.75f, 1f, 1.5f};
     static final int NORMAL_SIZE = 2;
 
+    /** The Options → Stream video sizes, as broadcast widths: 360p, 480p, 540p, 720p, 1080p (all even). */
+    static final List<Integer> CAPTURE_SIZES = List.of(640, 854, 960, 1280, 1920);
+    private static final int CAPTURE_WIDTH_MIN = 320;
+    private static final int CAPTURE_WIDTH_MAX = 1920;
+
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
         b.push("liveFeed");
@@ -42,7 +50,7 @@ public final class LiveFeedClientConfig {
             .define("streamChat", true);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")
-            .defineInRange("captureWidth", 1280, 320, 1920);
+            .defineInRange("captureWidth", 1280, CAPTURE_WIDTH_MIN, CAPTURE_WIDTH_MAX);
         CAPTURE_FPS = b
             .comment("Frames per second sent to the encoder. The game keeps rendering at full speed; this only caps how often a frame is copied out.")
             .defineInRange("captureFps", 20, 5, 30);
@@ -116,6 +124,27 @@ public final class LiveFeedClientConfig {
         if (!loaded() || STREAM_CHAT.get() == value) return;
         STREAM_CHAT.set(value);
         STREAM_CHAT.save();
+    }
+
+    /**
+     * Persist the broadcast width (Options → Stream → Video size). Clamped and evened; the next
+     * stream picks it up, and the preview follows it straight away.
+     */
+    public static void setCaptureWidth(int width) {
+        int w = Math.max(CAPTURE_WIDTH_MIN, Math.min(CAPTURE_WIDTH_MAX, width));
+        w -= w % 2;
+        if (!loaded() || CAPTURE_WIDTH.get() == w) return;
+        CAPTURE_WIDTH.set(w);
+        CAPTURE_WIDTH.save();
+    }
+
+    /** The sizes the Options row offers: the presets, plus {@code current} if it was hand-set off them. */
+    public static List<Integer> captureSizeValues(int current) {
+        if (CAPTURE_SIZES.contains(current)) return CAPTURE_SIZES;
+        List<Integer> values = new ArrayList<>(CAPTURE_SIZES);
+        values.add(current);
+        values.sort(null);
+        return List.copyOf(values);
     }
 
     /** Hotkey: flip the pinned viewer and persist it. Returns the new value. */

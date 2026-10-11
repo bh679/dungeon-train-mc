@@ -2441,6 +2441,8 @@
   "gui.dungeontrain.options.stream_chat": "Mostrar el chat a los espectadores",
   "gui.dungeontrain.options.stream_chat.tip": "Los espectadores ven el chat y lo que escribes. Desactivado = el chat nunca llega a la transmisión.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Siempre desactivado en el modo Niño: el chat nunca llega a la transmisión.",
+  "gui.dungeontrain.options.stream_size": "Tamaño de video",
+  "gui.dungeontrain.options.stream_size.tip": "Tamaño de imagen que se envía a los espectadores. Más pequeño pesa menos en tus FPS. Se aplica la próxima vez que transmitas.",
   "gui.dungeontrain.options.stream.preview": "Lo que ven los espectadores",
   "gui.dungeontrain.options.stream.preview.no_world": "Entra a un mundo para ver la vista previa",
   "gui.dungeontrain.options.stream.preview.off": "La transmisión está desactivada",

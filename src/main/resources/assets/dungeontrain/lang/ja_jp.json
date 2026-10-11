@@ -2394,6 +2394,8 @@
   "gui.dungeontrain.options.stream_chat": "視聴者にチャットを見せる",
   "gui.dungeontrain.options.stream_chat.tip": "視聴者にチャットや入力中の文字が見えます。オフ = チャットは配信に一切映りません。",
   "gui.dungeontrain.options.stream_chat.kid_tip": "キッズモードでは常にオフ:チャットは配信に一切映りません。",
+  "gui.dungeontrain.options.stream_size": "映像サイズ",
+  "gui.dungeontrain.options.stream_size.tip": "視聴者に送る映像の大きさ。小さいほどフレームレートへの負担が軽くなります。次の配信から反映されます。",
   "gui.dungeontrain.options.stream.preview": "視聴者に見えるもの",
   "gui.dungeontrain.options.stream.preview.no_world": "プレビューするにはワールドに入ってください",
   "gui.dungeontrain.options.stream.preview.off": "ライブ配信はオフです",

@@ -2394,6 +2394,8 @@
   "gui.dungeontrain.options.stream_chat": "Tunjukkan sembang kepada penonton",
   "gui.dungeontrain.options.stream_chat.tip": "Penonton nampak sembang dan apa yang anda taip. Mati = sembang tidak sekali-kali masuk ke strim.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Sentiasa mati dalam mod Kanak-kanak: sembang tidak sekali-kali masuk ke strim.",
+  "gui.dungeontrain.options.stream_size": "Saiz video",
+  "gui.dungeontrain.options.stream_size.tip": "Saiz gambar yang dihantar kepada penonton. Lebih kecil lebih ringan pada kadar bingkai anda. Berkuat kuasa pada siaran langsung seterusnya.",
   "gui.dungeontrain.options.stream.preview": "Apa yang penonton nampak",
   "gui.dungeontrain.options.stream.preview.no_world": "Masuk ke dunia untuk pratonton",
   "gui.dungeontrain.options.stream.preview.off": "Penstriman langsung dimatikan",

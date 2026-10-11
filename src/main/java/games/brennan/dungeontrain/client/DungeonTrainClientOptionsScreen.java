@@ -581,6 +581,9 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case DEV_CHAT -> onOffCandidates("gui.dungeontrain.options.dev_chat");
             case STREAM_GUI -> onOffCandidates("gui.dungeontrain.options.stream_gui");
             case STREAM_CHAT -> onOffCandidates("gui.dungeontrain.options.stream_chat");
+            case STREAM_SIZE -> LiveFeedClientConfig.captureSizeValues(LiveFeedClientConfig.captureWidth()).stream()
+                    .map(w -> value("gui.dungeontrain.options.stream_size", streamSizeLabel(w)))
+                    .toList();
             case POLITICAL_FILTER -> onOffCandidates("gui.dungeontrain.political_filter.option");
             case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
             case UPDATE_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.update_notice_chat");
@@ -719,6 +722,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 streamChat.active = !kid;
                 yield withTip(streamChat, kid ? "gui.dungeontrain.options.stream_chat.kid_tip"
                                               : "gui.dungeontrain.options.stream_chat.tip");
+            }
+
+            // Broadcast width; the preview re-captures at it on the next frame.
+            case STREAM_SIZE -> {
+                int current = LiveFeedClientConfig.captureWidth();
+                yield withTip(
+                        CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::streamSizeLabel)
+                                .withValues(LiveFeedClientConfig.captureSizeValues(current))
+                                .withInitialValue(current)
+                                .create(0, 0, width, ROW_H,
+                                        Component.translatable("gui.dungeontrain.options.stream_size"),
+                                        (btn, w) -> LiveFeedClientConfig.setCaptureWidth(w)),
+                        "gui.dungeontrain.options.stream_size.tip");
             }
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
@@ -1012,6 +1028,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         values.add(current);
         values.sort(null);
         return List.copyOf(values);
+    }
+
+    /** A broadcast width as its picture height: {@code 1280} reads "720p". */
+    private static Component streamSizeLabel(int width) {
+        return Component.literal(LiveFeedClientConfig.heightFor(width) + "p"); // a unit, not prose
     }
 
     private static Component resolutionLabel(int value) {

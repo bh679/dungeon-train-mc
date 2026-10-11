@@ -2441,6 +2441,8 @@
   "gui.dungeontrain.options.stream_chat": "Chat aan kijkers tonen",
   "gui.dungeontrain.options.stream_chat.tip": "Kijkers zien de chat en wat je typt. Uit = de chat komt nooit in de stream.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Altijd uit in kindermodus: de chat komt nooit in de stream.",
+  "gui.dungeontrain.options.stream_size": "Videoformaat",
+  "gui.dungeontrain.options.stream_size.tip": "Beeldgrootte die naar kijkers gaat. Kleiner is lichter voor je framerate. Geldt vanaf je volgende livestream.",
   "gui.dungeontrain.options.stream.preview": "Wat kijkers zien",
   "gui.dungeontrain.options.stream.preview.no_world": "Betreed een wereld voor een voorbeeld",
   "gui.dungeontrain.options.stream.preview.off": "Livestreamen staat uit",

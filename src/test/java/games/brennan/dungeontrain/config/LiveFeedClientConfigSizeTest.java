@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.config;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,5 +36,23 @@ class LiveFeedClientConfigSizeTest {
     @Test
     void streamersStartSmallerThanViewers() {
         assertTrue(LiveFeedClientConfig.headViewerSize(true) < LiveFeedClientConfig.headViewerSize(false));
+    }
+
+    @Test
+    void videoSizesAreEvenSixteenByNineAndAscending() {
+        int prev = 0;
+        for (int w : LiveFeedClientConfig.CAPTURE_SIZES) {
+            assertTrue(w % 2 == 0 && LiveFeedClientConfig.heightFor(w) % 2 == 0, "even " + w);
+            assertTrue(w > prev, "ascending " + w);
+            prev = w;
+        }
+        assertEquals(List.of(360, 480, 540, 720, 1080),
+            LiveFeedClientConfig.CAPTURE_SIZES.stream().map(LiveFeedClientConfig::heightFor).toList());
+    }
+
+    @Test
+    void videoSizeRowKeepsAHandSetWidth() {
+        assertEquals(LiveFeedClientConfig.CAPTURE_SIZES, LiveFeedClientConfig.captureSizeValues(1280));
+        assertEquals(List.of(640, 854, 960, 1100, 1280, 1920), LiveFeedClientConfig.captureSizeValues(1100));
     }
 }

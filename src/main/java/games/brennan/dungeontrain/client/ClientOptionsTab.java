@@ -137,6 +137,8 @@ public enum ClientOptionsTab {
         STREAM_GUI,
         /** Whether viewers see chat. Locked off in Kid mode. */
         STREAM_CHAT,
+        /** The broadcast's picture size; the preview shows it. */
+        STREAM_SIZE,
 
         // --- Editor ---
         SCALE_ALL,
@@ -249,6 +251,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.LIVESTREAM);
                 rows.add(Row.STREAM_GUI);
                 rows.add(Row.STREAM_CHAT);
+                rows.add(Row.STREAM_SIZE);
             }
             case EDITOR -> {
                 rows.add(Row.SCALE_ALL);
