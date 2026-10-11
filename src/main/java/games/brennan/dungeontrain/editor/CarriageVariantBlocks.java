@@ -1005,6 +1005,39 @@ public final class CarriageVariantBlocks {
     }
 
     /**
+     * {@link #pickIndexFromWeights} where a weight of 0 means "never" rather than being clamped to 1 —
+     * for weights adjusted at stamp time (see {@code LiveTvWeighting}). Same seed mix, so a column with
+     * no zero in it picks exactly as {@link #pickIndexFromWeights} does. Returns {@code -1} when every
+     * weight is 0; the caller then rolls the authored weights instead.
+     */
+    public static int pickIndexFromWeightsAllowZero(BlockPos localPos, long worldSeed, int carriageIndex, int[] weights) {
+        return drawAllowZero(seededRandom(localPos, worldSeed, carriageIndex), weights);
+    }
+
+    /** {@link #pickIndexFromLockGroup} with the zero rule of {@link #pickIndexFromWeightsAllowZero}. */
+    public static int pickIndexFromLockGroupAllowZero(int lockId, long worldSeed, int carriageIndex, int[] weights) {
+        if (lockId <= 0) throw new IllegalArgumentException("lockId must be > 0");
+        long seed = worldSeed
+            ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
+            ^ ((long) lockId * 0xBF58476D1CE4E5B9L);
+        return drawAllowZero(new Random(seed), weights);
+    }
+
+    private static int drawAllowZero(Random random, int[] weights) {
+        if (weights.length == 0) throw new IllegalArgumentException("weights must be non-empty");
+        int total = 0;
+        for (int w : weights) total += Math.max(0, w);
+        if (total <= 0) return -1;
+        int draw = random.nextInt(total);
+        int acc = 0;
+        for (int i = 0; i < weights.length; i++) {
+            acc += Math.max(0, weights[i]);
+            if (draw < acc) return i;
+        }
+        return weights.length - 1;
+    }
+
+    /**
      * Persist this sidecar to {@code <config>/dungeontrain/templates/<id>.variants.json}.
      * If the map is empty, any existing file is deleted so empty variants don't
      * leave stale sidecars on disk.
