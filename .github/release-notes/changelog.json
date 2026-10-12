@@ -25152,6 +25152,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "livestream-rooms-only-while-live",
+      "version": "0.1247.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Tuned in",
+      "summary": "Some rooms only turn up while someone is streaming.",
+      "highlights": [],
+      "pr": 1951,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
