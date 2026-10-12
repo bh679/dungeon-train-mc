@@ -119,6 +119,19 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Total server ticks this player has spent livestreaming, across every stream. Counts towards the
+     * Dark Room's lifetime streaming advancement ({@code event/LiveTvAdvancements}). {@code copyOnDeath}
+     * so dying doesn't reset it.
+     */
+    public static final Supplier<AttachmentType<Long>> LIVESTREAM_TICKS =
+        TYPES.register("livestream_ticks",
+            () -> AttachmentType.<Long>builder(() -> 0L)
+                .serialize(Codec.LONG)
+                .copyOnDeath()
+                .build()
+        );
+
+    /**
      * Per-player flag: has this player already seen the fly-up spawn intro
      * cinematic in this world? Set once on first login and serialized so it
      * survives logout / world reload. {@code copyOnDeath} preserves it across

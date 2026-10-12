@@ -105,7 +105,7 @@ public final class StreamPreview {
         GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, target.frameBufferId);
         GL30C.glBlitFramebuffer(0, 0, main.width, main.height, 0, 0, w, h,
             GL11C.GL_COLOR_BUFFER_BIT, GL11C.GL_LINEAR);
-        main.bindWrite(true);
+        StreamNameTag.drawInto(target); // rebinds the main target
         hasFrame = true;
     }
 

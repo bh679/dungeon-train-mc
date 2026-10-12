@@ -16,6 +16,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAMING_ENABLED;
     public static final ModConfigSpec.BooleanValue STREAM_GUI;
     public static final ModConfigSpec.BooleanValue STREAM_CHAT;
+    public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
@@ -27,6 +28,9 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.IntValue HEAD_VIEWER_WIDTH;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_SIZE_WATCHING;
     public static final ModConfigSpec.IntValue HEAD_VIEWER_SIZE_STREAMING;
+
+    /** Which of the streamer's names viewers see above the hotbar. */
+    public enum NameTag { MINECRAFT, DISCORD, NONE }
 
     /** The pinned feed's sizes, as fractions of {@code headViewerWidth}: two smaller, normal, one bigger. */
     static final float[] HEAD_VIEWER_SIZES = {0.5f, 0.75f, 1f, 1.5f};
@@ -49,6 +53,9 @@ public final class LiveFeedClientConfig {
         STREAM_CHAT = b
             .comment("Show chat to viewers. Always off in Kid mode, whatever this says.")
             .define("streamChat", true);
+        STREAM_NAME_TAG = b
+            .comment("Your name on the stream, bottom-middle above the hotbar: MINECRAFT, DISCORD (your linked Discord name; nothing if not linked) or NONE. Always NONE in Kid mode.")
+            .defineEnum("streamNameTag", NameTag.MINECRAFT);
         LIVE_CHAT = b
             .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
@@ -117,6 +124,15 @@ public final class LiveFeedClientConfig {
 
     /** The chat switch as set; {@code StreamCapture} still forces chat off in Kid mode. */
     public static boolean streamChat() { return !loaded() || STREAM_CHAT.get(); }
+
+    /** The name tag as set; {@code StreamNameTag} still forces it off in Kid mode. */
+    public static NameTag streamNameTag() { return loaded() ? STREAM_NAME_TAG.get() : NameTag.MINECRAFT; }
+
+    public static void setStreamNameTag(NameTag value) {
+        if (!loaded() || STREAM_NAME_TAG.get() == value) return;
+        STREAM_NAME_TAG.set(value);
+        STREAM_NAME_TAG.save();
+    }
 
     public static void setStreamGui(boolean value) {
         if (!loaded() || STREAM_GUI.get() == value) return;

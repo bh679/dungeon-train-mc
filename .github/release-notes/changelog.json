@@ -25260,6 +25260,74 @@
       "highlights": [],
       "pr": 1956,
       "date": "2026-10-12",
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
+    },
+    {
+      "id": "stream-name-tag",
+      "version": "0.1253.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Your name on stream",
+      "summary": "Viewers can now see whose stream they're watching \u2014 choose which name shows, or none, in Options.",
+      "highlights": [],
+      "pr": 1959,
+      "date": "2026-10-12",
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
+    },
+    {
+      "id": "livestream-ended-popup",
+      "version": "0.1254.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Livestream ended notice",
+      "summary": "You now get a notice in the corner whenever your livestream ends.",
+      "highlights": [],
+      "pr": 1960,
+      "date": "2026-10-12",
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
+    },
+    {
+      "id": "dh-333-tv-crash",
+      "version": "0.1255.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "TVs with Distant Horizons",
+      "summary": "TVs play happily alongside Distant Horizons again.",
+      "highlights": [],
+      "pr": 1961,
+      "date": "2026-10-12",
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
+    },
+    {
+      "id": "darkroom-on-air",
+      "version": "0.1256.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "On air in the Darkroom",
+      "summary": "The Darkroom has new advancements to earn \u2014 for going live, for the TVs, and for a couple of photos worth waiting for.",
+      "highlights": [],
+      "pr": 1962,
+      "date": "2026-10-12",
       "released": false,
       "released_in": null,
       "released_at": null

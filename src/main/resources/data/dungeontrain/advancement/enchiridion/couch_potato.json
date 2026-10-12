@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:enchiridion/square_eyes",
+  "display": {
+    "icon": {
+      "id": "vista:television"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.couch_potato.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.couch_potato.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "wore_tv_15_min",
+        "threshold": 15
+      }
+    }
+  },
+  "requirements": [
+    [
+      "action"
+    ]
+  ]
+}
