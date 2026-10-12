@@ -47,7 +47,13 @@ public final class LiveFeedTexture extends DynamicTexture implements IWebTexture
             NativeImage mine = getPixels();
             if (mine != null && session.copyLatestInto(mine)) {
                 shownFrame = seq;
-                if (RenderSystem.isOnRenderThread()) upload(); else RenderSystem.recordRenderCall(this::upload);
+                if (RenderSystem.isOnRenderThread()) {
+                    long startNs = System.nanoTime();
+                    upload();
+                    LivePerfStats.upload(System.nanoTime() - startNs);
+                } else {
+                    RenderSystem.recordRenderCall(this::upload);
+                }
                 everUploaded = true;
             }
         }

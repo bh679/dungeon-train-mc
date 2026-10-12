@@ -249,6 +249,18 @@ public final class LiveFeedSource implements IVideoSource {
         if (s != null) { s.close(); session = null; }
     }
 
+    /** Render thread: the session on screen, or null — for the {@code [live]} perf line. */
+    @Nullable
+    LiveHlsSession currentSession() {
+        return session;
+    }
+
+    /** Render thread: how many sessions (shown and pending) have a decoder running. */
+    int decodingSessions() {
+        LiveHlsSession s = session, p = pending;
+        return (s != null && s.decoding() ? 1 : 0) + (p != null && p.decoding() ? 1 : 0);
+    }
+
     /** Render thread: everything, including a pending switch (world unload). */
     public void dropAll() {
         dropPending();
