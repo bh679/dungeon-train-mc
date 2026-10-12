@@ -53,6 +53,7 @@ import java.util.Optional;
  * <ul>
  *   <li>{@code started_livestream} — went live wearing the camcorder ({@code LiveFeedEvents})</li>
  *   <li>{@code livestream_15_min} — streamed without a break for {@code threshold} minutes</li>
+ *   <li>{@code livestream_total} — streamed for {@code thresholdTicks} in total, across every stream</li>
  *   <li>{@code toggled_placed_tv} — switched a placed TV on or off with an empty-hand click</li>
  *   <li>{@code toggled_held_tv} — switched a held TV on or off ({@code TvHeldTogglePacket})</li>
  *   <li>{@code wore_tv} / {@code wore_tv_15_min} — put a TV on as a hat; kept it on for

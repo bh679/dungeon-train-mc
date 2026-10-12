@@ -7,14 +7,17 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.OwnableEntity;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.monster.warden.Warden;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Reads what was happening between the creatures in a photo — a fight, a pet, a courtship — off the
- * live entities in frame, for The Enchiridion's moment advancements ({@link PhotoSubjects.Scene}).
+ * live entities in frame, for The Enchiridion's moment advancements ({@link PhotoSubjects.Scene}) —
+ * and a Warden caught half out of the ground.
  * The photographer is never part of the scene.
  */
 final class PhotoScene {
@@ -26,7 +29,7 @@ final class PhotoScene {
 
     static PhotoSubjects.Scene of(ServerPlayer photographer, List<LivingEntity> inFrame) {
         List<LivingEntity> others = inFrame.stream().filter(e -> e != photographer).toList();
-        boolean ownPet = false, echoPet = false;
+        boolean ownPet = false, echoPet = false, wardenEmerging = false;
         int inLove = 0;
         for (LivingEntity e : others) {
             UUID owner = e instanceof OwnableEntity ownable ? ownable.getOwnerUUID() : null;
@@ -35,8 +38,9 @@ final class PhotoScene {
                 else if (isEcho(photographer.serverLevel(), owner)) echoPet = true;
             }
             if (e instanceof Animal animal && animal.isInLove()) inLove++;
+            if (e instanceof Warden warden && warden.hasPose(Pose.EMERGING)) wardenEmerging = true;
         }
-        return new PhotoSubjects.Scene(fighting(others), ownPet, echoPet, inLove >= 2);
+        return new PhotoSubjects.Scene(fighting(others), ownPet, echoPet, inLove >= 2, wardenEmerging);
     }
 
     /** Two creatures in frame going after each other: one targeting the other, or freshly hurt by it. */

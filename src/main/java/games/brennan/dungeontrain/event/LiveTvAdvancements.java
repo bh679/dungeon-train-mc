@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirements;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.player.LiveStreamers;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,7 +24,7 @@ import java.util.UUID;
 /**
  * The Dark Room's livestream and TV advancements that need watching over time: wearing a Vista TV
  * as a hat ({@code wore_tv}), keeping it on ({@code wore_tv_15_min}), and streaming without a
- * break ({@code livestream_15_min}). The one-shot ones fire where the action happens —
+ * break ({@code livestream_15_min}) or for a lifetime total ({@code livestream_total}). The one-shot ones fire where the action happens —
  * {@code started_livestream} via {@link #onStreamStarted} from {@link LiveFeedEvents},
  * {@code toggled_placed_tv} in {@code mixin/vista/TVBlockMixin}, {@code toggled_held_tv} in
  * {@code net/TvHeldTogglePacket}.
@@ -42,6 +43,9 @@ public final class LiveTvAdvancements {
 
     private static final ResourceLocation STREAM_15_ID = darkroom("prime_time");
     private static final ResourceLocation WORN_15_ID = darkroom("couch_potato");
+    private static final ResourceLocation STREAM_TOTAL_ID = darkroom("tuned_in");
+    /** Fallback lifetime streaming time, in ticks (2 hours), used when the JSON carries no thresholdTicks. */
+    private static final long TWO_HOURS_TICKS = 2L * 60 * 60 * TICKS_PER_SECOND;
 
     /** Server tick each player put a TV on their head, while it stays there. */
     private static final Map<UUID, Long> WORN_SINCE = new HashMap<>();
@@ -93,8 +97,14 @@ public final class LiveTvAdvancements {
             return;
         }
         ServerPlayer player = server.getPlayerList().getPlayer(streamer);
-        if (player != null && reached(now, streamSince, STREAM_15_ID)) {
+        if (player == null) return;
+        if (reached(now, streamSince, STREAM_15_ID)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "livestream_15_min");
+        }
+        long total = player.getData(ModDataAttachments.LIVESTREAM_TICKS.get()) + TICKS_PER_SECOND;
+        player.setData(ModDataAttachments.LIVESTREAM_TICKS.get(), total);
+        if (total >= AdvancementRequirements.value(STREAM_TOTAL_ID, TWO_HOURS_TICKS)) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "livestream_total");
         }
     }
 

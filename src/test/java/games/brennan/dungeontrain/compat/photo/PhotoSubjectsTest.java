@@ -63,12 +63,14 @@ final class PhotoSubjectsTest {
     }
 
     @Test
-    @DisplayName("moments: a fight, your pet, an Echo's pet, a courtship")
+    @DisplayName("moments: a fight, your pet, an Echo's pet, a courtship, an emerging Warden")
     void moments() {
         PhotoSubjects.Facts nowhere = where(Set.of(), null, null);
         assertEquals(Set.of(), PhotoSubjects.keys(nowhere, PhotoSubjects.Scene.NONE));
-        assertEquals(Set.of("combat", "pet_own", "pet_echo", "breeding"),
-                PhotoSubjects.keys(nowhere, new PhotoSubjects.Scene(true, true, true, true)));
-        assertEquals(Set.of("breeding"), PhotoSubjects.keys(nowhere, new PhotoSubjects.Scene(false, false, false, true)));
+        assertEquals(Set.of("combat", "pet_own", "pet_echo", "breeding", "warden_emerging"),
+                PhotoSubjects.keys(nowhere, new PhotoSubjects.Scene(true, true, true, true, true)));
+        assertEquals(Set.of("breeding"), PhotoSubjects.keys(nowhere, new PhotoSubjects.Scene(false, false, false, true, false)));
+        assertEquals(Set.of("warden_emerging"),
+                PhotoSubjects.keys(nowhere, new PhotoSubjects.Scene(false, false, false, false, true)));
     }
 }
