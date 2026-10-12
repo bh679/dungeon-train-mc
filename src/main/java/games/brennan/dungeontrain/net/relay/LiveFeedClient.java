@@ -92,9 +92,14 @@ public final class LiveFeedClient {
         }
     }
 
-    /** {@code variants[]} from a status body: even positive widths with an https playlist, sorted by width. */
-    static List<Variant> parseVariants(JsonObject body) {
+    /**
+     * {@code variants[]} from a status body: even positive widths with an {@code .m3u8} playlist on
+     * https (or on plain http only when the source playlist itself is — a local relay with a
+     * stand-in bucket), sorted by width.
+     */
+    static List<Variant> parseVariants(JsonObject body, String sourcePlaylistUrl) {
         if (body == null || !body.has("variants") || !body.get("variants").isJsonArray()) return List.of();
+        boolean plainHttpOk = sourcePlaylistUrl != null && sourcePlaylistUrl.startsWith("http://");
         List<Variant> out = new ArrayList<>();
         for (JsonElement e : body.getAsJsonArray("variants")) {
             if (!e.isJsonObject()) continue;
@@ -103,7 +108,8 @@ public final class LiveFeedClient {
             int width;
             try { width = v.get("width").getAsInt(); } catch (RuntimeException ex) { continue; }
             String url = v.get("playlistUrl").getAsString();
-            if (width <= 0 || width % 2 != 0 || !url.startsWith("https://") || !url.endsWith(".m3u8")) continue;
+            boolean scheme = url.startsWith("https://") || (plainHttpOk && url.startsWith("http://"));
+            if (width <= 0 || width % 2 != 0 || !scheme || !url.endsWith(".m3u8")) continue;
             int height = v.has("height") && v.get("height").isJsonPrimitive() ? v.get("height").getAsInt() : Math.round(width * 9f / 16f);
             out.add(new Variant(width, height, url));
         }
@@ -216,7 +222,7 @@ public final class LiveFeedClient {
         // tail; replayUrl is where a TV goes once it has reached the end.
         boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
         return new Status(true, r.str("session"), r.str("playlistUrl"), r.str("streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended, parseVariants(b));
+            ended ? replayUrl : null, ended, parseVariants(b, r.str("playlistUrl")));
     }
 
     /** PUT a local file to a signed URL with exactly the signed headers. */

@@ -48,6 +48,9 @@ class LiveFeedClientStatusTest {
         assertEquals(180, s.variants().get(0).height(), "height defaults to 16:9");
         assertEquals(640, s.variants().get(1).width());
         assertEquals("https://x/main/s1/r640/live.m3u8", s.variants().get(1).playlistUrl());
+        LiveFeedClient.Status local = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"http://127.0.0.1:3412/test/main/s1/live.m3u8\","
+            + "\"variants\":[{\"width\":320,\"playlistUrl\":\"http://127.0.0.1:3412/test/main/s1/r320/live.m3u8\"}]}");
+        assertEquals(1, local.variants().size(), "a plain-http variant is fine when the source is plain http too (local relay)");
     }
 
     @Test
