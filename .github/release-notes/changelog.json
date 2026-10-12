@@ -24943,6 +24943,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "options-settings-list",
+      "version": "0.1234.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Options screen reads at a glance",
+      "summary": "Every setting in Options \u2192 Dungeon Train is now one line: an icon, its name, a short grey hint and a control that shows only its value. Hover the name for the full explanation.",
+      "highlights": [],
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
