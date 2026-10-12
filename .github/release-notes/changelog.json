@@ -25044,6 +25044,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sable-step-collider-deadlock",
+      "version": "0.1240.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "compatibility"
+      ],
+      "title": "Clean breaks through glass",
+      "summary": "The train ploughs through glass, ice and leaves without a hitch now.",
+      "highlights": [],
+      "pr": 1945,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
