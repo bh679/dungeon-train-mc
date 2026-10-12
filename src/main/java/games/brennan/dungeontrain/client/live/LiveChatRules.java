@@ -33,13 +33,20 @@ public final class LiveChatRules {
 
     /**
      * Whether an inbound line belongs in this client's chat: never its own, and never a game line from
-     * a player in this same world — vanilla chat already showed that one.
+     * a player in this same world — vanilla chat already showed that one. A world-mate is matched by
+     * uuid or by name: on an offline-mode server the players' uuids are name-derived and differ from
+     * the profile ids the relay was given, but names are unique per server either way.
      */
-    public static boolean shouldShow(ChatLine line, @Nullable UUID me, Set<UUID> playersHere) {
-        if (!line.fromGame() || line.uuid() == null) return true;
-        if (me != null && line.uuid().equalsIgnoreCase(undashed(me))) return false;
-        for (UUID p : playersHere) {
-            if (line.uuid().equalsIgnoreCase(undashed(p))) return false;
+    public static boolean shouldShow(ChatLine line, @Nullable UUID me, Set<UUID> playersHere, Set<String> namesHere) {
+        if (!line.fromGame()) return true;
+        if (line.uuid() != null) {
+            if (me != null && line.uuid().equalsIgnoreCase(undashed(me))) return false;
+            for (UUID p : playersHere) {
+                if (line.uuid().equalsIgnoreCase(undashed(p))) return false;
+            }
+        }
+        for (String n : namesHere) {
+            if (n.equalsIgnoreCase(line.author())) return false;
         }
         return true;
     }

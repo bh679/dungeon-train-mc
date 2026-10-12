@@ -10,7 +10,7 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
@@ -140,10 +140,17 @@ public final class LiveChatBridge {
         }
         if (mc.player == null || mc.level == null) return;
         UUID me = mc.getUser() != null ? mc.getUser().getProfileId() : null;
+        // The tab list, not level.players(): that only holds players within render range.
         Set<UUID> here = new HashSet<>();
-        for (AbstractClientPlayer p : mc.level.players()) here.add(p.getUUID());
+        Set<String> names = new HashSet<>();
+        if (mc.getConnection() != null) {
+            for (PlayerInfo p : mc.getConnection().getOnlinePlayers()) {
+                here.add(p.getProfile().getId());
+                names.add(p.getProfile().getName());
+            }
+        }
         for (ChatLine line : page.lines()) {
-            if (LiveChatRules.shouldShow(line, me, here)) mc.gui.getChat().addMessage(LiveChatRules.line(line));
+            if (LiveChatRules.shouldShow(line, me, here, names)) mc.gui.getChat().addMessage(LiveChatRules.line(line));
         }
         cursor = Math.max(cursor, page.seq());
     }

@@ -34,11 +34,14 @@ class LiveChatRulesTest {
         ChatLine discord = new ChatLine(1, 0, "Viewer", null, "hi", false);
         ChatLine mine = new ChatLine(2, 0, "Me", LiveChatRules.undashed(ME), "hi", true);
         ChatLine other = new ChatLine(3, 0, "Other", LiveChatRules.undashed(OTHER), "hi", true);
-        assertTrue(LiveChatRules.shouldShow(discord, ME, Set.of(ME, OTHER)));
-        assertFalse(LiveChatRules.shouldShow(mine, ME, Set.of()));
-        assertFalse(LiveChatRules.shouldShow(other, ME, Set.of(ME, OTHER)), "already seen in vanilla chat");
-        assertTrue(LiveChatRules.shouldShow(other, ME, Set.of(ME)), "elsewhere: shown");
-        assertTrue(LiveChatRules.shouldShow(mine, null, Set.of()), "no identity: shown");
+        assertTrue(LiveChatRules.shouldShow(discord, ME, Set.of(ME, OTHER), Set.of("Me", "Other")));
+        assertFalse(LiveChatRules.shouldShow(mine, ME, Set.of(), Set.of()));
+        assertFalse(LiveChatRules.shouldShow(other, ME, Set.of(ME, OTHER), Set.of()), "already seen in vanilla chat");
+        assertTrue(LiveChatRules.shouldShow(other, ME, Set.of(ME), Set.of()), "elsewhere: shown");
+        assertTrue(LiveChatRules.shouldShow(mine, null, Set.of(), Set.of()), "no identity: shown");
+        assertFalse(LiveChatRules.shouldShow(other, ME, Set.of(), Set.of("other")), "offline server: matched by name");
+        ChatLine anon = new ChatLine(4, 0, "Other", null, "hi", true);
+        assertFalse(LiveChatRules.shouldShow(anon, ME, Set.of(), Set.of("Other")), "no uuid: still matched by name");
     }
 
     @Test
