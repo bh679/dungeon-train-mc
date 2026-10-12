@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:enchiridion/darkroom",
+  "parent": "dungeontrain:enchiridion/switched_on",
   "display": {
     "icon": {
       "id": "vista:television"
