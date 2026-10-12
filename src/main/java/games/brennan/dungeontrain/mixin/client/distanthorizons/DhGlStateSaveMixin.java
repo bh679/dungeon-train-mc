@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.gl.SafeGlGet;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Coerce;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
@@ -13,11 +14,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * {@link SafeGlGet}, which gives the driver room for the extra value.
  *
  * <p>The class moved between DH lines (2.x {@code core.render.glObject}, 3.x
- * {@code common.render.openGl.glObject}) and so did the LWJGL owner of the call (GL32 in 2.x, GL33 in
- * early 3.x); only one redirect matches per version, hence {@code require = 0}. From 3.3 on DH reads
- * through its own {@code ILWJGLService} and no longer reads {@code GL_POLYGON_MODE} at all (checked
- * against 3.3.3, the build the modpack pins), so nothing here matches there — the guard stays for
- * players still on an older DH.
+ * {@code common.render.openGl.glObject}) and so did the owner of the call: GL32 in 2.x, GL33 in early
+ * 3.x, and DH's own {@code ILWJGLService} interface from 3.3 (3.3.3, the build the modpack pins, still
+ * reads {@code GL_POLYGON_MODE} that way). Only one redirect matches per version, hence
+ * {@code require = 0}; the interface's type is not on DT's compile classpath, so its receiver is
+ * {@link Coerce coerced} to {@code Object}.
  * {@code DistantHorizonsMixinPlugin} gates the config on DH being installed and hands Mixin only the
  * target that exists in the installed jar, so the absent one is never probed (that probe used to log
  * {@code Error loading class ... GLState} at startup).</p>
@@ -28,6 +29,14 @@ import org.spongepowered.asm.mixin.injection.Redirect;
     "com.seibel.distanthorizons.core.render.glObject.GLState"
 }, remap = false)
 public abstract class DhGlStateSaveMixin {
+
+    @Redirect(method = "saveState",
+        at = @At(value = "INVOKE",
+            target = "Lcom/seibel/distanthorizons/lwjgl/ILWJGLService;glGetInteger(I)I"),
+        require = 0, remap = false)
+    private int dungeontrain$safeGetIntegerDhService(@Coerce Object lwjglService, int pname) {
+        return SafeGlGet.getInteger(pname);
+    }
 
     @Redirect(method = "saveState",
         at = @At(value = "INVOKE", target = "Lorg/lwjgl/opengl/GL33;glGetInteger(I)I"),
