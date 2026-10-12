@@ -15,19 +15,55 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class LiveHlsSessionTest {
 
     @Test
-    void aCleanExitAfterFramesIsTheEndOfTheStream() {
-        assertTrue(LiveHlsSession.reachedEnd(0, 120, false), "ffmpeg played the playlist to its ENDLIST");
+    void aCleanExitAfterFramesOnAnEndlistPlaylistIsTheEndOfTheStream() {
+        assertTrue(LiveHlsSession.reachedEnd(0, 120, false, true), "ffmpeg played the playlist to its ENDLIST");
+    }
+
+    @Test
+    void aCleanExitOnAVanishedPlaylistIsRetried() {
+        // ffmpeg exits 0 after a live playlist starts answering 404: the stream vanished, it did not end.
+        assertFalse(LiveHlsSession.reachedEnd(0, 120, false, false));
     }
 
     @Test
     void errorsAndEmptyRunsAreRetried() {
-        assertFalse(LiveHlsSession.reachedEnd(8, 120, false), "a 404 or network drop exits non-zero");
-        assertFalse(LiveHlsSession.reachedEnd(0, 0, false), "nothing decoded: try again");
+        assertFalse(LiveHlsSession.reachedEnd(8, 120, false, true), "a 404 or network drop exits non-zero");
+        assertFalse(LiveHlsSession.reachedEnd(0, 0, false, true), "nothing decoded: try again");
     }
 
     @Test
     void aReplayLoopNeverEnds() {
-        assertFalse(LiveHlsSession.reachedEnd(0, 120, true));
+        assertFalse(LiveHlsSession.reachedEnd(0, 120, true, true));
+    }
+
+    @Test
+    void onlyAPresentPlaylistWithEndlistMeansEnded() {
+        String live = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXTINF:10.0,\nseg00041.ts\n";
+        assertTrue(LiveHlsSession.isEndlist(200, live + "#EXT-X-ENDLIST\n"));
+        assertFalse(LiveHlsSession.isEndlist(200, live), "still live, just between segments");
+        assertFalse(LiveHlsSession.isEndlist(404, null), "deleted, expired or never uploaded");
+        assertFalse(LiveHlsSession.isEndlist(403, "#EXT-X-ENDLIST"), "an error page is not a playlist");
+    }
+
+    @Test
+    void aLiveRunWithNoFrameForTheStallWindowIsStalled() {
+        long last = 1_000_000L;
+        assertFalse(LiveHlsSession.stalled(last, last + LiveHlsSession.STALL_MS - 1, false, 300),
+            "waiting on the next segment is normal");
+        assertTrue(LiveHlsSession.stalled(last, last + LiveHlsSession.STALL_MS, false, 300));
+        assertTrue(LiveHlsSession.stalled(last, last + 120_000, false, 300));
+    }
+
+    @Test
+    void noFrameYetOrAReplayIsNeverStalled() {
+        long last = 1_000_000L;
+        assertFalse(LiveHlsSession.stalled(last, last + 120_000, false, 0), "the waiting pattern is already up");
+        assertFalse(LiveHlsSession.stalled(last, last + 120_000, true, 300), "a replay loops a finished segment");
+    }
+
+    @Test
+    void theStallWindowCoversMoreThanOneSegment() {
+        assertTrue(LiveHlsSession.STALL_MS >= 2 * 10_000L, "a viewer buffers up to one 10 s segment legitimately");
     }
 
     @Test

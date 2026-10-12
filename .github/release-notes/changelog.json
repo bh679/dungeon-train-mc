@@ -24925,6 +24925,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-feed-hangs-on",
+      "version": "0.1233.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live Feed hangs on",
+      "summary": "TVs now find their way back when a stream drops out.",
+      "highlights": [],
+      "pr": 1936,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
