@@ -56,17 +56,17 @@ public final class DisplayScaleOption {
      */
     public static OptionInstance<Integer> allDisplaysValueOnly() {
         return create("all_displays", ClientDisplayConfig::getAllScale, ClientDisplayConfig::setAllScale,
-                DisplayScaleOption::valueLabel);
+                DisplayScaleOption::valueLabel, false);
     }
 
     public static OptionInstance<Integer> worldspaceValueOnly() {
         return create("worldspace", ClientDisplayConfig::getWorldspaceChannel,
-                ClientDisplayConfig::setWorldspaceChannel, DisplayScaleOption::valueLabel);
+                ClientDisplayConfig::setWorldspaceChannel, DisplayScaleOption::valueLabel, false);
     }
 
     public static OptionInstance<Integer> hudValueOnly() {
         return create("hud", ClientDisplayConfig::getHudChannel, ClientDisplayConfig::setHudChannel,
-                DisplayScaleOption::valueLabel);
+                DisplayScaleOption::valueLabel, false);
     }
 
     /**
@@ -78,15 +78,17 @@ public final class DisplayScaleOption {
      * builds these in {@code init()}: reopening or resizing picks up a change made from the X-menu.</p>
      */
     private static OptionInstance<Integer> create(String channel, DoubleSupplier get, DoubleConsumer set) {
-        return create(channel, get, set, DisplayScaleOption::label);
+        return create(channel, get, set, DisplayScaleOption::label, true);
     }
 
+    /** {@code tooltip} false for the value-only sliders: their row's label carries the explanation. */
     private static OptionInstance<Integer> create(String channel, DoubleSupplier get, DoubleConsumer set,
-                                                  OptionInstance.CaptionBasedToString<Integer> label) {
+                                                  OptionInstance.CaptionBasedToString<Integer> label, boolean tooltip) {
         String key = "gui.dungeontrain.editor_settings." + channel;
         return new OptionInstance<>(
                 key,
-                OptionInstance.cachedConstantTooltip(Component.translatable(key + ".tip")),
+                tooltip ? OptionInstance.cachedConstantTooltip(Component.translatable(key + ".tip"))
+                        : OptionInstance.noTooltip(),
                 label,
                 new OptionInstance.IntRange(MIN_TENTHS, MAX_TENTHS),
                 toTenths(get.getAsDouble()),

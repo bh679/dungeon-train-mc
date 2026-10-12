@@ -271,8 +271,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 Setting setting = build(row);
                 list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
                         setting.hint != null ? setting.hint : Component.translatable(row.captionKey() + ".hint"),
-                        setting.tooltip == null ? setting.control : withTip(setting.control, setting.tooltip),
-                        setting.tooltip);
+                        setting.control, setting.tooltip);
             }
         }
     }
@@ -386,7 +385,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     .bounds(0, 0, CONTROL_W, ROW_H).build();
             list.addSetting(ClientOptionsIcons.DISCORD_LINK,
                     Component.translatable("gui.dungeontrain.credits.community.link_action"), why,
-                    withTip(link, why), why);
+                    link, why);
             addDonationPrefs(list); // works without a Discord link — it is keyed by the Minecraft account
             return;
         }
@@ -397,7 +396,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         Component allTip = Component.translatable(allKey + ".tip");
         list.addSetting(ClientOptionsIcons.PING, Component.translatable(allKey),
                 Component.translatable(allKey + ".hint"),
-                withTip(onOff(Component.translatable(allKey), status.pings(), on -> DiscordAccountState.setMaster(on, this::rebuildIfShown)), allTip),
+                onOff(Component.translatable(allKey), status.pings(), on -> DiscordAccountState.setMaster(on, this::rebuildIfShown)),
                 allTip);
 
         for (PingType type : PingType.values()) {
@@ -406,8 +405,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             CycleButton<Boolean> toggle = onOff(Component.translatable(pingKey(type)), status.types().getOrDefault(type, true),
                     on -> DiscordAccountState.setType(type, on, this::rebuildIfShown));
             toggle.active = status.pings();
-            list.addSetting(ClientOptionsIcons.PING, Component.translatable(pingKey(type)), hint,
-                    withTip(toggle, hint), null);
+            list.addSetting(ClientOptionsIcons.PING, Component.translatable(pingKey(type)), hint, toggle, null);
         }
         addDonationPrefs(list);
     }
@@ -447,11 +445,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 CycleButton.<DonationPrefsClient.Visibility>builder(DungeonTrainClientOptionsScreen::donationVisibilityLabel)
                         .withValues(List.of(DonationPrefsClient.Visibility.values()))
                         .withInitialValue(prefs.visibility())
-                        .withTooltip(v -> Tooltip.create(Component.translatable(donationKey(v) + ".tip")))
                         .displayOnlyValue()
                         .create(0, 0, CONTROL_W, ROW_H, Component.translatable(visKey),
                                 (btn, v) -> DonationPrefsState.setVisibility(v, this::rebuildIfShown));
-        // The row's tooltip says what the setting is; the control's own explains the current value.
+        // Explanations live on the label side of the row, never on the control.
         list.addSetting(ClientOptionsIcons.DONATION, Component.translatable(visKey),
                 Component.translatable(visKey + ".hint"), visibility, Component.translatable(visKey + ".tip"));
 
@@ -461,7 +458,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         tag.active = prefs.visibility() == DonationPrefsClient.Visibility.PUBLIC
                 || prefs.visibility() == DonationPrefsClient.Visibility.PRIVATE;
         list.addSetting(ClientOptionsIcons.DONATION_TAG, Component.translatable(tagKey),
-                Component.translatable(tagKey + ".hint"), withTip(tag, tagTip), tagTip);
+                Component.translatable(tagKey + ".hint"), tag, tagTip);
     }
 
     private static Component donationVisibilityLabel(DonationPrefsClient.Visibility v) {
@@ -659,17 +656,19 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 CycleButton<BackupMode> mode = CycleButton.<BackupMode>builder(BackupOptionsWidgets::modeLabel)
                         .withValues(List.of(BackupMode.EXTERNAL, BackupMode.INSTANCE, BackupMode.OFF))
                         .withInitialValue(BackupSettings.storedMode())
-                        .withTooltip(BackupOptionsWidgets::modeTip)
                         .displayOnlyValue()
-                        .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
-                                (btn, value) -> BackupSettings.setMode(value));
+                        .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key), (btn, value) -> {
+                            BackupSettings.setMode(value);
+                            rebuildIfShown(); // the label's explanation is per value
+                        });
                 if (BackupSettings.isOverridden()) {
                     mode.active = false;
                     mode.setTooltip(Tooltip.create(Component.translatable(BackupOptionsWidgets.KEY_MODE + ".overridden",
                             BackupSettings.operatorOverride().name().toLowerCase(Locale.ROOT))));
                 }
-                // No row tooltip: the control's per-value tip is the explanation that matters here.
-                yield new Setting(mode, null);
+                // The label carries the current mode's own explanation (Dungeon Backup's per-value tip).
+                yield new Setting(mode, Component.translatable(BackupOptionsWidgets.KEY_MODE + "."
+                        + BackupSettings.storedMode().name().toLowerCase(Locale.ROOT) + ".tip"));
             }
             case BACKUPS_PER_VERSION -> Setting.of(slider(backupsPerVersionOption()), key + ".tip");
 
@@ -793,7 +792,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 Math.min(BackupSettings.PER_VERSION_MAX, BackupSettings.perVersion()));
         return new OptionInstance<>(
                 BackupOptionsWidgets.KEY_PER_VERSION,
-                OptionInstance.cachedConstantTooltip(Component.translatable(BackupOptionsWidgets.KEY_PER_VERSION + ".tip")),
+                OptionInstance.noTooltip(),
                 (caption, value) -> Component.literal(Integer.toString(value)), // a count, not prose
                 new OptionInstance.IntRange(BackupSettings.PER_VERSION_MIN, BackupSettings.PER_VERSION_MAX),
                 initial,
@@ -829,11 +828,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         }
         return Component.translatable("gui.dungeontrain.options.catch_up_burst."
                 + mode.name().toLowerCase(Locale.ROOT));
-    }
-
-    private static <T extends AbstractWidget> T withTip(T widget, Component tip) {
-        widget.setTooltip(Tooltip.create(tip));
-        return widget;
     }
 
     /**

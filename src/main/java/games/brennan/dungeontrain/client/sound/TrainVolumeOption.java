@@ -43,7 +43,7 @@ public final class TrainVolumeOption {
      * category beside "Music" and "Ambient/Environment" — so it names the mod.
      */
     public static OptionInstance<Integer> forSoundScreen() {
-        return create("gui.dungeontrain.sound.train_engine", TrainVolumeOption::label);
+        return create("gui.dungeontrain.sound.train_engine", TrainVolumeOption::label, tip());
     }
 
     /**
@@ -51,7 +51,7 @@ public final class TrainVolumeOption {
      * names the setting instead of repeating the mod.
      */
     public static OptionInstance<Integer> forModScreen() {
-        return create("gui.dungeontrain.options.train_volume", TrainVolumeOption::label);
+        return create("gui.dungeontrain.options.train_volume", TrainVolumeOption::label, tip());
     }
 
     /**
@@ -60,7 +60,8 @@ public final class TrainVolumeOption {
      * the option for narration.
      */
     public static OptionInstance<Integer> valueOnly() {
-        return create("gui.dungeontrain.options.train_volume", (caption, tenths) -> valueLabel(tenths));
+        return create("gui.dungeontrain.options.train_volume", (caption, tenths) -> valueLabel(tenths),
+            OptionInstance.noTooltip());
     }
 
     /**
@@ -71,12 +72,16 @@ public final class TrainVolumeOption {
      * up a change made on any of the others. Only the caption differs between surfaces; the
      * tooltip, the notches and the accessor are one definition.</p>
      */
+    private static OptionInstance.TooltipSupplier<Integer> tip() {
+        return OptionInstance.cachedConstantTooltip(Component.translatable("gui.dungeontrain.sound.train_engine.tip"));
+    }
+
     private static OptionInstance<Integer> create(String captionKey,
-                                                  OptionInstance.CaptionBasedToString<Integer> label) {
+                                                  OptionInstance.CaptionBasedToString<Integer> label,
+                                                  OptionInstance.TooltipSupplier<Integer> tooltip) {
         return new OptionInstance<>(
             captionKey,
-            OptionInstance.cachedConstantTooltip(
-                Component.translatable("gui.dungeontrain.sound.train_engine.tip")),
+            tooltip,
             label,
             new OptionInstance.IntRange(MIN_TENTHS, MAX_TENTHS),
             toTenths(ClientDisplayConfig.getTrainEngineVolume()),
