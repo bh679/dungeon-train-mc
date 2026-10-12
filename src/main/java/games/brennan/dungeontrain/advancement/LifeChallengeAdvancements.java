@@ -3,14 +3,17 @@ package games.brennan.dungeontrain.advancement;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.requirement.AdvancementRequirements;
+import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import org.slf4j.Logger;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -32,6 +35,11 @@ import java.util.function.Supplier;
  * {@code dungeontrain:code_granted} criterion holding its threshold, read through
  * {@link AdvancementRequirements} so the editor and relay overrides can rebalance it. Lost challenges
  * are greyed out through {@link LifeDisqualification}.</p>
+ *
+ * <p>A flag missing from a save that is already partway through a life means the life began on a
+ * version that did not track it yet, so nothing it did earlier was recorded. Such a life is ruled
+ * out for those tiers on load ({@link #closeUntrackedChallenges}); a new flag added to
+ * {@link #TIERS} is covered the same way.</p>
  */
 public final class LifeChallengeAdvancements {
 
@@ -83,6 +91,19 @@ public final class LifeChallengeAdvancements {
         return !lostThisLife && travelledCarriagesAbs >= threshold;
     }
 
+    /**
+     * Was this flag missing from a save whose life was already underway? Then the life began before
+     * the flag was tracked, and it cannot vouch for anything done earlier in it.
+     */
+    static boolean untrackedMidLife(boolean flagSaved, boolean lifeUnderway) {
+        return !flagSaved && lifeUnderway;
+    }
+
+    /** Has this life moved along the train at all? */
+    static boolean lifeUnderway(int travelledCarriageIndex, int cartsForward, int cartsBackward) {
+        return travelledCarriageIndex != 0 || cartsForward > 0 || cartsBackward > 0;
+    }
+
     /** Does holding this item rule out the apple challenges? */
     public static boolean isAppleOrBackpack(String itemId) {
         return APPLES.contains(itemId) || BACKPACKS.contains(itemId);
@@ -112,6 +133,25 @@ public final class LifeChallengeAdvancements {
         if (player.getData(flag.get())) return;
         player.setData(flag.get(), Boolean.TRUE);
         LifeDisqualification.notify(player, tiers);
+    }
+
+    /**
+     * Just after the player's save is read, before anything fills in a default: rule out the tiers of
+     * any flag that life began without. Silent — the login sync sends the greyed-out state.
+     */
+    public static void closeUntrackedChallenges(ServerPlayer player) {
+        if (!player.hasData(ModDataAttachments.PLAYER_RUN_STATE.get())) return; // a new player
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        boolean underway = lifeUnderway(
+            run.travelledCarriageIndex(), run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
+        Set<AttachmentType<Boolean>> flags = new LinkedHashSet<>();
+        TIERS.forEach(tier -> flags.add(tier.lostFlag().get()));
+        for (AttachmentType<Boolean> flag : flags) {
+            if (!untrackedMidLife(player.hasData(flag), underway)) continue;
+            player.setData(flag, Boolean.TRUE);
+            LOGGER.info("[DungeonTrain] {}'s life began before {} was tracked — its challenges are closed until respawn",
+                player.getName().getString(), NeoForgeRegistries.ATTACHMENT_TYPES.getKey(flag));
+        }
     }
 
     /** Respawn: a new life starts with every challenge open again. */
