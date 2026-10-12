@@ -109,6 +109,7 @@
     "PhysicsChunkTicketManagerAccessor",
     "MergedMassTrackerPivotFreezeMixin",
     "SubLevelHoldingChunkFileMixin",
+    "SubLevelHoldingChunkAutoLoadVetoMixin",
     "SubLevelHoldingChunkMapLoadMixin",
     "SubLevelHoldingChunkMapSaveTimingMixin",
     "SubLevelStorageFileNoDsyncMixin",
