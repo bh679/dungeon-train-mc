@@ -25280,6 +25280,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "livestream-ended-popup",
+      "version": "0.1254.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Livestream ended notice",
+      "summary": "You now get a notice in the corner whenever your livestream ends.",
+      "highlights": [],
+      "pr": 1960,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
