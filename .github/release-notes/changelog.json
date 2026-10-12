@@ -24945,9 +24945,26 @@
       "released_at": null
     },
     {
-      "id": "options-settings-list",
-      "pr": 1938,
+      "id": "photo-views-tributes",
       "version": "0.1234.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Photos fade faster without a Tribute",
+      "summary": "Found photos now fade sooner unless someone pays them Tribute.",
+      "highlights": [],
+      "pr": 1937,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "options-settings-list",
+      "version": "0.1235.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -24956,6 +24973,7 @@
       "title": "Options screen reads at a glance",
       "summary": "Every setting in Options \u2192 Dungeon Train is now one line: an icon, its name, a short grey hint and a control that shows only its value. Hover the name for the full explanation.",
       "highlights": [],
+      "pr": 1938,
       "date": "2026-10-12",
       "released": false,
       "released_in": null,

@@ -105,11 +105,11 @@ public final class SharedPhotos {
     /** Frame extra-data key carrying the views a Tribute refills a found photo to (more if its photographer boosted it). */
     public static final String SHARED_MAX_VIEWS_KEY = "dt_shared_photo_max_views";
 
-    /** Views a photo starts with, and goes back to after a Tribute (the relay's PLAYER_PHOTOS_VIEWS). */
+    /**
+     * Views a photo goes back to after any Tribute, its photographer's own included (the relay's
+     * PLAYER_PHOTOS_VIEWS). Before its first Tribute a photo has fewer (PLAYER_PHOTOS_FRESH_VIEWS, 3).
+     */
     public static final int VIEWS_MAX = 5;
-
-    /** A photographer's Tribute to their own print multiplies its views by this (the relay's BOOST_FACTOR). */
-    public static final int OWN_BOOST_FACTOR = 2;
 
     /** Frame extra-data key carrying the key a print was uploaded with, so its photographer can boost it later. */
     public static final String UPLOAD_KEY = "dt_upload_key";
@@ -233,8 +233,8 @@ public final class SharedPhotos {
     }
 
     /**
-     * The photographer paid Tribute to their own print: ask the relay to give its upload
-     * {@link #OWN_BOOST_FACTOR}× the views. Safe to send before the upload itself — the relay holds the
+     * The photographer paid Tribute to their own print: ask the relay to raise its upload
+     * to {@link #VIEWS_MAX} views, like any first Tribute. Safe to send before the upload itself — the relay holds the
      * boost until the photo arrives. Returns false when the print was never uploaded (no key).
      */
     public static boolean boostOwnUpload(ServerPlayer player, ItemStack print, int cost) {
@@ -550,7 +550,7 @@ public final class SharedPhotos {
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(tributePaidLine(player, cost, maxViews(held)));
+        player.sendSystemMessage(tributePaidLine(player, cost, VIEWS_MAX));
     }
 
     /**
