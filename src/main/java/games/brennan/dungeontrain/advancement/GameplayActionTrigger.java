@@ -56,6 +56,7 @@ import java.util.Optional;
  *   <li>{@code livestream_total} — streamed for {@code thresholdTicks} in total, across every stream</li>
  *   <li>{@code toggled_placed_tv} — switched a placed TV on or off with an empty-hand click</li>
  *   <li>{@code toggled_held_tv} — switched a held TV on or off ({@code TvHeldTogglePacket})</li>
+ *   <li>{@code selfie_live_eye} / {@code selfie_tv_head} — a selfie wearing the Live Eye / a TV ({@code compat/photo/PhotoSelfies})</li>
  *   <li>{@code tv_to_live_eye} — swapped a worn TV for a Live Eye while someone else was live, and went live</li>
  *   <li>{@code wore_tv} / {@code wore_tv_15_min} — put a TV on as a hat; kept it on for
  *       {@code threshold} minutes ({@code LiveTvAdvancements})</li>

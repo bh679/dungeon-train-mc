@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/square_eyes",
+  "display": {
+    "icon": {
+      "id": "vista:television"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.screen_test.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.screen_test.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "selfie_tv_head"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "action"
+    ]
+  ]
+}

@@ -81,6 +81,7 @@ public final class PhotoAdvancementEvents {
             PhotoCounts.record(player, PhotoSubjectTally.of(player, inFrame));
             PhotoFinalMoments.remember(player, event.getFrame(), inFrame);
             data.get(Frame.BIOME).ifPresent(biome -> recordBiome(player, biome));
+            PhotoSelfies.trigger(player, data);
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Couldn't read photo subjects for {}: {}", player.getName().getString(), e.toString());
         }
