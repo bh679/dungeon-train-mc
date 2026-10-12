@@ -50,6 +50,26 @@ public final class DisplayScaleOption {
     }
 
     /**
+     * The same three sliders for a row that already names the channel beside them (the options
+     * screen's settings list), so each slider reads only {@code "1.0"}. The caption still names the
+     * option for narration.
+     */
+    public static OptionInstance<Integer> allDisplaysValueOnly() {
+        return create("all_displays", ClientDisplayConfig::getAllScale, ClientDisplayConfig::setAllScale,
+                DisplayScaleOption::valueLabel, false);
+    }
+
+    public static OptionInstance<Integer> worldspaceValueOnly() {
+        return create("worldspace", ClientDisplayConfig::getWorldspaceChannel,
+                ClientDisplayConfig::setWorldspaceChannel, DisplayScaleOption::valueLabel, false);
+    }
+
+    public static OptionInstance<Integer> hudValueOnly() {
+        return create("hud", ClientDisplayConfig::getHudChannel, ClientDisplayConfig::setHudChannel,
+                DisplayScaleOption::valueLabel, false);
+    }
+
+    /**
      * A fresh slider bound to one channel's accessors.
      *
      * <p>{@code channel} is the lang-key suffix under {@code gui.dungeontrain.editor_settings.} — the
@@ -58,11 +78,18 @@ public final class DisplayScaleOption {
      * builds these in {@code init()}: reopening or resizing picks up a change made from the X-menu.</p>
      */
     private static OptionInstance<Integer> create(String channel, DoubleSupplier get, DoubleConsumer set) {
+        return create(channel, get, set, DisplayScaleOption::label, true);
+    }
+
+    /** {@code tooltip} false for the value-only sliders: their row's label carries the explanation. */
+    private static OptionInstance<Integer> create(String channel, DoubleSupplier get, DoubleConsumer set,
+                                                  OptionInstance.CaptionBasedToString<Integer> label, boolean tooltip) {
         String key = "gui.dungeontrain.editor_settings." + channel;
         return new OptionInstance<>(
                 key,
-                OptionInstance.cachedConstantTooltip(Component.translatable(key + ".tip")),
-                DisplayScaleOption::label,
+                tooltip ? OptionInstance.cachedConstantTooltip(Component.translatable(key + ".tip"))
+                        : OptionInstance.noTooltip(),
+                label,
                 new OptionInstance.IntRange(MIN_TENTHS, MAX_TENTHS),
                 toTenths(get.getAsDouble()),
                 tenths -> set.accept(tenths / 10.0));
@@ -76,6 +103,11 @@ public final class DisplayScaleOption {
     private static Component label(Component caption, int tenths) {
         return Component.translatable("gui.dungeontrain.options.value_row",
                 caption, String.format(Locale.ROOT, "%.1f", tenths / 10.0));
+    }
+
+    /** {@code "1.0"} alone — the value with no caption, for a row that names the channel itself. */
+    private static Component valueLabel(Component caption, int tenths) {
+        return Component.literal(String.format(Locale.ROOT, "%.1f", tenths / 10.0)); // a config value, not prose
     }
 
     /** The stored scale as a slider notch, clamping a hand-edited toml value into range. */
