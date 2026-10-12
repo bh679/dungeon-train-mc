@@ -25280,6 +25280,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dh-333-tv-crash",
+      "version": "0.1254.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "TVs with Distant Horizons",
+      "summary": "TVs play happily alongside Distant Horizons again.",
+      "highlights": [],
+      "pr": 1961,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
