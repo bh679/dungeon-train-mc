@@ -18,6 +18,8 @@ from pathlib import Path
 from PIL import Image
 
 GRADLE = Path.home() / ".gradle" / "caches"
+#: DT's own item sprites, read from the working tree rather than a jar.
+DT_ITEM_TEXTURES = Path(__file__).resolve().parents[3] / "src/main/resources/assets/dungeontrain/textures/item"
 
 #: Flat (2D) item renders for block items whose inventory icon is the block texture itself.
 FLAT_BLOCK_ITEMS = {"oak_sapling", "dandelion", "poppy", "oxeye_daisy", "rail", "powered_rail",
@@ -101,6 +103,7 @@ class Textures:
             "exposure": _mod_jar("maven.modrinth/exposure/*/*/exposure-*.jar"),
             "exposure_polaroid": _mod_jar("maven.modrinth/exposure-polaroid/*/*/exposure-polaroid-*.jar"),
             "ediblebackpacks": _mod_jar("bh679/ediblebackpacks/*/*/ediblebackpacks-*.jar"),
+            "vista": _mod_jar("maven.modrinth/vista_tv/*/*/vista_tv-*.jar"),
         }
         self.missing: list[str] = []
         self._icons: dict[str, str] = {}
@@ -134,6 +137,32 @@ class Textures:
         except KeyError:
             return None
 
+    def _mod_tex(self, ns: str, path: str) -> Image.Image | None:
+        jar = self.mods.get(ns)
+        if jar is None:
+            return None
+        try:
+            return Image.open(io.BytesIO(jar.read(f"assets/{ns}/textures/{path}.png"))).convert("RGBA")
+        except KeyError:
+            return None
+
+    def _vista_tv(self) -> Image.Image | None:
+        """Vista's TV item is entity-rendered; its inventory look is the single-block cube, screen forward."""
+        top = self._mod_tex("vista", "block/tv/top/default")
+        front = self._mod_tex("vista", "block/tv/front/default")
+        side = self._mod_tex("vista", "block/tv/side/default")
+        return cube(top, front, side) if top and front and side else None
+
+    @staticmethod
+    def _dt_item(name: str) -> Image.Image | None:
+        """DT's own inventory sprite from the working tree: ``<name>.png``, or ``<name>_icon.png`` for
+        items whose inventory look differs from the worn one (the camcorder)."""
+        for file in (f"{name}.png", f"{name}_icon.png"):
+            path = DT_ITEM_TEXTURES / file
+            if path.is_file():
+                return Image.open(path).convert("RGBA")
+        return None
+
     # --- icons ---------------------------------------------------------------
 
     def icon(self, item_id: str) -> str:
@@ -153,8 +182,13 @@ class Textures:
     def _render(self, item_id: str) -> Image.Image | None:
         ns, name = item_id.split(":", 1)
         if ns == "dungeontrain":
+            own = self._dt_item(name)
+            if own is not None:
+                return flat(own)
             # DT's found photo and random books reuse their base item's look.
             return self._render("exposure:photograph" if name == "found_photograph" else "minecraft:written_book")
+        if item_id == "vista:television":
+            return self._vista_tv()
         if ns != "minecraft":
             img = self._mod_item(ns, name)
             return flat(img) if img else None
@@ -212,6 +246,8 @@ class Textures:
                 m = re.fullmatch(rf"assets/{ns}/textures/item/([a-z0-9_]+)\.png", n)
                 if m:
                     ids.append(f"{ns}:{m.group(1)}")
+        if self.mods.get("vista") is not None:
+            ids.append("vista:television")
         out = {}
         for item_id in ids:
             if item_id in skip or item_id in out:
