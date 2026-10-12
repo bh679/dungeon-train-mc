@@ -522,6 +522,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // ConsentChoice); coming back here re-runs init(), so this row redraws from the new value.
             case CONTENT_MODE -> Setting.of(
                     Button.builder(contentModeLabel(ClientDisplayConfig.getContentMode()), b -> {
+                                // The card can turn the connection and Developer chat on or off, so the
+                                // Account tab's last answer (e.g. "needs the internet connection") is
+                                // stale once it closes: ask the relay again when the tab next draws.
+                                this.accountRequested = false;
+                                DiscordAccountState.invalidate();
                                 DungeonTrain.markConsentCardReopened();
                                 this.minecraft.setScreen(new NetworkConsentScreen(this));
                             })

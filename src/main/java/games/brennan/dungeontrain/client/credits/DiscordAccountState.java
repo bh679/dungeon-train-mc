@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.client.credits;
 import games.brennan.dungeontrain.discord.PingType;
 import net.minecraft.client.Minecraft;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,6 +27,10 @@ public final class DiscordAccountState {
     /** The last toggle failed and was put back; the tab shows a one-line warning until the next answer. */
     private static boolean toggleFailed = false;
     private static boolean inFlight = false;
+    /** Asked to refresh while a request was out: run when the answer lands, so no caller is dropped. */
+    private static final List<Runnable> waiting = new ArrayList<>();
+    /** Invalidated while a request was out: that answer is stale, so ask again as soon as it lands. */
+    private static boolean staleInFlight = false;
 
     private DiscordAccountState() {}
 
@@ -45,13 +51,28 @@ public final class DiscordAccountState {
         return toggleFailed;
     }
 
-    /** Ask the relay again, then run {@code onChange} on the render thread. One request at a time. */
+    /**
+     * Ask the relay again, then run {@code onChange} on the render thread. One request at a time: a call
+     * made while one is out waits for that answer — or, if {@link #invalidate} made it stale, for the
+     * fresh request that follows it.
+     */
     public static void refresh(Runnable onChange) {
-        if (inFlight) return;
+        waiting.add(onChange);
+        if (!inFlight) start();
+    }
+
+    private static void start() {
         inFlight = true;
         if (status == null) phase = Phase.LOADING;
         CommunityLinkClient.status().whenComplete((s, err) -> onClient(() -> {
             inFlight = false;
+            if (staleInFlight) {
+                // The player changed something the answer depends on (e.g. Kid mode, the connection)
+                // after this request left: drop it and ask again for everyone still waiting.
+                staleInFlight = false;
+                start();
+                return;
+            }
             if (err == null && s != null && s.ok()) {
                 status = s;
                 phase = Phase.READY;
@@ -62,7 +83,9 @@ public final class DiscordAccountState {
                 // Keep showing the last good answer if there is one; a blip shouldn't empty the tab.
                 if (status == null) phase = Phase.FAILED;
             }
-            onChange.run();
+            List<Runnable> done = List.copyOf(waiting);
+            waiting.clear();
+            done.forEach(Runnable::run);
         }));
     }
 
@@ -70,6 +93,7 @@ public final class DiscordAccountState {
     public static void invalidate() {
         status = null;
         phase = Phase.LOADING;
+        if (inFlight) staleInFlight = true;
     }
 
     /** Turn the master switch on/off; {@code onChange} runs on the render thread with the result applied. */
