@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/shh",
   "display": {
     "icon": {
-      "id": "minecraft:sculk_shrieker"
+      "id": "minecraft:sculk_catalyst"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.rise_and_shine.title"
