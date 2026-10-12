@@ -45,7 +45,7 @@
     "6,2,0": { "lockId": 7, "states": ["minecraft:bookshelf", {"state": "dungeontrain:stage_stripped_wood[axis=z]", "groupRef": 2}, {"state": "minecraft:bookshelf", "weight": 3, "groupRef": 5}] },
     "6,0,0": { "lockId": 7, "states": ["minecraft:bookshelf", {"state": "dungeontrain:stage_stripped_wood[axis=z]", "groupRef": 2}, {"state": "minecraft:bookshelf", "weight": 3, "groupRef": 5}] },
     "5,0,0": { "lockId": 7, "states": ["minecraft:bookshelf", {"state": "dungeontrain:stage_stripped_wood[axis=z]", "groupRef": 2}, {"state": "minecraft:bookshelf", "weight": 3, "groupRef": 5}] },
-    "0,1,4": ["minecraft:potted_spruce_sapling", "minecraft:player_head[powered=false,rotation=0]", "dungeontrain:variant_placeholder", "minecraft:soul_lantern[hanging=false,waterlogged=false]", "minecraft:lantern[hanging=false,waterlogged=false]"],
+    "0,1,4": ["minecraft:potted_spruce_sapling", {"state": "minecraft:player_head[powered=false,rotation=0]", "rotation": {"mode": "options", "compass": ["nw", "n", "ne", "e", "se"]}}, "dungeontrain:variant_placeholder", "minecraft:soul_lantern[hanging=false,waterlogged=false]", "minecraft:lantern[hanging=false,waterlogged=false]"],
     "3,2,4": [{"state": "fastpaintings:painting[facing=north,waterlogged=false,x_offset=0,y_offset=0]", "nbt": "{placed_with_nbt:1b,variant:\"minecraft:courbet\"}", "rotation": {"mode": "lock", "dirs": ["north"]}}, {"state": "dungeontrain:variant_placeholder", "weight": 6, "rotation": {"mode": "lock", "dirs": ["north"]}}]
   }
 }
