@@ -1613,7 +1613,7 @@
   "gui.dungeontrain.settings.label.group_size": "Groepsgrootte:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Compat. terrein:",
   "gui.dungeontrain.options.catch_up_burst": "Inhaal-spawnen",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Hoe snel de trein weer aangroeit",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Hoe snel de trein voor je wordt gegenereerd",
   "gui.dungeontrain.options.catch_up_burst.tip": "Hoe snel de trein wordt gegenereerd. Langzamer is beter voor de prestaties.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Automatisch (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Uit",

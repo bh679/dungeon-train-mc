@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.settings.label.group_size": "그룹 크기:",
   "gui.dungeontrain.settings.label.compatible_terrain": "호환 지형:",
   "gui.dungeontrain.options.catch_up_burst": "따라잡기 생성",
-  "gui.dungeontrain.options.catch_up_burst.hint": "열차가 다시 늘어나는 속도",
+  "gui.dungeontrain.options.catch_up_burst.hint": "앞쪽 열차가 생성되는 속도",
   "gui.dungeontrain.options.catch_up_burst.tip": "열차 생성 속도. 느릴수록 성능이 좋아집니다.",
   "gui.dungeontrain.options.catch_up_burst.auto": "자동 (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "끄기",

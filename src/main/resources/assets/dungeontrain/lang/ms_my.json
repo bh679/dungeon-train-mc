@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.settings.label.group_size": "Saiz kumpulan:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Rupa bumi serasi:",
   "gui.dungeontrain.options.catch_up_burst": "Penjanaan mengejar",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Seberapa laju kereta api memanjang semula",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Seberapa laju kereta api dijana di hadapan anda",
   "gui.dungeontrain.options.catch_up_burst.tip": "Seberapa laju kereta api dijana. Lebih perlahan meningkatkan prestasi.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Automatik (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Mati",

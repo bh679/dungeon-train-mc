@@ -1655,7 +1655,7 @@
   "gui.dungeontrain.settings.label.group_size": "Rozmiar grupy:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Zgodny teren:",
   "gui.dungeontrain.options.catch_up_burst": "Nadrabianie wagonów",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Jak szybko pociąg się wydłuża",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Jak szybko pociąg generuje się przed tobą",
   "gui.dungeontrain.options.catch_up_burst.tip": "Jak szybko generuje się pociąg. Wolniej poprawia wydajność.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Automatycznie (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Wyłączone",

@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.settings.label.group_size": "ขนาดกลุ่ม:",
   "gui.dungeontrain.settings.label.compatible_terrain": "ภูมิประเทศเข้ากันได้:",
   "gui.dungeontrain.options.catch_up_burst": "การสร้างแบบไล่ตาม",
-  "gui.dungeontrain.options.catch_up_burst.hint": "รถไฟยืดกลับมาเร็วแค่ไหน",
+  "gui.dungeontrain.options.catch_up_burst.hint": "รถไฟสร้างข้างหน้าคุณเร็วแค่ไหน",
   "gui.dungeontrain.options.catch_up_burst.tip": "รถไฟสร้างเร็วแค่ไหน ช้าลงช่วยประสิทธิภาพ",
   "gui.dungeontrain.options.catch_up_burst.auto": "อัตโนมัติ (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "ปิด",

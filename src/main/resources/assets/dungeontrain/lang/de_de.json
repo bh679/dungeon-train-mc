@@ -1613,7 +1613,7 @@
   "gui.dungeontrain.settings.label.group_size": "Gruppengröße:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Kompat. Gelände:",
   "gui.dungeontrain.options.catch_up_burst": "Aufhol-Spawn",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Wie schnell der Zug nachwächst",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Wie schnell der Zug vor dir entsteht",
   "gui.dungeontrain.options.catch_up_burst.tip": "Wie schnell der Zug erzeugt wird. Langsamer verbessert die Leistung.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Automatisch (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Aus",

@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.settings.label.group_size": "Kích thước nhóm:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Địa hình tương thích:",
   "gui.dungeontrain.options.catch_up_burst": "Sinh toa đuổi kịp",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Tàu nối dài lại nhanh đến đâu",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Tàu sinh ra phía trước bạn nhanh đến đâu",
   "gui.dungeontrain.options.catch_up_burst.tip": "Tàu sinh ra nhanh đến đâu. Chậm hơn giúp hiệu năng tốt hơn.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Tự động (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Tắt",

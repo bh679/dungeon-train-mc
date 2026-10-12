@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.settings.label.group_size": "Ukuran grup:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Medan kompat:",
   "gui.dungeontrain.options.catch_up_burst": "Pemunculan pengejar",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Seberapa cepat kereta memanjang lagi",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Seberapa cepat kereta dibuat di depanmu",
   "gui.dungeontrain.options.catch_up_burst.tip": "Seberapa cepat kereta dibuat. Lebih lambat meringankan performa.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Otomatis (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Mati",

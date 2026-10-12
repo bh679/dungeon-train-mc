@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.settings.label.group_size": "Laki ng grupo:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Compat terrain:",
   "gui.dungeontrain.options.catch_up_burst": "Panghabol na paglikha",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Gaano kabilis humaba ang tren",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Gaano kabilis mabuo ang tren sa unahan mo",
   "gui.dungeontrain.options.catch_up_burst.tip": "Gaano kabilis mabuo ang tren. Mas mabagal ay mas magaan.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Awtomatiko (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Naka-off",

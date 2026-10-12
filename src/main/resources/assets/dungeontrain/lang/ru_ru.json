@@ -1660,7 +1660,7 @@
   "gui.dungeontrain.settings.label.group_size": "Размер группы:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Совм. рельеф:",
   "gui.dungeontrain.options.catch_up_burst": "Догоняющий спавн",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Как быстро поезд удлиняется снова",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Как быстро поезд генерируется впереди вас",
   "gui.dungeontrain.options.catch_up_burst.tip": "Как быстро генерируется поезд. Медленнее — выше производительность.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Автоматически (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Выкл.",

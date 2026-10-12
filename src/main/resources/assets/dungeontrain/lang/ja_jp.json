@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.settings.label.group_size": "グループサイズ:",
   "gui.dungeontrain.settings.label.compatible_terrain": "互換地形:",
   "gui.dungeontrain.options.catch_up_burst": "追いつき生成",
-  "gui.dungeontrain.options.catch_up_burst.hint": "列車が伸び直す速さ",
+  "gui.dungeontrain.options.catch_up_burst.hint": "前方の列車が生成される速さ",
   "gui.dungeontrain.options.catch_up_burst.tip": "列車の生成速度。遅いほど動作が軽くなります。",
   "gui.dungeontrain.options.catch_up_burst.auto": "自動 (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "オフ",

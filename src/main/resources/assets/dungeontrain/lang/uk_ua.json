@@ -2127,7 +2127,7 @@
   "gui.dungeontrain.settings.label.group_size": "Розмір групи:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Сумісний рельєф:",
   "gui.dungeontrain.options.catch_up_burst": "Наздоганяльна генерація",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Як швидко потяг подовжується знову",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Як швидко потяг генерується попереду вас",
   "gui.dungeontrain.options.catch_up_burst.tip": "Як швидко генерується потяг. Повільніше — краща продуктивність.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Автоматично (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Вимкнено",

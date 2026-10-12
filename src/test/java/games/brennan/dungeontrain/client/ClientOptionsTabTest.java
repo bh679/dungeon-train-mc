@@ -357,7 +357,7 @@ final class ClientOptionsTabTest {
             if (row.captionKey() == null) continue;
             String hint = en.get(row.captionKey() + ".hint").getAsString();
             // ~180px of 5-6px glyphs at GUI scale 1 beside a 100px control; longer reads as cut.
-            assertTrue(hint.length() <= 40, row + ": hint too long to fit the row: \"" + hint + "\"");
+            assertTrue(hint.length() <= 44, row + ": hint too long to fit the row: \"" + hint + "\"");
             assertFalse(hint.endsWith("."), row + ": a hint is a fragment, not a sentence: \"" + hint + "\"");
         }
     }

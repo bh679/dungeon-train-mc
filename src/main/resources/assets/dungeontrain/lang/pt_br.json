@@ -1613,7 +1613,7 @@
   "gui.dungeontrain.settings.label.group_size": "Tamanho do grupo:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Terreno compat.:",
   "gui.dungeontrain.options.catch_up_burst": "Geração de recuperação",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Quão rápido o trem se estende de novo",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Quão rápido o trem é gerado à sua frente",
   "gui.dungeontrain.options.catch_up_burst.tip": "Quão rápido o trem é gerado. Mais devagar melhora o desempenho.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Automático (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Desativada",

@@ -1571,7 +1571,7 @@
   "gui.dungeontrain.settings.label.group_size": "群組大小：",
   "gui.dungeontrain.settings.label.compatible_terrain": "相容地形：",
   "gui.dungeontrain.options.catch_up_burst": "追趕式生成",
-  "gui.dungeontrain.options.catch_up_burst.hint": "列車重新延長的速度",
+  "gui.dungeontrain.options.catch_up_burst.hint": "前方列車生成的速度",
   "gui.dungeontrain.options.catch_up_burst.tip": "列車生成的速度。越慢效能越好。",
   "gui.dungeontrain.options.catch_up_burst.auto": "自動 (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "關閉",

@@ -1613,7 +1613,7 @@
   "gui.dungeontrain.settings.label.group_size": "Taille de groupe :",
   "gui.dungeontrain.settings.label.compatible_terrain": "Terrain compat. :",
   "gui.dungeontrain.options.catch_up_burst": "Génération de rattrapage",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Vitesse à laquelle le train se rallonge",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Vitesse de génération du train devant vous",
   "gui.dungeontrain.options.catch_up_burst.tip": "Vitesse de génération du train. Plus lent améliore les performances.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Automatique (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Désactivée",

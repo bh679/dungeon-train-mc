@@ -2130,7 +2130,7 @@
   "gui.dungeontrain.settings.label.group_size": "Mărimea grupului:",
   "gui.dungeontrain.settings.label.compatible_terrain": "Teren compat:",
   "gui.dungeontrain.options.catch_up_burst": "Generare de recuperare",
-  "gui.dungeontrain.options.catch_up_burst.hint": "Cât de repede se prelungește trenul",
+  "gui.dungeontrain.options.catch_up_burst.hint": "Cât de repede se generează trenul în fața ta",
   "gui.dungeontrain.options.catch_up_burst.tip": "Cât de repede se generează trenul. Mai lent îmbunătățește performanța.",
   "gui.dungeontrain.options.catch_up_burst.auto": "Automat (%s)",
   "gui.dungeontrain.options.catch_up_burst.off": "Oprită",
