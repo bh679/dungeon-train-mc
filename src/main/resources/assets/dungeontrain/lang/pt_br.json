@@ -2464,7 +2464,7 @@
   "gui.dungeontrain.options.stream_chat.tip": "Os espectadores veem o chat e o que você digita.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Sempre desligado no modo Criança: o chat nunca chega à transmissão.",
   "gui.dungeontrain.options.stream_name_tag": "Nome na transmissão",
-  "gui.dungeontrain.options.stream_name_tag.hint": "Acima da sua barra de atalhos",
+  "gui.dungeontrain.options.stream_name_tag.hint": "No topo da sua transmissão",
   "gui.dungeontrain.options.stream_name_tag.tip": "Qual nome os espectadores veem na sua transmissão.",
   "gui.dungeontrain.options.stream_name_tag.kid_tip": "Sempre desligado no modo Criança: seu nome nunca chega à transmissão.",
   "gui.dungeontrain.options.stream_name_tag.minecraft": "Minecraft",

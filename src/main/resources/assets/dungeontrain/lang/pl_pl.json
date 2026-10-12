@@ -2513,7 +2513,7 @@
   "gui.dungeontrain.options.stream_chat.tip": "Czy widzowie widzą czat i to, co piszesz.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Zawsze wyłączone w trybie dziecka: czat nigdy nie trafia do transmisji.",
   "gui.dungeontrain.options.stream_name_tag": "Nazwa na transmisji",
-  "gui.dungeontrain.options.stream_name_tag.hint": "Nad paskiem szybkiego wyboru",
+  "gui.dungeontrain.options.stream_name_tag.hint": "Na górze transmisji",
   "gui.dungeontrain.options.stream_name_tag.tip": "Którą nazwę widzowie widzą na twojej transmisji.",
   "gui.dungeontrain.options.stream_name_tag.kid_tip": "Zawsze wyłączone w trybie dziecka: twoja nazwa nigdy nie trafia do transmisji.",
   "gui.dungeontrain.options.stream_name_tag.minecraft": "Minecraft",

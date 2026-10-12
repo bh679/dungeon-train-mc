@@ -2518,7 +2518,7 @@
   "gui.dungeontrain.options.stream_chat.tip": "Видят ли зрители чат и то, что вы печатаете.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "В детском режиме всегда выключено: чат никогда не попадает в трансляцию.",
   "gui.dungeontrain.options.stream_name_tag": "Имя в трансляции",
-  "gui.dungeontrain.options.stream_name_tag.hint": "Над панелью быстрого доступа",
+  "gui.dungeontrain.options.stream_name_tag.hint": "Вверху трансляции",
   "gui.dungeontrain.options.stream_name_tag.tip": "Какое имя зрители видят в вашей трансляции.",
   "gui.dungeontrain.options.stream_name_tag.kid_tip": "В детском режиме всегда выключено: ваше имя никогда не попадает в трансляцию.",
   "gui.dungeontrain.options.stream_name_tag.minecraft": "Minecraft",

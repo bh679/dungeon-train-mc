@@ -2415,7 +2415,7 @@
   "gui.dungeontrain.options.stream_chat.tip": "Người xem có thấy trò chuyện và những gì bạn gõ không.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Luôn tắt ở chế độ Trẻ em: trò chuyện không bao giờ lên sóng.",
   "gui.dungeontrain.options.stream_name_tag": "Tên trên luồng phát",
-  "gui.dungeontrain.options.stream_name_tag.hint": "Hiện phía trên thanh công cụ",
+  "gui.dungeontrain.options.stream_name_tag.hint": "Hiện ở đầu luồng phát",
   "gui.dungeontrain.options.stream_name_tag.tip": "Tên mà người xem thấy trên luồng phát của bạn.",
   "gui.dungeontrain.options.stream_name_tag.kid_tip": "Luôn tắt ở chế độ Trẻ em: tên của bạn không bao giờ lên sóng.",
   "gui.dungeontrain.options.stream_name_tag.minecraft": "Minecraft",

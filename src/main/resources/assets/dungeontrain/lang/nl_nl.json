@@ -2464,7 +2464,7 @@
   "gui.dungeontrain.options.stream_chat.tip": "Zien kijkers de chat en wat je typt.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Altijd uit in kindermodus: de chat komt nooit in de stream.",
   "gui.dungeontrain.options.stream_name_tag": "Naam in stream",
-  "gui.dungeontrain.options.stream_name_tag.hint": "Boven je hotbar",
+  "gui.dungeontrain.options.stream_name_tag.hint": "Bovenaan je stream",
   "gui.dungeontrain.options.stream_name_tag.tip": "Welke naam kijkers in je stream zien.",
   "gui.dungeontrain.options.stream_name_tag.kid_tip": "Altijd uit in kindermodus: je naam komt nooit in de stream.",
   "gui.dungeontrain.options.stream_name_tag.minecraft": "Minecraft",

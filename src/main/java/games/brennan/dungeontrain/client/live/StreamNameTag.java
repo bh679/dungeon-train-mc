@@ -11,31 +11,32 @@ import games.brennan.dungeontrain.config.LiveFeedClientConfig.NameTag;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.ClientHooks;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 /**
- * The streamer's name, bottom-middle just above the hotbar, drawn into the broadcast picture only.
+ * The streamer's name, top-middle in black-outlined white, drawn into the broadcast picture only.
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
  * ({@link StreamPreview}) — so viewers and the preview see it, the streamer's own screen never does,
- * and it is there whichever capture point the Stream switches chose. Sized in the stream's own GUI
- * pixels so it sits where the hotbar does in the picture.</p>
+ * and it is there on every frame (menus open, GUI off) until the streamer sets it to None. Sized in
+ * the stream's own GUI pixels so it matches the HUD viewers see.</p>
  *
  * <p>Which name: {@link LiveFeedClientConfig#streamNameTag()}. Kid mode shows none. A Discord tag
  * with no linked Discord name shows nothing rather than falling back to the Minecraft name.</p>
  */
 public final class StreamNameTag {
 
-    /** GUI pixels from the bottom of the picture to the bottom of the tag: just over the armour row. */
-    static final int BOTTOM_OFFSET = 50;
-    static final int PAD_X = 3;
-    static final int PAD_Y = 2;
-    static final int BACKING = 0x80000000;
+    /** GUI pixels from the top of the picture to the top of the tag (the outline sits one above). */
+    static final int TOP_OFFSET = 4;
     static final int TEXT = 0xFFFFFFFF;
+    /** Black 8-way outline, as on a glow-ink sign, so the name reads on any sky. */
+    static final int OUTLINE = 0xFF000000;
 
     private StreamNameTag() {}
 
@@ -98,7 +99,7 @@ public final class StreamNameTag {
             GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
             graphics.pose().pushPose();
             graphics.pose().scale(scale, scale, 1f);
-            draw(graphics, mc.font, name, Math.round(w / scale), Math.round(h / scale));
+            draw(graphics, mc.font, name, Math.round(w / scale));
             graphics.pose().popPose();
             graphics.flush();
         } finally {
@@ -109,12 +110,9 @@ public final class StreamNameTag {
         }
     }
 
-    private static void draw(GuiGraphics graphics, Font font, String name, int guiW, int guiH) {
-        int textW = font.width(name);
-        int x = (guiW - textW) / 2;
-        int bottom = guiH - BOTTOM_OFFSET;
-        int y = bottom - PAD_Y - font.lineHeight + 1;
-        graphics.fill(x - PAD_X, y - PAD_Y, x + textW + PAD_X, bottom, BACKING);
-        graphics.drawString(font, name, x, y, TEXT, true);
+    private static void draw(GuiGraphics graphics, Font font, String name, int guiW) {
+        int x = (guiW - font.width(name)) / 2;
+        font.drawInBatch8xOutline(Component.literal(name).getVisualOrderText(), x, TOP_OFFSET, TEXT, OUTLINE,
+            graphics.pose().last().pose(), graphics.bufferSource(), LightTexture.FULL_BRIGHT);
     }
 }

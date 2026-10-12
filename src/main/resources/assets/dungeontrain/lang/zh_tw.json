@@ -2415,7 +2415,7 @@
   "gui.dungeontrain.options.stream_chat.tip": "觀眾是否能看到聊天和你輸入的內容。",
   "gui.dungeontrain.options.stream_chat.kid_tip": "兒童模式下始終關閉:聊天永遠不會出現在直播中。",
   "gui.dungeontrain.options.stream_name_tag": "直播顯示名稱",
-  "gui.dungeontrain.options.stream_name_tag.hint": "顯示在快捷欄上方",
+  "gui.dungeontrain.options.stream_name_tag.hint": "顯示在直播畫面頂部",
   "gui.dungeontrain.options.stream_name_tag.tip": "觀眾在你的直播中看到的名稱。",
   "gui.dungeontrain.options.stream_name_tag.kid_tip": "兒童模式下始終關閉:你的名字永遠不會出現在直播中。",
   "gui.dungeontrain.options.stream_name_tag.minecraft": "Minecraft",

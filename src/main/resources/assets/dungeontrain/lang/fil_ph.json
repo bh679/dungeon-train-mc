@@ -2415,7 +2415,7 @@
   "gui.dungeontrain.options.stream_chat.tip": "Nakikita ba ng manonood ang chat at ang tina-type mo.",
   "gui.dungeontrain.options.stream_chat.kid_tip": "Laging off sa Kid mode: hindi kailanman aabot ang chat sa stream.",
   "gui.dungeontrain.options.stream_name_tag": "Pangalan sa stream",
-  "gui.dungeontrain.options.stream_name_tag.hint": "Nasa itaas ng hotbar mo",
+  "gui.dungeontrain.options.stream_name_tag.hint": "Nasa itaas ng stream mo",
   "gui.dungeontrain.options.stream_name_tag.tip": "Aling pangalan ang makikita ng mga manonood sa stream mo.",
   "gui.dungeontrain.options.stream_name_tag.kid_tip": "Laging off sa Kid mode: hindi kailanman aabot ang pangalan mo sa stream.",
   "gui.dungeontrain.options.stream_name_tag.minecraft": "Minecraft",

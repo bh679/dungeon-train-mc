@@ -2415,7 +2415,7 @@
   "gui.dungeontrain.options.stream_chat.tip": "ผู้ชมเห็นแชทและสิ่งที่คุณพิมพ์หรือไม่",
   "gui.dungeontrain.options.stream_chat.kid_tip": "ปิดเสมอในโหมดเด็ก: แชตจะไม่ขึ้นในสตรีมเลย",
   "gui.dungeontrain.options.stream_name_tag": "ชื่อในสตรีม",
-  "gui.dungeontrain.options.stream_name_tag.hint": "แสดงเหนือฮอตบาร์",
+  "gui.dungeontrain.options.stream_name_tag.hint": "แสดงด้านบนของสตรีม",
   "gui.dungeontrain.options.stream_name_tag.tip": "ชื่อที่ผู้ชมเห็นในสตรีมของคุณ",
   "gui.dungeontrain.options.stream_name_tag.kid_tip": "ปิดเสมอในโหมดเด็ก: ชื่อของคุณจะไม่ขึ้นในสตรีมเลย",
   "gui.dungeontrain.options.stream_name_tag.minecraft": "Minecraft",
