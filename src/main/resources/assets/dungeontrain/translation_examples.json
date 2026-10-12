@@ -13515,21 +13515,6 @@
       ]
     }
   },
-  "gui.dungeontrain.options.custom_content.tip": {
-    "1": {
-      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
-      "examples": [
-        {
-          "key": "effect.dungeontrain.free_play.desc.1",
-          "args": []
-        },
-        {
-          "key": "gui.dungeontrain.free_play.safe_space",
-          "args": []
-        }
-      ]
-    }
-  },
   "gui.dungeontrain.unsupported_mods.body": {
     "1": {
       "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
@@ -15319,6 +15304,15 @@
       "examples": [
         "11",
         "101"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.hint": {
+    "1": {
+      "label": "how much disk space every backup archive takes together",
+      "examples": [
+        "12 MB",
+        "1.4 GB"
       ]
     }
   },
