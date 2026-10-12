@@ -66,6 +66,11 @@ public final class LiveTvAdvancements {
         streamSince = player.server.getTickCount();
     }
 
+    /** Swapped the TV on their head for a Live Eye while someone else was live, and went live ({@link LiveFeedEvents}). */
+    static void onTookOverFromTv(ServerPlayer player) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "tv_to_live_eye");
+    }
+
     @SubscribeEvent
     public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
         if (event.getSlot() != EquipmentSlot.HEAD) return;

@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/square_eyes",
+  "display": {
+    "icon": {
+      "id": "dungeontrain:live_headpiece"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.change_the_channel.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.change_the_channel.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "tv_to_live_eye"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "action"
+    ]
+  ]
+}

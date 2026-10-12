@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
 import games.brennan.dungeontrain.player.LiveStreamers;
+import games.brennan.dungeontrain.player.ServerLiveStatus;
+import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.item.LiveHeadpiecePendingTag;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.ChatFormatting;
@@ -76,7 +78,12 @@ public final class LiveFeedEvents {
         boolean wasOn = isCamcorder(event.getFrom());
         boolean isOn = isCamcorder(event.getTo());
         if (isOn && !wasOn) {
+            // Read before the stream starts: once it does, this player is the one live.
+            boolean fromWatching = TvItems.isTv(event.getFrom()) && ServerLiveStatus.isSomeoneElseLive(player.getServer(), player);
             startStreaming(player);
+            if (fromWatching && player.getServer() != null && player.getUUID().equals(LiveStreamers.get(player.getServer()))) {
+                LiveTvAdvancements.onTookOverFromTv(player);
+            }
         } else if (wasOn && !isOn) {
             // Taken off by the player — or just burned/returned by us, in which case the streamer
             // was already cleared and this is a no-op.
