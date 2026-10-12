@@ -14,8 +14,13 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  *
  * <p>The class moved between DH lines (2.x {@code core.render.glObject}, 3.x
  * {@code common.render.openGl.glObject}) and so did the LWJGL owner of the call (GL32 in 2.x, GL33 in
- * 3.x); only one redirect matches per version, hence {@code require = 0}. Gated on DH being installed by
- * {@code DistantHorizonsMixinPlugin}.</p>
+ * early 3.x); only one redirect matches per version, hence {@code require = 0}. From 3.3 on DH reads
+ * through its own {@code ILWJGLService} and no longer reads {@code GL_POLYGON_MODE} at all (checked
+ * against 3.3.3, the build the modpack pins), so nothing here matches there — the guard stays for
+ * players still on an older DH.
+ * {@code DistantHorizonsMixinPlugin} gates the config on DH being installed and hands Mixin only the
+ * target that exists in the installed jar, so the absent one is never probed (that probe used to log
+ * {@code Error loading class ... GLState} at startup).</p>
  */
 @Pseudo
 @Mixin(targets = {
