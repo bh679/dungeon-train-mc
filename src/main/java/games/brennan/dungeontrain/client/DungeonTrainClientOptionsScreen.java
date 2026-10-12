@@ -120,6 +120,13 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * survives {@code rebuildWidgets()} — the answer's own rebuild must not ask again.
      */
     private boolean accountRequested = false;
+    /**
+     * Set when this screen opens a child that can change what it shows (the consent card, the Discord
+     * link screen): run when this screen is shown again, then rebuild. Showing a screen again does NOT
+     * re-run {@code init()} in 1.21 — {@code Screen#init} only repositions an already-initialised
+     * screen — so {@link #added()} rebuilds instead.
+     */
+    @Nullable private Runnable onReturn;
     private boolean donationPrefsRequested = false;
 
     public DungeonTrainClientOptionsScreen(Screen parent) {
@@ -170,6 +177,33 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     @Override
     protected void addOptions() {
         // Intentionally empty — see javadoc.
+    }
+
+    @Override
+    public void added() {
+        super.added();
+        if (this.onReturn != null) {
+            Runnable run = this.onReturn;
+            this.onReturn = null;
+            run.run();
+            rebuildWidgets();
+        }
+    }
+
+    /** Open {@code child} over this screen; when it comes back, run {@code onReturn} and rebuild. */
+    private void openChild(Screen child, Runnable onReturn) {
+        this.onReturn = onReturn;
+        this.minecraft.setScreen(child);
+    }
+
+    /**
+     * Forget the Account tab's answer so its next draw asks the relay again. Run when a child screen
+     * closes, not when it opens: an answer that lands while the child is up was asked under the old
+     * settings, and would otherwise be kept.
+     */
+    private void forgetAccount() {
+        this.accountRequested = false;
+        DiscordAccountState.invalidate();
     }
 
     @Override
@@ -380,10 +414,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // hint, and the Link button as the control.
             Component why = Component.translatable("gui.dungeontrain.options.account.not_linked");
             Button link = Button.builder(Component.translatable("gui.dungeontrain.options.account.link"), b -> {
-                        // Coming back re-runs init(); ask again then, so a fresh link shows at once.
-                        this.accountRequested = false;
-                        DiscordAccountState.invalidate();
-                        this.minecraft.setScreen(new DiscordLinkScreen(this, null));
+                        // Coming back rebuilds this screen and asks again, so a fresh link shows at once.
+                        openChild(new DiscordLinkScreen(this, null), this::forgetAccount);
                     })
                     .bounds(0, 0, CONTROL_W, ROW_H).build();
             list.addSetting(ClientOptionsIcons.DISCORD_LINK,
@@ -519,16 +551,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // the mode in place, so the choice is always made seeing what it switches on and off — and
             // confirming the card turns the internet connection on, which every online feature also
             // needs. The card's answer writes the mode and syncs it to the server (DungeonTrain's
-            // ConsentChoice); coming back here re-runs init(), so this row redraws from the new value.
+            // ConsentChoice); coming back rebuilds this screen (openChild), so this row redraws.
             case CONTENT_MODE -> Setting.of(
                     Button.builder(contentModeLabel(ClientDisplayConfig.getContentMode()), b -> {
                                 // The card can turn the connection and Developer chat on or off, so the
                                 // Account tab's last answer (e.g. "needs the internet connection") is
-                                // stale once it closes: ask the relay again when the tab next draws.
-                                this.accountRequested = false;
-                                DiscordAccountState.invalidate();
+                                // stale once it closes: forget it then, and the tab asks again.
                                 DungeonTrain.markConsentCardReopened();
-                                this.minecraft.setScreen(new NetworkConsentScreen(this));
+                                openChild(new NetworkConsentScreen(this), this::forgetAccount);
                             })
                             .bounds(0, 0, CONTROL_W, ROW_H).build(),
                     key + ".tip");
