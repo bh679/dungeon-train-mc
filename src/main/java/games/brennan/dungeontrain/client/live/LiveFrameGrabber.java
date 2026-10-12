@@ -73,6 +73,7 @@ public final class LiveFrameGrabber implements AutoCloseable {
             GlStateManager._glBindFramebuffer(GL30C.GL_DRAW_FRAMEBUFFER, target.frameBufferId);
             GL30C.glBlitFramebuffer(0, 0, main.width, main.height, 0, 0, width, height,
                 GL11C.GL_COLOR_BUFFER_BIT, GL11C.GL_LINEAR);
+            StreamNameTag.drawInto(target); // viewers' copy only — the main target is untouched
             int slot = ring.issue();
             if (slot >= 0) {
                 // Into the bound pack buffer at offset 0: queued on the GPU, returns at once.

@@ -25263,6 +25263,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stream-name-tag",
+      "version": "0.1253.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Your name on stream",
+      "summary": "Viewers can now see whose stream they're watching \u2014 choose which name shows, or none, in Options.",
+      "highlights": [],
+      "pr": 1959,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
