@@ -24925,6 +24925,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-feed-renditions",
+      "version": "0.1233.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "community"
+      ],
+      "title": "A lighter Live Feed",
+      "summary": "Watching someone's Live Feed, on a TV or in your own pinned view, now takes far less bandwidth and less of your PC.",
+      "highlights": [],
+      "pr": 1942,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
