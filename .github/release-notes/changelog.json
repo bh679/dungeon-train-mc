@@ -24978,6 +24978,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sampler-pool-lifecycle-backpressure",
+      "version": "0.1236.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Terrain fills in around you first",
+      "summary": "Distant terrain now fills in nearest you first, and leaving a world lets go of its background work straight away.",
+      "highlights": [],
+      "pr": 1941,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
