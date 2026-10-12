@@ -24943,6 +24943,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-views-tributes",
+      "version": "0.1234.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Photos fade faster without a Tribute",
+      "summary": "Found photos now fade sooner unless someone pays them Tribute.",
+      "highlights": [],
+      "pr": 1937,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
