@@ -12,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
@@ -25,6 +26,14 @@ public final class LifeChallengeEvents {
     private static final int SCAN_INTERVAL_TICKS = 20;
 
     private LifeChallengeEvents() {}
+
+    /** Fired right after the save is read — before login handlers' {@code getData} fill in defaults. */
+    @SubscribeEvent
+    public static void onLoadFromFile(PlayerEvent.LoadFromFile event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            LifeChallengeAdvancements.closeUntrackedChallenges(player);
+        }
+    }
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
