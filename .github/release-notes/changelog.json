@@ -25314,6 +25314,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "darkroom-on-air",
+      "version": "0.1256.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "On air in the Darkroom",
+      "summary": "The Darkroom has new advancements to earn \u2014 for going live, for the TVs, and for a couple of photos worth waiting for.",
+      "highlights": [],
+      "pr": 1962,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.net;
 
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import net.minecraft.network.FriendlyByteBuf;
@@ -46,6 +47,7 @@ public record TvHeldTogglePacket(InteractionHand hand) implements CustomPacketPa
             if (!TvItems.isTv(held)) return;
             boolean on = !TvItems.isOn(held);
             player.setItemInHand(packet.hand(), TvItems.withOn(held, on));
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "toggled_held_tv");
             SoundEvent click = on ? SoundEvents.COPPER_BULB_TURN_ON : SoundEvents.COPPER_BULB_TURN_OFF;
             player.level().playSound(null, player.blockPosition(), click, SoundSource.PLAYERS, 0.6f, on ? 1.1f : 0.9f);
         });

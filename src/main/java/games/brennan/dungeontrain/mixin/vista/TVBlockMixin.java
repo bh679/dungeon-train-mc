@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.mixin.vista;
 
+import net.minecraft.server.level.ServerPlayer;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.compat.DisabledModContent;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.compat.vista.TvPowerToggle;
@@ -69,6 +71,9 @@ public abstract class TVBlockMixin {
         }
         if (!stack.isEmpty() || player.isSecondaryUseActive()) return;
         TvPowerToggle.toggle(level, pos);
+        if (player instanceof ServerPlayer serverPlayer) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "toggled_placed_tv");
+        }
         cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
     }
 

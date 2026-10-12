@@ -3,11 +3,13 @@ package games.brennan.dungeontrain.player;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -28,6 +30,8 @@ public final class ServerLiveStatus {
     private static final AtomicBoolean IN_FLIGHT = new AtomicBoolean();
     private static volatile boolean relayLive;
     private static volatile long relayAtMs;
+    /** The relay's name for whoever is live, when it gave one. */
+    private static volatile String relayStreamer;
 
     private ServerLiveStatus() {}
 
@@ -35,6 +39,23 @@ public final class ServerLiveStatus {
     public static boolean isAnyoneLive(MinecraftServer server) {
         if (server != null && LiveStreamers.get(server) != null) return true;
         return isFresh(relayLive, relayAtMs, System.currentTimeMillis());
+    }
+
+    /**
+     * True while someone other than {@code player} is broadcasting — what a TV on their head would be
+     * showing. A streamer on this server counts unless it is them; otherwise a fresh relay answer counts
+     * unless it names them (a nameless answer counts as someone else).
+     */
+    public static boolean isSomeoneElseLive(MinecraftServer server, ServerPlayer player) {
+        UUID local = server == null ? null : LiveStreamers.get(server);
+        return someoneElseLive(local, player.getUUID(), isFresh(relayLive, relayAtMs, System.currentTimeMillis()),
+            relayStreamer, player.getGameProfile().getName());
+    }
+
+    /** Pure form for the tests. */
+    static boolean someoneElseLive(UUID localStreamer, UUID self, boolean relayFresh, String relayName, String selfName) {
+        if (localStreamer != null && !localStreamer.equals(self)) return true;
+        return relayFresh && (relayName == null || relayName.isEmpty() || !relayName.equalsIgnoreCase(selfName));
     }
 
     /** Pure form for the tests. */
@@ -51,7 +72,9 @@ public final class ServerLiveStatus {
         LiveFeedClient.status(null, LiveFeedClient.Channel.LIVE).whenComplete((result, error) -> {
             try {
                 if (error == null && result != null && result.ok()) {
-                    relayLive = LiveFeedClient.parseStatus(result).live();
+                    LiveFeedClient.Status status = LiveFeedClient.parseStatus(result);
+                    relayLive = status.live();
+                    relayStreamer = status.streamer();
                     relayAtMs = System.currentTimeMillis();
                 }
             } finally {
@@ -64,5 +87,6 @@ public final class ServerLiveStatus {
     public static void onServerStopped(ServerStoppedEvent event) {
         relayLive = false;
         relayAtMs = 0L;
+        relayStreamer = null;
     }
 }

@@ -42,6 +42,7 @@ public final class PhotoSubjects {
     public static final String PET_OWN = "pet_own";
     public static final String PET_ECHO = "pet_echo";
     public static final String BREEDING = "breeding";
+    public static final String WARDEN_EMERGING = "warden_emerging";
 
     /**
      * What one photo shows, already read off the frame and the live entities in it.
@@ -54,9 +55,13 @@ public final class PhotoSubjects {
                         boolean otherEcho, boolean pigmanVillager, boolean killerBunny, boolean technobladePig,
                         boolean inCave, String dimension, String band) {}
 
-    /** What was happening between the creatures in frame, read off the live entities ({@code PhotoScene}). */
-    public record Scene(boolean combat, boolean ownPet, boolean echoPet, boolean breeding) {
-        public static final Scene NONE = new Scene(false, false, false, false);
+    /**
+     * What was happening between the creatures in frame, read off the live entities ({@code PhotoScene}).
+     *
+     * @param wardenEmerging a Warden mid-way through digging itself out of the ground
+     */
+    public record Scene(boolean combat, boolean ownPet, boolean echoPet, boolean breeding, boolean wardenEmerging) {
+        public static final Scene NONE = new Scene(false, false, false, false, false);
     }
 
     /** The train's Nethers — the first one and its second, regrown look. */
@@ -77,6 +82,7 @@ public final class PhotoSubjects {
         if (scene.ownPet()) out.add(PET_OWN);
         if (scene.echoPet()) out.add(PET_ECHO);
         if (scene.breeding()) out.add(BREEDING);
+        if (scene.wardenEmerging()) out.add(WARDEN_EMERGING);
         for (String type : f.entityTypes()) out.add(ENTITY_PREFIX + type);
         if (f.playerMob()) out.add(PLAYERMOB);
         if (f.friend()) out.add(FRIEND_PLAYERMOB);

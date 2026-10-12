@@ -15337,5 +15337,42 @@
         "DungeonTrain TV"
       ]
     }
+  },
+  "advancements.dungeontrain.enchiridion.prime_time.description": {
+    "1": {
+      "label": "minutes, from the requirement",
+      "examples": [
+        "15",
+        "30"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.couch_potato.description": {
+    "1": {
+      "label": "minutes, from the requirement",
+      "examples": [
+        "15",
+        "30"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.for_the_fans.description": {
+    "1": {
+      "label": "how long, as a whole clause — hours or days, from the requirement",
+      "examples": [
+        {
+          "key": "dungeontrain.requirement.hours.some",
+          "args": [
+            "2"
+          ]
+        },
+        {
+          "key": "dungeontrain.requirement.hours.single",
+          "args": [
+            "1"
+          ]
+        }
+      ]
+    }
   }
 }
