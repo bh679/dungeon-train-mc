@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
+import games.brennan.dungeontrain.client.live.StreamNameTag;
 import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
 import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
 import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
@@ -544,6 +545,20 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(streamChat, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // Whose name viewers see above the hotbar. Kid mode shows None, greyed, whatever is stored.
+            case STREAM_NAME_TAG -> {
+                boolean kid = ClientDisplayConfig.isKidMode();
+                CycleButton<LiveFeedClientConfig.NameTag> nameTag =
+                        CycleButton.<LiveFeedClientConfig.NameTag>builder(DungeonTrainClientOptionsScreen::streamNameTagLabel)
+                                .withValues(LiveFeedClientConfig.NameTag.values())
+                                .withInitialValue(StreamNameTag.effective(LiveFeedClientConfig.streamNameTag(), kid))
+                                .displayOnlyValue()
+                                .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                        (btn, tag) -> LiveFeedClientConfig.setStreamNameTag(tag));
+                nameTag.active = !kid;
+                yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
+            }
+
             // Broadcast width; the preview re-captures at it on the next frame.
             case STREAM_SIZE -> {
                 int current = LiveFeedClientConfig.captureWidth();
@@ -862,6 +877,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /** A broadcast width as its picture height: {@code 1280} reads "720p". */
+    private static Component streamNameTagLabel(LiveFeedClientConfig.NameTag tag) {
+        return Component.translatable("gui.dungeontrain.options.stream_name_tag." + tag.name().toLowerCase(java.util.Locale.ROOT));
+    }
+
     private static Component streamSizeLabel(int width) {
         return Component.literal(LiveFeedClientConfig.heightFor(width) + "p"); // a unit, not prose
     }

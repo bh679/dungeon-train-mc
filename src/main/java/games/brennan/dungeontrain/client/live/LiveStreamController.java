@@ -260,6 +260,7 @@ public final class LiveStreamController {
             int h = LiveFeedClientConfig.heightFor(w);
             var ffmpeg = FfmpegSupport.get();
             if (ffmpeg == null) throw new IOException("ffmpeg vanished");
+            StreamNameTag.prepare();
             grabber = new LiveFrameGrabber(w, h);
             encoder = new LiveEncoder(ffmpeg, grabber, d, LiveFeedClientConfig.captureFps(),
                 LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds());
