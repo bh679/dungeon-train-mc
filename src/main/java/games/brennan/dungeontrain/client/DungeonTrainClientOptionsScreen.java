@@ -544,6 +544,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(streamChat, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // The Discord live chat bridge (LiveChatBridge); Kid mode keeps it off and greyed.
+            case LIVE_CHAT -> {
+                boolean kid = ClientDisplayConfig.isKidMode();
+                CycleButton<Boolean> liveChat = onOff(Component.translatable(key), !kid && LiveFeedClientConfig.liveChat(),
+                        LiveFeedClientConfig::setLiveChat);
+                liveChat.active = !kid;
+                yield Setting.of(liveChat, kid ? key + ".kid_tip" : key + ".tip");
+            }
+
             // Broadcast width; the preview re-captures at it on the next frame.
             case STREAM_SIZE -> {
                 int current = LiveFeedClientConfig.captureWidth();

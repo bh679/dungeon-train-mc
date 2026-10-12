@@ -143,6 +143,8 @@ public enum ClientOptionsTab {
         STREAM_GUI("gui.dungeontrain.options.stream_gui"),
         /** Whether viewers see chat. Locked off in Kid mode. */
         STREAM_CHAT("gui.dungeontrain.options.stream_chat"),
+        /** The stream's Discord chat in your chat, and yours back to it. Locked off in Kid mode. */
+        LIVE_CHAT("gui.dungeontrain.options.live_chat"),
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** The live feed pinned top-right on the HUD; the preview outlines it. */
@@ -286,6 +288,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.LIVESTREAM);
                 rows.add(Row.STREAM_GUI);
                 rows.add(Row.STREAM_CHAT);
+                rows.add(Row.LIVE_CHAT);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.HEAD_VIEWER_SIZE);
             }

@@ -28,6 +28,7 @@ public final class LiveStatusPoller {
     private static final long INTEREST_MS = 15_000;
 
     private static volatile Status current = Status.OFFLINE;
+    private static volatile Channel channel = Channel.LIVE;
     private static volatile boolean freePlay;
     private static volatile long lastInterestMs;
     /** A TV block (not the head viewer or a hand-held TV) last asked for the feed. */
@@ -59,10 +60,16 @@ public final class LiveStatusPoller {
             CompletableFuture<Status> devLive = fp
                 ? poll(null, Channel.DEV)
                 : CompletableFuture.completedFuture(Status.OFFLINE);
-            devLive.thenCompose(dev -> poll(me, LiveFeedClient.viewerChannel(fp, dev.live())))
-                .whenComplete((status, t) -> {
+            devLive.thenCompose(dev -> {
+                    Channel ch = LiveFeedClient.viewerChannel(fp, dev.live());
+                    return poll(me, ch).thenApply(status -> new Polled(status, ch));
+                })
+                .whenComplete((polled, t) -> {
                     // A reply begun before Free Play flipped must not land on the other side.
-                    if (status != null && fp == freePlay) current = status;
+                    if (polled != null && fp == freePlay) {
+                        current = polled.status();
+                        channel = polled.channel();
+                    }
                     inFlight.set(false);
                 });
         }
@@ -79,6 +86,13 @@ public final class LiveStatusPoller {
         return current;
     }
 
+    /** The channel {@link #current()} describes — what a TV in this world shows (and whose chat it reads). */
+    public static Channel channel() {
+        return channel;
+    }
+
+    private record Polled(Status status, Channel channel) {}
+
     /** True while a TV has asked for the feed within the last 15 s. */
     public static boolean interested() {
         return System.currentTimeMillis() - lastInterestMs < INTEREST_MS;
@@ -92,6 +106,7 @@ public final class LiveStatusPoller {
     /** Tests / world change: forget what we knew. */
     public static void reset() {
         current = Status.OFFLINE;
+        channel = Channel.LIVE;
         lastTvInterestMs = 0;
         lastPollMs = 0;
     }

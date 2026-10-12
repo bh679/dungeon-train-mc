@@ -15273,6 +15273,14 @@
       ]
     }
   },
+  "chat.dungeontrain.live_chat.connected": {
+    "1": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live_chat.path)",
+      "examples": [
+        "Options / Dungeon Train / Stream / Live chat"
+      ]
+    }
+  },
   "chat.dungeontrain.live.watching.one": {
     "1": {
       "label": "how many are watching (always 1)",

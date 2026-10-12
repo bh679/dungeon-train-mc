@@ -16,6 +16,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAMING_ENABLED;
     public static final ModConfigSpec.BooleanValue STREAM_GUI;
     public static final ModConfigSpec.BooleanValue STREAM_CHAT;
+    public static final ModConfigSpec.BooleanValue LIVE_CHAT;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
@@ -48,6 +49,9 @@ public final class LiveFeedClientConfig {
         STREAM_CHAT = b
             .comment("Show chat to viewers. Always off in Kid mode, whatever this says.")
             .define("streamChat", true);
+        LIVE_CHAT = b
+            .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
+            .define("liveChat", true);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")
             .defineInRange("captureWidth", 1280, CAPTURE_WIDTH_MIN, CAPTURE_WIDTH_MAX);
@@ -124,6 +128,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || STREAM_CHAT.get() == value) return;
         STREAM_CHAT.set(value);
         STREAM_CHAT.save();
+    }
+
+    /** The Discord live chat switch as set; {@code LiveChatBridge} still forces it off in Kid mode. */
+    public static boolean liveChat() { return !loaded() || LIVE_CHAT.get(); }
+
+    public static void setLiveChat(boolean value) {
+        if (!loaded() || LIVE_CHAT.get() == value) return;
+        LIVE_CHAT.set(value);
+        LIVE_CHAT.save();
     }
 
     /**
