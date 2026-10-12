@@ -144,14 +144,14 @@ public final class LiveFeedEvents {
         if (server == null) return;
         if (streamBlocked(player)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
-            burn(player, Exit.FREE_PLAY, false);
+            burn(player, Exit.FREE_PLAY);
             return;
         }
         UUID previous = LiveStreamers.setStreamer(server, player.getUUID());
         if (previous != null && !previous.equals(player.getUUID())) {
             ServerPlayer old = server.getPlayerList().getPlayer(previous);
             if (old != null) {
-                burn(old, Exit.REPLACED, true);
+                burn(old, Exit.REPLACED);
                 PacketDistributor.sendToPlayer(old, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_REPLACED,
                     player.getGameProfile().getName()));
             }
@@ -168,7 +168,7 @@ public final class LiveFeedEvents {
         if (server == null) return;
         if (!LiveStreamers.clearIf(server, player.getUUID())) return;
         if (burnsOn(exit)) {
-            burn(player, exit, wasLiveOn(exit));
+            burn(player, exit);
         } else if (exit == Exit.FAILED) {
             handBack(player);
         }
@@ -184,10 +184,10 @@ public final class LiveFeedEvents {
     /**
      * The camcorder flares and is gone: flame, smoke, a hiss. It is taken from the head slot, or —
      * when the player has just pulled it off — from the cursor or the inventory slot it landed in.
-     * The chat line says why ({@link #burnLineKey}); when it ended a stream ({@code wasLive}) a
-     * second line says plainly that the broadcast is over.
+     * The chat line says why ({@link #burnLineKey}); the streamer's client raises the "Livestream
+     * ended" pop-up itself, so it shows on every end — save &amp; quit included.
      */
-    private static void burn(ServerPlayer player, Exit why, boolean wasLive) {
+    private static void burn(ServerPlayer player, Exit why) {
         if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) {
             player.setItemSlot(EquipmentSlot.HEAD, ItemStack.EMPTY);
         } else if (isCamcorder(player.containerMenu.getCarried())) {
@@ -200,17 +200,6 @@ public final class LiveFeedEvents {
         level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getEyeY() + 0.4, player.getZ(), 8, 0.2, 0.1, 0.2, 0.01);
         level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.8f, 0.9f);
         player.sendSystemMessage(Component.translatable(burnLineKey(why)));
-        if (wasLive) {
-            player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.no_longer_live").withStyle(ChatFormatting.RED));
-        }
-    }
-
-    /**
-     * Whether a stream that ends with {@code exit} had gone live. Putting it on with Livestreaming
-     * switched off ({@link Exit#DISABLED}) never broadcast, so it gets no "no longer live" line.
-     */
-    static boolean wasLiveOn(Exit exit) {
-        return exit != Exit.DISABLED;
     }
 
     /** Taken off, handed to the next streamer, or anything else (death, Free Play, Livestreaming off). */
