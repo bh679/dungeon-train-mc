@@ -196,7 +196,10 @@ public final class EditorHelpPanelRenderer {
             return;
         }
 
-        EditorHelpPanelRaycast.updateHovered();
+        // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
+        if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
+            EditorHelpPanelRaycast.updateHovered();
+        }
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;

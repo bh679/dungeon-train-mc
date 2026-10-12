@@ -116,7 +116,10 @@ public final class ContainerContentsMenuRenderer {
         if (!ContainerContentsMenu.isActiveWorldspace()) return;
         if (ContainerContentsMenu.localPos() == null) return;
 
-        ContainerContentsMenuRaycast.updateHovered();
+        // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
+        if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
+            ContainerContentsMenuRaycast.updateHovered();
+        }
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;

@@ -145,7 +145,10 @@ public final class BlockVariantMenuRenderer {
         if (!BlockVariantMenu.isActiveWorldspace()) return;
         if (BlockVariantMenu.localPos() == null) return;
 
-        BlockVariantMenuRaycast.updateHovered();
+        // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
+        if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
+            BlockVariantMenuRaycast.updateHovered();
+        }
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;

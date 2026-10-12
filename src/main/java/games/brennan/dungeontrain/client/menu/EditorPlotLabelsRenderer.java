@@ -763,7 +763,10 @@ public final class EditorPlotLabelsRenderer {
 
         // Refresh hover from the camera frame so the highlight tracks the
         // crosshair without a one-tick lag, mirroring PartPositionMenuRenderer.
-        games.brennan.dungeontrain.client.menu.plot.EditorPlotPanelRaycast.updateHovered();
+        // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
+        if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
+            games.brennan.dungeontrain.client.menu.plot.EditorPlotPanelRaycast.updateHovered();
+        }
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
