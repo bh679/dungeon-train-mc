@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -21,7 +22,9 @@ import java.util.UUID;
  * "Final Moments": a creature that was in a player's photo dies within a second of the shot. Each
  * shot leaves its creatures here for {@link #WINDOW_TICKS}; a death inside that window credits the
  * photographer, and the advancement keeps that photo ({@link AdvancementPhotoCapture}) even though
- * it is earned after the shot. Server thread only.
+ * it is earned after the shot. When the creature is the Wither it also earns "Curtain Call". A shot
+ * taken during the death animation itself cannot count: Exposure leaves dead creatures out of a
+ * frame. Server thread only.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class PhotoFinalMoments {
@@ -58,8 +61,12 @@ public final class PhotoFinalMoments {
         if (shot == null || !inWindow(shot.gameTime(), dead.level().getGameTime())) return;
         ServerPlayer photographer = dead.getServer().getPlayerList().getPlayer(shot.photographer());
         if (photographer == null) return;
-        AdvancementPhotoCapture.during(shot.frame(), () ->
-                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(photographer, EnchiridionAdvancements.PHOTO_FINAL_MOMENTS));
+        AdvancementPhotoCapture.during(shot.frame(), () -> {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(photographer, EnchiridionAdvancements.PHOTO_FINAL_MOMENTS);
+            if (dead instanceof WitherBoss) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(photographer, EnchiridionAdvancements.PHOTO_WITHER_DYING);
+            }
+        });
     }
 
     @SubscribeEvent
