@@ -236,6 +236,7 @@
   "gui.dungeontrain.viewfinder.front": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a617590202898821"},
   "gui.dungeontrain.live.badge": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "35e0d0360a0af6d1"},
   "gui.dungeontrain.live.countdown": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "76e4cfab4ae20cc7"},
+  "gui.dungeontrain.live.stream_settings": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "de8c8db199fd194b"},
   "gui.dungeontrain.live.viewer_on": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "66fee647ce6aec72"},
   "gui.dungeontrain.live.viewer_off": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3b38e5f9e54f388f"},
   "gui.dungeontrain.loading.title": {"author": "老本願", "reviewer": "老本願", "source_hash": "f8b33176b16c511c"},

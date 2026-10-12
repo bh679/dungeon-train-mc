@@ -259,6 +259,7 @@
   "gui.dungeontrain.viewfinder.front": "Frontal",
   "gui.dungeontrain.live.badge": "EN DIRECTO",
   "gui.dungeontrain.live.countdown": "En directo en",
+  "gui.dungeontrain.live.stream_settings": "Ajustes de emisión",
   "gui.dungeontrain.live.viewer_on": "Visor en directo activado",
   "gui.dungeontrain.live.viewer_off": "Visor en directo desactivado",
   "gui.dungeontrain.loading.title": "Cargando el mundo…",
