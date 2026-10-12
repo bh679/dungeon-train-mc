@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/darkroom",
+  "display": {
+    "icon": {
+      "id": "vista:television"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.pocket_telly.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.pocket_telly.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "toggled_held_tv"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "action"
+    ]
+  ]
+}

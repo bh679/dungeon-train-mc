@@ -156,6 +156,7 @@ public final class LiveFeedEvents {
                     player.getGameProfile().getName()));
             }
         }
+        LiveTvAdvancements.onStreamStarted(player);
         ServerLevel level = player.serverLevel();
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.5f, 1.6f);
         // No chat line here: the client says "You are now live" once the relay has a viewer count.
