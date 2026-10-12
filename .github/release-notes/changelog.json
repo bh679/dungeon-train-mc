@@ -25044,6 +25044,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "held-carriages-stay-asleep",
+      "version": "0.1241.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "train"
+      ],
+      "title": "A lighter ride",
+      "summary": "Riding the train now asks less of the server, with the carriages you've left behind staying quietly put.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1946,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
