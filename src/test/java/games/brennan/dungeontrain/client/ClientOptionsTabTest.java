@@ -117,6 +117,23 @@ final class ClientOptionsTabTest {
     }
 
     @Test
+    @DisplayName("Dev HUD is on General, after the cinematic hotkey, on dev builds only")
+    void devHud_onlyOnDevBuilds() {
+        for (boolean chinese : BOOLS) {
+            for (boolean translate : BOOLS) {
+                for (ClientOptionsTab tab : ClientOptionsTab.values()) {
+                    assertFalse(ClientOptionsTab.rowsFor(tab, chinese, translate, true, false)
+                            .contains(ClientOptionsTab.Row.DEV_HUD), tab + ": Dev HUD on a release build");
+                }
+                List<ClientOptionsTab.Row> general =
+                        ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, chinese, translate, true, true);
+                assertEquals(general.indexOf(ClientOptionsTab.Row.CINEMATIC_HOTKEY) + 1,
+                        general.indexOf(ClientOptionsTab.Row.DEV_HUD));
+            }
+        }
+    }
+
+    @Test
     @DisplayName("The low-memory notice leads the Performance tab, above the tips")
     void lowMemoryNoticeLeadsPerformance() {
         assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT, ClientOptionsTab.Row.PERFORMANCE_TIPS),
@@ -168,11 +185,14 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("All three conditions together surface every row the screen knows about")
+    @DisplayName("All conditions together, on a dev build, surface every row the screen knows about")
     void allConditions_surfaceEveryRow() {
-        List<ClientOptionsTab.Row> rows = allRows(true, true, true);
+        List<ClientOptionsTab.Row> rows = new ArrayList<>();
+        for (ClientOptionsTab tab : ClientOptionsTab.values()) {
+            rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
+        }
 
-        assertEquals(38, rows.size());
+        assertEquals(39, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }

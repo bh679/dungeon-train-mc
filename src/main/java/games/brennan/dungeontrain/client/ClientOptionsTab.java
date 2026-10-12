@@ -91,6 +91,8 @@ public enum ClientOptionsTab {
         /** Minecraft's and other mods' tabs on the advancements screen — hidden by default, see {@code AdvancementTabGate}. */
         OTHER_ADVANCEMENT_TABS("gui.dungeontrain.options.other_advancement_tabs"),
         CINEMATIC_HOTKEY("gui.dungeontrain.options.cinematic_hotkey"),
+        /** The top-left developer read-out — dev builds only, see {@code VersionHudOverlay}. */
+        DEV_HUD("gui.dungeontrain.options.dev_hud"),
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
         BACKPACK_BUTTON("gui.dungeontrain.options.backpack_button"),
         /** Scribble's save/load-book-to-file buttons on the book screen — off by default, see {@code ScribbleBookButtonsToggle}. */
@@ -216,8 +218,14 @@ public enum ClientOptionsTab {
         return GROUP_LEADERS.contains(row);
     }
 
+    /** As a release build sees them: no dev-only rows. */
     public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget,
                                     boolean trainSettingsWritable) {
+        return rowsFor(tab, chineseLocale, hasTranslateTarget, trainSettingsWritable, false);
+    }
+
+    public static List<Row> rowsFor(ClientOptionsTab tab, boolean chineseLocale, boolean hasTranslateTarget,
+                                    boolean trainSettingsWritable, boolean devBuild) {
         List<Row> rows = new ArrayList<>();
         switch (tab) {
             case GENERAL -> {
@@ -232,6 +240,10 @@ public enum ClientOptionsTab {
                 rows.add(Row.UPDATE_NOTICE_CHAT);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.CINEMATIC_HOTKEY);
+                // Release builds never draw the dev HUD, so the row is absent there, not inert.
+                if (devBuild) {
+                    rows.add(Row.DEV_HUD);
+                }
                 rows.add(Row.BACKPACK_BUTTON);
                 rows.add(Row.BOOK_FILE_BUTTONS);
                 rows.add(Row.BOOK_INSERT_PAGE_BUTTON);
