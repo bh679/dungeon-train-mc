@@ -25328,9 +25328,9 @@
       "highlights": [],
       "pr": 1962,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1257.0",
+      "released_at": "2026-10-12T14:32:53Z"
     },
     {
       "id": "live-discord-chat",
@@ -25346,9 +25346,9 @@
       "highlights": [],
       "pr": 1964,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1257.0",
+      "released_at": "2026-10-12T14:32:53Z"
     }
   ]
 }
