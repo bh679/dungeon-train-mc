@@ -146,6 +146,12 @@ public final class LiveHlsSession implements IMediaSession {
         return !replay && framesSeen > 0 && nowMs - lastProgressMs >= STALL_MS;
     }
 
+    /** The current ffmpeg run, or null between runs — for the {@code [live]} perf line's CPU sample. */
+    @Nullable
+    Process currentProcess() {
+        return process;
+    }
+
     /** Whether the decoder thread is still running. */
     boolean decoding() {
         Thread r = reader;
@@ -174,6 +180,7 @@ public final class LiveHlsSession implements IMediaSession {
         if (p == null || p == stallKilled || !stalled(lastProgressMs, nowMs, replay, frameSeq)) return;
         stallKilled = p;
         status = MediaStatus.BUFFERING;
+        LivePerfStats.stall();
         LOGGER.info("[DungeonTrain] live decoder: no frame for {} s, restarting {}",
             (nowMs - lastProgressMs) / 1000, playlistUrl);
         p.destroyForcibly();
@@ -186,6 +193,7 @@ public final class LiveHlsSession implements IMediaSession {
             try {
                 status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
                 p = ffmpeg.runFFmpeg(args(playlistUrl, width, height, replay));
+                LivePerfStats.decoderRun();
                 lastProgressMs = System.currentTimeMillis(); // a fresh run gets a whole stall window
                 process = p;
                 if (closed) break;
@@ -244,6 +252,7 @@ public final class LiveHlsSession implements IMediaSession {
                 frameSeq++;
             }
             lastProgressMs = System.currentTimeMillis();
+            LivePerfStats.decoded();
         }
         return true;
     }

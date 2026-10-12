@@ -66,6 +66,7 @@ public final class LiveFrameGrabber implements AutoCloseable {
     /** Render thread: hand the newest finished read to the encoder, then start reading this frame. */
     public void grab(RenderTarget main) {
         if (closed || main == null) return;
+        long startNs = System.nanoTime();
         try {
             collectFinished();
             GlStateManager._glBindFramebuffer(GL30C.GL_READ_FRAMEBUFFER, main.frameBufferId);
@@ -82,9 +83,11 @@ public final class LiveFrameGrabber implements AutoCloseable {
                 fences[slot] = GL32C.glFenceSync(GL32C.GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
             }
             // else: every buffer still waits on the GPU — skip this frame rather than stall.
+            else LivePerfStats.grabSkipped();
         } finally {
             GL15C.glBindBuffer(GL21C.GL_PIXEL_PACK_BUFFER, 0);
             main.bindWrite(true);
+            LivePerfStats.grab(System.nanoTime() - startNs);
         }
     }
 
