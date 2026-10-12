@@ -133,6 +133,8 @@ public final class LiveHlsSession implements IMediaSession {
             Process p = null;
             try {
                 status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
+                LOGGER.info("[DungeonTrain] live decoder: {} at {}x{}{}", mediaUrl, width, height,
+                    mediaUrl.equals(playlistUrl) ? "" : " (a rendition of " + playlistUrl + ")");
                 p = ffmpeg.runFFmpeg(args(mediaUrl, width, height, replay));
                 process = p;
                 if (closed) break;
