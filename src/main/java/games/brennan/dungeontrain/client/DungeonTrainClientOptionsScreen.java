@@ -618,6 +618,13 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case CINEMATIC_HOTKEY -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isCinematicHotkeyEnabled(),
                     ClientDisplayConfig::setCinematicHotkeyEnabled), key + ".tip");
 
+            // Scribble's book-screen buttons. Applied when the book is next opened —
+            // ScribbleBookButtonsToggle reads these in ScreenEvent.Init.Post.
+            case BOOK_FILE_BUTTONS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isScribbleFileButtonsVisible(),
+                    ClientDisplayConfig::setScribbleFileButtonsVisible), key + ".tip");
+            case BOOK_INSERT_PAGE_BUTTON -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isScribbleInsertPageButtonVisible(),
+                    ClientDisplayConfig::setScribbleInsertPageButtonVisible), key + ".tip");
+
             // "Was any of this made by AI?" answered in full. Unconditional, and deliberately a
             // page rather than a tooltip: the honest answer is longer than a row can carry. Also
             // reachable from the Credits page — see AiPolicyScreen.

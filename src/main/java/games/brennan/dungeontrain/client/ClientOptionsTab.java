@@ -93,6 +93,10 @@ public enum ClientOptionsTab {
         CINEMATIC_HOTKEY("gui.dungeontrain.options.cinematic_hotkey"),
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
         BACKPACK_BUTTON("gui.dungeontrain.options.backpack_button"),
+        /** Scribble's save/load-book-to-file buttons on the book screen — off by default, see {@code ScribbleBookButtonsToggle}. */
+        BOOK_FILE_BUTTONS("gui.dungeontrain.options.book_file_buttons"),
+        /** Scribble's insert-page button on the book screen — off by default. */
+        BOOK_INSERT_PAGE_BUTTON("gui.dungeontrain.options.book_insert_page_button"),
         /** Opens the AI Policy page. Unconditional — every client can reach it. */
         AI_POLICY("gui.dungeontrain.options.ai_policy"),
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
@@ -229,6 +233,8 @@ public enum ClientOptionsTab {
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 rows.add(Row.BACKPACK_BUTTON);
+                rows.add(Row.BOOK_FILE_BUTTONS);
+                rows.add(Row.BOOK_INSERT_PAGE_BUTTON);
                 // The two rows that open a page rather than change a setting, led by the
                 // unconditional one so they pair on a line of their own — put TRANSLATE in the
                 // lead and the pair breaks apart on the release en_us clients where it is absent.

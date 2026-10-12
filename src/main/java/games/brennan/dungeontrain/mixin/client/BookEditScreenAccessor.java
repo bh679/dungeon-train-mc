@@ -24,4 +24,12 @@ public interface BookEditScreenAccessor {
 
     @Accessor("pages")
     List<String> dungeontrain$getPages();
+
+    /**
+     * Whether the screen is in its sign-and-title mode. Read by
+     * {@link games.brennan.dungeontrain.client.BookFilterInfoEvents} to hide the content-filter info
+     * button there, alongside Scribble's formatting column.
+     */
+    @Accessor("isSigning")
+    boolean dungeontrain$isSigning();
 }

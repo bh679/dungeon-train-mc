@@ -24856,6 +24856,93 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-watch-links",
+      "version": "0.1229.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye points the way",
+      "summary": "Going live now tells you where your audience can find you.",
+      "highlights": [],
+      "pr": 1932,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-encoder-thread-cap",
+      "version": "0.1230.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye is lighter on your computer.",
+      "highlights": [],
+      "pr": 1933,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "book-screen-info-button",
+      "version": "0.1231.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "A tidier book and quill",
+      "summary": "Writing a book is less cluttered, and a small info button now shows what the train won't take.",
+      "highlights": [],
+      "pr": 1934,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "streamer-head-viewer-decode-size",
+      "version": "0.1232.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye now asks a little less of your computer.",
+      "highlights": [],
+      "pr": 1935,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-hangs-on",
+      "version": "0.1233.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live Feed hangs on",
+      "summary": "TVs now find their way back when a stream drops out.",
+      "highlights": [],
+      "pr": 1936,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
