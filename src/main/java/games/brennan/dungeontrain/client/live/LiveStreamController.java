@@ -132,12 +132,12 @@ public final class LiveStreamController {
     public void onServerSaid(LiveStreamPacket packet) {
         switch (packet.action()) {
             case START -> start();
-            // The server's burn line already says why for these two.
-            case STOP_REPLACED -> stop(null);
-            case STOP_DIED -> stop(Component.translatable("chat.dungeontrain.live.ended_death"));
-            case STOP_LEFT -> stop(null);
-            case STOP_REMOVED -> stop(null);
-            case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
+            // The ended pop-up says why; the server's burn line describes the Live Eye.
+            case STOP_REPLACED -> stop(null, LiveStreamEndedToast.Reason.REPLACED);
+            case STOP_DIED -> stop(null, LiveStreamEndedToast.Reason.DIED);
+            case STOP_LEFT -> stop(null, LiveStreamEndedToast.Reason.LEFT);
+            case STOP_REMOVED -> stop(null, LiveStreamEndedToast.Reason.REMOVED);
+            case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY), LiveStreamEndedToast.Reason.FREE_PLAY);
         }
     }
 
@@ -189,7 +189,7 @@ public final class LiveStreamController {
                 default -> { /* still downloading */ }
             }
         } else if (state == State.STREAMING && encoder != null && encoder.died()) {
-            stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
+            stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED), LiveStreamEndedToast.Reason.FAILED);
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         } else if (state == State.STREAMING) {
             announceViewers(System.currentTimeMillis());
@@ -274,7 +274,7 @@ public final class LiveStreamController {
     private void cutOff(String by) {
         if (state != State.STREAMING) return;
         // Silent here: the server burns the Live Eye on CUT_OFF and its burn line says why.
-        stop(null, false);
+        stop(null, false, false, LiveStreamEndedToast.Reason.REPLACED);
         tellServerEnded(LiveStreamEndedPacket.Reason.CUT_OFF);
     }
 
@@ -286,15 +286,21 @@ public final class LiveStreamController {
 
     /** Clean stop: flush the ENDLIST playlist, tell the relay, say why. */
     public void stop(@Nullable Component why) {
-        stop(why, true);
+        stop(why, null);
     }
 
-    private void stop(@Nullable Component why, boolean clean) {
-        stop(why, clean, false);
+    private void stop(@Nullable Component why, @Nullable LiveStreamEndedToast.Reason ended) {
+        stop(why, true, false, ended);
     }
 
-    private void stop(@Nullable Component why, boolean clean, boolean wait) {
+    /**
+     * {@code ended} raises the top-right "Livestream ended" pop-up, but only for a stream that had
+     * gone live: a start that never reached STREAMING says why in chat instead. Raised after the
+     * state is IDLE, so the broadcast never captures it.
+     */
+    private void stop(@Nullable Component why, boolean clean, boolean wait, @Nullable LiveStreamEndedToast.Reason ended) {
         if (state == State.IDLE) return;
+        boolean wasLive = state == State.STREAMING;
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
@@ -302,6 +308,7 @@ public final class LiveStreamController {
         teardown(clean, wait);
         state = State.IDLE;
         if (why != null) say(why);
+        if (wasLive && ended != null) Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(ended));
     }
 
     /**
@@ -420,12 +427,13 @@ public final class LiveStreamController {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        INSTANCE.stop(null);
+        // Save & quit, disconnect or kick: the pop-up carries over to the title screen.
+        INSTANCE.stop(null, LiveStreamEndedToast.Reason.LEFT);
     }
 
     @SubscribeEvent
     public static void onGameShuttingDown(GameShuttingDownEvent event) {
-        INSTANCE.stop(null, true, true);
+        INSTANCE.stop(null, true, true, null);
     }
 
     // ---- helpers ------------------------------------------------------------------------------
