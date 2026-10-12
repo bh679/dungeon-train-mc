@@ -15,6 +15,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,11 +65,56 @@ public final class LiveFeedClient {
     /** What a claim gives the streamer. */
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName) {}
 
-    /** What a viewer sees. */
+    /**
+     * A smaller copy of the stream the relay's renditions worker has ready: {@code width} pixels
+     * wide (16:9), at its own playlist URL. The source stream is not a variant.
+     */
+    public record Variant(int width, int height, String playlistUrl) {}
+
+    /**
+     * What a viewer sees. {@code variants} are the ready renditions, smallest first — empty from an
+     * older relay or while the worker is off, stale or warming up.
+     */
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
-                         @Nullable String replayUrl, boolean ended) {
-        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false);
+                         @Nullable String replayUrl, boolean ended, List<Variant> variants) {
+        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of());
+
+        /**
+         * The playlist to decode at {@code decodeWidth}: the smallest variant at least that wide, else
+         * the source. A variant narrower than the decode would be upscaled — never picked.
+         */
+        public @Nullable String mediaUrlFor(int decodeWidth) {
+            for (Variant v : variants) {
+                if (v.width() >= decodeWidth) return v.playlistUrl();
+            }
+            return playlistUrl;
+        }
+    }
+
+    /**
+     * {@code variants[]} from a status body: even positive widths with an {@code .m3u8} playlist on
+     * https (or on plain http only when the source playlist itself is — a local relay with a
+     * stand-in bucket), sorted by width.
+     */
+    static List<Variant> parseVariants(JsonObject body, String sourcePlaylistUrl) {
+        if (body == null || !body.has("variants") || !body.get("variants").isJsonArray()) return List.of();
+        boolean plainHttpOk = sourcePlaylistUrl != null && sourcePlaylistUrl.startsWith("http://");
+        List<Variant> out = new ArrayList<>();
+        for (JsonElement e : body.getAsJsonArray("variants")) {
+            if (!e.isJsonObject()) continue;
+            JsonObject v = e.getAsJsonObject();
+            if (!v.has("width") || !v.has("playlistUrl") || !v.get("width").isJsonPrimitive() || !v.get("playlistUrl").isJsonPrimitive()) continue;
+            int width;
+            try { width = v.get("width").getAsInt(); } catch (RuntimeException ex) { continue; }
+            String url = v.get("playlistUrl").getAsString();
+            boolean scheme = url.startsWith("https://") || (plainHttpOk && url.startsWith("http://"));
+            if (width <= 0 || width % 2 != 0 || !scheme || !url.endsWith(".m3u8")) continue;
+            int height = v.has("height") && v.get("height").isJsonPrimitive() ? v.get("height").getAsInt() : Math.round(width * 9f / 16f);
+            out.add(new Variant(width, height, url));
+        }
+        out.sort(Comparator.comparingInt(Variant::width));
+        return List.copyOf(out);
     }
 
     private static String base() {
@@ -170,12 +217,12 @@ public final class LiveFeedClient {
         boolean slot = !b.has("slot") || b.get("slot").getAsBoolean();
         String replay = r.str("replayUrl");
         String replayUrl = replay.isEmpty() ? null : replay;
-        if (!live) return new Status(false, null, null, null, viewers, cap, slot, replayUrl, false);
+        if (!live) return new Status(false, null, null, null, viewers, cap, slot, replayUrl, false, List.of());
         // Ended: the streamer stopped and the relay keeps the stream on air while viewers play out its
         // tail; replayUrl is where a TV goes once it has reached the end.
         boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
         return new Status(true, r.str("session"), r.str("playlistUrl"), r.str("streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended);
+            ended ? replayUrl : null, ended, parseVariants(b, r.str("playlistUrl")));
     }
 
     /** PUT a local file to a signed URL with exactly the signed headers. */
