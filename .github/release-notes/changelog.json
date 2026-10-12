@@ -25047,7 +25047,7 @@
     },
     {
       "id": "delete-dead-run-worlds",
-      "version": "0.1240.0",
+      "version": "0.1241.0",
       "type": "fix",
       "tags": [
         "fix"
