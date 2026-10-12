@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client;
 
+import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.bugresponse.BugIssue;
 import games.brennan.dungeontrain.client.bugresponse.BugResponse;
@@ -510,19 +511,21 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // Adult / Kid content mode — the second home for the choice made once on the first-launch
             // consent card, so a player who dismissed that card (or an existing install that answered
             // consent before this feature shipped, and so never sees it) can still find the setting.
-            // Syncs to the server immediately so the per-player gates follow without a relog.
             // Its tooltip is the longest on the screen, and the one that most has to land: it is the
             // only place outside the one-time card that says what Kid mode actually does, and it is
             // where a parent comes to change it.
+            //
+            // The button shows the current mode and reopens that same consent card rather than flipping
+            // the mode in place, so the choice is always made seeing what it switches on and off — and
+            // confirming the card turns the internet connection on, which every online feature also
+            // needs. The card's answer writes the mode and syncs it to the server (DungeonTrain's
+            // ConsentChoice); coming back here re-runs init(), so this row redraws from the new value.
             case CONTENT_MODE -> Setting.of(
-                    CycleButton.<ContentMode>builder(DungeonTrainClientOptionsScreen::contentModeLabel)
-                            .withValues(List.of(ContentMode.ADULT, ContentMode.KID))
-                            .withInitialValue(ClientDisplayConfig.getContentMode())
-                            .displayOnlyValue()
-                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key), (btn, mode) -> {
-                                ClientDisplayConfig.setContentMode(mode);
-                                ContentModeSyncClient.syncNow();
-                            }),
+                    Button.builder(contentModeLabel(ClientDisplayConfig.getContentMode()), b -> {
+                                DungeonTrain.markConsentCardReopened();
+                                this.minecraft.setScreen(new NetworkConsentScreen(this));
+                            })
+                            .bounds(0, 0, CONTROL_W, ROW_H).build(),
                     key + ".tip");
 
             // The consent card's Livestreaming switch, findable again — the card's footnote promises
