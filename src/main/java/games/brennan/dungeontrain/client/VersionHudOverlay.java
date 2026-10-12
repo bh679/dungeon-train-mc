@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.ActivityStatePacket;
 import games.brennan.dungeontrain.net.CarriageGroupGapPacket;
 import games.brennan.dungeontrain.net.TravelCreditPacket;
@@ -179,7 +180,11 @@ public final class VersionHudOverlay {
             return false;
         }
         // Release builds run on `main`; the version/branch suffix is dev-only noise there.
-        return !"main".equals(VersionInfo.BRANCH);
+        if ("main".equals(VersionInfo.BRANCH)) {
+            return false;
+        }
+        // Options > Dungeon Train > General > Dev HUD.
+        return ClientDisplayConfig.isDevHudEnabled();
     }
 
     /**

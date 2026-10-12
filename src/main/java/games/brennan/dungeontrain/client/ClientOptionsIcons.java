@@ -54,6 +54,7 @@ final class ClientOptionsIcons {
             case LOW_MEMORY_NOTICE_CHAT -> Icon.item(Items.REDSTONE);
             case OTHER_ADVANCEMENT_TABS -> Icon.item(Items.EXPERIENCE_BOTTLE);
             case CINEMATIC_HOTKEY -> Icon.item(Items.SPYGLASS);
+            case DEV_HUD -> Icon.item(Items.CLOCK);
             case BACKPACK_BUTTON -> Icon.item(games.brennan.ediblebackpacks.registry.ModItems.EDIBLE_BACKPACK.get());
             case BOOK_FILE_BUTTONS -> Icon.item(Items.KNOWLEDGE_BOOK);
             case BOOK_INSERT_PAGE_BUTTON -> Icon.item(Items.PAPER);

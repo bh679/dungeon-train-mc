@@ -24,6 +24,24 @@ class LifeChallengeAdvancementsTest {
     }
 
     @Test
+    @DisplayName("a flag missing mid-life closes its challenges; a fresh life or a saved flag is left alone")
+    void untrackedMidLife() {
+        assertTrue(LifeChallengeAdvancements.untrackedMidLife(false, true));
+        assertFalse(LifeChallengeAdvancements.untrackedMidLife(false, false));
+        assertFalse(LifeChallengeAdvancements.untrackedMidLife(true, true));
+        assertFalse(LifeChallengeAdvancements.untrackedMidLife(true, false));
+    }
+
+    @Test
+    @DisplayName("a life is underway once it has moved either way, even back to where it started")
+    void lifeUnderway() {
+        assertFalse(LifeChallengeAdvancements.lifeUnderway(0, 0, 0));
+        assertTrue(LifeChallengeAdvancements.lifeUnderway(2000, 2000, 0));
+        assertTrue(LifeChallengeAdvancements.lifeUnderway(-5, 0, 5));
+        assertTrue(LifeChallengeAdvancements.lifeUnderway(0, 3, 3));
+    }
+
+    @Test
     @DisplayName("apples: vanilla's three and BetterNether's black apples, plus both edible backpacks; not the seed")
     void apples() {
         for (String id : new String[] {"minecraft:apple", "minecraft:golden_apple", "minecraft:enchanted_golden_apple",

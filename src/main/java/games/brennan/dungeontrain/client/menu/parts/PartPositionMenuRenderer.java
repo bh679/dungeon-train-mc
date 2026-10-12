@@ -129,7 +129,10 @@ public final class PartPositionMenuRenderer {
 
         // Refresh hover from the current camera frame so the highlight
         // tracks the crosshair without lagging by a tick.
-        PartPositionMenuRaycast.updateHovered();
+        // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
+        if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
+            PartPositionMenuRaycast.updateHovered();
+        }
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;

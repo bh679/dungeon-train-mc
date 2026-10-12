@@ -291,6 +291,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
+    /** The top-left developer read-out on dev builds — see {@code VersionHudOverlay}. */
+    public static final ModConfigSpec.BooleanValue DEV_HUD;
     /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
     public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_TABS;
 
@@ -421,6 +423,7 @@ public final class ClientDisplayConfig {
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
+        DEV_HUD = pair.getLeft().devHud;
         HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
@@ -621,7 +624,7 @@ public final class ClientDisplayConfig {
 
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
-                .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
+                .comment("Delete a world's save folder once its run ends in death: when reboarding (creating a fresh world) from the death screen, when leaving the death screen for the title or desktop, and at startup for dead-run worlds left behind. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
                 .define("deleteOnReboard", true);
         b.pop();
 
@@ -813,6 +816,14 @@ public final class ClientDisplayConfig {
                 .define("lowMemoryNoticeChat", true);
         b.pop();
 
+        b.push("dev");
+        ModConfigSpec.BooleanValue devHud = b
+                .comment("Development builds only: draw the developer read-out (version, carriage, difficulty,",
+                         "time, travel) in the top-left corner in-game. Release builds never draw it.",
+                         "Toggle in-game via Options > Dungeon Train > General. On by default.")
+                .define("devHud", true);
+        b.pop();
+
         b.push("advancements");
         ModConfigSpec.BooleanValue hideOtherAdvancementTabs = b
                 .comment("Show only Dungeon Train's tabs on the advancements screen (L). Minecraft's own tabs and",
@@ -839,7 +850,7 @@ public final class ClientDisplayConfig {
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
-                lowMemoryNoticeChat, hideOtherAdvancementTabs,
+                lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
@@ -1282,6 +1293,17 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         LOW_MEMORY_NOTICE_CHAT.set(value);
         LOW_MEMORY_NOTICE_CHAT.save();
+    }
+
+    /** Whether a dev build draws its top-left developer read-out. On by default, and before the config loads. */
+    public static boolean isDevHudEnabled() {
+        return !isLoaded() || DEV_HUD.get();
+    }
+
+    public static void setDevHud(boolean value) {
+        if (!isLoaded()) return;
+        DEV_HUD.set(value);
+        DEV_HUD.save();
     }
 
     /** Minimum client FPS required to take a ride photo; {@code 0} disables the FPS gate. */
@@ -2006,6 +2028,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
+            ModConfigSpec.BooleanValue devHud,
             ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,

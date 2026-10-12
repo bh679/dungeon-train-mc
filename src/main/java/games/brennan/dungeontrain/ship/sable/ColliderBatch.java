@@ -12,6 +12,7 @@ import dev.ryanhcode.sable.sublevel.system.ticket.PhysicsChunkTicketManager;
 import games.brennan.dungeontrain.mixin.PhysicsChunkTicketManagerAccessor;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.chunk.LevelChunkSection;
@@ -56,6 +57,11 @@ import java.util.function.Supplier;
  * or player movement runs in between. Entities a carriage template carries are already spawned
  * ticks later by the appender's settle tracker, never inside the stamp.</p>
  *
+ * <p><b>Second use: inside Sable's physics step.</b> Every native {@code physicsTick} also runs in a
+ * scope ({@link #callForced}), so a block a collision callback changes mid-step is uploaded after the
+ * step instead of re-entering Rapier while it holds its world lock — that re-entry froze the server
+ * thread for good. The collider is stale only for the rest of that substep.</p>
+ *
  * <p><b>Thread-local depth counter</b>, like {@code WorldgenForceGuard} and {@code CarriageStampGuard}:
  * only the server thread ever holds a scope, and nested scopes ({@code spawnGroup} inside a bootstrap
  * loop, say) fold into the outermost one's rebuild. {@link #ENABLED} is the runtime kill switch
@@ -93,17 +99,28 @@ public final class ColliderBatch {
         @Nullable
         ServerLevel level;
         /**
+         * A physics-step scope ({@link #callForced}): defers even with {@link #ENABLED} off, because
+         * there the deferral is what keeps the server alive, not an optimisation.
+         */
+        boolean forced;
+        /**
          * Touched sections, keyed by {@link SectionPos#asLong} → the section Sable handed the hook.
          * The section object is what the rebuild uploads: a plot chunk's sections are not reachable
          * through {@code level.getChunk}, and a chunk's section array is stable for its lifetime.
-         * Insertion-ordered so the rebuild log reads in stamp order.
+         * Insertion-ordered so the rebuild log reads in stamp order. Starts as a shared empty map and
+         * is allocated on the first {@link #record}: a physics-step scope opens every substep and
+         * almost never records anything.
          */
-        final Long2ObjectMap<LevelChunkSection> sections = new Long2ObjectLinkedOpenHashMap<>();
+        Long2ObjectMap<LevelChunkSection> sections = Long2ObjectMaps.emptyMap();
     }
 
-    /** True while a scope is open on this thread and batching is enabled. */
+    /**
+     * True while a scope is open on this thread and batching is enabled — or, whatever
+     * {@link #ENABLED} says, while a physics-step scope ({@link #callForced}) is open.
+     */
     public static boolean isActive() {
-        return ENABLED && CURRENT.get() != null;
+        Batch batch = CURRENT.get();
+        return batch != null && (ENABLED || batch.forced);
     }
 
     /** True while a scope is open on this thread, enabled or not (the bookkeeping test seam). */
@@ -120,6 +137,7 @@ public final class ColliderBatch {
         Batch batch = CURRENT.get();
         if (batch == null) return;
         if (batch.level == null) batch.level = level;
+        if (batch.sections.isEmpty()) batch.sections = new Long2ObjectLinkedOpenHashMap<>();
         batch.sections.put(sectionPos.asLong(), section);
         batch.deferred++;
     }
@@ -135,21 +153,50 @@ public final class ColliderBatch {
     }
 
     /**
+     * Run one of Sable's native physics steps inside a scope that defers whatever
+     * {@link #ENABLED} says. Called by {@code SubLevelPhysicsStepColliderDeferMixin} around every
+     * {@code PhysicsPipeline.physicsTick}.
+     *
+     * <p><b>Why.</b> {@code Rapier3D.step} holds Rapier's world lock while it runs Java collision
+     * callbacks, and a callback that sets a block — Sable's {@code FragileBlockCallback} breaking
+     * glass, ice or leaves a carriage hit — reaches {@code pipeline.handleBlockChange}. When that
+     * change needs a voxel collider Rapier has not built yet, {@code Rapier3D.newVoxelCollider}
+     * takes the same lock on the same thread and waits on itself for ever: the server thread
+     * freezes for good. Deferring the update to this scope's exit, after the step has returned and
+     * released the lock, closes that path for every callback, not just the fragile one.</p>
+     */
+    public static <T> T callForced(Supplier<T> body) {
+        return call(body, ColliderBatch::rebuild, true);
+    }
+
+    /**
      * The scope mechanics with the rebuild pluggable — what the unit test drives, since the real
      * rebuild needs a live Sable physics system.
      */
     static <T> T call(Supplier<T> body, Consumer<Batch> rebuild) {
+        return call(body, rebuild, false);
+    }
+
+    /**
+     * {@link #call(Supplier, Consumer)} with the scope's {@link Batch#forced} flag. A forced scope
+     * nested in a plain one marks the outer batch forced while it runs and restores it after.
+     */
+    static <T> T call(Supplier<T> body, Consumer<Batch> rebuild, boolean forced) {
         Batch batch = CURRENT.get();
         boolean outermost = batch == null;
         if (outermost) {
             batch = new Batch();
+            batch.forced = forced;
             CURRENT.set(batch);
         }
+        boolean promoted = !outermost && forced && !batch.forced;
+        if (promoted) batch.forced = true;
         batch.depth++;
         try {
             return body.get();
         } finally {
             batch.depth--;
+            if (promoted) batch.forced = false;
             if (outermost) {
                 CURRENT.remove();
                 try {
@@ -187,7 +234,11 @@ public final class ColliderBatch {
                 LOGGER.error("[colliderBatch] section {} rebuild failed: {}", pos, t.toString(), t);
             }
         }
-        PhysicsStepTimer.addBatchedBlockChanges(batch.deferred);
+        if (batch.forced) {
+            PhysicsStepTimer.addStepDeferredBlockChanges(batch.deferred);
+        } else {
+            PhysicsStepTimer.addBatchedBlockChanges(batch.deferred);
+        }
         LOGGER.debug("[colliderBatch] sections={} rebuilt={} blockChanges={} ms={}",
             batch.sections.size(), rebuilt, batch.deferred,
             String.format("%.2f", (System.nanoTime() - start) / 1_000_000.0));
