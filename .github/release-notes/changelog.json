@@ -25119,6 +25119,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "bedroom-livestream-tv-rooms",
+      "version": "0.1245.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Somewhere to put your feet up",
+      "summary": "Some carriages now have a bed to rest in, and a screen or two worth watching.",
+      "highlights": [],
+      "pr": 1950,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
