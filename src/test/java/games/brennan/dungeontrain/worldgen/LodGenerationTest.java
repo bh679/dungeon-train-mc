@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Pins the Distant Horizons LOD-lite seams: the generator-thread name DH 2.4.3-b uses
+ * Pins the Distant Horizons LOD-lite seams: the generator-thread name DH uses (2.4.3-b through 3.3.3)
  * ({@code DhThreadFactory}: {@code "DH-" + pool + " Thread[" + n + "]"}, pool {@code "World Gen"}),
  * the debug-override semantics, and the decoration steps an LOD can show.
  */

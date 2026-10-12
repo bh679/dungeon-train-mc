@@ -600,7 +600,8 @@ dependencies {
     // are either DH's or absent. The only DT class that names them
     // (client/DistantHorizonsSuppression, and the DistantHorizonsFrameClear it alone reaches) is
     // reached behind a ModList check, so nothing tries to link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
-    // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
+    // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}
+    // (`coreapi/ModInfo.API_*_VERSION` in its jar).
     compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
 
     // Fast Paintings + Moonlight — REQUIRED third-party deps (see gradle.properties). Not bundled:

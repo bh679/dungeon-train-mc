@@ -872,7 +872,7 @@
       "mod_ids": [
         "distanthorizons"
       ],
-      "sha1": "ed4dcd8363226bcaf7cbad9233e41d8e61805c50",
+      "sha1": "4357b4d19fab818780c94f0e43dad1cc931634b2",
       "packages": [
         "DistantHorizons.libraries",
         "com.seibel",
@@ -882,16 +882,13 @@
         "dh_sqlite.jdbc3",
         "dh_sqlite.jdbc4",
         "dh_sqlite.util",
-        "dhcomgithubluben.zstd",
-        "loaderCommon.fabric",
-        "loaderCommon.neoforge",
-        "org.tukaani"
+        "dhcomgithubluben.zstd"
       ],
       "project_id": 508933,
-      "file_id": 7350266,
+      "file_id": 9004764,
       "required": false,
       "modrinth_project": "distanthorizons",
-      "modrinth_version": "75PXmyqH"
+      "modrinth_version": "9w34y8ai"
     },
     {
       "name": "Controlling",
