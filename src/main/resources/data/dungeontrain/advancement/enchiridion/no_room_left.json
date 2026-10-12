@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/keepsake",
+  "display": {
+    "icon": {
+      "id": "exposure:signed_album"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.no_room_left.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.no_room_left.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "album": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "album_full"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "album"
+    ]
+  ]
+}

@@ -68,32 +68,63 @@ public final class TranslationFilters {
     }
 
     /**
-     * The lang-key prefixes that belong to the build editor — the world-space menus, the X menu,
-     * the builder profile, the block-variant / container / prefab tools — so a translator can take
-     * or leave that body on its own. It is creative-only UI, dense with jargon, and roughly a
-     * third of every string the mod ships; a player translating the game they play should not
-     * have to wade through it, and a builder translating the tool they use should not have to
-     * wade through the death screens to find it.
+     * The lang-key prefixes that belong to the build editor and the translate screen — the
+     * world-space menus, the X menu, the builder profile, the block-variant / container / prefab
+     * tools, the translation editor itself — so a translator can take or leave that body on
+     * its own. It is creative-only UI, dense with jargon, and roughly a third of every string the
+     * mod ships; a player translating the game they play should not have to wade through it, and a
+     * builder translating the tool they use should not have to wade through the death screens to
+     * find it.
+     *
+     * <p>Read from {@link #EDITOR_KEYS_RESOURCE}, the one list the build's provenance stamp and the
+     * relay's milestone backfill also read: every "% translated" a player sees leaves these lines
+     * out of a language's line count.</p>
      */
-    private static final java.util.List<String> EDITOR_KEY_PREFIXES = java.util.List.of(
-        "gui.dungeontrain.editor_menu.",
-        "gui.dungeontrain.editor_screen.",
-        "gui.dungeontrain.editor_settings.",
-        "gui.dungeontrain.editor_help.",
-        "gui.dungeontrain.builder.",
-        "gui.dungeontrain.block_variant.",
-        "gui.dungeontrain.template_blocks.",
-        "gui.dungeontrain.prefab_save.",
-        "gui.dungeontrain.prefab_tab.",
-        "gui.dungeontrain.number_input.",
-        "gui.dungeontrain.scribble.",
-        "gui.dungeontrain.custom_content.",
-        "chat.dungeontrain.editor_bar.");
+    private static final java.util.List<String> EDITOR_KEY_PREFIXES = loadEditorPrefixes();
+
+    /** The shipped list of editor/creator-tool lang-key prefixes. */
+    static final String EDITOR_KEYS_RESOURCE = "/assets/dungeontrain/translation_editor_keys.json";
+
+    private static java.util.List<String> loadEditorPrefixes() {
+        try (java.io.InputStream in = TranslationFilters.class.getResourceAsStream(EDITOR_KEYS_RESOURCE)) {
+            if (in == null) {
+                com.mojang.logging.LogUtils.getLogger().error(
+                    "[translate] {} missing from the jar; editor lines will count as player lines",
+                    EDITOR_KEYS_RESOURCE);
+                return java.util.List.of();
+            }
+            return parseEditorPrefixes(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            com.mojang.logging.LogUtils.getLogger().error(
+                "[translate] could not read {}; editor lines will count as player lines: {}",
+                EDITOR_KEYS_RESOURCE, e.toString());
+            return java.util.List.of();
+        }
+    }
+
+    /** {@code {"prefixes": ["gui.dungeontrain.editor_menu.", …]}} → the non-blank string entries. */
+    static java.util.List<String> parseEditorPrefixes(String body) {
+        com.google.gson.JsonElement root = com.google.gson.JsonParser.parseString(body);
+        if (root == null || !root.isJsonObject()) {
+            return java.util.List.of();
+        }
+        com.google.gson.JsonElement list = root.getAsJsonObject().get("prefixes");
+        if (list == null || !list.isJsonArray()) {
+            return java.util.List.of();
+        }
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (com.google.gson.JsonElement el : list.getAsJsonArray()) {
+            if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() && !el.getAsString().isBlank()) {
+                out.add(el.getAsString());
+            }
+        }
+        return java.util.List.copyOf(out);
+    }
 
     /**
      * Whether {@code key} is one of the build editor's strings — see {@link #EDITOR_KEY_PREFIXES}.
      * A prefix rule, so a new editor screen keyed under one of those roots is filed without a
-     * release; a screen under a new root needs adding here to be.
+     * release; a screen under a new root needs adding to {@link #EDITOR_KEYS_RESOURCE} to be.
      */
     public static boolean isEditorKey(String key) {
         if (key == null) {

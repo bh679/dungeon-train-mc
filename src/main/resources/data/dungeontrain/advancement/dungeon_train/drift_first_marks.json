@@ -1,7 +1,7 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_100",
+  "parent": "dungeontrain:dungeon_train/root",
   "display": {
-    "icon": { "id": "minecraft:crafting_table" },
+    "icon": { "id": "minecraft:compass" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.drift_first_marks.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.drift_first_marks.description" },
     "frame": "task",

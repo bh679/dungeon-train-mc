@@ -15,7 +15,7 @@ from lostcity import blocks  # noqa: E402
 from lostcity.archetypes import ALL  # noqa: E402
 from lostcity.canvas import Canvas  # noqa: E402
 from lostcity.check import validate  # noqa: E402
-from lostcity.datagen import render  # noqa: E402
+from lostcity.datagen import PLAYER_BUILDING, render  # noqa: E402
 from lostcity.floors import Facade, tower  # noqa: E402
 from lostcity.nbt_out import DATA_VERSION, to_bytes  # noqa: E402
 from lostcity.spec import ArchetypeSpec  # noqa: E402
@@ -131,7 +131,7 @@ def _has_repeat(cells, axis, period, similarity=0.5) -> bool:
 class DatagenTest(unittest.TestCase):
     def test_every_design_places_a_dt_template(self):
         files = render(ALL, designs(), {"structures": [], "placement": {}})
-        pools = {p: d for p, d in files.items() if "/template_pool/" in p}
+        pools = {p: d for p, d in files.items() if "/template_pool/" in p and PLAYER_BUILDING not in p}
         self.assertEqual(len(pools), len(ALL))
         for data in pools.values():
             self.assertNotIn(b"big_lost_city", data)

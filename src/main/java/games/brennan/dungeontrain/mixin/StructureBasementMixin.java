@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin;
 import games.brennan.dungeontrain.worldgen.LegacyUnderground;
 import games.brennan.dungeontrain.worldgen.LostCityFootprint;
 import games.brennan.dungeontrain.worldgen.LostCityStructures;
+import games.brennan.dungeontrain.worldgen.LostCityTemplateDemand;
 import games.brennan.dungeontrain.worldgen.UpsideDownSpawnerStructures;
 import games.brennan.dungeontrain.worldgen.WorldFloor;
 import net.minecraft.server.level.ServerLevel;
@@ -71,13 +72,22 @@ public abstract class StructureBasementMixin {
             return;
         }
         if (!LostCityStructures.isLostCityStructure(id)) return;
+        if (LostCityStructures.isNewBuildingSlot(id)
+                && !games.brennan.dungeontrain.building.BuildingWorldgen.hasNewBuildings()) {
+            // No new buildings in this world: the slot has nothing to place, so the set tries its others.
+            cir.setReturnValue(StructureStart.INVALID_START);
+            return;
+        }
         // Big Lost City's cities belong to the Lost City era alone (LostCityStructures) — anywhere
         // else, including a start we can't place in a level (a sampler or foreign generator), is dropped
         // before any template is loaded.
         ServerLevel level = dungeontrain$levelOf(heightAccessor, chunkGenerator);
         if (level == null || !LostCityStructures.allowedAt(level, chunkPos.x, chunkPos.z, id)) {
             cir.setReturnValue(StructureStart.INVALID_START);
+            return;
         }
+        // The start goes ahead and is about to ask for its templates, on this thread.
+        LostCityTemplateDemand.requested(id, chunkPos.x);
     }
 
     @Inject(method = "generate", at = @At("RETURN"), cancellable = true)

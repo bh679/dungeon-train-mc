@@ -40,6 +40,10 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.DisposableCamera;
+import games.brennan.dungeontrain.compat.photo.SharedPhotos;
+import games.brennan.dungeontrain.compat.photo.album.FoundAlbums;
+import io.github.mortuusars.exposure_polaroid.ExposurePolaroid;
 import games.brennan.dungeontrain.appearance.ArmorAppearanceRoller;
 import games.brennan.dungeontrain.debug.DebugFlags;
 import games.brennan.dungeontrain.difficulty.DifficultyProgression;
@@ -59,6 +63,7 @@ import games.brennan.dungeontrain.narrative.PlayerBookPendingTag;
 import games.brennan.dungeontrain.narrative.SharedBookPool;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import games.brennan.dungeontrain.item.LiveHeadpiecePendingTag;
 import games.brennan.dungeontrain.registry.ModItems;
 import org.slf4j.Logger;
 
@@ -96,6 +101,8 @@ public final class ContainerContentsRoller {
     private static final long SALT_RANDOM_BOOK = 0xB0011AB1ECAFEBE0L;
     private static final long SALT_LEADERBOARD_BOOK = 0x1EADE7B0A2DB00C5L;
     private static final long SALT_STAT_BOOK = 0x5A7B00C0FA017A11L;
+    /** Salt for the coin flip that turns an unfilled random_playerphoto slot into a disposable camera. */
+    private static final long SALT_PHOTO_CAMERA = 0xCA3E2AF0705A11E5L;
 
     /**
      * Which of the two kinds a {@code stats_book} slot comes up. Its own salt, so the flip does not
@@ -361,6 +368,11 @@ public final class ContainerContentsRoller {
         if (isDecoratedPot(state)) {
             return rollDecoratedPot(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
         }
+        // Suspicious sand / gravel hold one item under the same "item" key, but aren't a
+        // Container at all — an authored pool rolls into it the way a vase does.
+        if (isBrushable(state)) {
+            return rollBrushable(pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, baseNbt, registries);
+        }
         int slots = nativeContainerSlots(state);
         if (slots <= 0) return baseNbt;
 
@@ -544,6 +556,7 @@ public final class ContainerContentsRoller {
      * past the container's capacity.
      */
     public static int slotsForContainer(BlockState state) {
+        if (isBrushable(state)) return 1;
         return containerSlotsFor(state);
     }
 
@@ -586,11 +599,6 @@ public final class ContainerContentsRoller {
                                                 int diffIndex,
                                                 @Nullable CompoundTag baseNbt,
                                                 HolderLookup.Provider registries) {
-        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
-            ? 1 : Math.min(pool.fillMax(), 1);
-        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
-        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
-
         CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
         out.remove(NBT_POT_ITEM);
         // Vases also bake their single Luck-potion bonus candidate now, from the same pool —
@@ -599,6 +607,39 @@ public final class ContainerContentsRoller {
         ListTag bonus = LuckyBonusRoller.preRoll(
             pool, localPos, worldSeed, carriageIndex, diffIndex, LuckyBonusRoller.VASE_BONUS, registries);
         out = LuckyBonusRoller.withBonus(out, bonus);
+        return putSingleItem(out, pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, registries);
+    }
+
+    /**
+     * Brushable roll path — the vase's single-item roll written under the same {@code item} key,
+     * minus the Luck-potion bonus (that is served when a vase breaks; nothing brushes one out).
+     * Any {@code LootTable} / {@code LootTableSeed} is dropped first: vanilla
+     * {@code BrushableBlockEntity} prefers a stored table over {@code item}, so leaving one behind
+     * would quietly put the archaeology loot back.
+     */
+    private static CompoundTag rollBrushable(ContainerContentsPool pool, int totalWeight,
+                                             BlockPos localPos, long worldSeed, int carriageIndex,
+                                             int diffIndex,
+                                             @Nullable CompoundTag baseNbt,
+                                             HolderLookup.Provider registries) {
+        CompoundTag out = baseNbt == null ? new CompoundTag() : baseNbt.copy();
+        out.remove(NBT_POT_ITEM);
+        out.remove(NBT_BRUSHABLE_LOOT_TABLE);
+        out.remove(NBT_BRUSHABLE_LOOT_SEED);
+        return putSingleItem(out, pool, totalWeight, localPos, worldSeed, carriageIndex, diffIndex, registries);
+    }
+
+    /**
+     * Roll K in {@code [fillMin, min(fillMax, 1)]} and, when it lands on 1, write one weighted pick
+     * into {@code out} under {@link #NBT_POT_ITEM}. Shared by the two single-item holders.
+     */
+    private static CompoundTag putSingleItem(CompoundTag out, ContainerContentsPool pool, int totalWeight,
+                                             BlockPos localPos, long worldSeed, int carriageIndex,
+                                             int diffIndex, HolderLookup.Provider registries) {
+        int effectiveMax = pool.fillMax() == ContainerContentsPool.FILL_ALL
+            ? 1 : Math.min(pool.fillMax(), 1);
+        int effectiveMin = Math.max(0, Math.min(pool.fillMin(), effectiveMax));
+        int k = rollKCount(effectiveMin, effectiveMax, localPos, worldSeed, carriageIndex);
         if (k <= 0) return out;
 
         ContainerContentsEntry picked = pickEntry(pool, totalWeight, localPos, worldSeed, carriageIndex, /*slot*/ 0);
@@ -635,6 +676,14 @@ public final class ContainerContentsRoller {
      */
     public static boolean isBrushable(BlockState state) {
         return state.getBlock() instanceof BrushableBlock;
+    }
+
+    /**
+     * True for any block the loot (C) menu can author a pool for: a vanilla {@link Container}, or a
+     * brushable block, whose single dig item rolls from the pool like a vase's.
+     */
+    public static boolean isLootAuthorable(BlockState state) {
+        return isContainerState(state) || isBrushable(state);
     }
 
     /**
@@ -997,22 +1046,38 @@ public final class ContainerContentsRoller {
                 localPos, worldSeed, carriageIndex, slot, rolledCount, registries);
         }
 
+        // A community photo; when the relay has none left to hand out, sometimes a disposable camera
+        // instead — likelier the fewer photos the relay holds — so players go and take more. Otherwise
+        // a player book, so the slot is never wasted.
+        // Someone else's album; with none to hand out, the finder's own album instead.
+        if (item == ModItems.RANDOM_PLAYERPHOTOALBUM.get()) {
+            ItemStack album = FoundAlbums.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
+            return album.isEmpty() ? new ItemStack(ModItems.YOUR_PHOTOALBUM.get()) : album;
+        }
+        if (item == ModItems.RANDOM_PLAYERPHOTO.get()) {
+            ItemStack found = SharedPhotos.rollFound(mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK));
+            if (!found.isEmpty()) return found;
+            return rollPerMille(SharedPhotos.cameraFallbackPerMille(), localPos, worldSeed, carriageIndex, slot, SALT_PHOTO_CAMERA)
+                ? DisposableCamera.create() : rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
+        }
+
+        // The Live Eye slot. Baked with no player in sight, so it always bakes a pending Live Eye;
+        // event/LiveEyeLootResolver decides — when a player first sees it (open, Jade look, or
+        // arrival in their inventory) — whether it stays a Live Eye or becomes a TV.
+        if (item == ModItems.RANDOM_LIVE_HEADPIECE.get()) {
+            ItemStack headpiece = new ItemStack(ModItems.LIVE_HEADPIECE.get());
+            LiveHeadpiecePendingTag.markPending(headpiece);
+            return headpiece;
+        }
+
+        // Polaroid's plain instant camera is hidden (DisabledModContent); a loot entry for it is the
+        // one camera players get — DT's disposable camera.
+        if (item == ExposurePolaroid.Items.INSTANT_CAMERA.get()) {
+            return DisposableCamera.create();
+        }
+
         if (item == ModItems.RANDOM_PLAYERBOOK.get()) {
-            if (SharedBookGate.canDiscover()) {
-                // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
-                // isn't wasted and mark it pending; when it first reaches a player's hand,
-                // NarrativeBookEvents.onEquipmentChange resolves it through SharedBookSelector against THAT
-                // player's read/served state (community-book selection is per-player, so it can't be
-                // resolved world-wide at container-load like it was before).
-                long pendingSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
-                ItemStack local = RandomBookFactory.rollFromPool(pendingSeed).orElse(ItemStack.EMPTY);
-                if (!local.isEmpty()) PlayerBookPendingTag.markPending(local);
-                return local;
-            }
-            // Discovery disabled — a permanent, intended local book; nothing to
-            // upgrade to, so it is not marked pending.
-            long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
-            return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
+            return rollPlayerBook(localPos, worldSeed, carriageIndex, slot);
         }
 
         int maxStack = new ItemStack(item).getMaxStackSize();
@@ -1371,6 +1436,35 @@ public final class ContainerContentsRoller {
             lookup.get().get(ResourceKey.create(Registries.MOB_EFFECT, id)).ifPresent(out::add);
         }
         return out;
+    }
+
+    /** A community player book (pending per-player resolution) or, with discovery off, a local book. */
+    private static ItemStack rollPlayerBook(BlockPos localPos, long worldSeed, int carriageIndex, int slot) {
+        if (SharedBookGate.canDiscover()) {
+            // Always defer to per-player selection at hand-time. Bake a local placeholder so the slot
+            // isn't wasted and mark it pending; when it first reaches a player's hand,
+            // NarrativeBookEvents.onEquipmentChange resolves it through SharedBookSelector against THAT
+            // player's read/served state (community-book selection is per-player, so it can't be
+            // resolved world-wide at container-load like it was before).
+            long pendingSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
+            ItemStack local = RandomBookFactory.rollFromPool(pendingSeed).orElse(ItemStack.EMPTY);
+            if (!local.isEmpty()) PlayerBookPendingTag.markPending(local);
+            return local;
+        }
+        // Discovery disabled — a permanent, intended local book; nothing to
+        // upgrade to, so it is not marked pending.
+        long bookSeed = mix(localPos, worldSeed, carriageIndex, slot, SALT_RANDOM_BOOK);
+        return RandomBookFactory.rollFromPool(bookSeed).orElse(ItemStack.EMPTY);
+    }
+
+    /** {@link #rollChance} in tenths of a percent, for odds like 12.5%. */
+    static boolean rollPerMille(int perMille, BlockPos localPos, long worldSeed,
+                                int carriageIndex, int slot, long salt) {
+        if (perMille <= 0) return false;
+        if (perMille >= 1000) return true;
+        long state = mix(localPos, worldSeed, carriageIndex, slot, salt);
+        long unsigned = state & 0x7FFFFFFFFFFFFFFFL;
+        return (int) (unsigned % 1000L) < perMille;
     }
 
     /**

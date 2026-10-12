@@ -130,6 +130,11 @@ public final class TemplateSidecars {
                 out.add(new Sidecar("contents-allow", room.subdir(), id + ContentsAllowStore.EXT));
                 out.add(new Sidecar("copies", room.subdir(), id + PortalRoomCopiesVariant.COPIES_EXT));
             }
+            // A new building's roster weight travels with it.
+            case BUILDING -> out.add(new Sidecar("meta", games.brennan.dungeontrain.building.Buildings.SUBDIR,
+                    id + games.brennan.dungeontrain.building.BuildingMeta.EXT));
+            // An official Lost City building has no file of the player's at all.
+            case LOST_CITY -> { }
             // One document for the whole run, beside the group's .nbt — the file the editor's Group
             // plot writes and the train's overlay reads.
             case CARRIAGE_GROUP -> out.add(new Sidecar("variants", WholeKind.GROUP.userSubdir(),
@@ -164,6 +169,7 @@ public final class TemplateSidecars {
             case PORTAL_ROOM -> ContainerContentsStore.trackPlotKey(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> ChunkFramePlot.KEY_PREFIX + id;
             case CARRIAGE_GROUP -> BlockVariantPlot.wholeKey(WholeKind.GROUP, id);
+            case BUILDING, LOST_CITY -> null;
         };
     }
 
@@ -595,6 +601,6 @@ public final class TemplateSidecars {
 
     /** Whether {@code kind} has any sidecar at all — what a caller checks before bothering. */
     public static boolean carries(BuilderPhotoPaths.Kind kind) {
-        return kind != null;
+        return kind != null && kind != BuilderPhotoPaths.Kind.LOST_CITY;
     }
 }

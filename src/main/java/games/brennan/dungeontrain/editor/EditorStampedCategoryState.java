@@ -73,6 +73,14 @@ public final class EditorStampedCategoryState {
      * Whether {@code category}'s plots are the ones standing in the world — the gate on every
      * editor's {@code plotContaining}. Strict: with no resident category nothing is active.
      */
+    /**
+     * Whether a player at {@code y} is up at the editor's plots — the shared height gate, lowered to the
+     * Buildings layer while Buildings is the stamped category ({@link EditorLayout#isAtPlotHeight(int, boolean)}).
+     */
+    public static boolean atPlotHeight(int y) {
+        return EditorLayout.isAtPlotHeight(y, isActive(EditorCategory.BUILDINGS));
+    }
+
     public static boolean isActive(EditorCategory category) {
         return category != null && current == category;
     }

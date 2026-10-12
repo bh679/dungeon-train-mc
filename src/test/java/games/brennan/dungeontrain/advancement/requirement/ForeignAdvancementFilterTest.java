@@ -13,7 +13,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
-/** BetterNether/BetterEnd display advancements leave the map; everything else stays, in order. */
+/** BetterNether/BetterEnd/Exposure display advancements leave the map; everything else stays, in order. */
 final class ForeignAdvancementFilterTest {
 
     private static ResourceLocation rl(String id) {
@@ -48,6 +48,21 @@ final class ForeignAdvancementFilterTest {
             rl("betterend:recipes/tools/aeternium_hammer"),
             rl("bclib:recipes/combat/tag_shield")), List.copyOf(out.keySet()));
         assertEquals(8, loaded.size(), "input must not be mutated");
+    }
+
+    @Test
+    @DisplayName("Exposure and Exposure: Polaroid tabs removed, their recipes kept")
+    void removesExposureTabs() {
+        Map<ResourceLocation, JsonElement> out = ForeignAdvancementFilter.removeBlocked(mapOf(
+            "exposure:adventure/exposure",
+            "exposure:adventure/wildlife_archivist",
+            "exposure:recipes/misc/camera",
+            "exposure_polaroid:adventure/instant_classic",
+            "exposure_polaroid:recipes/misc/instant_camera"));
+
+        assertEquals(List.of(
+            rl("exposure:recipes/misc/camera"),
+            rl("exposure_polaroid:recipes/misc/instant_camera")), List.copyOf(out.keySet()));
     }
 
     @Test

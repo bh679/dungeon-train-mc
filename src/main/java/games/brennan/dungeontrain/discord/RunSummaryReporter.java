@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.stats.Stats;
 import org.slf4j.Logger;
 
 /**
@@ -49,7 +50,7 @@ public final class RunSummaryReporter {
             int carriage = packet.cartsTravelled();
             int distanceBlocks = (int) Math.round(packet.distanceBlocks());
             JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos, freePlay,
-                    WorldJoinReport.modVersion());
+                    WorldJoinReport.modVersion(), lifeSec(player));
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] run-summary relay report failed: {}", t.toString());
@@ -78,6 +79,19 @@ public final class RunSummaryReporter {
      */
     static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
                                    RunPosition pos, boolean freePlay, String modVersion) {
+        return buildPayload(uuid, player, runSec, carriage, distanceBlocks, pos, freePlay, modVersion, -1L);
+    }
+
+    /**
+     * As above, with the life's WALL-CLOCK length. {@code runSec} is active time on the train — it
+     * stops while the player is paused or idle, and the train keeps moving — so the relay cannot bound
+     * distance by it. {@code lifeSec} is vanilla's time-since-death stat in seconds: every server tick
+     * the player was alive, AFK included, which is exactly what the train's 2 blocks/s is measured
+     * against. The relay's plausibility checks read it as {@code lifeSec}; negative means unknown
+     * and the field is omitted.
+     */
+    static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
+                                   RunPosition pos, boolean freePlay, String modVersion, long lifeSec) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         if (player != null && !player.isEmpty()) {
@@ -93,7 +107,25 @@ public final class RunSummaryReporter {
         // world-border "distances" before the flag existed.
         body.addProperty("freePlay", freePlay);
         addModVersion(body, modVersion);
+        if (lifeSec >= 0L) {
+            body.addProperty("lifeSec", lifeSec);
+        }
         return body;
+    }
+
+    /**
+     * Seconds this player has been alive, from vanilla's {@code TIME_SINCE_DEATH} stat. Read at the
+     * death event, which NeoForge fires at the top of {@code ServerPlayer.die()} — before vanilla resets
+     * the stat for the next life. {@code -1} when the stat cannot be read, so the field is simply absent
+     * rather than wrong.
+     */
+    static long lifeSec(ServerPlayer player) {
+        try {
+            int ticks = player.getStats().getValue(Stats.CUSTOM.get(Stats.TIME_SINCE_DEATH));
+            return Math.max(0L, ticks / TICKS_PER_SECOND);
+        } catch (Throwable t) {
+            return -1L;
+        }
     }
 
     /** The version the relay places a one-life score by, when this jar knows its own. Shared with the death payload. */

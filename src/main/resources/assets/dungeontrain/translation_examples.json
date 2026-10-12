@@ -71,6 +71,14 @@
       ]
     }
   },
+  "gui.dungeontrain.unsupported_mods.unverified_file": {
+    "1": {
+      "label": "the jar file name",
+      "examples": [
+        "somemod-1.2.3.jar"
+      ]
+    }
+  },
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": {
     "1": {
       "label": "the mod's display name",
@@ -86,6 +94,15 @@
       "examples": [
         "somemod v1.2.3",
         "somemod v1.2.3, anothermod v4.5"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.unverified_mods": {
+    "1": {
+      "label": "the installed mod files that could not be verified, as file name plus the mod ids it declares, comma-separated",
+      "examples": [
+        "somemod-1.2.3.jar (somemod)",
+        "somemod-1.2.3.jar (somemod), bundle-4.5.jar (alpha, beta)"
       ]
     }
   },
@@ -449,6 +466,96 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.stat.photos.one": {
+    "1": {
+      "label": "Shared photos the reader has taken this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.photos.other": {
+    "1": {
+      "label": "Shared photos the reader has taken this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.tributes.one": {
+    "1": {
+      "label": "Tributes the reader has paid this run, to found photos and their own prints",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.tributes.other": {
+    "1": {
+      "label": "Tributes the reader has paid this run, to found photos and their own prints",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.passenger_photos.one": {
+    "1": {
+      "label": "Shared photos with another player, a PlayerMob or a villager in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.passenger_photos.other": {
+    "1": {
+      "label": "Shared photos with another player, a PlayerMob or a villager in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.monster_photos.one": {
+    "1": {
+      "label": "Shared photos with a hostile mob in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.monster_photos.other": {
+    "1": {
+      "label": "Shared photos with a hostile mob in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.animal_photos.one": {
+    "1": {
+      "label": "Shared photos with an animal in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.animal_photos.other": {
+    "1": {
+      "label": "Shared photos with an animal in frame this run",
+      "examples": [
+        "1",
+        "2"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.mob_kills.one": {
     "1": {
       "label": "creatures the reader has killed this run",
@@ -757,6 +864,210 @@
         "4m 30s",
         "45s",
         "2h"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_photo.tributed.1": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_photo.tributed.2": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "chat.dungeontrain.familiar_photo.tributed.3": {
+    "1": {
+      "label": "the player who paid Tribute to the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_viewed.more": {
+    "1": {
+      "label": "how many more people can view the photo",
+      "examples": [
+        "10",
+        "4",
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.paid.1": {
+    "1": {
+      "label": "the emeralds paid, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.one",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.other",
+          "args": [
+            "27"
+          ]
+        }
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.paid.3": {
+    "1": {
+      "label": "the emeralds paid, as a whole clause",
+      "examples": [
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.other",
+          "args": [
+            "3"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.one",
+          "args": [
+            "1"
+          ]
+        },
+        {
+          "key": "chat.dungeontrain.photo_tribute.emeralds.other",
+          "args": [
+            "27"
+          ]
+        }
+      ]
+    },
+    "2": {
+      "label": "how many more people can now see the photo",
+      "examples": [
+        "10",
+        "20"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.emeralds.one": {
+    "1": {
+      "label": "how many emeralds (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_tribute.emeralds.other": {
+    "1": {
+      "label": "how many emeralds",
+      "examples": [
+        "3",
+        "27"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.st": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "21",
+        "31",
+        "101"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.nd": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "2",
+        "22",
+        "32"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.rd": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "3",
+        "23",
+        "33"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.viewer.th": {
+    "1": {
+      "label": "which viewer of the photo the player is (a number taking this ending)",
+      "examples": [
+        "4",
+        "11",
+        "15"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.views_left": {
+    "1": {
+      "label": "how many more views the photo has before it is gone",
+      "examples": [
+        "10",
+        "3",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.photo_tribute.have": {
+    "1": {
+      "label": "how many emeralds the player is carrying",
+      "examples": [
+        "0",
+        "1",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.photo_burns_author": {
+    "1": {
+      "label": "the player who took the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "item.dungeontrain.player_album.name": {
+    "1": {
+      "label": "the player whose photo album it is",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
+      ]
+    }
+  },
+  "item.dungeontrain.shared_photo.by": {
+    "1": {
+      "label": "the player who took the photo",
+      "examples": [
+        "Steve",
+        "Alex",
+        "Notch"
       ]
     }
   },
@@ -3741,6 +4052,20 @@
       ]
     }
   },
+  "gui.dungeontrain.credits.funders.developer_line": {
+    "1": {
+      "label": "the developer's name",
+      "examples": [
+        "Brennan Hatton"
+      ]
+    },
+    "2": {
+      "label": "Australian dollars the developer has spent on the game that donations have not yet covered, whole number (the A$ sign is in the text)",
+      "examples": [
+        "1782"
+      ]
+    }
+  },
   "gui.dungeontrain.credits.funders.person_line_hidden": {
     "1": {
       "label": "the funder's name (they chose not to show the amount)",
@@ -5195,7 +5520,7 @@
       ]
     }
   },
-  "gui.dungeontrain.videos.filter.platform.shown": {
+  "gui.dungeontrain.videos.filter.solo": {
     "1": {
       "label": "the platform this toggle controls",
       "examples": [
@@ -5204,7 +5529,7 @@
       ]
     }
   },
-  "gui.dungeontrain.videos.filter.platform.hidden": {
+  "gui.dungeontrain.videos.filter.solo.on": {
     "1": {
       "label": "the platform this toggle controls",
       "examples": [
@@ -5379,6 +5704,60 @@
       ]
     }
   },
+  "advancements.dungeontrain.dungeon_train.apple_a_day.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.self_medicated.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.last_melon.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.three_melons.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1000",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.naked_and_afraid.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "100",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.dungeon_train.naked_and_unafraid.description": {
+    "1": {
+      "label": "carriages to travel, from the requirement",
+      "examples": [
+        "1,000",
+        "500"
+      ]
+    }
+  },
   "advancements.dungeontrain.dungeon_train.pacifist_100.description": {
     "1": {
       "label": "carriages to traverse, from the requirement",
@@ -5410,8 +5789,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "10",
-        "8"
+        "25",
+        "20"
       ]
     }
   },
@@ -5419,8 +5798,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "17",
-        "15"
+        "50",
+        "40"
       ]
     }
   },
@@ -5428,8 +5807,8 @@
     "1": {
       "label": "distinct biomes to ride through, from the requirement",
       "examples": [
-        "25",
-        "20"
+        "100",
+        "90"
       ]
     }
   },
@@ -5845,6 +6224,24 @@
     }
   },
   "gui.dungeontrain.editor_menu.editor.plot_lighting": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.mod_block_tabs": {
+    "1": {
+      "label": "ON or OFF, already translated",
+      "examples": [
+        "ON",
+        "OFF"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.editor.mod_blocks_in_search": {
     "1": {
       "label": "ON or OFF, already translated",
       "examples": [
@@ -13118,21 +13515,6 @@
       ]
     }
   },
-  "gui.dungeontrain.options.custom_content.tip": {
-    "1": {
-      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
-      "examples": [
-        {
-          "key": "effect.dungeontrain.free_play.desc.1",
-          "args": []
-        },
-        {
-          "key": "gui.dungeontrain.free_play.safe_space",
-          "args": []
-        }
-      ]
-    }
-  },
   "gui.dungeontrain.unsupported_mods.body": {
     "1": {
       "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
@@ -13165,7 +13547,7 @@
   },
   "gui.dungeontrain.death.update_button": {
     "1": {
-      "label": "the newest version on the player's launcher, without the leading v",
+      "label": "the newest version on any launcher, without the leading v",
       "examples": [
         "0.1078.0",
         "0.1081.0"
@@ -13174,10 +13556,9 @@
   },
   "gui.dungeontrain.death.update_sub.one": {
     "1": {
-      "label": "a launcher name (Modrinth or CurseForge)",
+      "label": "the website the button opens (a site name, keep as is)",
       "examples": [
-        "Modrinth",
-        "CurseForge"
+        "brennan.games"
       ]
     },
     "2": {
@@ -13190,10 +13571,9 @@
   },
   "gui.dungeontrain.death.update_sub.other": {
     "1": {
-      "label": "a launcher name (Modrinth or CurseForge)",
+      "label": "the website the button opens (a site name, keep as is)",
       "examples": [
-        "Modrinth",
-        "CurseForge"
+        "brennan.games"
       ]
     },
     "2": {
@@ -13313,6 +13693,33 @@
       "label": "the suggested render distance in chunks",
       "examples": [
         "10"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.render_distance.ok": {
+    "1": {
+      "label": "the player's current render distance in chunks",
+      "examples": [
+        "8",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.photos.ok": {
+    "1": {
+      "label": "the current ride photo resolution (long edge in pixels)",
+      "examples": [
+        "720",
+        "480"
+      ]
+    }
+  },
+  "gui.dungeontrain.bug_response.tips.memory.ok": {
+    "1": {
+      "label": "gigabytes of memory allocated to the game",
+      "examples": [
+        "8",
+        "12"
       ]
     }
   },
@@ -14637,6 +15044,297 @@
       "examples": [
         "2",
         "5"
+      ]
+    }
+  },
+  "chat.dungeontrain.first_ever": {
+    "1": {
+      "label": "the advancement's title",
+      "examples": [
+        "Cross-Country",
+        "Everything Burrito"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.body": {
+    "1": {
+      "label": "the mod's name and newest version, shown in green",
+      "examples": [
+        "Dungeon Train v0.1104.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.yours": {
+    "1": {
+      "label": "the version the player has, without the leading v",
+      "examples": [
+        "0.927.0",
+        "0.1093.0"
+      ]
+    },
+    "2": {
+      "label": "how far behind, in brackets, shown dimmer",
+      "examples": [
+        "(29 releases behind)",
+        "(1 release behind)"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.newest": {
+    "1": {
+      "label": "the newest version, without the leading v",
+      "examples": [
+        "0.1104.0",
+        "0.1121.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.update_prompt.behind": {
+    "1": {
+      "label": "how many releases newer, already counted with its noun",
+      "examples": [
+        "29 releases",
+        "1 release"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.review.resubmit_note": {
+    "1": {
+      "label": "the version rule the reviewer set, e.g. a version followed by 'or above'",
+      "examples": [
+        "0.1130.0 or above",
+        "1.2.0 exactly"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.review.rule_gte": {
+    "1": {
+      "label": "a Dungeon Train version number",
+      "examples": [
+        "0.1130.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.review.rule_exact": {
+    "1": {
+      "label": "a Dungeon Train version number",
+      "examples": [
+        "0.1130.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.review.rule_lte": {
+    "1": {
+      "label": "a Dungeon Train version number",
+      "examples": [
+        "0.1130.0",
+        "1.2.0"
+      ]
+    }
+  },
+  "gui.dungeontrain.builder.profile.needs_version": {
+    "1": {
+      "label": "the version rule the reviewer set, e.g. a version followed by 'or above'",
+      "examples": [
+        "0.1130.0 or above",
+        "1.2.0 exactly"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.photo_biomes.description": {
+    "1": {
+      "label": "distinct biomes to take photos in",
+      "examples": [
+        "10",
+        "25",
+        "50"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.photo_count.animal.description": {
+    "1": {
+      "label": "how many photos with an animal in them",
+      "examples": [
+        "50",
+        "200",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.photo_count.hostile.description": {
+    "1": {
+      "label": "how many photos with a hostile mob in them",
+      "examples": [
+        "50",
+        "200",
+        "500"
+      ]
+    }
+  },
+  "advancements.dungeontrain.enchiridion.photo_count.passenger.description": {
+    "1": {
+      "label": "how many photos with a passenger (villager, player or PlayerMob) in them",
+      "examples": [
+        "50",
+        "200",
+        "500"
+      ]
+    }
+  },
+  "gui.dungeontrain.earned_photos.count": {
+    "1": {
+      "label": "how many photos a collection album holds",
+      "examples": [
+        "3",
+        "26"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.code": {
+    "1": {
+      "label": "the 6-character link code, shown as a clickable code",
+      "examples": [
+        "K7QX2M"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.relink_code": {
+    "1": {
+      "label": "the 6-character link code, shown as a clickable code",
+      "examples": [
+        "K7QX2M"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.instructions": {
+    "1": {
+      "label": "the Discord slash command to type and pick from the list",
+      "examples": [
+        "/dtlink"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.linked_pings_on": {
+    "1": {
+      "label": "the in-game command that turns pings off",
+      "examples": [
+        "/discord pings off"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.linked_pings_off": {
+    "1": {
+      "label": "the in-game command that turns pings back on",
+      "examples": [
+        "/discord pings on"
+      ]
+    }
+  },
+  "chat.dungeontrain.discord.not_linked": {
+    "1": {
+      "label": "the in-game command that gives a link code",
+      "examples": [
+        "/discord"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.account.minecraft": {
+    "1": {
+      "label": "the player's Minecraft username",
+      "examples": [
+        "Steve"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.account.discord": {
+    "1": {
+      "label": "the linked Discord account's display name",
+      "examples": [
+        "Brennan"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.took_over": {
+    "1": {
+      "label": "the player name of the broadcaster who was cut off",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.disabled": {
+    "1": {
+      "label": "the clickable settings path, already translated (chat.dungeontrain.live.disabled.path)",
+      "examples": [
+        "Options / Dungeon Train / General / Livestreaming"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watching.one": {
+    "1": {
+      "label": "how many are watching (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watching.other": {
+    "1": {
+      "label": "how many are watching",
+      "examples": [
+        "0",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.viewers.one": {
+    "1": {
+      "label": "how many are watching (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.viewers.other": {
+    "1": {
+      "label": "how many are watching",
+      "examples": [
+        "11",
+        "101"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.hint": {
+    "1": {
+      "label": "how much disk space every backup archive takes together",
+      "examples": [
+        "12 MB",
+        "1.4 GB"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watch_links": {
+    "1": {
+      "label": "the clickable word Twitch, already translated (chat.dungeontrain.live.link.twitch)",
+      "examples": [
+        "Twitch"
+      ]
+    },
+    "2": {
+      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "examples": [
+        "DungeonTrain TV"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watch_link": {
+    "1": {
+      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "examples": [
+        "DungeonTrain TV"
       ]
     }
   }

@@ -35,6 +35,9 @@ public final class ModCreativeTabs {
     public static final DeferredRegister<CreativeModeTab> TABS = DeferredRegister.create(
         Registries.CREATIVE_MODE_TAB, DungeonTrain.MOD_ID);
 
+    /** Vista's Television item, looked up by id like the rest of DT's Vista content. */
+    static final ResourceLocation VISTA_TELEVISION = ResourceLocation.fromNamespaceAndPath("vista", "television");
+
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> PREFAB_VARIANTS = TABS.register(
         "prefab_variants",
         () -> CreativeModeTab.builder()
@@ -117,6 +120,11 @@ public final class ModCreativeTabs {
      *   <li>{@link ModBlocks#NARRATIVE_LECTERN_ITEM} — progression-aware
      *       lectern variant (also remains in vanilla FUNCTIONAL_BLOCKS for
      *       discoverability).</li>
+     *   <li>{@link ModItems#RANDOM_PLAYERPHOTO} — placeholder that substitutes
+     *       a community photo from the relay pool when a container rolls.</li>
+     *   <li>{@link ModItems#RANDOM_PLAYERPHOTOALBUM} / {@link ModItems#YOUR_PHOTOALBUM} — someone
+     *       else's album (read-only, burns on close) and the holder's own album.</li>
+     *   <li>Vista's Television ({@link #VISTA_TELEVISION}) — shows the Live Feed by itself.</li>
      * </ul>
      */
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> NARRATIVE = TABS.register(
@@ -134,6 +142,15 @@ public final class ModCreativeTabs {
                 output.accept(ModItems.RANDOM_GOOD_POTION.get());
                 output.accept(ModItems.RANDOM_BAD_POTION.get());
                 output.accept(ModBlocks.NARRATIVE_LECTERN_ITEM.get());
+                output.accept(ModItems.LIVE_HEADPIECE.get());
+                // Vista's Television — it tunes itself to the Live Feed (mixin.vista.TVBlockMixin).
+                Item television = BuiltInRegistries.ITEM.get(VISTA_TELEVISION);
+                if (television != Items.AIR) output.accept(television);
+                // No Live Feed Cassette or camcorder placeholder: TVs tune themselves, and neither is
+                // ever a player's item (event.UnobtainableLiveItems).
+                output.accept(ModItems.RANDOM_PLAYERPHOTO.get());
+                output.accept(ModItems.RANDOM_PLAYERPHOTOALBUM.get());
+                output.accept(ModItems.YOUR_PHOTOALBUM.get());
                 // The one camera players get — Exposure's own tab is hidden (DisabledModContent).
                 output.accept(games.brennan.dungeontrain.compat.DisposableCamera.create());
             })

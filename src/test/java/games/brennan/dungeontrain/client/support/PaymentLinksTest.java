@@ -181,14 +181,15 @@ class PaymentLinksTest {
 
     @Test
     void everyShippedModLanguageMapsToAStripeLocale() {
-        // The 21 lang files under assets/dungeontrain/lang — none should silently fall back.
+        // The 22 lang files under assets/dungeontrain/lang — none should silently fall back, except
+        // Ukrainian: Stripe has no `uk`, so the locale parameter is deliberately omitted (null).
         String[][] expected = {
             {"de_de", "de"}, {"en_us", "en"}, {"es_es", "es"}, {"es_mx", "es-419"},
             {"fil_ph", "fil"}, {"fr_fr", "fr"}, {"id_id", "id"}, {"it_it", "it"},
             {"ja_jp", "ja"}, {"ko_kr", "ko"}, {"ms_my", "ms"}, {"nl_nl", "nl"},
             {"pl_pl", "pl"}, {"pt_br", "pt-BR"}, {"pt_pt", "pt"}, {"ro_ro", "ro"},
             {"ru_ru", "ru"},
-            {"th_th", "th"}, {"vi_vn", "vi"}, {"zh_cn", "zh"}, {"zh_tw", "zh-TW"},
+            {"th_th", "th"}, {"uk_ua", null}, {"vi_vn", "vi"}, {"zh_cn", "zh"}, {"zh_tw", "zh-TW"},
         };
         for (String[] pair : expected) {
             assertEquals(pair[1], PaymentLinks.stripeLocale(pair[0]), "locale " + pair[0]);

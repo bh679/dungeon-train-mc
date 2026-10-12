@@ -155,6 +155,16 @@ jobs:
               cp release-notes.md curseforge-notes.md
             fi
           fi
+          # Every published changelog points at the update page on our website: its title heading
+          # opens this release there (#vX.Y.Z — a cascade tick's tag snaps down to the release whose
+          # notes it carries) and it ends with "Read more" (scripts/release-notes/link-changelog.py). The
+          # plain copy feeds update.json — that text is read inside Minecraft, whose version screen
+          # has its own update-page button.
+          python3 scripts/release-notes/link-changelog.py --strip < curseforge-notes.md > curseforge-notes.plain.md
+          for f in release-notes.md curseforge-notes.md; do
+            python3 scripts/release-notes/link-changelog.py --release "$RELEASE_TAG" < "$f" > "$f.linked"
+            mv "$f.linked" "$f"
+          done
           echo "::group::CurseForge mod changelog"; cat curseforge-notes.md; echo "::endgroup::"
 
           MC_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
@@ -267,6 +277,7 @@ jobs:
             platform(required)
             exposure(required)
             exposure-polaroid(required)
+            vista_tv(required)
             wwoo(required)
             cristel-lib(required)
             biomes-o-plenty(required)
@@ -279,7 +290,7 @@ jobs:
             # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
             # cannot resolve a non-public slug — which is why it was re-bundled in 0.909.x.)
           # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix (+ stream-detect, dpi-bypass-detect,
-          # pigman-villagers, lost-city-terrain-fit-wwoo-and-vanilla) are hybrid siblings: also jarJar'd in
+          # pigman-villagers, lost-city-terrain-fit-wwoo-and-vanilla, edible-backpacks) are hybrid siblings: also jarJar'd in
           # the DT jar (Modrinth/manual installs), but declared required here so the CurseForge
           # app installs them from their own pages. NeoForge drops the nested copy when the
           # top-level one is present. (No comments inside the list — check-relations.py parses it.)
@@ -291,6 +302,7 @@ jobs:
             ender-chest-persistence(required)
             trade-everything(required)
             keep-trim(required)
+            edible-backpacks(required)
             dungeon-train-backup(required)
             sable-fence-trapdoor-fix(required)
             stream-detect(required)
@@ -308,6 +320,7 @@ jobs:
             platform(required)
             exposure(required)
             exposure-polaroid(required)
+            vista(required)
             william-wythers-overhauled-overworld(required)
             cristel-lib(required)
             biomes-o-plenty(required)
@@ -470,7 +483,7 @@ jobs:
       # having been created. Commits to main with [skip ci]; same rebase-retry as
       # the changelog-mark step since a cascade tick could push in between.
       #
-      # The per-version changelog text is taken from curseforge-notes.md — the SAME
+      # The per-version changelog text is taken from curseforge-notes.plain.md — the SAME
       # notes composed above for this published file (operator changelog input, or
       # the carried-forward last-released curated notes, or the generated notes).
       # Feeding update.json from that one source keeps the in-game notifier's notes
@@ -485,8 +498,8 @@ jobs:
           set -euo pipefail
           MC_VERSION=$(grep '^minecraft_version=' gradle.properties | cut -d= -f2)
           ARGS=(--version "${RELEASE_TAG#v}" --mc "$MC_VERSION")
-          if [ -s curseforge-notes.md ]; then
-            ARGS+=(--changelog "$(cat curseforge-notes.md)")
+          if [ -s curseforge-notes.plain.md ]; then
+            ARGS+=(--changelog "$(cat curseforge-notes.plain.md)")
           fi
           python3 scripts/release-notes/build-update-json.py "${ARGS[@]}"
           if git diff --quiet -- update.json; then
@@ -542,10 +555,22 @@ jobs:
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
           REPO: ${{ github.repository }}
           PRERELEASE: ${{ steps.release_type.outputs.prerelease }}
-          MODRINTH_VERSION: ${{ steps.mcpublish.outputs.modrinth-version }}
-          CURSEFORGE_VERSION: ${{ steps.mcpublish.outputs.curseforge-version }}
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/notify-discord.sh
+
+      # A release that ships a major changelog entry (major: true) also posts it to #highlights as
+      # a plain markdown message (# title, description, photo). Reads the entries "Mark changelog entries released" stamped
+      # with this tag in the local checkout — so it works even if that step lost its push race.
+      # Real releases only, and only when Discord is being notified at all. Skips (green) when
+      # the secret is unset. Re-post or preview one entry by hand:
+      #   DRY_RUN=1 python3 scripts/release-notes/notify-highlights.py --tag vX --entry <id>
+      - name: Post major release to #highlights
+        if: ${{ always() && env.RELEASE_TAG != '' && inputs.notify_discord && inputs.auto == false && inputs.test_release == false }}
+        continue-on-error: true
+        env:
+          DISCORD_HIGHLIGHTS_WEBHOOK_URL: ${{ secrets.DISCORD_HIGHLIGHTS_WEBHOOK_URL }}
+          RELEASE_TAG: ${{ env.RELEASE_TAG }}
+        run: python3 scripts/release-notes/notify-highlights.py --tag "$RELEASE_TAG"
 
       # ---- Nothing below here is player-facing: it runs AFTER every publish so it can't delay one.
 
@@ -566,6 +591,22 @@ jobs:
           fi
           ./gradlew bundledFingerprints --no-daemon
           python3 scripts/relay/push-bundled-fingerprints.py
+
+      # Mirror every bundled template's builder credit (weights.json "builder") onto the relay, so the
+      # website's Credits Builders card matches the jar that just shipped (relay: template_credits).
+      # Upserts only, so a re-run is harmless. Never blocks a release: a relay hiccup here is a
+      # warning, and the next release (or scripts/relay/sync-template-credits.py by hand) catches up.
+      - name: Sync template builder credits to the relay
+        if: ${{ always() && env.RELEASE_TAG != '' }}
+        continue-on-error: true
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+        run: |
+          if [ -z "$DUNGEONTRAIN_RELAY_ADMIN_BASE" ]; then
+            echo "::warning::RELAY_ADMIN_BASE is not set — builder credits not synced."
+            exit 0
+          fi
+          python3 scripts/relay/sync-template-credits.py || echo "::warning::Some builder credits failed to sync — re-run scripts/relay/sync-template-credits.py."
 
       # A balancing release retires the current one-life leaderboard era on the relay and opens the
       # next at this version (relay: leaderboard-eras.js). Operator-dispatched only: the cascade never
@@ -592,18 +633,18 @@ jobs:
       # CurseForge. That is exactly how v0.692.0 shipped three-quarters of the way: two 500s, no
       # third attempt, success. This is the guard the MODPACK already had and the mod did not.
       #
-      # LAST on purpose: it polls the public listing for up to 30 min (the full 30 whenever
-      # CURSEFORGE_API_KEY is unset, since the cfwidget mirror can't prove absence). Nothing
-      # downstream needs it — the CurseForge modpack runs its own approval wait — so it only
-      # decides whether the run ends red, never when anything goes live.
+      # A missing file id means the upload itself failed — that turns this run red right here.
+      # Waiting for the file to appear on the public listing does NOT happen here any more: it used
+      # to poll for 30 min (every release spent ~30 of its ~34 min on it) and approval routinely
+      # takes longer than that. verify-curseforge-upload.yml does the wait in its own run, so a
+      # rejection shows up as a red run of that workflow, never as a slow release.
       #
       # Verification only — recovery is `reupload-curseforge.yml`, which re-publishes the tag's
       # existing artifact without burning a version number.
-      - name: Verify the CurseForge mod upload landed
+      - name: Dispatch CurseForge upload check
         if: ${{ always() && steps.publish_check.outputs.curseforge == 'true' }}
         env:
-          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
-          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
           CF_FILE_ID: ${{ steps.mcpublish.outputs.curseforge-version }}
         run: |
@@ -613,9 +654,7 @@ jobs:
             echo "::error::  gh workflow run reupload-curseforge.yml -f tag=$RELEASE_TAG"
             exit 1
           fi
-          python3 scripts/modpack/reconcile.py \
-            --verify "$RELEASE_TAG" \
-            --platform curseforge \
-            --curseforge-project "$CF_PROJECT" \
-            --timeout-minutes 30 \
-            --poll-seconds 60
+          echo "Dispatching the CurseForge listing check for $RELEASE_TAG (file $CF_FILE_ID)…"
+          gh workflow run verify-curseforge-upload.yml \
+            -f tag="$RELEASE_TAG" \
+            -f file_id="$CF_FILE_ID"

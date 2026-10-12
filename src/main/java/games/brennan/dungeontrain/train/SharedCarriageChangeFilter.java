@@ -14,8 +14,10 @@ import java.util.Set;
  *
  * <p>Two things are deliberately NOT build changes:</p>
  * <ol>
- *   <li><b>Breaking a loot container</b> — looting never fires the block-change hook at all, only
- *       breaking the block does, so this keeps ordinary looting from dirtying a carriage.</li>
+ *   <li><b>Breaking a loot container on a fresh carriage</b> — a carriage not yet on the relay is
+ *       published by its first upload, and looting a stock template (smashing its chest, picking up its
+ *       shulker) is not building it. On a carriage already on the relay it IS a change: the relay copy
+ *       must lose the container and its contents, or the next world to lease it gets them again.</li>
  *   <li><b>A transient-property flip</b> — a pressure plate powering, a door swinging, a lamp lighting.
  *       These describe runtime state, not what was placed. Without this rule a player standing in a
  *       doorway generates a relay POST every ~1.5&nbsp;s: production carriage 32 recorded 127 changes of
@@ -51,11 +53,12 @@ public final class SharedCarriageChangeFilter {
     private SharedCarriageChangeFilter() {}
 
     /**
-     * Whether {@code oldState → newState} should dirty the carriage it happened in. False for a broken
-     * loot container and for a change that only flips {@link #TRANSIENT_PROPERTIES} on the same block.
+     * Whether {@code oldState → newState} should dirty the carriage it happened in. False for a loot
+     * container broken on a carriage not yet on the relay ({@code onRelay} false) and for a change that
+     * only flips {@link #TRANSIENT_PROPERTIES} on the same block.
      */
-    public static boolean isBuildChange(BlockState oldState, BlockState newState) {
-        if (newState.isAir() && isLootContainer(oldState)) return false;
+    public static boolean isBuildChange(BlockState oldState, BlockState newState, boolean onRelay) {
+        if (!onRelay && newState.isAir() && isLootContainer(oldState)) return false;
         return !isTransientFlip(oldState, newState);
     }
 

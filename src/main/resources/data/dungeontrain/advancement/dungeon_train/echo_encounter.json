@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/im_not_alone",
+  "parent": "dungeontrain:dungeon_train/tab_others",
   "display": {
     "icon": { "id": "minecraft:echo_shard" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.echo_encounter.title" },

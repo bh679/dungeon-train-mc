@@ -2,6 +2,8 @@
   "id": "soren_the_keeper_of_the_door",
   "character": "Soren",
   "story": "The Keeper of the Door",
+  "after": "pip_aaro_the_waiting_child",
+  "weight": 20,
   "letters": [
     {
       "index": 1,

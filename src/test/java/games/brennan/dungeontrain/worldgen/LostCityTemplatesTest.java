@@ -213,6 +213,22 @@ class LostCityTemplatesTest {
         }
     }
 
+    /**
+     * The data saving a block entity from the world always records and nothing more — an empty barrel, a lectern
+     * with no book, a banner and its pattern: no items, no loot table, no command. What a building saved from the
+     * Buildings editor carries on its furniture; generated templates have none.
+     */
+    private static boolean inert(CompoundTag nbt) {
+        for (String key : nbt.getAllKeys()) {
+            switch (key) {
+                case "id", "patterns" -> { }
+                case "Items" -> { if (!nbt.getList("Items", Tag.TAG_COMPOUND).isEmpty()) return false; }
+                default -> { return false; }
+            }
+        }
+        return true;
+    }
+
     @Test
     @DisplayName("block-entity NBT only on spawners and loot chests, loot from vanilla chest tables, no structure blocks")
     void blockEntitiesOnlyForSpawnersAndLoot() throws IOException {
@@ -230,7 +246,7 @@ class LostCityTemplatesTest {
                 } else if (state.is(Blocks.CHEST)) {
                     chests++;
                     assertTrue(nbt.getString("LootTable").startsWith("minecraft:chests/"), t.name() + " chest loot " + nbt.getString("LootTable"));
-                } else {
+                } else if (!inert(nbt)) {
                     throw new AssertionError(t.name() + ": NBT on " + state.getBlock() + " at " + b.getList("pos", Tag.TAG_INT));
                 }
             }

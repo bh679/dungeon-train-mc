@@ -2,14 +2,18 @@
   "required": true,
   "minVersion": "0.8",
   "package": "games.brennan.dungeontrain.mixin",
+  "plugin": "games.brennan.dungeontrain.mixin.ThirdPartyMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
+    "betterend.BetterEndBiomeIslandPerThreadMixin",
     "betterend.BetterEndChorusCosmeticMixin",
     "betterend.BetterEndDebugItemsMixin",
     "betterend.BetterEndDirPerThreadMixin",
     "betterend.BetterEndDirectionsPerThreadMixin",
+    "betterend.BetterEndGlowshroomPerThreadMixin",
     "betterend.BetterEndHorizontalPerThreadMixin",
+    "betterend.BetterEndOreLayerPerThreadMixin",
     "betterend.BetterEndStaticShuffleMixin",
     "betterend.BetterEndWallScatterShuffleMixin",
     "wover.WoverBiomePickerOrderMixin",
@@ -23,6 +27,6 @@
   ],
   "server": [],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   }
 }

@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/memory_lane",
+  "display": {
+    "icon": {
+      "id": "exposure:photograph"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.keepsake.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.keepsake.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "album": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "album_photo"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "album"
+    ]
+  ]
+}

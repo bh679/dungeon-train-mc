@@ -36,9 +36,14 @@ player-visible counterparts are the [manifests](#shipped-manifests) and
   [Handing work to a translator](#workflows)), and
 - three GENERATED count fields — `total_keys` / `ai_authored` / `ai_unreviewed` —
   summarizing this directory's sidecars, which drive the **blue AI-fraction ring**
-  around that logo (filled circumference = `ai_unreviewed / total_keys`). Every
+  around that logo (filled circumference = `1 − (total_keys − ai_unreviewed) / counted_keys`,
+  never below 0). Every
   `stamp-provenance.py` run refreshes them, and `check-provenance.py` **hard-fails**
-  (exit 1, in CI) when they drift from the sidecars — never hand-edit them.
+  (exit 1, in CI) when they drift from the sidecars — never hand-edit them. A fourth,
+  `counted_keys`, is `total_keys` less the editor/creator-tool lines listed in
+  `assets/dungeontrain/translation_editor_keys.json`: the denominator of every
+  "% translated" a player sees (Credits, the website). A translator's own count still
+  includes the editor lines they did, so their share can pass 100%.
 
 ## Schema
 
@@ -210,9 +215,36 @@ python3 scripts/localization/stamp-narrative-provenance.py --sync --author 'Opus
 # a translator reviewed a book:
 python3 scripts/localization/stamp-narrative-provenance.py --locale zh_cn \
     --author 老本願 --reviewer 老本願 --files random_books/deathnote
+# a translator wrote some fields of a book over another author's body:
+python3 scripts/localization/stamp-narrative-provenance.py --locale uk_ua \
+    --author MrMultibite --reviewer MrMultibite \
+    --files random_books/deathnote --fields title author
 # coverage report:
 python3 scripts/localization/check-narrative-provenance.py --report
 ```
+
+**Per-field credit.** A book is usually one hand's work, but not always: a translator can write
+its title and a few passages over a machine-written body. An entry may then carry an optional
+`fields` map — `{"author": "Fable 5.1 (Claude)", "reviewer": "MrMultibite", "source_hash": "…",
+"fields": {"title": "MrMultibite", "variants.0": "MrMultibite"}}` — naming who wrote those
+dotted fields; the book-level `author` wrote the rest. `check-narrative-provenance.py` requires
+every name to be registered and every path to be a real translatable field of the book. The map
+collapses into a book-level author once one person wrote every field, and a whole-book
+`--author` restamp clears it. Only book sidecars may carry it.
+
+## Who gets the credit — rules the importer enforces
+
+`import-approved-translations.py` applies three rules, all pinned by its tests:
+
+- **A human's text is never credited to an AI.** An approved line whose text matches what a
+  model wrote makes the human its author (a line another *human* wrote stays theirs, and the
+  approver is stamped as its reviewer). Book fields follow the same rule, per field.
+- **A translator's newest submission is their best.** Of one person's approvals for a unit, the
+  newest *submission* wins, however the relay happened to order the reviews. Across different
+  translators the relay's rule still decides (an operator `picked` row, then the newest approval).
+- **`.other` lands on `.many`** for east-Slavic and Polish locales, whose grammar never selects
+  `other`, but only over a machine-written `.many`, and outranked by an approval written for
+  `.many` itself.
 
 ## Workflows
 

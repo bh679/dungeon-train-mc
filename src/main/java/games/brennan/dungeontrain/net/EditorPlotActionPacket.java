@@ -185,6 +185,7 @@ public record EditorPlotActionPacket(
                     case CONTENTS -> dispatchContents(sender, overworld, dims, packet);
                     case TRACKS -> dispatchTracks(sender, overworld, dims, packet);
                     case PORTALS -> dispatchPortals(sender, overworld, dims, packet);
+                    case BUILDINGS -> dispatchBuildings(sender, overworld, packet);
                     case ARCHITECTURE -> {} // no models
                 }
             } catch (Throwable t) {
@@ -368,6 +369,21 @@ public record EditorPlotActionPacket(
     }
 
     // ----- Portals (the pocket room) -----
+
+    private static void dispatchBuildings(ServerPlayer sender, ServerLevel overworld,
+                                          EditorPlotActionPacket packet) throws Exception {
+        String name = packet.modelName;
+        if (!games.brennan.dungeontrain.building.BuildingRegistry.contains(name)) return;
+        switch (packet.action) {
+            case SAVE -> SaveCommand.saveOrPrompt(sender, new Template.Building(name));
+            case RESET -> ResetCommand.resetToSavedPlayerVisible(sender, new Template.Building(name));
+            case CLEAR -> games.brennan.dungeontrain.editor.BuildingEditor.clearBlocks(overworld, name);
+            case ENTER_INSIDE -> games.brennan.dungeontrain.editor.BuildingEditor.walkTo(sender, overworld, name, true);
+            case GO_HERE -> games.brennan.dungeontrain.editor.BuildingEditor.walkTo(sender, overworld, name, false);
+        }
+        LOGGER.info("[DungeonTrain] EditorPlotAction: {} {} building '{}'",
+            sender.getName().getString(), packet.action, name);
+    }
 
     private static void dispatchPortals(ServerPlayer sender, ServerLevel overworld, CarriageDims dims,
                                         EditorPlotActionPacket packet) throws Exception {

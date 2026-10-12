@@ -31,7 +31,7 @@ final class EditorCategoryTest {
         // part plot). A PARTS constant here would add a category-bar button and a
         // /dt editor parts token that stamp nothing. The UI-facing vocabulary that DOES include
         // parts is PlotCategory.
-        assertEquals(6, EditorCategory.values().length);
+        assertEquals(7, EditorCategory.values().length);
         assertEquals(EditorCategory.WHOLE, EditorCategory.values()[0], "Whole is first in the row");
         assertFalse(EditorCategory.fromId("parts").isPresent(),
             "PARTS belongs to PlotCategory, not EditorCategory");

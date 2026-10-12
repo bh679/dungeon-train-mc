@@ -35,7 +35,10 @@ class LeaderboardCategoryTest {
         "deathnotes_written", "deathnotes_fought", "deathnotes_people",
         "lovenotes_written", "lovenotes_received", "lovenotes_people", "lovenotes_admirers",
         "book_votes", "translations", "donations", "donations_single",
-        "builder_time", "builds_approved", "templates_built", "books_praised");
+        "builder_time", "builds_approved", "templates_built", "books_praised",
+        "photos_taken", "photos_tributed", "photo_tributes_received", "tribute_emeralds",
+        "tribute_biggest", "photos_passengers", "photos_hostile", "photos_animals",
+        "photos_taken_run", "photos_tributed_run", "photos_passengers_run", "photos_hostile_run", "photos_animals_run");
 
     @Test
     @DisplayName("every category id matches one the relay serves, and none is missing")
@@ -138,5 +141,16 @@ class LeaderboardCategoryTest {
         assertEquals("2h 0m", LeaderboardCategory.PLAYTIME_RUN.render(7200));
         assertEquals("$120", LeaderboardCategory.DONATIONS.render(120));
         assertEquals("8400m", LeaderboardCategory.DISTANCE_RUN.render(8400));
+    }
+
+    @Test
+    @DisplayName("photo boards pair up as All Lives / One Life; the all-lives-only ones say no span")
+    void photoBoardPairs() {
+        assertEquals("Most Photos Taken, One Life", LeaderboardCategory.PHOTOS_TAKEN_RUN.title());
+        assertEquals("Most Photos Taken, All Lives", LeaderboardCategory.PHOTOS_TAKEN.title());
+        assertEquals(LeaderboardCategory.PHOTOS_TAKEN.headerKey(), LeaderboardCategory.PHOTOS_TAKEN_RUN.headerKey());
+        assertEquals("Most Emeralds Tributed", LeaderboardCategory.TRIBUTE_EMERALDS.title());
+        assertEquals("Most Tributed Photographer", LeaderboardCategory.PHOTO_TRIBUTES_RECEIVED.title());
+        assertEquals("Most Expensive Tribute", LeaderboardCategory.TRIBUTE_BIGGEST.title());
     }
 }

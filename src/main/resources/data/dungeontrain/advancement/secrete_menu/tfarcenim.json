@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:secrete_menu/reversed_nether",
+  "display": {
+    "icon": {
+      "id": "minecraft:grass_block"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.secrete_menu.tfarcenim.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.secrete_menu.tfarcenim.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "reached": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "tfarcenim"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "reached"
+    ]
+  ]
+}

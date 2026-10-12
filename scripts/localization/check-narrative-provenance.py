@@ -56,7 +56,9 @@ def check_locale(locale: str, narrative_dir: Path, prov_dir: Path) -> list[str]:
     except (json.JSONDecodeError, ValueError) as exc:
         return [f"{locale}: unparseable sidecar — {exc}"]
 
-    errors = [f"{locale}: {err}" for err in provenance_io.validate_entries(prov)]
+    errors = [f"{locale}: {err}"
+              for err in provenance_io.validate_entries(prov, allow_fields=True)]
+    errors += check_field_paths(locale, narrative_dir, prov)
 
     missing = [b for b in books if b not in prov]
     orphaned = [b for b in prov if b not in books]
@@ -78,6 +80,29 @@ def check_locale(locale: str, narrative_dir: Path, prov_dir: Path) -> list[str]:
                 f"{locale}: book order diverges from the locale dir at index {i} "
                 f"(books: {book_keys[i]!r}, provenance: {prov_keys[i]!r}) — {FIX_HINT}"
             )
+    return errors
+
+
+def check_field_paths(locale: str, narrative_dir: Path, prov: dict) -> list[str]:
+    """Errors for a per-field author naming a field its book does not have.
+
+    A stale path would credit somebody for prose that is not in the book — or, after a
+    re-pagination, for the passage that moved into its slot.
+    """
+    errors: list[str] = []
+    for book, entry in prov.items():
+        fields = entry.get(provenance_io.FIELDS_KEY) if isinstance(entry, dict) else None
+        if not isinstance(fields, dict):
+            continue
+        path = narrative_dir / locale / f"{book}.json"
+        try:
+            real = set(provenance_io.book_string_fields(json.loads(path.read_text(encoding="utf-8"))))
+        except (OSError, json.JSONDecodeError):
+            continue  # a missing/unreadable book is reported by the book-set check
+        for field in fields:
+            if field not in real:
+                errors.append(f"{locale}: {book}: {provenance_io.FIELDS_KEY} names {field!r}, "
+                              "which is not a translatable field of that book")
     return errors
 
 
@@ -104,6 +129,13 @@ def check_registry(locale: str, prov: dict, authors: dict[str, str]) -> list[str
                 errors.append(
                     f"{locale}: {book}: reviewer {reviewer!r} is registered as "
                     f"{authors[reviewer]!r} — only a human can human-review"
+                )
+        fields = entry.get(provenance_io.FIELDS_KEY)
+        for field, name in (fields.items() if isinstance(fields, dict) else ()):
+            if isinstance(name, str) and name.strip() and name not in authors:
+                errors.append(
+                    f"{locale}: {book}: field {field!r} author {name!r} is not in "
+                    f"localization/authors.json — register the name first"
                 )
     return errors
 

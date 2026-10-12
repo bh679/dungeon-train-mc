@@ -289,6 +289,10 @@
     {
       "structure": "dungeontrain:lost_city/snapped_tower",
       "weight": 4
+    },
+    {
+      "structure": "dungeontrain:lost_city/player_building",
+      "weight": 6
     }
   ],
   "placement": {

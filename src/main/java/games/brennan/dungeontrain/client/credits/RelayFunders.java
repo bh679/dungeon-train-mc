@@ -55,13 +55,18 @@ public final class RelayFunders {
     /**
      * One funder: name, whole-dollar AUD total, and the two independent self-edit flags. {@code rank}
      * is the 1-based position on the relay's list, kept through drops and in the cache so a
-     * {@link Standing} matches its row.
+     * {@link Standing} matches its row. {@code house} is the developer's own row — what he has spent
+     * that community support has not yet covered — captioned as such on the card.
      */
-    public record Funder(String name, int amountAud, boolean anonymous, boolean amountHidden, int rank) {
+    public record Funder(String name, int amountAud, boolean anonymous, boolean amountHidden, int rank, boolean house) {
         public Funder {
             name = name == null ? "" : name.trim();
             amountAud = Math.max(0, amountAud);
             rank = Math.max(0, rank);
+        }
+
+        public Funder(String name, int amountAud, boolean anonymous, boolean amountHidden, int rank) {
+            this(name, amountAud, anonymous, amountHidden, rank, false);
         }
 
         public Funder(String name, int amountAud) {
@@ -160,7 +165,7 @@ public final class RelayFunders {
     }
 
     /**
-     * {@code {"rows":[{"name","amountAud"|null,"anonymous"?,"amountHidden"?}]}} to funders in the
+     * {@code {"rows":[{"name","amountAud"|null,"anonymous"?,"amountHidden"?,"house"?}]}} to funders in the
      * relay's order. A row flagged {@code anonymous} is kept unnamed; one flagged {@code amountHidden}
      * (or with a null amount) is kept figureless. A row with neither a name nor a flag is nobody and
      * is dropped, as is a malformed body. Each funder keeps its 1-based position ({@code rank}).
@@ -181,7 +186,8 @@ public final class RelayFunders {
                 JsonElement amount = o.get("amountAud");
                 boolean amountHidden = flag(o, "amountHidden") || amount == null || amount.isJsonNull();
                 int rank = o.has("rank") ? num(o.get("rank")) : position;
-                Funder f = new Funder(anonymous ? "" : str(o.get("name")), amountHidden ? 0 : num(amount), anonymous, amountHidden, rank);
+                Funder f = new Funder(anonymous ? "" : str(o.get("name")), amountHidden ? 0 : num(amount), anonymous,
+                        amountHidden, rank, flag(o, "house"));
                 if (anonymous || !f.name().isEmpty()) out.add(f);
             }
         } catch (Exception e) {
@@ -235,6 +241,7 @@ public final class RelayFunders {
                 if (f.amountHidden()) o.addProperty("amountHidden", true);
                 else o.addProperty("amountAud", f.amountAud());
                 if (f.anonymous()) o.addProperty("anonymous", true);
+                if (f.house()) o.addProperty("house", true);
                 o.addProperty("rank", f.rank());
                 rows.add(o);
             }

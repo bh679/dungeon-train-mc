@@ -26,6 +26,7 @@ public final class EditorScreenLang {
     public static final String TAB_CONTENTS = PREFIX + "tab.contents";
     public static final String TAB_TRACKS = PREFIX + "tab.tracks";
     public static final String TAB_DIMENSIONS = PREFIX + "tab.dimensions";
+    public static final String TAB_BUILDINGS = PREFIX + "tab.buildings";
 
     /**
      * The Nav tab: the red button under the picked area, its greyed form when already there, the

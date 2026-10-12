@@ -23,11 +23,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * The Big Lost City templates a Lost City structure can actually place: every template in the
@@ -87,7 +89,7 @@ public final class LostCityTemplateIds {
             Registry<StructureTemplatePool> pools = access.registryOrThrow(Registries.TEMPLATE_POOL);
             Resolved last = resolved;
             if (last != null && last.structures() == structures && last.pools() == pools) return last.ids();
-            List<ResourceLocation> ids = List.copyOf(new TreeSet<>(collect(startPools(structures), id -> view(pools, id))));
+            List<ResourceLocation> ids = List.copyOf(new TreeSet<>(collect(startPools(structures, id -> true), id -> view(pools, id))));
             resolved = new Resolved(structures, pools, ids);
             return ids;
         } catch (Throwable t) {
@@ -96,10 +98,36 @@ public final class LostCityTemplateIds {
         }
     }
 
-    private static List<ResourceLocation> startPools(Registry<Structure> structures) {
+    /**
+     * The templates only the {@link #startable} structures {@code structure} accepts can place, sorted — one
+     * building's pieces, or the WWOO stretch's pick. Not memoised: asked once per pre-load. Empty on failure.
+     */
+    public static List<ResourceLocation> placeable(RegistryAccess access, Predicate<ResourceLocation> structure) {
+        try {
+            Registry<Structure> structures = access.registryOrThrow(Registries.STRUCTURE);
+            Registry<StructureTemplatePool> pools = access.registryOrThrow(Registries.TEMPLATE_POOL);
+            return List.copyOf(new TreeSet<>(collect(startPools(structures, structure), id -> view(pools, id))));
+        } catch (Throwable t) {
+            LOGGER.error("[DungeonTrain] Lost City template ids: failed to walk the structure registry", t);
+            return List.of();
+        }
+    }
+
+    /** {@code ids} with those also in {@code first} moved to the front, in {@code first}'s order; no duplicates, nothing added. */
+    public static List<ResourceLocation> ordered(List<ResourceLocation> ids, Collection<ResourceLocation> first) {
+        Set<ResourceLocation> all = new HashSet<>(ids);
+        Set<ResourceLocation> out = new LinkedHashSet<>();
+        for (ResourceLocation id : first) {
+            if (all.contains(id)) out.add(id);
+        }
+        out.addAll(ids);
+        return List.copyOf(out);
+    }
+
+    private static List<ResourceLocation> startPools(Registry<Structure> structures, Predicate<ResourceLocation> structure) {
         List<ResourceLocation> starts = new ArrayList<>();
         for (Map.Entry<ResourceKey<Structure>, Structure> e : structures.entrySet()) {
-            if (!startable(e.getKey().location())) continue;
+            if (!startable(e.getKey().location()) || !structure.test(e.getKey().location())) continue;
             if (!(e.getValue() instanceof JigsawStructure jigsaw)) continue;
             ((JigsawStructureAccessor) (Object) jigsaw).dungeontrain$startPool().unwrapKey()
                     .ifPresent(key -> starts.add(key.location()));

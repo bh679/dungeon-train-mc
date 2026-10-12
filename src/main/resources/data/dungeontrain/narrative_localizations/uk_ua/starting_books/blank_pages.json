@@ -1,0 +1,10 @@
+{
+  "id": "blank_pages",
+  "title": "Пусте Підземелля",
+  "author": "Бреннан Гаттон",
+  "generation": 0,
+  "weight": 1,
+  "variants": [
+    "Вітаю в Потязі-Підземеллі. \n\nЩо таке потяг? \n\nЧому ви тут? \n\nЩо ви маєте робити?\n\nЦе все гарні питання\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\nЦю сторінку спеціально було залишено пустою.\n%PAGE%\n\n%PAGE%\n\n%PAGE%\nА цю ні.\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\nЦя просто не пуста. \n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\nЩо ви робите в нескінченному потязі?\n%PAGE%\n\n%PAGE%\n\n%PAGE%\nЧому ви на цьому потязі?\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\n\n%PAGE%\nЩо таке цей потяг?"
+  ]
+}

@@ -16,9 +16,10 @@ import java.util.List;
 
 /**
  * Server → client: the answer to a {@link BuilderSubmitHintsRequestPacket} — which extra questions the
- * build earns, and whether this player may edit its answers (its owner, or the developer).
+ * build earns, whether this player may edit its answers (its owner, or the developer), and whether
+ * they may review it (the developer, on a build that is not their own).
  */
-public record BuilderSubmitHintsPacket(int relayId, SubmitHints.Hints hints, boolean canEdit)
+public record BuilderSubmitHintsPacket(int relayId, SubmitHints.Hints hints, boolean canEdit, boolean canReview)
         implements CustomPacketPayload {
 
     public BuilderSubmitHintsPacket {
@@ -39,9 +40,10 @@ public record BuilderSubmitHintsPacket(int relayId, SubmitHints.Hints hints, boo
                 writeFound(buf, packet.hints.redstone());
                 writeFound(buf, packet.hints.loot());
                 buf.writeBoolean(packet.canEdit);
+                buf.writeBoolean(packet.canReview);
             },
             buf -> new BuilderSubmitHintsPacket(buf.readVarInt(),
-                new SubmitHints.Hints(readFound(buf), readFound(buf)), buf.readBoolean())
+                new SubmitHints.Hints(readFound(buf), readFound(buf)), buf.readBoolean(), buf.readBoolean())
         );
 
     private static void writeFound(FriendlyByteBuf buf, List<SubmitHints.Found> found) {
@@ -75,6 +77,7 @@ public record BuilderSubmitHintsPacket(int relayId, SubmitHints.Hints hints, boo
     }
 
     public static void handle(BuilderSubmitHintsPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> BuilderSubmitHintsRequests.accept(packet.relayId, packet.hints, packet.canEdit));
+        ctx.enqueueWork(() -> BuilderSubmitHintsRequests.accept(packet.relayId, packet.hints, packet.canEdit,
+                packet.canReview));
     }
 }

@@ -86,7 +86,7 @@ final class DisabledModContentTest {
     }
 
     @Test
-    @DisplayName("Exposure's camera, film and lightroom are hidden; the instant camera and photographs are kept")
+    @DisplayName("Exposure's camera, film, lightroom and the instant slides are hidden; the instant camera and photographs are kept")
     void exposureFilmWorkflowHidden() {
         for (String hidden : new String[] {"camera", "black_and_white_film", "color_film",
                 "high_sensitivity_black_and_white_film", "high_sensitivity_color_film",
@@ -98,7 +98,22 @@ final class DisabledModContentTest {
         assertFalse(DisabledModContent.isDisabledItem(id("exposure:photograph_frame"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("exposure:camera_stand"), false));
         assertFalse(DisabledModContent.isDisabledItem(id("exposure_polaroid:instant_camera"), false));
-        assertFalse(DisabledModContent.isDisabledItem(id("exposure_polaroid:instant_color_slide"), false));
+        for (String slide : new String[] {"instant_color_slide", "instant_black_and_white_slide",
+                "high_sensitivity_instant_color_slide", "high_sensitivity_instant_black_and_white_slide"}) {
+            assertTrue(DisabledModContent.isDisabledItem(id("exposure_polaroid:" + slide), false), slide);
+        }
+    }
+
+    @Test
+    @DisplayName("Vista's viewfinder, wave gate and cassettes are hidden; the TV, mirror, picture tape and DT's live cassette stay")
+    void vistaContentHidden() {
+        for (String hidden : new String[] {"viewfinder", "wave_gate", "cassette", "hollow_cassette"}) {
+            assertTrue(DisabledModContent.isDisabledItem(id("vista:" + hidden), false), hidden);
+        }
+        for (String kept : new String[] {"vista:television", "vista:mirror", "vista:picture_tape",
+                "vista:music_disc_sojourn", "vista:crystalline", "dungeontrain:live_cassette"}) {
+            assertFalse(DisabledModContent.isDisabledItem(id(kept), false), kept);
+        }
     }
 
     @Test

@@ -105,7 +105,7 @@ final class BuilderProfileActionPacketTest {
         for (SubmitHints.Hints h : new SubmitHints.Hints[] {SubmitHints.Hints.NONE,
                 new SubmitHints.Hints(List.of(repeater), List.of()),
                 new SubmitHints.Hints(List.of(repeater), List.of(chest))}) {
-            BuilderSubmitHintsPacket original = new BuilderSubmitHintsPacket(99, h, h.hasLoot());
+            BuilderSubmitHintsPacket original = new BuilderSubmitHintsPacket(99, h, h.hasLoot(), h.hasRedstone());
             FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
             try {
                 BuilderSubmitHintsPacket.STREAM_CODEC.encode(buf, original);

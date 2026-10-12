@@ -224,7 +224,7 @@ public final class EditorStampQueue {
     private static void say(ServerLevel overworld, Component text, ChatFormatting colour) {
         Component line = text.copy().withStyle(colour);
         for (ServerPlayer player : overworld.players()) {
-            if (EditorLayout.isAtPlotHeight(player.getBlockY())) {
+            if (EditorStampedCategoryState.atPlotHeight(player.getBlockY())) {
                 player.displayClientMessage(line, true);
             }
         }

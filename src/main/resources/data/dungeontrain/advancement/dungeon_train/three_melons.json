@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:dungeon_train/last_melon",
+  "display": {
+    "icon": {
+      "id": "minecraft:melon"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.three_melons.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.three_melons.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "challenge": {
+      "trigger": "dungeontrain:code_granted",
+      "conditions": {
+        "threshold": 1000
+      }
+    }
+  },
+  "requirements": [
+    [
+      "challenge"
+    ]
+  ]
+}

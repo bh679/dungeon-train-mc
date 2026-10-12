@@ -109,8 +109,9 @@ public final class EditorMirror {
      * {@link BlockState#mirror}, vertical via {@link #verticalFlip}.
      */
     public static BlockState reflect(BlockState s, boolean flipX, boolean flipY, boolean flipZ) {
-        if (flipX) s = s.mirror(Mirror.FRONT_BACK); // X: EAST ↔ WEST
-        if (flipZ) s = s.mirror(Mirror.LEFT_RIGHT);  // Z: NORTH ↔ SOUTH
+        // PaintingPass.mirror = BlockState.mirror, plus the facing of a Fast Paintings painting.
+        if (flipX) s = PaintingPass.mirror(s, Mirror.FRONT_BACK); // X: EAST ↔ WEST
+        if (flipZ) s = PaintingPass.mirror(s, Mirror.LEFT_RIGHT);  // Z: NORTH ↔ SOUTH
         if (flipY) s = verticalFlip(s);
         return s;
     }
@@ -184,7 +185,21 @@ public final class EditorMirror {
      * remapped via {@link #mirrorDirection}, preserving {@link VariantRotation.Mode}.
      */
     public static VariantRotation reflectRotation(VariantRotation r, boolean flipX, boolean flipY, boolean flipZ) {
+        return reflectRotation(r, null, flipX, flipY, flipZ);
+    }
+
+    /**
+     * {@link #reflectRotation(VariantRotation, boolean, boolean, boolean)} aware of
+     * the candidate's block: a {@link RotationApplier#isCompass} block's mask holds
+     * compass slots, which are mirrored the way {@link #reflect} mirrors its
+     * {@code ROTATION_16}.
+     */
+    public static VariantRotation reflectRotation(VariantRotation r, BlockState state,
+                                                  boolean flipX, boolean flipY, boolean flipZ) {
         if (r.dirMask() == 0) return r;
+        if (state != null && RotationApplier.isCompass(state)) {
+            return new VariantRotation(r.mode(), RotationApplier.mirrorCompassMask(r.dirMask(), flipX, flipZ));
+        }
         int mask = 0;
         for (Direction d : r.directions()) {
             mask |= VariantRotation.maskOf(mirrorDirection(d, flipX, flipY, flipZ));
@@ -226,10 +241,10 @@ public final class EditorMirror {
             flipY ? MultiBlockFootprint.verticalFlip(reflect(v.state(), flipX, true, flipZ))
                 : reflect(v.state(), flipX, false, flipZ),
             v.blockEntityNbt(), v.weight(),
-            reflectRotation(v.rotation(), flipX, flipY, flipZ),
+            reflectRotation(v.rotation(), v.state(), flipX, flipY, flipZ),
             v.linkedLootPrefabId(), v.entityId(),
             reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active(), v.connect(),
-            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth());
+            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth(), v.painting(), v.hung());
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */

@@ -32,9 +32,12 @@ public final class BuilderSubmitHintsRequests {
     /** How long a submit waits for the server's answer before asking the general question alone. */
     static final long TIMEOUT_MS = 3000;
 
-    /** What the server said about one build. */
-    public record Answer(SubmitHints.Hints hints, boolean canEdit) {
-        public static final Answer UNKNOWN = new Answer(SubmitHints.Hints.NONE, false);
+    /**
+     * What the server said about one build: its extra questions, whether this player may edit its
+     * answers, and whether they may review it (the developer, on somebody else's build).
+     */
+    public record Answer(SubmitHints.Hints hints, boolean canEdit, boolean canReview) {
+        public static final Answer UNKNOWN = new Answer(SubmitHints.Hints.NONE, false, false);
     }
 
     /** One press waiting on its answer: what to do with it, and the screen it was pressed on. */
@@ -78,8 +81,8 @@ public final class BuilderSubmitHintsRequests {
     }
 
     /** The server's answer. Kept for {@link #peek}, and handed to a waiting press if there is one. */
-    public static void accept(int relayId, SubmitHints.Hints hints, boolean canEdit) {
-        Answer answer = new Answer(hints == null ? SubmitHints.Hints.NONE : hints, canEdit);
+    public static void accept(int relayId, SubmitHints.Hints hints, boolean canEdit, boolean canReview) {
+        Answer answer = new Answer(hints == null ? SubmitHints.Hints.NONE : hints, canEdit, canReview);
         KNOWN.put(relayId, answer);
         Pending pending = PENDING.remove(relayId);
         if (pending == null) return;

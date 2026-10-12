@@ -1,0 +1,20 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "games.brennan.dungeontrain.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "dungeontrain.refmap.json",
+  "mixins": [
+    "vista.TVBlockMixin",
+    "vista.TVBlockEntityMixin",
+    "vista.LivingEntityTvHeadMixin",
+    "vista.TVItemMixin"
+  ],
+  "client": [
+    "vista.TvItemRendererMixin"
+  ],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

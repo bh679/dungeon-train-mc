@@ -106,6 +106,7 @@ resolve() {
     # Present (Case A) they model the CurseForge-app install (nested copy skipped); absent they
     # model Modrinth/manual, loading from the nested copy.
     sd)       cached "bh679/streamdetect"            "$(prop streamdetect_version)" ;;
+    dmv)      cached "bh679/dtmodverify"             "$(prop dtmodverify_version)" ;;
     dbd)      cached "bh679/dpibypassdetect"         "$(prop dpibypassdetect_version)" ;;
     # Pigman Villagers — hybrid like sd/dbd: jarJar'd inside the DT jar; present (Case A) models the
     # CurseForge-app install (nested copy skipped in favour of the top-level one).
@@ -113,6 +114,9 @@ resolve() {
     # Lost City Terrain Fit — hybrid like pv: jarJar'd inside the DT jar; present (Case A) models the
     # CurseForge-app install (top-level copy wins), absent (Case G) the nested copy loads.
     lctf)     cached "bh679/lostcityterrainfit"      "$(prop lostcityterrainfit_version)" ;;
+    # Edible Backpacks — hybrid like lctf: jarJar'd inside the DT jar; present (Case A) models the
+    # CurseForge-app install (top-level copy wins), absent (Case G) the nested copy loads.
+    eb)       cached "bh679/ediblebackpacks"         "$(prop ediblebackpacks_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two

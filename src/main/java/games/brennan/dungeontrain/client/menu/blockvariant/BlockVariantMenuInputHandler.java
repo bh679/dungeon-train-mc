@@ -205,6 +205,24 @@ public final class BlockVariantMenuInputHandler {
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_GROWTH, variantId, local, hit.index(), "", next.toInt()));
             }
+            case PAINTING_OPTION -> {
+                // Same modal rules as GROWTH_OPTION: -2 closes, -1 is the popup's own margin.
+                int code = hit.secondary();
+                if (code == -1) return;
+                if (code < 0 || hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) {
+                    BlockVariantMenu.closeGrowthPopup();
+                    return;
+                }
+                BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
+                if (code / 10 != PaintingPopupLayout.SECTION_ON && code % 10 == PaintingPopupLayout.STEPPER_VALUE) return;
+                games.brennan.dungeontrain.editor.VariantPainting current = BlockVariantMenu.painting(e);
+                games.brennan.dungeontrain.editor.VariantPainting next = PaintingPopupLayout.apply(
+                    current, BlockVariantMenu.pictures(), code / 10, code % 10);
+                if (next.equals(current)) return;
+                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+                    BlockVariantEditPacket.Op.SET_PAINTING, variantId, local, hit.index(),
+                    next.isDefault() ? "" : next.id(), 0));
+            }
             case SPAN_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.
@@ -332,9 +350,9 @@ public final class BlockVariantMenuInputHandler {
                 BlockState parsed = BlockVariantMenu.parseState(e.stateString());
                 if (parsed == null) return;
                 int validMask = RotationApplier.validDirMask(parsed);
-                int currentMask = e.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
+                int currentMask = e.rotDirMask() & VariantRotation.ALL_SLOTS_MASK;
                 if (mode == VariantRotation.Mode.LOCK) {
-                    int nextMask = nextLockBit(currentMask, validMask);
+                    int nextMask = nextLockBit(currentMask, validMask, RotationApplier.slotCount(parsed));
                     if (nextMask == 0) return;
                     DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                         BlockVariantEditPacket.Op.SET_ROTATION_DIRS, variantId, local, hit.index(), "", nextMask));
@@ -356,14 +374,14 @@ public final class BlockVariantMenuInputHandler {
                     BlockVariantMenu.closeRotPopup();
                     return;
                 }
-                if (dirOrd < 0 || dirOrd >= 6) return; // backdrop click — ignore (popup stays open)
+                if (dirOrd < 0) return; // backdrop click — ignore (popup stays open)
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(row);
                 BlockState parsed = BlockVariantMenu.parseState(e.stateString());
-                if (parsed == null) return;
+                if (parsed == null || dirOrd >= RotationApplier.slotCount(parsed)) return;
                 int validMask = RotationApplier.validDirMask(parsed);
                 int bit = 1 << dirOrd;
                 if ((validMask & bit) == 0) return; // invalid for this block — no-op
-                int currentMask = e.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
+                int currentMask = e.rotDirMask() & VariantRotation.ALL_SLOTS_MASK;
                 int newMask = currentMask ^ bit;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_ROTATION_DIRS, variantId, local, row, "", newMask));
@@ -400,15 +418,16 @@ public final class BlockVariantMenuInputHandler {
     }
 
     /**
-     * Cycle to the next valid bit for LOCK mode. Walks Direction.ordinal()
-     * starting after the currently-set bit so repeated clicks move through
-     * the property's allowed directions in order. Wraps around.
+     * Cycle to the next valid bit for LOCK mode. Walks the mask's slots
+     * (Direction.ordinal(), or the 8 compass points for heads / banners /
+     * signs) starting after the currently-set bit so repeated clicks move
+     * through the property's allowed directions in order. Wraps around.
      */
-    private static int nextLockBit(int currentMask, int validMask) {
+    private static int nextLockBit(int currentMask, int validMask, int slotCount) {
         if (validMask == 0) return 0;
         int currentOrd = currentMask == 0 ? -1 : Integer.numberOfTrailingZeros(currentMask);
-        for (int step = 1; step <= 6; step++) {
-            int probe = (currentOrd + step) % 6;
+        for (int step = 1; step <= slotCount; step++) {
+            int probe = (currentOrd + step) % slotCount;
             int bit = 1 << probe;
             if ((validMask & bit) != 0) return bit;
         }

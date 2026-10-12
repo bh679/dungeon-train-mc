@@ -1,6 +1,92 @@
 {
   "entries": [
     {
+      "id": "release-launched-on-curseforge",
+      "version": "0.95.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Launched on CurseForge",
+      "summary": "Dungeon Train Minecraft Mod has offically launched on CurseForge! https://www.curseforge.com/minecraft/mc-mods/dungeon-train",
+      "highlights": [],
+      "date": "2026-05-03",
+      "released": true,
+      "released_in": "v0.95.0",
+      "released_at": "2026-05-03T03:31:07Z",
+      "major": true,
+      "description": "Dungeon Train Minecraft Mod has offically launched on CurseForge! [https://www.curseforge.com/minecraft/mc-mods/dungeon-train](https://www.curseforge.com/minecraft/mc-mods/dungeon-train)\n\nIts still early days, but already looking good! Give it a download, let me know what you think.\n\nLeave a review to boost it! (I dont know if it supports reviews so if not, favourite it I guess)\n\nThanks to Kat Flare for the screenshots!"
+    },
+    {
+      "id": "release-approved-on-modrinth",
+      "version": "0.147.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Approved on Modrinth",
+      "summary": "Modrinth App has been approved! \ud83e\udd73 https://modrinth.com/mod/dungeon-train",
+      "highlights": [],
+      "date": "2026-05-12",
+      "released": true,
+      "released_in": "v0.147.0",
+      "released_at": "2026-05-12T07:14:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "Modrinth App has been approved! \ud83e\udd73 [https://modrinth.com/mod/dungeon-train](https://modrinth.com/mod/dungeon-train)\n\nGo check it out, fav it, save it!, download it, play it."
+    },
+    {
+      "id": "release-todays-changes",
+      "version": "0.270.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Todays Changes",
+      "summary": "Train has random chance to spawn in nether / the end (only after death)\nNether train / end world gen improved\nDeath Screen Improved\nBookshelves now have chance to drop narrative content\nNew narrative content for end/nether\nNew advancements\nStarted development of new mob!",
+      "highlights": [],
+      "date": "2026-05-31",
+      "released": true,
+      "released_in": "v0.270.0",
+      "released_at": "2026-05-31T14:41:46Z",
+      "major": true,
+      "description": "- Train has random chance to spawn in nether / the end (only after death)\n- Nether train / end world gen improved\n- Death Screen Improved\n- Bookshelves now have chance to drop narrative content\n- New narrative content for end/nether\n- New advancements\n- Started development of new mob!"
+    },
+    {
+      "id": "release-adventurers-on-the-train",
+      "version": "0.276.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Adventurers on the Train",
+      "summary": "You can now find other adventurers on the train!",
+      "highlights": [],
+      "date": "2026-06-07",
+      "released": true,
+      "released_in": "v0.276.0",
+      "released_at": "2026-06-07T14:56:41Z",
+      "major": true,
+      "description": "You can now find other adventurers on the train!\n\nThey are exploring the train just like you, each with their own alignment, traits and personalities.\n\nFight them, or along side them?\n\nIt also comes with several new advancements.\n\nFeedback I want in discord - How is the frequence of their spawning? Too often? To few? I want to balance hwo full the train feels with passanges / adventuers.\n\n## Extra Notes\n\n- Ive been putting a lot of effort into bringing these players to life, and making them feel as real as possible. I have a big update with this coming next on how the players relate to other players, open to ideas on how to improve this."
+    },
+    {
+      "id": "release-social-playermobs",
+      "version": "0.281.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Social PlayerMobs & Player Echos",
+      "summary": "Player Mobs found on the train have a significantly more complex social structure now.\nRandom personal traits, Dynamic feeling towards players / other playermobs and complex behaviours to pair with these.\nYou may even come across an Echo of a past life.",
+      "highlights": [],
+      "date": "2026-06-12",
+      "released": true,
+      "released_in": "v0.281.0",
+      "released_at": "2026-06-12T12:59:26Z",
+      "major": true,
+      "description": "Player Mobs found on the train have a significantly more complex social structure now.\nRandom personal traits, Dynamic feeling towards players / other playermobs and complex behaviours to pair with these.\nYou may even come across an Echo of a past life.\n\n## Traits\n\n### Friendliness\n\nPlayerMobs have a scale of Unfriendly to Friendly.\nOn one end unfriendly players will go out of their way to avoid or attack other players.\nIn the middle they are massive and generally ignore other players\nOn the friendly end, they will greet, exchange gifts and want to interact with you.\n\n### Aggression\n\nScaling from shy to aggressive, this dictates how likely the player is to start or join fights.\nShy players will run away from fights, or avoid players entirely.\nMore aggressive players are more likely to attack a player unprovoked - even if they are feeling neutral to a player.\n\n## Feelings\n\nPlayerMobs have dynamic feelings towards other players / playermobs on the train.\nThese feeling will change based on interactions, and result in different behaviours.\nThey will join fights with players along side players they like, or find an excuse to attack a player they dont.\nStronger feelings will result in better gifts, even potentially giving up better items they have if they notice you need it. If they really love you, they may start to follow you on your journey through the train. You may also see a group of PlayerMobs travelling together.\n\nThings you can to do influence the feelings of a player mob will depend on their personality. Some like your to spam crouch face them, most like gifts and being defended in fights. More aggressive players may even like you if start a fight with someone else in front of them.\n\n## Player Echos\n\nPlayer Echos are PlayerMobs that spawn as a copy of your past life. The personality traits defined by your behaviour in that life. Perhaps spawning with echos of the friends you made in that lifetime too.\n\n*Shout out to Dan in discord for this idea!\n\n## Smaller Updates\n\n- PlayerMobs now will attempt to return to the train if knocked off\n- An array of new Advancements have been added relating to interactions with PlayerMobs\n- PlayerMob pathfinding has been improved. Particularly with doors.\n- More skins added\n- PlayerMobs can now make use of shields\n- PlayerMobs alignment adjusted in line with players.\n- Food is slightly more scarce - this will happen more in the future too (Thanks Wizard in discord for the suggestion)"
+    },
+    {
       "id": "cinematic-spawn-on-train",
       "version": "0.294.0",
       "type": "feat",
@@ -1994,6 +2080,23 @@
       "released_at": "2026-06-20T11:52:24Z"
     },
     {
+      "id": "release-big-week-update",
+      "version": "0.336.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Big Week Update",
+      "summary": "47 releases in the last week (v0.289 \u2192 v0.336). Watch the new trailer: https://www.youtube.com/watch?v=_-YP7r6wNO8",
+      "highlights": [],
+      "date": "2026-06-20",
+      "released": true,
+      "released_in": "v0.336.0",
+      "released_at": "2026-06-20T11:52:15Z",
+      "major": true,
+      "description": "47 releases in the last week (v0.289 \u2192 v0.336). Watch the new trailer: [https://www.youtube.com/watch?v=_-YP7r6wNO8](https://www.youtube.com/watch?v=_-YP7r6wNO8)\n\n## \ud83d\udc80 Death is now a story\n\nThe death screen is a 6-page run retrospective \u2014 what killed you, your deeds, cargo, lives & ledger. Your run's ride photos become the backdrop (saveable to a gallery), and it shows the advancements you earned that life.\n\n## \ud83c\udfc6 Advancements everywhere\n\nNew badges \u2014 biome diversity, distance & time milestones, own-Echo, \"The Great Beyond\", \"The Far Start\" + more. All advancements now persist across worlds. New Free Play mode: creative/cheat runs earn advancements live but don't touch your global stats.\n\n## \ud83c\udfac Cinematic arrival\n\nNew runs open on a cinematic spawn-on-train intro (replay with /dungeontrain cinematic), plus a TrainCinematographer spectator mode that auto-opens doors.\n\n## \ud83e\uddcd PlayerMobs get personal\n\nReincarnated \"Echo\" mobs wear the real skin of the player they came from \u2014 and these lives are cross-world and global, so you can meet echoes of other real players across the community. A loved PlayerMob follows you to your carriage down the train, and 30 new real-player skins (Dream SMP, MCC, YouTubers) push the pool to 68.\n\n## \ud83d\ude83 More to find\n\nToolsmith & leatherworker shops, new structures (houses, trees, cherry blossoms), 23 new lore-book entries, and escalating loot deeper into the run \u2014 plus gentler onboarding for new players.\n\n## \ud83d\udce6 Modpack overhaul\n\nSable physics \u2192 2.0.2. Now on by default: AppleSkin, FerriteCore, ModernFix, Advancement Plaques, AmbientSounds + more QoL.\n\n\ud83d\udcd6 Full write-up: [https://github.com/bh679/weekly-blog/wiki/Blog:-Dungeon-Train-Death-Gets-a-Story-and-the-Train-Learns-Some-Manners](https://github.com/bh679/weekly-blog/wiki/Blog:-Dungeon-Train-Death-Gets-a-Story-and-the-Train-Learns-Some-Manners)\n\n\u25b6\ufe0f Play it: Modrinth [https://modrinth.com/mod/dungeon-train](https://modrinth.com/mod/dungeon-train) \u00b7 CurseForge [https://www.curseforge.com/minecraft/mc-mods/dungeon-train](https://www.curseforge.com/minecraft/mc-mods/dungeon-train) \u00b7 Modpack [https://www.curseforge.com/minecraft/modpacks/dungeon-train](https://www.curseforge.com/minecraft/modpacks/dungeon-train)"
+    },
+    {
       "id": "death-screen-next-screen-label",
       "version": "0.337.0",
       "type": "fix",
@@ -2865,6 +2968,24 @@
       "released": true,
       "released_in": "v0.354.0",
       "released_at": "2026-06-23T12:31:19Z"
+    },
+    {
+      "id": "release-beyond-the-overworld",
+      "version": "0.354.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Beyond The OverWorld",
+      "summary": "The dungeon Train now travels into multiple dimensions in a single ride.",
+      "highlights": [],
+      "date": "2026-06-23",
+      "released": true,
+      "released_in": "v0.354.0",
+      "released_at": "2026-06-23T12:31:05Z",
+      "major": true,
+      "description": "The dungeon Train now travels into multiple dimensions in a single ride.\n\n(All screenshots taken from a single ride)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/beyond-the-overworld.jpg"
     },
     {
       "id": "quiet-rule-combine-repair",
@@ -4293,6 +4414,23 @@
       "released_at": "2026-07-08T12:20:41Z"
     },
     {
+      "id": "release-community-books",
+      "version": "0.399.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Community Books",
+      "summary": "Write a book. Someone else finds it.",
+      "highlights": [],
+      "date": "2026-07-08",
+      "released": true,
+      "released_in": "v0.399.0",
+      "released_at": "2026-07-08T12:20:21Z",
+      "major": true,
+      "description": "Sign a book and quill and it burns away, carried off into a library shared by every Dungeon Train world. Other players find it later in dungeon chests, credited to you, and you'll find theirs.\n\n- Every book is screened before anyone can find it\n- The more of the train's own books you read, the more community books turn up"
+    },
+    {
       "id": "shared-book-advancements",
       "version": "0.400.0",
       "type": "feat",
@@ -4862,6 +5000,23 @@
       "released_at": "2026-07-10T14:07:11Z"
     },
     {
+      "id": "release-death-notes",
+      "version": "0.424.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Death Notes",
+      "summary": "Curse another player's next life.",
+      "highlights": [],
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.424.0",
+      "released_at": "2026-07-10T14:06:51Z",
+      "major": true,
+      "description": "Title a book and quill **Death Note**, write another player's name on the first page, and sign it. It burns away in blue soul-fire. The curse seals the moment you next die: in that player's next run, your vengeful echo waits at the very carriage you fell at, and hunts them down."
+    },
+    {
       "id": "familiar-book-author-stats",
       "version": "0.425.0",
       "type": "feat",
@@ -4904,6 +5059,23 @@
       "released": true,
       "released_in": "v0.425.0",
       "released_at": "2026-07-10T14:57:57Z"
+    },
+    {
+      "id": "release-whats-new-june-23-july-10",
+      "version": "0.425.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "What's New (June 23 \u2013 July 10)",
+      "summary": "Highlights from the last few weeks:",
+      "highlights": [],
+      "date": "2026-07-10",
+      "released": true,
+      "released_in": "v0.425.0",
+      "released_at": "2026-07-10T14:57:48Z",
+      "major": true,
+      "description": "Highlights from the last few weeks:\n\n## Player-Written Books & Death Notes\n\n- Write a book, burn it, and it can turn up in another player's world \u2014 with loot odds that taper in fairly over time\n- Find your own book out in the world and it now tells you how it's doing, plus new advancements for signing, reading, and burning-without-reading\n- Death Notes: curse another player's next life when you die, with two new advancements\n- Echoes can now fight back with end crystals and TNT if you were carrying them when you died\n\n## Stages - The train changes as your progress\n\n- Carriages and the maze dungeon now shift through named Stages \u2014 Copper, Stone, Desert, Quartz, and more \u2014 each with its own look and content as you travel deeper into a run\n- New: Copper carriages, obsidian & quartz build sets, a desert temple, sandstone parts, mushroom rooms, and a batch of dungeon decor (pots, sculk, mossy rooms)\n- New enemy carriages: Witch, Evoker, Breeze, and Elder Guardian\n- Item stats now scale with difficulty, and late-game hostile gear keeps scaling past the old netherite plateau\n- The advancement page has been reorganized \u2014 it no longer spoils the whole tree, revealing the next advancement only once you're about to earn it. 22 new advancements since June 23, bringing the total to 88\n\n## Talk to the Dev & Bug Reports\n\n- New consent prompt before Developer messages show up in your chat \u2014 you choose whether to receive them\n- New `/bug` command \u2014 reports now ship your logs and, for lag reports, your system specs automatically\n\n## VR, Performance & Stability\n\n- Basic Vivecraft (VR) support for melee combat on the train\n- Smoother long-train rides, leaner world generation, and lighter editor overhead during normal play\n- Fixed carriages vanishing on pause/resume, on world save, and at low simulation distance\n- Fixed a world-gen freeze riding forward, dark carriage interiors, and long-train stutter/teleporting"
     },
     {
       "id": "death-detail-relay-reporting",
@@ -5003,6 +5175,25 @@
       "released": true,
       "released_in": "v0.430.0",
       "released_at": "2026-07-11T08:44:22Z"
+    },
+    {
+      "id": "release-first-influencer-and-translation",
+      "version": "0.430.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "First Influencer",
+      "summary": "https://www.bilibili.com/video/BV1TNMW6iEiQ/",
+      "highlights": [],
+      "date": "2026-07-11",
+      "released": true,
+      "released_in": "v0.430.0",
+      "released_at": "2026-07-11T11:04:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "[https://www.bilibili.com/video/BV1TNMW6iEiQ/](https://www.bilibili.com/video/BV1TNMW6iEiQ/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/first-influencer-bilibili.jpg"
     },
     {
       "id": "vase-group-live-tuning",
@@ -6024,6 +6215,23 @@
       "released": true,
       "released_in": "v0.462.0",
       "released_at": "2026-07-16T03:26:25Z"
+    },
+    {
+      "id": "release-official-chinese",
+      "version": "0.462.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Official Chinese Support",
+      "summary": "Dungeon Train in Simplified Chinese (\u7b80\u4f53\u4e2d\u6587).",
+      "highlights": [],
+      "date": "2026-07-16",
+      "released": true,
+      "released_in": "v0.462.0",
+      "released_at": "2026-07-16T03:26:05Z",
+      "major": true,
+      "description": "Dungeon Train now speaks Simplified Chinese. Every menu, plus the books, character stories and death lore, translated by community translator [\u8001\u672c\u9858](https://space.bilibili.com/296088227). Death-screen tallies are written in Chinese numerals, and Chinese players can reach the developer with @\u5f00\u53d1\u8005."
     },
     {
       "id": "lamppost-carriage-and-spawn-tuning",
@@ -7336,6 +7544,24 @@
       "released_at": "2026-07-24T14:24:19Z"
     },
     {
+      "id": "release-update-11-24-july",
+      "version": "0.512.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Update (11 \u2192 24 July)",
+      "summary": "Two weeks, a lot of track laid. Here's what's new.",
+      "highlights": [],
+      "date": "2026-07-24",
+      "released": true,
+      "released_in": "v0.512.0",
+      "released_at": "2026-07-24T14:24:07Z",
+      "major": true,
+      "description": "Two weeks, a lot of track laid. Here's what's new.\n\n## By the numbers\n\n- 22,000+ downloads across CurseForge & Modrinth\n- ~5,900 hours played\n- 4,300+ community books written\n- 7,500+ players, avg rating 8.1 / 10\n\n## New worlds to ride through\n\n- The Upside Down \u2014 the train rides into a mirrored world where everything's flipped, then dissolves back to the overworld through a stretch of floating islands. New advancements for entering and surviving it.\n- Chuncks \u2014 a mostly-void band of scattered floating chunks. Mind the gaps.\n- Deepdark stage \u2014 the Warden, a Wither reality, and a fresh Ancient City encounter.\n- The End band now bites back \u2014 beds explode, and chorus no longer blocks the track.\n\n## Now playable in ~19 languages\n\n- Big localization push: 18 new languages on top of English, including a fully refreshed & expanded Simplified Chinese (\u7b80\u4f53\u4e2d\u6587).\n- Human-reviewed translations are marked in the language menu; machine-translated ones get an AI label and a translation ring around the logo.\n- Player-written books, letters, and Death Notes now match your language, and the Support page was revised by a community translator.\n- Localization pack authors are now credited on the title screen.\n\n## Community books & letters\n\n- Write your own books \u2014 just sign a book and it enters the community pool, turning up as loot in other players' worlds.\n- Or write letters on lecterns \u2014 they appear in other players' worlds as travelers' letters.\n- Vote on books other players wrote; your votes tilt which ones show up in loot.\n- New random_playerbook loot item, and a global, cross-world read history so you don't see the same book twice.\n\n## Train Improvements\n\n- The train now smashes through blocks in its path instead of grinding to a halt.\n- Tighter, consistent gaps between carriage groups, and loose blocks stay attached to the train.\n- Big performance wins: smoother Nether crossings on long trains, cheaper physics, and pausing or minimising now lets your computer rest.\n\n## New content & encounters\n\n- New creeper encounter, potion barrels, lampposts, wells, and suspicious sand you can brush for real archaeology loot.\n- Ghasts grow bolder every time you return to the Nether.\n- Room lighting improvements across most rooms.\n\n## Quality of life\n\n- Redesigned continuous loading screens with lore stories, plus a smoother cinematic spawn.\n- New `/dtp` command \u2014 teleport anywhere on the track, always land on a train, and difficulty scales to match the destination.\n- New \"Ways to Help\" menu, in-game update notifications, and sharper death-screen photos.\n\n## Mod ecosystem\n\n- New required companion: Trade Everything \u2014 villagers will trade anything, and their trades scale with your train well beyond Master level.\n- Armor bar now shows your full protection past 1.5 bars.\n- Companion mods (Adventure Item Names / Stats, Interactive Player Mobs, Ender Chest Persistence) are now separate downloads the launchers auto-install.\n\nI've had a ton of feedback these past weeks \u2014 and I've read every single one. So much of this update came straight from you. Keep it coming.\n\nHappy riding \u2014 and thank you to everyone writing books, translating, and reporting bugs.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/update-11-24-july.jpg"
+    },
+    {
       "id": "death-screen-donation-page",
       "version": "0.513.0",
       "type": "feat",
@@ -7795,7 +8021,7 @@
         "train",
         "ui"
       ],
-      "title": "What We Give? What Comes Back?",
+      "title": "Drifting Carriages, Kid Mode & Political Filter",
       "summary": "#### What can we give to the train?\n\nIt has given you much. Carriages, corridors, the dark ahead. What is there to give back?\n\nA room. That is what it asks, and what it takes.\n\nBuild one in the right place and it does not stay with you. The train carries it off \u2014 onto another line, into a world you will never see. And it brings you what others gave: a space you did not make, left exactly so by someone who was gone before you arrived.\n\nGive enough and it gives back. A room of yours comes round again, still as you left it \u2014 mostly. Other hands have been in it since.\n\nWho built this? Who has been here since? The carriage remembers, if you ask it.\n\n#### And to the one who laid the track?\n\nPlayers in China had no way to answer \u2014 WeChat Pay now sits on Ways to Help and the death screen, for clients set to Chinese.\n\n#### Who keeps the kids safe, when no-one else is around?\n\nFirst launch asks who is playing. Kid mode closes the developer chat and lets through only the player-written books and carriages an AI has judged fit for children. Adult is everything, as before.\n\n#### And what of our Chinese players, who must obey the laws of the land?\n\nFilter out the community books and letters that touch politically sensitive ground.\n\n#### What else?",
       "highlights": [
         "Updated translations thanks to \u8001\u672c\u9858",
@@ -7808,7 +8034,10 @@
       "date": "2026-08-04",
       "released": true,
       "released_in": "v0.531.0",
-      "released_at": "2026-08-04T15:09:56Z"
+      "released_at": "2026-08-04T15:09:56Z",
+      "major": true,
+      "description": "## What can we give to the train?\n\nIt has given you much. Carriages, corridors, the dark ahead. What is there to give back?\n\nA room. That is what it asks, and what it takes.\n\nBuild one in the right place and it does not stay with you. The train carries it off \u2014 onto another line, into a world you will never see. And it brings you what others gave: a space you did not make, left exactly so by someone who was gone before you arrived.\n\nGive enough and it gives back. A room of yours comes round again, still as you left it \u2014 mostly. Other hands have been in it since.\n\nWho built this? Who has been here since? The carriage remembers, if you ask it.\n\n## And to the one who laid the track?\n\nPlayers in China had no way to answer \u2014 WeChat Pay now sits on Ways to Help and on the death screen, for clients set to Chinese.\n\n## Who keeps the kids safe, when no-one else is around?\n\nFirst launch asks who is playing. Kid mode closes the developer chat and lets through only the player-written books and carriages an AI has judged fit for children. Adult is everything, as before.\n\n## And what of our Chinese players, who must obey the laws of the land?\n\nFilter out the community books and letters that touch politically sensitive ground.\n\n## What else?\n\n- Updated translations thanks to \u8001\u672c\u9858\n- End cities in the End\n- Effect-less creepers \u2014 no more lingering potion cloud\n- Free Play echoes locked to Free Play\n- Trades more balanced\n- Dev replies stay in your chat history\n\n## And where should the track go next?\n\nFirst I sit where we are \u2014 answering, mending, tuning to use and feedback. Then there's fresh ground ahead, and a choice of which way to lay it.\n\nFour ways it might run:\n\n- Better multiplayer design\n- Portal carriages, bigger on the inside\n- A redesigned, longer train\n- Built to run with Create: Trains\n\nEach is a long stretch of track. I'll sit with them before deciding \u2014 putting them out now to hear which you'd want to ride.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/what-we-give.jpg"
     },
     {
       "id": "shared-carriages-switched-on",
@@ -8072,6 +8301,23 @@
       "released": true,
       "released_in": "v0.543.0",
       "released_at": "2026-08-07T03:06:04Z"
+    },
+    {
+      "id": "release-love-notes",
+      "version": "0.543.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Love Notes",
+      "summary": "Leave a Love Note for a friend: like a Death Note, but the opposite.",
+      "highlights": [],
+      "date": "2026-08-07",
+      "released": true,
+      "released_in": "v0.543.0",
+      "released_at": "2026-08-07T03:05:44Z",
+      "major": true,
+      "description": "Dungeon Train adventurers can now leave Love Notes for each other. They work like Death Notes, but the opposite. What does that actually mean? You'll have to try it to find out.\n\nTitle a book **Love Note**, and put your friend's Minecraft name on the first line."
     },
     {
       "id": "mod-recommendations-death-screen",
@@ -8887,6 +9133,41 @@
       "released_at": "2026-08-12T15:07:04Z"
     },
     {
+      "id": "release-help-translate",
+      "version": "0.552.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Help Translate",
+      "summary": "Fix Dungeon Train's text in your own language from inside the game. Your fixes reach everyone playing in that language, with no update to install.",
+      "highlights": [],
+      "date": "2026-08-11",
+      "released": true,
+      "released_in": "v0.552.0",
+      "released_at": "2026-08-11T14:48:00Z",
+      "major": true,
+      "description": "Dungeon Train speaks nineteen languages besides English, and most of those lines were written by a machine. Now the people who actually speak them can put them right. **Options \u2192 Language \u2192 Help Translate** opens every line the mod ships, with the English beside it and your language's current wording ready to edit.\n\n- Filter to the lines no human has ever checked\n- Work in a batch, and nothing leaves the game until you press Submit\n- Once a reviewer approves a fix, it reaches every player in that language the next time they start the game. No update needed\n- Translators are named in the credits, and the language list's AI ring shrinks as lines get human-checked\n- Prefer your own tools? Export and import the files\n\nThank you to everyone who has already sent fixes in."
+    },
+    {
+      "id": "release-dimensional-carriages",
+      "version": "0.556.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Dimensional Carriages",
+      "summary": "Some corridors between carriages now open onto rooms far bigger than the train. Halls, libraries and stranger places to loot while the train rolls on.",
+      "highlights": [],
+      "date": "2026-08-12",
+      "released": true,
+      "released_in": "v0.556.0",
+      "released_at": "2026-08-12T15:06:45Z",
+      "major": true,
+      "description": "Somewhere past your first stretch of track, a corridor between two carriages stops being a corridor. Walk it and the sound of the train falls away behind you, and you come out in a room that could never have fitted inside the carriage you stepped into \u2014 a hall, a library, a place of beams and sculk, some of them going on for as long as you care to keep walking.\n\nWhat you find is drawn from how far you have come, so late portals open onto places the early ones never do, and every portal rolls its own room: chests you loot stay looted when you walk back in. The train keeps rolling while you look around, and the ground you cover in there counts toward your journey. Nothing strands you \u2014 there is always a way back out \u2014 and if you would rather the door weren't there at all, breaking through the corridor's outer wall closes that portal for good.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dimensional-carriages.jpg"
+    },
+    {
       "id": "support-page-help-translate",
       "version": "0.557.0",
       "type": "feat",
@@ -9622,6 +9903,23 @@
       "released": true,
       "released_in": "v0.592.0",
       "released_at": "2026-08-21T11:09:14Z"
+    },
+    {
+      "id": "release-edible-backpacks",
+      "version": "0.592.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Edible Backpacks",
+      "summary": "Eat backpacks for extra inventory slots: up to 108 per run.",
+      "highlights": [],
+      "date": "2026-08-21",
+      "released": true,
+      "released_in": "v0.592.0",
+      "released_at": "2026-08-21T11:08:54Z",
+      "major": true,
+      "description": "I made a custom backpack mod for the modpack, and this version includes it: **Edible Backpacks**.\n\nFind and eat them to unlock a new slot, or find an upgraded backpack to add 9 slots at once. You can get up to 108 new slots! Your progress resets after each run."
     },
     {
       "id": "ain-0-49",
@@ -14192,6 +14490,25 @@
       "released_at": "2026-09-02T12:47:47Z"
     },
     {
+      "id": "release-curseforge-hidden-gem",
+      "version": "0.788.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "CurseForge Hidden Gem",
+      "summary": "The unexpected and incredibly successful CurseFroge Hidden Gem feature is over.",
+      "highlights": [],
+      "date": "2026-09-02",
+      "released": true,
+      "released_in": "v0.788.0",
+      "released_at": "2026-09-02T12:17:19Z",
+      "major": true,
+      "milestone": true,
+      "description": "Hey All,\n\nThe unexpected and incredibly successful CurseFroge Hidden Gem feature is over.\n\nIn 2 weeks, we went from 20,000 downloads, to 160,000. The game had over 1500days of playtime in the last two weeks. nearly 30,000 books published and over 6,000 drifting carraiges made.\nI've seen at least 15 new videos go live on Youtube, IG and Tiktok. Please keep sharing what you make or find in \ud83d\udcfa-streams-and-media-of-dungeont\u2026 !\n\nI put out close to 200 \ud83c\udd95-minor-updates in those two weeks. Fixing bugs, adding features and keeping the server alive. It was a lot of work. I put off my actual paid work to do so.\nYou may have noticed Im slightly less active in the discord the last few days, as I rest from a huge two weeks. I'm still here answering questions and welcoming you all, but anyone who can step in to welcome newcomers and answer questions is greatly appreciated right now.\n\nOver the next week, I will still be working hard to put out regular updates. Probably not at the rate I have been, but likely still daily.\nI am working on several things right now\n\n- Builder Update - to get all your hard work into the game.\n- Shader update, to support shaders.\n- Bug fixes and balancing\n\nThings I intend to fix in the future\n\n- Adding custom mobs and items\n- Mutliplayer support\n- More dimensions and variation.\n\nI am always listerning close to your feedback and suggestions, thank you for all the ideas!",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/curseforge-hidden-gem.jpg"
+    },
+    {
       "id": "nether-arrival-tuning",
       "version": "0.789.0",
       "type": "feat",
@@ -14409,6 +14726,24 @@
       "released": true,
       "released_in": "v0.795.0",
       "released_at": "2026-09-05T06:48:12Z"
+    },
+    {
+      "id": "release-shader-support",
+      "version": "0.795.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Shader Support",
+      "summary": "Nine supported shader packs, a new Shaders page to compare and pick one, and one-click download and enable.",
+      "highlights": [],
+      "date": "2026-09-05",
+      "released": true,
+      "released_in": "v0.795.0",
+      "released_at": "2026-09-05T06:17:48Z",
+      "major": true,
+      "description": "Nine shader packs are now supported, and there is a Shaders page to pick one from \u2014 on the title screen between Mods and Options, and in the Esc menu beside Mods. Each pack shows a screenshot of the same stretch of track at the same time of day, so you can see what it actually does before you commit to it, with the unshaded shot there to compare against. One click downloads it from the author's own page and turns it on; if you already have it, one click turns it on. Sort the list by our pick, by how demanding a pack is, by how close it stays to vanilla, or by mood.\n\n- A Shaders page on the title screen and in the Esc menu\n- Nine supported packs, each shown as the same scene so they can be compared\n- Download and turn a pack on in one click, straight from its author's page\n- Sort by our pick, performance cost, closeness to vanilla, or mood\n- Shader Settings opens the running pack's own options\n\n## Shader packs now render the Nether and the End properly\n\nWith a shader pack installed, the Nether and the End are rendered by the pack itself \u2014 its own sky, fog and lighting \u2014 and the change eases in as you travel into them rather than cutting. Skybox blocks, dimensional carriage fog and the upside-down band's permanent sunrise all work under shaders too.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/shader-support.jpg"
     },
     {
       "id": "x-menu-inventory-screen",
@@ -19788,13 +20123,16 @@
         "compatibility",
         "world"
       ],
-      "title": "Dimensions Overhaul 0.982.0",
+      "title": "Dimensions Overhaul",
       "summary": "## Number of dimensions\nA HUGE boost to the number of dimensions the train travels through. Many custom made for DT, some you may already know and love.\n\n## Shorter Dimensions\nDimensions are now short, pass through more quicker, but it will take longer to pass through them all.\n\n# The Whitelist for Mods\nMoving from blacklist to whitelist. Unless whitelisted, mods put you into freeplay. \nThe game will boot regardless, only whitelisted will enable high-scores.\n\n## Modpack Additions\n* **Advanced Shulkerboxes:** \n* **Sable Pathfinder:** *(Modrinth only for now)*\n* **Pigman Villagers:** ;)\n\n## Train Editor Tools\nThe train editor has undergone some big changes, make it work much better\n* **Test the Carriage** works on every carriage and contents template. Ctrl/Cmd+R re-rolls it\n* **Frames:** build your own to dress terrain dimensional carriages\n* **Doors, beds and tall plants** in block variants, with a new Span button\n* **Menus stay put** instead of following you, update as soon as you save, and no longer freeze on first open\n* **New** works for whole rooms and groups\n* **Save as new** on built-in templates, or keep a local edit\n* **Info panel** shows a build's lights and loot\n* **My Builds:** delete builds, and tell the reviewer about your build when you submit\n* Cmd/Ctrl-click deletes saved prefabs in the creative menu\n* Effortless Building breaks now clear block variants\n* Big shared builds keep their chest loot, and loading survives a busy server\n* Templates with thousands of block variants no longer lag\n\n## Bug Fixes\n* No more freezes when editing the train or saving\n* Distant Horizons no longer crashes on Mac\n* Dedicated servers now create Dungeon Train worlds\n* Eyes of ender lead to the same stronghold every time\n* Crops in dimensional carriages stay planted\n* Trees no longer turn the track into a tunnel\n\n## Bug fixes\n- New Biomes are cosmetics focused. New items and mobs on the train will be coming later.",
       "highlights": [],
       "date": "2026-09-27",
       "released": true,
       "released_in": "v0.982.0",
-      "released_at": "2026-09-27T09:01:26Z"
+      "released_at": "2026-09-27T09:01:26Z",
+      "major": true,
+      "description": "## Number of dimensions\nA HUGE boost to the number of dimensions the train travels through. Many custom made for DT, some you may already know and love.\n\n## Shorter Dimensions\nDimensions are now short, pass through more quicker, but it will take longer to pass through them all.\n\n# The Whitelist for Mods\nMoving from blacklist to whitelist. Unless whitelisted, mods put you into freeplay. \nThe game will boot regardless, only whitelisted will enable high-scores.\n\n## Modpack Additions\n* **Advanced Shulkerboxes:** \n* **Sable Pathfinder:** *(Modrinth only for now)*\n* **Pigman Villagers:** ;)\n\n## Train Editor Tools\nThe train editor has undergone some big changes, make it work much better\n* **Test the Carriage** works on every carriage and contents template. Ctrl/Cmd+R re-rolls it\n* **Frames:** build your own to dress terrain dimensional carriages\n* **Doors, beds and tall plants** in block variants, with a new Span button\n* **Menus stay put** instead of following you, update as soon as you save, and no longer freeze on first open\n* **New** works for whole rooms and groups\n* **Save as new** on built-in templates, or keep a local edit\n* **Info panel** shows a build's lights and loot\n* **My Builds:** delete builds, and tell the reviewer about your build when you submit\n* Cmd/Ctrl-click deletes saved prefabs in the creative menu\n* Effortless Building breaks now clear block variants\n* Big shared builds keep their chest loot, and loading survives a busy server\n* Templates with thousands of block variants no longer lag\n\n## Bug Fixes\n* No more freezes when editing the train or saving\n* Distant Horizons no longer crashes on Mac\n* Dedicated servers now create Dungeon Train worlds\n* Eyes of ender lead to the same stronghold every time\n* Crops in dimensional carriages stay planted\n* Trees no longer turn the track into a tunnel\n\n## Bug fixes\n- New Biomes are cosmetics focused. New items and mobs on the train will be coming later.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/dimensions-overhaul.jpg"
     },
     {
       "id": "band-advancements-review",
@@ -22077,9 +22415,9 @@
       "highlights": [],
       "pr": 1760,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "exposure-photography-required-mods",
@@ -22094,9 +22432,9 @@
       "highlights": [],
       "pr": 1762,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "ride-snapshot-fov-guard",
@@ -22111,9 +22449,9 @@
       "highlights": [],
       "pr": 1763,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "book-copies-not-votable",
@@ -22129,9 +22467,9 @@
       "highlights": [],
       "pr": 1764,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "photos-burn-when-dropped",
@@ -22145,9 +22483,9 @@
       "highlights": [],
       "pr": 1765,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "stage-blocks-tab-rows",
@@ -22163,9 +22501,9 @@
       "highlights": [],
       "pr": 1766,
       "date": "2026-10-02",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
     },
     {
       "id": "feedback-header-freshness",
@@ -22181,6 +22519,2462 @@
       "highlights": [],
       "pr": 1767,
       "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "betterend-sdf-per-thread",
+      "version": "0.1112.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "world"
+      ],
+      "title": "Giant mushrooms and layered rock keep their shape",
+      "summary": "Giant glowing mushrooms and bands of coloured rock now come out whole and the same every time, however many places the world is being built at once.",
+      "highlights": [],
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "buildings-editor-tab",
+      "version": "0.1113.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "world",
+        "ui"
+      ],
+      "title": "Build the buildings",
+      "summary": "The Train Editor has a new Buildings tab, where you can change the buildings the world places or add your own and share them.",
+      "highlights": [],
+      "pr": 1769,
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "biome-twin-lookup-memo",
+      "version": "0.1114.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Smoother scenery",
+      "summary": "The scenery colours in a little more smoothly as new ground comes into view.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1772,
+      "date": "2026-10-02",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "milestone-advancements-passenger-log",
+      "version": "0.1115.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "The rarest advancements make the passenger log",
+      "summary": "When someone earns one of the train's rarest advancements on a clean run, the passenger log hears about it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "perthread-sdf-quaternion",
+      "version": "0.1116.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "World generation fix",
+      "summary": "Some of the world's shapes now build a little more reliably.",
+      "highlights": [],
+      "pr": 1779,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "endband-worldgen-erosion",
+      "version": "0.1116.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Bare islands grow back",
+      "summary": "Some islands far down the line now carry the growth and rock they were always meant to, instead of standing bare.",
+      "highlights": [],
+      "pr": 1777,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "lost-city-template-cache-reach",
+      "version": "0.1118.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility",
+        "world"
+      ],
+      "title": "Fewer hitches as new scenery loads",
+      "summary": "Big buildings ahead now load quietly in the background, even after a long jump.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1773,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "mixin-target-guards",
+      "version": "0.1118.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "World mod updates no longer stop the game loading",
+      "summary": "The game keeps loading when one of the world mods it builds on updates.",
+      "highlights": [],
+      "pr": 1775,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "first-ever-advancement-announcement",
+      "version": "0.1120.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "The first passenger to earn an advancement is remembered",
+      "summary": "Be the first passenger ever to earn an advancement and the whole train hears about it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "disposable-camera-per-stack-print",
+      "version": "0.1121.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Disposable cameras keep to themselves",
+      "summary": "Only the disposable camera you shoot with reloads now, and every shot prints a single photo.",
+      "highlights": [],
+      "pr": 1782,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "rendering-hiccup-no-crash",
+      "version": "0.1122.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Rendering hiccups",
+      "summary": "A rare rendering hiccup no longer ends your ride.",
+      "highlights": [],
+      "pr": 1784,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "death-screen-photo-page",
+      "version": "0.1123.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Photos on the death screen",
+      "summary": "When the ride ends, the photos from your life get a page of their own.",
+      "highlights": [],
+      "pr": 1787,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "dimensional-carriages-remember",
+      "version": "0.1124.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages remember your visit",
+      "summary": "Dimensional carriages now stay as you left them when you come back.",
+      "highlights": [],
+      "pr": 1786,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "update-card-any-launcher",
+      "version": "0.1125.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Know when a new version is out",
+      "summary": "A short note now appears before the main menu when a newer version of Dungeon Train is out.",
+      "highlights": [],
+      "pr": 1788,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "endband-state-clear-on-stopped",
+      "version": "0.1126.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A clean slate",
+      "summary": "Opening another world after leaving one no longer carries a stray piece of the old one with it.",
+      "highlights": [],
+      "pr": 1789,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "every-train-world-opens-straight-in",
+      "version": "0.1127.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Straight back aboard",
+      "summary": "Every Dungeon Train world now opens straight away after an update.",
+      "highlights": [],
+      "pr": 1790,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "tributed-photo-passenger-log",
+      "version": "0.1128.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tributed photos are shared with everyone",
+      "summary": "When someone pays tribute to a photo, the whole passenger log gets to see it.",
+      "highlights": [],
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "shared-player-photos",
+      "version": "0.1128.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Photos travel the train",
+      "summary": "A photo you take may now turn up for another passenger further down the line, and theirs for you.",
+      "highlights": [],
+      "pr": 1791,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "translation-submit-keeps-name",
+      "version": "0.1129.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Your translator credit stays as you set it",
+      "summary": "On the Help Translate send screen, the name you want to be credited by, and whether you want credit at all, no longer reset when you resize the window or alt-tab out of fullscreen.",
+      "highlights": [],
+      "pr": 1792,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "camera-left-click-shutter",
+      "version": "0.1130.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Take photos with either click",
+      "summary": "Holding a camera up to your eye, a left-click now takes the photo too, just like a right-click. The camera's hover text is tidier as well \u2014 no more slide count or slide-swapping hints.",
+      "highlights": [
+        "Left-click or right-click takes a photo through the viewfinder",
+        "Camera hover text no longer lists slides"
+      ],
+      "pr": 1794,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "player-photos-in-train-loot",
+      "version": "0.1131.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "Other players' photos turn up in the train",
+      "summary": "Photos other players have shared can now be found in bookshelves, barrels, pots, villager stock and more across the train. Meals are a little more generous with the basics.",
+      "highlights": [
+        "Shared player photos join ten kinds of train loot",
+        "Builders can place a Random Player Photo straight from the Narrative creative tab"
+      ],
+      "pr": 1793,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "head-banner-sign-8-direction-rotation",
+      "version": "0.1132.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Rotate heads, banners and signs in 8 directions",
+      "summary": "Heads, skulls, standing banners and signs placed on the floor can now be given a rotation in the block variants menu. Lock one direction, or pick any of the 8 compass points for each spawn to choose from.",
+      "highlights": [
+        "Lock cycles through N, NE, E, SE, S, SW, W and NW",
+        "Options opens a compass rose so you can tick the directions you want",
+        "Mirroring and rotating a plot turns these directions along with the block"
+      ],
+      "pr": 1795,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "luggage-new-carriage-safe-room",
+      "version": "0.1132.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Luggage, a new carriage, and a rebuilt parkour room",
+      "summary": "Some book carriages now have travellers' luggage piled up in them. A new carriage design joins the train. One of the parkour dimensional carriages has been rebuilt and keeps turning up much further into a run. Shop carriages come up a little less often.",
+      "highlights": [
+        "Luggage piled up in some book carriages",
+        "A new carriage design on the train",
+        "A rebuilt parkour dimensional carriage that appears deeper into a run",
+        "Shop carriages are slightly rarer"
+      ],
+      "pr": 1797,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "tribute-photo-views-worn-paper",
+      "version": "0.1132.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tributed photos show how far they travelled",
+      "summary": "A tributed photo in the passenger log now shows how many passengers have held it and how close it came to fading, printed on the same worn, torn paper it had when you paid. Only your biggest tribute yet gets posted, so to share a photo with everyone, pay more than you ever have before.",
+      "highlights": [
+        "The passenger log shows how many hands a tributed photo has passed through",
+        "The posted picture keeps its worn paper and torn edges",
+        "Only a tribute bigger than any you've paid before is posted"
+      ],
+      "pr": 1798,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "editor-build-review-verdicts",
+      "version": "0.1133.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "Your submitted builds now come back with a verdict and a note",
+      "summary": "When a build you submitted for review has been looked at, My Builds now tells you what was decided \u2014 accepted, feedback, not accepted, or 'resubmit from a newer version' \u2014 with the reviewer's comment right beside it. Accepted builds are announced in Discord's build-submissions channel.",
+      "highlights": [
+        "Four outcomes, each with a note from the reviewer: accepted, feedback, resubmit from a given Dungeon Train version, or not accepted. The tile's border and icon in My Builds say which, and the comment sits under the build.",
+        "A build sent back for a version waits until you submit it again from that version \u2014 Submit for Review tells you which one it needs.",
+        "If you have a chat thread with the dev, the verdict and comment also arrive in your in-game inbox."
+      ],
+      "pr": 1796,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "drifting-carriage-fix",
+      "version": "0.1134.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Drifting carriage fix",
+      "summary": "Fixed an issue with drifting carriages.",
+      "highlights": [],
+      "pr": 1799,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "player-heads-face-into-rooms",
+      "version": "0.1135.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Player heads look into the room",
+      "summary": "Player heads placed around carriage rooms now turn to face into the room, each picking a slightly different angle so no two trains look quite the same. A head in the middle of a room can face any way.",
+      "highlights": [
+        "Heads look toward the centre of the room, give or take a quarter-turn either way, never at the wall behind them"
+      ],
+      "pr": 1800,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "review-feedback-discord-post",
+      "version": "0.1136.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Feedback and resubmit verdicts are announced too",
+      "summary": "When the reviewer sends a submitted build back with feedback, or asks for it again from a newer version, that now posts to Discord's build-submissions channel alongside accepts \u2014 so the whole conversation about a build sits in one place.",
+      "highlights": [],
+      "pr": 1801,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "loading-screen-stories-10-11",
+      "version": "0.1137.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "ui"
+      ],
+      "title": "Two new loading-screen stories",
+      "summary": "Two more verses join the loading screen's rotating story. One asks why the train looks the way it does, and what you see when you look at it. The other wonders who really built the train.",
+      "highlights": [
+        "New stories: \"Why does the train look that way?\" and \"Some ask of how the train was built?\"",
+        "Both are translated into every supported language"
+      ],
+      "pr": 1802,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "suspicious-sand-dig-loot",
+      "version": "0.1138.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "loot"
+      ],
+      "title": "Choose what suspicious sand and gravel dig up",
+      "summary": "Builders can now set the loot inside suspicious sand and suspicious gravel from the loot menu, just like a chest. Brushing one on the train turns up a single item from that list, and blocks left alone still give their usual archaeology finds.",
+      "highlights": [
+        "The loot menu (C) now opens on suspicious sand and gravel",
+        "Each block rolls one item from its list, with an optional chance of finding nothing"
+      ],
+      "pr": 1803,
+      "date": "2026-10-03",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "author-rooms-fit-their-books",
+      "version": "0.1139.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train",
+        "books"
+      ],
+      "title": "Libraries that fit their writer",
+      "summary": "Dimensional carriages that hold a writer's library now choose a room sized to that writer's shelf \u2014 a handful of books gets a cosy study, a prolific writer gets a grand hall \u2014 and three new library rooms join the rotation.",
+      "highlights": [
+        "Three new library rooms can now appear behind dimensional carriages",
+        "Each library is picked to fit its writer, so a few books aren't lost in an empty hall",
+        "Once you've signed a book, your own library is sized to how much you've written",
+        "Rooms of run statistics only appear where there's shelf space for the whole set"
+      ],
+      "pr": 1804,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "nether-band-cave-mob-spawns",
+      "version": "0.1140.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world",
+        "mobs"
+      ],
+      "title": "No Nether mobs in the mountain caves",
+      "summary": "Zombified piglins and magma cubes no longer spawn in the overworld caves inside the mountains around the Nether crossing. They only appear where the ground is actually Nether.",
+      "highlights": [],
+      "pr": 1805,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "keep-trim-dye",
+      "version": "0.1140.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Repairs keep your dye",
+      "summary": "Repairing dyed leather armour in the crafting grid now keeps the left item's colour, just like its trim.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "end-islands-no-bare-patches",
+      "version": "0.1141.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "No more bare islands in the stranger stretches",
+      "summary": "Some islands in the stranger stretches of the journey came through as flat bare stone right beside lush, overgrown neighbours. They now wear the same scenery as everything around them. Only newly generated ground is affected \u2014 stretches you have already crossed keep their look.",
+      "highlights": [
+        "Bare stone islands now get their scenery.",
+        "Only newly generated ground changes; existing worlds keep what they have."
+      ],
+      "pr": 1807,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "disposable-camera-loot",
+      "version": "0.1142.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Disposable cameras on the train",
+      "summary": "Disposable cameras now turn up in the train's chests, barrels, bookshelves and pots. While the train is still short of community photos, a spot that would have held one may hold a camera instead, so you can go and take more.",
+      "highlights": [
+        "Find one-shot disposable cameras in the train's loot",
+        "Fewer community photos to find? You're more likely to find a camera in their place"
+      ],
+      "pr": 1808,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "ladder-climb-moving-train",
+      "version": "0.1143.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "train"
+      ],
+      "title": "FIXED THE LADDER BUG!",
+      "summary": "Helll yeahhhhh",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "dynamic-lights-whitelist",
+      "version": "0.1144.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "All the dynamic-lights mods count for fair play",
+      "summary": "Sodium Dynamic Lights, RyoamicLights, Dynamic Lights Reforged and Dynamic Lights now join LambDynamicLights on the approved-mods list, so running one no longer puts you into Free Play.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "villagers-tire-of-items",
+      "version": "0.1145.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "loot",
+        "balance"
+      ],
+      "title": "Villagers tire of what you keep selling them",
+      "summary": "Selling one item over and over to the same villager now pays less each time. The first few sales pay full price, then the price eases down. The villager slowly gets its appetite back over a few in-game days. Red bars on the trade row show how much less it's paying.",
+      "highlights": [
+        "The first 8 emeralds' worth of any item still sells at full price",
+        "Every villager keeps its own tally, so a different villager pays full price again",
+        "Up to three red bars on the Trade Anything row: one once the price drops, two below 75%, three below half"
+      ],
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "feedback-answer-count",
+      "version": "0.1146.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Feedback posts count your answers",
+      "summary": "Each feedback post to Discord now notes how many times you have answered that question, in brackets at the end of its small tag line \u2014 so a fifth take on the same question reads as one.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "playermob-camera-photos",
+      "version": "0.1146.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "mobs"
+      ],
+      "title": "Hand a PlayerMob a camera and it takes your photo",
+      "summary": "PlayerMobs now pick up dropped disposable cameras. Toss one to a PlayerMob that is on good terms with you and not busy fighting: it raises the camera, lines you up and takes your picture, then hands you the print and the spent camera burns as yours do. The photo is credited to the PlayerMob by name and shows up in the passenger log on Discord. A PlayerMob that dislikes you keeps the camera and takes no photo.",
+      "highlights": [
+        "Dropped cameras are something PlayerMobs want \u2014 they pick them up like any valuable",
+        "Gift one to a friendly PlayerMob and it photographs you, viewfinder up, then tosses you the print",
+        "Prints are credited to the PlayerMob's name, in game and in the Discord passenger log"
+      ],
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "bookshelf-photo-weight",
+      "version": "0.1147.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot",
+        "balance"
+      ],
+      "title": "More photos on the shelves",
+      "summary": "Chiseled bookshelves turn up community photos about four times as often. When there are no photos left to find, a photo slot now gives you a player book instead of sitting empty, and disposable cameras turn up a little less often.",
+      "highlights": [],
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "carriage-mix-more-cargo",
+      "version": "0.1148.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "More cargo and flatbed carriages",
+      "summary": "Boxcars, cargo carriages and flatbeds now come up more than twice as often, and the standard carriage's pillars pick from a tidier set of wood and stone.",
+      "highlights": [
+        "Boxcars, cargo and flatbed carriages are more common",
+        "Carriage pillars mix stripped logs, planks and stone bricks"
+      ],
+      "pr": 1815,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z"
+    },
+    {
+      "id": "release-capture-the-view",
+      "version": "0.1148.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Capture The View",
+      "summary": "What did you see on train? What did the train see of you?\nFind disposable cameras in the loot and snap with a click. Your shots travel down the line into other passengers' bookshelves, barrels and chests, and theirs find you. Pay tribute to a photo to keep it travelling. A new page on the death screen.",
+      "highlights": [
+        "A villager get tired of repeat sales, and devalue the items he has to many of.",
+        "Finding you own library has never been easier, sign a book and the chances multiply until you find one next. New and improved author rooms.",
+        "THE LADDER BUG IS DEAD",
+        "New carraiges.",
+        "Many train editor improvements.",
+        "Improvements to the translation editor",
+        "New and improved connections to discord.",
+        "More loading screen lore.",
+        "Bug fixes",
+        "Performance improvements"
+      ],
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1149.0",
+      "released_at": "2026-10-04T10:04:47Z",
+      "major": true,
+      "description": "What did you see on train? What did the train see of you?\nFind disposable cameras in the loot and snap with a click. Your shots travel down the line into other passengers' bookshelves, barrels and chests, and theirs find you. Pay tribute to a photo to keep it travelling. A new page on the death screen.\n\n## Other significant updates\n\n- A villager get tired of repeat sales, and devalue the items he has to many of.\n- Finding you own library has never been easier, sign a book and the chances multiply until you find one next. New and improved author rooms.\n- THE LADDER BUG IS DEAD\n- New carraiges.\n- Many train editor improvements.\n- Improvements to the translation editor\n- New and improved connections to discord.\n- More loading screen lore.\n- Bug fixes\n- Performance improvements",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/capture-the-view.jpg"
+    },
+    {
+      "id": "performance-options-tab",
+      "version": "0.1150.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "ui"
+      ],
+      "title": "Performance tips in Options",
+      "summary": "Options \u2192 Dungeon Train\u2026 has a new Performance tab. It lists every setting that affects how smoothly Dungeon Train runs, checked against your setup, with a button to each one. The tips that would help you come first.",
+      "highlights": [
+        "The tips you used to see only after reporting lag are now always one click away",
+        "Each tip opens its setting: Video Settings, Shader Packs, Distant Horizons, Dungeon Train Settings, or lowers ride-photo resolution right there",
+        "Shows how many releases behind you are, with a link to what changed"
+      ],
+      "pr": 1817,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "lectern-story-order",
+      "version": "0.1151.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "books"
+      ],
+      "title": "Lectern stories unfold in a better order",
+      "summary": "The letters you find on lecterns now arrive in a more deliberate order, so the stories make more sense as you read them.",
+      "highlights": [
+        "A family's letters now come in the order they were written, one person's story leading into the next",
+        "A few stories turn up sooner, and some now wait until you have read the rest"
+      ],
+      "pr": 1819,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "dh-pause-hold-lod-gen",
+      "version": "0.1154.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Far terrain rests while you're paused",
+      "summary": "Pausing the game now also pauses far-terrain generation, so a long break no longer leaves the game sluggish when you come back.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1822,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "photos-survive-broken-containers",
+      "version": "0.1154.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Photos survive a broken chest or bookshelf",
+      "summary": "Photos no longer burn when the bookshelf, chest, barrel or pot holding them is broken. They drop intact and only burn once you look at them or throw them away.",
+      "highlights": [],
+      "pr": 1824,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1154.0",
+      "released_at": "2026-10-04T16:12:02Z"
+    },
+    {
+      "id": "build-submission-version-dot",
+      "version": "0.1155.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Build submissions show their version",
+      "summary": "Builds submitted for review now show which version of Dungeon Train they were made on, with a coloured dot for how up to date it is.",
+      "highlights": [],
+      "pr": 1828,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "spider-jockey-rider-visible",
+      "version": "0.1157.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Spider jockeys arrive with their skeleton",
+      "summary": "The rare spider jockey that can turn up in a carriage now spawns with its skeleton rider in place. Before, the skeleton was missing \u2014 and could appear later out of nowhere.",
+      "highlights": [],
+      "pr": 1827,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "photo-resolution-720-option",
+      "version": "0.1154.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Ride-photo resolution shows 720p",
+      "summary": "Snapshot Max Resolution now offers 720p, in Options and the X menu. After using Lower resolution on the Performance tab, the setting reads 720p instead of AUTO.",
+      "highlights": [],
+      "pr": 1829,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "ukrainian-localization",
+      "version": "0.1159.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations"
+      ],
+      "title": "Dungeon Train speaks Ukrainian",
+      "summary": "Ukrainian joins the language list \u2014 the whole game, not just the menus: every screen, the item names and all 57 in-game books, plus the Sable and Discord Presence menus in the modpack. The bulk is machine translation marked with the faded AI mark, but it already carries MrMultibite's community translations as human-reviewed text; if you read Ukrainian, the in-game translation editor is open and your fixes come back to everyone.",
+      "highlights": [
+        "Ukrainian (\u0423\u043a\u0440\u0430\u0457\u043d\u0441\u044c\u043a\u0430) is selectable in the vanilla language list",
+        "Menus, HUD, advancements, item names and all 57 books translated",
+        "Counts follow Ukrainian grammar \u2014 1 \u0432\u0430\u0433\u043e\u043d, 3 \u0432\u0430\u0433\u043e\u043d\u0438, 5 \u0432\u0430\u0433\u043e\u043d\u0456\u0432",
+        "MrMultibite's approved translations shipped as human-reviewed text"
+      ],
+      "pr": 1833,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "videos-filter-solo",
+      "version": "0.1160.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Videos: click a platform to see just that one",
+      "summary": "On the Videos page, clicking a platform icon now shows only that platform's videos, and clicking it again brings everything back. Shift-click still shows or hides just one, so you can mix and match.",
+      "highlights": [
+        "Click YouTube, Bilibili, Twitch, Instagram or Twitch streamers to see only that one",
+        "Shift-click to show or hide a single platform",
+        "The same video list is now on the website too: brennan.games/dungeontrain/videos/"
+      ],
+      "pr": 1834,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1160.0",
+      "released_at": "2026-10-04T18:29:34Z"
+    },
+    {
+      "id": "human-translations-only",
+      "version": "0.1161.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Human translations only",
+      "summary": "Prefer English over machine translation? A new switch on the Language screen shows only translations a person wrote or reviewed. Anything still machine-translated and unreviewed appears in English instead. It's off by default.",
+      "highlights": [
+        "New person button at the top right of the Language screen turns it on or off, instantly",
+        "Lines translated or reviewed by the community stay in your language",
+        "In single-player, unreviewed books and item names follow the same choice"
+      ],
+      "pr": 1837,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1161.0",
+      "released_at": "2026-10-04T19:20:57Z"
+    },
+    {
+      "id": "own-photo-tribute",
+      "version": "0.1162.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tribute your own photos",
+      "summary": "Took a photo worth sharing? Pay Tribute to your own print and it's posted to the passenger log on Discord for everyone to see \u2014 and it reaches twice as many players before it fades. The first Tribute in a life costs 3 emeralds; each one after costs three times the last.",
+      "highlights": [
+        "Pay Tribute to your own fresh photo to post it to the passenger log on Discord",
+        "A tributed photo can be seen by twice as many players before it fades",
+        "Costs 3 emeralds, tripling with each Tribute that life"
+      ],
+      "pr": 1835,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1163.0",
+      "released_at": "2026-10-04T19:46:16Z"
+    },
+    {
+      "id": "editor-plural-source",
+      "version": "0.1162.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Translators can now fix every plural form",
+      "summary": "In the in-game translation editor, the extra plural rows some languages need \u2014 Ukrainian, Russian, Polish and Romanian count things in three ways where English has two \u2014 showed no English text and refused to save anything with a number in it. They now show the English they stand for, so those lines can be corrected like any other.",
+      "highlights": [
+        "Plural rows show their English original instead of \"not supplied\"",
+        "Save works on those rows again \u2014 a %s is no longer reported as foreign"
+      ],
+      "pr": 1838,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1163.0",
+      "released_at": "2026-10-04T19:46:16Z"
+    },
+    {
+      "id": "photo-and-book-advancements",
+      "version": "0.1164.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "A camera's worth of advancements",
+      "summary": "Your books and photos now share an advancement tab of their own, and the camera has plenty to earn \u2014 the people, creatures and places you capture along the line. Every photo that earns one is kept: hover the advancement to see the shot, and click it for the full print.",
+      "highlights": [
+        "Biome advancements now count every biome the train takes you through \u2014 and ask for more. Everyone earns them again.",
+        "Fixed an advancement tab that sometimes took several clicks to open."
+      ],
+      "pr": 1839,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1164.0",
+      "released_at": "2026-10-04T19:57:42Z"
+    },
+    {
+      "id": "outdated-version-chat-notice",
+      "version": "0.1165.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Know when your version is out of date",
+      "summary": "Joining a game on an old version of Dungeon Train now tells you once, in chat, how many releases behind you are, with a link to update. It waits until you're actually in the world so it doesn't scroll past under the loading screen, and it won't repeat when you come back to the same game.",
+      "highlights": [],
+      "pr": 1841,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-04T20:22:34Z"
+    },
+    {
+      "id": "playermob-camera-gift-only",
+      "version": "0.1166.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Player Mobs only take your camera to photograph you",
+      "summary": "Player Mobs used to pocket any camera they found, even with no intention of using it. Now a mob picks up a camera only when you throw it to them and they're willing to take your photo. Cameras in chests, lying on the floor, or thrown at a mob that's fighting you are left alone.",
+      "highlights": [],
+      "pr": 1840,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-04T20:22:34Z"
+    },
+    {
+      "id": "turkish-locale-new-game",
+      "version": "0.1167.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "New Game works on Turkish-language computers",
+      "summary": "If your computer's language was set to Turkish or Azerbaijani, starting a New Game showed the loading screen and then dropped you straight back to the main menu. Worlds now load normally, and your in-game language and number formatting are unchanged.",
+      "highlights": [],
+      "pr": 1842,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-04T20:22:34Z"
+    },
+    {
+      "id": "translator-credit-human-over-ai",
+      "version": "0.1169.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations"
+      ],
+      "title": "Translator credit fixes",
+      "summary": "Community translators are credited correctly for their work.",
+      "highlights": [
+        "Ukrainian translation updates."
+      ],
+      "pr": 1843,
+      "date": "2026-10-04",
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-04T20:22:34Z"
+    },
+    {
+      "id": "release-website-launch",
+      "version": "0.1169.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Dungeon Train Has a Website",
+      "summary": "Dungeon Train now has a website, complete with roadmaps and update history.",
+      "highlights": [],
+      "date": "2026-10-05",
+      "released": true,
+      "released_in": "v0.1169.0",
+      "released_at": "2026-10-05T03:45:00Z",
+      "major": true,
+      "milestone": true,
+      "description": "Dungeon Train now has a website, complete with roadmaps and update history.\n\n[https://brennan.games/dungeontrain/](https://brennan.games/dungeontrain/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/website-launch.gif"
+    },
+    {
+      "id": "tribute-photos-own-channel",
+      "version": "0.1172.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Tributed Photos Get Their Own Channel",
+      "summary": "Photos you pay Tribute to now go up in their own channel on the Dungeon Train Discord, so every kept photo is in one place instead of mixed in with the passenger log.",
+      "highlights": [],
+      "pr": 1850,
+      "date": "2026-10-05",
+      "released": true,
+      "released_in": "v0.1173.0",
+      "released_at": "2026-10-05T16:30:57Z"
+    },
+    {
+      "id": "single-flowers-tall-plant-cells",
+      "version": "0.1173.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "No more stacked flowers",
+      "summary": "Flowers and grass in carriage gardens, animal pens and dimensional carriages now grow one block tall on the floor, instead of sometimes stacking a second flower on top of the first. Tall grass, ferns and tall flowers still grow two blocks tall.",
+      "highlights": [],
+      "pr": 1851,
+      "date": "2026-10-05",
+      "released": true,
+      "released_in": "v0.1173.0",
+      "released_at": "2026-10-05T16:30:57Z"
+    },
+    {
+      "id": "photo-tribute-leaderboards",
+      "version": "0.1174.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Photo & Tribute leaderboards",
+      "summary": "Thirteen new leaderboard books for the camera: who takes the most photos, who pays the most Tribute, whose photos other passengers honour most, and who has spent the most emeralds doing it.",
+      "highlights": [
+        "Most Photos Taken, Most Photos Tributed, Passenger Portraits, Bravest Photographer and Wildlife Photographer, each with an All Lives and a One Life board",
+        "Most Tributed Photographer counts only Tributes other players pay to your photos",
+        "Most Emeralds Tributed and Most Expensive Tribute count Tributes to your own prints and to other players' photos",
+        "Passenger, monster and animal boards fill from photos taken from this update on"
+      ],
+      "pr": 1852,
+      "date": "2026-10-06",
+      "released": true,
+      "released_in": "v0.1176.0",
+      "released_at": "2026-10-06T08:06:48Z"
+    },
+    {
+      "id": "bookshelf-photos-rarer",
+      "version": "0.1175.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "balance"
+      ],
+      "title": "Photos are rarer in bookshelves",
+      "summary": "Chiseled bookshelves hand out photos about half as often as before, so finding one feels special again.",
+      "highlights": [],
+      "pr": 1853,
+      "date": "2026-10-06",
+      "released": true,
+      "released_in": "v0.1176.0",
+      "released_at": "2026-10-06T08:06:48Z"
+    },
+    {
+      "id": "more-hidden-photo-advancements",
+      "version": "0.1176.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "New Photography Advancements",
+      "summary": "The camera's advancement tab has new hidden advancements to discover.",
+      "highlights": [],
+      "pr": 1854,
+      "date": "2026-10-06",
+      "released": true,
+      "released_in": "v0.1176.0",
+      "released_at": "2026-10-06T08:06:48Z"
+    },
+    {
+      "id": "community-photo-sharing-tidy",
+      "version": "0.1177.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Community photo sharing fixes",
+      "summary": "Small fixes to how community photos are shared.",
+      "highlights": [],
+      "pr": 1856,
+      "date": "2026-10-06",
+      "released": true,
+      "released_in": "v0.1181.0",
+      "released_at": "2026-10-07T04:23:09Z"
+    },
+    {
+      "id": "loading-stories-no-dashes",
+      "version": "0.1178.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Smoother loading-screen stories",
+      "summary": "The stories told on the loading screen have been re-punctuated so they read more naturally.",
+      "highlights": [],
+      "pr": 1855,
+      "date": "2026-10-06",
+      "released": true,
+      "released_in": "v0.1181.0",
+      "released_at": "2026-10-07T04:23:09Z"
+    },
+    {
+      "id": "website-credits-page",
+      "version": "0.1179.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Credits on the website",
+      "summary": "The Credits are now on the website at brennan.games/dungeontrain/credits/ \u2014 every translator, writer, builder, funder and community member, with each list's top contributor standing beside it as an animated player in their own Minecraft skin.",
+      "highlights": [
+        "The top translator, writer, builder, funder and community member, each in their own skin",
+        "Renames and Anonymous choices from the in-game Credits page carry over",
+        "Linked from the front page of the website"
+      ],
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1181.0",
+      "released_at": "2026-10-07T04:23:09Z"
+    },
+    {
+      "id": "release-public-credits-page",
+      "version": "0.1181.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Public Credits Page",
+      "summary": "The Credits now have a home on the website \u2014 everyone who translated, wrote, built, funded and grew Dungeon Train.",
+      "highlights": [],
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1181.0",
+      "released_at": "2026-10-07T04:23:09Z",
+      "major": true,
+      "milestone": true,
+      "description": "The Credits now have a home on the website \u2014 every translator, writer, builder, funder and community member who has helped make Dungeon Train, with each list's top contributor standing beside it in their own skin.\n\n[https://brennan.games/dungeontrain/credits/](https://brennan.games/dungeontrain/credits/)",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/public-credits-page.jpg"
+    },
+    {
+      "id": "trash-own-photos",
+      "version": "0.1180.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Trash your own photos",
+      "summary": "When you look at a photo you've just taken, a trash button now sits beside the X. It burns the photo, and no other passenger will ever find it.",
+      "highlights": [
+        "Paying Tribute to a photo now tells you how many emeralds it cost and how many more people will see it.",
+        "The chat lines that follow your photos are shorter.",
+        "Hovering the buttons under a photo now shows a plain Trash, Close or Tribute."
+      ],
+      "pr": 1859,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1181.0",
+      "released_at": "2026-10-07T04:23:09Z"
+    },
+    {
+      "id": "fancy-author-rooms-tuning",
+      "version": "0.1181.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "balance"
+      ],
+      "title": "Grander, more common fancy rooms in dimensional carriages",
+      "summary": "The fancy rooms inside dimensional carriages have been reworked with new quartz and deepslate pillars and finer stair detailing, and they now turn up far more often. Library rooms appear a little less often to make space for them.",
+      "highlights": [
+        "Fancy dimensional carriage rooms have new pillar and stair detail",
+        "Fancy rooms now appear about five times as often",
+        "Library rooms appear less often"
+      ],
+      "pr": 1860,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1181.0",
+      "released_at": "2026-10-07T04:23:09Z"
+    },
+    {
+      "id": "credits-builders-count-builds",
+      "version": "0.1182.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Credits count builds, not templates",
+      "summary": "The Credits screen now thanks each builder for their builds instead of listing templates, in every language.",
+      "highlights": [],
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "credits-team-rows",
+      "version": "0.1182.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "The team joins the Credits lists",
+      "summary": "The Credits page now thanks the people behind the train's own content: Brennan Hatton for the builds and books that ship with the game, and Wilson Taylor, Narrative Director of the original Dungeon Train, for the stories he wrote.",
+      "highlights": [
+        "Builders: Brennan Hatton, for every shipped build no one else is credited with",
+        "Writers: Brennan Hatton and Wilson Taylor, for the books built into the game",
+        "Funders: Brennan Hatton, for what he has spent that the community hasn't covered. The line goes once support covers it",
+        "The same names on the website's Credits page",
+        "Credits edit: a new \"Show my skin on the website\" box lets you keep your name on the website's Credits page without your skin"
+      ],
+      "pr": 1862,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "photo-frames-ride-the-train",
+      "version": "0.1182.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Photo frames stay on the train",
+      "summary": "Photo frames hung on a carriage wall now ride along with the train, photo and all, instead of disappearing once the carriage moves. They hang just as before, from a single block up to 3\u00d73, and still take a photo, glow ink and a turn of the picture.",
+      "highlights": [
+        "Photo frames stay visible on a moving carriage",
+        "Works for both the wooden and the clear frame",
+        "Frames in a saved build come back on the right wall"
+      ],
+      "pr": 1864,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "website-builders-credits-sync",
+      "version": "0.1183.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "Website Builders credits stay up to date",
+      "summary": "The Builders list on the Dungeon Train website now updates with every release, so newly credited builders show up there as well as in-game.",
+      "highlights": [],
+      "pr": 1865,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "player-facing-translation-progress",
+      "version": "0.1184.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "translations",
+        "ui"
+      ],
+      "title": "Translation progress counts the lines you actually see",
+      "summary": "A language's progress \u2014 the ring on the Language screen and each translator's % in the Credits \u2014 now leaves out the train editor and the translation screen, which most players never open, so it shows how much of the game you play is translated. Translators who also did the editor still get credit for it, so a share can go past 100%.",
+      "highlights": [],
+      "pr": 1866,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "hide-instant-slides",
+      "version": "0.1184.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Camera tidy-up",
+      "summary": "Removed some unused camera items.",
+      "highlights": [],
+      "pr": 1867,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1184.0",
+      "released_at": "2026-10-07T14:54:07Z"
+    },
+    {
+      "id": "photo-albums-on-train",
+      "version": "0.1185.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "loot"
+      ],
+      "title": "Photo albums",
+      "summary": "Photo albums have found their way onto the train. Keep one of your own, and you may stumble across someone else's.",
+      "highlights": [
+        "Your album remembers what you give it.",
+        "Other players' albums don't last long once opened."
+      ],
+      "pr": 1868,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
+    },
+    {
+      "id": "leased-carriage-keeps-entities",
+      "version": "0.1185.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Shared carriages hold on to their decorations",
+      "summary": "Fixed a case where a shared carriage could lose some of its decorations and occupants when passed on to the next world.",
+      "highlights": [],
+      "pr": 1869,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
+    },
+    {
+      "id": "drifting-group-carriages",
+      "version": "0.1186.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train"
+      ],
+      "title": "Whole drifting carriages",
+      "summary": "Now and then a long carriage that spans a whole stretch of the train turns up drifting. Change it and it travels on down the line in one piece, so someone else might ride through everything you built.",
+      "highlights": [
+        "Long carriages can now drift between worlds, not just single carriages",
+        "Whatever you build inside one travels on as a whole"
+      ],
+      "pr": 1870,
+      "date": "2026-10-07",
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
+    },
+    {
+      "id": "item-preview-empty-slot-fix",
+      "version": "0.1186.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Item previews in the translation editor show their text again",
+      "summary": "Previewing an item tooltip line in the translation editor \u2014 such as the prefab tab's \"Cmd/Ctrl-click to delete\" hint \u2014 no longer opens on an empty slot. The line now shows on its own, and once you've hovered the item in game, inside its real tooltip.",
+      "highlights": [
+        "Tooltip lines added while a tooltip is drawn are now recorded for the preview",
+        "The delete hint no longer offers a misleading widget-tooltip preview"
+      ],
+      "pr": 1872,
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1187.0",
+      "released_at": "2026-10-08T05:00:07Z"
+    },
+    {
+      "id": "photo-views-five-ten",
+      "version": "0.1187.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Photos are seen by fewer people",
+      "summary": "A shared photo now reaches 5 other players before it fades. Pay Tribute to your own photo and it reaches 10.",
+      "highlights": [
+        "Shared photos: 5 views, or 10 after you pay Tribute to your own",
+        "Paying Tribute to someone else's photo now tells you the right number of views it gets back"
+      ],
+      "pr": 1873,
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
+    },
+    {
+      "id": "books-arm-on-pickup",
+      "version": "0.1189.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "books"
+      ],
+      "title": "Book fixes",
+      "summary": "Books behave the same however they reach your inventory.",
+      "highlights": [],
+      "pr": 1875,
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
+    },
+    {
+      "id": "camera-photo-trade-values",
+      "version": "0.1190.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Cameras and photos now sell to villagers",
+      "summary": "Villagers will now buy cameras and photos, so a spare camera or a stack of photos turns into emeralds.",
+      "highlights": [],
+      "pr": 1877,
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
+    },
+    {
+      "id": "edible-backpacks-are-food",
+      "version": "0.1191.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "balance"
+      ],
+      "title": "Edible backpacks are a snack now",
+      "summary": "A backpack fills your hunger like an apple, and a golden one works like a golden apple.",
+      "highlights": [],
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1191.0",
+      "released_at": "2026-10-08T08:36:20Z"
+    },
+    {
+      "id": "release-albums",
+      "version": "0.1191.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Albums & Bigger Drifting Carriages",
+      "summary": "## Albums\nFind an album, save your photo for later. Find someone else's for a deeper glimpse into their life.\n\n## Bigger Drifting Carriages\nDrifting carriages now spread beyond just one room. They are rare, but worth it.",
+      "highlights": [
+        "Pay Tribute to your own photos \u2014 they post to their own Discord channel and reach more players.",
+        "Photo & Tribute leaderboards, and a camera advancement tab full of things to capture.",
+        "Trash a photo you've just taken; photo frames now ride along with the train.",
+        "Villagers buy cameras and photos.",
+        "Whole drifting carriages, and grander fancy rooms in dimensional carriages.",
+        "Dungeon Train speaks Ukrainian, with community translations by MrMultibite, and a \"human translations only\" switch.",
+        "A Performance tab in Options, and far terrain rests while you're paused.",
+        "Bug fixes",
+        "Performance improvements"
+      ],
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1192.0",
+      "released_at": "2026-10-08T13:12:46Z",
+      "major": true,
+      "description": "## Albums\nFind an album, save your photo for later. Find someone else's for a deeper glimpse into their life.\n\n## Bigger Drifting Carriages\nDrifting carriages now spread beyond just one room. They are rare, but worth it.\n\n## Other significant updates\n\n- Pay Tribute to your own photos \u2014 they post to their own Discord channel and reach more players.\n- Photo & Tribute leaderboards, and a camera advancement tab full of things to capture.\n- Trash a photo you've just taken; photo frames now ride along with the train.\n- Villagers buy cameras and photos.\n- Whole drifting carriages, and grander fancy rooms in dimensional carriages.\n- Dungeon Train speaks Ukrainian, with community translations by MrMultibite, and a \"human translations only\" switch.\n- A Performance tab in Options, and far terrain rests while you're paused.\n- Bug fixes\n- Performance improvements",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/albums.jpg"
+    },
+    {
+      "id": "discord-link-in-game-pings",
+      "version": "0.1193.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Link your Discord from in-game and get pinged on your photos and deaths",
+      "summary": "Type /discord for a code, then type /dtlink in the Dungeon Train Discord, pick it from the list and paste the code. Once linked, you're @-mentioned in Discord when your death is reported, when your photos are shared, and when you hit a milestone.",
+      "highlights": [
+        "/discord gives you a one-time code with a Copy code button and an Open Discord link, and tells you in chat once you're linked",
+        "New Account tab in Options \u2192 Dungeon Train\u2026: see your Minecraft and Discord accounts side by side, link your Discord, and choose which posts ping you \u2014 your deaths, your Tributes, photos of yours others Tribute, photos passengers take of you, and milestones",
+        "/discord pings off stops every ping without unlinking; already linked through Credits? Pings are on for you now \u2014 turn them off any time",
+        "Linking from Credits now copies just the code, so pasting it into Discord works"
+      ],
+      "pr": 1881,
+      "date": "2026-10-08",
+      "released": true,
+      "released_in": "v0.1193.0",
+      "released_at": "2026-10-08T14:48:27Z"
+    },
+    {
+      "id": "group-carriages-drift-more",
+      "version": "0.1194.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "train"
+      ],
+      "title": "Shared Group carriages turn up more often",
+      "summary": "Group carriages are now five times as likely to be shared. About one in ten arrives as a build from another player's world, or carries your changes out to theirs, instead of one in fifty.",
+      "highlights": [],
+      "pr": 1882,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1195.0",
+      "released_at": "2026-10-09T05:31:06Z"
+    },
+    {
+      "id": "dh-ghost-terrain-dimensional-carriages-shaders",
+      "version": "0.1194.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "train"
+      ],
+      "title": "Shader rendering fix inside dimensional carriages",
+      "summary": "Fixed a visual glitch inside dimensional carriages for players running shaders with Distant Horizons.",
+      "highlights": [],
+      "pr": 1884,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1195.0",
+      "released_at": "2026-10-09T05:31:06Z"
+    },
+    {
+      "id": "advancement-tabs",
+      "version": "0.1195.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Advancement Tabs",
+      "summary": "Dungeon Train's advancements have been reorganised into tabs, each with its own final advancement to earn. Finish a whole tab and it turns gold.",
+      "highlights": [
+        "Click a tab's final advancement to see everything you still need for it.",
+        "New challenges, and advancements for photo albums.",
+        "Other mods' advancement tabs are tucked away by default; switch them back on in Options.",
+        "Group carriages built in other players' worlds turn up more often.",
+        "Bug fixes"
+      ],
+      "pr": 1883,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1195.0",
+      "released_at": "2026-10-09T05:31:06Z",
+      "major": true,
+      "description": "## Advancement Tabs\nDungeon Train's advancements have been reorganised into tabs. Train Explorer, Challenges, Others, The Enchiridion and The Darkroom. Each has its own final advancement to earn. Finish a whole tab and it turns gold.\n\n## Other significant updates\n\n- Click a tab's final advancement to see everything you still need for it.\n- New challenges, and advancements for photo albums.\n- Other mods' advancement tabs are tucked away by default; switch them back on in Options.\n- Group carriages built in other players' worlds turn up more often.\n- Bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/advancement-tabs.gif"
+    },
+    {
+      "id": "viewfinder-selfie-hint",
+      "version": "0.1196.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Selfie hint on the camera viewfinder",
+      "summary": "Raising a camera now shows which key flips it round for a selfie, and which key turns it back.",
+      "highlights": [
+        "A small key hint sits under the viewfinder: Selfie, or Front while you're in selfie mode",
+        "It shows your own key for Toggle Perspective and moves with the viewfinder"
+      ],
+      "pr": 1886,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1196.0",
+      "released_at": "2026-10-09T08:54:47Z"
+    },
+    {
+      "id": "replay-mod-moving-train",
+      "version": "0.1197.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Replay Mod now captures the moving train",
+      "summary": "Filming with Replay Mod (ReForgedPlay) works. Record a ride and the train moves in the replay exactly as it did when you rode it, with you aboard \u2014 instead of standing still while your recorded self drifts away. Replay Mod's Quick Mode loads too, and Replay Mod is on the approved mod list, so recording never puts a run into Free Play.",
+      "highlights": [
+        "Record a fresh replay \u2014 recordings made before this version hold no train movement and cannot be repaired",
+        "Works in singleplayer and on servers running this version"
+      ],
+      "pr": 1887,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1198.0",
+      "released_at": "2026-10-09T15:35:14Z"
+    },
+    {
+      "id": "death-moment-no-lag-spike",
+      "version": "0.1198.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "ui"
+      ],
+      "title": "No more lag spike the moment you die",
+      "summary": "Dying used to hitch for a split second just before the death screen, which made it feel like lag had killed you. That stutter is gone. Now the world keeps rolling for a breath after you fall \u2014 the train still moving under a red fade \u2014 before the recap rises in from black.",
+      "highlights": [
+        "No stutter on the frame you die",
+        "A brief death moment over the still-moving train before the recap",
+        "The recap now opens from black and fades in"
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1888,
+      "date": "2026-10-09",
+      "released": true,
+      "released_in": "v0.1198.0",
+      "released_at": "2026-10-09T15:35:14Z"
+    },
+    {
+      "id": "run-summary-life-clock",
+      "version": "0.1199.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Leaderboard records carry their life's clock",
+      "summary": "Each run summary now tells the relay how long the life lasted on the clock, not just how long you were active on the train. That lets the one-life leaderboards tell an impossible record from an honest one without ever doubting a real player; nothing changes for you in-game.",
+      "highlights": [],
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-end-portal-fixes",
+      "version": "0.1200.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether and End portal fixes",
+      "summary": "A few portal oddities around the Nether and the End have been tidied up.",
+      "highlights": [],
+      "pr": 1897,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-tvs-tune-themselves",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Televisions tune themselves",
+      "summary": "Televisions find the broadcast on their own, so there is nothing to slot in or carry around.",
+      "highlights": [],
+      "pr": 1896,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-viewer-count",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "See how many are watching your stream",
+      "summary": "While you broadcast, a count under LIVE shows how many are watching, and the pinned feed now tucks behind your menus and changes size with a click.",
+      "highlights": [],
+      "pr": 1891,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-twitch-mirror",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed on Twitch",
+      "summary": "When someone goes live, the feed now also plays on the Dungeon Train Twitch channel, and goes quiet again when they stop.",
+      "highlights": [],
+      "pr": 1894,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed",
+      "version": "0.1201.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Feed",
+      "summary": "Put on the broadcast camcorder and every television, everywhere, starts showing what you see. Its aerial has opinions about whatever you point it at.",
+      "highlights": [],
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye",
+      "version": "0.1202.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "ui"
+      ],
+      "title": "Live Eye",
+      "summary": "The broadcast headpiece is now the Live Eye, and it looks the part in your inventory.",
+      "highlights": [],
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "portal-trips-count",
+      "version": "0.1203.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "A few small things",
+      "summary": "A few small things along the ride behave a little differently now.",
+      "highlights": [],
+      "pr": 1904,
+      "date": "2026-10-10",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "author-room-heads",
+      "version": "0.1206.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books"
+      ],
+      "title": "A writer's face",
+      "summary": "A library's heads now look like the one who wrote its books.",
+      "highlights": [],
+      "pr": 1909,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-new-lens",
+      "version": "0.1208.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "The Live Eye looks back",
+      "summary": "The Live Eye has a new lens, and it changes when someone puts it on.",
+      "highlights": [],
+      "pr": 1910,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "donation-message-options",
+      "version": "0.1209.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Choose how your support is announced",
+      "summary": "You can now choose how your support is announced, under Options \u2192 Account.",
+      "highlights": [],
+      "pr": 1911,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stream-settings",
+      "version": "0.1210.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Stream settings",
+      "summary": "You can now choose what your viewers see, and preview it before you go live.",
+      "highlights": [],
+      "pr": 1912,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-bigger-lens",
+      "version": "0.1211.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "The Live Eye opens wider",
+      "summary": "The Live Eye's lens takes up more of its face, and the front is tidier.",
+      "highlights": [],
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 1913
+    },
+    {
+      "id": "freeplay-live-feed",
+      "version": "0.1212.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Free Play stays off the air",
+      "summary": "Free Play runs can't go live with the Live Eye, and their screens sometimes catch something different.",
+      "highlights": [],
+      "pr": 1914,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-tv-train-loot",
+      "version": "0.1213.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Live Eyes and TVs in train loot",
+      "summary": "Live Eyes and TVs can now turn up in train chests, barrels and vases.",
+      "highlights": [],
+      "pr": 1915,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-take-off-freeze",
+      "version": "0.1214.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Live Eye comes off smoothly",
+      "summary": "Taking off the Live Eye is smooth now.",
+      "highlights": [],
+      "pr": 1917,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stream-video-and-viewer-size",
+      "version": "0.1215.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Stream size settings",
+      "summary": "Options \u2192 Stream now lets you pick your broadcast's video size and how big the live feed sits on your screen, with the preview showing both.",
+      "highlights": [],
+      "pr": 1918,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "translation-review-ping-toggle",
+      "version": "0.1216.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Translation review pings",
+      "summary": "Translators can now choose whether Discord pings them when a submission of theirs needs a closer look.",
+      "highlights": [],
+      "pr": 1921,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tv-template-join",
+      "version": "0.1217.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "TV walls show one screen",
+      "summary": "TV walls on the train now show as one big screen.",
+      "highlights": [],
+      "pr": 1922,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "consent-kid-livestream-tooltip",
+      "version": "0.1217.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Livestreaming note follows its switch",
+      "summary": "On the first-launch card in Kid mode, the Livestreaming note now changes when you flip its switch.",
+      "highlights": [],
+      "pr": 1916,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "painting-variant-options",
+      "version": "0.1219.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Painting variants",
+      "summary": "Paintings in the builder can now be varied by size and picture, and a variant swaps the whole painting.",
+      "highlights": [],
+      "pr": 1924,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photos-remember-advancements",
+      "version": "0.1220.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Photos remember what they earned",
+      "summary": "Photos you share now carry the advancements they earned you, shown beside them in the Live Gallery on the website.",
+      "highlights": [],
+      "pr": 1923,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tv-in-creative-tab",
+      "version": "0.1221.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Television in the creative tab",
+      "summary": "The Television now sits in the Dungeon Train creative tab, ready to place.",
+      "highlights": [],
+      "pr": 1925,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "hash-verified-mod-whitelist",
+      "version": "0.1216.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "A closer look at installed mods",
+      "summary": "Free Play now takes a closer look at the mods you have installed. Anything on the approved list, from CurseForge, Modrinth or your own build, plays as normal.",
+      "highlights": [],
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "variant-clipboard-icon-badges",
+      "version": "0.1223.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Clipboard icons show what they hold",
+      "summary": "Copied block variants now show their group and their blocks right on the icon.",
+      "highlights": [],
+      "pr": 1927,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "held-tv-live-screen",
+      "version": "0.1224.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Carry a television",
+      "summary": "A television in your hand can now be switched on with a tap of the attack button and watched as you go; it flips to the other hand without a pause, and one placed while on comes on.",
+      "highlights": [],
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-tv-weighting",
+      "version": "0.1225.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "TVs follow the stream",
+      "summary": "TVs turn up more often on the train while someone is streaming, and less often when nobody is.",
+      "highlights": [],
+      "pr": 1928,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-chat-lines",
+      "version": "0.1226.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye speaks up",
+      "summary": "The Live Eye now tells you when you're live, how many are watching, and when it's over.",
+      "highlights": [],
+      "pr": 1929,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photos-show-what-they-earned",
+      "version": "0.1227.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Photos show what they earned",
+      "summary": "Opening a photo now shows the advancements it earned its photographer \u2014 the ones you haven't found yet keep their secrets.",
+      "highlights": [],
+      "pr": 1930,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-frame-stalls",
+      "version": "0.1228.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "community"
+      ],
+      "title": "Smoother Live Eye and TVs",
+      "summary": "Streaming with the Live Eye and watching it on a TV now runs smoother.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1931,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-watch-links",
+      "version": "0.1229.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye points the way",
+      "summary": "Going live now tells you where your audience can find you.",
+      "highlights": [],
+      "pr": 1932,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-encoder-thread-cap",
+      "version": "0.1230.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye is lighter on your computer.",
+      "highlights": [],
+      "pr": 1933,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "book-screen-info-button",
+      "version": "0.1231.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "A tidier book and quill",
+      "summary": "Writing a book is less cluttered, and a small info button now shows what the train won't take.",
+      "highlights": [],
+      "pr": 1934,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "streamer-head-viewer-decode-size",
+      "version": "0.1232.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye now asks a little less of your computer.",
+      "highlights": [],
+      "pr": 1935,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-hangs-on",
+      "version": "0.1233.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live Feed hangs on",
+      "summary": "TVs now find their way back when a stream drops out.",
+      "highlights": [],
+      "pr": 1936,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photo-views-tributes",
+      "version": "0.1234.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Photos fade faster without a Tribute",
+      "summary": "Found photos now fade sooner unless someone pays them Tribute.",
+      "highlights": [],
+      "pr": 1937,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "options-settings-list",
+      "version": "0.1235.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Options screen reads at a glance",
+      "summary": "Every setting in Options \u2192 Dungeon Train is now one line: an icon, its name, a short grey hint and a control that shows only its value. Hover the name for the full explanation.",
+      "highlights": [],
+      "pr": 1938,
+      "date": "2026-10-12",
       "released": false,
       "released_in": null,
       "released_at": null

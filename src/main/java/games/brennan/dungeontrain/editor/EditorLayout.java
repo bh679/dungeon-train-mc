@@ -96,6 +96,22 @@ public final class EditorLayout {
     public static final int PLOT_Y = 230;
 
     /**
+     * Y of the Buildings plots — lower than {@link #PLOT_Y}, because a building may be 159 tall
+     * ({@code Buildings.MAX_SIZE}) and that does not fit between 230 and the build ceiling at 320. Only
+     * the resident category is ever stamped, so this layer never meets another category's plots.
+     */
+    public static final int BUILDINGS_PLOT_Y = 150;
+
+    /**
+     * The lowest Y any plot stands at — the Buildings layer. Counts as "up at the editor" only while
+     * Buildings is the stamped category ({@link #isAtPlotHeight(int, boolean)}): a gate left above it
+     * silently turns the status HUD, the labels, the menus and plot detection off for anyone standing
+     * in a building, and one lowered for everybody would run the editor overlay for players who are
+     * merely high up in an ordinary world.
+     */
+    public static final int LOWEST_PLOT_Y = Math.min(PLOT_Y, BUILDINGS_PLOT_Y);
+
+    /**
      * Margin below {@link #PLOT_Y} that still counts as "up at the editor" — a player standing on
      * their plot floor is a few blocks below the origin, and a gate left ABOVE the floor silently
      * disables everything that keys off this.
@@ -114,6 +130,15 @@ public final class EditorLayout {
      */
     public static boolean isAtPlotHeight(int y) {
         return y >= PLOT_Y - PLOT_HEIGHT_MARGIN;
+    }
+
+    /**
+     * {@link #isAtPlotHeight(int)} for the server, which knows which category is stamped: while it is
+     * Buildings the editor starts at the lower {@link #BUILDINGS_PLOT_Y} layer. Callers go through
+     * {@link EditorStampedCategoryState#atPlotHeight}.
+     */
+    public static boolean isAtPlotHeight(int y, boolean buildingsResident) {
+        return y >= (buildingsResident ? LOWEST_PLOT_Y : PLOT_Y) - PLOT_HEIGHT_MARGIN;
     }
 
     /**

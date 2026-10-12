@@ -51,7 +51,7 @@ public final class StoryCodec {
 
         String character = optionalString(root, "character", "Anonymous");
         String story = optionalString(root, "story", "Untitled");
-        boolean deferred = optionalBoolean(root, "deferred", false);
+        StoryFile.Tuning tuning = tuningOf(root);
 
         if (!root.has("letters") || !root.get("letters").isJsonArray()) {
             throw new StoryParseException("missing or non-array 'letters' field");
@@ -88,7 +88,8 @@ public final class StoryCodec {
         if (letters.isEmpty()) {
             throw new StoryParseException("story has zero letters");
         }
-        return new StoryFile(fileId, character, story, deferred, letters);
+        return new StoryFile(fileId, character, story,
+            tuning.deferred(), tuning.after(), tuning.weight(), letters);
     }
 
     private static String optionalString(JsonObject obj, String key, String fallback) {
@@ -107,12 +108,13 @@ public final class StoryCodec {
     }
 
     /**
-     * Read just the {@code deferred} flag of a story without building the whole record. {@link
-     * StoryRegistry} uses this on the ENGLISH base file when a localized copy has replaced it —
-     * the localized copies carry no flag of their own, so parsing them alone would silently
-     * un-defer every held-back series. Caller owns the stream lifecycle.
+     * Read just the serving-order tuning ({@code deferred}, {@code after}, {@code weight}) of a story
+     * without building the whole record. {@link StoryRegistry} uses this on the ENGLISH base file when
+     * a localized copy has replaced it — the localized copies carry no tuning of their own, so parsing
+     * them alone would silently un-defer, un-chain and un-weight every series. Caller owns the stream
+     * lifecycle.
      */
-    public static boolean parseDeferred(InputStream in) throws StoryParseException {
+    public static StoryFile.Tuning parseTuning(InputStream in) throws StoryParseException {
         JsonElement rootEl;
         try {
             rootEl = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8));
@@ -122,7 +124,23 @@ public final class StoryCodec {
         if (!rootEl.isJsonObject()) {
             throw new StoryParseException("root is not a JSON object");
         }
-        return optionalBoolean(rootEl.getAsJsonObject(), "deferred", false);
+        return tuningOf(rootEl.getAsJsonObject());
+    }
+
+    /** {@code deferred} (default false), {@code after} (default none), {@code weight} (default 1). */
+    private static StoryFile.Tuning tuningOf(JsonObject root) {
+        boolean deferred = optionalBoolean(root, "deferred", false);
+        String after = optionalString(root, "after", null);
+        double weight = optionalNumber(root, "weight", 1.0);
+        return new StoryFile.Tuning(deferred, after, weight);
+    }
+
+    private static double optionalNumber(JsonObject obj, String key, double fallback) {
+        if (!obj.has(key) || !obj.get(key).isJsonPrimitive() || !obj.get(key).getAsJsonPrimitive().isNumber()) {
+            return fallback;
+        }
+        double v = obj.get(key).getAsDouble();
+        return Double.isFinite(v) && v >= 0 ? v : fallback;
     }
 
     /** Surfaced to the registry's per-file try/catch so logging is uniform. */

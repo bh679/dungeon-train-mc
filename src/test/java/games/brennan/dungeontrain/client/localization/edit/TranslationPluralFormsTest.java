@@ -3,12 +3,15 @@ package games.brennan.dungeontrain.client.localization.edit;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -98,5 +101,42 @@ class TranslationPluralFormsTest {
     void noFamiliesIsANoOp() {
         Set<String> plain = new LinkedHashSet<>(List.of("a.key", "b.key"));
         assertEquals(plain, TranslationPluralForms.project(plain, "ru_ru"));
+    }
+
+    /** The English values behind {@link #ENGLISH}, as the catalog reads them. */
+    private static Map<String, String> englishText() {
+        Map<String, String> text = new LinkedHashMap<>();
+        text.put("chat.dungeontrain.time.day.one", "%s day");
+        text.put("chat.dungeontrain.time.day.other", "%s days");
+        text.put("gui.dungeontrain.pick.one", "Pick one");
+        text.put("gui.dungeontrain.title", "Dungeon Train");
+        return text;
+    }
+
+    @Test
+    @DisplayName("A projected .few / .many row reads the family's English .other")
+    void fewAndManyTakeEnglishOther() {
+        Map<String, String> english = englishText();
+        assertEquals("%s days", TranslationPluralForms.sourceFor("chat.dungeontrain.time.day.few", english));
+        assertEquals("%s days", TranslationPluralForms.sourceFor("chat.dungeontrain.time.day.many", english));
+        assertEquals("%s day", TranslationPluralForms.sourceFor("chat.dungeontrain.time.day.one", english));
+        assertEquals("%s days", TranslationPluralForms.sourceFor("chat.dungeontrain.time.day.other", english));
+    }
+
+    @Test
+    @DisplayName("A key that merely ends in .one is not a family and reads only itself")
+    void nonFamilyOneIsNotRewritten() {
+        Map<String, String> english = englishText();
+        assertEquals("Pick one", TranslationPluralForms.sourceFor("gui.dungeontrain.pick.one", english));
+        assertEquals("", TranslationPluralForms.sourceFor("gui.dungeontrain.pick.few", english));
+        assertEquals("", TranslationPluralForms.sourceFor("gui.dungeontrain.missing", english));
+    }
+
+    @Test
+    @DisplayName("With the .other source in place, a Ukrainian .few with %s passes the format check")
+    void fewRowWithPlaceholderIsSaveable() {
+        Map<String, String> english = englishText();
+        String source = TranslationPluralForms.sourceFor("chat.dungeontrain.time.day.few", english);
+        assertNull(TranslationFormatCheck.checkTyped(source, "%s дні"));
     }
 }

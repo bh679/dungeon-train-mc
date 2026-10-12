@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:dungeon_train/apple_a_day",
+  "display": {
+    "icon": {
+      "id": "minecraft:golden_apple"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.self_medicated.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.self_medicated.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "challenge": {
+      "trigger": "dungeontrain:code_granted",
+      "conditions": {
+        "threshold": 1000
+      }
+    }
+  },
+  "requirements": [
+    [
+      "challenge"
+    ]
+  ]
+}

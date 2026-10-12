@@ -46,7 +46,15 @@ public final class BuilderPhotoPaths {
          */
         PORTAL_ROOM("portal_room"),
         /** A chunk frame — its own directory, {@code chunk_frames/}, and no relay kind yet. */
-        CHUNK_FRAME("chunk_frame");
+        CHUNK_FRAME("chunk_frame"),
+        /** A Lost City / WWOO building — shipped or player-made; its own directory, {@code buildings/}. */
+        BUILDING("building"),
+        /**
+         * An official Lost City building — Big Lost City's own. Read-only everywhere: it exists as a kind
+         * only so its tile and preview can be drawn; it has no photo, no file of the player's, no relay
+         * kind and no install.
+         */
+        LOST_CITY("lost_city");
 
         private final String id;
 
@@ -106,6 +114,8 @@ public final class BuilderPhotoPaths {
                     TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, id)));
             case CHUNK_FRAME -> Optional.of(withPng(
                     games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.fileFor(id)));
+            case BUILDING -> Optional.of(withPng(games.brennan.dungeontrain.building.BuildingStore.writeFileFor(id)));
+            case LOST_CITY -> Optional.empty();
         };
     }
 
@@ -143,6 +153,9 @@ public final class BuilderPhotoPaths {
             case CHUNK_FRAME -> Optional.ofNullable(
                     games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.sourceFileFor(id))
                     .map(BuilderPhotoPaths::withPng);
+            case BUILDING -> Optional.ofNullable(games.brennan.dungeontrain.building.BuildingStore.sourceFileFor(id))
+                    .map(BuilderPhotoPaths::withPng);
+            case LOST_CITY -> Optional.empty();
         };
     }
 

@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/reassembly_required",
+  "parent": "dungeontrain:dungeon_train/reached_nether",
   "display": {
     "icon": { "id": "minecraft:azalea_leaves" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_wwoo.title" },

@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.worldgen.FloorYState;
 import games.brennan.dungeontrain.client.worldgen.PendingStartingDimension;
+import games.brennan.dungeontrain.client.worldgen.PendingWorldPreset;
 import games.brennan.dungeontrain.world.StartingDimension;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
@@ -120,6 +121,7 @@ public abstract class CreateWorldScreenMixin {
                 ? StartingDimension.fromPresetPath(currPath)
                 : StartingDimension.OVERWORLD;
         PendingStartingDimension.set(dim);
+        PendingWorldPreset.set(curr);
 
         // Only re-apply a non-default Y when the user has just TRANSITIONED onto the
         // plain dungeon_train preset from some other preset. This keeps the preset cycle

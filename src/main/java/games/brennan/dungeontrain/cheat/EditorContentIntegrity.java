@@ -271,11 +271,15 @@ public final class EditorContentIntegrity {
      * subfolders), so this walks rather than listing. An unreadable folder reports "no content" —
      * player-editable data must never take the game down, and the conservative answer here is the
      * one that leaves the run clean.
+     *
+     * <p>One kind of file does not count: a building the game has accepted, with the sidecar beside
+     * it ({@link ApprovedBuildings}). That is content the game said yes to, not something this
+     * install changed.</p>
      */
     static boolean containsAnyFile(Path dir) {
         if (dir == null || !Files.isDirectory(dir)) return false;
         try (Stream<Path> walk = Files.walk(dir)) {
-            return walk.anyMatch(Files::isRegularFile);
+            return walk.anyMatch(file -> Files.isRegularFile(file) && !ApprovedBuildings.exempts(dir, file));
         } catch (IOException | SecurityException e) {
             LOGGER.warn("[DungeonTrain] Couldn't scan {} for editor content: {}", dir, e.toString());
             return false;

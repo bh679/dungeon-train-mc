@@ -409,6 +409,24 @@ public final class TrackVariantRegistry {
         return chosen.id();
     }
 
+    /**
+     * {@code parent}'s sub-variants that {@code gateCtx} allows and that are registered — what
+     * {@link #resolveGroup} would draw among, for a caller that draws among them itself. Empty when
+     * {@code parent} has no group or every member is gated out. A {@code null} context gates nothing.
+     */
+    public static List<TrackVariantGroup.Member> eligibleMembers(TrackKind kind, String parent,
+                                                                 GateContext gateCtx) {
+        Optional<TrackVariantGroup> groupOpt =
+            games.brennan.dungeontrain.editor.TrackVariantGroupStore.get(kind, parent);
+        if (groupOpt.isEmpty()) return List.of();
+        List<TrackVariantGroup.Member> out = new ArrayList<>();
+        for (TrackVariantGroup.Member m : groupOpt.get().members()) {
+            if (!contains(kind, m.id())) continue;
+            if (gateCtx == null || gateCtx.allows(effectiveGateOf(m))) out.add(m);
+        }
+        return out;
+    }
+
     /** A member's effective gate — the union of its linked Stages' gates, else its inline gate. */
     private static games.brennan.dungeontrain.template.TemplateGate effectiveGateOf(TrackVariantGroup.Member m) {
         if (!m.isStageLinked()) return m.gate();

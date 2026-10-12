@@ -1,0 +1,20 @@
+{
+  "parent": "dungeontrain:dungeon_train/carts_100",
+  "display": {
+    "icon": { "id": "minecraft:furnace_minecart" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.train_explored.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.train_explored.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "explored": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    ["explored"]
+  ]
+}

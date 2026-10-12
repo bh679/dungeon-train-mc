@@ -1,0 +1,28 @@
+{
+  "parent": "dungeontrain:dungeon_train/gate_enchiridion",
+  "display": {
+    "icon": {
+      "id": "exposure_polaroid:instant_camera"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.darkroom.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.darkroom.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "mirrored": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "mirrored"
+    ]
+  ]
+}

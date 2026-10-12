@@ -62,7 +62,7 @@ public final class SharedRoomEditEvents {
         if (SharedRoomRegistry.isEmpty()) return; // the overwhelming majority of edits short-circuit here
         SharedRoomRegistry.Instance inst = SharedRoomRegistry.byWorldPos(level, pos);
         if (inst == null || inst.isCulled()) return;
-        if (!SharedCarriageChangeFilter.isBuildChange(oldState, newState)) return;
+        if (!SharedCarriageChangeFilter.isBuildChange(oldState, newState, inst.isOnRelay())) return;
         inst.enqueue(inst.offsetOf(pos));
         inst.markBlockEdited();
     }

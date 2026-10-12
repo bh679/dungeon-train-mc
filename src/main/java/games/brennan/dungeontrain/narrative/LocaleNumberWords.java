@@ -33,7 +33,7 @@ public final class LocaleNumberWords {
             // Out of spelled range — let the caller use digits (all these languages use Arabic numerals).
             return switch (base) {
                 case "es", "pt", "id", "ms", "fi", "vi", "th",
-                     "de", "fr", "it", "nl", "pl", "ro", "ru", "ja", "ko" -> Long.toString(n);
+                     "de", "fr", "it", "nl", "pl", "ro", "ru", "uk", "ja", "ko" -> Long.toString(n);
                 default -> null;
             };
         }
@@ -52,6 +52,7 @@ public final class LocaleNumberWords {
             case "pl" -> pl(n);
             case "ro" -> ro(n);
             case "ru" -> ru(n);
+            case "uk" -> uk(n);
             case "ja" -> ja(n);
             case "ko" -> ko(n);
             default -> null;
@@ -601,6 +602,59 @@ public final class LocaleNumberWords {
         // 1000 reads idiomatically as "тысяча" (одна dropped); thousands count is feminine.
         String kw = (k == 1) ? "тысяча" : ruBelow1000(k, true) + " " + ruThousandWord(k);
         return r == 0 ? kw : kw + " " + ruBelow1000(r, false);
+    }
+
+    // ---------------------------------------------------------------- Ukrainian
+    // Same shape as Russian: gendered 1/2 before тисяча (одна/дві), east-Slavic plural of тисяча.
+    // Apostrophe is U+2019 (’), the form vanilla uk_ua uses.
+
+    private static final String[] UK_0_19 = {
+        "нуль", "один", "два", "три", "чотири", "п’ять", "шість", "сім", "вісім", "дев’ять",
+        "десять", "одинадцять", "дванадцять", "тринадцять", "чотирнадцять", "п’ятнадцять",
+        "шістнадцять", "сімнадцять", "вісімнадцять", "дев’ятнадцять"
+    };
+    private static final String[] UK_TENS = {
+        "", "", "двадцять", "тридцять", "сорок", "п’ятдесят", "шістдесят", "сімдесят",
+        "вісімдесят", "дев’яносто"
+    };
+    private static final String[] UK_HUNDREDS = {
+        "", "сто", "двісті", "триста", "чотириста", "п’ятсот", "шістсот", "сімсот",
+        "вісімсот", "дев’ятсот"
+    };
+
+    /** Unit word 0..19; feminine forms of 1/2 (одна/дві) when {@code fem} — used before тисяча. */
+    private static String ukUnit(long n, boolean fem) {
+        if (fem && n == 1) return "одна";
+        if (fem && n == 2) return "дві";
+        return UK_0_19[(int) n];
+    }
+
+    private static String ukBelow100(long n, boolean fem) {
+        if (n < 20) return ukUnit(n, fem);
+        long t = n / 10, r = n % 10;
+        return r == 0 ? UK_TENS[(int) t] : UK_TENS[(int) t] + " " + ukUnit(r, fem);
+    }
+
+    private static String ukBelow1000(long n, boolean fem) {
+        if (n < 100) return ukBelow100(n, fem);
+        long h = n / 100, r = n % 100;
+        return UK_HUNDREDS[(int) h] + (r == 0 ? "" : " " + ukBelow100(r, fem));
+    }
+
+    /** Ukrainian plural of "тисяча" governed by the thousands count k. */
+    private static String ukThousandWord(long k) {
+        long lastDigit = k % 10, lastTwo = k % 100;
+        if (lastDigit == 1 && lastTwo != 11) return "тисяча";
+        if (lastDigit >= 2 && lastDigit <= 4 && !(lastTwo >= 12 && lastTwo <= 14)) return "тисячі";
+        return "тисяч";
+    }
+
+    private static String uk(long n) {
+        if (n < 1000) return ukBelow1000(n, false);
+        long k = n / 1000, r = n % 1000;
+        // 1000 reads idiomatically as "тисяча" (одна dropped); thousands count is feminine.
+        String kw = (k == 1) ? "тисяча" : ukBelow1000(k, true) + " " + ukThousandWord(k);
+        return r == 0 ? kw : kw + " " + ukBelow1000(r, false);
     }
 
     // ---------------------------------------------------------------- Japanese

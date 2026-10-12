@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
+import games.brennan.dungeontrain.client.localization.HumanOnlyTranslations;
 import games.brennan.dungeontrain.client.localization.LanguageAiFilter;
 import games.brennan.dungeontrain.client.localization.LanguageSearchIndex;
 import games.brennan.dungeontrain.mixin.client.LanguageSelectEntryAccessor;
@@ -15,6 +16,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
 import net.minecraft.network.chat.Component;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -68,6 +70,11 @@ public final class LanguageScreenSearch {
         ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/filter");
     /** Authored at 16 and drawn 1:1, like the editor's own icons. */
     private static final int FILTER_ICON_PX = 16;
+    /** A person, ours — grey while AI translations show, green once the player opted out of them. */
+    private static final ResourceLocation HUMAN_ONLY_OFF_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/human_only");
+    private static final ResourceLocation HUMAN_ONLY_ON_ICON =
+        ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "icon/human_only_on");
     /** Vanilla insets a button's label by 2px a side; 10 keeps a word clear of the frame. */
     private static final int LABEL_PAD = 10;
 
@@ -100,6 +107,12 @@ public final class LanguageScreenSearch {
     private static SpriteIconButton filterIcon;
     /** What it becomes once it is narrowing something: a button naming the state. */
     private static Button filterLabel;
+    /**
+     * The "Human translations only" switch at the row's right end, as two sprite buttons — a sprite
+     * is fixed at build time, so the on and off looks are separate widgets, like the filter's two.
+     */
+    private static SpriteIconButton humanOnlyOff;
+    private static SpriteIconButton humanOnlyOn;
     /** Where the left cluster ends, so the title knows whether it still has room. */
     private static int clusterRight;
     private static boolean searchOpen;
@@ -153,6 +166,8 @@ public final class LanguageScreenSearch {
         addIfAbsent(event, filterLabel);
         addIfAbsent(event, toggle);
         addIfAbsent(event, search);
+        addIfAbsent(event, humanOnlyOff);
+        addIfAbsent(event, humanOnlyOn);
 
         titleWidget = new WeakReference<>(title);
         layoutRow();
@@ -177,13 +192,43 @@ public final class LanguageScreenSearch {
         toggle.setPosition(toggleX, rowY);
         clusterRight = toggleX + ROW_H;
 
+        int humanOnlyX = rowRight - ROW_H;
+        humanOnlyOff.setPosition(humanOnlyX, rowY);
+        humanOnlyOn.setPosition(humanOnlyX, rowY);
+
         int searchX = clusterRight + GAP;
         search.setX(searchX);
         search.setY(rowY);
-        search.setWidth(Math.max(ROW_H, rowRight - searchX));
+        search.setWidth(Math.max(ROW_H, humanOnlyX - GAP - searchX));
 
         applyFilterState();
         applySearchOpen();
+        applyHumanOnlyState();
+    }
+
+    /** Which of the two switch widgets shows, and the tooltip saying what it does and where it is. */
+    private static void applyHumanOnlyState() {
+        boolean on = HumanOnlyTranslations.isEnabled();
+        humanOnlyOff.visible = !on;
+        humanOnlyOff.active = !on;
+        humanOnlyOn.visible = on;
+        humanOnlyOn.active = on;
+        Tooltip tip = Tooltip.create(Component.translatable("gui.dungeontrain.language.human_only")
+            .append("\n")
+            .append(Component.translatable(on
+                ? "gui.dungeontrain.language.human_only.on"
+                : "gui.dungeontrain.language.human_only.off"))
+            .append("\n\n")
+            .append(Component.translatable("gui.dungeontrain.language.human_only.tooltip")));
+        humanOnlyOff.setTooltip(tip);
+        humanOnlyOn.setTooltip(tip);
+    }
+
+    /** Flip the choice, save it, and re-lay the running game's language over it straight away. */
+    private static void toggleHumanOnly() {
+        ClientDisplayConfig.setHumanOnlyTranslations(!HumanOnlyTranslations.isEnabled());
+        TranslationOverrides.reapplyHumanOnly();
+        applyHumanOnlyState();
     }
 
     /** Which of the two filter widgets is the one on screen, and what it says. */
@@ -250,11 +295,23 @@ public final class LanguageScreenSearch {
             .sprite(SEARCH_ICON, SEARCH_ICON_PX, SEARCH_ICON_PX)
             .build();
 
+        humanOnlyOff = humanOnlyButton(HUMAN_ONLY_OFF_ICON);
+        humanOnlyOn = humanOnlyButton(HUMAN_ONLY_ON_ICON);
+
         search = new EditBox(Minecraft.getInstance().font, rowLeft, rowY, ROW_H, ROW_H,
             Component.translatable("gui.dungeontrain.language.search"));
         search.setHint(Component.translatable("gui.dungeontrain.language.search.hint"));
         search.setMaxLength(MAX_QUERY);
         search.setResponder(text -> refilter());
+    }
+
+    private static SpriteIconButton humanOnlyButton(ResourceLocation sprite) {
+        return SpriteIconButton.builder(
+                Component.translatable("gui.dungeontrain.language.human_only"),
+                b -> toggleHumanOnly(), true)
+            .width(ROW_H)
+            .sprite(sprite, FILTER_ICON_PX, FILTER_ICON_PX)
+            .build();
     }
 
     private static void setSearchOpen(LanguageSelectScreen screen, boolean open) {

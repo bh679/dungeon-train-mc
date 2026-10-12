@@ -85,7 +85,9 @@ public final class PortalChunkDimension {
             // for it has been planned. It stays pending and is written when the room exists.
             if (structure == null) continue;
             PortalChunkSlice slice = PortalChunkTerrain.peek(pairKey);
-            if (slice == null) {
+            // A room laid from a captured blob already stands as it was left — decorated, mined and
+            // with whatever lived there — so the pass would only undo that.
+            if (slice == null || structure.stampsFromBlob()) {
                 PortalChunkTerrain.decorationApplied(pairKey);
                 continue;
             }

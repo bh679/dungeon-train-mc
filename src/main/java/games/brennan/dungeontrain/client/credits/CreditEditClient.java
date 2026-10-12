@@ -71,9 +71,12 @@ public final class CreditEditClient {
     /** The wire value asking for every section at once. */
     static final String ALL = "all";
 
-    /** What the player asked for. The amount pair is Funders-only (see {@link #amountOnly}). */
+    /**
+     * What the player asked for. The amount pair is Funders-only (see {@link #amountOnly}); the skin
+     * pair is the website Credits page drawing the player in their own skin, on every card.
+     */
     public enum Action {
-        RENAME, REMOVE, RESTORE, HIDE_AMOUNT, SHOW_AMOUNT;
+        RENAME, REMOVE, RESTORE, HIDE_AMOUNT, SHOW_AMOUNT, HIDE_SKIN, SHOW_SKIN;
 
         public String wire() {
             return name().toLowerCase(Locale.ROOT);
@@ -131,6 +134,16 @@ public final class CreditEditClient {
     /** Show the figure beside this player's name on the Funders card again. */
     public static CompletableFuture<Result> showAmount() {
         return send(Action.SHOW_AMOUNT, "", "");
+    }
+
+    /** Keep this player named on the website's Credits page but never drawn in their own skin. */
+    public static CompletableFuture<Result> hideSkin() {
+        return send(Action.HIDE_SKIN, "", "");
+    }
+
+    /** Let the website's Credits page draw this player in their own skin again. */
+    public static CompletableFuture<Result> showSkin() {
+        return send(Action.SHOW_SKIN, "", "");
     }
 
     /**

@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AdvancementVisibilityRule;
 import games.brennan.dungeontrain.advancement.BandAdvancements;
+import games.brennan.dungeontrain.advancement.TabGateways;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.advancements.AdvancementVisibilityEvaluator;
@@ -57,6 +59,10 @@ import java.util.function.Predicate;
  * earned it falls back to {@code original} — hidden — and the tab stays
  * out of sight until the player unlocks it.</p>
  *
+ * <p>Each advancement can override that rule in the advancement editor — hidden until parent (the
+ * default above), always visible while its parent is, or hidden until earned — see
+ * {@link games.brennan.dungeontrain.advancement.AdvancementVisibilityRule}.</p>
+ *
  * <p>This only decides whether a node is <em>sent</em> to the client at all —
  * it says nothing about where it's drawn once there. An earned node whose
  * real parent got hidden by this rule needs its synced tree connection
@@ -79,12 +85,10 @@ public abstract class AdvancementVisibilityEvaluatorMixin {
         ResourceLocation id = node.holder().id();
         if (!DungeonTrain.MOD_ID.equals(id.getNamespace())) return original;
         if (!BandAdvancements.isFrontierTab(id.getPath())) return original;
-
-        if (isDoneTest.test(node)) return true;
-
-        AdvancementNode parent = node.parent();
-        if (parent == null) return original;
-
-        return isDoneTest.test(parent);
+        // Per-advancement mode from the advancement editor; with none set, the frontier rule
+        // (hidden until parent) for a child and vanilla's own answer for a tab head.
+        return AdvancementVisibilityRule.isVisible(node, AdvancementNode::parent, isDoneTest,
+            n -> AdvancementVisibilityRule.Mode.parse(TabGateways.layout().visibility().get(n.holder().id().toString())),
+            n -> original);
     }
 }

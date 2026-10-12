@@ -139,6 +139,8 @@ public final class EditorPlotTransformer {
         Optional<EditorCategory.Located> located = EditorCategory.locate(player, dims);
         if (located.isEmpty()) return Optional.empty();
         Template model = located.get().model();
+        // Official Lost City buildings are view-only: nothing rearranges their blocks.
+        if (model instanceof Template.LostCity) return Optional.empty();
         BlockPos origin = model.editorPlotOrigin(level, dims);
         Vec3i size = model.plotSize(dims);
         if (origin == null || size == null

@@ -586,7 +586,7 @@ public final class CarriageVariantBlocks {
                     int rawW = obj.get("weight").getAsInt();
                     mobWeight = rawW < 1 ? 1 : rawW;
                 }
-                VariantRotation mobRot = parseRotation(obj.get("rotation"), contextId, contextPos);
+                VariantRotation mobRot = parseRotation(obj.get("rotation"), false, contextId, contextPos);
                 // Mob entries never have SLAB_TYPE / HALF (the state is the
                 // empty-placeholder sentinel), but parse the field for round-trip
                 // fidelity in case future schema lets mobs carry it.
@@ -629,7 +629,8 @@ public final class CarriageVariantBlocks {
                 int raw = obj.get("weight").getAsInt();
                 weight = raw < 1 ? 1 : raw;
             }
-            VariantRotation rotation = parseRotation(obj.get("rotation"), contextId, contextPos);
+            VariantRotation rotation = parseRotation(obj.get("rotation"),
+                RotationApplier.isCompass(base.state()), contextId, contextPos);
             String lootPrefab = null;
             if (obj.has("lootPrefab") && obj.get("lootPrefab").isJsonPrimitive()
                 && obj.get("lootPrefab").getAsJsonPrimitive().isString()) {
@@ -669,8 +670,15 @@ public final class CarriageVariantBlocks {
             // Additive column growth. Absent → off (a single block), so older
             // files spawn unchanged.
             VariantGrowth growth = parseGrowth(obj.get("growth"), contextId, contextPos);
+            // Additive painting size / picture. Absent → off (the captured
+            // block, cell by cell), so older files spawn unchanged.
+            VariantPainting painting = parsePainting(obj.get("painting"), contextId, contextPos);
+            // Additive: the size of the painting this cell was captured from, cleared at every spawn.
+            JsonElement hungEl = obj.get("hung");
+            HungPainting hung = hungEl != null && hungEl.isJsonPrimitive()
+                ? HungPainting.parse(hungEl.getAsString()) : HungPainting.NONE;
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, connect, growth);
+                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -991,6 +999,39 @@ public final class CarriageVariantBlocks {
         int acc = 0;
         for (int i = 0; i < weights.length; i++) {
             acc += Math.max(1, weights[i]);
+            if (draw < acc) return i;
+        }
+        return weights.length - 1;
+    }
+
+    /**
+     * {@link #pickIndexFromWeights} where a weight of 0 means "never" rather than being clamped to 1 —
+     * for weights adjusted at stamp time (see {@code LiveTvWeighting}). Same seed mix, so a column with
+     * no zero in it picks exactly as {@link #pickIndexFromWeights} does. Returns {@code -1} when every
+     * weight is 0; the caller then rolls the authored weights instead.
+     */
+    public static int pickIndexFromWeightsAllowZero(BlockPos localPos, long worldSeed, int carriageIndex, int[] weights) {
+        return drawAllowZero(seededRandom(localPos, worldSeed, carriageIndex), weights);
+    }
+
+    /** {@link #pickIndexFromLockGroup} with the zero rule of {@link #pickIndexFromWeightsAllowZero}. */
+    public static int pickIndexFromLockGroupAllowZero(int lockId, long worldSeed, int carriageIndex, int[] weights) {
+        if (lockId <= 0) throw new IllegalArgumentException("lockId must be > 0");
+        long seed = worldSeed
+            ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
+            ^ ((long) lockId * 0xBF58476D1CE4E5B9L);
+        return drawAllowZero(new Random(seed), weights);
+    }
+
+    private static int drawAllowZero(Random random, int[] weights) {
+        if (weights.length == 0) throw new IllegalArgumentException("weights must be non-empty");
+        int total = 0;
+        for (int w : weights) total += Math.max(0, w);
+        if (total <= 0) return -1;
+        int draw = random.nextInt(total);
+        int acc = 0;
+        for (int i = 0; i < weights.length; i++) {
+            acc += Math.max(0, weights[i]);
             if (draw < acc) return i;
         }
         return weights.length - 1;
@@ -1341,7 +1382,7 @@ public final class CarriageVariantBlocks {
             }
             if (!s.rotation().isDefault()) {
                 sb.append(", \"rotation\": ");
-                appendRotationJson(sb, s.rotation());
+                appendRotationJson(sb, s.rotation(), false);
             }
             // Armor-stand / entity entries can carry an equipment loadout link
             // (e.g. minecraft:armor_stand + lootPrefab); emit it so the link
@@ -1381,7 +1422,7 @@ public final class CarriageVariantBlocks {
         }
         if (!s.rotation().isDefault()) {
             sb.append(", \"rotation\": ");
-            appendRotationJson(sb, s.rotation());
+            appendRotationJson(sb, s.rotation(), RotationApplier.isCompass(s.state()));
         }
         if (s.linkedLootPrefabId() != null) {
             sb.append(", \"lootPrefab\": \"").append(escapeJson(s.linkedLootPrefabId())).append("\"");
@@ -1401,6 +1442,12 @@ public final class CarriageVariantBlocks {
         if (!s.growth().isDefault()) {
             sb.append(", \"growth\": \"").append(s.growth().id()).append("\"");
         }
+        if (!s.painting().isDefault()) {
+            sb.append(", \"painting\": \"").append(s.painting().id()).append("\"");
+        }
+        if (!s.hung().isDefault()) {
+            sb.append(", \"hung\": \"").append(s.hung().id()).append("\"");
+        }
         sb.append("}");
     }
 
@@ -1409,8 +1456,15 @@ public final class CarriageVariantBlocks {
      * Returns {@link VariantRotation#NONE} if the element is missing, null,
      * or malformed. The {@link VariantRotation} canonical constructor
      * silently re-clamps malformed mode/mask combinations.
+     *
+     * <p>{@code compass} says the entry's block is a {@link RotationApplier#isCompass}
+     * block: only {@code "compass"} is read then, and a legacy {@code "dirs"} is
+     * ignored. Heads captured before compass rotation often inherited a 6-way
+     * lock from a neighbouring block, which had no effect; read as compass
+     * slots it would turn them (NORTH's bit is slot 2, west). Other blocks read
+     * only {@code "dirs"}.</p>
      */
-    private static VariantRotation parseRotation(JsonElement el, String contextId, BlockPos contextPos) {
+    static VariantRotation parseRotation(JsonElement el, boolean compass, String contextId, BlockPos contextPos) {
         if (el == null || !el.isJsonObject()) return VariantRotation.NONE;
         JsonObject obj = el.getAsJsonObject();
         VariantRotation.Mode mode = VariantRotation.Mode.RANDOM;
@@ -1424,7 +1478,7 @@ public final class CarriageVariantBlocks {
             }
         }
         int dirMask = 0;
-        if (obj.has("dirs") && obj.get("dirs").isJsonArray()) {
+        if (!compass && obj.has("dirs") && obj.get("dirs").isJsonArray()) {
             for (JsonElement d : obj.getAsJsonArray("dirs")) {
                 if (!d.isJsonPrimitive()) continue;
                 String name = d.getAsString().trim().toUpperCase(Locale.ROOT);
@@ -1435,6 +1489,18 @@ public final class CarriageVariantBlocks {
                     LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown rotation dir '{}', skipping.",
                         contextId, contextPos, name);
                 }
+            }
+        }
+        if (compass && obj.has("compass") && obj.get("compass").isJsonArray()) {
+            for (JsonElement c : obj.getAsJsonArray("compass")) {
+                if (!c.isJsonPrimitive()) continue;
+                int slot = RotationApplier.compassSlotOf(c.getAsString());
+                if (slot < 0) {
+                    LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown compass point '{}', skipping.",
+                        contextId, contextPos, c.getAsString());
+                    continue;
+                }
+                dirMask |= 1 << slot;
             }
         }
         return new VariantRotation(mode, dirMask);
@@ -1497,6 +1563,22 @@ public final class CarriageVariantBlocks {
             return VariantGrowth.NONE;
         }
         return growth;
+    }
+
+    /**
+     * Parse an optional {@code "painting"} token ({@code "any random"}, {@code "2x1 minecraft:kebab"}).
+     * Absent → off; malformed → off with a warning.
+     */
+    private static VariantPainting parsePainting(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantPainting.NONE;
+        String token = el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
+        VariantPainting painting = token == null ? null : VariantPainting.parse(token);
+        if (painting == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown painting '{}', using off.",
+                contextId, contextPos, el);
+            return VariantPainting.NONE;
+        }
+        return painting;
     }
 
     private static VariantActive parseActive(JsonElement el, String contextId, BlockPos contextPos) {
@@ -1610,11 +1692,23 @@ public final class CarriageVariantBlocks {
     /**
      * Serialise a {@link VariantRotation} to the v5 JSON shape. Direction
      * names are written lowercase for human readability; the parser is
-     * case-insensitive.
+     * case-insensitive. A {@link RotationApplier#isCompass} block's mask is
+     * compass slots, written as {@code "compass": ["n", "ne", ...]} so it never
+     * collides with the {@code "dirs"} meaning.
      */
-    private static void appendRotationJson(StringBuilder sb, VariantRotation rot) {
+    static void appendRotationJson(StringBuilder sb, VariantRotation rot, boolean compass) {
         sb.append("{\"mode\": \"").append(rot.mode().name().toLowerCase(Locale.ROOT)).append("\"");
-        if (rot.dirMask() != 0) {
+        if (compass && rot.dirMask() != 0) {
+            sb.append(", \"compass\": [");
+            boolean first = true;
+            for (int slot = 0; slot < RotationApplier.COMPASS_SLOTS; slot++) {
+                if ((rot.dirMask() & (1 << slot)) == 0) continue;
+                if (!first) sb.append(", ");
+                sb.append('"').append(RotationApplier.compassJsonName(slot)).append('"');
+                first = false;
+            }
+            sb.append("]");
+        } else if (rot.dirMask() != 0) {
             sb.append(", \"dirs\": [");
             boolean first = true;
             for (net.minecraft.core.Direction d : net.minecraft.core.Direction.values()) {

@@ -1,0 +1,22 @@
+{
+  "parent": "dungeontrain:dungeon_train/the_enchiridion",
+  "display": {
+    "icon": { "id": "minecraft:enchanted_book" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.heros_handbook.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.heros_handbook.description" },
+    "frame": "challenge",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "mirrored": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "mirrored"
+    ]
+  ]
+}

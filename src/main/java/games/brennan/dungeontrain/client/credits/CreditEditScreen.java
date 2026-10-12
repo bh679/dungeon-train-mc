@@ -8,6 +8,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -25,7 +26,9 @@ import java.util.List;
  * offers <b>Restore</b> instead of the box. Whichever card it was opened from, the edit is to the
  * player's <b>one</b> identity — every card follows. Opened from the Funders card it adds one more
  * row, <b>Hide my amount</b> / <b>Show my amount</b>: the figure beside the name, not the name, so
- * it is the one edit that stays on that card alone.
+ * it is the one edit that stays on that card alone. Every card also carries <b>Show my skin on the
+ * website</b>: whether the website's Credits page may draw the player in their own Minecraft skin.
+ * Like the name, it is one identity — every card follows.
  *
  * <p>Deliberately not a settings option. The credited name is the player's, not the game's, and
  * the place to change it is beside where it is shown. Every button is a relay call — the change has
@@ -61,6 +64,7 @@ public final class CreditEditScreen extends Screen {
     private Button removeButton;
     private Button restoreButton;
     private Button amountButton;
+    private Checkbox skinBox;
     private Component status = Component.empty();
     private List<FormattedCharSequence> hintLines = List.of();
     private boolean sending;
@@ -78,6 +82,11 @@ public final class CreditEditScreen extends Screen {
         this.hidden = hidden;
         this.amountHidden = amountHidden;
         this.onEdited = onEdited;
+    }
+
+    /** The skin box is for a named line; an anonymous one is never drawn in its skin anyway. */
+    private boolean offersSkin() {
+        return !hidden;
     }
 
     /** The amount row belongs to the Funders card alone, and only while the name is on show. */
@@ -126,6 +135,16 @@ public final class CreditEditScreen extends Screen {
                 Component.translatable(amountHidden
                     ? "gui.dungeontrain.credits.rename.show_amount"
                     : "gui.dungeontrain.credits.rename.hide_amount"), b -> toggleAmount()));
+            y += ROW_H + GAP;
+        }
+        if (offersSkin()) {
+            // Reversible in one click, like the amount — no confirm.
+            skinBox = addRenderableWidget(Checkbox.builder(
+                    Component.translatable("gui.dungeontrain.credits.rename.show_skin"), this.font)
+                .pos(left, y)
+                .selected(!CreditsSelfEdits.get().skinHidden())
+                .onValueChange((box, show) -> toggleSkin(show))
+                .build());
         }
 
         Component hint = !RelayChatClient.canConnect()
@@ -154,6 +173,7 @@ public final class CreditEditScreen extends Screen {
         if (removeButton != null) removeButton.active = !sending;
         if (restoreButton != null) restoreButton.active = !sending;
         if (amountButton != null) amountButton.active = !sending;
+        if (skinBox != null) skinBox.active = !sending;
     }
 
     private boolean consentOk() {
@@ -196,6 +216,15 @@ public final class CreditEditScreen extends Screen {
         else begin(Action.HIDE_AMOUNT, "", CreditEditClient.hideAmount());
     }
 
+    private void toggleSkin(boolean show) {
+        if (!consentOk()) {
+            rebuildWidgets(); // put the box back the way it was
+            return;
+        }
+        if (show) begin(Action.SHOW_SKIN, "", CreditEditClient.showSkin());
+        else begin(Action.HIDE_SKIN, "", CreditEditClient.hideSkin());
+    }
+
     private void begin(Action action, String to, java.util.concurrent.CompletableFuture<CreditEditClient.Result> call) {
         sending = true;
         updateButtons();
@@ -224,6 +253,8 @@ public final class CreditEditScreen extends Screen {
             case UNSUPPORTED -> "unsupported";
             default -> "failed";
         };
+        // A refused skin edit must not leave the box showing what did not happen.
+        if (action == Action.HIDE_SKIN || action == Action.SHOW_SKIN) rebuildWidgets();
         status = Component.translatable("gui.dungeontrain.credits.rename." + key)
             .withStyle(ChatFormatting.RED);
     }
@@ -236,8 +267,8 @@ public final class CreditEditScreen extends Screen {
         g.drawCenteredString(font, title, this.width / 2, formTop() - 16, 0xFFFFFFFF);
 
         // Below the last row of buttons: name box + Save/Cancel + Remove (+ the amount row on the
-        // Funders card), or Restore/Cancel alone.
-        int rows = hidden ? 1 : offersAmount() ? 4 : 3;
+        // Funders card) + the skin box, or Restore/Cancel alone.
+        int rows = hidden ? 1 : (offersAmount() ? 4 : 3) + (offersSkin() ? 1 : 0);
         int y = formTop() + rows * (ROW_H + GAP) + 2;
         for (FormattedCharSequence line : hintLines) {
             g.drawString(font, line, left, y, 0xFFA0A0A0, false);

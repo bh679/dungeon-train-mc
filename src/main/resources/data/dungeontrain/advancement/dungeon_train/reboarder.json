@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/im_not_alone",
+  "parent": "dungeontrain:dungeon_train/tab_others",
   "display": {
     "icon": { "id": "minecraft:rail" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reboarder.title" },

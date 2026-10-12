@@ -141,6 +141,11 @@ public final class TemplateStores {
         // rooms are sub-variants — and a stale answer here would put a member back in the top-level
         // pool as a sibling of its own parent.
         games.brennan.dungeontrain.editor.TrackVariantGroupStore.clearCache();
+        // A package switch can change which copy of a building worldgen places: drop the loaded
+        // templates (by the names known before the switch) and the new-building roster with them.
+        games.brennan.dungeontrain.building.BuildingSizes.clear();
+        games.brennan.dungeontrain.building.BuildingWorldgen.evictAll(
+            net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer());
     }
 
     private static void reloadRegistries() {
@@ -158,6 +163,7 @@ public final class TemplateStores {
         games.brennan.dungeontrain.editor.CarriageGroupTemplateStore.reload();
         games.brennan.dungeontrain.editor.LootPrefabStore.reload();
         games.brennan.dungeontrain.editor.BlockVariantPrefabStore.reload();
+        games.brennan.dungeontrain.building.BuildingRegistry.reload();
     }
 
     private static void reloadWeights() {

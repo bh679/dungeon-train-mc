@@ -11,12 +11,17 @@ import games.brennan.dungeontrain.advancement.SurveyAdvancement;
 import games.brennan.dungeontrain.compat.DiscordAdvancementSuffix;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.compat.TradeEverythingBridge;
+import games.brennan.dungeontrain.compat.PlayerMobCameraBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSocialBridge;
 import games.brennan.dungeontrain.compat.DiscordInboundBridge;
 import games.brennan.dungeontrain.compat.PlayerMobSpawnBridge;
 import games.brennan.dungeontrain.compat.FreePlayBridge;
+import games.brennan.dungeontrain.client.ContentModeSyncClient;
+import games.brennan.dungeontrain.client.DevMessageConsentClient;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.ConsentDraft;
 import games.brennan.dungeontrain.config.ContentMode;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.SurveyTag;
@@ -25,9 +30,11 @@ import games.brennan.dungeontrain.discord.WorldJoinReport;
 import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.logging.SableAabbLogFilter;
+import games.brennan.dungeontrain.registry.ModBlockEntities;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.registry.ModDataComponents;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
@@ -128,6 +135,15 @@ public class DungeonTrain {
      */
     private static final String RELAY_BUILDS_BASE_URL =
             "https://brennan.games/api/dp-relay/aaca6153252ea44856c8243b99fc382327afd6cb3853550e";
+    /**
+     * Tribute-photos channel capability. Every photo a player pays Tribute to on a RELEASE
+     * ({@code main}) build posts here, in its own channel rather than the public passenger log;
+     * dev/test builds fall through to the build's default cap (the dev channel). Non-secret +
+     * revocable like the others; the real channel webhook lives only on the relay (its
+     * {@code TRIBUTES_WEBHOOK_URL}, mapped to this cap in the relay's {@code .env}, never in the jar).
+     */
+    private static final String RELAY_TRIBUTES_BASE_URL =
+            "https://brennan.games/api/dp-relay/efb485a811a645b33514aea829d8ce2f2d27ed0fe43dab9e";
 
     /**
      * Discord guild (server) ids used to build the survey copy's jump-link back to the threaded
@@ -168,6 +184,19 @@ public class DungeonTrain {
             return override;
         }
         return RELAY_LIVE_BASE_URL;
+    }
+
+    /**
+     * The DEV relay capability, whatever branch this is — the dev twin of {@link #liveRelayBaseUrl()}.
+     * Free Play TVs watch the dev Live Feed channel on every build (see {@code LiveStatusPoller}).
+     * Honours the same {@code DUNGEONTRAIN_RELAY_BASE_URL} override as {@link #relayBaseUrl()}.
+     */
+    public static String devRelayBaseUrl() {
+        String override = System.getenv("DUNGEONTRAIN_RELAY_BASE_URL");
+        if (override != null && !override.isBlank()) {
+            return override;
+        }
+        return RELAY_DEV_BASE_URL;
     }
 
     /** The relay capability this build reports through: the dev channel for dev builds, live on main. */
@@ -248,6 +277,23 @@ public class DungeonTrain {
     }
 
     /**
+     * Where a tributed photo should post. On a RELEASE ({@code main}) build it routes to the
+     * dedicated tribute-photos cap; on a dev/test build it returns {@code null} so the post falls
+     * through to the build's default cap (the dev channel).
+     */
+    public static String tributeWebhookOverride() {
+        return tributeWebhookOverrideForBranch(VersionInfo.BRANCH);
+    }
+
+    /**
+     * Pure branch-&gt;tribute-photos-destination mapping (package-private for unit testing). Only a
+     * {@code main} build routes to the dedicated cap; every other branch returns {@code null}.
+     */
+    static String tributeWebhookOverrideForBranch(String branch) {
+        return "main".equals(branch) ? RELAY_TRIBUTES_BASE_URL + "/hook" : null;
+    }
+
+    /**
      * Guild id for the survey copy's jump-link on this build: the live community server on a
      * {@code main} build, the dev server otherwise — matching the channel the threaded original was
      * posted into. {@code ""} (the unset default) → the copy posts without a link.
@@ -293,6 +339,9 @@ public class DungeonTrain {
         // project. NarrativeLecternHooks (mod-bus) attaches it to vanilla
         // BlockEntityType.LECTERN's valid blocks.
         ModBlocks.register(modBus);
+        ModBlockEntities.register(modBus);
+        // Live Feed: a block-less Vista broadcast location (compat/vista/LiveBroadcastLocation).
+        games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation.register(modBus);
 
         ModCreativeTabs.register(modBus);
         ModFeatures.register(modBus);
@@ -308,6 +357,8 @@ public class DungeonTrain {
         // + per-player run-state attachment.
         ModAdvancementTriggers.register(modBus);
         ModDataAttachments.register(modBus);
+        // Item data components: the hand-held TV's on/off switch (compat/vista/TvItems).
+        ModDataComponents.register(modBus);
         // The relay's live milestone values (e.g. carts_1000's threshold), fetched once per
         // session and applied at datapack load. Kicked off here rather than at client init so
         // dedicated servers — where advancements are actually evaluated — get them too.
@@ -325,6 +376,12 @@ public class DungeonTrain {
                 ModConfig.Type.CLIENT,
                 ClientDisplayConfig.SPEC,
                 "dungeontrain-client.toml");
+        // Live Feed capture/playback knobs — its own file so the (already huge) display config
+        // record stays untouched and the knobs can be edited mid-run without any fair-play meaning.
+        modContainer.registerConfig(
+                ModConfig.Type.CLIENT,
+                games.brennan.dungeontrain.config.LiveFeedClientConfig.SPEC,
+                "dungeontrain-live-client.toml");
 
         // Common gameplay defaults readable on the title screen (no world) and
         // on a dedicated server. Holds the global DEFAULT PlayerMob spawn rate;
@@ -423,6 +480,7 @@ public class DungeonTrain {
         // is refused and pauses their uploads, and the writer is told in chat (see
         // SharedBookSubmitResponses). Registration only — no network, no game state.
         games.brennan.dungeontrain.net.relay.SharedBookSubmitResponses.register();
+        games.brennan.dungeontrain.compat.photo.SharedPhotos.registerResponses();
 
         // Point the bundled Discord Presence at Dungeon Train's central relay feed: every DT install
         // reports joins / deaths / advancements / chat to one community Discord via the relay at
@@ -502,6 +560,12 @@ public class DungeonTrain {
                             ContentMode[] modes = ContentMode.values();
                             ContentMode picked = index >= 0 && index < modes.length ? modes[index] : ContentMode.ADULT;
                             ClientDisplayConfig.setContentMode(picked);
+                            // The switches land here, after the mode, so an untouched switch takes the
+                            // default of the mode actually confirmed. Esc lands here too: the master
+                            // consent is DENIED then, and every gate also checks that, so a stored
+                            // "on" is inert until the player grants the connection.
+                            LIVESTREAM_DRAFT.commit(livestreamDefault(picked));
+                            DEV_CHAT_DRAFT.commit(devChatDefault(picked));
                             // Which tier players actually choose, and how that moves when the card is
                             // shown again. Fires on every exit path, because the card records the answer
                             // on every exit path — including Esc, where consent lands DENIED and the
@@ -565,12 +629,13 @@ public class DungeonTrain {
             // Stamp the DT version on genuine survey answers (bug / feedback / improvement) and their
             // results copy as the embed footer — Discord's smallest text. Notices stay unstamped.
             @Override public String surveyEmbedFooter() { return "DT " + VersionInfo.VERSION; }
-            // The per-player form DP actually calls: the same version, led by a dot for how current
-            // that build is, then who is answering — their language, how modded the game is and how
-            // many games they have played. Server thread, behind DP's network-consent gate.
-            @Override public String surveyEmbedFooter(UUID playerId, String clientLanguage) {
+            // The per-answer form DP actually calls: the same version, led by a dot for how current
+            // that build is, then who is answering — their language, how modded the game is, how
+            // many games they have played — and how many times they have now answered this question.
+            // Server thread, behind DP's network-consent gate.
+            @Override public String surveyEmbedFooter(UUID playerId, String clientLanguage, int timesAnswered) {
                 LatestReleaseCache.refreshIfStale();
-                return SurveyTag.forPlayer(playerId, clientLanguage);
+                return SurveyTag.forPlayer(playerId, clientLanguage, timesAnswered);
             }
         });
 
@@ -598,6 +663,15 @@ public class DungeonTrain {
             // (PlayerMobSpawnHooks, playermob 0.46.0+). Independent try so a build predating
             // the seam (e.g. an older bundled version) degrades to "no encounter stories"
             // rather than disabling the gift bridge above too.
+            // Cameras: a PlayerMob picks one up only as a gift from a player it will photograph
+            // (PlayerMobPickupHooks floor-gift want, playermob 0.107.0+), then photographs them
+            // (reached through the social bridge above).
+            try {
+                PlayerMobCameraBridge.install();
+            } catch (Throwable t) {
+                LOGGER.warn("PlayerMob present but pickup seam unavailable ({}); "
+                        + "PlayerMobs ignore cameras.", t.toString());
+            }
             try {
                 PlayerMobSpawnBridge.install();
             } catch (Throwable t) {
@@ -667,7 +741,33 @@ public class DungeonTrain {
      *
      * <p>1 — first version to carry the Adult / Kid content-mode question.</p>
      */
-    private static final int CONSENT_VERSION = 1;
+    // 2: the card gained the Livestreaming line (and the Developer chat switch), so everyone who
+    // answered version 1 sees it once more and gets the Livestreaming default for their mode.
+    private static final int CONSENT_VERSION = 2;
+
+    /**
+     * The card's two switches, held across one showing. Discord Presence reports a click the moment
+     * it happens and the chosen mode only at close; {@link ConsentDraft} turns that into "last click
+     * wins, else the mode's default" when the card closes. One instance each — the card is modal.
+     */
+    private static final ConsentDraft LIVESTREAM_DRAFT = new ConsentDraft(value -> {
+        LiveFeedClientConfig.setStreamingEnabled(value);
+        ContentModeSyncClient.syncNow(); // the server's loot gate reads it with the content mode
+    });
+    private static final ConsentDraft DEV_CHAT_DRAFT = new ConsentDraft(value -> {
+        ClientDisplayConfig.setDevChatEnabled(value);
+        DevMessageConsentClient.resync();
+    });
+
+    /** Livestreaming default per mode: on for Adult, off for Kid. */
+    static boolean livestreamDefault(ContentMode mode) {
+        return !mode.isKid();
+    }
+
+    /** Developer chat default per mode: on for Adult; Kid has no switch and is always off. */
+    static boolean devChatDefault(ContentMode mode) {
+        return !mode.isKid();
+    }
 
     /** A localized string for the consent card — DP takes raw Strings, not Components, on these seams. */
     private static String tr(String key) {
@@ -687,6 +787,10 @@ public class DungeonTrain {
      */
     private static List<ConsentBullet> consentBullets(ContentMode mode) {
         boolean kid = mode.isKid();
+        // Built once per mode when the card opens; the card re-reads the list (and resets its pills)
+        // when the player picks the other mode, so clicks made under the previous mode are dropped.
+        LIVESTREAM_DRAFT.reset();
+        DEV_CHAT_DRAFT.reset();
         return List.of(
                 new ConsentBullet(
                         tr(kid ? "gui.dungeontrain.consent.content.kid" : "gui.dungeontrain.consent.content.adult"),
@@ -699,10 +803,28 @@ public class DungeonTrain {
                         tr("gui.dungeontrain.consent.reincarnations"), true,
                         tr(kid ? "gui.dungeontrain.consent.reincarnations.kid.tip"
                                : "gui.dungeontrain.consent.reincarnations.adult.tip")),
-                new ConsentBullet(
-                        tr("gui.dungeontrain.consent.dev_chat"), !kid,
-                        tr(kid ? "gui.dungeontrain.consent.dev_chat.kid.tip"
-                               : "gui.dungeontrain.consent.dev_chat.adult.tip")),
+                // Livestreaming: a switch in both modes, on for adults and off for kids by default. The
+                // Kid hover says what a stream shares only once the switch is on; off, it just says so.
+                kid
+                        ? ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                                tr("gui.dungeontrain.consent.livestream.kid.tip"),
+                                tr("gui.dungeontrain.consent.livestream.kid.tip_off"),
+                                LIVESTREAM_DRAFT::touch)
+                        : ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                                tr("gui.dungeontrain.consent.livestream.adult.tip"),
+                                LIVESTREAM_DRAFT::touch),
+                // Developer chat: a switch for adults; for kids a fixed off line, because the Kid block
+                // (RelayChatClient.canConnect, ContentModeMirror) is a safety rule, not a preference.
+                kid
+                        ? new ConsentBullet(
+                                tr("gui.dungeontrain.consent.dev_chat"), false,
+                                tr("gui.dungeontrain.consent.dev_chat.kid.tip"))
+                        : ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.dev_chat"), devChatDefault(mode),
+                                tr("gui.dungeontrain.consent.dev_chat.adult.tip"),
+                                DEV_CHAT_DRAFT::touch),
                 // The soul line is the one whose marker flips the "wrong" way — off for adults, on for
                 // kids — which is the joke. Its hovers carry it, in the developer's own first person.
                 new ConsentBullet(

@@ -48,7 +48,8 @@ public final class DungeonTrainWorldData extends SavedData {
             (tag, registries) -> load(tag));
 
     private static final String TAG_TRAIN_Y = "trainY";
-    private static final String TAG_STARTS_WITH_TRAIN = "startsWithTrain";
+    /** Package-visible for {@link DungeonTrainSave}, which reads it straight off disk before the world opens. */
+    static final String TAG_STARTS_WITH_TRAIN = "startsWithTrain";
     private static final String TAG_CARRIAGE_LENGTH = "carriageLength";
     private static final String TAG_CARRIAGE_WIDTH = "carriageWidth";
     private static final String TAG_CARRIAGE_HEIGHT = "carriageHeight";
@@ -64,6 +65,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE = "breakBlocksOnContactOverride";
     private static final String TAG_USED_CARRIAGE_IDS = "usedSharedCarriageIds";
     private static final String TAG_OWN_SHELF_PAIRS = "ownShelfPairs";
+    private static final String TAG_AUTHOR_ROOM_PICKS = "authorRoomPicks";
     private static final String TAG_BUILDER_MODE = "builderMode";
     private static final String TAG_BUILDER_VARIANT = "builderVariant";
     private static final String TAG_BUILDER_STAGE = "builderStage";
@@ -93,6 +95,16 @@ public final class DungeonTrainWorldData extends SavedData {
     private int trainY;
     private boolean startsWithTrain;
     private CarriageDims dims;
+
+    /**
+     * Whether this world was created from a {@code dungeontrain:} world preset, or {@code null} when
+     * nobody recorded it — every world saved before the marker existed, and any world created
+     * without a preset being published (a dedicated server). Kept three-valued on disk too: the tag
+     * is written only once known, so loading and re-saving an old world never turns "unknown" into
+     * "no". Read before the world opens by {@link DungeonTrainSave}.
+     */
+    @javax.annotation.Nullable
+    private Boolean dungeonTrainPreset;
 
     /**
      * Whether the sky editor has ever stamped a plot in this world. {@code EditorCategory.clearAllPlots}
@@ -351,6 +363,17 @@ public final class DungeonTrainWorldData extends SavedData {
      */
     private final java.util.Set<Integer> ownShelfPairs = new java.util.LinkedHashSet<>();
 
+    /** Most author-room picks remembered; well past the pairs that can stand at once. */
+    private static final int MAX_AUTHOR_ROOM_PICKS = 512;
+
+    /**
+     * Pair key → {@code "<room>|<share>"} for pairs that landed on an author room. The room was fitted
+     * to an author or a self count fetched from the relay, neither of which is guaranteed to read the
+     * same after a restart, so the answer is kept rather than re-derived. Oldest dropped past
+     * {@link #MAX_AUTHOR_ROOM_PICKS}.
+     */
+    private final java.util.LinkedHashMap<Integer, String> authorRoomPicks = new java.util.LinkedHashMap<>();
+
     /**
      * What a Train Builder world has uploaded to the relay — one record per saved template. Empty in
      * every ordinary world. Its credentials cannot be re-derived, which is why they are saved rather
@@ -522,6 +545,10 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_CUSTOM_CONTENT_CHOICE)) {
             data.customContentChoice = CustomContentChoice.fromNbt(tag.getString(TAG_CUSTOM_CONTENT_CHOICE));
         }
+        // Absent on every world saved before the preset was recorded → stays unknown (null).
+        if (tag.contains(DungeonTrainSave.PRESET_MARKER_TAG)) {
+            data.dungeonTrainPreset = tag.getBoolean(DungeonTrainSave.PRESET_MARKER_TAG);
+        }
         // Absent on every world saved before the rate was settable → false, which is correct: those
         // worlds ran at the rate DT balanced.
         data.portalRateTuned = tag.getBoolean(TAG_PORTAL_RATE_TUNED);
@@ -533,6 +560,15 @@ public final class DungeonTrainWorldData extends SavedData {
         data.usedCarriageIds.loadFrom(tag.getIntArray(TAG_USED_CARRIAGE_IDS));
         // Empty for an absent key too, so a world saved before this was tracked has boosted nothing.
         for (int pairKey : tag.getIntArray(TAG_OWN_SHELF_PAIRS)) data.ownShelfPairs.add(pairKey);
+        // Absent on every world saved before author rooms were rolled together → nothing remembered.
+        net.minecraft.nbt.CompoundTag picks = tag.getCompound(TAG_AUTHOR_ROOM_PICKS);
+        for (String key : picks.getAllKeys()) {
+            try {
+                data.authorRoomPicks.put(Integer.parseInt(key), picks.getString(key));
+            } catch (NumberFormatException ignored) {
+                // A hand-edited key that is not a pair key names no pair; skip it.
+            }
+        }
         // Absent in every world that has never uploaded a build, which is every non-builder world.
         data.builderRelayBuilds.loadFrom(
                 tag.getList(TAG_BUILDER_RELAY_BUILDS, net.minecraft.nbt.Tag.TAG_COMPOUND));
@@ -640,6 +676,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (breakBlocksOnContactOverride != null) {
             tag.putBoolean(TAG_BREAK_BLOCKS_ON_CONTACT_OVERRIDE, breakBlocksOnContactOverride);
         }
+        if (dungeonTrainPreset != null) {
+            tag.putBoolean(DungeonTrainSave.PRESET_MARKER_TAG, dungeonTrainPreset);
+        }
         tag.putBoolean(TAG_JOIN_REPORT_POSTED, joinReportPosted);
         tag.putBoolean(TAG_EDITOR_PLOTS_STAMPED, editorPlotsStamped);
         tag.putString(TAG_EDITOR_STAMPED_CATEGORY, editorStampedCategory);
@@ -652,6 +691,11 @@ public final class DungeonTrainWorldData extends SavedData {
         if (!ownShelfPairs.isEmpty()) {
             tag.putIntArray(TAG_OWN_SHELF_PAIRS,
                 ownShelfPairs.stream().mapToInt(Integer::intValue).toArray());
+        }
+        if (!authorRoomPicks.isEmpty()) {
+            net.minecraft.nbt.CompoundTag picks = new net.minecraft.nbt.CompoundTag();
+            authorRoomPicks.forEach((pairKey, pick) -> picks.putString(Integer.toString(pairKey), pick));
+            tag.put(TAG_AUTHOR_ROOM_PICKS, picks);
         }
         if (!builderRelayBuilds.isEmpty()) {
             tag.put(TAG_BUILDER_RELAY_BUILDS, builderRelayBuilds.toTag());
@@ -1182,6 +1226,22 @@ public final class DungeonTrainWorldData extends SavedData {
         setDirty();
     }
 
+    /** Whether this world came from a {@code dungeontrain:} preset; {@code null} when never recorded. */
+    @javax.annotation.Nullable
+    public Boolean dungeonTrainPreset() {
+        return dungeonTrainPreset;
+    }
+
+    /**
+     * Record, once, at world creation, whether the world came from a {@code dungeontrain:} preset.
+     * A world that already carries an answer keeps it.
+     */
+    public void recordDungeonTrainPreset(boolean fromDungeonTrainPreset) {
+        if (dungeonTrainPreset != null) return;
+        dungeonTrainPreset = fromDungeonTrainPreset;
+        setDirty();
+    }
+
     /**
      * True once the per-world join-info report (Dungeon Train version + train regeneration data +
      * installed-mods list) has been appended to a player-join Discord message for this world.
@@ -1218,6 +1278,21 @@ public final class DungeonTrainWorldData extends SavedData {
     /** Remember that {@code pairKey}'s room was rolled with the own-books library weighted up. */
     public void markOwnShelfPair(int pairKey) {
         if (ownShelfPairs.add(pairKey)) setDirty();
+    }
+
+    /** {@code pairKey}'s remembered author-room pick as {@code "<room>|<share>"}, or null. */
+    public String authorRoomPick(int pairKey) {
+        return authorRoomPicks.get(pairKey);
+    }
+
+    /** Remember the author room {@code pairKey} landed on and whose books it holds. */
+    public void rememberAuthorRoomPick(int pairKey, String pick) {
+        if (pick == null || pick.equals(authorRoomPicks.get(pairKey))) return;
+        authorRoomPicks.put(pairKey, pick);
+        while (authorRoomPicks.size() > MAX_AUTHOR_ROOM_PICKS) {
+            authorRoomPicks.remove(authorRoomPicks.keySet().iterator().next());
+        }
+        setDirty();
     }
 
     /** Relay ids this world has already placed, newest first and capped at {@code limit}. */

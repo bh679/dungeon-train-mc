@@ -80,7 +80,7 @@ public record BuilderNewPacket(String modeId, String subTypeId,
                 return;   // a client can send anything; this one stamps blocks
             }
 
-            Optional<BuilderMode> mode = BuilderMode.fromId(packet.modeId);
+            Optional<BuilderMode> mode = BuilderMode.fromBuilderId(packet.modeId);
             if (mode.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Builder new: unknown mode '{}' — ignoring", packet.modeId);
                 return;

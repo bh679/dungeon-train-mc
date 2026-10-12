@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.train.CarriageBlockSnapshot;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriageEntitySnapshot;
 import games.brennan.dungeontrain.train.SharedCarriagePool;
+import games.brennan.dungeontrain.train.SharedGroupPool;
 import games.brennan.dungeontrain.train.SharedCarriageRegistry;
 import games.brennan.dungeontrain.train.StorageContents;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -18,6 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -135,6 +137,7 @@ public final class SharedCarriageEvents {
             }
         }
         SharedCarriagePool.returnAllBuffered();
+        SharedGroupPool.returnAllBuffered();
         int rooms = SharedRoomEvents.returnAllHeld(); // the rooms' leases belong to the old pool too
         LOGGER.info("[DungeonTrain] Shared-carriage pool switched {} → {}; returned {} held carriage(s) and {} room(s) and cleared the buffers.",
                 previous, mode, detached, rooms);
@@ -175,6 +178,17 @@ public final class SharedCarriageEvents {
             String owner = players.get(idx).getUUID().toString().replace("-", "");
             SharedCarriagePool.refreshOwnAsync(dims, stage, owner, exclude, mode);
         }
+        // Drifting Group carriages: only once one has drifted here (demand is null until then), so a
+        // world that never rolls one never locks a group build away from everyone else.
+        SharedGroupPool.Demand groupDemand = SharedGroupPool.demand();
+        if (groupDemand != null) {
+            SharedGroupPool.refreshAsync(groupDemand, hostUuid, hostName, exclude, mode);
+            if (!players.isEmpty()) {
+                String owner = players.get(Math.floorMod(ownPrefetchCursor, players.size()))
+                        .getUUID().toString().replace("-", "");
+                SharedGroupPool.refreshOwnAsync(groupDemand, owner, exclude, mode);
+            }
+        }
     }
 
     /**
@@ -214,6 +228,9 @@ public final class SharedCarriageEvents {
             return;
         }
         if (inst.hasPending()) {
+            // A block edit is one of the two moments parked storage travels (leaving is the other), so
+            // fold it into this same upload rather than a delta of its own.
+            if (inst.hasParked()) inst.releaseParked(pos -> StorageContents.read(inst.level, pos));
             if (inst.isOnRelay()) flushDelta(inst, false); // leased/submitted → stream only the changed cells
             else submitFresh(inst);                       // never uploaded → one-time full submit
             return;
@@ -249,6 +266,9 @@ public final class SharedCarriageEvents {
     private static boolean entitiesChanged(SharedCarriageRegistry.Instance inst) {
         SableManagedShip ship = liveShip(inst.level, inst);
         if (ship == null) return false;
+        // The lease's entities are still waiting on the deferred spawn, so the carriage stands empty and
+        // a fingerprint now would be adopted as the baseline — or worse, read as "emptied". Wait for them.
+        if (inst.isHoldingRelayEnts()) return false;
         long live = CarriageEntitySnapshot.liveDecorFingerprint(ship, inst.level, inst.shipyardOrigin, inst.dims);
         if (!inst.hasEntitySigBaseline()) {
             // A leased carriage was placed from the relay's own copy, so what stands in it now IS the
@@ -279,7 +299,7 @@ public final class SharedCarriageEvents {
         // this carriage was placed, and the build belongs to whichever pool the world is in when it lands.
         String mode = SharedCarriageMode.current(inst.level);
         SharedUploadFlow.submitFresh(inst, captureOf(ship, inst),
-                new SharedUploadFlow.SubmitSpec(SharedCarriageClient.PoolLease.KIND_CARRIAGE, null,
+                new SharedUploadFlow.SubmitSpec(inst.kind, null,
                         inst.dims.length(), inst.dims.height(), inst.dims.width()),
                 covered, ownerUuid, ownerName, inst.stageId, mode);
     }
@@ -324,7 +344,7 @@ public final class SharedCarriageEvents {
         // Storage a player changed but never walked away from (culled around them, server stopping) —
         // queue it now, while the plot is still readable and before markCulled stops enqueue, so the
         // full capture below carries it.
-        inst.releaseParked(pos -> StorageContents.sig(inst.level, pos));
+        inst.releaseParked(pos -> StorageContents.read(inst.level, pos));
         SableManagedShip ship = liveShip(inst.level, inst);
         // No ship → nothing readable; the flow then does a bare return (allowCapture is moot).
         return SharedUploadFlow.finalFlushAndReturn(inst,
@@ -354,8 +374,7 @@ public final class SharedCarriageEvents {
                     // The fingerprint of what this upload actually carries — recorded only once the POST
                     // lands, so a failed upload is re-tried rather than mistaken for "the relay already
                     // has these entities".
-                    long sig = CarriageEntitySnapshot.decorFingerprint(
-                            cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
+                    long sig = CarriageEntitySnapshot.decorFingerprint(uploadEnts(inst, cap));
                     return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
                 } catch (Throwable tErr) {
                     LOGGER.debug("[DungeonTrain] shared-carriage delta capture failed for pIdx={}: {}", inst.pIdx, tErr.toString());
@@ -371,13 +390,25 @@ public final class SharedCarriageEvents {
             CarriageBlockSnapshot.Captured cap =
                     CarriageBlockSnapshot.capture(ship, inst.level, inst.shipyardOrigin, inst.dims,
                             DungeonTrainConfig.getSharedCarriageMaxEntities());
-            long sig = CarriageEntitySnapshot.decorFingerprint(
-                    cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
+            long sig = CarriageEntitySnapshot.decorFingerprint(uploadEnts(inst, cap));
             return new SharedUploadFlow.CapturedBlob(CarriageBlockSnapshot.encode(cap.tag()), cap.text(), sig);
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-carriage full capture failed for pIdx={}: {}", inst.pIdx, t.toString());
             return null;
         }
+    }
+
+    /**
+     * Settle the entity list {@code cap} uploads and return it. Normally that is what was just read live;
+     * while a leased carriage's own entities still wait on the deferred spawn it is the lease's list
+     * instead, because the carriage stands empty and every upload replaces the relay's whole list.
+     */
+    private static net.minecraft.nbt.ListTag uploadEnts(SharedCarriageRegistry.Instance inst,
+                                                        CarriageBlockSnapshot.Captured cap) {
+        net.minecraft.nbt.ListTag ents = inst.entsForUpload(
+                cap.tag().getList("ents", net.minecraft.nbt.Tag.TAG_COMPOUND));
+        cap.tag().put("ents", ents);
+        return ents;
     }
 
     private static ServerPlayer firstConsentingPlayer(ServerLevel level) {
@@ -396,7 +427,10 @@ public final class SharedCarriageEvents {
         return null;
     }
 
-    @SubscribeEvent
+    // HIGHEST: ShipShutdownEvents deletes every train sub-level on this same event, and the final capture
+    // must read the plot before that — otherwise every lease goes back bare and storage looted since the
+    // last block edit (parked, see Instance.releaseParked) never reaches the relay.
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStopping(ServerStoppingEvent event) {
         // Final flush + hand back every held lease + the unused buffer so carriages don't stay locked to a
         // stopped world for the full TTL. Best-effort (the return POST is async) — the relay's TTL covers
@@ -409,12 +443,14 @@ public final class SharedCarriageEvents {
             }
         }
         SharedCarriagePool.returnAllBuffered();
+        SharedGroupPool.returnAllBuffered();
     }
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         SharedCarriageRegistry.clear();
         SharedCarriagePool.clear();
+        SharedGroupPool.clear();
         lastMode = null; // the next world decides its own pool from scratch
     }
 }

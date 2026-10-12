@@ -144,4 +144,35 @@ final class RequirementJsonRewriterTest {
         AdvancementRequirements.clear();
         assertEquals(-1, AdvancementRequirements.value(ours, -1));
     }
+
+    @Test
+    @DisplayName("A description that quotes the shipped number itself follows an override; any other with is left alone")
+    void inlineShippedArgumentFollowsOverride() {
+        JsonObject quoting = JsonParser.parseString("""
+            {"display": {"description": {"translate": "k", "with": [50]}},
+             "criteria": {"done": {"trigger": "dungeontrain:photo_count", "conditions": {"category": "x", "threshold": 50}}}}
+            """).getAsJsonObject();
+        JsonObject out = RequirementJsonRewriter.rewrite(quoting, 20L).json();
+        assertEquals(20, out.getAsJsonObject("display").getAsJsonObject("description").getAsJsonArray("with").get(0).getAsLong());
+        assertEquals(50, quoting.getAsJsonObject("display").getAsJsonObject("description").getAsJsonArray("with").get(0).getAsLong(),
+            "input untouched");
+
+        JsonObject other = JsonParser.parseString("""
+            {"display": {"description": {"translate": "k", "with": ["Nether"]}},
+             "criteria": {"done": {"trigger": "dungeontrain:photo_count", "conditions": {"category": "x", "threshold": 50}}}}
+            """).getAsJsonObject();
+        assertEquals("Nether", RequirementJsonRewriter.rewrite(other, 20L).json().getAsJsonObject("display")
+            .getAsJsonObject("description").getAsJsonArray("with").get(0).getAsString());
+    }
+
+    @Test
+    @DisplayName("isOurs: every tab in our namespace but the Editor — tabs are not named")
+    void isOursAnyTab() {
+        assertTrue(RequirementJsonRewriter.isOurs(ResourceLocation.parse("dungeontrain:dungeon_train/carts_1000"), "dungeontrain"));
+        assertTrue(RequirementJsonRewriter.isOurs(ResourceLocation.parse("dungeontrain:enchiridion/photo_void"), "dungeontrain"));
+        assertTrue(RequirementJsonRewriter.isOurs(ResourceLocation.parse("dungeontrain:some_future_tab/x"), "dungeontrain"));
+        assertFalse(RequirementJsonRewriter.isOurs(ResourceLocation.parse("dungeontrain:editor/root"), "dungeontrain"));
+        assertFalse(RequirementJsonRewriter.isOurs(ResourceLocation.parse("minecraft:story/root"), "dungeontrain"));
+        assertFalse(RequirementJsonRewriter.isOurs(null, "dungeontrain"));
+    }
 }

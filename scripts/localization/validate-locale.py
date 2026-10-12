@@ -55,7 +55,7 @@ GUI_MODS = ["dungeontrain", "adventureitemnames", "playermob", "discordpresence"
 DATA_SUBTREES = ["narrative_localizations", "ain_localizations"]
 
 # Strings whose value is structural (loader-significant) and must match the reference exactly.
-STRUCT_STR_KEYS = {"id", "ref", "page", "_translator_note"}
+STRUCT_STR_KEYS = {"id", "ref", "page", "after", "_translator_note"}
 # Numeric keys whose value legitimately varies per translation (character offsets into prose).
 # These are shape-checked (must be a number) but range-checked separately, not equality-checked.
 SOFT_NUM_KEYS = {"offset"}

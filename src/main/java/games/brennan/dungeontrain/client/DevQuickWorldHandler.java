@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.editor.EditorQuietRules;
 import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.cheat.EditorContentIntegrity;
 import games.brennan.dungeontrain.client.menu.CustomContentToggleButton;
+import games.brennan.dungeontrain.client.worldgen.PendingWorldPreset;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -533,6 +534,7 @@ public final class DevQuickWorldHandler {
         WorldOptions options = pinnedSeed
                 ? new WorldOptions(PerfTestMode.seed(), true, false)
                 : WorldOptions.defaultWithRandomSeed();
+        PendingWorldPreset.set(preset);
         WorldOpenFlows flows = mc.createWorldOpenFlows();
         flows.createFreshLevel(name, settings, options, presetDimensions(preset), lastScreen);
     }

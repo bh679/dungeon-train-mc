@@ -125,7 +125,7 @@ public final class TranslationCatalog {
                     TranslationUnit.Type.LANG,
                     namespace,
                     key,
-                    english.getOrDefault(key, ""),
+                    TranslationPluralForms.sourceFor(key, english),
                     translated.getOrDefault(key, ""),
                     ProvenanceManifestRegistry.isAiUnreviewedLang(locale, namespace, key),
                     ProvenanceManifestRegistry.isSourceChangedLang(locale, namespace, key)));

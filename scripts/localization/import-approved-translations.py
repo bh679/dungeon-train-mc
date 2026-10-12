@@ -322,6 +322,28 @@ def approval_rank(row: dict, index: int) -> tuple:
             num(row.get("reviewedTs") or row.get("ts")), num(row.get("id")), -index)
 
 
+def newest_per_translator(rows: list[dict]) -> list[dict]:
+    """``rows`` keeping only each translator's newest SUBMISSION of each unit.
+
+    A translator who sends a line twice has changed their mind, and the second text is the one
+    they stand behind — however the relay happened to review them. Ranking a person's own rows by
+    approval time instead let an older wording win whenever it was approved last: MrMultibite's
+    rewrite of a whole book's narrator, and a typo fix, both shipped as the version they had
+    replaced. Across DIFFERENT translators the approval rule (``approval_rank``) still decides.
+    An operator ``picked`` row outranks the same person's newer one.
+    """
+    best: dict[tuple, tuple] = {}
+    for index, row in enumerate(rows):
+        who = row.get("uuid") or translator_of(row)
+        unit = (row.get("namespace") or "dungeontrain", row.get("locale"), row.get("unitType"),
+                row.get("unitId"), who)
+        rank = (1 if row.get("picked") else 0, num(row.get("ts")), num(row.get("id")), -index)
+        if unit not in best or rank > best[unit][0]:
+            best[unit] = (rank, row)
+    keep = {id(row) for _, row in best.values()}
+    return [row for row in rows if id(row) in keep]
+
+
 class LangImport(NamedTuple):
     """What ``import_lang`` did, for the summary, the registry and the stamps.
 
@@ -338,7 +360,7 @@ class LangImport(NamedTuple):
 
 
 def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[str],
-                deferred: list[str]) -> LangImport:
+                deferred: list[str], authors: dict[str, str] | None = None) -> LangImport:
     """Apply approved lang units, one winner per key.
 
     ``revised`` are the keys whose text this changed — the winner becomes author — and
@@ -352,7 +374,45 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
     difference between a name in the game's credits and a name nowhere at all. A third contender
     has nowhere to go; ``main`` names anyone left uncredited rather than dropping them silently,
     which is exactly what this function used to do to all of them.
+
+    HUMAN OVER MACHINE. A matching line whose current author is registered ``"ai"`` is not the
+    machine's any more once a person has had the same text approved: the person authors it. The
+    uk_ua bootstrap left 18 of MrMultibite's lines credited to the model that happened to agree
+    with them. A matching line a different human wrote keeps its author, as before.
+
+    PLURAL RETARGET. The editor offered ``<base>.other`` to east-Slavic and Polish translators,
+    whose grammar never selects ``other`` — and what they wrote there is the count form for "many"
+    (5 книг). When this locale carries ``<base>.many`` but no ``.other``, the unit lands on
+    ``.many``, outranked by any approval made for ``.many`` itself, and only over a line a machine
+    wrote — a human's ``.many`` is never replaced by text written for a different question.
     """
+    authors = authors or {}
+    prov_cache: dict[Path, dict] = {}
+
+    def author_of(name: str, locale: str, key: str) -> str:
+        path = ns_dirs[name].prov_dir / f"{locale}.json"
+        if path not in prov_cache:
+            prov_cache[path] = pio.load_provenance(path) if path.is_file() else {}
+        entry = prov_cache[path].get(key)
+        return entry.get("author", "") if isinstance(entry, dict) else ""
+
+    def retarget(row: dict) -> dict:
+        """``row`` aimed at ``.many`` when its ``.other`` has nowhere to land here — see above."""
+        key, locale = row["unitId"], row["locale"]
+        name = row.get("namespace") or "dungeontrain"
+        if not key.endswith(".other") or name not in ns_dirs:
+            return row
+        lang = lang_of(ns_dirs[name].lang_dir / f"{locale}.json")
+        many = key[: -len("other")] + "many"
+        if (lang is None or key in lang or many not in lang
+                or "other" in plural_forms.plural_categories(locale)):
+            return row
+        if authors.get(author_of(name, locale, many)) != "ai":
+            deferred.append(f"{locale} [{name}] {key}: written for .other, which {locale} never "
+                            f"uses — {many} is a person's work, so it is not replaced")
+            return {}
+        return dict(row, unitId=many, english_key=key, retargeted=True)
+
     revised: dict[tuple, list[str]] = {}
     confirmed: dict[tuple, list[str]] = {}
     stale: list[str] = []
@@ -396,12 +456,14 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
                 deferred.append(excuse)
             return None
         source = row.get("source") or ""
-        if source and key in english and english[key] != source:
+        english_key = row.get("english_key") or key
+        if source and english_key in english and english[english_key] != source:
             stale.append(f"{locale} [{name}] {key}: en_us changed since this was translated")
             return None
         # Checked BEFORE the already-matches branch on purpose: if a malformed value is what the
         # file already holds, the shipped file is malformed too, and that is worth being told.
-        broken = lang_format.mismatch(value, english.get(key, "")) if key in english else None
+        broken = (lang_format.mismatch(value, english[english_key])
+                  if english_key in english else None)
         if broken:
             deferred.append(f"{locale} [{name}] {key}: {broken} — the text needs fixing at the "
                             "relay before it can be imported")
@@ -410,8 +472,13 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
 
     by_key: dict[tuple, list[tuple]] = {}
     for index, row in enumerate(rows):
+        row = retarget(row)
+        if not row:
+            continue
         unit = (row.get("namespace") or "dungeontrain", row["locale"], row["unitId"])
-        by_key.setdefault(unit, []).append((approval_rank(row, index), row))
+        # A unit written for this very key outranks one retargeted onto it.
+        rank = (0 if row.get("retargeted") else 1, *approval_rank(row, index))
+        by_key.setdefault(unit, []).append((rank, row))
 
     for (name, locale, key), candidates in by_key.items():
         passed = []
@@ -428,7 +495,12 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
             contested += 1
         row, lang, winner = passed[0]
         value = row["value"]
+        reviewer = names[1] if len(names) > 1 else winner
         if lang[key] == value:
+            if authors.get(author_of(name, locale, key)) == "ai":
+                # A person's approved text, which a machine happened to have written too: theirs.
+                revised.setdefault((name, locale, winner, reviewer), []).append(key)
+                continue
             # The author slot is not ours to take, so a runner-up has nowhere to go here.
             confirmed.setdefault((name, locale, "", winner), []).append(key)
             continue
@@ -437,7 +509,6 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
                 problems.append(f"{locale} [{name}] {key}: value line not found in {locale}.json")
                 continue
             lang[key] = value
-        reviewer = names[1] if len(names) > 1 else winner
         revised.setdefault((name, locale, winner, reviewer), []).append(key)
     return LangImport(revised, confirmed, stale, contenders, contested)
 
@@ -472,26 +543,59 @@ def english_fields(path: Path) -> dict | None:
         return None
 
 
+class BookImport(NamedTuple):
+    """What ``import_books`` did, for the stamps.
+
+    ``rewritten`` — ``(locale, name) -> [book]`` where the person is now the author of every
+    field, so of the book. ``fielded`` — ``(locale, book, name) -> [field]`` where they wrote some
+    fields over somebody else's body. ``reviewed`` — ``(locale, name) -> [book]`` where their
+    approved text matched a person's existing text, so they read it but did not write it.
+    """
+    rewritten: dict
+    fielded: dict
+    reviewed: dict
+
+
 def import_books(rows: list[dict], narrative_dir: Path, english_dir: Path, dry_run: bool,
-                 problems: list[str], deferred: list[str]) -> tuple[dict, dict]:
+                 problems: list[str], deferred: list[str],
+                 authors: dict[str, str] | None = None,
+                 provenance_dir: Path | None = None) -> BookImport:
     """Apply approved book units, one file open per book however many fields it has.
 
-    Returns ``(rewritten, revised)`` keyed by ``(locale, translator)``: narrative provenance is
-    per BOOK, not per field, so a translator who replaced every editable field of a book becomes
-    its author, and one who fixed a line or two is recorded as having reviewed it — taking the
-    authorship of prose they mostly did not write would be a worse record than none.
+    ONE WINNER PER FIELD, by ``approval_rank`` — the same rule as a lang line. Rows used to be
+    applied in listing order, which is newest-first, so the OLDEST approval of a field was written
+    last and shipped.
+
+    Credit is per field (``narrative_provenance`` ``fields``, see provenance_io.FIELDS_KEY): a
+    translator is the author of every field whose text is theirs — a field they changed, or one
+    whose existing text a machine wrote. A person who replaced every field becomes the book's
+    author outright. A field whose text matched a HUMAN's existing work is a review, as with lang.
     """
+    authors = authors or {}
     rewritten: dict[tuple, list[str]] = {}
-    revised: dict[tuple, list[str]] = {}
-    by_book: dict[tuple, list[dict]] = {}
-    for row in rows:
+    fielded: dict[tuple, list[str]] = {}
+    reviewed: dict[tuple, list[str]] = {}
+    by_book: dict[tuple, dict[str, list[tuple]]] = {}
+    for index, row in enumerate(rows):
         book_path, sep, field = row["unitId"].partition("#")
         if not sep or not field:
             problems.append(f"{row['locale']} {row['unitId']}: not a <book>#<field> unit id")
             continue
-        by_book.setdefault((row["locale"], book_path), []).append(dict(row, field=field))
+        by_book.setdefault((row["locale"], book_path), {}).setdefault(field, []).append(
+            (approval_rank(row, index), dict(row, field=field)))
 
-    for (locale, book_path), book_rows in sorted(by_book.items()):
+    prov_cache: dict[str, dict] = {}
+
+    def field_author(locale: str, book_path: str, field: str) -> str:
+        if locale not in prov_cache:
+            path = (provenance_dir or pio.DEFAULT_NARRATIVE_PROVENANCE_DIR) / f"{locale}.json"
+            prov_cache[locale] = pio.load_provenance(path) if path.is_file() else {}
+        entry = prov_cache[locale].get(book_path)
+        if not isinstance(entry, dict):
+            return ""
+        return (entry.get(pio.FIELDS_KEY) or {}).get(field) or entry.get("author", "")
+
+    for (locale, book_path), by_field in sorted(by_book.items()):
         path = narrative_dir / locale / f"{book_path}.json"
         if not path.is_file():
             problems.append(f"{locale} {book_path}: no such book for this locale")
@@ -499,51 +603,74 @@ def import_books(rows: list[dict], narrative_dir: Path, english_dir: Path, dry_r
         original = pio.read_verbatim(path)
         text = original
         english = english_fields(english_book_path(english_dir, book_path))
-        applied: dict[str, set[str]] = {}
-        for row in book_rows:
-            # Checked before the edit is attempted, and deferred rather than fatal, for the same
-            # reasons as import_lang's printf branch: the file is fine and the translation is
-            # nearly fine, so somebody has to look at this one field — not abandon the other 979.
-            if english is not None:
-                source = pio.book_field_value(english, row["field"])
-                broken = book_format.mismatch(row["value"], source) if source is not None else None
-                # Page-break parity is checked HERE rather than in the repo-wide sweep: this is the
-                # one place both sides are the same book at the same moment, so a difference is the
-                # translation's, not an author's re-pagination that the translation hasn't caught
-                # up with yet.
-                if not broken and source is not None:
-                    broken = book_format.page_break_mismatch(row["value"], source)
-                if broken:
-                    deferred.append(f"{locale} {book_path}#{row['field']}: {broken} — the text "
-                                    "needs fixing at the relay before it can be imported")
-                    continue
-            edited = pio.set_book_field_text(text, row["field"], row["value"])
-            if edited is None:
-                if targets_structure(row["field"]):
-                    # `id`, `ref`, `page`, `_translator_note` are load-bearing: the loaders match
-                    # on them and the translator note carries rules to the next translator. A unit
-                    # aimed at one is not a translation that failed to apply, it is a unit that
-                    # should never have existed — the editor never offers these. Stop.
-                    problems.append(f"{locale} {book_path}#{row['field']}: targets a structural "
-                                    "field, which is never translatable")
-                    continue
-                # Deferred, not fatal: the translation is fine and the book is fine, the two just
-                # cannot be married by a text-level edit. Somebody has to open the file; nobody
-                # has to abandon the other 979 units.
-                deferred.append(f"{locale} {book_path}#{row['field']}: could not be applied "
-                                "safely (field missing or not prose) — edit this one by hand")
-                continue
-            text = edited
-            applied.setdefault(translator_of(row), set()).add(row["field"])
-        if not applied:
-            continue
+        wrote: dict[str, set[str]] = {}
+        read: set[str] = set()
+        for field, candidates in by_field.items():
+            for _, row in sorted(candidates, key=lambda c: c[0], reverse=True):
+                outcome = apply_book_field(text, row, english, locale, book_path, problems,
+                                           deferred)
+                if outcome is None:
+                    continue  # this candidate cannot land; an older one still might
+                edited, changed = outcome
+                text = edited
+                who = translator_of(row)
+                if changed or authors.get(field_author(locale, book_path, field)) != "human":
+                    wrote.setdefault(who, set()).add(field)
+                else:
+                    read.add(who)
+                break
         if not dry_run and text != original:
             pio.write_verbatim(path, text)
         every_field = set(pio.book_string_fields(json.loads(text)))
-        for name, fields in applied.items():
-            target = rewritten if every_field and fields >= every_field else revised
-            target.setdefault((locale, name), []).append(book_path)
-    return rewritten, revised
+        for name, fields in wrote.items():
+            if every_field and fields >= every_field:
+                rewritten.setdefault((locale, name), []).append(book_path)
+            else:
+                fielded.setdefault((locale, book_path, name), []).extend(sorted(fields))
+        for name in read - set(wrote):
+            reviewed.setdefault((locale, name), []).append(book_path)
+    return BookImport(rewritten, fielded, reviewed)
+
+
+def apply_book_field(text: str, row: dict, english, locale: str, book_path: str,
+                     problems: list[str], deferred: list[str]) -> tuple[str, bool] | None:
+    """``(new text, whether the field changed)`` for one approved field, or None (reported).
+
+    Checked before the edit is attempted, and deferred rather than fatal: the file is fine and
+    the translation is nearly fine, so somebody has to look at this one field — not abandon the
+    other 979.
+    """
+    field = row["field"]
+    if english is not None:
+        source = pio.book_field_value(english, field)
+        broken = book_format.mismatch(row["value"], source) if source is not None else None
+        # Page-break parity is checked HERE rather than in the repo-wide sweep: this is the one
+        # place both sides are the same book at the same moment, so a difference is the
+        # translation's, not an author's re-pagination that the translation hasn't caught up
+        # with yet.
+        if not broken and source is not None:
+            broken = book_format.page_break_mismatch(row["value"], source)
+        if broken:
+            deferred.append(f"{locale} {book_path}#{field}: {broken} — the text needs fixing at "
+                            "the relay before it can be imported")
+            return None
+    before = pio.book_field_value(json.loads(text), field)
+    edited = pio.set_book_field_text(text, field, row["value"])
+    if edited is None:
+        if targets_structure(field):
+            # `id`, `ref`, `page`, `_translator_note` are load-bearing: the loaders match on them
+            # and the translator note carries rules to the next translator. A unit aimed at one is
+            # not a translation that failed to apply, it is a unit that should never have existed
+            # — the editor never offers these. Stop.
+            problems.append(f"{locale} {book_path}#{field}: targets a structural field, which "
+                            "is never translatable")
+            return None
+        # Deferred, not fatal: the translation is fine and the book is fine, the two just cannot
+        # be married by a text-level edit. Somebody has to open the file.
+        deferred.append(f"{locale} {book_path}#{field}: could not be applied safely (field "
+                        "missing or not prose) — edit this one by hand")
+        return None
+    return edited, before != row["value"]
 
 
 # ---- stamping ----------------------------------------------------------------
@@ -594,12 +721,9 @@ def stamp_lang(revised: dict, confirmed: dict, args) -> None:
         run(cmd + ["--reviewer", reviewer, "--keys", *sorted(keys)], args.dry_run)
 
 
-def stamp_books(rewritten: dict, revised: dict, args) -> None:
-    for group, books, author in (
-        *[(g, b, True) for g, b in sorted(rewritten.items())],
-        *[(g, b, False) for g, b in sorted(revised.items())],
-    ):
-        locale, name = group
+def stamp_books(books: "BookImport", args) -> None:
+    """Whole-book authors, then per-field authors, then reviews — one stamp call each."""
+    def base(locale: str) -> list:
         cmd = [sys.executable, str(STAMP_NARRATIVE), "--authors-file", str(args.authors_file),
                "--narrative-dir", str(args.narrative_dir),
                "--english-dir", str(args.narrative_en_dir)]
@@ -607,10 +731,16 @@ def stamp_books(rewritten: dict, revised: dict, args) -> None:
             cmd += ["--provenance-dir", str(args.narrative_provenance_dir)]
         if args.manifest_dir:
             cmd += ["--manifest-dir", str(args.manifest_dir)]
-        cmd += ["--locale", locale]
-        if author:
-            cmd += ["--author", name]
-        run(cmd + ["--reviewer", name, "--files", *sorted(books)], args.dry_run)
+        return cmd + ["--locale", locale]
+
+    for (locale, name), paths in sorted(books.rewritten.items()):
+        run(base(locale) + ["--author", name, "--reviewer", name, "--files", *sorted(paths)],
+            args.dry_run)
+    for (locale, book_path, name), fields in sorted(books.fielded.items()):
+        run(base(locale) + ["--author", name, "--reviewer", name, "--files", book_path,
+                            "--fields", *fields], args.dry_run)
+    for (locale, name), paths in sorted(books.reviewed.items()):
+        run(base(locale) + ["--reviewer", name, "--files", *sorted(paths)], args.dry_run)
 
 
 # ---- entry point -------------------------------------------------------------
@@ -679,15 +809,20 @@ def main(argv: list[str] | None = None) -> int:
                                                  args.provenance_dir, None, None)}
     else:
         ns_dirs = {ns.name: ns for ns in pio.namespaces()}
+    rows = newest_per_translator(rows)
+    authors = pio.load_authors(args.authors_file)
     lang = import_lang(
-        [r for r in rows if r["unitType"] == "lang"], ns_dirs, args.dry_run, problems, deferred)
+        [r for r in rows if r["unitType"] == "lang"], ns_dirs, args.dry_run, problems, deferred,
+        authors)
     revised, confirmed, stale = lang.revised, lang.confirmed, lang.stale
-    rewritten, reviewed = import_books(
+    books = import_books(
         [r for r in rows if r["unitType"] == "book"], args.narrative_dir, args.narrative_en_dir,
-        args.dry_run, problems, deferred)
+        args.dry_run, problems, deferred, authors, args.narrative_provenance_dir)
 
-    counts = (sum(map(len, revised.values())), sum(map(len, confirmed.values())),
-              sum(map(len, rewritten.values())) + sum(map(len, reviewed.values())))
+    touched = ({(loc, b) for (loc, _), bs in books.rewritten.items() for b in bs}
+               | {(loc, b) for (loc, b, _) in books.fielded}
+               | {(loc, b) for (loc, _), bs in books.reviewed.items() for b in bs})
+    counts = (sum(map(len, revised.values())), sum(map(len, confirmed.values())), len(touched))
     print(f"{len(rows)} approved unit(s): {counts[0]} string(s) revised, {counts[1]} confirmed "
           f"as already matching, {counts[2]} book(s) touched, {len(stale)} stale, "
           f"{lang.contested} key(s) translated by more than one person")
@@ -695,7 +830,7 @@ def main(argv: list[str] | None = None) -> int:
     # Everyone a stamp will actually name: both people on a lang group (namespace, locale, author,
     # reviewer) — author is "" on a confirmed one — and the single name on a book group.
     landed = {name for group in (*revised, *confirmed) for name in group[2:] if name}
-    landed |= {group[-1] for group in (*rewritten, *reviewed)}
+    landed |= {group[-1] for group in (*books.rewritten, *books.fielded, *books.reviewed)}
     # A key holds one author and one reviewer, so a third translator of the same line cannot be
     # recorded at all. Say so: this is the one path by which real work still goes uncredited, and
     # it staying quiet is what let a whole translator vanish from the credits unnoticed.
@@ -710,7 +845,7 @@ def main(argv: list[str] | None = None) -> int:
                                         + "\n", encoding="utf-8")
 
     stamp_lang(revised, confirmed, args)
-    stamp_books(rewritten, reviewed, args)
+    stamp_books(books, args)
     return report(problems, stale, deferred, args)
 
 

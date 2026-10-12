@@ -23,6 +23,8 @@ public final class NewSourcePickerScreen implements MenuScreen {
 
     public enum Category {
         CARRIAGES, CONTENTS, PARTS, CHUNK_FRAMES, TRACKS,
+        /** A building: a bare pad, or a copy of the one stood in. Dispatches {@code editor buildings enter}. */
+        BUILDINGS,
         /**
          * Portal pocket room. Same single-name shape as {@link #TRACKS} — no source choice — but
          * dispatches through the {@code portals} command prefix.
@@ -81,6 +83,7 @@ public final class NewSourcePickerScreen implements MenuScreen {
     @Override public String title() {
         return switch (category) {
             case PARTS, CHUNK_FRAMES -> MenuLang.t("new_source.title_kind_source", kind);
+            case BUILDINGS -> MenuLang.t("new_source.title_building");
             case CONTENTS -> kind.isEmpty() ? MenuLang.t("new_source.title_contents")
                 : MenuLang.t("new_source.title_kind_source", sizeName(kind));
             case CARRIAGES -> MenuLang.t("new_source.title_carriage");
@@ -158,6 +161,16 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 }
                 out.add(new CommandMenuEntry.TypeArg(
                     MenuLang.t("new_source.standard"), "name", prefix + " standard"));
+            }
+            case BUILDINGS -> {
+                // A bare pad, or a copy of the building being stood in — `enter` with a new name makes
+                // it; the optional trailing name is the building it is copied from.
+                String prefix = "dungeontrain editor buildings enter";
+                out.add(new CommandMenuEntry.TypeArg(MenuLang.t("new_source.blank"), "name", prefix));
+                if (!currentId.isEmpty()) {
+                    out.add(new CommandMenuEntry.TypeArg(
+                        MenuLang.t("new_source.current", currentId), "name", prefix, currentId));
+                }
             }
             case CHUNK_FRAMES -> {
                 // Blank, or a copy of the frame being stood in. `enter` with a new name makes it;

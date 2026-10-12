@@ -231,6 +231,11 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // Count it for the death-screen "books written" cargo icon (per-run tally).
             serverPlayer.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementBooksWritten();
 
+            // Their self page no longer counts everything they have written. Dropped rather than
+            // re-fetched here: the upload above is still in flight, and the next author room planned
+            // near them asks for a fresh page anyway.
+            games.brennan.dungeontrain.portal.PortalRoomAuthorLocks.forgetSelf(serverPlayer);
+
             ci.cancel();
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] SharedBook: {} signed a book — uploaded + dropped to burn",
                     author);

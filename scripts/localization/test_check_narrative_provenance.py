@@ -169,5 +169,42 @@ def _main():
     return 1 if failures else 0
 
 
+def _with_prose(nd, locale="zh_cn", book="random_books/deathnote"):
+    with open(os.path.join(nd, locale, book + ".json"), "w", encoding="utf-8") as f:
+        json.dump({"id": "deathnote", "title": "t", "variants": ["a"]}, f, ensure_ascii=False)
+
+
+def test_field_credit_passes():
+    good = dict(PROV, **{"random_books/deathnote": {
+        "author": "Opus 4.8 (Claude)", "reviewer": "老本願", "source_hash": "",
+        "fields": {"title": "老本願"}}})
+    nd, pd, af = workspace({"zh_cn": BOOKS}, {"zh_cn": good})
+    _with_prose(nd)
+    proc = run(nd, pd, af)
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_field_credit_to_an_unregistered_name_fails():
+    bad = dict(PROV, **{"random_books/deathnote": {
+        "author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "",
+        "fields": {"title": "Ghost"}}})
+    nd, pd, af = workspace({"zh_cn": BOOKS}, {"zh_cn": bad})
+    _with_prose(nd)
+    proc = run(nd, pd, af)
+    assert proc.returncode == 1
+    assert "'Ghost' is not in localization/authors.json" in proc.stderr
+
+
+def test_field_credit_for_a_field_the_book_lacks_fails():
+    bad = dict(PROV, **{"random_books/deathnote": {
+        "author": "Opus 4.8 (Claude)", "reviewer": "", "source_hash": "",
+        "fields": {"variants.7": "老本願"}}})
+    nd, pd, af = workspace({"zh_cn": BOOKS}, {"zh_cn": bad})
+    _with_prose(nd)
+    proc = run(nd, pd, af)
+    assert proc.returncode == 1
+    assert "not a translatable field" in proc.stderr
+
+
 if __name__ == "__main__":
     sys.exit(_main())

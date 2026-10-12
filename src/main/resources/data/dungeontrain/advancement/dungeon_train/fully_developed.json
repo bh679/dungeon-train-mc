@@ -1,0 +1,20 @@
+{
+  "parent": "dungeontrain:dungeon_train/gate_darkroom",
+  "display": {
+    "icon": { "id": "minecraft:painting" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.fully_developed.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.fully_developed.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "complete": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    ["complete"]
+  ]
+}

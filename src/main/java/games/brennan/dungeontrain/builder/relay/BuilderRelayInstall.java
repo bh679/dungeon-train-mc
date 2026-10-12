@@ -2,9 +2,18 @@ package games.brennan.dungeontrain.builder.relay;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.building.BuildingMeta;
+import games.brennan.dungeontrain.building.BuildingRegistry;
+import games.brennan.dungeontrain.building.BuildingSizes;
+import games.brennan.dungeontrain.building.BuildingStore;
+import games.brennan.dungeontrain.building.BuildingWorldgen;
+import games.brennan.dungeontrain.building.Buildings;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.editor.BuildingEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
+import games.brennan.dungeontrain.editor.EditorCategory;
+import games.brennan.dungeontrain.editor.EditorStampedCategoryState;
 import games.brennan.dungeontrain.editor.WholeVariantBlocks;
 import games.brennan.dungeontrain.train.WholeKind;
 import games.brennan.dungeontrain.editor.CarriageContentsVariantBlocks;
@@ -32,7 +41,11 @@ import games.brennan.dungeontrain.train.CarriageVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageWeights;
 import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
+import net.minecraft.core.Vec3i;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -217,6 +230,9 @@ public final class BuilderRelayInstall {
             case PORTAL_ROOM -> installPortalRoom(id, template);
             // Frames have no relay kind yet: nothing is ever offered for one.
             case CHUNK_FRAME -> Outcome.UNSUPPORTED;
+            case BUILDING -> installBuilding(id, template);
+            // Official Lost City buildings are never installed — Big Lost City is All Rights Reserved.
+            case LOST_CITY -> Outcome.UNSUPPORTED;
         };
         if (outcome == Outcome.INSTALLED) TemplateSidecars.apply(kind, subKind, id, sidecars);
         return outcome;
@@ -277,6 +293,8 @@ public final class BuilderRelayInstall {
             }
             case PORTAL_ROOM -> PortalRoomTemplateStore.exists(id);
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names().contains(id);
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingRegistry.contains(id);
+            case LOST_CITY -> games.brennan.dungeontrain.building.LostCityReferences.find(id).isPresent();
         };
     }
 
@@ -313,6 +331,8 @@ public final class BuilderRelayInstall {
             }
             case PORTAL_ROOM -> TrackVariantRegistry.namesFor(TrackKind.PORTAL_ROOM);
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameRegistry.names();
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingRegistry.names();
+            case LOST_CITY -> games.brennan.dungeontrain.building.LostCityReferences.all().stream().map(games.brennan.dungeontrain.building.LostCityReferences.Reference::name).toList();
         };
 
         List<String> out = new ArrayList<>();
@@ -352,6 +372,8 @@ public final class BuilderRelayInstall {
             }
             case PORTAL_ROOM -> TrackVariantStore.bundled(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.isBundled(id);
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingStore.isBundled(id);
+            case LOST_CITY -> true;
         };
     }
 
@@ -436,6 +458,30 @@ public final class BuilderRelayInstall {
                 PortalRoomSizes.forget(id);
                 return true;
             }
+            case BUILDING -> {
+                // Only the player's own copy can move; a shipped building has no file of theirs.
+                CompoundTag tag = BuildingStore.readPlayerTag(id).orElse(null);
+                if (tag == null || !Buildings.NAME.matcher(newId).matches()) return false;
+                BuildingMeta meta = BuildingMeta.load(id);
+                BuildingStore.save(newId, tag, false);
+                if (!BuildingStore.isShipped(newId)) BuildingMeta.save(newId, meta, false);
+                BuildingStore.deleteFiles(id, false);
+                BuildingMeta.delete(id);
+                // Appended, and the old name left registered: the caller writes the download under
+                // it next, and re-sorting the roster here would move every plot after it in a
+                // Buildings tab that is already stamped.
+                BuildingRegistry.register(newId);
+                BuildingSizes.settle(newId, BuildingSizes.sizeIn(tag));
+                BuildingSizes.forget(id);
+                MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+                BuildingWorldgen.evict(server, id);
+                BuildingWorldgen.evict(server, newId);
+                restampIfShowing(server, newId);
+                return true;
+            }
+            // No store of the player's to move: frames are never offered, groups handled above,
+            // and an official Lost City building is not a file.
+            case CHUNK_FRAME, LOST_CITY -> { }
         }
         return false;
     }
@@ -528,6 +574,47 @@ public final class BuilderRelayInstall {
         TrackVariantRegistry.register(TrackKind.PORTAL_ROOM, id);
         LOGGER.info("[DungeonTrain] Builder relay download: installed portal room '{}'", id);
         return Outcome.INSTALLED;
+    }
+
+    /**
+     * A building: write the file, register the name, and drop worldgen's cached copy so the next
+     * chunk places the downloaded one.
+     *
+     * <p>Refused, rather than clamped, when the name or the size is not one a building may have —
+     * the relay holds what an author uploaded, and a download that silently lost its top floors
+     * would be a different building under the same name. A new building takes the default roster
+     * weight unless its sidecar says otherwise ({@code TemplateSidecars.apply} runs after this).</p>
+     */
+    private static Outcome installBuilding(String id, StructureTemplate template) throws IOException {
+        Vec3i size = template.getSize();
+        if (!Buildings.NAME.matcher(id).matches() || !Buildings.clamp(size).equals(size)) {
+            LOGGER.warn("[DungeonTrain] Builder relay download: '{}' ({}) is not a building this install can hold",
+                    id, size);
+            return Outcome.UNSUPPORTED;
+        }
+        BuildingStore.save(id, template.save(new CompoundTag()), false);
+        if (!BuildingStore.isShipped(id)) BuildingMeta.save(id, BuildingMeta.load(id), false);
+        BuildingRegistry.register(id);
+        BuildingSizes.settle(id, size);
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        BuildingWorldgen.evict(server, id);
+        restampIfShowing(server, id);
+        LOGGER.info("[DungeonTrain] Builder relay download: installed building '{}'", id);
+        return Outcome.INSTALLED;
+    }
+
+    /**
+     * Put a building's plot back in step with its file, when the Buildings tab is the one standing.
+     *
+     * <p>The other kinds leave this to the editor's enter command, which stamps on the way in. A
+     * building is opened by walking to its plot instead — entering would restamp over unsaved work —
+     * so a plot nobody stamps here stays as it was: empty for a build that just arrived, and the old
+     * blocks for one that was replaced. With another tab standing there is no plot to touch, and
+     * entering Buildings stamps every one from disk.</p>
+     */
+    private static void restampIfShowing(MinecraftServer server, String id) {
+        if (server == null || !EditorStampedCategoryState.isActive(EditorCategory.BUILDINGS)) return;
+        BuildingEditor.restamp(server.overworld(), id);
     }
 
     /** The variant to write a carriage under — the registered one, or a new custom. See {@code BuilderSave.variantFor}. */

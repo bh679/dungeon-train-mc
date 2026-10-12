@@ -34,6 +34,11 @@ final class BuilderRelayKindsTest {
     @DisplayName("every relay kind maps back to the store it came from")
     void kindsRoundTrip() {
         for (BuilderPhotoPaths.Kind kind : BuilderPhotoPaths.Kind.values()) {
+            if (kind == BuilderPhotoPaths.Kind.LOST_CITY) {
+                // Official Lost City buildings never travel: nothing named so is ever filed anywhere.
+                assertNull(BuilderRelayKinds.kindOf(BuilderRelayKinds.idOf(kind)));
+                continue;
+            }
             assertEquals(kind, BuilderRelayKinds.kindOf(BuilderRelayKinds.idOf(kind)),
                     "a build downloaded as " + kind + " must be filed back in the store it was saved from");
         }
@@ -82,6 +87,12 @@ final class BuilderRelayKindsTest {
     @DisplayName("every kind the builder authors may be offered to the operator")
     void everyKindIsSubmittable() {
         for (BuilderPhotoPaths.Kind kind : BuilderPhotoPaths.Kind.values()) {
+            if (kind == BuilderPhotoPaths.Kind.LOST_CITY) {
+                // Big Lost City's buildings are All Rights Reserved — never offered, by either name.
+                assertFalse(BuilderRelayKinds.canSubmitForReview(kind));
+                assertFalse(BuilderRelayKinds.canSubmitForReview(BuilderRelayKinds.idOf(kind)));
+                continue;
+            }
             assertTrue(BuilderRelayKinds.canSubmitForReview(kind),
                     kind + " is a build a person can look at and accept");
             assertTrue(BuilderRelayKinds.canSubmitForReview(BuilderRelayKinds.idOf(kind)),

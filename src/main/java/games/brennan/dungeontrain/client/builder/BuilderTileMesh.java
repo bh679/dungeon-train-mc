@@ -108,8 +108,16 @@ final class BuilderTileMesh implements AutoCloseable {
      * from every tile that happens to be on screen.</p>
      */
     static BuilderTileMesh bake(Map<BlockPos, BlockState> cells) {
-        if (cells.isEmpty() || cells.size() > MAX_BLOCKS) {
+        if (cells.isEmpty()) {
             return null;
+        }
+        if (cells.size() > MAX_BLOCKS) {
+            // Too big to bake whole — a tower, floor after floor. Its outside is all a tile shows, so
+            // bake that (TileShell); only a build whose skin alone is over the cap keeps its photo.
+            cells = games.brennan.dungeontrain.builder.TileShell.of(cells);
+            if (cells.isEmpty() || cells.size() > MAX_BLOCKS) {
+                return null;
+            }
         }
         BlockRenderDispatcher blocks = Minecraft.getInstance().getBlockRenderer();
         RandomSource random = RandomSource.create();

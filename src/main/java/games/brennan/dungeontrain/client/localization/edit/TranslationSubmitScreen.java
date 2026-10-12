@@ -54,6 +54,13 @@ public final class TranslationSubmitScreen extends Screen {
 
     private Checkbox creditBox;
     private EditBox nameBox;
+    /**
+     * The form as the translator left it, or null until the first {@link #init}. Kept across
+     * rebuilds — a resize (alt-tabbing out of fullscreen is one) re-runs {@code init}, and the name
+     * they typed and the credit they unticked must survive it, as the edit screen's typing does.
+     */
+    private String typedName;
+    private Boolean credited;
     private Button submitButton;
     private TranslationSubmissionList sentList;
     private Component status = CommonComponents.EMPTY;
@@ -89,8 +96,11 @@ public final class TranslationSubmitScreen extends Screen {
         creditBox = Checkbox.builder(
                 Component.translatable("gui.dungeontrain.translate.submit.credit"), this.font)
             .pos(left, y)
-            .selected(true)
-            .onValueChange((box, checked) -> updateNameBoxState())
+            .selected(credited == null || credited)
+            .onValueChange((box, checked) -> {
+                credited = checked;
+                updateNameBoxState();
+            })
             .build();
         addRenderableWidget(creditBox);
         y += ROW_GAP;
@@ -99,7 +109,8 @@ public final class TranslationSubmitScreen extends Screen {
             Component.translatable("gui.dungeontrain.translate.submit.name"));
         nameBox.setHint(Component.translatable("gui.dungeontrain.translate.submit.name"));
         nameBox.setMaxLength(MAX_NAME_CHARS);
-        nameBox.setValue(defaultName());
+        nameBox.setValue(typedName != null ? typedName : defaultName());
+        nameBox.setResponder(value -> typedName = value);
         addRenderableWidget(nameBox);
         y += ROW_GAP;
 

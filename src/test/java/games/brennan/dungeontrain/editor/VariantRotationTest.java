@@ -79,11 +79,11 @@ final class VariantRotationTest {
     }
 
     @Test
-    @DisplayName("dirMask higher bits past 6 are masked off")
-    void mask_clampsToSixBits() {
-        // Bit 6+ should be discarded since only Direction's 6 ordinals are valid.
-        VariantRotation r = new VariantRotation(VariantRotation.Mode.OPTIONS, 0xFF);
-        assertEquals(0x3F, r.dirMask());
+    @DisplayName("dirMask higher bits past 8 are masked off")
+    void mask_clampsToEightSlots() {
+        // Bits 0-7 survive (8 compass slots for ROTATION_16 blocks); bit 8+ is discarded.
+        VariantRotation r = new VariantRotation(VariantRotation.Mode.OPTIONS, 0x3FF);
+        assertEquals(0xFF, r.dirMask());
     }
 
     @Test

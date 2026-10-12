@@ -40,6 +40,9 @@ public enum PlotCategory {
     CONTENTS(EditorCategory.CONTENTS),
     TRACKS(EditorCategory.TRACKS),
     PORTALS(EditorCategory.PORTALS),
+    BUILDINGS(EditorCategory.BUILDINGS),
+    /** The official Lost City buildings — view-only, browsed and stamped with {@link #BUILDINGS}. */
+    LOST_CITY(EditorCategory.BUILDINGS),
     ARCHITECTURE(EditorCategory.ARCHITECTURE),
     /** Carriage parts — addressable in its own right, but stamped as part of {@link #CARRIAGES}. */
     PARTS(EditorCategory.CARRIAGES),
@@ -120,17 +123,17 @@ public enum PlotCategory {
      * from a handler that would have dropped it.</p>
      */
     public boolean hasActionRow() {
-        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE;
+        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != LOST_CITY;
     }
 
     /** Whether templates here have a spawn-weight pool to bump. False for parts and architecture. */
     public boolean hasWeightPool() {
-        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE;
+        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != LOST_CITY;
     }
 
     /** Whether templates here carry a spawn gate — min/max level, dimensions, stage link. */
     public boolean hasGate() {
-        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE;
+        return this != PARTS && this != CHUNK_FRAMES && this != ARCHITECTURE && this != BUILDINGS && this != LOST_CITY;
     }
 
     /**

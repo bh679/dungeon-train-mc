@@ -232,6 +232,10 @@ public final class ClientDisplayConfig {
     /** Whether shader-world changes render both worlds and blend, or cut. See {@link #isShaderCrossfadeEnabled()}. */
     public static final ModConfigSpec.BooleanValue SHADER_CROSSFADE;
     public static final ModConfigSpec.BooleanValue SCRIBBLE_COLOR_PICKER_VISIBLE;
+    /** Whether Scribble's save-to-file / load-from-file buttons stay on the book screen. See {@link #isScribbleFileButtonsVisible()}. */
+    public static final ModConfigSpec.BooleanValue SCRIBBLE_FILE_BUTTONS_VISIBLE;
+    /** Whether Scribble's insert-page button stays on the book screen. See {@link #isScribbleInsertPageButtonVisible()}. */
+    public static final ModConfigSpec.BooleanValue SCRIBBLE_INSERT_PAGE_BUTTON_VISIBLE;
     /** Whether BetterX's title-screen popups and version check are skipped. See {@link #isBetterXStartupScreensSuppressed()}. */
     public static final ModConfigSpec.BooleanValue BETTERX_SUPPRESS_STARTUP_SCREENS;
     public static final ModConfigSpec.BooleanValue CINEMATIC_HOTKEY_ENABLED;
@@ -267,6 +271,7 @@ public final class ClientDisplayConfig {
      * state above; the server learns it per-player via {@code ContentModeSyncPacket}.
      */
     public static final ModConfigSpec.EnumValue<ContentMode> CONTENT_MODE;
+    public static final ModConfigSpec.BooleanValue DEV_CHAT_ENABLED;
     /**
      * The config deviation the player last chose to keep, as a stable signature (see
      * {@code ConfigDeviationPromptHandler}). Empty when they have never dismissed the launch
@@ -286,6 +291,8 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
     public static final ModConfigSpec.BooleanValue LOW_MEMORY_NOTICE_CHAT;
+    /** Only Dungeon Train's tabs show on the advancements screen — see {@link #isHideOtherAdvancementTabs()}. */
+    public static final ModConfigSpec.BooleanValue HIDE_OTHER_ADVANCEMENT_TABS;
 
     /**
      * Where each of the editor's three author-facing menus draws — see {@link EditorMenuSpace}.
@@ -336,6 +343,7 @@ public final class ClientDisplayConfig {
      * save would have made. There is no decision in that worth interrupting a title screen for.</p>
      */
     public static final ModConfigSpec.BooleanValue CONFIRM_BUILD_RESTORE;
+    public static final ModConfigSpec.BooleanValue HUMAN_ONLY_TRANSLATIONS;
 
     /** The player's answer to the Political Filter prompt. See {@link #POLITICAL_FILTER}. */
     public enum PoliticalFilter {
@@ -390,6 +398,8 @@ public final class ClientDisplayConfig {
         SHADER_CROSSING_LIFT = pair.getLeft().shaderCrossingLift;
         SHADER_CROSSFADE = pair.getLeft().shaderCrossfade;
         SCRIBBLE_COLOR_PICKER_VISIBLE = pair.getLeft().scribbleColorPickerVisible;
+        SCRIBBLE_FILE_BUTTONS_VISIBLE = pair.getLeft().scribbleFileButtonsVisible;
+        SCRIBBLE_INSERT_PAGE_BUTTON_VISIBLE = pair.getLeft().scribbleInsertPageButtonVisible;
         BETTERX_SUPPRESS_STARTUP_SCREENS = pair.getLeft().betterXSuppressStartupScreens;
         CINEMATIC_HOTKEY_ENABLED = pair.getLeft().cinematicHotkeyEnabled;
         CREATIVE_SHIFT_CLICK_TO_HOTBAR = pair.getLeft().creativeShiftClickToHotbar;
@@ -401,7 +411,9 @@ public final class ClientDisplayConfig {
         DEATH_FORM_MUTED_IDS = pair.getLeft().deathFormMutedIds;
         POLITICAL_FILTER = pair.getLeft().politicalFilter;
         CONFIRM_BUILD_RESTORE = pair.getLeft().confirmBuildRestore;
+        HUMAN_ONLY_TRANSLATIONS = pair.getLeft().humanOnlyTranslations;
         CONTENT_MODE = pair.getLeft().contentMode;
+        DEV_CHAT_ENABLED = pair.getLeft().devChatEnabled;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
@@ -409,6 +421,7 @@ public final class ClientDisplayConfig {
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
+        HIDE_OTHER_ADVANCEMENT_TABS = pair.getLeft().hideOtherAdvancementTabs;
         COMMAND_MENU_SPACE = pair.getLeft().commandMenuSpace;
         TEMPLATE_BLOCKS_MENU_SPACE = pair.getLeft().templateBlocksMenuSpace;
         CONTAINER_CONTENTS_MENU_SPACE = pair.getLeft().containerContentsMenuSpace;
@@ -568,6 +581,12 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue scribbleColorPickerVisible = b
                 .comment("Show the Scribble mod's 16-swatch colour picker on the book-writing screen. Off by default: Dungeon Train keeps the book screen close to vanilla, and the picker is the one part of Scribble that changes what a book LOOKS like rather than how it is edited. No in-game control by design — flip this by hand to get the swatches back. Has no effect unless the Scribble mod is installed.")
                 .define("colorPickerVisible", false);
+        ModConfigSpec.BooleanValue scribbleFileButtonsVisible = b
+                .comment("Show the Scribble mod's save-book-to-file and load-book-from-file buttons on the book-writing screen. Off by default. Set from Options > Dungeon Train. Has no effect unless the Scribble mod is installed.")
+                .define("fileButtonsVisible", false);
+        ModConfigSpec.BooleanValue scribbleInsertPageButtonVisible = b
+                .comment("Show the Scribble mod's insert-page button on the book-writing screen. Off by default. Set from Options > Dungeon Train. Has no effect unless the Scribble mod is installed.")
+                .define("insertPageButtonVisible", false);
         b.pop();
 
         b.push("betterX");
@@ -675,6 +694,10 @@ public final class ClientDisplayConfig {
                          "narratives and shared carriages are world-shared and follow the host's.",
                          "Asked once on the first-launch consent card; changeable in Options -> Dungeon Train...")
                 .defineEnum("mode", ContentMode.ADULT);
+        ModConfigSpec.BooleanValue devChatEnabled = b
+                .comment("Chat with the developer in-game, both ways. A switch on the first-launch consent card",
+                         "(Adult only) and an Options row. Kid mode keeps developer chat off regardless.")
+                .define("devChat", true);
         b.pop();
 
         b.push("customContent");
@@ -740,6 +763,14 @@ public final class ClientDisplayConfig {
                 .define("confirmBuildRestore", false);
         b.pop();
 
+        b.push("translations");
+        ModConfigSpec.BooleanValue humanOnlyTranslations = b
+                .comment("Show only translations a person wrote or reviewed. Dungeon Train text that is still",
+                         "machine-translated and unreviewed in your language is shown in English instead.",
+                         "Set from the person button on the Language screen.")
+                .define("humanOnly", false);
+        b.pop();
+
         b.push("configIntegrity");
         ModConfigSpec.ConfigValue<String> configDeviationAcknowledged = b
                 .comment("Internal: the Dungeon Train config change you last chose to keep at the launch prompt,",
@@ -782,6 +813,14 @@ public final class ClientDisplayConfig {
                 .define("lowMemoryNoticeChat", true);
         b.pop();
 
+        b.push("advancements");
+        ModConfigSpec.BooleanValue hideOtherAdvancementTabs = b
+                .comment("Show only Dungeon Train's tabs on the advancements screen (L). Minecraft's own tabs and",
+                         "every other mod's are hidden; their advancements are still earned and still pop up.",
+                         "Toggle in-game via Options > Dungeon Train. On by default.")
+                .define("hideOtherTabs", true);
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -790,21 +829,21 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
                 sharedBooksRead,
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
-                politicalFilter, contentMode, customContentPreference,
+                politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
                 configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
-                lowMemoryNoticeChat,
+                lowMemoryNoticeChat, hideOtherAdvancementTabs,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
-                confirmBuildRestore);
+                confirmBuildRestore, humanOnlyTranslations);
     }
 
     /**
@@ -988,6 +1027,21 @@ public final class ClientDisplayConfig {
         if (CONFIRM_BUILD_RESTORE.get() == value) return; // skip a needless TOML write
         CONFIRM_BUILD_RESTORE.set(value);
         CONFIRM_BUILD_RESTORE.save();
+    }
+
+    /**
+     * Whether the player has asked for human translations only — machine-translated lines nobody
+     * has reviewed fall back to English. {@code false} wherever the client spec is absent.
+     */
+    public static boolean isHumanOnlyTranslations() {
+        return isLoaded() && HUMAN_ONLY_TRANSLATIONS.get();
+    }
+
+    public static void setHumanOnlyTranslations(boolean value) {
+        if (!isLoaded()) return;
+        if (HUMAN_ONLY_TRANSLATIONS.get() == value) return; // skip a needless TOML write
+        HUMAN_ONLY_TRANSLATIONS.set(value);
+        HUMAN_ONLY_TRANSLATIONS.save();
     }
 
     // ----- Developer-message consent state (see DevMessageConsentClient) -----
@@ -1203,6 +1257,21 @@ public final class ClientDisplayConfig {
         if (!isLoaded()) return;
         UPDATE_NOTICE_CHAT.set(value);
         UPDATE_NOTICE_CHAT.save();
+    }
+
+    /**
+     * Whether the advancements screen hides every tab outside the {@code dungeontrain} namespace. On
+     * by default, pre-load included, so the screen never flashes the vanilla tabs before the config
+     * loads. Read each time the screen is opened — see {@code AdvancementTabGate}.
+     */
+    public static boolean isHideOtherAdvancementTabs() {
+        return !isLoaded() || HIDE_OTHER_ADVANCEMENT_TABS.get();
+    }
+
+    public static void setHideOtherAdvancementTabs(boolean value) {
+        if (!isLoaded()) return;
+        HIDE_OTHER_ADVANCEMENT_TABS.set(value);
+        HIDE_OTHER_ADVANCEMENT_TABS.save();
     }
 
     public static boolean isLowMemoryNoticeChatEnabled() {
@@ -1428,6 +1497,40 @@ public final class ClientDisplayConfig {
         if (SCRIBBLE_COLOR_PICKER_VISIBLE.get() == value) return;
         SCRIBBLE_COLOR_PICKER_VISIBLE.set(value);
         SCRIBBLE_COLOR_PICKER_VISIBLE.save();
+    }
+
+    /**
+     * Keep Scribble's save-to-file / load-from-file buttons on the book screen? Defaults to
+     * {@code false}; read by {@link games.brennan.dungeontrain.client.ScribbleBookButtonsToggle}.
+     * Same {@code isLoaded() &&} form as {@link #isScribbleColorPickerVisible()}, so the hidden
+     * default holds before the config file loads.
+     */
+    public static boolean isScribbleFileButtonsVisible() {
+        return isLoaded() && SCRIBBLE_FILE_BUTTONS_VISIBLE.get();
+    }
+
+    /** Persist the file-buttons toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setScribbleFileButtonsVisible(boolean value) {
+        if (!isLoaded()) return;
+        if (SCRIBBLE_FILE_BUTTONS_VISIBLE.get() == value) return;
+        SCRIBBLE_FILE_BUTTONS_VISIBLE.set(value);
+        SCRIBBLE_FILE_BUTTONS_VISIBLE.save();
+    }
+
+    /**
+     * Keep Scribble's insert-page button on the book screen? Defaults to {@code false}; read by
+     * {@link games.brennan.dungeontrain.client.ScribbleBookButtonsToggle}.
+     */
+    public static boolean isScribbleInsertPageButtonVisible() {
+        return isLoaded() && SCRIBBLE_INSERT_PAGE_BUTTON_VISIBLE.get();
+    }
+
+    /** Persist the insert-page toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setScribbleInsertPageButtonVisible(boolean value) {
+        if (!isLoaded()) return;
+        if (SCRIBBLE_INSERT_PAGE_BUTTON_VISIBLE.get() == value) return;
+        SCRIBBLE_INSERT_PAGE_BUTTON_VISIBLE.set(value);
+        SCRIBBLE_INSERT_PAGE_BUTTON_VISIBLE.save();
     }
 
     /**
@@ -1680,6 +1783,22 @@ public final class ClientDisplayConfig {
         CONTENT_MODE.save();
     }
 
+    /**
+     * The Developer chat switch (consent card, Options row). A preference layered under the Kid rule:
+     * {@code RelayChatClient.canConnect} and the inbound sync both still require Adult mode.
+     * Defaults on, including pre-load, so an unanswered install behaves as before.
+     */
+    public static boolean isDevChatEnabled() {
+        return !isLoaded() || DEV_CHAT_ENABLED.get();
+    }
+
+    /** Persist the Developer chat switch. Idempotent; no-op pre-load. */
+    public static void setDevChatEnabled(boolean value) {
+        if (!isLoaded() || DEV_CHAT_ENABLED.get() == value) return;
+        DEV_CHAT_ENABLED.set(value);
+        DEV_CHAT_ENABLED.save();
+    }
+
     // ----- Custom Train Editor content prompt (see CustomContentPromptClient) -----
 
     /**
@@ -1862,6 +1981,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue shaderCrossingLift,
             ModConfigSpec.BooleanValue shaderCrossfade,
             ModConfigSpec.BooleanValue scribbleColorPickerVisible,
+            ModConfigSpec.BooleanValue scribbleFileButtonsVisible,
+            ModConfigSpec.BooleanValue scribbleInsertPageButtonVisible,
             ModConfigSpec.BooleanValue betterXSuppressStartupScreens,
             ModConfigSpec.BooleanValue cinematicHotkeyEnabled,
             ModConfigSpec.BooleanValue creativeShiftClickToHotbar,
@@ -1877,6 +1998,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<List<? extends String>> deathFormMutedIds,
             ModConfigSpec.EnumValue<PoliticalFilter> politicalFilter,
             ModConfigSpec.EnumValue<ContentMode> contentMode,
+            ModConfigSpec.BooleanValue devChatEnabled,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentPreference,
             ModConfigSpec.EnumValue<CustomContentPreference> customContentLastAnswer,
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
@@ -1884,11 +2006,13 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
+            ModConfigSpec.BooleanValue hideOtherAdvancementTabs,
             ModConfigSpec.EnumValue<EditorMenuSpace> commandMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> templateBlocksMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> containerContentsMenuSpace,
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
-            ModConfigSpec.BooleanValue confirmBuildRestore
+            ModConfigSpec.BooleanValue confirmBuildRestore,
+            ModConfigSpec.BooleanValue humanOnlyTranslations
     ) {}
 }

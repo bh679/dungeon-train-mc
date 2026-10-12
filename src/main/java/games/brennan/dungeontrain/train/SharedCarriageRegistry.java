@@ -1,9 +1,11 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.net.relay.SharedCarriageClient;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Credits;
 import games.brennan.dungeontrain.net.relay.SharedCarriageClient.Deaths;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
 
@@ -53,6 +55,11 @@ public final class SharedCarriageRegistry {
         public final BlockPos shipyardOrigin;
         public final CarriageDims dims;
         public final String variantId;
+        /**
+         * The relay kind this build uploads and leases as — {@code carriage} for a one-carriage slot,
+         * {@code carriage_group} for a drifting Group carriage whose {@link #dims} span the whole group.
+         */
+        public final String kind;
         /** True once this carriage was leased from the relay pool (PR C); false for a fresh local build. */
         public final boolean leasedFromPool;
         /**
@@ -120,8 +127,10 @@ public final class SharedCarriageRegistry {
         Instance(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx, BlockPos shipyardOrigin,
                  CarriageDims dims, String variantId, boolean leasedFromPool, boolean authoredHere,
                  String authorUuid, Integer relayId, String leaseToken, int seqSeed, String stageId,
-                 Credits credits, Deaths deaths) {
+                 Credits credits, Deaths deaths, String kind) {
             this.level = level;
+            this.kind = kind == null || kind.isEmpty()
+                    ? SharedCarriageClient.PoolLease.KIND_CARRIAGE : kind;
             this.subLevelId = subLevelId;
             this.trainId = trainId;
             this.pIdx = pIdx;
@@ -221,14 +230,15 @@ public final class SharedCarriageRegistry {
         /**
          * Storage blocks whose contents a player changed without it being a gift (taking, swapping,
          * rearranging), mapped to the contents signature from BEFORE the first such change. Flagged
-         * locally only — nothing is sent until {@link #releaseParked} decides it should be, so that
-         * looting neither costs a relay delta per container nor drains a carriage's loot across worlds.
+         * locally only — nothing is sent until {@link #releaseParked} runs, which happens when the player
+         * leaves the carriage or a block edit (or a gift) is flushed — so a visit costs at most one relay
+         * delta however many containers were looted.
          */
         private final Map<BlockPos, Long> parkedContainers = new ConcurrentHashMap<>();
         /**
          * Set once a real block edit lands on this carriage in this session (see
-         * {@code SableBlockChangeGuardMixin}). Parked container changes only travel on a carriage somebody
-         * actually built on — a player who only loots never uploads anything.
+         * {@code SableBlockChangeGuardMixin}). Only matters for a fresh carriage: it is what lets parked
+         * storage travel on one that is not on the relay yet (see {@link #releaseParked}).
          */
         private volatile boolean blockEditedThisSession;
 
@@ -245,21 +255,36 @@ public final class SharedCarriageRegistry {
         }
 
         /**
+         * Forget a parked storage block — its current contents are being uploaded right now (a gift), so
+         * a later withdrawal must be measured from what was just sent, not from before it.
+         */
+        public void unparkContainer(BlockPos pos) {
+            parkedContainers.remove(pos);
+        }
+
+        /**
          * Queue every parked container whose live contents really differ from its baseline — one emptied
-         * and refilled nets to nothing — and forget them. Does nothing (and keeps them parked) until a
-         * block edit has landed this session, so a later edit plus a later release still sends them.
-         * {@code liveSig} returns null when the container cannot be read (unloaded, broken); such a cell
-         * is dropped rather than uploaded as whatever now stands there.
+         * and refilled nets to nothing — and forget them. {@code live} returns null when the container
+         * cannot be read (unloaded, broken); such a cell is dropped rather than uploaded as whatever now
+         * stands there (breaking a container is a block change of its own — see
+         * {@link SharedCarriageChangeFilter}).
+         *
+         * <p>On a carriage already on the relay this always releases: taking items out must drain the
+         * relay copy, or the next world to lease it is handed the same loot again. A fresh carriage is
+         * different — sending anything publishes it to the pool — so it releases only once it was
+         * block-edited this session (a gift publishes it on its own, after which it is on the relay).
+         * Looting a fresh carriage alone keeps everything parked, so a later edit still sends it.</p>
          *
          * @return how many cells were queued
          */
-        public int releaseParked(Function<BlockPos, Long> liveSig) {
-            if (!blockEditedThisSession || parkedContainers.isEmpty()) return 0;
+        public int releaseParked(Function<BlockPos, StorageContents.Snapshot> live) {
+            if (parkedContainers.isEmpty()) return 0;
+            if (!isOnRelay() && !blockEditedThisSession) return 0;
             int queued = 0;
             for (Map.Entry<BlockPos, Long> e : Map.copyOf(parkedContainers).entrySet()) {
                 parkedContainers.remove(e.getKey());
-                Long live = liveSig.apply(e.getKey());
-                if (live == null || live.longValue() == e.getValue()) continue;
+                StorageContents.Snapshot snap = live.apply(e.getKey());
+                if (snap == null || snap.sig() == e.getValue()) continue;
                 enqueue(e.getKey());
                 queued++;
             }
@@ -324,6 +349,34 @@ public final class SharedCarriageRegistry {
             return true;
         }
 
+        /**
+         * The lease's own {@code ents} list, held from placement until the deferred relay-entity spawn
+         * puts them in the world ({@code TrainCarriageAppender.firePendingRelayEntitySpawns}); null once
+         * spawned, and always null for a fresh build or a lease that carried no entities.
+         *
+         * <p>Every upload carries the carriage's WHOLE entity list, and the relay's fold replaces the
+         * base's with it. Before the spawn fires the live carriage stands empty, so a capture then — a
+         * block edit, a shutdown's final flush — would tell the relay the build has no entities, and the
+         * next world to lease it would get none. While this is set, uploads carry it instead.</p>
+         */
+        private volatile ListTag heldRelayEnts;
+
+        /** Hold {@code ents} as this carriage's entity list until {@link #releaseRelayEnts}. Empty holds nothing. */
+        public void holdRelayEnts(ListTag ents) {
+            this.heldRelayEnts = ents == null || ents.isEmpty() ? null : ents.copy();
+        }
+
+        /** The held entities are standing in the world now — uploads read them live from here on. */
+        public void releaseRelayEnts() { this.heldRelayEnts = null; }
+
+        public boolean isHoldingRelayEnts() { return heldRelayEnts != null; }
+
+        /** The entity list an upload should carry: the held lease list while one is held, else {@code live}. */
+        public ListTag entsForUpload(ListTag live) {
+            ListTag held = heldRelayEnts;
+            return held != null ? held.copy() : live;
+        }
+
         public boolean needsRebaseline() { return rebaseline; }
         /** Ask the flusher to re-baseline (full save) — the relay's delta log is near/at full. */
         public void markRebaseline() { this.rebaseline = true; }
@@ -355,8 +408,23 @@ public final class SharedCarriageRegistry {
                                     boolean leasedFromPool, boolean authoredHere, String authorUuid,
                                     Integer relayId, String leaseToken, int seqSeed,
                                     String stageId, Credits credits, Deaths deaths) {
+        return register(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId, leasedFromPool,
+                authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits, deaths,
+                SharedCarriageClient.PoolLease.KIND_CARRIAGE);
+    }
+
+    /**
+     * {@link #register} naming the relay kind — {@code carriage_group} for a drifting Group carriage,
+     * registered once at the group's first carriage with {@code dims} spanning the whole group.
+     */
+    public static Instance register(ServerLevel level, UUID subLevelId, UUID trainId, int pIdx,
+                                    BlockPos shipyardOrigin, CarriageDims dims, String variantId,
+                                    boolean leasedFromPool, boolean authoredHere, String authorUuid,
+                                    Integer relayId, String leaseToken, int seqSeed,
+                                    String stageId, Credits credits, Deaths deaths, String kind) {
         Instance inst = new Instance(level, subLevelId, trainId, pIdx, shipyardOrigin, dims, variantId,
-                leasedFromPool, authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits, deaths);
+                leasedFromPool, authoredHere, authorUuid, relayId, leaseToken, seqSeed, stageId, credits, deaths,
+                kind);
         BY_SUBLEVEL.computeIfAbsent(subLevelId, k -> new CopyOnWriteArrayList<>()).add(inst);
         LOGGER.debug("[DungeonTrain] Registered shared carriage variant={} pIdx={} subLevel={} leased={} own={} stage={}.",
                 variantId, pIdx, subLevelId, leasedFromPool, authoredHere, stageId);

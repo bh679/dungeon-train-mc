@@ -127,10 +127,19 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Vista — third-party, REQUIRED. The TVs the Live Feed plays on; DT's antenna block implements its
+# broadcast seam and the viewer carriage template carries its blocks, so both sides need it.
+[[dependencies.${mod_id}]]
+    modId="vista"
+    type="required"
+    versionRange="[${vista_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Second-lap overworld mods — third-party, REQUIRED. On odd laps the overworld gap before the
 # Nether band is William Wythers' Overhauled Overworld and the gap after it is Biomes O' Plenty
-# (worldgen/SecondLapOverworld). Floors only; their libraries (Cristel Lib, TerraBlender,
-# GlitchCore) are declared by the mods themselves.
+# (worldgen/SecondLapOverworld). Floors only; Cristel Lib and GlitchCore are declared by the mods
+# themselves. TerraBlender gets its own floor below because DT compiles against it directly.
 [[dependencies.${mod_id}]]
     modId="wwoo"
     type="required"
@@ -142,6 +151,15 @@ logoFile="logo.png"
     modId="biomesoplenty"
     type="required"
     versionRange="[${biomesoplenty_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
+# TerraBlender — BoP's library, but DT uses it directly: its Regions/SurfaceRuleManager API, some
+# internals (guarded by mixin/ThirdPartyMixinPlugin and fall-backs), and a surface-rule mixin.
+[[dependencies.${mod_id}]]
+    modId="terrablender"
+    type="required"
+    versionRange="[${terrablender_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
@@ -218,12 +236,12 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Edible Backpacks is jarJar'd INSIDE this jar (like DiscordPresence),
-# so the shipped version is always exactly ediblebackpacks_version — no floor indirection.
+# Edible Backpacks — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a
+# required external download on CurseForge. Range keys off the FLOOR, like the other siblings.
 [[dependencies.${mod_id}]]
     modId="ediblebackpacks"
     type="required"
-    versionRange="[${ediblebackpacks_version},)"
+    versionRange="[${ediblebackpacks_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
@@ -304,6 +322,17 @@ logoFile="logo.png"
     versionRange="[${streamdetect_min_version},)"
     ordering="NONE"
     side="CLIENT"
+
+# DT Mod Verify — the Free Play file-verification engine (hashes + package fingerprints of the
+# installed jars, and the relay verify call). jarJar'd inside this jar like Stream Detect; `optional`
+# so DT degrades to the id-only whitelist check without it (compat/DtModVerifyBridge). Both sides:
+# a dedicated server scans its own mods/ too.
+[[dependencies.${mod_id}]]
+    modId="dtmodverify"
+    type="optional"
+    versionRange="[${dtmodverify_min_version},)"
+    ordering="NONE"
+    side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="dpibypassdetect"
@@ -390,6 +419,11 @@ logoFile="logo.png"
 # villager's goods (see TradePricerEmeraldPayoutMixin).
 [[mixins]]
     config="${mod_id}.tradeeverything.mixins.json"
+
+# Vista (required dep) — TVs toggle on a redstone pulse or an empty-hand click instead of
+# following a steady signal (see compat/vista/TvPowerToggle).
+[[mixins]]
+    config="${mod_id}.vista.mixins.json"
 
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"

@@ -105,24 +105,15 @@ final class EditorNavPane {
     }
 
     /**
-     * Four 16:9 tiles, two per row, as large as the column allows and centred in it. Pure so the
-     * fit can be tested at the sizes that matter without a client.
+     * The nav tiles in {@link BuilderMode#NAV_ORDER} — big for the two primary areas, short for the
+     * advanced rest ({@code NavTiles}). Pure so the fit can be tested without a client.
      */
     static List<InventoryEditorLayout.Rect> tiles(InventoryEditorLayout.Rect area) {
-        int cols = 1;
-        int rows = BuilderMode.values().length;
         // Tiles span the column; the cover-cropped art shows a wider slice when height-limited.
-        int tileW = Math.max(1, (area.w() - TILE_GAP * (cols - 1)) / cols);
-        int maxTileH = Math.max(1, (area.h() - TILE_GAP * (rows - 1)) / rows);
-        int tileH = Math.max(1, Math.min(tileW * 9 / 16, maxTileH));
-        int gridW = cols * tileW + TILE_GAP * (cols - 1);
-        int gridH = rows * tileH + TILE_GAP * (rows - 1);
-        int x0 = area.x() + Math.max(0, (area.w() - gridW) / 2);
-        int y0 = area.y() + Math.max(0, (area.h() - gridH) / 2);
-        List<InventoryEditorLayout.Rect> out = new ArrayList<>(cols * rows);
-        for (int i = 0; i < cols * rows; i++) {
-            out.add(new InventoryEditorLayout.Rect(
-                x0 + (i % cols) * (tileW + TILE_GAP), y0 + (i / cols) * (tileH + TILE_GAP), tileW, tileH));
+        List<InventoryEditorLayout.Rect> out = new ArrayList<>();
+        for (games.brennan.dungeontrain.client.builder.NavTiles.Cell c
+                : games.brennan.dungeontrain.client.builder.NavTiles.layout(area.x(), area.y(), area.w(), area.h())) {
+            out.add(new InventoryEditorLayout.Rect(c.x(), c.y(), c.w(), c.h()));
         }
         return out;
     }
@@ -166,10 +157,10 @@ final class EditorNavPane {
         InventoryEditorLayout.Rect r = rect(layout);
         g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, theme.subPanel());
         List<InventoryEditorLayout.Rect> cells = tiles(r);
-        BuilderMode[] modes = BuilderMode.values();
+        List<BuilderMode> modes = BuilderMode.NAV_ORDER;
         tileRects.clear();
-        for (int i = 0; i < modes.length && i < cells.size(); i++) {
-            BuilderMode mode = modes[i];
+        for (int i = 0; i < modes.size() && i < cells.size(); i++) {
+            BuilderMode mode = modes.get(i);
             InventoryEditorLayout.Rect cell = cells.get(i);
             tileRects.put(mode, cell);
             boolean lit = mode == selected || cell.contains(mouseX, mouseY);

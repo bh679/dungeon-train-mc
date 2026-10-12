@@ -1,0 +1,23 @@
+{
+  "_comment": "Who wrote the built-in books, for the Credits page's Writers card. Every book not listed under a writer here is the default writer's. Wilson Taylor's are the six stories ported from the original game's narratives/originals/ and the variants of Musings of Faulthurst that come from narratives/originals/Faulthurst.txt (indices into its variants[]; scripts/credits/house-credits.py --check fails if one stops matching that file). Counts are generated into src/main/resources/assets/dungeontrain/credits/house_credits.json by that script.",
+  "default": "Brennan Hatton",
+  "writers": [
+    {
+      "name": "Wilson Taylor",
+      "stories": [
+        "aelis_the_ronin_shield_maiden_part_one_outline",
+        "augustus_park",
+        "jay_kuruvilla_the_time_traveler",
+        "maxwell_valiant",
+        "the_letters_of_madame_ulster_the_answerless_prophet",
+        "the_querys_and_life_of_fourteen"
+      ],
+      "random_book_variants": {
+        "musings_of_faulthurst": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 26]
+      },
+      "originals": {
+        "musings_of_faulthurst": "Faulthurst.txt"
+      }
+    }
+  ]
+}

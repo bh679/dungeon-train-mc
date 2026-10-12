@@ -20,6 +20,7 @@ final class EditorCategoryFilterTest {
         assertArrayEquals(new EditorCategoryFilter[] {
             EditorCategoryFilter.ALL, EditorCategoryFilter.WHOLE, EditorCategoryFilter.CARRIAGES,
             EditorCategoryFilter.CONTENTS, EditorCategoryFilter.TRACKS, EditorCategoryFilter.DIMENSIONS,
+            EditorCategoryFilter.BUILDINGS,
         }, EditorCategoryFilter.values());
         assertEquals(PlotCategory.WHOLE, EditorCategoryFilter.WHOLE.category());
         assertNull(EditorCategoryFilter.ALL.category());

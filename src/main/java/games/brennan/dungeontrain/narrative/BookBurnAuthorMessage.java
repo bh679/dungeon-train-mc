@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.narrative;
 
+import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.event.BookAuthorChatMirror;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -42,11 +43,12 @@ public final class BookBurnAuthorMessage {
     public static void announce(ServerLevel level, ItemEntity item, ItemStack stack) {
         if (level == null || item == null || stack == null || stack.isEmpty()) return;
         WrittenBookContent content = stack.get(DataComponents.WRITTEN_BOOK_CONTENT);
-        if (content == null) return;
-        String author = content.author();
+        // A burning photograph names its photographer the same way a book names its author.
+        String author = content != null ? content.author() : SharedPhotos.authorOf(stack);
+        String key = content != null ? "chat.dungeontrain.book_burns_author" : "chat.dungeontrain.photo_burns_author";
         if (author == null || author.isBlank()) return;
 
-        Component message = Component.translatable("chat.dungeontrain.book_burns_author",
+        Component message = Component.translatable(key,
                 clickToCopy(author))
             .withStyle(ChatFormatting.GRAY);
 

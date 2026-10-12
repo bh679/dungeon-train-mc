@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_1000",
+  "parent": "dungeontrain:dungeon_train/no_container_100",
   "display": {
     "icon": { "id": "minecraft:ender_chest" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.contained_loop.title" },

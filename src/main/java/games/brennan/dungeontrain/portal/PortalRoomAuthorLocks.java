@@ -570,6 +570,76 @@ public final class PortalRoomAuthorLocks {
         return false;
     }
 
+    /**
+     * {@code player}'s own author entries as cached right now — empty when they declined network
+     * access or the page has not come back (a fetch is kicked then, so the next pair has it).
+     *
+     * <p>What {@link PortalAuthorRoomPick} fits a Self room to. Never waits: a pair is planned in the
+     * portal tick, and a cold page simply means this pair is fitted as somebody else's library.</p>
+     */
+    public static List<BookAuthorsClient.Author> selfAuthors(ServerPlayer player, boolean kidSafe) {
+        if (player == null || !consented(player)) return List.of();
+        String kind = PortalRoomBooks.Share.SELF.directoryKind();
+        PortalRoomBooks any = PortalRoomBooks.DEFAULT;
+        String cacheKey = directoryKey(kind, player.getUUID(), any, null);
+        CachedPage cached = DIRECTORY.get(cacheKey);
+        long now = System.currentTimeMillis();
+        if (shouldRefetch(cached, now)) fetchDirectory(kind, cacheKey, player, any, kidSafe, null);
+        return usable(cached, now) ? cached.page().authors() : List.of();
+    }
+
+    /**
+     * The {@code share} directory over {@code band} as cached right now, in the host's language —
+     * empty when it is cold (a fetch is kicked then).
+     */
+    public static List<BookAuthorsClient.Author> directoryAuthors(ServerPlayer player,
+                                                                  PortalRoomBooks.Share share,
+                                                                  PortalRoomBooks band, boolean kidSafe) {
+        if (player == null || share == null || share.isStats() || share.isSelf()) return List.of();
+        String lang = hostLocaleOf(player);
+        String cacheKey = directoryKey(share.directoryKind(), player.getUUID(), band, lang);
+        CachedPage cached = DIRECTORY.get(cacheKey);
+        long now = System.currentTimeMillis();
+        if (shouldRefetch(cached, now)) fetchDirectory(share.directoryKind(), cacheKey, player, band, kidSafe, lang);
+        return usable(cached, now) ? cached.page().authors() : List.of();
+    }
+
+    /**
+     * Settle {@code pairKey} on {@code author} before its shelves are ever asked for — the room was
+     * chosen to fit them, so the first stocking must not draw somebody else.
+     *
+     * <p>Self locks are per holder, the rest per room, matching {@link #keyFor}. Overwrites nothing
+     * already settled: a room that has stocked keeps the author it stocked from.</p>
+     */
+    public static void preLock(int pairKey, ServerPlayer holder, PortalRoomBooks.Share share,
+                               BookAuthorsClient.Author author) {
+        if (author == null || share == null || share.isStats()) return;
+        if (share.isSelf() && holder == null) return;
+        LOCKS.putIfAbsent(new Key(pairKey, share.isSelf() ? holder.getUUID() : null), author);
+        remember(author.token());
+    }
+
+    /**
+     * Warm {@code player}'s self page so the next author room planned near them can be fitted to
+     * their own count. {@code refresh} drops a page already held — what a fresh signing wants, since
+     * a page that named somebody is otherwise kept for the session and would not count the new book.
+     */
+    public static void prefetchSelf(ServerPlayer player, boolean refresh) {
+        if (player == null || !consented(player)) return;
+        if (refresh) forgetSelf(player);
+        selfAuthors(player, games.brennan.dungeontrain.event.ContentModeMirror.isKid(player));
+    }
+
+    /**
+     * Drop {@code player}'s cached self page so the next read fetches it afresh — after a signing,
+     * when the held page no longer counts everything they have written.
+     */
+    public static void forgetSelf(ServerPlayer player) {
+        if (player == null) return;
+        DIRECTORY.remove(directoryKey(
+            PortalRoomBooks.Share.SELF.directoryKind(), player.getUUID(), PortalRoomBooks.DEFAULT, null));
+    }
+
     /** Drop every lock, directory page and catalogue — server stop, and unit tests. */
     public static void clear() {
         LOCKS.clear();

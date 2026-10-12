@@ -53,6 +53,19 @@ final class SharedCarriageMineParseTest {
     }
 
     @Test
+    @DisplayName("a row's review verdict and the reviewer's comment are read; a relay without them reads as empty")
+    void reviewComment() {
+        SharedCarriageClient.Mine mine = SharedCarriageClient.parseMine(json(
+                "{\"ok\":true,\"cap\":10,\"carriages\":[{\"id\":7,\"review\":\"feedback\","
+                + "\"reviewComment\":\"More light.\"},{\"id\":8,\"review\":\"accepted\",\"reviewComment\":null},{\"id\":9}]}"));
+        assertNotNull(mine);
+        assertEquals("feedback", mine.builds().get(0).review());
+        assertEquals("More light.", mine.builds().get(0).reviewComment());
+        assertEquals("", mine.builds().get(1).reviewComment(), "null is nothing said");
+        assertEquals("", mine.builds().get(2).reviewComment(), "an older relay sends no field");
+    }
+
+    @Test
     @DisplayName("no carriages array is an unusable reply, not an empty profile")
     void unusableReply() {
         assertNull(SharedCarriageClient.parseMine(json("{\"ok\":true}")));

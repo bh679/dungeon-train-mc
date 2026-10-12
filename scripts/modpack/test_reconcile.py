@@ -74,6 +74,22 @@ def test_verify_is_inconclusive_when_only_the_cached_mirror_says_missing():
     assert _verify("v0.613.0", authoritative=False) == reconcile.INCONCLUSIVE
 
 
+def test_verify_does_not_poll_the_cached_mirror():
+    # A cache can't fail the check, so waiting on it only slowed every release by its full
+    # timeout (30 min). A long timeout must still answer from the first look, without sleeping.
+    calls = []
+    reconcile.PLATFORMS["curseforge"] = lambda: calls.append(1) or [("0.592.0", hours_ago(20))]
+    os.environ.pop("CURSEFORGE_API_KEY", None)
+    real_sleep = reconcile.time.sleep
+    reconcile.time.sleep = lambda _s: (_ for _ in ()).throw(AssertionError("slept on the mirror"))
+    try:
+        outcome = reconcile.verify("curseforge", "v0.613.0", timeout_minutes=300, poll_seconds=300)
+    finally:
+        reconcile.time.sleep = real_sleep
+    assert outcome == reconcile.INCONCLUSIVE
+    assert len(calls) == 1
+
+
 def test_only_missing_exits_nonzero():
     reconcile.PLATFORMS["curseforge"] = lambda: [("0.592.0", hours_ago(20))]
     os.environ.pop("CURSEFORGE_API_KEY", None)

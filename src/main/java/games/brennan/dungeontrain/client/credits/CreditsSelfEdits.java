@@ -40,10 +40,11 @@ public final class CreditsSelfEdits {
     /**
      * The remembered edits. Immutable; a change is a new value. {@code amountHidden} is the Funders
      * card's figure, independent of the name: an anonymous funder can still show a figure and a
-     * named one can hide it.
+     * named one can hide it. {@code skinHidden} keeps the player out of the website Credits page's
+     * 3D bands in their own skin, on every card.
      */
-    public record Entry(String from, String to, boolean hidden, boolean amountHidden) {
-        public static final Entry NONE = new Entry("", "", false, false);
+    public record Entry(String from, String to, boolean hidden, boolean amountHidden, boolean skinHidden) {
+        public static final Entry NONE = new Entry("", "", false, false, false);
 
         public Entry {
             from = from == null ? "" : from.trim();
@@ -54,28 +55,36 @@ public final class CreditsSelfEdits {
             this(from, to, hidden, false);
         }
 
+        public Entry(String from, String to, boolean hidden, boolean amountHidden) {
+            this(from, to, hidden, amountHidden, false);
+        }
+
         public boolean hasRename() {
             return !from.isEmpty() && !to.isEmpty() && !from.equals(to);
         }
 
         public boolean isEmpty() {
-            return !hasRename() && !hidden && !amountHidden;
+            return !hasRename() && !hidden && !amountHidden && !skinHidden;
         }
 
         Entry withRename(String f, String t) {
-            return new Entry(f, t, hidden, amountHidden);
+            return new Entry(f, t, hidden, amountHidden, skinHidden);
         }
 
         Entry withHidden(boolean h) {
-            return new Entry(from, to, h, amountHidden);
+            return new Entry(from, to, h, amountHidden, skinHidden);
         }
 
         Entry withAmountHidden(boolean a) {
-            return new Entry(from, to, hidden, a);
+            return new Entry(from, to, hidden, a, skinHidden);
+        }
+
+        Entry withSkinHidden(boolean k) {
+            return new Entry(from, to, hidden, amountHidden, k);
         }
 
         Entry withoutRename() {
-            return new Entry("", "", hidden, amountHidden);
+            return new Entry("", "", hidden, amountHidden, skinHidden);
         }
     }
 
@@ -109,6 +118,12 @@ public final class CreditsSelfEdits {
     public static synchronized void setAmountHidden(boolean amountHidden) {
         ensureLoaded();
         put(entry.withAmountHidden(amountHidden));
+    }
+
+    /** Remember that the player hid their skin from the website's Credits page — or showed it. */
+    public static synchronized void setSkinHidden(boolean skinHidden) {
+        ensureLoaded();
+        put(entry.withSkinHidden(skinHidden));
     }
 
     /**
@@ -216,7 +231,8 @@ public final class CreditsSelfEdits {
     }
 
     static Entry parseEntry(JsonObject o) {
-        return new Entry(str(o.get("from")), str(o.get("to")), flag(o, "hidden"), flag(o, "amountHidden"));
+        return new Entry(str(o.get("from")), str(o.get("to")), flag(o, "hidden"), flag(o, "amountHidden"),
+                flag(o, "skinHidden"));
     }
 
     private static boolean flag(JsonObject o, String key) {
@@ -239,6 +255,7 @@ public final class CreditsSelfEdits {
             }
             if (entry.hidden()) root.addProperty("hidden", true);
             if (entry.amountHidden()) root.addProperty("amountHidden", true);
+            if (entry.skinHidden()) root.addProperty("skinHidden", true);
             Files.writeString(path, root.toString(), StandardCharsets.UTF_8);
         } catch (Exception e) {
             LOGGER.warn("[DungeonTrain] Credits: could not save {} — {}", FILE, e.toString());

@@ -65,7 +65,7 @@ public record BuilderSetupPacket(String modeId) implements CustomPacketPayload {
             MinecraftServer server = player.getServer();
             if (server == null) return;
 
-            Optional<BuilderMode> mode = BuilderMode.fromId(packet.modeId);
+            Optional<BuilderMode> mode = BuilderMode.fromBuilderId(packet.modeId);
             if (mode.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Builder setup: unknown mode id '{}' — ignoring", packet.modeId);
                 return;

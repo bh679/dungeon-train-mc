@@ -179,4 +179,33 @@ final class LostCityTemplateIdsTest {
     void unknownPool() {
         assertTrue(LostCityTemplateIds.collect(List.of(rl("t:missing")), id -> null).isEmpty());
     }
+
+    @Test
+    @DisplayName("an urgent pre-load puts the requested structure's templates first, each template once, none added")
+    void orderedPutsRequestedFirst() {
+        List<ResourceLocation> all = List.of(blc("a"), blc("b"), blc("c"), blc("d"));
+        assertEquals(List.of(blc("c"), blc("b"), blc("a"), blc("d")),
+                LostCityTemplateIds.ordered(all, List.of(blc("c"), blc("b"), blc("c"), blc("not_placeable"))));
+        assertEquals(all, LostCityTemplateIds.ordered(all, List.of()));
+        assertTrue(LostCityTemplateIds.ordered(List.of(), List.of(blc("a"))).isEmpty());
+    }
+
+    @Test
+    @DisplayName("one building's start pool reaches only its own templates — a strict subset of the 42")
+    void oneBuildingIsASubset() throws Exception {
+        Shipped s = shipped();
+        // a trackside copy of a Big Lost City building (DT's own buildings place none of the mod's templates)
+        ResourceLocation start = s.dtStarts().stream()
+                .filter(id -> LostCityStructures.NAMESPACE.equals(id.getNamespace()))
+                .findFirst().orElseThrow();
+        Set<ResourceLocation> one = withBlcData(root -> {
+            Map<ResourceLocation, PoolView> pools = new HashMap<>();
+            readPools(LostCityStructures.NAMESPACE, root.resolve("worldgen/template_pool"), pools);
+            readPools("dungeontrain", RepoPaths.resources().resolve("data/dungeontrain/worldgen/template_pool"), pools);
+            return LostCityTemplateIds.collect(List.of(start), pools::get);
+        });
+        assertFalse(one.isEmpty(), start.toString());
+        assertTrue(s.collected().containsAll(one));
+        assertTrue(one.size() < s.collected().size(), one.toString());
+    }
 }

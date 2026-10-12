@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
+import games.brennan.dungeontrain.worldgen.SampledCells;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentSerialization;
 import net.neoforged.bus.api.IEventBus;
@@ -81,6 +82,39 @@ public final class ModDataAttachments {
         TYPES.register("end_band_pending",
             () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
                 .serialize(Codec.BOOL, pending -> pending)
+                .build()
+        );
+
+    /**
+     * Per-chunk record of the cells the End-band sampler wrote during the chunk's own worldgen
+     * ({@code EndBandInlineTerrain}, the {@code endBandTerrain = worldgen} default), so the void erosion
+     * that runs when the chunk goes live ({@code WorldDisintegrationEvents}) leaves exactly those cells
+     * alone. Copied verbatim from the proto chunk to the live chunk on promotion (the default copy path
+     * needs a serializer, which would persist 12 KB per chunk for nothing). Persisted only as a marker
+     * while a record exists, and read back as {@link SampledCells#ALL}: the one way a chunk is promoted
+     * without its record is a chunk saved mid-generation and finished on a later boot, where skipping its
+     * erosion beats erasing its islands.
+     */
+    public static final Supplier<AttachmentType<SampledCells>> END_BAND_SAMPLED_CELLS =
+        TYPES.register("end_band_sampled_cells",
+            () -> AttachmentType.builder(() -> SampledCells.NONE)
+                .serialize(Codec.BOOL.xmap(written -> written ? SampledCells.ALL : SampledCells.NONE,
+                                           cells -> cells != SampledCells.NONE),
+                           cells -> cells != SampledCells.NONE && !cells.isEmpty())
+                .copyHandler((cells, holder, provider) -> cells)   // after serialize(): the builder insists
+                .build()
+        );
+
+    /**
+     * Overworld game time at which the player last saw a Live Eye in a container (0 = never). Starts the
+     * 15-minute window in which loot Live Eyes become TVs for them ({@code event/LiveEyeLootResolver}).
+     * {@code copyOnDeath} so dying doesn't reset it.
+     */
+    public static final Supplier<AttachmentType<Long>> LIVE_EYE_SEEN_AT =
+        TYPES.register("live_eye_seen_at",
+            () -> AttachmentType.<Long>builder(() -> 0L)
+                .serialize(Codec.LONG)
+                .copyOnDeath()
                 .build()
         );
 
@@ -245,6 +279,42 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-life flag: has an apple or edible backpack been in this player's inventory this life? Rules out the apple challenges. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> HELD_APPLE_THIS_LIFE =
+        TYPES.register("held_apple_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player eaten anything but melon this life? Rules out The Last Melon. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> ATE_NON_MELON_THIS_LIFE =
+        TYPES.register("ate_non_melon_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player worn armor (an elytra aside) this life? Rules out the naked challenges. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> WORE_ARMOR_THIS_LIFE =
+        TYPES.register("wore_armor_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
      * Travelled-carriage reading (the same {@code effectiveTravelled} value the carts tiers use) at
      * the moment this player last broke a block this life. The "no block broken" streak is
      * {@code effectiveTravelled - this}, driving the {@code no_break_100} / {@code no_break_1000}
@@ -260,6 +330,35 @@ public final class ModDataAttachments {
         TYPES.register("carts_at_last_block_break",
             () -> AttachmentType.<Integer>builder(() -> 0)
                 .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
+     * How many times this player has paid Tribute to their own photo this life — each one triples the
+     * next one's cost ({@link games.brennan.dungeontrain.compat.photo.OwnPhotoTribute#cost}).
+     *
+     * <p>Serialized so a mid-life logout can't reset the price, and <b>no</b> {@code copyOnDeath} so
+     * every new life starts back at the base cost — the same shape as {@link #CARTS_AT_LAST_CONTAINER_OPEN}.</p>
+     */
+    public static final Supplier<AttachmentType<Integer>> OWN_PHOTO_TRIBUTES_THIS_LIFE =
+        TYPES.register("own_photo_tributes_this_life",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
+     * A random id for this life, sent with every photo upload and Tribute so the relay can keep the
+     * one-life photo leaderboards ({@link games.brennan.dungeontrain.compat.photo.SharedPhotos#lifeFields}).
+     * Blank until the life's first photo event mints it.
+     *
+     * <p>Serialized so a mid-life logout keeps the same life, and <b>no</b> {@code copyOnDeath} so every
+     * new life gets a new one — the same shape as {@link #OWN_PHOTO_TRIBUTES_THIS_LIFE}.</p>
+     */
+    public static final Supplier<AttachmentType<String>> PHOTO_LIFE_ID =
+        TYPES.register("photo_life_id",
+            () -> AttachmentType.<String>builder(() -> "")
+                .serialize(Codec.STRING)
                 .build()
         );
 

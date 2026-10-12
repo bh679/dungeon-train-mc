@@ -9,28 +9,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class SurveyTagTest {
 
     @Test
-    @DisplayName("dot, version, language, mods, games — in that order")
+    @DisplayName("dot, version, language, mods, games, times answered — in that order")
     void fullTag() {
+        assertEquals("🟠 DT 0.1093.0 · Russian · Mods: 87 · Games 12 · (3)",
+                SurveyTag.format(VersionFreshness.MONTH, "0.1093.0", "ru_ru", 87, 12L, 3));
+    }
+
+    @Test
+    @DisplayName("an unknown answer count leaves the bracket off")
+    void unknownCountIsSkipped() {
         assertEquals("🟠 DT 0.1093.0 · Russian · Mods: 87 · Games 12",
-                SurveyTag.format(VersionFreshness.MONTH, "0.1093.0", "ru_ru", 87, 12L));
+                SurveyTag.format(VersionFreshness.MONTH, "0.1093.0", "ru_ru", 87, 12L, 0));
+        assertEquals("🟠 DT 0.1093.0 · Russian · Mods: 87 · Games 12",
+                SurveyTag.format(VersionFreshness.MONTH, "0.1093.0", "ru_ru", 87, 12L, -1));
     }
 
     @Test
     @DisplayName("an unknown language is left out, not shown blank")
     void blankLanguageIsSkipped() {
-        assertEquals("🟢 DT 0.1104.0 · Mods: 60 · Games 0",
-                SurveyTag.format(VersionFreshness.LATEST, "0.1104.0", "", 60, 0L));
-        assertEquals("🟢 DT 0.1104.0 · Mods: 60 · Games 0",
-                SurveyTag.format(VersionFreshness.LATEST, "0.1104.0", null, 60, 0L));
+        assertEquals("🟢 DT 0.1104.0 · Mods: 60 · Games 0 · (1)",
+                SurveyTag.format(VersionFreshness.LATEST, "0.1104.0", "", 60, 0L, 1));
+        assertEquals("🟢 DT 0.1104.0 · Mods: 60 · Games 0 · (1)",
+                SurveyTag.format(VersionFreshness.LATEST, "0.1104.0", null, 60, 0L, 1));
     }
 
     @Test
     @DisplayName("a client language that is not a locale code never reaches Discord")
     void hostileLanguageIsDropped() {
-        assertEquals("🔴 DT 0.900.0 · Mods: 3 · Games 5",
-                SurveyTag.format(VersionFreshness.OLDER, "0.900.0", "@everyone", 3, 5L));
-        assertEquals("🔴 DT 0.900.0 · Mods: 3 · Games 5",
-                SurveyTag.format(VersionFreshness.OLDER, "0.900.0", "[x](http://a.b)", 3, 5L));
+        assertEquals("🔴 DT 0.900.0 · Mods: 3 · Games 5 · (2)",
+                SurveyTag.format(VersionFreshness.OLDER, "0.900.0", "@everyone", 3, 5L, 2));
+        assertEquals("🔴 DT 0.900.0 · Mods: 3 · Games 5 · (2)",
+                SurveyTag.format(VersionFreshness.OLDER, "0.900.0", "[x](http://a.b)", 3, 5L, 2));
     }
 
     @Test

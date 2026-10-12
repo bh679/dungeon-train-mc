@@ -95,6 +95,9 @@ public final class BuilderTemplateSource {
             }
             case PORTAL_ROOM -> Optional.of(TrackVariantStore.fileFor(TrackKind.PORTAL_ROOM, id));
             case CHUNK_FRAME -> Optional.of(games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.fileFor(id));
+            case BUILDING -> Optional.of(games.brennan.dungeontrain.building.BuildingStore.writeFileFor(id));
+            // Big Lost City's buildings live only in its jar — there is no file to hand anyone.
+            case LOST_CITY -> Optional.empty();
         };
     }
 
@@ -137,6 +140,8 @@ public final class BuilderTemplateSource {
                     : BuilderPhotoPaths.Kind.TRACK;
             out.add(new Slug(kind, track.id(), track.subdir()));
         }
+        out.add(new Slug(BuilderPhotoPaths.Kind.BUILDING, "",
+                games.brennan.dungeontrain.building.Buildings.SUBDIR));
         return List.copyOf(out);
     }
 

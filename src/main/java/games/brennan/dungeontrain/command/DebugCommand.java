@@ -158,6 +158,23 @@ public final class DebugCommand {
             // /dungeontrain debug nether-passes — core X range + core biomes of the first Nether bands
             // (even passes vanilla, odd passes BetterNether). Also logged at INFO for RCON runs.
             .then(Commands.literal("nether-passes").executes(ctx -> NetherPassesDebug.report(ctx.getSource())))
+            // /dungeontrain debug mixin-guards — the guarded WorldWeaver/BCLib/BetterEnd/TerraBlender mixins
+            // that are off this boot and what each falls back to. Also logged at INFO for RCON runs.
+            .then(Commands.literal("mixin-guards").executes(ctx -> MixinGuardsDebug.report(ctx.getSource())))
+            // /dungeontrain debug lost-city-templates [status|reset|reach|legacy] — the Big Lost City template
+            // cache: pre-loads, evictions and cold lookups by thread kind. `legacy` = the pre-change rule
+            // (player's own X, no demand signal) for a same-seed A/B against `reach` (default).
+            .then(Commands.literal("lost-city-templates")
+                .executes(ctx -> LostCityTemplatesDebug.status(ctx.getSource()))
+                .then(Commands.literal("status").executes(ctx -> LostCityTemplatesDebug.status(ctx.getSource())))
+                .then(Commands.literal("reset").executes(ctx -> LostCityTemplatesDebug.reset(ctx.getSource())))
+                .then(Commands.literal("at")
+                    .then(Commands.argument("x", IntegerArgumentType.integer())
+                        .executes(ctx -> LostCityTemplatesDebug.at(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "x")))))
+                .then(Commands.literal("reach").executes(ctx -> LostCityTemplatesDebug.setMode(ctx.getSource(),
+                    games.brennan.dungeontrain.worldgen.LostCityTemplatePreload.Mode.REACH)))
+                .then(Commands.literal("legacy").executes(ctx -> LostCityTemplatesDebug.setMode(ctx.getSource(),
+                    games.brennan.dungeontrain.worldgen.LostCityTemplatePreload.Mode.LEGACY))))
             // /dungeontrain debug trade-values dump — every registered item with its name, Trade
             // Everything's current value and where it comes from, to <server dir>/trade-values-catalog.json.
             // Copied verbatim to the relay page's catalog.json (brennan.games/dungeontrain/items/).
@@ -168,6 +185,10 @@ public final class DebugCommand {
             // /dungeontrain debug mix-pick — the mix-zone band each chunk around you generates as (a letter grid,
             // +X to the right), plus the candidate counts. Also logged at INFO for RCON runs.
             .then(Commands.literal("mix-pick").executes(ctx -> MixPickDebug.report(ctx.getSource())))
+            // /dungeontrain debug spider-jockey — spawn spiders through the carriage variant-mob path
+            // at your feet until one rolls a skeleton jockey; reports whether the rider is in the level
+            // and carries the contents tag (regression probe for the ghost-passenger bug).
+            .then(Commands.literal("spider-jockey").executes(ctx -> SpiderJockeyDebug.run(ctx.getSource())))
             .then(Commands.literal("cycle-layout")
                 .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
                 .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))
@@ -205,6 +226,17 @@ public final class DebugCommand {
                         .executes(ctx -> PortalSitesDebug.probeEnd(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
                 .then(Commands.argument("count", IntegerArgumentType.integer(1, 100_000))
                     .executes(ctx -> PortalSitesDebug.report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
+            // /dungeontrain debug author-rooms [count] [player] — how often the lottery lands on an
+            // author room, the share each rolls and the sub-room that fits it. INFO-logged too.
+            .then(Commands.literal("author-rooms")
+                .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(), AuthorRoomsDebug.DEFAULT_COUNT, null))
+                .then(Commands.argument("count", IntegerArgumentType.integer(1, 100_000))
+                    .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(),
+                        IntegerArgumentType.getInteger(ctx, "count"), null))
+                    .then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player())
+                        .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(),
+                            IntegerArgumentType.getInteger(ctx, "count"),
+                            net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "player"))))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -517,7 +549,8 @@ public final class DebugCommand {
         boolean configOn = games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDistantLodLiteDecoration();
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] LOD-lite Nether-core decoration: " + describeLodLite(mode)
-                + " (config distantLodLiteDecoration=" + configOn + ")"
+                + " (config distantLodLiteDecoration=" + configOn + "); DH pause-hold: "
+                + games.brennan.dungeontrain.worldgen.LodGenerationHold.describe(System.currentTimeMillis())
         ).withStyle(configOn && mode != LodGeneration.Mode.FORCE_OFF ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }

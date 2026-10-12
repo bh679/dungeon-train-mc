@@ -1,0 +1,28 @@
+{
+  "parent": "dungeontrain:dungeon_train/root",
+  "display": {
+    "icon": {
+      "id": "minecraft:book"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.the_enchiridion.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "mirrored": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "mirrored"
+    ]
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 4,
+  "block": "minecraft:barrel",
+  "category": "loot",
+  "fillMin": 3,
+  "fillMax": 6,
+  "entries": [
+    { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 100, "randDur": false, "durChance": 0, "randEnch": false, "enchChance": 0 }
+  ]
+}

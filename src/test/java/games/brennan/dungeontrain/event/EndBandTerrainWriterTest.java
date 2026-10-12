@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.event;
 
+import games.brennan.dungeontrain.worldgen.SampledCells;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -94,5 +95,30 @@ class EndBandTerrainWriterTest {
                 Map.of(chestAt.asLong(), nbt), sink));
         assertEquals(chestAt, sink.blockEntityAt);
         assertEquals(nbt, sink.blockEntityNbt);
+    }
+
+    @Test
+    @DisplayName("the recording sink marks exactly the cells it writes, so the void erosion can skip them")
+    void recordingSinkMarksWrittenCells() {
+        SphereCarveGeometry geo = new SphereCarveGeometry(80, 81, 0, 8, 0, 8, 82, 100);
+        ChunkPos pos = new ChunkPos(2380, 2);
+        RecordingSink inner = new RecordingSink();
+        SampledCells cells = SampledCells.forChunk(-64, 384);
+        EndBandTerrainWriter.Sink sink = EndBandTerrainWriter.recordingSink(inner, cells);
+        long seed = 8675309031337L;
+
+        assertFalse(EndBandTerrainWriter.place(pos, geo, seed, 1.0, true, false, 3, 80, 4, END_STONE, Map.of(), sink),
+                "reserved cell: nothing written, nothing recorded");
+        assertTrue(cells.isEmpty());
+
+        assertTrue(EndBandTerrainWriter.place(pos, geo, seed, 1.0, false, false, 3, 90, 12, END_STONE, Map.of(), sink));
+        assertEquals(END_STONE, inner.get(3, 90, 12), "the write reached the inner sink");
+        assertTrue(cells.contains(3, 90, 12));
+        assertFalse(cells.contains(3, 91, 12));
+        assertEquals(1, cells.count());
+
+        assertFalse(EndBandTerrainWriter.place(pos, geo, seed, 1.0, false, false, 3, 90, 12, OBSIDIAN, Map.of(), sink),
+                "a refused write records nothing new");
+        assertEquals(1, cells.count());
     }
 }

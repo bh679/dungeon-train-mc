@@ -297,7 +297,7 @@ public final class VariantOverlayRenderer {
         // editor's clock runs or rests. See EditorClock.
         boolean cycleSeen = false;
         for (ServerPlayer player : players) {
-            if (EditorLayout.isAtPlotHeight(player.getBlockY())) atPlots++;
+            if (EditorStampedCategoryState.atPlotHeight(player.getBlockY())) atPlots++;
             // The two snapshots the block-variant menu draws itself against, and nothing else: the
             // rest of the cascade below is about editor plots — a plot grid, per-plot labels, type
             // menus, a plot sky — none of which a builder world has. Both are plot-driven and
@@ -318,7 +318,7 @@ public final class VariantOverlayRenderer {
             // ~9ms/tick the profiler flagged, which ran unconditionally during normal play.
             // forget() clears any lingering editor HUD once on the way out, then no-ops (cheap
             // map checks), so a player descending from the build area doesn't keep stale overlay.
-            if (!EditorLayout.isAtPlotHeight(player.getBlockY())) {
+            if (!EditorStampedCategoryState.atPlotHeight(player.getBlockY())) {
                 forget(player);
                 continue;
             }
@@ -1162,7 +1162,7 @@ public final class VariantOverlayRenderer {
         if (!level.dimension().equals(net.minecraft.world.level.Level.OVERWORLD)) return;
         if (EditorStampedCategoryState.current().isEmpty()) return;
         for (ServerPlayer player : players) {
-            if (EditorLayout.isAtPlotHeight(player.getBlockY())) {
+            if (EditorStampedCategoryState.atPlotHeight(player.getBlockY())) {
                 EditorStrayBlocks.sweepStep(level, dims);
                 return;
             }

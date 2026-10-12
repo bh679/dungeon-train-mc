@@ -1,6 +1,6 @@
 package games.brennan.dungeontrain.mixin.betteradvancements;
 
-import games.brennan.dungeontrain.client.EditorAdvancementsGate;
+import games.brennan.dungeontrain.client.AdvancementTabGate;
 import net.minecraft.advancements.AdvancementNode;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -8,8 +8,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * The Better Advancements half of the editor-tab gate — see {@link EditorAdvancementsGate}
- * for the rule and
+ * The Better Advancements half of the advancement-tab gate (other mods' tabs, the editor tab) — see {@link AdvancementTabGate}
+ * for the rules and
  * {@code games.brennan.dungeontrain.mixin.client.AdvancementsScreenEditorTabMixin} for the
  * vanilla screen. BA replaces the advancements screen outright and ships enabled in the
  * modpack, so without this the tab would still show for most players.
@@ -23,9 +23,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class BetterAdvancementsScreenEditorTabMixin {
 
     @Inject(method = "onAddAdvancementRoot", at = @At("HEAD"), cancellable = true)
-    private void dungeontrain$hideEditorTab(AdvancementNode node, CallbackInfo ci) {
-        if (EditorAdvancementsGate.isEditorAdvancement(node.holder().id())
-            && EditorAdvancementsGate.shouldHideEditorTab()) {
+    private void dungeontrain$hideTab(AdvancementNode node, CallbackInfo ci) {
+        if (AdvancementTabGate.shouldHideTab(node.holder().id())) {
             ci.cancel();
         }
     }

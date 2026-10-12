@@ -25,7 +25,6 @@ import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.core.Direction;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -389,8 +388,11 @@ public final class BlockVariantMenuRenderer {
                 && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
             double armsCellR = connectCellL;
             double armsCellL = showArms ? armsCellR - ARMS_CELL_WIDTH : armsCellR;
-            boolean growable = parsed != null && concrete && BlockVariantMenu.growthSupported()
-                && GrowthShapes.canGrow(parsed);
+            // A painting row puts its Painting pill in the Grow slot (a painting never grows).
+            boolean painting = concrete && BlockVariantMenu.growthSupported()
+                && BlockVariantMenu.isPaintingRow(entry, parsed);
+            boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
+                && GrowthShapes.canGrow(parsed)) || painting;
             double growthCellR = armsCellL;
             double growthCellL = growable ? growthCellR - GROWTH_CELL_WIDTH : growthCellR;
             // Difficulty min/max cells (mob rows only) sit between the name and
@@ -463,6 +465,13 @@ public final class BlockVariantMenuRenderer {
                 } else {
                     labelColour = nameHover ? 0xFF000000 : 0xFFFFD477;
                 }
+            } else if (painting && BlockVariantMenu.painting(entry).on()) {
+                // "painting · kebab" / "painting · random" — the pill already shows the size.
+                games.brennan.dungeontrain.editor.VariantPainting p = BlockVariantMenu.painting(entry);
+                String picture = p.image() == null
+                    ? MenuLang.t("block_variant.painting_random") : p.image().getPath();
+                label = MenuLang.t("common.name_value", shortenStateLabel(entry.stateString()), picture);
+                labelColour = nameHover ? 0xFF000000 : 0xFFFFFFFF;
             } else {
                 label = shortenStateLabel(entry.stateString());
                 labelColour = nameHover ? 0xFF000000 : 0xFFFFFFFF;
@@ -501,7 +510,10 @@ public final class BlockVariantMenuRenderer {
             }
 
             // Grow pill (vines / ladders / bamboo / dripstone …)
-            if (growable) {
+            if (painting) {
+                drawPaintingCell(ps, buffer, font, i, entry,
+                    growthCellL, growthCellR, rowBottom, rowTop, rowCY, hovered);
+            } else if (growable) {
                 drawGrowthCell(ps, buffer, font, i, entry, parsed,
                     growthCellL, growthCellR, rowBottom, rowTop, rowCY, hovered);
             }
@@ -544,7 +556,11 @@ public final class BlockVariantMenuRenderer {
         int growthRow = BlockVariantMenu.growthPopupRow();
         if (growthRow >= 0) {
             BlockState growthState = BlockVariantMenu.parseState(entries.get(growthRow).stateString());
-            if (growthState != null) {
+            if (growthState != null && BlockVariantMenu.isPaintingRow(entries.get(growthRow), growthState)) {
+                drawPopupRows(ps, buffer, font,
+                    PaintingPopupLayout.rows(BlockVariantMenu.painting(entries.get(growthRow)), panelW, halfH),
+                    BlockVariantMenu.CellKind.PAINTING_OPTION, hovered);
+            } else if (growthState != null) {
                 drawGrowthPopup(ps, buffer, font, entries.get(growthRow), growthState, panelW, halfH, hovered);
             }
         }
@@ -607,12 +623,39 @@ public final class BlockVariantMenuRenderer {
             (cellL + cellR) / 2.0, rowCY, growth.on() || hover ? 0xFFFFFFFF : 0xFF888888);
     }
 
+    /**
+     * The Painting pill: "Painting" when off, the size ({@code 2×1} / {@code Any}) in green when on,
+     * lit while its popup is open — the Grow pill's look, in the Grow slot.
+     */
+    private static void drawPaintingCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                         int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                         double cellL, double cellR,
+                                         double rowBottom, double rowTop, double rowCY,
+                                         BlockVariantMenu.Hit hovered) {
+        games.brennan.dungeontrain.editor.VariantPainting painting = BlockVariantMenu.painting(entry);
+        boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_GROWTH && hovered.index() == rowIndex;
+        boolean open = BlockVariantMenu.growthPopupRow() == rowIndex;
+        int tint = painting.on()
+            ? (hover || open ? 0xC055CC66 : 0x80338844)
+            : (hover || open ? 0x60AAAAAA : 0x30777777);
+        drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
+        drawCenteredText(ps, buffer, font, PaintingPopupLayout.shortLabel(painting),
+            (cellL + cellR) / 2.0, rowCY, painting.on() || hover ? 0xFFFFFFFF : 0xFF888888);
+    }
+
     /** The Grow popup: the visible sections of {@link GrowthPopupLayout} for one row. */
     private static void drawGrowthPopup(PoseStack ps, MultiBufferSource buffer, Font font,
                                         BlockVariantSyncPacket.Entry entry, BlockState state,
                                         double panelW, double halfH, BlockVariantMenu.Hit hovered) {
-        List<GrowthPopupLayout.Row> rows = GrowthPopupLayout.rows(
-            VariantGrowth.fromInt(entry.growth()), state, panelW, halfH);
+        drawPopupRows(ps, buffer, font,
+            GrowthPopupLayout.rows(VariantGrowth.fromInt(entry.growth()), state, panelW, halfH),
+            BlockVariantMenu.CellKind.GROWTH_OPTION, hovered);
+    }
+
+    /** A Grow-style popup: labelled rows of toggle buttons / {@code − n +} steppers above the panel. */
+    private static void drawPopupRows(PoseStack ps, MultiBufferSource buffer, Font font,
+                                      List<GrowthPopupLayout.Row> rows, BlockVariantMenu.CellKind optionKind,
+                                      BlockVariantMenu.Hit hovered) {
         double[] r = GrowthPopupLayout.rect(rows);
         drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
         for (GrowthPopupLayout.Row row : rows) {
@@ -626,7 +669,7 @@ public final class BlockVariantMenuRenderer {
                 double bR = bL + row.buttonWidth();
                 boolean value = stepper && i == GrowthPopupLayout.STEPPER_VALUE;
                 boolean selected = i == row.selected();
-                boolean hover = !value && hovered.kind() == BlockVariantMenu.CellKind.GROWTH_OPTION
+                boolean hover = !value && hovered.kind() == optionKind
                     && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);
                 int tint = value ? 0x00000000
                     : selected ? (hover ? 0xC0D98CFF : 0x808A4FB3)
@@ -648,7 +691,7 @@ public final class BlockVariantMenuRenderer {
                                           double rowBottom, double rowTop, double rowCY,
                                           BlockVariantMenu.Hit hovered, boolean showDirs) {
         VariantRotation.Mode mode = decodeMode(entry.rotMode());
-        int dirMask = entry.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
+        int dirMask = entry.rotDirMask() & VariantRotation.ALL_SLOTS_MASK;
 
         boolean modeHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_ROT_MODE && hovered.index() == rowIndex;
         boolean dirsHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_ROT_DIRS && hovered.index() == rowIndex;
@@ -689,9 +732,12 @@ public final class BlockVariantMenuRenderer {
         int dirsTint = dirsHover ? 0xC0FFCC33 : 0x40FFFFFF;
         drawQuad(ps, buffer, dirsL + 0.005, rowBottom + 0.005,
             dirsR - 0.005, rowTop - 0.005, dirsTint);
+        BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
         String dirsLabel = switch (mode) {
-            case LOCK -> dirMask == 0 ? "?" : dirShortName(directionFromLowestBit(dirMask));
-            case OPTIONS -> Integer.bitCount(dirMask) + "/6";
+            case LOCK -> dirMask == 0 || parsed == null
+                ? "?" : RotationApplier.slotLabel(parsed, Integer.numberOfTrailingZeros(dirMask));
+            case OPTIONS -> Integer.bitCount(dirMask) + "/"
+                + (parsed == null ? 6 : RotationApplier.slotCount(parsed));
             default -> "";
         };
         drawCenteredText(ps, buffer, font, dirsLabel,
@@ -700,10 +746,11 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
-     * Floating popup anchored above the row's direction cell — 3×2 grid of
-     * direction toggle buttons used in OPTIONS mode. Buttons reflect
-     * selection state and only toggle directions valid for this block's
-     * rotation property.
+     * Floating popup anchored above the row's direction cell — the
+     * {@link RotationPopupLayout} grid of direction toggle buttons used in
+     * OPTIONS mode (3×2 faces, or a 3×3 compass rose for heads / banners /
+     * signs). Buttons reflect selection state and only toggle directions
+     * valid for this block's rotation property.
      */
     private static void drawRotationOptionsPopup(PoseStack ps, MultiBufferSource buffer, Font font,
                                                  int rowIndex, BlockVariantSyncPacket.Entry entry,
@@ -712,43 +759,26 @@ public final class BlockVariantMenuRenderer {
         BlockState parsed = BlockVariantMenu.parseState(entry.stateString());
         if (parsed == null) return;
         int validMask = RotationApplier.validDirMask(parsed);
-        int dirMask = entry.rotDirMask() & VariantRotation.ALL_DIRS_MASK;
+        int dirMask = entry.rotDirMask() & VariantRotation.ALL_SLOTS_MASK;
 
-        int col = rowIndex / BlockVariantMenu.ROWS_PER_COLUMN;
-        int row = rowIndex % BlockVariantMenu.ROWS_PER_COLUMN;
-        double colXL = -halfW + col * colActualW;
-        double rowTop = gridTop - row * ROW_HEIGHT;
-
-        double popupW = 3 * POPUP_BUTTON_SIZE + 0.04;
-        double popupH = 2 * POPUP_BUTTON_SIZE + 0.04;
-        double popupCX = colXL + colActualW - ROT_DIRS_CELL_WIDTH / 2.0 - WEIGHT_CELL_WIDTH;
-        double popupBot = rowTop + 0.02;
-        double popupTop = popupBot + popupH;
-        double popupL = popupCX - popupW / 2.0;
-        double popupR = popupL + popupW;
+        int[][] grid = RotationPopupLayout.grid(parsed);
+        double[] popup = RotationPopupLayout.bounds(grid, rowIndex, colActualW, gridTop, halfW);
 
         // Backdrop
-        drawQuad(ps, buffer, popupL, popupBot, popupR, popupTop, 0xE0202020);
+        drawQuad(ps, buffer, popup[0], popup[1], popup[2], popup[3], 0xE0202020);
 
-        // 3 columns × 2 rows: top row = positive (UP, EAST, SOUTH);
-        // bottom row = negative (DOWN, WEST, NORTH). Visually compact.
-        Direction[][] grid = {
-            { Direction.UP, Direction.EAST, Direction.SOUTH },
-            { Direction.DOWN, Direction.WEST, Direction.NORTH }
-        };
-        for (int gy = 0; gy < 2; gy++) {
-            for (int gx = 0; gx < 3; gx++) {
-                Direction d = grid[gy][gx];
-                int bit = VariantRotation.maskOf(d);
+        for (int gy = 0; gy < grid.length; gy++) {
+            for (int gx = 0; gx < grid[gy].length; gx++) {
+                int slot = grid[gy][gx];
+                if (slot < 0) continue;
+                int bit = 1 << slot;
                 boolean valid = (validMask & bit) != 0;
                 boolean selected = (dirMask & bit) != 0;
                 boolean btnHover = hovered.kind() == BlockVariantMenu.CellKind.ROT_DIR_OPTION
-                    && hovered.index() == rowIndex && hovered.secondary() == d.ordinal();
+                    && hovered.index() == rowIndex && hovered.secondary() == slot;
 
-                double bL = popupL + 0.02 + gx * POPUP_BUTTON_SIZE;
-                double bR = bL + POPUP_BUTTON_SIZE - 0.005;
-                double bTop = popupTop - 0.02 - gy * POPUP_BUTTON_SIZE;
-                double bBot = bTop - POPUP_BUTTON_SIZE + 0.005;
+                double[] b = RotationPopupLayout.button(popup, gx, gy);
+                double bL = b[0], bBot = b[1], bR = b[2], bTop = b[3];
 
                 int tint;
                 if (!valid) {
@@ -760,7 +790,7 @@ public final class BlockVariantMenuRenderer {
                 }
                 drawQuad(ps, buffer, bL, bBot, bR, bTop, tint);
                 int textColour = valid ? 0xFFFFFFFF : 0xFF666666;
-                drawCenteredText(ps, buffer, font, dirShortName(d),
+                drawCenteredText(ps, buffer, font, RotationApplier.slotLabel(parsed, slot),
                     (bL + bR) / 2.0, (bTop + bBot) / 2.0, textColour);
             }
         }
@@ -989,24 +1019,6 @@ public final class BlockVariantMenuRenderer {
         return values[ord];
     }
 
-    /** XU/XD/YU/YD/ZU/ZD short-name for a Direction. */
-    static String dirShortName(Direction d) {
-        return switch (d) {
-            case EAST -> "XU";
-            case WEST -> "XD";
-            case UP -> "YU";
-            case DOWN -> "YD";
-            case SOUTH -> "ZU";
-            case NORTH -> "ZD";
-        };
-    }
-
-    static Direction directionFromLowestBit(int mask) {
-        int ord = Integer.numberOfTrailingZeros(mask);
-        if (ord < 0 || ord >= 6) return Direction.UP;
-        return Direction.values()[ord];
-    }
-
     private static void drawSearch(PoseStack ps, MultiBufferSource buffer, Font font,
                                    @Nullable PanelIconBatch icons) {
         List<String> filtered = BlockVariantMenu.filteredBlockIds();
@@ -1135,6 +1147,8 @@ public final class BlockVariantMenuRenderer {
         BlockState state = BlockVariantMenu.parseState(stateString);
         if (state == null) return;
         Item item = state.getBlock().asItem();
+        // Fast Paintings' block has no item of its own — it is placed with the vanilla painting.
+        if (games.brennan.dungeontrain.editor.PaintingPass.isPainting(state)) item = Items.PAINTING;
         // Liquids have no item form at all (WATER.asItem() is AIR), so without
         // this they would every one of them read as the BARRIER fallback. The
         // fluid's own bucket is the icon players already associate with it.

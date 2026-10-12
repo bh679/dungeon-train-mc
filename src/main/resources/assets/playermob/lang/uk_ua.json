@@ -1,0 +1,10 @@
+{
+  "entity.playermob.player_mob": "Гравець",
+  "item.playermob.player_mob_spawn_egg": "Яйце появи гравця",
+  "item.playermob.player_mob_aggressive_spawn_egg": "Яйце появи агресивного гравця",
+  "item.playermob.player_mob_friendly_spawn_egg": "Яйце появи дружнього гравця",
+  "item.playermob.player_mob_passive_spawn_egg": "Яйце появи мирного гравця",
+  "item.playermob.player_mob_skeptical_spawn_egg": "Яйце появи недовірливого гравця",
+  "item.playermob.player_mob_shy_spawn_egg": "Яйце появи сором’язливого гравця",
+  "container.playermob.player_mob": "Гравець"
+}

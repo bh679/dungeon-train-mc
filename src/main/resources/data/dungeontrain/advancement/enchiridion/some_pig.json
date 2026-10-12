@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/village_gossip",
+  "display": {
+    "icon": {
+      "id": "minecraft:porkchop"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.some_pig.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.some_pig.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "pigman": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "pigman_villager"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "pigman"
+    ]
+  ]
+}

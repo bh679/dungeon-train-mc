@@ -104,16 +104,18 @@ public abstract class SableBlockChangeGuardMixin {
 
         UUID subLevelId = serverSub.getUniqueId();
         if (!SharedCarriageRegistry.hasSubLevel(subLevelId)) return;
-        // Not every block change is a BUILD change — breaking a loot container and flipping a transient
-        // property (a plate powering, a door swinging) both leave the build untouched.
-        if (!SharedCarriageChangeFilter.isBuildChange(oldState, newState)) return;
         SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.resolve(subLevelId, x, y, z);
+        if (inst == null || inst.isCulled()) return;
+        // Not every block change is a BUILD change — flipping a transient property (a plate powering, a
+        // door swinging) leaves the build untouched, and so does breaking a loot container on a carriage
+        // not yet on the relay. On one already there, that break must drain the relay copy.
+        if (!SharedCarriageChangeFilter.isBuildChange(oldState, newState, inst.isOnRelay())) return;
         // Queue the changed cell for the next delta flush (deduped by pos; drained off-thread). Cheap +
-        // non-blocking — safe on the server thread inside setBlock. Skipped once the carriage is culling.
-        if (inst != null && !inst.isCulled()) {
-            inst.enqueue(new BlockPos(x, y, z));
-            // A real build edit — from now on this carriage's parked storage changes are allowed to travel.
-            inst.markBlockEdited();
-        }
+        // non-blocking — safe on the server thread inside setBlock. The flush releases parked storage
+        // into the same delta.
+        inst.enqueue(new BlockPos(x, y, z));
+        // A real build edit — from now on this carriage's parked storage may travel even before it is
+        // on the relay.
+        inst.markBlockEdited();
     }
 }

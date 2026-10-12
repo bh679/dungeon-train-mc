@@ -332,6 +332,7 @@ public final class EditorCreatorBuilds {
             case BuilderRelayKinds.PART -> PlotCategory.PARTS;
             case BuilderRelayKinds.TRACK -> PlotCategory.TRACKS;
             case BuilderRelayKinds.PORTAL_ROOM -> PlotCategory.PORTALS;
+            case BuilderRelayKinds.BUILDING -> PlotCategory.BUILDINGS;
             // A carriage group is authored in the Train Builder; no editor plot holds one.
             default -> null;
         };
@@ -345,6 +346,7 @@ public final class EditorCreatorBuilds {
             case BuilderRelayKinds.PART -> BuilderPhotoPaths.Kind.PART;
             case BuilderRelayKinds.TRACK -> BuilderPhotoPaths.Kind.TRACK;
             case BuilderRelayKinds.PORTAL_ROOM -> BuilderPhotoPaths.Kind.PORTAL_ROOM;
+            case BuilderRelayKinds.BUILDING -> BuilderPhotoPaths.Kind.BUILDING;
             default -> BuilderPhotoPaths.Kind.CARRIAGE;
         };
     }
@@ -409,6 +411,7 @@ public final class EditorCreatorBuilds {
             case CONTENTS -> BuilderRelayKinds.CONTENTS.equals(kind);
             case TRACKS -> BuilderRelayKinds.TRACK.equals(kind);
             case DIMENSIONS -> BuilderRelayKinds.PORTAL_ROOM.equals(kind);
+            case BUILDINGS -> BuilderRelayKinds.BUILDING.equals(kind);
             default -> true;
         };
     }
@@ -438,6 +441,8 @@ public final class EditorCreatorBuilds {
             }
             case BuilderRelayKinds.PORTAL_ROOM ->
                 new TemplateArt(BuilderPhotoPaths.Kind.PORTAL_ROOM, entry.buildName(), null, TrackKind.PORTAL_ROOM);
+            case BuilderRelayKinds.BUILDING ->
+                new TemplateArt(BuilderPhotoPaths.Kind.BUILDING, entry.buildName(), null, null);
             default -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE, entry.buildName(), null, null);
         };
     }
@@ -456,6 +461,7 @@ public final class EditorCreatorBuilds {
             case BuilderRelayKinds.PART -> "gui.dungeontrain.builder.profile.type.part";
             case BuilderRelayKinds.TRACK -> "gui.dungeontrain.builder.profile.type.track";
             case BuilderRelayKinds.PORTAL_ROOM -> "gui.dungeontrain.builder.profile.type.portal_room";
+            case BuilderRelayKinds.BUILDING -> "gui.dungeontrain.builder.profile.type.building";
             default -> "gui.dungeontrain.builder.profile.type.carriage";
         };
     }

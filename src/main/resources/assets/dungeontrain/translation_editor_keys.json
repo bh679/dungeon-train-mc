@@ -1,0 +1,21 @@
+{
+  "_note": "Lang-key prefixes of the build editor and the translate screen. The translate screen files these under its Editor filter, and every \"% translated\" (Credits, the website) leaves them out of a language's line count — translating them still counts towards a translator's share, which can therefore pass 100%. Read by TranslationFilters, scripts/localization/provenance_io.py and dp-relay's backfill-stat-milestones.js.",
+  "prefixes": [
+    "gui.dungeontrain.editor_menu.",
+    "gui.dungeontrain.editor_screen.",
+    "gui.dungeontrain.editor_settings.",
+    "gui.dungeontrain.editor_help.",
+    "gui.dungeontrain.builder.",
+    "gui.dungeontrain.block_variant.",
+    "gui.dungeontrain.template_blocks.",
+    "gui.dungeontrain.prefab_save.",
+    "gui.dungeontrain.prefab_tab.",
+    "gui.dungeontrain.prefab_delete.",
+    "gui.dungeontrain.number_input.",
+    "gui.dungeontrain.scribble.",
+    "gui.dungeontrain.translate.",
+    "chat.dungeontrain.editor.",
+    "chat.dungeontrain.editor_bar.",
+    "chat.dungeontrain.prefab_delete."
+  ]
+}

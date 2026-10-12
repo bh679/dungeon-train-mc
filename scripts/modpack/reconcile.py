@@ -122,7 +122,7 @@ INCONCLUSIVE = "inconclusive"
 
 
 def verify(platform, version, timeout_minutes, poll_seconds):
-    """Poll until `version` is publicly listed.
+    """Poll until `version` is publicly listed (an authoritative source), or look once (a cache).
 
     Returns PUBLISHED, MISSING, or INCONCLUSIVE. INCONCLUSIVE means we could not see the
     version but our only source was a cache that cannot prove absence — the caller must
@@ -146,15 +146,17 @@ def verify(platform, version, timeout_minutes, poll_seconds):
         if want in published:
             print(f"✓ {platform}: {want} is publicly listed (after {attempt} check(s))")
             return PUBLISHED
+        # A cache can never turn this into a failure, so polling it only burns the timeout (it
+        # cost every release 30 min): answer from the first look.
+        if not authoritative:
+            print(f"::warning::{platform}: {want} is not visible via the cfwidget mirror yet, "
+                  "but the mirror is cached and cannot prove absence — NOT failing on it, and "
+                  "not waiting on it either.")
+            print("::warning::Confirm by hand at "
+                  "https://www.curseforge.com/minecraft/modpacks/dungeon-train/files , and "
+                  "set the CURSEFORGE_API_KEY secret to make this check authoritative.")
+            return INCONCLUSIVE
         if time.monotonic() >= deadline:
-            if not authoritative:
-                print(f"::warning::{platform}: {want} is not visible via the cfwidget mirror "
-                      f"after {timeout_minutes} minutes, but the mirror is cached and cannot "
-                      "prove absence — NOT failing the release on it.")
-                print("::warning::Confirm by hand at "
-                      "https://www.curseforge.com/minecraft/modpacks/dungeon-train/files , and "
-                      "set the CURSEFORGE_API_KEY secret to make this check authoritative.")
-                return INCONCLUSIVE
             print(f"::error::{platform}: {want} was uploaded but is STILL not publicly listed "
                   f"after {timeout_minutes} minutes.")
             print("::error::The upload was accepted but the platform did not publish it — "

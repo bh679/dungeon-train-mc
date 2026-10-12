@@ -21,6 +21,8 @@ final class BuilderReviewStateTest {
         assertEquals(BuilderReviewState.SUBMITTED, BuilderReviewState.of("submitted"));
         assertEquals(BuilderReviewState.ACCEPTED, BuilderReviewState.of("accepted"));
         assertEquals(BuilderReviewState.DECLINED, BuilderReviewState.of("declined"));
+        assertEquals(BuilderReviewState.FEEDBACK, BuilderReviewState.of("feedback"));
+        assertEquals(BuilderReviewState.RESUBMIT, BuilderReviewState.of("resubmit"));
 
         // A relay that predates the queue sends no field at all, which SharedCarriageClient reads as
         // the empty string — the commonest of these by far while the relay rolls out.
@@ -46,10 +48,30 @@ final class BuilderReviewStateTest {
 
         // Opaque, or the tile art shows through and the state reads as a different colour on every
         // build behind it.
+        assertEquals(BuilderReviewState.BORDER_FEEDBACK,
+                BuilderReviewState.borderColourFor(BuilderReviewState.FEEDBACK));
         for (int colour : new int[]{BuilderReviewState.BORDER_SUBMITTED,
-                BuilderReviewState.BORDER_ACCEPTED, BuilderReviewState.BORDER_DECLINED}) {
+                BuilderReviewState.BORDER_ACCEPTED, BuilderReviewState.BORDER_DECLINED,
+                BuilderReviewState.BORDER_FEEDBACK}) {
             assertEquals(0xFF, (colour >>> 24) & 0xFF, "alpha must be full");
         }
+    }
+
+    @Test
+    @DisplayName("a resubmit rule: dotted versions only, unknown ops read as or-above")
+    void resubmitRule() {
+        assertEquals(BuilderReviewState.OP_GTE, BuilderReviewState.opOf(null));
+        assertEquals(BuilderReviewState.OP_GTE, BuilderReviewState.opOf("sideways"));
+        assertEquals(BuilderReviewState.OP_EXACT, BuilderReviewState.opOf("exact"));
+        assertEquals(BuilderReviewState.OP_LTE, BuilderReviewState.opOf("lte"));
+        assertEquals(true, BuilderReviewState.isDottedVersion("0.1130.0"));
+        assertEquals(true, BuilderReviewState.isDottedVersion(" 1.2 "));
+        assertEquals(false, BuilderReviewState.isDottedVersion("latest"));
+        assertEquals(false, BuilderReviewState.isDottedVersion(""));
+        assertEquals(false, BuilderReviewState.isDottedVersion(null));
+        assertEquals(BuilderReviewState.BORDER_RESUBMIT, BuilderReviewState.borderColourFor(BuilderReviewState.RESUBMIT));
+        assertEquals("gui.dungeontrain.builder.profile.review.resubmit_note",
+                BuilderReviewState.noteKeyFor(BuilderReviewState.RESUBMIT));
     }
 
     @Test
@@ -57,6 +79,9 @@ final class BuilderReviewStateTest {
     void noteKeys() {
         assertNotNull(BuilderReviewState.noteKeyFor(BuilderReviewState.SUBMITTED));
         assertNotNull(BuilderReviewState.noteKeyFor(BuilderReviewState.DECLINED));
+        assertEquals("gui.dungeontrain.builder.profile.review.feedback_note",
+                BuilderReviewState.noteKeyFor(BuilderReviewState.FEEDBACK),
+                "feedback is a verdict the author has to act on, so it is explained like declined");
         assertNull(BuilderReviewState.noteKeyFor(BuilderReviewState.ACCEPTED),
                 "an accepted build is doing what its author asked; there is nothing to explain");
         assertNull(BuilderReviewState.noteKeyFor(BuilderReviewState.NONE));

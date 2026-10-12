@@ -1,0 +1,35 @@
+{
+  "parent": "dungeontrain:enchiridion/danger_close",
+  "display": {
+    "icon": {
+      "id": "minecraft:creeper_head"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.creature_feature.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_count.hostile.description",
+      "with": [
+        200
+      ]
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "dungeontrain:photo_count",
+      "conditions": {
+        "category": "hostile",
+        "threshold": 200
+      }
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

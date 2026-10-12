@@ -41,9 +41,8 @@ import java.util.function.DoubleSupplier;
 public final class VanillaBiomeTwins {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Map<Biome, Biome> TWINS = new IdentityHashMap<>();
-    private static final Map<Biome, MobSpawnSettings> SPAWNS = new IdentityHashMap<>();
-    private static volatile boolean any;
+    /** Lock-free for readers (every tinted block, every snow/ice check); written only by {@link #build} / {@link #clear}. */
+    private static final TwinTable<Biome, Biome, MobSpawnSettings> TABLE = new TwinTable<>();
     /** The client camera's world X, set by the client at init — {@code null} on a dedicated server. */
     private static volatile DoubleSupplier cameraX;
     /** Client-side "this world has the train" gate; the server reads {@link NetherBandContext} instead. */
@@ -53,11 +52,7 @@ public final class VanillaBiomeTwins {
 
     /** The vanilla twin to answer for {@code live} at world {@code x}, or {@code null} to let it answer itself. */
     public static Biome twinFor(Biome live, double x) {
-        if (!any) return null;
-        Biome twin;
-        synchronized (TWINS) {
-            twin = TWINS.get(live);
-        }
+        Biome twin = TABLE.twin(live);
         if (twin == null) return null;
         return outsideWwoo(x) ? twin : null;
     }
@@ -71,9 +66,7 @@ public final class VanillaBiomeTwins {
     /** The mob spawns a twinned biome offers at world {@code x}, or {@code null} to keep the live ones. */
     public static MobSpawnSettings spawnsFor(Biome live, double x) {
         if (twinFor(live, x) == null) return null;
-        synchronized (SPAWNS) {
-            return SPAWNS.get(live);
-        }
+        return TABLE.spawns(live);
     }
 
     /** The spawn list {@code live} answers with at world {@code x}: the twin's outside the WWOO stretch, else its own. */
@@ -82,7 +75,7 @@ public final class VanillaBiomeTwins {
         return twin != null ? twin : live.getMobSettings();
     }
 
-    /** True when the WWOO stretch is elsewhere: the twin answers. Pure apart from the cycle lookup. */
+    /** True when the WWOO stretch is elsewhere: the twin answers. Pure apart from the cycle lookup (memoised per thread by block X). */
     static boolean outsideWwoo(double x) {
         NetherBandContext ctx = NetherBandContext.current();
         WorldGenCycle cycle;
@@ -93,7 +86,7 @@ public final class VanillaBiomeTwins {
         } else {
             return true; // no train in this world: nothing is ever a WWOO stretch
         }
-        return SecondLapOverworld.lookAt(cycle, (int) Math.floor(x)) != SecondLapOverworld.Stretch.WWOO;
+        return WwooStretchMemo.outside(cycle, (int) Math.floor(x));
     }
 
     public static void setCameraX(DoubleSupplier supplier) {
@@ -105,45 +98,31 @@ public final class VanillaBiomeTwins {
     }
 
     public static int count() {
-        synchronized (TWINS) {
-            return TWINS.size();
-        }
+        return TABLE.size();
     }
 
     /** Add this side's twins to the table (server at start, client at login). */
     public static void build(RegistryAccess live, String side) {
         long t0 = System.nanoTime();
         try {
-            Map<Biome, Biome> twins = new IdentityHashMap<>();
-            Map<Biome, MobSpawnSettings> spawns = new IdentityHashMap<>();
-            collect(live, twins, spawns);
-            synchronized (TWINS) {
-                TWINS.putAll(twins);
-            }
+            Map<Biome, Biome> newTwins = new IdentityHashMap<>();
+            Map<Biome, MobSpawnSettings> newSpawns = new IdentityHashMap<>();
+            collect(live, newTwins, newSpawns);
+            TABLE.publish(newTwins, newSpawns);
             if (LOGGER.isDebugEnabled()) {
                 Registry<Biome> reg = live.registryOrThrow(Registries.BIOME);
                 LOGGER.debug("[DungeonTrain] Vanilla biome twins ({}): {}", side,
-                        twins.keySet().stream().map(b -> String.valueOf(reg.getKey(b))).sorted().toList());
+                        newTwins.keySet().stream().map(b -> String.valueOf(reg.getKey(b))).sorted().toList());
             }
-            synchronized (SPAWNS) {
-                SPAWNS.putAll(spawns);
-            }
-            any = count() > 0;
             LOGGER.info("[DungeonTrain] Vanilla biome twins ({}): {} biomes differ from vanilla ({} ms)",
-                    side, twins.size(), (System.nanoTime() - t0) / 1_000_000L);
+                    side, newTwins.size(), (System.nanoTime() - t0) / 1_000_000L);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to build vanilla biome twins ({}); WWOO's biome look applies everywhere", side, t);
         }
     }
 
     public static void clear() {
-        synchronized (TWINS) {
-            TWINS.clear();
-        }
-        synchronized (SPAWNS) {
-            SPAWNS.clear();
-        }
-        any = false;
+        TABLE.clear();
     }
 
     private static void collect(RegistryAccess live, Map<Biome, Biome> twins, Map<Biome, MobSpawnSettings> spawns) {

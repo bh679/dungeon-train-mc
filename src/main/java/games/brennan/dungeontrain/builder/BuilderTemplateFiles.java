@@ -39,6 +39,9 @@ public final class BuilderTemplateFiles {
                     : TrackVariantStore.rawTag(trackKind, id);
             case PORTAL_ROOM -> TrackVariantStore.rawTag(TrackKind.PORTAL_ROOM, id);
             case CHUNK_FRAME -> games.brennan.dungeontrain.portal.chunkframe.ChunkFrameStore.readTag(id);
+            case BUILDING -> games.brennan.dungeontrain.building.BuildingStore.readTag(id);
+            // Read to draw its tile and preview only — never written, copied or sent anywhere.
+            case LOST_CITY -> games.brennan.dungeontrain.building.LostCityReferences.readForPreview(id);
         };
     }
 
