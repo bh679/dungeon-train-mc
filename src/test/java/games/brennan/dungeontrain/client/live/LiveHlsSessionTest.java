@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -28,6 +29,20 @@ class LiveHlsSessionTest {
     @Test
     void aReplayLoopNeverEnds() {
         assertFalse(LiveHlsSession.reachedEnd(0, 120, true));
+    }
+
+    @Test
+    void aSessionKeepsTheSourceAsItsIdentityWhileDecodingARendition() {
+        LiveHlsSession s = new LiveHlsSession("https://x/main/s1/live.m3u8", "https://x/main/s1/r320/live.m3u8", 320, 180, false);
+        try {
+            assertEquals("https://x/main/s1/live.m3u8", s.playlistUrl(), "what status, playedToEnd and the own-broadcast check compare");
+            assertEquals("https://x/main/s1/r320/live.m3u8", s.mediaUrl(), "what ffmpeg reads");
+            LiveHlsSession plain = new LiveHlsSession("https://x/main/s1/live.m3u8", 640, 360, false);
+            assertEquals(plain.playlistUrl(), plain.mediaUrl(), "without a rendition the two are one");
+            plain.close();
+        } finally {
+            s.close();
+        }
     }
 
     @Test

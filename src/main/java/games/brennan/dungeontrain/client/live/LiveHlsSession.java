@@ -45,6 +45,7 @@ public final class LiveHlsSession implements IMediaSession {
     private static final long IDLE_KILL_MS = 30_000;
 
     private final String playlistUrl;
+    private final String mediaUrl;
     private final boolean replay;
     private final int width, height;
     /** Guarded by {@code lock}: the newest whole frame. */
@@ -70,7 +71,18 @@ public final class LiveHlsSession implements IMediaSession {
      * and white with a little noise — what a dark channel shows between broadcasts.
      */
     public LiveHlsSession(String playlistUrl, int width, int height, boolean replay) {
+        this(playlistUrl, playlistUrl, width, height, replay);
+    }
+
+    /**
+     * {@code playlistUrl} is the stream's identity — the source playlist the relay's status names,
+     * which {@code playedToEnd} and the streamer's own-broadcast check compare against; {@code
+     * mediaUrl} is what ffmpeg actually reads: the same URL, or one of the relay's smaller
+     * renditions of it.
+     */
+    public LiveHlsSession(String playlistUrl, String mediaUrl, int width, int height, boolean replay) {
         this.playlistUrl = playlistUrl;
+        this.mediaUrl = mediaUrl;
         this.replay = replay;
         this.width = width;
         this.height = height;
@@ -78,7 +90,11 @@ public final class LiveHlsSession implements IMediaSession {
         this.staging = new NativeImage(NativeImage.Format.RGBA, width, height, false);
     }
 
+    /** The source playlist this session stands for (not necessarily what it decodes). */
     public String playlistUrl() { return playlistUrl; }
+
+    /** The playlist ffmpeg reads: the source, or a rendition of it. */
+    public String mediaUrl() { return mediaUrl; }
 
     /** The decode width, in pixels. */
     public int width() { return width; }
@@ -117,7 +133,7 @@ public final class LiveHlsSession implements IMediaSession {
             Process p = null;
             try {
                 status = frameSeq == 0 ? MediaStatus.LOADING : MediaStatus.BUFFERING;
-                p = ffmpeg.runFFmpeg(args(playlistUrl, width, height, replay));
+                p = ffmpeg.runFFmpeg(args(mediaUrl, width, height, replay));
                 process = p;
                 if (closed) break;
                 FfmpegSupport.drain(p.getErrorStream(), "decoder");
