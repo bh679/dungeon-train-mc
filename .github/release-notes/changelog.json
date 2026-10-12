@@ -25209,6 +25209,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "mirror-largerlibrary-rooms",
+      "version": "0.1250.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "New dimensional carriage rooms",
+      "summary": "A couple of new rooms may now be waiting behind dimensional carriage doors.",
+      "highlights": [],
+      "pr": 1954,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
