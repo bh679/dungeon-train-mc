@@ -25,6 +25,10 @@
     {
       "id": "author_fancy_126",
       "weight": 10
+    },
+    {
+      "id": "largerlibrary",
+      "weight": 1
     }
   ]
 }

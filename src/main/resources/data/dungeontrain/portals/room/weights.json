@@ -261,6 +261,10 @@
     "weight": 2,
     "mode": "endless_repetition/dynamic"
   },
+  "largerlibrary": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/mix:20:20:0:1:24:126/day/sealed/-1/0/-1/0/dungeontrain:skybox_block"
+  },
   "library_dimension": {
     "weight": 1,
     "minLevel": 5,
@@ -296,6 +300,25 @@
       "uuid": "753c591dc29a49adadaca1770b1ccf8d",
       "name": "dot_cheeselover"
     }
+  },
+  "mirror": {
+    "weight": 2,
+    "phases": [
+      "OVERWORLD",
+      "NETHER",
+      "VOID",
+      "END",
+      "BETA",
+      "ALPHA",
+      "INFDEV",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "mode": "bedrock"
   },
   "moria": {
     "weight": 1,
