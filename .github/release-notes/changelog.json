@@ -25046,8 +25046,42 @@
       "released_at": null
     },
     {
-      "id": "held-carriages-stay-asleep",
+      "id": "delete-dead-run-worlds",
       "version": "0.1241.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Finished runs tidy up after themselves",
+      "summary": "Worlds from runs that ended in death no longer pile up on your disk.",
+      "highlights": [],
+      "pr": 1944,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sable-step-collider-deadlock",
+      "version": "0.1242.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "compatibility"
+      ],
+      "title": "Clean breaks through glass",
+      "summary": "The train ploughs through glass, ice and leaves without a hitch now.",
+      "highlights": [],
+      "pr": 1945,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "held-carriages-stay-asleep",
+      "version": "0.1243.0",
       "type": "fix",
       "tags": [
         "fix",
