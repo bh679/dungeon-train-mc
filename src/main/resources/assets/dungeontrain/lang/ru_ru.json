@@ -287,6 +287,7 @@
   "gui.dungeontrain.viewfinder.front": "Вперёд",
   "gui.dungeontrain.live.badge": "В ЭФИРЕ",
   "gui.dungeontrain.live.countdown": "Эфир через",
+  "gui.dungeontrain.live.stream_settings": "Настройки трансляции",
   "gui.dungeontrain.live.viewer_on": "Окно эфира включено",
   "gui.dungeontrain.live.viewer_off": "Окно эфира выключено",
   "gui.dungeontrain.loading.title": "Загрузка мира…",
