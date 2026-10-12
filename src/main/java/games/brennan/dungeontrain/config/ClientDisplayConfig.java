@@ -621,7 +621,7 @@ public final class ClientDisplayConfig {
 
         b.push("world");
         ModConfigSpec.BooleanValue deleteWorldOnReboard = b
-                .comment("Delete the old world's save folder when reboarding (creating a fresh world) from the death screen. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
+                .comment("Delete a world's save folder once its run ends in death: when reboarding (creating a fresh world) from the death screen, when leaving the death screen for the title or desktop, and at startup for dead-run worlds left behind. Dungeon Train is designed around a new world per run, so this defaults on to keep the world list and disk clean. Only auto-generated \"<prefix> <timestamp>\" saves (Dungeon Train / Dev World / World) are ever deleted — renamed or hand-made worlds and editor worlds are always kept. Toggleable in-game via the trash icon next to the reboard button.")
                 .define("deleteOnReboard", true);
         b.pop();
 
