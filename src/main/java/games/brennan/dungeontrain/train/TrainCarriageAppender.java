@@ -594,6 +594,9 @@ public final class TrainCarriageAppender {
      * <em>sub-levels</em>. Bounded and small so retained memory stays O(groups),
      * not O(train length): 4 covers the newest backward group plus the three
      * settled predecessors a new spawn places against.</p>
+     *
+     * <p>Counted from the tail of what the players still need, never below it — see
+     * {@link #trailingCandidates}.</p>
      */
     private static final int TRAILING_FORCELOAD_GROUPS = 4;
 
@@ -3392,11 +3395,45 @@ public final class TrainCarriageAppender {
     // is no longer trailing so memory stays bounded.
 
     /**
-     * Lightweight (pIdx, sub-level id) pair for the pure force-load target
-     * selector. Package-private + static so {@link #backmostForceLoadTargets}
+     * Lightweight (pIdx, highest pIdx, sub-level id) triple for the pure force-load
+     * target selector. Package-private + static so {@link #backmostForceLoadTargets}
      * is unit-testable without a live {@link Trains.Carriage} or Sable.
+     * {@code highestPIdx} is the group's last carriage; the two-argument form treats
+     * the entry as a single carriage.
      */
-    record TrailingId(int pIdx, UUID subLevelId) {}
+    record TrailingId(int pIdx, int highestPIdx, UUID subLevelId) {
+        TrailingId(int pIdx, UUID subLevelId) {
+            this(pIdx, pIdx, subLevelId);
+        }
+    }
+
+    /**
+     * The groups the trailing window may pin: every group, minus those lying wholly
+     * BELOW the players' needed window ({@code highestPIdx < nearMinPIdx}). Pure;
+     * package-private for unit tests.
+     *
+     * <p><b>Why.</b> The window is sticky, so once a rider has moved on up the train
+     * the backmost-N used to stay pinned far behind them while the groups between
+     * those pins and the near-player hold were released and culled. Sable reloads a
+     * held sub-level whenever its holding chunk loads, and the pinned groups' chunk
+     * tickets travel forward with the train into exactly those chunks — so each
+     * sandwiched group came back for one tick every 16 blocks, re-anchored into an
+     * unloaded chunk and was filed again (the {@code [reanchor] gapTicks=160} loop).
+     * Without the pins below the window the force-loaded set runs unbroken from the
+     * window up, and a released group stays held until a player needs it.</p>
+     *
+     * <p>A window wholly below the train (a remote player behind it) filters nothing:
+     * the tail is then the backward lane's working edge and stays pinned. With no
+     * near player the list is returned as is.</p>
+     */
+    static List<TrailingId> trailingCandidates(List<TrailingId> groups, boolean playerNear, int nearMinPIdx) {
+        if (!playerNear || nearMinPIdx == Integer.MAX_VALUE) return groups;
+        List<TrailingId> out = new ArrayList<>(groups.size());
+        for (TrailingId t : groups) {
+            if (t.highestPIdx() >= nearMinPIdx) out.add(t);
+        }
+        return out;
+    }
 
     /**
      * Pure core of the trailing-window policy: the sub-level IDs of the
@@ -3458,6 +3495,19 @@ public final class TrainCarriageAppender {
             && anchorPIdx <= nearMaxPIdx;
     }
 
+    /**
+     * Top of the near-player hold: the needed window's front edge plus one group. The forward
+     * lane builds the group covering the window's front edge; a rider settling one carriage back
+     * pulls the edge below that group's anchor, and an unpinned group directly ahead of a pinned
+     * one is never left alone — the pinned group's chunk tickets reach the chunk it was filed in
+     * every 16 blocks, so Sable reloads it and it is culled again (see {@link #trailingCandidates}).
+     * One group of slack keeps it. Sentinel-safe; pure, package-private for unit tests.
+     */
+    static int nearHoldTop(int nearMaxPIdx, int groupSize) {
+        if (nearMaxPIdx == Integer.MIN_VALUE) return Integer.MIN_VALUE;
+        return nearMaxPIdx + Math.max(0, groupSize);
+    }
+
     private static void maintainTrailingForceLoadWindow(
         ServerLevel level, UUID trainId, List<Trains.Carriage> train,
         boolean needsBackward, boolean needsForward, boolean playerNear, int nearMinPIdx, int nearMaxPIdx
@@ -3471,7 +3521,7 @@ public final class TrainCarriageAppender {
         for (Trains.Carriage c : train) {
             UUID id = c.ship().subLevelId();
             byId.put(id, c);
-            ids.add(new TrailingId(c.provider().getPIdx(), id));
+            ids.add(new TrailingId(c.provider().getPIdx(), c.provider().getGroupHighestPIdx(), id));
         }
         // During a singleplayer resume-recovery window keep the WHOLE train resident
         // (every visible carriage), not just the trailing-N. On a resume the rider is
@@ -3501,8 +3551,10 @@ public final class TrainCarriageAppender {
             target = new HashSet<>();
             if (active) {
                 // The train list is one entry per group/sub-level, so target the
-                // backmost-N GROUPS directly (not × groupSize).
-                target.addAll(backmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS));
+                // backmost-N GROUPS directly (not × groupSize). Never below the players'
+                // window: a pin there leaves a hole Sable cycles (see trailingCandidates).
+                target.addAll(backmostForceLoadTargets(
+                    trailingCandidates(ids, playerNear, nearMinPIdx), TRAILING_FORCELOAD_GROUPS));
             }
             if (needsForward) {
                 // The forward lane's working edge. Near a rider the lead sits inside the
@@ -3514,8 +3566,8 @@ public final class TrainCarriageAppender {
             if (playerNear) {
                 for (Trains.Carriage c : train) {
                     TrainTransformProvider p = c.provider();
-                    if (shouldHoldGroupNearPlayer(
-                            true, p.getPIdx(), p.getGroupHighestPIdx(), nearMinPIdx, nearMaxPIdx)) {
+                    if (shouldHoldGroupNearPlayer(true, p.getPIdx(), p.getGroupHighestPIdx(),
+                            nearMinPIdx, nearHoldTop(nearMaxPIdx, p.getGroupSize()))) {
                         target.add(c.ship().subLevelId());
                     }
                 }
