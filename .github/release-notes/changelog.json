@@ -25244,6 +25244,25 @@
       "major": true,
       "description": "The train is now littered with TVs broadcasting Dungeon Train TV, a new livestreaming channel. Sit down a while and watch, pick one up and carry it with you, or put it on your head. What's on? You are. Or at least\u2026 one of you will be.\n\nWhoever finds the Live Eye and puts it on gets their run streamed to the TVs on the train, to the new [Dungeon Train Twitch](https://twitch.tv/brennanhattongames) and to the [Dungeon Train website](https://brennan.games/dungeontrain/live). They stream until they take it off, or until the next person finds one.\n\n## Other significant updates\n\n- Some carriages now have a bed to rest in and a screen or two worth watching, and some rooms only turn up while someone is streaming.\n- Photos remember what they earned: opening one shows the advancements it earned its photographer, and the Live Gallery on the website shows them too. Photos without a Tribute fade faster.\n- A cleaner Options screen: one line per setting, with an icon, a hint and its value.\n- New dimensional carriage rooms, painting variants in the builder, library heads that look like their author, and a tidier book and quill.\n- A smoother, lighter ride: less work for the server, smoother deaths however many lives you've lived, the train ploughs through glass and leaves, and nearby terrain fills in first.\n- Bug fixes\n- Performance improvements",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/live-eye-dungeon-train-tv.jpg"
+    },
+    {
+      "id": "playermob-0-111-0",
+      "version": "0.1251.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "mobs",
+        "loot"
+      ],
+      "title": "A gift worth keeping",
+      "summary": "A PlayerMob that truly adores you might part with a Totem of Undying.",
+      "highlights": [],
+      "pr": 1956,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
