@@ -38,6 +38,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -555,6 +556,17 @@ public final class NarrativeBookEvents {
         return true;
     }
 
+    /** Last English-window fetch, on its own budget so it never competes with the main window's. */
+    private static volatile long lastEnglishRefreshMs = 0L;
+
+    /** {@link #claimRefreshSlot}'s twin for {@link EnglishFallbackPool}, same interval. */
+    static boolean claimEnglishRefreshSlot(long now) {
+        if (now - lastEnglishRefreshMs <= EXHAUSTED_REFRESH_RETRY_MS) return false;
+        lastEnglishRefreshMs = now;
+        return true;
+    }
+
+
     private static boolean resolvePending(ServerPlayer player, ItemStack stack) {
         if (!SharedBookGate.canDiscover()) return false;
         ServerLevel ow = overworldOf(player);
@@ -604,9 +616,21 @@ public final class NarrativeBookEvents {
             ContentModeMirror.isKid(player),
             // THIS holder's political-filter answer, for the same reason as the locale above: the pool
             // is shared, the preference is not.
-            PoliticalFilterMirror.isEnabled(player));
+            PoliticalFilterMirror.isEnabled(player),
+            // Books THIS holder wrote. The sign-book mixin submits the player's name as the author,
+            // and names are unique, so a name match is authorship. A renamed player's old books just
+            // read as somebody else's — the behaviour before this existed.
+            SharedBookSelector.isOwnBy(player.getName().getString()));
+        // English mix-in: once only this player's own books are left unread in their language, the
+        // selector mixes in English. Fetch that window lazily — only when a pickup actually needs it.
+        List<SharedBookPool.PoolBook> english = EnglishFallbackPool.snapshot();
+        if (SharedBookSelector.needsEnglishFallback(SharedBookPool.snapshot(), english, ctx)
+                && claimEnglishRefreshSlot(System.currentTimeMillis())) {
+            EnglishFallbackPool.refreshAsync(WorldLanguage.hostUuidConsented(player.getServer()),
+                    WorldLanguage.hostFetchesKidSafeBooks(player.getServer()));
+        }
         Optional<SharedBookPool.PoolBook> chosen =
-            SharedBookSelector.select(SharedBookPool.snapshot(), ctx, seedFor(ow, uuid, stack));
+            SharedBookSelector.select(SharedBookPool.snapshot(), english, ctx, seedFor(ow, uuid, stack));
         // Defensive only. The selector relaxes its per-life dedup on exhaustion, so it yields a book
         // whenever the pool has one — the built-in placeholder therefore survives ONLY when the relay is
         // unreachable / has no approved books, never merely because this player has already seen everything.
