@@ -24997,8 +24997,23 @@
       "released_at": null
     },
     {
-      "id": "sampler-pool-lifecycle-backpressure",
+      "id": "dtmodverify-store-release",
       "version": "0.1236.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Mod verification from the stores",
+      "summary": "The mod verification companion now comes from CurseForge and Modrinth and is installed alongside Dungeon Train.",
+      "highlights": [],
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sampler-pool-lifecycle-backpressure",
+      "version": "0.1238.0",
       "type": "perf",
       "tags": [
         "performance",
