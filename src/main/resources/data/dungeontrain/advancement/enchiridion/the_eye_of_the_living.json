@@ -5,10 +5,10 @@
       "id": "dungeontrain:live_headpiece"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.going_live.title"
+      "translate": "advancements.dungeontrain.enchiridion.the_eye_of_the_living.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.going_live.description"
+      "translate": "advancements.dungeontrain.enchiridion.the_eye_of_the_living.description"
     },
     "frame": "task",
     "show_toast": true,

@@ -22,7 +22,7 @@ import java.util.UUID;
  * "Final Moments": a creature that was in a player's photo dies within a second of the shot. Each
  * shot leaves its creatures here for {@link #WINDOW_TICKS}; a death inside that window credits the
  * photographer, and the advancement keeps that photo ({@link AdvancementPhotoCapture}) even though
- * it is earned after the shot. When the creature is the Wither it also earns "Curtain Call". A shot
+ * it is earned after the shot. When the creature is the Wither it also earns "Before The Beacon". A shot
  * taken during the death animation itself cannot count: Exposure leaves dead creatures out of a
  * frame. Server thread only.
  */

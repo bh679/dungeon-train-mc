@@ -5,10 +5,10 @@
       "id": "dungeontrain:live_headpiece"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.tuned_in.title"
+      "translate": "advancements.dungeontrain.enchiridion.for_the_fans.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.tuned_in.description"
+      "translate": "advancements.dungeontrain.enchiridion.for_the_fans.description"
     },
     "frame": "task",
     "show_toast": true,

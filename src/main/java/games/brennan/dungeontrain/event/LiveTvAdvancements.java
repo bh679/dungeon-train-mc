@@ -43,7 +43,7 @@ public final class LiveTvAdvancements {
 
     private static final ResourceLocation STREAM_15_ID = darkroom("prime_time");
     private static final ResourceLocation WORN_15_ID = darkroom("couch_potato");
-    private static final ResourceLocation STREAM_TOTAL_ID = darkroom("tuned_in");
+    private static final ResourceLocation STREAM_TOTAL_ID = darkroom("for_the_fans");
     /** Fallback lifetime streaming time, in ticks (2 hours), used when the JSON carries no thresholdTicks. */
     private static final long TWO_HOURS_TICKS = 2L * 60 * 60 * TICKS_PER_SECOND;
 

@@ -5,10 +5,10 @@
       "id": "minecraft:nether_star"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.curtain_call.title"
+      "translate": "advancements.dungeontrain.enchiridion.before_the_beacon.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.curtain_call.description"
+      "translate": "advancements.dungeontrain.enchiridion.before_the_beacon.description"
     },
     "frame": "task",
     "show_toast": true,

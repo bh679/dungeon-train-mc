@@ -5,10 +5,10 @@
       "id": "dungeontrain:live_headpiece"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.change_the_channel.title"
+      "translate": "advancements.dungeontrain.enchiridion.hostile_take_over.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.change_the_channel.description"
+      "translate": "advancements.dungeontrain.enchiridion.hostile_take_over.description"
     },
     "frame": "task",
     "show_toast": true,
