@@ -25044,6 +25044,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "delete-dead-run-worlds",
+      "version": "0.1241.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Finished runs tidy up after themselves",
+      "summary": "Worlds from runs that ended in death no longer pile up on your disk.",
+      "highlights": [],
+      "pr": 1944,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
