@@ -141,7 +141,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         this.tabs.clear();
         for (ClientOptionsTab tab : ClientOptionsTab.values()) {
             this.tabs.add(new OptionsTab(tab,
-                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(), trainSettingsWritable)));
+                    ClientOptionsTab.rowsFor(tab, chinese, !this.translateTarget.isEmpty(), trainSettingsWritable,
+                            DungeonTrain.isDevBuild())));
         }
 
         this.tabNavigationBar = TabNavigationBar.builder(this.tabManager, this.width)
@@ -617,6 +618,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // it without hunting through the keybind list.
             case CINEMATIC_HOTKEY -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isCinematicHotkeyEnabled(),
                     ClientDisplayConfig::setCinematicHotkeyEnabled), key + ".tip");
+
+            // The top-left developer read-out. Listed on dev builds only; takes effect next frame.
+            case DEV_HUD -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isDevHudEnabled(),
+                    ClientDisplayConfig::setDevHud), key + ".tip");
 
             // Scribble's book-screen buttons. Applied when the book is next opened —
             // ScribbleBookButtonsToggle reads these in ScreenEvent.Init.Post.
