@@ -82,6 +82,12 @@ public final class LiveStreamController {
     private static final long LIVE_LINE_FALLBACK_MS = 10_000L;
     private final LiveViewerBands bands = new LiveViewerBands();
     private boolean announcedLive; // render thread: this stream's going-live line has been said
+    /**
+     * Render thread: the "Livestream ended" pop-up of a stream that ended by leaving the world, held
+     * until the world is gone — vanilla's {@code Gui.onDisconnected} clears every toast after
+     * LoggingOut fires, so one raised there would never be seen.
+     */
+    @Nullable private LiveStreamEndedToast.Reason endedAfterLeave;
 
     private LiveStreamController() {}
 
@@ -177,6 +183,10 @@ public final class LiveStreamController {
     }
 
     private void tick() {
+        if (endedAfterLeave != null && Minecraft.getInstance().level == null) {
+            Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(endedAfterLeave));
+            endedAfterLeave = null;
+        }
         if (state == State.WAIT_FFMPEG) {
             if (++waitTicks % 20 != 0) return;
             switch (FfmpegSupport.state()) {
@@ -308,7 +318,12 @@ public final class LiveStreamController {
         teardown(clean, wait);
         state = State.IDLE;
         if (why != null) say(why);
-        if (wasLive && ended != null) Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(ended));
+        if (!wasLive || ended == null) return;
+        if (ended == LiveStreamEndedToast.Reason.LEFT) {
+            endedAfterLeave = ended;
+        } else {
+            Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(ended));
+        }
     }
 
     /**
