@@ -236,6 +236,7 @@
   "gui.dungeontrain.viewfinder.front": "Depan",
   "gui.dungeontrain.live.badge": "LANGSUNG",
   "gui.dungeontrain.live.countdown": "Siaran dalam",
+  "gui.dungeontrain.live.stream_settings": "Pengaturan siaran",
   "gui.dungeontrain.live.viewer_on": "Penampil langsung aktif",
   "gui.dungeontrain.live.viewer_off": "Penampil langsung mati",
   "gui.dungeontrain.loading.title": "Memuat dunia…",

@@ -138,7 +138,7 @@ public final class LiveFeedSource implements IVideoSource {
         }
         FFmpeg ffmpeg = FfmpegSupport.get();
         if (ffmpeg == null) return Frame.STATIC;
-        LiveHlsSession s = sessionFor(url, replay, ffmpeg);
+        LiveHlsSession s = sessionFor(url, replay, status, ffmpeg);
         s.touch(ffmpeg);
         LiveFeedTexture tex = texture;
         if (tex == null) return new Frame(Kind.WAITING, url, replay, -1, false);
@@ -162,26 +162,28 @@ public final class LiveFeedSource implements IVideoSource {
      * Render thread. A source change (takeover, replay ↔ live) does not cut straight over: the new
      * session decodes alongside the old one and takes the screen at its first frame, so a viewer
      * never sees "waiting" between two pictures. With no picture yet, the switch is immediate.
-     * A change of decode width ({@link #decodeWidth()}) is a source change too.
+     * A change of decode width ({@link #decodeWidth()}) is a source change too, and so is the relay
+     * starting or stopping to offer a rendition that fits it ({@link #mediaUrlFor}).
      */
-    private LiveHlsSession sessionFor(String url, boolean replay, FFmpeg ffmpeg) {
+    private LiveHlsSession sessionFor(String url, boolean replay, Status status, FFmpeg ffmpeg) {
         int width = decodeWidth();
+        String media = mediaUrlFor(url, replay, status, width);
         LiveHlsSession s = session;
-        if (s != null && matches(s, url, replay, width)) {
+        if (s != null && matches(s, url, media, replay, width)) {
             dropPending();
             return s;
         }
         if (s == null || texture == null || !texture.hasPicture()) {
             dropSession();
-            session = newSession(url, replay, width);
+            session = newSession(url, media, replay, width);
             texture = (LiveFeedTexture) session.createTextureView(TEXTURE);
             texture.register();
             return session;
         }
         LiveHlsSession p = pending;
-        if (p == null || !matches(p, url, replay, width)) {
+        if (p == null || !matches(p, url, media, replay, width)) {
             dropPending();
-            pending = newSession(url, replay, width);
+            pending = newSession(url, media, replay, width);
             pendingTexture = (LiveFeedTexture) pending.createTextureView(PENDING_TEXTURE);
             pendingTexture.register();
             p = pending;
@@ -202,8 +204,20 @@ public final class LiveFeedSource implements IVideoSource {
         return s; // keep showing the old picture meanwhile
     }
 
-    private static boolean matches(LiveHlsSession s, String url, boolean replay, int width) {
-        return s.playlistUrl().equals(url) && s.isReplay() == replay && s.width() == width;
+    private static boolean matches(LiveHlsSession s, String url, String media, boolean replay, int width) {
+        return s.playlistUrl().equals(url) && s.mediaUrl().equals(media) && s.isReplay() == replay && s.width() == width;
+    }
+
+    /**
+     * What to feed ffmpeg for the stream {@code url} at {@code width}: the smallest rendition the
+     * relay has ready that covers it, else the source. The replay clip and anything that is not
+     * the status's live playlist (a stopped stream's tail included — the worker plays it out too,
+     * but its variants are only listed while the status names that session) stay as they are.
+     */
+    static String mediaUrlFor(String url, boolean replay, Status status, int width) {
+        if (replay || status.variants().isEmpty() || !url.equals(status.playlistUrl())) return url;
+        String media = status.mediaUrlFor(width);
+        return media != null ? media : url;
     }
 
     /**
@@ -216,8 +230,8 @@ public final class LiveFeedSource implements IVideoSource {
             Minecraft.getInstance().getWindow().getGuiScale(), LiveFeedClientConfig.viewerWidth());
     }
 
-    private static LiveHlsSession newSession(String url, boolean replay, int width) {
-        return new LiveHlsSession(url, width, LiveFeedClientConfig.heightFor(width), replay);
+    private static LiveHlsSession newSession(String url, String media, boolean replay, int width) {
+        return new LiveHlsSession(url, media, width, LiveFeedClientConfig.heightFor(width), replay);
     }
 
     private void dropPending() {
@@ -233,6 +247,18 @@ public final class LiveFeedSource implements IVideoSource {
         if (t != null) { t.unregister(); t.close(); texture = null; }
         LiveHlsSession s = session;
         if (s != null) { s.close(); session = null; }
+    }
+
+    /** Render thread: the session on screen, or null — for the {@code [live]} perf line. */
+    @Nullable
+    LiveHlsSession currentSession() {
+        return session;
+    }
+
+    /** Render thread: how many sessions (shown and pending) have a decoder running. */
+    int decodingSessions() {
+        LiveHlsSession s = session, p = pending;
+        return (s != null && s.decoding() ? 1 : 0) + (p != null && p.decoding() ? 1 : 0);
     }
 
     /** Render thread: everything, including a pending switch (world unload). */

@@ -24978,6 +24978,72 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stream-settings-cog",
+      "version": "0.1236.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Stream settings shortcut",
+      "summary": "While you're live, a cog under the stream preview in your inventory takes you straight to the stream settings.",
+      "highlights": [],
+      "pr": 1939,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dtmodverify-store-release",
+      "version": "0.1236.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Mod verification from the stores",
+      "summary": "The mod verification companion now comes from CurseForge and Modrinth and is installed alongside Dungeon Train.",
+      "highlights": [],
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sampler-pool-lifecycle-backpressure",
+      "version": "0.1238.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Terrain fills in around you first",
+      "summary": "Distant terrain now fills in nearest you first, and leaving a world lets go of its background work straight away.",
+      "highlights": [],
+      "pr": 1941,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-renditions",
+      "version": "0.1239.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "community"
+      ],
+      "title": "A lighter Live Feed",
+      "summary": "Watching someone's Live Feed, on a TV or in your own pinned view, now takes far less bandwidth and less of your PC.",
+      "highlights": [],
+      "pr": 1942,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

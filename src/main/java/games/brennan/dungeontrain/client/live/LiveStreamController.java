@@ -97,6 +97,18 @@ public final class LiveStreamController {
         return state == State.STREAMING;
     }
 
+    /** Render thread: the running encoder, or null — for the {@code [live]} perf line. */
+    @Nullable
+    LiveEncoder encoder() {
+        return encoder;
+    }
+
+    /** Render thread: the running frame grabber, or null — for the {@code [live]} perf line. */
+    @Nullable
+    LiveFrameGrabber grabber() {
+        return grabber;
+    }
+
     /** Wall-clock start of the current broadcast; meaningful only while {@link #streaming()}. */
     public long streamStartedMs() {
         return streamStartedMs;

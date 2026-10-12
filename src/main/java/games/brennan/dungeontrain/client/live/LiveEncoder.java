@@ -74,6 +74,11 @@ public final class LiveEncoder implements AutoCloseable {
         return a.toArray(new String[0]);
     }
 
+    /** The ffmpeg process, for the {@code [live]} perf line's CPU sample. */
+    Process process() {
+        return process;
+    }
+
     /** True once ffmpeg exited on its own (bad binary, disk full…). The controller stops the stream. */
     public boolean died() {
         return died;
@@ -93,6 +98,7 @@ public final class LiveEncoder implements AutoCloseable {
                 if (last != null) {
                     last.position(0);
                     while (last.hasRemaining()) out.write(last);
+                    LivePerfStats.encoderWrote(fresh != null);
                 }
                 next += periodNs;
                 long sleep = next - System.nanoTime();
