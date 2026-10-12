@@ -109,23 +109,28 @@ public final class BlockVariantMenuRaycast {
         BlockState growthState = growthRow >= 0
             ? BlockVariantMenu.parseState(entries.get(growthRow).stateString()) : null;
         if (growthState != null) {
-            java.util.List<GrowthPopupLayout.Row> rows = GrowthPopupLayout.rows(
-                games.brennan.dungeontrain.editor.VariantGrowth.fromInt(entries.get(growthRow).growth()),
-                growthState, panelW, halfH);
+            boolean paintingPopup = BlockVariantMenu.isPaintingRow(entries.get(growthRow), growthState);
+            BlockVariantMenu.CellKind optionKind = paintingPopup
+                ? BlockVariantMenu.CellKind.PAINTING_OPTION : BlockVariantMenu.CellKind.GROWTH_OPTION;
+            java.util.List<GrowthPopupLayout.Row> rows = paintingPopup
+                ? PaintingPopupLayout.rows(BlockVariantMenu.painting(entries.get(growthRow)), panelW, halfH)
+                : GrowthPopupLayout.rows(
+                    games.brennan.dungeontrain.editor.VariantGrowth.fromInt(entries.get(growthRow).growth()),
+                    growthState, panelW, halfH);
             for (GrowthPopupLayout.Row row : rows) {
                 if (hitY < row.bottom() || hitY > row.top()) continue;
                 double rel = hitX - row.buttonsLeft();
                 if (rel < 0 || rel > GrowthPopupLayout.BUTTONS_WIDTH) continue;
                 int opt = Math.min(row.buttons().length - 1, (int) Math.floor(rel / row.buttonWidth()));
-                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.GROWTH_OPTION, growthRow,
+                return new BlockVariantMenu.Hit(optionKind, growthRow,
                     GrowthPopupLayout.encode(row.section(), opt));
             }
             double[] r = GrowthPopupLayout.rect(rows);
             if (hitX >= r[0] && hitX <= r[1] && hitY >= r[2] && hitY <= r[3]) {
-                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.GROWTH_OPTION, growthRow, -1);
+                return new BlockVariantMenu.Hit(optionKind, growthRow, -1);
             }
             if (hitX >= -halfW && hitX <= halfW && hitY >= -halfH && hitY <= halfH) {
-                return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.GROWTH_OPTION, growthRow, -2);
+                return new BlockVariantMenu.Hit(optionKind, growthRow, -2);
             }
             return BlockVariantMenu.Hit.NONE;
         }
@@ -228,8 +233,10 @@ public final class BlockVariantMenuRaycast {
             && VariantConnect.Mode.fromOrdinal(entry.connectMode() & 0xFF) == VariantConnect.Mode.LOCK;
         double armsCellR = connectCellL;
         double armsCellL = showArms ? armsCellR - BlockVariantMenuRenderer.ARMS_CELL_WIDTH : armsCellR;
-        boolean growable = parsed != null && concrete && BlockVariantMenu.growthSupported()
-            && GrowthShapes.canGrow(parsed);
+        // A painting row puts its Painting pill in the Grow slot (a painting never grows).
+        boolean growable = (parsed != null && concrete && BlockVariantMenu.growthSupported()
+            && GrowthShapes.canGrow(parsed))
+            || (concrete && BlockVariantMenu.growthSupported() && BlockVariantMenu.isPaintingRow(entry, parsed));
         double growthCellR = armsCellL;
         double growthCellL = growable ? growthCellR - BlockVariantMenuRenderer.GROWTH_CELL_WIDTH : growthCellR;
         // Difficulty cells (mob rows only) — mirror the renderer geometry: they

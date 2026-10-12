@@ -670,8 +670,15 @@ public final class CarriageVariantBlocks {
             // Additive column growth. Absent → off (a single block), so older
             // files spawn unchanged.
             VariantGrowth growth = parseGrowth(obj.get("growth"), contextId, contextPos);
+            // Additive painting size / picture. Absent → off (the captured
+            // block, cell by cell), so older files spawn unchanged.
+            VariantPainting painting = parsePainting(obj.get("painting"), contextId, contextPos);
+            // Additive: the size of the painting this cell was captured from, cleared at every spawn.
+            JsonElement hungEl = obj.get("hung");
+            HungPainting hung = hungEl != null && hungEl.isJsonPrimitive()
+                ? HungPainting.parse(hungEl.getAsString()) : HungPainting.NONE;
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, connect, growth);
+                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -992,6 +999,39 @@ public final class CarriageVariantBlocks {
         int acc = 0;
         for (int i = 0; i < weights.length; i++) {
             acc += Math.max(1, weights[i]);
+            if (draw < acc) return i;
+        }
+        return weights.length - 1;
+    }
+
+    /**
+     * {@link #pickIndexFromWeights} where a weight of 0 means "never" rather than being clamped to 1 —
+     * for weights adjusted at stamp time (see {@code LiveTvWeighting}). Same seed mix, so a column with
+     * no zero in it picks exactly as {@link #pickIndexFromWeights} does. Returns {@code -1} when every
+     * weight is 0; the caller then rolls the authored weights instead.
+     */
+    public static int pickIndexFromWeightsAllowZero(BlockPos localPos, long worldSeed, int carriageIndex, int[] weights) {
+        return drawAllowZero(seededRandom(localPos, worldSeed, carriageIndex), weights);
+    }
+
+    /** {@link #pickIndexFromLockGroup} with the zero rule of {@link #pickIndexFromWeightsAllowZero}. */
+    public static int pickIndexFromLockGroupAllowZero(int lockId, long worldSeed, int carriageIndex, int[] weights) {
+        if (lockId <= 0) throw new IllegalArgumentException("lockId must be > 0");
+        long seed = worldSeed
+            ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L)
+            ^ ((long) lockId * 0xBF58476D1CE4E5B9L);
+        return drawAllowZero(new Random(seed), weights);
+    }
+
+    private static int drawAllowZero(Random random, int[] weights) {
+        if (weights.length == 0) throw new IllegalArgumentException("weights must be non-empty");
+        int total = 0;
+        for (int w : weights) total += Math.max(0, w);
+        if (total <= 0) return -1;
+        int draw = random.nextInt(total);
+        int acc = 0;
+        for (int i = 0; i < weights.length; i++) {
+            acc += Math.max(0, weights[i]);
             if (draw < acc) return i;
         }
         return weights.length - 1;
@@ -1402,6 +1442,12 @@ public final class CarriageVariantBlocks {
         if (!s.growth().isDefault()) {
             sb.append(", \"growth\": \"").append(s.growth().id()).append("\"");
         }
+        if (!s.painting().isDefault()) {
+            sb.append(", \"painting\": \"").append(s.painting().id()).append("\"");
+        }
+        if (!s.hung().isDefault()) {
+            sb.append(", \"hung\": \"").append(s.hung().id()).append("\"");
+        }
         sb.append("}");
     }
 
@@ -1517,6 +1563,22 @@ public final class CarriageVariantBlocks {
             return VariantGrowth.NONE;
         }
         return growth;
+    }
+
+    /**
+     * Parse an optional {@code "painting"} token ({@code "any random"}, {@code "2x1 minecraft:kebab"}).
+     * Absent → off; malformed → off with a warning.
+     */
+    private static VariantPainting parsePainting(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || el.isJsonNull()) return VariantPainting.NONE;
+        String token = el.isJsonPrimitive() && el.getAsJsonPrimitive().isString() ? el.getAsString() : null;
+        VariantPainting painting = token == null ? null : VariantPainting.parse(token);
+        if (painting == null) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unknown painting '{}', using off.",
+                contextId, contextPos, el);
+            return VariantPainting.NONE;
+        }
+        return painting;
     }
 
     private static VariantActive parseActive(JsonElement el, String contextId, BlockPos contextPos) {

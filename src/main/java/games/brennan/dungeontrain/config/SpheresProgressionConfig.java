@@ -129,7 +129,7 @@ public final class SpheresProgressionConfig {
                 .defineInRange("spheresForeignApplyPerTick", DEFAULT_APPLY_PER_TICK, 1, 64);
         samplerThreads = b
                 .comment("Background threads shared by the End-band and other-dimension sphere samplers, on top of",
-                        "vanilla's worldgen threads. 0 = auto (a quarter of the CPU cores, 1-4). Takes effect on restart.")
+                        "vanilla's worldgen threads. 0 = auto (a quarter of the CPU cores, 1-4). Takes effect the next time a world loads.")
                 .defineInRange("worldgenSamplerThreads", DEFAULT_SAMPLER_THREADS, AUTO_SAMPLER_THREADS, MAX_SAMPLER_THREADS);
     }
 

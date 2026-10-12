@@ -18,6 +18,10 @@
 // An id appears once: platform first, then the generated groups, then the curated rest.
 
 def curatedFile = file('src/main/whitelist/approved_mods.curated.json')
+// Every approved mod's published 1.21.1 NeoForge file hashes, pulled by hand with
+// scripts/modpack/pull-approved-hashes.py and committed — the baked seed of the hash-verified
+// whitelist beyond the modpack's own pins.
+def hashesFile = file('src/main/whitelist/approved_hashes.json')
 def modsTomlFile = file('src/main/templates/META-INF/neoforge.mods.toml')
 def modpackFile = file('modpack/modpack.config.json')
 def outDir = layout.buildDirectory.dir('generated/sources/approvedMods')
@@ -38,6 +42,37 @@ def tomlModIds = { String text ->
         if (inMods && m.find()) ids << m.group(1)
     }
     ids
+}
+
+// A jar's package fingerprint — the Groovy twin of check-mod-ids.py jar_packages / cheat/PackageFingerprint:
+// the top two segments of every .class path (three under com.github-style hosts), shaded commons
+// dropped, sorted, at most 64. Embedded jars included.
+def pkgDrop = ['org.apache', 'org.slf4j', 'org.jetbrains', 'org.intellij', 'org.objectweb', 'org.lwjgl', 'org.joml',
+               'org.spongepowered', 'org.yaml', 'org.json', 'org.checkerframework', 'org.jspecify', 'org.codehaus',
+               'com.google', 'com.mojang', 'com.sun', 'com.electronwill', 'com.fasterxml', 'io.netty', 'kotlin',
+               'kotlinx', 'javax', 'jakarta', 'java', 'sun', 'net.minecraft', 'net.neoforged', 'net.minecraftforge',
+               'net.fabricmc', 'scala', 'groovy', 'it.unimi', 'cpw.mods', 'mixin', 'META-INF']
+def pkgHosts = ['com.github', 'io.github', 'org.github', 'dev.github', 'com.gitlab', 'io.gitlab']
+def packageOf = { String name ->
+    if (!name.endsWith('.class') || name.startsWith('META-INF/')) return null
+    def parts = name.split('/').toList(); parts = parts[0..<parts.size() - 1]
+    if (parts.size() < 2) return null
+    def key = parts[0..1].join('.')
+    if (key in pkgHosts && parts.size() >= 3) key = parts[0..2].join('.')
+    if (pkgDrop.any { d -> key == d || key.startsWith(d + '.') }) return null
+    (key ==~ /[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*){1,2}/) ? key : null
+}
+def jarPackages
+jarPackages = { byte[] data, int depth = 0 ->
+    def out = new TreeSet<String>()
+    new java.util.zip.ZipInputStream(new ByteArrayInputStream(data)).withCloseable { zip ->
+        for (def e = zip.nextEntry; e != null; e = zip.nextEntry) {
+            def key = packageOf(e.name)
+            if (key) out << key
+            else if (depth < 2 && e.name.startsWith('META-INF/jarjar/') && e.name.endsWith('.jar')) out.addAll(jarPackages(zip.readAllBytes(), depth + 1))
+        }
+    }
+    out.take(64) as List
 }
 
 // Every modId a jar loads: its own [[mods]] plus each META-INF/jarjar/*.jar, recursively.
@@ -61,6 +96,7 @@ jarModIds = { byte[] data ->
 
 tasks.register('generateApprovedMods') {
     inputs.file curatedFile
+    inputs.file hashesFile
     inputs.file modsTomlFile
     inputs.file modpackFile
     inputs.files jarJarJars
@@ -144,12 +180,62 @@ tasks.register('generateApprovedMods') {
             throw new GradleException("Not modIds (store slug pasted in?): ${bad.unique().join(', ')}")
         }
 
+        // hashes: the hash-verified whitelist's baked seed — every file the modpack pins (sha1 recorded
+        // by check-mod-ids.py --fill) and every jar we embed. A stock install then passes the FILE
+        // check offline, before the relay has been asked; everything else is verified live.
+        def hashes = new TreeSet<String>()
+        ([config.sable] + config.optional_mods).each { entry ->
+            if (entry.whitelist == false) return
+            if (entry.sha1 ==~ /[0-9a-f]{40}/) hashes << (entry.sha1 as String)
+        }
+        jarJarJars.files.each { f ->
+            hashes << java.security.MessageDigest.getInstance('SHA-1').digest(f.bytes).encodeHex().toString()
+        }
+        // The pulled catalogue: every approved id must have a record (matched or unmatched), so a
+        // newly approved mod fails the build until pull-approved-hashes.py has been run for it —
+        // the same contract check-mod-ids.py enforces for the modpack roster.
+        def pulled = hashesFile.exists() ? slurper.parse(hashesFile) : [byMod: [:], unmatched: []]
+        def pulledIds = (pulled.byMod?.keySet() ?: []) + (pulled.unmatched ?: [])
+        // Mirrors UnapprovedModIntegrity.EXEMPT_IDS: judged by id alone, never hashed (dtmodverify is the engine itself).
+        def exemptIds = ['minecraft', 'neoforge', 'forge', selfId, 'dtmodverify'] as Set
+        def noRecord = seen.findAll { id -> !(id in exemptIds) && !id.startsWith('fabric_') && !(id in pulledIds) }
+        if (noRecord) {
+            throw new GradleException("Approved ids with no file-hash record: ${noRecord.sort().join(', ')}. "
+                + 'Run `python3 scripts/modpack/pull-approved-hashes.py` and commit src/main/whitelist/approved_hashes.json.')
+        }
+        def pulledHashes = 0
+        (pulled.byMod ?: [:]).each { id, rec ->
+            if (id in seen) (rec.sha1 ?: []).each { h -> if (h ==~ /[0-9a-f]{40}/) { hashes << (h as String); pulledHashes++ } }
+        }
+
+        // knownPackages: what each approved mod's code looks like — pulled records, the modpack's
+        // pinned jars (check-mod-ids.py --fill), and the jars we embed. The file check's second tier:
+        // an unknown hash whose packages are the claimed mod's is plausible, not Free Play.
+        def knownPackages = new TreeMap<String, List<String>>()
+        (pulled.byMod ?: [:]).each { id, rec -> if (id in seen && rec.packages instanceof List) knownPackages[id] = rec.packages.collect { it as String } }
+        ([config.sable] + config.optional_mods).each { entry ->
+            if (entry.whitelist == false || !(entry.packages instanceof List)) return
+            (entry.mod_ids ?: []).each { id -> if ((id as String) in seen) knownPackages[id as String] = entry.packages.collect { it as String } }
+        }
+        jarJarJars.files.sort { it.name }.each { f ->
+            def pk = jarPackages(f.bytes)
+            jarModIds(f.bytes).each { id -> if ((id as String) in seen) knownPackages[id as String] = pk }
+        }
+
         def result = new LinkedHashMap()
         result.comment = ['GENERATED by the generateApprovedMods Gradle task (gradle/approved-mods.gradle) — do not edit.',
                           'Hand-curated groups live in src/main/whitelist/approved_mods.curated.json.'] + (curated.comment ?: [])
         result.prefixes = curated.prefixes ?: []
         result.prefixesWhy = curated.prefixesWhy ?: []
         result.groups = groups
+        result.hashesWhy = 'SHA-1 of every file the modpack pins, every jar embedded in ours, and every published ' +
+            '1.21.1 NeoForge file of each approved mod — approved as files offline. GENERATED from modpack.config.json ' +
+            'sha1 fields, the jarJar dependencies and src/main/whitelist/approved_hashes.json (pull-approved-hashes.py).'
+        result.hashes = hashes as List
+        result.knownPackagesWhy = 'Package fingerprint of each approved mod\'s published jars (pull-approved-hashes.py, ' +
+            'modpack pins, embedded jars). A file whose hash is unknown but whose packages are the claimed mod\'s is ' +
+            'plausible, not Free Play; one whose packages are not is suspect.'
+        result.knownPackages = knownPackages
 
         def outFile = outDir.get().file("assets/${selfId}/cheat/approved_mods.json").asFile
         outFile.parentFile.mkdirs()
@@ -157,7 +243,9 @@ tasks.register('generateApprovedMods') {
         outFile.setText(groovy.json.JsonOutput.prettyPrint(json) + '\n', 'UTF-8')
         logger.lifecycle("generateApprovedMods: ${seen.size()} approved ids "
             + "(${embedded.size()} embedded, ${declared.required.size()} required, "
-            + "${declared.optional.size()} optional, ${roster.unique(false).size()} modpack)")
+            + "${declared.optional.size()} optional, ${roster.unique(false).size()} modpack), "
+            + "${hashes.size()} file hashes (${pulledHashes} pulled for ${(pulled.byMod ?: [:]).size()} ids, "
+            + "${(pulled.unmatched ?: []).size()} unmatched), package knowledge for ${knownPackages.size()} ids")
     }
 }
 sourceSets.main.resources.srcDir(files(outDir) { builtBy 'generateApprovedMods' })

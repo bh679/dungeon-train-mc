@@ -111,10 +111,13 @@ public final class CarriageContentsStore {
     public static synchronized void reload() {
         CACHE.clear();
         games.brennan.dungeontrain.train.ContentsFlip.clearCache();
+        games.brennan.dungeontrain.compat.vista.LiveTvWeighting.clearCache();
     }
 
     public static synchronized void clearCache() {
         CACHE.clear();
+        // Whether a template has a TV baked in is read from the template itself — re-read it too.
+        games.brennan.dungeontrain.compat.vista.LiveTvWeighting.clearCache();
         // The vertical-flip copies are derived from the templates being dropped here — keeping them
         // would hand a stale flip back for a template that has just been re-authored.
         games.brennan.dungeontrain.train.ContentsFlip.clearCache();

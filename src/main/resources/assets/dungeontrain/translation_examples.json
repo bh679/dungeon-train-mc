@@ -71,6 +71,14 @@
       ]
     }
   },
+  "gui.dungeontrain.unsupported_mods.unverified_file": {
+    "1": {
+      "label": "the jar file name",
+      "examples": [
+        "somemod-1.2.3.jar"
+      ]
+    }
+  },
   "gui.dungeontrain.unsupported_mods.suggested.tooltip": {
     "1": {
       "label": "the mod's display name",
@@ -86,6 +94,15 @@
       "examples": [
         "somemod v1.2.3",
         "somemod v1.2.3, anothermod v4.5"
+      ]
+    }
+  },
+  "chat.dungeontrain.free_play.unverified_mods": {
+    "1": {
+      "label": "the installed mod files that could not be verified, as file name plus the mod ids it declares, comma-separated",
+      "examples": [
+        "somemod-1.2.3.jar (somemod)",
+        "somemod-1.2.3.jar (somemod), bundle-4.5.jar (alpha, beta)"
       ]
     }
   },
@@ -13498,21 +13515,6 @@
       ]
     }
   },
-  "gui.dungeontrain.options.custom_content.tip": {
-    "1": {
-      "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
-      "examples": [
-        {
-          "key": "effect.dungeontrain.free_play.desc.1",
-          "args": []
-        },
-        {
-          "key": "gui.dungeontrain.free_play.safe_space",
-          "args": []
-        }
-      ]
-    }
-  },
   "gui.dungeontrain.unsupported_mods.body": {
     "1": {
       "label": "the shared Free Play explanation (translated once, under gui.dungeontrain.free_play.explained)",
@@ -15271,21 +15273,68 @@
       ]
     }
   },
-  "chat.dungeontrain.live.cut_off_by": {
+  "chat.dungeontrain.live.watching.one": {
     "1": {
-      "label": "the player name of the broadcaster who was cut off",
+      "label": "how many are watching (always 1)",
       "examples": [
-        "Steve",
-        "brennan_hatton"
+        "1"
       ]
     }
   },
-  "chat.dungeontrain.live.replaced_here": {
+  "chat.dungeontrain.live.watching.other": {
     "1": {
-      "label": "the player name of the broadcaster who was cut off",
+      "label": "how many are watching",
       "examples": [
-        "Steve",
-        "brennan_hatton"
+        "0",
+        "12"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.viewers.one": {
+    "1": {
+      "label": "how many are watching (always 1)",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.viewers.other": {
+    "1": {
+      "label": "how many are watching",
+      "examples": [
+        "11",
+        "101"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.clear_backups.hint": {
+    "1": {
+      "label": "how much disk space every backup archive takes together",
+      "examples": [
+        "12 MB",
+        "1.4 GB"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watch_links": {
+    "1": {
+      "label": "the clickable word Twitch, already translated (chat.dungeontrain.live.link.twitch)",
+      "examples": [
+        "Twitch"
+      ]
+    },
+    "2": {
+      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "examples": [
+        "DungeonTrain TV"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watch_link": {
+    "1": {
+      "label": "the clickable name of the website's live page, already translated (chat.dungeontrain.live.link.tv)",
+      "examples": [
+        "DungeonTrain TV"
       ]
     }
   }

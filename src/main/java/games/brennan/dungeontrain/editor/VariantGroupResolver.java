@@ -112,6 +112,22 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
     }
 
     /**
+     * {@link #resolve} for a reference-free cell rolled on {@code weights} instead of its authored
+     * weights — one per entry of {@code states}, where 0 means the entry is never picked. Locked cells
+     * still roll on their group id, so a group whose cells share one list still lands on one index.
+     * Returns {@code null} when every weight is 0, so the caller can fall back to the authored roll.
+     */
+    @Nullable
+    public static VariantState resolveWeighted(BlockPos localPos, int lockId, List<VariantState> states,
+                                               long worldSeed, int index, int[] weights) {
+        if (states == null || states.isEmpty() || weights.length != states.size()) return null;
+        int picked = lockId > 0
+            ? CarriageVariantBlocks.pickIndexFromLockGroupAllowZero(lockId, worldSeed, index, weights)
+            : CarriageVariantBlocks.pickIndexFromWeightsAllowZero(localPos, worldSeed, index, weights);
+        return picked < 0 ? null : states.get(picked);
+    }
+
+    /**
      * The group's analysed pool when it is the very list about to be rolled —
      * the normal case, since the cells of a group share one candidate list.
      * Matching by identity rather than equality is deliberate: it is exactly

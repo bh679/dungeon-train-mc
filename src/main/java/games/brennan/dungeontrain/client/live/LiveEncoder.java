@@ -35,6 +35,8 @@ public final class LiveEncoder implements AutoCloseable {
     private static final int LIST_SIZE = 6;
     /** Keyframe cadence in seconds. Twitch accepts at most 4 s; 2 s is its recommendation. */
     static final int KEYFRAME_SECONDS = 2;
+    /** libx264 defaults to ~1.5 threads per core (sliced under zerolatency) and competes with the game; 720p20 veryfast needs under one core. */
+    static final int ENCODER_THREADS = 2;
 
     private final LiveFrameGrabber grabber;
     private final Process process;
@@ -61,6 +63,7 @@ public final class LiveEncoder implements AutoCloseable {
             "-f", "rawvideo", "-pix_fmt", "rgba", "-s", w + "x" + h, "-r", String.valueOf(fps), "-i", "-",
             "-vf", "vflip",
             "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-pix_fmt", "yuv420p",
+            "-threads", String.valueOf(ENCODER_THREADS),
             "-b:v", bitrateKbps + "k", "-maxrate", bitrateKbps + "k", "-bufsize", (bitrateKbps * 2) + "k",
             "-g", String.valueOf(gop), "-keyint_min", String.valueOf(gop), "-sc_threshold", "0",
             "-force_key_frames", "expr:gte(t,n_forced*" + KEYFRAME_SECONDS + ")",
@@ -69,6 +72,11 @@ public final class LiveEncoder implements AutoCloseable {
             "-hls_segment_filename", dir.resolve("seg%05d.ts").toString(),
             dir.resolve(LivePlaylist.FILE_NAME).toString()));
         return a.toArray(new String[0]);
+    }
+
+    /** The ffmpeg process, for the {@code [live]} perf line's CPU sample. */
+    Process process() {
+        return process;
     }
 
     /** True once ffmpeg exited on its own (bad binary, disk full…). The controller stops the stream. */
@@ -90,6 +98,7 @@ public final class LiveEncoder implements AutoCloseable {
                 if (last != null) {
                     last.position(0);
                     while (last.hasRemaining()) out.write(last);
+                    LivePerfStats.encoderWrote(fresh != null);
                 }
                 next += periodNs;
                 long sleep = next - System.nanoTime();

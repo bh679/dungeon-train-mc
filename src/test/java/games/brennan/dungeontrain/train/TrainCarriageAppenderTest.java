@@ -267,6 +267,64 @@ final class TrainCarriageAppenderTest {
         assertEquals(Set.of(slId(-7)), target);
     }
 
+    /** Groups of 3 at the given anchors, each with slId(anchor). */
+    private static List<TrailingId> groupsOf3(int... anchors) {
+        List<TrailingId> out = new ArrayList<>();
+        for (int a : anchors) out.add(new TrailingId(a, a + 2, slId(a)));
+        return out;
+    }
+
+    /** The trailing window as maintainTrailingForceLoadWindow builds it. */
+    private static Set<UUID> trailingTargets(List<TrailingId> groups, boolean near, int nearMin) {
+        return TrainCarriageAppender.backmostForceLoadTargets(
+            TrainCarriageAppender.trailingCandidates(groups, near, nearMin), 4);
+    }
+
+    @Test
+    @DisplayName("trailing window never pins a group below the players' window (no sandwiched held group)")
+    void trailingWindow_neverBelowNeededWindow() {
+        // The 2026-10-03 repro: groups -18..42 loaded, rider's window starts at carriage 0.
+        // Before: -18,-15,-12,-9 pinned while -6/-3 were released and cycled.
+        List<TrailingId> train = groupsOf3(-18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12);
+        assertEquals(Set.of(slId(0), slId(3), slId(6), slId(9)), trailingTargets(train, true, 0));
+    }
+
+    @Test
+    @DisplayName("trailing window keeps a group straddling the window's bottom edge")
+    void trailingWindow_keepsStraddlingGroup() {
+        // Group -3 covers -3..-1; a window starting at -1 still needs it.
+        List<TrailingId> train = groupsOf3(-9, -6, -3, 0, 3, 6);
+        assertEquals(Set.of(slId(-3), slId(0), slId(3), slId(6)), trailingTargets(train, true, -1));
+    }
+
+    @Test
+    @DisplayName("trailing window: window reaching past the tail, or wholly below the train, pins the tail")
+    void trailingWindow_tailInsideOrBelowWindow() {
+        List<TrailingId> train = groupsOf3(-9, -6, -3, 0, 3, 6);
+        Set<UUID> tail = Set.of(slId(-9), slId(-6), slId(-3), slId(0));
+        assertEquals(tail, trailingTargets(train, true, -20)); // backward rider, window covers the tail
+        assertEquals(tail, trailingTargets(train, true, -400)); // remote player far behind the train
+    }
+
+    @Test
+    @DisplayName("trailing window: no near player (sentinel window) keeps the plain backmost-N")
+    void trailingWindow_noNearPlayerUnchanged() {
+        List<TrailingId> train = groupsOf3(-9, -6, -3, 0, 3, 6);
+        Set<UUID> tail = Set.of(slId(-9), slId(-6), slId(-3), slId(0));
+        assertEquals(tail, trailingTargets(train, false, 0));
+        assertEquals(tail, trailingTargets(train, true, Integer.MAX_VALUE));
+    }
+
+    @Test
+    @DisplayName("near hold keeps the lead a one-carriage drift left just past the window")
+    void nearHoldTop_keepsLeadAfterOneCarriageDrift() {
+        // 2026-10-12 repro: group 42 built for window [1,42]; rider settled to window [0,41].
+        int top = TrainCarriageAppender.nearHoldTop(41, 3);
+        assertTrue(TrainCarriageAppender.shouldHoldGroupNearPlayer(true, 42, 44, 0, top));
+        assertFalse(TrainCarriageAppender.shouldHoldGroupNearPlayer(true, 45, 47, 0, top));
+        assertEquals(Integer.MIN_VALUE, TrainCarriageAppender.nearHoldTop(Integer.MIN_VALUE, 3));
+    }
+
     // ---- Option 2: registry-edge reference resolution ----
     //
     // decideEdgeAction is the pure decision core: given whether the registry

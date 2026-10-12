@@ -136,7 +136,23 @@ public record BlockVariantSyncPacket(
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
                         int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
-                        int growth) {
+                        int growth, String painting) {
+
+        public Entry {
+            if (painting == null) painting = "";
+        }
+
+        /**
+         * Backward-compat constructor for call sites that don't carry painting options
+         * (defaults to off, the empty token).
+         */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode, byte connectMode, int growth) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, connectMode, growth, "");
+        }
 
         /**
          * Backward-compat constructor for call sites that don't carry column growth
@@ -286,6 +302,7 @@ public record BlockVariantSyncPacket(
             buf.writeByte(e.activeMode());
             buf.writeByte(e.connectMode());
             buf.writeVarInt(e.growth());
+            buf.writeUtf(e.painting(), 256);
         }
     }
 
@@ -329,9 +346,10 @@ public record BlockVariantSyncPacket(
             byte activeMode = buf.readByte();
             byte connectMode = buf.readByte();
             int growth = buf.readVarInt();
+            String painting = buf.readUtf(256);
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive,
-                activeMode, connectMode, growth));
+                activeMode, connectMode, growth, painting));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
             copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported);

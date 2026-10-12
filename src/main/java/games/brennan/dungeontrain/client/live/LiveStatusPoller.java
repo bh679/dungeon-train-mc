@@ -30,10 +30,18 @@ public final class LiveStatusPoller {
     private static volatile Status current = Status.OFFLINE;
     private static volatile boolean freePlay;
     private static volatile long lastInterestMs;
+    /** A TV block (not the head viewer or a hand-held TV) last asked for the feed. */
+    private static volatile long lastTvInterestMs;
     private static volatile long lastPollMs;
     private static final AtomicBoolean inFlight = new AtomicBoolean();
 
     private LiveStatusPoller() {}
+
+    /** {@link #wanted()} for a TV block: also marks the feed as wanted at full size. */
+    public static Status tvWanted() {
+        lastTvInterestMs = System.currentTimeMillis();
+        return wanted();
+    }
 
     /** Call from a render path that wants the feed; returns the last known status. */
     public static Status wanted() {
@@ -76,9 +84,15 @@ public final class LiveStatusPoller {
         return System.currentTimeMillis() - lastInterestMs < INTEREST_MS;
     }
 
+    /** True while a TV block has asked for the feed within the last 15 s. */
+    public static boolean tvInterested() {
+        return System.currentTimeMillis() - lastTvInterestMs < INTEREST_MS;
+    }
+
     /** Tests / world change: forget what we knew. */
     public static void reset() {
         current = Status.OFFLINE;
+        lastTvInterestMs = 0;
         lastPollMs = 0;
     }
 }

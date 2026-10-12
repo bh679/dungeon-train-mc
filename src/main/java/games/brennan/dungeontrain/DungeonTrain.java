@@ -34,6 +34,7 @@ import games.brennan.dungeontrain.registry.ModBlockEntities;
 import games.brennan.dungeontrain.registry.ModBlocks;
 import games.brennan.dungeontrain.registry.ModCreativeTabs;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.registry.ModDataComponents;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.registry.ModSounds;
@@ -356,6 +357,8 @@ public class DungeonTrain {
         // + per-player run-state attachment.
         ModAdvancementTriggers.register(modBus);
         ModDataAttachments.register(modBus);
+        // Item data components: the hand-held TV's on/off switch (compat/vista/TvItems).
+        ModDataComponents.register(modBus);
         // The relay's live milestone values (e.g. carts_1000's threshold), fetched once per
         // session and applied at datapack load. Kicked off here rather than at client init so
         // dedicated servers — where advancements are actually evaluated — get them too.
@@ -800,12 +803,18 @@ public class DungeonTrain {
                         tr("gui.dungeontrain.consent.reincarnations"), true,
                         tr(kid ? "gui.dungeontrain.consent.reincarnations.kid.tip"
                                : "gui.dungeontrain.consent.reincarnations.adult.tip")),
-                // Livestreaming: a switch in both modes, on for adults and off for kids by default.
-                ConsentBullet.toggle(
-                        tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
-                        tr(kid ? "gui.dungeontrain.consent.livestream.kid.tip"
-                               : "gui.dungeontrain.consent.livestream.adult.tip"),
-                        LIVESTREAM_DRAFT::touch),
+                // Livestreaming: a switch in both modes, on for adults and off for kids by default. The
+                // Kid hover says what a stream shares only once the switch is on; off, it just says so.
+                kid
+                        ? ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                                tr("gui.dungeontrain.consent.livestream.kid.tip"),
+                                tr("gui.dungeontrain.consent.livestream.kid.tip_off"),
+                                LIVESTREAM_DRAFT::touch)
+                        : ConsentBullet.toggle(
+                                tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                                tr("gui.dungeontrain.consent.livestream.adult.tip"),
+                                LIVESTREAM_DRAFT::touch),
                 // Developer chat: a switch for adults; for kids a fixed off line, because the Kid block
                 // (RelayChatClient.canConnect, ContentModeMirror) is a safety rule, not a preference.
                 kid

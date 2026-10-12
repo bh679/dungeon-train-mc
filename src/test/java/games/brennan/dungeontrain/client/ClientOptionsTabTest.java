@@ -1,8 +1,14 @@
 package games.brennan.dungeontrain.client;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import games.brennan.dungeontrain.RepoPaths;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -10,6 +16,8 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -73,11 +81,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: thirty-one rows, none of the conditional rows present")
+    @DisplayName("Plain client: thirty-three rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(31, rows.size());
+        assertEquals(35, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -98,13 +106,23 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.DEV_CHAT,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
                         ClientOptionsTab.Row.UPDATE_NOTICE_CHAT,
-                        ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT,
                         ClientOptionsTab.Row.OTHER_ADVANCEMENT_TABS,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
                         ClientOptionsTab.Row.BACKPACK_BUTTON,
+                        ClientOptionsTab.Row.BOOK_FILE_BUTTONS,
+                        ClientOptionsTab.Row.BOOK_INSERT_PAGE_BUTTON,
                         ClientOptionsTab.Row.AI_POLICY),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
+    }
+
+    @Test
+    @DisplayName("The low-memory notice leads the Performance tab, above the tips")
+    void lowMemoryNoticeLeadsPerformance() {
+        assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT, ClientOptionsTab.Row.PERFORMANCE_TIPS),
+                ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true));
+        assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, true, true)
+                .contains(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT));
     }
 
     @Test
@@ -154,7 +172,7 @@ final class ClientOptionsTabTest {
     void allConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true, true);
 
-        assertEquals(34, rows.size());
+        assertEquals(38, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -163,7 +181,8 @@ final class ClientOptionsTabTest {
     @DisplayName("The Stream tab holds Livestreaming and the two what-viewers-see switches; General no longer does")
     void streamTabRows() {
         assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
-                        ClientOptionsTab.Row.STREAM_CHAT),
+                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_SIZE,
+                        ClientOptionsTab.Row.HEAD_VIEWER_SIZE),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
                 .contains(ClientOptionsTab.Row.LIVESTREAM));
@@ -310,5 +329,38 @@ final class ClientOptionsTabTest {
         List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(ClientOptionsTab.TRAIN, true, true, true);
         assertThrows(UnsupportedOperationException.class,
                 () -> rows.add(ClientOptionsTab.Row.SCALE_HUD));
+    }
+
+    // ---- Every row names itself, and has the one-line hint the settings list draws under the name ----
+
+    @Test
+    @DisplayName("every setting row has a caption key and a .hint in en_us; the expanded rows have neither")
+    void everyRowHasCaptionAndHint() throws IOException {
+        JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
+            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT || row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
+                assertNull(row.captionKey(), row + " stands for several rows and has no caption of its own");
+                continue;
+            }
+            String key = row.captionKey();
+            assertNotNull(key, row + " has no caption key");
+            assertTrue(en.has(key), row + ": en_us lacks its name " + key);
+            assertTrue(en.has(key + ".hint"), row + ": en_us lacks its hint " + key + ".hint");
+        }
+    }
+
+    @Test
+    @DisplayName("hints are one short line — the list cuts anything longer with an ellipsis")
+    void hintsAreShort() throws IOException {
+        JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
+                .getAsJsonObject();
+        for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
+            if (row.captionKey() == null) continue;
+            String hint = en.get(row.captionKey() + ".hint").getAsString();
+            // ~180px of 5-6px glyphs at GUI scale 1 beside a 100px control; longer reads as cut.
+            assertTrue(hint.length() <= 44, row + ": hint too long to fit the row: \"" + hint + "\"");
+            assertFalse(hint.endsWith("."), row + ": a hint is a fragment, not a sentence: \"" + hint + "\"");
+        }
     }
 }

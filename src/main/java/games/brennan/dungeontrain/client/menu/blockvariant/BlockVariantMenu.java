@@ -85,6 +85,11 @@ public final class BlockVariantMenu {
         ENTRY_GROWTH,
         /** A button in the Grow popup; {@code secondary} = {@code GrowthPopupLayout.encode}. */
         GROWTH_OPTION,
+        /**
+         * A button in a painting row's Painting popup (opened from the Grow pill slot, which a
+         * painting row uses instead); {@code secondary} = {@code GrowthPopupLayout.encode}.
+         */
+        PAINTING_OPTION,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
         ROT_DIR_OPTION,
@@ -190,6 +195,29 @@ public final class BlockVariantMenu {
     }
     public static void toggleGrowthPopup(int row) { growthPopupRow = growthPopupRow == row ? -1 : row; }
     public static void closeGrowthPopup() { growthPopupRow = -1; }
+
+    /**
+     * True when {@code entry} is a painting row — it shows the Painting pill and popup in the Grow
+     * slot. Mob and group-reference rows never do.
+     */
+    public static boolean isPaintingRow(BlockVariantSyncPacket.Entry entry, @Nullable BlockState parsed) {
+        return parsed != null && !entry.isMob() && !entry.isGroupRef()
+            && games.brennan.dungeontrain.editor.PaintingPass.isPainting(parsed);
+    }
+
+    /** The row's painting option, or off when the wire token is blank / malformed. */
+    public static games.brennan.dungeontrain.editor.VariantPainting painting(BlockVariantSyncPacket.Entry entry) {
+        games.brennan.dungeontrain.editor.VariantPainting p =
+            games.brennan.dungeontrain.editor.VariantPainting.parse(entry.painting());
+        return p == null ? games.brennan.dungeontrain.editor.VariantPainting.NONE : p;
+    }
+
+    /** The placeable pictures as the client's synced registry has them (empty with no level). */
+    public static List<games.brennan.dungeontrain.compat.PaintingCatalog.Picture> pictures() {
+        var level = Minecraft.getInstance().level;
+        return level == null ? List.of()
+            : games.brennan.dungeontrain.compat.PaintingCatalog.placeable(level.registryAccess());
+    }
 
     /** The connect-mode segment kinds, indexed by {@code VariantConnect.Mode} ordinal. */
     public static final CellKind[] CONNECT_SEGMENTS = {

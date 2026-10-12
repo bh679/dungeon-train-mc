@@ -138,6 +138,63 @@ final class ColliderBatchTest {
     }
 
     @Test
+    @DisplayName("a forced (physics-step) scope defers even with ENABLED=false")
+    void forcedIgnoresKillSwitch() {
+        ColliderBatch.ENABLED = false;
+        ColliderBatch.call(() -> {
+            assertTrue(ColliderBatch.isActive(), "the kill switch must not re-open the step deadlock");
+            record(0, 4, 0);
+            return null;
+        }, rebuilt::add, true);
+        assertFalse(ColliderBatch.isActive());
+        assertEquals(1, rebuilt.size());
+        assertTrue(rebuilt.get(0).forced);
+        assertEquals(1, rebuilt.get(0).sections.size());
+    }
+
+    @Test
+    @DisplayName("a forced scope nested in a plain one forces it only while it runs")
+    void forcedNestedRestoresOuter() {
+        ColliderBatch.ENABLED = false;
+        ColliderBatch.call(() -> {
+            assertFalse(ColliderBatch.isActive());
+            ColliderBatch.call(() -> {
+                assertTrue(ColliderBatch.isActive());
+                record(1, 1, 1);
+                return null;
+            }, rebuilt::add, true);
+            assertFalse(ColliderBatch.isActive(), "outer plain scope goes back to unforced");
+            assertEquals(0, rebuilt.size(), "inner exit must not rebuild");
+            return null;
+        }, rebuilt::add);
+        assertEquals(1, rebuilt.size());
+        assertFalse(rebuilt.get(0).forced);
+        assertEquals(1, rebuilt.get(0).sections.size());
+    }
+
+    @Test
+    @DisplayName("an idle scope allocates no section map; the first record does")
+    void sectionsAllocatedLazily() {
+        ColliderBatch.call(() -> null, rebuilt::add, true);
+        ColliderBatch.call(() -> { record(2, 2, 2); return null; }, rebuilt::add, true);
+        assertTrue(rebuilt.get(0).sections.isEmpty());
+        assertEquals(1, rebuilt.get(1).sections.size());
+        assertTrue(rebuilt.get(0).sections != rebuilt.get(1).sections);
+    }
+
+    @Test
+    @DisplayName("step-deferred changes drain into their own [mspt] counter")
+    void stepDeferredDrains() {
+        PhysicsStepTimer.drain();
+        PhysicsStepTimer.addStepDeferredBlockChanges(3);
+        PhysicsStepTimer.addStepDeferredBlockChanges(0);
+        PhysicsStepTimer.Window w = PhysicsStepTimer.drain();
+        assertEquals(3, w.stepDeferredBlockChanges());
+        assertEquals(0, w.batchedBlockChanges());
+        assertEquals(0, PhysicsStepTimer.drain().stepDeferredBlockChanges());
+    }
+
+    @Test
     @DisplayName("records outside any scope are ignored")
     void recordOutsideScopeIgnored() {
         record(9, 9, 9);

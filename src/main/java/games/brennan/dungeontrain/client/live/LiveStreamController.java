@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.ClientLanguage;
+import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
@@ -33,8 +35,12 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -56,6 +62,8 @@ public final class LiveStreamController {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final LiveStreamController INSTANCE = new LiveStreamController();
+    /** Session dirs a {@link LiveTeardown} is still flushing; the next stream's sweep leaves them be. */
+    private static final Set<Path> TEARING_DOWN = ConcurrentHashMap.newKeySet();
 
     public enum State { IDLE, WAIT_FFMPEG, CLAIMING, STREAMING, STOPPING }
 
@@ -70,6 +78,10 @@ public final class LiveStreamController {
     private boolean grabbedThisFrame; // render thread: this frame was already read at an earlier point
     private long streamStartedMs;
     private int waitTicks;
+    /** How long the going-live line waits for the relay's first viewer count before saying 0. */
+    private static final long LIVE_LINE_FALLBACK_MS = 10_000L;
+    private final LiveViewerBands bands = new LiveViewerBands();
+    private boolean announcedLive; // render thread: this stream's going-live line has been said
 
     private LiveStreamController() {}
 
@@ -83,6 +95,18 @@ public final class LiveStreamController {
 
     public boolean streaming() {
         return state == State.STREAMING;
+    }
+
+    /** Render thread: the running encoder, or null — for the {@code [live]} perf line. */
+    @Nullable
+    LiveEncoder encoder() {
+        return encoder;
+    }
+
+    /** Render thread: the running frame grabber, or null — for the {@code [live]} perf line. */
+    @Nullable
+    LiveFrameGrabber grabber() {
+        return grabber;
     }
 
     /** Wall-clock start of the current broadcast; meaningful only while {@link #streaming()}. */
@@ -108,10 +132,11 @@ public final class LiveStreamController {
     public void onServerSaid(LiveStreamPacket packet) {
         switch (packet.action()) {
             case START -> start();
-            case STOP_REPLACED -> stop(Component.translatable("chat.dungeontrain.live.replaced_here", packet.by()));
+            // The server's burn line already says why for these two.
+            case STOP_REPLACED -> stop(null);
             case STOP_DIED -> stop(Component.translatable("chat.dungeontrain.live.ended_death"));
             case STOP_LEFT -> stop(null);
-            case STOP_REMOVED -> stop(Component.translatable("chat.dungeontrain.live.removed"));
+            case STOP_REMOVED -> stop(null);
             case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
         }
     }
@@ -166,6 +191,32 @@ public final class LiveStreamController {
         } else if (state == State.STREAMING && encoder != null && encoder.died()) {
             stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+        } else if (state == State.STREAMING) {
+            announceViewers(System.currentTimeMillis());
+        }
+    }
+
+    /**
+     * "You are now live on [Twitch] &amp; [DungeonTrain TV]" ({@link LiveWatchLinks}) then "N people
+     * watching" once the relay's first viewer count lands (or after
+     * {@link #LIVE_LINE_FALLBACK_MS} with none, as 0), then a line each time the count settles in a
+     * new band ({@link LiveViewerBands}).
+     */
+    private void announceViewers(long nowMs) {
+        int viewers = viewerCount();
+        if (!announcedLive) {
+            if (viewers < 0 && nowMs - streamStartedMs < LIVE_LINE_FALLBACK_MS) return;
+            int shown = Math.max(0, viewers);
+            announcedLive = true;
+            bands.start(shown);
+            say(LiveWatchLinks.line());
+            say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.watching", shown)
+                .withStyle(ChatFormatting.GREEN));
+            return;
+        }
+        if (bands.update(viewers, nowMs)) {
+            say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.viewers", viewers)
+                .withStyle(ChatFormatting.GRAY));
         }
     }
 
@@ -209,12 +260,12 @@ public final class LiveStreamController {
             state = State.STREAMING;
             LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps, playlist {}", c.session(), w, h,
                 LiveFeedClientConfig.captureFps(), c.playlistUrl());
-            say(Component.translatable("chat.dungeontrain.live.started").withStyle(ChatFormatting.GREEN));
+            announcedLive = false;
             if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] live stream could not start", e);
             say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
-            teardown(false);
+            teardown(false, false);
             state = State.IDLE;
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         }
@@ -222,7 +273,8 @@ public final class LiveStreamController {
 
     private void cutOff(String by) {
         if (state != State.STREAMING) return;
-        stop(Component.translatable(by == null || by.isBlank() ? "chat.dungeontrain.live.cut_off" : "chat.dungeontrain.live.cut_off_by", by).withStyle(ChatFormatting.YELLOW), false);
+        // Silent here: the server burns the Live Eye on CUT_OFF and its burn line says why.
+        stop(null, false);
         tellServerEnded(LiveStreamEndedPacket.Reason.CUT_OFF);
     }
 
@@ -238,23 +290,57 @@ public final class LiveStreamController {
     }
 
     private void stop(@Nullable Component why, boolean clean) {
+        stop(why, clean, false);
+    }
+
+    private void stop(@Nullable Component why, boolean clean, boolean wait) {
         if (state == State.IDLE) return;
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
-        teardown(clean);
+        teardown(clean, wait);
         state = State.IDLE;
         if (why != null) say(why);
     }
 
-    private void teardown(boolean clean) {
-        if (encoder != null) { encoder.close(); encoder = null; }
-        if (uploader != null) { uploader.close(clean); uploader = null; }
-        if (grabber != null) { grabber.close(); grabber = null; }
-        if (clean && claim != null) LiveFeedClient.stop(claim.token());
+    /**
+     * Hands this stream's encoder, uploader, relay claim and directory to {@link LiveTeardown} and
+     * clears them, so the controller is IDLE at once. The steps block for seconds — ffmpeg's last
+     * segment, the final upload pass, the relay stop — and on the render thread that froze the game
+     * every time the Live Eye came off, so they run on their own thread. {@code wait} runs them here
+     * instead: game shutdown only, where a daemon thread would die before the ENDLIST went out.
+     */
+    private void teardown(boolean clean, boolean wait) {
+        LiveEncoder enc = encoder;
+        LiveUploader up = uploader;
+        LiveFrameGrabber grab = grabber;
+        Claim c = claim;
+        Path d = dir;
+        encoder = null;
+        uploader = null;
+        grabber = null;
         claim = null;
-        if (dir != null) { deleteTree(dir); dir = null; }
+        dir = null;
+
+        List<LiveTeardown.Step> steps = new ArrayList<>();
+        if (enc != null) steps.add(new LiveTeardown.Step("encoder", enc::close));
+        if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean)));
+        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> LiveFeedClient.stop(c.token())));
+        if (d != null) steps.add(new LiveTeardown.Step("delete session dir", () -> deleteTree(d)));
+        // GL buffers belong to the render thread; freed only once the encoder has stopped reading them.
+        if (grab != null) steps.add(new LiveTeardown.Step("frame grabber",
+            () -> { if (wait) grab.close(); else Minecraft.getInstance().execute(grab::close); }));
+        if (steps.isEmpty()) return;
+
+        if (d != null) TEARING_DOWN.add(d);
+        Runnable done = () -> { if (d != null) TEARING_DOWN.remove(d); };
+        if (wait) {
+            LiveTeardown.runAll(steps);
+            done.run();
+        } else {
+            LiveTeardown.runAsync(steps, done);
+        }
     }
 
     // ---- capture ------------------------------------------------------------------------------
@@ -339,7 +425,7 @@ public final class LiveStreamController {
 
     @SubscribeEvent
     public static void onGameShuttingDown(GameShuttingDownEvent event) {
-        INSTANCE.stop(null);
+        INSTANCE.stop(null, true, true);
     }
 
     // ---- helpers ------------------------------------------------------------------------------
@@ -357,7 +443,7 @@ public final class LiveStreamController {
         Path root = liveRoot();
         if (!Files.isDirectory(root)) return;
         try (Stream<Path> kids = Files.list(root)) {
-            kids.forEach(LiveStreamController::deleteTree);
+            kids.filter(kid -> !TEARING_DOWN.contains(kid)).forEach(LiveStreamController::deleteTree);
         } catch (IOException ignored) {
             // best effort
         }

@@ -605,6 +605,16 @@
  "chat.dungeontrain.free_play.unapproved_mods_fix": [
   "chat"
  ],
+ "chat.dungeontrain.free_play.cause.unverified_mod": [
+  "chat",
+  "tooltip"
+ ],
+ "chat.dungeontrain.free_play.unverified_mods": [
+  "chat"
+ ],
+ "chat.dungeontrain.free_play.unverified_mods_fix": [
+  "chat"
+ ],
  "chat.dungeontrain.free_play.cause.operator": [
   "chat",
   "tooltip"
@@ -8843,6 +8853,9 @@
  ],
  "gui.dungeontrain.unsupported_mods.title": [
   "screen"
+ ],
+ "gui.dungeontrain.unsupported_mods.unverified_file": [
+  "gui"
  ],
  "gui.dungeontrain.unsupported_mods.body": [
   "screen"
