@@ -24352,9 +24352,9 @@
       "summary": "Each run summary now tells the relay how long the life lasted on the clock, not just how long you were active on the train. That lets the one-life leaderboards tell an impossible record from an honest one without ever doubting a real player; nothing changes for you in-game.",
       "highlights": [],
       "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "nether-end-portal-fixes",
@@ -24369,9 +24369,9 @@
       "highlights": [],
       "pr": 1897,
       "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-feed-tvs-tune-themselves",
@@ -24386,9 +24386,9 @@
       "highlights": [],
       "pr": 1896,
       "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-viewer-count",
@@ -24404,9 +24404,9 @@
       "highlights": [],
       "pr": 1891,
       "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-feed-twitch-mirror",
@@ -24421,9 +24421,9 @@
       "highlights": [],
       "pr": 1894,
       "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-feed",
@@ -24437,9 +24437,9 @@
       "summary": "Put on the broadcast camcorder and every television, everywhere, starts showing what you see. Its aerial has opinions about whatever you point it at.",
       "highlights": [],
       "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye",
@@ -24454,9 +24454,9 @@
       "summary": "The broadcast headpiece is now the Live Eye, and it looks the part in your inventory.",
       "highlights": [],
       "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "portal-trips-count",
@@ -24471,9 +24471,9 @@
       "highlights": [],
       "pr": 1904,
       "date": "2026-10-10",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "author-room-heads",
@@ -24489,9 +24489,9 @@
       "highlights": [],
       "pr": 1909,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye-new-lens",
@@ -24505,9 +24505,9 @@
       "highlights": [],
       "pr": 1910,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "donation-message-options",
@@ -24523,9 +24523,9 @@
       "highlights": [],
       "pr": 1911,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "stream-settings",
@@ -24541,9 +24541,9 @@
       "highlights": [],
       "pr": 1912,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye-bigger-lens",
@@ -24556,9 +24556,9 @@
       "summary": "The Live Eye's lens takes up more of its face, and the front is tidier.",
       "highlights": [],
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z",
       "pr": 1913
     },
     {
@@ -24574,9 +24574,9 @@
       "highlights": [],
       "pr": 1914,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye-tv-train-loot",
@@ -24592,9 +24592,9 @@
       "highlights": [],
       "pr": 1915,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye-take-off-freeze",
@@ -24609,9 +24609,9 @@
       "highlights": [],
       "pr": 1917,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "stream-video-and-viewer-size",
@@ -24626,9 +24626,9 @@
       "highlights": [],
       "pr": 1918,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "translation-review-ping-toggle",
@@ -24644,9 +24644,9 @@
       "highlights": [],
       "pr": 1921,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "tv-template-join",
@@ -24661,9 +24661,9 @@
       "highlights": [],
       "pr": 1922,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "consent-kid-livestream-tooltip",
@@ -24678,9 +24678,9 @@
       "highlights": [],
       "pr": 1916,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "painting-variant-options",
@@ -24695,9 +24695,9 @@
       "highlights": [],
       "pr": 1924,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "photos-remember-advancements",
@@ -24712,9 +24712,9 @@
       "highlights": [],
       "pr": 1923,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "tv-in-creative-tab",
@@ -24729,9 +24729,9 @@
       "highlights": [],
       "pr": 1925,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "hash-verified-mod-whitelist",
@@ -24746,9 +24746,9 @@
       "summary": "Free Play now takes a closer look at the mods you have installed. Anything on the approved list, from CurseForge, Modrinth or your own build, plays as normal.",
       "highlights": [],
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "variant-clipboard-icon-badges",
@@ -24764,9 +24764,9 @@
       "highlights": [],
       "pr": 1927,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "held-tv-live-screen",
@@ -24780,9 +24780,9 @@
       "summary": "A television in your hand can now be switched on with a tap of the attack button and watched as you go; it flips to the other hand without a pause, and one placed while on comes on.",
       "highlights": [],
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-tv-weighting",
@@ -24797,9 +24797,9 @@
       "highlights": [],
       "pr": 1928,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye-chat-lines",
@@ -24815,9 +24815,9 @@
       "highlights": [],
       "pr": 1929,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "photos-show-what-they-earned",
@@ -24833,9 +24833,9 @@
       "highlights": [],
       "pr": 1930,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye-frame-stalls",
@@ -24853,9 +24853,9 @@
       ],
       "pr": 1931,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye-watch-links",
@@ -24871,9 +24871,9 @@
       "highlights": [],
       "pr": 1932,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-eye-encoder-thread-cap",
@@ -24887,9 +24887,9 @@
       "highlights": [],
       "pr": 1933,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "book-screen-info-button",
@@ -24906,9 +24906,9 @@
       "highlights": [],
       "pr": 1934,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "streamer-head-viewer-decode-size",
@@ -24922,9 +24922,9 @@
       "highlights": [],
       "pr": 1935,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-feed-hangs-on",
@@ -24940,9 +24940,9 @@
       "highlights": [],
       "pr": 1936,
       "date": "2026-10-11",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "photo-views-tributes",
@@ -24958,9 +24958,9 @@
       "highlights": [],
       "pr": 1937,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "options-settings-list",
@@ -24975,9 +24975,9 @@
       "highlights": [],
       "pr": 1938,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "stream-settings-cog",
@@ -24992,9 +24992,9 @@
       "highlights": [],
       "pr": 1939,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "dtmodverify-store-release",
@@ -25007,9 +25007,9 @@
       "summary": "The mod verification companion now comes from CurseForge and Modrinth and is installed alongside Dungeon Train.",
       "highlights": [],
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "sampler-pool-lifecycle-backpressure",
@@ -25024,9 +25024,9 @@
       "highlights": [],
       "pr": 1941,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "live-feed-renditions",
@@ -25041,9 +25041,9 @@
       "highlights": [],
       "pr": 1942,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "delete-dead-run-worlds",
@@ -25057,9 +25057,9 @@
       "highlights": [],
       "pr": 1944,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "sable-step-collider-deadlock",
@@ -25075,9 +25075,9 @@
       "highlights": [],
       "pr": 1945,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "playermob-0-108-0",
@@ -25095,9 +25095,9 @@
       ],
       "pr": 1947,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "held-carriages-stay-asleep",
@@ -25116,9 +25116,9 @@
       ],
       "pr": 1946,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "untracked-life-challenges",
@@ -25132,9 +25132,9 @@
       "summary": "Challenge advancements no longer pop up when you load a run started on an older version.",
       "highlights": [],
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "bedroom-livestream-tv-rooms",
@@ -25149,9 +25149,9 @@
       "highlights": [],
       "pr": 1950,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "livestream-rooms-only-while-live",
@@ -25167,9 +25167,9 @@
       "highlights": [],
       "pr": 1951,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "playermob-0-110-0",
@@ -25187,9 +25187,9 @@
       ],
       "pr": 1952,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "editor-menus-click-near-tvs",
@@ -25206,9 +25206,9 @@
       "highlights": [],
       "pr": 1953,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "mirror-largerlibrary-rooms",
@@ -25223,9 +25223,9 @@
       "highlights": [],
       "pr": 1954,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z"
     },
     {
       "id": "release-live-eye-dungeon-train-tv",
@@ -25238,9 +25238,9 @@
       "summary": "The train is now littered with TVs broadcasting Dungeon Train TV, a new livestreaming channel. Whoever finds the Live Eye and puts it on gets their run streamed to the TVs on the train, to Twitch and to the Dungeon Train website.",
       "highlights": [],
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1250.0",
+      "released_at": "2026-10-12T10:25:35Z",
       "major": true,
       "description": "The train is now littered with TVs broadcasting Dungeon Train TV, a new livestreaming channel. Sit down a while and watch, pick one up and carry it with you, or put it on your head. What's on? You are. Or at least\u2026 one of you will be.\n\nWhoever finds the Live Eye and puts it on gets their run streamed to the TVs on the train, to the new [Dungeon Train Twitch](https://twitch.tv/brennanhattongames) and to the [Dungeon Train website](https://brennan.games/dungeontrain/live). They stream until they take it off, or until the next person finds one.\n\n## Other significant updates\n\n- Some carriages now have a bed to rest in and a screen or two worth watching, and some rooms only turn up while someone is streaming.\n- Photos remember what they earned: opening one shows the advancements it earned its photographer, and the Live Gallery on the website shows them too. Photos without a Tribute fade faster.\n- A cleaner Options screen: one line per setting, with an icon, a hint and its value.\n- New dimensional carriage rooms, painting variants in the builder, library heads that look like their author, and a tidier book and quill.\n- A smoother, lighter ride: less work for the server, smoother deaths however many lives you've lived, the train ploughs through glass and leaves, and nearby terrain fills in first.\n- Bug fixes\n- Performance improvements",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/live-eye-dungeon-train-tv.jpg"
