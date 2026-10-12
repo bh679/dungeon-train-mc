@@ -25119,6 +25119,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "untracked-life-challenges",
+      "version": "0.1244.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Challenge advancements after updating mid-run",
+      "summary": "Challenge advancements no longer pop up when you load a run started on an older version.",
+      "highlights": [],
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
