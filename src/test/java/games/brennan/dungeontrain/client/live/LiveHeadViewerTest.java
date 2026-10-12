@@ -61,6 +61,16 @@ class LiveHeadViewerTest {
     }
 
     @Test
+    void bufferingDotsStepAlongAndWrap() {
+        long step = LiveHeadViewer.DOT_STEP_MS;
+        assertEquals(0, LiveHeadViewer.bufferingDot(0));
+        assertEquals(0, LiveHeadViewer.bufferingDot(step - 1));
+        assertEquals(1, LiveHeadViewer.bufferingDot(step));
+        assertEquals(2, LiveHeadViewer.bufferingDot(2 * step));
+        assertEquals(0, LiveHeadViewer.bufferingDot(3 * step), "wraps to the first dot");
+    }
+
+    @Test
     void countdownClearsOnlyOnOwnLivePicture() {
         String mine = "https://cdn/live/abc/live.m3u8";
         var own = new LiveFeedSource.Frame(LiveFeedSource.Kind.PICTURE, mine, false, -1, false);
