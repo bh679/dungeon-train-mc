@@ -73,4 +73,16 @@ final class PhotoSubjectsTest {
         assertEquals(Set.of("warden_emerging"),
                 PhotoSubjects.keys(nowhere, new PhotoSubjects.Scene(false, false, false, false, true)));
     }
+
+    @Test
+    @DisplayName("an emerging Warden counts only while half out: ticks 20 to 80 of its dig-out")
+    void wardenHalfOut() {
+        assertFalse(PhotoScene.halfOut(0), "still underground");
+        assertFalse(PhotoScene.halfOut(15), "only a hand showing");
+        assertTrue(PhotoScene.halfOut(20), "arm and tendrils up");
+        assertTrue(PhotoScene.halfOut(50));
+        assertTrue(PhotoScene.halfOut(80), "hips just leaving the ground");
+        assertFalse(PhotoScene.halfOut(85), "standing up out of the hole");
+        assertFalse(PhotoScene.halfOut(133));
+    }
 }
