@@ -25080,6 +25080,7 @@
       "released_at": null
     },
     {
+<<<<<<< HEAD
       "id": "held-carriages-stay-asleep",
       "version": "0.1243.0",
       "type": "fix",
@@ -25090,11 +25091,26 @@
       ],
       "title": "A lighter ride",
       "summary": "Riding the train now asks less of the server, with the carriages you've left behind staying quietly put.",
+=======
+      "id": "playermob-0-108-0",
+      "version": "0.1243.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Smoother deaths",
+      "summary": "Dying and abandoning a run are smoother, even after many lives.",
+>>>>>>> origin/main
       "highlights": [],
       "addresses": [
         "lag"
       ],
+<<<<<<< HEAD
       "pr": 1946,
+=======
+      "pr": 1947,
+>>>>>>> origin/main
       "date": "2026-10-12",
       "released": false,
       "released_in": null,
