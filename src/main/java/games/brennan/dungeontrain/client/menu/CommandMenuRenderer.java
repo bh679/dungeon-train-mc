@@ -85,7 +85,10 @@ public final class CommandMenuRenderer {
         // Refresh hover using the current frame's camera — between ticks
         // the crosshair keeps moving, so this keeps the highlight glued
         // to the player's aim.
-        CommandMenuRaycast.updateHovered();
+        // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
+        if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
+            CommandMenuRaycast.updateHovered();
+        }
 
         Minecraft mc = Minecraft.getInstance();
 

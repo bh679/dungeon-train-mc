@@ -413,7 +413,10 @@ public final class EditorTypeMenuRenderer {
         List<EditorTypeMenusPacket.Menu> snapshot = CACHE;
         if (snapshot.isEmpty()) return;
 
-        EditorTypeMenuRaycast.updateHovered();
+        // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
+        if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
+            EditorTypeMenuRaycast.updateHovered();
+        }
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;

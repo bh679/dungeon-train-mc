@@ -25190,6 +25190,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-menus-click-near-tvs",
+      "version": "0.1249.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Editor menus take clicks near TVs",
+      "summary": "Clicking an editor menu with a TV nearby now presses the button you're pointing at.",
+      "highlights": [],
+      "pr": 1953,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

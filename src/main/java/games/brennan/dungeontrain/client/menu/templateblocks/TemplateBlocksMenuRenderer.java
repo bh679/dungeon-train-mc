@@ -81,7 +81,10 @@ public final class TemplateBlocksMenuRenderer {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
         if (!TemplateBlocksMenu.isActiveWorldspace()) return;
 
-        TemplateBlocksMenuRaycast.updateHovered();
+        // Not inside a TV/mirror pass: Vista swaps the main camera there, so hover would be lost.
+        if (!games.brennan.dungeontrain.compat.vista.VistaRenderPass.isNestedRender()) {
+            TemplateBlocksMenuRaycast.updateHovered();
+        }
 
         Minecraft mc = Minecraft.getInstance();
         Font font = mc.font;
