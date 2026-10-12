@@ -1728,6 +1728,7 @@ public final class TrainCarriageAppender {
         LINE_FIX.clear();
         REMOTE_WAKES.clear();
         RANGE_RELOAD_ISSUED.clear();
+        HeldGroupWakeVeto.clear();
         lastSyncGenTick = Long.MIN_VALUE;
     }
 
@@ -3545,7 +3546,17 @@ public final class TrainCarriageAppender {
         // the near-player set all at once — the mass-release churn a group cap
         // caused once a long ride exceeded it.
         Set<UUID> target;
-        if (isResumeHoldActive(trainId, level.getGameTime())) {
+        boolean resumeHold = isResumeHoldActive(trainId, level.getGameTime());
+        // Tell Sable's own wake-on-chunk-load which groups this train wants this tick; one
+        // outside the window stays held until a lane asks for it (see HeldGroupWakeVeto).
+        if (playerNear && !resumeHold && nearMinPIdx <= nearMaxPIdx && !train.isEmpty()) {
+            int groupSize = train.get(0).provider().getGroupSize();
+            HeldGroupWakeVeto.record(trainId, nearMinPIdx, nearHoldTop(nearMaxPIdx, groupSize),
+                groupSize, level.getGameTime());
+        } else {
+            HeldGroupWakeVeto.forget(trainId);
+        }
+        if (resumeHold) {
             target = new HashSet<>(byId.keySet());
         } else {
             target = new HashSet<>();
