@@ -25078,6 +25078,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "playermob-0-108-0",
+      "version": "0.1243.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Smoother deaths",
+      "summary": "Dying and abandoning a run are smoother, even after many lives.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1947,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
