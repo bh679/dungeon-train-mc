@@ -77,7 +77,7 @@ final class ClientOptionsTabTest {
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(33, rows.size());
+        assertEquals(35, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -102,6 +102,8 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.OTHER_ADVANCEMENT_TABS,
                         ClientOptionsTab.Row.CINEMATIC_HOTKEY,
                         ClientOptionsTab.Row.BACKPACK_BUTTON,
+                        ClientOptionsTab.Row.BOOK_FILE_BUTTONS,
+                        ClientOptionsTab.Row.BOOK_INSERT_PAGE_BUTTON,
                         ClientOptionsTab.Row.AI_POLICY),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
@@ -154,7 +156,7 @@ final class ClientOptionsTabTest {
     void allConditions_surfaceEveryRow() {
         List<ClientOptionsTab.Row> rows = allRows(true, true, true);
 
-        assertEquals(36, rows.size());
+        assertEquals(38, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
