@@ -24,8 +24,8 @@ import java.util.List;
  *       viewers see the HUD and chat — with a preview of what they would see.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
  *       render at, plus where each of the four editor menus (X/V/C/Z) draws itself.</li>
- *   <li>{@link #PERFORMANCE} — the lag tips the death screen's bug-report card offers, checked
- *       against this player's setup, each with a button to where the setting lives.</li>
+ *   <li>{@link #PERFORMANCE} — the low-memory notice, then the lag tips the death screen's bug-report
+ *       card offers, checked against this player's setup, each with a button to where the setting lives.</li>
  * </ul>
  *
  * <p>Kept free of Minecraft types on purpose. Three rows are conditional — {@link Row#POLITICAL_FILTER}
@@ -78,29 +78,29 @@ public enum ClientOptionsTab {
     /** One row of the options screen — identity only; the screen decides what widget renders it. */
     public enum Row {
         // --- General ---
-        CONTENT_MODE,
+        CONTENT_MODE("gui.dungeontrain.options.content_mode"),
         /** Chat with the developer, both ways — the consent card's Developer chat switch (Adult only). */
-        DEV_CHAT,
+        DEV_CHAT("gui.dungeontrain.options.dev_chat"),
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
-        POLITICAL_FILTER,
-        BOOK_AUTHOR_CHAT,
+        POLITICAL_FILTER("gui.dungeontrain.political_filter.option"),
+        BOOK_AUTHOR_CHAT("gui.dungeontrain.options.book_author_chat"),
         /** "Dungeon Train X is out" chat line when a release lands mid-session. */
-        UPDATE_NOTICE_CHAT,
+        UPDATE_NOTICE_CHAT("gui.dungeontrain.options.update_notice_chat"),
         /** Once-a-session "give Minecraft more memory" boot card + chat line — see {@code LowMemoryNotice}. */
-        LOW_MEMORY_NOTICE_CHAT,
+        LOW_MEMORY_NOTICE_CHAT("gui.dungeontrain.options.low_memory_notice_chat"),
         /** Minecraft's and other mods' tabs on the advancements screen — hidden by default, see {@code AdvancementTabGate}. */
-        OTHER_ADVANCEMENT_TABS,
-        CINEMATIC_HOTKEY,
+        OTHER_ADVANCEMENT_TABS("gui.dungeontrain.options.other_advancement_tabs"),
+        CINEMATIC_HOTKEY("gui.dungeontrain.options.cinematic_hotkey"),
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
-        BACKPACK_BUTTON,
+        BACKPACK_BUTTON("gui.dungeontrain.options.backpack_button"),
         /** Scribble's save/load-book-to-file buttons on the book screen — off by default, see {@code ScribbleBookButtonsToggle}. */
-        BOOK_FILE_BUTTONS,
+        BOOK_FILE_BUTTONS("gui.dungeontrain.options.book_file_buttons"),
         /** Scribble's insert-page button on the book screen — off by default. */
-        BOOK_INSERT_PAGE_BUTTON,
+        BOOK_INSERT_PAGE_BUTTON("gui.dungeontrain.options.book_insert_page_button"),
         /** Opens the AI Policy page. Unconditional — every client can reach it. */
-        AI_POLICY,
+        AI_POLICY("gui.dungeontrain.options.ai_policy"),
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
-        TRANSLATE,
+        TRANSLATE("gui.dungeontrain.options.translate"),
 
         // --- Account ---
         /**
@@ -108,23 +108,23 @@ public enum ClientOptionsTab {
          * once linked, one toggle per kind of ping. What it shows comes from the relay at draw time
          * ({@code DiscordAccountState}), so it cannot be fixed enum rows of its own.
          */
-        DISCORD_ACCOUNT,
+        DISCORD_ACCOUNT(null),
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
-        BACKUPS,
+        BACKUPS("gui.dungeontrain.options.backups"),
         /** How many archives to keep per mod version. */
-        BACKUPS_PER_VERSION,
+        BACKUPS_PER_VERSION("gui.dungeontrain.options.backups_per_version"),
         /** Deletes every archive, in the instance and outside it. Shows the size on disk. */
-        CLEAR_BACKUPS,
+        CLEAR_BACKUPS("gui.dungeontrain.options.clear_backups"),
         /** Whether to be asked before builds the build server has lost are sent back up. */
-        CONFIRM_BUILD_RESTORE,
+        CONFIRM_BUILD_RESTORE("gui.dungeontrain.options.confirm_build_restore"),
 
         // --- Train ---
-        TRAIN_VOLUME,
-        CUSTOM_CONTENT,
-        SNAPSHOT_MAX_RES,
-        SNAPSHOT_CHAT_LOG,
+        TRAIN_VOLUME("gui.dungeontrain.options.train_volume"),
+        CUSTOM_CONTENT("gui.dungeontrain.options.custom_content"),
+        SNAPSHOT_MAX_RES("gui.dungeontrain.options.snapshot_max_res"),
+        SNAPSHOT_CHAT_LOG("gui.dungeontrain.options.snapshot_chat_log"),
         /**
          * How fast an end of the train may extend once it has fallen behind. One global value
          * in the COMMON config, so it is present at the title screen as well as in a world, and
@@ -132,32 +132,32 @@ public enum ClientOptionsTab {
          * client, where the value belongs to the server and our write would change nothing the
          * player can see — the row is absent rather than a control that lies about what it did.
          */
-        CATCH_UP_BURST,
+        CATCH_UP_BURST("gui.dungeontrain.options.catch_up_burst"),
 
         // --- Stream (the screen adds the viewer preview under these rows) ---
         /** Broadcast when the live headpiece goes on — the consent card's Livestreaming switch. */
-        LIVESTREAM,
+        LIVESTREAM("gui.dungeontrain.options.livestream"),
         /** Whether viewers see the HUD and open menus. Everyone. */
-        STREAM_GUI,
+        STREAM_GUI("gui.dungeontrain.options.stream_gui"),
         /** Whether viewers see chat. Locked off in Kid mode. */
-        STREAM_CHAT,
+        STREAM_CHAT("gui.dungeontrain.options.stream_chat"),
         /** The broadcast's picture size; the preview shows it. */
-        STREAM_SIZE,
+        STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** The live feed pinned top-right on the HUD; the preview outlines it. */
-        HEAD_VIEWER_SIZE,
+        HEAD_VIEWER_SIZE("gui.dungeontrain.options.head_viewer_size"),
 
         // --- Editor ---
-        SCALE_ALL,
-        SCALE_WORLDSPACE,
-        SCALE_HUD,
-        MENU_SPACE_COMMAND,
-        MENU_SPACE_TEMPLATE_BLOCKS,
-        MENU_SPACE_CONTAINER_CONTENTS,
-        MENU_SPACE_BLOCK_VARIANT,
+        SCALE_ALL("gui.dungeontrain.editor_settings.all_displays"),
+        SCALE_WORLDSPACE("gui.dungeontrain.editor_settings.worldspace"),
+        SCALE_HUD("gui.dungeontrain.editor_settings.hud"),
+        MENU_SPACE_COMMAND("gui.dungeontrain.editor_settings.command_menu"),
+        MENU_SPACE_TEMPLATE_BLOCKS("gui.dungeontrain.editor_settings.template_blocks_menu"),
+        MENU_SPACE_CONTAINER_CONTENTS("gui.dungeontrain.editor_settings.container_contents_menu"),
+        MENU_SPACE_BLOCK_VARIANT("gui.dungeontrain.editor_settings.block_variant_menu"),
         /** Whether the biome mods' own creative tabs are drawn. Off by default. */
-        CREATIVE_MOD_BLOCK_TABS,
+        CREATIVE_MOD_BLOCK_TABS("gui.dungeontrain.editor_settings.mod_block_tabs"),
         /** Whether those tabs' contents are listed in the creative search. Off by default. */
-        CREATIVE_MOD_BLOCKS_IN_SEARCH,
+        CREATIVE_MOD_BLOCKS_IN_SEARCH("gui.dungeontrain.editor_settings.mod_blocks_in_search"),
 
         // --- Performance ---
         /**
@@ -165,7 +165,23 @@ public enum ClientOptionsTab {
          * {@link games.brennan.dungeontrain.client.bugresponse.LagTips} tip that applies right now.
          * The tips are decided per setup at build time, so they cannot be enum rows of their own.
          */
-        PERFORMANCE_TIPS
+        PERFORMANCE_TIPS(null);
+
+        /** The lang key of this row's name, or null for a row the screen expands into several. */
+        private final String captionKey;
+
+        Row(String captionKey) {
+            this.captionKey = captionKey;
+        }
+
+        /**
+         * The lang key of the name shown beside this row's icon. {@code <key>.hint} is the one-line grey
+         * description under it; the screen decides the tooltip. Null for {@link #DISCORD_ACCOUNT} and
+         * {@link #PERFORMANCE_TIPS}, which stand for several rows.
+         */
+        public String captionKey() {
+            return captionKey;
+        }
     }
 
     /**
@@ -214,11 +230,9 @@ public enum ClientOptionsTab {
                 rows.add(Row.DEV_CHAT);
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
-                rows.add(Row.LOW_MEMORY_NOTICE_CHAT);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 rows.add(Row.BACKPACK_BUTTON);
-                // The two book-screen buttons, adjacent so they pair on one line.
                 rows.add(Row.BOOK_FILE_BUTTONS);
                 rows.add(Row.BOOK_INSERT_PAGE_BUTTON);
                 // The two rows that open a page rather than change a setting, led by the
@@ -276,7 +290,12 @@ public enum ClientOptionsTab {
                 rows.add(Row.CREATIVE_MOD_BLOCK_TABS);
                 rows.add(Row.CREATIVE_MOD_BLOCKS_IN_SEARCH);
             }
-            case PERFORMANCE -> rows.add(Row.PERFORMANCE_TIPS);
+            case PERFORMANCE -> {
+                // The one performance NOTICE sits above the tips: it is about this machine's setup,
+                // not about the client or the player, so it reads as part of this tab's subject.
+                rows.add(Row.LOW_MEMORY_NOTICE_CHAT);
+                rows.add(Row.PERFORMANCE_TIPS);
+            }
         }
         return List.copyOf(rows);
     }

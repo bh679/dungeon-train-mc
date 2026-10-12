@@ -24927,8 +24927,110 @@
       "released_at": null
     },
     {
-      "id": "live-feed-renditions",
+      "id": "live-feed-hangs-on",
       "version": "0.1233.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live Feed hangs on",
+      "summary": "TVs now find their way back when a stream drops out.",
+      "highlights": [],
+      "pr": 1936,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photo-views-tributes",
+      "version": "0.1234.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Photos fade faster without a Tribute",
+      "summary": "Found photos now fade sooner unless someone pays them Tribute.",
+      "highlights": [],
+      "pr": 1937,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "options-settings-list",
+      "version": "0.1235.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Options screen reads at a glance",
+      "summary": "Every setting in Options \u2192 Dungeon Train is now one line: an icon, its name, a short grey hint and a control that shows only its value. Hover the name for the full explanation.",
+      "highlights": [],
+      "pr": 1938,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "stream-settings-cog",
+      "version": "0.1236.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Stream settings shortcut",
+      "summary": "While you're live, a cog under the stream preview in your inventory takes you straight to the stream settings.",
+      "highlights": [],
+      "pr": 1939,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dtmodverify-store-release",
+      "version": "0.1236.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Mod verification from the stores",
+      "summary": "The mod verification companion now comes from CurseForge and Modrinth and is installed alongside Dungeon Train.",
+      "highlights": [],
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sampler-pool-lifecycle-backpressure",
+      "version": "0.1238.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Terrain fills in around you first",
+      "summary": "Distant terrain now fills in nearest you first, and leaving a world lets go of its background work straight away.",
+      "highlights": [],
+      "pr": 1941,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-renditions",
+      "version": "0.1239.0",
       "type": "perf",
       "tags": [
         "performance",

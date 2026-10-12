@@ -59,6 +59,9 @@ public final class LiveHeadViewer {
     static final long UPLOAD_SLACK_MS = 2_000;
     static final float NUMBER_SCALE = 3f;
     static final int NOISE_CELL = 3;
+    static final int DOT = 3;
+    static final int DOT_GAP = 2;
+    static final long DOT_STEP_MS = 350;
 
     private static final Component COUNTDOWN = Component.translatable("gui.dungeontrain.live.countdown");
     private static final int BORDER_COLOR = 0xFF101010;
@@ -112,10 +115,17 @@ public final class LiveHeadViewer {
         if (mc.screen == null && mc.options.hideGui) return;
         LiveFeedSource.Frame frame = LiveFeedSource.MAIN.frame(mc.player.tickCount,
             event.getPartialTick().getGameTimeDeltaPartialTick(false), false);
-        LiveRecOverlay.guiPass(g -> draw(g, frame));
+        LiveRecOverlay.guiPass(g -> {
+            draw(g, frame);
+            LiveStreamSettingsButton.draw(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(true)));
+        });
     }
 
-    /** In the inventory or chat, a left click on the box cycles its size and goes no further. */
+    /**
+     * In the inventory or chat, a left click on the box cycles its size and goes no further. While
+     * streaming, a click on the settings button under it ({@link LiveStreamSettingsButton}) opens the
+     * Stream options page instead.
+     */
     @SubscribeEvent
     public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT || !isResizeScreen(event.getScreen())) return;
@@ -123,6 +133,10 @@ public final class LiveHeadViewer {
         if (!shown(mc)) return;
         boolean streaming = LiveStreamController.get().streaming();
         Box b = layout(mc.getWindow().getGuiScaledWidth(), LiveFeedClientConfig.headViewerWidth(streaming));
+        if (streaming && LiveStreamSettingsButton.click(event.getScreen(), b, event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            return;
+        }
         if (!contains(b, event.getMouseX(), event.getMouseY())) return;
         event.setCanceled(true);
         LiveFeedClientConfig.cycleHeadViewerSize(streaming);
@@ -157,6 +171,9 @@ public final class LiveHeadViewer {
             case STATIC -> noise(g, b);
             case DOWNLOADING, WAITING -> g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + b.h(), DARK);
         }
+        if (frame.kind() == LiveFeedSource.Kind.PICTURE && frame.buffering()) {
+            bufferingMark(g, b, bufferingDot(System.currentTimeMillis()));
+        }
 
         if (streaming && !showingOwnBroadcast(frame, streamer.playlistUrl())) {
             int n = countdownSeconds(streamer.streamStartedMs(), LiveFeedClientConfig.segmentSeconds(),
@@ -188,6 +205,28 @@ public final class LiveHeadViewer {
         g.pose().scale(NUMBER_SCALE, NUMBER_SCALE, 1f);
         g.drawString(font, num, 0, 0, 0xFFFFFFFF, true);
         g.pose().popPose();
+    }
+
+    /** Which of the three buffering dots is lit at {@code nowMs}: one step every {@link #DOT_STEP_MS}. */
+    static int bufferingDot(long nowMs) {
+        return (int) Math.floorMod(nowMs / DOT_STEP_MS, 3L);
+    }
+
+    /**
+     * The picture is stalled on the next segment: three dots on a dark backing in the bottom-right
+     * corner, the lit one stepping along — the TV screens' loading overlay, drawn for the HUD.
+     */
+    private static void bufferingMark(GuiGraphics g, Box b, int lit) {
+        int pad = 2;
+        int w = 3 * DOT + 2 * DOT_GAP + 2 * pad;
+        int h = DOT + 2 * pad;
+        int x = b.x() + b.w() - w - 3;
+        int y = b.y() + b.h() - h - 3;
+        g.fill(x, y, x + w, y + h, BLACKOUT);
+        for (int i = 0; i < 3; i++) {
+            int dx = x + pad + i * (DOT + DOT_GAP);
+            g.fill(dx, y + pad, dx + DOT, y + pad + DOT, i == lit ? 0xFFFFFFFF : 0xFF707070);
+        }
     }
 
     /** Snow for a dark channel — a cheap per-frame grey speckle, not Vista's shader. */

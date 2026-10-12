@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.cheat.FreePlayText;
 import games.brennan.dungeontrain.client.bugresponse.BugIssue;
 import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
@@ -11,33 +10,33 @@ import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
-import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
-import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
-import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
-import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
-import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
-import games.brennan.dungeontrain.config.ClientDisplayConfig;
-import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
-import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.client.live.StreamPreviewWidget;
-import org.jetbrains.annotations.Nullable;
-import games.brennan.dungeontrain.train.CatchUpBurstAuto;
-import games.brennan.dungeontrain.train.CatchUpBurstMode;
-import games.brennan.dungeonbackup.client.BackupOptionsWidgets;
+import games.brennan.dungeontrain.client.localization.edit.TranslationScreen;
+import games.brennan.dungeontrain.client.localization.edit.TranslationTarget;
+import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
+import games.brennan.dungeontrain.client.sound.TrainVolumeOption;
+import games.brennan.dungeontrain.client.version.compare.VersionCompareScreen;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.ContentMode;
 import games.brennan.dungeontrain.config.CustomContentPreference;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.EditorMenuSpace;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.discord.PingType;
+import games.brennan.dungeontrain.train.CatchUpBurstAuto;
+import games.brennan.dungeontrain.train.CatchUpBurstMode;
+import games.brennan.dungeonbackup.api.BackupSettings;
+import games.brennan.dungeonbackup.client.BackupOptionsWidgets;
+import games.brennan.dungeonbackup.core.BackupArchiver;
+import games.brennan.dungeonbackup.core.BackupMode;
 import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
-import net.minecraft.client.Options;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
-import net.minecraft.client.gui.components.OptionsList;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.tabs.Tab;
 import net.minecraft.client.gui.components.tabs.TabManager;
@@ -47,10 +46,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -71,15 +69,17 @@ import java.util.function.Supplier;
  * Done tacked on after the last row. Eleven rows do not fit that way — on a small window or at GUI
  * Scale 3–4 the bottom rows <em>and the Done button</em> ran off-screen with no way to reach them.
  * The base class supplies a Done button pinned in the footer where it is always reachable, and each
- * tab owns a scrolling {@link OptionsList} sized to whatever height is left. Add rows through
+ * tab owns a scrolling {@link SettingsRowList} sized to whatever height is left. Add rows through
  * {@link ClientOptionsTab}; never position widgets by hand here again.</p>
  *
- * <p><b>Rows are packed two-across only when they actually fit.</b> A row whose widest possible label
- * would overrun a {@value #ROW_W}px column takes a full-width line to itself instead of being paired
- * and left to scroll its own caption forever — see {@link #fitsNarrow}. The measurement is done on the
- * label, before the widget is built, because a widget's width is fixed at construction.</p>
+ * <p><b>Every row is one line of the settings list:</b> an icon ({@link ClientOptionsIcons}), the
+ * setting's name, a one-line grey hint ({@code <captionKey>.hint}) and, at the right, a control that
+ * shows only its value. The rows used to be 150px buttons packed two across, each carrying its whole
+ * meaning in its own label ("Book Author Chat: OFF"); ten of those to a tab was a wall of text that
+ * had to be read before it could be scanned. The long explanation each button used to hold as its
+ * tooltip is now the whole row's tooltip.</p>
  *
- * <p><b>Every row here is localized</b> — labels and tooltips alike — and new rows must follow suit
+ * <p><b>Every row here is localized</b> — names, hints and tooltips alike — and new rows must follow suit
  * rather than reaching for {@link Component#literal}. This screen used to be plain-English literals
  * with the content-mode and Political Filter rows as localized exceptions; a screenshot of a Chinese
  * client settled it, because the exceptions are the reason the rest has to be translated too. The
@@ -90,24 +90,15 @@ import java.util.function.Supplier;
  */
 public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
-    /** One of the list's two columns. Vanilla's own small-option width. */
-    private static final int ROW_W = 150;
-    /** A full content row, for labels too long to share a line. */
-    private static final int WIDE_W = 310;
-    private static final int ROW_H = 20;
-    /** Vanilla insets its button text by 2px a side; leave a little more so nothing sits flush. */
-    private static final int TEXT_PADDING = 8;
+    private static final int ROW_W = SettingsRowList.ROW_W;
+    private static final int ROW_H = SettingsRowList.CONTROL_H;
+    private static final int CONTROL_W = SettingsRowList.CONTROL_W;
 
     /**
      * Ceiling ladder shared with the X-menu row: 0 = AUTO, then fixed long-edge caps. 720 is the rung the
      * Performance tab's "Lower resolution" sets, so it must be here or the row would misreport it as AUTO.
      */
     private static final List<Integer> RESOLUTION_VALUES = List.of(0, 720, 1080, 1440, 2160);
-
-    /** Slider bounds for "Backups per version". Kept in step with the config's own range. */
-    private static final int BACKUPS_PER_VERSION_MIN = 1;
-    private static final int BACKUPS_PER_VERSION_MAX = 20;
-
 
     private final TabManager tabManager = new TabManager(this::addRenderableWidget, this::removeWidget);
     private final List<OptionsTab> tabs = new ArrayList<>();
@@ -221,21 +212,22 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     /** One tab: a title on the bar, and its own scrolling list of rows. */
     private final class OptionsTab implements Tab {
 
-        /** Height of one packed line in an {@link OptionsList}, plus the list's top and bottom padding. */
-        private static final int LIST_LINE_H = 25;
+        /** The list's top and bottom padding around its rows. */
         private static final int LIST_PAD = 8;
         private static final int PREVIEW_MARGIN = 20;
 
         private final ClientOptionsTab id;
-        private final OptionsList list;
+        private final SettingsRowList list;
         /** Stream tab only: what viewers would see, under the rows that change it. */
         @Nullable private final StreamPreviewWidget preview;
 
         OptionsTab(ClientOptionsTab id, List<ClientOptionsTab.Row> rows) {
             this.id = id;
-            this.list = new OptionsList(DungeonTrainClientOptionsScreen.this.minecraft,
-                    DungeonTrainClientOptionsScreen.this.width, DungeonTrainClientOptionsScreen.this);
-            pack(this.list, rows);
+            this.list = new SettingsRowList(DungeonTrainClientOptionsScreen.this.minecraft,
+                    DungeonTrainClientOptionsScreen.this.width, 0, 0);
+            for (ClientOptionsTab.Row row : rows) {
+                addRow(this.list, row);
+            }
             this.preview = id == ClientOptionsTab.STREAM ? new StreamPreviewWidget() : null;
         }
 
@@ -258,7 +250,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             }
             // The list shrinks to its rows; the preview takes the rest (the widget hides itself
             // when that is too small to show a picture).
-            int listH = Math.min(rectangle.height(), this.list.children().size() * LIST_LINE_H + LIST_PAD);
+            int listH = Math.min(rectangle.height(), this.list.rowCount() * SettingsRowList.ROW_H + LIST_PAD);
             this.list.updateSizeAndPosition(rectangle.width(), listH, rectangle.top());
             this.preview.setX(rectangle.left() + PREVIEW_MARGIN);
             this.preview.setY(rectangle.top() + listH + 4);
@@ -268,54 +260,33 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /**
-     * Fills a tab's list, pairing rows two-across but only where both actually fit.
-     *
-     * <p>A wide row breaks the current pair rather than joining it, so a lone narrow row ahead of it
-     * takes the left column and the wide row starts its own line — no widget ever straddles another.</p>
+     * Adds one row of the model to a tab's list: a setting row with its icon, name, hint and control,
+     * or — for the two rows that stand for several — the expanded lines.
      */
-    private void pack(OptionsList list, List<ClientOptionsTab.Row> rows) {
-        AbstractWidget pending = null;
-        for (ClientOptionsTab.Row row : rows) {
-            if (row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
-                if (pending != null) {
-                    list.addSmall(pending, null);
-                    pending = null;
-                }
-                addPerformanceTips(list);
-                continue;
-            }
-            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT) {
-                if (pending != null) {
-                    list.addSmall(pending, null);
-                    pending = null;
-                }
-                addDiscordAccount(list);
-                continue;
-            }
-            // A group leader never shares a line with whatever came before it, so the rows that
-            // belong together read as one block instead of being split across pair boundaries.
-            if (ClientOptionsTab.startsGroup(row) && pending != null) {
-                list.addSmall(pending, null);
-                pending = null;
-            }
-            if (fitsNarrow(row)) {
-                AbstractWidget narrow = build(row, ROW_W);
-                if (pending == null) {
-                    pending = narrow;
-                } else {
-                    list.addSmall(pending, narrow);
-                    pending = null;
-                }
-            } else {
-                if (pending != null) {
-                    list.addSmall(pending, null);
-                    pending = null;
-                }
-                list.addSmall(build(row, WIDE_W), null);
+    private void addRow(SettingsRowList list, ClientOptionsTab.Row row) {
+        switch (row) {
+            case PERFORMANCE_TIPS -> addPerformanceTips(list);
+            case DISCORD_ACCOUNT -> addDiscordAccount(list);
+            default -> {
+                Setting setting = build(row);
+                list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
+                        setting.hint != null ? setting.hint : Component.translatable(row.captionKey() + ".hint"),
+                        setting.control, setting.tooltip);
             }
         }
-        if (pending != null) {
-            list.addSmall(pending, null);
+    }
+
+    /**
+     * A row's control, the explanation shown for the whole row, and — for the one row whose hint carries
+     * a live value — the hint itself; null means the row's own {@code <captionKey>.hint}.
+     */
+    private record Setting(AbstractWidget control, @Nullable Component tooltip, @Nullable Component hint) {
+        Setting(AbstractWidget control, @Nullable Component tooltip) {
+            this(control, tooltip, null);
+        }
+
+        static Setting of(AbstractWidget control, String tipKey) {
+            return new Setting(control, Component.translatable(tipKey));
         }
     }
 
@@ -330,22 +301,21 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * tip moves down to the other group; the one action that stays on this screen (lowering the photo
      * resolution) rebuilds it.</p>
      */
-    private void addPerformanceTips(OptionsList list) {
+    private void addPerformanceTips(SettingsRowList list) {
         List<LagTips.Tip> tips = LagTips.all(this);
         List<LagTips.Tip> worth = tips.stream().filter(LagTips.Tip::applies).toList();
         List<LagTips.Tip> other = tips.stream().filter(t -> !t.applies()).toList();
 
-        list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H, Component.translatable(
+        list.addWidget(caption(Component.translatable(
                 worth.isEmpty() ? "gui.dungeontrain.options.performance.none"
-                        : "gui.dungeontrain.options.performance.intro")), null);
+                        : "gui.dungeontrain.options.performance.intro")));
         for (LagTips.Tip tip : worth) {
-            list.addSmall(PerformanceTipRow.tip(this.font, WIDE_W, ROW_H, tip, this::rebuildIfShown), null);
+            list.addWidget(PerformanceTipRow.tip(this.font, ROW_W, ROW_H, tip, this::rebuildIfShown));
         }
         if (!other.isEmpty()) {
-            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
-                    Component.translatable("gui.dungeontrain.options.performance.other")), null);
+            list.addWidget(caption(Component.translatable("gui.dungeontrain.options.performance.other")));
             for (LagTips.Tip tip : other) {
-                list.addSmall(PerformanceTipRow.tip(this.font, WIDE_W, ROW_H, tip, this::rebuildIfShown), null);
+                list.addWidget(PerformanceTipRow.tip(this.font, ROW_W, ROW_H, tip, this::rebuildIfShown));
             }
         }
 
@@ -355,22 +325,22 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         boolean multiplayer = mc.level != null && !mc.hasSingleplayerServer();
         BugResponse.Result versions = BugResponseCard.decideNow(BugIssue.LAG, multiplayer);
         if (versions.behind()) {
-            list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H, BugResponseCard.outdated(versions),
+            list.addWidget(PerformanceTipRow.action(this.font, ROW_W, ROW_H, BugResponseCard.outdated(versions),
                     Component.translatable("gui.dungeontrain.bug_response.button.changes"),
-                    () -> mc.setScreen(new VersionCompareScreen(this))), null);
+                    () -> mc.setScreen(new VersionCompareScreen(this))));
         }
     }
 
     /**
      * The Account tab: the player's Discord link as the relay last reported it ({@link DiscordAccountState}).
-     * Not linked → a line saying what linking does and a Link button (the Credits link screen). Linked →
-     * the master "All Discord pings" switch, then one toggle per {@link PingType}, greyed while the master
-     * is off. Every toggle writes straight to the relay and the tab redraws from its answer, so a failed
+     * Not linked → a Link row saying what linking does (the Credits link screen). Linked → the master
+     * "All Discord pings" switch, then one row per {@link PingType}, greyed while the master is off.
+     * Every toggle writes straight to the relay and the tab redraws from its answer, so a failed
      * write puts the toggle back and says so.
      *
      * <p>The first draw asks the relay once; its answer rebuilds the screen.</p>
      */
-    private void addDiscordAccount(OptionsList list) {
+    private void addDiscordAccount(SettingsRowList list) {
         if (!this.accountRequested) {
             this.accountRequested = true;
             DiscordAccountState.refresh(this::rebuildIfShown);
@@ -381,79 +351,62 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 CommunityLinkClient.Error error = DiscordAccountState.error();
                 Component why = Component.translatable(error == CommunityLinkClient.Error.NO_CONSENT
                         ? "gui.dungeontrain.credits.link.no_consent" : "gui.dungeontrain.credits.link.failed");
-                list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H, why,
+                list.addWidget(PerformanceTipRow.action(this.font, ROW_W, ROW_H, why,
                         Component.translatable("gui.dungeontrain.options.account.retry"), () -> {
                             this.accountRequested = false;
                             DiscordAccountState.invalidate();
                             rebuildIfShown();
-                        }), null);
+                        }));
             } else {
-                list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
-                        Component.translatable("gui.dungeontrain.options.account.checking")), null);
+                list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.checking")));
             }
             return;
         }
         // Who is linked to whom: the Minecraft account signed in here, and the Discord account the
         // relay has it tied to — so a player with two Discords can see which one gets the pings.
-        // Side by side on one row: the two halves of the one link.
-        list.addSmall(PerformanceTipRow.caption(this.font, ROW_W, ROW_H, Component.translatable(
-                        "gui.dungeontrain.options.account.minecraft", this.minecraft.getUser().getName())),
-                PerformanceTipRow.caption(this.font, ROW_W, ROW_H, !status.linked()
-                        ? Component.translatable("gui.dungeontrain.options.account.discord_none")
-                        : status.discordName().isEmpty()
-                                ? Component.translatable("gui.dungeontrain.options.account.discord_linked")
-                                : Component.translatable("gui.dungeontrain.options.account.discord", status.discordName())));
+        // One line: the two halves of the one link.
+        Component discord = !status.linked()
+                ? Component.translatable("gui.dungeontrain.options.account.discord_none")
+                : status.discordName().isEmpty()
+                        ? Component.translatable("gui.dungeontrain.options.account.discord_linked")
+                        : Component.translatable("gui.dungeontrain.options.account.discord", status.discordName());
+        list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.minecraft",
+                this.minecraft.getUser().getName()).copy().append("   ").append(discord)));
         if (!status.linked()) {
-            // What linking does on its own line, then the button across the full width — the one
-            // thing to do on this tab until the account is linked.
-            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
-                    Component.translatable("gui.dungeontrain.options.account.not_linked")), null);
-            list.addSmall(withTip(Button.builder(Component.translatable("gui.dungeontrain.credits.community.link_action"),
-                                    b -> {
-                                        // Coming back re-runs init(); ask again then, so a fresh link shows at once.
-                                        this.accountRequested = false;
-                                        DiscordAccountState.invalidate();
-                                        this.minecraft.setScreen(new DiscordLinkScreen(this, null));
-                                    })
-                            .bounds(0, 0, WIDE_W, ROW_H).build(),
-                    "gui.dungeontrain.options.account.not_linked"), null);
+            // The one thing to do on this tab until the account is linked: what linking does as the
+            // hint, and the Link button as the control.
+            Component why = Component.translatable("gui.dungeontrain.options.account.not_linked");
+            Button link = Button.builder(Component.translatable("gui.dungeontrain.options.account.link"), b -> {
+                        // Coming back re-runs init(); ask again then, so a fresh link shows at once.
+                        this.accountRequested = false;
+                        DiscordAccountState.invalidate();
+                        this.minecraft.setScreen(new DiscordLinkScreen(this, null));
+                    })
+                    .bounds(0, 0, CONTROL_W, ROW_H).build();
+            list.addSetting(ClientOptionsIcons.DISCORD_LINK,
+                    Component.translatable("gui.dungeontrain.credits.community.link_action"), why,
+                    link, why);
             addDonationPrefs(list); // works without a Discord link — it is keyed by the Minecraft account
             return;
         }
-        list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
-                Component.translatable("gui.dungeontrain.options.account.linked")), null);
         if (DiscordAccountState.toggleFailed()) {
-            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
-                    Component.translatable("gui.dungeontrain.options.account.toggle_failed")), null);
+            list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.toggle_failed")));
         }
-        list.addSmall(withTip(CycleButton.onOffBuilder(status.pings())
-                        .create(0, 0, WIDE_W, ROW_H, Component.translatable("gui.dungeontrain.options.account.pings_all"),
-                                (btn, on) -> DiscordAccountState.setMaster(on, this::rebuildIfShown)),
-                "gui.dungeontrain.options.account.pings_all.tip"), null);
+        String allKey = "gui.dungeontrain.options.account.pings_all";
+        Component allTip = Component.translatable(allKey + ".tip");
+        list.addSetting(ClientOptionsIcons.PING, Component.translatable(allKey),
+                Component.translatable(allKey + ".hint"),
+                onOff(Component.translatable(allKey), status.pings(), on -> DiscordAccountState.setMaster(on, this::rebuildIfShown)),
+                allTip);
 
-        boolean narrow = true;
         for (PingType type : PingType.values()) {
-            for (Component c : onOffCandidates(pingKey(type))) {
-                if (this.font.width(c) > ROW_W - TEXT_PADDING) narrow = false;
-            }
-        }
-        AbstractWidget pending = null;
-        for (PingType type : PingType.values()) {
-            CycleButton<Boolean> toggle = CycleButton.onOffBuilder(status.types().getOrDefault(type, true))
-                    .create(0, 0, narrow ? ROW_W : WIDE_W, ROW_H, Component.translatable(pingKey(type)),
-                            (btn, on) -> DiscordAccountState.setType(type, on, this::rebuildIfShown));
+            // The tip is one short line ("Ping me when my death report is posted."), so it IS the hint.
+            Component hint = Component.translatable(pingKey(type) + ".tip");
+            CycleButton<Boolean> toggle = onOff(Component.translatable(pingKey(type)), status.types().getOrDefault(type, true),
+                    on -> DiscordAccountState.setType(type, on, this::rebuildIfShown));
             toggle.active = status.pings();
-            withTip(toggle, pingKey(type) + ".tip");
-            if (!narrow) {
-                list.addSmall(toggle, null);
-            } else if (pending == null) {
-                pending = toggle;
-            } else {
-                list.addSmall(pending, toggle);
-                pending = null;
-            }
+            list.addSetting(ClientOptionsIcons.PING, Component.translatable(pingKey(type)), hint, toggle, null);
         }
-        if (pending != null) list.addSmall(pending, null);
         addDonationPrefs(list);
     }
 
@@ -463,63 +416,49 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * is tagged. Stored on the relay ({@link DonationPrefsState}); shown linked or not, since it is keyed
      * by the Minecraft account. The tag switch greys out where it has no effect (anonymous, off).
      */
-    private void addDonationPrefs(OptionsList list) {
+    private void addDonationPrefs(SettingsRowList list) {
         if (!this.donationPrefsRequested) {
             this.donationPrefsRequested = true;
             DonationPrefsState.refresh(this::rebuildIfShown);
         }
-        list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
-                Component.translatable("gui.dungeontrain.options.account.donation.header")), null);
+        list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.donation.header")));
         DonationPrefsClient.Prefs prefs = DonationPrefsState.prefs();
         if (prefs == null) {
             if (DonationPrefsState.phase() == DonationPrefsState.Phase.FAILED) {
-                list.addSmall(PerformanceTipRow.action(this.font, WIDE_W, ROW_H,
+                list.addWidget(PerformanceTipRow.action(this.font, ROW_W, ROW_H,
                         Component.translatable("gui.dungeontrain.options.account.donation.failed"),
                         Component.translatable("gui.dungeontrain.options.account.retry"), () -> {
                             this.donationPrefsRequested = false;
                             DonationPrefsState.invalidate();
                             rebuildIfShown();
-                        }), null);
+                        }));
             } else {
-                list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
-                        Component.translatable("gui.dungeontrain.options.account.checking")), null);
+                list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.checking")));
             }
             return;
         }
         if (DonationPrefsState.saveFailed()) {
-            list.addSmall(PerformanceTipRow.caption(this.font, WIDE_W, ROW_H,
-                    Component.translatable("gui.dungeontrain.options.account.toggle_failed")), null);
+            list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.toggle_failed")));
         }
-        // Side by side when every label fits a half-width button, otherwise one per row — "Developer only"
-        // and most translations don't fit half a row.
         String visKey = "gui.dungeontrain.options.account.donation.visibility";
-        boolean narrow = true;
-        for (DonationPrefsClient.Visibility v : DonationPrefsClient.Visibility.values()) {
-            if (this.font.width(value(visKey, donationVisibilityLabel(v))) > ROW_W - TEXT_PADDING) narrow = false;
-        }
-        for (Component c : onOffCandidates("gui.dungeontrain.options.account.donation.tag")) {
-            if (this.font.width(c) > ROW_W - TEXT_PADDING) narrow = false;
-        }
-        int w = narrow ? ROW_W : WIDE_W;
         CycleButton<DonationPrefsClient.Visibility> visibility =
                 CycleButton.<DonationPrefsClient.Visibility>builder(DungeonTrainClientOptionsScreen::donationVisibilityLabel)
                         .withValues(List.of(DonationPrefsClient.Visibility.values()))
                         .withInitialValue(prefs.visibility())
-                        .withTooltip(v -> Tooltip.create(Component.translatable(donationKey(v) + ".tip")))
-                        .create(0, 0, w, ROW_H, Component.translatable(visKey),
+                        .displayOnlyValue()
+                        .create(0, 0, CONTROL_W, ROW_H, Component.translatable(visKey),
                                 (btn, v) -> DonationPrefsState.setVisibility(v, this::rebuildIfShown));
-        CycleButton<Boolean> tag = CycleButton.onOffBuilder(prefs.tag())
-                .create(0, 0, w, ROW_H, Component.translatable("gui.dungeontrain.options.account.donation.tag"),
-                        (btn, on) -> DonationPrefsState.setTag(on, this::rebuildIfShown));
+        // Explanations live on the label side of the row, never on the control.
+        list.addSetting(ClientOptionsIcons.DONATION, Component.translatable(visKey),
+                Component.translatable(visKey + ".hint"), visibility, Component.translatable(visKey + ".tip"));
+
+        String tagKey = "gui.dungeontrain.options.account.donation.tag";
+        Component tagTip = Component.translatable(tagKey + ".tip");
+        CycleButton<Boolean> tag = onOff(Component.translatable(tagKey), prefs.tag(), on -> DonationPrefsState.setTag(on, this::rebuildIfShown));
         tag.active = prefs.visibility() == DonationPrefsClient.Visibility.PUBLIC
                 || prefs.visibility() == DonationPrefsClient.Visibility.PRIVATE;
-        withTip(tag, "gui.dungeontrain.options.account.donation.tag.tip");
-        if (narrow) {
-            list.addSmall(visibility, tag);
-        } else {
-            list.addSmall(visibility, null);
-            list.addSmall(tag, null);
-        }
+        list.addSetting(ClientOptionsIcons.DONATION_TAG, Component.translatable(tagKey),
+                Component.translatable(tagKey + ".hint"), tag, tagTip);
     }
 
     private static Component donationVisibilityLabel(DonationPrefsClient.Visibility v) {
@@ -532,6 +471,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
 
     private static String pingKey(PingType type) {
         return "gui.dungeontrain.options.account.pings." + type.key();
+    }
+
+    /** A gold caption line across the row, with nothing to click. */
+    private PerformanceTipRow caption(Component text) {
+        return PerformanceTipRow.caption(this.font, ROW_W, ROW_H, text);
     }
 
     /**
@@ -552,341 +496,205 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     }
 
     /**
-     * Whether every label this row could ever display fits a {@value #ROW_W}px column.
+     * The value-only control for one row and the explanation its row shows.
      *
-     * <p>Measured across all of a cycler's values, not just its current one — otherwise a row would
-     * pair happily on AUTO and overflow the moment the player cycled it to a longer value.</p>
+     * <p>Positions are left at {@code 0,0} on purpose — the list assigns every control's real x/y as it
+     * renders, so setting them here would only be overwritten. Width is {@value #CONTROL_W}; the list
+     * enforces it.</p>
      */
-    private boolean fitsNarrow(ClientOptionsTab.Row row) {
-        // A caption spans the block it introduces; pairing it with a setting would read as a label
-        // for that setting alone.
-        if (ClientOptionsTab.isHeading(row)) {
-            return false;
-        }
-        for (Component candidate : labelCandidates(row)) {
-            if (this.font.width(candidate) > ROW_W - TEXT_PADDING) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /** Every label a row can show, composed the way its widget will compose it. */
-    private List<Component> labelCandidates(ClientOptionsTab.Row row) {
-        return switch (row) {
-            case CONTENT_MODE -> List.of(
-                    value("gui.dungeontrain.options.content_mode", contentModeLabel(ContentMode.ADULT)),
-                    value("gui.dungeontrain.options.content_mode", contentModeLabel(ContentMode.KID)));
-            case LIVESTREAM -> onOffCandidates("gui.dungeontrain.options.livestream");
-            case DEV_CHAT -> onOffCandidates("gui.dungeontrain.options.dev_chat");
-            case STREAM_GUI -> onOffCandidates("gui.dungeontrain.options.stream_gui");
-            case STREAM_CHAT -> onOffCandidates("gui.dungeontrain.options.stream_chat");
-            case STREAM_SIZE -> LiveFeedClientConfig.captureSizeValues(LiveFeedClientConfig.captureWidth()).stream()
-                    .map(w -> value("gui.dungeontrain.options.stream_size", streamSizeLabel(w)))
-                    .toList();
-            case HEAD_VIEWER_SIZE -> LiveFeedClientConfig.headViewerSizeIndexes().stream()
-                    .map(i -> value("gui.dungeontrain.options.head_viewer_size", headViewerSizeLabel(i)))
-                    .toList();
-            case POLITICAL_FILTER -> onOffCandidates("gui.dungeontrain.political_filter.option");
-            case BOOK_AUTHOR_CHAT -> onOffCandidates("gui.dungeontrain.options.book_author_chat");
-            case UPDATE_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.update_notice_chat");
-            case LOW_MEMORY_NOTICE_CHAT -> onOffCandidates("gui.dungeontrain.options.low_memory_notice_chat");
-            case OTHER_ADVANCEMENT_TABS -> onOffCandidates("gui.dungeontrain.options.other_advancement_tabs");
-            case CINEMATIC_HOTKEY -> onOffCandidates("gui.dungeontrain.options.cinematic_hotkey");
-            case SNAPSHOT_CHAT_LOG -> onOffCandidates("gui.dungeontrain.options.snapshot_chat_log");
-            case BACKPACK_BUTTON -> onOffCandidates("gui.dungeontrain.options.backpack_button");
-            case BOOK_FILE_BUTTONS -> onOffCandidates("gui.dungeontrain.options.book_file_buttons");
-            case BOOK_INSERT_PAGE_BUTTON -> onOffCandidates("gui.dungeontrain.options.book_insert_page_button");
-            // Every mode, because the row must fit its LONGEST value — the button shows the
-            // caption and the value together, and "Fill all" is not the longest in every locale.
-            // AUTO is the longest of all: it names the mode it resolved to inside its own label.
-            case CATCH_UP_BURST -> Arrays.stream(CatchUpBurstMode.values())
-                    .map(m -> value("gui.dungeontrain.options.catch_up_burst", catchUpBurstLabel(m)))
-                    .toList();
-            case AI_POLICY -> List.of(Component.translatable("gui.dungeontrain.options.ai_policy"));
-            case TRANSLATE -> List.of(Component.translatable("gui.dungeontrain.options.translate"));
-            case CUSTOM_CONTENT -> {
-                List<Component> out = new ArrayList<>();
-                for (CustomContentPreference pref : customContentValues()) {
-                    out.add(value("gui.dungeontrain.options.custom_content", customContentLabel(pref)));
-                }
-                yield out;
-            }
-            case BACKUPS_PER_VERSION -> List.of(BackupOptionsWidgets.perVersionWidestLabel());
-            case CONFIRM_BUILD_RESTORE -> onOffCandidates("gui.dungeontrain.options.confirm_build_restore");
-            // The size is read at build time, so the candidate has to stand in for the widest it
-            // could ever be rather than whatever it happens to be right now.
-            case CLEAR_BACKUPS -> List.of(BackupOptionsWidgets.clearWidestLabel());
-            case BACKUPS -> BackupOptionsWidgets.modeLabels();
-            case SNAPSHOT_MAX_RES -> {
-                List<Component> out = new ArrayList<>();
-                for (int res : RESOLUTION_VALUES) {
-                    out.add(value("gui.dungeontrain.options.snapshot_max_res", resolutionLabel(res)));
-                }
-                yield out;
-            }
-            // Sliders: the caption plus the widest value each can reach.
-            case TRAIN_VOLUME -> List.of(
-                    value("gui.dungeontrain.options.train_volume", CommonComponents.OPTION_OFF),
-                    Component.translatable("options.percent_value",
-                            Component.translatable("gui.dungeontrain.options.train_volume"), 100));
-            case SCALE_ALL -> scaleCandidates("all_displays");
-            case SCALE_WORLDSPACE -> scaleCandidates("worldspace");
-            case SCALE_HUD -> scaleCandidates("hud");
-            case MENU_SPACE_COMMAND -> menuSpaceCandidates("command_menu");
-            case MENU_SPACE_TEMPLATE_BLOCKS -> menuSpaceCandidates("template_blocks_menu");
-            case MENU_SPACE_CONTAINER_CONTENTS -> menuSpaceCandidates("container_contents_menu");
-            case MENU_SPACE_BLOCK_VARIANT -> menuSpaceCandidates("block_variant_menu");
-            case CREATIVE_MOD_BLOCK_TABS -> onOffCandidates("gui.dungeontrain.editor_settings.mod_block_tabs");
-            case CREATIVE_MOD_BLOCKS_IN_SEARCH ->
-                    onOffCandidates("gui.dungeontrain.editor_settings.mod_blocks_in_search");
-            // Never measured: pack() expands it into full-width tip rows before asking.
-            case PERFORMANCE_TIPS, DISCORD_ACCOUNT -> List.of();
-        };
-    }
-
-    /** A cycler's two states, as vanilla composes them: {@code "Caption: ON"} / {@code "Caption: OFF"}. */
-    private static List<Component> onOffCandidates(String captionKey) {
-        return List.of(value(captionKey, CommonComponents.OPTION_ON),
-                value(captionKey, CommonComponents.OPTION_OFF));
-    }
-
-    /** A menu-space cycler's two states — {@code "<menu>: Worldspace"} / {@code "…: Screenspace"}. */
-    private static List<Component> menuSpaceCandidates(String menu) {
-        String key = "gui.dungeontrain.editor_settings." + menu;
-        return List.of(value(key, menuSpaceLabel(EditorMenuSpace.WORLDSPACE)),
-                value(key, menuSpaceLabel(EditorMenuSpace.SCREENSPACE)));
-    }
-
-    /** A scale slider's widest reading — the two-digit end of the 0.2–2.0 range. */
-    private static List<Component> scaleCandidates(String channel) {
-        String key = "gui.dungeontrain.editor_settings." + channel;
-        return List.of(Component.translatable("gui.dungeontrain.options.value_row",
-                Component.translatable(key), "2.0"));
-    }
-
-    /** {@code "Caption: Value"} exactly as a {@link CycleButton} builds its own message. */
-    private static Component value(String captionKey, Component valueLabel) {
-        return Options.genericValueLabel(Component.translatable(captionKey), valueLabel);
-    }
-
-    /**
-     * The widget for one row, at the width {@link #pack} decided for it.
-     *
-     * <p>Positions are left at {@code 0,0} on purpose — {@code OptionsList} assigns every row's real
-     * x/y as it renders, so setting them here would only be overwritten.</p>
-     */
-    private AbstractWidget build(ClientOptionsTab.Row row, int width) {
+    private Setting build(ClientOptionsTab.Row row) {
+        String key = row.captionKey();
         return switch (row) {
             // Adult / Kid content mode — the second home for the choice made once on the first-launch
             // consent card, so a player who dismissed that card (or an existing install that answered
             // consent before this feature shipped, and so never sees it) can still find the setting.
             // Syncs to the server immediately so the per-player gates follow without a relog.
-            case CONTENT_MODE -> withTip(
+            // Its tooltip is the longest on the screen, and the one that most has to land: it is the
+            // only place outside the one-time card that says what Kid mode actually does, and it is
+            // where a parent comes to change it.
+            case CONTENT_MODE -> Setting.of(
                     CycleButton.<ContentMode>builder(DungeonTrainClientOptionsScreen::contentModeLabel)
                             .withValues(List.of(ContentMode.ADULT, ContentMode.KID))
                             .withInitialValue(ClientDisplayConfig.getContentMode())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.content_mode"),
-                                    (btn, mode) -> {
-                                        ClientDisplayConfig.setContentMode(mode);
-                                        ContentModeSyncClient.syncNow();
-                                    }),
-                    // The longest tooltip on the screen, and the one that most has to land: it is the
-                    // only place outside the one-time card that says what Kid mode actually does, and
-                    // it is where a parent comes to change it.
-                    "gui.dungeontrain.options.content_mode.tip");
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key), (btn, mode) -> {
+                                ClientDisplayConfig.setContentMode(mode);
+                                ContentModeSyncClient.syncNow();
+                            }),
+                    key + ".tip");
 
             // The consent card's Livestreaming switch, findable again — the card's footnote promises
             // "change anytime in options".
-            case LIVESTREAM -> withTip(
-                    CycleButton.onOffBuilder(LiveFeedClientConfig.streamingEnabled())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.livestream"),
-                                    (btn, on) -> {
-                                        LiveFeedClientConfig.setStreamingEnabled(on);
-                                        ContentModeSyncClient.syncNow();
-                                    }),
-                    "gui.dungeontrain.options.livestream.tip");
+            case LIVESTREAM -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamingEnabled(), on -> {
+                LiveFeedClientConfig.setStreamingEnabled(on);
+                ContentModeSyncClient.syncNow();
+            }), key + ".tip");
 
             // What viewers see; the preview under the rows follows both switches live.
-            case STREAM_GUI -> withTip(
-                    CycleButton.onOffBuilder(LiveFeedClientConfig.streamGui())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.stream_gui"),
-                                    (btn, on) -> LiveFeedClientConfig.setStreamGui(on)),
-                    "gui.dungeontrain.options.stream_gui.tip");
+            case STREAM_GUI -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamGui(), LiveFeedClientConfig::setStreamGui),
+                    key + ".tip");
 
             // Kid mode never streams chat: the switch shows Off and is greyed, whatever is stored.
             case STREAM_CHAT -> {
                 boolean kid = ClientDisplayConfig.isKidMode();
-                CycleButton<Boolean> streamChat = CycleButton.onOffBuilder(!kid && LiveFeedClientConfig.streamChat())
-                        .create(0, 0, width, ROW_H,
-                                Component.translatable("gui.dungeontrain.options.stream_chat"),
-                                (btn, on) -> LiveFeedClientConfig.setStreamChat(on));
+                CycleButton<Boolean> streamChat = onOff(Component.translatable(key), !kid && LiveFeedClientConfig.streamChat(),
+                        LiveFeedClientConfig::setStreamChat);
                 streamChat.active = !kid;
-                yield withTip(streamChat, kid ? "gui.dungeontrain.options.stream_chat.kid_tip"
-                                              : "gui.dungeontrain.options.stream_chat.tip");
+                yield Setting.of(streamChat, kid ? key + ".kid_tip" : key + ".tip");
             }
 
             // Broadcast width; the preview re-captures at it on the next frame.
             case STREAM_SIZE -> {
                 int current = LiveFeedClientConfig.captureWidth();
-                yield withTip(
+                yield Setting.of(
                         CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::streamSizeLabel)
                                 .withValues(LiveFeedClientConfig.captureSizeValues(current))
                                 .withInitialValue(current)
-                                .create(0, 0, width, ROW_H,
-                                        Component.translatable("gui.dungeontrain.options.stream_size"),
+                                .displayOnlyValue()
+                                .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                         (btn, w) -> LiveFeedClientConfig.setCaptureWidth(w)),
-                        "gui.dungeontrain.options.stream_size.tip");
+                        key + ".tip");
             }
 
             // The pinned top-right feed; the preview outlines it at the chosen size.
-            case HEAD_VIEWER_SIZE -> withTip(
+            case HEAD_VIEWER_SIZE -> Setting.of(
                     CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::headViewerSizeLabel)
                             .withValues(LiveFeedClientConfig.headViewerSizeIndexes())
                             .withInitialValue(LiveFeedClientConfig.headViewerSize(false))
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.head_viewer_size"),
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                     (btn, i) -> LiveFeedClientConfig.setHeadViewerSize(i)),
-                    "gui.dungeontrain.options.head_viewer_size.tip");
+                    key + ".tip");
 
             // The consent card's Developer chat switch. Inert (greyed) in Kid mode, where the Kid rule
             // keeps developer chat off whatever this says; flipping it re-syncs the inbound gate.
             case DEV_CHAT -> {
-                CycleButton<Boolean> devChat = CycleButton.onOffBuilder(ClientDisplayConfig.isDevChatEnabled())
-                        .create(0, 0, width, ROW_H,
-                                Component.translatable("gui.dungeontrain.options.dev_chat"),
-                                (btn, on) -> {
-                                    ClientDisplayConfig.setDevChatEnabled(on);
-                                    DevMessageConsentClient.resync();
-                                });
+                CycleButton<Boolean> devChat = onOff(Component.translatable(key), ClientDisplayConfig.isDevChatEnabled(), on -> {
+                    ClientDisplayConfig.setDevChatEnabled(on);
+                    DevMessageConsentClient.resync();
+                });
                 devChat.active = !ClientDisplayConfig.isKidMode();
-                yield withTip(devChat, "gui.dungeontrain.options.dev_chat.tip");
+                yield Setting.of(devChat, key + ".tip");
             }
 
             // Offered only where it is a live concern (Chinese-language clients), so the row is absent
             // rather than merely inert for everyone else. Translated; see the class javadoc.
-            case POLITICAL_FILTER -> withTip(
-                    CycleButton.onOffBuilder(PoliticalFilterPrefs.isEnabled())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.political_filter.option"),
-                                    (btn, on) -> PoliticalFilterPrefs.answer(on)),
-                    "gui.dungeontrain.political_filter.option.tooltip");
+            case POLITICAL_FILTER -> Setting.of(onOff(Component.translatable(key), PoliticalFilterPrefs.isEnabled(), PoliticalFilterPrefs::answer),
+                    key + ".tooltip");
 
             // "The book by X burns" as each DT book catches fire.
-            case BOOK_AUTHOR_CHAT -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isBookAuthorBurnChatEnabled())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.book_author_chat"),
-                                    (btn, on) -> ClientDisplayConfig.setBookAuthorBurnChat(on)),
-                    "gui.dungeontrain.options.book_author_chat.tip");
+            case BOOK_AUTHOR_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isBookAuthorBurnChatEnabled(),
+                    ClientDisplayConfig::setBookAuthorBurnChat), key + ".tip");
 
             // "Dungeon Train X is out" when a real release lands mid-session.
-            case UPDATE_NOTICE_CHAT -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isUpdateNoticeChatEnabled())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.update_notice_chat"),
-                                    (btn, on) -> ClientDisplayConfig.setUpdateNoticeChat(on)),
-                    "gui.dungeontrain.options.update_notice_chat.tip");
+            case UPDATE_NOTICE_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isUpdateNoticeChatEnabled(),
+                    ClientDisplayConfig::setUpdateNoticeChat), key + ".tip");
 
             // "Minecraft only has N GB of memory" — title-screen card + chat line, once a session each.
-            case LOW_MEMORY_NOTICE_CHAT -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isLowMemoryNoticeChatEnabled())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.low_memory_notice_chat"),
-                                    (btn, on) -> ClientDisplayConfig.setLowMemoryNoticeChat(on)),
-                    "gui.dungeontrain.options.low_memory_notice_chat.tip");
+            case LOW_MEMORY_NOTICE_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isLowMemoryNoticeChatEnabled(),
+                    ClientDisplayConfig::setLowMemoryNoticeChat), key + ".tip");
 
             // Minecraft's and other mods' advancement tabs. ON shows them; the config stores the inverse
             // (hideOtherTabs) because hiding is the default.
-            case OTHER_ADVANCEMENT_TABS -> withTip(
-                    CycleButton.onOffBuilder(!ClientDisplayConfig.isHideOtherAdvancementTabs())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.other_advancement_tabs"),
-                                    (btn, on) -> ClientDisplayConfig.setHideOtherAdvancementTabs(!on)),
-                    "gui.dungeontrain.options.other_advancement_tabs.tip");
+            case OTHER_ADVANCEMENT_TABS -> Setting.of(onOff(Component.translatable(key), !ClientDisplayConfig.isHideOtherAdvancementTabs(),
+                    on -> ClientDisplayConfig.setHideOtherAdvancementTabs(!on)), key + ".tip");
 
             // How fast the train may re-extend once an end has fallen behind the carriages a nearby
             // player needs. One global value, not a per-world one — set it here or at the title
             // screen and every world follows. Applies live to the train already running: the
             // appender reads it at the moment it decides each spawn, so nothing waits on a reload.
-            case CATCH_UP_BURST -> withTip(
+            case CATCH_UP_BURST -> Setting.of(
                     CycleButton.<CatchUpBurstMode>builder(DungeonTrainClientOptionsScreen::catchUpBurstLabel)
                             .withValues(CatchUpBurstMode.values())
                             .withInitialValue(DungeonTrainCommonConfig.getCatchUpBurstMode())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.catch_up_burst"),
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                     (btn, mode) -> DungeonTrainCommonConfig.setCatchUpBurstMode(mode)),
-                    "gui.dungeontrain.options.catch_up_burst.tip");
+                    key + ".tip");
 
             // The binding itself lives in vanilla Controls (Dungeon Train category); this only decides
             // whether it does anything, so a player who wants the key back for something else can free
             // it without hunting through the keybind list.
-            case CINEMATIC_HOTKEY -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isCinematicHotkeyEnabled())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.cinematic_hotkey"),
-                                    (btn, on) -> ClientDisplayConfig.setCinematicHotkeyEnabled(on)),
-                    "gui.dungeontrain.options.cinematic_hotkey.tip");
+            case CINEMATIC_HOTKEY -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isCinematicHotkeyEnabled(),
+                    ClientDisplayConfig::setCinematicHotkeyEnabled), key + ".tip");
+
             // Scribble's book-screen buttons. Applied when the book is next opened —
             // ScribbleBookButtonsToggle reads these in ScreenEvent.Init.Post.
-            case BOOK_FILE_BUTTONS -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isScribbleFileButtonsVisible())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.book_file_buttons"),
-                                    (btn, on) -> ClientDisplayConfig.setScribbleFileButtonsVisible(on)),
-                    "gui.dungeontrain.options.book_file_buttons.tip");
-            case BOOK_INSERT_PAGE_BUTTON -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isScribbleInsertPageButtonVisible())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.book_insert_page_button"),
-                                    (btn, on) -> ClientDisplayConfig.setScribbleInsertPageButtonVisible(on)),
-                    "gui.dungeontrain.options.book_insert_page_button.tip");
+            case BOOK_FILE_BUTTONS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isScribbleFileButtonsVisible(),
+                    ClientDisplayConfig::setScribbleFileButtonsVisible), key + ".tip");
+            case BOOK_INSERT_PAGE_BUTTON -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isScribbleInsertPageButtonVisible(),
+                    ClientDisplayConfig::setScribbleInsertPageButtonVisible), key + ".tip");
 
             // "Was any of this made by AI?" answered in full. Unconditional, and deliberately a
             // page rather than a tooltip: the honest answer is longer than a row can carry. Also
             // reachable from the Credits page — see AiPolicyScreen.
-            case AI_POLICY -> withTip(
-                    Button.builder(Component.translatable("gui.dungeontrain.options.ai_policy"),
-                                    b -> this.minecraft.setScreen(new AiPolicyScreen(this)))
-                            .bounds(0, 0, width, ROW_H).build(),
-                    "gui.dungeontrain.options.ai_policy.tip");
+            case AI_POLICY -> Setting.of(open(() -> this.minecraft.setScreen(new AiPolicyScreen(this))), key + ".tip");
 
             // Shown only when there is a language to edit — on en_us in a release build there is none
             // and the row would be a dead end; a dev build points it at the dev target instead, so the
             // editor stays testable with the UI still in English.
-            case TRANSLATE -> withTip(
-                    Button.builder(Component.translatable("gui.dungeontrain.options.translate"),
-                                    b -> this.minecraft.setScreen(
-                                            new TranslationScreen(this, this.translateTarget)))
-                            .bounds(0, 0, width, ROW_H).build(),
-                    "gui.dungeontrain.options.translate.tip");
+            case TRANSLATE -> Setting.of(open(() -> this.minecraft.setScreen(
+                    new TranslationScreen(this, this.translateTarget))), key + ".tip");
 
-            // Literally the same widget vanilla's Music & Sounds screen carries (put there by
+            // Literally the same control vanilla's Music & Sounds screen carries (put there by
             // SoundOptionsScreenTrainVolumeMixin) — one OptionInstance definition over one config
             // accessor, so a player who came looking here rather than there finds the same control at
-            // the same value. Its tooltip is baked into the option, not set here.
-            case TRAIN_VOLUME -> slider(TrainVolumeOption.forModScreen(), width);
+            // the same value. The slider carries the sound screen's long tooltip; the row has its own short one.
+            case TRAIN_VOLUME -> Setting.of(slider(TrainVolumeOption.valueOnly()), key + ".tip");
 
             // The standing answer to the start-of-world prompt shown when the player has Train Editor
             // edits or an imported dtpack. This is the "can be changed in options" half of that
             // prompt's "Remember decision" checkbox.
-            case CUSTOM_CONTENT -> withTip(
-                    CycleButton.<CustomContentPreference>builder(
-                                    DungeonTrainClientOptionsScreen::customContentLabel)
+            case CUSTOM_CONTENT -> new Setting(
+                    CycleButton.<CustomContentPreference>builder(DungeonTrainClientOptionsScreen::customContentLabel)
                             .withValues(customContentValues())
                             .withInitialValue(customContentInitial())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.custom_content"),
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                     (btn, pref) -> ClientDisplayConfig.setCustomContentPreference(pref)),
-                    FreePlayText.withExplanation("gui.dungeontrain.options.custom_content.tip"));
+                    Component.translatable(key + ".tip"));
 
-            // The three backup controls are Dungeon Backup's: it owns the setting
-            // (config/dungeonbackup-client.toml) and the archives, so it builds the widgets; this
-            // screen only hosts them on the Backups tab.
-            case BACKUPS -> BackupOptionsWidgets.modeButton(width, ROW_H);
+            // The three backup settings are Dungeon Backup's: it owns the setting
+            // (config/dungeonbackup-client.toml) and the archives. Its own widgets carry their caption
+            // in the label, so the value-only controls are built here over its public BackupSettings,
+            // with its labels and tips. Per-value tips: "Instanced" means nothing on its own, and the
+            // whole point of the setting is the difference in what each option survives.
+            case BACKUPS -> {
+                CycleButton<BackupMode> mode = CycleButton.<BackupMode>builder(BackupOptionsWidgets::modeLabel)
+                        .withValues(List.of(BackupMode.EXTERNAL, BackupMode.INSTANCE, BackupMode.OFF))
+                        .withInitialValue(BackupSettings.storedMode())
+                        .displayOnlyValue()
+                        .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key), (btn, value) -> {
+                            BackupSettings.setMode(value);
+                            rebuildIfShown(); // the label's explanation is per value
+                        });
+                if (BackupSettings.isOverridden()) {
+                    mode.active = false;
+                    mode.setTooltip(Tooltip.create(Component.translatable(BackupOptionsWidgets.KEY_MODE + ".overridden",
+                            BackupSettings.operatorOverride().name().toLowerCase(Locale.ROOT))));
+                }
+                // The label carries the current mode's own explanation (Dungeon Backup's per-value tip).
+                yield new Setting(mode, Component.translatable(BackupOptionsWidgets.KEY_MODE + "."
+                        + BackupSettings.storedMode().name().toLowerCase(Locale.ROOT) + ".tip"));
+            }
+            case BACKUPS_PER_VERSION -> Setting.of(slider(backupsPerVersionOption()), key + ".tip");
+
+            // The label carries the size on disk, so after a clear the widgets are rebuilt —
+            // rebuildWidgets() is what re-runs init(); merely returning to the screen only
+            // repositions it and the button would keep reporting the space it just freed.
+            case CLEAR_BACKUPS -> {
+                // Dungeon Backup's button puts the size in its label; here the control is one verb and
+                // the size is the hint, so the label fits the value column.
+                Button clear = BackupOptionsWidgets.clearButton(CONTROL_W, ROW_H, this, this::rebuildWidgets);
+                clear.setMessage(Component.translatable("gui.dungeontrain.options.clear"));
+                yield new Setting(clear, Component.translatable(key + ".tip"),
+                        Component.translatable(key + ".hint", BackupArchiver.formatBytes(BackupSettings.totalSize())));
+            }
+
+            // Off by default: a restore is the same upload the build's next save would have made, so
+            // there is normally nothing to decide. On, it shows the title-screen card instead.
+            case CONFIRM_BUILD_RESTORE -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isConfirmBuildRestore(),
+                    ClientDisplayConfig::setConfirmBuildRestore), key + ".tip");
 
             // The bundled Edible Backpacks' open/close button on the survival inventory screen.
             // Reads and writes EB's OWN client config rather than mirroring it into
@@ -894,94 +702,71 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // (it also carries the anchor and custom x/y this row deliberately does not expose),
             // and EB re-reads the value every frame, so the change lands without reopening the
             // inventory. Turning it off is safe — EB's keybind still opens the panels.
-            case BACKPACK_BUTTON -> withTip(
-                    CycleButton.onOffBuilder(EBClientConfig.buttonEnabled())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.backpack_button"),
-                                    (btn, on) -> setBackpackButtonEnabled(on)),
-                    "gui.dungeontrain.options.backpack_button.tip");
-            case BACKUPS_PER_VERSION -> BackupOptionsWidgets.perVersionSlider(width);
-
-            // Off by default: a restore is the same upload the build's next save would have made, so
-            // there is normally nothing to decide. On, it shows the title-screen card instead.
-            case CONFIRM_BUILD_RESTORE -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isConfirmBuildRestore())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.confirm_build_restore"),
-                                    (btn, on) -> ClientDisplayConfig.setConfirmBuildRestore(on)),
-                    "gui.dungeontrain.options.confirm_build_restore.tip");
-
-            // The label carries the size on disk, so after a clear the widgets are rebuilt —
-            // rebuildWidgets() is what re-runs init(); merely returning to the screen only
-            // repositions it and the button would keep reporting the space it just freed.
-            case CLEAR_BACKUPS -> BackupOptionsWidgets.clearButton(width, ROW_H, this, this::rebuildWidgets);
+            case BACKPACK_BUTTON -> Setting.of(onOff(Component.translatable(key), EBClientConfig.buttonEnabled(),
+                    DungeonTrainClientOptionsScreen::setBackpackButtonEnabled), key + ".tip");
 
             // Snapshot max resolution ceiling (0 = AUTO).
             case SNAPSHOT_MAX_RES -> {
                 int currentRes = ClientDisplayConfig.getRideSnapshotMaxResolution();
-                yield withTip(
+                yield Setting.of(
                         CycleButton.<Integer>builder(DungeonTrainClientOptionsScreen::resolutionLabel)
                                 .withValues(resolutionValues(currentRes))
                                 .withInitialValue(Math.max(0, currentRes))
-                                .create(0, 0, width, ROW_H,
-                                        Component.translatable("gui.dungeontrain.options.snapshot_max_res"),
+                                .displayOnlyValue()
+                                .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
                                         (btn, val) -> ClientDisplayConfig.setRideSnapshotMaxResolution(val)),
-                        "gui.dungeontrain.options.snapshot_max_res.tip");
+                        key + ".tip");
             }
 
-            case SNAPSHOT_CHAT_LOG -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isRideSnapshotChatLogEnabled())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.options.snapshot_chat_log"),
-                                    (btn, on) -> ClientDisplayConfig.setRideSnapshotChatLog(on)),
-                    "gui.dungeontrain.options.snapshot_chat_log.tip");
+            case SNAPSHOT_CHAT_LOG -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isRideSnapshotChatLogEnabled(),
+                    ClientDisplayConfig::setRideSnapshotChatLog), key + ".tip");
 
             // The three display-scale channels, inlined here rather than behind a sub-screen button.
-            // Their tooltips are baked into the options, not set here.
-            case SCALE_ALL -> slider(DisplayScaleOption.allDisplays(), width);
-            case SCALE_WORLDSPACE -> slider(DisplayScaleOption.worldspace(), width);
-            case SCALE_HUD -> slider(DisplayScaleOption.hud(), width);
+            // Their tooltips are baked into the options; the rows repeat them.
+            case SCALE_ALL -> Setting.of(slider(DisplayScaleOption.allDisplaysValueOnly()), key + ".tip");
+            case SCALE_WORLDSPACE -> Setting.of(slider(DisplayScaleOption.worldspaceValueOnly()), key + ".tip");
+            case SCALE_HUD -> Setting.of(slider(DisplayScaleOption.hudValueOnly()), key + ".tip");
 
             // Where each of the four editor menus (X/V/C/Z) draws itself — worldspace panel aimed by
             // the camera, or a screenspace window pointed at with a free mouse cursor. Same accessors
             // and lang keys the deleted DungeonTrainEditorSettingsScreen used; only the row's home moved.
-            case MENU_SPACE_COMMAND -> menuSpaceRow("command_menu",
-                    ClientDisplayConfig::getCommandMenuSpace, ClientDisplayConfig::setCommandMenuSpace, width);
-            case MENU_SPACE_TEMPLATE_BLOCKS -> menuSpaceRow("template_blocks_menu",
-                    ClientDisplayConfig::getTemplateBlocksMenuSpace,
-                    ClientDisplayConfig::setTemplateBlocksMenuSpace, width);
-            case MENU_SPACE_CONTAINER_CONTENTS -> menuSpaceRow("container_contents_menu",
-                    ClientDisplayConfig::getContainerContentsMenuSpace,
-                    ClientDisplayConfig::setContainerContentsMenuSpace, width);
-            case MENU_SPACE_BLOCK_VARIANT -> menuSpaceRow("block_variant_menu",
-                    ClientDisplayConfig::getBlockVariantMenuSpace,
-                    ClientDisplayConfig::setBlockVariantMenuSpace, width);
+            case MENU_SPACE_COMMAND -> menuSpace(key,
+                    ClientDisplayConfig::getCommandMenuSpace, ClientDisplayConfig::setCommandMenuSpace);
+            case MENU_SPACE_TEMPLATE_BLOCKS -> menuSpace(key,
+                    ClientDisplayConfig::getTemplateBlocksMenuSpace, ClientDisplayConfig::setTemplateBlocksMenuSpace);
+            case MENU_SPACE_CONTAINER_CONTENTS -> menuSpace(key,
+                    ClientDisplayConfig::getContainerContentsMenuSpace, ClientDisplayConfig::setContainerContentsMenuSpace);
+            case MENU_SPACE_BLOCK_VARIANT -> menuSpace(key,
+                    ClientDisplayConfig::getBlockVariantMenuSpace, ClientDisplayConfig::setBlockVariantMenuSpace);
 
             // The biome mods' creative tabs and their search entries, both hidden by default. The
             // tabs are rebuilt on the spot so the change shows without a relog.
-            case CREATIVE_MOD_BLOCK_TABS -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isCreativeModBlockTabs())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.editor_settings.mod_block_tabs"),
-                                    (btn, on) -> {
-                                        ClientDisplayConfig.setCreativeModBlockTabs(on);
-                                        CreativeTabRefresh.rebuild();
-                                    }),
-                    "gui.dungeontrain.editor_settings.mod_block_tabs.tip");
-            case CREATIVE_MOD_BLOCKS_IN_SEARCH -> withTip(
-                    CycleButton.onOffBuilder(ClientDisplayConfig.isCreativeModBlocksInSearch())
-                            .create(0, 0, width, ROW_H,
-                                    Component.translatable("gui.dungeontrain.editor_settings.mod_blocks_in_search"),
-                                    (btn, on) -> {
-                                        ClientDisplayConfig.setCreativeModBlocksInSearch(on);
-                                        CreativeTabRefresh.rebuild();
-                                    }),
-                    "gui.dungeontrain.editor_settings.mod_blocks_in_search.tip");
+            case CREATIVE_MOD_BLOCK_TABS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isCreativeModBlockTabs(), on -> {
+                ClientDisplayConfig.setCreativeModBlockTabs(on);
+                CreativeTabRefresh.rebuild();
+            }), key + ".tip");
+            case CREATIVE_MOD_BLOCKS_IN_SEARCH -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isCreativeModBlocksInSearch(), on -> {
+                ClientDisplayConfig.setCreativeModBlocksInSearch(on);
+                CreativeTabRefresh.rebuild();
+            }), key + ".tip");
 
-            // Expanded by pack() into several rows; there is no single widget for it.
-            case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is packed, not built");
-            case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is packed, not built");
+            // Expanded by addRow() into several rows; there is no single control for them.
+            case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is expanded, not built");
+            case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is expanded, not built");
         };
+    }
+
+    /** An {@code ON} / {@code OFF} control showing only its state; {@code name} is what narration calls it. */
+    private static CycleButton<Boolean> onOff(Component name, boolean initial, Consumer<Boolean> set) {
+        return CycleButton.onOffBuilder(initial)
+                .displayOnlyValue()
+                .create(0, 0, CONTROL_W, ROW_H, name, (btn, on) -> set.accept(on));
+    }
+
+    /** The control of a row that opens a page rather than changing a setting: one verb, "Open". */
+    private static Button open(Runnable action) {
+        return Button.builder(Component.translatable("gui.dungeontrain.options.open"), b -> action.run())
+                .bounds(0, 0, CONTROL_W, ROW_H).build();
     }
 
     /**
@@ -1000,19 +785,35 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         EBClientConfig.SPEC.save();
     }
 
-    private AbstractWidget slider(OptionInstance<Integer> option, int width) {
-        return option.createButton(this.minecraft.options, 0, 0, width);
+    private AbstractWidget slider(OptionInstance<Integer> option) {
+        return option.createButton(this.minecraft.options, 0, 0, CONTROL_W);
     }
 
-    /** A {@code [label: Worldspace|Screenspace]} cycle row for one editor menu. */
-    private AbstractWidget menuSpaceRow(String menu, Supplier<EditorMenuSpace> get,
-            Consumer<EditorMenuSpace> set, int width) {
-        String key = "gui.dungeontrain.editor_settings." + menu;
-        return withTip(
+    /**
+     * Dungeon Backup's "Backups per version" slider showing only its number: the same stored value
+     * and the same commit ({@link BackupSettings#setPerVersion}) as its own
+     * {@link BackupOptionsWidgets#perVersionOption}, whose label carries the caption.
+     */
+    private static OptionInstance<Integer> backupsPerVersionOption() {
+        int initial = Math.max(BackupSettings.PER_VERSION_MIN,
+                Math.min(BackupSettings.PER_VERSION_MAX, BackupSettings.perVersion()));
+        return new OptionInstance<>(
+                BackupOptionsWidgets.KEY_PER_VERSION,
+                OptionInstance.noTooltip(),
+                (caption, value) -> Component.literal(Integer.toString(value)), // a count, not prose
+                new OptionInstance.IntRange(BackupSettings.PER_VERSION_MIN, BackupSettings.PER_VERSION_MAX),
+                initial,
+                BackupSettings::setPerVersion);
+    }
+
+    /** A {@code Worldspace} / {@code Screenspace} control for one editor menu. */
+    private Setting menuSpace(String key, Supplier<EditorMenuSpace> get, Consumer<EditorMenuSpace> set) {
+        return Setting.of(
                 CycleButton.<EditorMenuSpace>builder(DungeonTrainClientOptionsScreen::menuSpaceLabel)
                         .withValues(EditorMenuSpace.values())
                         .withInitialValue(get.get())
-                        .create(0, 0, width, ROW_H, Component.translatable(key), (btn, val) -> set.accept(val)),
+                        .displayOnlyValue()
+                        .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key), (btn, val) -> set.accept(val)),
                 key + ".tip");
     }
 
@@ -1034,15 +835,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         }
         return Component.translatable("gui.dungeontrain.options.catch_up_burst."
                 + mode.name().toLowerCase(Locale.ROOT));
-    }
-
-    private static <T extends AbstractWidget> T withTip(T widget, String key) {
-        return withTip(widget, Component.translatable(key));
-    }
-
-    private static <T extends AbstractWidget> T withTip(T widget, Component tip) {
-        widget.setTooltip(Tooltip.create(tip));
-        return widget;
     }
 
     /**
@@ -1075,7 +867,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 : Component.literal(value + "p"); // "1080p" — a unit, not prose
     }
 
-    /** ASK / CONTINUE / DISABLE, each with its own translated label. */
     /**
      * The standing answers on offer. The dev waiver is listed on dev builds only — a release
      * build neither shows nor honours it.

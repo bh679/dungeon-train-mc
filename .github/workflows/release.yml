@@ -306,6 +306,7 @@ jobs:
             dungeon-train-backup(required)
             sable-fence-trapdoor-fix(required)
             stream-detect(required)
+            dungeon-train-mod-verification(required)
             dpi-bypass-detect(required)
             pigman-villagers(required)
             lost-city-terrain-fit-wwoo-and-vanilla(required)
