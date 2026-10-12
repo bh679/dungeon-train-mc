@@ -25260,9 +25260,9 @@
       "highlights": [],
       "pr": 1956,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
     },
     {
       "id": "stream-name-tag",
@@ -25277,9 +25277,9 @@
       "highlights": [],
       "pr": 1959,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
     },
     {
       "id": "livestream-ended-popup",
@@ -25294,9 +25294,9 @@
       "highlights": [],
       "pr": 1960,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
     },
     {
       "id": "dh-333-tv-crash",
@@ -25311,9 +25311,9 @@
       "highlights": [],
       "pr": 1961,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
     },
     {
       "id": "darkroom-on-air",
