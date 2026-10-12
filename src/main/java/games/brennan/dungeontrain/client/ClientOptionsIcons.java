@@ -76,6 +76,7 @@ final class ClientOptionsIcons {
             case STREAM_GUI -> Icon.item(Items.ITEM_FRAME);
             case STREAM_CHAT -> Icon.item(Items.OAK_SIGN);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
+            case LIVE_CHAT -> Icon.item(Items.BELL);
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
 

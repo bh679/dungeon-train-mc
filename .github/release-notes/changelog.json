@@ -25331,6 +25331,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-discord-chat",
+      "version": "0.1257.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live chat from Discord",
+      "summary": "While a stream is on, the streamer and anyone wearing a TV now see the Discord live chat in their own chat and can talk back from in-game. Switch it in Options \u2192 Stream \u2192 Live chat.",
+      "highlights": [],
+      "pr": 1964,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
