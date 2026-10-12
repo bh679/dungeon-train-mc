@@ -338,6 +338,7 @@
   "gui.dungeontrain.viewfinder.front": "Вперед",
   "gui.dungeontrain.live.badge": "В ЕФІРІ",
   "gui.dungeontrain.live.countdown": "Ефір через",
+  "gui.dungeontrain.live.stream_settings": "Налаштування трансляції",
   "gui.dungeontrain.live.viewer_on": "Вікно ефіру увімкнено",
   "gui.dungeontrain.live.viewer_off": "Вікно ефіру вимкнено",
   "gui.dungeontrain.loading.title": "Завантажуємо світ...",

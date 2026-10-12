@@ -24980,6 +24980,23 @@
       "released_at": null
     },
     {
+      "id": "stream-settings-cog",
+      "version": "0.1236.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Stream settings shortcut",
+      "summary": "While you're live, a cog under the stream preview in your inventory takes you straight to the stream settings.",
+      "highlights": [],
+      "pr": 1939,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "sampler-pool-lifecycle-backpressure",
       "version": "0.1236.0",
       "type": "perf",
