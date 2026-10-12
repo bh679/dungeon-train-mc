@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.vista.LiveTvWeighting;
 import games.brennan.dungeontrain.editor.CarriageContentsGroupStore;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageVariantContentsAllowStore;
@@ -245,7 +246,7 @@ public final class CarriageContentsRegistry {
         if (ctx.fallbackToDefault) {
             return CarriageContents.of(ContentsType.DEFAULT);
         }
-        return resolveGroup(ctx.picked, ctx.parentRng, safeAllow, gateCtx);
+        return resolveGroup(ctx.picked, ctx.parentRng, safeAllow, gateCtx, carriageIndex);
     }
 
     /**
@@ -332,7 +333,8 @@ public final class CarriageContentsRegistry {
         int[] cumulative = new int[m];
         int total = 0;
         for (int i = 0; i < m; i++) {
-            total += weights.weightFor(effective.get(i).id());
+            String id = effective.get(i).id();
+            total += LiveTvWeighting.contentsWeight(id, weights.weightFor(id), carriageIndex);
             cumulative[i] = total;
         }
         long seed = worldSeed ^ ((long) carriageIndex * 0x9E3779B97F4A7C15L);
@@ -370,6 +372,14 @@ public final class CarriageContentsRegistry {
     /** Sentinel id used internally to mark the synthetic-self entry in the resolution pool. */
     private static final String SELF_TOKEN = "<self>";
 
+    /** A group draw that belongs to no carriage — its weights are never live-TV adjusted. */
+    private static final int NO_CARRIAGE = Integer.MIN_VALUE;
+
+    /** A group entry's weight, live-TV adjusted for the carriage it is drawn for ({@link LiveTvWeighting}). */
+    private static int groupWeight(String contentsId, int weight, int carriageIndex) {
+        return carriageIndex == NO_CARRIAGE ? weight : LiveTvWeighting.contentsWeight(contentsId, weight, carriageIndex);
+    }
+
     /**
      * Draw a sub-variant of a parent that is already known, rather than one that was just picked.
      *
@@ -388,7 +398,7 @@ public final class CarriageContentsRegistry {
      */
     public static CarriageContents resolveSubVariant(CarriageContents parent, long seed,
                                                      GateContext gateCtx) {
-        return resolveGroup(parent, new Random(seed), CarriageContentsAllowList.EMPTY, gateCtx);
+        return resolveGroup(parent, new Random(seed), CarriageContentsAllowList.EMPTY, gateCtx, NO_CARRIAGE);
     }
 
     /**
@@ -409,7 +419,8 @@ public final class CarriageContentsRegistry {
      */
     @SuppressWarnings("unused") // allow-list intentionally not used inside group resolution
     private static CarriageContents resolveGroup(
-        CarriageContents picked, Random parentRng, CarriageContentsAllowList allow, GateContext gateCtx
+        CarriageContents picked, Random parentRng, CarriageContentsAllowList allow, GateContext gateCtx,
+        int carriageIndex
     ) {
         Optional<CarriageContentsGroup> groupOpt = CarriageContentsGroupStore.get(picked.id());
         if (groupOpt.isEmpty() || groupOpt.get().isEmpty()) return picked;
@@ -434,9 +445,9 @@ public final class CarriageContentsRegistry {
         // Self-weight is read from the group sidecar (defaults to
         // CarriageContentsGroup.DEFAULT_SELF_WEIGHT for pre-v1.1 files).
         List<PoolEntry> pool = new ArrayList<>(members.size() + 1);
-        pool.add(new PoolEntry(SELF_TOKEN, group.selfWeight()));
+        pool.add(new PoolEntry(SELF_TOKEN, groupWeight(picked.id(), group.selfWeight(), carriageIndex)));
         for (CarriageContentsGroup.Member m : members) {
-            pool.add(new PoolEntry(m.id(), m.weight()));
+            pool.add(new PoolEntry(m.id(), groupWeight(m.id(), m.weight(), carriageIndex)));
         }
 
         Random childRng = new Random(parentRng.nextLong());

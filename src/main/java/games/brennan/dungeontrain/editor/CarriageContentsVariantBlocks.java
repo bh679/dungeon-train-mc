@@ -5,6 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.vista.LiveTvWeighting;
 import games.brennan.dungeontrain.train.CarriageContents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -485,13 +486,42 @@ public final class CarriageContentsVariantBlocks {
         for (VariantState s : states) {
             if (s.isMob() && !s.difficulty().eligible(tier)) { anyGated = true; break; }
         }
-        if (!anyGated) return pickFrom(localPos, worldSeed, carriageIndex, states);
+        if (!anyGated) return pickLive(localPos, worldSeed, carriageIndex, states);
         List<VariantState> eligible = new ArrayList<>(states.size());
         for (VariantState s : states) {
             if (!s.isMob() || s.difficulty().eligible(tier)) eligible.add(s);
         }
         if (eligible.isEmpty()) return null;
-        return pickFrom(localPos, worldSeed, carriageIndex, eligible);
+        return pickLive(localPos, worldSeed, carriageIndex, eligible);
+    }
+
+    /**
+     * {@link #pickFrom} with TV entries reweighted for the live stream ({@link LiveTvWeighting}). A
+     * cell with no TV in it — or one holding a lock-group reference, or with no server running — rolls
+     * exactly as before; so does a cell whose every weight came out 0.
+     */
+    private VariantState pickLive(BlockPos localPos, long worldSeed, int carriageIndex, List<VariantState> states) {
+        int[] weights = liveTvWeights(states, carriageIndex);
+        if (weights != null) {
+            VariantState picked = VariantGroupResolver.resolveWeighted(
+                localPos, lockIdAt(localPos), states, worldSeed, carriageIndex, weights);            if (picked != null) return picked;
+        }
+        return pickFrom(localPos, worldSeed, carriageIndex, states);
+    }
+
+    /** The live-adjusted weight column for {@code states}, or {@code null} when nothing changes. */
+    private static int[] liveTvWeights(List<VariantState> states, int carriageIndex) {
+        if (!LiveTvWeighting.active() || VariantGroupRefs.anyRef(states)) return null;
+        boolean anyTv = false;
+        for (VariantState s : states) {
+            if (LiveTvWeighting.isTv(s)) { anyTv = true; break; }
+        }
+        if (!anyTv) return null;
+        int[] weights = new int[states.size()];
+        for (int i = 0; i < weights.length; i++) {
+            weights[i] = LiveTvWeighting.variantWeight(states.get(i), carriageIndex);
+        }
+        return weights;
     }
 
     /**

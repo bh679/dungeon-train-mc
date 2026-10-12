@@ -24783,6 +24783,201 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-tv-weighting",
+      "version": "0.1225.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "TVs follow the stream",
+      "summary": "TVs turn up more often on the train while someone is streaming, and less often when nobody is.",
+      "highlights": [],
+      "pr": 1928,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-chat-lines",
+      "version": "0.1226.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye speaks up",
+      "summary": "The Live Eye now tells you when you're live, how many are watching, and when it's over.",
+      "highlights": [],
+      "pr": 1929,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photos-show-what-they-earned",
+      "version": "0.1227.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Photos show what they earned",
+      "summary": "Opening a photo now shows the advancements it earned its photographer \u2014 the ones you haven't found yet keep their secrets.",
+      "highlights": [],
+      "pr": 1930,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-frame-stalls",
+      "version": "0.1228.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "community"
+      ],
+      "title": "Smoother Live Eye and TVs",
+      "summary": "Streaming with the Live Eye and watching it on a TV now runs smoother.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 1931,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-watch-links",
+      "version": "0.1229.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye points the way",
+      "summary": "Going live now tells you where your audience can find you.",
+      "highlights": [],
+      "pr": 1932,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-encoder-thread-cap",
+      "version": "0.1230.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye is lighter on your computer.",
+      "highlights": [],
+      "pr": 1933,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "book-screen-info-button",
+      "version": "0.1231.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "A tidier book and quill",
+      "summary": "Writing a book is less cluttered, and a small info button now shows what the train won't take.",
+      "highlights": [],
+      "pr": 1934,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "streamer-head-viewer-decode-size",
+      "version": "0.1232.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Lighter Live Eye streaming",
+      "summary": "Streaming with the Live Eye now asks a little less of your computer.",
+      "highlights": [],
+      "pr": 1935,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-feed-hangs-on",
+      "version": "0.1233.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Live Feed hangs on",
+      "summary": "TVs now find their way back when a stream drops out.",
+      "highlights": [],
+      "pr": 1936,
+      "date": "2026-10-11",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "photo-views-tributes",
+      "version": "0.1234.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "balance"
+      ],
+      "title": "Photos fade faster without a Tribute",
+      "summary": "Found photos now fade sooner unless someone pays them Tribute.",
+      "highlights": [],
+      "pr": 1937,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "options-settings-list",
+      "version": "0.1235.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Options screen reads at a glance",
+      "summary": "Every setting in Options \u2192 Dungeon Train is now one line: an icon, its name, a short grey hint and a control that shows only its value. Hover the name for the full explanation.",
+      "highlights": [],
+      "pr": 1938,
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
