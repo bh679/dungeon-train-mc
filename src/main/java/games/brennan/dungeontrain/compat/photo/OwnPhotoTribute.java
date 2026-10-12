@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 
 /**
  * Tribute to a player's own fresh print: pay emeralds and the photo is posted to the public passenger
- * log ({@link TributePhotoReporter#postOwn}), its upload is boosted to {@link SharedPhotos#OWN_BOOST_FACTOR}×
- * the views on the relay ({@link SharedPhotos#boostOwnUpload}), and it burns in green flames. The first
+ * log ({@link TributePhotoReporter#postOwn}), its upload is raised to {@link SharedPhotos#VIEWS_MAX}
+ * views on the relay ({@link SharedPhotos#boostOwnUpload}), and it burns in green flames. The first
  * one in a life costs {@link #BASE_COST}; each one after triples it, and a new life starts over.
  *
  * <p>Offered only when the post can actually happen — a clean run (or any run on a dev build, which
@@ -131,7 +131,7 @@ public final class OwnPhotoTribute {
         SharedPhotos.encodeForDiscord(server, data.get(), PhotoPaperTextures.paper(PhotographType.REGULAR), frame.identifier().id(),
                 png -> TributePhotoReporter.postOwn(player, tributeNumber, cost, png));
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(SharedPhotos.tributePaidLine(player, cost, SharedPhotos.VIEWS_MAX * SharedPhotos.OWN_BOOST_FACTOR));
+        player.sendSystemMessage(SharedPhotos.tributePaidLine(player, cost, SharedPhotos.VIEWS_MAX));
         sync(player);
     }
 
