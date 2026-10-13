@@ -22,8 +22,8 @@ import java.util.List;
  * <p>Head slot, no armour value. It stays on while you stream — vanilla's {@code CustomHeadLayer}
  * draws any non-armour head item with the model's {@code head} display, so the camcorder model is
  * visible to other players. The server-side {@code LiveFeedEvents} sees the equipment change and
- * tells this client to start streaming; taking it off stops the stream and keeps the item; being
- * cut off by another streamer burns it away. Found in chests ({@code ContainerContentsRoller}).</p>
+ * tells this client to start streaming; taking it off stops the stream and burns it away, as does
+ * being cut off by another streamer. Found in chests ({@code ContainerContentsRoller}).</p>
  */
 public class LiveHeadpieceItem extends Item implements Equipable {
 

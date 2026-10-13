@@ -73,6 +73,8 @@ public final class LiveStreamController {
     @Nullable private LiveEncoder encoder;
     @Nullable private LiveUploader uploader;
     @Nullable private Claim claim;
+    /** The worn Live Eye's id from the server's START; the relay matches reconnects by it. */
+    private String eyeId = "";
     @Nullable private Path dir;
     private long lastGrabNs;
     private boolean grabbedThisFrame; // render thread: this frame was already read at an earlier point
@@ -137,7 +139,7 @@ public final class LiveStreamController {
 
     public void onServerSaid(LiveStreamPacket packet) {
         switch (packet.action()) {
-            case START -> start();
+            case START -> start(packet.eyeId());
             // The ended pop-up says why; the server's burn line describes the Live Eye.
             case STOP_REPLACED -> stop(null, LiveStreamEndedToast.Reason.REPLACED);
             case STOP_DIED -> stop(null, LiveStreamEndedToast.Reason.DIED);
@@ -149,7 +151,8 @@ public final class LiveStreamController {
 
     // ---- lifecycle ----------------------------------------------------------------------------
 
-    private void start() {
+    private void start(String eyeId) {
+        this.eyeId = eyeId == null ? "" : eyeId;
         LOGGER.info("[DungeonTrain] live stream requested by the server (ffmpeg {})", FfmpegSupport.state());
         if (state != State.IDLE) stop(null);
         // Livestreaming is a line on the first-launch consent card: the master "use the internet?"
@@ -237,7 +240,7 @@ public final class LiveStreamController {
         if (uuid == null) { state = State.IDLE; return; }
         state = State.CLAIMING;
         int gen = generation;
-        LiveFeedClient.claim(uuid, name).thenAcceptAsync(result -> {
+        LiveFeedClient.claim(uuid, name, eyeId).thenAcceptAsync(result -> {
             if (gen != generation || state != State.CLAIMING) return;
             Claim c = LiveFeedClient.parseClaim(result);
             if (c == null) {

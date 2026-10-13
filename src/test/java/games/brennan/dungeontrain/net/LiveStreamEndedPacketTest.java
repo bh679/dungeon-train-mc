@@ -28,7 +28,7 @@ final class LiveStreamEndedPacketTest {
     void streamRoundTrip() {
         for (LiveStreamPacket.Action a : LiveStreamPacket.Action.values()) {
             FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-            LiveStreamPacket p = a == LiveStreamPacket.Action.START ? LiveStreamPacket.start() : LiveStreamPacket.stop(a, "Dev2");
+            LiveStreamPacket p = a == LiveStreamPacket.Action.START ? LiveStreamPacket.start("3f2a9c1e-0000-4000-8000-00000000abcd") : LiveStreamPacket.stop(a, "Dev2");
             LiveStreamPacket.STREAM_CODEC.encode(buf, p);
             assertEquals(p, LiveStreamPacket.STREAM_CODEC.decode(buf));
         }
