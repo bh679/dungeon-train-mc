@@ -258,6 +258,7 @@
   "gui.dungeontrain.viewfinder.selfie": "Selfie",
   "gui.dungeontrain.viewfinder.front": "Face",
   "gui.dungeontrain.live.badge": "DIRECT",
+  "gui.dungeontrain.live.name_tag": "%s est en direct",
   "gui.dungeontrain.live.countdown": "En direct dans",
   "gui.dungeontrain.live.stream_settings": "Paramètres du stream",
   "gui.dungeontrain.live.viewer_on": "Écran en direct activé",

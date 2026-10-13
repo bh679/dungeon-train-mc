@@ -337,6 +337,7 @@
   "gui.dungeontrain.viewfinder.selfie": "Selfie",
   "gui.dungeontrain.viewfinder.front": "Față",
   "gui.dungeontrain.live.badge": "LIVE",
+  "gui.dungeontrain.live.name_tag": "%s este live",
   "gui.dungeontrain.live.countdown": "Live în",
   "gui.dungeontrain.live.stream_settings": "Setări transmisiune",
   "gui.dungeontrain.live.viewer_on": "Vizualizare live pornită",

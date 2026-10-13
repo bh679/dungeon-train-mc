@@ -8,10 +8,10 @@ import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig.NameTag;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.ClientHooks;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +19,8 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 /**
- * The streamer's name, top-middle in black-outlined white, drawn into the broadcast picture only.
+ * "<b>Name</b> is live", top-middle in black on a black-outlined white pill with a pulsing green
+ * dot before it, drawn into the broadcast picture only.
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
@@ -32,11 +33,26 @@ import org.joml.Matrix4fStack;
  */
 public final class StreamNameTag {
 
-    /** GUI pixels from the top of the picture to the top of the tag (the outline sits one above). */
+    /** GUI pixels from the top of the picture to the top of the pill. */
     static final int TOP_OFFSET = 4;
-    static final int TEXT = 0xFFFFFFFF;
-    /** Black 8-way outline, as on a glow-ink sign, so the name reads on any sky. */
+    static final String LABEL_KEY = "gui.dungeontrain.live.name_tag";
+    static final int TEXT = 0xFF000000;
+    static final int PILL = 0xFFFFFFFF;
     static final int OUTLINE = 0xFF000000;
+    /** The live dot's colour, without alpha — the pulse supplies that. */
+    static final int DOT_RGB = 0x22C55E;
+    /** GUI pixels between the dot+name group and the pill's ends / top and bottom. */
+    static final int PAD_X = 6;
+    static final int PAD_Y = 3;
+    /** Glyph height in GUI pixels, descenders included. */
+    static final int GLYPH_H = 8;
+    /** The dot's diameter and its gap to the name, in GUI pixels. */
+    static final int DOT_SIZE = 5;
+    static final int DOT_GAP = 4;
+    /** One full fade out and back in. */
+    static final long PULSE_MS = 1200;
+    /** The dot's dimmest alpha, out of 1; it peaks at fully opaque. */
+    static final double PULSE_MIN = 0.35;
 
     private StreamNameTag() {}
 
@@ -97,10 +113,7 @@ public final class StreamNameTag {
             RenderSystem.applyModelViewMatrix();
             target.bindWrite(true);
             GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-            graphics.pose().pushPose();
-            graphics.pose().scale(scale, scale, 1f);
-            draw(graphics, mc.font, name, Math.round(w / scale));
-            graphics.pose().popPose();
+            draw(graphics, mc.font, label(name), w, scale);
             graphics.flush();
         } finally {
             modelView.popMatrix();
@@ -110,9 +123,68 @@ public final class StreamNameTag {
         }
     }
 
-    private static void draw(GuiGraphics graphics, Font font, String name, int guiW) {
-        int x = (guiW - font.width(name)) / 2;
-        font.drawInBatch8xOutline(Component.literal(name).getVisualOrderText(), x, TOP_OFFSET, TEXT, OUTLINE,
-            graphics.pose().last().pose(), graphics.bufferSource(), LightTexture.FULL_BRIGHT);
+    /**
+     * The outlined pill and the dot in target pixels (so their curves are smooth at stream
+     * resolution, not a GUI-pixel staircase), then the name in GUI pixels.
+     */
+    private static void draw(GuiGraphics graphics, Font font, Component label, int targetW, float scale) {
+        int textW = font.width(label) - 1; // drop the trailing 1px advance so the group centres
+        float groupW = (DOT_SIZE + DOT_GAP + textW) * scale;
+        int pillW = Math.round(groupW + 2 * PAD_X * scale);
+        int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
+        int pillX = (targetW - pillW) / 2;
+        int pillY = Math.round(TOP_OFFSET * scale);
+        int line = Math.max(1, Math.round(scale));
+        pill(graphics, pillX, pillY, pillW, pillH, OUTLINE);
+        pill(graphics, pillX + line, pillY + line, pillW - 2 * line, pillH - 2 * line, PILL);
+
+        float groupX = (targetW - groupW) / 2f;
+        int dot = Math.round(DOT_SIZE * scale);
+        int dotY = pillY + (pillH - dot) / 2;
+        pill(graphics, Math.round(groupX), dotY, dot, dot, dotColor(System.currentTimeMillis()));
+
+        graphics.pose().pushPose();
+        graphics.pose().translate(groupX + (DOT_SIZE + DOT_GAP) * scale, pillY + PAD_Y * scale, 0f);
+        graphics.pose().scale(scale, scale, 1f);
+        graphics.drawString(font, label, 0, 0, TEXT, false);
+        graphics.pose().popPose();
+    }
+
+    /** "<b>name</b> is live", in the streamer's language. */
+    static Component label(String name) {
+        return Component.translatable(LABEL_KEY, Component.literal(name).withStyle(ChatFormatting.BOLD));
+    }
+
+    /** A {@code w}×{@code h} pill at ({@code x},{@code y}); with {@code w == h} it is a disc. */
+    private static void pill(GuiGraphics graphics, int x, int y, int w, int h, int color) {
+        for (int row = 0; row < h; row++) {
+            int inset = pillInset(row, h);
+            graphics.fill(x + inset, y + row, x + w - inset, y + row + 1, color);
+        }
+    }
+
+    /** The live dot's ARGB at {@code nowMs}: green, its alpha pulsing on {@link #PULSE_MS}. */
+    static int dotColor(long nowMs) {
+        int alpha = (int) Math.round(dotAlpha(nowMs) * 255);
+        return alpha << 24 | DOT_RGB;
+    }
+
+    /** Smooth sine pulse from fully opaque at the start of each period down to {@link #PULSE_MIN} halfway. */
+    static double dotAlpha(long nowMs) {
+        double phase = (Math.floorMod(nowMs, PULSE_MS)) / (double) PULSE_MS;
+        double wave = (Math.cos(phase * 2 * Math.PI) + 1) / 2; // 1 → 0 → 1
+        return PULSE_MIN + (1 - PULSE_MIN) * wave;
+    }
+
+    /**
+     * How far row {@code row} of a {@code height}-tall pill is cut in from each side: the ends are
+     * half-discs of radius {@code height / 2}, so the middle rows run full width and the top and
+     * bottom rows are pulled in.
+     */
+    static int pillInset(int row, int height) {
+        double r = height / 2.0;
+        double dy = row + 0.5 - r;
+        double half = Math.sqrt(Math.max(0.0, r * r - dy * dy));
+        return (int) Math.round(r - half);
     }
 }
