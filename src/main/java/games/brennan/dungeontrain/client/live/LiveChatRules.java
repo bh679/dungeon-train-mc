@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -10,8 +11,9 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * The pure rules behind {@link LiveChatBridge}: who is in the stream's Discord chat, which lines to
- * show, and how a line reads. No Minecraft state — everything comes in as arguments.
+ * The pure rules behind {@link LiveChatBridge}: who is in the stream's chat room (Discord, Twitch and
+ * other worlds), which lines to show, and how a line reads. No Minecraft state — everything comes in
+ * as arguments.
  */
 public final class LiveChatRules {
 
@@ -60,12 +62,24 @@ public final class LiveChatRules {
         return t.length() > MAX_CONTENT ? t.substring(0, MAX_CONTENT) : t;
     }
 
-    /** {@code [Live] Name: text} — the prefix grey, the name aqua, the text plain. */
+    /**
+     * {@code [Live] Name: text} — the prefix grey, the text plain, the name coloured by room so the
+     * reader knows where to answer: Discord aqua, Twitch light purple, another world green.
+     */
     public static MutableComponent line(ChatLine line) {
         return Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY)
-            .append(Component.literal(" " + line.author()).withStyle(ChatFormatting.AQUA))
+            .append(Component.literal(" " + line.author()).withStyle(nameColour(line.source())))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
             .append(Component.literal(line.content()).withStyle(ChatFormatting.WHITE));
+    }
+
+    /** The name colour for a room. */
+    public static ChatFormatting nameColour(Source source) {
+        return switch (source) {
+            case TWITCH -> ChatFormatting.LIGHT_PURPLE;
+            case GAME -> ChatFormatting.GREEN;
+            case DISCORD, OTHER -> ChatFormatting.AQUA;
+        };
     }
 
     static String undashed(UUID u) {

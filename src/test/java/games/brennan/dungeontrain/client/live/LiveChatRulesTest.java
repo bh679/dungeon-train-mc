@@ -1,6 +1,9 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.TextColor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -31,16 +34,18 @@ class LiveChatRulesTest {
     @Test
     @DisplayName("shouldShow: Discord lines always; game lines unless mine or from a player in this world")
     void shouldShow() {
-        ChatLine discord = new ChatLine(1, 0, "Viewer", null, "hi", false);
-        ChatLine mine = new ChatLine(2, 0, "Me", LiveChatRules.undashed(ME), "hi", true);
-        ChatLine other = new ChatLine(3, 0, "Other", LiveChatRules.undashed(OTHER), "hi", true);
+        ChatLine discord = new ChatLine(1, 0, "Viewer", null, "hi", Source.DISCORD);
+        ChatLine mine = new ChatLine(2, 0, "Me", LiveChatRules.undashed(ME), "hi", Source.GAME);
+        ChatLine other = new ChatLine(3, 0, "Other", LiveChatRules.undashed(OTHER), "hi", Source.GAME);
+        ChatLine twitch = new ChatLine(5, 0, "Me", null, "hi", Source.TWITCH);
+        assertTrue(LiveChatRules.shouldShow(twitch, ME, Set.of(ME), Set.of("Me")), "a Twitch viewer sharing my name is still shown");
         assertTrue(LiveChatRules.shouldShow(discord, ME, Set.of(ME, OTHER), Set.of("Me", "Other")));
         assertFalse(LiveChatRules.shouldShow(mine, ME, Set.of(), Set.of()));
         assertFalse(LiveChatRules.shouldShow(other, ME, Set.of(ME, OTHER), Set.of()), "already seen in vanilla chat");
         assertTrue(LiveChatRules.shouldShow(other, ME, Set.of(ME), Set.of()), "elsewhere: shown");
         assertTrue(LiveChatRules.shouldShow(mine, null, Set.of(), Set.of()), "no identity: shown");
         assertFalse(LiveChatRules.shouldShow(other, ME, Set.of(), Set.of("other")), "offline server: matched by name");
-        ChatLine anon = new ChatLine(4, 0, "Other", null, "hi", true);
+        ChatLine anon = new ChatLine(4, 0, "Other", null, "hi", Source.GAME);
         assertFalse(LiveChatRules.shouldShow(anon, ME, Set.of(), Set.of("Other")), "no uuid: still matched by name");
     }
 
@@ -55,9 +60,16 @@ class LiveChatRulesTest {
     }
 
     @Test
-    @DisplayName("line: [Live] Name: text")
+    @DisplayName("line: [Live] Name: text, the name coloured by room")
     void line() {
-        ChatLine l = new ChatLine(1, 0, "Viewer", null, "hi there", false);
+        ChatLine l = new ChatLine(1, 0, "Viewer", null, "hi there", Source.DISCORD);
         assertEquals("chat.dungeontrain.live_chat.prefix Viewer: hi there", LiveChatRules.line(l).getString());
+        ChatLine t = new ChatLine(2, 0, "Twitcher", null, "yo", Source.TWITCH);
+        assertEquals("chat.dungeontrain.live_chat.prefix Twitcher: yo", LiveChatRules.line(t).getString());
+        assertEquals(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE), LiveChatRules.line(t).getSiblings().get(0).getStyle().getColor());
+        assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.DISCORD));
+        assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.OTHER));
+        assertEquals(ChatFormatting.LIGHT_PURPLE, LiveChatRules.nameColour(Source.TWITCH));
+        assertEquals(ChatFormatting.GREEN, LiveChatRules.nameColour(Source.GAME));
     }
 }
