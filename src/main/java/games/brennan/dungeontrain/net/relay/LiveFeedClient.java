@@ -317,7 +317,7 @@ public final class LiveFeedClient {
 
     /**
      * {@link #status(UUID, Channel)}, and with a non-null {@code ranked} the viewer's watching counts
-     * toward the relay's "Longest Watching" boards — all-time, and one-life for {@code ranked}'s life.
+     * toward the relay's "Longest Viewer" boards — all-time, and one-life for {@code ranked}'s life.
      * Pass it only with the player's consent.
      */
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked) {

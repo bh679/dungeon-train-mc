@@ -11,7 +11,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
  * Client → server: "I watched the Live Feed for {@code seconds} since my last report" — one per live
- * status poll the relay credits toward "Longest Watching". The server adds it to this life's stat-book
+ * status poll the relay credits toward "Longest Viewer". The server adds it to this life's stat-book
  * figure ({@link LiveWatchTally}), bounded by real time.
  */
 public record LiveWatchedPacket(int seconds) implements CustomPacketPayload {

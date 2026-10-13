@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This life's seconds watching the Live Feed, for Faulthurst's stat book — the server-side twin of the
- * relay's one-life "Longest Watching" board.
+ * relay's one-life "Longest Viewer" board.
  *
  * <p>Only the client knows it rendered the feed, so the client reports each live poll's gap
  * ({@code net/LiveWatchedPacket}). A report is credited no more than the wall-clock time since the

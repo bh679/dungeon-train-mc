@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *
  * <p>A life is a server fact, but streaming and watching the Live Feed are reported to the relay by
  * the client. The client passes this id along with both, so the relay can keep the one-life "Longest
- * On Air" and "Longest Watching" boards. Sent at login and at every respawn.</p>
+ * Stream" and "Longest Viewer" boards. Sent at login and at every respawn.</p>
  */
 public record LiveLifePacket(String lifeId) implements CustomPacketPayload {
 

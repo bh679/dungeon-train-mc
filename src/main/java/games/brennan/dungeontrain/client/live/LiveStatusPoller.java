@@ -87,7 +87,7 @@ public final class LiveStatusPoller {
 
     /**
      * Tell the server how long this client has watched since its last live poll — the same gap the
-     * relay credits to "Longest Watching" — for this life's stat-book figure. Only polls the relay
+     * relay credits to "Longest Viewer" — for this life's stat-book figure. Only polls the relay
      * ranks count (consent on, and not the streamer watching themselves).
      */
     private static void noteWatched(boolean live, long now) {
@@ -105,7 +105,7 @@ public final class LiveStatusPoller {
 
     /** One status poll; a failed request reads as offline. */
     private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel) {
-        // Watching counts toward the "Longest Watching" boards only behind the master internet consent.
+        // Watching counts toward the "Longest Viewer" boards only behind the master internet consent.
         LiveFeedClient.Life ranked = DiscordPresenceClientConfig.isGranted()
             ? new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION) : null;
         return LiveFeedClient.status(viewer, channel, ranked)
