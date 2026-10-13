@@ -25502,9 +25502,9 @@
       "highlights": [],
       "pr": 1976,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1267.0",
+      "released_at": "2026-10-13T06:48:45Z"
     },
     {
       "id": "warden-wither-selfie-advancement",
@@ -25519,9 +25519,9 @@
       "highlights": [],
       "pr": 1977,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1267.0",
+      "released_at": "2026-10-13T06:48:45Z"
     },
     {
       "id": "enemies-group-two-boxcar-crates",
