@@ -25380,9 +25380,9 @@
       "highlights": [],
       "pr": 1968,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1259.0",
+      "released_at": "2026-10-13T04:13:03Z"
     },
     {
       "id": "own-books-language-mix",
@@ -25398,9 +25398,9 @@
       "highlights": [],
       "pr": 1969,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1259.0",
+      "released_at": "2026-10-13T04:13:03Z"
     }
   ]
 }
