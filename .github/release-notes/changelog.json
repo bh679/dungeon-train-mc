@@ -25727,6 +25727,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "knockback-kill-credit",
+      "version": "0.1280.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Knock-off kills count",
+      "summary": "Sending something off the edge or into lava now counts as your kill.",
+      "highlights": [],
+      "pr": 1995,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
