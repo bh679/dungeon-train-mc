@@ -25349,6 +25349,22 @@
       "released": true,
       "released_in": "v0.1257.0",
       "released_at": "2026-10-12T14:32:53Z"
+    },
+    {
+      "id": "content-mode-reopens-consent",
+      "version": "0.1258.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Content choice shows what it changes",
+      "summary": "Picking Adult or Kid in Options now brings back the welcome card, so you can see what each one turns on.",
+      "highlights": [],
+      "date": "2026-10-12",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
