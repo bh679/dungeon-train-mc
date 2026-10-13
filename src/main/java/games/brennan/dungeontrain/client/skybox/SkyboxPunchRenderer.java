@@ -81,8 +81,8 @@ import java.util.UUID;
  * <p>Iris shades a deferred gbuffer. A colour-masked depth write leaves the albedo and normal
  * attachments untouched, so the composite pass would shade those pixels from cleared gbuffer
  * data — black, not sky. Under a pack the punch therefore runs stencil-free (no per-variant
- * sky pass; the pack owns the sky) and a second pass at {@code AFTER_BLOCK_ENTITIES},
- * {@link SkyboxHoleReopen}, pushes every hole pixel that is still visible back to the far plane
+ * sky pass; the pack owns the sky) and a second pass after the frame's final entity flush
+ * ({@link #runPendingReopen()} → {@link SkyboxHoleReopen}) pushes every hole pixel that is still visible back to the far plane
  * so the pack's deferred and composite passes paint its own sky there. The on/off verdict lives in
  * {@link ShaderCompat#allows} alongside the other atmosphere systems'.</p>
  */
@@ -113,6 +113,16 @@ public final class SkyboxPunchRenderer {
                                Matrix4f frustumMatrix, Frustum frustum, Vec3 cam, float partialTick) {}
 
     private static ReopenFrame reopenFrame = null;
+
+    /**
+     * The frame captured at {@code AFTER_BLOCK_ENTITIES}, waiting for {@link #runPendingReopen()}.
+     * Set and consumed within one frame; a frame that never reaches the flush is simply replaced by
+     * the next capture rather than run stale.
+     */
+    private static ReopenFrame pendingReopen = null;
+
+    /** Diagnostics only: the framebuffer the reopen drew into, for the panel's "Restore:" line. */
+    private static String fboAtReopen = "";
 
     private SkyboxPunchRenderer() {}
 
@@ -176,17 +186,11 @@ public final class SkyboxPunchRenderer {
         Map<UUID, ClientSubLevel> subLevels = indexSubLevels(level, snapshot);
 
         if (reopenStage) {
-            // Under a pack: mark the hole pixels nothing opaque has covered since the punch, and
-            // push them back to the far plane so the pack's deferred and composite passes treat
-            // them as sky. Same meshes, same matrices as the punch — see SkyboxHoleReopen for why
-            // this is a stencil pass and why it runs before the translucents.
-            SkyboxHoleReopen.run(() -> {
-                for (SkyboxSky sky : SkyboxSky.values()) {
-                    MeshData mesh = buildMesh(sky, snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);
-                    if (mesh != null) BufferUploader.drawWithShader(mesh);
-                }
-            });
-            reopenFrame = new ReopenFrame(snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);
+            // Under a pack: capture everything the reopen needs. The pass itself runs from
+            // IrisPipelineSkyboxReopenMixin at the head of Iris' beginTranslucents — this stage is
+            // too early, because Iris holds every entity draw back until a flush after it, and a
+            // hole reopened before that flush lets mobs behind the block through. See runPendingReopen().
+            pendingReopen = new ReopenFrame(snapshot, subLevels, frustumMatrix, frustum, cam, partialTick);
             return;
         }
 
@@ -251,6 +255,31 @@ public final class SkyboxPunchRenderer {
     }
 
     /**
+     * Mark the hole pixels nothing opaque has covered since the punch and push them back to the far
+     * plane, so the pack's deferred and composite passes treat them as sky.
+     *
+     * <p>Called from {@code IrisPipelineSkyboxReopenMixin} at the head of Iris' own
+     * {@code beginTranslucents} — after every opaque thing, Iris' deferred entity flush included,
+     * and immediately before its deferred pass. Same meshes, same matrices as the punch;
+     * see {@link SkyboxHoleReopen} for why this is a stencil pass. Consumes the frame captured at
+     * {@code AFTER_BLOCK_ENTITIES} and hands it on to {@link #restoreHoleDepth()}.</p>
+     */
+    public static void runPendingReopen() {
+        ReopenFrame frame = pendingReopen;
+        pendingReopen = null;
+        if (frame == null) return;
+        if (ShaderDiagnostics.recording()) fboAtReopen = SkyboxHoleReopen.describeBoundFramebuffer();
+        SkyboxHoleReopen.run(() -> {
+            for (SkyboxSky sky : SkyboxSky.values()) {
+                MeshData mesh = buildMesh(sky, frame.snapshot(), frame.subLevels(),
+                    frame.frustumMatrix(), frame.frustum(), frame.cam(), frame.partialTick());
+                if (mesh != null) BufferUploader.drawWithShader(mesh);
+            }
+        });
+        reopenFrame = frame;
+    }
+
+    /**
      * Put the holes' real depth back, after the pack has painted its sky into them and before the
      * translucents draw.
      *
@@ -267,15 +296,27 @@ public final class SkyboxPunchRenderer {
      * against the block again. {@code LEQUAL} rather than {@code ALWAYS} so the nearest face wins
      * with culling off, exactly as in the original punch.</p>
      *
-     * <p>Called from {@code LevelRendererSkyboxDepthMixin} at the one instruction that sits between
-     * the pack's deferred pass and the translucent draw.</p>
+     * <p>Called from {@code IrisPipelineSkyboxReopenMixin} at the tail of Iris' {@code beginTranslucents}
+     * — after the pack's deferred pass, before Iris flushes its translucent entities and before the
+     * translucent terrain — and, as a fallback that normally finds nothing left to do, from
+     * {@code LevelRendererSkyboxDepthMixin} at vanilla's {@code RenderType.translucent()} call.</p>
      */
     public static void restoreHoleDepth() {
         ReopenFrame frame = reopenFrame;
         reopenFrame = null;
         if (frame == null || !SkyboxStencil.isAvailable()) return;
 
+        boolean probe = ShaderDiagnostics.recording();
+        float before = probe ? SkyboxHoleReopen.readCentreDepth() : 0.0F;
         boolean depthMaskWas = GL11.glGetBoolean(GL11.GL_DEPTH_WRITEMASK);
+        // The cube vertices already carry the frustum, and vanilla still has the frustum on the
+        // model-view stack here — exactly the double transform SkyboxHoleReopen#run guards against.
+        // Without the identity this draw landed nowhere and the holes stayed at the far plane
+        // (measured: centre depth 1.0 -> 1.0, glass behind a live-sky wall drawn through it).
+        org.joml.Matrix4fStack modelView = RenderSystem.getModelViewStack();
+        modelView.pushMatrix();
+        modelView.identity();
+        RenderSystem.applyModelViewMatrix();
         try {
             SkyboxStencil.beginSkyPass();
             RenderSystem.stencilFunc(GL11.GL_EQUAL,
@@ -293,7 +334,13 @@ public final class SkyboxPunchRenderer {
                     frame.frustumMatrix(), frame.frustum(), frame.cam(), frame.partialTick());
                 if (mesh != null) BufferUploader.drawWithShader(mesh);
             }
+            if (probe) {
+                ShaderDiagnostics.recordRestore(before, SkyboxHoleReopen.readCentreDepth(),
+                    fboAtReopen, SkyboxHoleReopen.describeBoundFramebuffer());
+            }
         } finally {
+            modelView.popMatrix();
+            RenderSystem.applyModelViewMatrix();
             SkyboxStencil.endStencil();
             RenderSystem.colorMask(true, true, true, true);
             RenderSystem.enableCull();
