@@ -263,7 +263,7 @@
   },
   "largerlibrary": {
     "weight": 1,
-    "mode": "bedrock/exact/off/off/mix:3:1:0:1:0:0/day/sealed/-1/0/-1/0/dungeontrain:skybox_block"
+    "mode": "bedrock/exact/off/off/mix:3:1:0:1:0:0/day/sealed/-1/5/-1/5/dungeontrain:skybox_block"
   },
   "library_dimension": {
     "weight": 1,
@@ -389,6 +389,10 @@
   "romanpillars": {
     "weight": 1,
     "mode": "endless_repetition/dynamic"
+  },
+  "room": {
+    "weight": 1,
+    "mode": "bedrock/exact/off/off/off/none/sealed/0/0/0/0/minecraft:observer"
   },
   "safe": {
     "weight": 2,
