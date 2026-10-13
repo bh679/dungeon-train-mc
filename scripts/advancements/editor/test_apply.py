@@ -227,6 +227,14 @@ def test_visibility_stored_only_when_not_default():
     raise AssertionError("accepted a bad mode")
 
 
+def test_save_keeps_the_needs_table():
+    ws = Workspace()
+    needs = {DT + "carts_100": [DT + "root"]}
+    ws.tabs.write_text(json.dumps({"needs": needs}))
+    ws.apply({"visibility": {DT + "carts_100": "always"}})
+    assert json.loads(ws.tabs.read_text())["needs"] == needs, "All at Once's rule list must survive an editor save"
+
+
 def test_reword_existing_text():
     ws = Workspace()
     key = "advancements.dungeontrain.dungeon_train.carts_100."

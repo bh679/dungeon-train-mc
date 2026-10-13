@@ -25557,6 +25557,23 @@
       "released": true,
       "released_in": "v0.1269.0",
       "released_at": "2026-10-13T09:48:55Z"
+    },
+    {
+      "id": "all-at-once-challenge",
+      "version": "0.1270.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Every rule at once",
+      "summary": "A new challenge waits for anyone who can keep every rule at once.",
+      "highlights": [],
+      "pr": 1982,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
