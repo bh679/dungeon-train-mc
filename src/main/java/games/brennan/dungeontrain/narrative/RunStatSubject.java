@@ -78,7 +78,11 @@ public enum RunStatSubject {
     TRIBUTES("tributes", Format.COUNT, 1, Tone.KIND, PlayerRunState::photosTributed, "photos_tributed"),
     PASSENGER_PHOTOS("passenger_photos", Format.COUNT, 1, Tone.KIND, PlayerRunState::photosPassengers, "photos_passengers"),
     MONSTER_PHOTOS("monster_photos", Format.COUNT, 1, Tone.PLAIN, PlayerRunState::photosHostile, "photos_hostile"),
-    ANIMAL_PHOTOS("animal_photos", Format.COUNT, 1, Tone.KIND, PlayerRunState::photosAnimals, "photos_animals");
+    ANIMAL_PHOTOS("animal_photos", Format.COUNT, 1, Tone.KIND, PlayerRunState::photosAnimals, "photos_animals"),
+
+    // The one-life Live Feed boards: seconds on air with the Live Eye, and seconds watching the feed.
+    LIVE_STREAM("live_stream", Format.DURATION, 60, Tone.PLAIN, PlayerRunState::liveStreamSeconds, "live_stream_time"),
+    LIVE_WATCH("live_watch", Format.DURATION, 60, Tone.PLAIN, PlayerRunState::liveWatchSeconds, "live_view_time");
 
     /**
      * Vanilla server tick rate — {@link #PLAYTIME} reports seconds, not ticks.

@@ -1,9 +1,14 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
+import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Channel;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Status;
+import games.brennan.dungeontrain.net.LiveWatchedPacket;
+import games.brennan.dungeontrain.player.LiveWatchTally;
 import games.brennan.dungeontrain.registry.ModMobEffects;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.client.Minecraft;
 import org.jetbrains.annotations.Nullable;
 
@@ -70,15 +75,40 @@ public final class LiveStatusPoller {
                         current = polled.status();
                         channel = polled.channel();
                     }
+                    noteWatched(polled != null && polled.status().live(), System.currentTimeMillis());
                     inFlight.set(false);
                 });
         }
         return current;
     }
 
+    /** When the last ranked poll found the feed live; 0 after a dark one. */
+    private static long lastLiveMs;
+
+    /**
+     * Tell the server how long this client has watched since its last live poll — the same gap the
+     * relay credits to "Longest Viewer" — for this life's stat-book figure. Only polls the relay
+     * ranks count (consent on, and not the streamer watching themselves).
+     */
+    private static void noteWatched(boolean live, long now) {
+        boolean ranked = live && DiscordPresenceClientConfig.isGranted() && !LiveStreamController.get().streaming();
+        long previous = lastLiveMs;
+        lastLiveMs = ranked ? now : 0L;
+        if (!ranked || previous == 0L) return;
+        long seconds = (now - previous) / 1000;
+        if (seconds <= 0 || seconds > LiveWatchTally.MAX_REPORT_SECONDS) return;
+        Minecraft mc = Minecraft.getInstance();
+        mc.execute(() -> {
+            if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveWatchedPacket((int) seconds));
+        });
+    }
+
     /** One status poll; a failed request reads as offline. */
     private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel) {
-        return LiveFeedClient.status(viewer, channel)
+        // Watching counts toward the "Longest Viewer" boards only behind the master internet consent.
+        LiveFeedClient.Life ranked = DiscordPresenceClientConfig.isGranted()
+            ? new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION) : null;
+        return LiveFeedClient.status(viewer, channel, ranked)
             .handle((r, t) -> r == null ? Status.OFFLINE : LiveFeedClient.parseStatus(r));
     }
 
