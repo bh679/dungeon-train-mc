@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import games.brennan.dungeontrain.client.BookLanguageSignClient;
 import games.brennan.dungeontrain.client.LetterEditorClient;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,6 +28,7 @@ public abstract class BookEditScreenSignMixin {
     private void dungeontrain$flagLetterSign(boolean publish, CallbackInfo ci) {
         if (publish) {
             LetterEditorClient.markSigned();
+            BookLanguageSignClient.sendForNextSign((BookEditScreen) (Object) this);
         }
     }
 }

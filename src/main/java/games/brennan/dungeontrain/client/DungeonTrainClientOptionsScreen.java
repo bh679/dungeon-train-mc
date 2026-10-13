@@ -703,6 +703,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case TRANSLATE -> Setting.of(open(() -> this.minecraft.setScreen(
                     new TranslationScreen(this, this.translateTarget))), key + ".tip");
 
+            // A page of its own: a list of languages with a weight each. Re-synced to the server on
+            // return so the next book found already uses the new mix.
+            case BOOK_LANGUAGES -> Setting.of(open(() -> openChild(new ReadingLanguagesScreen(this),
+                    ReadingLanguagesSyncClient::syncNow)), key + ".tip");
+
             // Literally the same control vanilla's Music & Sounds screen carries (put there by
             // SoundOptionsScreenTrainVolumeMixin) — one OptionInstance definition over one config
             // accessor, so a player who came looking here rather than there finds the same control at

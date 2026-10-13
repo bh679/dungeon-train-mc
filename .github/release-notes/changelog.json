@@ -25467,6 +25467,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "weighted-reading-languages",
+      "version": "0.1265.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "Books in more languages",
+      "summary": "You can now read other players' books in more than one language, and pick the language when you sign your own.",
+      "highlights": [],
+      "pr": 1975,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -37,6 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Each family walks the relay with its OWN session token, so exhausting one window (which makes the
  * relay reset that session's offered set) can never reset another's walk.</p>
  *
+ * <p>Also the window for each of a player's extra reading languages that isn't the host's (see
+ * {@link SharedBookSelector.PlayerContext#readingFamilies}).</p>
+ *
  * <p>Fetched lazily: only when a pickup actually hits the mix. Worlds that never do never send it.</p>
  */
 public final class FallbackBookPool {
@@ -61,6 +64,8 @@ public final class FallbackBookPool {
     /** family → its relay session token — see the class javadoc for why each family has its own. */
     private static final Map<String, String> SESSIONS = new ConcurrentHashMap<>();
     private static final Set<String> IN_FLIGHT = ConcurrentHashMap.newKeySet();
+    /** family → how many new books its last completed fetch added. */
+    private static final Map<String, Integer> LAST_ADDED = new ConcurrentHashMap<>();
 
     private FallbackBookPool() {}
 
@@ -68,6 +73,19 @@ public final class FallbackBookPool {
     public static List<SharedBookPool.PoolBook> snapshot(String family) {
         if (family == null) return List.of();
         return SNAPSHOTS.getOrDefault(family, List.of());
+    }
+
+    /**
+     * Whether {@code family}'s last completed fetch brought new books — a reason to fetch again straight
+     * away rather than wait out the retry throttle, which is there for fetches that bring nothing.
+     */
+    public static boolean lastFetchWasProductive(String family) {
+        return family != null && LAST_ADDED.getOrDefault(family, 0) > 0;
+    }
+
+    /** Whether a fetch for {@code family} is on its way. */
+    public static boolean isInFlight(String family) {
+        return family != null && IN_FLIGHT.contains(family);
     }
 
     /**
@@ -104,6 +122,7 @@ public final class FallbackBookPool {
                                 return;
                             }
                             int added = applyResponse(family, resp.body());
+                            LAST_ADDED.put(family, added);
                             LOGGER.debug("[DungeonTrain] fallback-book pool ({}) refreshed: {} book(s) ({} new this fetch)",
                                     family, snapshot(family).size(), added);
                         } catch (Throwable t) {
@@ -151,5 +170,6 @@ public final class FallbackBookPool {
     static void clear() {
         SNAPSHOTS.clear();
         IN_FLIGHT.clear();
+        LAST_ADDED.clear();
     }
 }

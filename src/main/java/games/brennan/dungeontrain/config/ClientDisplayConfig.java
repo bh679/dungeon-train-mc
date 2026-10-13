@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.config;
 
+import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -251,6 +252,10 @@ public final class ClientDisplayConfig {
      * pool (older relay, no network consent, or offline). See {@link games.brennan.dungeontrain.event.SharedBookReadMirror}.
      */
     public static final ModConfigSpec.ConfigValue<List<? extends String>> SHARED_BOOKS_READ;
+    /** Extra reading languages for community books, as {@code "<locale>:<weight>"} — see {@link ReadingLanguages}. */
+    public static final ModConfigSpec.ConfigValue<List<? extends String>> SHARED_BOOKS_LANGUAGES;
+    /** Weight of the game language among the reading languages. */
+    public static final ModConfigSpec.IntValue SHARED_BOOKS_GAME_LANGUAGE_WEIGHT;
     /** The player's most recent NPS ("recommend") answer (0-10), or -1 if never answered. */
     public static final ModConfigSpec.IntValue DEATH_SCREEN_LAST_NPS;
     /**
@@ -408,6 +413,8 @@ public final class ClientDisplayConfig {
         CREATIVE_MOD_BLOCK_TABS = pair.getLeft().creativeModBlockTabs;
         CREATIVE_MOD_BLOCKS_IN_SEARCH = pair.getLeft().creativeModBlocksInSearch;
         SHARED_BOOKS_READ = pair.getLeft().sharedBooksRead;
+        SHARED_BOOKS_LANGUAGES = pair.getLeft().sharedBooksLanguages;
+        SHARED_BOOKS_GAME_LANGUAGE_WEIGHT = pair.getLeft().sharedBooksGameLanguageWeight;
         DEATH_SCREEN_LAST_NPS = pair.getLeft().deathScreenLastNps;
         DEATH_FORM_ANSWERED_IDS = pair.getLeft().deathFormAnsweredIds;
         DEATH_FORM_MUTED_IDS = pair.getLeft().deathFormMutedIds;
@@ -680,6 +687,16 @@ public final class ClientDisplayConfig {
                          "automatically — you can clear it by emptying this list.")
                 .defineListAllowEmpty("read", () -> List.<String>of(), () -> "0",
                         o -> o instanceof String);
+        ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksLanguages = b
+                .comment("Languages you read community books in besides your game language, as \"<locale>:<weight>\"",
+                         "(e.g. \"uk_ua:1\"). Books you find come as a mix of your game language and these, each",
+                         "language's share in proportion to its weight (1-5). Set in-game: Options > Dungeon Train >",
+                         "Book languages.")
+                .defineListAllowEmpty("languages", () -> List.<String>of(), () -> "en_us:1",
+                        o -> o instanceof String);
+        ModConfigSpec.IntValue sharedBooksGameLanguageWeight = b
+                .comment("Weight (1-5) of your game language among your book languages.")
+                .defineInRange("gameLanguageWeight", 1, 1, 5);
         b.pop();
 
         b.push("contentMode");
@@ -845,7 +862,7 @@ public final class ClientDisplayConfig {
                 builderTilesPerRow,
                 menuRenderDistance,
                 editorPlotLighting,
-                sharedBooksRead,
+                sharedBooksRead, sharedBooksLanguages, sharedBooksGameLanguageWeight,
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
@@ -1885,6 +1902,28 @@ public final class ClientDisplayConfig {
         return out;
     }
 
+    /** The extra reading languages, cleaned against {@code gameLocale}. Empty before the config loads. */
+    public static List<ReadingLanguages.Entry> readingLanguages(String gameLocale) {
+        if (!isLoaded()) return List.of();
+        return ReadingLanguages.parseAll(SHARED_BOOKS_LANGUAGES.get(), gameLocale);
+    }
+
+    /** The game language's reading weight; the default before the config loads. */
+    public static int gameLanguageWeight() {
+        if (!isLoaded()) return ReadingLanguages.DEFAULT_WEIGHT;
+        return SHARED_BOOKS_GAME_LANGUAGE_WEIGHT.get();
+    }
+
+    /** Persist the reading-language settings (cleaned by the caller). No-op pre-load. */
+    public static void setReadingLanguages(int gameWeight, List<ReadingLanguages.Entry> extras) {
+        if (!isLoaded()) return;
+        List<String> stored = new ArrayList<>(extras.size());
+        for (ReadingLanguages.Entry e : extras) stored.add(e.encode());
+        SHARED_BOOKS_LANGUAGES.set(stored);
+        SHARED_BOOKS_GAME_LANGUAGE_WEIGHT.set(ReadingLanguages.clampWeight(gameWeight));
+        SHARED_BOOKS_LANGUAGES.save();
+    }
+
     /**
      * Record that this player has read the community book with relay pool {@code id}, persisting it to
      * {@code dungeontrain-client.toml}. Idempotent — skips the TOML write when the id is already present.
@@ -2015,6 +2054,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.IntValue menuRenderDistance,
             ModConfigSpec.BooleanValue editorPlotLighting,
             ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksRead,
+            ModConfigSpec.ConfigValue<List<? extends String>> sharedBooksLanguages,
+            ModConfigSpec.IntValue sharedBooksGameLanguageWeight,
             ModConfigSpec.IntValue deathScreenLastNps,
             ModConfigSpec.ConfigValue<List<? extends String>> deathFormAnsweredIds,
             ModConfigSpec.ConfigValue<List<? extends String>> deathFormMutedIds,
