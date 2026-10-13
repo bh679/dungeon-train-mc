@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.echo;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.event.KillCredit;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -53,7 +54,9 @@ public final class EchoEncounterEvents {
     @SubscribeEvent
     public static void onDeath(LivingDeathEvent event) {
         if (!(event.getEntity().level() instanceof ServerLevel level)) return;
-        RemoteEchoEncounters.onEntityDeath(level, event.getEntity(), event.getSource().getEntity());
+        // A knock into the void or lava still credits whoever struck (see KillCredit).
+        RemoteEchoEncounters.onEntityDeath(level, event.getEntity(),
+                KillCredit.resolveKiller(event.getEntity(), event.getSource()).orElse(null));
     }
 
     @SubscribeEvent
