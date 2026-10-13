@@ -29,9 +29,12 @@ public final class LiveStreamEndedToast implements Toast {
         FAILED("failed");
 
         final String key;
+        /** What /live/stop tells the relay, so the #live-eye "has gone offline" post can say why. */
+        public final String relayReason;
 
         Reason(String suffix) {
             this.key = "toast.dungeontrain.live_ended." + suffix;
+            this.relayReason = suffix;
         }
     }
 
