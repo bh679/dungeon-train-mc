@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/square_eyes",
   "display": {
     "icon": {
-      "id": "vista:television"
+      "id": "exposure_polaroid:instant_camera"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.screen_test.title"

@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/the_eye_of_the_living",
   "display": {
     "icon": {
-      "id": "dungeontrain:live_headpiece"
+      "id": "exposure_polaroid:instant_camera"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.eye_spy_myself.title"
