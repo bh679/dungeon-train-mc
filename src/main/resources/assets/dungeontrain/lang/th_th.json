@@ -2567,7 +2567,7 @@
   "gui.dungeontrain.book_languages.pick.add": "เพิ่ม",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "หนังสือเล่มนี้เขียนเป็นภาษาอะไร?",
-  "gui.dungeontrain.book_language.caption": "ภาษาของหนังสือ",
+  "gui.dungeontrain.book_language.caption": "ภาษา",
   "gui.dungeontrain.book_language.on_page": "ภาษา: %s",
   "gui.dungeontrain.translate.button": "ช่วยแปล",
   "gui.dungeontrain.translate.button.tooltip": "ปรับปรุงคำแปลภาษา %s",

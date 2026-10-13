@@ -2670,7 +2670,7 @@
   "gui.dungeontrain.book_languages.pick.add": "Добавить",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "На каком языке написана эта книга?",
-  "gui.dungeontrain.book_language.caption": "Язык книги",
+  "gui.dungeontrain.book_language.caption": "Язык",
   "gui.dungeontrain.book_language.on_page": "Язык: %s",
   "gui.dungeontrain.translate.button": "Помочь с переводом",
   "gui.dungeontrain.translate.button.tooltip": "Улучшить перевод для %s",

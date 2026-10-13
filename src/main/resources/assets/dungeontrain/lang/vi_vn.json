@@ -2567,7 +2567,7 @@
   "gui.dungeontrain.book_languages.pick.add": "Thêm",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "Cuốn sách này được viết bằng ngôn ngữ nào?",
-  "gui.dungeontrain.book_language.caption": "Ngôn ngữ sách",
+  "gui.dungeontrain.book_language.caption": "Ngôn ngữ",
   "gui.dungeontrain.book_language.on_page": "Ngôn ngữ: %s",
   "gui.dungeontrain.translate.button": "Giúp dịch",
   "gui.dungeontrain.translate.button.tooltip": "Cải thiện bản dịch %s",

@@ -2567,7 +2567,7 @@
   "gui.dungeontrain.book_languages.pick.add": "Tambah",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "Buku ini ditulis dalam bahasa apa?",
-  "gui.dungeontrain.book_language.caption": "Bahasa buku",
+  "gui.dungeontrain.book_language.caption": "Bahasa",
   "gui.dungeontrain.book_language.on_page": "Bahasa: %s",
   "gui.dungeontrain.translate.button": "Bantu terjemah",
   "gui.dungeontrain.translate.button.tooltip": "Perbaik terjemahan %s",

@@ -2567,7 +2567,7 @@
   "gui.dungeontrain.book_languages.pick.add": "Idagdag",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "Sa anong wika nakasulat ang librong ito?",
-  "gui.dungeontrain.book_language.caption": "Wika ng libro",
+  "gui.dungeontrain.book_language.caption": "Wika",
   "gui.dungeontrain.book_language.on_page": "Wika: %s",
   "gui.dungeontrain.translate.button": "Tumulong magsalin",
   "gui.dungeontrain.translate.button.tooltip": "Pagbutihin ang salin sa %s",

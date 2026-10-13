@@ -2567,7 +2567,7 @@
   "gui.dungeontrain.book_languages.pick.add": "追加",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "この本は何語で書かれていますか？",
-  "gui.dungeontrain.book_language.caption": "本の言語",
+  "gui.dungeontrain.book_language.caption": "言語",
   "gui.dungeontrain.book_language.on_page": "言語：%s",
   "gui.dungeontrain.translate.button": "翻訳に協力",
   "gui.dungeontrain.translate.button.tooltip": "%s の翻訳を改善する",

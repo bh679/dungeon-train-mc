@@ -54,11 +54,11 @@ public final class BookLanguageSignClient {
     private static final int PAGE_W = 114;
     private static final int PAGE_Y = 150;
     /**
-     * The "Language: …" line on the page: between vanilla's "by <author>" (y 60) and its sign note
-     * (y 82), centred in the page column, in the same black as the page's own text.
+     * The "Language: …" line on the page, directly under vanilla's "by <author>" (y 60) and in its
+     * grey, so it reads as part of the book's byline rather than the start of the sign note (y 82).
      */
-    private static final int PAGE_LINE_Y = 71;
-    private static final int PAGE_TEXT_COLOR = 0x000000;
+    private static final int PAGE_LINE_Y = 69;
+    private static final int PAGE_TEXT_COLOR = 0x808080;
     /** The "Book language" caption sits this far above the head, in light grey. */
     private static final int CAPTION_GAP = 11;
     private static final int CAPTION_COLOR = 0xFFA0A0A0;
@@ -188,6 +188,8 @@ public final class BookLanguageSignClient {
         net.minecraft.client.gui.Font font = net.minecraft.client.Minecraft.getInstance().font;
         net.minecraft.client.gui.GuiGraphics g = event.getGuiGraphics();
         Component line = Component.translatable(KEY + ".on_page", shortName(chosen));
+        // A long translated label could run off the page — then the language name alone.
+        if (font.width(line) > PAGE_W) line = shortName(chosen);
         int pageX = (screen.width - 2 * BOOK_HALF) / 2 + PAGE_X_FROM_BOOK;
         g.drawString(font, line, pageX + (PAGE_W - font.width(line)) / 2, PAGE_LINE_Y, PAGE_TEXT_COLOR, false);
         for (GuiEventListener child : screen.children()) {

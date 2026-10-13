@@ -2567,7 +2567,7 @@
   "gui.dungeontrain.book_languages.pick.add": "추가",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "이 책은 어떤 언어로 쓰였나요?",
-  "gui.dungeontrain.book_language.caption": "책 언어",
+  "gui.dungeontrain.book_language.caption": "언어",
   "gui.dungeontrain.book_language.on_page": "언어: %s",
   "gui.dungeontrain.translate.button": "번역 돕기",
   "gui.dungeontrain.translate.button.tooltip": "%s 번역 개선하기",

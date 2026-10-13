@@ -2616,7 +2616,7 @@
   "gui.dungeontrain.book_languages.pick.add": "Toevoegen",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "In welke taal is dit boek geschreven?",
-  "gui.dungeontrain.book_language.caption": "Boektaal",
+  "gui.dungeontrain.book_language.caption": "Taal",
   "gui.dungeontrain.book_language.on_page": "Taal: %s",
   "gui.dungeontrain.translate.button": "Help met vertalen",
   "gui.dungeontrain.translate.button.tooltip": "De %s-vertaling verbeteren",
