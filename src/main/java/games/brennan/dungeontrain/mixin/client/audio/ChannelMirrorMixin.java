@@ -6,7 +6,9 @@ import com.mojang.blaze3d.audio.Channel;
 import com.mojang.blaze3d.audio.SoundBuffer;
 import games.brennan.dungeontrain.client.live.audio.AudioMirror;
 import games.brennan.dungeontrain.client.live.audio.MirrorTwin;
+import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.client.sounds.AudioStream;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.openal.AL10;
@@ -36,6 +38,22 @@ public abstract class ChannelMirrorMixin implements MirrorTwin.Channel {
 
     @Unique private int dungeontrain$twinGen;
     @Unique private int dungeontrain$twinId;
+    @Unique @Nullable private volatile SoundSource dungeontrain$category;
+    @Unique @Nullable private volatile SoundInstance dungeontrain$instance;
+
+    @Override
+    @Nullable
+    public SoundSource dungeontrain$category() { return dungeontrain$category; }
+
+    @Override
+    @Nullable
+    public SoundInstance dungeontrain$instance() { return dungeontrain$instance; }
+
+    @Override
+    public void dungeontrain$setOrigin(SoundSource category, SoundInstance instance) {
+        dungeontrain$category = category;
+        dungeontrain$instance = instance;
+    }
 
     @Override
     public int dungeontrain$twinGen() { return dungeontrain$twinGen; }
@@ -82,7 +100,7 @@ public abstract class ChannelMirrorMixin implements MirrorTwin.Channel {
     }
 
     @Inject(method = "setVolume", at = @At("RETURN"))
-    private void dungeontrain$mirrorVolume(float volume, CallbackInfo ci) { AudioMirror.sourcef(this, AL10.AL_GAIN, volume); }
+    private void dungeontrain$mirrorVolume(float volume, CallbackInfo ci) { AudioMirror.volume(this, volume); }
 
     @Inject(method = "disableAttenuation", at = @At("RETURN"))
     private void dungeontrain$mirrorNoAttenuation(CallbackInfo ci) {

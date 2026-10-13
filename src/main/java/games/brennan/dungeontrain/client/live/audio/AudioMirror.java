@@ -11,6 +11,8 @@ import games.brennan.dungeontrain.mixin.client.audio.SoundBufferLibraryAccessor;
 import games.brennan.dungeontrain.mixin.client.audio.SoundEngineAccessor;
 import games.brennan.dungeontrain.mixin.client.audio.SoundManagerAccessor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.client.sounds.AudioStream;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -132,8 +134,7 @@ public final class AudioMirror {
     private static void seed(Session s, SoundEngineAccessor engine) {
         if (live != s) return;
         Listener listener = engine.dungeontrain$listener();
-        listenerTransform(listener.getTransform());
-        listenerGain(listener.getGain());
+        listenerTransform(listener.getTransform()); // gain stays 1: the stream ignores the master slider
         engine.dungeontrain$channelAccess().executeOnChannels(channels -> {
             channels.forEach(ch -> adopt(s, (MirrorTwin.Channel) ch));
             List<SoundBuffer> rest = new ArrayList<>();
@@ -217,6 +218,38 @@ public final class AudioMirror {
     }
 
     // ---- channel calls (sound thread, except destroy) ----------------------------------------
+
+    /** Whether a stream with sound is live — the engine's zero-volume skips stand aside while it is. */
+    public static boolean live() {
+        return live != null;
+    }
+
+    /** The speaker source's gain changed: the twin gets it with the streamer's category slider undone. */
+    public static void volume(MirrorTwin.Channel ch, float speakerGain) {
+        if (live == null) return;
+        float gain = streamGain(ch, speakerGain);
+        onTwin(ch, true, id -> AL10.alSourcef(id, AL10.AL_GAIN, gain));
+    }
+
+    /**
+     * NeoForge's play events (sound thread, right after attach + play): the channel learns what it
+     * plays, and its twin's gain is set again now that the category is known.
+     */
+    public static void played(MirrorTwin.Channel ch, SoundInstance instance) {
+        ch.dungeontrain$setOrigin(instance.getSource(), instance);
+        if (live == null) return;
+        float gain = streamGain(ch, AL10.alGetSourcef(ch.dungeontrain$speakerSource(), AL10.AL_GAIN));
+        onTwin(ch, false, id -> AL10.alSourcef(id, AL10.AL_GAIN, gain));
+    }
+
+    private static float streamGain(MirrorTwin.Channel ch, float speakerGain) {
+        SoundSource category = ch.dungeontrain$category();
+        SoundInstance instance = ch.dungeontrain$instance();
+        if (category == null || instance == null) return speakerGain;
+        // The engine's own getVolume(): MASTER-category sounds are not scaled by a slider at all.
+        float slider = category == SoundSource.MASTER ? 1.0F : Minecraft.getInstance().options.getSoundSourceVolume(category);
+        return StreamVolume.twinGain(speakerGain, slider, instance.getVolume());
+    }
 
     public static void sourcef(MirrorTwin.Channel ch, int param, float value) {
         onTwin(ch, true, id -> AL10.alSourcef(id, param, value));
@@ -382,11 +415,6 @@ public final class AudioMirror {
         }));
     }
 
-    public static void listenerGain(float gain) {
-        Session s = live;
-        if (s == null) return;
-        withLock(s, () -> s.device.run(() -> AL10.alListenerf(AL10.AL_GAIN, gain)));
-    }
 
     // ---- what may reach the stream ----------------------------------------------------------
 
@@ -496,7 +524,7 @@ public final class AudioMirror {
         if (id != 0) return id;
         int src = ch.dungeontrain$speakerSource();
         // Read on this thread's own (speaker) context, before switching to the mirror.
-        float gain = AL10.alGetSourcef(src, AL10.AL_GAIN);
+        float gain = streamGain(ch, AL10.alGetSourcef(src, AL10.AL_GAIN));
         float pitch = AL10.alGetSourcef(src, AL10.AL_PITCH);
         int looping = AL10.alGetSourcei(src, AL10.AL_LOOPING);
         int relative = AL10.alGetSourcei(src, AL10.AL_SOURCE_RELATIVE);

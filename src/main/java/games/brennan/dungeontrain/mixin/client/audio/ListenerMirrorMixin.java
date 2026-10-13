@@ -10,8 +10,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * The streamer's ears, copied to the stream's mirror context ({@link AudioMirror}): where the camera
- * is and which way it faces (sound thread), and the master volume (client thread). Viewers hear what
- * the streamer hears, at the streamer's master volume.
+ * is and which way it faces. Not the master volume — the stream is heard at full volume whatever the
+ * streamer's sliders say ({@code StreamVolume}).
  */
 @Mixin(Listener.class)
 public abstract class ListenerMirrorMixin {
@@ -19,10 +19,5 @@ public abstract class ListenerMirrorMixin {
     @Inject(method = "setTransform", at = @At("RETURN"))
     private void dungeontrain$mirrorTransform(ListenerTransform transform, CallbackInfo ci) {
         AudioMirror.listenerTransform(transform);
-    }
-
-    @Inject(method = "setGain", at = @At("RETURN"))
-    private void dungeontrain$mirrorGain(float gain, CallbackInfo ci) {
-        AudioMirror.listenerGain(gain);
     }
 }

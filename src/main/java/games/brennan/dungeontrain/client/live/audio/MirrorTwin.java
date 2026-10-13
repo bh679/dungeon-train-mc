@@ -33,6 +33,16 @@ public interface MirrorTwin {
     /** A {@code Channel}: also exposes the speaker source id the twin mirrors. */
     interface Channel extends MirrorTwin {
         int dungeontrain$speakerSource();
+
+        /** The sound's category, once the engine has said what is playing (null before). */
+        @org.jetbrains.annotations.Nullable
+        net.minecraft.sounds.SoundSource dungeontrain$category();
+
+        @org.jetbrains.annotations.Nullable
+        net.minecraft.client.resources.sounds.SoundInstance dungeontrain$instance();
+
+        void dungeontrain$setOrigin(net.minecraft.sounds.SoundSource category,
+                                    net.minecraft.client.resources.sounds.SoundInstance instance);
     }
 
     /** A {@code SoundBuffer}: also exposes whether and where it is uploaded to the speakers. */
