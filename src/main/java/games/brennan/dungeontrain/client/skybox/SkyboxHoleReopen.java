@@ -26,7 +26,10 @@ import org.lwjgl.opengl.GL11;
  *       pack's {@code gbuffers_basic}, allowed to write), depth test {@code LEQUAL}, depth and
  *       colour writes off, stencil {@code REPLACE} on {@link #STILL_VISIBLE_BIT}. A pixel passes
  *       only where the cube is still the frontmost surface — anything drawn in front of it since
- *       the punch left a nearer depth.</li>
+ *       the punch left a nearer depth. The bit is cleared first ({@link SkyboxStencil#clearBit}):
+ *       no frame clear touches stencil, and a view of only live-sky blocks skips the full clear
+ *       at {@code AFTER_SKY}, so without it marks accumulated across frames and the reopen below
+ *       pushed nearer blocks to the far plane wherever a cube had once been frontmost.</li>
  *   <li><b>Reopen</b> — the cubes again with {@code glDepthRange(1, 1)}, depth func {@code ALWAYS},
  *       depth writes on, colour off, stencil {@code EQUAL} that bit. Those pixels are now at
  *       depth 1.0 and the pack paints its sky there.</li>

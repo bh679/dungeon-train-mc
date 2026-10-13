@@ -151,15 +151,31 @@ public final class SkyboxStencil {
      * Configure the stencil for a pass that stamps a single <em>bit</em>, leaving every other bit
      * of the buffer alone.
      *
-     * <p>Unlike {@link #beginMaskPass()} this does not clear. That matters: the variant ids written
-     * at {@code AFTER_SKY} are what the post-composite sky pass reads to tell one hole from another,
-     * and clearing here would erase them halfway through the frame.</p>
+     * <p>Clears <em>only that bit</em> first, via {@link #clearBit(int)}. The variant ids written at
+     * {@code AFTER_SKY} are what the post-composite sky pass reads to tell one hole from another,
+     * so a full clear here would erase them halfway through the frame — but the bit itself must
+     * start clean every frame. Nothing else clears it: vanilla's and Iris' frame clears are colour
+     * and depth only, and {@link #beginMaskPass()} only runs when a variant with its own sky is on
+     * screen. A view of plain live-sky blocks therefore left last frame's marks in place, and the
+     * reopen pass pushed every stale-marked pixel the cubes covered to the far plane — a skybox
+     * block drawing its sky over a nearer block.</p>
      */
     public static void beginMarkPass(int bit) {
+        clearBit(bit);
         GL11.glEnable(GL11.GL_STENCIL_TEST);
         RenderSystem.stencilMask(bit);
         RenderSystem.stencilFunc(GL11.GL_ALWAYS, bit, bit);
         RenderSystem.stencilOp(GL11.GL_KEEP, GL11.GL_KEEP, GL11.GL_REPLACE);
+    }
+
+    /**
+     * Zero one stencil bit across the whole buffer, leaving the others untouched. {@code glClear}
+     * honours the stencil write mask, so masking to the bit makes the clear per-bit.
+     */
+    public static void clearBit(int bit) {
+        RenderSystem.stencilMask(bit);
+        RenderSystem.clearStencil(0);
+        RenderSystem.clear(GL11.GL_STENCIL_BUFFER_BIT, Minecraft.ON_OSX);
     }
 
     /**
