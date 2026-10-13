@@ -156,7 +156,8 @@ public final class PhotoAdvancementEvents {
         String dimension = data.get(Frame.DIMENSION).map(ResourceLocation::toString)
                 .orElse(player.level().dimension().location().toString());
         return new PhotoSubjects.Facts(types, playerMob, friend, echo, ownEcho, otherEcho, pigman, killerBunny,
-                techno, data.getOrDefault(Frame.IN_CAVE, false) || inCave(player), dimension, bandAt(player));
+                techno, data.getOrDefault(Frame.IN_CAVE, false) || inCave(player),
+                data.getOrDefault(Frame.SELFIE, false), dimension, bandAt(player));
     }
 
     /**

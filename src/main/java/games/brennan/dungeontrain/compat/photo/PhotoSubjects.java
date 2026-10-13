@@ -15,6 +15,7 @@ import java.util.Set;
  *       {@code echo_own} (your own Echo), {@code echo_other} (someone else's)</li>
  *   <li>specials: {@code pigman_villager}, {@code killer_bunny}, {@code technoblade_pig}</li>
  *   <li>{@code cave}, {@code dim:<dimension id>}</li>
+ *   <li>{@code selfie} — taken in Exposure's selfie mode, the camera facing the photographer</li>
  *   <li>{@code nether} / {@code end} — the train's own Nether or End, or the vanilla dimension</li>
  *   <li>{@code band:<forward band id>} — taken in one of the train's dimensions (either side of spawn)</li>
  *   <li>moments ({@link Scene}): {@code combat} (two creatures fighting each other), {@code pet_own}
@@ -38,6 +39,7 @@ public final class PhotoSubjects {
     public static final String NETHER = "nether";
     public static final String END = "end";
     public static final String CAVE = "cave";
+    public static final String SELFIE = "selfie";
     public static final String COMBAT = "combat";
     public static final String PET_OWN = "pet_own";
     public static final String PET_ECHO = "pet_echo";
@@ -48,12 +50,13 @@ public final class PhotoSubjects {
      * What one photo shows, already read off the frame and the live entities in it.
      *
      * @param entityTypes  type ids of every entity in frame
+     * @param selfie       taken in Exposure's selfie mode
      * @param dimension    dimension id the photo was taken in, or {@code null}
      * @param band         forward band advancement id the photographer stood in, or {@code null}
      */
     public record Facts(Set<String> entityTypes, boolean playerMob, boolean friend, boolean echo, boolean ownEcho,
                         boolean otherEcho, boolean pigmanVillager, boolean killerBunny, boolean technobladePig,
-                        boolean inCave, String dimension, String band) {}
+                        boolean inCave, boolean selfie, String dimension, String band) {}
 
     /**
      * What was happening between the creatures in frame, read off the live entities ({@code PhotoScene}).
@@ -93,6 +96,7 @@ public final class PhotoSubjects {
         if (f.killerBunny()) out.add(KILLER_BUNNY);
         if (f.technobladePig()) out.add(TECHNOBLADE_PIG);
         if (f.inCave()) out.add(CAVE);
+        if (f.selfie()) out.add(SELFIE);
         if (f.dimension() != null) out.add(DIMENSION_PREFIX + f.dimension());
         if ("minecraft:the_nether".equals(f.dimension()) || (f.band() != null && NETHER_BANDS.contains(f.band()))) out.add(NETHER);
         if ("minecraft:the_end".equals(f.dimension()) || (f.band() != null && END_BANDS.contains(f.band()))) out.add(END);
