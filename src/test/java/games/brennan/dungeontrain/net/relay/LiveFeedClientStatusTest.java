@@ -17,6 +17,22 @@ class LiveFeedClientStatusTest {
     }
 
     @Test
+    void theStatusPathRanksAViewerOnlyWhenAsked() {
+        java.util.UUID id = java.util.UUID.fromString("01234567-89ab-cdef-0123-456789abcdef");
+        String life = "0123456789abcdef0123456789abcdef";
+        LiveFeedClient.Life ranked = new LiveFeedClient.Life(life, false, "0.1268.2");
+        assertEquals("/live/status", LiveFeedClient.statusPath(null, ranked));
+        assertEquals("/live/status?viewer=" + id, LiveFeedClient.statusPath(id, null));
+        assertEquals("/live/status?viewer=" + id + "&lb=1&life=" + life + "&fp=0&v=0.1268.2",
+            LiveFeedClient.statusPath(id, ranked));
+        assertEquals("/live/status?viewer=" + id + "&lb=1&life=" + life + "&fp=1&v=0.1268.2%2Bdev",
+            LiveFeedClient.statusPath(id, new LiveFeedClient.Life(life, true, "0.1268.2+dev")));
+        // A server that never said which life: all-time only.
+        assertEquals("/live/status?viewer=" + id + "&lb=1",
+            LiveFeedClient.statusPath(id, new LiveFeedClient.Life("", false, "0.1268.2")));
+    }
+
+    @Test
     void aStoppedStreamIsStillOnAirWithWhereToGoAfterItsTail() {
         LiveFeedClient.Status s = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
             + "\"streamer\":\"Alice\",\"ended\":true,\"replayUrl\":\"https://x/main/s1/seg00004.ts\"}");

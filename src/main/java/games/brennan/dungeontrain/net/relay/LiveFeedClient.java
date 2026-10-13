@@ -122,9 +122,16 @@ public final class LiveFeedClient {
         return new LogRequest(target, id);
     }
 
-    /** A chat poll: whether anyone is on air, the ring's head seq, and the lines after {@code since}. */
-    public record ChatPage(boolean live, long seq, List<ChatLine> lines) {
-        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of());
+    /**
+     * A chat poll: whether anyone is on air, the ring's head seq, the lines after {@code since}, and the
+     * seqs of earlier lines removed since then ({@code deleted} — a Twitch mod deleted them).
+     */
+    public record ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted) {
+        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of());
+
+        public ChatPage(boolean live, long seq, List<ChatLine> lines) {
+            this(live, seq, lines, List.of());
+        }
     }
 
     /**
@@ -184,10 +191,16 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
-                                                  LiveClaimInfo info) {
+                                                  LiveClaimInfo info, @Nullable Life life) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
+        // Which life this stream is in, for the one-life "Longest Stream" board. A death ends the
+        // stream, so a session never spans two lives.
+        if (life != null) {
+            body.addProperty("lifeId", life.lifeId());
+            body.addProperty("freePlay", life.freePlay());
+        }
         // One id per Live Eye item: the relay's #live-eye post tells a relog from a new Live Eye by it.
         if (eyeId != null && !eyeId.isEmpty()) body.addProperty("eyeId", eyeId);
         // For the #live-eye post's streamer line: version + survey freshness dot, and Live Chat on/off.
@@ -292,7 +305,13 @@ public final class LiveFeedClient {
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m)));
                 }
             }
-            return new ChatPage(live, seq, List.copyOf(lines));
+            List<Long> deleted = new ArrayList<>();
+            if (b.has("deleted") && b.get("deleted").isJsonArray()) {
+                for (JsonElement el : b.getAsJsonArray("deleted")) {
+                    if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isNumber()) deleted.add(el.getAsLong());
+                }
+            }
+            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted));
         } catch (RuntimeException e) {
             return ChatPage.EMPTY;
         }
@@ -323,10 +342,44 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel) {
-        String path = "/live/status" + (viewer == null ? "" : "?viewer=" + viewer);
+        return status(viewer, channel, null);
+    }
+
+    /**
+     * The life a stream or a watch happened in, for the relay's one-life Live Feed boards. A blank
+     * {@code lifeId} (a server that never said) earns the all-time boards only.
+     */
+    public record Life(String lifeId, boolean freePlay, String version) {
+        public Life {
+            lifeId = lifeId == null ? "" : lifeId;
+            version = version == null ? "" : version;
+        }
+    }
+
+    /**
+     * {@link #status(UUID, Channel)}, and with a non-null {@code ranked} the viewer's watching counts
+     * toward the relay's "Longest Viewer" boards — all-time, and one-life for {@code ranked}'s life.
+     * Pass it only with the player's consent.
+     */
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked) {
+        String path = statusPath(viewer, ranked);
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
+    }
+
+    /**
+     * The status request's path: {@code ?viewer=} names who is watching, {@code &lb=1} lets it rank,
+     * and {@code life}/{@code fp}/{@code v} say which life it ranks in.
+     */
+    static String statusPath(@Nullable UUID viewer, @Nullable Life ranked) {
+        if (viewer == null) return "/live/status";
+        String path = "/live/status?viewer=" + viewer;
+        if (ranked == null) return path;
+        path += "&lb=1";
+        if (ranked.lifeId().isEmpty()) return path;
+        return path + "&life=" + ranked.lifeId() + "&fp=" + (ranked.freePlay() ? 1 : 0)
+            + "&v=" + java.net.URLEncoder.encode(ranked.version(), java.nio.charset.StandardCharsets.UTF_8);
     }
 
     public static Status parseStatus(Result r) {
