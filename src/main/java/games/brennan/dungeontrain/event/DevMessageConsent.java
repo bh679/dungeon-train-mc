@@ -1,7 +1,10 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.discordpresence.compat.DiscordCommandHooks;
 import games.brennan.dungeontrain.discord.DevMessageReport;
+import games.brennan.dungeontrain.logrequest.DeliveryFailureReport;
+import org.jetbrains.annotations.Nullable;
 import games.brennan.dungeontrain.net.ConsentUpdatePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.ChatFormatting;
@@ -80,6 +83,8 @@ public final class DevMessageConsent {
         boolean granted;
         double grantSession;
         long lastMsgToDevMs;
+        /** The client's Developer chat switch; true until the first sync says otherwise. */
+        boolean devChatEnabled = true;
     }
 
     private static final Map<UUID, Mirror> MIRRORS = new ConcurrentHashMap<>();
@@ -155,11 +160,19 @@ public final class DevMessageConsent {
     }
 
     /** Seed the mirror from the client's login sync ({@link games.brennan.dungeontrain.net.ConsentSyncPacket}). Server thread. */
-    public static void onClientSync(ServerPlayer player, boolean granted, double grantSession, double lastMsgToDevMs) {
+    public static void onClientSync(ServerPlayer player, boolean granted, double grantSession, double lastMsgToDevMs,
+                                    boolean devChatEnabled) {
         Mirror m = MIRRORS.computeIfAbsent(player.getUUID(), k -> new Mirror());
         m.granted = granted;
         m.grantSession = grantSession;
         m.lastMsgToDevMs = (long) lastMsgToDevMs;
+        m.devChatEnabled = devChatEnabled;
+    }
+
+    /** Whether {@code playerId}'s client has switched Developer chat off (false until it has synced). */
+    public static boolean isDevChatOff(UUID playerId) {
+        Mirror m = MIRRORS.get(playerId);
+        return m != null && !m.devChatEnabled;
     }
 
     /** True if {@code playerId} currently has a valid consent to receive Developer messages in-game. */
@@ -194,7 +207,7 @@ public final class DevMessageConsent {
      *                post) — such a message is shown to nobody in-game.
      * @param content the message text.
      */
-    public static void onDevMessage(UUID owner, String content) {
+    public static void onDevMessage(UUID owner, String content, @Nullable DiscordCommandHooks.Reply reply) {
         if (owner == null || content == null || content.isBlank()) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return; // at the main menu there is no in-game surface; menu chat has it
@@ -204,8 +217,17 @@ public final class DevMessageConsent {
             // Kid mode: drop the message entirely rather than holding it behind the consent prompt. A
             // prompt would be worse than nothing — it advertises to the child that an adult is trying
             // to reach them and offers them a way to accept. The menu-chat surface is closed too (see
-            // RelayChatClient.canConnect), so this really is the whole inbound path.
-            if (ContentModeMirror.isKid(player)) return;
+            // RelayChatClient.canConnect), so this really is the whole inbound path. The Developer
+            // chat switch vetoes it the same way. Either way the Developer is told it didn't land.
+            String name = player.getGameProfile().getName();
+            if (ContentModeMirror.isKid(player)) {
+                DeliveryFailureReport.report(reply, player, name, DeliveryFailureReport.Reason.KID_MODE);
+                return;
+            }
+            if (isDevChatOff(player.getUUID())) {
+                DeliveryFailureReport.report(reply, player, name, DeliveryFailureReport.Reason.DEV_CHAT_OFF);
+                return;
+            }
             if (isValid(player.getUUID())) {
                 player.sendSystemMessage(deliveredLine(content));
                 AchievementEvents.notifyCreatorAnswered(player);

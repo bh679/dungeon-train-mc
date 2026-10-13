@@ -25571,9 +25571,9 @@
       "highlights": [],
       "pr": 1982,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "twitch-deletions-follow",
@@ -25588,9 +25588,9 @@
       "highlights": [],
       "pr": 1983,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "carriage-milestones-on-time",
@@ -25605,9 +25605,9 @@
       "highlights": [],
       "pr": 1984,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "translation-reviewer-credit",
@@ -25622,9 +25622,9 @@
       "highlights": [],
       "pr": 1985,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "livestream-time-leaderboards",
@@ -25639,9 +25639,9 @@
       "highlights": [],
       "pr": 1986,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "backpack-collects-pickups",
@@ -25654,9 +25654,62 @@
       "summary": "Your backpack now catches what you pick up.",
       "highlights": [],
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
+    },
+    {
+      "id": "developer-log-requests",
+      "version": "0.1276.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Send your logs to the developer",
+      "summary": "The developer can now ask to look at your game logs, and you choose whether to send them.",
+      "highlights": [],
+      "pr": 1987,
+      "date": "2026-10-13",
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
+    },
+    {
+      "id": "dimension-variant-half-fix",
+      "version": "0.1277.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriage blocks face the right way",
+      "summary": "Trapdoors, stairs and slabs in dimensional carriages now sit the way their builders set them.",
+      "highlights": [],
+      "pr": 1989,
+      "date": "2026-10-13",
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
+    },
+    {
+      "id": "largerlibrary-room-variants",
+      "version": "0.1278.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "A roomier library",
+      "summary": "One of the dimensional carriage libraries has been rearranged, with more to find on its upper floors.",
+      "highlights": [],
+      "pr": 1990,
+      "date": "2026-10-13",
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     }
   ]
 }

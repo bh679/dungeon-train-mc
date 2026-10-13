@@ -2022,6 +2022,10 @@ public final class PortalCarriageBuilder {
                 };
                 VariantState picked = sidecar.resolve(local, worldSeed, cellIndex);
                 if (picked == null) continue;
+                // Every write below goes through the entry's authored facing / half / toggle, as the
+                // carriage stamp does — writing the captured state alone ignored the menu's T/B pick.
+                final int lockId = sidecar.lockIdAt(local);
+                final int rollIndex = cellIndex;
                 if (picked.isMob()) {
                     // The cell itself still has to go: a mob entry carries an empty-placeholder sentinel as
                     // its state so every block applier blanks it without a special case.
@@ -2041,7 +2045,9 @@ public final class PortalCarriageBuilder {
                     // A two-space cell (door / bed / tall plant) writes both of its spaces; an empty
                     // pick clears them. Same no-cascade + eviction rules as the single write below.
                     for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(local), picked, local,
-                            worldSeed, cellIndex, VariantState::state)) {
+                            worldSeed, cellIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                                games.brennan.dungeontrain.train.StagePlacementScope.resolve(v.state()), v,
+                                local, worldSeed, rollIndex, lockId))) {
                         BlockPos wWorld = roomOrigin.offset(w.localPos());
                         if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
                         if (w.isAir()) {
@@ -2050,7 +2056,7 @@ public final class PortalCarriageBuilder {
                             continue;
                         }
                         SilentBlockOps.evictBlockEntity(level.getChunkAt(wWorld), wWorld);
-                        BlockState placedState = games.brennan.dungeontrain.train.StagePlacementScope.resolve(w.state());
+                        BlockState placedState = w.state();
                         ContainerContentsPlacement.place(level, wWorld,
                             placedState, w.entry().blockEntityNbt(),
                             plotKey, w.localPos(), worldSeed, cellIndex, /*diffIndex*/ pairKey,
@@ -2080,7 +2086,9 @@ public final class PortalCarriageBuilder {
                 // The same index the block was picked at, so a flagged chest's contents vary with the
                 // block rather than the block changing over identical loot. Still the pair-and-copy
                 // frame, never the difficulty one — pairKey stays that, see the javadoc above.
-                BlockState placedState = games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state());
+                BlockState placedState = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                    games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state()), picked,
+                    local, worldSeed, cellIndex, lockId);
                 ContainerContentsPlacement.place(level, world,
                     placedState, picked.blockEntityNbt(),
                     plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,
