@@ -160,7 +160,7 @@ public final class LiveFeedClient {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
-        // Which life this stream is in, for the one-life "Longest On Air" board. A death ends the
+        // Which life this stream is in, for the one-life "Longest Stream" board. A death ends the
         // stream, so a session never spans two lives.
         if (life != null) {
             body.addProperty("lifeId", life.lifeId());

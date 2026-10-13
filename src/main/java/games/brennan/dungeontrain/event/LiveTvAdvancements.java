@@ -106,7 +106,7 @@ public final class LiveTvAdvancements {
         if (reached(now, streamSince, STREAM_15_ID)) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "livestream_15_min");
         }
-        // This life's "Longest On Air" figure for Faulthurst's stat book.
+        // This life's "Longest Stream" figure for Faulthurst's stat book.
         player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).addLiveStreamSeconds(1);
         long total = player.getData(ModDataAttachments.LIVESTREAM_TICKS.get()) + TICKS_PER_SECOND;
         player.setData(ModDataAttachments.LIVESTREAM_TICKS.get(), total);

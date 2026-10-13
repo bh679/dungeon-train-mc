@@ -220,7 +220,7 @@ public final class PlayerRunState {
     /**
      * This life's seconds on the Live Feed — on air with the Live Eye ({@code LiveTvAdvancements}),
      * and watching it ({@code LiveWatchTally}, as the client reports its consented, ranked polls) —
-     * the one-life twins of the "Longest On Air" / "Longest Watching" boards. In-memory only, NOT in
+     * the one-life twins of the "Longest Stream" / "Longest Watching" boards. In-memory only, NOT in
      * {@link #CODEC}, for the same 16-field reason as the photo counts above.
      */
     private long liveStreamSeconds;

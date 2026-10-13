@@ -125,8 +125,8 @@ public enum LeaderboardCategory {
     // Time on the Live Feed: on air with the Live Eye, and watching it on a TV. The relay measures
     // both from the feed's own traffic (livetime.js); the one-life halves key on the life id the
     // server sends the client (LiveLifePacket), so a pair like the photo boards.
-    LIVE_STREAM_TIME("live_stream_time", "live_stream_time", "Longest On Air", Scope.TOTAL, Format.DURATION),
-    LIVE_STREAM_RUN("live_stream_run", "live_stream_time", "Longest On Air", Scope.RUN, Format.DURATION),
+    LIVE_STREAM_TIME("live_stream_time", "live_stream_time", "Longest Stream", Scope.TOTAL, Format.DURATION),
+    LIVE_STREAM_RUN("live_stream_run", "live_stream_time", "Longest Stream", Scope.RUN, Format.DURATION),
     LIVE_VIEW_TIME("live_view_time", "live_view_time", "Longest Watching", Scope.TOTAL, Format.DURATION),
     LIVE_VIEW_RUN("live_view_run", "live_view_time", "Longest Watching", Scope.RUN, Format.DURATION);
 
