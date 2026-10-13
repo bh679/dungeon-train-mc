@@ -107,7 +107,7 @@ public final class DeathNoteEvents {
         ItemEntity drop = new ItemEntity(echo.level(), echo.getX(), echo.getY() + 0.5, echo.getZ(), book);
         drop.setDefaultPickUpDelay();
         echo.level().addFreshEntity(drop);
-        if (event.getSource().getEntity() instanceof ServerPlayer killer) {
+        if (KillCredit.resolveKiller(echo, event.getSource()).orElse(null) instanceof ServerPlayer killer) {
             ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(killer, killedEchoActionId(kind));
         }
         LOGGER.debug("[DungeonTrain] Note: echo of {} dropped a {} on death", author, kind.trophyTitle());
@@ -172,7 +172,8 @@ public final class DeathNoteEvents {
     public static void onCursedPlayerDeath(LivingDeathEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer victim)) return;
         if (victim.level().isClientSide()) return;
-        if (!(event.getSource().getEntity() instanceof PlayerMobEntity echo)) return;
+        if (!(KillCredit.resolveKiller(victim, event.getSource()).orElse(null)
+                instanceof PlayerMobEntity echo)) return;
         CompoundTag data = echo.getPersistentData();
         if (!data.contains(DeathNoteEchoSpawner.KEY_TARGET)) return;      // an ordinary PlayerMob kill
         if (!victim.getUUID().toString().equals(data.getString(DeathNoteEchoSpawner.KEY_TARGET))) return;

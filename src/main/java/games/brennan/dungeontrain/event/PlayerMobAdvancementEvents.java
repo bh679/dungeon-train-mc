@@ -287,7 +287,8 @@ public final class PlayerMobAdvancementEvents {
     public static void onMobKilled(LivingDeathEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (!(KillCredit.resolveKiller(victim, event.getSource()).orElse(null)
+                instanceof ServerPlayer player)) return;
         if (!(victim instanceof Mob mob)) return;
         if (isPlayerMob(mob.getTarget())) {
             ModAdvancementTriggers.DEFENDED_PLAYERMOB.get().trigger(player);
@@ -347,8 +348,10 @@ public final class PlayerMobAdvancementEvents {
     public static void onEchoKilled(LivingDeathEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer player)) return;
-        boolean own = EchoIdentity.isOwnEcho(victim, player.getUUID());
+        // A shove into the void or lava counts too (see KillCredit).
+        if (!(KillCredit.resolveKiller(victim, event.getSource()).orElse(null)
+                instanceof ServerPlayer player)) return;
+        boolean own =EchoIdentity.isOwnEcho(victim, player.getUUID());
         if (own) {
             ModAdvancementTriggers.KILLED_ECHO.get().trigger(player);
         } else if (EchoIdentity.sourcePlayer(victim).isPresent()) {
@@ -370,8 +373,8 @@ public final class PlayerMobAdvancementEvents {
 
     /**
      * Fires when an echo the player recently shoved off the train falls to its death in the void
-     * ({@code FELL_OUT_OF_WORLD}). A void death carries no killer entity, so {@link #onEchoKilled}
-     * never sees it — this handler bridges the gap. The strike is captured in
+     * ({@code FELL_OUT_OF_WORLD}). {@link #onEchoKilled} already credits the kill itself (via
+     * {@link KillCredit}); this handler adds the void-push feats on top. The strike is captured in
      * {@link #onAttackEntity} (with whether the echo was aboard at the time); a death within
      * {@link #VOID_PUSH_WINDOW_TICKS} of an on-train strike reads as a deliberate shove and credits
      * {@code own_void_push} or {@code remote_void_push} per the echo's source identity.

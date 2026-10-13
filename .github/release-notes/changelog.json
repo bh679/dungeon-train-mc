@@ -25724,9 +25724,9 @@
       "highlights": [],
       "pr": 1991,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1281.0",
+      "released_at": "2026-10-13T15:30:08Z"
     },
     {
       "id": "cf-include-hybrid-siblings",
@@ -25739,13 +25739,30 @@
       "summary": "The CurseForge modpack now installs two more of Dungeon Train's companion mods from their own pages.",
       "highlights": [],
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1281.0",
+      "released_at": "2026-10-13T15:30:08Z"
+    },
+    {
+      "id": "knockback-kill-credit",
+      "version": "0.1281.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Knock-off kills count",
+      "summary": "Sending something off the edge or into lava now counts as your kill.",
+      "highlights": [],
+      "pr": 1995,
+      "date": "2026-10-13",
+      "released": true,
+      "released_in": "v0.1281.0",
+      "released_at": "2026-10-13T15:30:08Z"
     },
     {
       "id": "backpack-auto-collect-setting",
-      "version": "0.1281.0",
+      "version": "0.1282.0",
       "type": "feat",
       "tags": [
         "feature",
