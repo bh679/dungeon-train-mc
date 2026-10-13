@@ -772,8 +772,100 @@ def test_paging_stops_when_the_cursor_stops_advancing():
     assert Stuck.hits <= 2, Stuck.hits
 
 
+# ---- the Discord approver is the reviewer --------------------------------------
+#
+# The relay's admin listing carries `reviewer` when a person approved the line on Discord. That
+# person read and accepted the text, so they take the reviewer slot ahead of the fallback.
+
+APPROVER_AUTHORS = {**AUTHORS, "Approver": "human", "SandRuin": "human"}
+
+
+def test_the_discord_approver_is_stamped_as_reviewer():
+    ws = workspace(authors=APPROVER_AUTHORS)
+    proc = run(ws, [unit(reviewer="  Approver  ", reviewerUuid="u-1")])
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"] == {"author": "老本願", "reviewer": "Approver", "source_hash": pio.source_hash("Alpha")}
+
+
+def test_a_blank_or_missing_reviewer_keeps_the_translator_as_reviewer():
+    for over in ({}, {"reviewer": None}, {"reviewer": "   "}, {"reviewer": 7}):
+        ws = workspace()
+        proc = run(ws, [unit(**over)])
+        assert proc.returncode == 0, (over, proc.stderr)
+        assert prov_of(ws)["a.key"]["reviewer"] == "老本願", over
+
+
+def test_the_discord_approver_outranks_the_runner_up_for_the_reviewer_slot():
+    ws = workspace(authors=APPROVER_AUTHORS)
+    proc = run(ws, [unit(id=4, ts=100, translator="SandRuin", value="早い Alpha"),
+                    unit(id=9, ts=200, translator="老本願", value="新しい Alpha",
+                         reviewer="Approver")])
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"]["author"] == "老本願"
+    assert prov_of(ws)["a.key"]["reviewer"] == "Approver"
+    assert "WARNING" in proc.stdout and "SandRuin" in proc.stdout, proc.stdout
+
+
+def test_the_discord_approver_reviews_a_line_that_already_matches_a_humans():
+    prov = dict(PROV, **{"a.key": {"author": "阿世xAsh", "reviewer": "", "source_hash": ""}})
+    ws = workspace(prov=prov, authors=dict(APPROVER_AUTHORS, **{"阿世xAsh": "human"}))
+    proc = run(ws, [unit(value="AI Alpha", reviewer="Approver")])
+    assert proc.returncode == 0, proc.stderr
+    assert prov_of(ws)["a.key"] == {"author": "阿世xAsh", "reviewer": "Approver", "source_hash": pio.source_hash("Alpha")}
+
+
+def test_a_new_discord_approver_whose_review_landed_is_registered():
+    ws = workspace()
+    out = os.path.join(ws, "new-authors.json")
+    proc = run(ws, [unit(reviewer="FreshApprover")], "--register-new", "--new-authors-out", out)
+    assert proc.returncode == 0, proc.stderr
+    assert read_json(os.path.join(ws, "authors.json"))["FreshApprover"] == "human"
+    assert read_json(out) == ["FreshApprover"]
+    assert prov_of(ws)["a.key"]["reviewer"] == "FreshApprover"
+
+
+def test_an_unregistered_discord_approver_fails_without_register_new():
+    ws = workspace()
+    proc = run(ws, [unit(reviewer="FreshApprover")])
+    assert proc.returncode != 0
+    assert "FreshApprover" in proc.stderr
+    assert lang_of(ws)["a.key"] == "AI Alpha"
+
+
+def test_a_book_field_is_stamped_with_the_discord_approver_as_reviewer():
+    ws = workspace(authors=APPROVER_AUTHORS)
+    rows = [unit(unitType="book", unitId="random_books/deathnote#variants.0", source="",
+                 value="人工 one", reviewer="Approver")]
+    proc = run(ws, rows)
+    assert proc.returncode == 0, proc.stderr
+    assert book_prov_of(ws)["random_books/deathnote"] == {
+        "author": "Opus 5 (Claude)", "reviewer": "Approver",
+        "source_hash": pio.book_source_hash(BOOK_EN), "fields": {"variants.0": "老本願"}}
+
+
+def test_a_rewritten_book_is_stamped_with_the_discord_approver_as_reviewer():
+    ws = workspace(authors=APPROVER_AUTHORS)
+    fields = {"title": "人工 Title", "variants.0": "人工 one", "variants.1": "人工 two"}
+    rows = [unit(id=i, unitType="book", unitId=f"random_books/deathnote#{field}",
+                 source="", value=value, reviewer="Approver")
+            for i, (field, value) in enumerate(fields.items())]
+    proc = run(ws, rows)
+    assert proc.returncode == 0, proc.stderr
+    assert book_prov_of(ws)["random_books/deathnote"] == {
+        "author": "老本願", "reviewer": "Approver", "source_hash": pio.book_source_hash(BOOK_EN)}
+
+
+def test_reviewer_of_sanitises_the_relay_field():
+    mod = _importer()
+    assert mod.reviewer_of({"reviewer": " Ann "}) == "Ann"
+    assert mod.reviewer_of({"reviewer": ""}) is None
+    assert mod.reviewer_of({"reviewer": None}) is None
+    assert mod.reviewer_of({"reviewer": ["Ann"]}) is None
+    assert mod.reviewer_of({}) is None
+
+
 def _main():
-    funcs = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
+    funcs =[v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failures = 0
     for fn in funcs:
         try:
