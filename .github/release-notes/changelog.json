@@ -25442,8 +25442,8 @@
         "feature",
         "ui"
       ],
-      "title": "Chat-off icon on stream",
-      "summary": "Viewers can now tell at a glance when a streamer isn't reading chat.",
+      "title": "Chat-off notice on stream",
+      "summary": "Viewers can now see when a streamer has chat turned off.",
       "highlights": [],
       "pr": 1973,
       "date": "2026-10-13",

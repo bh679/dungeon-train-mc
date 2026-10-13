@@ -73,16 +73,11 @@ class StreamNameTagTest {
     }
 
     @Test
-    void chatOffIconFollowsLiveChat() {
+    void chatDisabledFollowsLiveChat() {
         assertTrue(StreamNameTag.chatOff(false, false), "Live chat off");
         assertTrue(StreamNameTag.chatOff(true, true), "Kid mode forces it off");
         assertTrue(StreamNameTag.chatOff(false, true));
-        assertEquals(false, StreamNameTag.chatOff(true, false), "Live chat on, not Kid: no icon");
-    }
-
-    @Test
-    void chatOffIconIsRectangular() {
-        for (String row : StreamNameTag.CHAT_OFF) assertEquals(StreamNameTag.CHAT_OFF[0].length(), row.length());
+        assertEquals(false, StreamNameTag.chatOff(true, false), "Live chat on, not Kid: plain label");
     }
 
     @Test

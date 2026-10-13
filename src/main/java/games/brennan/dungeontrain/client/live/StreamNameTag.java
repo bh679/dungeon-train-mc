@@ -20,8 +20,8 @@ import org.joml.Matrix4fStack;
 
 /**
  * "<b>Name</b> is live", top-middle in black on a black-outlined white pill with a pulsing green
- * dot before it (and a slashed speech bubble after it when the streamer has Live chat off), drawn into
- * the broadcast picture only.
+ * dot before it ("… is live with chat disabled" when the streamer has Live chat off), drawn into the
+ * broadcast picture only.
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
@@ -37,6 +37,7 @@ public final class StreamNameTag {
     /** GUI pixels from the top of the picture to the top of the pill. */
     static final int TOP_OFFSET = 4;
     static final String LABEL_KEY = "gui.dungeontrain.live.name_tag";
+    static final String LABEL_CHAT_OFF_KEY = "gui.dungeontrain.live.name_tag.chat_off";
     static final int TEXT = 0xFF000000;
     static final int PILL = 0xFFFFFFFF;
     static final int OUTLINE = 0xFF000000;
@@ -54,20 +55,6 @@ public final class StreamNameTag {
     static final long PULSE_MS = 1200;
     /** The dot's dimmest alpha, out of 1; it peaks at fully opaque. */
     static final double PULSE_MIN = 0.35;
-    /** GUI pixels between "is live" and the chat-off icon. */
-    static final int ICON_GAP = 4;
-    /** A speech bubble (tail bottom-left) with a slash through it, one cell per GUI pixel. */
-    static final String[] CHAT_OFF = {
-        ".#.#######.",
-        "#.#.......#",
-        "#..#......#",
-        "#...#.....#",
-        "#....#....#",
-        "#.....#...#",
-        ".#####.#.#.",
-        "..##....#..",
-        "..#......#.",
-    };
 
     private StreamNameTag() {}
 
@@ -128,7 +115,7 @@ public final class StreamNameTag {
             RenderSystem.applyModelViewMatrix();
             target.bindWrite(true);
             GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-            draw(graphics, mc.font, label(name), chatOff(LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode()),
+            draw(graphics, mc.font, label(name, chatOff(LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode())),
                 w, scale);
             graphics.flush();
         } finally {
@@ -141,14 +128,11 @@ public final class StreamNameTag {
 
     /**
      * The outlined pill and the dot in target pixels (so their curves are smooth at stream
-     * resolution, not a GUI-pixel staircase), then the name in GUI pixels, then the chat-off icon if
-     * it applies.
+     * resolution, not a GUI-pixel staircase), then the name in GUI pixels.
      */
-    private static void draw(GuiGraphics graphics, Font font, Component label, boolean chatOff, int targetW,
-                             float scale) {
+    private static void draw(GuiGraphics graphics, Font font, Component label, int targetW, float scale) {
         int textW = font.width(label) - 1; // drop the trailing 1px advance so the group centres
-        int iconW = chatOff ? ICON_GAP + CHAT_OFF[0].length() : 0;
-        float groupW = (DOT_SIZE + DOT_GAP + textW + iconW) * scale;
+        float groupW = (DOT_SIZE + DOT_GAP + textW) * scale;
         int pillW = Math.round(groupW + 2 * PAD_X * scale);
         int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
         int pillX = (targetW - pillW) / 2;
@@ -167,16 +151,15 @@ public final class StreamNameTag {
         graphics.pose().scale(scale, scale, 1f);
         graphics.drawString(font, label, 0, 0, TEXT, false);
         graphics.pose().popPose();
+    }
 
-        if (chatOff) {
-            float iconX = groupX + (DOT_SIZE + DOT_GAP + textW + ICON_GAP) * scale;
-            float iconY = pillY + (pillH - CHAT_OFF.length * scale) / 2f;
-            graphics.pose().pushPose();
-            graphics.pose().translate(iconX, iconY, 0f);
-            graphics.pose().scale(scale, scale, 1f);
-            mask(graphics, CHAT_OFF, TEXT);
-            graphics.pose().popPose();
-        }
+    /**
+     * "<b>name</b> is live", or "<b>name</b> is live with chat disabled" when {@code chatOff}, in the
+     * streamer's language. Whole sentences per key so each language keeps its own word order.
+     */
+    static Component label(String name, boolean chatOff) {
+        return Component.translatable(chatOff ? LABEL_CHAT_OFF_KEY : LABEL_KEY,
+            Component.literal(name).withStyle(ChatFormatting.BOLD));
     }
 
     /**
@@ -185,20 +168,6 @@ public final class StreamNameTag {
      */
     static boolean chatOff(boolean liveChat, boolean kid) {
         return !liveChat || kid;
-    }
-
-    /** One {@code fill} per '#' cell of {@code mask}, at the current pose. */
-    private static void mask(GuiGraphics graphics, String[] mask, int color) {
-        for (int row = 0; row < mask.length; row++) {
-            for (int col = 0; col < mask[row].length(); col++) {
-                if (mask[row].charAt(col) == '#') graphics.fill(col, row, col + 1, row + 1, color);
-            }
-        }
-    }
-
-    /** "<b>name</b> is live", in the streamer's language. */
-    static Component label(String name) {
-        return Component.translatable(LABEL_KEY, Component.literal(name).withStyle(ChatFormatting.BOLD));
     }
 
     /** A {@code w}×{@code h} pill at ({@code x},{@code y}); with {@code w == h} it is a disc. */
