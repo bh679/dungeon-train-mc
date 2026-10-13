@@ -25776,6 +25776,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "skybox-blocks-shader-occlusion",
+      "version": "0.1282.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Skybox blocks under shader packs",
+      "summary": "With a shader pack on, skybox blocks now sit properly among the blocks, mobs and glass around them.",
+      "highlights": [],
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
