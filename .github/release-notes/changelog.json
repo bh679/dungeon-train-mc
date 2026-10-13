@@ -25488,6 +25488,23 @@
       "released": true,
       "released_in": "v0.1265.0",
       "released_at": "2026-10-13T05:58:40Z"
+    },
+    {
+      "id": "live-eye-offline-reason",
+      "version": "0.1266.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Why the stream ended",
+      "summary": "Discord's live channel now says why a stream ended, and stays quiet when the streamer has chat off.",
+      "highlights": [],
+      "pr": 1976,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
