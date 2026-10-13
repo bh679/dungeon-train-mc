@@ -3161,6 +3161,8 @@
   "gui.dungeontrain.book_languages.pick.add": "Додати",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "Якою мовою написано цю книжку?",
+  "gui.dungeontrain.book_language.caption": "Мова книжки",
+  "gui.dungeontrain.book_language.on_page": "Мова: %s",
   "gui.dungeontrain.translate.button": "Допомогти з перекладом",
   "gui.dungeontrain.translate.button.tooltip": "Покращити переклад: %s",
   "gui.dungeontrain.translate.switch.title": "Спершу змінити мову?",

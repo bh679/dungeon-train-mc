@@ -53,6 +53,15 @@ public final class BookLanguageSignClient {
     private static final int PAGE_X_FROM_BOOK = 36;
     private static final int PAGE_W = 114;
     private static final int PAGE_Y = 150;
+    /**
+     * The "Language: …" line on the page: between vanilla's "by <author>" (y 60) and its sign note
+     * (y 82), centred in the page column, in the same black as the page's own text.
+     */
+    private static final int PAGE_LINE_Y = 71;
+    private static final int PAGE_TEXT_COLOR = 0x000000;
+    /** The "Book language" caption sits this far above the head, in light grey. */
+    private static final int CAPTION_GAP = 11;
+    private static final int CAPTION_COLOR = 0xFFA0A0A0;
 
     /** The screen the state below belongs to — a new sign screen starts over on the game language. */
     private static WeakReference<BookEditScreen> owner = new WeakReference<>(null);
@@ -70,9 +79,22 @@ public final class BookLanguageSignClient {
 
     /** One language in the open dropdown. */
     private static final class Option extends Button {
-        Option(int x, int y, int width, Component name, OnPress onPress) {
-            super(x, y, width, HEIGHT, name, onPress, DEFAULT_NARRATION);
+        final String locale;
+
+        Option(int x, int y, int width, String locale, OnPress onPress) {
+            super(x, y, width, HEIGHT, shortName(locale), onPress, DEFAULT_NARRATION);
+            this.locale = locale;
         }
+    }
+
+    /**
+     * A language's own name without its region ("Українська", "English") — short enough to read whole
+     * on the button and the page. Each choice is a different language family, so names don't collide.
+     */
+    static Component shortName(String locale) {
+        net.minecraft.client.resources.language.LanguageInfo info = locale == null ? null
+                : net.minecraft.client.Minecraft.getInstance().getLanguageManager().getLanguage(locale);
+        return info != null ? Component.literal(info.name()) : Component.literal(String.valueOf(locale));
     }
 
     /** The game language followed by the extra reading languages. */
@@ -102,7 +124,7 @@ public final class BookLanguageSignClient {
         }
         int width = MIN_WIDTH;
         for (String locale : choices) {
-            Component head = Component.translatable(KEY + ".head", ReadingLanguagesScreen.languageName(locale));
+            Component head = Component.translatable(KEY + ".head", shortName(locale));
             width = Math.max(width, net.minecraft.client.Minecraft.getInstance().font.width(head) + TEXT_PAD);
         }
         width = Math.min(width, MAX_WIDTH);
@@ -127,7 +149,7 @@ public final class BookLanguageSignClient {
         event.addListener(head);
         for (int i = 0; i < choices.size(); i++) {
             String locale = choices.get(i);
-            event.addListener(new Option(x, y + step * (i + 1), width, ReadingLanguagesScreen.languageName(locale), b -> {
+            event.addListener(new Option(x, y + step * (i + 1), width, locale, b -> {
                 chosen = locale;
                 open = false;
             }));
@@ -141,9 +163,37 @@ public final class BookLanguageSignClient {
         for (GuiEventListener child : screen.children()) {
             if (child instanceof Head head) {
                 head.visible = show;
-                head.setMessage(Component.translatable(KEY + ".head", ReadingLanguagesScreen.languageName(chosen)));
+                head.setMessage(Component.translatable(KEY + ".head", shortName(chosen)));
             } else if (child instanceof Option option) {
+                // The current pick is ticked and greyed, so the open list shows which one is in use.
+                boolean current = option.locale.equals(chosen);
                 option.visible = show && open;
+                option.active = !current;
+                option.setMessage(current
+                        ? Component.literal("✔ ").append(shortName(option.locale))
+                        : shortName(option.locale));
+            }
+        }
+    }
+
+    /**
+     * The chosen language written on the page itself — "Language: Українська" under "by <author>" — so
+     * the language the book will be filed under is plain whether or not the dropdown is open; plus a
+     * "Book language" caption over the dropdown when it sits beside the book.
+     */
+    @SubscribeEvent
+    public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
+        if (!(event.getScreen() instanceof BookEditScreen screen) || owner.get() != screen) return;
+        if (chosen == null || !applies(screen)) return;
+        net.minecraft.client.gui.Font font = net.minecraft.client.Minecraft.getInstance().font;
+        net.minecraft.client.gui.GuiGraphics g = event.getGuiGraphics();
+        Component line = Component.translatable(KEY + ".on_page", shortName(chosen));
+        int pageX = (screen.width - 2 * BOOK_HALF) / 2 + PAGE_X_FROM_BOOK;
+        g.drawString(font, line, pageX + (PAGE_W - font.width(line)) / 2, PAGE_LINE_Y, PAGE_TEXT_COLOR, false);
+        for (GuiEventListener child : screen.children()) {
+            if (child instanceof Head head && head.getY() == SIDE_Y) {
+                g.drawString(font, Component.translatable(KEY + ".caption"), head.getX() + 2,
+                        head.getY() - CAPTION_GAP, CAPTION_COLOR, true);
             }
         }
     }

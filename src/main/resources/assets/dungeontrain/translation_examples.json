@@ -15403,10 +15403,19 @@
   },
   "gui.dungeontrain.book_language.head": {
     "1": {
-      "label": "the name of the language the book is filed under",
+      "label": "the short name of the language the book is filed under",
       "examples": [
-        "English (US)",
-        "Українська (Україна)"
+        "English",
+        "Українська"
+      ]
+    }
+  },
+  "gui.dungeontrain.book_language.on_page": {
+    "1": {
+      "label": "the short name of the language the book is filed under",
+      "examples": [
+        "English",
+        "Українська"
       ]
     }
   }

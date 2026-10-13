@@ -3023,6 +3023,8 @@
       "gui.dungeontrain.book_languages.pick.add",
       "gui.dungeontrain.book_language.head",
       "gui.dungeontrain.book_language.tip",
+      "gui.dungeontrain.book_language.caption",
+      "gui.dungeontrain.book_language.on_page",
       "gui.dungeontrain.translate.button",
       "gui.dungeontrain.translate.button.tooltip",
       "gui.dungeontrain.translate.switch.title",

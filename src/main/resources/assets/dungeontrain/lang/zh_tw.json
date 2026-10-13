@@ -2567,6 +2567,8 @@
   "gui.dungeontrain.book_languages.pick.add": "新增",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "這本書是用什麼語言寫的？",
+  "gui.dungeontrain.book_language.caption": "書籍語言",
+  "gui.dungeontrain.book_language.on_page": "語言：%s",
   "gui.dungeontrain.translate.button": "幫忙翻譯",
   "gui.dungeontrain.translate.button.tooltip": "改進 %s 翻譯",
   "gui.dungeontrain.translate.switch.title": "要先切換語言嗎？",

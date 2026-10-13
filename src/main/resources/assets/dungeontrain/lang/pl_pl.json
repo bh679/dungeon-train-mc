@@ -2665,6 +2665,8 @@
   "gui.dungeontrain.book_languages.pick.add": "Dodaj",
   "gui.dungeontrain.book_language.head": "%s ▾",
   "gui.dungeontrain.book_language.tip": "W jakim języku napisano tę książkę?",
+  "gui.dungeontrain.book_language.caption": "Język książki",
+  "gui.dungeontrain.book_language.on_page": "Język: %s",
   "gui.dungeontrain.translate.button": "Pomóż tłumaczyć",
   "gui.dungeontrain.translate.button.tooltip": "Popraw tłumaczenie na %s",
   "gui.dungeontrain.translate.switch.title": "Najpierw zmienić język?",

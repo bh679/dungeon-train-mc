@@ -2660,6 +2660,8 @@
   "gui.dungeontrain.book_languages.pick.add": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9fd728c66c9a256b"},
   "gui.dungeontrain.book_language.head": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4396a06010959047"},
   "gui.dungeontrain.book_language.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e48a1d434ee49567"},
+  "gui.dungeontrain.book_language.caption": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "a1ccd2a8bf11caa2"},
+  "gui.dungeontrain.book_language.on_page": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "45792a6eedfb9740"},
   "gui.dungeontrain.translate.button": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "a10eb71b91f2341a"},
   "gui.dungeontrain.translate.button.tooltip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "2ee4aa10bd82a1c3"},
   "gui.dungeontrain.translate.switch.title": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "482c563c9becf678"},
