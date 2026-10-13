@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.discord.BugReportSink;
+import games.brennan.dungeontrain.logrequest.LogRequestManager;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -78,7 +79,12 @@ public record BugReportLogsPacket(String optionLabel, String systemInfo, List<Lo
     public static void handle(BugReportLogsPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
+            // A "Developer request" upload is only taken (and only pings the dev) when it answers a
+            // log request the server actually issued — never on a client's say-so.
+            boolean requested = LogRequestManager.UPLOAD_LABEL.equals(packet.optionLabel());
+            if (requested && !LogRequestManager.consumeUpload(player)) return;
             BugReportSink.accept(player, packet.optionLabel(), packet.systemInfo(), packet.files());
+            if (requested) LogRequestManager.pingDeveloper(player);
         });
     }
 }

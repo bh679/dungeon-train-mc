@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
+import games.brennan.dungeontrain.logrequest.LogRequestClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
@@ -161,8 +162,13 @@ public final class LiveChatBridge {
         ChatComponent chat = mc.gui.getChat();
         // The tag plain addMessage(Component) would pick, so a printed line looks exactly as before.
         GuiMessageTag tag = mc.isSingleplayer() ? GuiMessageTag.systemSinglePlayer() : GuiMessageTag.system();
+        String myName = mc.getUser() != null ? mc.getUser().getName() : "";
+        boolean streaming = LiveStreamController.get().streaming();
         for (ChatLine line : page.lines()) {
             if (LiveChatRules.shouldShow(line, me, here, names)) chat.addMessage(LiveChatRules.line(line), signatures.sign(line.seq()), tag);
+            if (line.logRequest() != null && line.logRequest().isFor(myName, streaming)) {
+                LogRequestClient.onLiveRequest(line.logRequest().id());
+            }
         }
         for (long seq : page.deleted()) {
             MessageSignature sig = signatures.take(seq);
