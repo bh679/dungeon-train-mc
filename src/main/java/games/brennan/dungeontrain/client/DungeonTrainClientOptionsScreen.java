@@ -32,6 +32,8 @@ import games.brennan.dungeonbackup.api.BackupSettings;
 import games.brennan.dungeonbackup.client.BackupOptionsWidgets;
 import games.brennan.dungeonbackup.core.BackupArchiver;
 import games.brennan.dungeonbackup.core.BackupMode;
+import games.brennan.ediblebackpacks.client.ClientAutoCollect;
+import games.brennan.ediblebackpacks.config.AutoCollectMode;
 import games.brennan.ediblebackpacks.config.EBClientConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.OptionInstance;
@@ -781,6 +783,17 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BACKPACK_BUTTON -> Setting.of(onOff(Component.translatable(key), EBClientConfig.buttonEnabled(),
                     DungeonTrainClientOptionsScreen::setBackpackButtonEnabled), key + ".tip");
 
+            // EB's own CLIENT config again (autoCollect); ClientAutoCollect.set saves it and tells the
+            // server, which is where pickups are decided. A server's own autoCollect=false still wins.
+            case BACKPACK_AUTO_COLLECT -> new Setting(
+                    CycleButton.<AutoCollectMode>builder(DungeonTrainClientOptionsScreen::autoCollectLabel)
+                            .withValues(AutoCollectMode.values())
+                            .withInitialValue(EBClientConfig.autoCollect())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
+                                    (btn, mode) -> ClientAutoCollect.set(mode)),
+                    Component.translatable(key + ".tip"));
+
             // Snapshot max resolution ceiling (0 = AUTO).
             case SNAPSHOT_MAX_RES -> {
                 int currentRes = ClientDisplayConfig.getRideSnapshotMaxResolution();
@@ -966,6 +979,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private static CustomContentPreference customContentInitial() {
         CustomContentPreference stored = ClientDisplayConfig.getCustomContentPreference();
         return customContentValues().contains(stored) ? stored : CustomContentPreference.CONTINUE;
+    }
+
+    private static Component autoCollectLabel(AutoCollectMode mode) {
+        return Component.translatable("gui.dungeontrain.options.backpack_auto_collect."
+                + mode.name().toLowerCase(Locale.ROOT));
     }
 
     private static Component customContentLabel(CustomContentPreference preference) {

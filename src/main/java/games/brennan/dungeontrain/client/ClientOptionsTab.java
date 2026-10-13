@@ -95,6 +95,8 @@ public enum ClientOptionsTab {
         DEV_HUD("gui.dungeontrain.options.dev_hud"),
         /** Whether Edible Backpacks draws its open/close button on the inventory screen. */
         BACKPACK_BUTTON("gui.dungeontrain.options.backpack_button"),
+        /** When Edible Backpacks collects ground pickups: off, while the panels are open, or always. */
+        BACKPACK_AUTO_COLLECT("gui.dungeontrain.options.backpack_auto_collect"),
         /** Scribble's save/load-book-to-file buttons on the book screen — off by default, see {@code ScribbleBookButtonsToggle}. */
         BOOK_FILE_BUTTONS("gui.dungeontrain.options.book_file_buttons"),
         /** Scribble's insert-page button on the book screen — off by default. */
@@ -253,6 +255,7 @@ public enum ClientOptionsTab {
                     rows.add(Row.DEV_HUD);
                 }
                 rows.add(Row.BACKPACK_BUTTON);
+                rows.add(Row.BACKPACK_AUTO_COLLECT);
                 rows.add(Row.BOOK_FILE_BUTTONS);
                 rows.add(Row.BOOK_INSERT_PAGE_BUTTON);
                 // The two rows that open a page rather than change a setting, led by the
