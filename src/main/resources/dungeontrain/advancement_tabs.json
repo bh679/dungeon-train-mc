@@ -34,6 +34,7 @@
     "dungeontrain:dungeon_train/all_out_of_secrets": false,
     "dungeontrain:dungeon_train/the_enchiridion": true,
     "dungeontrain:dungeon_train/a_silent_friend": true,
+    "dungeontrain:dungeon_train/all_at_once": true,
     "dungeontrain:dungeon_train/apple_a_day": true,
     "dungeontrain:dungeon_train/assassination_attempt": true,
     "dungeontrain:dungeon_train/burned_leaderboard_book": true,
@@ -201,7 +202,8 @@
     "dungeontrain:enchiridion/war_correspondent": true,
     "dungeontrain:enchiridion/wildlife_photographer": true,
     "dungeontrain:enchiridion/wither_watcher": true,
-    "dungeontrain:dungeon_train/three_melons": true
+    "dungeontrain:dungeon_train/three_melons": true,
+    "dungeontrain:dungeon_train/the_challenge": true
   },
   "visibility": {
     "dungeontrain:enchiridion/cave_painting": "always",

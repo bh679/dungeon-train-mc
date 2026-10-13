@@ -130,6 +130,7 @@ public final class LifeChallengeAdvancements {
      * lost (a tracked one toasts, the screen greys it out).
      */
     public static void markLost(ServerPlayer player, Supplier<AttachmentType<Boolean>> flag, List<ResourceLocation> tiers) {
+        AllAtOnceAdvancement.markLost(player);
         if (player.getData(flag.get())) return;
         player.setData(flag.get(), Boolean.TRUE);
         LifeDisqualification.notify(player, tiers);
@@ -146,6 +147,7 @@ public final class LifeChallengeAdvancements {
             run.travelledCarriageIndex(), run.cartsForwardSinceDeath(), run.cartsBackwardSinceDeath());
         Set<AttachmentType<Boolean>> flags = new LinkedHashSet<>();
         TIERS.forEach(tier -> flags.add(tier.lostFlag().get()));
+        flags.add(ModDataAttachments.ALL_AT_ONCE_LOST_THIS_LIFE.get()); // AllAtOnceAdvancement
         for (AttachmentType<Boolean> flag : flags) {
             if (!untrackedMidLife(player.hasData(flag), underway)) continue;
             player.setData(flag, Boolean.TRUE);
@@ -159,6 +161,7 @@ public final class LifeChallengeAdvancements {
         player.setData(ModDataAttachments.HELD_APPLE_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.ATE_NON_MELON_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.WORE_ARMOR_THIS_LIFE.get(), Boolean.FALSE);
+        player.setData(ModDataAttachments.ALL_AT_ONCE_LOST_THIS_LIFE.get(), Boolean.FALSE);
     }
 
     private static void grant(ServerPlayer player, ResourceLocation id) {

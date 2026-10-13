@@ -1,5 +1,6 @@
 dungeontrain:dungeon_train/a_new_way_out
 dungeontrain:dungeon_train/a_silent_friend
+dungeontrain:dungeon_train/all_at_once
 dungeontrain:dungeon_train/all_others
 dungeontrain:dungeon_train/apple_a_day
 dungeontrain:dungeon_train/assassination_attempt
@@ -108,6 +109,7 @@ dungeontrain:dungeon_train/submitted_love_note
 dungeontrain:dungeon_train/summon_the_creator
 dungeontrain:dungeon_train/taking_notes
 dungeontrain:dungeon_train/thats_what_friends_are_for
+dungeontrain:dungeon_train/the_challenge
 dungeontrain:dungeon_train/the_denamed
 dungeontrain:dungeon_train/the_enchiridion
 dungeontrain:dungeon_train/the_far_start

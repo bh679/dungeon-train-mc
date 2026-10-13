@@ -85,6 +85,8 @@ public final class LifeDisqualification {
         LifeChallengeAdvancements.APPLE_TIERS.forEach(id -> rules.put(id, heldApple));
         LifeChallengeAdvancements.MELON_TIERS.forEach(id -> rules.put(id, ateNonMelon));
         LifeChallengeAdvancements.NAKED_TIERS.forEach(id -> rules.put(id, woreArmor));
+        Predicate<ServerPlayer> brokeAnyRule = AllAtOnceAdvancement::anyRuleBroken;
+        AllAtOnceAdvancement.TIERS.forEach(id -> rules.put(id, brokeAnyRule));
         return java.util.Collections.unmodifiableMap(rules); // keeps insertion order (Map.copyOf would not)
     }
 

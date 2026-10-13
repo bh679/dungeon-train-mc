@@ -1,0 +1,19 @@
+{
+  "parent": "dungeontrain:dungeon_train/all_at_once",
+  "display": {
+    "icon": { "id": "minecraft:bedrock" },
+    "title": { "translate": "advancements.dungeontrain.dungeon_train.the_challenge.title" },
+    "description": { "translate": "advancements.dungeontrain.dungeon_train.the_challenge.description" },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "challenge": {
+      "trigger": "dungeontrain:code_granted",
+      "conditions": { "threshold": 1000 }
+    }
+  },
+  "requirements": [["challenge"]]
+}
