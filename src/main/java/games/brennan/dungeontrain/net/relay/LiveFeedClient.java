@@ -66,6 +66,18 @@ public final class LiveFeedClient {
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName) {}
 
     /**
+     * One line of the stream's Discord chat. {@code uuid} is the Minecraft player who typed it when it
+     * came from the game (dashes stripped, lower-case), null for a Discord post; {@code fromGame} tells
+     * the two apart.
+     */
+    public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, boolean fromGame) {}
+
+    /** A chat poll: whether anyone is on air, the ring's head seq, and the lines after {@code since}. */
+    public record ChatPage(boolean live, long seq, List<ChatLine> lines) {
+        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of());
+    }
+
+    /**
      * A smaller copy of the stream the relay's renditions worker has ready: {@code width} pixels
      * wide (16:9), at its own playlist URL. The source stream is not a variant.
      */
@@ -180,6 +192,53 @@ public final class LiveFeedClient {
         }
     }
 
+    /**
+     * The stream's Discord chat after {@code since} (a seq; negative = just the head, no backlog), on
+     * {@code base} — the streamer's own relay or the viewer channel's.
+     */
+    public static CompletableFuture<Result> chat(String base, long since) {
+        String path = "/live/chat" + (since < 0 ? "" : "?since=" + since);
+        HttpRequest req = HttpRequest.newBuilder(URI.create(base + path))
+            .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
+        return send(RELAY, req);
+    }
+
+    /** Post one in-game line into the stream's Discord chat as this player. */
+    public static CompletableFuture<Result> chatSend(String base, UUID uuid, String name, String content) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        body.addProperty("content", content);
+        return post(base, "/live/chat/send", body);
+    }
+
+    /** A chat poll's page; {@link ChatPage#EMPTY} on any failure (seq −1 keeps the cursor untouched). */
+    public static ChatPage parseChat(Result r) {
+        if (!r.ok()) return ChatPage.EMPTY;
+        JsonObject b = r.body();
+        try {
+            boolean live = b.has("live") && b.get("live").getAsBoolean();
+            long seq = b.has("seq") ? b.get("seq").getAsLong() : -1;
+            List<ChatLine> lines = new ArrayList<>();
+            if (b.has("messages") && b.get("messages").isJsonArray()) {
+                for (JsonElement el : b.getAsJsonArray("messages")) {
+                    if (!el.isJsonObject()) continue;
+                    JsonObject m = el.getAsJsonObject();
+                    String content = m.has("content") && !m.get("content").isJsonNull() ? m.get("content").getAsString() : "";
+                    if (content.isBlank() || !m.has("seq")) continue;
+                    String author = m.has("author") && !m.get("author").isJsonNull() ? m.get("author").getAsString() : "";
+                    String uuid = m.has("uuid") && !m.get("uuid").isJsonNull() ? m.get("uuid").getAsString() : null;
+                    boolean game = m.has("source") && !m.get("source").isJsonNull() && "game".equals(m.get("source").getAsString());
+                    lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
+                        author.isBlank() ? "Someone" : author, uuid, content, game));
+                }
+            }
+            return new ChatPage(live, seq, List.copyOf(lines));
+        } catch (RuntimeException e) {
+            return ChatPage.EMPTY;
+        }
+    }
+
     public static CompletableFuture<Result> stop(String token) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
@@ -197,7 +256,8 @@ public final class LiveFeedClient {
         return freePlay && devLive ? Channel.DEV : Channel.LIVE;
     }
 
-    private static String viewerBase(Channel channel) {
+    /** The relay base a viewer of {@code channel} reads from. */
+    public static String viewerBase(Channel channel) {
         return channel == Channel.DEV ? DungeonTrain.devRelayBaseUrl() : DungeonTrain.liveRelayBaseUrl();
     }
 
@@ -241,7 +301,11 @@ public final class LiveFeedClient {
     }
 
     private static CompletableFuture<Result> post(String path, JsonObject body) {
-        HttpRequest req = HttpRequest.newBuilder(URI.create(base() + path))
+        return post(base(), path, body);
+    }
+
+    private static CompletableFuture<Result> post(String base, String path, JsonObject body) {
+        HttpRequest req = HttpRequest.newBuilder(URI.create(base + path))
             .timeout(RELAY_TIMEOUT)
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")

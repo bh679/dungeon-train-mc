@@ -25260,9 +25260,9 @@
       "highlights": [],
       "pr": 1956,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
     },
     {
       "id": "stream-name-tag",
@@ -25277,9 +25277,9 @@
       "highlights": [],
       "pr": 1959,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
     },
     {
       "id": "livestream-ended-popup",
@@ -25294,9 +25294,9 @@
       "highlights": [],
       "pr": 1960,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
     },
     {
       "id": "dh-333-tv-crash",
@@ -25311,9 +25311,9 @@
       "highlights": [],
       "pr": 1961,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1255.0",
+      "released_at": "2026-10-12T13:29:24Z"
     },
     {
       "id": "darkroom-on-air",
@@ -25328,9 +25328,43 @@
       "highlights": [],
       "pr": 1962,
       "date": "2026-10-12",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1257.0",
+      "released_at": "2026-10-12T14:32:53Z"
+    },
+    {
+      "id": "live-discord-chat",
+      "version": "0.1257.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live chat from Discord",
+      "summary": "While a stream is on, the streamer and anyone wearing a TV now see the Discord live chat in their own chat and can talk back from in-game. Switch it in Options \u2192 Stream \u2192 Live chat.",
+      "highlights": [],
+      "pr": 1964,
+      "date": "2026-10-12",
+      "released": true,
+      "released_in": "v0.1257.0",
+      "released_at": "2026-10-12T14:32:53Z"
+    },
+    {
+      "id": "content-mode-reopens-consent",
+      "version": "0.1258.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Content choice shows what it changes",
+      "summary": "Picking Adult or Kid in Options now brings back the welcome card, so you can see what each one turns on.",
+      "highlights": [],
+      "date": "2026-10-12",
+      "released": true,
+      "released_in": "v0.1258.0",
+      "released_at": "2026-10-13T03:05:14Z"
     }
   ]
 }

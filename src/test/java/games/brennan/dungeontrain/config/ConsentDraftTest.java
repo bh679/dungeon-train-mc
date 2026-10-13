@@ -27,20 +27,28 @@ class ConsentDraftTest {
     void commitWritesOnceAndForgetsTheClick() {
         List<Boolean> written = new ArrayList<>();
         ConsentDraft draft = new ConsentDraft(written::add);
-        draft.touch(false);
-        draft.commit(true);          // Adult default on, but the player turned it off
-        draft.commit(true);          // next showing, no click -> default
+        draft.touch(ContentMode.ADULT, false);
+        draft.commit(ContentMode.ADULT, true);   // Adult default on, but the player turned it off
+        draft.commit(ContentMode.ADULT, true);   // next showing, no report -> fallback
         assertEquals(List.of(false, true), written);
     }
 
     @Test
-    void resetDropsAClickMadeUnderAnotherMode() {
+    void aReportUnderAnotherModeIsIgnored() {
         List<Boolean> written = new ArrayList<>();
         ConsentDraft draft = new ConsentDraft(written::add);
-        draft.touch(true);           // clicked on under Adult
-        draft.reset();               // switched to Kid, card rebuilt its pills
-        draft.commit(false);         // Kid default off
+        draft.touch(ContentMode.ADULT, true);    // clicked on under Adult
+        draft.commit(ContentMode.KID, false);    // confirmed Kid: its own fallback, off
         assertEquals(List.of(false), written);
-        assertFalse(draft.isTouched());
+    }
+
+    @Test
+    void aCardRebuildDoesNotLoseTheClick() {
+        // DP rebuilds the card (re-asking DT for its bullets) after every pill click; nothing resets.
+        List<Boolean> written = new ArrayList<>();
+        ConsentDraft draft = new ConsentDraft(written::add);
+        draft.touch(ContentMode.ADULT, false);
+        draft.commit(ContentMode.ADULT, true);
+        assertEquals(List.of(false), written);
     }
 }
