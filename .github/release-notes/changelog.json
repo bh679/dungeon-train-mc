@@ -25435,8 +25435,25 @@
       "released_at": null
     },
     {
-      "id": "live-eye-post-version-chat",
+      "id": "stream-pill-chat-off-icon",
       "version": "0.1263.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Chat-off notice on stream",
+      "summary": "Viewers can now see when a streamer has chat turned off.",
+      "highlights": [],
+      "pr": 1973,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-post-version-chat",
+      "version": "0.1264.0",
       "type": "feat",
       "tags": [
         "feature",
