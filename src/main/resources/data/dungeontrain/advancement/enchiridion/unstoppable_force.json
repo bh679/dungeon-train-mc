@@ -5,10 +5,10 @@
       "id": "minecraft:sculk_shrieker"
     },
     "title": {
-      "translate": "advancements.dungeontrain.enchiridion.squad_goals.title"
+      "translate": "advancements.dungeontrain.enchiridion.unstoppable_force.title"
     },
     "description": {
-      "translate": "advancements.dungeontrain.enchiridion.squad_goals.description"
+      "translate": "advancements.dungeontrain.enchiridion.unstoppable_force.description"
     },
     "frame": "challenge",
     "show_toast": true,
