@@ -9,9 +9,12 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.GuiMessageTag;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MessageSignature;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -36,6 +39,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@code POST /live/chat/send}, at most one a second, fire-and-forget. Which relay: the streamer's own
  * (the channel it claimed); a viewer's, whatever channel its TVs show ({@link LiveStatusPoller#channel()}).</p>
  *
+ * <p>A line the relay later lists as {@code deleted} (a Twitch mod removed it) becomes vanilla's grey
+ * "deleted" marker, through {@link LiveChatSignatures}.</p>
+ *
  * <p>Failures are quiet: a bad poll is retried next interval, a failed send is logged once per session.
  * Nothing here touches the stream itself.</p>
  */
@@ -52,6 +58,7 @@ public final class LiveChatBridge {
     private static volatile long lastSendMs;
     private static volatile boolean sendFailureLogged;
     private static final AtomicBoolean inFlight = new AtomicBoolean();
+    private static final LiveChatSignatures signatures = new LiveChatSignatures();
 
     private LiveChatBridge() {}
 
@@ -116,6 +123,7 @@ public final class LiveChatBridge {
         connected = true;
         cursor = -1;
         lastPollMs = 0;
+        signatures.clear();
         mc.gui.getChat().addMessage(Component.translatable(LiveChatRules.CONNECTED_KEY,
             LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY));
     }
@@ -123,6 +131,7 @@ public final class LiveChatBridge {
     private static void disconnect() {
         connected = false;
         cursor = -1;
+        signatures.clear();
     }
 
     /** Logout / world change: forget the cursor and the connected line. */
@@ -149,8 +158,15 @@ public final class LiveChatBridge {
                 names.add(p.getProfile().getName());
             }
         }
+        ChatComponent chat = mc.gui.getChat();
+        // The tag plain addMessage(Component) would pick, so a printed line looks exactly as before.
+        GuiMessageTag tag = mc.isSingleplayer() ? GuiMessageTag.systemSinglePlayer() : GuiMessageTag.system();
         for (ChatLine line : page.lines()) {
-            if (LiveChatRules.shouldShow(line, me, here, names)) mc.gui.getChat().addMessage(LiveChatRules.line(line));
+            if (LiveChatRules.shouldShow(line, me, here, names)) chat.addMessage(LiveChatRules.line(line), signatures.sign(line.seq()), tag);
+        }
+        for (long seq : page.deleted()) {
+            MessageSignature sig = signatures.take(seq);
+            if (sig != null) chat.deleteMessage(sig);
         }
         cursor = Math.max(cursor, page.seq());
     }
