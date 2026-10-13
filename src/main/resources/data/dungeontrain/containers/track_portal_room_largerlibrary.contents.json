@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
   "pools": {
-    "4,8,20": {
+    "4,13,20": {
       "fillMax": 17,
       "entries": [
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -41,7 +41,7 @@
         { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     },
-    "3,9,20": {
+    "3,14,20": {
       "fillMax": 17,
       "entries": [
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -81,7 +81,7 @@
         { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     },
-    "4,9,20": {
+    "4,14,20": {
       "fillMax": 17,
       "entries": [
         { "id": "minecraft:diamond_sword", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
@@ -118,11 +118,137 @@
         { "id": "minecraft:netherite_scrap", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "17,1,24": {
+      "fillMin": 1,
+      "fillMax": 10,
+      "entries": [
+        { "id": "minecraft:stone_sword", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_sword", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_sword", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wooden_axe", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:stone_axe", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_axe", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_axe", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:shield", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chainmail_boots", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_helmet", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_chestplate", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_leggings", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_boots", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_helmet", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_chestplate", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_leggings", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_boots", "count": 1, "weight": 3, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wooden_sword", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_ingot", "count": 2, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_nugget", "count": 4, "weight": 60, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:gold_ingot", "count": 2, "weight": 15, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:gold_nugget", "count": 4, "weight": 50, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:raw_gold", "count": 3, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:raw_iron", "count": 3, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:ender_chest", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "ediblebackpacks:edible_backpack", "count": 1, "weight": 5, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:stats_book", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
+      ]
+    },
+    "22,3,17": {
+      "fillMin": 1,
+      "entries": [
+        { "id": "minecraft:emerald", "count": 5, "weight": 40, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:totem_of_undying", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:netherite_upgrade_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:dune_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wild_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:coast_armor_trim_smithing_template", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wooden_sword", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:stone_sword", "count": 1, "weight": 12, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_sword", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_sword", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wooden_axe", "count": 1, "weight": 60, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:stone_axe", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_axe", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_axe", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:shield", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:leather_helmet", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:leather_chestplate", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chainmail_helmet", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chainmail_chestplate", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chainmail_boots", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:chainmail_leggings", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_helmet", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_chestplate", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_leggings", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:iron_boots", "count": 2, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:leather_leggings", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:leather_boots", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_helmet", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_chestplate", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_leggings", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_boots", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:turtle_helmet", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wind_charge", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:arrow", "count": 10, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:spectral_arrow", "count": 15, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:tipped_arrow", "count": 10, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:tipped_arrow", "count": 9, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:tipped_arrow", "count": 9, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:tipped_arrow", "count": 8, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:flower_pot", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:apple", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:golden_apple", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:enchanted_golden_apple", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:melon_slice", "count": 7, "weight": 22, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:cooked_beef", "count": 2, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:mushroom_stew", "count": 2, "weight": 16, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:beetroot_soup", "count": 2, "weight": 16, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:suspicious_stew", "count": 2, "weight": 16, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:wheat", "count": 1, "weight": 30, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:scrape_pottery_sherd", "count": 1, "weight": 20, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:ender_pearl", "count": 3, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "minecraft:ender_chest", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_book", "count": 1, "weight": 14, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "ediblebackpacks:edible_backpack", "count": 1, "weight": 10, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:stats_book", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphoto", "count": 1, "weight": 8, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "exposure_polaroid:instant_camera", "count": 1, "weight": 4, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_playerphotoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:your_photoalbum", "count": 1, "weight": 2, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
+        { "id": "dungeontrain:random_live_headpiece", "count": 1, "weight": 6, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 },
         { "id": "vista:television", "count": 1, "weight": 1, "randDur": true, "durChance": 100, "randEnch": true, "enchChance": 25 }
       ]
     }
   },
   "links": {
-    "3,8,20": "loot"
+    "3,13,20": "loot",
+    "19,1,29": "pot",
+    "20,1,29": "pot",
+    "15,1,29": "pot",
+    "14,1,29": "pot",
+    "19,1,25": "pot",
+    "19,1,27": "pot",
+    "15,1,25": "pot",
+    "15,1,27": "pot",
+    "14,1,24": "pot",
+    "20,1,24": "pot",
+    "15,1,24": "pot",
+    "19,1,24": "pot",
+    "17,1,25": "loot_irongold",
+    "21,3,20": "pot",
+    "21,3,18": "pot",
+    "25,3,18": "pot",
+    "25,3,20": "pot",
+    "24,3,21": "pot",
+    "22,3,21": "pot",
+    "24,3,17": "pot"
   }
 }
