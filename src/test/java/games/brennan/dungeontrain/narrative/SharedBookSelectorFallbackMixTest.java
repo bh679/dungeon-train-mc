@@ -170,4 +170,32 @@ final class SharedBookSelectorFallbackMixTest {
         assertFalse(SharedBookSelector.isOwnBy("").test(book(1, "uk_ua", "")));
         assertFalse(SharedBookSelector.isOwnBy(ME).test(book(1, "uk_ua", null)));
     }
+
+    @Test
+    @DisplayName("a reader who wrote nothing and has read every in-language book → fallback language")
+    void nonWriterAllReadGetsFallback() {
+        List<PoolBook> pool = List.of(book(10, "uk_ua", "Other"), book(11, "uk_ua", "Another"));
+        PlayerContext ctx = player("uk_ua", id -> id < 100, false);
+        assertEquals(Set.of(100, 101), picks(pool, "en", EN_WINDOW, ctx));
+        assertTrue(SharedBookSelector.needsFallbackFetch(pool, "en", List.of(), ctx));
+    }
+
+    @Test
+    @DisplayName("an English reader who has read everything gets the biggest other language")
+    void englishNonWriterGetsOtherFamily() {
+        List<PoolBook> pool = List.of(book(1, "en_us", "Anglo"), book(2, "en_us", "Saxon"));
+        List<PoolBook> uk = List.of(book(300, "uk_ua", "Taras"), book(301, "uk_ua", "Lesya"));
+        PlayerContext ctx = player("en_us", id -> id < 100, false);
+        assertEquals(Set.of(300, 301), picks(pool, "uk", uk, ctx));
+    }
+
+    @Test
+    @DisplayName("writer under 5% whose own books are read too → fallback language")
+    void smallWriterAllReadGetsFallback() {
+        List<PoolBook> pool = new ArrayList<>();
+        pool.add(book(1, "uk_ua", ME));
+        for (int i = 0; i < 20; i++) pool.add(book(10 + i, "uk_ua", "Other" + i)); // 1 / 21 ≈ 4.8%
+        PlayerContext ctx = player("uk_ua", id -> id < 100, false);
+        assertEquals(Set.of(100, 101), picks(pool, "en", EN_WINDOW, ctx));
+    }
 }

@@ -146,8 +146,9 @@ public final class SharedBookSelector {
      * {@link #select(List, PlayerContext, long)} with a fallback-language window to mix in.
      *
      * <h3>Fallback-language mix</h3>
-     * <p>Once no unread in-language book by ANYONE ELSE is left, the unread books remaining in the
-     * player's language are all ones they wrote. If their own books are also at least
+     * <p>Once no unread in-language book by ANYONE ELSE is left, the player has been through their
+     * language. If no unread book of their own is left either — a reader, writer or not, who has read
+     * everything — every pick comes from the fallback. If unread own books remain and they are at least
      * {@link #OWN_SHARE_TRIGGER_PERCENT}% of the in-language pool — a writer who has become a real part of their
      * language's corpus, not one stray book — the pick becomes a seeded roll: {@link #OWN_PICK_PERCENT}%
      * one of their unread own books, otherwise an unread book from {@code fallbackPool} (books in
@@ -271,17 +272,21 @@ public final class SharedBookSelector {
 
     /**
      * The mix point: a fallback family other than the player's own, no unread in-language book by
-     * anybody else left in {@code eligible}, and the player's own books at least
-     * {@link #OWN_SHARE_TRIGGER_PERCENT}% of the in-language books in {@code pool}.
+     * anybody else left in {@code eligible}, and EITHER no unread own book left either (a reader who has
+     * been through their whole language, writer or not) OR the player's own books at least
+     * {@link #OWN_SHARE_TRIGGER_PERCENT}% of the in-language books in {@code pool} (a prolific writer).
+     * A writer under that share gets their few unread own books first, as before.
      */
     private static boolean needsMix(List<PoolBook> pool, List<PoolBook> eligible, String fallbackFamily,
                                     PlayerContext ctx) {
         if (fallbackFamily == null || LanguageFamily.sameFamily(ctx.playerLang(), fallbackFamily)) return false;
+        boolean ownUnread = false;
         for (PoolBook b : eligible) {
-            if (originOf(b, ctx) != Origin.OTHER && !ctx.isOwn().test(b) && !ctx.hasRead().test(b.id())) {
-                return false;
-            }
+            if (originOf(b, ctx) == Origin.OTHER || ctx.hasRead().test(b.id())) continue;
+            if (!ctx.isOwn().test(b)) return false;
+            ownUnread = true;
         }
+        if (!ownUnread) return true;
         int inLanguage = 0;
         int own = 0;
         for (PoolBook b : pool) {
