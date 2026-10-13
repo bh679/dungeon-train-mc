@@ -548,6 +548,12 @@ public class DungeonTrain {
             @Override public int networkConsentVersion() {
                 return CONSENT_VERSION;
             }
+            // A player with the internet connection off sees the card again on every launch: it is the
+            // one place the content mode, Developer chat and the connection are chosen together, and
+            // every online feature (Discord linking, dev chat, shared books) waits on that answer.
+            @Override public boolean networkConsentReaskWhenDenied() {
+                return true;
+            }
             @Override public ConsentChoice networkConsentChoice() {
                 return new ConsentChoice(
                         tr("gui.dungeontrain.content_mode.label"),
@@ -559,13 +565,19 @@ public class DungeonTrain {
                         index -> {
                             ContentMode[] modes = ContentMode.values();
                             ContentMode picked = index >= 0 && index < modes.length ? modes[index] : ContentMode.ADULT;
+                            // Read before the mode is written: an untouched switch keeps the player's
+                            // current setting only when the card was reopened and confirmed on the mode
+                            // they were already in (see switchStart).
+                            boolean livestream = livestreamStart(picked);
+                            boolean devChat = devChatStart(picked);
+                            consentCardReopened = false;
                             ClientDisplayConfig.setContentMode(picked);
                             // The switches land here, after the mode, so an untouched switch takes the
-                            // default of the mode actually confirmed. Esc lands here too: the master
-                            // consent is DENIED then, and every gate also checks that, so a stored
-                            // "on" is inert until the player grants the connection.
-                            LIVESTREAM_DRAFT.commit(livestreamDefault(picked));
-                            DEV_CHAT_DRAFT.commit(devChatDefault(picked));
+                            // start value of the mode actually confirmed. A non-button close lands here
+                            // too: the master consent is DENIED then, and every gate also checks that,
+                            // so a stored "on" is inert until the player grants the connection.
+                            LIVESTREAM_DRAFT.commit(picked, livestream);
+                            DEV_CHAT_DRAFT.commit(picked, devChat);
                             // Which tier players actually choose, and how that moves when the card is
                             // shown again. Fires on every exit path, because the card records the answer
                             // on every exit path — including Esc, where consent lands DENIED and the
@@ -747,8 +759,9 @@ public class DungeonTrain {
 
     /**
      * The card's two switches, held across one showing. Discord Presence reports a click the moment
-     * it happens and the chosen mode only at close; {@link ConsentDraft} turns that into "last click
-     * wins, else the mode's default" when the card closes. One instance each — the card is modal.
+     * it happens, every switch's final state at close, then the chosen mode; {@link ConsentDraft} turns
+     * that into "the confirmed mode's last report, else its start value". One instance each — the card
+     * is modal.
      */
     private static final ConsentDraft LIVESTREAM_DRAFT = new ConsentDraft(value -> {
         LiveFeedClientConfig.setStreamingEnabled(value);
@@ -758,6 +771,41 @@ public class DungeonTrain {
         ClientDisplayConfig.setDevChatEnabled(value);
         DevMessageConsentClient.resync();
     });
+
+    /**
+     * True while the consent card is open because the player reopened it from Options (the Content
+     * row), not because it is a first launch or a {@link #CONSENT_VERSION} re-ask. A reopen starts the
+     * switches at the player's current settings; the other two start them at the mode's defaults.
+     * Cleared when the card reports its answer. Client-only state; the card is modal.
+     */
+    private static volatile boolean consentCardReopened;
+
+    /** The Options Content row is about to open the consent card over itself. */
+    public static void markConsentCardReopened() {
+        consentCardReopened = true;
+    }
+
+    /** Where the card's Livestreaming switch starts (and lands, if untouched) for {@code shown}. */
+    private static boolean livestreamStart(ContentMode shown) {
+        return switchStart(consentCardReopened, shown, ClientDisplayConfig.getContentMode(),
+                LiveFeedClientConfig.streamingEnabled(), livestreamDefault(shown));
+    }
+
+    /** Where the card's Developer chat switch starts (and lands, if untouched) for {@code shown}. */
+    private static boolean devChatStart(ContentMode shown) {
+        return switchStart(consentCardReopened, shown, ClientDisplayConfig.getContentMode(),
+                ClientDisplayConfig.isDevChatEnabled(), devChatDefault(shown));
+    }
+
+    /**
+     * A consent-card switch's starting value. Reopened from Options on the mode the player is already
+     * in, it shows what they have now; on the other mode, or on a first launch or re-ask, it shows that
+     * mode's default — picking a different mode is a fresh choice. Pure, for the tests.
+     */
+    static boolean switchStart(boolean reopened, ContentMode shown, ContentMode current,
+                               boolean stored, boolean modeDefault) {
+        return reopened && shown == current ? stored : modeDefault;
+    }
 
     /** Livestreaming default per mode: on for Adult, off for Kid. */
     static boolean livestreamDefault(ContentMode mode) {
@@ -787,10 +835,8 @@ public class DungeonTrain {
      */
     private static List<ConsentBullet> consentBullets(ContentMode mode) {
         boolean kid = mode.isKid();
-        // Built once per mode when the card opens; the card re-reads the list (and resets its pills)
-        // when the player picks the other mode, so clicks made under the previous mode are dropped.
-        LIVESTREAM_DRAFT.reset();
-        DEV_CHAT_DRAFT.reset();
+        // Rebuilt on every card re-init (a pill click included), so nothing is reset here: each switch
+        // reports under its own mode and ConsentDraft keeps only the confirmed mode's last report.
         return List.of(
                 new ConsentBullet(
                         tr(kid ? "gui.dungeontrain.consent.content.kid" : "gui.dungeontrain.consent.content.adult"),
@@ -807,14 +853,14 @@ public class DungeonTrain {
                 // Kid hover says what a stream shares only once the switch is on; off, it just says so.
                 kid
                         ? ConsentBullet.toggle(
-                                tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                                tr("gui.dungeontrain.consent.livestream"), livestreamStart(mode),
                                 tr("gui.dungeontrain.consent.livestream.kid.tip"),
                                 tr("gui.dungeontrain.consent.livestream.kid.tip_off"),
-                                LIVESTREAM_DRAFT::touch)
+                                v -> LIVESTREAM_DRAFT.touch(mode, v))
                         : ConsentBullet.toggle(
-                                tr("gui.dungeontrain.consent.livestream"), livestreamDefault(mode),
+                                tr("gui.dungeontrain.consent.livestream"), livestreamStart(mode),
                                 tr("gui.dungeontrain.consent.livestream.adult.tip"),
-                                LIVESTREAM_DRAFT::touch),
+                                v -> LIVESTREAM_DRAFT.touch(mode, v)),
                 // Developer chat: a switch for adults; for kids a fixed off line, because the Kid block
                 // (RelayChatClient.canConnect, ContentModeMirror) is a safety rule, not a preference.
                 kid
@@ -822,9 +868,9 @@ public class DungeonTrain {
                                 tr("gui.dungeontrain.consent.dev_chat"), false,
                                 tr("gui.dungeontrain.consent.dev_chat.kid.tip"))
                         : ConsentBullet.toggle(
-                                tr("gui.dungeontrain.consent.dev_chat"), devChatDefault(mode),
+                                tr("gui.dungeontrain.consent.dev_chat"), devChatStart(mode),
                                 tr("gui.dungeontrain.consent.dev_chat.adult.tip"),
-                                DEV_CHAT_DRAFT::touch),
+                                v -> DEV_CHAT_DRAFT.touch(mode, v)),
                 // The soul line is the one whose marker flips the "wrong" way — off for adults, on for
                 // kids — which is the joke. Its hovers carry it, in the developer's own first person.
                 new ConsentBullet(
