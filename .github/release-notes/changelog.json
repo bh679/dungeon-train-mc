@@ -25591,6 +25591,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "carriage-milestones-on-time",
+      "version": "0.1272.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Carriage milestones arrive on time",
+      "summary": "Carriage-distance advancements now unlock the moment you reach them.",
+      "highlights": [],
+      "pr": 1984,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
