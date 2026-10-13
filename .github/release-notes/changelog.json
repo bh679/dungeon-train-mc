@@ -25724,9 +25724,9 @@
       "highlights": [],
       "pr": 1991,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1281.0",
+      "released_at": "2026-10-13T15:30:08Z"
     },
     {
       "id": "cf-include-hybrid-siblings",
@@ -25739,9 +25739,9 @@
       "summary": "The CurseForge modpack now installs two more of Dungeon Train's companion mods from their own pages.",
       "highlights": [],
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1281.0",
+      "released_at": "2026-10-13T15:30:08Z"
     },
     {
       "id": "knockback-kill-credit",
@@ -25756,9 +25756,9 @@
       "highlights": [],
       "pr": 1995,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1281.0",
+      "released_at": "2026-10-13T15:30:08Z"
     }
   ]
 }
