@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 4,
+  "floor": [
+    {
+      "name": "none",
+      "weight": 1
+    }
+  ],
+  "walls": [
+    {
+      "name": "none",
+      "weight": 1
+    }
+  ],
+  "roof": [
+    {
+      "name": "none",
+      "weight": 1
+    }
+  ],
+  "doors": [
+    {
+      "name": "none",
+      "weight": 1,
+      "phases": [
+        "OVERWORLD",
+        "NETHER",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
+    }
+  ]
+}
