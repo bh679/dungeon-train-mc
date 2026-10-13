@@ -157,6 +157,8 @@
       "gui.dungeontrain.editor_settings.block_variant_menu.tip",
       "gui.dungeontrain.editor_settings.mod_block_tabs.tip",
       "gui.dungeontrain.options.translate.tip",
+      "gui.dungeontrain.options.book_languages.hint",
+      "gui.dungeontrain.book_language.caption",
       "gui.dungeontrain.custom_content.card.custom.tag",
       "gui.dungeontrain.options.confirm_build_restore.tip",
       "gui.dungeontrain.options.custom_content.tip",

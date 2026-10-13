@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.SharedBookReporter;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.editor.EditorPlotScope;
+import games.brennan.dungeontrain.event.ReadingLanguagesMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.BookSafeText;
@@ -111,6 +112,13 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
      */
     private String dungeontrain$pendingEditorAuthor;
 
+    /**
+     * Locale this book is filed under, taken at HEAD from {@link ReadingLanguagesMirror#takeBookLanguage}:
+     * the sign-screen language pick when it is one of the signer's reading languages, else their game
+     * language. Consumed on every sign so a pick can't leak into a later book.
+     */
+    private String dungeontrain$bookLanguage;
+
     @Inject(method = "signBook", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$interceptSignBook(FilteredText title, List<FilteredText> pages, int slot,
                                                 CallbackInfo ci) {
@@ -123,6 +131,9 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         // must not survive to credit a later community book, letter or Note.
         this.dungeontrain$pendingEditorAuthor = earlyPlayer != null
                 ? EditorBookAuthorPending.take(earlyPlayer.getUUID())
+                : null;
+        this.dungeontrain$bookLanguage = earlyPlayer != null
+                ? ReadingLanguagesMirror.takeBookLanguage(earlyPlayer)
                 : null;
         try {
             ServerPlayer serverPlayer = this.player;
@@ -176,7 +187,8 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // shared-book branches: route to the per-life narrative-series upload + burn at the lectern.
             GlobalPos pendingLectern = LetterLecternEvents.consumePending(serverPlayer.getUUID());
             if (pendingLectern != null) {
-                LetterSigning.handleSigning(serverPlayer, pendingLectern, titleStr, author, pageStrs, writable);
+                LetterSigning.handleSigning(serverPlayer, pendingLectern, titleStr, author, pageStrs, writable,
+                        this.dungeontrain$bookLanguage);
                 ci.cancel();
                 DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] Letter: {} signed a lectern letter", author);
                 return;
@@ -206,7 +218,9 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             // Fire-and-forget upload of the authored text (no-throw internally). The author's client
             // language (vanilla-synced ClientInformation, "" when unknown) is stamped so the relay can
             // store it for language-matched delivery.
-            String lang = WorldInfoReporter.clientLanguage(serverPlayer);
+            String lang = this.dungeontrain$bookLanguage != null
+                    ? this.dungeontrain$bookLanguage
+                    : WorldInfoReporter.clientLanguage(serverPlayer);
             SharedBookReporter.submit(serverPlayer.getUUID(), author, titleStr, pageStrs, lang);
 
             // Remove one writable book from the player's slot — they keep nothing.

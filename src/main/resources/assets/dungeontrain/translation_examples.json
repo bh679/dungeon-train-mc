@@ -15256,6 +15256,15 @@
       ]
     }
   },
+  "gui.dungeontrain.live.name_tag.chat_off": {
+    "1": {
+      "label": "the broadcaster's name (Minecraft or Discord, as they chose), shown in bold",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    }
+  },
   "gui.dungeontrain.live.name_tag": {
     "1": {
       "label": "the broadcaster's name (Minecraft or Discord, as they chose), shown in bold",
@@ -15389,6 +15398,42 @@
             "1"
           ]
         }
+      ]
+    }
+  },
+  "gui.dungeontrain.book_languages.weight": {
+    "1": {
+      "label": "a reading language's weight, 1 to 5",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.book_languages.share": {
+    "1": {
+      "label": "the percentage of player books that come in this language",
+      "examples": [
+        "50",
+        "25"
+      ]
+    }
+  },
+  "gui.dungeontrain.book_language.head": {
+    "1": {
+      "label": "the short name of the language the book is filed under",
+      "examples": [
+        "English",
+        "Українська"
+      ]
+    }
+  },
+  "gui.dungeontrain.book_language.on_page": {
+    "1": {
+      "label": "the short name of the language the book is filed under",
+      "examples": [
+        "English",
+        "Українська"
       ]
     }
   }

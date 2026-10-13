@@ -14,6 +14,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The relay's approved-book counts per language family ({@code /books/languages}), largest first.
@@ -60,12 +61,41 @@ public final class BookLanguages {
      * when there is none (nothing fetched yet, or English is the only language).
      */
     public static String fallbackFamilyFor(String playerLang, List<FamilyTotal> totals) {
-        String own = LanguageFamily.of(playerLang);
-        if (!LanguageFamily.DEFAULT_FAMILY.equals(own)) return LanguageFamily.DEFAULT_FAMILY;
+        return fallbackFamilyFor(Set.of(LanguageFamily.of(playerLang)), totals);
+    }
+
+    /**
+     * The fallback family for a player reading every family in {@code reading}: English when English is
+     * not one of them, otherwise the largest family in {@code totals} that isn't, or {@code null}.
+     */
+    public static String fallbackFamilyFor(Set<String> reading, List<FamilyTotal> totals) {
+        if (!reading.contains(LanguageFamily.DEFAULT_FAMILY)) return LanguageFamily.DEFAULT_FAMILY;
         for (FamilyTotal f : totals) {
-            if (f.total() > 0 && !LanguageFamily.DEFAULT_FAMILY.equals(f.family())) return f.family();
+            if (f.total() > 0 && !reading.contains(f.family())) return f.family();
         }
         return null;
+    }
+
+    /** {@link #fallbackFamilyFor(Set, List)} against the fetched list. */
+    public static String fallbackFamilyFor(Set<String> reading) {
+        return fallbackFamilyFor(reading, families);
+    }
+
+    /**
+     * Whether {@code totals} is known (non-empty) and lists no approved book in {@code family}. The relay
+     * answers a request for such a family with English, so there is no point asking.
+     */
+    public static boolean knownEmpty(String family, List<FamilyTotal> totals) {
+        if (totals.isEmpty()) return false;
+        for (FamilyTotal f : totals) {
+            if (f.family().equals(family)) return f.total() <= 0;
+        }
+        return true;
+    }
+
+    /** {@link #knownEmpty(String, List)} against the fetched list. */
+    public static boolean knownEmpty(String family) {
+        return knownEmpty(family, families);
     }
 
     /** {@link #fallbackFamilyFor(String, List)} against the fetched list. */
