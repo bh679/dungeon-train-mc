@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/wither_watcher",
   "display": {
     "icon": {
-      "id": "minecraft:sculk_shrieker"
+      "id": "minecraft:sculk"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.unstoppable_force.title"
