@@ -103,6 +103,8 @@ public enum ClientOptionsTab {
         AI_POLICY("gui.dungeontrain.options.ai_policy"),
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
         TRANSLATE("gui.dungeontrain.options.translate"),
+        /** Opens the reading-languages page (community books in more than one language). Unconditional. */
+        BOOK_LANGUAGES("gui.dungeontrain.options.book_languages"),
 
         // --- Account ---
         /**
@@ -258,6 +260,9 @@ public enum ClientOptionsTab {
                 if (hasTranslateTarget) {
                     rows.add(Row.TRANSLATE);
                 }
+                // Last, so it never splits the pair above: without TRANSLATE it pairs with AI_POLICY
+                // (both open a page), with it it sits on a line of its own.
+                rows.add(Row.BOOK_LANGUAGES);
             }
             case ACCOUNT -> rows.add(Row.DISCORD_ACCOUNT);
             case BACKUPS -> {

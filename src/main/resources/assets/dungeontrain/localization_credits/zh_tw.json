@@ -2,8 +2,8 @@
   "locale": "zh_tw",
   "name": "AI 未經人工審閱",
   "human_reviewed": false,
-  "total_keys": 4675,
-  "ai_authored": 4664,
-  "ai_unreviewed": 4661,
-  "counted_keys": 2916
+  "total_keys": 4695,
+  "ai_authored": 4684,
+  "ai_unreviewed": 4681,
+  "counted_keys": 2936
 }
