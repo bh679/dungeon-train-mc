@@ -235,6 +235,7 @@
   "gui.dungeontrain.viewfinder.selfie": "Tự chụp",
   "gui.dungeontrain.viewfinder.front": "Phía trước",
   "gui.dungeontrain.live.badge": "TRỰC TIẾP",
+  "gui.dungeontrain.live.name_tag": "%s đang phát trực tiếp",
   "gui.dungeontrain.live.countdown": "Phát trực tiếp sau",
   "gui.dungeontrain.live.stream_settings": "Cài đặt phát trực tiếp",
   "gui.dungeontrain.live.viewer_on": "Đã bật màn hình trực tiếp",

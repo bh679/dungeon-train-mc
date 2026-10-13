@@ -265,6 +265,7 @@
       "gui.dungeontrain.viewfinder.selfie",
       "gui.dungeontrain.viewfinder.front",
       "gui.dungeontrain.live.badge",
+      "gui.dungeontrain.live.name_tag",
       "gui.dungeontrain.live.countdown",
       "gui.dungeontrain.live.stream_settings",
       "gui.dungeontrain.live.viewer_on",
