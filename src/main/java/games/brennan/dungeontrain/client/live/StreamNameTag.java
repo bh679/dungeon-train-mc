@@ -11,15 +11,14 @@ import games.brennan.dungeontrain.config.LiveFeedClientConfig.NameTag;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.ClientHooks;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 /**
- * The streamer's name, top-middle in black-outlined white, drawn into the broadcast picture only.
+ * The streamer's name, top-middle in white on a translucent black pill, drawn into the broadcast
+ * picture only.
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
@@ -32,11 +31,16 @@ import org.joml.Matrix4fStack;
  */
 public final class StreamNameTag {
 
-    /** GUI pixels from the top of the picture to the top of the tag (the outline sits one above). */
+    /** GUI pixels from the top of the picture to the top of the pill. */
     static final int TOP_OFFSET = 4;
     static final int TEXT = 0xFFFFFFFF;
-    /** Black 8-way outline, as on a glow-ink sign, so the name reads on any sky. */
-    static final int OUTLINE = 0xFF000000;
+    /** Translucent black: the picture shows through, the white name reads on any sky. */
+    static final int PILL = 0xB0000000;
+    /** GUI pixels between the name and the pill's ends / top and bottom. */
+    static final int PAD_X = 6;
+    static final int PAD_Y = 3;
+    /** Glyph height in GUI pixels, descenders and shadow included. */
+    static final int GLYPH_H = 8;
 
     private StreamNameTag() {}
 
@@ -97,10 +101,7 @@ public final class StreamNameTag {
             RenderSystem.applyModelViewMatrix();
             target.bindWrite(true);
             GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-            graphics.pose().pushPose();
-            graphics.pose().scale(scale, scale, 1f);
-            draw(graphics, mc.font, name, Math.round(w / scale));
-            graphics.pose().popPose();
+            draw(graphics, mc.font, name, w, scale);
             graphics.flush();
         } finally {
             modelView.popMatrix();
@@ -110,9 +111,36 @@ public final class StreamNameTag {
         }
     }
 
-    private static void draw(GuiGraphics graphics, Font font, String name, int guiW) {
-        int x = (guiW - font.width(name)) / 2;
-        font.drawInBatch8xOutline(Component.literal(name).getVisualOrderText(), x, TOP_OFFSET, TEXT, OUTLINE,
-            graphics.pose().last().pose(), graphics.bufferSource(), LightTexture.FULL_BRIGHT);
+    /**
+     * The pill in target pixels (so its round ends are smooth at stream resolution, not a GUI-pixel
+     * staircase), then the name over it in GUI pixels, centred on the same point.
+     */
+    private static void draw(GuiGraphics graphics, Font font, String name, int targetW, float scale) {
+        int textW = font.width(name);
+        int pillW = Math.round((textW + 2 * PAD_X) * scale);
+        int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
+        int pillX = (targetW - pillW) / 2;
+        int pillY = Math.round(TOP_OFFSET * scale);
+        for (int row = 0; row < pillH; row++) {
+            int inset = pillInset(row, pillH);
+            graphics.fill(pillX + inset, pillY + row, pillX + pillW - inset, pillY + row + 1, PILL);
+        }
+        graphics.pose().pushPose();
+        graphics.pose().translate((targetW - textW * scale) / 2f, pillY + PAD_Y * scale, 0f);
+        graphics.pose().scale(scale, scale, 1f);
+        graphics.drawString(font, name, 0, 0, TEXT, true);
+        graphics.pose().popPose();
+    }
+
+    /**
+     * How far row {@code row} of a {@code height}-tall pill is cut in from each side: the ends are
+     * half-discs of radius {@code height / 2}, so the middle rows run full width and the top and
+     * bottom rows are pulled in.
+     */
+    static int pillInset(int row, int height) {
+        double r = height / 2.0;
+        double dy = row + 0.5 - r;
+        double half = Math.sqrt(Math.max(0.0, r * r - dy * dy));
+        return (int) Math.round(r - half);
     }
 }
