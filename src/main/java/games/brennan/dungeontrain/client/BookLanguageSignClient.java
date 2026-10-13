@@ -32,7 +32,7 @@ import java.util.List;
  *
  * <p>A dropdown is a head button plus one button per language beneath it, shown while it is open. It sits
  * to the right of the book, clear of the page text and the sign buttons; on a GUI too narrow for that it
- * goes on the page below the sign note.</p>
+ * goes on the page below the sign note and opens upward.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class BookLanguageSignClient {
@@ -43,7 +43,7 @@ public final class BookLanguageSignClient {
     private static final int MAX_WIDTH = 170;
     private static final int TEXT_PAD = 24;
     /** Air kept between a side-placed dropdown and the window's right edge. */
-    private static final int EDGE = 4;
+    private static final int EDGE = 1;
     private static final int HEIGHT = 20;
     /** Half the vanilla book texture's width. */
     private static final int BOOK_HALF = 96;
@@ -106,21 +106,28 @@ public final class BookLanguageSignClient {
             width = Math.max(width, net.minecraft.client.Minecraft.getInstance().font.width(head) + TEXT_PAD);
         }
         width = Math.min(width, MAX_WIDTH);
-        boolean side = screen.width / 2 + BOOK_HALF + GAP + width + EDGE <= screen.width;
+        // Beside the book when at least the minimum fits (a longer name then scrolls, as vanilla
+        // buttons do); else on the page under the sign note, opening UPWARD so the list never
+        // covers Sign and Close / Cancel, which take a click first.
+        int sideX = screen.width / 2 + BOOK_HALF + GAP;
+        int sideRoom = screen.width - EDGE - sideX;
+        boolean side = sideRoom >= MIN_WIDTH;
         int x;
         if (side) {
-            x = screen.width / 2 + BOOK_HALF + GAP;
+            x = sideX;
+            width = Math.min(width, sideRoom);
         } else {
             width = Math.min(width, PAGE_W);
             x = (screen.width - 2 * BOOK_HALF) / 2 + PAGE_X_FROM_BOOK + (PAGE_W - width) / 2;
         }
         int y = side ? SIDE_Y : PAGE_Y;
+        int step = side ? HEIGHT : -HEIGHT;
         Head head = new Head(x, y, width, b -> open = !open);
         head.setTooltip(Tooltip.create(Component.translatable(KEY + ".tip")));
         event.addListener(head);
         for (int i = 0; i < choices.size(); i++) {
             String locale = choices.get(i);
-            event.addListener(new Option(x, y + HEIGHT * (i + 1), width, ReadingLanguagesScreen.languageName(locale), b -> {
+            event.addListener(new Option(x, y + step * (i + 1), width, ReadingLanguagesScreen.languageName(locale), b -> {
                 chosen = locale;
                 open = false;
             }));

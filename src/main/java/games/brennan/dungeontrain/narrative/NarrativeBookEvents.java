@@ -592,11 +592,12 @@ public final class NarrativeBookEvents {
             if (family.equals(hostFamily) || BookLanguages.knownEmpty(family)) continue;
             List<SharedBookPool.PoolBook> window = FallbackBookPool.snapshot(family);
             // Nothing left for them in this language — fetch its next page and wait for it (as the main
-            // window does), or every pickup until it lands would go to the other languages. Bounded:
-            // once a fetch completes with nothing new, the per-family throttle lets pickups through.
+            // window does), or every pickup until it lands would go to the other languages. A fetch that
+            // brought new books may be repeated at once (a burst of pickups can use a page up within
+            // seconds); once one brings nothing, the per-family throttle lets pickups through instead.
             if (SharedBookSelector.needsFamilyFetch(window, family, ctx)) {
                 if (FallbackBookPool.isInFlight(family)) return null;
-                if (claimFallbackRefreshSlot(family, now)) {
+                if (claimFallbackRefreshSlot(family, now) || FallbackBookPool.lastFetchWasProductive(family)) {
                     FallbackBookPool.refreshAsync(family,
                             WorldLanguage.hostUuidConsented(player.getServer()), kidSafeFetch);
                     if (FallbackBookPool.isInFlight(family)) return null;
