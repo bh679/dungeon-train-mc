@@ -649,6 +649,7 @@
   "chat.dungeontrain.live.took_over": "%s is afgesneden.",
   "chat.dungeontrain.live.preparing": "De uitzendapparatuur wordt klaargezet...",
   "chat.dungeontrain.live.no_ffmpeg": "Geen uitzending: videoweergave van Vista staat uit op deze client.",
+  "chat.dungeontrain.live.sound_off_unapproved": "Streamgeluid staat uit: er zijn niet-goedgekeurde mods geladen.",
   "chat.dungeontrain.live.unreachable": "Geen uitzending: de feed was niet bereikbaar.",
   "chat.dungeontrain.live.disabled": "Livestreamen staat uit, zet het aan in %s",
   "chat.dungeontrain.live.disabled.path": "Opties / Dungeon Train / Algemeen / Livestreamen",

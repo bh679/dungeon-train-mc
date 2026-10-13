@@ -734,6 +734,7 @@
   "chat.dungeontrain.live.took_over": "Трансляцію %s перервано.",
   "chat.dungeontrain.live.preparing": "Підготовка обладнання для трансляції...",
   "chat.dungeontrain.live.no_ffmpeg": "Немає трансляції: відтворення відео Vista вимкнено на цьому клієнті.",
+  "chat.dungeontrain.live.sound_off_unapproved": "Звук трансляції вимкнено: завантажено несхвалені моди.",
   "chat.dungeontrain.live.unreachable": "Немає трансляції: не вдалося зв'язатися з потоком.",
   "chat.dungeontrain.live.disabled": "Пряму трансляцію вимкнено, увімкни її в %s",
   "chat.dungeontrain.live.disabled.path": "Налаштування / Dungeon Train / Загальні / Пряма трансляція",

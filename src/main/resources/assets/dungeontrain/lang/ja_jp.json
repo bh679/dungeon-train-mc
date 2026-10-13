@@ -620,6 +620,7 @@
   "chat.dungeontrain.live.took_over": "%s の放送は打ち切られた。",
   "chat.dungeontrain.live.preparing": "放送機材を準備中...",
   "chat.dungeontrain.live.no_ffmpeg": "放送できない：このクライアントでは Vista の動画再生がオフになっている。",
+  "chat.dungeontrain.live.sound_off_unapproved": "配信音声はオフです：未承認のMODが読み込まれています。",
   "chat.dungeontrain.live.unreachable": "放送できない：配信先に接続できなかった。",
   "chat.dungeontrain.live.disabled": "ライブ配信はオフになっています。%s でオンにしてください",
   "chat.dungeontrain.live.disabled.path": "設定 / Dungeon Train / 一般 / ライブ配信",

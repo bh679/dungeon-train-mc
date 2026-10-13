@@ -620,6 +620,7 @@
   "chat.dungeontrain.live.took_over": "%s ถูกตัดสัญญาณแล้ว",
   "chat.dungeontrain.live.preparing": "กำลังเตรียมอุปกรณ์ถ่ายทอด...",
   "chat.dungeontrain.live.no_ffmpeg": "ไม่มีการถ่ายทอด: การเล่นวิดีโอของ Vista ถูกปิดอยู่บนไคลเอนต์นี้",
+  "chat.dungeontrain.live.sound_off_unapproved": "เสียงสตรีมปิดอยู่: มีม็อดที่ไม่ได้รับอนุมัติโหลดอยู่",
   "chat.dungeontrain.live.unreachable": "ไม่มีการถ่ายทอด: ติดต่อฟีดไม่ได้",
   "chat.dungeontrain.live.disabled": "การถ่ายทอดสดถูกปิดอยู่ เปิดได้ที่ %s",
   "chat.dungeontrain.live.disabled.path": "ตัวเลือก / Dungeon Train / ทั่วไป / การถ่ายทอดสด",

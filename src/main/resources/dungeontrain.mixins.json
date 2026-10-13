@@ -134,6 +134,7 @@
     "client.audio.SoundManagerAccessor",
     "client.audio.SoundEngineAccessor",
     "client.audio.SoundBufferLibraryAccessor",
+    "client.audio.SoundBufferLibraryMirrorMixin",
     "client.KeyboardHandlerDebugChordMixin",
     "client.ViewfinderOverlaySelfieHintMixin",
     "client.BiomeColorsTwinMixin",

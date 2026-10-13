@@ -7,6 +7,9 @@ package games.brennan.dungeontrain.client.live.audio;
  */
 public interface MirrorTwin {
 
+    /** A channel's twin id meaning "kept off the stream" (its sound is not allowed); never a real id. */
+    int BLOCKED = -1;
+
     /** The mirror session the twin was made in; 0 when there is none. */
     int dungeontrain$twinGen();
 
@@ -18,7 +21,7 @@ public interface MirrorTwin {
 
     void dungeontrain$setTwin(int gen, int id, int bytes);
 
-    /** A twin from {@code gen}, or 0. */
+    /** A twin from {@code gen}, or 0 ({@link #BLOCKED} for a channel kept off the stream). */
     default int dungeontrain$twinIn(int gen) {
         return dungeontrain$twinGen() == gen ? dungeontrain$twinId() : 0;
     }
@@ -43,5 +46,11 @@ public interface MirrorTwin {
         java.nio.ByteBuffer dungeontrain$data();
 
         javax.sound.sampled.AudioFormat dungeontrain$format();
+
+        /** The sound file this buffer was decoded from, or null if it did not come through the cache. */
+        @org.jetbrains.annotations.Nullable
+        net.minecraft.resources.ResourceLocation dungeontrain$source();
+
+        void dungeontrain$setSource(net.minecraft.resources.ResourceLocation source);
     }
 }

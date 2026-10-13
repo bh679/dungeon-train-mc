@@ -623,6 +623,7 @@
       "chat.dungeontrain.live.took_over",
       "chat.dungeontrain.live.preparing",
       "chat.dungeontrain.live.no_ffmpeg",
+      "chat.dungeontrain.live.sound_off_unapproved",
       "chat.dungeontrain.live.unreachable",
       "chat.dungeontrain.live.disabled",
       "chat.dungeontrain.live.disabled.path",

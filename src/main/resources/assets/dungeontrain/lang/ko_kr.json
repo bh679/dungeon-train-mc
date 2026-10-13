@@ -620,6 +620,7 @@
   "chat.dungeontrain.live.took_over": "%s의 방송이 끊겼습니다.",
   "chat.dungeontrain.live.preparing": "방송 장비를 준비하는 중...",
   "chat.dungeontrain.live.no_ffmpeg": "방송 불가: 이 클라이언트에서 Vista의 영상 재생이 꺼져 있습니다.",
+  "chat.dungeontrain.live.sound_off_unapproved": "방송 소리가 꺼져 있습니다: 승인되지 않은 모드가 로드되어 있습니다.",
   "chat.dungeontrain.live.unreachable": "방송 불가: 피드에 연결할 수 없습니다.",
   "chat.dungeontrain.live.disabled": "라이브 방송이 꺼져 있습니다. %s에서 켜세요",
   "chat.dungeontrain.live.disabled.path": "설정 / Dungeon Train / 일반 / 라이브 방송",

@@ -705,6 +705,7 @@
   "chat.dungeontrain.live.took_over": "%s was cut off.",
   "chat.dungeontrain.live.preparing": "Preparing the broadcast equipment...",
   "chat.dungeontrain.live.no_ffmpeg": "No broadcast: Vista's video playback is turned off on this client.",
+  "chat.dungeontrain.live.sound_off_unapproved": "Stream sound is off: unapproved mods are loaded.",
   "chat.dungeontrain.live.unreachable": "No broadcast: the feed could not be reached.",
   "chat.dungeontrain.live.disabled": "Live-streaming is disabled, turn it on in %s",
   "chat.dungeontrain.live.disabled.path": "Options / Dungeon Train / General / Livestreaming",

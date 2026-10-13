@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.mixin.client.audio;
 import com.mojang.blaze3d.audio.SoundBuffer;
 import games.brennan.dungeontrain.client.live.audio.AudioMirror;
 import games.brennan.dungeontrain.client.live.audio.MirrorTwin;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -33,6 +34,14 @@ public abstract class SoundBufferMirrorMixin implements MirrorTwin.Buffer {
     @Unique private int dungeontrain$twinGen;
     @Unique private int dungeontrain$twinId;
     @Unique private int dungeontrain$twinBytes;
+    @Unique @Nullable private volatile ResourceLocation dungeontrain$source;
+
+    @Override
+    @Nullable
+    public ResourceLocation dungeontrain$source() { return dungeontrain$source; }
+
+    @Override
+    public void dungeontrain$setSource(ResourceLocation source) { dungeontrain$source = source; }
 
     @Override
     public int dungeontrain$twinGen() { return dungeontrain$twinGen; }

@@ -25,7 +25,7 @@ final class LivePerfWindow {
                     long uploads, long uploadNs, long uploadMaxNs,
                     long worstFrameNs,
                     long audioRenders, long audioRenderNs, long audioRenderMaxNs, long audioMirrored,
-                    long audioDecodes, long audioDecodeNs, long audioStalls) {}
+                    long audioDecodes, long audioDecodeNs, long audioStalls, long audioBlocked) {}
 
     /** What the line says about this client's context besides the counters. */
     record Context(boolean streaming, @Nullable String streamSize, @Nullable Double encCpuPct,
@@ -61,6 +61,7 @@ final class LivePerfWindow {
     private final LongAdder audioDecodes = new LongAdder();
     private final LongAdder audioDecodeNs = new LongAdder();
     private final LongAdder audioStalls = new LongAdder();
+    private final LongAdder audioBlocked = new LongAdder();
 
     void grab(long ns) { grabs.increment(); grabNs.add(ns); grabMaxNs.accumulateAndGet(ns, Math::max); }
     void grabSkipped() { skipped.increment(); }
@@ -74,6 +75,7 @@ final class LivePerfWindow {
     void audioMirrored() { audioMirrored.increment(); }
     void audioDecoded(long ns) { audioDecodes.increment(); audioDecodeNs.add(ns); }
     void audioStall() { audioStalls.increment(); }
+    void audioBlocked() { audioBlocked.increment(); }
 
     /** Reads every counter and resets it; a bump racing the reset lands in one window or the next. */
     Snapshot drain() {
@@ -83,7 +85,7 @@ final class LivePerfWindow {
             uploads.sumThenReset(), uploadNs.sumThenReset(), uploadMaxNs.getAndSet(0),
             worstFrameNs.getAndSet(0),
             audioRenders.sumThenReset(), audioRenderNs.sumThenReset(), audioRenderMaxNs.getAndSet(0), audioMirrored.sumThenReset(),
-            audioDecodes.sumThenReset(), audioDecodeNs.sumThenReset(), audioStalls.sumThenReset());
+            audioDecodes.sumThenReset(), audioDecodeNs.sumThenReset(), audioStalls.sumThenReset(), audioBlocked.sumThenReset());
     }
 
     /**
@@ -120,7 +122,8 @@ final class LivePerfWindow {
                     .append(" twinMB=").append(String.format(Locale.ROOT, "%.1f", c.audio().twinBytes() / 1048576.0))
                     .append(" decodes=").append(s.audioDecodes())
                     .append(" decodeMs=").append(ms(s.audioDecodeNs()))
-                    .append(" stalls=").append(s.audioStalls());
+                    .append(" stalls=").append(s.audioStalls())
+                    .append(" blocked=").append(s.audioBlocked());
             }
         }
         if (viewing) {

@@ -620,6 +620,7 @@
   "chat.dungeontrain.live.took_over": "%s terputus.",
   "chat.dungeontrain.live.preparing": "Menyiapkan peralatan siaran...",
   "chat.dungeontrain.live.no_ffmpeg": "Tidak ada siaran: pemutaran video Vista dimatikan di klien ini.",
+  "chat.dungeontrain.live.sound_off_unapproved": "Suara siaran mati: ada mod yang belum disetujui dimuat.",
   "chat.dungeontrain.live.unreachable": "Tidak ada siaran: feed tidak dapat dijangkau.",
   "chat.dungeontrain.live.disabled": "Siaran langsung dimatikan, nyalakan di %s",
   "chat.dungeontrain.live.disabled.path": "Opsi / Dungeon Train / Umum / Siaran langsung",

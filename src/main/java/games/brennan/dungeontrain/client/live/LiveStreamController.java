@@ -3,7 +3,10 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientLanguage;
+import games.brennan.dungeontrain.cheat.ApprovedModList;
+import games.brennan.dungeontrain.client.live.audio.AudioMirror;
 import games.brennan.dungeontrain.client.live.audio.LiveAudioPump;
+import games.brennan.dungeontrain.client.live.audio.StreamSoundPolicy;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
@@ -23,6 +26,8 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -214,6 +219,8 @@ public final class LiveStreamController {
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         } else if (state == State.STREAMING) {
             announceViewers(System.currentTimeMillis());
+            // The approved list can change under a running stream (the relay's overlay revokes a mod).
+            if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
         }
     }
 
@@ -278,8 +285,9 @@ public final class LiveStreamController {
             StreamNameTag.prepare();
             grabber = new LiveFrameGrabber(w, h);
             int fps = LiveFeedClientConfig.captureFps();
-            // Off (the default), or not possible here: the stream goes out without sound, as before.
-            audio = LiveFeedClientConfig.streamAudio() ? LiveAudioPump.open(ffmpeg) : null;
+            // Off (the default), not possible here, or an unapproved mod loaded (it could play anything):
+            // the stream goes out without sound, as before.
+            audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(ffmpeg) : null;
             encoder = new LiveEncoder(ffmpeg, grabber, d, fps,
                 LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), audio == null ? 0 : audio.port());
             if (audio != null) audio.start(encoder::framesWritten, fps);
@@ -324,6 +332,24 @@ public final class LiveStreamController {
             LOGGER.error("[DungeonTrain] live encoder could not restart without sound", e);
             return false;
         }
+    }
+
+    /** How often a stream with sound re-checks the loaded mods against the approved list. */
+    private static final int MOD_RECHECK_TICKS = 200;
+
+    /**
+     * Stream sound only goes out while every loaded mod is approved: an unapproved one could play
+     * whatever it likes through the sound engine. {@code tell} says so in chat when it is not.
+     */
+    private static boolean soundAllowedByMods(boolean tell) {
+        List<String> loaded = ModList.get().getMods().stream().map(IModInfo::getModId).toList();
+        List<String> unapproved = StreamSoundPolicy.unapproved(loaded, ApprovedModList::isApproved);
+        if (unapproved.isEmpty()) return true;
+        if (tell) {
+            LOGGER.warn("[DungeonTrain] stream sound off: unapproved mods loaded {}", unapproved);
+            say(Component.translatable("chat.dungeontrain.live.sound_off_unapproved").withStyle(ChatFormatting.GRAY));
+        }
+        return false;
     }
 
     private void cutOff(String by) {

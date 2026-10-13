@@ -6,7 +6,9 @@ import com.mojang.blaze3d.audio.Channel;
 import com.mojang.blaze3d.audio.SoundBuffer;
 import games.brennan.dungeontrain.client.live.audio.AudioMirror;
 import games.brennan.dungeontrain.client.live.audio.MirrorTwin;
+import net.minecraft.client.sounds.AudioStream;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.openal.AL10;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -30,6 +32,7 @@ import java.util.OptionalInt;
 public abstract class ChannelMirrorMixin implements MirrorTwin.Channel {
 
     @Shadow @Final private int source;
+    @Shadow @Nullable private AudioStream stream;
 
     @Unique private int dungeontrain$twinGen;
     @Unique private int dungeontrain$twinId;
@@ -108,7 +111,7 @@ public abstract class ChannelMirrorMixin implements MirrorTwin.Channel {
     @WrapOperation(method = "pumpBuffers",
         at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/audio/SoundBuffer;releaseAlBuffer()Ljava/util/OptionalInt;"))
     private OptionalInt dungeontrain$mirrorStreamChunk(SoundBuffer chunk, Operation<OptionalInt> original) {
-        AudioMirror.streamChunk(this, (MirrorTwin.Buffer) (Object) chunk);
+        AudioMirror.streamChunk(this, stream, (MirrorTwin.Buffer) (Object) chunk);
         return original.call(chunk);
     }
 }

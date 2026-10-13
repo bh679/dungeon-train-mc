@@ -649,6 +649,7 @@
   "chat.dungeontrain.live.took_over": "%s è stato interrotto.",
   "chat.dungeontrain.live.preparing": "Preparazione dell'attrezzatura di trasmissione...",
   "chat.dungeontrain.live.no_ffmpeg": "Nessuna trasmissione: la riproduzione video di Vista è disattivata su questo client.",
+  "chat.dungeontrain.live.sound_off_unapproved": "L'audio della diretta è disattivato: sono caricate mod non approvate.",
   "chat.dungeontrain.live.unreachable": "Nessuna trasmissione: impossibile raggiungere il flusso.",
   "chat.dungeontrain.live.disabled": "La diretta streaming è disattivata, attivala in %s",
   "chat.dungeontrain.live.disabled.path": "Opzioni / Dungeon Train / Generale / Diretta streaming",

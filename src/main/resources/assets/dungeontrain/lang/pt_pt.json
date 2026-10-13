@@ -649,6 +649,7 @@
   "chat.dungeontrain.live.took_over": "%s foi cortado.",
   "chat.dungeontrain.live.preparing": "A preparar o equipamento de emissão...",
   "chat.dungeontrain.live.no_ffmpeg": "Sem emissão: a reprodução de vídeo do Vista está desligada neste cliente.",
+  "chat.dungeontrain.live.sound_off_unapproved": "O som da transmissão está desligado: há mods não aprovados carregados.",
   "chat.dungeontrain.live.unreachable": "Sem emissão: não foi possível alcançar o feed.",
   "chat.dungeontrain.live.disabled": "A transmissão em direto está desligada; liga-a em %s",
   "chat.dungeontrain.live.disabled.path": "Opções / Dungeon Train / Geral / Transmissão em direto",

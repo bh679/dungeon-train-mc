@@ -678,6 +678,7 @@
   "chat.dungeontrain.live.took_over": "%s został odcięty.",
   "chat.dungeontrain.live.preparing": "Przygotowywanie sprzętu do transmisji...",
   "chat.dungeontrain.live.no_ffmpeg": "Brak transmisji: odtwarzanie wideo Vista jest wyłączone na tym kliencie.",
+  "chat.dungeontrain.live.sound_off_unapproved": "Dźwięk transmisji jest wyłączony: wczytano niezatwierdzone mody.",
   "chat.dungeontrain.live.unreachable": "Brak transmisji: nie udało się połączyć z przekazem.",
   "chat.dungeontrain.live.disabled": "Transmisja na żywo jest wyłączona, włącz ją w %s",
   "chat.dungeontrain.live.disabled.path": "Opcje / Dungeon Train / Ogólne / Transmisja na żywo",

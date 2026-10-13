@@ -5,12 +5,15 @@ import com.mojang.blaze3d.audio.Listener;
 import com.mojang.blaze3d.audio.ListenerTransform;
 import com.mojang.blaze3d.audio.SoundBuffer;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.cheat.ApprovedModList;
 import games.brennan.dungeontrain.client.live.LivePerfStats;
 import games.brennan.dungeontrain.mixin.client.audio.SoundBufferLibraryAccessor;
 import games.brennan.dungeontrain.mixin.client.audio.SoundEngineAccessor;
 import games.brennan.dungeontrain.mixin.client.audio.SoundManagerAccessor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.sounds.AudioStream;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.openal.AL10;
@@ -24,6 +27,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -44,6 +49,11 @@ import java.util.function.IntConsumer;
  * Minecraft's upload while live, or — for sounds the engine uploaded before the stream started, whose
  * PCM it has already dropped — re-decoded in the background ({@link MirrorPredecoder}); a channel that
  * plays one before it is ready (a looping engine hum, say) catches up at the speaker's sample offset.</p>
+ *
+ * <p>Only sounds {@link StreamSoundPolicy} allows are mirrored — files from vanilla or an approved
+ * mod's jar. A channel playing anything else (a resource pack's override, an unapproved mod's file, a
+ * stream that never came through the sound cache such as a Vista TV's) is {@linkplain MirrorTwin#BLOCKED
+ * blocked}: the streamer hears it, the stream does not.</p>
  */
 public final class AudioMirror {
 
@@ -54,6 +64,8 @@ public final class AudioMirror {
     private static final AtomicInteger GENERATIONS = new AtomicInteger();
 
     @Nullable private static volatile Session live;
+    /** The sound file each open stream was read from (tagged by {@code SoundBufferLibraryMirrorMixin}). */
+    private static final Map<AudioStream, ResourceLocation> STREAM_SOURCES = Collections.synchronizedMap(new WeakHashMap<>());
     private static volatile boolean warned;
 
     /** What the {@code [live]} perf line reports about the mirror. */
@@ -74,6 +86,10 @@ public final class AudioMirror {
         final Map<SoundBuffer, List<MirrorTwin.Channel>> waiting = new IdentityHashMap<>();
         long twinBytes;
         MirrorPredecoder decoder;
+        /** Whether each sound file may reach the stream, decided once per session. */
+        final Map<ResourceLocation, Boolean> verdicts = new ConcurrentHashMap<>();
+        /** Unapproved mods appeared mid-stream: the pump writes silence until they are gone. */
+        volatile boolean silenced;
 
         Session(MirrorDevice device, int gen, Map<SoundBuffer, ResourceLocation> known) {
             this.device = device;
@@ -97,7 +113,11 @@ public final class AudioMirror {
         Map<SoundBuffer, ResourceLocation> known = new IdentityHashMap<>();
         for (Map.Entry<ResourceLocation, CompletableFuture<SoundBuffer>> e : library.dungeontrain$cache().entrySet()) {
             SoundBuffer buffer = e.getValue().isDone() && !e.getValue().isCompletedExceptionally() ? e.getValue().join() : null;
-            if (buffer != null) known.put(buffer, e.getKey());
+            if (buffer != null) {
+                known.put(buffer, e.getKey());
+                MirrorTwin.Buffer duck = (MirrorTwin.Buffer) (Object) buffer;
+                if (duck.dungeontrain$source() == null) duck.dungeontrain$setSource(e.getKey());
+            }
         }
         Session s = new Session(device, GENERATIONS.incrementAndGet(), Collections.unmodifiableMap(known));
         s.decoder = new MirrorPredecoder(s, library.dungeontrain$resourceManager(), engine.dungeontrain$executor());
@@ -135,7 +155,7 @@ public final class AudioMirror {
             for (SoundBuffer b : s.known.keySet()) {
                 MirrorTwin.Buffer duck = (MirrorTwin.Buffer) (Object) b;
                 if (duck.dungeontrain$hasAlBuffer() && duck.dungeontrain$alBuffer() == speakerBuffer) {
-                    await(s, b, ch);
+                    if (bufferAllowed(s, b)) await(s, b, ch); else block(s, ch);
                     return;
                 }
             }
@@ -188,7 +208,7 @@ public final class AudioMirror {
         Session s = live;
         if (s == null || !s.lock.readLock().tryLock()) return false;
         try {
-            if (s.closed) return false;
+            if (s.closed || s.silenced) return false;
             s.device.render(out, frames);
             return true;
         } finally {
@@ -231,6 +251,10 @@ public final class AudioMirror {
         Session s = live;
         if (s == null) return;
         withLock(s, () -> {
+            if (!bufferAllowed(s, buffer)) {
+                block(s, ch);
+                return;
+            }
             int src = twinSource(s, ch);
             if (src == 0) return;
             int twin = ((MirrorTwin.Buffer) (Object) buffer).dungeontrain$twinIn(s.gen);
@@ -248,13 +272,17 @@ public final class AudioMirror {
      * A streamed chunk about to be uploaded to the speakers (its PCM still in hand): upload a twin and
      * queue it on the channel's twin, restarting the twin if it ran dry while the speaker plays on.
      */
-    public static void streamChunk(MirrorTwin.Channel ch, MirrorTwin.Buffer chunk) {
+    public static void streamChunk(MirrorTwin.Channel ch, @Nullable AudioStream stream, MirrorTwin.Buffer chunk) {
         Session s = live;
         if (s == null) return;
         ByteBuffer data = chunk.dungeontrain$data();
         AudioFormat format = chunk.dungeontrain$format();
         if (data == null) return;
         withLock(s, () -> {
+            if (!allowed(s, stream == null ? null : STREAM_SOURCES.get(stream))) {
+                block(s, ch);
+                return;
+            }
             int src = twinSource(s, ch);
             if (src == 0) return;
             boolean speakerPlaying = state(ch.dungeontrain$speakerSource()) == AL10.AL_PLAYING;
@@ -289,7 +317,7 @@ public final class AudioMirror {
         withLock(s, () -> {
             int id = ch.dungeontrain$twinIn(s.gen);
             if (id == 0) return;
-            s.device.run(() -> deleteSource(id));
+            if (id > 0) s.device.run(() -> deleteSource(id));
             synchronized (s) {
                 s.sources.remove(ch);
                 s.waiting.values().forEach(list -> list.remove(ch));
@@ -309,6 +337,7 @@ public final class AudioMirror {
         if (data == null) return;
         withLock(s, () -> {
             if (buffer.dungeontrain$twinIn(s.gen) != 0) return;
+            if (!allowed(s, buffer.dungeontrain$source())) return; // never mirrored; its channel is blocked on attach
             adoptBuffer(s, buffer, data, format);
         });
     }
@@ -359,6 +388,53 @@ public final class AudioMirror {
         withLock(s, () -> s.device.run(() -> AL10.alListenerf(AL10.AL_GAIN, gain)));
     }
 
+    // ---- what may reach the stream ----------------------------------------------------------
+
+    /** {@code SoundBufferLibraryMirrorMixin}: remember the file a stream was opened from. */
+    public static void tagStream(AudioStream stream, ResourceLocation source) {
+        STREAM_SOURCES.put(stream, source);
+    }
+
+    /** The unapproved-mod gate: while silenced the stream carries silence; the mirror itself runs on. */
+    public static void setSilenced(boolean silenced) {
+        Session s = live;
+        if (s != null && s.silenced != silenced) {
+            s.silenced = silenced;
+            LOGGER.info("[DungeonTrain] stream audio {}", silenced ? "silenced: unapproved mods loaded" : "back on");
+        }
+    }
+
+    /** Whether a decoded sound may reach the stream: by its tagged file, or the cache it was found in. */
+    static boolean bufferAllowed(Session s, SoundBuffer buffer) {
+        ResourceLocation source = ((MirrorTwin.Buffer) (Object) buffer).dungeontrain$source();
+        return allowed(s, source != null ? source : s.known.get(buffer));
+    }
+
+    /** {@link StreamSoundPolicy} for one file, by the pack that serves it now (top-most wins). */
+    private static boolean allowed(Session s, @Nullable ResourceLocation source) {
+        if (source == null) return false;
+        return s.verdicts.computeIfAbsent(source, id -> {
+            String pack = Minecraft.getInstance().getResourceManager().getResource(id).map(Resource::sourcePackId).orElse(null);
+            boolean ok = StreamSoundPolicy.allowed(pack, ApprovedModList::isApproved);
+            if (!ok) LOGGER.debug("[DungeonTrain] stream audio: {} from pack {} stays off the stream", id, pack);
+            return ok;
+        });
+    }
+
+    /** Keep a channel off the stream for good: its twin (if any) goes, and nothing re-creates it. */
+    private static void block(Session s, MirrorTwin.Channel ch) {
+        int id = ch.dungeontrain$twinIn(s.gen);
+        if (id == MirrorTwin.BLOCKED) return;
+        if (id > 0) {
+            s.device.run(() -> deleteSource(id));
+            synchronized (s) {
+                s.sources.remove(ch);
+            }
+        }
+        ch.dungeontrain$setTwin(s.gen, MirrorTwin.BLOCKED, 0);
+        LivePerfStats.audioBlocked();
+    }
+
     // ---- helpers ------------------------------------------------------------------------------
 
     private static void adoptBuffer(Session s, MirrorTwin.Buffer buffer, ByteBuffer data, AudioFormat format) {
@@ -378,7 +454,7 @@ public final class AudioMirror {
     /** A channel that started before its twin buffer existed: attach it and jump to the speaker's place. */
     private static void catchUp(Session s, MirrorTwin.Channel ch, int bufferId) {
         int src = ch.dungeontrain$twinIn(s.gen);
-        if (src == 0) return;
+        if (src <= 0) return;
         int speaker = ch.dungeontrain$speakerSource();
         int speakerState = state(speaker);
         int offset = AL10.alGetSourcei(speaker, AL_SAMPLE_OFFSET);
@@ -416,6 +492,7 @@ public final class AudioMirror {
     /** The twin of a speaker source, made on first use as a copy of the speaker source's settings. */
     private static int twinSource(Session s, MirrorTwin.Channel ch) {
         int id = ch.dungeontrain$twinIn(s.gen);
+        if (id == MirrorTwin.BLOCKED) return 0;
         if (id != 0) return id;
         int src = ch.dungeontrain$speakerSource();
         // Read on this thread's own (speaker) context, before switching to the mirror.
@@ -459,7 +536,7 @@ public final class AudioMirror {
         if (s == null) return;
         withLock(s, () -> {
             int id = create ? twinSource(s, ch) : ch.dungeontrain$twinIn(s.gen);
-            if (id == 0) return;
+            if (id <= 0) return;
             s.device.run(() -> { op.accept(id); AL10.alGetError(); });
             LivePerfStats.audioMirrored();
         });
@@ -495,7 +572,7 @@ public final class AudioMirror {
 
     /** Mirror context current: stop, free its queued chunks, delete. */
     private static void deleteSource(int source) {
-        if (source == 0) return;
+        if (source <= 0) return;
         AL10.alSourceStop(source);
         unqueueProcessed(source);
         AL10.alSourcei(source, AL10.AL_BUFFER, 0);

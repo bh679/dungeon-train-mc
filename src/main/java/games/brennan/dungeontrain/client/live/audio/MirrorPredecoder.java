@@ -79,6 +79,7 @@ final class MirrorPredecoder {
                 SoundBuffer buffer = queue.take();
                 MirrorTwin.Buffer duck = (MirrorTwin.Buffer) (Object) buffer;
                 if (duck.dungeontrain$twinIn(session.gen) != 0) continue;
+                if (!AudioMirror.bufferAllowed(session, buffer)) continue; // a pack's override: never on the stream
                 ResourceLocation id = session.known.get(buffer);
                 if (id != null) decode(buffer, id);
             }

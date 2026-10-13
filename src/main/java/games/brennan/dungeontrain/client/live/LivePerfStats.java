@@ -61,6 +61,7 @@ public final class LivePerfStats {
     public static void audioMirrored() { WINDOW.audioMirrored(); }
     public static void audioDecoded(long ns) { WINDOW.audioDecoded(ns); }
     public static void audioStall() { WINDOW.audioStall(); }
+    public static void audioBlocked() { WINDOW.audioBlocked(); }
 
     // ---- frame interval and window boundary (render thread) -----------------------------------
 

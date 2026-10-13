@@ -111,13 +111,14 @@ class LivePerfWindowTest {
         w.audioMirrored();
         w.audioMirrored();
         w.audioDecoded(4 * MS);
+        w.audioBlocked();
         w.frame(20 * MS);
         String line = LivePerfWindow.format(w.drain(),
             new LivePerfWindow.Context(true, "1280x720@20", 24.4, 0, 0, null, 104,
                 new LivePerfWindow.Audio(12, 3 * 1048576L)));
         assertEquals("[live] role=stream size=1280x720@20 grabs=1 skipped=0 grabMs avg=1.00 max=1.00"
             + " encFrames=1 dup=0 encCpu=24%"
-            + " audio renderMs avg=0.20 max=0.30 calls=2 twins=12 twinMB=3.0 decodes=1 decodeMs=4.00 stalls=0"
+            + " audio renderMs avg=0.20 max=0.30 calls=2 twins=12 twinMB=3.0 decodes=1 decodeMs=4.00 stalls=0 blocked=1"
             + " | fps=104 worstFrameMs=20.00", line);
         LivePerfWindow.Snapshot next = w.drain();
         assertEquals(0, next.audioRenders());

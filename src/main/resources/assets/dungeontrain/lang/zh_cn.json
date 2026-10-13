@@ -620,6 +620,7 @@
   "chat.dungeontrain.live.took_over": "%s 的直播被切断了。",
   "chat.dungeontrain.live.preparing": "正在准备直播设备……",
   "chat.dungeontrain.live.no_ffmpeg": "无法直播：此客户端已关闭 Vista 的视频播放。",
+  "chat.dungeontrain.live.sound_off_unapproved": "直播声音已关闭：已加载未经批准的模组。",
   "chat.dungeontrain.live.unreachable": "无法直播：无法连接到信号源。",
   "chat.dungeontrain.live.disabled": "直播已关闭，请在 %s 中开启",
   "chat.dungeontrain.live.disabled.path": "选项 / Dungeon Train / 通用 / 直播",
