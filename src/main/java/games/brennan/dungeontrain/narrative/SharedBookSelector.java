@@ -146,16 +146,13 @@ public final class SharedBookSelector {
      * {@link #select(List, PlayerContext, long)} with a fallback-language window to mix in.
      *
      * <h3>Fallback-language mix</h3>
-     * <p>Once no unread in-language book by ANYONE ELSE is left, the player has been through their
-     * language. If no unread book of their own is left either — a reader, writer or not, who has read
-     * everything — every pick comes from the fallback. If unread own books remain and they are at least
-     * {@link #OWN_SHARE_TRIGGER_PERCENT}% of the in-language pool — a writer who has become a real part of their
-     * language's corpus, not one stray book — the pick becomes a seeded roll: {@link #OWN_PICK_PERCENT}%
-     * one of their unread own books, otherwise an unread book from {@code fallbackPool} (books in
-     * {@code fallbackFamily}: English for a non-English player, the biggest other language for an
-     * English one). No unread own book → the fallback. Nothing servable in the fallback, no fallback
-     * family, or below the share → the ordinary chain, unchanged. It switches itself off as soon as an
-     * unread book by another in-language writer arrives.</p>
+     * <p>As a player runs out of unread books in their own language, books from {@code fallbackFamily}
+     * (English for a non-English player, the biggest other language for an English one) fade in. It
+     * depends only on how many unread in-language books by OTHER writers are {@code left} — never on how
+     * much the player has written: with {@link #FADE_START_BOOKS} or more left nothing changes; below
+     * that, {@link #fallbackShare} of picks come from the fallback, reaching all of them at none left.
+     * While the mix is active a player's own unread books are capped at {@link #OWN_PICK_PERCENT}% of
+     * picks. Nothing servable in the fallback, or no fallback family → the ordinary chain, unchanged.</p>
      */
     public static Optional<PoolBook> select(List<PoolBook> pool, String fallbackFamily,
                                             List<PoolBook> fallbackPool, PlayerContext ctx, long seed) {
@@ -176,12 +173,19 @@ public final class SharedBookSelector {
 
         List<PoolBook> pool3;
         List<PoolBook> fallback = servableFallback(pool, fallbackFamily, fallbackPool, ctx);
-        if (!fallback.isEmpty() && needsMix(pool, eligible, fallbackFamily, ctx)) {
+        List<PoolBook> othersUnread = othersUnread(eligible, ctx);
+        double share = fallbackShare(othersUnread.size(), fallbackFamily, ctx);
+        if (share > 0 && !fallback.isEmpty()) {
             // Fallback-language mix — see the method javadoc.
             List<PoolBook> ownUnread = filter(eligible, b -> originOf(b, ctx) != Origin.OTHER
                     && ctx.isOwn().test(b) && !ctx.hasRead().test(b.id()));
-            boolean takeOwn = !ownUnread.isEmpty() && unitRoll(seed ^ COIN_SALT) * 100 < OWN_PICK_PERCENT;
-            pool3 = takeOwn ? ownUnread : fallback;
+            if (!ownUnread.isEmpty() && unitRoll(seed ^ COIN_SALT) * 100 < OWN_PICK_PERCENT) {
+                pool3 = ownUnread;
+            } else if (othersUnread.isEmpty() || unitRoll(seed ^ FADE_SALT) < share) {
+                pool3 = fallback;
+            } else {
+                pool3 = othersUnread;
+            }
         } else {
             // 2. Language bucket (hard) — {MINE, TRANSLATED} drained before OTHER.
             List<PoolBook> inLanguage = filter(eligible, b -> originOf(b, ctx) != Origin.OTHER);
@@ -225,8 +229,11 @@ public final class SharedBookSelector {
         return b -> b.author() != null && b.author().equalsIgnoreCase(playerName);
     }
 
-    /** Own books must be at least this percentage of the in-language pool before the mix starts. */
-    public static final int OWN_SHARE_TRIGGER_PERCENT = 5;
+    /**
+     * The fallback language starts fading in once fewer than this many unread in-language books by other
+     * writers are left, and serves every pick at none left.
+     */
+    public static final int FADE_START_BOOKS = 10;
 
     /** Once mixing, the percentage chance a pick is one of the player's own books; the rest is the fallback language. */
     public static final int OWN_PICK_PERCENT = 5;
@@ -234,9 +241,12 @@ public final class SharedBookSelector {
     /** Salt for the own-vs-fallback roll, so it is independent of the index pick drawn from the same seed. */
     private static final long COIN_SALT = 0x454e474c495348L; // "ENGLISH"
 
+    /** Salt for the fade roll — independent of the own roll and the index pick. */
+    private static final long FADE_SALT = 0x46414445L; // "FADE"
+
     /**
-     * Whether a pickup by this player has reached the mix point but has nothing in the fallback window
-     * to mix in — i.e. whether fetching {@code fallbackFamily}'s window would actually help. The caller
+     * Whether a pickup by this player is in the fade (fallback share above zero) but has nothing in the
+     * fallback window to mix in — i.e. whether fetching {@code fallbackFamily}'s window would actually help. The caller
      * uses it to fetch lazily.
      */
     public static boolean needsFallbackFetch(List<PoolBook> pool, String fallbackFamily,
@@ -244,7 +254,7 @@ public final class SharedBookSelector {
         if (pool == null || pool.isEmpty()) return false;
         List<PoolBook> filtered = contentFiltered(pool, ctx);
         if (filtered.isEmpty()) return false;
-        return needsMix(filtered, eligibleOrAll(filtered, ctx), fallbackFamily, ctx)
+        return fallbackShare(othersUnread(eligibleOrAll(filtered, ctx), ctx).size(), fallbackFamily, ctx) > 0
                 && servableFallback(filtered, fallbackFamily, fallbackPool, ctx).isEmpty();
     }
 
@@ -270,31 +280,21 @@ public final class SharedBookSelector {
         return eligible.isEmpty() ? pool : eligible;
     }
 
+    /** Unread in-language books by OTHER writers in {@code eligible} — what is "left" in the player's language. */
+    private static List<PoolBook> othersUnread(List<PoolBook> eligible, PlayerContext ctx) {
+        return filter(eligible, b -> originOf(b, ctx) != Origin.OTHER
+                && !ctx.isOwn().test(b) && !ctx.hasRead().test(b.id()));
+    }
+
     /**
-     * The mix point: a fallback family other than the player's own, no unread in-language book by
-     * anybody else left in {@code eligible}, and EITHER no unread own book left either (a reader who has
-     * been through their whole language, writer or not) OR the player's own books at least
-     * {@link #OWN_SHARE_TRIGGER_PERCENT}% of the in-language books in {@code pool} (a prolific writer).
-     * A writer under that share gets their few unread own books first, as before.
+     * Share of picks taken from the fallback language with {@code left} unread in-language books by
+     * other writers: 0 at {@link #FADE_START_BOOKS} or more, rising linearly to 1 at none. 0 when there
+     * is no fallback family, or it is the player's own.
      */
-    private static boolean needsMix(List<PoolBook> pool, List<PoolBook> eligible, String fallbackFamily,
-                                    PlayerContext ctx) {
-        if (fallbackFamily == null || LanguageFamily.sameFamily(ctx.playerLang(), fallbackFamily)) return false;
-        boolean ownUnread = false;
-        for (PoolBook b : eligible) {
-            if (originOf(b, ctx) == Origin.OTHER || ctx.hasRead().test(b.id())) continue;
-            if (!ctx.isOwn().test(b)) return false;
-            ownUnread = true;
-        }
-        if (!ownUnread) return true;
-        int inLanguage = 0;
-        int own = 0;
-        for (PoolBook b : pool) {
-            if (originOf(b, ctx) == Origin.OTHER) continue;
-            inLanguage++;
-            if (ctx.isOwn().test(b)) own++;
-        }
-        return inLanguage > 0 && own * 100 >= OWN_SHARE_TRIGGER_PERCENT * inLanguage;
+    static double fallbackShare(int left, String fallbackFamily, PlayerContext ctx) {
+        if (fallbackFamily == null || LanguageFamily.sameFamily(ctx.playerLang(), fallbackFamily)) return 0;
+        if (left >= FADE_START_BOOKS) return 0;
+        return (double) (FADE_START_BOOKS - Math.max(0, left)) / FADE_START_BOOKS;
     }
 
     /**
