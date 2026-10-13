@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.LiveClaimInfo;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -154,12 +155,19 @@ public final class LiveFeedClient {
         return DungeonTrain.relayBaseUrl();
     }
 
-    public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId) {
+    public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
+                                                  LiveClaimInfo info) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
         // One id per Live Eye item: the relay's #live-eye post tells a relog from a new Live Eye by it.
         if (eyeId != null && !eyeId.isEmpty()) body.addProperty("eyeId", eyeId);
+        // For the #live-eye post's streamer line: version + survey freshness dot, and Live Chat on/off.
+        if (info != null) {
+            if (!info.version().isEmpty()) body.addProperty("version", info.version());
+            body.addProperty("versionDot", info.versionDot());
+            body.addProperty("chat", info.chat());
+        }
         return post("/live/claim", body);
     }
 
