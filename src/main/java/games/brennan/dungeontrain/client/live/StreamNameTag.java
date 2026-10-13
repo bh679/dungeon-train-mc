@@ -20,7 +20,8 @@ import org.joml.Matrix4fStack;
 
 /**
  * "<b>Name</b> is live", top-middle in black on a black-outlined white pill with a pulsing green
- * dot before it, drawn into the broadcast picture only.
+ * dot before it (and a slashed speech bubble after it when the streamer has Live chat off), drawn into
+ * the broadcast picture only.
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
@@ -53,6 +54,20 @@ public final class StreamNameTag {
     static final long PULSE_MS = 1200;
     /** The dot's dimmest alpha, out of 1; it peaks at fully opaque. */
     static final double PULSE_MIN = 0.35;
+    /** GUI pixels between "is live" and the chat-off icon. */
+    static final int ICON_GAP = 4;
+    /** A speech bubble (tail bottom-left) with a slash through it, one cell per GUI pixel. */
+    static final String[] CHAT_OFF = {
+        ".#.#######.",
+        "#.#.......#",
+        "#..#......#",
+        "#...#.....#",
+        "#....#....#",
+        "#.....#...#",
+        ".#####.#.#.",
+        "..##....#..",
+        "..#......#.",
+    };
 
     private StreamNameTag() {}
 
@@ -113,7 +128,8 @@ public final class StreamNameTag {
             RenderSystem.applyModelViewMatrix();
             target.bindWrite(true);
             GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-            draw(graphics, mc.font, label(name), w, scale);
+            draw(graphics, mc.font, label(name), chatOff(LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode()),
+                w, scale);
             graphics.flush();
         } finally {
             modelView.popMatrix();
@@ -125,11 +141,14 @@ public final class StreamNameTag {
 
     /**
      * The outlined pill and the dot in target pixels (so their curves are smooth at stream
-     * resolution, not a GUI-pixel staircase), then the name in GUI pixels.
+     * resolution, not a GUI-pixel staircase), then the name in GUI pixels, then the chat-off icon if
+     * it applies.
      */
-    private static void draw(GuiGraphics graphics, Font font, Component label, int targetW, float scale) {
+    private static void draw(GuiGraphics graphics, Font font, Component label, boolean chatOff, int targetW,
+                             float scale) {
         int textW = font.width(label) - 1; // drop the trailing 1px advance so the group centres
-        float groupW = (DOT_SIZE + DOT_GAP + textW) * scale;
+        int iconW = chatOff ? ICON_GAP + CHAT_OFF[0].length() : 0;
+        float groupW = (DOT_SIZE + DOT_GAP + textW + iconW) * scale;
         int pillW = Math.round(groupW + 2 * PAD_X * scale);
         int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
         int pillX = (targetW - pillW) / 2;
@@ -148,6 +167,33 @@ public final class StreamNameTag {
         graphics.pose().scale(scale, scale, 1f);
         graphics.drawString(font, label, 0, 0, TEXT, false);
         graphics.pose().popPose();
+
+        if (chatOff) {
+            float iconX = groupX + (DOT_SIZE + DOT_GAP + textW + ICON_GAP) * scale;
+            float iconY = pillY + (pillH - CHAT_OFF.length * scale) / 2f;
+            graphics.pose().pushPose();
+            graphics.pose().translate(iconX, iconY, 0f);
+            graphics.pose().scale(scale, scale, 1f);
+            mask(graphics, CHAT_OFF, TEXT);
+            graphics.pose().popPose();
+        }
+    }
+
+    /**
+     * Viewers' cue that the streamer won't see their messages: Live chat (the stream's Discord chat
+     * mirrored into the game) is off, or Kid mode forces it off — the rule {@link LiveChatBridge} uses.
+     */
+    static boolean chatOff(boolean liveChat, boolean kid) {
+        return !liveChat || kid;
+    }
+
+    /** One {@code fill} per '#' cell of {@code mask}, at the current pose. */
+    private static void mask(GuiGraphics graphics, String[] mask, int color) {
+        for (int row = 0; row < mask.length; row++) {
+            for (int col = 0; col < mask[row].length(); col++) {
+                if (mask[row].charAt(col) == '#') graphics.fill(col, row, col + 1, row + 1, color);
+            }
+        }
     }
 
     /** "<b>name</b> is live", in the streamer's language. */

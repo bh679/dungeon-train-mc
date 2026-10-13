@@ -73,6 +73,19 @@ class StreamNameTagTest {
     }
 
     @Test
+    void chatOffIconFollowsLiveChat() {
+        assertTrue(StreamNameTag.chatOff(false, false), "Live chat off");
+        assertTrue(StreamNameTag.chatOff(true, true), "Kid mode forces it off");
+        assertTrue(StreamNameTag.chatOff(false, true));
+        assertEquals(false, StreamNameTag.chatOff(true, false), "Live chat on, not Kid: no icon");
+    }
+
+    @Test
+    void chatOffIconIsRectangular() {
+        for (String row : StreamNameTag.CHAT_OFF) assertEquals(StreamNameTag.CHAT_OFF[0].length(), row.length());
+    }
+
+    @Test
     void pillIsSymmetricTopToBottom() {
         for (int h : new int[] {14, 15, 28, 42}) {
             for (int row = 0; row < h; row++) assertEquals(pillInset(row, h), pillInset(h - 1 - row, h));
