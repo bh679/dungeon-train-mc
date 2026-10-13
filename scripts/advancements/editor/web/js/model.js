@@ -590,6 +590,8 @@ function paintTab(tab) {
 
 // ---------- what a capstone needs ----------
 const BURRITO = 'dungeontrain:dungeon_train/completionist';
+/** Does this one combine other advancements' rules (the tabs file's `needs` — All at Once, The Challenge)? */
+function combinesRules(id) { return !!(M.needs && M.needs[id]); }
 /**
  * The advancements the selected capstone needs, for highlighting: the Everything Burrito's (those that count
  * towards it), or a tab-complete advancement's (its tab, less the tab-complete copies). Hidden-until-earned
@@ -599,6 +601,7 @@ function neededBy(L, id) {
   const E = L.E;
   if (E.nodes[id] && E.nodes[id].copyOf && M.complete && M.complete[E.nodes[id].copyOf]) id = E.nodes[id].copyOf; // its in-tab copy
   let ids;
+  if (combinesRules(id)) return new Set(M.needs[id].filter(k => E.nodes[k])); // every rule, seen or not
   if (id === BURRITO) ids = Object.keys(E.nodes).filter(k => E.nodes[k].cap && E.nodes[k].cap.req);
   else if (M.complete && M.complete[id]) {
     const root = M.complete[id], skip = new Set(Object.keys(M.complete));

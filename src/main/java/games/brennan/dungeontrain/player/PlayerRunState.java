@@ -504,6 +504,18 @@ public final class PlayerRunState {
         travelledCarriageIndex += signedDelta;
     }
 
+    /**
+     * Book one leader advance: {@link #advanceTravelled} plus {@link #recordCartMovement}, in that
+     * order, returning the post-advance {@link #travelledCarriageIndex}. The carriage milestones are
+     * evaluated off this return value, so a threshold is met on the advance that reaches it rather
+     * than one advance later.
+     */
+    public int recordLeaderAdvance(int signedDelta) {
+        advanceTravelled(signedDelta);
+        recordCartMovement(signedDelta);
+        return travelledCarriageIndex;
+    }
+
     public int incrementMobKills() {
         return ++mobKills;
     }

@@ -145,6 +145,8 @@ public enum ClientOptionsTab {
         STREAM_GUI("gui.dungeontrain.options.stream_gui"),
         /** Whether viewers see chat. Locked off in Kid mode. */
         STREAM_CHAT("gui.dungeontrain.options.stream_chat"),
+        /** Whether the stream carries the game's sound. Off by default. */
+        STREAM_AUDIO("gui.dungeontrain.options.stream_audio"),
         /** Which name viewers see above the hotbar. Locked to none in Kid mode. */
         STREAM_NAME_TAG("gui.dungeontrain.options.stream_name_tag"),
         /** The stream's Discord chat in your chat, and yours back to it. Locked off in Kid mode. */
@@ -295,6 +297,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.LIVESTREAM);
                 rows.add(Row.STREAM_GUI);
                 rows.add(Row.STREAM_CHAT);
+                rows.add(Row.STREAM_AUDIO);
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.LIVE_CHAT);
                 rows.add(Row.STREAM_SIZE);

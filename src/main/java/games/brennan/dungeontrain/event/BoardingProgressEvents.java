@@ -251,19 +251,15 @@ public final class BoardingProgressEvents {
             boolean gliding = glidingOutside.contains(leader);
             int delta = gliding ? 0 : current - data.lastLeaderCarriage();
             data.advance(delta, current);
-            // Tick the per-player carts-since-death counter so the
-            // carts_in_run advancement fires once the leader has actually
-            // traversed forward. Negative / zero deltas no-op inside the
-            // notify helper.
+            // Advance the leader's per-player travelled-carriage index and
+            // carts-since-death counters, then check the carriage milestones
+            // against the post-advance count. The travelled index also drives
+            // mob difficulty (max across players, resets on respawn). Signed
+            // delta — backward movement reduces tier. Zero deltas no-op inside
+            // the notify helper.
             ServerPlayer leaderPlayer = level.getServer().getPlayerList().getPlayer(leader);
             if (leaderPlayer != null && !gliding) {
                 AchievementEvents.notifyCartAdvance(leaderPlayer, delta);
-                // Per-player travelled-carriage-index drives mob difficulty
-                // (max across players, resets on respawn). Signed delta —
-                // backward movement reduces tier just like the global
-                // counter did before.
-                PlayerRunState leaderRun = leaderPlayer.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-                leaderRun.advanceTravelled(delta);
             }
             leaderOffTrainScans = 0;
         } else if (leader != null) {

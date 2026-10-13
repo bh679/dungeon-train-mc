@@ -81,11 +81,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: thirty-eight rows, none of the conditional rows present")
+    @DisplayName("Plain client: thirty-nine rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(38, rows.size());
+        assertEquals(39, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -194,7 +194,7 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        assertEquals(42, rows.size());
+        assertEquals(43, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -203,7 +203,7 @@ final class ClientOptionsTabTest {
     @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows; General no longer does")
     void streamTabRows() {
         assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
-                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_NAME_TAG, ClientOptionsTab.Row.LIVE_CHAT,
+                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO, ClientOptionsTab.Row.STREAM_NAME_TAG, ClientOptionsTab.Row.LIVE_CHAT,
                         ClientOptionsTab.Row.STREAM_SIZE,
                         ClientOptionsTab.Row.HEAD_VIEWER_SIZE),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));

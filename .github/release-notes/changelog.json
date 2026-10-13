@@ -25537,6 +25537,74 @@
       "highlights": [],
       "pr": 1978,
       "date": "2026-10-13",
+      "released": true,
+      "released_in": "v0.1269.0",
+      "released_at": "2026-10-13T09:48:55Z"
+    },
+    {
+      "id": "live-eye-stream-sound",
+      "version": "0.1269.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Eye streams now carry in-game sound",
+      "summary": "Live Eye streams now carry in-game sounds, never your microphone; you can switch it off in the Stream options.",
+      "highlights": [],
+      "pr": 1981,
+      "date": "2026-10-13",
+      "released": true,
+      "released_in": "v0.1269.0",
+      "released_at": "2026-10-13T09:48:55Z"
+    },
+    {
+      "id": "all-at-once-challenge",
+      "version": "0.1270.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Every rule at once",
+      "summary": "A new challenge waits for anyone who can keep every rule at once.",
+      "highlights": [],
+      "pr": 1982,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "twitch-deletions-follow",
+      "version": "0.1271.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Twitch deletions reach the Live chat",
+      "summary": "Messages removed by a Twitch moderator now disappear from the Live chat everywhere.",
+      "highlights": [],
+      "pr": 1983,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-milestones-on-time",
+      "version": "0.1272.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Carriage milestones arrive on time",
+      "summary": "Carriage-distance advancements now unlock the moment you reach them.",
+      "highlights": [],
+      "pr": 1984,
+      "date": "2026-10-13",
       "released": false,
       "released_in": null,
       "released_at": null

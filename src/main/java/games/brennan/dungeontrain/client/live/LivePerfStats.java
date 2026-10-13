@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.audio.AudioMirror;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.util.DtLogging;
 import net.minecraft.client.Minecraft;
@@ -55,6 +56,13 @@ public final class LivePerfStats {
     static void stall() { WINDOW.stall(); }
     static void upload(long ns) { WINDOW.upload(ns); }
 
+    // Stream audio (client.live.audio): mix renders, mirrored OpenAL calls, re-decodes, slow writes.
+    public static void audioRendered(long ns) { WINDOW.audioRendered(ns); }
+    public static void audioMirrored() { WINDOW.audioMirrored(); }
+    public static void audioDecoded(long ns) { WINDOW.audioDecoded(ns); }
+    public static void audioStall() { WINDOW.audioStall(); }
+    public static void audioBlocked() { WINDOW.audioBlocked(); }
+
     // ---- frame interval and window boundary (render thread) -----------------------------------
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -89,8 +97,10 @@ public final class LivePerfStats {
             LiveFrameGrabber grabber = controller.grabber();
             String size = grabber == null ? null
                 : grabber.width() + "x" + grabber.height() + "@" + LiveFeedClientConfig.captureFps();
+            AudioMirror.Stats audio = AudioMirror.stats();
             LivePerfWindow.Context context = new LivePerfWindow.Context(streaming, size, encCpu,
-                sessions, session == null ? 0 : session.width(), decCpu, Minecraft.getInstance().getFps());
+                sessions, session == null ? 0 : session.width(), decCpu, Minecraft.getInstance().getFps(),
+                audio == null ? null : new LivePerfWindow.Audio(audio.sources(), audio.twinBytes()));
             PERF.debug(LivePerfWindow.format(snapshot, context));
         }
         activeSeen = active;

@@ -94,9 +94,16 @@ public final class LiveFeedClient {
         }
     }
 
-    /** A chat poll: whether anyone is on air, the ring's head seq, and the lines after {@code since}. */
-    public record ChatPage(boolean live, long seq, List<ChatLine> lines) {
-        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of());
+    /**
+     * A chat poll: whether anyone is on air, the ring's head seq, the lines after {@code since}, and the
+     * seqs of earlier lines removed since then ({@code deleted} — a Twitch mod deleted them).
+     */
+    public record ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted) {
+        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of());
+
+        public ChatPage(boolean live, long seq, List<ChatLine> lines) {
+            this(live, seq, lines, List.of());
+        }
     }
 
     /**
@@ -270,7 +277,13 @@ public final class LiveFeedClient {
                         author.isBlank() ? "Someone" : author, uuid, content, source));
                 }
             }
-            return new ChatPage(live, seq, List.copyOf(lines));
+            List<Long> deleted = new ArrayList<>();
+            if (b.has("deleted") && b.get("deleted").isJsonArray()) {
+                for (JsonElement el : b.getAsJsonArray("deleted")) {
+                    if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isNumber()) deleted.add(el.getAsLong());
+                }
+            }
+            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted));
         } catch (RuntimeException e) {
             return ChatPage.EMPTY;
         }

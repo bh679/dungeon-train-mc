@@ -3,6 +3,10 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientLanguage;
+import games.brennan.dungeontrain.cheat.ApprovedModList;
+import games.brennan.dungeontrain.client.live.audio.AudioMirror;
+import games.brennan.dungeontrain.client.live.audio.LiveAudioPump;
+import games.brennan.dungeontrain.client.live.audio.StreamSoundPolicy;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
@@ -23,6 +27,8 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforgespi.language.IModInfo;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
@@ -76,6 +82,8 @@ public final class LiveStreamController {
     private int generation; // bumps on every start/stop so a late async reply cannot act on a newer stream
     @Nullable private LiveFrameGrabber grabber;
     @Nullable private LiveEncoder encoder;
+    /** The stream's sound, when Options → Stream → Stream sound is on and this client can do it. */
+    @Nullable private LiveAudioPump audio;
     @Nullable private LiveUploader uploader;
     @Nullable private Claim claim;
     /** The worn Live Eye's id from the server's START; the relay matches reconnects by it. */
@@ -207,10 +215,13 @@ public final class LiveStreamController {
                 default -> { /* still downloading */ }
             }
         } else if (state == State.STREAMING && encoder != null && encoder.died()) {
+            if (audio != null && restartWithoutSound()) return;
             stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED), LiveStreamEndedToast.Reason.FAILED);
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         } else if (state == State.STREAMING) {
             announceViewers(System.currentTimeMillis());
+            // The approved list can change under a running stream (the relay's overlay revokes a mod).
+            if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
         }
     }
 
@@ -276,15 +287,20 @@ public final class LiveStreamController {
             if (ffmpeg == null) throw new IOException("ffmpeg vanished");
             StreamNameTag.prepare();
             grabber = new LiveFrameGrabber(w, h);
-            encoder = new LiveEncoder(ffmpeg, grabber, d, LiveFeedClientConfig.captureFps(),
-                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds());
+            int fps = LiveFeedClientConfig.captureFps();
+            // Off (the default), not possible here, or an unapproved mod loaded (it could play anything):
+            // the stream goes out without sound, as before.
+            audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(ffmpeg) : null;
+            encoder = new LiveEncoder(ffmpeg, grabber, d, fps,
+                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), audio == null ? 0 : audio.port());
+            if (audio != null) audio.start(encoder::framesWritten, fps);
             uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
             claim = c;
             dir = d;
             streamStartedMs = System.currentTimeMillis();
             state = State.STREAMING;
-            LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps, playlist {}", c.session(), w, h,
-                LiveFeedClientConfig.captureFps(), c.playlistUrl());
+            LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}, playlist {}", c.session(), w, h,
+                fps, audio != null ? " with sound" : "", c.playlistUrl());
             announcedLive = false;
             if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
         } catch (Exception e) {
@@ -294,6 +310,49 @@ public final class LiveStreamController {
             state = State.IDLE;
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         }
+    }
+
+    /**
+     * ffmpeg died on a stream with sound before anything went out — most likely it could not open the
+     * sound input. Rather than end the broadcast, start the encoder again without sound, as it would
+     * have been with the setting off. Only before the first upload: a fresh encoder numbers its
+     * segments from 0 again. True when the stream carries on.
+     */
+    private boolean restartWithoutSound() {
+        LiveAudioPump snd = audio;
+        audio = null;
+        snd.close();
+        LiveUploader up = uploader;
+        var ffmpeg = FfmpegSupport.get();
+        if (up == null || up.segmentsUploaded() > 0 || ffmpeg == null || grabber == null || dir == null) return false;
+        LOGGER.warn("[DungeonTrain] live encoder failed with stream sound on; carrying on without sound");
+        try {
+            encoder.close();
+            encoder = new LiveEncoder(ffmpeg, grabber, dir, LiveFeedClientConfig.captureFps(),
+                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), 0);
+            return true;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] live encoder could not restart without sound", e);
+            return false;
+        }
+    }
+
+    /** How often a stream with sound re-checks the loaded mods against the approved list. */
+    private static final int MOD_RECHECK_TICKS = 200;
+
+    /**
+     * Stream sound only goes out while every loaded mod is approved: an unapproved one could play
+     * whatever it likes through the sound engine. {@code tell} says so in chat when it is not.
+     */
+    private static boolean soundAllowedByMods(boolean tell) {
+        List<String> loaded = ModList.get().getMods().stream().map(IModInfo::getModId).toList();
+        List<String> unapproved = StreamSoundPolicy.unapproved(loaded, ApprovedModList::isApproved);
+        if (unapproved.isEmpty()) return true;
+        if (tell) {
+            LOGGER.warn("[DungeonTrain] stream sound off: unapproved mods loaded {}", unapproved);
+            say(Component.translatable("chat.dungeontrain.live.sound_off_unapproved").withStyle(ChatFormatting.GRAY));
+        }
+        return false;
     }
 
     private void cutOff(String by) {
@@ -350,17 +409,21 @@ public final class LiveStreamController {
      */
     private void teardown(boolean clean, boolean wait, @Nullable LiveStreamEndedToast.Reason ended) {
         LiveEncoder enc = encoder;
+        LiveAudioPump snd = audio;
         LiveUploader up = uploader;
         LiveFrameGrabber grab = grabber;
         Claim c = claim;
         Path d = dir;
         encoder = null;
+        audio = null;
         uploader = null;
         grabber = null;
         claim = null;
         dir = null;
 
         List<LiveTeardown.Step> steps = new ArrayList<>();
+        // Sound first: ffmpeg finishes only once every input has ended, and the encoder gives it 3 s.
+        if (snd != null) steps.add(new LiveTeardown.Step("audio", snd::close));
         if (enc != null) steps.add(new LiveTeardown.Step("encoder", enc::close));
         if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean)));
         String reason = ended == null ? null : ended.relayReason;
