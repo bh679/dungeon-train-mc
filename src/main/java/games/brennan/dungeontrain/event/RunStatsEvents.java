@@ -119,7 +119,9 @@ public final class RunStatsEvents {
     public static void onMobKilled(LivingDeathEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer killer)) return;
+        // A knock into the void or lava credits whoever struck it (see KillCredit).
+        if (!(KillCredit.resolveKiller(victim, event.getSource()).orElse(null)
+                instanceof ServerPlayer killer)) return;
         // Don't credit a player for killing themselves (TNT, fall while
         // holding a damaging item, etc.). Stat is "things I killed" not
         // "deaths I caused".
@@ -145,7 +147,9 @@ public final class RunStatsEvents {
         // modded projectiles that don't expose their weapon), fall back to
         // the killer's current mainhand. Bare-hand kills become
         // {@code minecraft:air} and are filtered out of the final pick by
-        // {@link PlayerRunState#mostUsedWeapon()}.
+        // {@link PlayerRunState#mostUsedWeapon()}. A knock-off kill (the void or lava did
+        // the killing) credits no weapon — whatever is in hand when it lands didn't kill it.
+        if (KillCredit.isIndirect(event.getSource())) return;
         Entity direct = event.getSource().getDirectEntity();
         ItemStack weaponStack = null;
         if (direct instanceof AbstractArrow arrow) {
@@ -347,7 +351,8 @@ public final class RunStatsEvents {
         // and those runs are what fill the channel. EXCEPT when an echo did the killing — a
         // cross-player kill is exactly what the feed is for, so it posts at any carriage count.
         // The threaded report above always posts. Applies on dev + release — noise in either.
-        boolean slainByEcho = EchoIdentity.sourcePlayer(source.getEntity()).isPresent();
+        boolean slainByEcho = EchoIdentity.sourcePlayer(
+                KillCredit.resolveKiller(player, source).orElse(null)).isPresent();
         boolean shortRun = suppressPublicShortRun(packet.cartsTravelled(), slainByEcho);
         if (shortRun) {
             LOGGER.debug("[DungeonTrain] {} ended at {} carriages (< {}, no echo kill) — skipping public death feed",
