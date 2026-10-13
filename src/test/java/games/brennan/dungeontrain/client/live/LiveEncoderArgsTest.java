@@ -40,6 +40,7 @@ class LiveEncoderArgsTest {
         int sound = a.indexOf("tcp://127.0.0.1:51234");
         assertTrue(sound > 0, "ffmpeg reads the sound from the loopback port");
         assertEquals(List.of("-f", "s16le", "-ar", "48000", "-ac", "2", "-i"), a.subList(sound - 7, sound));
+        assertFalse(a.contains("-itsoffset"), "the mpegts muxer swallows it; LiveAudioPump delays the sound itself");
         assertTrue(a.indexOf("-i") < sound, "the picture stays input 0 (stdin)");
         assertEquals("0:v:0", a.get(a.indexOf("-map") + 1));
         assertEquals("1:a:0", a.get(a.lastIndexOf("-map") + 1));

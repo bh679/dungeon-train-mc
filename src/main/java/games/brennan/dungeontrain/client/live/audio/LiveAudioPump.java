@@ -26,7 +26,7 @@ import java.util.function.LongSupplier;
  * <p>Paced by the picture, not by its own clock: after the encoder has written {@code n} video frames
  * it has written exactly {@code n × 48000 / fps} sample frames ({@link #samplesDue}), so both inputs
  * sit on one timeline even when the encoder's writer falls behind and skips ticks. What the encoder
- * wrote before ffmpeg connected is matched with silence.</p>
+ * wrote before ffmpeg connected is matched with silence, as is {@link #DELAY_MS}.</p>
  */
 public final class LiveAudioPump implements AutoCloseable {
 
@@ -37,6 +37,20 @@ public final class LiveAudioPump implements AutoCloseable {
     private static final long POLL_MS = 5;
     /** A socket write this slow means ffmpeg is not keeping up; counted on the perf line. */
     private static final long STALL_NS = 50_000_000L;
+    /**
+     * How much later the sound goes out than the picture it belongs with. A grabbed frame reaches the
+     * encoder a frame or so after it was drawn (the read-back ring), so unshifted the sound led by
+     * 30–110 ms, avg ~63 (measured 2026-10-13: title flash + anvil hit in one tick, 20 fps). Written
+     * as leading silence, which moves every later sample by the same amount; ffmpeg's
+     * {@code -itsoffset} did not survive the mpegts muxer's timestamp normalisation.
+     */
+    static final int DELAY_MS = 60;
+    /**
+     * IPv4 loopback exactly, as ffmpeg is told {@code tcp://127.0.0.1:<port>}. Not
+     * {@link InetAddress#getLoopbackAddress()}: under the game's JVM flags that can be {@code ::1},
+     * and ffmpeg's connect is then refused.
+     */
+    private static final byte[] IPV4_LOOPBACK = {127, 0, 0, 1};
 
     private final ServerSocketChannel server;
     private final int port;
@@ -63,7 +77,7 @@ public final class LiveAudioPump implements AutoCloseable {
         if (!AudioMirror.start()) return null;
         try {
             ServerSocketChannel server = ServerSocketChannel.open();
-            server.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 1);
+            server.bind(new InetSocketAddress(InetAddress.getByAddress(IPV4_LOOPBACK), 0), 1);
             int port = ((InetSocketAddress) server.getLocalAddress()).getPort();
             return new LiveAudioPump(server, port);
         } catch (IOException e) {
@@ -85,9 +99,13 @@ public final class LiveAudioPump implements AutoCloseable {
         t.start();
     }
 
-    /** Sample frames that belong with {@code videoFrames} frames of picture at {@code fps}. */
+    /** Sample frames that belong with {@code videoFrames} frames of picture at {@code fps}, {@link #DELAY_MS} included. */
     static long samplesDue(long videoFrames, int fps) {
-        return videoFrames * RATE / fps;
+        return videoFrames * RATE / fps + delaySamples();
+    }
+
+    static long delaySamples() {
+        return (long) DELAY_MS * RATE / 1000;
     }
 
     static boolean isLoopback(@Nullable SocketAddress address) {

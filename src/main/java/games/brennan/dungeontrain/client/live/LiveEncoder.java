@@ -44,11 +44,6 @@ public final class LiveEncoder implements AutoCloseable {
     static final int ENCODER_THREADS = 2;
     /** Stream audio bitrate: AAC stereo, plenty for game sound. */
     static final int AUDIO_KBPS = 96;
-    /**
-     * Shifts the sound against the picture, in ms (positive = later). The picture reaches the encoder
-     * a frame or so after it was drawn; tuned by ear against the stream, 0 until that says otherwise.
-     */
-    static final int AUDIO_OFFSET_MS = 0;
     /** Input queue for each input when there are two, so neither blocks ffmpeg's reader on the other. */
     static final int INPUT_QUEUE = 512;
 
@@ -85,7 +80,6 @@ public final class LiveEncoder implements AutoCloseable {
         a.addAll(List.of("-f", "rawvideo", "-pix_fmt", "rgba", "-s", w + "x" + h, "-r", String.valueOf(fps), "-i", "-"));
         if (audio) {
             a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
-            if (AUDIO_OFFSET_MS != 0) a.addAll(List.of("-itsoffset", String.valueOf(AUDIO_OFFSET_MS / 1000.0)));
             a.addAll(List.of("-f", "s16le", "-ar", "48000", "-ac", "2", "-i", "tcp://127.0.0.1:" + audioPort,
                 "-map", "0:v:0", "-map", "1:a:0"));
         }

@@ -205,6 +205,7 @@ public final class LiveStreamController {
                 default -> { /* still downloading */ }
             }
         } else if (state == State.STREAMING && encoder != null && encoder.died()) {
+            if (audio != null && restartWithoutSound()) return;
             stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED), LiveStreamEndedToast.Reason.FAILED);
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         } else if (state == State.STREAMING) {
@@ -289,6 +290,31 @@ public final class LiveStreamController {
             teardown(false, false);
             state = State.IDLE;
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+        }
+    }
+
+    /**
+     * ffmpeg died on a stream with sound before anything went out — most likely it could not open the
+     * sound input. Rather than end the broadcast, start the encoder again without sound, as it would
+     * have been with the setting off. Only before the first upload: a fresh encoder numbers its
+     * segments from 0 again. True when the stream carries on.
+     */
+    private boolean restartWithoutSound() {
+        LiveAudioPump snd = audio;
+        audio = null;
+        snd.close();
+        LiveUploader up = uploader;
+        var ffmpeg = FfmpegSupport.get();
+        if (up == null || up.segmentsUploaded() > 0 || ffmpeg == null || grabber == null || dir == null) return false;
+        LOGGER.warn("[DungeonTrain] live encoder failed with stream sound on; carrying on without sound");
+        try {
+            encoder.close();
+            encoder = new LiveEncoder(ffmpeg, grabber, dir, LiveFeedClientConfig.captureFps(),
+                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), 0);
+            return true;
+        } catch (IOException e) {
+            LOGGER.error("[DungeonTrain] live encoder could not restart without sound", e);
+            return false;
         }
     }
 
