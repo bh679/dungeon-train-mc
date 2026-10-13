@@ -673,6 +673,24 @@
       ]
     }
   },
+  "book.dungeontrain.statbook.stat.live_stream": {
+    "1": {
+      "label": "how long the reader has been live with the Live Eye this run, already formatted",
+      "examples": [
+        "1h 5m",
+        "12m"
+      ]
+    }
+  },
+  "book.dungeontrain.statbook.stat.live_watch": {
+    "1": {
+      "label": "how long the reader has watched the Live Feed this run, already formatted",
+      "examples": [
+        "2h 40m",
+        "8m"
+      ]
+    }
+  },
   "book.dungeontrain.statbook.stat.tamed.one": {
     "1": {
       "label": "animals the reader has tamed this run",

@@ -38,6 +38,8 @@
   "book.dungeontrain.statbook.stat.player_kills.none.other": "เจ้ายังไม่ได้สังหารผู้โดยสารเลยสักคน ผ่านมา %s ตู้แล้ว",
   "book.dungeontrain.statbook.stat.player_kills.other": "เจ้าสังหารผู้โดยสารไป %s คน",
   "book.dungeontrain.statbook.stat.playtime": "เจ้าอยู่บนขบวนมา %s แล้ว",
+  "book.dungeontrain.statbook.stat.live_stream": "คุณออกอากาศสดมาแล้ว %s",
+  "book.dungeontrain.statbook.stat.live_watch": "คุณดูถ่ายทอดสดมาแล้ว %s",
   "book.dungeontrain.statbook.stat.tamed.other": "เจ้าฝึกสัตว์ไปแล้ว %s ตัว",
   "book.dungeontrain.statbook.stat.tributes.other": "เจ้าถวายเครื่องบรรณาการไปแล้ว %s ครั้ง",
   "book.dungeontrain.statbook.tail.0": "ทำต่อไปแบบนี้",

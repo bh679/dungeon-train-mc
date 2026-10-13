@@ -80,6 +80,8 @@
   "book.dungeontrain.statbook.stat.player_kills.many": "Ты убил %s пассажиров.",
   "book.dungeontrain.statbook.stat.player_kills.one": "Ты убил %s пассажира.",
   "book.dungeontrain.statbook.stat.playtime": "Ты был на борту уже %s раз.",
+  "book.dungeontrain.statbook.stat.live_stream": "Ты был в эфире %s.",
+  "book.dungeontrain.statbook.stat.live_watch": "Ты смотрел прямую трансляцию %s.",
   "book.dungeontrain.statbook.stat.tamed.few": "Ты приручил %s животных.",
   "book.dungeontrain.statbook.stat.tamed.many": "Ты приручил %s животных.",
   "book.dungeontrain.statbook.stat.tamed.one": "Ты приручил %s животное.",

@@ -59,6 +59,8 @@
   "book.dungeontrain.statbook.stat.player_kills.one": "Has matado %s pasajero.",
   "book.dungeontrain.statbook.stat.player_kills.other": "Has matado %s pasajeros.",
   "book.dungeontrain.statbook.stat.playtime": "Llevas %s a bordo.",
+  "book.dungeontrain.statbook.stat.live_stream": "Has estado en vivo %s.",
+  "book.dungeontrain.statbook.stat.live_watch": "Has visto la transmisión en vivo durante %s.",
   "book.dungeontrain.statbook.stat.tamed.one": "Has domesticado %s animal.",
   "book.dungeontrain.statbook.stat.tamed.other": "Has domesticado %s animales.",
   "book.dungeontrain.statbook.stat.tributes.one": "Has pagado %s tributo.",

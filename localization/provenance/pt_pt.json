@@ -59,6 +59,8 @@
   "book.dungeontrain.statbook.stat.player_kills.one": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "167ce0c13dce1605"},
   "book.dungeontrain.statbook.stat.player_kills.other": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "4fc2f6546846b5ed"},
   "book.dungeontrain.statbook.stat.playtime": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c10b246390cbd3d1"},
+  "book.dungeontrain.statbook.stat.live_stream": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "845babec86654cfb"},
+  "book.dungeontrain.statbook.stat.live_watch": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "161789e1be9e086f"},
   "book.dungeontrain.statbook.stat.tamed.one": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "5bdf8cdcd11430b1"},
   "book.dungeontrain.statbook.stat.tamed.other": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "32f23f92b72f5f10"},
   "book.dungeontrain.statbook.stat.tributes.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1780164360cdc353"},

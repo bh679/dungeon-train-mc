@@ -156,10 +156,16 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
-                                                  LiveClaimInfo info) {
+                                                  LiveClaimInfo info, @Nullable Life life) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
+        // Which life this stream is in, for the one-life "Longest On Air" board. A death ends the
+        // stream, so a session never spans two lives.
+        if (life != null) {
+            body.addProperty("lifeId", life.lifeId());
+            body.addProperty("freePlay", life.freePlay());
+        }
         // One id per Live Eye item: the relay's #live-eye post tells a relog from a new Live Eye by it.
         if (eyeId != null && !eyeId.isEmpty()) body.addProperty("eyeId", eyeId);
         // For the #live-eye post's streamer line: version + survey freshness dot, and Live Chat on/off.
@@ -295,24 +301,44 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel) {
-        return status(viewer, channel, false);
+        return status(viewer, channel, null);
     }
 
     /**
-     * {@link #status(UUID, Channel)}, and with {@code ranked} the viewer's watching may count toward
-     * the relay's "Longest Watching" leaderboard. Pass it only with the player's consent.
+     * The life a stream or a watch happened in, for the relay's one-life Live Feed boards. A blank
+     * {@code lifeId} (a server that never said) earns the all-time boards only.
      */
-    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, boolean ranked) {
+    public record Life(String lifeId, boolean freePlay, String version) {
+        public Life {
+            lifeId = lifeId == null ? "" : lifeId;
+            version = version == null ? "" : version;
+        }
+    }
+
+    /**
+     * {@link #status(UUID, Channel)}, and with a non-null {@code ranked} the viewer's watching counts
+     * toward the relay's "Longest Watching" boards — all-time, and one-life for {@code ranked}'s life.
+     * Pass it only with the player's consent.
+     */
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked) {
         String path = statusPath(viewer, ranked);
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
     }
 
-    /** The status request's path: {@code ?viewer=} names who is watching, {@code &lb=1} lets it rank. */
-    static String statusPath(@Nullable UUID viewer, boolean ranked) {
+    /**
+     * The status request's path: {@code ?viewer=} names who is watching, {@code &lb=1} lets it rank,
+     * and {@code life}/{@code fp}/{@code v} say which life it ranks in.
+     */
+    static String statusPath(@Nullable UUID viewer, @Nullable Life ranked) {
         if (viewer == null) return "/live/status";
-        return "/live/status?viewer=" + viewer + (ranked ? "&lb=1" : "");
+        String path = "/live/status?viewer=" + viewer;
+        if (ranked == null) return path;
+        path += "&lb=1";
+        if (ranked.lifeId().isEmpty()) return path;
+        return path + "&life=" + ranked.lifeId() + "&fp=" + (ranked.freePlay() ? 1 : 0)
+            + "&v=" + java.net.URLEncoder.encode(ranked.version(), java.nio.charset.StandardCharsets.UTF_8);
     }
 
     public static Status parseStatus(Result r) {

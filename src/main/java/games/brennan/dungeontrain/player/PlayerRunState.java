@@ -218,6 +218,14 @@ public final class PlayerRunState {
     private int photosHostile;
     private int photosAnimals;
     /**
+     * This life's seconds on the Live Feed — on air with the Live Eye ({@code LiveTvAdvancements}),
+     * and watching it ({@code LiveWatchTally}, as the client reports its consented, ranked polls) —
+     * the one-life twins of the "Longest On Air" / "Longest Watching" boards. In-memory only, NOT in
+     * {@link #CODEC}, for the same 16-field reason as the photo counts above.
+     */
+    private long liveStreamSeconds;
+    private long liveWatchSeconds;
+    /**
      * Visual identity of the PlayerMob that likes this player most this run — the
      * death-screen "friend" portrait — captured while it is loaded near the player
      * and only kept when its feeling clears the friend threshold (see
@@ -676,6 +684,20 @@ public final class PlayerRunState {
         return ++photosTributed;
     }
 
+    /** Seconds on air with the Live Eye this run. */
+    public long liveStreamSeconds() { return liveStreamSeconds; }
+
+    /** Seconds spent watching the Live Feed this run. */
+    public long liveWatchSeconds() { return liveWatchSeconds; }
+
+    public void addLiveStreamSeconds(long seconds) {
+        if (seconds > 0) liveStreamSeconds += seconds;
+    }
+
+    public void addLiveWatchSeconds(long seconds) {
+        if (seconds > 0) liveWatchSeconds += seconds;
+    }
+
     /**
      * Record a narrative letter (key {@code storyBasename + "#" + letterIndex})
      * read at a lectern this run.
@@ -871,6 +893,8 @@ public final class PlayerRunState {
         photosPassengers = 0;
         photosHostile = 0;
         photosAnimals = 0;
+        liveStreamSeconds = 0L;
+        liveWatchSeconds = 0L;
         narrativeLetters.clear();
         earnedAdvancements.clear();
         servedBookToCarriage.clear();

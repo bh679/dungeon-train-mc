@@ -59,6 +59,8 @@
   "book.dungeontrain.statbook.stat.player_kills.one": "Tu as tué %s passager.",
   "book.dungeontrain.statbook.stat.player_kills.other": "Tu as tué %s passagers.",
   "book.dungeontrain.statbook.stat.playtime": "Tu es à bord depuis %s maintenant.",
+  "book.dungeontrain.statbook.stat.live_stream": "Tu as été en direct pendant %s.",
+  "book.dungeontrain.statbook.stat.live_watch": "Tu as regardé le direct pendant %s.",
   "book.dungeontrain.statbook.stat.tamed.one": "Tu as apprivoisé %s animal.",
   "book.dungeontrain.statbook.stat.tamed.other": "Tu as apprivoisé %s animaux.",
   "book.dungeontrain.statbook.stat.tributes.one": "Tu as payé %s tribut.",

@@ -4,7 +4,10 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
+import games.brennan.dungeontrain.net.LiveLifePacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
+import games.brennan.dungeontrain.player.LifeKey;
+import games.brennan.dungeontrain.player.LiveWatchTally;
 import games.brennan.dungeontrain.player.LiveStreamers;
 import games.brennan.dungeontrain.player.ServerLiveStatus;
 import games.brennan.dungeontrain.compat.vista.TvItems;
@@ -95,9 +98,19 @@ public final class LiveFeedEvents {
     /** A player who logs back in still wearing the camcorder picks the stream up again. */
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) {
-            startStreaming(player);
-        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        sendLife(player);
+        if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) startStreaming(player);
+    }
+
+    /** A respawn is a new life: tell the client its id for the one-life Live Feed boards. */
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) sendLife(player);
+    }
+
+    private static void sendLife(ServerPlayer player) {
+        PacketDistributor.sendToPlayer(player, new LiveLifePacket(LifeKey.of(player)));
     }
 
     @SubscribeEvent
@@ -107,6 +120,7 @@ public final class LiveFeedEvents {
 
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+        LiveWatchTally.forget(event.getEntity().getUUID());
         // The connection is going away; the packet may not land, but the client stops itself on
         // LoggingOut too. The camcorder stays on, so logging back in resumes.
         if (event.getEntity() instanceof ServerPlayer player) endStream(player, Exit.LEFT);

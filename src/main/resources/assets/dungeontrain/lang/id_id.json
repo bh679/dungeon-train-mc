@@ -38,6 +38,8 @@
   "book.dungeontrain.statbook.stat.player_kills.none.other": "Kau belum membunuh satu penumpang pun, %s gerbong jauhnya.",
   "book.dungeontrain.statbook.stat.player_kills.other": "Kau telah membunuh %s penumpang.",
   "book.dungeontrain.statbook.stat.playtime": "Kau sudah %s di atas kereta.",
+  "book.dungeontrain.statbook.stat.live_stream": "Kamu sudah siaran langsung selama %s.",
+  "book.dungeontrain.statbook.stat.live_watch": "Kamu sudah menonton siaran langsung selama %s.",
   "book.dungeontrain.statbook.stat.tamed.other": "Kau telah menjinakkan %s hewan.",
   "book.dungeontrain.statbook.stat.tributes.other": "Kau telah membayar %s persembahan.",
   "book.dungeontrain.statbook.tail.0": "Teruskan.",

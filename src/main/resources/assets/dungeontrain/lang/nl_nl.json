@@ -59,6 +59,8 @@
   "book.dungeontrain.statbook.stat.player_kills.one": "Je hebt %s passagier gedood.",
   "book.dungeontrain.statbook.stat.player_kills.other": "Je hebt %s passagiers gedood.",
   "book.dungeontrain.statbook.stat.playtime": "Je bent nu %s aan boord.",
+  "book.dungeontrain.statbook.stat.live_stream": "Je bent %s live geweest.",
+  "book.dungeontrain.statbook.stat.live_watch": "Je hebt %s naar de livestream gekeken.",
   "book.dungeontrain.statbook.stat.tamed.one": "Je hebt %s dier getemd.",
   "book.dungeontrain.statbook.stat.tamed.other": "Je hebt %s dieren getemd.",
   "book.dungeontrain.statbook.stat.tributes.one": "Je hebt %s keer tribuut betaald.",

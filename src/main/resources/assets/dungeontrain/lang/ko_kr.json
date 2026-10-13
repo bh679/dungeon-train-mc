@@ -38,6 +38,8 @@
   "book.dungeontrain.statbook.stat.player_kills.none.other": "객차 %s 량을 지나왔는데, 승객을 한 명도 죽이지 않았다.",
   "book.dungeontrain.statbook.stat.player_kills.other": "승객 %s 명을 죽였다.",
   "book.dungeontrain.statbook.stat.playtime": "탑승한 지 이제 %s 되었다.",
+  "book.dungeontrain.statbook.stat.live_stream": "%s 동안 방송했다.",
+  "book.dungeontrain.statbook.stat.live_watch": "%s 동안 생방송을 봤다.",
   "book.dungeontrain.statbook.stat.tamed.other": "동물 %s 마리를 길들였다.",
   "book.dungeontrain.statbook.stat.tributes.other": "공물을 %s 번 바쳤다.",
   "book.dungeontrain.statbook.tail.0": "그 기세로.",

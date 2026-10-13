@@ -38,6 +38,8 @@
   "book.dungeontrain.statbook.stat.player_kills.none.other": "Ngươi chưa giết một hành khách nào, đã %s toa rồi.",
   "book.dungeontrain.statbook.stat.player_kills.other": "Ngươi đã giết %s hành khách.",
   "book.dungeontrain.statbook.stat.playtime": "Ngươi đã ở trên tàu được %s.",
+  "book.dungeontrain.statbook.stat.live_stream": "Bạn đã phát trực tiếp được %s.",
+  "book.dungeontrain.statbook.stat.live_watch": "Bạn đã xem phát trực tiếp được %s.",
   "book.dungeontrain.statbook.stat.tamed.other": "Ngươi đã thuần hóa %s con vật.",
   "book.dungeontrain.statbook.stat.tributes.other": "Ngươi đã dâng %s lần cống phẩm.",
   "book.dungeontrain.statbook.tail.0": "Cứ thế mà tiếp tục.",

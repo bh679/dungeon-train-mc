@@ -80,6 +80,8 @@
   "book.dungeontrain.statbook.stat.player_kills.many": "Zabiłeś %s pasażerów.",
   "book.dungeontrain.statbook.stat.player_kills.one": "Zabiłeś %s pasażera.",
   "book.dungeontrain.statbook.stat.playtime": "Jesteś na pokładzie już %s.",
+  "book.dungeontrain.statbook.stat.live_stream": "Nadawałeś na żywo przez %s.",
+  "book.dungeontrain.statbook.stat.live_watch": "Oglądałeś transmisję na żywo przez %s.",
   "book.dungeontrain.statbook.stat.tamed.few": "Oswoiłeś %s zwierzęta.",
   "book.dungeontrain.statbook.stat.tamed.many": "Oswoiłeś %s zwierząt.",
   "book.dungeontrain.statbook.stat.tamed.one": "Oswoiłeś %s zwierzę.",

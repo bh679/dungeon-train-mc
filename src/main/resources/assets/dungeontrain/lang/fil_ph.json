@@ -38,6 +38,8 @@
   "book.dungeontrain.statbook.stat.player_kills.none.other": "Wala ka pang napapatay na kahit isang pasahero, %s na bagon na ang nalakbay.",
   "book.dungeontrain.statbook.stat.player_kills.other": "Nakapatay ka na ng %s na pasahero.",
   "book.dungeontrain.statbook.stat.playtime": "%s ka nang nakasakay.",
+  "book.dungeontrain.statbook.stat.live_stream": "Naka-live ka nang %s.",
+  "book.dungeontrain.statbook.stat.live_watch": "Nanood ka ng live nang %s.",
   "book.dungeontrain.statbook.stat.tamed.other": "Naamo mo na ang %s na hayop.",
   "book.dungeontrain.statbook.stat.tributes.other": "Nakapag-alay ka na ng %s beses.",
   "book.dungeontrain.statbook.tail.0": "Ipagpatuloy mo.",

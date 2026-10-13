@@ -42,6 +42,8 @@
       "book.dungeontrain.statbook.stat.player_kills.none.other",
       "book.dungeontrain.statbook.stat.player_kills.other",
       "book.dungeontrain.statbook.stat.playtime",
+      "book.dungeontrain.statbook.stat.live_stream",
+      "book.dungeontrain.statbook.stat.live_watch",
       "book.dungeontrain.statbook.stat.tamed.other",
       "book.dungeontrain.statbook.stat.tributes.other",
       "book.dungeontrain.statbook.tail.0",

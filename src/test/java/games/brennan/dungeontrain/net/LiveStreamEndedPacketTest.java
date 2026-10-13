@@ -24,6 +24,15 @@ final class LiveStreamEndedPacketTest {
     }
 
     @Test
+    @DisplayName("LiveLifePacket round-trips a life id")
+    void lifeRoundTrip() {
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        LiveLifePacket p = new LiveLifePacket("0123456789abcdef0123456789abcdef");
+        LiveLifePacket.STREAM_CODEC.encode(buf, p);
+        assertEquals(p, LiveLifePacket.STREAM_CODEC.decode(buf));
+    }
+
+    @Test
     @DisplayName("LiveStreamPacket round-trips every action including STOP_REMOVED")
     void streamRoundTrip() {
         for (LiveStreamPacket.Action a : LiveStreamPacket.Action.values()) {
