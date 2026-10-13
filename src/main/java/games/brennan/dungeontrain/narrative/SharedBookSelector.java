@@ -3,7 +3,10 @@ package games.brennan.dungeontrain.narrative;
 import games.brennan.dungeontrain.narrative.SharedBookPool.PoolBook;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.IntPredicate;
 import java.util.function.IntUnaryOperator;
@@ -98,6 +101,11 @@ public final class SharedBookSelector {
      * @param isOwn           whether a book was written by THIS player. Drives the English mix-in only
      *                        (see {@link #select(List, List, PlayerContext, long)}); own books are
      *                        otherwise ordinary candidates.
+     * @param readingFamilies the language families this player reads, each with its weight (1+), the
+     *                        game language's family first. Every one of them counts as "my language";
+     *                        with more than one, each pick's family is rolled by weight — see
+     *                        {@link #byWeightedFamily}. Null/empty means just {@code playerLang}'s family,
+     *                        which is exactly the single-language behaviour.
      */
     public record PlayerContext(String playerLang,
                                 IntPredicate hasRead,
@@ -107,7 +115,26 @@ public final class SharedBookSelector {
                                 int repeatCarriages,
                                 boolean kidMode,
                                 boolean politicalFilter,
-                                Predicate<PoolBook> isOwn) {
+                                Predicate<PoolBook> isOwn,
+                                Map<String, Integer> readingFamilies) {
+
+        public PlayerContext {
+            readingFamilies = normaliseFamilies(playerLang, readingFamilies);
+        }
+
+        /** Context for a player who reads only their game language. */
+        public PlayerContext(String playerLang,
+                             IntPredicate hasRead,
+                             IntPredicate wasServed,
+                             IntUnaryOperator servedCarriage,
+                             int currentCarriage,
+                             int repeatCarriages,
+                             boolean kidMode,
+                             boolean politicalFilter,
+                             Predicate<PoolBook> isOwn) {
+            this(playerLang, hasRead, wasServed, servedCarriage, currentCarriage, repeatCarriages,
+                    kidMode, politicalFilter, isOwn, null);
+        }
 
         /** Context with no own-book knowledge — every book counts as somebody else's. */
         public PlayerContext(String playerLang,
@@ -153,6 +180,12 @@ public final class SharedBookSelector {
      * that, {@link #fallbackShare} of picks come from the fallback, reaching all of them at none left.
      * While the mix is active a player's own unread books are capped at {@link #OWN_PICK_PERCENT}% of
      * picks. Nothing servable in the fallback, or no fallback family → the ordinary chain, unchanged.</p>
+     *
+     * <h3>Reading languages</h3>
+     * <p>A player may read several languages ({@link PlayerContext#readingFamilies}). All of them count
+     * as "my language" — for the bucket, for "left" in the fade, and the fallback is never one of them —
+     * and once the chain has narrowed to its candidates, {@link #byWeightedFamily} rolls which of those
+     * languages this pick comes from, in proportion to their weights.</p>
      */
     public static Optional<PoolBook> select(List<PoolBook> pool, String fallbackFamily,
                                             List<PoolBook> fallbackPool, PlayerContext ctx, long seed) {
@@ -196,6 +229,9 @@ public final class SharedBookSelector {
             pool3 = unread.isEmpty() ? tier : unread;
         }
 
+        // 3b. Reading languages — with several, roll which one this pick comes from, by weight.
+        pool3 = byWeightedFamily(pool3, ctx, seed);
+
         // 4. Weight tier (hard) — keep only the top effectiveWeight group.
         int topWeight = Integer.MIN_VALUE;
         for (PoolBook b : pool3) topWeight = Math.max(topWeight, effectiveWeight(b, ctx));
@@ -212,7 +248,53 @@ public final class SharedBookSelector {
      * {@link Origin#OTHER}. {@link Origin#TRANSLATED} is not yet reachable — see its javadoc.
      */
     static Origin originOf(PoolBook book, PlayerContext ctx) {
-        return LanguageFamily.sameFamily(book.lang(), ctx.playerLang()) ? Origin.MINE : Origin.OTHER;
+        return ctx.readingFamilies().containsKey(LanguageFamily.of(book.lang())) ? Origin.MINE : Origin.OTHER;
+    }
+
+    /**
+     * The game language's family first (weight from {@code families} if listed there, else 1), then every
+     * other listed family with a weight of at least 1. Immutable; order kept.
+     */
+    static Map<String, Integer> normaliseFamilies(String playerLang, Map<String, Integer> families) {
+        String own = LanguageFamily.of(playerLang);
+        Map<String, Integer> out = new LinkedHashMap<>();
+        int ownWeight = families == null ? 1 : Math.max(1, families.getOrDefault(own, 1));
+        out.put(own, ownWeight);
+        if (families != null) {
+            for (Map.Entry<String, Integer> e : families.entrySet()) {
+                if (e.getKey() == null || e.getValue() == null) continue;
+                out.putIfAbsent(LanguageFamily.of(e.getKey()), Math.max(1, e.getValue()));
+            }
+        }
+        return Collections.unmodifiableMap(out);
+    }
+
+    /**
+     * For a player reading several languages: roll one of the reading families present in {@code in},
+     * each with probability weight / (sum of the weights of the families present), and keep only that
+     * family's books. A family with nothing left in {@code in} is simply not in the roll, so its share
+     * goes to the others. Books outside the reading families are never in the roll; a list with fewer
+     * than two reading families present comes back unchanged — so a single-language player is unaffected.
+     */
+    static List<PoolBook> byWeightedFamily(List<PoolBook> in, PlayerContext ctx, long seed) {
+        Map<String, Integer> reading = ctx.readingFamilies();
+        if (reading.size() < 2) return in;
+        Map<String, List<PoolBook>> present = new LinkedHashMap<>();
+        for (String family : reading.keySet()) present.put(family, new ArrayList<>());
+        for (PoolBook b : in) {
+            List<PoolBook> bucket = present.get(LanguageFamily.of(b.lang()));
+            if (bucket != null) bucket.add(b);
+        }
+        present.values().removeIf(List::isEmpty);
+        if (present.size() < 2) return in;
+        int total = 0;
+        for (String family : present.keySet()) total += reading.get(family);
+        double roll = unitRoll(seed ^ LANGUAGE_SALT) * total;
+        for (Map.Entry<String, List<PoolBook>> e : present.entrySet()) {
+            roll -= reading.get(e.getKey());
+            if (roll < 0) return e.getValue();
+        }
+        return in; // unreachable — the roll is below the total
     }
 
     /** {@code weight}, docked 1 for a translated book so a native book of equal raw weight ranks above it. */
@@ -244,6 +326,9 @@ public final class SharedBookSelector {
     /** Salt for the fade roll — independent of the own roll and the index pick. */
     private static final long FADE_SALT = 0x46414445L; // "FADE"
 
+    /** Salt for the reading-language roll — independent of the other rolls and the index pick. */
+    private static final long LANGUAGE_SALT = 0x4c414e4755414745L; // "LANGUAGE"
+
     /**
      * Whether a pickup by this player is in the fade (fallback share above zero) but has nothing in the
      * fallback window to mix in — i.e. whether fetching {@code fallbackFamily}'s window would actually help. The caller
@@ -256,6 +341,35 @@ public final class SharedBookSelector {
         if (filtered.isEmpty()) return false;
         return fallbackShare(othersUnread(eligibleOrAll(filtered, ctx), ctx).size(), fallbackFamily, ctx) > 0
                 && servableFallback(filtered, fallbackFamily, fallbackPool, ctx).isEmpty();
+    }
+
+    /**
+     * Whether {@code family}'s window holds nothing this player could be served from it — no unread
+     * book in that family by somebody else that passes their content filters and per-life eligibility.
+     * The caller fetches the window's next page when this is true.
+     */
+    public static boolean needsFamilyFetch(List<PoolBook> window, String family, PlayerContext ctx) {
+        if (family == null) return false;
+        if (window == null || window.isEmpty()) return true;
+        for (PoolBook b : contentFiltered(window, ctx)) {
+            if (LanguageFamily.of(b.lang()).equals(family) && !ctx.isOwn().test(b)
+                    && !ctx.hasRead().test(b.id()) && isEligible(b, ctx)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** {@code main} followed by every window's books not already in it (first copy of an id wins). */
+    public static List<PoolBook> withWindows(List<PoolBook> main, List<List<PoolBook>> windows) {
+        if (windows == null || windows.isEmpty()) return main;
+        java.util.Set<Integer> seen = new java.util.HashSet<>();
+        List<PoolBook> out = new ArrayList<>();
+        for (PoolBook b : main) if (seen.add(b.id())) out.add(b);
+        for (List<PoolBook> w : windows) {
+            for (PoolBook b : w) if (seen.add(b.id())) out.add(b);
+        }
+        return out;
     }
 
     /** Kid / political hard filters (no-ops when the player has neither on). */
@@ -292,7 +406,7 @@ public final class SharedBookSelector {
      * is no fallback family, or it is the player's own.
      */
     static double fallbackShare(int left, String fallbackFamily, PlayerContext ctx) {
-        if (fallbackFamily == null || LanguageFamily.sameFamily(ctx.playerLang(), fallbackFamily)) return 0;
+        if (fallbackFamily == null || ctx.readingFamilies().containsKey(fallbackFamily)) return 0;
         if (left >= FADE_START_BOOKS) return 0;
         return (double) (FADE_START_BOOKS - Math.max(0, left)) / FADE_START_BOOKS;
     }

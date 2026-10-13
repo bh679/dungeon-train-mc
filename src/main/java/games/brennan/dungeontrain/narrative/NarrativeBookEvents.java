@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.PoliticalFilterMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
+import games.brennan.dungeontrain.event.ReadingLanguagesMirror;
 import games.brennan.dungeontrain.event.SharedBookReadMirror;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -556,16 +557,56 @@ public final class NarrativeBookEvents {
         return true;
     }
 
-    /** Last fallback-window fetch, on its own budget so it never competes with the main window's. */
-    private static volatile long lastFallbackRefreshMs = 0L;
+    /**
+     * Last fetch per {@link FallbackBookPool} family, each on its own budget so neither the main window
+     * nor another language's window competes with it.
+     */
+    private static final java.util.Map<String, Long> LAST_FALLBACK_REFRESH_MS =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
-    /** {@link #claimRefreshSlot}'s twin for {@link FallbackBookPool}, same interval. */
-    static boolean claimFallbackRefreshSlot(long now) {
-        if (now - lastFallbackRefreshMs <= EXHAUSTED_REFRESH_RETRY_MS) return false;
-        lastFallbackRefreshMs = now;
-        return true;
+    /** {@link #claimRefreshSlot}'s twin for one {@link FallbackBookPool} family, same interval. */
+    static boolean claimFallbackRefreshSlot(String family, long now) {
+        if (family == null) return false;
+        boolean[] claimed = {false};
+        LAST_FALLBACK_REFRESH_MS.compute(family, (f, last) -> {
+            if (last != null && now - last <= EXHAUSTED_REFRESH_RETRY_MS) return last;
+            claimed[0] = true;
+            return now;
+        });
+        return claimed[0];
     }
 
+
+    /**
+     * The {@link FallbackBookPool} window of each of this player's reading languages that the host's
+     * window doesn't cover, fetching the next page of any with nothing left for them. {@code null} when
+     * the pickup should wait for a fresh page of a used-up window that is already on its way. Languages the relay has no
+     * books in are skipped — it would answer with English.
+     */
+    private static List<List<SharedBookPool.PoolBook>> readingWindows(ServerPlayer player,
+            SharedBookSelector.PlayerContext ctx, boolean kidSafeFetch, long now) {
+        BookLanguages.refreshIfStale(kidSafeFetch, now);
+        String hostFamily = LanguageFamily.of(WorldLanguage.hostLocale(player.getServer()));
+        List<List<SharedBookPool.PoolBook>> windows = new java.util.ArrayList<>();
+        for (String family : ctx.readingFamilies().keySet()) {
+            if (family.equals(hostFamily) || BookLanguages.knownEmpty(family)) continue;
+            List<SharedBookPool.PoolBook> window = FallbackBookPool.snapshot(family);
+            // Nothing left for them in this language — fetch its next page and wait for it (as the main
+            // window does), or every pickup until it lands would go to the other languages. A fetch that
+            // brought new books may be repeated at once (a burst of pickups can use a page up within
+            // seconds); once one brings nothing, the per-family throttle lets pickups through instead.
+            if (SharedBookSelector.needsFamilyFetch(window, family, ctx)) {
+                if (FallbackBookPool.isInFlight(family)) return null;
+                if (claimFallbackRefreshSlot(family, now) || FallbackBookPool.lastFetchWasProductive(family)) {
+                    FallbackBookPool.refreshAsync(family,
+                            WorldLanguage.hostUuidConsented(player.getServer()), kidSafeFetch);
+                    if (FallbackBookPool.isInFlight(family)) return null;
+                }
+            }
+            windows.add(window);
+        }
+        return windows;
+    }
 
     private static boolean resolvePending(ServerPlayer player, ItemStack stack) {
         if (!SharedBookGate.canDiscover()) return false;
@@ -620,23 +661,35 @@ public final class NarrativeBookEvents {
             // Books THIS holder wrote. The sign-book mixin submits the player's name as the author,
             // and names are unique, so a name match is authorship. A renamed player's old books just
             // read as somebody else's — the behaviour before this existed.
-            SharedBookSelector.isOwnBy(player.getName().getString()));
+            SharedBookSelector.isOwnBy(player.getName().getString()),
+            // Every language THIS holder reads, with its weight (just the game language unless they
+            // added more in Options) — each pick's language is rolled by weight.
+            ReadingLanguagesMirror.families(player));
         // Fallback-language mix: once only this player's own books are left unread in their language
         // (and they are a real share of it), the selector mixes in another language — English, or for
         // an English player the biggest other one. Both the language list and that language's window
         // are fetched lazily, only when a pickup actually needs them.
         boolean kidSafeFetch = WorldLanguage.hostFetchesKidSafeBooks(player.getServer());
         long now = System.currentTimeMillis();
-        String fallbackFamily = BookLanguages.fallbackFamilyFor(ctx.playerLang());
+        // Extra reading languages: every one the host's window doesn't cover gets its own window. A
+        // pickup waits (the 1s sweep retries) while a still-empty one is on its way, so a newly added
+        // language gets its share from the first book rather than after a few.
+        List<SharedBookPool.PoolBook> pool = SharedBookPool.snapshot();
+        if (ctx.readingFamilies().size() > 1) {
+            List<List<SharedBookPool.PoolBook>> windows = readingWindows(player, ctx, kidSafeFetch, now);
+            if (windows == null) return false;
+            pool = SharedBookSelector.withWindows(pool, windows);
+        }
+        String fallbackFamily = BookLanguages.fallbackFamilyFor(ctx.readingFamilies().keySet());
         if (fallbackFamily == null) BookLanguages.refreshIfStale(kidSafeFetch, now);
         List<SharedBookPool.PoolBook> fallback = FallbackBookPool.snapshot(fallbackFamily);
-        if (SharedBookSelector.needsFallbackFetch(SharedBookPool.snapshot(), fallbackFamily, fallback, ctx)
-                && claimFallbackRefreshSlot(now)) {
+        if (SharedBookSelector.needsFallbackFetch(pool, fallbackFamily, fallback, ctx)
+                && claimFallbackRefreshSlot(fallbackFamily, now)) {
             FallbackBookPool.refreshAsync(fallbackFamily,
                     WorldLanguage.hostUuidConsented(player.getServer()), kidSafeFetch);
         }
         Optional<SharedBookPool.PoolBook> chosen = SharedBookSelector.select(
-            SharedBookPool.snapshot(), fallbackFamily, fallback, ctx, seedFor(ow, uuid, stack));
+            pool, fallbackFamily, fallback, ctx, seedFor(ow, uuid, stack));
         // Defensive only. The selector relaxes its per-life dedup on exhaustion, so it yields a book
         // whenever the pool has one — the built-in placeholder therefore survives ONLY when the relay is
         // unreachable / has no approved books, never merely because this player has already seen everything.
