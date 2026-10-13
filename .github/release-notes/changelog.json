@@ -25710,6 +25710,21 @@
       "released": true,
       "released_in": "v0.1278.0",
       "released_at": "2026-10-13T13:08:52Z"
+    },
+    {
+      "id": "cf-include-hybrid-siblings",
+      "version": "0.1279.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Companions in the CurseForge pack",
+      "summary": "The CurseForge modpack now installs two more of Dungeon Train's companion mods from their own pages.",
+      "highlights": [],
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
