@@ -583,6 +583,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(streamChat, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // The game's sound on the stream; read when the next stream starts.
+            case STREAM_AUDIO -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamAudio(),
+                    LiveFeedClientConfig::setStreamAudio), key + ".tip");
+
             // Whose name viewers see above the hotbar. Kid mode shows None, greyed, whatever is stored.
             case STREAM_NAME_TAG -> {
                 boolean kid = ClientDisplayConfig.isKidMode();

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientLanguage;
+import games.brennan.dungeontrain.client.live.audio.LiveAudioPump;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -71,6 +72,8 @@ public final class LiveStreamController {
     private int generation; // bumps on every start/stop so a late async reply cannot act on a newer stream
     @Nullable private LiveFrameGrabber grabber;
     @Nullable private LiveEncoder encoder;
+    /** The stream's sound, when Options → Stream → Stream sound is on and this client can do it. */
+    @Nullable private LiveAudioPump audio;
     @Nullable private LiveUploader uploader;
     @Nullable private Claim claim;
     /** The worn Live Eye's id from the server's START; the relay matches reconnects by it. */
@@ -265,15 +268,19 @@ public final class LiveStreamController {
             if (ffmpeg == null) throw new IOException("ffmpeg vanished");
             StreamNameTag.prepare();
             grabber = new LiveFrameGrabber(w, h);
-            encoder = new LiveEncoder(ffmpeg, grabber, d, LiveFeedClientConfig.captureFps(),
-                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds());
+            int fps = LiveFeedClientConfig.captureFps();
+            // Off (the default), or not possible here: the stream goes out without sound, as before.
+            audio = LiveFeedClientConfig.streamAudio() ? LiveAudioPump.open(ffmpeg) : null;
+            encoder = new LiveEncoder(ffmpeg, grabber, d, fps,
+                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), audio == null ? 0 : audio.port());
+            if (audio != null) audio.start(encoder::framesWritten, fps);
             uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
             claim = c;
             dir = d;
             streamStartedMs = System.currentTimeMillis();
             state = State.STREAMING;
-            LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps, playlist {}", c.session(), w, h,
-                LiveFeedClientConfig.captureFps(), c.playlistUrl());
+            LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}, playlist {}", c.session(), w, h,
+                fps, audio != null ? " with sound" : "", c.playlistUrl());
             announcedLive = false;
             if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
         } catch (Exception e) {
@@ -339,17 +346,21 @@ public final class LiveStreamController {
      */
     private void teardown(boolean clean, boolean wait) {
         LiveEncoder enc = encoder;
+        LiveAudioPump snd = audio;
         LiveUploader up = uploader;
         LiveFrameGrabber grab = grabber;
         Claim c = claim;
         Path d = dir;
         encoder = null;
+        audio = null;
         uploader = null;
         grabber = null;
         claim = null;
         dir = null;
 
         List<LiveTeardown.Step> steps = new ArrayList<>();
+        // Sound first: ffmpeg finishes only once every input has ended, and the encoder gives it 3 s.
+        if (snd != null) steps.add(new LiveTeardown.Step("audio", snd::close));
         if (enc != null) steps.add(new LiveTeardown.Step("encoder", enc::close));
         if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean)));
         if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> LiveFeedClient.stop(c.token())));
