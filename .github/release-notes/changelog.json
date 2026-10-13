@@ -25540,6 +25540,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-stream-sound",
+      "version": "0.1269.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Eye streams now carry in-game sound",
+      "summary": "Live Eye streams now carry in-game sounds, never your microphone; you can switch it off in the Stream options.",
+      "highlights": [],
+      "pr": 1981,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

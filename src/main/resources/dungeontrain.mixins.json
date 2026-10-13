@@ -128,6 +128,14 @@
     "PlayerEnderChestContainerSizeMixin"
   ],
   "client": [
+    "client.audio.ChannelMirrorMixin",
+    "client.audio.SoundBufferMirrorMixin",
+    "client.audio.ListenerMirrorMixin",
+    "client.audio.SoundManagerAccessor",
+    "client.audio.SoundEngineAccessor",
+    "client.audio.SoundBufferLibraryAccessor",
+    "client.audio.SoundBufferLibraryMirrorMixin",
+    "client.audio.SoundEngineStreamVolumeMixin",
     "client.KeyboardHandlerDebugChordMixin",
     "client.ViewfinderOverlaySelfieHintMixin",
     "client.BiomeColorsTwinMixin",
