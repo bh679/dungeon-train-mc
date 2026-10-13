@@ -25433,6 +25433,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-post-version-chat",
+      "version": "0.1263.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Your version and chat on the live post",
+      "summary": "Going live now shows your version and whether your chat is on in Discord's live channel.",
+      "highlights": [],
+      "pr": 1974,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
