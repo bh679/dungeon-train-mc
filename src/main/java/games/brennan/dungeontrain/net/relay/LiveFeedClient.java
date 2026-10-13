@@ -154,10 +154,12 @@ public final class LiveFeedClient {
         return DungeonTrain.relayBaseUrl();
     }
 
-    public static CompletableFuture<Result> claim(UUID uuid, String name) {
+    public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
+        // One id per Live Eye item: the relay's #live-eye post tells a relog from a new Live Eye by it.
+        if (eyeId != null && !eyeId.isEmpty()) body.addProperty("eyeId", eyeId);
         return post("/live/claim", body);
     }
 
