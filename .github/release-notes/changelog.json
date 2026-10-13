@@ -25571,9 +25571,9 @@
       "highlights": [],
       "pr": 1982,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "twitch-deletions-follow",
@@ -25588,9 +25588,9 @@
       "highlights": [],
       "pr": 1983,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "carriage-milestones-on-time",
@@ -25605,9 +25605,9 @@
       "highlights": [],
       "pr": 1984,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "translation-reviewer-credit",
@@ -25622,9 +25622,9 @@
       "highlights": [],
       "pr": 1985,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "livestream-time-leaderboards",
@@ -25639,9 +25639,9 @@
       "highlights": [],
       "pr": 1986,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "backpack-collects-pickups",
@@ -25654,9 +25654,9 @@
       "summary": "Your backpack now catches what you pick up.",
       "highlights": [],
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "developer-log-requests",
@@ -25671,9 +25671,9 @@
       "highlights": [],
       "pr": 1987,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "dimension-variant-half-fix",
@@ -25689,9 +25689,9 @@
       "highlights": [],
       "pr": 1989,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     },
     {
       "id": "largerlibrary-room-variants",
@@ -25707,9 +25707,9 @@
       "highlights": [],
       "pr": 1990,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1278.0",
+      "released_at": "2026-10-13T13:08:52Z"
     }
   ]
 }
