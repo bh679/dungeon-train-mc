@@ -9,11 +9,11 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-final class EnglishFallbackPoolTest {
+final class FallbackBookPoolTest {
 
     @BeforeEach
     void reset() {
-        EnglishFallbackPool.clear();
+        FallbackBookPool.clear();
     }
 
     private static String body(int... ids) {
@@ -28,35 +28,46 @@ final class EnglishFallbackPoolTest {
     }
 
     private static List<Integer> ids() {
-        return EnglishFallbackPool.snapshot().stream().map(SharedBookPool.PoolBook::id).toList();
+        return FallbackBookPool.snapshot("en").stream().map(SharedBookPool.PoolBook::id).toList();
     }
 
     @Test
     @DisplayName("fetches merge by id, new ids appended")
     void merges() {
-        assertEquals(2, EnglishFallbackPool.applyResponse(body(1, 2)));
-        assertEquals(1, EnglishFallbackPool.applyResponse(body(2, 3)));
+        assertEquals(2, FallbackBookPool.applyResponse("en", body(1, 2)));
+        assertEquals(1, FallbackBookPool.applyResponse("en", body(2, 3)));
         assertEquals(List.of(1, 2, 3), ids());
     }
 
     @Test
     @DisplayName("malformed or not-ok reply leaves the window untouched")
     void badReplyKeepsWindow() {
-        EnglishFallbackPool.applyResponse(body(1));
-        assertEquals(0, EnglishFallbackPool.applyResponse("{\"ok\":false}"));
-        assertEquals(0, EnglishFallbackPool.applyResponse("[]"));
+        FallbackBookPool.applyResponse("en", body(1));
+        assertEquals(0, FallbackBookPool.applyResponse("en", "{\"ok\":false}"));
+        assertEquals(0, FallbackBookPool.applyResponse("en", "[]"));
         assertEquals(List.of(1), ids());
     }
 
     @Test
     @DisplayName("window capped, oldest evicted")
     void capped() {
-        int max = EnglishFallbackPool.MAX_SNAPSHOT;
-        EnglishFallbackPool.applyResponse(body(IntStream.rangeClosed(1, max).toArray()));
-        EnglishFallbackPool.applyResponse(body(max + 1, max + 2));
+        int max = FallbackBookPool.MAX_SNAPSHOT;
+        FallbackBookPool.applyResponse("en", body(IntStream.rangeClosed(1, max).toArray()));
+        FallbackBookPool.applyResponse("en", body(max + 1, max + 2));
         List<Integer> got = ids();
         assertEquals(max, got.size());
         assertEquals(3, got.get(0));
         assertEquals(max + 2, got.get(got.size() - 1));
+    }
+
+    @Test
+    @DisplayName("each family keeps its own window")
+    void perFamily() {
+        FallbackBookPool.applyResponse("en", body(1, 2));
+        FallbackBookPool.applyResponse("de", body(3));
+        assertEquals(List.of(1, 2), ids());
+        assertEquals(1, FallbackBookPool.snapshot("de").size());
+        assertEquals(0, FallbackBookPool.snapshot("fr").size());
+        assertEquals(0, FallbackBookPool.snapshot(null).size());
     }
 }
