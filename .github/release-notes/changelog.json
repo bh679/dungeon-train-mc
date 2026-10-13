@@ -25759,6 +25759,23 @@
       "released": true,
       "released_in": "v0.1281.0",
       "released_at": "2026-10-13T15:30:08Z"
+    },
+    {
+      "id": "backpack-auto-collect-setting",
+      "version": "0.1282.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Backpack auto-collect setting",
+      "summary": "Choose when the things you pick up go into your backpack.",
+      "highlights": [],
+      "pr": 1992,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
