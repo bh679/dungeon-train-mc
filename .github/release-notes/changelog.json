@@ -25644,8 +25644,23 @@
       "released_at": null
     },
     {
-      "id": "developer-log-requests",
+      "id": "backpack-collects-pickups",
       "version": "0.1275.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Backpacks catch what you pick up",
+      "summary": "Your backpack now catches what you pick up.",
+      "highlights": [],
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "developer-log-requests",
+      "version": "0.1276.0",
       "type": "feat",
       "tags": [
         "feature",
