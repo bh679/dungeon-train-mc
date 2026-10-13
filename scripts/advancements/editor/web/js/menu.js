@@ -75,7 +75,9 @@ function fillMenuRaw(id) {
   h += `<div class="note card">${lines.join('<br>')}</div>`;
   if (editable) h += `<div class="hint" id="mHover">${openSec ? '' : 'Click any part above to change it.'}</div>`;
   const need = neededBy(L, id);
-  if (need) h += `<div class="note">Highlighted: the ${need.size} advancements it needs that a player can see.</div>`;
+  if (need) h += combinesRules(id)
+    ? `<div class="note">Highlighted: the ${need.size} challenges whose rules it combines. Break any one and it is lost.</div>`
+    : `<div class="note">Highlighted: the ${need.size} advancements it needs that a player can see.</div>`;
   if (n.chain) h += `<div class="note">Band journey: when the game loads, this chain is put in band order. Only the first band’s parent comes from here.</div>`;
   if (n.copyOf) h += `<div class="note">Copy of <b>${esc(E.nodes[n.copyOf] ? E.nodes[n.copyOf].t : n.copyOf)}</b> in ${esc(tabTitle(L, L.tabOf[n.copyOf]))}. Earning either earns both. Edit its text and value on the original.</div>`;
   if (copies.length) h += `<div class="note">A copy is in ${copies.map(c => `<b>${esc(tabTitle(L, L.tabOf[c]))}</b>`).join(', ')}. Earning this earns it too.</div>`;

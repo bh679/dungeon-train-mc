@@ -68,20 +68,41 @@ public final class TabGateways {
     public record Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order,
                          Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset,
                          Map<String, String> unlockedBy, Map<String, String> visibility,
-                         Map<String, String> complete) {
+                         Map<String, String> complete, Map<String, List<String>> needs) {
 
-        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
+        public static final Layout EMPTY = new Layout(Map.of(), Map.of(), List.of());
 
         /** A layout with copies, names and order only — no capstone overrides or unlock links. */
         public Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order) {
             this(copies, tabNames, order, Map.of(), Map.of(), Map.of(), Map.of(), Map.of());
         }
 
+        /** A layout with no {@code needs} table. */
+        public Layout(Map<String, String> copies, Map<String, String> tabNames, List<String> order,
+                      Map<String, Boolean> burrito, Map<String, Boolean> startAgainReset,
+                      Map<String, String> unlockedBy, Map<String, String> visibility, Map<String, String> complete) {
+            this(copies, tabNames, order, burrito, startAgainReset, unlockedBy, visibility, complete, Map.of());
+        }
+
         public static Layout parse(Reader reader) {
             JsonObject root = JsonParser.parseReader(reader).getAsJsonObject();
             return new Layout(stringMap(root, "copies"), stringMap(root, "tabNames"), stringList(root, "order"),
                     boolMap(root, "burrito"), boolMap(root, "startAgainReset"), stringMap(root, "unlockedBy"),
-                    stringMap(root, "visibility"), stringMap(root, "complete"));
+                    stringMap(root, "visibility"), stringMap(root, "complete"), listMap(root, "needs"));
+        }
+
+        /** {@code needs}: an advancement → the advancements whose rules it combines (All at Once's challenges). */
+        private static Map<String, List<String>> listMap(JsonObject root, String key) {
+            Map<String, List<String>> out = new LinkedHashMap<>();
+            if (root.has(key) && root.get(key).isJsonObject()) {
+                for (Map.Entry<String, JsonElement> e : root.getAsJsonObject(key).entrySet()) {
+                    if (!e.getValue().isJsonArray()) continue;
+                    List<String> ids = new ArrayList<>();
+                    e.getValue().getAsJsonArray().forEach(v -> { if (v.isJsonPrimitive()) ids.add(v.getAsString()); });
+                    out.put(e.getKey(), List.copyOf(ids));
+                }
+            }
+            return Collections.unmodifiableMap(out);
         }
 
         /**

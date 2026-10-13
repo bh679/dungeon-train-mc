@@ -222,5 +222,39 @@
     "dungeontrain:dungeon_train/heros_handbook": "dungeontrain:dungeon_train/the_enchiridion",
     "dungeontrain:dungeon_train/fully_developed": "dungeontrain:enchiridion/darkroom",
     "dungeontrain:dungeon_train/all_out_of_secrets": "dungeontrain:secrete_menu/root"
+  },
+  "needs": {
+    "dungeontrain:dungeon_train/all_at_once": [
+      "dungeontrain:dungeon_train/apple_a_day",
+      "dungeontrain:dungeon_train/self_medicated",
+      "dungeontrain:dungeon_train/last_melon",
+      "dungeontrain:dungeon_train/three_melons",
+      "dungeontrain:dungeon_train/naked_and_afraid",
+      "dungeontrain:dungeon_train/naked_and_unafraid",
+      "dungeontrain:dungeon_train/no_break_100",
+      "dungeontrain:dungeon_train/no_break_1000",
+      "dungeontrain:dungeon_train/no_container_100",
+      "dungeontrain:dungeon_train/no_container_1000",
+      "dungeontrain:dungeon_train/pacifist_100",
+      "dungeontrain:dungeon_train/pacifist_250",
+      "dungeontrain:dungeon_train/pacifist_1000",
+      "dungeontrain:dungeon_train/contained_loop"
+    ],
+    "dungeontrain:dungeon_train/the_challenge": [
+      "dungeontrain:dungeon_train/apple_a_day",
+      "dungeontrain:dungeon_train/self_medicated",
+      "dungeontrain:dungeon_train/last_melon",
+      "dungeontrain:dungeon_train/three_melons",
+      "dungeontrain:dungeon_train/naked_and_afraid",
+      "dungeontrain:dungeon_train/naked_and_unafraid",
+      "dungeontrain:dungeon_train/no_break_100",
+      "dungeontrain:dungeon_train/no_break_1000",
+      "dungeontrain:dungeon_train/no_container_100",
+      "dungeontrain:dungeon_train/no_container_1000",
+      "dungeontrain:dungeon_train/pacifist_100",
+      "dungeontrain:dungeon_train/pacifist_250",
+      "dungeontrain:dungeon_train/pacifist_1000",
+      "dungeontrain:dungeon_train/contained_loop"
+    ]
   }
 }
