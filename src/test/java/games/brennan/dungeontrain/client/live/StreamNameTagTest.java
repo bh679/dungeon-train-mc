@@ -56,6 +56,23 @@ class StreamNameTagTest {
     }
 
     @Test
+    void liveDotPulsesBetweenDimAndFull() {
+        assertEquals(1.0, StreamNameTag.dotAlpha(0), 1e-9);
+        assertEquals(StreamNameTag.PULSE_MIN, StreamNameTag.dotAlpha(StreamNameTag.PULSE_MS / 2), 1e-9);
+        assertEquals(StreamNameTag.dotAlpha(123), StreamNameTag.dotAlpha(123 + 5 * StreamNameTag.PULSE_MS), 1e-9);
+        for (long t = 0; t < StreamNameTag.PULSE_MS; t += 7) {
+            double a = StreamNameTag.dotAlpha(t);
+            assertTrue(a >= StreamNameTag.PULSE_MIN - 1e-9 && a <= 1.0 + 1e-9, "alpha in range at " + t);
+        }
+    }
+
+    @Test
+    void liveDotIsGreen() {
+        assertEquals(StreamNameTag.DOT_RGB, StreamNameTag.dotColor(0) & 0xFFFFFF);
+        assertEquals(0xFF, StreamNameTag.dotColor(0) >>> 24);
+    }
+
+    @Test
     void pillIsSymmetricTopToBottom() {
         for (int h : new int[] {14, 15, 28, 42}) {
             for (int row = 0; row < h; row++) assertEquals(pillInset(row, h), pillInset(h - 1 - row, h));

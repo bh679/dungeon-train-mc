@@ -17,8 +17,8 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 /**
- * The streamer's name, top-middle in white on a translucent black pill, drawn into the broadcast
- * picture only.
+ * The streamer's name, top-middle in black on a black-outlined white pill with a pulsing green "live"
+ * dot before it, drawn into the broadcast picture only.
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
@@ -33,14 +33,23 @@ public final class StreamNameTag {
 
     /** GUI pixels from the top of the picture to the top of the pill. */
     static final int TOP_OFFSET = 4;
-    static final int TEXT = 0xFFFFFFFF;
-    /** Translucent black: the picture shows through, the white name reads on any sky. */
-    static final int PILL = 0xB0000000;
-    /** GUI pixels between the name and the pill's ends / top and bottom. */
+    static final int TEXT = 0xFF000000;
+    static final int PILL = 0xFFFFFFFF;
+    static final int OUTLINE = 0xFF000000;
+    /** The live dot's colour, without alpha — the pulse supplies that. */
+    static final int DOT_RGB = 0x22C55E;
+    /** GUI pixels between the dot+name group and the pill's ends / top and bottom. */
     static final int PAD_X = 6;
     static final int PAD_Y = 3;
-    /** Glyph height in GUI pixels, descenders and shadow included. */
+    /** Glyph height in GUI pixels, descenders included. */
     static final int GLYPH_H = 8;
+    /** The dot's diameter and its gap to the name, in GUI pixels. */
+    static final int DOT_SIZE = 5;
+    static final int DOT_GAP = 4;
+    /** One full fade out and back in. */
+    static final long PULSE_MS = 1200;
+    /** The dot's dimmest alpha, out of 1; it peaks at fully opaque. */
+    static final double PULSE_MIN = 0.35;
 
     private StreamNameTag() {}
 
@@ -112,24 +121,51 @@ public final class StreamNameTag {
     }
 
     /**
-     * The pill in target pixels (so its round ends are smooth at stream resolution, not a GUI-pixel
-     * staircase), then the name over it in GUI pixels, centred on the same point.
+     * The outlined pill and the dot in target pixels (so their curves are smooth at stream
+     * resolution, not a GUI-pixel staircase), then the name in GUI pixels.
      */
     private static void draw(GuiGraphics graphics, Font font, String name, int targetW, float scale) {
-        int textW = font.width(name);
-        int pillW = Math.round((textW + 2 * PAD_X) * scale);
+        int textW = font.width(name) - 1; // drop the trailing 1px advance so the group centres
+        float groupW = (DOT_SIZE + DOT_GAP + textW) * scale;
+        int pillW = Math.round(groupW + 2 * PAD_X * scale);
         int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
         int pillX = (targetW - pillW) / 2;
         int pillY = Math.round(TOP_OFFSET * scale);
-        for (int row = 0; row < pillH; row++) {
-            int inset = pillInset(row, pillH);
-            graphics.fill(pillX + inset, pillY + row, pillX + pillW - inset, pillY + row + 1, PILL);
-        }
+        int line = Math.max(1, Math.round(scale));
+        pill(graphics, pillX, pillY, pillW, pillH, OUTLINE);
+        pill(graphics, pillX + line, pillY + line, pillW - 2 * line, pillH - 2 * line, PILL);
+
+        float groupX = (targetW - groupW) / 2f;
+        int dot = Math.round(DOT_SIZE * scale);
+        int dotY = pillY + (pillH - dot) / 2;
+        pill(graphics, Math.round(groupX), dotY, dot, dot, dotColor(System.currentTimeMillis()));
+
         graphics.pose().pushPose();
-        graphics.pose().translate((targetW - textW * scale) / 2f, pillY + PAD_Y * scale, 0f);
+        graphics.pose().translate(groupX + (DOT_SIZE + DOT_GAP) * scale, pillY + PAD_Y * scale, 0f);
         graphics.pose().scale(scale, scale, 1f);
-        graphics.drawString(font, name, 0, 0, TEXT, true);
+        graphics.drawString(font, name, 0, 0, TEXT, false);
         graphics.pose().popPose();
+    }
+
+    /** A {@code w}×{@code h} pill at ({@code x},{@code y}); with {@code w == h} it is a disc. */
+    private static void pill(GuiGraphics graphics, int x, int y, int w, int h, int color) {
+        for (int row = 0; row < h; row++) {
+            int inset = pillInset(row, h);
+            graphics.fill(x + inset, y + row, x + w - inset, y + row + 1, color);
+        }
+    }
+
+    /** The live dot's ARGB at {@code nowMs}: green, its alpha pulsing on {@link #PULSE_MS}. */
+    static int dotColor(long nowMs) {
+        int alpha = (int) Math.round(dotAlpha(nowMs) * 255);
+        return alpha << 24 | DOT_RGB;
+    }
+
+    /** Smooth sine pulse from fully opaque at the start of each period down to {@link #PULSE_MIN} halfway. */
+    static double dotAlpha(long nowMs) {
+        double phase = (Math.floorMod(nowMs, PULSE_MS)) / (double) PULSE_MS;
+        double wave = (Math.cos(phase * 2 * Math.PI) + 1) / 2; // 1 → 0 → 1
+        return PULSE_MIN + (1 - PULSE_MIN) * wave;
     }
 
     /**
