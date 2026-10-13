@@ -95,6 +95,9 @@ public final class SharedBookSelector {
      *                        politically sensitive (mirrored server-side from their client — see
      *                        {@link games.brennan.dungeontrain.event.PoliticalFilterMirror}). Per
      *                        player for the same reason {@code kidMode} is.
+     * @param isOwn           whether a book was written by THIS player. Drives the English mix-in only
+     *                        (see {@link #select(List, List, PlayerContext, long)}); own books are
+     *                        otherwise ordinary candidates.
      */
     public record PlayerContext(String playerLang,
                                 IntPredicate hasRead,
@@ -103,7 +106,21 @@ public final class SharedBookSelector {
                                 int currentCarriage,
                                 int repeatCarriages,
                                 boolean kidMode,
-                                boolean politicalFilter) {
+                                boolean politicalFilter,
+                                Predicate<PoolBook> isOwn) {
+
+        /** Context with no own-book knowledge — every book counts as somebody else's. */
+        public PlayerContext(String playerLang,
+                             IntPredicate hasRead,
+                             IntPredicate wasServed,
+                             IntUnaryOperator servedCarriage,
+                             int currentCarriage,
+                             int repeatCarriages,
+                             boolean kidMode,
+                             boolean politicalFilter) {
+            this(playerLang, hasRead, wasServed, servedCarriage, currentCarriage, repeatCarriages,
+                    kidMode, politicalFilter, b -> false);
+        }
 
         /** Unfiltered context — the shape every call site had before either content filter existed. */
         public PlayerContext(String playerLang,
@@ -122,6 +139,23 @@ public final class SharedBookSelector {
      * {@code (pool, ctx, seed)}.
      */
     public static Optional<PoolBook> select(List<PoolBook> pool, PlayerContext ctx, long seed) {
+        return select(pool, null, List.of(), ctx, seed);
+    }
+
+    /**
+     * {@link #select(List, PlayerContext, long)} with a fallback-language window to mix in.
+     *
+     * <h3>Fallback-language mix</h3>
+     * <p>As a player runs out of unread books in their own language, books from {@code fallbackFamily}
+     * (English for a non-English player, the biggest other language for an English one) fade in. It
+     * depends only on how many unread in-language books by OTHER writers are {@code left} — never on how
+     * much the player has written: with {@link #FADE_START_BOOKS} or more left nothing changes; below
+     * that, {@link #fallbackShare} of picks come from the fallback, reaching all of them at none left.
+     * While the mix is active a player's own unread books are capped at {@link #OWN_PICK_PERCENT}% of
+     * picks. Nothing servable in the fallback, or no fallback family → the ordinary chain, unchanged.</p>
+     */
+    public static Optional<PoolBook> select(List<PoolBook> pool, String fallbackFamily,
+                                            List<PoolBook> fallbackPool, PlayerContext ctx, long seed) {
         if (pool == null || pool.isEmpty()) return Optional.empty();
 
         // 0. The two hard per-player content filters, BEFORE anything else. Applied to the input pool
@@ -131,34 +165,36 @@ public final class SharedBookSelector {
         // are never in the set any fallback can reach. An empty result is a legitimate answer: the
         // caller falls back to a built-in book, which is the right outcome for both filters — better mod
         // content than an unjudged stranger's writing, or content the player opted out of.
-        if (ctx.kidMode()) {
-            pool = filter(pool, PoolBook::kidSafe);
-            if (pool.isEmpty()) return Optional.empty();
-        }
-        if (ctx.politicalFilter()) {
-            pool = filter(pool, b -> !b.political());
-            if (pool.isEmpty()) return Optional.empty();
-        }
+        pool = contentFiltered(pool, ctx);
+        if (pool.isEmpty()) return Optional.empty();
 
         // 1. Eligibility — drop books already served this life unless the unread + far-behind escape applies.
-        final List<PoolBook> filtered = pool;
-        List<PoolBook> eligible = filter(filtered, b -> isEligible(b, ctx));
-        // RELAXATION: no-duplicates-per-life is a PREFERENCE, not a hard gate. Once a life has seen the
-        // whole servable pool, honouring it strictly would leave the caller with nothing and a
-        // random_playerbook slot would silently degrade to a built-in book — but that slot's contract is
-        // to serve PLAYER writing. Re-showing a community book the player already got beats handing them
-        // mod content, so on exhaustion we reconsider the entire pool. The built-in fallback is then
-        // reserved for the only cases that truly warrant it: the relay being unreachable or having no
-        // books at all, which the caller checks before ever getting here.
-        if (eligible.isEmpty()) eligible = filtered;
+        List<PoolBook> eligible = eligibleOrAll(pool, ctx);
 
-        // 2. Language bucket (hard) — {MINE, TRANSLATED} drained before OTHER.
-        List<PoolBook> inLanguage = filter(eligible, b -> originOf(b, ctx) != Origin.OTHER);
-        List<PoolBook> tier = inLanguage.isEmpty() ? eligible : inLanguage;
+        List<PoolBook> pool3;
+        List<PoolBook> fallback = servableFallback(pool, fallbackFamily, fallbackPool, ctx);
+        List<PoolBook> othersUnread = othersUnread(eligible, ctx);
+        double share = fallbackShare(othersUnread.size(), fallbackFamily, ctx);
+        if (share > 0 && !fallback.isEmpty()) {
+            // Fallback-language mix — see the method javadoc.
+            List<PoolBook> ownUnread = filter(eligible, b -> originOf(b, ctx) != Origin.OTHER
+                    && ctx.isOwn().test(b) && !ctx.hasRead().test(b.id()));
+            if (!ownUnread.isEmpty() && unitRoll(seed ^ COIN_SALT) * 100 < OWN_PICK_PERCENT) {
+                pool3 = ownUnread;
+            } else if (othersUnread.isEmpty() || unitRoll(seed ^ FADE_SALT) < share) {
+                pool3 = fallback;
+            } else {
+                pool3 = othersUnread;
+            }
+        } else {
+            // 2. Language bucket (hard) — {MINE, TRANSLATED} drained before OTHER.
+            List<PoolBook> inLanguage = filter(eligible, b -> originOf(b, ctx) != Origin.OTHER);
+            List<PoolBook> tier = inLanguage.isEmpty() ? eligible : inLanguage;
 
-        // 3. Unread-first (soft) — prefer unread within the tier, else fall back to the whole tier.
-        List<PoolBook> unread = filter(tier, b -> !ctx.hasRead().test(b.id()));
-        List<PoolBook> pool3 = unread.isEmpty() ? tier : unread;
+            // 3. Unread-first (soft) — prefer unread within the tier, else fall back to the whole tier.
+            List<PoolBook> unread = filter(tier, b -> !ctx.hasRead().test(b.id()));
+            pool3 = unread.isEmpty() ? tier : unread;
+        }
 
         // 4. Weight tier (hard) — keep only the top effectiveWeight group.
         int topWeight = Integer.MIN_VALUE;
@@ -182,6 +218,105 @@ public final class SharedBookSelector {
     /** {@code weight}, docked 1 for a translated book so a native book of equal raw weight ranks above it. */
     static int effectiveWeight(PoolBook b, PlayerContext ctx) {
         return b.weight() - (originOf(b, ctx) == Origin.TRANSLATED ? 1 : 0);
+    }
+
+    /**
+     * Authorship by display name, case-insensitive; a blank name or author never matches. The sign-book
+     * mixin submits the signer's name as the author and names are unique, so a match is authorship.
+     */
+    public static Predicate<PoolBook> isOwnBy(String playerName) {
+        if (playerName == null || playerName.isBlank()) return b -> false;
+        return b -> b.author() != null && b.author().equalsIgnoreCase(playerName);
+    }
+
+    /**
+     * The fallback language starts fading in once fewer than this many unread in-language books by other
+     * writers are left, and serves every pick at none left.
+     */
+    public static final int FADE_START_BOOKS = 10;
+
+    /** Once mixing, the percentage chance a pick is one of the player's own books; the rest is the fallback language. */
+    public static final int OWN_PICK_PERCENT = 5;
+
+    /** Salt for the own-vs-fallback roll, so it is independent of the index pick drawn from the same seed. */
+    private static final long COIN_SALT = 0x454e474c495348L; // "ENGLISH"
+
+    /** Salt for the fade roll — independent of the own roll and the index pick. */
+    private static final long FADE_SALT = 0x46414445L; // "FADE"
+
+    /**
+     * Whether a pickup by this player is in the fade (fallback share above zero) but has nothing in the
+     * fallback window to mix in — i.e. whether fetching {@code fallbackFamily}'s window would actually help. The caller
+     * uses it to fetch lazily.
+     */
+    public static boolean needsFallbackFetch(List<PoolBook> pool, String fallbackFamily,
+                                             List<PoolBook> fallbackPool, PlayerContext ctx) {
+        if (pool == null || pool.isEmpty()) return false;
+        List<PoolBook> filtered = contentFiltered(pool, ctx);
+        if (filtered.isEmpty()) return false;
+        return fallbackShare(othersUnread(eligibleOrAll(filtered, ctx), ctx).size(), fallbackFamily, ctx) > 0
+                && servableFallback(filtered, fallbackFamily, fallbackPool, ctx).isEmpty();
+    }
+
+    /** Kid / political hard filters (no-ops when the player has neither on). */
+    private static List<PoolBook> contentFiltered(List<PoolBook> in, PlayerContext ctx) {
+        List<PoolBook> out = in;
+        if (ctx.kidMode()) out = filter(out, PoolBook::kidSafe);
+        if (ctx.politicalFilter()) out = filter(out, b -> !b.political());
+        return out;
+    }
+
+    /**
+     * Books not yet served this life (or past the far-behind escape). RELAXATION: no-duplicates-per-life
+     * is a PREFERENCE, not a hard gate. Once a life has seen the whole servable pool, honouring it
+     * strictly would leave the caller with nothing and a random_playerbook slot would silently degrade
+     * to a built-in book — but that slot's contract is to serve PLAYER writing. Re-showing a community
+     * book the player already got beats handing them mod content, so on exhaustion the entire pool is
+     * reconsidered. The built-in fallback is then reserved for the only cases that truly warrant it:
+     * the relay being unreachable or having no books at all, which the caller checks first.
+     */
+    private static List<PoolBook> eligibleOrAll(List<PoolBook> pool, PlayerContext ctx) {
+        List<PoolBook> eligible = filter(pool, b -> isEligible(b, ctx));
+        return eligible.isEmpty() ? pool : eligible;
+    }
+
+    /** Unread in-language books by OTHER writers in {@code eligible} — what is "left" in the player's language. */
+    private static List<PoolBook> othersUnread(List<PoolBook> eligible, PlayerContext ctx) {
+        return filter(eligible, b -> originOf(b, ctx) != Origin.OTHER
+                && !ctx.isOwn().test(b) && !ctx.hasRead().test(b.id()));
+    }
+
+    /**
+     * Share of picks taken from the fallback language with {@code left} unread in-language books by
+     * other writers: 0 at {@link #FADE_START_BOOKS} or more, rising linearly to 1 at none. 0 when there
+     * is no fallback family, or it is the player's own.
+     */
+    static double fallbackShare(int left, String fallbackFamily, PlayerContext ctx) {
+        if (fallbackFamily == null || LanguageFamily.sameFamily(ctx.playerLang(), fallbackFamily)) return 0;
+        if (left >= FADE_START_BOOKS) return 0;
+        return (double) (FADE_START_BOOKS - Math.max(0, left)) / FADE_START_BOOKS;
+    }
+
+    /**
+     * Unread books in {@code family} from {@code fallbackPool} this player may be served: same hard
+     * content filters and per-life eligibility as the main pool, not their own, and not already in the
+     * main pool (the relay's English fallback can put the same ids in both).
+     */
+    private static List<PoolBook> servableFallback(List<PoolBook> pool, String family,
+                                                   List<PoolBook> fallbackPool, PlayerContext ctx) {
+        if (family == null || fallbackPool == null || fallbackPool.isEmpty()) return List.of();
+        java.util.Set<Integer> inMain = new java.util.HashSet<>();
+        for (PoolBook b : pool) inMain.add(b.id());
+        return filter(contentFiltered(fallbackPool, ctx), b -> !inMain.contains(b.id())
+                && LanguageFamily.of(b.lang()).equals(family)
+                && !ctx.isOwn().test(b)
+                && !ctx.hasRead().test(b.id())
+                && isEligible(b, ctx));
+    }
+
+    /** A uniform value in [0, 1) from {@code seed}. */
+    private static double unitRoll(long seed) {
+        return (mix(seed) >>> 11) * 0x1.0p-53;
     }
 
     /** A book is eligible unless served this life — then only if still unread AND its carriage scrolled far behind. */
