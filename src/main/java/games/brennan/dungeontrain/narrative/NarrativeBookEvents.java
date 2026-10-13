@@ -580,7 +580,7 @@ public final class NarrativeBookEvents {
     /**
      * The {@link FallbackBookPool} window of each of this player's reading languages that the host's
      * window doesn't cover, fetching the next page of any with nothing left for them. {@code null} when
-     * the pickup should wait for an empty window that is already on its way. Languages the relay has no
+     * the pickup should wait for a fresh page of a used-up window that is already on its way. Languages the relay has no
      * books in are skipped — it would answer with English.
      */
     private static List<List<SharedBookPool.PoolBook>> readingWindows(ServerPlayer player,
@@ -591,12 +591,16 @@ public final class NarrativeBookEvents {
         for (String family : ctx.readingFamilies().keySet()) {
             if (family.equals(hostFamily) || BookLanguages.knownEmpty(family)) continue;
             List<SharedBookPool.PoolBook> window = FallbackBookPool.snapshot(family);
-            if (window.isEmpty() && FallbackBookPool.isInFlight(family)) return null;
-            if (SharedBookSelector.needsFamilyFetch(window, family, ctx)
-                    && claimFallbackRefreshSlot(family, now)) {
-                FallbackBookPool.refreshAsync(family,
-                        WorldLanguage.hostUuidConsented(player.getServer()), kidSafeFetch);
-                if (window.isEmpty() && FallbackBookPool.isInFlight(family)) return null;
+            // Nothing left for them in this language — fetch its next page and wait for it (as the main
+            // window does), or every pickup until it lands would go to the other languages. Bounded:
+            // once a fetch completes with nothing new, the per-family throttle lets pickups through.
+            if (SharedBookSelector.needsFamilyFetch(window, family, ctx)) {
+                if (FallbackBookPool.isInFlight(family)) return null;
+                if (claimFallbackRefreshSlot(family, now)) {
+                    FallbackBookPool.refreshAsync(family,
+                            WorldLanguage.hostUuidConsented(player.getServer()), kidSafeFetch);
+                    if (FallbackBookPool.isInFlight(family)) return null;
+                }
             }
             windows.add(window);
         }

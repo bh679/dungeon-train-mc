@@ -3097,7 +3097,7 @@
   "gui.dungeontrain.options.translate.hint": "Fix your language's translation",
   "gui.dungeontrain.options.translate.tip": "Fix the auto-generated translation for your language for everyone.",
   "gui.dungeontrain.options.book_languages": "Book Languages…",
-  "gui.dungeontrain.options.book_languages.hint": "Read player books in more languages",
+  "gui.dungeontrain.options.book_languages.hint": "Player books in more languages",
   "gui.dungeontrain.options.book_languages.tip": "Add languages to read other players' books in, and choose how much of each you find.",
   "gui.dungeontrain.book_languages.title": "Book Languages",
   "gui.dungeontrain.book_languages.add": "Add Language…",

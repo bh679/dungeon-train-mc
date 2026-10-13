@@ -38,7 +38,12 @@ import java.util.List;
 public final class BookLanguageSignClient {
 
     private static final String KEY = "gui.dungeontrain.book_language";
-    private static final int WIDTH = 110;
+    /** Width bounds; within them the dropdown fits its longest language name plus the arrow. */
+    private static final int MIN_WIDTH = 110;
+    private static final int MAX_WIDTH = 170;
+    private static final int TEXT_PAD = 24;
+    /** Air kept between a side-placed dropdown and the window's right edge. */
+    private static final int EDGE = 4;
     private static final int HEIGHT = 20;
     /** Half the vanilla book texture's width. */
     private static final int BOOK_HALF = 96;
@@ -58,15 +63,15 @@ public final class BookLanguageSignClient {
 
     /** Head button of the dropdown. */
     private static final class Head extends Button {
-        Head(int x, int y, OnPress onPress) {
-            super(x, y, WIDTH, HEIGHT, Component.empty(), onPress, DEFAULT_NARRATION);
+        Head(int x, int y, int width, OnPress onPress) {
+            super(x, y, width, HEIGHT, Component.empty(), onPress, DEFAULT_NARRATION);
         }
     }
 
     /** One language in the open dropdown. */
     private static final class Option extends Button {
-        Option(int x, int y, Component name, OnPress onPress) {
-            super(x, y, WIDTH, HEIGHT, name, onPress, DEFAULT_NARRATION);
+        Option(int x, int y, int width, Component name, OnPress onPress) {
+            super(x, y, width, HEIGHT, name, onPress, DEFAULT_NARRATION);
         }
     }
 
@@ -95,16 +100,27 @@ public final class BookLanguageSignClient {
             chosen = choices.get(0);
             open = false;
         }
-        boolean side = screen.width / 2 + BOOK_HALF + GAP + WIDTH <= screen.width;
-        int x = side ? screen.width / 2 + BOOK_HALF + GAP
-                : (screen.width - 2 * BOOK_HALF) / 2 + PAGE_X_FROM_BOOK + (PAGE_W - WIDTH) / 2;
+        int width = MIN_WIDTH;
+        for (String locale : choices) {
+            Component head = Component.translatable(KEY + ".head", ReadingLanguagesScreen.languageName(locale));
+            width = Math.max(width, net.minecraft.client.Minecraft.getInstance().font.width(head) + TEXT_PAD);
+        }
+        width = Math.min(width, MAX_WIDTH);
+        boolean side = screen.width / 2 + BOOK_HALF + GAP + width + EDGE <= screen.width;
+        int x;
+        if (side) {
+            x = screen.width / 2 + BOOK_HALF + GAP;
+        } else {
+            width = Math.min(width, PAGE_W);
+            x = (screen.width - 2 * BOOK_HALF) / 2 + PAGE_X_FROM_BOOK + (PAGE_W - width) / 2;
+        }
         int y = side ? SIDE_Y : PAGE_Y;
-        Head head = new Head(x, y, b -> open = !open);
+        Head head = new Head(x, y, width, b -> open = !open);
         head.setTooltip(Tooltip.create(Component.translatable(KEY + ".tip")));
         event.addListener(head);
         for (int i = 0; i < choices.size(); i++) {
             String locale = choices.get(i);
-            event.addListener(new Option(x, y + HEIGHT * (i + 1), ReadingLanguagesScreen.languageName(locale), b -> {
+            event.addListener(new Option(x, y + HEIGHT * (i + 1), width, ReadingLanguagesScreen.languageName(locale), b -> {
                 chosen = locale;
                 open = false;
             }));
