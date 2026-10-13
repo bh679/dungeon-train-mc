@@ -64,4 +64,14 @@ class LiveFeedClientChatParseTest {
         assertEquals(-1, parse(0, null).seq());
         assertEquals(-1, parse(200, "{\"ok\":true,\"seq\":\"nope\"}").seq());
     }
+
+    @Test
+    @DisplayName("deleted: the removed seqs come through; junk entries and a missing field give none")
+    void deleted() {
+        ChatPage p = parse(200, """
+            {"ok":true,"live":true,"seq":9,"deleted":[3,"x",null,7],"messages":[]}""");
+        assertEquals(java.util.List.of(3L, 7L), p.deleted());
+        assertTrue(parse(200, "{\"ok\":true,\"live\":true,\"seq\":9,\"messages\":[]}").deleted().isEmpty());
+        assertTrue(ChatPage.EMPTY.deleted().isEmpty());
+    }
 }
