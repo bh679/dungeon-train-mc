@@ -258,6 +258,7 @@
   "gui.dungeontrain.viewfinder.selfie": "Selfie",
   "gui.dungeontrain.viewfinder.front": "Frente",
   "gui.dungeontrain.live.badge": "AO VIVO",
+  "gui.dungeontrain.live.name_tag": "%s está ao vivo",
   "gui.dungeontrain.live.countdown": "Ao vivo em",
   "gui.dungeontrain.live.stream_settings": "Configurações da transmissão",
   "gui.dungeontrain.live.viewer_on": "Visor ao vivo ligado",

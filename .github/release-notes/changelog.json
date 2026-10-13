@@ -25399,6 +25399,40 @@
       "pr": 1969,
       "date": "2026-10-13",
       "released": false
+    },
+    {
+      "id": "stream-name-live-pill",
+      "version": "0.1261.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Live name pill",
+      "summary": "When you go live, viewers see your name in a tidy pill with a pulsing green dot.",
+      "highlights": [],
+      "pr": 1971,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-discord-posts",
+      "version": "0.1262.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Every new Live Eye gets its own Discord post",
+      "summary": "Putting on a new Live Eye now announces you in Discord's live channel, and the channel says when you go offline.",
+      "highlights": [],
+      "pr": 1972,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

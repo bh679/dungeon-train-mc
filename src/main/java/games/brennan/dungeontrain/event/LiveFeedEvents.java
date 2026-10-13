@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.net.LiveStreamPacket;
 import games.brennan.dungeontrain.player.LiveStreamers;
 import games.brennan.dungeontrain.player.ServerLiveStatus;
 import games.brennan.dungeontrain.compat.vista.TvItems;
+import games.brennan.dungeontrain.item.LiveEyeId;
 import games.brennan.dungeontrain.item.LiveHeadpiecePendingTag;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.ChatFormatting;
@@ -167,7 +168,8 @@ public final class LiveFeedEvents {
         ServerLevel level = player.serverLevel();
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.5f, 1.6f);
         // No chat line here: the client says "You are now live" once the relay has a viewer count.
-        PacketDistributor.sendToPlayer(player, LiveStreamPacket.start());
+        String eyeId = LiveEyeId.ensure(player.getItemBySlot(EquipmentSlot.HEAD));
+        PacketDistributor.sendToPlayer(player, LiveStreamPacket.start(eyeId));
     }
 
     /** Ends {@code player}'s stream if they hold it: clear the streamer first so the slot change we cause is ignored. */

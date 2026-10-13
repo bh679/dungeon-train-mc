@@ -258,6 +258,7 @@
   "gui.dungeontrain.viewfinder.selfie": "Selfie",
   "gui.dungeontrain.viewfinder.front": "Voorkant",
   "gui.dungeontrain.live.badge": "LIVE",
+  "gui.dungeontrain.live.name_tag": "%s is live",
   "gui.dungeontrain.live.countdown": "Live over",
   "gui.dungeontrain.live.stream_settings": "Streaminstellingen",
   "gui.dungeontrain.live.viewer_on": "Live-weergave aan",

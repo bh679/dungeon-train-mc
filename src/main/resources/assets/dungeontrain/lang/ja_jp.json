@@ -235,6 +235,7 @@
   "gui.dungeontrain.viewfinder.selfie": "自撮り",
   "gui.dungeontrain.viewfinder.front": "前方",
   "gui.dungeontrain.live.badge": "LIVE",
+  "gui.dungeontrain.live.name_tag": "%s が配信中",
   "gui.dungeontrain.live.countdown": "ライブまで",
   "gui.dungeontrain.live.stream_settings": "配信設定",
   "gui.dungeontrain.live.viewer_on": "ライブビューア オン",
