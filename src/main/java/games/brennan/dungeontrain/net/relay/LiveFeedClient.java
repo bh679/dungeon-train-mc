@@ -65,12 +65,33 @@ public final class LiveFeedClient {
     /** What a claim gives the streamer. */
     public record Claim(String session, String token, String playlistUrl, @Nullable String prevName) {}
 
+    /** Where a chat line was typed: the relay's {@code source} field. */
+    public enum Source {
+        GAME, DISCORD, TWITCH, OTHER;
+
+        /** {@code "game"} → GAME, {@code "discord"} → DISCORD, {@code "twitch"} → TWITCH; anything else OTHER. */
+        public static Source parse(@Nullable String s) {
+            if (s == null) return OTHER;
+            return switch (s) {
+                case "game" -> GAME;
+                case "discord" -> DISCORD;
+                case "twitch" -> TWITCH;
+                default -> OTHER;
+            };
+        }
+    }
+
     /**
-     * One line of the stream's Discord chat. {@code uuid} is the Minecraft player who typed it when it
-     * came from the game (dashes stripped, lower-case), null for a Discord post; {@code fromGame} tells
-     * the two apart.
+     * One line of the stream's chat room. {@code uuid} is the Minecraft player who typed it when it
+     * came from the game (dashes stripped, lower-case), null for a Discord or Twitch post; {@code source}
+     * tells the rooms apart.
      */
-    public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, boolean fromGame) {}
+    public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source) {
+        /** Typed in some Minecraft world (and so possibly already shown by vanilla chat). */
+        public boolean fromGame() {
+            return source == Source.GAME;
+        }
+    }
 
     /** A chat poll: whether anyone is on air, the ring's head seq, and the lines after {@code since}. */
     public record ChatPage(boolean live, long seq, List<ChatLine> lines) {
@@ -228,9 +249,9 @@ public final class LiveFeedClient {
                     if (content.isBlank() || !m.has("seq")) continue;
                     String author = m.has("author") && !m.get("author").isJsonNull() ? m.get("author").getAsString() : "";
                     String uuid = m.has("uuid") && !m.get("uuid").isJsonNull() ? m.get("uuid").getAsString() : null;
-                    boolean game = m.has("source") && !m.get("source").isJsonNull() && "game".equals(m.get("source").getAsString());
+                    Source source = Source.parse(m.has("source") && !m.get("source").isJsonNull() ? m.get("source").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
-                        author.isBlank() ? "Someone" : author, uuid, content, game));
+                        author.isBlank() ? "Someone" : author, uuid, content, source));
                 }
             }
             return new ChatPage(live, seq, List.copyOf(lines));

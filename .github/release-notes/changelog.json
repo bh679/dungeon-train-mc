@@ -25367,8 +25367,26 @@
       "released_at": "2026-10-13T03:05:14Z"
     },
     {
-      "id": "own-books-language-mix",
+      "id": "twitch-live-chat",
       "version": "0.1259.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Twitch chat joins the live chat",
+      "summary": "While a stream is on air, the Twitch chat now shows up in the streamer's and TV wearers' in-game chat alongside Discord, and what they type reaches Twitch too. Names are coloured by where they were typed.",
+      "highlights": [],
+      "pr": 1968,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "own-books-language-mix",
+      "version": "0.1260.0",
       "type": "feat",
       "tags": [
         "feature",

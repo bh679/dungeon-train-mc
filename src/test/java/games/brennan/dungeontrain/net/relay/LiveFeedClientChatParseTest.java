@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.net.relay;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -25,16 +26,23 @@ class LiveFeedClientChatParseTest {
             {"ok":true,"live":true,"seq":7,"messages":[
               {"seq":6,"ts":1000,"author":"Viewer","uuid":null,"content":"hello","source":"discord"},
               {"seq":7,"ts":1001,"author":"Alice","uuid":"11111111222233334444555555555555","content":"hi","source":"game"},
-              {"seq":8,"ts":1002,"author":"","content":"   ","source":"discord"}
+              {"seq":8,"ts":1002,"author":"","content":"   ","source":"discord"},
+              {"seq":9,"ts":1003,"author":"Twitcher","uuid":null,"content":"pog","source":"twitch"},
+              {"seq":10,"ts":1004,"author":"Mystery","content":"?","source":"matrix"}
             ]}""");
         assertTrue(p.live());
         assertEquals(7, p.seq());
-        assertEquals(2, p.lines().size(), "a blank line is dropped");
+        assertEquals(4, p.lines().size(), "a blank line is dropped");
         assertEquals("Viewer", p.lines().get(0).author());
         assertNull(p.lines().get(0).uuid());
         assertFalse(p.lines().get(0).fromGame());
+        assertEquals(Source.DISCORD, p.lines().get(0).source());
         assertEquals("11111111222233334444555555555555", p.lines().get(1).uuid());
         assertTrue(p.lines().get(1).fromGame());
+        assertEquals(Source.GAME, p.lines().get(1).source());
+        assertEquals(Source.TWITCH, p.lines().get(2).source());
+        assertFalse(p.lines().get(2).fromGame());
+        assertEquals(Source.OTHER, p.lines().get(3).source(), "an unknown room is still shown");
     }
 
     @Test
@@ -46,6 +54,7 @@ class LiveFeedClientChatParseTest {
         assertTrue(p.lines().isEmpty());
         ChatPage q = parse(200, "{\"ok\":true,\"seq\":1,\"messages\":[{\"seq\":1,\"content\":\"x\"}]}");
         assertEquals("Someone", q.lines().get(0).author());
+        assertEquals(Source.OTHER, q.lines().get(0).source(), "no source field: other");
     }
 
     @Test
