@@ -76,6 +76,11 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
         addEntry(new WidgetEntry(widget));
     }
 
+    /** Drop every row — for a list refilled in place, like a search result. */
+    public void clear() {
+        clearEntries();
+    }
+
     /** How many rows are in the list — the Stream tab sizes itself by it to leave room for the preview. */
     public int rowCount() {
         return children().size();

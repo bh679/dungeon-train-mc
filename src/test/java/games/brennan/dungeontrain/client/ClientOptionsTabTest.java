@@ -81,11 +81,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: thirty-seven rows, none of the conditional rows present")
+    @DisplayName("Plain client: thirty-eight rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(37, rows.size());
+        assertEquals(38, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -111,7 +111,8 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.BACKPACK_BUTTON,
                         ClientOptionsTab.Row.BOOK_FILE_BUTTONS,
                         ClientOptionsTab.Row.BOOK_INSERT_PAGE_BUTTON,
-                        ClientOptionsTab.Row.AI_POLICY),
+                        ClientOptionsTab.Row.AI_POLICY,
+                        ClientOptionsTab.Row.BOOK_LANGUAGES),
                 general);
         assertFalse(general.contains(ClientOptionsTab.Row.TRANSLATE));
     }
@@ -161,8 +162,9 @@ final class ClientOptionsTabTest {
         List<ClientOptionsTab.Row> general =
                 ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, true, true);
 
-        // Translate closes the tab again now that the backup block has its own tab.
-        assertEquals(ClientOptionsTab.Row.TRANSLATE, general.get(general.size() - 1));
+        // Translate sits just before Book Languages, which closes the tab so it never splits the pair.
+        assertEquals(ClientOptionsTab.Row.TRANSLATE, general.get(general.size() - 2));
+        assertEquals(ClientOptionsTab.Row.BOOK_LANGUAGES, general.get(general.size() - 1));
         assertFalse(general.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
     }
 
@@ -192,7 +194,7 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        assertEquals(41, rows.size());
+        assertEquals(42, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
