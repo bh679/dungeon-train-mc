@@ -78,6 +78,7 @@ resolve() {
     # Third-party required deps, keyed by Modrinth VERSION ID (see gradle.properties).
     fp)       cached "maven.modrinth/fast-paintings" "$(prop fastpaintings_version)" ;;
     moon)     cached "maven.modrinth/moonlight"      "$(prop moonlight_version)" ;;
+    vista)    cached "maven.modrinth/vista_tv"       "$(prop vista_version)" ;;
     sp)       cached "maven.modrinth/sable-pathfinder" "$(prop sablepathfinder_version)" ;;
     bn)       cached "maven.modrinth/betternether-neoforge" "$(prop betternether_version)" ;;
     bclib)    cached "maven.modrinth/bclib-neoforge"        "$(prop bclib_version)" ;;
@@ -117,6 +118,9 @@ resolve() {
     # Edible Backpacks — hybrid like lctf: jarJar'd inside the DT jar; present (Case A) models the
     # CurseForge-app install (top-level copy wins), absent (Case G) the nested copy loads.
     eb)       cached "bh679/ediblebackpacks"         "$(prop ediblebackpacks_version)" ;;
+    # Discord Presence — hybrid like eb: jarJar'd inside the DT jar; present (Case A) models the
+    # CurseForge-app install (top-level copy wins), absent (Case G) the nested copy loads.
+    dp)       cached "bh679/discordpresence"         "$(prop discordpresence_version)" ;;
     # At the declared floor — the oldest build DT claims to support.
     pmob)     cached "bh679/playermob"               "$(prop playermob_min_version)" ;;
     # Above the floor: whatever the cascade has moved playermob_version to. When those two
