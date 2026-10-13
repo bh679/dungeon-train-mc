@@ -25540,6 +25540,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-stream-sound",
+      "version": "0.1269.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Eye streams can carry game sound",
+      "summary": "Your Live Eye stream can now carry the game's sound; switch it on in the Stream options.",
+      "highlights": [],
+      "pr": 1981,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
