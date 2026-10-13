@@ -55,8 +55,8 @@ public final class LiveFeedClientConfig {
             .comment("Show chat to viewers. Always off in Kid mode, whatever this says.")
             .define("streamChat", true);
         STREAM_AUDIO = b
-            .comment("Send the game's sound with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never voice chat or other apps. Off by default; takes effect from your next stream.")
-            .define("streamAudio", false);
+            .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never your microphone, voice chat or other apps. On by default; takes effect from your next stream.")
+            .define("streamAudio", true);
         STREAM_NAME_TAG = b
             .comment("Your name on the stream, bottom-middle above the hotbar: MINECRAFT, DISCORD (your linked Discord name; nothing if not linked) or NONE. Always NONE in Kid mode.")
             .defineEnum("streamNameTag", NameTag.MINECRAFT);
@@ -129,8 +129,8 @@ public final class LiveFeedClientConfig {
     /** The chat switch as set; {@code StreamCapture} still forces chat off in Kid mode. */
     public static boolean streamChat() { return !loaded() || STREAM_CHAT.get(); }
 
-    /** Whether the stream carries the game's sound. Off until the player turns it on. */
-    public static boolean streamAudio() { return loaded() && STREAM_AUDIO.get(); }
+    /** Whether the stream carries in-game sounds (never the microphone). On unless the player turns it off. */
+    public static boolean streamAudio() { return !loaded() || STREAM_AUDIO.get(); }
 
     public static void setStreamAudio(boolean value) {
         if (!loaded() || STREAM_AUDIO.get() == value) return;

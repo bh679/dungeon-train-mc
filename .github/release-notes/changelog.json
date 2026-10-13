@@ -25549,8 +25549,8 @@
         "feature",
         "community"
       ],
-      "title": "Live Eye streams can carry game sound",
-      "summary": "Your Live Eye stream can now carry the game's sound; switch it on in the Stream options.",
+      "title": "Live Eye streams now carry in-game sound",
+      "summary": "Live Eye streams now carry in-game sounds, never your microphone; you can switch it off in the Stream options.",
       "highlights": [],
       "pr": 1981,
       "date": "2026-10-13",
