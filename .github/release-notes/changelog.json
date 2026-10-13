@@ -25785,8 +25785,8 @@
         "fix",
         "compatibility"
       ],
-      "title": "Skybox blocks under shader packs",
-      "summary": "With a shader pack on, skybox blocks now sit properly among the blocks, mobs and glass around them.",
+      "title": "Shader improvements",
+      "summary": "A few things look more as they should with a shader pack on.",
       "highlights": [],
       "date": "2026-10-13",
       "released": false,
