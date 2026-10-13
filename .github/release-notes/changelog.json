@@ -25710,6 +25710,23 @@
       "released": true,
       "released_in": "v0.1278.0",
       "released_at": "2026-10-13T13:08:52Z"
+    },
+    {
+      "id": "largerlibrary-mode-mix",
+      "version": "0.1279.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Library touch-up",
+      "summary": "One of the dimensional carriage libraries has had a small touch-up.",
+      "highlights": [],
+      "pr": 1991,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
