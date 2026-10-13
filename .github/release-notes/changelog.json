@@ -25365,6 +25365,24 @@
       "released": true,
       "released_in": "v0.1258.0",
       "released_at": "2026-10-13T03:05:14Z"
+    },
+    {
+      "id": "own-books-language-mix",
+      "version": "0.1259.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books"
+      ],
+      "title": "Books from further afield",
+      "summary": "Prolific writers now come across books from other languages among the community books on the train.",
+      "highlights": [],
+      "pr": 1969,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
