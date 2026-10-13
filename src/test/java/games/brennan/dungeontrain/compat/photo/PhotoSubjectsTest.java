@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class PhotoSubjectsTest {
 
     private static PhotoSubjects.Facts where(Set<String> types, String dimension, String band) {
-        return new PhotoSubjects.Facts(types, false, false, false, false, false, false, false, false, false, dimension, band);
+        return new PhotoSubjects.Facts(types, false, false, false, false, false, false, false, false, false, false, dimension, band);
     }
 
     @Test
@@ -33,10 +33,10 @@ final class PhotoSubjectsTest {
     @DisplayName("passengers: any, a friend, an Echo — yours or someone else's")
     void passengers() {
         Set<String> plain = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), true, false, false, false, false,
-                false, false, false, false, null, null));
+                false, false, false, false, false, null, null));
         assertEquals(Set.of("playermob"), plain);
         Set<String> all = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), true, true, true, true, true,
-                false, false, false, false, null, null));
+                false, false, false, false, false, null, null));
         assertTrue(all.containsAll(Set.of("playermob", "friend_playermob", "echo", "echo_own", "echo_other")));
     }
 
@@ -44,7 +44,7 @@ final class PhotoSubjectsTest {
     @DisplayName("specials, cave, dimension and band keys")
     void places() {
         Set<String> keys = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, false, false, false,
-                true, true, true, true, "minecraft:overworld", "reached_spheres"));
+                true, true, true, true, false, "minecraft:overworld", "reached_spheres"));
         assertTrue(keys.containsAll(Set.of("pigman_villager", "killer_bunny", "technoblade_pig", "cave",
                 "dim:minecraft:overworld", "band:reached_spheres")));
         assertFalse(keys.contains(PhotoSubjects.NETHER));
@@ -84,5 +84,14 @@ final class PhotoSubjectsTest {
         assertTrue(PhotoScene.halfOut(80), "hips just leaving the ground");
         assertFalse(PhotoScene.halfOut(85), "standing up out of the hole");
         assertFalse(PhotoScene.halfOut(133));
+    }
+
+    @Test
+    @DisplayName("a selfie-mode shot carries selfie; a normal one doesn't")
+    void selfie() {
+        Set<String> selfie = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of("minecraft:warden"), false, false, false,
+                false, false, false, false, false, false, true, null, null));
+        assertEquals(Set.of("selfie", "entity:minecraft:warden"), selfie);
+        assertFalse(PhotoSubjects.keys(where(Set.of("minecraft:warden"), null, null)).contains("selfie"));
     }
 }
