@@ -216,6 +216,21 @@ public final class RotationApplier {
     }
 
     /**
+     * Whole-entry apply: {@code base} placed with {@code entry}'s authored facing, half and
+     * redstone toggle. {@code base} is normally {@code entry.state()} after the caller's stage
+     * resolution — passed separately so this class stays free of the train package. Use this from
+     * any stamp pass that writes a picked {@link VariantState}; writing {@code entry.state()}
+     * directly drops the T/R/B, L/R/O and On/R/Off cells the menu offers.
+     */
+    public static BlockState apply(
+        BlockState base, VariantState entry,
+        BlockPos localPos, long worldSeed, int carriageIndex, int lockId
+    ) {
+        return apply(base, entry.rotation(), entry.half(), entry.active(),
+            localPos, worldSeed, carriageIndex, lockId);
+    }
+
+    /**
      * Legacy 6-arg apply (rotation only). Preserves the v7 behaviour
      * exactly: RANDOM rotation rolls the half flip; LOCK / OPTIONS rotation
      * preserves the captured half. New callers should use the 7-arg
