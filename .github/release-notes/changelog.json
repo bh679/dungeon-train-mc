@@ -25537,9 +25537,9 @@
       "highlights": [],
       "pr": 1978,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1269.0",
+      "released_at": "2026-10-13T09:48:55Z"
     },
     {
       "id": "live-eye-stream-sound",
@@ -25554,9 +25554,9 @@
       "highlights": [],
       "pr": 1981,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1269.0",
+      "released_at": "2026-10-13T09:48:55Z"
     }
   ]
 }
