@@ -2599,7 +2599,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Кнопка на экране инвентаря",
   "gui.dungeontrain.options.backpack_button.tip": "Показывать кнопку открыть/закрыть Edible Backpacks на экране инвентаря.",
   "gui.dungeontrain.options.backpack_auto_collect": "Автосбор в рюкзак",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Подобранное идёт в рюкзак",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Подобранное — в рюкзак",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Выберите, когда подобранные предметы попадают в рюкзак.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "Выкл.",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Когда открыт",

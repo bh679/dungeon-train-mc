@@ -2496,7 +2496,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Butang di skrin inventori",
   "gui.dungeontrain.options.backpack_button.tip": "Tunjukkan butang buka/tutup Edible Backpacks pada skrin inventori anda.",
   "gui.dungeontrain.options.backpack_auto_collect": "Kutip Auto Beg Galas",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Barang dikutip masuk beg galas",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Barang dikutip ke beg galas",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Pilih bila barang yang anda kutip dimasukkan ke dalam beg galas.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "Mati",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Semasa Dibuka",

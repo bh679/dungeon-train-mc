@@ -2545,7 +2545,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Pulsante nella schermata inventario",
   "gui.dungeontrain.options.backpack_button.tip": "Mostra il pulsante apri/chiudi di Edible Backpacks nella schermata inventario.",
   "gui.dungeontrain.options.backpack_auto_collect": "Raccolta nello zaino",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Gli oggetti raccolti vanno nello zaino",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Oggetti raccolti nello zaino",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Scegli quando gli oggetti che raccogli finiscono nello zaino.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "No",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Se aperto",

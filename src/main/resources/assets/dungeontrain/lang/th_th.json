@@ -2496,7 +2496,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "ปุ่มบนหน้าจอช่องเก็บของ",
   "gui.dungeontrain.options.backpack_button.tip": "แสดงปุ่มเปิด/ปิดของ Edible Backpacks บนหน้าจอช่องเก็บของ",
   "gui.dungeontrain.options.backpack_auto_collect": "เก็บของเข้าเป้อัตโนมัติ",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "ของที่เก็บได้จะเข้าเป้",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "ของที่เก็บได้เข้าเป้",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "เลือกว่าจะให้ของที่เก็บได้เข้าไปในเป้เมื่อไร",
   "gui.dungeontrain.options.backpack_auto_collect.off": "ปิด",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "ขณะเปิด",

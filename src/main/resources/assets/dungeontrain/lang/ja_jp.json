@@ -2496,7 +2496,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "インベントリ画面のボタン",
   "gui.dungeontrain.options.backpack_button.tip": "インベントリ画面にEdible Backpacksの開閉ボタンを表示します。",
   "gui.dungeontrain.options.backpack_auto_collect": "バックパック自動回収",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "拾ったアイテムをバックパックへ",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "拾った物をバックパックへ",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "拾ったアイテムをいつバックパックに入れるか選びます。",
   "gui.dungeontrain.options.backpack_auto_collect.off": "オフ",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "開いている間",

@@ -2496,7 +2496,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "인벤토리 화면의 버튼",
   "gui.dungeontrain.options.backpack_button.tip": "인벤토리 화면에 Edible Backpacks 열기/닫기 버튼을 표시합니다.",
   "gui.dungeontrain.options.backpack_auto_collect": "가방 자동 수집",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "주운 아이템을 가방에 넣기",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "주운 아이템을 가방에",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "주운 아이템을 언제 가방에 넣을지 고릅니다.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "끔",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "열려 있을 때",

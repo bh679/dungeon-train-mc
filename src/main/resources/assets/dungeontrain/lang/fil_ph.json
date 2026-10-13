@@ -2496,7 +2496,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Button sa inventory screen",
   "gui.dungeontrain.options.backpack_button.tip": "Ipakita ang open/close button ng Edible Backpacks sa inventory screen mo.",
   "gui.dungeontrain.options.backpack_auto_collect": "Backpack Auto-Collect",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Napupunta sa backpack ang napulot",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Sa backpack ang napulot",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Piliin kung kailan mapupunta sa backpack mo ang mga napulot mong item.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "Off",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Kapag Bukas",

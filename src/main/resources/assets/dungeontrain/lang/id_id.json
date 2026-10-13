@@ -2496,7 +2496,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Tombol di layar inventaris",
   "gui.dungeontrain.options.backpack_button.tip": "Tampilkan tombol buka/tutup Edible Backpacks di layar inventaris.",
   "gui.dungeontrain.options.backpack_auto_collect": "Ambil Otomatis ke Ransel",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Barang yang dipungut masuk ransel",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Barang dipungut ke ransel",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Pilih kapan barang yang kamu pungut masuk ke ranselmu.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "Mati",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Saat Terbuka",

@@ -2496,7 +2496,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Nút trên màn hình túi đồ",
   "gui.dungeontrain.options.backpack_button.tip": "Hiện nút mở/đóng của Edible Backpacks trên màn hình túi đồ.",
   "gui.dungeontrain.options.backpack_auto_collect": "Tự nhặt vào ba lô",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Đồ nhặt được vào ba lô",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Đồ nhặt vào ba lô",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Chọn khi nào vật phẩm bạn nhặt được cho vào ba lô.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "Tắt",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Khi mở",

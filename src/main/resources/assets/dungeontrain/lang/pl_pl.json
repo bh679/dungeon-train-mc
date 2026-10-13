@@ -2594,7 +2594,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Przycisk na ekranie ekwipunku",
   "gui.dungeontrain.options.backpack_button.tip": "Pokaż przycisk otwórz/zamknij z Edible Backpacks na ekranie ekwipunku.",
   "gui.dungeontrain.options.backpack_auto_collect": "Automatyczne zbieranie",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Podniesione przedmioty trafiają do plecaka",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Podniesione rzeczy do plecaka",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Wybierz, kiedy podnoszone przedmioty trafiają do plecaka.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "Wył.",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Gdy otwarty",

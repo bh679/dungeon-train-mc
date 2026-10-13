@@ -2545,7 +2545,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Botón en la pantalla del inventario",
   "gui.dungeontrain.options.backpack_button.tip": "Mostrar el botón de abrir/cerrar de Edible Backpacks en la pantalla del inventario.",
   "gui.dungeontrain.options.backpack_auto_collect": "Recolección en mochila",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Lo que recoges va a tu mochila",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Lo recogido va a la mochila",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Elige cuándo los objetos que recoges van a tu mochila.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "No",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Si está abierta",

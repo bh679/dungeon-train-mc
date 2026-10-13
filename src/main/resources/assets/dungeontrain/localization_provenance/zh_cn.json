@@ -3812,6 +3812,7 @@
       "gui.dungeontrain.options.editor_settings.tip",
       "gui.dungeontrain.options.train_volume",
       "gui.dungeontrain.options.cinematic_hotkey.tip",
+      "gui.dungeontrain.options.backpack_auto_collect.hint",
       "gui.dungeontrain.options.snapshot_chat_log",
       "gui.dungeontrain.options.snapshot_chat_log.tip",
       "gui.dungeontrain.options.snapshot_max_res",

@@ -3082,7 +3082,7 @@
   "gui.dungeontrain.options.backpack_button.hint": "Buton pe ecranul inventarului",
   "gui.dungeontrain.options.backpack_button.tip": "Afișează butonul deschide/închide Edible Backpacks pe ecranul inventarului.",
   "gui.dungeontrain.options.backpack_auto_collect": "Colectare în rucsac",
-  "gui.dungeontrain.options.backpack_auto_collect.hint": "Obiectele ridicate merg în rucsac",
+  "gui.dungeontrain.options.backpack_auto_collect.hint": "Obiecte ridicate în rucsac",
   "gui.dungeontrain.options.backpack_auto_collect.tip": "Alege când obiectele pe care le ridici ajung în rucsac.",
   "gui.dungeontrain.options.backpack_auto_collect.off": "Oprit",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Când e deschis",
