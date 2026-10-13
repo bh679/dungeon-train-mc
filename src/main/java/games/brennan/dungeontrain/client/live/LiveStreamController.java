@@ -5,7 +5,9 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
+import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
@@ -35,6 +37,8 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -240,7 +244,11 @@ public final class LiveStreamController {
         if (uuid == null) { state = State.IDLE; return; }
         state = State.CLAIMING;
         int gen = generation;
-        LiveFeedClient.claim(uuid, name, eyeId).thenAcceptAsync(result -> {
+        LatestReleaseCache.refreshIfStale();
+        LiveClaimInfo info = LiveClaimInfo.of(VersionInfo.VERSION, LatestReleaseCache.latestVersion(),
+            VersionInfo.LAST_UPDATE_DATE, LocalDate.now(ZoneOffset.UTC),
+            LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode());
+        LiveFeedClient.claim(uuid, name, eyeId, info).thenAcceptAsync(result -> {
             if (gen != generation || state != State.CLAIMING) return;
             Claim c = LiveFeedClient.parseClaim(result);
             if (c == null) {
