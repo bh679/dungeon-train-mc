@@ -3265,6 +3265,8 @@
       "dungeontrain.requirement.days.plural",
       "dungeontrain.leaderboard.advancements.header",
       "dungeontrain.leaderboard.builder_time.header",
+      "dungeontrain.leaderboard.live_stream_time.header",
+      "dungeontrain.leaderboard.live_view_time.header",
       "dungeontrain.leaderboard.builds_approved.header",
       "dungeontrain.leaderboard.templates_built.header",
       "dungeontrain.leaderboard.books_praised.header",

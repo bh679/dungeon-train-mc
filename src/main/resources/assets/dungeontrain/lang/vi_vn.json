@@ -2716,6 +2716,8 @@
   "item.dungeontrain.random_leaderboard_book": "Sách Bảng Xếp Hạng Ngẫu Nhiên",
   "dungeontrain.leaderboard.advancements.header": "Ai đạt được nhiều thành tựu nhất?",
   "dungeontrain.leaderboard.builder_time.header": "Ai đã dành nhiều thời gian xây dựng nhất?",
+  "dungeontrain.leaderboard.live_stream_time.header": "Ai đã phát trực tiếp lâu nhất?",
+  "dungeontrain.leaderboard.live_view_time.header": "Ai đã xem phát trực tiếp lâu nhất?",
   "dungeontrain.leaderboard.builds_approved.header": "Công trình của ai đã lên được nhiều đoàn tàu nhất?",
   "dungeontrain.leaderboard.templates_built.header": "Công trình của ai đi cùng mọi chuyến tàu?",
   "dungeontrain.leaderboard.books_praised.header": "Sách của ai được chuyến tàu yêu thích nhất?",

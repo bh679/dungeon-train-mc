@@ -295,10 +295,24 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel) {
-        String path = "/live/status" + (viewer == null ? "" : "?viewer=" + viewer);
+        return status(viewer, channel, false);
+    }
+
+    /**
+     * {@link #status(UUID, Channel)}, and with {@code ranked} the viewer's watching may count toward
+     * the relay's "Longest Watching" leaderboard. Pass it only with the player's consent.
+     */
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, boolean ranked) {
+        String path = statusPath(viewer, ranked);
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
+    }
+
+    /** The status request's path: {@code ?viewer=} names who is watching, {@code &lb=1} lets it rank. */
+    static String statusPath(@Nullable UUID viewer, boolean ranked) {
+        if (viewer == null) return "/live/status";
+        return "/live/status?viewer=" + viewer + (ranked ? "&lb=1" : "");
     }
 
     public static Status parseStatus(Result r) {

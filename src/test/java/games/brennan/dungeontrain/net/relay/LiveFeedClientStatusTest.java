@@ -17,6 +17,14 @@ class LiveFeedClientStatusTest {
     }
 
     @Test
+    void theStatusPathRanksAViewerOnlyWhenAsked() {
+        java.util.UUID id = java.util.UUID.fromString("01234567-89ab-cdef-0123-456789abcdef");
+        assertEquals("/live/status", LiveFeedClient.statusPath(null, true));
+        assertEquals("/live/status?viewer=" + id, LiveFeedClient.statusPath(id, false));
+        assertEquals("/live/status?viewer=" + id + "&lb=1", LiveFeedClient.statusPath(id, true));
+    }
+
+    @Test
     void aStoppedStreamIsStillOnAirWithWhereToGoAfterItsTail() {
         LiveFeedClient.Status s = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
             + "\"streamer\":\"Alice\",\"ended\":true,\"replayUrl\":\"https://x/main/s1/seg00004.ts\"}");

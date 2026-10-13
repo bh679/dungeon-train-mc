@@ -3356,6 +3356,8 @@
   "dungeontrain.requirement.days.plural": "%s days",
   "dungeontrain.leaderboard.advancements.header": "Who has earned the most advancements?",
   "dungeontrain.leaderboard.builder_time.header": "Who has spent the longest building?",
+  "dungeontrain.leaderboard.live_stream_time.header": "Who has spent the longest on air?",
+  "dungeontrain.leaderboard.live_view_time.header": "Who has spent the longest watching live?",
   "dungeontrain.leaderboard.builds_approved.header": "Whose builds have made it onto the most trains?",
   "dungeontrain.leaderboard.templates_built.header": "Whose builds ride with every train?",
   "dungeontrain.leaderboard.books_praised.header": "Whose books does the train love best?",

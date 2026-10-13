@@ -2716,6 +2716,8 @@
   "item.dungeontrain.random_leaderboard_book": "Random na Aklat ng Ranggo",
   "dungeontrain.leaderboard.advancements.header": "Sino ang pinakamaraming tagumpay na nakamit?",
   "dungeontrain.leaderboard.builder_time.header": "Sino ang pinakamatagal na gumagawa?",
+  "dungeontrain.leaderboard.live_stream_time.header": "Sino ang pinakamatagal na naka-live?",
+  "dungeontrain.leaderboard.live_view_time.header": "Sino ang pinakamatagal na nanood ng live?",
   "dungeontrain.leaderboard.builds_approved.header": "Kaninong mga gawa ang pinakamaraming nakasakay sa tren?",
   "dungeontrain.leaderboard.templates_built.header": "Kaninong mga gawa ang sumasakay sa bawat tren?",
   "dungeontrain.leaderboard.books_praised.header": "Kaninong mga aklat ang pinakamahal ng tren?",

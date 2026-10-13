@@ -2765,6 +2765,8 @@
   "item.dungeontrain.random_leaderboard_book": "Livro de classificação aleatório",
   "dungeontrain.leaderboard.advancements.header": "Quem conquistou mais progressos?",
   "dungeontrain.leaderboard.builder_time.header": "Quem passou mais tempo construindo?",
+  "dungeontrain.leaderboard.live_stream_time.header": "Quem passou mais tempo ao vivo?",
+  "dungeontrain.leaderboard.live_view_time.header": "Quem passou mais tempo assistindo transmissões ao vivo?",
   "dungeontrain.leaderboard.builds_approved.header": "As construções de quem entraram em mais trens?",
   "dungeontrain.leaderboard.templates_built.header": "De quem são as construções que viajam em cada trem?",
   "dungeontrain.leaderboard.books_praised.header": "De quem são os livros que o trem mais ama?",

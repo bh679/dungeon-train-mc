@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Channel;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Status;
@@ -78,7 +79,8 @@ public final class LiveStatusPoller {
 
     /** One status poll; a failed request reads as offline. */
     private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel) {
-        return LiveFeedClient.status(viewer, channel)
+        // Watching counts toward the "Longest Watching" board only behind the master internet consent.
+        return LiveFeedClient.status(viewer, channel, DiscordPresenceClientConfig.isGranted())
             .handle((r, t) -> r == null ? Status.OFFLINE : LiveFeedClient.parseStatus(r));
     }
 

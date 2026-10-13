@@ -121,7 +121,12 @@ public enum LeaderboardCategory {
     PHOTOS_TRIBUTED_RUN("photos_tributed_run", "photos_tributed", "Most Photos Tributed", Scope.RUN, Format.COUNT),
     PHOTOS_PASSENGERS_RUN("photos_passengers_run", "photos_passengers", "Passenger Portraits", Scope.RUN, Format.COUNT),
     PHOTOS_HOSTILE_RUN("photos_hostile_run", "photos_hostile", "Bravest Photographer", Scope.RUN, Format.COUNT),
-    PHOTOS_ANIMALS_RUN("photos_animals_run", "photos_animals", "Wildlife Photographer", Scope.RUN, Format.COUNT);
+    PHOTOS_ANIMALS_RUN("photos_animals_run", "photos_animals", "Wildlife Photographer", Scope.RUN, Format.COUNT),
+    // Time on the Live Feed: on air with the Live Eye, and watching it on a TV. The relay measures
+    // both from the feed's own traffic (livetime.js), not from any one life, so Scope.NONE like the
+    // builder boards.
+    LIVE_STREAM_TIME("live_stream_time", "live_stream_time", "Longest On Air", Scope.NONE, Format.DURATION),
+    LIVE_VIEW_TIME("live_view_time", "live_view_time", "Longest Watching", Scope.NONE, Format.DURATION);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject

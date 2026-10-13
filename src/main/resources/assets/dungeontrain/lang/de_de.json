@@ -2765,6 +2765,8 @@
   "item.dungeontrain.random_leaderboard_book": "Zufälliges Bestenlistenbuch",
   "dungeontrain.leaderboard.advancements.header": "Wer hat die meisten Fortschritte errungen?",
   "dungeontrain.leaderboard.builder_time.header": "Wer hat am längsten gebaut?",
+  "dungeontrain.leaderboard.live_stream_time.header": "Wer war am längsten auf Sendung?",
+  "dungeontrain.leaderboard.live_view_time.header": "Wer hat am längsten live zugeschaut?",
   "dungeontrain.leaderboard.builds_approved.header": "Wessen Bauten haben es auf die meisten Züge geschafft?",
   "dungeontrain.leaderboard.templates_built.header": "Wessen Bauten fahren mit jedem Zug mit?",
   "dungeontrain.leaderboard.books_praised.header": "Wessen Bücher liebt der Zug am meisten?",

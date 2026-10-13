@@ -2716,6 +2716,8 @@
   "item.dungeontrain.random_leaderboard_book": "Buku Papan Pendahulu Rawak",
   "dungeontrain.leaderboard.advancements.header": "Siapa yang paling banyak mencapai pencapaian?",
   "dungeontrain.leaderboard.builder_time.header": "Siapa yang paling lama membina?",
+  "dungeontrain.leaderboard.live_stream_time.header": "Siapa yang paling lama bersiaran langsung?",
+  "dungeontrain.leaderboard.live_view_time.header": "Siapa yang paling lama menonton siaran langsung?",
   "dungeontrain.leaderboard.builds_approved.header": "Binaan siapa yang paling banyak menaiki kereta api?",
   "dungeontrain.leaderboard.templates_built.header": "Binaan siapa yang menaiki setiap kereta api?",
   "dungeontrain.leaderboard.books_praised.header": "Buku siapa yang paling disayangi kereta api?",
