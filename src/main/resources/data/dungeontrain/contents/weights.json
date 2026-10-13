@@ -28,6 +28,11 @@
     "minLevel": 1,
     "optIn": true
   },
+  "enemiesgroup2": {
+    "weight": 5,
+    "minLevel": 1,
+    "optIn": true
+  },
   "featurefancy": {
     "weight": 1,
     "builder": {
@@ -45,6 +50,10 @@
     "optIn": true
   },
   "maze": 4,
+  "mazelong": {
+    "weight": 0,
+    "optIn": true
+  },
   "mild_1": {
     "weight": 1,
     "name": "trap_chest",
