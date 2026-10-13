@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AllAtOnceAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
@@ -611,6 +612,7 @@ public final class RunStatsEvents {
             // The first point of damage this life closes every pacifist tier until the next one.
             if (firstDamageThisLife) {
                 LifeDisqualification.notify(dealer, LifeDisqualification.pacifistTiers());
+                AllAtOnceAdvancement.markLost(dealer);
             }
         }
     }

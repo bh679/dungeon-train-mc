@@ -240,6 +240,7 @@ def build_bundle() -> tuple[dict, list[str]]:
         "iconNames": [i.split(":", 1)[1].replace("_", " ") for i in icon_ids],
         "bgs": bgs, "moreBgs": more, "sprites": sprites,
         "complete": tabs_file.get("complete", {}),
+        "needs": tabs_file.get("needs", {}),
     }
     return bundle, tex.missing
 

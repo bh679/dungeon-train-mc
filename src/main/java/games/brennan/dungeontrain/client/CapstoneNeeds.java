@@ -19,6 +19,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +30,10 @@ import java.util.Set;
  * halo around it ({@link #currentTabMarked}), on the vanilla screen and on Better Advancements alike. The pin
  * survives switching tabs and closing the screen; clicking it again, or clicking any other advancement, clears it
  * ({@link #onClick}, from {@link AdvancementTrackClick}). Leaving the world clears it too.
+ *
+ * <p>An advancement listed in the tabs file's {@code needs} table (All at Once, The Challenge) pins the same
+ * way, haloing the challenges whose rules it combines — earned or not, since every one of those rules still
+ * applies to it.</p>
  *
  * <p>The rules are the server's — {@link CompletionistAdvancement#isRequiredId} and the tab-complete
  * {@code complete} map — read against the client's own tree, which only ever holds advancements the player
@@ -78,7 +83,21 @@ public final class CapstoneNeeds {
     }
 
     static boolean isCapstone(TabGateways.Layout layout, ResourceLocation id) {
-        return CompletionistAdvancement.ID.equals(id) || layout.complete().containsKey(id.toString());
+        return CompletionistAdvancement.ID.equals(id) || layout.complete().containsKey(id.toString())
+            || combinesRules(layout, id);
+    }
+
+    /**
+     * Is {@code id} one that combines other advancements' rules ({@code needs} in the tabs file — All at Once,
+     * The Challenge)? Its rules all apply whether or not each was earned on its own, so earned ones halo too.
+     */
+    static boolean combinesRules(TabGateways.Layout layout, ResourceLocation id) {
+        return id != null && layout.needs().containsKey(id.toString());
+    }
+
+    /** Should a tile with this progress halo while {@code capstone} is pinned? Rule lists ignore earning. */
+    private static boolean stillCounts(TabGateways.Layout layout, ResourceLocation capstone, AdvancementProgress progress) {
+        return progress == null || !progress.isDone() || combinesRules(layout, capstone);
     }
 
     @SubscribeEvent
@@ -89,8 +108,9 @@ public final class CapstoneNeeds {
 
     /** Should {@code node} be haloed: unearned and needed by the pinned capstone? */
     public static boolean highlights(AdvancementNode node, AdvancementProgress progress) {
-        if (pinned == null || node == null || (progress != null && progress.isDone())) return false;
-        return needs(TabGateways.layout(), pinned, node);
+        if (pinned == null || node == null) return false;
+        TabGateways.Layout layout = TabGateways.layout();
+        return stillCounts(layout, pinned, progress) && needs(layout, pinned, node);
     }
 
     // ---- tab marker ----------------------------------------------------------
@@ -130,7 +150,7 @@ public final class CapstoneNeeds {
             TabGateways.Layout layout = TabGateways.layout();
             for (AdvancementNode node : advancements.getTree().nodes()) {
                 AdvancementProgress p = progress.get(node.holder());
-                if ((p == null || !p.isDone()) && needs(layout, pinned, node)) out.add(node.root().holder().id());
+                if (stillCounts(layout, pinned, p) && needs(layout, pinned, node)) out.add(node.root().holder().id());
             }
         }
         tabsCache = Set.copyOf(out);
@@ -153,6 +173,8 @@ public final class CapstoneNeeds {
         if (capstone == null) return false;
         ResourceLocation id = node.holder().id();
         if (id.equals(capstone)) return false;
+        List<String> rules = layout.needs().get(capstone.toString());
+        if (rules != null) return rules.contains(id.toString());
         if (CompletionistAdvancement.ID.equals(capstone)) {
             return node.holder().value().display().isPresent()
                 && CompletionistAdvancement.isRequiredId(id, Set.of(), CompletionistAdvancement.inDungeonTrainTab(node));

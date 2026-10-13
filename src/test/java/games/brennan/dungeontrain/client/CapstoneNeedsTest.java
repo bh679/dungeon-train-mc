@@ -105,4 +105,37 @@ class CapstoneNeedsTest {
         assertTrue(CapstoneNeeds.isCapstone(layout, burrito));
         assertFalse(CapstoneNeeds.isCapstone(layout, ResourceLocation.parse(DT + "carts_100")));
     }
+
+    @Test
+    @DisplayName("a needs entry (All at Once) pins and highlights exactly the rules it lists")
+    void needsListHighlightsItsRules() {
+        TabGateways.Layout rules = new TabGateways.Layout(Map.of(), Map.of(), List.of(), Map.of(), Map.of(),
+            Map.of(), Map.of(), Map.of(), Map.of(DT + "reached_nether", List.of(DT + "carts_100", DT + "te_probe")));
+        ResourceLocation allAtOnce = ResourceLocation.parse(DT + "reached_nether");
+        assertTrue(CapstoneNeeds.isCapstone(rules, allAtOnce));
+        assertTrue(CapstoneNeeds.combinesRules(rules, allAtOnce));
+        assertEquals(allAtOnce, CapstoneNeeds.nextPin(rules, null, allAtOnce));
+        assertTrue(CapstoneNeeds.needs(rules, allAtOnce, node(DT + "carts_100")));
+        assertTrue(CapstoneNeeds.needs(rules, allAtOnce, node(DT + "te_probe")), "across tabs too");
+        assertFalse(CapstoneNeeds.needs(rules, allAtOnce, node(DT + "root")), "not listed");
+        assertFalse(CapstoneNeeds.needs(rules, allAtOnce, node(DT + "reached_nether")), "never itself");
+        assertFalse(CapstoneNeeds.combinesRules(layout, allAtOnce), "only when listed");
+    }
+
+    @Test
+    @DisplayName("the shipped tabs file lists All at Once's and The Challenge's rules")
+    void shippedNeedsTable() throws java.io.IOException {
+        try (var in = java.nio.file.Files.newBufferedReader(
+                games.brennan.dungeontrain.RepoPaths.resources().resolve("dungeontrain/advancement_tabs.json"))) {
+            Map<String, List<String>> needs = TabGateways.Layout.parse(in).needs();
+            List<String> rules = needs.get(DT + "all_at_once");
+            assertEquals(14, rules.size());
+            assertEquals(rules, needs.get(DT + "the_challenge"));
+            assertTrue(rules.containsAll(List.of(DT + "self_medicated", DT + "pacifist_1000", DT + "contained_loop",
+                DT + "no_break_1000", DT + "no_container_1000", DT + "three_melons", DT + "naked_and_unafraid")));
+            for (String excluded : List.of("chests_100_unique", "leather_over_diamond", "challenge_complete_tab")) {
+                assertFalse(rules.contains(DT + excluded), excluded);
+            }
+        }
+    }
 }

@@ -328,6 +328,20 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-life flag: has this player broken any rule of "All at Once" / "The Challenge" this life — a
+     * block broken, a chest or barrel opened, an ender chest opened, damage dealt, an apple held,
+     * non-melon eaten or armor worn? See
+     * {@link games.brennan.dungeontrain.advancement.AllAtOnceAdvancement}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> ALL_AT_ONCE_LOST_THIS_LIFE =
+        TYPES.register("all_at_once_lost_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
      * Travelled-carriage reading (the same {@code effectiveTravelled} value the carts tiers use) at
      * the moment this player last broke a block this life. The "no block broken" streak is
      * {@code effectiveTravelled - this}, driving the {@code no_break_100} / {@code no_break_1000}
