@@ -25502,9 +25502,9 @@
       "highlights": [],
       "pr": 1976,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1267.0",
+      "released_at": "2026-10-13T06:48:45Z"
     },
     {
       "id": "warden-wither-selfie-advancement",
@@ -25519,9 +25519,9 @@
       "highlights": [],
       "pr": 1977,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1267.0",
+      "released_at": "2026-10-13T06:48:45Z"
     },
     {
       "id": "enemies-group-two-boxcar-crates",
@@ -25537,9 +25537,26 @@
       "highlights": [],
       "pr": 1978,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1269.0",
+      "released_at": "2026-10-13T09:48:55Z"
+    },
+    {
+      "id": "live-eye-stream-sound",
+      "version": "0.1269.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Eye streams now carry in-game sound",
+      "summary": "Live Eye streams now carry in-game sounds, never your microphone; you can switch it off in the Stream options.",
+      "highlights": [],
+      "pr": 1981,
+      "date": "2026-10-13",
+      "released": true,
+      "released_in": "v0.1269.0",
+      "released_at": "2026-10-13T09:48:55Z"
     }
   ]
 }

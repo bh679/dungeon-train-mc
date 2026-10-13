@@ -12,6 +12,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * Vista's downloaded ffmpeg, as the Live Feed uses it. Vista fetches a static build per client the
@@ -21,6 +23,10 @@ import java.util.concurrent.CompletableFuture;
 public final class FfmpegSupport {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+    /** An {@code -encoders} line for ffmpeg's own AAC encoder: flags starting with A (audio), then {@code aac}. */
+    private static final Pattern AAC_ENCODER = Pattern.compile("(?m)^\\s*A\\S*\\s+aac\\s");
+    private static final long PROBE_TIMEOUT_S = 5;
+    @Nullable private static volatile Boolean aac;
 
     public enum State {
         /** Vista has not been asked to fetch ffmpeg (its welcome screen was declined or not yet shown). */
@@ -51,6 +57,33 @@ public final class FfmpegSupport {
         CompletableFuture<FFmpeg> f = VistaModClient.getFFmpegFuture();
         if (f == null) return CompletableFuture.failedFuture(new IllegalStateException("vista ffmpeg off"));
         return f;
+    }
+
+    /**
+     * Whether this ffmpeg can encode AAC (stream audio). Asked once per launch with
+     * {@code ffmpeg -encoders}; a failed or slow answer counts as no.
+     */
+    public static boolean hasAacEncoder(FFmpeg ffmpeg) {
+        Boolean known = aac;
+        if (known != null) return known;
+        boolean found = false;
+        try {
+            Process p = ffmpeg.runFFmpeg("-hide_banner", "-encoders");
+            drain(p.getErrorStream(), "encoders-err");
+            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            if (p.waitFor(PROBE_TIMEOUT_S, TimeUnit.SECONDS)) found = listsAacEncoder(out); else p.destroyForcibly();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] could not ask ffmpeg for its encoders: {}", e.toString());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        aac = found;
+        return found;
+    }
+
+    /** True when {@code ffmpeg -encoders} output lists the native {@code aac} encoder. */
+    static boolean listsAacEncoder(String encodersOutput) {
+        return AAC_ENCODER.matcher(encodersOutput).find();
     }
 
     /** Drain a process stream to the log on a daemon thread — ffmpeg blocks on a full stderr pipe. */
