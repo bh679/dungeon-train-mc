@@ -236,6 +236,7 @@
   "gui.dungeontrain.viewfinder.front": "Harap",
   "gui.dungeontrain.live.badge": "LIVE",
   "gui.dungeontrain.live.name_tag": "Live si %s",
+  "gui.dungeontrain.live.name_tag.chat_off": "Live si %s, naka-off ang chat",
   "gui.dungeontrain.live.countdown": "Live sa loob ng",
   "gui.dungeontrain.live.stream_settings": "Mga setting ng stream",
   "gui.dungeontrain.live.viewer_on": "Naka-on ang live viewer",

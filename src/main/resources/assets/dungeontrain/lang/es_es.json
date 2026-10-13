@@ -259,6 +259,7 @@
   "gui.dungeontrain.viewfinder.front": "Frontal",
   "gui.dungeontrain.live.badge": "EN DIRECTO",
   "gui.dungeontrain.live.name_tag": "%s está en directo",
+  "gui.dungeontrain.live.name_tag.chat_off": "%s está en directo con el chat desactivado",
   "gui.dungeontrain.live.countdown": "En directo en",
   "gui.dungeontrain.live.stream_settings": "Ajustes de emisión",
   "gui.dungeontrain.live.viewer_on": "Visor en directo activado",
