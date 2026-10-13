@@ -206,6 +206,29 @@ public final class ShaderDiagnostics {
 
     public static int reopenStencil() { return reopenStencil; }
 
+    // --- Sticky: the depth restore before the translucents, and where each pass' writes went ---
+    private static volatile float restoreBefore = -1.0f;
+    private static volatile float restoreAfter = -1.0f;
+    private static volatile String reopenFbo = "";
+    private static volatile String restoreFbo = "";
+
+    /**
+     * Centre-pixel depth either side of {@code SkyboxPunchRenderer#restoreHoleDepth}, plus the
+     * framebuffer (id and depth attachment) each of the two passes drew into — under Iris the two
+     * can differ, and a restore that lands in the wrong one leaves translucents leaking through.
+     */
+    public static void recordRestore(float before, float after, String fboAtReopen, String fboAtRestore) {
+        restoreBefore = before;
+        restoreAfter = after;
+        reopenFbo = fboAtReopen == null ? "" : fboAtReopen;
+        restoreFbo = fboAtRestore == null ? "" : fboAtRestore;
+    }
+
+    public static float restoreBefore() { return restoreBefore; }
+    public static float restoreAfter() { return restoreAfter; }
+    public static String reopenFbo() { return reopenFbo; }
+    public static String restoreFbo() { return restoreFbo; }
+
     public static float reopenBefore() { return reopenBefore; }
     public static float reopenAfter() { return reopenAfter; }
 

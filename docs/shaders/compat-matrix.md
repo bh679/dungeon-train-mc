@@ -39,9 +39,17 @@ Iris (read off `iris-neoforge-1.8.14-beta.1` with `javap`) point somewhere bette
      Dungeon Train already asks for — to its gbuffer framebuffers, and never touches stencil state.
      `SkyboxHoleReopen` marks the hole pixels still visible after everything opaque has drawn and
      pushes them to depth 1.0 (the cubes again under `glDepthRange(1,1)`), so the pack's deferred
-     and composite passes paint its own sky there. It runs at `AFTER_BLOCK_ENTITIES`, the last
-     stage before Iris' deferred pass, and under an identity model-view (vanilla has the frustum on
-     the stack by then — the first version drew the cubes rotated twice and marked nothing).
+     and composite passes paint its own sky there. It runs from the Iris-gated
+     `IrisPipelineSkyboxReopenMixin` at the head of Iris' own `beginTranslucents` — after Iris has
+     flushed its fully-buffered entities, before its deferred pass — not at `AFTER_BLOCK_ENTITIES`,
+     because Iris holds every entity draw back until a flush after that stage, and a hole reopened
+     at the stage let mobs behind the block show through it (2026-10). No vanilla instruction sits
+     between Iris' flush and its deferred pass (both hang off the `"translucent"` constant), and the
+     next vanilla flush differs between Fancy and Fabulous, so the pipeline call is the anchor.
+     The mark bit is cleared every frame (`SkyboxStencil.clearBit`): nothing else clears stencil,
+     and a view of only live-sky blocks skips the full clear, so stale marks once pushed nearer
+     blocks to the far plane. Under an identity model-view (vanilla has the frustum on the stack by
+     then — the first version drew the cubes rotated twice and marked nothing).
    - Dimensional-carriage fog is drawn by `PostFogPass` at `AFTER_LEVEL`, after the composite, from
      a depth copy taken at `AFTER_WEATHER`, toward the frame's own fog colour. Packs that honour
      `fogStart`/`fogEnd` still get vanilla's planes as well.
@@ -285,9 +293,11 @@ whatever render distance the pack's own settings leave; the room radius (60) is 
 
 ### Known limits
 
-- **Translucents behind a skybox block show through it** under a pack: the reopen has to run before
-  the pack's deferred pass (or its sky and volumetric clouds skip the hole), which is also before
-  translucents. Skybox blocks face open sky or void in practice.
+- ~~Translucents behind a skybox block show through it under a pack~~ — closed 2026-10: the holes'
+  real depth is put back at the tail of Iris' `beginTranslucents` (after the deferred pass, before
+  its translucent entity flush and the translucent terrain), under the identity model-view the
+  cube meshes need. The earlier restore at vanilla's `RenderType.translucent()` call drew under the
+  frustum stack and never landed (panel: `Restore: centre depth 1.00000 -> 1.00000` on a hole pixel).
 - **Per-variant skies are vanilla-only.** Under a pack every variant shows the pack's sky for the
   world currently rendering.
 - **DAY / CYCLE rooms are not pinned under packs** that ignore the lightmap; a pack's time of day
