@@ -25505,6 +25505,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "warden-wither-selfie-advancement",
+      "version": "0.1267.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "A daring new selfie",
+      "summary": "There is now a hidden photo challenge for the very brave.",
+      "highlights": [],
+      "pr": 1977,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
