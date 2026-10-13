@@ -25773,9 +25773,9 @@
       "highlights": [],
       "pr": 1992,
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1283.0",
+      "released_at": "2026-10-13T16:12:02Z"
     },
     {
       "id": "skybox-blocks-shader-occlusion",
@@ -25789,9 +25789,9 @@
       "summary": "A few things look more as they should with a shader pack on.",
       "highlights": [],
       "date": "2026-10-13",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1283.0",
+      "released_at": "2026-10-13T16:12:02Z"
     }
   ]
 }
