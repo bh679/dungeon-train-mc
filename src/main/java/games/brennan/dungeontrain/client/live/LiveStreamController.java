@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.client.live.audio.StreamSoundPolicy;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
@@ -259,7 +260,9 @@ public final class LiveStreamController {
         LiveClaimInfo info = LiveClaimInfo.of(VersionInfo.VERSION, LatestReleaseCache.latestVersion(),
             VersionInfo.LAST_UPDATE_DATE, LocalDate.now(ZoneOffset.UTC),
             LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode());
-        LiveFeedClient.claim(uuid, name, eyeId, info).thenAcceptAsync(result -> {
+        boolean freePlay = mc.player != null && mc.player.hasEffect(ModMobEffects.FREE_PLAY);
+        LiveFeedClient.Life life = new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION);
+        LiveFeedClient.claim(uuid, name, eyeId, info, life).thenAcceptAsync(result -> {
             if (gen != generation || state != State.CLAIMING) return;
             Claim c = LiveFeedClient.parseClaim(result);
             if (c == null) {

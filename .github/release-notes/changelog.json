@@ -25576,8 +25576,76 @@
       "released_at": null
     },
     {
-      "id": "backpack-collects-pickups",
+      "id": "twitch-deletions-follow",
       "version": "0.1271.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Twitch deletions reach the Live chat",
+      "summary": "Messages removed by a Twitch moderator now disappear from the Live chat everywhere.",
+      "highlights": [],
+      "pr": 1983,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-milestones-on-time",
+      "version": "0.1272.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Carriage milestones arrive on time",
+      "summary": "Carriage-distance advancements now unlock the moment you reach them.",
+      "highlights": [],
+      "pr": 1984,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "translation-reviewer-credit",
+      "version": "0.1273.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Translation reviewers credited",
+      "summary": "Players who check translations on Discord now share the credit.",
+      "highlights": [],
+      "pr": 1985,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "livestream-time-leaderboards",
+      "version": "0.1274.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Longest Stream and Longest Viewer",
+      "summary": "Time spent behind the Live Eye, and in front of the TV, now earns a place on the leaderboards.",
+      "highlights": [],
+      "pr": 1986,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "backpack-collects-pickups",
+      "version": "0.1275.0",
       "type": "feat",
       "tags": [
         "feature"

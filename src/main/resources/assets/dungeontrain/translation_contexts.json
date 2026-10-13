@@ -180,6 +180,12 @@
  "book.dungeontrain.statbook.stat.playtime": [
   "book"
  ],
+ "book.dungeontrain.statbook.stat.live_stream": [
+  "book"
+ ],
+ "book.dungeontrain.statbook.stat.live_watch": [
+  "book"
+ ],
  "book.dungeontrain.statbook.stat.tamed.one": [
   "book"
  ],
@@ -8735,6 +8741,12 @@
   "book"
  ],
  "dungeontrain.leaderboard.builder_time.header": [
+  "book"
+ ],
+ "dungeontrain.leaderboard.live_stream_time.header": [
+  "book"
+ ],
+ "dungeontrain.leaderboard.live_view_time.header": [
   "book"
  ],
  "dungeontrain.leaderboard.builds_approved.header": [

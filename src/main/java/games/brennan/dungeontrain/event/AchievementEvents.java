@@ -311,7 +311,10 @@ public final class AchievementEvents {
     /**
      * Called from {@link BoardingProgressEvents} every tick the leader player
      * advances along the train. Accepts signed {@code delta}: forward
-     * (positive) and backward (negative).
+     * (positive) and backward (negative). Owns the leader's
+     * {@link PlayerRunState#travelledCarriageIndex} advance (via
+     * {@link PlayerRunState#recordLeaderAdvance}) so every milestone below reads
+     * the post-advance count.
      *
      * <p>{@link ModAdvancementTriggers#CARTS_IN_RUN} (tiers 100 / 1000 / 10000)
      * fires off {@code Math.abs(PlayerRunState.travelledCarriageIndex())} —
@@ -337,13 +340,14 @@ public final class AchievementEvents {
     public static void notifyCartAdvance(ServerPlayer player, int delta) {
         if (delta == 0) return;
         PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
-        run.recordCartMovement(delta);
+        // Advance the travelled index BEFORE any milestone reads it, so a threshold is met
+        // on the advance that reaches it — not one advance later.
+        int travelled = run.recordLeaderAdvance(delta);
         // Carriage-distance milestones read the EFFECTIVE progress (raw travel + the
         // admin difficulty offset), so an admin-set difficulty is treated as genuine
         // progress here too. The forward/backward subtotals below stay on the real
         // signed movement — "The Long Way Back" is about actual back-and-forth travel.
-        int effectiveTravelled = Math.abs(
-            DifficultyProgression.effectiveTravelled(run.travelledCarriageIndex()));
+        int effectiveTravelled = Math.abs(DifficultyProgression.effectiveTravelled(travelled));
         ModAdvancementTriggers.CARTS_IN_RUN.get()
             .trigger(player, effectiveTravelled);
         ModAdvancementTriggers.CARTS_BOTH_DIRECTIONS.get()

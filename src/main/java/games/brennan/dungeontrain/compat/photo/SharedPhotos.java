@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.player.LifeKey;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
@@ -182,12 +183,7 @@ public final class SharedPhotos {
      * every other one-life board. Upload meta already carries the version as {@code version}.
      */
     static void lifeFields(ServerPlayer player, JsonObject json, boolean withVersion) {
-        String lifeId = player.getData(ModDataAttachments.PHOTO_LIFE_ID.get());
-        if (lifeId.isBlank()) {
-            lifeId = newKey();
-            player.setData(ModDataAttachments.PHOTO_LIFE_ID.get(), lifeId);
-        }
-        json.addProperty("lifeId", lifeId);
+        json.addProperty("lifeId", LifeKey.of(player));
         json.addProperty("freePlay", RunIntegrity.isCheated(player));
         if (withVersion) {
             ModList.get().getModContainerById(DungeonTrain.MOD_ID)
