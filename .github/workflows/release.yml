@@ -252,7 +252,7 @@ jobs:
           # Sibling mods are external required downloads (no longer jarJar'd), so each
           # is declared `required` — that is what makes the Modrinth/CurseForge apps
           # fetch them and credit the download to their own project pages.
-          # discordpresence is absent from both lists: it is still embedded in the jar.
+          # discordpresence is a hybrid sibling (embedded in the jar): CurseForge list only, below.
           # NOTE: AIN's Modrinth slug is `adventureitemnames` (no hyphens) while its
           # CurseForge slug is `adventure-item-names`; AIS is `adventure-items-stats` on
           # Modrinth vs `adventure-item-stats` on CurseForge. The spellings differ per
@@ -290,7 +290,8 @@ jobs:
             # separate mods. (keep-trim's Modrinth listing is also still in review — mc-publish
             # cannot resolve a non-public slug — which is why it was re-bundled in 0.909.x.)
           # keep-trim + dungeon-train-backup + sable-fence-trapdoor-fix (+ stream-detect, dpi-bypass-detect,
-          # pigman-villagers, lost-city-terrain-fit-wwoo-and-vanilla, edible-backpacks) are hybrid siblings: also jarJar'd in
+          # pigman-villagers, lost-city-terrain-fit-wwoo-and-vanilla, edible-backpacks, discord-presence,
+          # dungeon-train-mod-verification) are hybrid siblings: also jarJar'd in
           # the DT jar (Modrinth/manual installs), but declared required here so the CurseForge
           # app installs them from their own pages. NeoForge drops the nested copy when the
           # top-level one is present. (No comments inside the list — check-relations.py parses it.)
@@ -307,6 +308,7 @@ jobs:
             sable-fence-trapdoor-fix(required)
             stream-detect(required)
             dungeon-train-mod-verification(required)
+            discord-presence(required)
             dpi-bypass-detect(required)
             pigman-villagers(required)
             lost-city-terrain-fit-wwoo-and-vanilla(required)

@@ -25712,8 +25712,40 @@
       "released_at": "2026-10-13T13:08:52Z"
     },
     {
-      "id": "backpack-auto-collect-setting",
+      "id": "largerlibrary-mode-mix",
       "version": "0.1279.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train"
+      ],
+      "title": "Library touch-up",
+      "summary": "One of the dimensional carriage libraries has had a small touch-up.",
+      "highlights": [],
+      "pr": 1991,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cf-include-hybrid-siblings",
+      "version": "0.1280.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Companions in the CurseForge pack",
+      "summary": "The CurseForge modpack now installs two more of Dungeon Train's companion mods from their own pages.",
+      "highlights": [],
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "backpack-auto-collect-setting",
+      "version": "0.1281.0",
       "type": "feat",
       "tags": [
         "feature",

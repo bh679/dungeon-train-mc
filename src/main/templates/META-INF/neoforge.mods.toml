@@ -213,12 +213,12 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Discord Presence is still jarJar'd INSIDE this jar, so the shipped version is always
-# exactly discordpresence_version — no floor indirection needed.
+# Discord Presence is a hybrid sibling: jarJar'd INSIDE this jar, but on CurseForge the app installs
+# the top-level copy (which may be any release ≥ the floor), so the range uses the floor, not the pin.
 [[dependencies.${mod_id}]]
     modId="discordpresence"
     type="required"
-    versionRange="[${discordpresence_version},)"
+    versionRange="[${discordpresence_min_version},)"
     ordering="AFTER"
     side="BOTH"
 

@@ -592,6 +592,42 @@
       "curseforge_only": true
     },
     {
+      "name": "Dungeon Train Mod Verification",
+      "slug": "dungeon-train-mod-verification",
+      "mod_ids": [
+        "dtmodverify"
+      ],
+      "sha1": "72d635d59c1965269f4f7d2c822ecd2b5accb11a",
+      "packages": [
+        "games.brennan"
+      ],
+      "project_id": 1738856,
+      "file_id": 9128034,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.1.1",
+      "gradle_property": "dtmodverify_min_version",
+      "curseforge_only": true
+    },
+    {
+      "name": "Discord Presence",
+      "slug": "discord-presence",
+      "mod_ids": [
+        "discordpresence"
+      ],
+      "sha1": "96090682c7645c0adc1c0c01f367462620e6cc0d",
+      "packages": [
+        "games.brennan"
+      ],
+      "project_id": 1573749,
+      "file_id": 9146819,
+      "required": true,
+      "dependency_type": "required",
+      "version": "0.68.0",
+      "gradle_property": "discordpresence_min_version",
+      "curseforge_only": true
+    },
+    {
       "name": "Pigman Villagers",
       "slug": "pigman-villagers",
       "mod_ids": [

@@ -492,12 +492,12 @@ dependencies {
     // so compat.PlayerMobSocialBridge references it directly — no extra dep needed.
 
     // Discord Presence (Discord join/online/death notifications + reactions) —
-    // one of the two siblings still bundled via jarJar (with EdibleBackpacks below;
-    // TradeEverything graduated to an external dep). Its Modrinth project is not public
-    // yet (the `discordpresence` slug there belongs to an unrelated third-party
-    // mod), so making it an external required dep would leave Modrinth users with
-    // no way to obtain it. Unbundle once that listing goes live — at which point
-    // this matches AIN/AIS/PMOB/ECP above. DT compiles against its public
+    // a hybrid sibling like StreamDetect below: jarJar'd here for Modrinth + manual
+    // installs, and a separate required dep + modpack Include on CurseForge only. Its
+    // Modrinth project is not public yet (the `discordpresence` slug there belongs to an
+    // unrelated third-party mod), so it can't go fully external there. Drop this jarJar
+    // once that listing goes live — at which point it matches AIN/AIS/PMOB/ECP above.
+    // DT compiles against its public
     // API: DiscordCredentials/DiscordCredentialsProvider (relay-mode + chat-tag ping
     // triggers + presence tracking) and DiscordService (death reports, and the
     // editor-welcome "last seen online" presence query). `implementation` puts it on
@@ -940,6 +940,7 @@ tasks.register('generateModMetadata', ProcessResources) {
         adventureitemstats_version : adventureitemstats_version,
         playermob_version          : playermob_version,
         discordpresence_version          : discordpresence_version,
+        discordpresence_min_version      : discordpresence_min_version,
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
