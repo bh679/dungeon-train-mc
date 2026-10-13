@@ -118,6 +118,39 @@ final class PlayerRunStateTest {
     }
 
     @Test
+    @DisplayName("recordLeaderAdvance: returns the POST-advance index, so a threshold of 3 is met on the advance reaching 3")
+    void recordLeaderAdvanceReturnsPostAdvanceIndex() {
+        PlayerRunState state = new PlayerRunState();
+        assertEquals(2, state.recordLeaderAdvance(2));
+        // Regression: milestones used to read the index before it advanced, so 3 was
+        // only seen on the NEXT advance.
+        assertEquals(3, state.recordLeaderAdvance(1));
+        assertEquals(3, state.travelledCarriageIndex());
+        assertEquals(3, state.cartsSinceDeath());
+        assertEquals(0, state.cartsBackwardSinceDeath());
+    }
+
+    @Test
+    @DisplayName("recordLeaderAdvance: negative delta returns the signed index and books backward travel")
+    void recordLeaderAdvanceNegativeDelta() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordLeaderAdvance(5);
+        assertEquals(2, state.recordLeaderAdvance(-3));
+        assertEquals(8, state.cartsSinceDeath());
+        assertEquals(3, state.cartsBackwardSinceDeath());
+        assertEquals(5, state.cartsForwardSinceDeath());
+    }
+
+    @Test
+    @DisplayName("recordLeaderAdvance: zero delta is a no-op and returns the current index")
+    void recordLeaderAdvanceZeroDelta() {
+        PlayerRunState state = new PlayerRunState();
+        state.recordLeaderAdvance(4);
+        assertEquals(4, state.recordLeaderAdvance(0));
+        assertEquals(4, state.cartsSinceDeath());
+    }
+
+    @Test
     @DisplayName("resetCarts clears travelledCarriageIndex AND both cart counters")
     void resetCartsClearsTravelled() {
         PlayerRunState state = new PlayerRunState();
