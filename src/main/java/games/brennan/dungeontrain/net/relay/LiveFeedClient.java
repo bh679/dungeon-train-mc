@@ -270,9 +270,11 @@ public final class LiveFeedClient {
         }
     }
 
-    public static CompletableFuture<Result> stop(String token) {
+    /** {@code reason} (nullable) says why — died, removed, left, … — for the #live-eye "has gone offline" post. */
+    public static CompletableFuture<Result> stop(String token, @Nullable String reason) {
         JsonObject body = new JsonObject();
         body.addProperty("token", token);
+        if (reason != null && !reason.isEmpty()) body.addProperty("reason", reason);
         return post("/live/stop", body);
     }
 

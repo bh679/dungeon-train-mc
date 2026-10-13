@@ -303,7 +303,7 @@ public final class LiveStreamController {
         } catch (Exception e) {
             LOGGER.error("[DungeonTrain] live stream could not start", e);
             say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
-            teardown(false, false);
+            teardown(false, false, null);
             state = State.IDLE;
             tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
         }
@@ -386,7 +386,7 @@ public final class LiveStreamController {
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
-        teardown(clean, wait);
+        teardown(clean, wait, ended);
         state = State.IDLE;
         if (why != null) say(why);
         if (!wasLive || ended == null) return;
@@ -404,7 +404,7 @@ public final class LiveStreamController {
      * every time the Live Eye came off, so they run on their own thread. {@code wait} runs them here
      * instead: game shutdown only, where a daemon thread would die before the ENDLIST went out.
      */
-    private void teardown(boolean clean, boolean wait) {
+    private void teardown(boolean clean, boolean wait, @Nullable LiveStreamEndedToast.Reason ended) {
         LiveEncoder enc = encoder;
         LiveAudioPump snd = audio;
         LiveUploader up = uploader;
@@ -423,7 +423,8 @@ public final class LiveStreamController {
         if (snd != null) steps.add(new LiveTeardown.Step("audio", snd::close));
         if (enc != null) steps.add(new LiveTeardown.Step("encoder", enc::close));
         if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean)));
-        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> LiveFeedClient.stop(c.token())));
+        String reason = ended == null ? null : ended.relayReason;
+        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> LiveFeedClient.stop(c.token(), reason)));
         if (d != null) steps.add(new LiveTeardown.Step("delete session dir", () -> deleteTree(d)));
         // GL buffers belong to the render thread; freed only once the encoder has stopped reading them.
         if (grab != null) steps.add(new LiveTeardown.Step("frame grabber",

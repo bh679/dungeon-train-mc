@@ -4,6 +4,8 @@
     "cargocontents": "full",
     "default_full": "full",
     "enemies_group": "full",
+    "enemiesgroup2": "full",
+    "mazelong": "full",
     "portal": "half",
     "things": "full"
   }
