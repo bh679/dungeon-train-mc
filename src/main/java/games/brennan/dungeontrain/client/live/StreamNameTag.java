@@ -8,16 +8,18 @@ import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig.NameTag;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.neoforged.neoforge.client.ClientHooks;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 /**
- * The streamer's name, top-middle in black on a black-outlined white pill with a pulsing green "live"
+ * "<b>Name</b> is live", top-middle in black on a black-outlined white pill with a pulsing green
  * dot before it, drawn into the broadcast picture only.
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
@@ -33,6 +35,7 @@ public final class StreamNameTag {
 
     /** GUI pixels from the top of the picture to the top of the pill. */
     static final int TOP_OFFSET = 4;
+    static final String LABEL_KEY = "gui.dungeontrain.live.name_tag";
     static final int TEXT = 0xFF000000;
     static final int PILL = 0xFFFFFFFF;
     static final int OUTLINE = 0xFF000000;
@@ -110,7 +113,7 @@ public final class StreamNameTag {
             RenderSystem.applyModelViewMatrix();
             target.bindWrite(true);
             GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-            draw(graphics, mc.font, name, w, scale);
+            draw(graphics, mc.font, label(name), w, scale);
             graphics.flush();
         } finally {
             modelView.popMatrix();
@@ -124,8 +127,8 @@ public final class StreamNameTag {
      * The outlined pill and the dot in target pixels (so their curves are smooth at stream
      * resolution, not a GUI-pixel staircase), then the name in GUI pixels.
      */
-    private static void draw(GuiGraphics graphics, Font font, String name, int targetW, float scale) {
-        int textW = font.width(name) - 1; // drop the trailing 1px advance so the group centres
+    private static void draw(GuiGraphics graphics, Font font, Component label, int targetW, float scale) {
+        int textW = font.width(label) - 1; // drop the trailing 1px advance so the group centres
         float groupW = (DOT_SIZE + DOT_GAP + textW) * scale;
         int pillW = Math.round(groupW + 2 * PAD_X * scale);
         int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
@@ -143,8 +146,13 @@ public final class StreamNameTag {
         graphics.pose().pushPose();
         graphics.pose().translate(groupX + (DOT_SIZE + DOT_GAP) * scale, pillY + PAD_Y * scale, 0f);
         graphics.pose().scale(scale, scale, 1f);
-        graphics.drawString(font, name, 0, 0, TEXT, false);
+        graphics.drawString(font, label, 0, 0, TEXT, false);
         graphics.pose().popPose();
+    }
+
+    /** "<b>name</b> is live", in the streamer's language. */
+    static Component label(String name) {
+        return Component.translatable(LABEL_KEY, Component.literal(name).withStyle(ChatFormatting.BOLD));
     }
 
     /** A {@code w}×{@code h} pill at ({@code x},{@code y}); with {@code w == h} it is a disc. */
