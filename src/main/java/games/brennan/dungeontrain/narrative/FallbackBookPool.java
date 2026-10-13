@@ -37,6 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * Each family walks the relay with its OWN session token, so exhausting one window (which makes the
  * relay reset that session's offered set) can never reset another's walk.</p>
  *
+ * <p>Also the window for each of a player's extra reading languages that isn't the host's (see
+ * {@link SharedBookSelector.PlayerContext#readingFamilies}).</p>
+ *
  * <p>Fetched lazily: only when a pickup actually hits the mix. Worlds that never do never send it.</p>
  */
 public final class FallbackBookPool {
@@ -68,6 +71,11 @@ public final class FallbackBookPool {
     public static List<SharedBookPool.PoolBook> snapshot(String family) {
         if (family == null) return List.of();
         return SNAPSHOTS.getOrDefault(family, List.of());
+    }
+
+    /** Whether a fetch for {@code family} is on its way. */
+    public static boolean isInFlight(String family) {
+        return family != null && IN_FLIGHT.contains(family);
     }
 
     /**
