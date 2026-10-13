@@ -15256,6 +15256,15 @@
       ]
     }
   },
+  "gui.dungeontrain.live.name_tag.chat_off": {
+    "1": {
+      "label": "the broadcaster's name (Minecraft or Discord, as they chose), shown in bold",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    }
+  },
   "gui.dungeontrain.live.name_tag": {
     "1": {
       "label": "the broadcaster's name (Minecraft or Discord, as they chose), shown in bold",

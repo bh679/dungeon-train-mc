@@ -20,7 +20,8 @@ import org.joml.Matrix4fStack;
 
 /**
  * "<b>Name</b> is live", top-middle in black on a black-outlined white pill with a pulsing green
- * dot before it, drawn into the broadcast picture only.
+ * dot before it ("… is live with chat disabled" when the streamer has Live chat off), drawn into the
+ * broadcast picture only.
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
@@ -36,6 +37,7 @@ public final class StreamNameTag {
     /** GUI pixels from the top of the picture to the top of the pill. */
     static final int TOP_OFFSET = 4;
     static final String LABEL_KEY = "gui.dungeontrain.live.name_tag";
+    static final String LABEL_CHAT_OFF_KEY = "gui.dungeontrain.live.name_tag.chat_off";
     static final int TEXT = 0xFF000000;
     static final int PILL = 0xFFFFFFFF;
     static final int OUTLINE = 0xFF000000;
@@ -113,7 +115,8 @@ public final class StreamNameTag {
             RenderSystem.applyModelViewMatrix();
             target.bindWrite(true);
             GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-            draw(graphics, mc.font, label(name), w, scale);
+            draw(graphics, mc.font, label(name, chatOff(LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode())),
+                w, scale);
             graphics.flush();
         } finally {
             modelView.popMatrix();
@@ -150,9 +153,21 @@ public final class StreamNameTag {
         graphics.pose().popPose();
     }
 
-    /** "<b>name</b> is live", in the streamer's language. */
-    static Component label(String name) {
-        return Component.translatable(LABEL_KEY, Component.literal(name).withStyle(ChatFormatting.BOLD));
+    /**
+     * "<b>name</b> is live", or "<b>name</b> is live with chat disabled" when {@code chatOff}, in the
+     * streamer's language. Whole sentences per key so each language keeps its own word order.
+     */
+    static Component label(String name, boolean chatOff) {
+        return Component.translatable(chatOff ? LABEL_CHAT_OFF_KEY : LABEL_KEY,
+            Component.literal(name).withStyle(ChatFormatting.BOLD));
+    }
+
+    /**
+     * Viewers' cue that the streamer won't see their messages: Live chat (the stream's Discord chat
+     * mirrored into the game) is off, or Kid mode forces it off — the rule {@link LiveChatBridge} uses.
+     */
+    static boolean chatOff(boolean liveChat, boolean kid) {
+        return !liveChat || kid;
     }
 
     /** A {@code w}×{@code h} pill at ({@code x},{@code y}); with {@code w == h} it is a disc. */

@@ -236,6 +236,7 @@
   "gui.dungeontrain.viewfinder.front": "Depan",
   "gui.dungeontrain.live.badge": "LANGSUNG",
   "gui.dungeontrain.live.name_tag": "%s sedang bersiaran langsung",
+  "gui.dungeontrain.live.name_tag.chat_off": "%s sedang bersiaran langsung, sembang dimatikan",
   "gui.dungeontrain.live.countdown": "Siaran dalam",
   "gui.dungeontrain.live.stream_settings": "Tetapan strim",
   "gui.dungeontrain.live.viewer_on": "Paparan langsung hidup",

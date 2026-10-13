@@ -282,6 +282,7 @@
   "gui.dungeontrain.viewfinder.front": "Przód",
   "gui.dungeontrain.live.badge": "NA ŻYWO",
   "gui.dungeontrain.live.name_tag": "%s nadaje na żywo",
+  "gui.dungeontrain.live.name_tag.chat_off": "%s nadaje na żywo, czat wyłączony",
   "gui.dungeontrain.live.countdown": "Na żywo za",
   "gui.dungeontrain.live.stream_settings": "Ustawienia transmisji",
   "gui.dungeontrain.live.viewer_on": "Podgląd na żywo włączony",

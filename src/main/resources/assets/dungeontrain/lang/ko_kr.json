@@ -236,6 +236,7 @@
   "gui.dungeontrain.viewfinder.front": "정면",
   "gui.dungeontrain.live.badge": "LIVE",
   "gui.dungeontrain.live.name_tag": "%s 님 방송 중",
+  "gui.dungeontrain.live.name_tag.chat_off": "%s 님 방송 중 (채팅 꺼짐)",
   "gui.dungeontrain.live.countdown": "라이브까지",
   "gui.dungeontrain.live.stream_settings": "방송 설정",
   "gui.dungeontrain.live.viewer_on": "라이브 뷰어 켜짐",
