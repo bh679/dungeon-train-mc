@@ -25433,6 +25433,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stream-pill-chat-off-icon",
+      "version": "0.1263.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Chat-off icon on stream",
+      "summary": "Viewers can now tell at a glance when a streamer isn't reading chat.",
+      "highlights": [],
+      "pr": 1973,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
