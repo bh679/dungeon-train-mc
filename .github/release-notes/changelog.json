@@ -25505,6 +25505,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "enemies-group-two-boxcar-crates",
+      "version": "0.1267.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "mobs"
+      ],
+      "title": "New enemy pack",
+      "summary": "A new pack of enemies may be waiting further down the line, and some boxcars and crates have had a rearrange.",
+      "highlights": [],
+      "pr": 1978,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
