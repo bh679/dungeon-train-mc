@@ -25657,6 +25657,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimension-variant-half-fix",
+      "version": "0.1276.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Dimensional carriage blocks face the right way",
+      "summary": "Trapdoors, stairs and slabs in dimensional carriages now sit the way their builders set them.",
+      "highlights": [],
+      "pr": 1989,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
