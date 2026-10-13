@@ -87,11 +87,39 @@ public final class LiveFeedClient {
      * came from the game (dashes stripped, lower-case), null for a Discord or Twitch post; {@code source}
      * tells the rooms apart.
      */
-    public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source) {
+    public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                           @Nullable LogRequest logRequest) {
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source) {
+            this(seq, ts, author, uuid, content, source, null);
+        }
+
         /** Typed in some Minecraft world (and so possibly already shown by vanilla chat). */
         public boolean fromGame() {
             return source == Source.GAME;
         }
+    }
+
+    /**
+     * A Developer log request the relay attached to a chat line ({@code cmd: "log_request"}). The relay
+     * only issues one for a verified Developer account. {@code target} is the player name asked, or
+     * empty for "whoever is streaming"; {@code id} dedupes repeats across polls.
+     */
+    public record LogRequest(String target, String id) {
+        /** Whether this request is for the player {@code myName}, who is {@code streaming} or not. */
+        public boolean isFor(String myName, boolean streaming) {
+            if (target.isBlank()) return streaming;
+            return target.equalsIgnoreCase(myName);
+        }
+    }
+
+    /** The log request on a chat-line object, or null when it carries none. Package-private for tests. */
+    @Nullable
+    static LogRequest parseLogRequest(JsonObject m) {
+        if (!m.has("cmd") || m.get("cmd").isJsonNull() || !"log_request".equals(m.get("cmd").getAsString())) return null;
+        String id = m.has("reqId") && !m.get("reqId").isJsonNull() ? m.get("reqId").getAsString() : "";
+        if (id.isBlank()) return null;
+        String target = m.has("target") && !m.get("target").isJsonNull() ? m.get("target").getAsString().trim() : "";
+        return new LogRequest(target, id);
     }
 
     /** A chat poll: whether anyone is on air, the ring's head seq, and the lines after {@code since}. */
@@ -261,7 +289,7 @@ public final class LiveFeedClient {
                     String uuid = m.has("uuid") && !m.get("uuid").isJsonNull() ? m.get("uuid").getAsString() : null;
                     Source source = Source.parse(m.has("source") && !m.get("source").isJsonNull() ? m.get("source").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
-                        author.isBlank() ? "Someone" : author, uuid, content, source));
+                        author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m)));
                 }
             }
             return new ChatPage(live, seq, List.copyOf(lines));

@@ -5,6 +5,7 @@ import games.brennan.discordpresence.compat.InboundDiscordHooks;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DevMessageConsent;
+import games.brennan.dungeontrain.logrequest.LogRequestManager;
 
 import java.util.UUID;
 
@@ -49,9 +50,14 @@ public final class DiscordInboundBridge {
             if (!DungeonTrain.BRENNAN_DISCORD_ID.equals(authorId)) {
                 return false;
             }
+            // "/bug" asks the thread's player for their logs instead of being shown as a message.
+            if (LogRequestManager.isCommand(content)) {
+                LogRequestManager.onThreadCommand(parseUuid(targetPlayerUuid), reply);
+                return true;
+            }
             // Scope to the one player whose thread this message is in (null when unanchored — the
             // consent flow then shows it to nobody in-game). Never a global broadcast.
-            DevMessageConsent.onDevMessage(parseUuid(targetPlayerUuid), content);
+            DevMessageConsent.onDevMessage(parseUuid(targetPlayerUuid), content, reply);
             return true; // suppress DiscordPresence's own relay — the consent flow now owns delivery
         });
     }

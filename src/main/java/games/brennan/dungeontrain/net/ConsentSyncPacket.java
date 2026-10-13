@@ -30,7 +30,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * <p>Session token and timestamp are carried as {@code double} (millis are exact well past any
  * realistic date) so no {@code long} config type is required client-side.</p>
  */
-public record ConsentSyncPacket(boolean granted, double grantSession, double lastMsgToDevMs)
+public record ConsentSyncPacket(boolean granted, double grantSession, double lastMsgToDevMs, boolean devChatEnabled)
         implements CustomPacketPayload {
 
     public static final Type<ConsentSyncPacket> TYPE =
@@ -43,13 +43,15 @@ public record ConsentSyncPacket(boolean granted, double grantSession, double las
         buf.writeBoolean(pkt.granted());
         buf.writeDouble(pkt.grantSession());
         buf.writeDouble(pkt.lastMsgToDevMs());
+        buf.writeBoolean(pkt.devChatEnabled());
     }
 
     private static ConsentSyncPacket decode(FriendlyByteBuf buf) {
         boolean granted = buf.readBoolean();
         double grantSession = buf.readDouble();
         double lastMsgToDevMs = buf.readDouble();
-        return new ConsentSyncPacket(granted, grantSession, lastMsgToDevMs);
+        boolean devChatEnabled = buf.readBoolean();
+        return new ConsentSyncPacket(granted, grantSession, lastMsgToDevMs, devChatEnabled);
     }
 
     @Override
@@ -60,7 +62,8 @@ public record ConsentSyncPacket(boolean granted, double grantSession, double las
     public static void handle(ConsentSyncPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
-            DevMessageConsent.onClientSync(player, packet.granted(), packet.grantSession(), packet.lastMsgToDevMs());
+            DevMessageConsent.onClientSync(player, packet.granted(), packet.grantSession(), packet.lastMsgToDevMs(),
+                packet.devChatEnabled());
         });
     }
 }

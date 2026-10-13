@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
+import games.brennan.dungeontrain.logrequest.LogRequestClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
@@ -149,8 +150,13 @@ public final class LiveChatBridge {
                 names.add(p.getProfile().getName());
             }
         }
+        String myName = mc.getUser() != null ? mc.getUser().getName() : "";
+        boolean streaming = LiveStreamController.get().streaming();
         for (ChatLine line : page.lines()) {
             if (LiveChatRules.shouldShow(line, me, here, names)) mc.gui.getChat().addMessage(LiveChatRules.line(line));
+            if (line.logRequest() != null && line.logRequest().isFor(myName, streaming)) {
+                LogRequestClient.onLiveRequest(line.logRequest().id());
+            }
         }
         cursor = Math.max(cursor, page.seq());
     }
