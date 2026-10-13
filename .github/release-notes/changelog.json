@@ -25674,6 +25674,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "largerlibrary-room-variants",
+      "version": "0.1277.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "A roomier library",
+      "summary": "One of the dimensional carriage libraries has been rearranged, with more to find on its upper floors.",
+      "highlights": [],
+      "pr": 1990,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
