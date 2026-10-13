@@ -25574,6 +25574,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-reviewer-credit",
+      "version": "0.1271.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Translation reviewers credited",
+      "summary": "Players who check translations on Discord now share the credit.",
+      "highlights": [],
+      "pr": 1985,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
