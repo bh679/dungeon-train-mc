@@ -197,6 +197,25 @@ def translator_of(row: dict) -> str:
     return (row.get("translator") or "").strip() or ANONYMOUS
 
 
+def reviewer_of(row: dict) -> str | None:
+    """The credited name of whoever approved this row on Discord, or None.
+
+    The relay sets ``reviewer`` when a person approved the line (a reaction on its Discord post);
+    rows approved any other way carry none, and keep the translator-derived reviewer.
+    """
+    name = row.get("reviewer")
+    if not isinstance(name, str):
+        return None
+    return name.strip() or None
+
+
+def credited_names(rows: list[dict]) -> set[str]:
+    """Every name a stamp could carry for ``rows``: translators and Discord approvers."""
+    names = {translator_of(r) for r in rows}
+    names |= {who for who in map(reviewer_of, rows) if who}
+    return names
+
+
 def register_authors(path: Path, names: list[str]) -> None:
     """Append ``names`` to authors.json as humans, preserving the file's hand-kept layout.
 
@@ -495,14 +514,17 @@ def import_lang(rows: list[dict], ns_dirs: dict, dry_run: bool, problems: list[s
             contested += 1
         row, lang, winner = passed[0]
         value = row["value"]
-        reviewer = names[1] if len(names) > 1 else winner
+        # Whoever approved the winning line on Discord reviewed it, and takes the reviewer slot
+        # ahead of the runner-up / self-review fallback.
+        approver = reviewer_of(row)
+        reviewer = approver or (names[1] if len(names) > 1 else winner)
         if lang[key] == value:
             if authors.get(author_of(name, locale, key)) == "ai":
                 # A person's approved text, which a machine happened to have written too: theirs.
                 revised.setdefault((name, locale, winner, reviewer), []).append(key)
                 continue
             # The author slot is not ours to take, so a runner-up has nowhere to go here.
-            confirmed.setdefault((name, locale, "", winner), []).append(key)
+            confirmed.setdefault((name, locale, "", approver or winner), []).append(key)
             continue
         if not dry_run:
             if not pio.set_lang_value(ns_dirs[name].lang_dir / f"{locale}.json", key, value):
@@ -546,10 +568,12 @@ def english_fields(path: Path) -> dict | None:
 class BookImport(NamedTuple):
     """What ``import_books`` did, for the stamps.
 
-    ``rewritten`` — ``(locale, name) -> [book]`` where the person is now the author of every
-    field, so of the book. ``fielded`` — ``(locale, book, name) -> [field]`` where they wrote some
-    fields over somebody else's body. ``reviewed`` — ``(locale, name) -> [book]`` where their
-    approved text matched a person's existing text, so they read it but did not write it.
+    ``rewritten`` — ``(locale, name, reviewer) -> [book]`` where the person is now the author of
+    every field, so of the book. ``fielded`` — ``(locale, book, name, reviewer) -> [field]`` where
+    they wrote some fields over somebody else's body. ``reviewed`` — ``(locale, reviewer) ->
+    [book]`` where their approved text matched a person's existing text, so it was read but not
+    written. ``reviewer`` is whoever approved the row on Discord (``reviewer_of``), and the
+    translator themself when nobody did.
     """
     rewritten: dict
     fielded: dict
@@ -603,7 +627,7 @@ def import_books(rows: list[dict], narrative_dir: Path, english_dir: Path, dry_r
         original = pio.read_verbatim(path)
         text = original
         english = english_fields(english_book_path(english_dir, book_path))
-        wrote: dict[str, set[str]] = {}
+        wrote: dict[tuple[str, str], set[str]] = {}
         read: set[str] = set()
         for field, candidates in by_field.items():
             for _, row in sorted(candidates, key=lambda c: c[0], reverse=True):
@@ -614,20 +638,21 @@ def import_books(rows: list[dict], narrative_dir: Path, english_dir: Path, dry_r
                 edited, changed = outcome
                 text = edited
                 who = translator_of(row)
+                reviewer = reviewer_of(row) or who
                 if changed or authors.get(field_author(locale, book_path, field)) != "human":
-                    wrote.setdefault(who, set()).add(field)
+                    wrote.setdefault((who, reviewer), set()).add(field)
                 else:
-                    read.add(who)
+                    read.add(reviewer)
                 break
         if not dry_run and text != original:
             pio.write_verbatim(path, text)
         every_field = set(pio.book_string_fields(json.loads(text)))
-        for name, fields in wrote.items():
+        for (name, reviewer), fields in wrote.items():
             if every_field and fields >= every_field:
-                rewritten.setdefault((locale, name), []).append(book_path)
+                rewritten.setdefault((locale, name, reviewer), []).append(book_path)
             else:
-                fielded.setdefault((locale, book_path, name), []).extend(sorted(fields))
-        for name in read - set(wrote):
+                fielded.setdefault((locale, book_path, name, reviewer), []).extend(sorted(fields))
+        for name in read - {reviewer for _, reviewer in wrote}:
             reviewed.setdefault((locale, name), []).append(book_path)
     return BookImport(rewritten, fielded, reviewed)
 
@@ -733,11 +758,11 @@ def stamp_books(books: "BookImport", args) -> None:
             cmd += ["--manifest-dir", str(args.manifest_dir)]
         return cmd + ["--locale", locale]
 
-    for (locale, name), paths in sorted(books.rewritten.items()):
-        run(base(locale) + ["--author", name, "--reviewer", name, "--files", *sorted(paths)],
+    for (locale, name, reviewer), paths in sorted(books.rewritten.items()):
+        run(base(locale) + ["--author", name, "--reviewer", reviewer, "--files", *sorted(paths)],
             args.dry_run)
-    for (locale, book_path, name), fields in sorted(books.fielded.items()):
-        run(base(locale) + ["--author", name, "--reviewer", name, "--files", book_path,
+    for (locale, book_path, name, reviewer), fields in sorted(books.fielded.items()):
+        run(base(locale) + ["--author", name, "--reviewer", reviewer, "--files", book_path,
                             "--fields", *fields], args.dry_run)
     for (locale, name), paths in sorted(books.reviewed.items()):
         run(base(locale) + ["--reviewer", name, "--files", *sorted(paths)], args.dry_run)
@@ -801,8 +826,7 @@ def main(argv: list[str] | None = None) -> int:
         print("no approved units to import" + (" (see problems below)" if problems else ""))
         return report(problems, [], deferred, args)
 
-    unknown = check_registered({translator_of(r) for r in rows}, args.authors_file,
-                               args.register_new)
+    unknown = check_registered(credited_names(rows), args.authors_file, args.register_new)
 
     if args.lang_dir:
         ns_dirs = {"dungeontrain": pio.Namespace("dungeontrain", args.lang_dir,
@@ -819,8 +843,8 @@ def main(argv: list[str] | None = None) -> int:
         [r for r in rows if r["unitType"] == "book"], args.narrative_dir, args.narrative_en_dir,
         args.dry_run, problems, deferred, authors, args.narrative_provenance_dir)
 
-    touched = ({(loc, b) for (loc, _), bs in books.rewritten.items() for b in bs}
-               | {(loc, b) for (loc, b, _) in books.fielded}
+    touched = ({(loc, b) for (loc, *_), bs in books.rewritten.items() for b in bs}
+               | {(loc, b) for (loc, b, *_) in books.fielded}
                | {(loc, b) for (loc, _), bs in books.reviewed.items() for b in bs})
     counts = (sum(map(len, revised.values())), sum(map(len, confirmed.values())), len(touched))
     print(f"{len(rows)} approved unit(s): {counts[0]} string(s) revised, {counts[1]} confirmed "
@@ -828,9 +852,11 @@ def main(argv: list[str] | None = None) -> int:
           f"{lang.contested} key(s) translated by more than one person")
 
     # Everyone a stamp will actually name: both people on a lang group (namespace, locale, author,
-    # reviewer) — author is "" on a confirmed one — and the single name on a book group.
+    # reviewer) — author is "" on a confirmed one — and the author + reviewer on a book group
+    # (a reviewed book names only its reviewer).
     landed = {name for group in (*revised, *confirmed) for name in group[2:] if name}
-    landed |= {group[-1] for group in (*books.rewritten, *books.fielded, *books.reviewed)}
+    landed |= {name for group in (*books.rewritten, *books.fielded) for name in group[-2:]}
+    landed |= {group[-1] for group in books.reviewed}
     # A key holds one author and one reviewer, so a third translator of the same line cannot be
     # recorded at all. Say so: this is the one path by which real work still goes uncredited, and
     # it staying quiet is what let a whole translator vanish from the credits unnoticed.
