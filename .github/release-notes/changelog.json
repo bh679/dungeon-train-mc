@@ -25576,8 +25576,25 @@
       "released_at": null
     },
     {
-      "id": "carriage-milestones-on-time",
+      "id": "twitch-deletions-follow",
       "version": "0.1271.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Twitch deletions reach the Live chat",
+      "summary": "Messages removed by a Twitch moderator now disappear from the Live chat everywhere.",
+      "highlights": [],
+      "pr": 1983,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "carriage-milestones-on-time",
+      "version": "0.1272.0",
       "type": "fix",
       "tags": [
         "fix",
