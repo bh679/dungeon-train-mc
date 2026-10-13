@@ -87,11 +87,39 @@ public final class LiveFeedClient {
      * came from the game (dashes stripped, lower-case), null for a Discord or Twitch post; {@code source}
      * tells the rooms apart.
      */
-    public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source) {
+    public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                           @Nullable LogRequest logRequest) {
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source) {
+            this(seq, ts, author, uuid, content, source, null);
+        }
+
         /** Typed in some Minecraft world (and so possibly already shown by vanilla chat). */
         public boolean fromGame() {
             return source == Source.GAME;
         }
+    }
+
+    /**
+     * A Developer log request the relay attached to a chat line ({@code cmd: "log_request"}). The relay
+     * only issues one for a verified Developer account. {@code target} is the player name asked, or
+     * empty for "whoever is streaming"; {@code id} dedupes repeats across polls.
+     */
+    public record LogRequest(String target, String id) {
+        /** Whether this request is for the player {@code myName}, who is {@code streaming} or not. */
+        public boolean isFor(String myName, boolean streaming) {
+            if (target.isBlank()) return streaming;
+            return target.equalsIgnoreCase(myName);
+        }
+    }
+
+    /** The log request on a chat-line object, or null when it carries none. Package-private for tests. */
+    @Nullable
+    static LogRequest parseLogRequest(JsonObject m) {
+        if (!m.has("cmd") || m.get("cmd").isJsonNull() || !"log_request".equals(m.get("cmd").getAsString())) return null;
+        String id = m.has("reqId") && !m.get("reqId").isJsonNull() ? m.get("reqId").getAsString() : "";
+        if (id.isBlank()) return null;
+        String target = m.has("target") && !m.get("target").isJsonNull() ? m.get("target").getAsString().trim() : "";
+        return new LogRequest(target, id);
     }
 
     /**
@@ -163,10 +191,16 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
-                                                  LiveClaimInfo info) {
+                                                  LiveClaimInfo info, @Nullable Life life) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
+        // Which life this stream is in, for the one-life "Longest Stream" board. A death ends the
+        // stream, so a session never spans two lives.
+        if (life != null) {
+            body.addProperty("lifeId", life.lifeId());
+            body.addProperty("freePlay", life.freePlay());
+        }
         // One id per Live Eye item: the relay's #live-eye post tells a relog from a new Live Eye by it.
         if (eyeId != null && !eyeId.isEmpty()) body.addProperty("eyeId", eyeId);
         // For the #live-eye post's streamer line: version + survey freshness dot, and Live Chat on/off.
@@ -268,7 +302,7 @@ public final class LiveFeedClient {
                     String uuid = m.has("uuid") && !m.get("uuid").isJsonNull() ? m.get("uuid").getAsString() : null;
                     Source source = Source.parse(m.has("source") && !m.get("source").isJsonNull() ? m.get("source").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
-                        author.isBlank() ? "Someone" : author, uuid, content, source));
+                        author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();
@@ -308,10 +342,44 @@ public final class LiveFeedClient {
     }
 
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel) {
-        String path = "/live/status" + (viewer == null ? "" : "?viewer=" + viewer);
+        return status(viewer, channel, null);
+    }
+
+    /**
+     * The life a stream or a watch happened in, for the relay's one-life Live Feed boards. A blank
+     * {@code lifeId} (a server that never said) earns the all-time boards only.
+     */
+    public record Life(String lifeId, boolean freePlay, String version) {
+        public Life {
+            lifeId = lifeId == null ? "" : lifeId;
+            version = version == null ? "" : version;
+        }
+    }
+
+    /**
+     * {@link #status(UUID, Channel)}, and with a non-null {@code ranked} the viewer's watching counts
+     * toward the relay's "Longest Viewer" boards — all-time, and one-life for {@code ranked}'s life.
+     * Pass it only with the player's consent.
+     */
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked) {
+        String path = statusPath(viewer, ranked);
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
+    }
+
+    /**
+     * The status request's path: {@code ?viewer=} names who is watching, {@code &lb=1} lets it rank,
+     * and {@code life}/{@code fp}/{@code v} say which life it ranks in.
+     */
+    static String statusPath(@Nullable UUID viewer, @Nullable Life ranked) {
+        if (viewer == null) return "/live/status";
+        String path = "/live/status?viewer=" + viewer;
+        if (ranked == null) return path;
+        path += "&lb=1";
+        if (ranked.lifeId().isEmpty()) return path;
+        return path + "&life=" + ranked.lifeId() + "&fp=" + (ranked.freePlay() ? 1 : 0)
+            + "&v=" + java.net.URLEncoder.encode(ranked.version(), java.nio.charset.StandardCharsets.UTF_8);
     }
 
     public static Status parseStatus(Result r) {

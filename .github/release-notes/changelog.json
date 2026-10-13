@@ -25608,6 +25608,72 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "translation-reviewer-credit",
+      "version": "0.1273.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Translation reviewers credited",
+      "summary": "Players who check translations on Discord now share the credit.",
+      "highlights": [],
+      "pr": 1985,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "livestream-time-leaderboards",
+      "version": "0.1274.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Longest Stream and Longest Viewer",
+      "summary": "Time spent behind the Live Eye, and in front of the TV, now earns a place on the leaderboards.",
+      "highlights": [],
+      "pr": 1986,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "backpack-collects-pickups",
+      "version": "0.1275.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Backpacks catch what you pick up",
+      "summary": "Your backpack now catches what you pick up.",
+      "highlights": [],
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "developer-log-requests",
+      "version": "0.1276.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Send your logs to the developer",
+      "summary": "The developer can now ask to look at your game logs, and you choose whether to send them.",
+      "highlights": [],
+      "pr": 1987,
+      "date": "2026-10-13",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

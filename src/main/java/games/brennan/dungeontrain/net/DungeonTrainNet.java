@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "126";
+    public static final String PROTOCOL_VERSION = "128";
 
     private DungeonTrainNet() {}
 
@@ -47,6 +47,8 @@ public final class DungeonTrainNet {
         // Dev-HUD read-out: is time on the train banking, and if not, which idle rule stopped it.
         registrar.playToClient(ActivityStatePacket.TYPE, ActivityStatePacket.STREAM_CODEC, ActivityStatePacket::handle);
         registrar.playToClient(LiveStreamPacket.TYPE, LiveStreamPacket.STREAM_CODEC, LiveStreamPacket::handle);
+        registrar.playToClient(LiveLifePacket.TYPE, LiveLifePacket.STREAM_CODEC, LiveLifePacket::handle);
+        registrar.playToServer(LiveWatchedPacket.TYPE, LiveWatchedPacket.STREAM_CODEC, LiveWatchedPacket::handle);
         registrar.playToServer(LiveStreamEndedPacket.TYPE, LiveStreamEndedPacket.STREAM_CODEC, LiveStreamEndedPacket::handle);
         registrar.playToClient(EditorStatusPacket.TYPE, EditorStatusPacket.STREAM_CODEC, EditorStatusPacket::handle);
         registrar.playToClient(EditorMirrorPlotPacket.TYPE, EditorMirrorPlotPacket.STREAM_CODEC, EditorMirrorPlotPacket::handle);
@@ -221,6 +223,11 @@ public final class DungeonTrainNet {
         // Bug-report logs: client → server when the player reports a bug on the death-screen survey;
         // archived under logs/<version>/<user>/ and posted as Discord attachments to the feedback feed.
         registrar.playToServer(BugReportLogsPacket.TYPE, BugReportLogsPacket.STREAM_CODEC, BugReportLogsPacket::handle);
+        // Developer log request (/bug from the dev's Discord thread or the livestream chat): server →
+        // client prompt, client → server answer, and client → server "the live chat asked for my logs".
+        registrar.playToClient(LogRequestPromptPacket.TYPE, LogRequestPromptPacket.STREAM_CODEC, LogRequestPromptPacket::handle);
+        registrar.playToServer(LogRequestAnswerPacket.TYPE, LogRequestAnswerPacket.STREAM_CODEC, LogRequestAnswerPacket::handle);
+        registrar.playToServer(LogRequestFromLivePacket.TYPE, LogRequestFromLivePacket.STREAM_CODEC, LogRequestFromLivePacket::handle);
 
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);
