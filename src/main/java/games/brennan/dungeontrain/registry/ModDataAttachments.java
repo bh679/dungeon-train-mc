@@ -389,6 +389,24 @@ public final class ModDataAttachments {
                 .build()
         );
 
+    /**
+     * Which advancement profile ({@link games.brennan.dungeontrain.player.DifficultyPartition} key) this
+     * world's live advancement tree currently mirrors — see
+     * {@link games.brennan.dungeontrain.advancement.AdvancementProfiles}. Blank means the legacy (Normal)
+     * profile: every tree written before advancements were split by difficulty holds the combined
+     * history, which is Normal's.
+     *
+     * <p>{@code copyOnDeath}: the advancement tree belongs to the player, not the body, so it survives a
+     * respawn and so must the note of whose tree it is.</p>
+     */
+    public static final Supplier<AttachmentType<String>> ADVANCEMENT_PARTITION =
+        TYPES.register("advancement_partition",
+            () -> AttachmentType.<String>builder(() -> "")
+                .serialize(Codec.STRING)
+                .copyOnDeath()
+                .build()
+        );
+
     private ModDataAttachments() {}
 
     public static void register(IEventBus modBus) {

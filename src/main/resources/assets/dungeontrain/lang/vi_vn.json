@@ -189,7 +189,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "Trang bị của bạn vẫn ở lại %s và sẽ trở về nếu bạn chuyển ngược lại.",
   "gui.dungeontrain.difficulty_confirm.change": "Thay đổi độ khó",
   "gui.dungeontrain.difficulty_confirm.cancel": "Hủy bỏ ",
-  "chat.dungeontrain.difficulty_profile.swapped": "Giờ bạn đang đi trên %s. Mỗi độ khó giữ trang bị, điểm kinh nghiệm và Rương Ẩn Giới riêng — những gì bạn đang mang vẫn đợi bạn bên %s.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Giờ bạn đang đi trên %s. Mỗi độ khó giữ trang bị, điểm kinh nghiệm, Rương Ẩn Giới và tiến trình riêng — những gì bạn đang mang vẫn đợi bạn bên %s.",
   "chat.dungeontrain.free_play.ais_changed": "Đã thay đổi: %s",
   "chat.dungeontrain.free_play.ais_fix": "Nhấp vào đây để khôi phục cài đặt mặc định, sau đó khởi động lại trò chơi để chơi bình thường.",
   "command.dungeontrain.fix_ais.success": "Đã khôi phục cài đặt mặc định của Adventure Item Stats. Khởi động lại trò chơi (hoặc máy chủ) để chơi bình thường trở lại.",

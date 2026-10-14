@@ -189,7 +189,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "你的装备会留在%s，切换回来时原样归还。",
   "gui.dungeontrain.difficulty_confirm.change": "切换难度",
   "gui.dungeontrain.difficulty_confirm.cancel": "取消",
-  "chat.dungeontrain.difficulty_profile.swapped": "你现在乘坐的是%s。每个难度各自保管装备、经验和末影箱——你之前携带的东西正在%s那边等着你。",
+  "chat.dungeontrain.difficulty_profile.swapped": "你现在乘坐的是%s。每个难度各自保管装备、经验、末影箱和进度——你之前携带的东西正在%s那边等着你。",
   "chat.dungeontrain.free_play.ais_changed": "已修改：%s",
   "chat.dungeontrain.free_play.ais_fix": "点击此处恢复默认设置，然后重启游戏即可恢复正常游玩。",
   "command.dungeontrain.fix_ais.success": "已恢复 Adventure Item Stats 默认设置。重启游戏（或服务器）即可恢复正常游玩。",

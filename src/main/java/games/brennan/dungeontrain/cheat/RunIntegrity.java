@@ -348,7 +348,7 @@ public final class RunIntegrity {
      * Should this advancement be written to the cross-world profile for this
      * player right now? Yes when the run is clean, OR when it's an
      * editor-authoring advancement (mode-agnostic). The display-present check
-     * stays at the call site ({@code AchievementEvents.shouldPersist}).
+     * stays at the call site ({@code AdvancementProfiles.shouldPersist}).
      */
     public static boolean persistsAdvancement(ServerPlayer player, AdvancementHolder holder) {
         return !isCheated(player) || isEditorAdvancement(holder.id());

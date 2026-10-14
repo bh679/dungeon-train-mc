@@ -189,7 +189,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "Kelengkapan anda kekal di %s dan kembali jika anda beralih semula.",
   "gui.dungeontrain.difficulty_confirm.change": "Tukar kesukaran",
   "gui.dungeontrain.difficulty_confirm.cancel": "Batal",
-  "chat.dungeontrain.difficulty_profile.swapped": "Kini menunggang pada %s. Setiap tahap kesukaran menyimpan kelengkapan, XP dan Peti Endernya sendiri — apa yang anda bawa tadi menunggu anda di %s.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Kini menunggang pada %s. Setiap tahap kesukaran menyimpan kelengkapan, XP, Peti Ender dan kemajuannya sendiri — apa yang anda bawa tadi menunggu anda di %s.",
   "chat.dungeontrain.free_play.ais_changed": "Diubah: %s",
   "chat.dungeontrain.free_play.ais_fix": "Klik di sini untuk memulihkan tetapan lalai, kemudian mulakan semula permainan untuk bermain seperti biasa.",
   "command.dungeontrain.fix_ais.success": "Tetapan lalai Adventure Item Stats dipulihkan. Mulakan semula permainan (atau pelayan) untuk bermain seperti biasa.",

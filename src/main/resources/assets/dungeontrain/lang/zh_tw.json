@@ -189,7 +189,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "你的裝備會留在 %s，切回來時就會回到你身上。",
   "gui.dungeontrain.difficulty_confirm.change": "變更難度",
   "gui.dungeontrain.difficulty_confirm.cancel": "取消",
-  "chat.dungeontrain.difficulty_profile.swapped": "你現在以 %s 乘車。每個難度各自保有自己的裝備、經驗值和終界箱——你原本帶的東西，正在 %s 那邊等你。",
+  "chat.dungeontrain.difficulty_profile.swapped": "你現在以 %s 乘車。每個難度各自保有自己的裝備、經驗值、終界箱和進度——你原本帶的東西，正在 %s 那邊等你。",
   "chat.dungeontrain.free_play.ais_changed": "已更改:%s",
   "chat.dungeontrain.free_play.ais_fix": "點擊此處恢復預設設定,然後重新啟動遊戲即可正常遊玩。",
   "command.dungeontrain.fix_ais.success": "已恢復 Adventure Item Stats 的預設設定。重新啟動遊戲(或伺服器)即可恢復正常遊玩。",

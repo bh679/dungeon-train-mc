@@ -235,7 +235,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "Twój sprzęt zostaje na %s i wróci, gdy się tam przełączysz.",
   "gui.dungeontrain.difficulty_confirm.change": "Zmień trudność",
   "gui.dungeontrain.difficulty_confirm.cancel": "Anuluj",
-  "chat.dungeontrain.difficulty_profile.swapped": "Jedziesz teraz na %s. Każdy poziom trudności ma własny sprzęt, doświadczenie i skrzynię Kresu — to, co niosłeś, czeka na ciebie z powrotem na %s.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Jedziesz teraz na %s. Każdy poziom trudności ma własny sprzęt, doświadczenie, skrzynię Kresu i postępy — to, co niosłeś, czeka na ciebie z powrotem na %s.",
   "chat.dungeontrain.free_play.ais_changed": "Zmieniono: %s",
   "chat.dungeontrain.free_play.ais_fix": "Kliknij tutaj, aby przywrócić ustawienia domyślne, a następnie uruchom grę ponownie, aby grać normalnie.",
   "command.dungeontrain.fix_ais.success": "Przywrócono domyślne ustawienia Adventure Item Stats. Uruchom grę (lub serwer) ponownie, aby wrócić do normalnej gry.",

@@ -212,7 +212,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "Je spullen blijven op %s staan en komen terug als je terugwisselt.",
   "gui.dungeontrain.difficulty_confirm.change": "Moeilijkheidsgraad wijzigen",
   "gui.dungeontrain.difficulty_confirm.cancel": "Annuleren",
-  "chat.dungeontrain.difficulty_profile.swapped": "Je rijdt nu op %s. Elke moeilijkheidsgraad houdt eigen spullen, XP en Enderkist bij — wat je bij je had, wacht op je terug op %s.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Je rijdt nu op %s. Elke moeilijkheidsgraad houdt eigen spullen, XP, Enderkist en vooruitgangen bij — wat je bij je had, wacht op je terug op %s.",
   "chat.dungeontrain.free_play.ais_changed": "Gewijzigd: %s",
   "chat.dungeontrain.free_play.ais_fix": "Klik hier om de standaardinstellingen te herstellen en herstart daarna het spel om normaal te spelen.",
   "command.dungeontrain.fix_ais.success": "Standaardinstellingen van Adventure Item Stats hersteld. Herstart het spel (of de server) om weer normaal te spelen.",

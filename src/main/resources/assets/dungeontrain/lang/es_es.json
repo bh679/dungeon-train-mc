@@ -212,7 +212,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "Tu equipo se queda en %s y vuelve contigo si regresas.",
   "gui.dungeontrain.difficulty_confirm.change": "Cambiar dificultad",
   "gui.dungeontrain.difficulty_confirm.cancel": "Cancelar",
-  "chat.dungeontrain.difficulty_profile.swapped": "Ahora viajas en %s. Cada dificultad conserva su propio equipo, XP y cofre de Ender: lo que llevabas te espera de vuelta en %s.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Ahora viajas en %s. Cada dificultad conserva su propio equipo, XP, cofre de Ender y progresos: lo que llevabas te espera de vuelta en %s.",
   "chat.dungeontrain.free_play.ais_changed": "Cambiado: %s",
   "chat.dungeontrain.free_play.ais_fix": "Haz clic aquí para restaurar los ajustes por defecto y luego reinicia el juego para jugar con normalidad.",
   "command.dungeontrain.fix_ais.success": "Ajustes por defecto de Adventure Item Stats restaurados. Reinicia el juego (o el servidor) para volver a jugar con normalidad.",
