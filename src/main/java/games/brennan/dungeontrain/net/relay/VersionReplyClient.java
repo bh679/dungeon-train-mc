@@ -19,7 +19,7 @@ import java.util.UUID;
  *
  * <pre>
  * POST &lt;relayBase&gt;/dev/version-reply
- *   { "reqId": "…", "uuid": "…", "name": "Steve", "status": "ok|kid|offline|timeout|left", "text": "…" }
+ *   { "reqId": "…", "uuid": "…", "name": "Steve", "status": "ok|kid|timeout|left", "text": "…" }
  * </pre>
  *
  * <p>Fire-and-forget like {@link DebugGrantClient}: the request expires on the relay within minutes,
@@ -38,7 +38,7 @@ public final class VersionReplyClient {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     /** Outcome of a request, as the relay reads it. */
-    public enum Status { OK, KID, OFFLINE, TIMEOUT, LEFT }
+    public enum Status { OK, KID, TIMEOUT, LEFT }
 
     private VersionReplyClient() {}
 

@@ -33,6 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>Unlike {@code /bug} there is no consent prompt and nothing is shown in game; only version and
  * mod facts are read. Kid-mode players are never asked — Brennan hears "Kid mode is on".</p>
  *
+ * <p>Only the server the player is on answers; a server that doesn't have them stays silent and the
+ * relay's own timeout tells Brennan they aren't in a world.</p>
+ *
  * <p>A {@code /version} with no relay id (an older relay passing a typed thread message through) is
  * swallowed so it never reaches the player as a dev message, and only logged.</p>
  */
@@ -58,17 +61,12 @@ public final class VersionRequestManager {
             return;
         }
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        if (owner == null || server == null) {
-            if (owner != null) VersionReplyClient.post(cmd.reqId(), owner, "", Status.OFFLINE, "not in a world");
-            return;
-        }
+        if (owner == null || server == null) return;
         server.execute(() -> {
+            // The relay fans out to every server on the capability: only the one the player is on
+            // answers. Nobody answering is the relay's "not in a world" (it times out on its own).
             ServerPlayer player = server.getPlayerList().getPlayer(owner);
-            if (player == null) {
-                VersionReplyClient.post(cmd.reqId(), owner, "", Status.OFFLINE, "not in a world");
-                return;
-            }
-            ask(player, cmd);
+            if (player != null) ask(player, cmd);
         });
     }
 
