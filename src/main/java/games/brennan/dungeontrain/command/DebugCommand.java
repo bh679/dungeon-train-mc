@@ -81,6 +81,13 @@ public final class DebugCommand {
             // /dungeontrain debug physicsfreeze <on|off|status> — toggles the #646 physics-freeze
             // of untracked carriages. `off` restores every frozen body next tick. Drives the Gate 2
             // matched-toggle A/B (freeze off vs on, same seed/path — chunk-gen noise cancels).
+            // Live Eye text filter: behave as if someone were live (so chat/book masking can be tried
+            // without a stream), and walk the strike ladder without typing anything.
+            .then(Commands.literal("live-moderation")
+                .then(Commands.literal("force")
+                    .then(Commands.literal("on").executes(ctx -> setLiveModerationForce(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setLiveModerationForce(ctx.getSource(), false))))
+                .then(Commands.literal("strike").executes(ctx -> liveModerationStrike(ctx.getSource()))))
             .then(Commands.literal("physicsfreeze")
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
@@ -411,6 +418,24 @@ public final class DebugCommand {
             source.sendSuccess(() -> Component.literal("  " + line).withStyle(ChatFormatting.YELLOW), false);
         }
         return lines.size();
+    }
+
+    private static int setLiveModerationForce(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.moderation.LiveModerationScope.devForce = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Live text filter forced " + (on ? "ON — chat and books are checked as if someone were live" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int liveModerationStrike(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("live-moderation strike needs a player."));
+            return 0;
+        }
+        games.brennan.dungeontrain.event.LiveModeration.strike(player, "debug", java.util.List.of("debug"));
+        return 1;
     }
 
     private static int setPhysicsFreeze(CommandSourceStack source, boolean on) {

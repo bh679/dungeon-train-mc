@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /** The stop reasons the client sends are the ones the relay's /live/stop accepts (dp-relay live.js STOP_REASONS). */
 final class LiveStreamEndedReasonTest {
 
-    private static final Set<String> RELAY_STOP_REASONS = Set.of("died", "removed", "left", "free_play", "disabled", "failed");
+    private static final Set<String> RELAY_STOP_REASONS = Set.of("died", "removed", "left", "free_play", "disabled", "failed", "moderated", "banned");
 
     @Test
     @DisplayName("every reason a clean stop can carry is one the relay knows (REPLACED is a cut-off: no stop is sent)")

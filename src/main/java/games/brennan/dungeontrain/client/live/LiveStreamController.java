@@ -159,6 +159,8 @@ public final class LiveStreamController {
             case STOP_LEFT -> stop(null, LiveStreamEndedToast.Reason.LEFT);
             case STOP_REMOVED -> stop(null, LiveStreamEndedToast.Reason.REMOVED);
             case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY), LiveStreamEndedToast.Reason.FREE_PLAY);
+            // The server's burn line and strike warning already said why.
+            case STOP_MODERATED -> stop(null, LiveStreamEndedToast.Reason.MODERATED);
         }
     }
 
@@ -264,6 +266,13 @@ public final class LiveStreamController {
         LiveFeedClient.Life life = new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION);
         LiveFeedClient.claim(uuid, name, eyeId, info, life).thenAcceptAsync(result -> {
             if (gen != generation || state != State.CLAIMING) return;
+            if (result.forbidden() && "banned".equals(result.str("error"))) {
+                // The text-filter ladder has this player banned from the Live Eye; the server burns it
+                // on BANNED and says for how long.
+                state = State.IDLE;
+                tellServerEnded(LiveStreamEndedPacket.Reason.BANNED);
+                return;
+            }
             Claim c = LiveFeedClient.parseClaim(result);
             if (c == null) {
                 say(Component.translatable("chat.dungeontrain.live.unreachable").withStyle(ChatFormatting.RED));

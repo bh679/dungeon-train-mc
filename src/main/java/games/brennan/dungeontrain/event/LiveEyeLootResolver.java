@@ -43,6 +43,13 @@ public final class LiveEyeLootResolver {
     /** The rule, pure for the tests. {@code roll} is uniform in [0, 1). */
     public static Outcome decide(boolean mayLoot, boolean holdsLiveEye, boolean onCooldown,
                                  boolean anyoneLive, float roll) {
+        return decide(mayLoot, holdsLiveEye, onCooldown, anyoneLive, false, roll);
+    }
+
+    /** As above; a player banned from the Live Eye by the text-filter ladder ({@code LiveModeration}) always finds a TV. */
+    public static Outcome decide(boolean mayLoot, boolean holdsLiveEye, boolean onCooldown,
+                                 boolean anyoneLive, boolean banned, float roll) {
+        if (banned) return Outcome.TV;
         if (!mayLoot || holdsLiveEye || onCooldown) return Outcome.TV;
         if (anyoneLive && roll >= LIVE_KEEP_CHANCE) return Outcome.TV;
         return Outcome.LIVE_EYE;
@@ -63,6 +70,7 @@ public final class LiveEyeLootResolver {
             holdsLiveEye(player),
             onCooldown(player),
             ServerLiveStatus.isAnyoneLive(player.server),
+            LiveModeration.isBanned(player.getUUID()),
             player.getRandom().nextFloat());
         if (outcome == Outcome.LIVE_EYE) {
             markSeen(player);

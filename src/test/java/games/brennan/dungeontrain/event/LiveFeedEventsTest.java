@@ -19,6 +19,8 @@ final class LiveFeedEventsTest {
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.CUT_OFF));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.DISABLED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.FREE_PLAY));
+        assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.MODERATED));
+        assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.BANNED));
         assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.LEFT));
         assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.FAILED));
     }
@@ -41,5 +43,7 @@ final class LiveFeedEventsTest {
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.DIED));
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.FREE_PLAY));
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.DISABLED));
+        assertEquals("chat.dungeontrain.live.burns_moderated", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.MODERATED));
+        assertEquals("chat.dungeontrain.live.burns_moderated", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.BANNED));
     }
 }

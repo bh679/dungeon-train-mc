@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin.client;
 
+import net.minecraft.client.gui.font.TextFieldHelper;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -32,4 +33,22 @@ public interface BookEditScreenAccessor {
      */
     @Accessor("isSigning")
     boolean dungeontrain$isSigning();
+
+    // The Live Eye text filter (client/live/LiveTextCensorClient) rewrites the page or title being
+    // typed: which page is open, the title, and the two cursors to park at the end afterwards.
+
+    @Accessor("currentPage")
+    int dungeontrain$getCurrentPage();
+
+    @Accessor("title")
+    String dungeontrain$getTitle();
+
+    @Accessor("title")
+    void dungeontrain$setTitle(String title);
+
+    @Accessor("pageEdit")
+    TextFieldHelper dungeontrain$getPageEdit();
+
+    @Accessor("titleEdit")
+    TextFieldHelper dungeontrain$getTitleEdit();
 }

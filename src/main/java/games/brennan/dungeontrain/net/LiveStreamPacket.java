@@ -36,7 +36,9 @@ public record LiveStreamPacket(Action action, String by, String eyeId) implement
         /** The streamer took the camcorder off. */
         STOP_REMOVED,
         /** The streamer's run turned Free Play, which can't go live. */
-        STOP_FREE_PLAY
+        STOP_FREE_PLAY,
+        /** The text-filter ladder struck the streamer out (or banned them): the camcorder burned. */
+        STOP_MODERATED
     }
 
     private static final int MAX_NAME = 48;

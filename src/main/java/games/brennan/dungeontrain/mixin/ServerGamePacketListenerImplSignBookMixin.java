@@ -7,6 +7,11 @@ import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.editor.EditorPlotScope;
 import games.brennan.dungeontrain.event.ReadingLanguagesMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
+import games.brennan.dungeontrain.event.LiveModeration;
+import games.brennan.dungeontrain.moderation.LiveModerationScope;
+import games.brennan.dungeontrain.moderation.LiveWordList;
+import games.brennan.dungeontrain.moderation.TextCensor;
+import games.brennan.dungeontrain.player.ServerLiveStatus;
 import games.brennan.dungeontrain.narrative.BookFactory;
 import games.brennan.dungeontrain.narrative.BookSafeText;
 import games.brennan.dungeontrain.narrative.BookSuspensionMessage;
@@ -31,6 +36,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.FilteredText;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.WrittenBookContent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.network.Filterable;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Mixin;
@@ -113,6 +120,14 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
     private String dungeontrain$pendingEditorAuthor;
 
     /**
+     * Live Eye text filter: the title and pages with listed words masked, set at HEAD while someone is
+     * live and anything matched, so the vanilla-signing branch's RETURN injector can rewrite the kept
+     * book; null when nothing changed. Consumed by the RETURN injector.
+     */
+    private String dungeontrain$censoredTitle;
+    private List<String> dungeontrain$censoredPages;
+
+    /**
      * Locale this book is filed under, taken at HEAD from {@link ReadingLanguagesMirror#takeBookLanguage}:
      * the sign-screen language pick when it is one of the signer's reading languages, else their game
      * language. Consumed on every sign so a pick can't leak into a later book.
@@ -135,6 +150,8 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         this.dungeontrain$bookLanguage = earlyPlayer != null
                 ? ReadingLanguagesMirror.takeBookLanguage(earlyPlayer)
                 : null;
+        this.dungeontrain$censoredTitle = null;
+        this.dungeontrain$censoredPages = null;
         try {
             ServerPlayer serverPlayer = this.player;
             if (serverPlayer == null) return;
@@ -160,6 +177,11 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
                 return;
             }
 
+            // Live Eye text filter — while someone is live, listed words in the title and pages are masked
+            // before any branch below sees them (letters, Notes, the community upload and the kept book
+            // alike), and the writer takes a strike. Fail-open inside this try: a filter fault signs as-is.
+            dungeontrain$censorForLive(serverPlayer, title, pages);
+
             // Uploads paused — the relay refused a book this player had already sent (see
             // BookUploadSuspensions). Signing is off ENTIRELY for the window: community books,
             // lectern letters, Death Notes and Love Notes alike. Notes never upload, so this is a
@@ -178,9 +200,11 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
                 return;
             }
 
-            String titleStr = title.raw();
+            String titleStr = this.dungeontrain$censoredTitle != null ? this.dungeontrain$censoredTitle : title.raw();
             String author = serverPlayer.getName().getString();
-            List<String> pageStrs = pages.stream().map(FilteredText::raw).toList();
+            List<String> pageStrs = this.dungeontrain$censoredPages != null
+                    ? this.dungeontrain$censoredPages
+                    : pages.stream().map(FilteredText::raw).toList();
 
             // Lectern letter — the sign was opened from a lectern (LetterLecternEvents recorded it on the
             // right-click). A lectern sign is always a letter, taking priority over the Death Note /
@@ -285,6 +309,45 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         }
     }
 
+    /** Mask listed words while anyone is live; records one strike when anything changed. Never throws. */
+    private void dungeontrain$censorForLive(ServerPlayer serverPlayer, FilteredText title, List<FilteredText> pages) {
+        try {
+            if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(serverPlayer.getServer()))) return;
+            var words = LiveWordList.effective();
+            java.util.List<String> hits = new java.util.ArrayList<>();
+            TextCensor.Result t = TextCensor.censor(title.raw(), words);
+            hits.addAll(t.hits());
+            java.util.List<String> out = new java.util.ArrayList<>(pages.size());
+            boolean changed = t.changed();
+            for (FilteredText page : pages) {
+                TextCensor.Result r = TextCensor.censor(page.raw(), words);
+                out.add(r.text());
+                hits.addAll(r.hits());
+                changed |= r.changed();
+            }
+            if (!changed) return;
+            this.dungeontrain$censoredTitle = t.text();
+            this.dungeontrain$censoredPages = List.copyOf(out);
+            LiveModeration.strike(serverPlayer, "book", hits);
+        } catch (Throwable e) {
+            DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] live text filter skipped a book: {}", e.toString());
+        }
+    }
+
+    /** Rewrite a vanilla-signed book's title and pages with the censored text captured at HEAD. Fail-open. */
+    private static void dungeontrain$applyCensoredText(ItemStack signed, String title, List<String> pages) {
+        try {
+            WrittenBookContent current = signed.get(DataComponents.WRITTEN_BOOK_CONTENT);
+            if (current == null) return;
+            List<Filterable<Component>> newPages = pages.stream()
+                    .map(p -> Filterable.passThrough((Component) Component.literal(p))).toList();
+            signed.set(DataComponents.WRITTEN_BOOK_CONTENT, new WrittenBookContent(
+                    Filterable.passThrough(title), current.author(), current.generation(), newPages, current.resolved()));
+        } catch (Throwable t) {
+            DUNGEONTRAIN$LOGGER.warn("[DungeonTrain] live text filter: censored book not rewritten: {}", t.toString());
+        }
+    }
+
     /** Each note kind has its own feature flag, so either mechanic can be turned off independently. */
     private static boolean dungeontrain$isNoteKindEnabled(NoteKind kind) {
         return kind == NoteKind.LOVE
@@ -316,12 +379,20 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         this.dungeontrain$signedInEditorPlot = false;
         String pendingAuthor = this.dungeontrain$pendingEditorAuthor;
         this.dungeontrain$pendingEditorAuthor = null;
+        String censoredTitle = this.dungeontrain$censoredTitle;
+        List<String> censoredPages = this.dungeontrain$censoredPages;
+        this.dungeontrain$censoredTitle = null;
+        this.dungeontrain$censoredPages = null;
 
         ServerPlayer serverPlayer = this.player;
         if (serverPlayer == null) return;
 
         ItemStack signed = serverPlayer.getInventory().getItem(slot);
         if (signed.isEmpty() || !signed.has(DataComponents.WRITTEN_BOOK_CONTENT)) return;
+
+        if (censoredPages != null && !inEditorPlot) {
+            dungeontrain$applyCensoredText(signed, censoredTitle, censoredPages);
+        }
 
         if (inEditorPlot) {
             EditorAuthoredBookTag.stamp(signed);
