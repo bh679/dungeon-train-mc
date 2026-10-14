@@ -220,8 +220,9 @@ public final class LiveModeration {
             out = Component.translatable(KEY + "burns_banned_permanent").withStyle(ChatFormatting.RED);
         } else {
             String locale = WorldInfoReporter.clientLanguage(player);
+            // Rounded up to the next hour: "7 days" a minute into a week-long ban, not "6 days".
             out = Component.translatable(KEY + "burns_banned",
-                PresenceLine.agoComponent(locale, Duration.ofSeconds(Math.max(1L, left)))).withStyle(ChatFormatting.RED);
+                PresenceLine.agoComponent(locale, Duration.ofSeconds(Math.max(1L, left) + 3599L))).withStyle(ChatFormatting.RED);
         }
         List<LiveModerationLadder.Evidence> evidence = evidenceFor(player.getUUID());
         if (!evidence.isEmpty()) {
