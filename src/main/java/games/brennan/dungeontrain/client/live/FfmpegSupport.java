@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
 import net.mehvahdjukaar.vista.VistaModClient;
+import net.minecraft.Util;
 import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -12,7 +13,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 
 /**
@@ -26,7 +29,7 @@ public final class FfmpegSupport {
     /** An {@code -encoders} line for ffmpeg's own AAC encoder: flags starting with A (audio), then {@code aac}. */
     private static final Pattern AAC_ENCODER = Pattern.compile("(?m)^\\s*A\\S*\\s+aac\\s");
     private static final long PROBE_TIMEOUT_S = 5;
-    @Nullable private static volatile Boolean aac;
+    @Nullable private static CompletableFuture<Boolean> aac;
 
     public enum State {
         /** Vista has not been asked to fetch ffmpeg (its welcome screen was declined or not yet shown). */
@@ -61,24 +64,57 @@ public final class FfmpegSupport {
 
     /**
      * Whether this ffmpeg can encode AAC (stream audio). Asked once per launch with
-     * {@code ffmpeg -encoders}; a failed or slow answer counts as no.
+     * {@code ffmpeg -encoders}, on a pool thread once Vista's ffmpeg is ready — never on the render
+     * thread. A failed, missing or slow answer counts as no. Any thread.
      */
-    public static boolean hasAacEncoder(FFmpeg ffmpeg) {
-        Boolean known = aac;
+    public static synchronized CompletableFuture<Boolean> aacEncoder() {
+        CompletableFuture<Boolean> known = aac;
         if (known != null) return known;
-        boolean found = false;
+        // Vista not asked yet: answer no for now, and ask again once it has been.
+        if (VistaModClient.getFFmpegFuture() == null) return CompletableFuture.completedFuture(false);
+        CompletableFuture<Boolean> probe = whenReady()
+            .thenApplyAsync(FfmpegSupport::probeAac, Util.ioPool())
+            .exceptionally(e -> false);
+        aac = probe;
+        return probe;
+    }
+
+    /**
+     * Blocking: runs {@code ffmpeg -encoders} with stdout drained on its own thread, so a stuck
+     * process is bounded by {@link #PROBE_TIMEOUT_S} rather than by its pipe closing.
+     */
+    private static boolean probeAac(FFmpeg ffmpeg) {
         try {
             Process p = ffmpeg.runFFmpeg("-hide_banner", "-encoders");
             drain(p.getErrorStream(), "encoders-err");
-            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-            if (p.waitFor(PROBE_TIMEOUT_S, TimeUnit.SECONDS)) found = listsAacEncoder(out); else p.destroyForcibly();
-        } catch (IOException e) {
+            CompletableFuture<String> out = readAll(p.getInputStream(), "encoders-out");
+            if (!p.waitFor(PROBE_TIMEOUT_S, TimeUnit.SECONDS)) {
+                p.destroyForcibly();
+                LOGGER.warn("[DungeonTrain] ffmpeg -encoders took over {} s; stream audio off", PROBE_TIMEOUT_S);
+                return false;
+            }
+            return listsAacEncoder(out.get(PROBE_TIMEOUT_S, TimeUnit.SECONDS));
+        } catch (IOException | ExecutionException | TimeoutException e) {
             LOGGER.warn("[DungeonTrain] could not ask ffmpeg for its encoders: {}", e.toString());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        aac = found;
-        return found;
+        return false;
+    }
+
+    /** Reads a process stream to its end on a daemon thread. */
+    private static CompletableFuture<String> readAll(InputStream in, String tag) {
+        CompletableFuture<String> result = new CompletableFuture<>();
+        Thread t = new Thread(() -> {
+            try (in) {
+                result.complete(new String(in.readAllBytes(), StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                result.completeExceptionally(e);
+            }
+        }, "dt-live-" + tag + "-read");
+        t.setDaemon(true);
+        t.start();
+        return result;
     }
 
     /** True when {@code ffmpeg -encoders} output lists the native {@code aac} encoder. */

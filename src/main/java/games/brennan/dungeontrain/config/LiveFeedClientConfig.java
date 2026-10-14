@@ -39,8 +39,8 @@ public final class LiveFeedClientConfig {
 
     /** The Options → Stream video sizes, as broadcast widths: 360p, 480p, 540p, 720p, 1080p (all even). */
     static final List<Integer> CAPTURE_SIZES = List.of(640, 854, 960, 1280, 1920);
-    private static final int CAPTURE_WIDTH_MIN = 320;
-    private static final int CAPTURE_WIDTH_MAX = 1920;
+    static final int CAPTURE_WIDTH_MIN = 320;
+    static final int CAPTURE_WIDTH_MAX = 1920;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -104,7 +104,8 @@ public final class LiveFeedClientConfig {
     }
 
     public static boolean streamingEnabled() { return !loaded() || STREAMING_ENABLED.get(); }
-    public static int captureWidth() { return loaded() ? CAPTURE_WIDTH.get() : 1280; }
+    /** Evened here too: a hand-edited odd width would kill libx264's yuv420p output at start. */
+    public static int captureWidth() { return loaded() ? evenCaptureWidth(CAPTURE_WIDTH.get()) : 1280; }
     public static int captureFps() { return loaded() ? CAPTURE_FPS.get() : 20; }
     public static int bitrateKbps() { return loaded() ? BITRATE_KBPS.get() : 2500; }
     public static int segmentSeconds() { return loaded() ? SEGMENT_SECONDS.get() : 10; }
@@ -173,11 +174,16 @@ public final class LiveFeedClientConfig {
      * stream picks it up, and the preview follows it straight away.
      */
     public static void setCaptureWidth(int width) {
-        int w = Math.max(CAPTURE_WIDTH_MIN, Math.min(CAPTURE_WIDTH_MAX, width));
-        w -= w % 2;
+        int w = evenCaptureWidth(width);
         if (!loaded() || CAPTURE_WIDTH.get() == w) return;
         CAPTURE_WIDTH.set(w);
         CAPTURE_WIDTH.save();
+    }
+
+    /** {@code width} clamped to the allowed range and rounded down to even (yuv420p needs even dimensions). */
+    static int evenCaptureWidth(int width) {
+        int w = Math.max(CAPTURE_WIDTH_MIN, Math.min(CAPTURE_WIDTH_MAX, width));
+        return w - w % 2;
     }
 
     /** The sizes the Options row offers: the presets, plus {@code current} if it was hand-set off them. */
