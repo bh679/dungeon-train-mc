@@ -25806,9 +25806,9 @@
       "highlights": [],
       "pr": 1997,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
     },
     {
       "id": "live-eye-streams-only-while-worn",
@@ -25823,9 +25823,9 @@
       "highlights": [],
       "pr": 1998,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
     },
     {
       "id": "live-chat-survives-relay-restart",
@@ -25839,9 +25839,9 @@
       "summary": "In-game Live Chat no longer goes quiet for the rest of a stream when the relay is restarted mid-stream \u2014 the chat picks up again on its own.",
       "highlights": [],
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
     },
     {
       "id": "live-feed-decoder-hardening",
@@ -25861,9 +25861,9 @@
       ],
       "pr": 2000,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
     },
     {
       "id": "live-eye-smoother-streaming",
@@ -25879,9 +25879,9 @@
       "highlights": [],
       "pr": 2001,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
     },
     {
       "id": "live-eye-quits-quickly",
@@ -25896,9 +25896,9 @@
       "highlights": [],
       "pr": 2002,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
     },
     {
       "id": "live-eye-text-filter",
