@@ -53,7 +53,9 @@ public final class NewSourcePickerScreen implements MenuScreen {
          */
         WHOLE,
         /** Whole group — {@link #WHOLE}'s shape through {@code editor whole group new}. */
-        WHOLE_GROUP
+        WHOLE_GROUP,
+        /** Whole half — {@link #WHOLE}'s shape through {@code editor whole half new}. */
+        WHOLE_HALF
     }
 
     private final Category category;
@@ -98,6 +100,8 @@ public final class NewSourcePickerScreen implements MenuScreen {
                 MenuLang.typeName(games.brennan.dungeontrain.editor.EditorWholeTypeMenus.ROOM_TYPE_NAME));
             case WHOLE_GROUP -> MenuLang.t("new_source.title_kind_source",
                 MenuLang.typeName(games.brennan.dungeontrain.editor.EditorWholeTypeMenus.GROUP_TYPE_NAME));
+            case WHOLE_HALF -> MenuLang.t("new_source.title_kind_source",
+                MenuLang.typeName(games.brennan.dungeontrain.editor.EditorWholeTypeMenus.HALF_TYPE_NAME));
         };
     }
 
@@ -225,9 +229,10 @@ public final class NewSourcePickerScreen implements MenuScreen {
                     out.add(new CommandMenuEntry.TypeArg(MenuLang.t("common.new"), "name", prefix));
                 }
             }
-            case WHOLE, WHOLE_GROUP -> {
-                String prefix = category == Category.WHOLE_GROUP
-                    ? "dungeontrain editor whole group new" : "dungeontrain editor whole new";
+            case WHOLE, WHOLE_GROUP, WHOLE_HALF -> {
+                String prefix = category == Category.WHOLE_GROUP ? "dungeontrain editor whole group new"
+                    : category == Category.WHOLE_HALF ? "dungeontrain editor whole half new"
+                    : "dungeontrain editor whole new";
                 out.add(new CommandMenuEntry.TypeArg(MenuLang.t("new_source.blank"), "name", prefix, "blank"));
                 if (!currentId.isEmpty()) {
                     out.add(new CommandMenuEntry.TypeArg(

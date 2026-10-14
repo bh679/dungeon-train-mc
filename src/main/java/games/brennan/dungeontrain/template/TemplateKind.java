@@ -16,6 +16,8 @@ public enum TemplateKind {
     CONTENTS,
     /** Shell and interior saved together as one template — see {@code train.WholeCarriage}. */
     WHOLE_CARRIAGE,
+    /** A whole half carriage — see {@code WholeKind.HALF}. */
+    WHOLE_HALF,
     /** A whole run of carriages saved as one template — see {@code train.CarriageGroup}. */
     CARRIAGE_GROUP,
     PART,
@@ -31,7 +33,9 @@ public enum TemplateKind {
     /** A Lost City / WWOO building — shipped or player-made; see {@code building.Buildings}. */
     BUILDING,
     /** An official Lost City building — Big Lost City's, view-only; see {@code building.LostCityReferences}. */
-    LOST_CITY;
+    LOST_CITY,
+    /** A relay build parked in the editor's Workbench, committed to no kind yet — see {@code Template.Staged}. */
+    STAGED;
 
     public String id() {
         return name().toLowerCase(Locale.ROOT);

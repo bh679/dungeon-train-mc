@@ -122,6 +122,8 @@ public final class EditorRelayWrite {
             // of the same name, which is a different template and must not share its relay entry.
             case Template.WholeCarriage room ->
                     new Naming(BuilderPhotoPaths.Kind.CARRIAGE, WHOLE_ROOM_SUBKIND, room.id());
+            // Whole halves do not ride the relay yet — no sub kind to file them under.
+            case Template.WholeHalf ignored -> null;
 
             // A group rides the relay under its own kind — the same key the Train Builder's save uses.
             case Template.CarriageGroup group ->
@@ -154,6 +156,8 @@ public final class EditorRelayWrite {
                     new Naming(BuilderPhotoPaths.Kind.BUILDING, "", building.name());
             // Official Lost City buildings are never uploaded — Big Lost City is All Rights Reserved.
             case Template.LostCity ignored -> null;
+            // A staged build is not a template yet; it reaches the relay only after a commit, as its kind.
+            case Template.Staged ignored -> null;
         };
     }
 

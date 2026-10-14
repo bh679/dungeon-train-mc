@@ -119,9 +119,10 @@ public final class TrainBuilderScreen extends Screen {
     protected void init() {
         int topY = TITLE_TOP + this.font.lineHeight + BODY_TOP_PADDING;
 
-        layout = BuilderPickerLayout.of(this.width, this.height, topY, this.height - BODY_BOTTOM_MARGIN);
+        // A dev checkout leads with the Workbench, the reviewer's bench; a release never lists it.
+        List<BuilderMode> modes = BuilderMode.navOrder();
+        layout = BuilderPickerLayout.of(modes, this.width, this.height, topY, this.height - BODY_BOTTOM_MARGIN);
 
-        List<BuilderMode> modes = BuilderMode.NAV_ORDER;
         List<BuilderPickerLayout.Rect> cells = layout.tiles();
         for (int i = 0; i < modes.size() && i < cells.size(); i++) {
             BuilderMode mode = modes.get(i);

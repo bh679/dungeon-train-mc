@@ -43,6 +43,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -187,6 +188,7 @@ public final class EditorGuiScreen extends Screen {
         super.removed();
         BuilderTilePreviews.clear();
         RelayBuildPreviews.clear();
+        games.brennan.dungeontrain.client.builder.WorkbenchPreviews.clear();
         games.brennan.dungeontrain.client.builder.StagePreviews.clear();
         search.close();
         EditorCreatorBuilds.detach();
@@ -281,6 +283,8 @@ public final class EditorGuiScreen extends Screen {
             loading = false;
             // Given up on: an answer that turns up after this is dropped rather than replayed.
             lastDownload = null;
+            lastStageRelayId = -1;
+            autoloadPending.clear();
             creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOAD_FAILED);
         }
     }
@@ -386,6 +390,7 @@ public final class EditorGuiScreen extends Screen {
             BuilderProfilePacket.Entry picked = selectedCreatorBuild();
             trackVersionsOf(picked == null ? 0 : picked.relayId(),
                 EditorCreatorBuilds.ownerOf(picked));
+            creatorPane.workbenchTab(EditorScreenState.onWorkbenchTab(), browser.creatorTiles().size());
             creatorPane.render(g, this.font, layout, theme, picked, orbit.yaw(),
                 creatorNote, loadAsCopy, EditorCreatorBuilds.here(index, picked), goingTo != null,
                 loading, previewSeq, mx, my);
@@ -395,7 +400,10 @@ public final class EditorGuiScreen extends Screen {
         } else {
             EditorRosterIndex.Tile tile = ctx.hasSelection() ? index.find(ctx.selection()) : null;
             TemplateArt art = TemplateArt.of(ctx.selection());
-            TemplateSummary summary = art == null ? null : art.summary();
+            boolean staged = ctx.hasSelection() && ctx.selection().category() == PlotCategory.WORKBENCH;
+            TemplateSummary summary = staged
+                ? games.brennan.dungeontrain.client.builder.WorkbenchPreviews.summary(ctx.selection().modelName())
+                : art == null ? null : art.summary();
             trackVersionsOf(tile == null ? 0 : tile.relayId(), "");
             detail.showVersion(tile == null ? 0 : tile.relayId(), previewSeq);
             detail.showSummary(summary);
@@ -519,6 +527,57 @@ public final class EditorGuiScreen extends Screen {
 
     /** The press most recently sent, so the loot-prefab question can replay it with the answer attached. */
     private BuilderProfileDownloadPacket lastDownload;
+    /** The relay row the last "To Workbench" press asked about, or -1; its answer comes back as a download result. */
+    private int lastStageRelayId = -1;
+    /** The relay rows an Autoload is still waiting on; each answer comes back as a download result. */
+    private final java.util.Set<Integer> autoloadPending = new java.util.HashSet<>();
+    private int autoloadTotal;
+
+    /**
+     * Stage every build the grid lists — one server round trip, which enters the Workbench first when
+     * another category is resident. Answers arrive one per build and are counted in
+     * {@link #onDownloadResult}; the note reads the count up.
+     */
+    private void autoloadWorkbench() {
+        List<BuilderProfilePacket.Entry> listed = browser.creatorTiles();
+        if (listed.isEmpty() || loading) return;
+        List<games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.Item> items = new ArrayList<>();
+        autoloadPending.clear();
+        for (BuilderProfilePacket.Entry entry : listed) {
+            if (items.size() >= games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.MAX_ITEMS) break;
+            String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
+                ? EditorCreatorBuilds.viewedName() : entry.ownerName();
+            items.add(new games.brennan.dungeontrain.net.WorkbenchAutoloadPacket.Item(entry.relayId(),
+                EditorCreatorBuilds.ownerOf(entry), ownerName));
+            autoloadPending.add(entry.relayId());
+        }
+        autoloadTotal = items.size();
+        lastDownload = null;
+        lastStageRelayId = -1;
+        DungeonTrainNet.sendToServer(new games.brennan.dungeontrain.net.WorkbenchAutoloadPacket(items, BuilderProfileState.live()));
+        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADING, 0, autoloadTotal);
+        loading = true;
+        loadingTicks = LOAD_TIMEOUT_TICKS * Math.max(1, autoloadTotal);
+    }
+
+    /**
+     * Stage the selected build on the Workbench: the same fetch as a Load, landing on the shelf instead
+     * of in a store — and never a category switch. What comes back is read by {@link #onDownloadResult}.
+     */
+    private void stageSelectedCreatorBuild() {
+        BuilderProfilePacket.Entry entry = selectedCreatorBuild();
+        if (entry == null || loading) return;
+        String ownerName = entry.ownerName() == null || entry.ownerName().isEmpty()
+            ? EditorCreatorBuilds.viewedName()
+            : entry.ownerName();
+        lastDownload = null;
+        lastStageRelayId = entry.relayId();
+        DungeonTrainNet.sendToServer(new games.brennan.dungeontrain.net.WorkbenchStagePacket(entry.relayId(),
+            EditorCreatorBuilds.ownerOf(entry), ownerName, BuilderProfileState.live()));
+        creatorNote = EditorScreenLang.text(EditorScreenLang.CREATOR_LOADING_BUILD);
+        loading = true;
+        loadingTicks = LOAD_TIMEOUT_TICKS;
+    }
 
     private void sendDownload(BuilderProfileDownloadPacket packet) {
         this.lastDownload = packet;
@@ -592,7 +651,21 @@ public final class EditorGuiScreen extends Screen {
     private void onDownloadResult(BuilderProfileDownloadResultPacket packet) {
         // Only the press this screen is waiting on: an answer to one it never made, or gave up on,
         // says nothing about the row in front of the player.
-        if (lastDownload == null || packet.relayId() != lastDownload.relayId()) return;
+        if (autoloadPending.remove(packet.relayId())) {
+            // One of a batch: count it, and stay greyed until the last one is in.
+            int done = autoloadTotal - autoloadPending.size();
+            creatorNote = autoloadPending.isEmpty()
+                ? EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADED, done)
+                : EditorScreenLang.text(EditorScreenLang.CREATOR_AUTOLOADING, done, autoloadTotal);
+            if (autoloadPending.isEmpty()) {
+                loading = false;
+                afterCommand();
+            }
+            return;
+        }
+        boolean stagePress = lastStageRelayId >= 0 && packet.relayId() == lastStageRelayId;
+        if (!stagePress && (lastDownload == null || packet.relayId() != lastDownload.relayId())) return;
+        if (stagePress) lastStageRelayId = -1;
         // Answered, whatever the answer: the button is back. A prefab question below re-sends and
         // greys it again.
         loading = false;
@@ -859,6 +932,16 @@ public final class EditorGuiScreen extends Screen {
                 case PARENT -> {
                     click();
                     pickLoadParent();
+                    return true;
+                }
+                case WORKBENCH -> {
+                    click();
+                    stageSelectedCreatorBuild();
+                    return true;
+                }
+                case AUTOLOAD -> {
+                    click();
+                    autoloadWorkbench();
                     return true;
                 }
                 case SUBMIT -> {

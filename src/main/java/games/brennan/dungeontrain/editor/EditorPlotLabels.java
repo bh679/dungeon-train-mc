@@ -126,6 +126,7 @@ public final class EditorPlotLabels {
             case TRACKS -> trackLabels(dims);
             case PORTALS -> portalLabels(dims);
             case BUILDINGS -> buildingLabels();
+            case WORKBENCH -> workbenchLabels();
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -156,6 +157,16 @@ public final class EditorPlotLabels {
                 games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
                 games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
                 PlotCategory.WHOLE_GROUP.name(), g.id(), g.id(), false, p.isUser, p.isImported));
+        }
+        Vec3i halfFootprint = WholeCarriageEditor.plotSize(games.brennan.dungeontrain.train.WholeKind.HALF, dims);
+        for (games.brennan.dungeontrain.train.WholeCarriage h : games.brennan.dungeontrain.train.WholeHalfRegistry.all()) {
+            BlockPos origin = WholeCarriageEditor.halfPlotOrigin(h, dims);
+            if (origin == null) continue;
+            Provenance p = provenanceOf(WholeHalfTemplateStore.fileForId(h.id()));
+            out.add(new Label(anchorAbove(origin, halfFootprint),
+                games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.HALF, h.id()),
+                games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.HALF, h.id()),
+                PlotCategory.WHOLE_HALF.name(), h.id(), h.id(), false, p.isUser, p.isImported));
         }
         return out;
     }
@@ -280,6 +291,23 @@ public final class EditorPlotLabels {
             if (origin == null) continue;
             out.add(new Label(anchorAbove(origin, games.brennan.dungeontrain.building.Buildings.MAX_SIZE), ref.name(),
                 EditorPlotLabelsPacket.NO_WEIGHT, official, LostCityReferenceEditor.MODEL_ID, ref.name(), false, false, false));
+        }
+        return out;
+    }
+
+    /** One label per staged build, over its recorded plot: the relay's name, no weight. */
+    private static List<Label> workbenchLabels() {
+        net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return Collections.emptyList();
+        net.minecraft.server.level.ServerLevel overworld = server.overworld();
+        List<Label> out = new ArrayList<>();
+        String category = EditorCategory.WORKBENCH.name();
+        for (games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild build
+                : games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.list()) {
+            BlockPos origin = WorkbenchEditor.plotOrigin(overworld, build.stagedId());
+            if (origin == null) continue;
+            out.add(new Label(anchorAbove(origin, build.size()), build.stagedId(), EditorPlotLabelsPacket.NO_WEIGHT,
+                category, WorkbenchEditor.MODEL_ID, build.stagedId(), false, true, false));
         }
         return out;
     }

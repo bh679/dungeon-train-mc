@@ -61,7 +61,7 @@ public final class BuilderDefaultOpen {
             // opening TUNNEL_PORTAL here put the tunnel mouth on the plot and called it a dimension.
             case TRAIN_DIMENSIONS -> first(portalRooms).map(BuilderOpenRequest::forPortalRoom);
             // No builder world for buildings; the editor is where they are made.
-            case BUILDINGS -> Optional.empty();
+            case BUILDINGS, WORKBENCH -> Optional.empty();
         };
     }
 

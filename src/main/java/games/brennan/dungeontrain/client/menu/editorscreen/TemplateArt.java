@@ -27,6 +27,8 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
             // tile draws the shell twin until whole rooms get a photo kind of their own.
             case WHOLE -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE, key.modelId(), null, null);
             case WHOLE_GROUP -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, key.modelId(), null, null);
+            // A half shares the carriage photo kind with rooms until it has a kind of its own.
+            case WHOLE_HALF -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE, key.modelId(), null, null);
             case CONTENTS -> new TemplateArt(BuilderPhotoPaths.Kind.CONTENTS, key.modelId(), null, null);
             case PARTS -> {
                 CarriagePartKind pk = CarriagePartKind.fromId(key.modelId());
@@ -41,7 +43,8 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
             case CHUNK_FRAMES -> new TemplateArt(BuilderPhotoPaths.Kind.CHUNK_FRAME, key.modelName(), null, null);
             case BUILDINGS -> new TemplateArt(BuilderPhotoPaths.Kind.BUILDING, key.modelName(), null, null);
             case LOST_CITY -> new TemplateArt(BuilderPhotoPaths.Kind.LOST_CITY, key.modelName(), null, null);
-            case ARCHITECTURE -> null;
+            // A staged build has no photo store of its own until it is committed.
+            case ARCHITECTURE, WORKBENCH -> null;
         };
     }
 

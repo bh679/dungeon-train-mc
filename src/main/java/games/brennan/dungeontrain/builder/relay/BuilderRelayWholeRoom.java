@@ -4,25 +4,19 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorDevMode;
-import games.brennan.dungeontrain.editor.EditorLayout;
 import games.brennan.dungeontrain.editor.StageStore;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
-import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.train.CarriagePlacer;
-import games.brennan.dungeontrain.train.CarriageStampGuard;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.train.CarriageVariant;
 import games.brennan.dungeontrain.train.WholeCarriage;
-import games.brennan.dungeontrain.train.WholeCarriagePlacer;
 import games.brennan.dungeontrain.train.WholeCarriageRegistry;
 import games.brennan.dungeontrain.train.WholeKind;
 import games.brennan.dungeontrain.train.WholeWeights;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import org.slf4j.Logger;
 
@@ -55,11 +49,6 @@ public final class BuilderRelayWholeRoom {
     /** The weight a room arrives with — in the pool, but not dominating it. */
     public static final int ARRIVAL_WEIGHT = 1;
 
-    /**
-     * Scratch box for the contents bake — well off the editor rows, which grow from {@code Z=0}
-     * along {@code +Z}, and under the build ceiling.
-     */
-    private static final int SCRATCH_Z = -(EditorLayout.GAP * 8);
 
     private BuilderRelayWholeRoom() {}
 
@@ -162,30 +151,11 @@ public final class BuilderRelayWholeRoom {
      * stay placeholders so the room resolves its stage when it is stamped into a train.</p>
      */
     static StructureTemplate bakeOntoDefaultShell(ServerLevel level, StructureTemplate contents, CarriageDims dims) {
-        Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
-        if (!contents.getSize().equals(interior)) {
-            Vec3i size = contents.getSize();
-            LOGGER.warn("[DungeonTrain] Builder relay download: contents are {}x{}x{}, interior is {}x{}x{} — cannot bake a whole room",
-                size.getX(), size.getY(), size.getZ(), interior.getX(), interior.getY(), interior.getZ());
-            return null;
-        }
         Optional<StructureTemplate> shell = CarriageTemplateStore.get(level, CarriageVariant.of(CarriageType.STANDARD), dims);
         if (shell.isEmpty()) {
             LOGGER.warn("[DungeonTrain] Builder relay download: no standard shell to bake contents onto");
             return null;
         }
-        BlockPos scratch = new BlockPos(0, level.getMaxBuildHeight() - dims.height() - 2, SCRATCH_Z);
-        try {
-            return CarriageStampGuard.call(() -> {
-                CarriagePlacer.eraseAt(level, scratch, dims);
-                StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true);
-                shell.get().placeInWorld(level, scratch, scratch, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
-                BlockPos inside = CarriageContentsPlacer.interiorOrigin(scratch);
-                contents.placeInWorld(level, inside, inside, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
-                return WholeCarriagePlacer.captureTemplate(level, scratch, dims);
-            });
-        } finally {
-            CarriagePlacer.eraseAt(level, scratch, dims);
-        }
+        return games.brennan.dungeontrain.editor.pool.PoolScratch.bake(level, shell.get(), contents, dims);
     }
 }

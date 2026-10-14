@@ -292,11 +292,11 @@ public interface BlockVariantPlot {
      * is what made a second, drifting copy of the string concatenation worth avoiding — see
      * {@link ContainerContentsStore#trackPlotKey} for the bug the last one caused.
      */
-    static String carriageKey(String variantId) {
+    public static String carriageKey(String variantId) {
         return "carriage:" + variantId;
     }
 
-    static String contentsKey(String contentsId) {
+    public static String contentsKey(String contentsId) {
         return "contents:" + contentsId;
     }
 
@@ -309,8 +309,8 @@ public interface BlockVariantPlot {
     }
 
     /** {@code whole:<id>} for a room, {@code whole_group:<id>} for a group — also the containers-store key. */
-    static String wholeKey(games.brennan.dungeontrain.train.WholeKind kind, String id) {
-        return (kind == games.brennan.dungeontrain.train.WholeKind.GROUP ? "whole_group:" : "whole:") + id;
+    public static String wholeKey(games.brennan.dungeontrain.train.WholeKind kind, String id) {
+        return WholeCarriageEditor.categoryIdOf(kind) + ":" + id;
     }
 
     // ---------- Resolution ----------
@@ -402,16 +402,14 @@ public interface BlockVariantPlot {
         if (key.startsWith(ChunkFramePlot.KEY_PREFIX)) {
             return ChunkFramePlot.of(key.substring(ChunkFramePlot.KEY_PREFIX.length()));
         }
-        if (key.startsWith("whole:") || key.startsWith("whole_group:")) {
-            boolean group = key.startsWith("whole_group:");
-            String id = key.substring(group ? "whole_group:".length() : "whole:".length());
-            games.brennan.dungeontrain.train.WholeKind kind = group
-                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
-            games.brennan.dungeontrain.template.Template model = group
-                ? games.brennan.dungeontrain.train.CarriageGroupRegistry.find(id)
-                    .map(games.brennan.dungeontrain.template.Template.CarriageGroup::new).orElse(null)
-                : games.brennan.dungeontrain.train.WholeCarriageRegistry.find(id)
-                    .map(games.brennan.dungeontrain.template.Template.WholeCarriage::new).orElse(null);
+        if (key.startsWith("whole:") || key.startsWith("whole_group:") || key.startsWith("whole_half:")) {
+            games.brennan.dungeontrain.train.WholeKind kind = key.startsWith("whole_group:")
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP
+                : key.startsWith("whole_half:") ? games.brennan.dungeontrain.train.WholeKind.HALF
+                : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            String id = key.substring((WholeCarriageEditor.categoryIdOf(kind) + ":").length());
+            games.brennan.dungeontrain.template.Template model = WholeTemplateNew.ids(kind).contains(id)
+                ? WholeTemplateNew.template(kind, id) : null;
             if (model == null) return null;
             BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
             if (origin == null) return null;

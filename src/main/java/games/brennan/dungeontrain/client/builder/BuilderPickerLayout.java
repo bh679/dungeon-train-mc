@@ -46,11 +46,17 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
      * @param bottomY      first Y the body may NOT occupy (the bottom margin)
      */
     static BuilderPickerLayout of(int screenWidth, int screenHeight, int topY, int bottomY) {
+        return of(games.brennan.dungeontrain.builder.BuilderMode.NAV_ORDER, screenWidth, screenHeight, topY, bottomY);
+    }
+
+    /** The same for an explicit tile order — a dev checkout's, which leads with the Workbench. */
+    static BuilderPickerLayout of(List<games.brennan.dungeontrain.builder.BuilderMode> order,
+                                  int screenWidth, int screenHeight, int topY, int bottomY) {
+        int rows = order.size();
         // Two tiers (NavTiles): the primary tiles at 16:9, the rest short, so the floor counts them apart.
-        long primaries = games.brennan.dungeontrain.builder.BuilderMode.NAV_ORDER.stream()
-                .filter(games.brennan.dungeontrain.builder.BuilderMode::primary).count();
-        int minBodyH = (int) (primaries * (MIN_TILE_WIDTH * 9 / 16) + (ROWS - primaries) * NavTiles.MIN_SMALL_H)
-                + NavTiles.GAP * ROWS + ROW_GAP + GO_H;
+        long primaries = order.stream().filter(games.brennan.dungeontrain.builder.BuilderMode::primary).count();
+        int minBodyH = (int) (primaries * (MIN_TILE_WIDTH * 9 / 16) + (rows - primaries) * NavTiles.MIN_SMALL_H)
+                + NavTiles.GAP * rows + ROW_GAP + GO_H;
         int bodyW = Math.max(COLUMNS * MIN_TILE_WIDTH + TILE_GAP + COLUMN_GAP + MIN_TILE_WIDTH,
                 Math.min(screenWidth - 2 * SIDE_MARGIN, MAX_BODY_WIDTH));
         int bodyH = Math.max(bottomY - topY, minBodyH);
@@ -62,7 +68,7 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
 
         Rect go = new Rect(detailX, topY + bodyH - GO_H, detailW, GO_H);
         Rect back = new Rect(bodyX, go.y(), tileColumnW, GO_H);
-        List<Rect> tiles = tiles(new Rect(bodyX, topY, tileColumnW, Math.max(0, back.y() - ROW_GAP - topY)));
+        List<Rect> tiles = tiles(order, new Rect(bodyX, topY, tileColumnW, Math.max(0, back.y() - ROW_GAP - topY)));
 
         Rect header = new Rect(detailX, topY, detailW, HEADER_H);
         int between = Math.max(0, go.y() - ROW_GAP - (header.bottom() + ROW_GAP));
@@ -79,11 +85,15 @@ record BuilderPickerLayout(List<Rect> tiles, Rect back, Rect header, Rect previe
      * the two primary modes, short ones for the advanced rest — the Nav tab's arithmetic ({@link NavTiles}).
      */
     static List<Rect> tiles(Rect area) {
+        return tiles(games.brennan.dungeontrain.builder.BuilderMode.NAV_ORDER, area);
+    }
+
+    static List<Rect> tiles(List<games.brennan.dungeontrain.builder.BuilderMode> order, Rect area) {
         // Tiles always span the column: the art is cover-cropped, so a tile shorter than 16:9 shows
         // a wider slice of its picture rather than a squashed one, and the caption has the width.
         // Two tiers, in nav order — see NavTiles.
         List<Rect> out = new ArrayList<>();
-        for (NavTiles.Cell c : NavTiles.layout(area.x(), area.y(), area.w(), area.h())) {
+        for (NavTiles.Cell c : NavTiles.layout(order, area.x(), area.y(), area.w(), area.h())) {
             out.add(new Rect(c.x(), c.y(), c.w(), c.h()));
         }
         return List.copyOf(out);

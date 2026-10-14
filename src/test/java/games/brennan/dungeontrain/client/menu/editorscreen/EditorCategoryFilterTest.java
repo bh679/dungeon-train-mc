@@ -20,7 +20,7 @@ final class EditorCategoryFilterTest {
         assertArrayEquals(new EditorCategoryFilter[] {
             EditorCategoryFilter.ALL, EditorCategoryFilter.WHOLE, EditorCategoryFilter.CARRIAGES,
             EditorCategoryFilter.CONTENTS, EditorCategoryFilter.TRACKS, EditorCategoryFilter.DIMENSIONS,
-            EditorCategoryFilter.BUILDINGS,
+            EditorCategoryFilter.BUILDINGS, EditorCategoryFilter.WORKBENCH,
         }, EditorCategoryFilter.values());
         assertEquals(PlotCategory.WHOLE, EditorCategoryFilter.WHOLE.category());
         assertNull(EditorCategoryFilter.ALL.category());
@@ -38,6 +38,7 @@ final class EditorCategoryFilterTest {
         assertEquals(EditorCategoryFilter.TRACKS, EditorCategoryFilter.forCategory(PlotCategory.TRACKS));
         assertEquals(EditorCategoryFilter.DIMENSIONS, EditorCategoryFilter.forCategory(PlotCategory.PORTALS));
         assertNull(EditorCategoryFilter.forCategory(PlotCategory.ARCHITECTURE));
+        assertEquals(EditorCategoryFilter.WORKBENCH, EditorCategoryFilter.forCategory(PlotCategory.WORKBENCH));
         assertNull(EditorCategoryFilter.forCategory(null));
     }
 }

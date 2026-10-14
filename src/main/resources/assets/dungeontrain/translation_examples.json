@@ -875,10 +875,54 @@
       ]
     }
   },
-  "chat.dungeontrain.live.censored": {"1": {"label": "which warning this is", "examples": ["1", "3"]}, "2": {"label": "how many warnings there are before the Live Eye is taken", "examples": ["3"]}},
-  "chat.dungeontrain.live.censored_book": {"1": {"label": "which warning this is", "examples": ["1", "3"]}, "2": {"label": "how many warnings there are before the Live Eye is taken", "examples": ["3"]}},
-  "chat.dungeontrain.live.burns_banned": {"1": {"label": "how long the ban still has to run", "examples": ["6 days", "3 hours"]}},
-  "command.dungeontrain.live_appeal.no_such_line": {"1": {"label": "how many lines there are to pick from", "examples": ["12", "4"]}},
+  "chat.dungeontrain.live.censored": {
+    "1": {
+      "label": "which warning this is",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "how many warnings there are before the Live Eye is taken",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.censored_book": {
+    "1": {
+      "label": "which warning this is",
+      "examples": [
+        "1",
+        "3"
+      ]
+    },
+    "2": {
+      "label": "how many warnings there are before the Live Eye is taken",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.burns_banned": {
+    "1": {
+      "label": "how long the ban still has to run",
+      "examples": [
+        "6 days",
+        "3 hours"
+      ]
+    }
+  },
+  "command.dungeontrain.live_appeal.no_such_line": {
+    "1": {
+      "label": "how many lines there are to pick from",
+      "examples": [
+        "12",
+        "4"
+      ]
+    }
+  },
   "chat.dungeontrain.book_suspended.blocked": {
     "1": {
       "label": "how long the pause still has to run",
@@ -13386,6 +13430,174 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.pool.keep_name": {
+    "1": {
+      "label": "the pool's name",
+      "examples": [
+        "Whole"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.pool.as_new": {
+    "1": {
+      "label": "the pool's name",
+      "examples": [
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.moved": {
+    "1": {
+      "label": "the template's old id",
+      "examples": [
+        "cargo"
+      ]
+    },
+    "2": {
+      "label": "the destination pool's name",
+      "examples": [
+        "Contents"
+      ]
+    },
+    "3": {
+      "label": "the id it landed under",
+      "examples": [
+        "cargo_rooms"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.dropped": {
+    "1": {
+      "label": "the sidecars that could not travel, comma-separated",
+      "examples": [
+        "parts assignment, contents allow-list"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.same_pool": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "cargo"
+      ]
+    },
+    "2": {
+      "label": "the pool's name",
+      "examples": [
+        "Whole"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.not_found": {
+    "1": {
+      "label": "the pool's name",
+      "examples": [
+        "Carriage"
+      ]
+    },
+    "2": {
+      "label": "the id the player typed",
+      "examples": [
+        "cargo"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.name_taken": {
+    "1": {
+      "label": "the id the player asked for",
+      "examples": [
+        "cargo"
+      ]
+    },
+    "2": {
+      "label": "the pool's name",
+      "examples": [
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.not_movable": {
+    "1": {
+      "label": "the shell id",
+      "examples": [
+        "flatbed"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.protected": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "standard"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.unsaved": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "cargo"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.box_mismatch": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "cargo"
+      ]
+    },
+    "2": {
+      "label": "the size name",
+      "examples": [
+        "Half"
+      ]
+    },
+    "3": {
+      "label": "the box dimensions",
+      "examples": [
+        "13×7×7"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.group_size": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "triple"
+      ]
+    },
+    "2": {
+      "label": "this world's carriages per group",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.no_shell": {
+    "1": {
+      "label": "the missing shell id",
+      "examples": [
+        "standard_half"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.failed": {
+    "1": {
+      "label": "the error message",
+      "examples": [
+        "No server context."
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.unknown_whole_half": {
+    "1": {
+      "label": "the half id the player typed",
+      "examples": [
+        "short_bunk"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.unknown_whole_group": {
     "1": {
       "label": "the group id the player typed",
@@ -15474,6 +15686,183 @@
       "examples": [
         "English",
         "Українська"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.commit.title": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271",
+        "library-88"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.commit.kind": {
+    "1": {
+      "label": "the template kind the build will become",
+      "examples": [
+        "contents",
+        "portal_room"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.commit.sub_kind": {
+    "1": {
+      "label": "the sub kind within that kind (a part kind or a track kind)",
+      "examples": [
+        "floor",
+        "tunnel_section"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.commit.parent": {
+    "1": {
+      "label": "the chosen variant parent's label",
+      "examples": [
+        "User builds",
+        "Top level"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.cleared": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.removed": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.saved": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.not_standing": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.failed": {
+    "1": {
+      "label": "the error text or outcome name",
+      "examples": [
+        "FAILED",
+        "No such file"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.unknown": {
+    "1": {
+      "label": "the Workbench id that was asked for",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.bad_kind": {
+    "1": {
+      "label": "the kind word that was typed",
+      "examples": [
+        "chunk_frame",
+        "house"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.committed": {
+    "1": {
+      "label": "the staged build's Workbench id",
+      "examples": [
+        "brick_cabin-4271"
+      ]
+    },
+    "2": {
+      "label": "the kind it became",
+      "examples": [
+        "contents",
+        "building"
+      ]
+    },
+    "3": {
+      "label": "the template name it landed under",
+      "examples": [
+        "brick_cabin"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.name_taken": {
+    "1": {
+      "label": "the template name that is already in use",
+      "examples": [
+        "brick_cabin"
+      ]
+    },
+    "2": {
+      "label": "the kind it was being committed as",
+      "examples": [
+        "contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.prefabs_kept_local": {
+    "1": {
+      "label": "comma-separated loot prefab ids",
+      "examples": [
+        "gold_hoard, trap_chest"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.list_header": {
+    "1": {
+      "label": "how many builds are on the Workbench",
+      "examples": [
+        "1",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.creator.autoload": {
+    "1": {
+      "label": "how many builds the grid lists",
+      "examples": [
+        "3",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.creator.autoloading": {
+    "1": {
+      "label": "builds staged so far",
+      "examples": [
+        "2"
+      ]
+    },
+    "2": {
+      "label": "builds in the batch",
+      "examples": [
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.creator.autoloaded": {
+    "1": {
+      "label": "builds staged by the batch",
+      "examples": [
+        "7"
       ]
     }
   }

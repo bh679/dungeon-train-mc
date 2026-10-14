@@ -9,6 +9,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -28,14 +29,22 @@ final class BuilderModeTest {
             assertTrue(keys.add(mode.labelKey()), "duplicate label key: " + mode.labelKey());
             assertTrue(textures.add(mode.texturePath()), "duplicate texture: " + mode.texturePath());
         }
-        assertEquals(6, ids.size(), "the picker screen lays out six tiles in a vertical list");
+        assertEquals(7, ids.size(), "six public tiles plus the dev-only Workbench");
         assertEquals(BuilderMode.WHOLE_CARRIAGES, BuilderMode.values()[0], "Whole leads, as in the editor's row");
         // The picker's order: the two big tiles, then the advanced three, Buildings last.
         assertEquals(java.util.List.of(BuilderMode.WHOLE_CARRIAGES, BuilderMode.TRAIN_DIMENSIONS,
             BuilderMode.TRAIN_OUTSIDE, BuilderMode.INSIDE_CARRIAGE, BuilderMode.TRACKS_TUNNELS, BuilderMode.BUILDINGS),
             BuilderMode.NAV_ORDER);
-        assertEquals(java.util.Set.copyOf(java.util.Arrays.asList(BuilderMode.values())), java.util.Set.copyOf(BuilderMode.NAV_ORDER),
-            "every mode has a tile");
+        java.util.Set<BuilderMode> publicModes = new java.util.HashSet<>(java.util.Arrays.asList(BuilderMode.values()));
+        publicModes.remove(BuilderMode.WORKBENCH);
+        assertEquals(publicModes, java.util.Set.copyOf(BuilderMode.NAV_ORDER), "every public mode has a tile");
+        // A dev checkout leads with the Workbench; a release never lists it.
+        assertEquals(BuilderMode.WORKBENCH, BuilderMode.navOrder(true).get(0));
+        assertEquals(BuilderMode.NAV_ORDER, BuilderMode.navOrder(true).subList(1, BuilderMode.navOrder(true).size()));
+        assertSame(BuilderMode.NAV_ORDER, BuilderMode.navOrder(false));
+        assertTrue(BuilderMode.WORKBENCH.devOnly() && !BuilderMode.BUILDINGS.devOnly());
+        assertFalse(BuilderMode.WORKBENCH.hasBuilderWorld());
+        assertFalse(BuilderMode.BUILDER_MODES.contains(BuilderMode.WORKBENCH));
         assertTrue(BuilderMode.WHOLE_CARRIAGES.primary() && BuilderMode.TRAIN_DIMENSIONS.primary());
         assertFalse(BuilderMode.BUILDINGS.primary() || BuilderMode.TRAIN_OUTSIDE.primary());
         // Buildings are editor-only: no builder world, never offered by a builder packet.
