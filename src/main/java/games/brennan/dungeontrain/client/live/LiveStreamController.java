@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.client.live.audio.StreamSoundPolicy;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
@@ -21,9 +22,9 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -104,6 +105,8 @@ public final class LiveStreamController {
     private boolean grabbedThisFrame; // render thread: this frame was already read at an earlier point
     private long streamStartedMs;
     private int waitTicks;
+    /** The Live Eye must be on this client's head: the server's START alone is not enough. */
+    private final LiveHeadpieceGuard headpiece = new LiveHeadpieceGuard();
     /** How long the going-live line waits for the relay's first viewer count before saying 0. */
     private static final long LIVE_LINE_FALLBACK_MS = 10_000L;
     private final LiveViewerBands bands = new LiveViewerBands();
@@ -192,6 +195,7 @@ public final class LiveStreamController {
         generation++;
         state = State.WAIT_FFMPEG;
         waitTicks = 0;
+        headpiece.reset();
         switch (FfmpegSupport.state()) {
             case OFF, FAILED -> {
                 say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
@@ -199,8 +203,36 @@ public final class LiveStreamController {
                 tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
             }
             case DOWNLOADING -> say(Component.translatable("chat.dungeontrain.live.preparing").withStyle(ChatFormatting.GRAY));
-            case READY -> claimChannel();
+            // No claim until the Live Eye is on: claiming cuts off whoever streams in another world.
+            // Not on yet (login: the inventory may land after START) → the tick claims once it is.
+            case READY -> { if (headpieceWorn()) claimChannel(); }
         }
+    }
+
+    /** The Live Eye is on this client's own head, as far as this client can see. */
+    private static boolean headpieceWorn() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null && mc.player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.LIVE_HEADPIECE.get());
+    }
+
+    /**
+     * Ends a stream whose Live Eye is not on this client's head ({@link LiveHeadpieceGuard}). The
+     * server hears FAILED, the no-burn exit: a real take-off was already burned and cleared by the
+     * server, so this only reaches a server that still thinks it is worn, and that hands it back.
+     * True when the stream ended.
+     */
+    private boolean checkHeadpiece() {
+        LiveHeadpieceGuard.Verdict v = headpiece.tick(headpieceWorn(), state == State.STREAMING);
+        if (v == LiveHeadpieceGuard.Verdict.NONE) return false;
+        if (v == LiveHeadpieceGuard.Verdict.REFUSE) {
+            LOGGER.warn("[DungeonTrain] live stream refused: headpiece not worn");
+            stop(null);
+        } else {
+            LOGGER.info("[DungeonTrain] live stream ended: headpiece no longer worn");
+            stop(null, LiveStreamEndedToast.Reason.REMOVED);
+        }
+        tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+        return true;
     }
 
     /** Client tick: finish waiting for ffmpeg, and watch the encoder while streaming. */
@@ -214,10 +246,14 @@ public final class LiveStreamController {
             Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(endedAfterLeave));
             endedAfterLeave = null;
         }
+        if (state != State.IDLE && state != State.STOPPING && checkHeadpiece()) return;
         if (state == State.WAIT_FFMPEG) {
+            if (FfmpegSupport.state() == FfmpegSupport.State.READY) {
+                if (headpieceWorn()) claimChannel();
+                return;
+            }
             if (++waitTicks % 20 != 0) return;
             switch (FfmpegSupport.state()) {
-                case READY -> claimChannel();
                 case OFF, FAILED -> {
                     say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
                     state = State.IDLE;
@@ -489,9 +525,7 @@ public final class LiveStreamController {
         // An earlier point that never fired (no GUI pass this frame, or another mod removed the chat
         // layer) drops the frame: reading the finished frame instead could send what was kept back.
         StreamCapture.Point point = INSTANCE.capturePoint();
-        if (point == StreamCapture.Point.FRAME_END || point == StreamCapture.Point.FRAME_END_HIDE_CHAT) {
-            INSTANCE.grabFrame();
-        }
+        if (point == StreamCapture.Point.FRAME_END) INSTANCE.grabFrame();
     }
 
     /**
@@ -504,17 +538,22 @@ public final class LiveStreamController {
     }
 
     /**
-     * Stream chat off (always, in Kid mode): read just before chat draws, or skip the chat layer
-     * while a menu is open. Receives cancelled events for the same reason as {@link #onGuiStart}.
+     * Stream chat off (always, in Kid mode): read just before chat draws. Receives cancelled events
+     * for the same reason as {@link #onGuiStart}.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public static void onGuiLayer(RenderGuiLayerEvent.Pre event) {
         if (!VanillaGuiLayers.CHAT.equals(event.getName())) return;
-        switch (INSTANCE.capturePoint()) {
-            case BEFORE_CHAT -> INSTANCE.grabNow(event.getGuiGraphics());
-            case FRAME_END_HIDE_CHAT -> event.setCanceled(true);
-            default -> { }
-        }
+        if (INSTANCE.capturePoint() == StreamCapture.Point.BEFORE_CHAT) INSTANCE.grabNow(event.getGuiGraphics());
+    }
+
+    /**
+     * A screen open with chat on: read once the HUD is drawn and before the screen is, so the chat
+     * box, a sign or book being written, or any other menu never reaches viewers.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onGuiEnd(RenderGuiEvent.Post event) {
+        if (INSTANCE.capturePoint() == StreamCapture.Point.AFTER_GUI) INSTANCE.grabNow(event.getGuiGraphics());
     }
 
     private void grabNow(GuiGraphics graphics) {
@@ -525,11 +564,12 @@ public final class LiveStreamController {
     }
 
     private StreamCapture.Point capturePoint() {
-        if (state != State.STREAMING) return StreamCapture.Point.SKIP;
+        // Not worn → nothing goes out, from the first frame; the guard's grace only delays ending.
+        if (state != State.STREAMING || !headpieceWorn()) return StreamCapture.Point.SKIP;
         Minecraft mc = Minecraft.getInstance();
         Screen screen = mc.screen;
         return StreamCapture.point(LiveFeedClientConfig.streamGui(), streamChatShown(),
-            screen != null, screen instanceof ChatScreen, mc.options.hideGui);
+            screen != null, mc.options.hideGui);
     }
 
     /** The Stream chat switch as it applies to this player — always off in Kid mode. */

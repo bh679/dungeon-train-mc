@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client.live;
 import com.google.gson.JsonObject;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Result;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.SignedPut;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -13,187 +12,282 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * The uploader against a stand-in relay and bucket: an unanswered presign backs off instead of
- * hammering the relay, a 403 is a cut-off, a failed segment never gets named in the published
- * playlist, and the final flush runs on the uploader's own thread — never beside another pass.
- */
 class LiveUploaderTest {
 
-    @TempDir Path dir;
-    private final AtomicLong now = new AtomicLong(1_000_000);
-    private FakeTransport net;
+    @TempDir
+    Path dir;
 
-    @BeforeEach
-    void setUp() {
-        net = new FakeTransport();
+    /** Stands in for the relay and R2: signs every file, fails the segments it is told to. */
+    private static final class FakeStorage implements LiveUploader.Storage {
+        final Set<String> failing = new HashSet<>();
+        final List<String> published = new ArrayList<>();
+        final List<String> segmentPuts = new ArrayList<>();
+        final Set<String> onStorage = new HashSet<>();
+        int presignStatus = 200;
+
+        @Override
+        public CompletableFuture<Result> presign(String token, List<String> files) {
+            JsonObject urls = new JsonObject();
+            for (String f : files) {
+                JsonObject o = new JsonObject();
+                o.addProperty("url", "https://r2.invalid/" + f);
+                urls.add(f, o);
+            }
+            JsonObject body = new JsonObject();
+            body.add("urls", urls);
+            if (presignStatus == 403) body.addProperty("takenBy", "Someone");
+            return CompletableFuture.completedFuture(new Result(presignStatus, body, null));
+        }
+
+        @Override
+        public CompletableFuture<Result> upload(SignedPut target, Path file) {
+            String name = file.getFileName().toString();
+            segmentPuts.add(name);
+            if (failing.contains(name)) return CompletableFuture.completedFuture(new Result(0, null, new IOException("header parser received no bytes")));
+            onStorage.add(name);
+            return CompletableFuture.completedFuture(new Result(200, null, null));
+        }
+
+        @Override
+        public CompletableFuture<Result> upload(SignedPut target, String body) {
+            published.add(body);
+            return CompletableFuture.completedFuture(new Result(200, null, null));
+        }
+
+        LivePlaylist last() {
+            return LivePlaylist.parse(published.get(published.size() - 1));
+        }
+    }
+
+    private long tick = 1_000_000L;
+
+    /** ffmpeg writes segments {@code first..first+count-1} and a fresh playlist naming them. */
+    private void encoderWrites(long first, int count, boolean ended) throws IOException {
+        StringBuilder b = new StringBuilder("#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXT-X-MEDIA-SEQUENCE:" + first + "\n");
+        for (long sn = first; sn < first + count; sn++) {
+            String name = String.format("seg%05d.ts", sn);
+            if (!Files.exists(dir.resolve(name))) Files.writeString(dir.resolve(name), "ts");
+            b.append("#EXTINF:10.0,\n").append(name).append('\n');
+        }
+        if (ended) b.append("#EXT-X-ENDLIST\n");
+        Path pl = dir.resolve(LivePlaylist.FILE_NAME);
+        Files.writeString(pl, b.toString(), StandardCharsets.UTF_8);
+        Files.setLastModifiedTime(pl, FileTime.fromMillis(tick += 1000));
+    }
+
+    /** Runs a pass past any failure back-off, as later polls would. */
+    private static void passNow(LiveUploader u) throws Exception {
+        java.lang.reflect.Field f = LiveUploader.class.getDeclaredField("notBeforeMs");
+        f.setAccessible(true);
+        f.setLong(u, 0L);
+        u.pass(false);
+    }
+
+    private LiveUploader uploader(FakeStorage s, AtomicReference<String> cutOffBy) {
+        return new LiveUploader(dir, "tok", cutOffBy::set, s, false);
+    }
+
+    @Test
+    void failedSegmentIsLeftOutOfThePlaylistUntilItIsUp() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        encoderWrites(0, 3, false);
+        s.failing.add("seg00001.ts");
+        u.pass(false);
+        assertEquals(List.of("seg00000.ts"), s.last().segments());
+
+        s.failing.clear();
+        passNow(u);
+        assertEquals(List.of("seg00000.ts", "seg00001.ts", "seg00002.ts"), s.last().segments());
+        assertEquals(3, u.segmentsUploaded());
+        assertEquals(0, u.segmentsSkipped());
+    }
+
+    @Test
+    void segmentIsSkippedAfterFourFailedPassesAndLaterOnesGoOut() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        encoderWrites(0, 3, false);
+        s.failing.add("seg00001.ts");
+        for (int i = 0; i < LiveUploader.MAX_FAILED_PASSES; i++) passNow(u);
+        assertEquals(LiveUploader.MAX_FAILED_PASSES, s.segmentPuts.stream().filter("seg00001.ts"::equals).count());
+        assertEquals(1, u.segmentsSkipped());
+        String last = s.published.get(s.published.size() - 1);
+        assertEquals(List.of("seg00000.ts", "seg00002.ts"), LivePlaylist.parse(last).segments());
+        assertTrue(last.contains("#EXT-X-DISCONTINUITY\n"));
+
+        // Given up for good: no more tries, and the next segments keep flowing.
+        encoderWrites(1, 3, false);
+        passNow(u);
+        assertEquals(LiveUploader.MAX_FAILED_PASSES, s.segmentPuts.stream().filter("seg00001.ts"::equals).count());
+        assertEquals(List.of("seg00002.ts", "seg00003.ts"), s.last().segments());
+        assertEquals(1, s.last().mediaSequence());
+    }
+
+    @Test
+    void neverPublishesASegmentThatIsNotUp() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        for (int first = 0; first < 10; first++) {
+            s.failing.clear();
+            if (first % 3 == 1) s.failing.add(String.format("seg%05d.ts", first + 2));
+            encoderWrites(first, 3, false);
+            passNow(u);
+            for (String body : s.published) {
+                for (String seg : LivePlaylist.parse(body).segments()) {
+                    assertTrue(s.onStorage.contains(seg), seg + " published before it was on storage");
+                }
+            }
+        }
+    }
+
+    @Test
+    void unchangedPlaylistIsNotUploadedAgain() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        encoderWrites(0, 2, false);
+        s.failing.add("seg00001.ts");
+        u.pass(false);
+        passNow(u);
+        assertEquals(1, s.published.size());
+    }
+
+    @Test
+    void finalPassGivesUpOnFailuresSoEndlistGoesOut() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        encoderWrites(0, 3, true);
+        s.failing.add("seg00002.ts");
+        u.pass(true);
+        assertTrue(s.last().ended());
+        assertEquals(List.of("seg00000.ts", "seg00001.ts"), s.last().segments());
+    }
+
+    @Test
+    void presign403CutsOff() throws Exception {
+        FakeStorage s = new FakeStorage();
+        s.presignStatus = 403;
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        encoderWrites(0, 1, false);
+        LiveUploader.CutOff c = assertThrows(LiveUploader.CutOff.class, () -> u.pass(false));
+        assertEquals("Someone", c.by);
+        assertTrue(s.published.isEmpty());
+    }
+
+    @Test
+    void missingSegmentFileIsSkipped() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        encoderWrites(0, 3, false);
+        Files.delete(dir.resolve("seg00001.ts"));
+        u.pass(false);
+        assertEquals(1, u.segmentsSkipped());
+        assertEquals(List.of("seg00000.ts", "seg00002.ts"), s.last().segments());
+        assertFalse(s.segmentPuts.contains("seg00001.ts"));
+    }
+
+    // ---- presign back-off ---------------------------------------------------------------------
+
+    private final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(5_000_000L);
+
+    private LiveUploader clocked(FakeStorage s) {
+        return new LiveUploader(dir, "tok", by -> { }, s, now::get, false);
     }
 
     @Test
     void unansweredPresignBacksOffExponentiallyUpToTenSeconds() throws Exception {
-        writeStream(0, false, "seg00000.ts");
-        net.presignReply = files -> new Result(0, null, new IOException("connection refused"));
-        LiveUploader up = uploader();
-
+        FakeStorage s = new FakeStorage();
+        s.presignStatus = 503;
+        LiveUploader u = clocked(s);
+        encoderWrites(0, 1, false);
         List<Long> waits = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            up.pass();
-            waits.add(up.notBeforeMs() - now.get());
-            now.set(up.notBeforeMs());
+            u.pass(false);
+            waits.add(u.notBeforeMs() - now.get());
+            now.set(u.notBeforeMs());
         }
         assertEquals(List.of(1000L, 2000L, 4000L, 8000L, 10_000L, 10_000L), waits);
-        assertEquals(6, net.presigns.get());
     }
 
     @Test
-    void aPassBeforeTheBackoffEndsAsksNothing() throws Exception {
-        writeStream(0, false, "seg00000.ts");
-        net.presignReply = files -> new Result(503, null, null);
-        LiveUploader up = uploader();
-        up.pass();
+    void noPresignInsideTheBackOff() throws Exception {
+        CountingStorage s = new CountingStorage(new FakeStorage());
+        s.inner.presignStatus = 503;
+        LiveUploader u = new LiveUploader(dir, "tok", by -> { }, s, now::get, false);
+        encoderWrites(0, 1, false);
+        u.pass(false);
         now.addAndGet(500);
-        up.pass();
-        up.pass();
-        assertEquals(1, net.presigns.get(), "presign called again inside the backoff");
+        u.pass(false);
+        u.pass(false);
+        assertEquals(1, s.presigns.get(), "presign asked again inside the back-off");
     }
 
     @Test
-    void anAnsweredPresignResetsTheBackoff() throws Exception {
-        writeStream(0, false, "seg00000.ts");
-        net.presignReply = files -> new Result(503, null, null);
-        LiveUploader up = uploader();
-        up.pass();
-        now.set(up.notBeforeMs());
-        up.pass();
-        assertEquals(2000L, up.presignBackoffMs());
+    void anAnsweredPresignResetsTheBackOff() throws Exception {
+        FakeStorage s = new FakeStorage();
+        s.presignStatus = 503;
+        LiveUploader u = clocked(s);
+        encoderWrites(0, 1, false);
+        u.pass(false);
+        now.set(u.notBeforeMs());
+        u.pass(false);
+        assertEquals(2000L, u.presignBackoffMs());
 
-        now.set(up.notBeforeMs());
-        net.presignReply = FakeTransport::signAll;
-        up.pass();
-        assertEquals(0L, up.presignBackoffMs());
-        assertEquals(1, up.segmentsUploaded());
+        s.presignStatus = 200;
+        now.set(u.notBeforeMs());
+        u.pass(false);
+        assertEquals(0L, u.presignBackoffMs());
+        assertEquals(1, u.segmentsUploaded());
     }
 
-    @Test
-    void forbiddenIsACutOffNamingWhoTookTheChannel() throws Exception {
-        writeStream(0, false, "seg00000.ts");
-        JsonObject body = new JsonObject();
-        body.addProperty("takenBy", "Steve");
-        net.presignReply = files -> new Result(403, body, null);
-        LiveUploader up = uploader();
-        LiveUploader.CutOff c = assertThrows(LiveUploader.CutOff.class, up::pass);
-        assertEquals("Steve", c.by);
-    }
-
-    @Test
-    void aFailedSegmentIsLeftOutOfThePlaylistUntilItIsUp() throws Exception {
-        writeStream(0, false, "seg00000.ts", "seg00001.ts", "seg00002.ts");
-        net.failing.add("seg00002.ts");
-        LiveUploader up = uploader();
-        up.pass();
-
-        String first = net.lastPlaylist();
-        assertEquals(List.of("seg00000.ts", "seg00001.ts"), LivePlaylist.parse(first).segments());
-        assertEquals(LiveUploader.FAIL_BACKOFF_MS, up.notBeforeMs() - now.get());
-
-        // Same local playlist (its mtime was not recorded): the retry sends the segment, then all of it.
-        net.failing.clear();
-        now.set(up.notBeforeMs());
-        up.pass();
-        assertEquals(List.of("seg00000.ts", "seg00001.ts", "seg00002.ts"), LivePlaylist.parse(net.lastPlaylist()).segments());
-        assertEquals(3, up.segmentsUploaded());
-
-        // Recorded now: nothing changed, nothing asked.
-        int presigns = net.presigns.get();
-        up.pass();
-        assertEquals(presigns, net.presigns.get());
-    }
-
-    @Test
-    void aSegmentGivenUpCutsTheHeadAndKeepsSequenceNumbers() throws Exception {
-        writeStream(7, false, "seg00007.ts", "seg00008.ts", "seg00009.ts");
-        net.failing.add("seg00007.ts");
-        LiveUploader up = uploader();
-        up.pass(); // first failure: the whole list waits on seg7
-        assertTrue(net.playlists.isEmpty(), "a playlist naming a missing first segment went up");
-
-        now.set(up.notBeforeMs());
-        up.pass(); // second failure: given up
-        String published = net.lastPlaylist();
-        assertEquals(List.of("seg00008.ts", "seg00009.ts"), LivePlaylist.parse(published).segments());
-        assertTrue(published.contains("#EXT-X-MEDIA-SEQUENCE:8"), published);
-    }
+    // ---- close: the final pass belongs to the uploader thread -----------------------------------
 
     @Test
     void finalFlushRunsOnceOnTheUploaderThreadNeverBesideAPass() throws Exception {
-        writeStream(0, false, "seg00000.ts");
-        net.presignDelayMs = 150; // keep a pass in flight when close() arrives
-        LiveUploader up = new LiveUploader(dir, "tok", by -> { }, net, System::currentTimeMillis, true);
-        assertTrue(waitFor(() -> net.presigns.get() >= 1), "uploader never polled");
+        CountingStorage s = new CountingStorage(new FakeStorage());
+        s.presignDelayMs = 150; // keep a pass in flight when close() arrives
+        encoderWrites(0, 1, false);
+        LiveUploader u = new LiveUploader(dir, "tok", by -> { }, s, true);
+        assertTrue(waitFor(() -> s.presigns.get() >= 1), "uploader never polled");
 
-        writeStream(0, true, "seg00000.ts", "seg00001.ts"); // ffmpeg's last write: ENDLIST
-        up.close(true, 5_000);
+        encoderWrites(0, 2, true); // ffmpeg's last write: ENDLIST
+        u.close(true, 5_000);
 
-        assertTrue(up.finished(), "close returned with the uploader still running");
-        assertEquals(1, net.maxConcurrent.get(), "two passes overlapped");
-        String last = net.lastPlaylist();
-        assertTrue(LivePlaylist.parse(last).ended(), "the ENDLIST playlist never went out: " + last);
-        assertTrue(net.threads.stream().allMatch(t -> t.equals("dt-live-uploader")), "a pass ran off the uploader thread: " + net.threads);
+        assertTrue(u.finished(), "close returned with the uploader still running");
+        assertEquals(1, s.maxConcurrent.get(), "two passes overlapped");
+        assertTrue(s.inner.last().ended(), "the ENDLIST playlist never went out");
+        assertTrue(s.threads.stream().allMatch("dt-live-uploader"::equals), "a pass ran off the uploader thread: " + s.threads);
     }
 
     @Test
     void closeKeepsItsBudgetWhenTheRelayHangs() throws Exception {
-        writeStream(0, false, "seg00000.ts");
-        net.presignReply = null; // never answers
-        LiveUploader up = new LiveUploader(dir, "tok", by -> { }, net, System::currentTimeMillis, true);
-        assertTrue(waitFor(() -> net.presigns.get() >= 1), "uploader never polled");
+        CountingStorage s = new CountingStorage(new FakeStorage());
+        s.hang = true;
+        encoderWrites(0, 1, false);
+        LiveUploader u = new LiveUploader(dir, "tok", by -> { }, s, true);
+        assertTrue(waitFor(() -> s.presigns.get() >= 1), "uploader never polled");
 
         long start = System.nanoTime();
-        up.close(true, 600);
-        long tookMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        u.close(true, 600);
+        long tookMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
         assertTrue(tookMs < 2_000, "close took " + tookMs + " ms");
-        // The deadline also cut the in-flight call, so the thread ends soon after.
-        assertTrue(waitFor(up::finished), "uploader thread outlived its deadline");
-    }
-
-    // ---- helpers ------------------------------------------------------------------------------
-
-    private LiveUploader uploader() {
-        return new LiveUploader(dir, "tok", by -> { }, net, now::get, false);
-    }
-
-    /** Writes the segments (a few bytes each) and an ffmpeg-shaped playlist naming them; bumps its mtime. */
-    private void writeStream(int firstSeq, boolean ended, String... segs) throws IOException {
-        StringBuilder m3u8 = new StringBuilder("#EXTM3U\n#EXT-X-VERSION:6\n#EXT-X-TARGETDURATION:10\n#EXT-X-MEDIA-SEQUENCE:")
-            .append(firstSeq).append("\n#EXT-X-INDEPENDENT-SEGMENTS\n");
-        for (String seg : segs) {
-            Files.writeString(dir.resolve(seg), "ts:" + seg);
-            m3u8.append("#EXTINF:10.000000,\n").append(seg).append('\n');
-        }
-        if (ended) m3u8.append("#EXT-X-ENDLIST\n");
-        Path pl = dir.resolve(LivePlaylist.FILE_NAME);
-        long prev = Files.exists(pl) ? Files.getLastModifiedTime(pl).toMillis() : 0;
-        Files.writeString(pl, m3u8.toString());
-        Files.setLastModifiedTime(pl, FileTime.fromMillis(Math.max(prev + 1000, System.currentTimeMillis())));
+        // The deadline also cut the call in flight, so the thread ends soon after.
+        assertTrue(waitFor(u::finished), "uploader thread outlived its deadline");
     }
 
     private static boolean waitFor(java.util.function.BooleanSupplier ok) throws InterruptedException {
-        long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        long end = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
         while (System.nanoTime() < end) {
             if (ok.getAsBoolean()) return true;
             Thread.sleep(20);
@@ -201,46 +295,30 @@ class LiveUploaderTest {
         return ok.getAsBoolean();
     }
 
-    /** A relay that signs everything (unless told otherwise) and a bucket that keeps what it is sent. */
-    private static final class FakeTransport implements LiveUploader.Transport {
-        /** null = the call never completes. */
-        volatile Function<List<String>, Result> presignReply = FakeTransport::signAll;
+    /** {@link FakeStorage}, counting presigns and the threads that call, slowed or hung on request. */
+    private static final class CountingStorage implements LiveUploader.Storage {
+        final FakeStorage inner;
         volatile long presignDelayMs;
-        final Set<String> failing = ConcurrentHashMap.newKeySet();
-        final AtomicInteger presigns = new AtomicInteger();
-        final List<String> playlists = new CopyOnWriteArrayList<>();
-        final List<String> threads = new CopyOnWriteArrayList<>();
-        final AtomicInteger inFlight = new AtomicInteger();
-        final AtomicInteger maxConcurrent = new AtomicInteger();
+        volatile boolean hang;
+        final java.util.concurrent.atomic.AtomicInteger presigns = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.concurrent.atomic.AtomicInteger inFlight = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.concurrent.atomic.AtomicInteger maxConcurrent = new java.util.concurrent.atomic.AtomicInteger();
+        final List<String> threads = new java.util.concurrent.CopyOnWriteArrayList<>();
 
-        static Result signAll(List<String> files) {
-            JsonObject urls = new JsonObject();
-            for (String f : files) {
-                JsonObject o = new JsonObject();
-                o.addProperty("url", "https://bucket.test/" + f);
-                urls.add(f, o);
-            }
-            JsonObject body = new JsonObject();
-            body.add("urls", urls);
-            return new Result(200, body, null);
-        }
-
-        String lastPlaylist() {
-            assertFalse(playlists.isEmpty(), "no playlist was uploaded");
-            return playlists.get(playlists.size() - 1);
+        CountingStorage(FakeStorage inner) {
+            this.inner = inner;
         }
 
         @Override
         public CompletableFuture<Result> presign(String token, List<String> files) {
-            // Every pass opens with a presign, held for presignDelayMs: two passes at once would overlap here.
+            // Every pass opens with a presign, held for presignDelayMs: two passes at once overlap here.
             maxConcurrent.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
             threads.add(Thread.currentThread().getName());
             presigns.incrementAndGet();
-            Function<List<String>, Result> reply = presignReply;
             try {
-                if (reply == null) return new CompletableFuture<>();
+                if (hang) return new CompletableFuture<>();
                 if (presignDelayMs > 0) Thread.sleep(presignDelayMs);
-                return CompletableFuture.completedFuture(reply.apply(files));
+                return inner.presign(token, files);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return CompletableFuture.completedFuture(new Result(0, null, e));
@@ -252,16 +330,13 @@ class LiveUploaderTest {
         @Override
         public CompletableFuture<Result> upload(SignedPut target, Path file) {
             threads.add(Thread.currentThread().getName());
-            String name = file.getFileName().toString();
-            if (failing.contains(name)) return CompletableFuture.completedFuture(new Result(500, null, null));
-            return CompletableFuture.completedFuture(new Result(200, null, null));
+            return inner.upload(target, file);
         }
 
         @Override
-        public CompletableFuture<Result> upload(SignedPut target, byte[] body) {
+        public CompletableFuture<Result> upload(SignedPut target, String body) {
             threads.add(Thread.currentThread().getName());
-            playlists.add(new String(body, StandardCharsets.UTF_8));
-            return CompletableFuture.completedFuture(new Result(200, null, null));
+            return inner.upload(target, body);
         }
     }
 }

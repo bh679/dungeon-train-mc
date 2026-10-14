@@ -4,7 +4,6 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Result;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.SignedPut;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -12,11 +11,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -27,16 +29,19 @@ import java.util.function.LongSupplier;
 /**
  * Ships what the encoder writes: watches {@code live.m3u8}, and whenever it changes, asks the relay
  * for signed URLs for the new segments plus the playlist, PUTs the segments, then the playlist
- * (that order matters — a playlist must never name a segment that is not there yet, so the copy that
- * goes up is {@link LivePlaylist#publishable cut} to what storage holds).
+ * (that order matters — a playlist must never name a segment that is not there yet). The playlist
+ * that goes up is {@link LivePlaylist#publishable}: cut off before a segment still being retried,
+ * and without a segment given up on, so it only ever names what is on storage.
  *
  * <p>Each presign is the relay heartbeat. A 403 means someone else took the channel: the uploader
- * stops and tells the controller who. An unanswered presign backs off 1 s, 2 s, 4 s … up to 10 s; a
- * failed PUT waits 3 s and is retried; a segment that fails twice is given up (viewers see a hiccup,
- * not a stall).</p>
+ * stops and tells the controller who. A failed segment is retried on later polls (after a
+ * {@value #FAIL_BACKOFF_MS} ms back-off); after {@value #MAX_FAILED_PASSES} failed passes it is
+ * skipped — viewers see a jump, not a crash. An unanswered presign (relay down, 5xx) backs off
+ * 1 s, 2 s, 4 s … up to 10 s instead of asking again every poll.</p>
  *
  * <p>Every pass runs on the uploader's own thread — the final one on a clean stop too, so two passes
- * never touch the upload bookkeeping at once; {@link #close(boolean, long)} only waits for it.</p>
+ * never touch the upload bookkeeping at once; {@link #close(boolean, long)} only waits for it, and
+ * cuts every call short at its deadline.</p>
  */
 public final class LiveUploader implements AutoCloseable {
 
@@ -46,66 +51,66 @@ public final class LiveUploader implements AutoCloseable {
     private static final long CALL_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(20);
     /** How often a waiting call re-checks a deadline {@link #close(boolean, long)} may have pulled in. */
     private static final long AWAIT_SLICE_NS = TimeUnit.MILLISECONDS.toNanos(250);
+    private static final long JOIN_MARGIN_MS = 100;
     static final long FAIL_BACKOFF_MS = 3000;
     static final long PRESIGN_BACKOFF_MIN_MS = 1000;
     static final long PRESIGN_BACKOFF_MAX_MS = 10_000;
-    private static final long JOIN_MARGIN_MS = 100;
-    /** PUT attempts per segment before it is given up. */
-    static final int MAX_TRIES = 2;
+    static final int MAX_FAILED_PASSES = 4;
     /** How long a clean stop off the render thread waits for the final pass. */
     public static final long CLOSE_BUDGET_MS = 60_000;
 
-    /** The relay + storage calls, so tests can stand in for the network. */
-    interface Transport {
+    /** The relay and storage calls, so tests can stand in for them. */
+    interface Storage {
         CompletableFuture<Result> presign(String token, List<String> files);
         CompletableFuture<Result> upload(SignedPut target, Path file);
-        CompletableFuture<Result> upload(SignedPut target, byte[] body);
-
-        Transport RELAY = new Transport() {
-            @Override public CompletableFuture<Result> presign(String token, List<String> files) { return LiveFeedClient.presign(token, files); }
-            @Override public CompletableFuture<Result> upload(SignedPut target, Path file) { return LiveFeedClient.upload(target, file); }
-            @Override public CompletableFuture<Result> upload(SignedPut target, byte[] body) { return LiveFeedClient.upload(target, body); }
-        };
+        CompletableFuture<Result> upload(SignedPut target, String body);
     }
+
+    private static final Storage LIVE = new Storage() {
+        @Override public CompletableFuture<Result> presign(String token, List<String> files) { return LiveFeedClient.presign(token, files); }
+        @Override public CompletableFuture<Result> upload(SignedPut target, Path file) { return LiveFeedClient.upload(target, file); }
+        @Override public CompletableFuture<Result> upload(SignedPut target, String body) { return LiveFeedClient.upload(target, body); }
+    };
 
     private final Path dir;
     private final String token;
     private final Consumer<String> onCutOff;
-    private final Transport transport;
+    private final Storage storage;
     private final LongSupplier clock;
     private final Object wake = new Object();
-    @Nullable private final Thread thread;
-    // Uploader thread only:
+    private final Thread thread;
     private final Set<String> uploaded = new HashSet<>();
-    private final Map<String, Integer> failures = new HashMap<>();
-    private long lastPlaylistMtime = -1;
-    private long presignBackoffMs;
-    private volatile long notBeforeMs;
-    // Set by close():
+    private final Map<String, Integer> failures = new java.util.HashMap<>();
+    /** Sequence numbers of segments given up on: never on storage, never in a published playlist. */
+    private final NavigableSet<Long> skippedSeqs = new TreeSet<>();
+    private String lastPublished;
+    private long presignBackoffMs; // uploader thread only
     private volatile boolean running = true;
     private volatile boolean flushRequested;
     private volatile long deadlineNs = Long.MAX_VALUE;
+    private volatile long lastPlaylistMtime = -1;
+    private volatile long notBeforeMs;
     private volatile int segmentsUploaded;
     private volatile int viewers = -1;
 
     public LiveUploader(Path dir, String token, Consumer<String> onCutOff) {
-        this(dir, token, onCutOff, Transport.RELAY, System::currentTimeMillis, true);
+        this(dir, token, onCutOff, LIVE, true);
     }
 
-    /** {@code start} false = no thread; the caller drives {@link #pass} (tests). */
-    LiveUploader(Path dir, String token, Consumer<String> onCutOff, Transport transport, LongSupplier clock, boolean start) {
+    LiveUploader(Path dir, String token, Consumer<String> onCutOff, Storage storage, boolean start) {
+        this(dir, token, onCutOff, storage, System::currentTimeMillis, start);
+    }
+
+    /** {@code start} false = the thread is not started; the caller drives {@link #pass} (tests). */
+    LiveUploader(Path dir, String token, Consumer<String> onCutOff, Storage storage, LongSupplier clock, boolean start) {
         this.dir = dir;
         this.token = token;
         this.onCutOff = onCutOff;
-        this.transport = transport;
+        this.storage = storage;
         this.clock = clock;
-        if (start) {
-            this.thread = new Thread(this::loop, "dt-live-uploader");
-            this.thread.setDaemon(true);
-            this.thread.start();
-        } else {
-            this.thread = null;
-        }
+        this.thread = new Thread(this::loop, "dt-live-uploader");
+        this.thread.setDaemon(true);
+        if (start) this.thread.start();
     }
 
     public int segmentsUploaded() {
@@ -123,6 +128,11 @@ public final class LiveUploader implements AutoCloseable {
 
     long presignBackoffMs() {
         return presignBackoffMs;
+    }
+
+    /** True once the uploader thread has finished, or was never started (tests). */
+    boolean finished() {
+        return !thread.isAlive();
     }
 
     private void loop() {
@@ -180,13 +190,20 @@ public final class LiveUploader implements AutoCloseable {
         if (mtime == lastPlaylistMtime) return;
         String text = Files.readString(playlist, StandardCharsets.UTF_8);
         LivePlaylist parsed = LivePlaylist.parse(text);
-        List<String> pending = new ArrayList<>();
+        Map<String, Long> pending = new LinkedHashMap<>();
+        long seq = parsed.mediaSequence();
         for (String seg : parsed.segments()) {
-            if (!uploaded.contains(seg) && !givenUp(seg)) pending.add(seg);
+            long sn = seq++;
+            if (uploaded.contains(seg) || skippedSeqs.contains(sn)) continue;
+            if (Files.exists(dir.resolve(seg))) {
+                pending.put(seg, sn);
+            } else {
+                skip(seg, sn, "its file is gone");
+            }
         }
-        List<String> ask = new ArrayList<>(pending);
+        List<String> ask = new ArrayList<>(pending.keySet());
         ask.add(LivePlaylist.FILE_NAME);
-        Result r = await(transport.presign(token, ask));
+        Result r = await(storage.presign(token, ask));
         if (r.forbidden()) throw new CutOff(r.str("takenBy"));
         Map<String, SignedPut> urls = LiveFeedClient.parsePresign(r);
         int count = LiveFeedClient.parseViewerCount(r);
@@ -196,43 +213,55 @@ public final class LiveUploader implements AutoCloseable {
             return;
         }
         presignBackoffMs = 0;
-        boolean allOk = true;
-        for (String seg : pending) {
+        boolean allDone = true;
+        for (Map.Entry<String, Long> e : pending.entrySet()) {
+            String seg = e.getKey();
             SignedPut target = urls.get(seg);
-            if (target == null) { allOk = false; continue; }
-            Result put = await(transport.upload(target, dir.resolve(seg)));
+            if (target == null) { allDone = false; continue; }
+            Result put = await(storage.upload(target, dir.resolve(seg)));
             if (put.status() >= 200 && put.status() < 300) {
                 uploaded.add(seg);
                 segmentsUploaded++;
+                continue;
+            }
+            int failed = failures.merge(seg, 1, Integer::sum);
+            LOGGER.warn("[DungeonTrain] live segment {} upload → {} {}", seg, put.status(), put.error() == null ? "" : put.error().toString());
+            // The last pass has no later pass to retry in: give up now so the ENDLIST playlist still goes out.
+            if (last || failed >= MAX_FAILED_PASSES) {
+                skip(seg, e.getValue(), "gave up after " + failed + " failed uploads");
             } else {
-                allOk = false;
+                allDone = false;
                 notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
-                failures.merge(seg, 1, Integer::sum);
-                LOGGER.warn("[DungeonTrain] live segment {} upload → {} {}", seg, put.status(), put.error() == null ? "" : put.error().toString());
             }
         }
+        Optional<String> publish = LivePlaylist.publishable(text, uploaded, skippedSeqs);
+        boolean published = publish.isEmpty() || publish.get().equals(lastPublished);
         SignedPut pl = urls.get(LivePlaylist.FILE_NAME);
-        if (pl == null) return;
-        // Only what storage holds: a segment still to retry cuts the tail, one given up cuts the head.
-        String publish = LivePlaylist.publishable(text, uploaded::contains, this::givenUp);
-        if (publish == null) {
-            LOGGER.debug("[DungeonTrain] live playlist held back: none of its segments are up yet");
-            return;
+        if (!published && pl != null) {
+            Result put = await(storage.upload(pl, publish.get()));
+            if (put.status() >= 200 && put.status() < 300) {
+                lastPublished = publish.get();
+                published = true;
+            } else {
+                // Storage said no (or the network did): wait before asking the relay to sign again,
+                // or a dead bucket turns into two presign calls a second.
+                notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
+                LOGGER.warn("[DungeonTrain] live playlist upload → {} (retry in {} s)", put.status(), FAIL_BACKOFF_MS / 1000);
+            }
         }
-        Result put = await(transport.upload(pl, publish.getBytes(StandardCharsets.UTF_8)));
-        if (put.status() >= 200 && put.status() < 300) {
-            if (allOk) lastPlaylistMtime = mtime;
-        } else {
-            // Storage said no (or the network did): wait before asking the relay to sign again,
-            // or a dead bucket turns into two presign calls a second.
-            notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
-            LOGGER.warn("[DungeonTrain] live playlist upload → {} (retry in {} s)", put.status(), FAIL_BACKOFF_MS / 1000);
-        }
+        // Only once nothing is left to retry: until then every poll comes back for the pending segments.
+        if (allDone && published) lastPlaylistMtime = mtime;
     }
 
-    /** Will never be uploaded: failed {@link #MAX_TRIES} times, or ffmpeg already deleted it. */
-    private boolean givenUp(String seg) {
-        return failures.getOrDefault(seg, 0) >= MAX_TRIES || !Files.exists(dir.resolve(seg));
+    private void skip(String seg, long sn, String why) {
+        skippedSeqs.add(sn);
+        failures.remove(seg);
+        LOGGER.info("[DungeonTrain] live segment {} skipped: {}", seg, why);
+    }
+
+    /** Segments given up on so far. */
+    int segmentsSkipped() {
+        return skippedSeqs.size();
     }
 
     /** The relay did not sign (down, 5xx, garbled): back off 1 s, 2 s, 4 s … 10 s, not every poll. */
@@ -277,7 +306,7 @@ public final class LiveUploader implements AutoCloseable {
         deadlineNs = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(0, budgetMs));
         flushRequested = flush;
         running = false;
-        if (thread == null) return;
+        if (!thread.isAlive()) return;
         if (!flush) {
             thread.interrupt();
             return;
@@ -299,11 +328,6 @@ public final class LiveUploader implements AutoCloseable {
     @Override
     public void close() {
         close(false, 0);
-    }
-
-    /** True once the uploader thread has finished (tests). */
-    boolean finished() {
-        return thread == null || !thread.isAlive();
     }
 
     static final class CutOff extends Exception {
