@@ -253,6 +253,7 @@ public final class WorkbenchEditor {
     public static boolean remove(ServerLevel overworld, String stagedId) throws IOException {
         clearPlot(overworld, stagedId);
         DungeonTrainWorldData.get(overworld).forgetWorkbenchPlotBox(stagedId);
+        games.brennan.dungeontrain.editor.workbench.WorkbenchSidecarFold.forget(stagedId);
         return WorkbenchStagingStore.delete(stagedId);
     }
 

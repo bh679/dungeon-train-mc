@@ -159,7 +159,8 @@ public final class VariantOverlayRenderer {
      * Entrance / Exit word over the doorway the author has already cut.
      */
     private static final java.util.Set<EditorCategory> DOOR_GHOST_CATEGORIES =
-        java.util.EnumSet.of(EditorCategory.PORTALS, EditorCategory.CARRIAGES, EditorCategory.CONTENTS);
+        java.util.EnumSet.of(EditorCategory.PORTALS, EditorCategory.CARRIAGES, EditorCategory.CONTENTS,
+            EditorCategory.WORKBENCH);
 
     /**
      * Per-player dedup key for the door markers — {@link EditorDoorGhosts#key}, which encodes the
@@ -347,6 +348,19 @@ public final class VariantOverlayRenderer {
             pushOutlineSnapshot(player);
 
             BlockPos playerPos = player.blockPosition();
+
+            // A staged Workbench build: its own document, through the same plot every Workbench menu
+            // resolves (BlockVariantPlot.resolveAtPos's Workbench arm) rather than a third copy.
+            games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot stagedPlot =
+                games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.at(level, playerPos);
+            if (stagedPlot != null) {
+                PartPositionMenuController.forget(player);
+                Vec3i stagedSize = stagedPlot.footprint();
+                updateHoverPacket(player, stagedPlot.origin(),
+                    pos -> inBounds(pos, stagedSize),
+                    stagedPlot::statesAt);
+                continue;
+            }
 
             // Carriage plot takes first priority — drives the parts menu
             // controller and the variant-blocks icon HUD.
@@ -1247,12 +1261,14 @@ public final class VariantOverlayRenderer {
      * keyed on the boxes, like {@link #pushDoorGhostsSnapshot}: a steady editor sends nothing.
      */
     private static void pushTunnelEnvelopeSnapshot(ServerPlayer player, CarriageDims dims) {
-        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) {
+        boolean workbench = EditorStampedCategoryState.isActive(EditorCategory.WORKBENCH);
+        if (!workbench && !EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) {
             clearTunnelEnvelopeIfStale(player);
             return;
         }
-        List<net.minecraft.world.level.levelgen.structure.BoundingBox> boxes =
-            EditorTunnelEnvelopes.snapshot(dims);
+        List<net.minecraft.world.level.levelgen.structure.BoundingBox> boxes = workbench
+            ? EditorTunnelEnvelopes.workbenchSnapshot(dims)
+            : EditorTunnelEnvelopes.snapshot(dims);
         if (boxes.isEmpty()) {
             clearTunnelEnvelopeIfStale(player);
             return;

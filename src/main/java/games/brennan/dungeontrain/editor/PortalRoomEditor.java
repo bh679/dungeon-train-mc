@@ -98,8 +98,15 @@ public final class PortalRoomEditor {
      * the reverse, would be the editor contradicting itself about where its own door is.</p>
      */
     public static List<BlockPos> doorBases(String name, BlockPos origin, Vec3i size, CarriageDims dims) {
-        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return doorBases(games.brennan.dungeontrain.portal.PortalRoomSettings.of(name), origin, size, dims);
+    }
+
+    /**
+     * As above, for a room whose settings are not under a registered name — a room staged in the
+     * Workbench, whose settings travel in its own sidecar document.
+     */
+    public static List<BlockPos> doorBases(games.brennan.dungeontrain.portal.PortalRoomSettings settings,
+                                           BlockPos origin, Vec3i size, CarriageDims dims) {
         int offset = PortalRoomLayout.clampDoorOffset(dims, size.getZ(), settings.doorOffset().value());
         int heightOffset = PortalRoomLayout.clampDoorHeightOffset(
             dims, size.getY(), settings.doorHeightOffset().value());
