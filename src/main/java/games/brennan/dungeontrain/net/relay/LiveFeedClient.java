@@ -402,9 +402,22 @@ public final class LiveFeedClient {
     /** PUT a local file to a signed URL with exactly the signed headers. */
     public static CompletableFuture<Result> upload(SignedPut target, Path file) {
         try {
+            return upload(target, HttpRequest.BodyPublishers.ofFile(file));
+        } catch (Throwable t) {
+            return CompletableFuture.completedFuture(new Result(0, null, t));
+        }
+    }
+
+    /** PUT bytes built in memory (a rewritten playlist) to a signed URL with exactly the signed headers. */
+    public static CompletableFuture<Result> upload(SignedPut target, byte[] body) {
+        return upload(target, HttpRequest.BodyPublishers.ofByteArray(body));
+    }
+
+    private static CompletableFuture<Result> upload(SignedPut target, HttpRequest.BodyPublisher body) {
+        try {
             HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(target.url()))
                 .timeout(UPLOAD_TIMEOUT)
-                .PUT(HttpRequest.BodyPublishers.ofFile(file));
+                .PUT(body);
             target.headers().forEach(b::header);
             return STORAGE.sendAsync(b.build(), HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> new Result(resp.statusCode(), null, null))
