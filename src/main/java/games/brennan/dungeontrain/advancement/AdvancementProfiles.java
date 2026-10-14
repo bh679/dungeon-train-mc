@@ -89,10 +89,16 @@ public final class AdvancementProfiles {
      * Bank a live earn into its partition, subject to the persist policy and {@link RunIntegrity}
      * (cheated runs earn live but don't write to the cross-world profile; editor authoring is exempt).
      *
+     * <p>A replayed award is never recorded: it came out of the store, so it is already banked — and
+     * mid-swap it is banked in the profile being swapped <em>in</em>, while
+     * {@code DifficultyChangeEvent} still runs with the level reporting the <em>old</em> difficulty.
+     * Recording it would copy it into the profile being left.</p>
+     *
      * @return true when the store was actually written
      */
     public static boolean record(ServerPlayer player, AdvancementHolder advancement) {
-        return shouldPersist(advancement)
+        return !replaying
+            && shouldPersist(advancement)
             && RunIntegrity.persistsAdvancement(player, advancement)
             && GlobalAchievementStore.append(player.getUUID(), partitionFor(player, advancement.id()), advancement.id());
     }
