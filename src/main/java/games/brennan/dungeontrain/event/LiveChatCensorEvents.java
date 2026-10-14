@@ -34,7 +34,7 @@ public final class LiveChatCensorEvents {
             TextCensor.Result r = TextCensor.censor(event.getMessage().getString(), LiveWordList.effective());
             if (!r.changed()) return;
             event.setMessage(Component.literal(r.text()));
-            LiveModeration.strike(event.getPlayer(), "chat", r.hits());
+            LiveModeration.strike(event.getPlayer(), "chat_server", r.hits());
         } catch (Throwable t) {
             // Fail open: a filter fault must never eat a chat line.
         }

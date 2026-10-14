@@ -328,7 +328,7 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             if (!changed) return;
             this.dungeontrain$censoredTitle = t.text();
             this.dungeontrain$censoredPages = List.copyOf(out);
-            LiveModeration.strike(serverPlayer, "book", hits);
+            LiveModeration.strike(serverPlayer, "book_sign", hits);
         } catch (Throwable e) {
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] live text filter skipped a book: {}", e.toString());
         }
