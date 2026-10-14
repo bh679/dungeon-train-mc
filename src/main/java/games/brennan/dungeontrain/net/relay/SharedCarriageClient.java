@@ -516,9 +516,20 @@ public final class SharedCarriageClient {
      * same two-answer convention every listing here follows.</p>
      */
     public static CompletableFuture<List<ProfileBuild>> listAll(boolean useLive, int limit) {
+        return listAll(useLive, limit, false);
+    }
+
+    /**
+     * As {@link #listAll(boolean, int)}, narrowed on the relay: builder rows that are not stock
+     * copies, and with {@code pendingOnly} just the submission queue (submitted / resubmit). A relay
+     * older than 0.244.86 ignores the query and answers the whole pool, which the same filters below
+     * then narrow here — so the answer is the same either way, only the download differs.
+     */
+    public static CompletableFuture<List<ProfileBuild>> listAll(boolean useLive, int limit, boolean pendingOnly) {
         String admin = RelayTarget.adminSearchBase();
         if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
-        String url = admin + "/carriages?cap=" + (useLive ? "live" : "dev");
+        String url = admin + "/carriages?cap=" + (useLive ? "live" : "dev")
+            + "&source=" + SOURCE_BUILDER + "&templateCopy=0" + (pendingOnly ? "&review=pending" : "");
         return get(url, POOL_TIMEOUT).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
@@ -529,6 +540,7 @@ public final class SharedCarriageClient {
                 if (!r.has("id")) continue;
                 ProfileBuild build = parseBuild(r);
                 if (SOURCE_PLAY.equals(build.source()) || build.templateCopy()) continue;
+                if (pendingOnly && !games.brennan.dungeontrain.builder.relay.BuilderReviewState.isPending(build.review())) continue;
                 out.add(build);
             }
             out.sort((a, b) -> Long.compare(b.updatedTs(), a.updatedTs()));
@@ -538,6 +550,8 @@ public final class SharedCarriageClient {
 
     /** What the relay calls a row uploaded by ordinary play rather than by the Train Builder. */
     private static final String SOURCE_PLAY = "play";
+    /** And one saved from the Train Builder — the only rows the pooled browser lists. */
+    private static final String SOURCE_BUILDER = "builder";
 
     /** One reconstructable frame of a build's history: a full snapshot and the deltas since it. */
     public record HistoryFrame(int seq, int baseSeq, String base, List<String> deltas) {}

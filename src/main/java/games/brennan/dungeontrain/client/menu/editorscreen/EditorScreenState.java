@@ -150,11 +150,11 @@ public final class EditorScreenState {
             workbenchFlippedLive = true;
         }
         if (!EditorCreatorBuilds.pooled()) {
-            EditorCreatorBuilds.showAll();
+            EditorCreatorBuilds.showPending();
             workbenchOpenedPool = true;
-        } else if (workbenchFlippedLive) {
-            // The pool on show was the dev relay's; ask the live one.
-            EditorCreatorBuilds.refresh();
+        } else if (workbenchFlippedLive || !EditorCreatorBuilds.pendingOnly()) {
+            // The pool on show was the dev relay's, or the whole pool: ask the live queue.
+            EditorCreatorBuilds.showPending();
         }
         creatorReview = BuilderProfileFilters.PENDING;
         EditorRosterIndex index = EditorRosterClient.index();
