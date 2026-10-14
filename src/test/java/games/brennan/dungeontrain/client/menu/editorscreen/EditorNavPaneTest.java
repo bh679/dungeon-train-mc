@@ -30,7 +30,7 @@ final class EditorNavPaneTest {
             InventoryEditorLayout layout = InventoryEditorLayout.of(size[0], size[1], false);
             Rect area = EditorNavPane.rect(layout);
             List<Rect> tiles = EditorNavPane.tiles(area);
-            assertEquals(BuilderMode.values().length, tiles.size(), "one tile per mode, stacked");
+            assertEquals(BuilderMode.NAV_ORDER.size(), tiles.size(), "one tile per public mode, stacked");
             Rect detail = EditorNavPane.detail(layout);
             assertTrue(detail.x() >= area.right(), "detail column sits right of the tiles");
             assertTrue(detail.w() > area.w(), "the preview column is the wide one");
