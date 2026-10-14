@@ -49,10 +49,10 @@ public final class LiveFeedClientConfig {
             .comment("Allow this client to broadcast when you put the headpiece on. Off = the headpiece still burns away and takes the channel, but nothing is sent (the feed shows static).")
             .define("streamingEnabled", true);
         STREAM_GUI = b
-            .comment("Show your HUD and open menus to viewers. Off = viewers see only the world and your hand.")
+            .comment("Show your HUD to viewers. Off = viewers see only the world and your hand. Open menus (the chat box, signs, books, inventories) are never shown.")
             .define("streamGui", true);
         STREAM_CHAT = b
-            .comment("Show chat to viewers. Always off in Kid mode, whatever this says.")
+            .comment("Show the chat lines on your screen to viewers, whispers included. What you type is never shown. Always off in Kid mode, whatever this says.")
             .define("streamChat", true);
         STREAM_AUDIO = b
             .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never your microphone, voice chat or other apps. On by default; takes effect from your next stream.")

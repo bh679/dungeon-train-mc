@@ -25809,6 +25809,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-streams-only-while-worn",
+      "version": "0.1284.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Eye only broadcasts while worn",
+      "summary": "The Live Eye now only broadcasts while you are wearing it, and menus you open \u2014 the chat box included \u2014 are never shown to viewers. Viewers see your world and HUD, plus the chat lines on your screen (whispers included) when Show chat to viewers is on.",
+      "highlights": [],
+      "pr": 1998,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
