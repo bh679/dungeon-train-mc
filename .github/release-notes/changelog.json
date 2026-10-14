@@ -25958,6 +25958,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-streams-menus",
+      "version": "0.1289.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Your menus show on stream again",
+      "summary": "With Show GUI to viewers on, the Live Eye streams your inventory, chests and other containers, the pause menu and advancements again. Anything you type, like the chat box, signs, books, anvil names and searches, still never goes out, and with Show chat off no chat lines show behind your inventory.",
+      "highlights": [],
+      "pr": 2006,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
