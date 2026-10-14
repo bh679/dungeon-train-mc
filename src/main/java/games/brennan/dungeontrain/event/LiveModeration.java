@@ -15,7 +15,10 @@ import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.dungeontrain.player.ServerLiveStatus;
 import games.brennan.dungeontrain.util.PresenceLine;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -190,10 +193,7 @@ public final class LiveModeration {
                 if (online == null) return;
                 switch (v.action()) {
                     case REMOVE -> LiveFeedEvents.endForModeration(online, false);
-                    case BAN -> {
-                        LiveFeedEvents.endForModeration(online, true);
-                        online.sendSystemMessage(bannedLine(online));
-                    }
+                    case BAN -> LiveFeedEvents.endForModeration(online, true); // the burn line carries the ban
                     default -> { }
                 }
             } catch (Throwable t) {
@@ -202,21 +202,57 @@ public final class LiveModeration {
         });
     }
 
+    /** The logged lines behind {@code player}'s ban, newest first; empty when not banned or unknown. */
+    public static List<LiveModerationLadder.Evidence> evidenceFor(UUID player) {
+        Cached c = VERDICTS.get(player);
+        return c == null ? List.of() : c.verdict().evidence();
+    }
+
     /**
-     * "You can't wear the Live Eye for another N days" / "…no longer wear the Live Eye", followed by
-     * how to appeal.
+     * The burn line of a banned player's Live Eye: "The Live Eye burns away. You can't wear another for
+     * N days." (or "…can no longer wear one."), then the lines that earned the ban — each masked, with
+     * a clickable [Appeal] that runs {@code /liveappeal <n>} — and the appeal hint.
      */
-    public static Component bannedLine(ServerPlayer player) {
+    public static Component bannedBurnLine(ServerPlayer player) {
         long left = banRemainingSec(player.getUUID());
-        Component line;
+        MutableComponent out;
         if (left == Long.MAX_VALUE) {
-            line = Component.translatable(KEY + "banned_permanent").withStyle(ChatFormatting.RED);
+            out = Component.translatable(KEY + "burns_banned_permanent").withStyle(ChatFormatting.RED);
         } else {
             String locale = WorldInfoReporter.clientLanguage(player);
-            line = Component.translatable(KEY + "banned",
+            out = Component.translatable(KEY + "burns_banned",
                 PresenceLine.agoComponent(locale, Duration.ofSeconds(Math.max(1L, left)))).withStyle(ChatFormatting.RED);
         }
-        return line.copy().append(" ").append(Component.translatable(KEY + "appeal_hint").withStyle(ChatFormatting.GRAY));
+        List<LiveModerationLadder.Evidence> evidence = evidenceFor(player.getUUID());
+        if (!evidence.isEmpty()) {
+            out.append("\n").append(Component.translatable(KEY + "banned_for").withStyle(ChatFormatting.GRAY));
+            out.append(evidenceLines(evidence));
+        }
+        return out.append("\n").append(Component.translatable(KEY + "appeal_hint").withStyle(ChatFormatting.GRAY));
+    }
+
+    /**
+     * One line per logged strike: "1. you **** there  [Appeal]". The text is shown masked — the
+     * player knows what they typed, and the word must not reappear on anyone's screen. Clicking
+     * [Appeal] runs {@code /liveappeal <n>}.
+     */
+    public static Component evidenceLines(List<LiveModerationLadder.Evidence> evidence) {
+        MutableComponent out = Component.empty();
+        var words = LiveWordList.effective();
+        for (int i = 0; i < evidence.size(); i++) {
+            final int n = i + 1;
+            LiveModerationLadder.Evidence e = evidence.get(i);
+            String shown = games.brennan.dungeontrain.moderation.TextCensor.censor(e.text(), words).text();
+            if (shown.isBlank()) shown = String.join(", ", e.terms());
+            out.append("\n").append(Component.literal(n + ". ").withStyle(ChatFormatting.DARK_GRAY))
+               .append(Component.literal(shown).withStyle(ChatFormatting.GRAY))
+               .append(" ")
+               .append(Component.translatable(KEY + "appeal_link").withStyle(s -> s.withColor(ChatFormatting.AQUA)
+                   .withUnderlined(true)
+                   .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/liveappeal " + n))
+                   .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(KEY + "appeal_link_hover")))));
+        }
+        return out;
     }
 
     // --- appeals ----------------------------------------------------------------------------------

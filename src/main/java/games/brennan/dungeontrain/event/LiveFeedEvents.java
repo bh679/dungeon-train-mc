@@ -172,8 +172,7 @@ public final class LiveFeedEvents {
         }
         // Banned from the Live Eye by the text-filter ladder (LiveModeration): it burns on the way on.
         if (LiveModeration.isBanned(player.getUUID())) {
-            player.sendSystemMessage(LiveModeration.bannedLine(player));
-            burn(player, Exit.BANNED);
+            burn(player, Exit.BANNED); // its line says how long, and lists the lines to appeal
             // An approved appeal lifts the ban on the relay; ask again so the next try reflects it.
             LiveModeration.refresh(player);
             return;
@@ -244,7 +243,7 @@ public final class LiveFeedEvents {
         level.sendParticles(ParticleTypes.FLAME, player.getX(), player.getEyeY() + 0.3, player.getZ(), 24, 0.3, 0.2, 0.3, 0.02);
         level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getEyeY() + 0.4, player.getZ(), 8, 0.2, 0.1, 0.2, 0.01);
         level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.8f, 0.9f);
-        player.sendSystemMessage(Component.translatable(burnLineKey(why)));
+        player.sendSystemMessage(why == Exit.BANNED ? LiveModeration.bannedBurnLine(player) : Component.translatable(burnLineKey(why)));
     }
 
     /** Taken off, handed to the next streamer, or anything else (death, Free Play, Livestreaming off). */

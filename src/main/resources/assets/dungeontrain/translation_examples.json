@@ -877,7 +877,8 @@
   },
   "chat.dungeontrain.live.censored": {"1": {"label": "which warning this is", "examples": ["1", "3"]}, "2": {"label": "how many warnings there are before the Live Eye is taken", "examples": ["3"]}},
   "chat.dungeontrain.live.censored_book": {"1": {"label": "which warning this is", "examples": ["1", "3"]}, "2": {"label": "how many warnings there are before the Live Eye is taken", "examples": ["3"]}},
-  "chat.dungeontrain.live.banned": {"1": {"label": "how long the ban still has to run", "examples": ["29 days", "3 hours"]}},
+  "chat.dungeontrain.live.burns_banned": {"1": {"label": "how long the ban still has to run", "examples": ["6 days", "3 hours"]}},
+  "command.dungeontrain.live_appeal.no_such_line": {"1": {"label": "how many lines there are to pick from", "examples": ["12", "4"]}},
   "chat.dungeontrain.book_suspended.blocked": {
     "1": {
       "label": "how long the pause still has to run",

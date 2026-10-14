@@ -31,7 +31,8 @@ final class LiveModerationClientTest {
     @DisplayName("the player is read back from the request body; junk reads as null")
     void playerOf() {
         assertEquals(P, LiveModerationClient.playerOf(LiveModerationClient.strikeBody(P, null, null, null, null)));
-        assertEquals(P, LiveModerationClient.playerOf(LiveModerationClient.appealBody(P, "Dev", "sorry")));
+        assertEquals(P, LiveModerationClient.playerOf(LiveModerationClient.appealBody(P, "Dev", 7L, "sorry")));
+        assertEquals(7, JsonParser.parseString(LiveModerationClient.appealBody(P, "Dev", 7L, "")).getAsJsonObject().get("evidenceId").getAsInt());
         assertNull(LiveModerationClient.playerOf("{\"uuid\":\"short\"}"));
         assertNull(LiveModerationClient.playerOf("nope"));
         assertNull(LiveModerationClient.playerOf(null));

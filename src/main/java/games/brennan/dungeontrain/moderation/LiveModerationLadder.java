@@ -5,6 +5,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * The relay's verdict on a strike or a status check, and the local guess made while waiting for it.
  *
@@ -18,10 +21,18 @@ public final class LiveModerationLadder {
 
     public enum Action { NONE, WARN, REMOVE, BAN }
 
-    /** What the relay said. {@code remainingSec} is only meaningful while {@code banned}. */
-    public record Verdict(int strikes, int removals, Action action, boolean banned, boolean permanent, long remainingSec) {
+    /** One logged line behind a ban: the relay's id (what an appeal names), the text as typed, the terms that matched. */
+    public record Evidence(long id, String text, List<String> terms) {}
 
-        public static final Verdict CLEAN = new Verdict(0, 0, Action.NONE, false, false, 0);
+    /** What the relay said. {@code remainingSec} and {@code evidence} are only meaningful while {@code banned}. */
+    public record Verdict(int strikes, int removals, Action action, boolean banned, boolean permanent, long remainingSec,
+                          List<Evidence> evidence) {
+
+        public static final Verdict CLEAN = new Verdict(0, 0, Action.NONE, false, false, 0, List.of());
+
+        public Verdict {
+            evidence = evidence == null ? List.of() : List.copyOf(evidence);
+        }
 
         /** Whether a Live Eye may be worn: not banned, or a timed ban that has run out. */
         public boolean mayStream(long nowMs, long receivedAtMs) {
@@ -56,10 +67,33 @@ public final class LiveModerationLadder {
             boolean permanent = boolOr(o, "permanent", false);
             long remaining = Math.max(0, longOr(o, "remainingSec", 0));
             if (!banned) { permanent = false; remaining = 0; }
-            return new Verdict(strikes, removals, action(o), banned, permanent, remaining);
+            return new Verdict(strikes, removals, action(o), banned, permanent, remaining, banned ? evidence(o) : List.of());
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /** The {@code evidence[]} of a ban verdict, newest first; malformed rows are skipped. */
+    private static List<Evidence> evidence(JsonObject o) {
+        if (!o.has("evidence") || !o.get("evidence").isJsonArray()) return List.of();
+        List<Evidence> out = new ArrayList<>();
+        for (JsonElement e : o.getAsJsonArray("evidence")) {
+            if (!e.isJsonObject()) continue;
+            JsonObject r = e.getAsJsonObject();
+            try {
+                long id = r.get("id").getAsLong();
+                String text = r.has("text") && !r.get("text").isJsonNull() ? r.get("text").getAsString() : "";
+                List<String> terms = new ArrayList<>();
+                if (r.has("terms") && r.get("terms").isJsonArray()) {
+                    for (JsonElement t : r.getAsJsonArray("terms")) if (t.isJsonPrimitive()) terms.add(t.getAsString());
+                }
+                out.add(new Evidence(id, text, List.copyOf(terms)));
+            } catch (Exception ignored) {
+                // one bad row never hides the others
+            }
+            if (out.size() >= 50) break;
+        }
+        return List.copyOf(out);
     }
 
     private static Action action(JsonObject o) {

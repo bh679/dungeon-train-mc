@@ -105,11 +105,12 @@ public final class LiveModerationClient {
         return o.toString();
     }
 
-    /** The {@code /live/moderation/appeal} body. Pure. */
-    public static String appealBody(UUID player, String name, String message) {
+    /** The {@code /live/moderation/appeal} body: the logged line being appealed ({@code evidenceId}, may be null) and/or free text. Pure. */
+    public static String appealBody(UUID player, String name, Long evidenceId, String message) {
         JsonObject o = new JsonObject();
         o.addProperty("uuid", player.toString().replace("-", ""));
         o.addProperty("name", name == null ? "" : name);
+        if (evidenceId != null) o.addProperty("evidenceId", evidenceId);
         o.addProperty("message", message == null ? "" : message);
         return o.toString();
     }

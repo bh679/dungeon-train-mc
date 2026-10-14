@@ -27,9 +27,14 @@ final class LiveModerationLadderTest {
     @Test
     @DisplayName("a ban answer carries its remaining time, measured from arrival")
     void parsesBan() {
-        Verdict v = LiveModerationLadder.parse("{\"ok\":true,\"strikes\":0,\"removals\":3,\"action\":\"ban\",\"banned\":true,\"remainingSec\":100}");
+        Verdict v = LiveModerationLadder.parse("{\"ok\":true,\"strikes\":0,\"removals\":3,\"action\":\"ban\",\"banned\":true,\"remainingSec\":100,"
+            + "\"evidence\":[{\"id\":9,\"text\":\"you zorp\",\"terms\":[\"zorp\"]},{\"id\":\"bad\"},{\"id\":8,\"text\":null,\"terms\":[]}]}");
         assertNotNull(v);
         assertEquals(Action.BAN, v.action());
+        assertEquals(2, v.evidence().size());
+        assertEquals(9, v.evidence().get(0).id());
+        assertEquals("you zorp", v.evidence().get(0).text());
+        assertEquals("", v.evidence().get(1).text());
         assertFalse(v.mayStream(50_000, 0));
         assertTrue(v.mayStream(100_000, 0));
         assertEquals(50, v.remainingAt(50_000, 0));
