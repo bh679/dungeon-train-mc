@@ -71,6 +71,8 @@ public final class EditorScreenState {
      * reviewer had opened by hand through Find a Builder stays open.
      */
     private static boolean workbenchOpenedPool;
+    /** Whether the Workbench tab switched the profile screens to the live relay, to switch back on leave. */
+    private static boolean workbenchFlippedLive;
 
     private EditorScreenState() {}
 
@@ -141,9 +143,18 @@ public final class EditorScreenState {
      * every kind. The strip and the status chip stay live: these are defaults, not locks.
      */
     static void enterWorkbenchTab() {
+        // Submissions are reviewed on the live relay; the dev one is where the author's own test
+        // uploads go. The tab reads live and puts the switch back when it is left.
+        if (!games.brennan.dungeontrain.client.builder.BuilderProfileState.live()) {
+            EditorSettingsPage.setRelay(true);
+            workbenchFlippedLive = true;
+        }
         if (!EditorCreatorBuilds.pooled()) {
             EditorCreatorBuilds.showAll();
             workbenchOpenedPool = true;
+        } else if (workbenchFlippedLive) {
+            // The pool on show was the dev relay's; ask the live one.
+            EditorCreatorBuilds.refresh();
         }
         creatorReview = BuilderProfileFilters.PENDING;
         EditorRosterIndex index = EditorRosterClient.index();
@@ -158,6 +169,10 @@ public final class EditorScreenState {
         if (workbenchOpenedPool) {
             EditorCreatorBuilds.clear();
             workbenchOpenedPool = false;
+        }
+        if (workbenchFlippedLive) {
+            EditorSettingsPage.setRelay(false);
+            workbenchFlippedLive = false;
         }
         if (BuilderProfileFilters.PENDING.equals(creatorReview)) creatorReview = BuilderProfileFilters.ALL;
     }

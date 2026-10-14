@@ -519,7 +519,7 @@ public final class SharedCarriageClient {
         String admin = RelayTarget.adminSearchBase();
         if (admin.isEmpty()) return CompletableFuture.completedFuture(null);
         String url = admin + "/carriages?cap=" + (useLive ? "live" : "dev");
-        return get(url).thenApply(resp -> {
+        return get(url, POOL_TIMEOUT).thenApply(resp -> {
             JsonObject o = okJson(resp);
             if (o == null || !o.has("carriages") || !o.get("carriages").isJsonArray()) return null;
             List<ProfileBuild> out = new java.util.ArrayList<>();
@@ -708,9 +708,21 @@ public final class SharedCarriageClient {
 
     /** GET a JSON URL; resolves to the HttpResponse, or null on transport failure. */
     private static CompletableFuture<HttpResponse<String>> get(String url) {
+        return get(url, REQUEST_TIMEOUT);
+    }
+
+    /**
+     * The pooled listing's budget. The live pool was 6.6 MB on 2026-09-05 and the ordinary ten
+     * seconds timed out on it from a home connection (2026-10-14), which left the Workbench tab
+     * showing nothing while every submission sat on the relay.
+     */
+    private static final Duration POOL_TIMEOUT = Duration.ofSeconds(60);
+
+    /** GET a JSON URL within {@code timeout}; resolves to the HttpResponse, or null on transport failure. */
+    private static CompletableFuture<HttpResponse<String>> get(String url, Duration timeout) {
         try {
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                    .timeout(REQUEST_TIMEOUT)
+                    .timeout(timeout)
                     .header("Accept", "application/json")
                     .GET()
                     .build();
