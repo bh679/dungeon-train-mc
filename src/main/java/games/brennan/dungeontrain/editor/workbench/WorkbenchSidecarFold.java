@@ -48,6 +48,7 @@ public final class WorkbenchSidecarFold {
     /** Forget every cache and store pointer {@code stagedId} holds — after it leaves the shelf. */
     public static void forget(String stagedId) {
         WorkbenchVariantStore.invalidate(stagedId);
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.invalidate(WorkbenchRooms.nameFor(stagedId));
         ContainerContentsStore.setPathOverride(WorkbenchVariantPlot.keyFor(stagedId), null);
     }
 }

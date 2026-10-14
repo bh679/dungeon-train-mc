@@ -6,8 +6,6 @@ import games.brennan.dungeontrain.portal.PortalRoomDoorHeightOffset;
 import games.brennan.dungeontrain.portal.PortalRoomDoorOffset;
 import games.brennan.dungeontrain.portal.PortalRoomLayout;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
-import games.brennan.dungeontrain.track.variant.TrackKind;
-import games.brennan.dungeontrain.track.variant.TrackVariantWeights;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.ChatFormatting;
@@ -140,7 +138,8 @@ public final class PortalRoomDoorPointer {
     private static boolean holdingDoor(ItemStack held) {
         if (!(held.getItem() instanceof BlockItem blockItem)) return false;
         if (!(blockItem.getBlock() instanceof DoorBlock)) return false;
-        return EditorStampedCategoryState.current().orElse(null) == EditorCategory.PORTALS;
+        EditorCategory resident = EditorStampedCategoryState.current().orElse(null);
+        return resident == EditorCategory.PORTALS || resident == EditorCategory.WORKBENCH;
     }
 
     /**
@@ -181,10 +180,10 @@ public final class PortalRoomDoorPointer {
                 .withExitDoorHeightOffset(new PortalRoomDoorHeightOffset(heightOffset));
 
         try {
-            TrackVariantWeights.setMode(TrackKind.PORTAL_ROOM, match.name(), updated.toTag());
+            games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.writeSettings(match.name(), updated);
         } catch (IOException e) {
             player.displayClientMessage(Component.translatable(
-                    BAR + "set_failed", match.name(), String.valueOf(e.getMessage()))
+                    BAR + "set_failed", games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.displayName(match.name()), String.valueOf(e.getMessage()))
                 .withStyle(ChatFormatting.RED), true);
             return;
         }
@@ -199,7 +198,8 @@ public final class PortalRoomDoorPointer {
         // Name the door, not just the room. The two ends can stand apart now, so a message that said
         // only "door position" would leave an author unable to tell which of their two clicks landed.
         String whichKey = match.role() == PortalCarriageRole.ENTRY ? "position_entry" : "position_exit";
-        Component position = Component.translatable(BAR + whichKey, match.name(), across, up);
+        Component position = Component.translatable(BAR + whichKey,
+            games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.displayName(match.name()), across, up);
         Component message = note == null
             ? position
             : Component.translatable(BAR + "position_with_note", position, note);
@@ -258,31 +258,47 @@ public final class PortalRoomDoorPointer {
         for (String name : PortalRoomEditor.names()) {
             BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
             if (origin == null) continue;
-            Vec3i size = PortalRoomEditor.plotSize(name, dims);
-            if (size.getZ() <= 2 || size.getY() <= 2) continue;
-
-            boolean nearColumn = target.getX() == origin.getX() - 1;
-            boolean farColumn = target.getX() == origin.getX() + size.getX();
-            if (!nearColumn && !farColumn) continue;
-
-            int minZ = origin.getZ() + 1;
-            int maxZ = origin.getZ() + size.getZ() - 2;
-            if (target.getZ() < minZ || target.getZ() > maxZ) continue;
-
-            int minY = origin.getY() + 1;
-            int maxY = origin.getY() + size.getY() - 2;
-            if (target.getY() < minY || target.getY() > maxY) continue;
-
-            int centreZ = origin.getZ() + 1 + (size.getZ() - 2) / 2;
-            int rawOffset = target.getZ() - centreZ;
-            int rawHeightOffset = target.getY() - (origin.getY() + 1);
-            // The near column is the entry mouth and the far column the exit one — the same pair of
-            // columns PortalRoomDoorCells ghosts, in the same order, and the same rule
-            // stampCorridorHalf seals them by.
-            PortalCarriageRole role =
-                nearColumn ? PortalCarriageRole.ENTRY : PortalCarriageRole.EXIT;
-            return new Match(name, size, role, rawOffset, rawHeightOffset);
+            Match match = match(name, origin, PortalRoomEditor.plotSize(name, dims), target);
+            if (match != null) return match;
+        }
+        // The rooms staged in the Workbench, each under its staged room name.
+        net.minecraft.server.MinecraftServer server =
+            net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server != null && EditorStampedCategoryState.isActive(EditorCategory.WORKBENCH)) {
+            for (games.brennan.dungeontrain.editor.workbench.WorkbenchStagedPlot room
+                    : games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.rooms(server.overworld())) {
+                Match match = match(games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.nameFor(room.stagedId()),
+                    room.origin(), room.size(), target);
+                if (match != null) return match;
+            }
         }
         return null;
+    }
+
+    /** {@code target} against one room's two doorway columns, or null when it is on neither. */
+    private static Match match(String name, BlockPos origin, Vec3i size, BlockPos target) {
+        if (size.getZ() <= 2 || size.getY() <= 2) return null;
+
+        boolean nearColumn = target.getX() == origin.getX() - 1;
+        boolean farColumn = target.getX() == origin.getX() + size.getX();
+        if (!nearColumn && !farColumn) return null;
+
+        int minZ = origin.getZ() + 1;
+        int maxZ = origin.getZ() + size.getZ() - 2;
+        if (target.getZ() < minZ || target.getZ() > maxZ) return null;
+
+        int minY = origin.getY() + 1;
+        int maxY = origin.getY() + size.getY() - 2;
+        if (target.getY() < minY || target.getY() > maxY) return null;
+
+        int centreZ = origin.getZ() + 1 + (size.getZ() - 2) / 2;
+        int rawOffset = target.getZ() - centreZ;
+        int rawHeightOffset = target.getY() - (origin.getY() + 1);
+        // The near column is the entry mouth and the far column the exit one — the same pair of
+        // columns PortalRoomDoorCells ghosts, in the same order, and the same rule
+        // stampCorridorHalf seals them by.
+        PortalCarriageRole role =
+            nearColumn ? PortalCarriageRole.ENTRY : PortalCarriageRole.EXIT;
+        return new Match(name, size, role, rawOffset, rawHeightOffset);
     }
 }
