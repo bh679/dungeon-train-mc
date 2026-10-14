@@ -27,6 +27,7 @@ public final class FfmpegSupport {
     private static final Pattern AAC_ENCODER = Pattern.compile("(?m)^\\s*A\\S*\\s+aac\\s");
     private static final long PROBE_TIMEOUT_S = 5;
     @Nullable private static volatile Boolean aac;
+    @Nullable private static volatile Boolean readrateCatchup;
 
     public enum State {
         /** Vista has not been asked to fetch ffmpeg (its welcome screen was declined or not yet shown). */
@@ -79,6 +80,35 @@ public final class FfmpegSupport {
         }
         aac = found;
         return found;
+    }
+
+    /**
+     * Whether this ffmpeg has {@code -readrate_catchup} (7.1+), which lets the Live Feed decoder pace
+     * at real speed yet catch up after a stall. Vista prefers a system ffmpeg on PATH, which can be
+     * older. Asked once per launch with {@code ffmpeg -h long}; a failed or slow answer counts as no.
+     */
+    public static boolean hasReadrateCatchup(FFmpeg ffmpeg) {
+        Boolean known = readrateCatchup;
+        if (known != null) return known;
+        boolean found = false;
+        try {
+            Process p = ffmpeg.runFFmpeg("-hide_banner", "-h", "long");
+            drain(p.getErrorStream(), "help-err");
+            String out = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            if (p.waitFor(PROBE_TIMEOUT_S, TimeUnit.SECONDS)) found = listsReadrateCatchup(out); else p.destroyForcibly();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] could not ask ffmpeg for its options: {}", e.toString());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        readrateCatchup = found;
+        LOGGER.info("[DungeonTrain] live decoder: ffmpeg {} -readrate_catchup", found ? "has" : "lacks");
+        return found;
+    }
+
+    /** True when {@code ffmpeg -h long} output lists the {@code -readrate_catchup} option. */
+    static boolean listsReadrateCatchup(String helpOutput) {
+        return helpOutput.contains("-readrate_catchup ");
     }
 
     /** True when {@code ffmpeg -encoders} output lists the native {@code aac} encoder. */

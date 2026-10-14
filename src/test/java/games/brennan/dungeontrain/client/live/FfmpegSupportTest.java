@@ -30,4 +30,14 @@ class FfmpegSupportTest {
         assertFalse(FfmpegSupport.listsAacEncoder(out));
         assertFalse(FfmpegSupport.listsAacEncoder(""));
     }
+
+    @Test
+    void findsReadrateCatchupInLongHelp() {
+        String v8 = "-re <>              read input at native frame rate; equivalent to -readrate 1\n"
+            + "-readrate <speed>   read input at specified rate\n"
+            + "-readrate_catchup <speed>  Temporary readrate used to catch up if an input lags behind\n";
+        assertTrue(FfmpegSupport.listsReadrateCatchup(v8));
+        assertFalse(FfmpegSupport.listsReadrateCatchup("-re <>  read input at native frame rate\n-readrate <speed>  read input\n"),
+            "ffmpeg 6: -readrate but no catch-up");
+    }
 }
