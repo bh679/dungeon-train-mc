@@ -241,6 +241,8 @@ public final class LiveFeedClient {
             if (!e.getValue().isJsonObject()) continue;
             JsonObject o = e.getValue().getAsJsonObject();
             if (!o.has("url")) continue;
+            // Only an https PUT target (or loopback http, a local relay's stand-in bucket).
+            if (!LiveUrls.allowed(o.get("url").getAsString(), "")) continue;
             Map<String, String> headers = new LinkedHashMap<>();
             if (o.has("headers") && o.get("headers").isJsonObject()) {
                 for (Map.Entry<String, JsonElement> h : o.getAsJsonObject("headers").entrySet()) {
@@ -395,14 +397,20 @@ public final class LiveFeedClient {
         int viewers = b.has("viewers") ? b.get("viewers").getAsInt() : 0;
         int cap = b.has("cap") ? b.get("cap").getAsInt() : 0;
         boolean slot = !b.has("slot") || b.get("slot").getAsBoolean();
-        String replay = r.str("replayUrl");
-        String replayUrl = replay.isEmpty() ? null : replay;
+        // Relay-supplied URLs a viewer's ffmpeg will fetch: https (or loopback http) to an HLS playlist
+        // or a .ts segment, or nothing. A live status with no usable playlist reads as off air.
+        String replayUrl = LiveUrls.orNull(r.str("replayUrl"), ".ts");
+        String playlistUrl = LiveUrls.orNull(r.str("playlistUrl"), ".m3u8");
+        if (live && playlistUrl == null) {
+            LOGGER.debug("[DungeonTrain] live status: refusing playlistUrl {}", r.str("playlistUrl"));
+            live = false;
+        }
         if (!live) return new Status(false, null, null, null, viewers, cap, slot, replayUrl, false, List.of());
         // Ended: the streamer stopped and the relay keeps the stream on air while viewers play out its
         // tail; replayUrl is where a TV goes once it has reached the end.
         boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
-        return new Status(true, r.str("session"), r.str("playlistUrl"), r.str("streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended, parseVariants(b, r.str("playlistUrl")));
+        return new Status(true, r.str("session"), playlistUrl, r.str("streamer"), viewers, cap, slot,
+            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl));
     }
 
     /** PUT a local file to a signed URL with exactly the signed headers. */
@@ -421,6 +429,11 @@ public final class LiveFeedClient {
     }
 
     private static CompletableFuture<Result> put(HttpClient client, SignedPut target, Body body) {
+        // Only an https PUT target (or loopback http, a local relay's stand-in bucket).
+        if (!LiveUrls.allowed(target.url(), "")) {
+            return CompletableFuture.completedFuture(new Result(0, null,
+                new IllegalArgumentException("refusing a non-https upload target")));
+        }
         try {
             HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(target.url()))
                 .timeout(UPLOAD_TIMEOUT)

@@ -91,4 +91,40 @@ class LiveFeedClientStatusTest {
         assertFalse(s.ended());
         assertEquals("https://x/main/s1/seg00004.ts", s.replayUrl());
     }
+
+    @Test
+    void aPlaylistUrlThatIsNotHttpsHlsReadsOffAir() {
+        for (String bad : new String[] {"http://evil.example/main/s1/live.m3u8", "file:///etc/live.m3u8",
+                "https://x/main/s1/live.mp4", "ftp://x/live.m3u8", "https:///live.m3u8", "https://u@x/live.m3u8"}) {
+            LiveFeedClient.Status s = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"" + bad + "\"}");
+            assertFalse(s.live(), bad);
+            assertNull(s.playlistUrl(), bad);
+        }
+        LiveFeedClient.Status local = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\","
+            + "\"playlistUrl\":\"http://127.0.0.1:3412/test/main/s1/live.m3u8\"}");
+        assertTrue(local.live(), "a local relay's stand-in bucket is plain http on loopback");
+    }
+
+    @Test
+    void aReplayUrlThatIsNotAnHttpsSegmentIsDropped() {
+        assertNull(parse("{\"ok\":true,\"live\":false,\"replayUrl\":\"http://evil.example/seg00004.ts\"}").replayUrl());
+        assertNull(parse("{\"ok\":true,\"live\":false,\"replayUrl\":\"https://x/live.m3u8\"}").replayUrl(), "not a segment");
+        LiveFeedClient.Status ended = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
+            + "\"ended\":true,\"replayUrl\":\"file:///seg00004.ts\"}");
+        assertTrue(ended.ended());
+        assertNull(ended.replayUrl());
+    }
+
+    @Test
+    void presignDropsAPutTargetThatIsNotHttps() {
+        JsonObject body = JsonParser.parseString("{\"urls\":{"
+            + "\"seg00001.ts\":{\"url\":\"https://acct.r2.cloudflarestorage.com/dt-live/seg00001.ts?X-Amz-Signature=a\"},"
+            + "\"live.m3u8\":{\"url\":\"http://evil.example/live.m3u8?sig=b\"}}}").getAsJsonObject();
+        java.util.Map<String, LiveFeedClient.SignedPut> puts = LiveFeedClient.parsePresign(new LiveFeedClient.Result(200, body, null));
+        assertEquals(java.util.Set.of("seg00001.ts"), puts.keySet());
+        LiveFeedClient.Result r = LiveFeedClient.upload(new LiveFeedClient.SignedPut("http://evil.example/x", java.util.Map.of(), 0),
+            java.nio.file.Path.of("missing")).join();
+        assertEquals(0, r.status());
+        assertTrue(r.error() instanceof IllegalArgumentException);
+    }
 }

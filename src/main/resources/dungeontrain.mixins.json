@@ -167,6 +167,7 @@
     "client.ProgressScreenThemeMixin",
     "client.WorldOpenFlowsDelayMixin",
     "client.AdvancementsScreenAccessor",
+    "client.NativeImageAccessor",
     "client.AdvancementsScreenClickMixin",
     "client.AdvancementsScreenEditorTabMixin",
     "client.AdvancementTabTitleMixin",
