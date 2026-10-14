@@ -668,6 +668,7 @@
   "chat.dungeontrain.live.banned_for": "Banni pour ces lignes :",
   "chat.dungeontrain.live.appeal_link": "[Faire appel]",
   "chat.dungeontrain.live.appeal_link_hover": "Faire appel pour cette ligne",
+  "chat.dungeontrain.live.link_hidden": "Les liens et les numéros de téléphone sont masqués pendant que le Live Feed est à l'antenne.",
   "chat.dungeontrain.live.appeal_hint": "Tu penses qu'une ligne est une erreur ? Clique sur [Faire appel] à côté, ou tape /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Utilisation : /liveappeal affiche les lignes qui t'ont valu le bannissement ; /liveappeal <numéro> [raison] fait appel pour l'une d'elles.",
   "command.dungeontrain.live_appeal.pick": "Choisis la ligne à faire examiner :",

@@ -639,6 +639,7 @@
   "chat.dungeontrain.live.banned_for": "Dilarang kerana baris-baris ini:",
   "chat.dungeontrain.live.appeal_link": "[Rayu]",
   "chat.dungeontrain.live.appeal_link_hover": "Rayu baris ini",
+  "chat.dungeontrain.live.link_hidden": "Pautan dan nombor telefon disembunyikan semasa Live Feed bersiaran.",
   "chat.dungeontrain.live.appeal_hint": "Rasa ada baris yang silap? Klik [Rayu] pada baris itu atau taip /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Penggunaan: /liveappeal memaparkan baris yang menyebabkan larangan anda; /liveappeal <nombor> [sebab] merayu satu baris.",
   "command.dungeontrain.live_appeal.pick": "Pilih baris yang anda mahu disemak:",

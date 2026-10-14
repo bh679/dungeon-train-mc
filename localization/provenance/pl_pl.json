@@ -697,6 +697,7 @@
   "chat.dungeontrain.live.banned_for": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "e7aaaec5118408b7"},
   "chat.dungeontrain.live.appeal_link": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "d3f3699aed053773"},
   "chat.dungeontrain.live.appeal_link_hover": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "798d025d56f598bc"},
+  "chat.dungeontrain.live.link_hidden": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "c6c9ce7845249716"},
   "chat.dungeontrain.live.appeal_hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "80d263a363b1303f"},
   "command.dungeontrain.live_appeal.usage": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "bf2d556b51082cd2"},
   "command.dungeontrain.live_appeal.pick": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "7d861bbd1fee034a"},

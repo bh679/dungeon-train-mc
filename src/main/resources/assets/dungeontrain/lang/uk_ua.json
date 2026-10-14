@@ -753,6 +753,7 @@
   "chat.dungeontrain.live.banned_for": "Бан за ці рядки:",
   "chat.dungeontrain.live.appeal_link": "[Апеляція]",
   "chat.dungeontrain.live.appeal_link_hover": "Оскаржити цей рядок",
+  "chat.dungeontrain.live.link_hidden": "Посилання та номери телефонів приховано, поки Live Feed в ефірі.",
   "chat.dungeontrain.live.appeal_hint": "Вважаєш, що якийсь рядок потрапив помилково? Натисни [Апеляція] біля нього або введи /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Використання: /liveappeal показує рядки, за які видано бан; /liveappeal <номер> [причина] оскаржує один із них.",
   "command.dungeontrain.live_appeal.pick": "Вибери рядок для розгляду:",

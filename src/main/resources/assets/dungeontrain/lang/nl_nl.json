@@ -668,6 +668,7 @@
   "chat.dungeontrain.live.banned_for": "Verbannen vanwege deze regels:",
   "chat.dungeontrain.live.appeal_link": "[Beroep]",
   "chat.dungeontrain.live.appeal_link_hover": "Ga in beroep tegen deze regel",
+  "chat.dungeontrain.live.link_hidden": "Links en telefoonnummers zijn verborgen terwijl de Live Feed uitzendt.",
   "chat.dungeontrain.live.appeal_hint": "Denk je dat een regel een vergissing is? Klik op [Beroep] erbij, of typ /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Gebruik: /liveappeal toont de regels waarvoor je verbannen bent; /liveappeal <nummer> [reden] gaat tegen één regel in beroep.",
   "command.dungeontrain.live_appeal.pick": "Kies de regel die je wilt laten beoordelen:",

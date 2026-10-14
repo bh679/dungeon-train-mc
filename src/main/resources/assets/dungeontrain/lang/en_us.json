@@ -724,6 +724,7 @@
   "chat.dungeontrain.live.banned_for": "It was banned for these lines:",
   "chat.dungeontrain.live.appeal_link": "[Appeal]",
   "chat.dungeontrain.live.appeal_link_hover": "Appeal this line",
+  "chat.dungeontrain.live.link_hidden": "Links and phone numbers are hidden while the Live Feed is on air.",
   "chat.dungeontrain.live.appeal_hint": "Think a line is a mistake? Click [Appeal] on it, or type /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Usage: /liveappeal to see the lines you were banned for, /liveappeal <number> [why] to appeal one.",
   "command.dungeontrain.live_appeal.pick": "Pick the line you want reviewed:",

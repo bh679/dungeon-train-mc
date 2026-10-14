@@ -753,6 +753,7 @@
   "chat.dungeontrain.live.banned_for": "Interdicție pentru aceste rânduri:",
   "chat.dungeontrain.live.appeal_link": "[Contestă]",
   "chat.dungeontrain.live.appeal_link_hover": "Contestă acest rând",
+  "chat.dungeontrain.live.link_hidden": "Linkurile și numerele de telefon sunt ascunse cât timp Live Feed-ul e în emisie.",
   "chat.dungeontrain.live.appeal_hint": "Crezi că un rând e o greșeală? Apasă [Contestă] lângă el sau scrie /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Utilizare: /liveappeal arată rândurile pentru care ai primit interdicția; /liveappeal <număr> [motiv] contestă unul.",
   "command.dungeontrain.live_appeal.pick": "Alege rândul pe care vrei să-l analizăm:",

@@ -668,6 +668,7 @@
   "chat.dungeontrain.live.banned_for": "Bannato per queste righe:",
   "chat.dungeontrain.live.appeal_link": "[Ricorso]",
   "chat.dungeontrain.live.appeal_link_hover": "Fai ricorso per questa riga",
+  "chat.dungeontrain.live.link_hidden": "Link e numeri di telefono sono nascosti mentre il Live Feed è in onda.",
   "chat.dungeontrain.live.appeal_hint": "Pensi che una riga sia un errore? Clicca [Ricorso] accanto, oppure scrivi /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Uso: /liveappeal mostra le righe per cui sei stato bannato; /liveappeal <numero> [motivo] fa ricorso per una di esse.",
   "command.dungeontrain.live_appeal.pick": "Scegli la riga da far riesaminare:",

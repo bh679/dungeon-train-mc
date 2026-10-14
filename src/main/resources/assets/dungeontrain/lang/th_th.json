@@ -639,6 +639,7 @@
   "chat.dungeontrain.live.banned_for": "ถูกแบนเพราะข้อความเหล่านี้:",
   "chat.dungeontrain.live.appeal_link": "[อุทธรณ์]",
   "chat.dungeontrain.live.appeal_link_hover": "อุทธรณ์ข้อความนี้",
+  "chat.dungeontrain.live.link_hidden": "ลิงก์และหมายเลขโทรศัพท์จะถูกซ่อนขณะที่ Live Feed กำลังถ่ายทอดสด",
   "chat.dungeontrain.live.appeal_hint": "คิดว่าข้อความใดเป็นความผิดพลาด? คลิก [อุทธรณ์] ที่ข้อความนั้น หรือพิมพ์ /liveappeal",
   "command.dungeontrain.live_appeal.usage": "วิธีใช้: /liveappeal แสดงข้อความที่ทำให้คุณถูกแบน, /liveappeal <หมายเลข> [เหตุผล] อุทธรณ์ข้อความนั้น",
   "command.dungeontrain.live_appeal.pick": "เลือกข้อความที่ต้องการให้พิจารณา:",

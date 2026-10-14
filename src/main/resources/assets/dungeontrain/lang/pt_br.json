@@ -668,6 +668,7 @@
   "chat.dungeontrain.live.banned_for": "Banido por estas linhas:",
   "chat.dungeontrain.live.appeal_link": "[Recorrer]",
   "chat.dungeontrain.live.appeal_link_hover": "Recorrer desta linha",
+  "chat.dungeontrain.live.link_hidden": "Links e números de telefone ficam ocultos enquanto o Live Feed está no ar.",
   "chat.dungeontrain.live.appeal_hint": "Acha que uma linha foi um engano? Clique em [Recorrer] ao lado dela ou digite /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Uso: /liveappeal mostra as linhas pelas quais você foi banido; /liveappeal <número> [motivo] recorre de uma delas.",
   "command.dungeontrain.live_appeal.pick": "Escolha a linha que você quer que seja analisada:",

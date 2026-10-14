@@ -697,6 +697,7 @@
   "chat.dungeontrain.live.banned_for": "Ban za te linie:",
   "chat.dungeontrain.live.appeal_link": "[Odwołaj się]",
   "chat.dungeontrain.live.appeal_link_hover": "Odwołaj się od tej linii",
+  "chat.dungeontrain.live.link_hidden": "Linki i numery telefonów są ukryte, gdy Live Feed nadaje.",
   "chat.dungeontrain.live.appeal_hint": "Uważasz, że któraś linia to pomyłka? Kliknij przy niej [Odwołaj się] albo wpisz /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Użycie: /liveappeal pokazuje linie, za które masz bana; /liveappeal <numer> [powód] odwołuje się od jednej z nich.",
   "command.dungeontrain.live_appeal.pick": "Wybierz linię do rozpatrzenia:",

@@ -639,6 +639,7 @@
   "chat.dungeontrain.live.banned_for": "차단 사유가 된 문장:",
   "chat.dungeontrain.live.appeal_link": "[이의 제기]",
   "chat.dungeontrain.live.appeal_link_hover": "이 문장에 이의 제기",
+  "chat.dungeontrain.live.link_hidden": "라이브 방송 중에는 링크와 전화번호가 가려집니다.",
   "chat.dungeontrain.live.appeal_hint": "잘못 걸린 문장이 있나요? 그 문장의 [이의 제기]를 누르거나 /liveappeal 을 입력하세요.",
   "command.dungeontrain.live_appeal.usage": "사용법: /liveappeal 로 차단 사유 문장을 보고, /liveappeal <번호> [이유] 로 그 문장에 이의를 제기합니다.",
   "command.dungeontrain.live_appeal.pick": "검토받을 문장을 고르세요:",

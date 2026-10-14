@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.LiveModeration;
 import games.brennan.dungeontrain.moderation.LiveModerationScope;
 import games.brennan.dungeontrain.moderation.LiveWordList;
+import games.brennan.dungeontrain.moderation.PatternCensor;
 import games.brennan.dungeontrain.moderation.TextCensor;
 import games.brennan.dungeontrain.player.ServerLiveStatus;
 import games.brennan.dungeontrain.narrative.BookFactory;
@@ -317,21 +318,26 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             java.util.List<String> hits = new java.util.ArrayList<>();
             StringBuilder evidence = new StringBuilder();
             TextCensor.Result t = TextCensor.censor(title.raw(), words);
+            TextCensor.Result tp = PatternCensor.censor(t.text());
             hits.addAll(t.hits());
             if (t.changed()) evidence.append("[title] ").append(title.raw());
             java.util.List<String> out = new java.util.ArrayList<>(pages.size());
             boolean changed = t.changed();
+            boolean linksHidden = tp.changed();
             for (FilteredText page : pages) {
                 TextCensor.Result r = TextCensor.censor(page.raw(), words);
-                out.add(r.text());
+                TextCensor.Result rp = PatternCensor.censor(r.text());
+                out.add(rp.text());
                 hits.addAll(r.hits());
                 changed |= r.changed();
+                linksHidden |= rp.changed();
                 if (r.changed() && evidence.length() < 400) evidence.append(evidence.length() > 0 ? " | " : "").append(page.raw());
             }
-            if (!changed) return;
-            this.dungeontrain$censoredTitle = t.text();
+            if (!changed && !linksHidden) return;
+            this.dungeontrain$censoredTitle = tp.text();
             this.dungeontrain$censoredPages = List.copyOf(out);
-            LiveModeration.strike(serverPlayer, "book_sign", hits, evidence.toString());
+            if (changed) LiveModeration.strike(serverPlayer, "book_sign", hits, evidence.toString());
+            if (linksHidden) LiveModeration.warnLinkHidden(serverPlayer);
         } catch (Throwable e) {
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] live text filter skipped a book: {}", e.toString());
         }
