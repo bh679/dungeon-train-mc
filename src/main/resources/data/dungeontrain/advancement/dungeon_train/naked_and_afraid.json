@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "display": {
+    "icon": {
+      "id": "minecraft:leather_chestplate"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.naked_and_afraid.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.naked_and_afraid.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "challenge": {
+      "trigger": "dungeontrain:code_granted",
+      "conditions": {
+        "threshold": 100
+      }
+    }
+  },
+  "requirements": [
+    [
+      "challenge"
+    ]
+  ]
+}

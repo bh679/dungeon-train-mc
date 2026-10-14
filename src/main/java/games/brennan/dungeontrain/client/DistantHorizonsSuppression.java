@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import com.mojang.logging.LogUtils;
 import com.seibel.distanthorizons.api.methods.events.DhApiEventRegister;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeDeferredRenderEvent;
 import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeRenderEvent;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiCancelableEventParam;
 import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
@@ -34,6 +35,10 @@ import org.slf4j.Logger;
  * the worst of it: the room <em>is</em> a sampled slice of terrain, and DH draws the unrelated
  * surface behind that slice.</p>
  *
+ * <p><b>What a cancelled frame still needs.</b> Under a shader pack, Iris keeps reading DH's frame
+ * textures on frames DH never drew, so {@link DistantHorizonsFrameClear} empties them whenever a
+ * frame is cancelled — otherwise the last-drawn horizon lingers as fog silhouettes in the room.</p>
+ *
  * <p><b>What this does not do.</b> Only DH's <em>rendering</em> of a frame is cancelled, per frame.
  * DH's config file is never written, its LOD generation and stored data are untouched, and nothing
  * persists — a crash or a disconnect inside a room or mid-band cannot leave a player's DH switched
@@ -59,6 +64,10 @@ public final class DistantHorizonsSuppression {
     public static void register() {
         try {
             DhApiEventRegister.on(DhApiBeforeRenderEvent.class, new RenderSuppressor());
+            // The deferred (transparent) pass is its own event — a subclass DH dispatches by its own
+            // class, so the binding above never sees it. Under Iris every frame defers water/glass
+            // LODs to it, and without this they kept drawing inside rooms under a pack.
+            DhApiEventRegister.on(DhApiBeforeDeferredRenderEvent.class, new DeferredRenderSuppressor());
             LOGGER.info("[DungeonTrain] Distant Horizons will stop drawing in the upside-down band "
                     + "and inside dimensional carriages");
         } catch (Throwable t) {
@@ -91,8 +100,25 @@ public final class DistantHorizonsSuppression {
                         ClientDisplayConfig.UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN.get());
     }
 
-    /** DH's cancellable before-render event: cancelling it skips DH's LOD pass for that frame. */
+    /**
+     * DH's cancellable before-render event: cancelling it skips DH's LOD pass for that frame.
+     *
+     * <p>The cancel also skips DH's own clear of its frame textures, which a shader pack goes on
+     * reading — so the skipped clear is done here instead. See {@link DistantHorizonsFrameClear}
+     * for the ghost-terrain failure that is avoiding.</p>
+     */
     private static final class RenderSuppressor extends DhApiBeforeRenderEvent {
+        @Override
+        public void beforeRender(DhApiCancelableEventParam<DhApiRenderParam> event) {
+            if (hideThisFrame()) {
+                event.cancelEvent();
+                DistantHorizonsFrameClear.clearSuppressedFrame();
+            }
+        }
+    }
+
+    /** The deferred transparent pass, same rule; the opaque pass already cleared this frame. */
+    private static final class DeferredRenderSuppressor extends DhApiBeforeDeferredRenderEvent {
         @Override
         public void beforeRender(DhApiCancelableEventParam<DhApiRenderParam> event) {
             if (hideThisFrame()) {

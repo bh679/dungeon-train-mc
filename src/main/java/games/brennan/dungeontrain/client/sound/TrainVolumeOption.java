@@ -43,7 +43,7 @@ public final class TrainVolumeOption {
      * category beside "Music" and "Ambient/Environment" — so it names the mod.
      */
     public static OptionInstance<Integer> forSoundScreen() {
-        return create("gui.dungeontrain.sound.train_engine");
+        return create("gui.dungeontrain.sound.train_engine", TrainVolumeOption::label, tip());
     }
 
     /**
@@ -51,7 +51,17 @@ public final class TrainVolumeOption {
      * names the setting instead of repeating the mod.
      */
     public static OptionInstance<Integer> forModScreen() {
-        return create("gui.dungeontrain.options.train_volume");
+        return create("gui.dungeontrain.options.train_volume", TrainVolumeOption::label, tip());
+    }
+
+    /**
+     * For a row that already names the setting beside the slider (the options screen's settings
+     * list), so the slider itself reads only {@code "70%"} or {@code OFF}. The caption still names
+     * the option for narration.
+     */
+    public static OptionInstance<Integer> valueOnly() {
+        return create("gui.dungeontrain.options.train_volume", (caption, tenths) -> valueLabel(tenths),
+            OptionInstance.noTooltip());
     }
 
     /**
@@ -62,12 +72,17 @@ public final class TrainVolumeOption {
      * up a change made on any of the others. Only the caption differs between surfaces; the
      * tooltip, the notches and the accessor are one definition.</p>
      */
-    private static OptionInstance<Integer> create(String captionKey) {
+    private static OptionInstance.TooltipSupplier<Integer> tip() {
+        return OptionInstance.cachedConstantTooltip(Component.translatable("gui.dungeontrain.sound.train_engine.tip"));
+    }
+
+    private static OptionInstance<Integer> create(String captionKey,
+                                                  OptionInstance.CaptionBasedToString<Integer> label,
+                                                  OptionInstance.TooltipSupplier<Integer> tooltip) {
         return new OptionInstance<>(
             captionKey,
-            OptionInstance.cachedConstantTooltip(
-                Component.translatable("gui.dungeontrain.sound.train_engine.tip")),
-            TrainVolumeOption::label,
+            tooltip,
+            label,
             new OptionInstance.IntRange(MIN_TENTHS, MAX_TENTHS),
             toTenths(ClientDisplayConfig.getTrainEngineVolume()),
             tenths -> ClientDisplayConfig.setTrainEngineVolume(tenths / (double) MAX_TENTHS));
@@ -78,6 +93,13 @@ public final class TrainVolumeOption {
         return tenths <= MIN_TENTHS
             ? Options.genericValueLabel(caption, CommonComponents.OPTION_OFF)
             : Component.translatable("options.percent_value", caption, tenths * (100 / MAX_TENTHS));
+    }
+
+    /** {@code "70%"}, or {@code OFF} at zero — the value with no caption in front of it. */
+    private static Component valueLabel(int tenths) {
+        return tenths <= MIN_TENTHS
+            ? CommonComponents.OPTION_OFF
+            : Component.literal(tenths * (100 / MAX_TENTHS) + "%"); // a unit, not prose
     }
 
     /** The stored {@code 0.0..1.0} volume as a slider notch, clamping a hand-edited toml value. */

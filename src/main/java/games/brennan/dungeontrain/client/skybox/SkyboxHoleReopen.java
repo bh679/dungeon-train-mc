@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.skybox;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.renderer.GameRenderer;
 import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL30;
 
 /**
  * The second half of the skybox punch under a shader pack: turn every hole that is still
@@ -26,20 +27,27 @@ import org.lwjgl.opengl.GL11;
  *       pack's {@code gbuffers_basic}, allowed to write), depth test {@code LEQUAL}, depth and
  *       colour writes off, stencil {@code REPLACE} on {@link #STILL_VISIBLE_BIT}. A pixel passes
  *       only where the cube is still the frontmost surface — anything drawn in front of it since
- *       the punch left a nearer depth.</li>
+ *       the punch left a nearer depth. The bit is cleared first ({@link SkyboxStencil#clearBit}):
+ *       no frame clear touches stencil, and a view of only live-sky blocks skips the full clear
+ *       at {@code AFTER_SKY}, so without it marks accumulated across frames and the reopen below
+ *       pushed nearer blocks to the far plane wherever a cube had once been frontmost.</li>
  *   <li><b>Reopen</b> — the cubes again with {@code glDepthRange(1, 1)}, depth func {@code ALWAYS},
  *       depth writes on, colour off, stencil {@code EQUAL} that bit. Those pixels are now at
  *       depth 1.0 and the pack paints its sky there.</li>
  * </ol>
  *
- * <p>Runs at {@code AFTER_BLOCK_ENTITIES}: after every opaque thing — terrain, Sable's carriages,
- * entities, block entities — and immediately before Iris' <em>deferred</em> pass and its
- * no-translucents depth copy. Packs draw their sky and volumetric clouds in deferred from the
- * depth as it stands then, so a hole reopened any later shows sky without the clouds around it
- * (measured on Complementary Unbound at {@code AFTER_WEATHER}). The price of going early is that
- * a translucent surface <em>behind</em> a skybox block draws through it, because the hole is at
- * the far plane by the time translucents render. Skybox blocks face open sky or void in practice,
- * so the clouds win. The depth mask is read at entry and restored on exit rather than assumed.</p>
+ * <p>Runs at the head of Iris' {@code beginTranslucents} (see {@code IrisPipelineSkyboxReopenMixin}):
+ * after every opaque thing — terrain, Sable's carriages, entities, block entities — and immediately
+ * before Iris' <em>deferred</em> pass and its no-translucents depth copy. Not at
+ * {@code AFTER_BLOCK_ENTITIES}: Iris holds every entity draw back and flushes them after that
+ * stage, so a hole reopened at the stage let mobs behind the block draw through it. Packs draw
+ * their sky and volumetric clouds in deferred from the depth as it stands then, so a hole reopened
+ * any later shows sky without the clouds around it (measured on Complementary Unbound at
+ * {@code AFTER_WEATHER}). Going before the translucents would leave a translucent surface
+ * <em>behind</em> a skybox block drawing through it, so once the pack has painted its sky
+ * {@code SkyboxPunchRenderer#restoreHoleDepth} puts the holes' real depth back, at the tail of that
+ * same Iris call — before its translucent entity flush and before translucent terrain. The depth
+ * mask is read at entry and restored on exit rather than assumed.</p>
  *
  * <p>Under a pack every variant shows the <em>pack's</em> sky for the pipeline currently
  * rendering — an End block inside an End-skied carriage shows the pack's End, an End block in the
@@ -135,7 +143,7 @@ public final class SkyboxHoleReopen {
      * pipeline, so it runs solely while the F3+5 panel is open, where "did the reopen take?" is
      * exactly the question being asked.
      */
-    private static float readCentreDepth() {
+    static float readCentreDepth() {
         int[] viewport = new int[4];
         GL11.glGetIntegerv(GL11.GL_VIEWPORT, viewport);
         java.nio.FloatBuffer out = java.nio.ByteBuffer.allocateDirect(4)
@@ -143,6 +151,18 @@ public final class SkyboxHoleReopen {
         GL11.glReadPixels(viewport[0] + viewport[2] / 2, viewport[1] + viewport[3] / 2, 1, 1,
             GL11.GL_DEPTH_COMPONENT, GL11.GL_FLOAT, out);
         return out.get(0);
+    }
+
+    /**
+     * {@code "<draw fbo id>/d<depth attachment name>"} for the framebuffer currently bound for drawing.
+     * Diagnostics only: under Iris the reopen and the restore can land in different framebuffers,
+     * and whether they share a depth attachment is the whole question.
+     */
+    static String describeBoundFramebuffer() {
+        int fbo = GL11.glGetInteger(GL30.GL_DRAW_FRAMEBUFFER_BINDING);
+        int depth = GL30.glGetFramebufferAttachmentParameteri(GL30.GL_DRAW_FRAMEBUFFER,
+            GL30.GL_DEPTH_ATTACHMENT, GL30.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+        return fbo + "/d" + depth;
     }
 
     /** The stencil value at the centre pixel — is the mark pass landing? Diagnostics only. */

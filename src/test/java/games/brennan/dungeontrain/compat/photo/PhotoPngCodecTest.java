@@ -67,4 +67,18 @@ class PhotoPngCodecTest {
         byte[] cut = PhotoPngCodec.encode(8, 8, noise(8, 2), palette());
         assertThrows(IOException.class, () -> PhotoPngCodec.decode(Arrays.copyOf(cut, cut.length - 30)));
     }
+
+    @Test
+    @DisplayName("a full-colour picture keeps its colours and its transparency")
+    void argbReadableWithAlpha() throws IOException {
+        int[] argb = {0xFF112233, 0x00000000, 0x80FF00FF, 0xFFFFFFFF, 0xFF000000, 0xFF00FF00};
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(PhotoPngCodec.encodeArgb(3, 2, argb)));
+        assertEquals(3, image.getWidth());
+        assertEquals(2, image.getHeight());
+        assertEquals(0xFF112233, image.getRGB(0, 0));
+        assertEquals(0, image.getRGB(1, 0) >>> 24);
+        assertEquals(0x80FF00FF, image.getRGB(2, 0));
+        assertEquals(0xFF00FF00, image.getRGB(2, 1));
+        assertThrows(IOException.class, () -> PhotoPngCodec.encodeArgb(3, 3, argb));
+    }
 }

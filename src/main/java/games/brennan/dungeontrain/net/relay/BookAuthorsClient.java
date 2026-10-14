@@ -6,6 +6,7 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.narrative.BookSafeText;
+import games.brennan.dungeontrain.train.HeadProfiles;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -59,8 +60,18 @@ public final class BookAuthorsClient {
      * One author the relay is willing to name: an opaque {@code token} to fetch their books with, the
      * display {@code name} (a signature — public on every book already), and how many approved books
      * stand behind it.
+     *
+     * <p>{@code skinUrl} is the Mojang skin the author wears, when the relay's skin cache has it —
+     * what an author room's player heads are dressed in (see {@code PortalRoomAuthorHeads}). Null
+     * for a signature author (free text, not one account), an uncached one, or a relay older than
+     * the field. Validated at the parse boundary, so a non-null value is always a CDN texture URL.</p>
      */
-    public record Author(String token, String name, int count, boolean mine) {
+    public record Author(String token, String name, int count, boolean mine, String skinUrl, boolean slim) {
+
+        /** An author with no known skin. */
+        public Author(String token, String name, int count, boolean mine) {
+            this(token, name, count, mine, null, false);
+        }
 
         /**
          * An author page fetched as somebody else's — the ordinary {@code player} / {@code signature}
@@ -195,7 +206,7 @@ public final class BookAuthorsClient {
     }
 
     /**
-     * Parse {@code {ok, authors:[{token,name,count}], relaxed}}; anything malformed yields
+     * Parse {@code {ok, authors:[{token,name,count,skin?}], relaxed}}; anything malformed yields
      * {@link Page#failed()} — a reply we could not read is not a reply saying nobody qualifies.
      *
      * <p>{@code relaxed} absent reads as false, which is what a relay older than the field means:
@@ -236,7 +247,20 @@ public final class BookAuthorsClient {
                     // non-numeric count — a nameable author with an unknown tally is still usable
                 }
             }
-            out.add(new Author(token, name, count, mine));
+            String skinUrl = null;
+            boolean slim = false;
+            if (o.has("skin") && o.get("skin").isJsonObject()) {
+                JsonObject skin = o.getAsJsonObject("skin");
+                String url = skin.has("url") && skin.get("url").isJsonPrimitive() ? skin.get("url").getAsString() : null;
+                // Anything but a Mojang CDN texture is a bad reply, not a face — dropped here so the
+                // author still stands, just without one.
+                if (HeadProfiles.isTextureUrl(url)) {
+                    skinUrl = url;
+                    slim = skin.has("model") && skin.get("model").isJsonPrimitive()
+                        && "slim".equals(skin.get("model").getAsString());
+                }
+            }
+            out.add(new Author(token, name, count, mine, skinUrl, slim));
         }
         return Page.of(out, relaxed);
     }

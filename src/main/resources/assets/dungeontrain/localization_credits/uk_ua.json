@@ -1,0 +1,9 @@
+{
+  "locale": "uk_ua",
+  "name": "ШІ без перевірки людиною",
+  "human_reviewed": false,
+  "total_keys": 4873,
+  "ai_authored": 4727,
+  "ai_unreviewed": 4727,
+  "counted_keys": 3086
+}

@@ -217,7 +217,8 @@ public final class BugResponseCard {
 
     // ---- Helpers ----
 
-    private static Component outdated(Result r) {
+    /** "You're N releases behind (vX → vY)." — also the Options screen's Performance tab footer. */
+    public static Component outdated(Result r) {
         String plural = plural(r.releasesBehind());
         String to = r.updateTarget().map(FullSemver::toString).orElse("?");
         return Component.translatable(KEY + "outdated." + plural, r.releasesBehind(), installedText(r), to);

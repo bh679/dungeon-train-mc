@@ -28,6 +28,7 @@ public final class PhysicsStepTimer {
     private static final LongAdder colliderRebuilds = new LongAdder();
     private static final LongAdder batchedBlockChanges = new LongAdder();
     private static final LongAdder blockChangeNanos = new LongAdder();
+    private static final LongAdder stepDeferredBlockChanges = new LongAdder();
 
     private PhysicsStepTimer() {}
 
@@ -74,9 +75,19 @@ public final class PhysicsStepTimer {
         if (n > 0) batchedBlockChanges.add(n);
     }
 
+    /**
+     * Called by {@link ColliderBatch} at the exit of a physics-step scope with how many block changes
+     * a collision callback made inside Sable's native step — each one a change that used to re-enter
+     * Rapier while it held its world lock. Non-zero means the deadlock path fired and was deferred.
+     */
+    public static void addStepDeferredBlockChanges(long n) {
+        if (n > 0) stepDeferredBlockChanges.add(n);
+    }
+
     /** One drained {@code [mspt]} window. */
     public record Window(long stepNanos, long blockChanges, long reanchors,
-                         long colliderRebuilds, long batchedBlockChanges, long blockChangeNanos) {
+                         long colliderRebuilds, long batchedBlockChanges, long blockChangeNanos,
+                         long stepDeferredBlockChanges) {
         /** Total wall time of Sable's per-block handling over the window, in ms. */
         public double blockChangeMs() {
             return blockChangeNanos / 1_000_000.0;
@@ -91,6 +102,7 @@ public final class PhysicsStepTimer {
     /** Read and reset every counter — call from exactly one place per window. */
     public static Window drain() {
         return new Window(stepNanos.sumThenReset(), blockChanges.sumThenReset(), reanchors.sumThenReset(),
-            colliderRebuilds.sumThenReset(), batchedBlockChanges.sumThenReset(), blockChangeNanos.sumThenReset());
+            colliderRebuilds.sumThenReset(), batchedBlockChanges.sumThenReset(), blockChangeNanos.sumThenReset(),
+            stepDeferredBlockChanges.sumThenReset());
     }
 }

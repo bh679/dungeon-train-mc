@@ -27,6 +27,13 @@ field is derived from them (the in-game translation editor filters on it).
     Restamps author and/or reviewer on the selected books. Restamping --author WITHOUT
     --reviewer resets reviewer to "" — a re-translated book invalidates its previous review.
 
+  Per-field credit (a translator wrote some fields of a book over another author's body):
+      python3 scripts/localization/stamp-narrative-provenance.py --locale uk_ua \
+          --author MrMultibite --reviewer MrMultibite \
+          --files random_books/deathnote --fields title author
+    Records {"fields": {"title": NAME, "author": NAME}} on the book; the book-level author keeps
+    the rest. Collapses to a book-level author once one person wrote every field.
+
 Names passed to --author / --reviewer must exist in ``localization/authors.json`` (reviewers
 must be registered as human), same as the lang provenance.
 """
@@ -93,10 +100,46 @@ def stamp_books(prov: dict, targets: list[str], author: str | None,
             stamped[book]["author"] = author
             # A re-translated book invalidates the previous review.
             stamped[book]["reviewer"] = reviewer if reviewer is not None else ""
+            # ...and every field in it is now the new author's, so no per-field credit stands.
+            stamped[book].pop(provenance_io.FIELDS_KEY, None)
         elif reviewer is not None:
             stamped[book]["reviewer"] = reviewer
         if author is not None or reviewer is not None:
             stamped[book]["source_hash"] = book_hash(english_dir, book)
+    return stamped
+
+
+def stamp_fields(prov: dict, book: str, fields: list[str], author: str,
+                 reviewer: str | None, book_fields: list[str],
+                 english_dir: Path | None = None) -> dict:
+    """A new sidecar crediting ``fields`` of ``book`` to ``author``.
+
+    The book-level author keeps every other field. A per-field credit equal to the book author
+    says nothing and is dropped; once one person is the effective author of every field in
+    ``book_fields`` the map collapses into a book-level author, so the record stays as short as
+    the truth allows. ``reviewer`` (if given) stamps the book as reviewed, as on a book stamp.
+    """
+    unknown = sorted(set(fields) - set(book_fields))
+    if unknown:
+        raise ValueError(f"{book}: --fields names {', '.join(unknown)}, which "
+                         "the book does not have")
+    stamped = {b: dict(e) for b, e in prov.items()}
+    entry = stamped[book]
+    per_field = dict(entry.get(provenance_io.FIELDS_KEY) or {})
+    per_field.update({f: author for f in fields})
+    effective = {f: per_field.get(f, entry["author"]) for f in book_fields}
+    owners = set(effective.values())
+    if len(owners) == 1:
+        entry["author"] = owners.pop()
+        per_field = {}
+    per_field = {f: n for f, n in per_field.items() if n != entry["author"] and f in effective}
+    if per_field:
+        entry[provenance_io.FIELDS_KEY] = {f: per_field[f] for f in book_fields if f in per_field}
+    else:
+        entry.pop(provenance_io.FIELDS_KEY, None)
+    if reviewer is not None:
+        entry["reviewer"] = reviewer
+        entry["source_hash"] = book_hash(english_dir, book)
     return stamped
 
 
@@ -112,7 +155,15 @@ def process_locale(locale: str, narrative_dir: Path, prov_dir: Path,
         prov, added, removed = sync_locale(books, prov, args.author, args.english_dir)
 
     stamped = 0
-    if args.selecting:
+    if args.selecting and getattr(args, "fields", None):
+        targets = select_books(prov, args.files, None, False)
+        book = targets[0]
+        book_fields = provenance_io.book_string_fields(json.loads(
+            (narrative_dir / locale / f"{book}.json").read_text(encoding="utf-8")))
+        prov = stamp_fields(prov, book, args.fields, args.author, args.reviewer, book_fields,
+                            args.english_dir)
+        stamped = 1
+    elif args.selecting:
         targets = select_books(prov, args.files, args.prefix, args.all)
         prov = stamp_books(prov, targets, args.author, args.reviewer, args.english_dir)
         stamped = len(targets)
@@ -153,6 +204,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="explicit book keys to stamp (e.g. random_books/deathnote)")
     parser.add_argument("--prefix", help="stamp every book whose key starts with this prefix")
     parser.add_argument("--all", action="store_true", help="stamp every book")
+    parser.add_argument("--fields", nargs="+",
+                        help="credit only these dotted fields of ONE --files book to --author "
+                             "(e.g. title variants.0); the book-level author keeps the rest")
     args = parser.parse_args(argv)
 
     selections = [s for s in (args.files is not None, args.prefix is not None, args.all) if s]
@@ -162,6 +216,9 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     if args.selecting and args.author is None and args.reviewer is None:
         print("ERROR: a selection needs --author and/or --reviewer to stamp", file=sys.stderr)
+        return 2
+    if args.fields and (args.author is None or not args.files or len(args.files) != 1):
+        print("ERROR: --fields needs --author and exactly one --files book", file=sys.stderr)
         return 2
     if args.reviewer is not None and not args.selecting:
         print("ERROR: --reviewer needs a selection (--files / --prefix / --all)", file=sys.stderr)

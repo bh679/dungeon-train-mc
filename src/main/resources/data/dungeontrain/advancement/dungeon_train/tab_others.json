@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "minecraft:player_head"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.im_not_alone.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.im_not_alone.description"
+    },
+    "frame": "goal",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true,
+    "background": "minecraft:textures/block/white_terracotta.png"
+  },
+  "criteria": {
+    "mirrored": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "mirrored"
+    ]
+  ]
+}

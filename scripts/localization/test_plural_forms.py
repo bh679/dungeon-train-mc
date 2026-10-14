@@ -18,6 +18,7 @@ def test_categories_match_the_families_the_game_uses():
     assert pf.plural_categories("ru_ru") == ("one", "few", "many")
     assert pf.plural_categories("pl_pl") == ("one", "few", "many")
     assert pf.plural_categories("ro_ro") == ("one", "few", "other")
+    assert pf.plural_categories("uk_ua") == ("one", "few", "many")
     assert pf.plural_categories("ja_jp") == ("other",)
     assert pf.plural_categories("zh_cn") == ("other",)
     assert pf.plural_categories("ko_kr") == ("other",)

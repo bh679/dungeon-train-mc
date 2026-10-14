@@ -41,7 +41,7 @@ public final class TranslationCreditsMerge {
     public static List<TranslationContributor> merged() {
         return merge(TranslationContributorsRegistry.all(),
             TranslationCoverageClient.allCredits(),
-            TranslationCreditsMerge::totalKeysFor,
+            TranslationCreditsMerge::countedKeysFor,
             TranslatorRenames.snapshot(),
             Set.of());
     }
@@ -207,7 +207,7 @@ public final class TranslationCreditsMerge {
      * {@code LanguageShare#fraction} must therefore tolerate — a name with no percentage is still
      * a name worth showing.
      */
-    private static int totalKeysFor(String locale) {
-        return LocalizationCreditRegistry.totalKeysFor(locale);
+    private static int countedKeysFor(String locale) {
+        return LocalizationCreditRegistry.countedKeysFor(locale);
     }
 }

@@ -119,6 +119,7 @@ Read `.claude/gates/gate-3-merge.md` for full procedure. Summary:
 ./gradlew test            # Run JUnit tests (if present)
 ./gradlew --stop          # Stop the gradle daemon if dev client hangs
 ./gradlew pullTradeValues # Refresh data/dungeontrain/trade_values.json from the relay (see below)
+python3 scripts/modpack/pull-approved-hashes.py  # Refresh src/main/whitelist/approved_hashes.json (see below)
 ```
 
 ### Community item trade values
@@ -134,6 +135,21 @@ review the diff, commit. To refresh the page's item list, run
 to the relay's `public/dungeontrain/items/catalog.json`. For the icons, `./gradlew runClient
 -PtradeValueIcons` renders every item at the title screen to `run/trade-values-icons/` and quits
 (`client/TradeValueIconDump`); copy that folder to `public/dungeontrain/items/icons/`.
+
+### Approved-mod file hashes (hash-verified whitelist)
+
+Free Play judges installed mods by their jar's SHA-1 as well as by mod id. The scanning and
+verify-call ENGINE is the jarJar'd optional sibling `dtmodverify` (`bh679/dtmodverify-mc`, bumped by
+hand via `dtmodverify_version`; DT reaches it through `compat/DtModVerifyBridge` and falls back to the
+id-only check without it — relay `POST /approved-mods/verify`). The jar bakes the hashes it can know offline:
+`generateApprovedMods` merges the modpack's pinned-file `sha1`s (`check-mod-ids.py --fill` records
+them), the embedded jars', and `src/main/whitelist/approved_hashes.json` — every published 1.21.1
+NeoForge file of every approved mod, pulled by hand with
+`python3 scripts/modpack/pull-approved-hashes.py` (Modrinth; CurseForge too with
+`CURSEFORGE_API_KEY`) and committed. **Approving a new id means running it again**: the build
+fails on an approved id with no record. Ids the script cannot place are listed in `unmatched` and
+stay id-only approved; the relay verifies their files live and the Approved Mods page's review
+queue shows what it could not place. The relay's `enforceHashes` switch ships OFF.
 
 ### In-Game Manual Testing
 
@@ -333,7 +349,7 @@ loads (Advancement Plaques needs Iceberg).
 - **Sable-pin coupling:** when you bump `sable_version` in `gradle.properties`, also update
   `modpack/modpack.config.json` → `sable.file_id` (CurseForge) **and** `sable.modrinth_version`
   (Modrinth) — both modpacks pin Sable to the tested version. Flagged in `gradle.properties`.
-- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix; also Stream Detect, DPI Bypass Detect, Pigman Villagers, Lost City Terrain Fit — CF project 1717775):** jarJar'd inside the DT jar
+- **Hybrid siblings (KT/DB/SFF = Keep Trim, Dungeon Backup, Sable Fence & Trapdoor Fix; also Stream Detect, DPI Bypass Detect, Pigman Villagers, Lost City Terrain Fit — CF project 1717775, Discord Presence — CF project 1573749, Dungeon Train Mod Verification — CF project 1738856):** jarJar'd inside the DT jar
   (so Modrinth + manual installs have them built in) AND declared `<slug>(required)` on **CurseForge
   only** + shipped as CurseForge modpack Includes (`curseforge_only: true` in `modpack.config.json`,
   which keeps them out of the `.mrpack`). When the CF app installs the top-level copy, NeoForge's
@@ -377,8 +393,13 @@ loads (Advancement Plaques needs Iceberg).
   A 2026-08-22 re-upload of the identical rejected manifest was **accepted**, so those rejections
   were a transient CurseForge fault — missing versions can be recovered by re-uploading.
   ⚠️ **Set the `CURSEFORGE_API_KEY` secret.** Without it the check reads the cached cfwidget
-  mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` reports
-  INCONCLUSIVE and won't fail the run. With the key it is authoritative.
+  mirror, which lagged 30+ min in testing; a cache can't prove absence, so `--verify` looks once,
+  reports INCONCLUSIVE and won't fail (or wait). With the key it is authoritative and polls.
+  The **mod** jar's listing is checked the same way, but off the release's critical path:
+  `release.yml` fails only on a missing upload file id, then dispatches
+  `verify-curseforge-upload.yml` (300-min approval wait) — a red run there means the file was
+  rejected; recover with `reupload-curseforge.yml`. (Until Oct 2026 `release.yml` polled for
+  30 min itself, which was ~30 of every release's ~34 minutes.)
 - Both publish scripts retry transient 5xx/transport failures via
   `scripts/modpack/lib/upload-retry.sh` (never 4xx — a bad payload stays bad).
 - Manual test: `gh workflow run release-modpack.yml --ref <branch> -f tag=v<ver>

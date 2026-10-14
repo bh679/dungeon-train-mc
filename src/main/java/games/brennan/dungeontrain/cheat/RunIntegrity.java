@@ -274,8 +274,11 @@ public final class RunIntegrity {
         if (CheatModIntegrity.isSessionFreePlay()) {
             causes.add(sessionCause("cheat_mod", CheatModIntegrity.detected()));
         }
-        if (UnapprovedModIntegrity.isSessionFreePlay()) {
+        if (UnapprovedModIntegrity.isIdFreePlay()) {
             causes.add(sessionCause("unapproved_mod", UnapprovedModIntegrity.detected()));
+        }
+        if (UnapprovedModIntegrity.isFileFreePlay()) {
+            causes.add(sessionCause("unverified_mod", UnapprovedModIntegrity.unverified()));
         }
         if (EditorContentIntegrity.isSessionFreePlay()) {
             causes.add(sessionCause("custom_content", EditorContentIntegrity.contentPackageNames()));

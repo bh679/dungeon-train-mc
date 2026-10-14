@@ -55,6 +55,22 @@ public final class LocaleOrdinalWords {
             "шестнадцатое", "семнадцатое", "восемнадцатое", "девятнадцатое", "двадцатое"
     };
 
+    private static final String[] UK_M = {
+            "перший", "другий", "третій", "четвертий", "п’ятий", "шостий", "сьомий", "восьмий", "дев’ятий",
+            "десятий", "одинадцятий", "дванадцятий", "тринадцятий", "чотирнадцятий", "п’ятнадцятий",
+            "шістнадцятий", "сімнадцятий", "вісімнадцятий", "дев’ятнадцятий", "двадцятий"
+    };
+    private static final String[] UK_F = {
+            "перша", "друга", "третя", "четверта", "п’ята", "шоста", "сьома", "восьма", "дев’ята",
+            "десята", "одинадцята", "дванадцята", "тринадцята", "чотирнадцята", "п’ятнадцята",
+            "шістнадцята", "сімнадцята", "вісімнадцята", "дев’ятнадцята", "двадцята"
+    };
+    private static final String[] UK_N = {
+            "перше", "друге", "третє", "четверте", "п’яте", "шосте", "сьоме", "восьме", "дев’яте",
+            "десяте", "одинадцяте", "дванадцяте", "тринадцяте", "чотирнадцяте", "п’ятнадцяте",
+            "шістнадцяте", "сімнадцяте", "вісімнадцяте", "дев’ятнадцяте", "двадцяте"
+    };
+
     /**
      * {@code n} as an ordinal in {@code localeCode}'s language, agreeing with {@code gender} where the
      * language inflects. Never null and never empty: an unknown locale falls back to the English digit
@@ -79,6 +95,11 @@ public final class LocaleOrdinalWords {
                 case NEUTER -> RU_N[n - 1];
                 case MASCULINE -> RU_M[n - 1];
             };
+            case "uk" -> switch (gender) {
+                case FEMININE -> UK_F[n - 1];
+                case NEUTER -> UK_N[n - 1];
+                case MASCULINE -> UK_M[n - 1];
+            };
             default -> null;
         };
     }
@@ -94,6 +115,12 @@ public final class LocaleOrdinalWords {
             // Russian writes the adjective ending after a hyphen, and it still agrees: 37-й / 37-я / 37-е.
             case "ru" -> d + switch (gender) {
                 case FEMININE -> "-я";
+                case NEUTER -> "-е";
+                case MASCULINE -> "-й";
+            };
+            // Ukrainian does the same: 37-й / 37-а / 37-е.
+            case "uk" -> d + switch (gender) {
+                case FEMININE -> "-а";
                 case NEUTER -> "-е";
                 case MASCULINE -> "-й";
             };

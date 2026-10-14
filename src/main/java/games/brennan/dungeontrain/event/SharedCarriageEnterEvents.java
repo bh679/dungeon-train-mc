@@ -251,8 +251,8 @@ public final class SharedCarriageEnterEvents {
 
     /**
      * A player just left the carriage {@code key} ("subLevelId:pIdx", null when they weren't on one):
-     * send whichever storage blocks they changed aboard it, if the carriage was block-edited this
-     * session. Storage edits are parked at container close rather than sent, so one visit costs at most
+     * send whichever storage blocks they changed aboard it (see {@code Instance.releaseParked} for when a
+     * carriage not yet on the relay holds them back). Storage edits are parked at container close rather than sent, so one visit costs at most
      * one delta however many containers were opened.
      */
     private static void releaseParkedStorage(String key) {
@@ -269,7 +269,7 @@ public final class SharedCarriageEnterEvents {
         }
         for (SharedCarriageRegistry.Instance inst : SharedCarriageRegistry.bySubLevel(subLevelId)) {
             if (inst.pIdx != pIdx || inst.isCulled() || !inst.hasParked()) continue;
-            int queued = inst.releaseParked(pos -> StorageContents.sig(inst.level, pos));
+            int queued = inst.releaseParked(pos -> StorageContents.read(inst.level, pos));
             if (queued > 0) {
                 LOGGER.debug("[DungeonTrain] player left drifting carriage pIdx={} — released {} storage cell(s) for upload.",
                         inst.pIdx, queued);

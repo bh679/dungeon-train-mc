@@ -26,8 +26,10 @@ import java.util.Set;
  * nearest surviving ancestor. A disabled chain collapses onto the first enabled ancestor.</p>
  *
  * <p>Pure function over Gson trees, returning a new map in the same order; the input is never
- * mutated. Only ids {@link RequirementJsonRewriter#isOurs ours} are ever removed — the relay
- * allowlists them too, and the root is refused there, so a whole tab can never vanish.</p>
+ * mutated. Only ids {@link RequirementJsonRewriter#isOurs ours} are ever removed, and never a tab's
+ * root (an advancement with no parent): its children would have nothing to climb to and would each
+ * become a tab of their own. The relay refuses roots too; this holds for any tab, however the
+ * datapack arranges them.</p>
  */
 public final class AdvancementDisabler {
 
@@ -51,7 +53,12 @@ public final class AdvancementDisabler {
             if (!RequirementJsonRewriter.isOurs(id, modId)) continue;
             JsonElement el = loaded.get(id);
             if (el == null || !el.isJsonObject()) continue; // not in this datapack — nothing to drop
-            removedParent.put(id, parentOf(el.getAsJsonObject()));
+            ResourceLocation parent = parentOf(el.getAsJsonObject());
+            if (parent == null) {
+                LOGGER.warn("[DungeonTrain] Advancement flags: ignoring disable of tab root {}", id);
+                continue;
+            }
+            removedParent.put(id, parent);
         }
         if (removedParent.isEmpty()) return loaded;
 
@@ -109,8 +116,6 @@ public final class AdvancementDisabler {
     }
 
     private static String shortName(ResourceLocation id) {
-        String path = id.getPath();
-        return path.startsWith(RequirementJsonRewriter.PATH_PREFIX)
-            ? path.substring(RequirementJsonRewriter.PATH_PREFIX.length()) : id.toString();
+        return id.getPath();
     }
 }

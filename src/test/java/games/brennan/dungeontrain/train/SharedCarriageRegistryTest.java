@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SharedCarriageRegistryTest {
@@ -43,6 +44,29 @@ class SharedCarriageRegistryTest {
         assertEquals(1, b.pIdx);
         assertNull(SharedCarriageRegistry.resolve(sub, 100, 65, 3)); // outside every footprint
         assertNull(SharedCarriageRegistry.resolve(UUID.randomUUID(), 3, 65, 3)); // unknown sub-level
+    }
+
+    @Test
+    void aDriftingGroupResolvesFromEveryCarriageItSpans() {
+        UUID sub = UUID.randomUUID();
+        CarriageDims groupBox = new CarriageDims(27, 7, 7); // three 9-long carriages as one build
+        SharedCarriageRegistry.Instance group = SharedCarriageRegistry.register(null, sub, UUID.randomUUID(), 6,
+                new BlockPos(0, 64, 0), groupBox, "full", false, false, "", null, null, 0, "stone",
+                Credits.EMPTY, Deaths.EMPTY,
+                games.brennan.dungeontrain.net.relay.SharedCarriageClient.PoolLease.KIND_CARRIAGE_GROUP);
+        assertEquals("carriage_group", group.kind);
+        assertSame(group, SharedCarriageRegistry.resolve(sub, 2, 65, 3));
+        assertSame(group, SharedCarriageRegistry.resolve(sub, 13, 65, 3));
+        assertSame(group, SharedCarriageRegistry.resolve(sub, 26, 65, 3));
+        assertNull(SharedCarriageRegistry.resolve(sub, 27, 65, 3));
+    }
+
+    @Test
+    void anOrdinarySharedCarriageRegistersAsACarriage() {
+        SharedCarriageRegistry.Instance inst = SharedCarriageRegistry.register(null, UUID.randomUUID(),
+                UUID.randomUUID(), 0, BlockPos.ZERO, DIMS, "shared", false, false, "", null, null, 0, "stone",
+                Credits.EMPTY, Deaths.EMPTY);
+        assertEquals("carriage", inst.kind);
     }
 
     @Test
@@ -199,64 +223,152 @@ class SharedCarriageRegistryTest {
 
     // ---------------- Parked storage ----------------
 
-    private static SharedCarriageRegistry.Instance parkingCarriage() {
+    private static final BlockPos CHEST = new BlockPos(1, 1, 1);
+
+    /** A carriage leased from the pool — already on the relay. */
+    private static SharedCarriageRegistry.Instance relayCarriage() {
         return SharedCarriageRegistry.register(null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0),
                 DIMS, "shared", true, false, "", 7, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
     }
 
-    @Test
-    void parkedStorageStaysLocalUntilTheCarriageIsBlockEdited() {
-        SharedCarriageRegistry.Instance inst = parkingCarriage();
-        inst.parkContainer(new BlockPos(1, 1, 1), 10L);
+    /** A fresh local carriage — never uploaded, so anything sent publishes it to the pool. */
+    private static SharedCarriageRegistry.Instance freshCarriage() {
+        return SharedCarriageRegistry.register(null, UUID.randomUUID(), UUID.randomUUID(), 0, new BlockPos(0, 0, 0),
+                DIMS, "shared", false, false, "", null, null, 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+    }
 
-        assertEquals(0, inst.releaseParked(pos -> 99L)); // looting only → nothing travels
+    private static StorageContents.Snapshot holding(long sig, int itemCount) {
+        return new StorageContents.Snapshot(itemCount, sig, 0.0);
+    }
+
+    @Test
+    void lootingARelayCarriageDrainsItWithoutABlockEdit() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L);
+
+        // Emptied the chest, never touched a block — the relay copy must still lose the items.
+        assertEquals(1, inst.releaseParked(pos -> holding(99L, 0)));
+        assertEquals(Set.of(CHEST), inst.drainPending());
+        assertFalse(inst.hasParked());
+    }
+
+    @Test
+    void rearrangingAndPuttingBackSendsNothing() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L); // baseline before the first change
+        inst.parkContainer(CHEST, 11L); // reopened after it — must not move the baseline
+        // Put everything back exactly as it was, so the relay copy needs nothing.
+        assertEquals(0, inst.releaseParked(pos -> holding(10L, 3)));
         assertFalse(inst.hasPending());
-        assertTrue(inst.hasParked());                    // kept for a later edit + leave
+        assertFalse(inst.hasParked());
+    }
+
+    @Test
+    void lootingAFreshCarriageStaysLocalUntilItIsBlockEdited() {
+        SharedCarriageRegistry.Instance inst = freshCarriage();
+        inst.parkContainer(CHEST, 10L);
+
+        assertEquals(0, inst.releaseParked(pos -> holding(99L, 2))); // looting a stock template publishes nothing
+        assertFalse(inst.hasPending());
+        assertTrue(inst.hasParked());                                // kept for a later edit + leave
 
         inst.markBlockEdited();
-        assertEquals(1, inst.releaseParked(pos -> 99L));
-        assertEquals(Set.of(new BlockPos(1, 1, 1)), inst.drainPending());
+        assertEquals(1, inst.releaseParked(pos -> holding(99L, 2)));
+        assertEquals(Set.of(CHEST), inst.drainPending());
         assertFalse(inst.hasParked());
+    }
+
+    @Test
+    void aGiftUploadedAtCloseResetsTheBaseline() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L);      // looted earlier: baseline is the pre-loot contents
+        inst.unparkContainer(CHEST);         // then a gift uploaded the chest as it stands
+        assertFalse(inst.hasParked());
+        inst.parkContainer(CHEST, 20L);      // taking the gift back parks against the uploaded contents
+        assertEquals(1, inst.releaseParked(pos -> holding(10L, 0)));
+        assertEquals(Set.of(CHEST), inst.drainPending());
     }
 
     @Test
     void releaseSendsOnlyStorageThatReallyChanged() {
-        SharedCarriageRegistry.Instance inst = parkingCarriage();
-        inst.markBlockEdited();
-        BlockPos changed = new BlockPos(1, 1, 1);
+        SharedCarriageRegistry.Instance inst = relayCarriage();
         BlockPos putBack = new BlockPos(2, 1, 1);
         BlockPos broken = new BlockPos(3, 1, 1);
-        inst.parkContainer(changed, 10L);
+        inst.parkContainer(CHEST, 10L);
         inst.parkContainer(putBack, 20L);
         inst.parkContainer(broken, 30L);
 
-        java.util.Map<BlockPos, Long> live = new java.util.HashMap<>();
-        live.put(changed, 11L); // contents differ from the baseline
-        live.put(putBack, 20L); // emptied and refilled — same as before
-        // `broken` absent → unreadable → dropped, never uploaded as whatever stands there now
-        int queued = inst.releaseParked(live::get);
-
-        assertEquals(1, queued);
-        assertEquals(Set.of(changed), inst.drainPending());
+        java.util.Map<BlockPos, StorageContents.Snapshot> live = new java.util.HashMap<>();
+        live.put(CHEST, holding(11L, 4));   // contents differ from the baseline
+        live.put(putBack, holding(20L, 5)); // emptied and refilled — same as before
+        // `broken` absent → unreadable → dropped here (the break itself is a block change of its own)
+        assertEquals(1, inst.releaseParked(live::get));
+        assertEquals(Set.of(CHEST), inst.drainPending());
         assertFalse(inst.hasParked());
-    }
-
-    @Test
-    void theFirstParkedSignatureIsTheBaseline() {
-        SharedCarriageRegistry.Instance inst = parkingCarriage();
-        inst.markBlockEdited();
-        BlockPos pos = new BlockPos(1, 1, 1);
-        inst.parkContainer(pos, 10L); // before the first edit
-        inst.parkContainer(pos, 11L); // reopened after it — must not move the baseline
-        // Put back exactly as it was before the first edit → nothing to send.
-        assertEquals(0, inst.releaseParked(p -> 10L));
     }
 
     @Test
     void cullingDropsParkedStorage() {
-        SharedCarriageRegistry.Instance inst = parkingCarriage();
-        inst.parkContainer(new BlockPos(1, 1, 1), 10L);
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.parkContainer(CHEST, 10L);
         inst.markCulled();
         assertFalse(inst.hasParked());
+    }
+
+    private static net.minecraft.nbt.ListTag oneStand() {
+        net.minecraft.nbt.CompoundTag n = new net.minecraft.nbt.CompoundTag();
+        n.putString("id", "minecraft:armor_stand");
+        net.minecraft.nbt.CompoundTag entry = new net.minecraft.nbt.CompoundTag();
+        entry.put("n", n);
+        net.minecraft.nbt.ListTag ents = new net.minecraft.nbt.ListTag();
+        ents.add(entry);
+        return ents;
+    }
+
+    @Test
+    void heldLeaseEntitiesReplaceTheEmptyLiveListUntilReleased() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        net.minecraft.nbt.ListTag live = new net.minecraft.nbt.ListTag(); // spawn not fired → nothing standing
+        inst.holdRelayEnts(oneStand());
+        assertTrue(inst.isHoldingRelayEnts());
+
+        net.minecraft.nbt.ListTag up = inst.entsForUpload(live);
+        assertEquals(oneStand(), up);
+        up.clear(); // what an upload does to its copy never reaches the held list
+        assertEquals(oneStand(), inst.entsForUpload(live));
+
+        inst.releaseRelayEnts();
+        assertFalse(inst.isHoldingRelayEnts());
+        org.junit.jupiter.api.Assertions.assertSame(live, inst.entsForUpload(live)); // spawned → uploads read the carriage live
+    }
+
+    @Test
+    void holdingIsACopyOfTheLeaseList() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        net.minecraft.nbt.ListTag lease = oneStand();
+        inst.holdRelayEnts(lease);
+        lease.clear(); // the spawn path owns the original
+        assertEquals(oneStand(), inst.entsForUpload(new net.minecraft.nbt.ListTag()));
+    }
+
+    @Test
+    void anEmptyLeaseHoldsNothing() {
+        SharedCarriageRegistry.Instance inst = relayCarriage();
+        inst.holdRelayEnts(new net.minecraft.nbt.ListTag());
+        assertFalse(inst.isHoldingRelayEnts());
+        inst.holdRelayEnts(null);
+        assertFalse(inst.isHoldingRelayEnts());
+    }
+
+    @Test
+    void aGroupLongBuildIsFoundFromItsFirstCarriageOrigin() {
+        // A drifting Group carriage registers once over the whole box; its pending entity record sits at
+        // the box's origin, which is how the hold and the release find it.
+        UUID sub = UUID.randomUUID();
+        CarriageDims groupBox = new CarriageDims(DIMS.length() * 3, DIMS.width(), DIMS.height());
+        SharedCarriageRegistry.Instance group = SharedCarriageRegistry.register(null, sub, UUID.randomUUID(), 0,
+            new BlockPos(0, 64, 0), groupBox, "shared", true, false, "", 7, "tok", 0, "stone", Credits.EMPTY, Deaths.EMPTY);
+        org.junit.jupiter.api.Assertions.assertSame(group, SharedCarriageRegistry.resolve(sub, 0, 64, 0));
+        org.junit.jupiter.api.Assertions.assertSame(group, SharedCarriageRegistry.resolve(sub, DIMS.length() * 2 + 1, 65, 1));
     }
 }

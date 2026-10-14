@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.snapshot;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.CinematicCameraController;
 import games.brennan.dungeontrain.client.FramerateThrottle;
+import games.brennan.dungeontrain.client.DeathMomentScreen;
 import games.brennan.dungeontrain.client.NarrativeDeathScreen;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
 import games.brennan.dungeontrain.client.VrCompat;
@@ -156,7 +157,7 @@ public final class RideSnapshotDirector {
         if (level == null || player == null) return;
         // Dead → the death screen is drawing this run's photos (the gallery is frozen). Never
         // capture or flush here: releasing a texture mid-blit would blank the backdrop.
-        if (mc.screen instanceof NarrativeDeathScreen) return;
+        if (mc.screen instanceof NarrativeDeathScreen || mc.screen instanceof DeathMomentScreen) return;
         if (CinematicCameraController.isActive()) return;
         if (RideSnapshotCapture.hasPending()) return;
         // Idle (unfocused/minimised) → sit out entirely. Client ticks keep running while the window

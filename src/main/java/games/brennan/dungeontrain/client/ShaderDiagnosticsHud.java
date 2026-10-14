@@ -180,6 +180,12 @@ public final class ShaderDiagnosticsHud {
             lines.add(new Line(String.format(Locale.ROOT, "Reopen: centre depth %.5f -> %.5f  stencil after mark 0x%02X",
                 reopenBefore, ShaderDiagnostics.reopenAfter(), ShaderDiagnostics.reopenStencil()), COLOR_ACTIVE));
         }
+        float restoreBefore = ShaderDiagnostics.restoreBefore();
+        if (restoreBefore >= 0.0f) {
+            lines.add(new Line(String.format(Locale.ROOT, "Restore: centre depth %.5f -> %.5f  fbo reopen %s  restore %s",
+                restoreBefore, ShaderDiagnostics.restoreAfter(), ShaderDiagnostics.reopenFbo(),
+                ShaderDiagnostics.restoreFbo()), COLOR_ACTIVE));
+        }
 
         String world = games.brennan.dungeontrain.client.shader.ShaderWorld.describe();
         String switched = games.brennan.dungeontrain.client.shader.ShaderPackSwitcher.describe();

@@ -2,6 +2,8 @@
   "id": "tomas_aaro_the_walking_father",
   "character": "Tomas Aaro",
   "story": "The Walking Father",
+  "after": "della_aaro_the_searching_mother",
+  "weight": 20,
   "letters": [
     {
       "index": 1,

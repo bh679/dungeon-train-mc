@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.localization.edit;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.localization.HumanOnlyTranslations;
+import games.brennan.dungeontrain.event.NarrativeLocaleWatcher;
 import games.brennan.dungeontrain.mixin.client.I18nAccessor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.locale.Language;
@@ -222,7 +224,11 @@ public final class TranslationOverrides {
      */
     public static String effectiveLang(String key) {
         String override = merged().lang().get(key);
-        return override != null ? override : Language.getInstance().getOrDefault(key, key);
+        // The overlay's delegate, not the overlay: with "Human translations only" on, the overlay also
+        // carries English stand-ins, and the editor must keep showing the translation it is editing.
+        Language current = Language.getInstance();
+        Language shipped = current instanceof OverlayLanguage overlay ? overlay.delegate() : current;
+        return override != null ? override : shipped.getOrDefault(key, key);
     }
 
     /**
@@ -257,6 +263,24 @@ public final class TranslationOverrides {
             ApprovedTranslationsFetcher.fetchAsync(target);
         } else {
             ApprovedTranslationsFetcher.fetchOnceFor(target);
+        }
+    }
+
+    /**
+     * Re-install the override layer after the "Human translations only" choice changed, and push the
+     * same choice to the integrated server's prose when this client hosts one.
+     */
+    public static void reapplyHumanOnly() {
+        HumanOnlyTranslations.invalidate();
+        install();
+        try {
+            Minecraft mc = Minecraft.getInstance();
+            net.minecraft.server.MinecraftServer server = mc == null ? null : mc.getSingleplayerServer();
+            if (server != null) {
+                server.execute(() -> NarrativeLocaleWatcher.reapplyHumanOnly(server));
+            }
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] Translations: could not reapply human-only prose — {}", t.toString());
         }
     }
 
@@ -366,7 +390,13 @@ public final class TranslationOverrides {
      */
     private static void install() {
         try {
-            Map<String, String> overrides = merged().lang();
+            // English stand-ins for unreviewed AI lines first, when the player opted out of AI
+            // translation; their own edits and relay approvals then win over those.
+            Map<String, String> overrides = HumanOnlyTranslations.layer(
+                HumanOnlyTranslations.englishFallbacks(
+                    Minecraft.getInstance().getResourceManager(), locale()),
+                merged().lang());
+            HumanOnlyTranslations.publishProse(locale());
             Language current = Language.getInstance();
             Language base = current instanceof OverlayLanguage overlay ? overlay.delegate() : current;
             if (base == null) {

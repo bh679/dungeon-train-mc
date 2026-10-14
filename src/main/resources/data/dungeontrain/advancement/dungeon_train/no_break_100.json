@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_100",
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
   "display": {
     "icon": { "id": "minecraft:stone_pickaxe" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.no_break_100.title" },

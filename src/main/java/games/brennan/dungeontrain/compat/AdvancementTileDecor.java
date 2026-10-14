@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.compat;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import games.brennan.dungeontrain.client.CapstoneNeeds;
 import games.brennan.dungeontrain.client.TrackedAdvancements;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
@@ -26,6 +27,9 @@ import org.joml.Vector3f;
  * {@link #wrapHoverFrame} puts the halo back behind it. A faded tile's incoming connector is
  * clipped at its frame ({@link #beginConnectorClip}) so the line doesn't show through it.</p>
  *
+ * <p>While the mouse is over a capstone (the Everything Burrito or a tab-complete advancement), an
+ * untracked tile it still needs gets the same halo in aqua ({@link CapstoneNeeds}).</p>
+ *
  * <p>Both paths call {@link #enableBlend()} first: vanilla's sprite blit does not turn blending on
  * itself, and in the tree it happens to be off — a half-alpha shader colour was simply ignored
  * there, while the hover tooltip's translucent backdrop had already switched it on.</p>
@@ -36,6 +40,8 @@ public final class AdvancementTileDecor {
     private static final float DISQUALIFIED_ALPHA = 0.5f;
     /** Tint of the tracked halo — vanilla's "yellow" text colour. */
     private static final float HALO_R = 1.0f, HALO_G = 1.0f, HALO_B = 0.33f;
+    /** Tint of the "still needed" halo shown while a capstone is hovered — vanilla's "aqua". */
+    private static final float NEED_R = 0.33f, NEED_G = 1.0f, NEED_B = 1.0f;
     /** How far the halo frame extends past the tile on each side. */
     private static final int HALO_PAD = 2;
     /** Frame size both widgets blit. */
@@ -56,7 +62,9 @@ public final class AdvancementTileDecor {
         boolean faded = AdvancementHintText.isGreyedOut(id, progress);
         float alpha = faded ? DISQUALIFIED_ALPHA : 1.0f;
         if (isTrackedAndUnearned(id, progress)) {
-            drawHalo(g, node, originX + widgetX + TILE_X_OFFSET, originY + widgetY, alpha);
+            drawHalo(g, node, originX + widgetX + TILE_X_OFFSET, originY + widgetY, alpha, HALO_R, HALO_G, HALO_B);
+        } else if (CapstoneNeeds.highlights(node, progress)) {
+            drawHalo(g, node, originX + widgetX + TILE_X_OFFSET, originY + widgetY, alpha, NEED_R, NEED_G, NEED_B);
         }
         if (faded) {
             enableBlend();
@@ -70,11 +78,12 @@ public final class AdvancementTileDecor {
      * frame's neutral grey takes the tint cleanly. Drawn at the tile's own alpha: a faded tile over
      * a full-strength halo would read as a bright yellow tile, not a faded one.
      */
-    private static void drawHalo(GuiGraphics g, AdvancementNode node, int left, int top, float alpha) {
+    private static void drawHalo(GuiGraphics g, AdvancementNode node, int left, int top, float alpha,
+                                 float r, float gr, float b) {
         enableBlend();
         AdvancementType type = node.advancement().display().map(DisplayInfo::getType).orElse(AdvancementType.TASK);
         ResourceLocation frame = AdvancementWidgetType.UNOBTAINED.frameSprite(type);
-        g.setColor(HALO_R, HALO_G, HALO_B, alpha);
+        g.setColor(r, gr, b, alpha);
         g.blitSprite(frame, left - HALO_PAD, top - HALO_PAD, TILE_SIZE + 2 * HALO_PAD, TILE_SIZE + 2 * HALO_PAD);
         g.setColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
@@ -98,7 +107,7 @@ public final class AdvancementTileDecor {
                                       AdvancementNode node, AdvancementProgress progress, Runnable blit) {
         if (node != null && sprite.getPath().contains("_frame_")
             && isTrackedAndUnearned(node.holder().id(), progress)) {
-            drawHalo(g, node, x, y, 1.0f);
+            drawHalo(g, node, x, y, 1.0f, HALO_R, HALO_G, HALO_B);
         }
         blit.run();
     }

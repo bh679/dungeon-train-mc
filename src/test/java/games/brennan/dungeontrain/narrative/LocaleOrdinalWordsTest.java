@@ -48,6 +48,18 @@ final class LocaleOrdinalWordsTest {
         // Above the spelled range Russian writes the digit with the same adjective ending.
         check("ru_ru", 37, Gender.MASCULINE, "37-й");
         check("ru_ru", 37, Gender.FEMININE, "37-я");
+        // Ukrainian: same pattern, its own tables and endings (-й / -а / -е).
+        check("uk_ua", 1, Gender.MASCULINE, "перший");
+        check("uk_ua", 1, Gender.FEMININE, "перша");
+        check("uk_ua", 2, Gender.MASCULINE, "другий");
+        check("uk_ua", 2, Gender.NEUTER, "друге");
+        check("uk_ua", 3, Gender.MASCULINE, "третій");
+        check("uk_ua", 3, Gender.FEMININE, "третя");
+        check("uk_ua", 3, Gender.NEUTER, "третє");
+        check("uk_ua", 20, Gender.MASCULINE, "двадцятий");
+        check("uk_ua", 37, Gender.MASCULINE, "37-й");
+        check("uk_ua", 37, Gender.FEMININE, "37-а");
+        check("uk_ua", 37, Gender.NEUTER, "37-е");
         check("ru_ru", 37, Gender.NEUTER, "37-е");
     }
 

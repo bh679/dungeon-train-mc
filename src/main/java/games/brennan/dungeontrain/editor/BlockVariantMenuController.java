@@ -173,9 +173,10 @@ public final class BlockVariantMenuController {
             return;
         }
         // Either space of a door / bed / tall-plant cell opens that cell's menu, but the panel
-        // hangs off the half the player actually aimed at.
+        // hangs off the half the player actually aimed at. Any square of a hung painting opens
+        // the cell it hangs from, so its variants cover the whole painting.
         BlockPos lookedLocal = clampToFootprint(localPos, plot);
-        BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, lookedLocal);
+        BlockPos clampedLocal = MultiBlockFootprint.ownerCell(plot, paintingCell(level, plot, lookedLocal));
         BlockPos anchorWorld = plot.origin().offset(lookedLocal);
 
         Direction face = bhit.getDirection();
@@ -360,7 +361,8 @@ public final class BlockVariantMenuController {
                 s.groupRef(), refLive,
                 (byte) s.active().mode().ordinal(),
                 (byte) s.connect().ordinal(),
-                s.growth().toInt()));
+                s.growth().toInt(),
+                s.painting().isDefault() ? "" : s.painting().id()));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -607,6 +609,7 @@ public final class BlockVariantMenuController {
                 BlockState capturedState;
                 CompoundTag itemBeNbt;
                 String linkedPrefabId = null;
+                VariantPainting addedPainting = VariantPainting.NONE;
                 BlockState bucketSource = VariantLiquids.sourceStateFrom(held);
                 if (held.isEmpty()) {
                     // Empty hand → add the empty-placeholder sentinel.
@@ -623,6 +626,12 @@ public final class BlockVariantMenuController {
                     // Buckets carry no block-entity or loot-prefab payload.
                     capturedState = bucketSource;
                     itemBeNbt = null;
+                } else if (held.is(net.minecraft.world.item.Items.PAINTING) && PaintingPass.paintingState(Direction.NORTH) != null) {
+                    // A painting item → a Fast Paintings painting row hung whole at spawn
+                    // (PaintingPass). Its picture, if the stack names one, becomes the row's.
+                    capturedState = PaintingPass.paintingState(Direction.NORTH);
+                    itemBeNbt = null;
+                    addedPainting = PaintingPass.fromItem(held, level.registryAccess());
                 } else if (!(held.getItem() instanceof BlockItem blockItem)) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.hold_to_add_variant"),
                         ChatFormatting.YELLOW);
@@ -654,7 +663,8 @@ public final class BlockVariantMenuController {
                 RotationApplier.OrientedState oriented =
                     RotationApplier.orientToPredecessors(capturedState, mutated);
                 VariantState newVariant = new VariantState(
-                    oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId);
+                    oriented.state(), itemBeNbt, 1, oriented.rotation(), linkedPrefabId)
+                    .withPainting(addedPainting);
                 if (mutated.size() >= MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_cell_full", MAX_ENTRIES), ChatFormatting.YELLOW);
                     return;
@@ -673,7 +683,8 @@ public final class BlockVariantMenuController {
                         && existing.state().equals(newVariant.state())
                         && Objects.equals(existing.blockEntityNbt(), newVariant.blockEntityNbt())
                         && Objects.equals(existing.linkedLootPrefabId(), newVariant.linkedLootPrefabId())
-                        && Objects.equals(existing.entityId(), newVariant.entityId())) {
+                        && Objects.equals(existing.entityId(), newVariant.entityId())
+                        && existing.painting().equals(newVariant.painting())) {
                         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.variant_already_in_cell"), ChatFormatting.YELLOW);
                         return;
                     }
@@ -751,7 +762,7 @@ public final class BlockVariantMenuController {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
-                int newMask = packet.delta() & VariantRotation.ALL_DIRS_MASK;
+                int newMask = packet.delta() & VariantRotation.ALL_SLOTS_MASK;
                 VariantRotation prev = mutated.get(idx).rotation();
                 VariantRotation next = new VariantRotation(prev.mode(), newMask);
                 mutated.set(idx, mutated.get(idx).withRotation(next));
@@ -817,6 +828,19 @@ public final class BlockVariantMenuController {
                     next = next.withDir(GrowthShapes.effectiveDir(entry.state(), next.dir()));
                 }
                 mutated.set(idx, entry.withGrowth(next.isDefault() ? VariantGrowth.NONE : next));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_PAINTING -> {
+                // stateString = VariantPainting token; blank turns the option off.
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (entry.isMob() || entry.isGroupRef() || !PaintingPass.isPainting(entry.state())) return;
+                VariantPainting next = VariantPainting.parse(packet.stateString());
+                if (next == null) return;
+                mutated.set(idx, entry.withPainting(PaintingPass.normalise(next, level.registryAccess())));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
@@ -1276,8 +1300,8 @@ public final class BlockVariantMenuController {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.block_outside_plot"), ChatFormatting.YELLOW);
             return;
         }
-        // Copying from a door's top half copies the door's cell, as the menu opens on it.
-        localPos = MultiBlockFootprint.ownerCell(plot, localPos);
+        // Copying from a door's top half (or any square of a painting) copies the cell the menu opens on.
+        localPos = MultiBlockFootprint.ownerCell(plot, paintingCell(level, plot, localPos));
 
         Clipboard clip = buildClipboardStack(player, plot, localPos);
         if (clip == null) return;
@@ -1450,7 +1474,20 @@ public final class BlockVariantMenuController {
             BlockEntity be = level.getBlockEntity(clicked);
             if (be != null) beNbt = be.saveWithoutMetadata(level.registryAccess());
         }
-        return new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+        VariantState base = new VariantState(baseState, beNbt, 1, RotationApplier.lockToCurrent(baseState));
+        return VariantBlockInteractions.withWholePainting(level, clicked, base);
+    }
+
+    /**
+     * The cell a hung painting's square belongs to — the painting's anchor, when that lies inside
+     * the plot — so every square of a painting opens (and copies) the one cell that varies the whole
+     * painting. {@code local} unchanged for anything else.
+     */
+    private static BlockPos paintingCell(ServerLevel level, BlockVariantPlot plot, BlockPos local) {
+        PaintingPass.Whole whole = PaintingPass.whole(level, plot.origin().offset(local));
+        if (whole == null) return local;
+        BlockPos anchor = whole.anchor().subtract(plot.origin());
+        return plot.inBounds(anchor) ? anchor : local;
     }
 
     /**

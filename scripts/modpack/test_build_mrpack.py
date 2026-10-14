@@ -346,7 +346,8 @@ def test_real_config_every_mod_has_modrinth_pins():
     # Modrinth keys. Keep Trim rides here while its Modrinth listing is in review.
     cf_only = bm.curseforge_only_entries(cfg)
     assert sorted(o["slug"] for o in cf_only) == [
-        "dpi-bypass-detect", "dungeon-train-backup", "keep-trim",
+        "discord-presence", "dpi-bypass-detect", "dungeon-train-backup",
+        "dungeon-train-mod-verification", "edible-backpacks", "keep-trim",
         "lost-city-terrain-fit-wwoo-and-vanilla", "pigman-villagers",
         "sable-fence-trapdoor-fix", "stream-detect",
     ], cf_only
@@ -358,7 +359,7 @@ def test_real_config_every_mod_has_modrinth_pins():
     assert sable["modrinth_version"] == "U678xqle", sable  # Sable 2.0.5+mc1.21.1
     by_slug = {o["slug"]: o for o in cfg["optional_mods"]}
     assert by_slug["jade"]["modrinth_version"] == "yd8FKCmx"            # Jade 15.10.5 (Sable compat)
-    assert by_slug["distant-horizons"]["modrinth_version"] == "75PXmyqH"  # DH 2.4.3-b (2.x only)
+    assert by_slug["distant-horizons"]["modrinth_version"] == "9w34y8ai"  # DH 3.3.3 (Vista needs 3.3.1+)
     # the two slugs whose Modrinth project differs from the CurseForge slug
     assert by_slug["ferritecore"]["modrinth_project"] == "ferrite-core"
     assert by_slug["distant-horizons"]["modrinth_project"] == "distanthorizons"

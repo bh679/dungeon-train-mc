@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "minecraft:furnace_minecart"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.carts_100.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.carts_100.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true,
+    "background": "minecraft:textures/block/deepslate_bricks.png"
+  },
+  "criteria": {
+    "mirrored": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "mirrored"
+    ]
+  ]
+}

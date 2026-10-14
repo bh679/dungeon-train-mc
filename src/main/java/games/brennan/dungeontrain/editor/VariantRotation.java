@@ -12,7 +12,9 @@ import java.util.Set;
  * draws over an author-selected subset.
  *
  * <p>Direction set is a 6-bit mask over {@link Direction#ordinal()} (vanilla
- * order: DOWN=0, UP=1, NORTH=2, SOUTH=3, WEST=4, EAST=5). Plain {@code int}
+ * order: DOWN=0, UP=1, NORTH=2, SOUTH=3, WEST=4, EAST=5) — or, for
+ * {@code ROTATION_16} blocks, an 8-bit mask over compass slots (see
+ * {@link RotationApplier#isCompass}). Plain {@code int}
  * round-trips cleanly through wire / JSON and gives free equals/hashCode for
  * the enclosing record.
  *
@@ -33,9 +35,17 @@ public record VariantRotation(Mode mode, int dirMask) {
 
     public static final int ALL_DIRS_MASK = 0b111111;
 
+    /**
+     * Widest mask the record holds: 8 slots. Facing / axis blocks use bits 0–5
+     * ({@link Direction#ordinal()}); {@code ROTATION_16} blocks (heads, standing
+     * banners and signs) use bits 0–7 as the 8 compass points — see
+     * {@link RotationApplier#isCompass}. Fits the wire / NBT byte unchanged.
+     */
+    public static final int ALL_SLOTS_MASK = 0xFF;
+
     public VariantRotation {
         if (mode == null) mode = Mode.RANDOM;
-        dirMask = dirMask & ALL_DIRS_MASK;
+        dirMask = dirMask & ALL_SLOTS_MASK;
         switch (mode) {
             case LOCK -> {
                 if (dirMask == 0) {

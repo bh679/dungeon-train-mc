@@ -113,6 +113,8 @@ public final class TitleScreenLayoutHandler {
         // list stays current on shipped jars, baked ∪ disk-cache when offline. (Also refreshed at
         // server boot for dedicated servers, which have no title screen.)
         CheatModListFetcher.ensureFetched();
+        // Live Eye text filter word list — relay overlay on the baked floor, cached for offline boots.
+        games.brennan.dungeontrain.net.relay.LiveWordListFetcher.ensureFetched();
         // And the approved-mod whitelist, which carries the enforcement switch as well as the list.
         ApprovedModListFetcher.ensureFetched();
         // And the Videos catalogue: the icon below shows a live dot when a streamer is on, so it

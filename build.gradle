@@ -196,6 +196,20 @@ neoForge {
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
             }
+            // Pose-sheet seam: ./gradlew runClient -PquickWorld="<save folder>" -PtvPoseShots opens that
+            // singleplayer world and client/live/HeldTvPosePuppet screenshots the hand-held TV in ten
+            // candidate poses to run/screenshots/tvpose-NN.png. Dev only; neither flag exists in production.
+            def quickWorld = project.findProperty('quickWorld')
+            if (quickWorld) {
+                programArgument '--quickPlaySingleplayer'
+                programArgument quickWorld.toString()
+            }
+            if (project.hasProperty('tvPoseShots')) {
+                systemProperty 'dungeontrain.tvPoseShots', 'true'
+            }
+            if (project.hasProperty('tvPoseSwap')) {
+                systemProperty 'dungeontrain.tvPoseSwap', 'true'
+            }
             // Item-icon dump for the relay's item-values page: ./gradlew runClient -PtradeValueIcons
             // renders every item to run/trade-values-icons/<ns>/<path>.png at the title screen and
             // quits (client/TradeValueIconDump).
@@ -261,6 +275,12 @@ neoForge {
             // cost a re-run of all eight across a dozen packs.
             if (project.hasProperty('shaderSweepSites')) {
                 systemProperty 'dungeontrain.shader_sweep_sites', project.property('shaderSweepSites').toString()
+            }
+            // -PdhFrameClear=false leaves Distant Horizons' frame textures stale on suppressed frames
+            // (the pre-fix behaviour) so the ghost-terrain bug can be photographed against the fix on
+            // one build. See client/DistantHorizonsFrameClear.
+            if (project.hasProperty('dhFrameClear')) {
+                systemProperty 'dungeontrain.dh_frame_clear', project.property('dhFrameClear').toString()
             }
             // -PshaderPreview="<world folder name>" runs the same harness for the Shaders menu's
             // preview frame instead: one site, the train stopped, no diagnostics panel, written to
@@ -332,6 +352,20 @@ neoForge {
             }
             if (project.hasProperty('perfSeed')) {
                 systemProperty 'dungeontrain.perfSeed', project.property('perfSeed').toString()
+            }
+            // Pose-sheet seam: ./gradlew runClient -PquickWorld="<save folder>" -PtvPoseShots opens that
+            // singleplayer world and client/live/HeldTvPosePuppet screenshots the hand-held TV in ten
+            // candidate poses to run/screenshots/tvpose-NN.png. Dev only; neither flag exists in production.
+            def quickWorld = project.findProperty('quickWorld')
+            if (quickWorld) {
+                programArgument '--quickPlaySingleplayer'
+                programArgument quickWorld.toString()
+            }
+            if (project.hasProperty('tvPoseShots')) {
+                systemProperty 'dungeontrain.tvPoseShots', 'true'
+            }
+            if (project.hasProperty('tvPoseSwap')) {
+                systemProperty 'dungeontrain.tvPoseSwap', 'true'
             }
         }
 
@@ -458,12 +492,12 @@ dependencies {
     // so compat.PlayerMobSocialBridge references it directly — no extra dep needed.
 
     // Discord Presence (Discord join/online/death notifications + reactions) —
-    // one of the two siblings still bundled via jarJar (with EdibleBackpacks below;
-    // TradeEverything graduated to an external dep). Its Modrinth project is not public
-    // yet (the `discordpresence` slug there belongs to an unrelated third-party
-    // mod), so making it an external required dep would leave Modrinth users with
-    // no way to obtain it. Unbundle once that listing goes live — at which point
-    // this matches AIN/AIS/PMOB/ECP above. DT compiles against its public
+    // a hybrid sibling like StreamDetect below: jarJar'd here for Modrinth + manual
+    // installs, and a separate required dep + modpack Include on CurseForge only. Its
+    // Modrinth project is not public yet (the `discordpresence` slug there belongs to an
+    // unrelated third-party mod), so it can't go fully external there. Drop this jarJar
+    // once that listing goes live — at which point it matches AIN/AIS/PMOB/ECP above.
+    // DT compiles against its public
     // API: DiscordCredentials/DiscordCredentialsProvider (relay-mode + chat-tag ping
     // triggers + presence tracking) and DiscordService (death reports, and the
     // editor-welcome "last seen online" presence query). `implementation` puts it on
@@ -515,6 +549,8 @@ dependencies {
     // NeoForge's JarSelector drops the nested copy when the CF app installs a top-level one.
     implementation "bh679:streamdetect:${streamdetect_version}"
     jarJar(group: 'bh679', name: 'streamdetect', version: streamdetect_version)
+    implementation "bh679:dtmodverify:${dtmodverify_version}"
+    jarJar(group: 'bh679', name: 'dtmodverify', version: dtmodverify_version)
     implementation "bh679:dpibypassdetect:${dpibypassdetect_version}"
     jarJar(group: 'bh679', name: 'dpibypassdetect', version: dpibypassdetect_version)
 
@@ -562,9 +598,10 @@ dependencies {
     // DH is an optional companion (opt-in in the modpack, `optional` in neoforge.mods.toml) and
     // is not in the dev client; it ships the API classes inside its own jar, so at runtime they
     // are either DH's or absent. The only DT class that names them
-    // (client/DistantHorizonsSuppression) is reached behind a ModList check, so nothing tries to
-    // link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
-    // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}.
+    // (client/DistantHorizonsSuppression, and the DistantHorizonsFrameClear it alone reaches) is
+    // reached behind a ModList check, so nothing tries to link them when DH isn't installed. The API artifact version is DH's OWN api version, not the
+    // mod version: DH ${distant_horizons_version} reports API ${distant_horizons_api_version}
+    // (`coreapi/ModInfo.API_*_VERSION` in its jar).
     compileOnly "maven.modrinth:distanthorizonsapi:${distant_horizons_api_version}"
 
     // Fast Paintings + Moonlight — REQUIRED third-party deps (see gradle.properties). Not bundled:
@@ -615,6 +652,18 @@ dependencies {
     implementation "maven.modrinth:exposure:${exposure_version}"
     implementation "maven.modrinth:exposure-polaroid:${exposurepolaroid_version}"
 
+    // Vista — REQUIRED third-party dep (see gradle.properties). DT compiles against its broadcast
+    // seam (IBroadcastSource / IVideoSource / IWebTexture) and its downloaded ffmpeg wrapper for
+    // the Live Feed (block/LiveAntenna*, client/live/*). Never jarJar'd: its licence forbids it.
+    implementation "maven.modrinth:vista_tv:${vista_version}"
+
+    // Jade — OPTIONAL (an on-by-default modpack companion, never a declared dependency). Compile-only for
+    // compat/jade/LiveEyeJadePlugin, which Jade discovers by its @WailaPlugin annotation, so nothing
+    // loads a Jade class when Jade is absent. localRuntime puts it in runClient/runServer for testing.
+    // Pinned to the modpack's Jade build (modpack.config.json → jade.modrinth_version).
+    compileOnly "maven.modrinth:jade:${jade_version}"
+    localRuntime "maven.modrinth:jade:${jade_version}"
+
     // Big Lost City — REQUIRED third-party dep (see gradle.properties). Structures only; on the dev
     // classpath so runClient/runServer generate the Lost City era's cities.
     implementation "maven.modrinth:big-lost-city:${biglostcity_version}"
@@ -651,6 +700,21 @@ tasks.named('test', Test).configure {
     maxHeapSize = '2g'
     testLogging {
         events 'passed', 'skipped', 'failed'
+        exceptionFormat 'full'
+    }
+    // Every test prints a PASSED line, so a failure scrolls thousands of lines up a CI log that is
+    // only ever read from the tail. Repeat the failures, with their messages, after the suite.
+    def failedTests = []
+    afterTest { desc, result ->
+        if (result.resultType == TestResult.ResultType.FAILURE) {
+            failedTests << "${desc.className} > ${desc.displayName}: ${result.exception?.message?.readLines()?.find() ?: ''}"
+        }
+    }
+    afterSuite { desc, result ->
+        if (desc.parent == null && !failedTests.isEmpty()) {
+            logger.lifecycle("\nFAILED TESTS (${failedTests.size()}):")
+            failedTests.each { logger.lifecycle("  - ${it}") }
+        }
     }
 }
 
@@ -876,15 +940,18 @@ tasks.register('generateModMetadata', ProcessResources) {
         adventureitemstats_version : adventureitemstats_version,
         playermob_version          : playermob_version,
         discordpresence_version          : discordpresence_version,
+        discordpresence_min_version      : discordpresence_min_version,
         enderchestpersistence_version    : enderchestpersistence_version,
         tradeeverything_version          : tradeeverything_version,
         ediblebackpacks_version          : ediblebackpacks_version,
+        ediblebackpacks_min_version      : ediblebackpacks_min_version,
         lostcityterrainfit_version       : lostcityterrainfit_version,
         lostcityterrainfit_min_version   : lostcityterrainfit_min_version,
         keeptrim_version                 : keeptrim_version,
         keeptrim_min_version             : keeptrim_min_version,
         pigmanvillagers_min_version      : pigmanvillagers_min_version,
         streamdetect_min_version         : streamdetect_min_version,
+        dtmodverify_min_version          : dtmodverify_min_version,
         dpibypassdetect_min_version      : dpibypassdetect_min_version,
         dungeonbackup_min_version        : dungeonbackup_min_version,
         sablefencetrapdoorfix_min_version : sablefencetrapdoorfix_min_version,
@@ -920,6 +987,8 @@ tasks.register('generateModMetadata', ProcessResources) {
         // Exposure + its Polaroid add-on — floors only.
         exposure_min_version              : exposure_min_version,
         exposurepolaroid_min_version      : exposurepolaroid_min_version,
+        // Vista — floor only.
+        vista_min_version                 : vista_min_version,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.compat;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.compat.photo.OwnPhotoTribute;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -59,10 +60,10 @@ public final class DisposableCameraEvents {
      * Ticks after the shot before the viewfinder closes — a short beat, so the client's capture
      * (taken through the viewfinder) is done before the view changes.
      */
-    static final int VIEWFINDER_HOLD_TICKS = 10;
+    public static final int VIEWFINDER_HOLD_TICKS = 10;
 
     /** Length of the print animation, from the viewfinder closing to the photo coming out. */
-    static final int PRINT_TICKS = 40;
+    public static final int PRINT_TICKS = 40;
 
     private DisposableCameraEvents() {}
 
@@ -177,6 +178,7 @@ public final class DisposableCameraEvents {
         photograph.setPopTime(Inventory.POP_TIME_DURATION);
         inventory.setItem(slot, photograph);
         SharedPhotos.queueUpload(player, photograph);
+        OwnPhotoTribute.sync(player);
         player.level().playSound(null, player, Exposure.SoundEvents.PHOTOGRAPH_RUSTLE.get(), SoundSource.PLAYERS,
             0.6f, player.level().getRandom().nextFloat() * 0.2f + 1.0f);
         Exposure.CriteriaTriggers.FRAME_PRINTED.get().trigger(player, player.blockPosition(), frame, photograph);

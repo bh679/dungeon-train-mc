@@ -130,7 +130,7 @@ def refresh_credit_counts(locale: str, prov: dict, authors: dict[str, str],
     byte-identical); returns the written paths. A locale with no credit file is a
     silent no-op — the ring is simply absent in game.
     """
-    counts = dict(zip(provenance_io.CREDIT_COUNT_FIELDS, provenance_io.ai_counts(prov, authors)))
+    counts = provenance_io.credit_counts(prov, authors)
     written: list[Path] = []
     for path in provenance_io.credit_paths_for_locale(credits_dir, locale):
         credit = provenance_io.load_credit(path)

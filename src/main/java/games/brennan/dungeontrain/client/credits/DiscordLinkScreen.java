@@ -165,7 +165,9 @@ public final class DiscordLinkScreen extends Screen {
 
     private void copyCode() {
         if (code.isEmpty()) return;
-        Minecraft.getInstance().keyboardHandler.setClipboard(command + " " + code);
+        // The code alone: Discord only runs a slash command picked from its list, so a pasted
+        // "/dtlink CODE" posts as a plain message. Type /dtlink, pick it, paste this into its box.
+        Minecraft.getInstance().keyboardHandler.setClipboard(code);
         copiedUntilMs = System.currentTimeMillis() + COPIED_MS;
     }
 

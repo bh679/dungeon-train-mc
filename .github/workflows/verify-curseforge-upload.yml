@@ -1,0 +1,61 @@
+name: Verify CurseForge Upload
+
+# Waits for a release's Dungeon Train jar to appear on the public CurseForge listing.
+#
+# An upload returning 200 is not a publish: CurseForge validates and approves files after the
+# upload, and can reject them then. release.yml used to poll for this itself, for 30 minutes,
+# which made every release ~30 minutes slower than its actual publishing — and approval
+# routinely takes longer than that anyway. release.yml now dispatches this workflow instead,
+# so the wait happens off the release's critical path, with a window long enough to get an
+# answer (300 min — the same approval wait release-modpack.yml uses).
+#
+# A red run here means the upload was accepted but never published (most likely rejected during
+# validation). Recover with `gh workflow run reupload-curseforge.yml -f tag=<tag>`, which
+# re-publishes the tag's existing artifact without burning a version number.
+#
+# Without the CURSEFORGE_API_KEY secret, reconcile.py can only read the cached cfwidget mirror,
+# which cannot prove absence — the check then answers at once (listed, or inconclusive) and never
+# fails. With the key it is authoritative.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag whose CurseForge file to check (e.g. v0.1154.0)."
+        required: true
+        type: string
+      file_id:
+        description: "CurseForge file id the release uploaded (logged for the record)."
+        required: false
+        type: string
+        default: ""
+
+# One check per tag; a re-dispatch of the same tag supersedes the in-flight one.
+concurrency:
+  group: verify-curseforge-${{ inputs.tag }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 320
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Wait for the file on the public CurseForge listing
+        env:
+          CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+          CF_PROJECT: ${{ vars.CURSEFORGE_PROJECT_ID }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          CF_FILE_ID: ${{ inputs.file_id }}
+        run: |
+          set -euo pipefail
+          echo "Checking CurseForge for $RELEASE_TAG (file ${CF_FILE_ID:-unknown})…"
+          python3 scripts/modpack/reconcile.py \
+            --verify "$RELEASE_TAG" \
+            --platform curseforge \
+            --curseforge-project "$CF_PROJECT" \
+            --timeout-minutes 300 \
+            --poll-seconds 300

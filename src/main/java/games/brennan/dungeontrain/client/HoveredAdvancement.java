@@ -21,6 +21,7 @@ public final class HoveredAdvancement {
 
     private static ResourceLocation id;
     private static boolean earned;
+    private static AdvancementProgress progress;
     private static long at;
 
     private HoveredAdvancement() {}
@@ -32,6 +33,7 @@ public final class HoveredAdvancement {
     public static void record(ResourceLocation hovered, AdvancementProgress progress) {
         id = hovered;
         earned = progress != null && progress.isDone();
+        HoveredAdvancement.progress = progress;
         at = Util.getMillis();
     }
 
@@ -39,6 +41,11 @@ public final class HoveredAdvancement {
     public static ResourceLocation current() {
         if (id == null || Util.getMillis() - at > FRESH_MILLIS) return null;
         return id;
+    }
+
+    /** The progress drawn with {@link #current()} — which criteria are ticked, for the photo albums. */
+    public static AdvancementProgress currentProgress() {
+        return progress;
     }
 
     /** Whether the advancement {@link #current()} refers to was already earned when it was drawn. */

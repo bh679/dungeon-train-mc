@@ -56,4 +56,17 @@ class LocalizationCreditRegistryTest {
     void absentCountsDoNotQualify() {
         assertFalse(LocalizationCreditRegistry.meetsReviewedCoverage(null));
     }
+
+    @Test
+    @DisplayName("the ring measures player-facing lines: editor work counts for, never against")
+    void ringLeavesTheEditorOutOfTheLineCount() {
+        // zh_cn: 4388 lines, 3356 still AI-unreviewed, 2564 of them player-facing — 1032 done by a human.
+        LocalizationCredit.AiCounts zh = new LocalizationCredit.AiCounts(4388, 3408, 3356, 2564);
+        org.junit.jupiter.api.Assertions.assertEquals(1.0 - 1032.0 / 2564, zh.unreviewedFraction(), 1e-9);
+        // More human lines than player-facing ones (editor included) fills the ring: never negative.
+        LocalizationCredit.AiCounts over = new LocalizationCredit.AiCounts(4000, 1000, 1000, 2500);
+        org.junit.jupiter.api.Assertions.assertEquals(0.0, over.unreviewedFraction());
+        assertTrue(LocalizationCreditRegistry.meetsReviewedCoverage(over));
+        assertFalse(LocalizationCreditRegistry.meetsReviewedCoverage(zh));
+    }
 }

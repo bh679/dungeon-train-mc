@@ -13,6 +13,7 @@ import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.event.ContentModeMirror;
 import games.brennan.dungeontrain.event.PoliticalFilterMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
+import games.brennan.dungeontrain.event.ReadingLanguagesMirror;
 import games.brennan.dungeontrain.event.SharedBookReadMirror;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -38,6 +39,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import org.slf4j.Logger;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -296,9 +298,14 @@ public final class NarrativeBookEvents {
      *       {@link RandomBookTag#NBT_HELD} "has been held" marker so the
      *       burn flow (see {@link games.brennan.dungeontrain.narrative.BurnableBookTag})
      *       can fire on subsequent drops. Random books that have never
-     *       reached a held hand slot stay non-burnable, so chest / pot
+     *       been in a player's inventory stay non-burnable, so chest / pot
      *       drops don't ignite on the floor.</li>
      * </ul>
+     *
+     * <p>A hand slot is only the IMMEDIATE path. Most books never touch one on the way in —
+     * shift-clicking out of a chest, taking from a chiseled bookshelf and walking over a dropped book
+     * all go through {@code Inventory#add} — so {@link #onPlayerTick}'s sweep arms every book in the
+     * inventory too. "Held" therefore means "has been in a player's inventory".</p>
      */
     @SubscribeEvent
     public static void onEquipmentChange(LivingEquipmentChangeEvent event) {
@@ -307,6 +314,18 @@ public final class NarrativeBookEvents {
         if (slot != EquipmentSlot.MAINHAND && slot != EquipmentSlot.OFFHAND) return;
         ItemStack stack = event.getTo();
         if (stack.isEmpty()) return;
+        armHeld(player, stack, true);
+    }
+
+    /**
+     * Resolve and arm one book now in {@code player}'s inventory — the body of
+     * {@link #onEquipmentChange}, shared with the inventory sweep in {@link #onPlayerTick}.
+     *
+     * @param inHand true on the equip path. Only then does a discovered community book greet its
+     *               author ({@link FamiliarBookGreeter#maybeGreet} asks the relay), so the
+     *               once-a-second sweep never sends a request per book.
+     */
+    private static void armHeld(ServerPlayer player, ItemStack stack, boolean inHand) {
 
         // Pending community-book placeholder — resolve it PER-PLAYER now that a hand is holding it, then
         // fall through to the shared-found branch for the same held-marker + author greeting a natively
@@ -363,7 +382,7 @@ public final class NarrativeBookEvents {
                     player.getName().getString());
             }
             // If the holder authored this community book, greet them with how it's doing in the wild.
-            FamiliarBookGreeter.maybeGreet(player, stack);
+            if (inHand) FamiliarBookGreeter.maybeGreet(player, stack);
             return;
         }
 
@@ -454,6 +473,14 @@ public final class NarrativeBookEvents {
                 // value, so a steady book costs a comparison and never touches the stack).
                 RunStatBookFactory.refresh(stack, player);
             }
+            // Arm the burn on every book that arrived without passing through a hand, so "held" means
+            // "has been in a player's inventory" — what Nothing But Books and the drop-burn both rely
+            // on. Already-armed and always-burnable books skip it, so a settled inventory costs one
+            // predicate per book.
+            if (!BurnableBookTag.isBurnable(stack)) {
+                armHeld(player, stack, false);
+                if (RunStatBookTag.is(stack)) RunStatBookTag.markHeld(stack);
+            }
         }
     }
 
@@ -530,6 +557,57 @@ public final class NarrativeBookEvents {
         return true;
     }
 
+    /**
+     * Last fetch per {@link FallbackBookPool} family, each on its own budget so neither the main window
+     * nor another language's window competes with it.
+     */
+    private static final java.util.Map<String, Long> LAST_FALLBACK_REFRESH_MS =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** {@link #claimRefreshSlot}'s twin for one {@link FallbackBookPool} family, same interval. */
+    static boolean claimFallbackRefreshSlot(String family, long now) {
+        if (family == null) return false;
+        boolean[] claimed = {false};
+        LAST_FALLBACK_REFRESH_MS.compute(family, (f, last) -> {
+            if (last != null && now - last <= EXHAUSTED_REFRESH_RETRY_MS) return last;
+            claimed[0] = true;
+            return now;
+        });
+        return claimed[0];
+    }
+
+
+    /**
+     * The {@link FallbackBookPool} window of each of this player's reading languages that the host's
+     * window doesn't cover, fetching the next page of any with nothing left for them. {@code null} when
+     * the pickup should wait for a fresh page of a used-up window that is already on its way. Languages the relay has no
+     * books in are skipped — it would answer with English.
+     */
+    private static List<List<SharedBookPool.PoolBook>> readingWindows(ServerPlayer player,
+            SharedBookSelector.PlayerContext ctx, boolean kidSafeFetch, long now) {
+        BookLanguages.refreshIfStale(kidSafeFetch, now);
+        String hostFamily = LanguageFamily.of(WorldLanguage.hostLocale(player.getServer()));
+        List<List<SharedBookPool.PoolBook>> windows = new java.util.ArrayList<>();
+        for (String family : ctx.readingFamilies().keySet()) {
+            if (family.equals(hostFamily) || BookLanguages.knownEmpty(family)) continue;
+            List<SharedBookPool.PoolBook> window = FallbackBookPool.snapshot(family);
+            // Nothing left for them in this language — fetch its next page and wait for it (as the main
+            // window does), or every pickup until it lands would go to the other languages. A fetch that
+            // brought new books may be repeated at once (a burst of pickups can use a page up within
+            // seconds); once one brings nothing, the per-family throttle lets pickups through instead.
+            if (SharedBookSelector.needsFamilyFetch(window, family, ctx)) {
+                if (FallbackBookPool.isInFlight(family)) return null;
+                if (claimFallbackRefreshSlot(family, now) || FallbackBookPool.lastFetchWasProductive(family)) {
+                    FallbackBookPool.refreshAsync(family,
+                            WorldLanguage.hostUuidConsented(player.getServer()), kidSafeFetch);
+                    if (FallbackBookPool.isInFlight(family)) return null;
+                }
+            }
+            windows.add(window);
+        }
+        return windows;
+    }
+
     private static boolean resolvePending(ServerPlayer player, ItemStack stack) {
         if (!SharedBookGate.canDiscover()) return false;
         ServerLevel ow = overworldOf(player);
@@ -579,9 +657,39 @@ public final class NarrativeBookEvents {
             ContentModeMirror.isKid(player),
             // THIS holder's political-filter answer, for the same reason as the locale above: the pool
             // is shared, the preference is not.
-            PoliticalFilterMirror.isEnabled(player));
-        Optional<SharedBookPool.PoolBook> chosen =
-            SharedBookSelector.select(SharedBookPool.snapshot(), ctx, seedFor(ow, uuid, stack));
+            PoliticalFilterMirror.isEnabled(player),
+            // Books THIS holder wrote. The sign-book mixin submits the player's name as the author,
+            // and names are unique, so a name match is authorship. A renamed player's old books just
+            // read as somebody else's — the behaviour before this existed.
+            SharedBookSelector.isOwnBy(player.getName().getString()),
+            // Every language THIS holder reads, with its weight (just the game language unless they
+            // added more in Options) — each pick's language is rolled by weight.
+            ReadingLanguagesMirror.families(player));
+        // Fallback-language mix: once only this player's own books are left unread in their language
+        // (and they are a real share of it), the selector mixes in another language — English, or for
+        // an English player the biggest other one. Both the language list and that language's window
+        // are fetched lazily, only when a pickup actually needs them.
+        boolean kidSafeFetch = WorldLanguage.hostFetchesKidSafeBooks(player.getServer());
+        long now = System.currentTimeMillis();
+        // Extra reading languages: every one the host's window doesn't cover gets its own window. A
+        // pickup waits (the 1s sweep retries) while a still-empty one is on its way, so a newly added
+        // language gets its share from the first book rather than after a few.
+        List<SharedBookPool.PoolBook> pool = SharedBookPool.snapshot();
+        if (ctx.readingFamilies().size() > 1) {
+            List<List<SharedBookPool.PoolBook>> windows = readingWindows(player, ctx, kidSafeFetch, now);
+            if (windows == null) return false;
+            pool = SharedBookSelector.withWindows(pool, windows);
+        }
+        String fallbackFamily = BookLanguages.fallbackFamilyFor(ctx.readingFamilies().keySet());
+        if (fallbackFamily == null) BookLanguages.refreshIfStale(kidSafeFetch, now);
+        List<SharedBookPool.PoolBook> fallback = FallbackBookPool.snapshot(fallbackFamily);
+        if (SharedBookSelector.needsFallbackFetch(pool, fallbackFamily, fallback, ctx)
+                && claimFallbackRefreshSlot(fallbackFamily, now)) {
+            FallbackBookPool.refreshAsync(fallbackFamily,
+                    WorldLanguage.hostUuidConsented(player.getServer()), kidSafeFetch);
+        }
+        Optional<SharedBookPool.PoolBook> chosen = SharedBookSelector.select(
+            pool, fallbackFamily, fallback, ctx, seedFor(ow, uuid, stack));
         // Defensive only. The selector relaxes its per-life dedup on exhaustion, so it yields a book
         // whenever the pool has one — the built-in placeholder therefore survives ONLY when the relay is
         // unreachable / has no approved books, never merely because this player has already seen everything.

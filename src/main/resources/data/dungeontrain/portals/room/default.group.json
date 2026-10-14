@@ -1,25 +1,29 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 5,
   "variants": [
     {
       "id": "default2",
-      "weight": 1
+      "weight": 5
     },
     {
       "id": "biggerlibrary",
-      "weight": 1
+      "weight": 5
     },
     {
       "id": "defaultweird",
-      "weight": 1
+      "weight": 5
     },
     {
       "id": "room",
-      "weight": 1
+      "weight": 5
     },
     {
       "id": "room2",
+      "weight": 5
+    },
+    {
+      "id": "mirror",
       "weight": 1
     }
   ]

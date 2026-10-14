@@ -2,10 +2,15 @@ package games.brennan.dungeontrain.registry;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.photo.WornPhotographItem;
+import games.brennan.dungeontrain.compat.vista.LiveBroadcastSource;
+import games.brennan.dungeontrain.item.LiveCassetteItem;
+import games.brennan.dungeontrain.item.LiveHeadpieceItem;
 import games.brennan.dungeontrain.item.VariantClipboardItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.mehvahdjukaar.vista.VistaMod;
+import net.minecraft.world.item.Rarity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -71,8 +76,61 @@ public final class ModItems {
      * Exposure photograph taken by another player (see {@code compat.photo.SharedPhotos#rollFound});
      * the slot rolls empty when no approved photo is available.
      */
+    /**
+     * The Live Feed broadcast headpiece — wear it to take over the single live stream; it burns
+     * away on equip (see {@code event.LiveFeedEvents}, {@code item.LiveHeadpieceItem}).
+     */
+    public static final DeferredItem<Item> LIVE_HEADPIECE = ITEMS.register(
+        "live_headpiece",
+        () -> new LiveHeadpieceItem(new Item.Properties().stacksTo(1).rarity(Rarity.RARE))
+    );
+
+    /**
+     * A Vista cassette already tuned to the Live Feed ({@code item.LiveCassetteItem}): its default
+     * {@code vista:linked_feed} component is the feed id, so any TV it goes into shows the stream.
+     * Only a TV ever holds one ({@code mixin.vista.TVBlockMixin} auto-tune); it is never a player's
+     * item — see {@code event.UnobtainableLiveItems}.
+     */
+    public static final DeferredItem<Item> LIVE_CASSETTE = ITEMS.register(
+        "live_cassette",
+        () -> new LiveCassetteItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)
+            .component(VistaMod.LINKED_FEED_COMPONENT.get(), LiveBroadcastSource.MAIN_FEED_UUID))
+    );
+
+    /**
+     * Editor-only placeholder: at chest spawn time {@code ContainerContentsRoller.rollItemStack}
+     * rolls it into a {@link #LIVE_HEADPIECE} a few times per thousand and a player book otherwise,
+     * so a slot that names it is never empty. Not in any creative tab, and never a player's item —
+     * see {@code event.UnobtainableLiveItems}.
+     */
+    public static final DeferredItem<Item> RANDOM_LIVE_HEADPIECE = ITEMS.register(
+        "random_live_headpiece",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
     public static final DeferredItem<Item> RANDOM_PLAYERPHOTO = ITEMS.register(
         "random_playerphoto",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
+     * Editor-only placeholder for someone else's photo album. Substituted at chest spawn time for a
+     * read-only album another player filled (see {@code compat.photo.album.FoundAlbums#rollFound}),
+     * which burns once it has been looked through; with none to hand out, the slot holds the finder's
+     * own album ({@link #YOUR_PHOTOALBUM}) instead.
+     */
+    public static final DeferredItem<Item> RANDOM_PLAYERPHOTOALBUM = ITEMS.register(
+        "random_playerphotoalbum",
+        () -> new Item(new Item.Properties().stacksTo(1))
+    );
+
+    /**
+     * The finder's own photo album. Stays as this item in the chest and becomes the holder's album
+     * — the one album they have, same pages everywhere — the moment it is taken in hand (see
+     * {@code compat.photo.album.PlayerAlbums#onEquipmentChange}).
+     */
+    public static final DeferredItem<Item> YOUR_PHOTOALBUM = ITEMS.register(
+        "your_photoalbum",
         () -> new Item(new Item.Properties().stacksTo(1))
     );
 

@@ -79,6 +79,14 @@ public final class LifeDisqualification {
             p -> p.getData(ModDataAttachments.OPENED_ENDER_CHEST_THIS_LIFE.get()));
         rules.put(FarStartAdvancement.ID,
             p -> p.getData(ModDataAttachments.STARTING_BOOK_BURNED_THIS_LIFE.get()));
+        Predicate<ServerPlayer> heldApple = p -> p.getData(ModDataAttachments.HELD_APPLE_THIS_LIFE.get());
+        Predicate<ServerPlayer> ateNonMelon = p -> p.getData(ModDataAttachments.ATE_NON_MELON_THIS_LIFE.get());
+        Predicate<ServerPlayer> woreArmor = p -> p.getData(ModDataAttachments.WORE_ARMOR_THIS_LIFE.get());
+        LifeChallengeAdvancements.APPLE_TIERS.forEach(id -> rules.put(id, heldApple));
+        LifeChallengeAdvancements.MELON_TIERS.forEach(id -> rules.put(id, ateNonMelon));
+        LifeChallengeAdvancements.NAKED_TIERS.forEach(id -> rules.put(id, woreArmor));
+        Predicate<ServerPlayer> brokeAnyRule = AllAtOnceAdvancement::anyRuleBroken;
+        AllAtOnceAdvancement.TIERS.forEach(id -> rules.put(id, brokeAnyRule));
         return java.util.Collections.unmodifiableMap(rules); // keeps insertion order (Map.copyOf would not)
     }
 

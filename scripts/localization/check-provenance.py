@@ -138,10 +138,10 @@ def check_credit_counts(locale: str, prov: dict, authors: dict[str, str],
 
     Unlike cross_check_credits (advisory), these are ERRORS: the counts drive the
     AI-fraction ring in the language list, so stale shipped numbers mislead players.
-    Every credit file matching the locale must carry all three fields, exactly.
+    Every credit file matching the locale must carry all four fields, exactly.
     """
     fields = provenance_io.CREDIT_COUNT_FIELDS
-    expected = dict(zip(fields, provenance_io.ai_counts(prov, authors)))
+    expected = provenance_io.credit_counts(prov, authors)
 
     def fmt(counts: dict) -> str:
         return ", ".join(f"{f}={counts[f]}" for f in fields)
@@ -165,10 +165,12 @@ def check_credit_counts(locale: str, prov: dict, authors: dict[str, str],
                 f"non-negative integers — {FIX_HINT_COUNTS}"
             )
             continue
-        if not values["ai_unreviewed"] <= values["ai_authored"] <= values["total_keys"]:
+        if not (values["ai_unreviewed"] <= values["ai_authored"] <= values["total_keys"]
+                and values["counted_keys"] <= values["total_keys"]):
             errors.append(
                 f"{locale}: {path.name}: inconsistent counts ({fmt(values)}) — need "
-                f"ai_unreviewed <= ai_authored <= total_keys — {FIX_HINT_COUNTS}"
+                f"ai_unreviewed <= ai_authored <= total_keys and counted_keys <= total_keys "
+                f"— {FIX_HINT_COUNTS}"
             )
             continue
         if values != expected:

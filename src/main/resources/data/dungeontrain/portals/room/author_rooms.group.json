@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "author_new",
+      "weight": 2
+    },
+    {
+      "id": "smalllibrary",
+      "weight": 1
+    },
+    {
+      "id": "midlibrary",
+      "weight": 1
+    },
+    {
+      "id": "author_fancy",
+      "weight": 10
+    },
+    {
+      "id": "author_fancy24",
+      "weight": 10
+    },
+    {
+      "id": "author_fancy_126",
+      "weight": 10
+    },
+    {
+      "id": "largerlibrary",
+      "weight": 1
+    }
+  ]
+}

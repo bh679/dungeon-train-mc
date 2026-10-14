@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_100",
+  "parent": "dungeontrain:dungeon_train/tab_train_explorer",
   "display": {
     "icon": { "id": "minecraft:netherrack" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.reached_nether.title" },

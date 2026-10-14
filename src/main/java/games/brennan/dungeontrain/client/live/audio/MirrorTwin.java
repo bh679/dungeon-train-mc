@@ -1,0 +1,66 @@
+package games.brennan.dungeontrain.client.live.audio;
+
+/**
+ * Duck interface mixed into {@code com.mojang.blaze3d.audio.Channel} and {@code SoundBuffer}: the id
+ * of this object's twin in the stream's mirror OpenAL context ({@link AudioMirror}), tagged with the
+ * mirror session it belongs to. A twin from an older session is never used — its context is gone.
+ */
+public interface MirrorTwin {
+
+    /** A channel's twin id meaning "kept off the stream" (its sound is not allowed); never a real id. */
+    int BLOCKED = -1;
+
+    /** The mirror session the twin was made in; 0 when there is none. */
+    int dungeontrain$twinGen();
+
+    /** The twin's OpenAL source or buffer id in that session's context. */
+    int dungeontrain$twinId();
+
+    /** Bytes of PCM the twin holds (buffers only), for the perf line. */
+    int dungeontrain$twinBytes();
+
+    void dungeontrain$setTwin(int gen, int id, int bytes);
+
+    /** A twin from {@code gen}, or 0 ({@link #BLOCKED} for a channel kept off the stream). */
+    default int dungeontrain$twinIn(int gen) {
+        return dungeontrain$twinGen() == gen ? dungeontrain$twinId() : 0;
+    }
+
+    default void dungeontrain$clearTwin() {
+        dungeontrain$setTwin(0, 0, 0);
+    }
+
+    /** A {@code Channel}: also exposes the speaker source id the twin mirrors. */
+    interface Channel extends MirrorTwin {
+        int dungeontrain$speakerSource();
+
+        /** The sound's category, once the engine has said what is playing (null before). */
+        @org.jetbrains.annotations.Nullable
+        net.minecraft.sounds.SoundSource dungeontrain$category();
+
+        @org.jetbrains.annotations.Nullable
+        net.minecraft.client.resources.sounds.SoundInstance dungeontrain$instance();
+
+        void dungeontrain$setOrigin(net.minecraft.sounds.SoundSource category,
+                                    net.minecraft.client.resources.sounds.SoundInstance instance);
+    }
+
+    /** A {@code SoundBuffer}: also exposes whether and where it is uploaded to the speakers. */
+    interface Buffer extends MirrorTwin {
+        boolean dungeontrain$hasAlBuffer();
+
+        int dungeontrain$alBuffer();
+
+        /** The PCM not yet handed to OpenAL, or null once it has been (vanilla drops it on upload). */
+        @org.jetbrains.annotations.Nullable
+        java.nio.ByteBuffer dungeontrain$data();
+
+        javax.sound.sampled.AudioFormat dungeontrain$format();
+
+        /** The sound file this buffer was decoded from, or null if it did not come through the cache. */
+        @org.jetbrains.annotations.Nullable
+        net.minecraft.resources.ResourceLocation dungeontrain$source();
+
+        void dungeontrain$setSource(net.minecraft.resources.ResourceLocation source);
+    }
+}

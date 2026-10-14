@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
+  "display": {
+    "icon": {
+      "id": "minecraft:melon_slice"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.last_melon.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.last_melon.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "challenge": {
+      "trigger": "dungeontrain:code_granted",
+      "conditions": {
+        "threshold": 100
+      }
+    }
+  },
+  "requirements": [
+    [
+      "challenge"
+    ]
+  ]
+}

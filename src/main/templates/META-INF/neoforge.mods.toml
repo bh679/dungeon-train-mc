@@ -127,6 +127,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Vista — third-party, REQUIRED. The TVs the Live Feed plays on; DT's antenna block implements its
+# broadcast seam and the viewer carriage template carries its blocks, so both sides need it.
+[[dependencies.${mod_id}]]
+    modId="vista"
+    type="required"
+    versionRange="[${vista_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # Second-lap overworld mods — third-party, REQUIRED. On odd laps the overworld gap before the
 # Nether band is William Wythers' Overhauled Overworld and the gap after it is Biomes O' Plenty
 # (worldgen/SecondLapOverworld). Floors only; Cristel Lib and GlitchCore are declared by the mods
@@ -204,12 +213,12 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Discord Presence is still jarJar'd INSIDE this jar, so the shipped version is always
-# exactly discordpresence_version — no floor indirection needed.
+# Discord Presence is a hybrid sibling: jarJar'd INSIDE this jar, but on CurseForge the app installs
+# the top-level copy (which may be any release ≥ the floor), so the range uses the floor, not the pin.
 [[dependencies.${mod_id}]]
     modId="discordpresence"
     type="required"
-    versionRange="[${discordpresence_version},)"
+    versionRange="[${discordpresence_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
@@ -227,12 +236,12 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
-# Edible Backpacks is jarJar'd INSIDE this jar (like DiscordPresence),
-# so the shipped version is always exactly ediblebackpacks_version — no floor indirection.
+# Edible Backpacks — hybrid sibling: jarJar'd INSIDE this jar (Modrinth / manual installs) AND a
+# required external download on CurseForge. Range keys off the FLOOR, like the other siblings.
 [[dependencies.${mod_id}]]
     modId="ediblebackpacks"
     type="required"
-    versionRange="[${ediblebackpacks_version},)"
+    versionRange="[${ediblebackpacks_min_version},)"
     ordering="AFTER"
     side="BOTH"
 
@@ -313,6 +322,17 @@ logoFile="logo.png"
     versionRange="[${streamdetect_min_version},)"
     ordering="NONE"
     side="CLIENT"
+
+# DT Mod Verify — the Free Play file-verification engine (hashes + package fingerprints of the
+# installed jars, and the relay verify call). jarJar'd inside this jar like Stream Detect; `optional`
+# so DT degrades to the id-only whitelist check without it (compat/DtModVerifyBridge). Both sides:
+# a dedicated server scans its own mods/ too.
+[[dependencies.${mod_id}]]
+    modId="dtmodverify"
+    type="optional"
+    versionRange="[${dtmodverify_min_version},)"
+    ordering="NONE"
+    side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="dpibypassdetect"
@@ -399,6 +419,11 @@ logoFile="logo.png"
 # villager's goods (see TradePricerEmeraldPayoutMixin).
 [[mixins]]
     config="${mod_id}.tradeeverything.mixins.json"
+
+# Vista (required dep) — TVs toggle on a redstone pulse or an empty-hand click instead of
+# following a steady signal (see compat/vista/TvPowerToggle).
+[[mixins]]
+    config="${mod_id}.vista.mixins.json"
 
 [[mixins]]
     config="${mod_id}.vivecraft.mixins.json"

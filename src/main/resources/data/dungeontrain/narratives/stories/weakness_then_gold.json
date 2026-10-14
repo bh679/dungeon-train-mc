@@ -1,6 +1,7 @@
 {
   "id": "weakness_then_gold",
   "story": "Weakness, Then Gold",
+  "deferred": true,
   "letters": [
     {
       "index": 1,

@@ -106,6 +106,32 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Overworld game time at which the player last saw a Live Eye in a container (0 = never). Starts the
+     * 15-minute window in which loot Live Eyes become TVs for them ({@code event/LiveEyeLootResolver}).
+     * {@code copyOnDeath} so dying doesn't reset it.
+     */
+    public static final Supplier<AttachmentType<Long>> LIVE_EYE_SEEN_AT =
+        TYPES.register("live_eye_seen_at",
+            () -> AttachmentType.<Long>builder(() -> 0L)
+                .serialize(Codec.LONG)
+                .copyOnDeath()
+                .build()
+        );
+
+    /**
+     * Total server ticks this player has spent livestreaming, across every stream. Counts towards the
+     * Dark Room's lifetime streaming advancement ({@code event/LiveTvAdvancements}). {@code copyOnDeath}
+     * so dying doesn't reset it.
+     */
+    public static final Supplier<AttachmentType<Long>> LIVESTREAM_TICKS =
+        TYPES.register("livestream_ticks",
+            () -> AttachmentType.<Long>builder(() -> 0L)
+                .serialize(Codec.LONG)
+                .copyOnDeath()
+                .build()
+        );
+
+    /**
      * Per-player flag: has this player already seen the fly-up spawn intro
      * cinematic in this world? Set once on first login and serialized so it
      * survives logout / world reload. {@code copyOnDeath} preserves it across
@@ -266,6 +292,56 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-life flag: has an apple or edible backpack been in this player's inventory this life? Rules out the apple challenges. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> HELD_APPLE_THIS_LIFE =
+        TYPES.register("held_apple_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player eaten anything but melon this life? Rules out The Last Melon. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> ATE_NON_MELON_THIS_LIFE =
+        TYPES.register("ate_non_melon_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player worn armor (an elytra aside) this life? Rules out the naked challenges. See
+     * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> WORE_ARMOR_THIS_LIFE =
+        TYPES.register("wore_armor_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
+     * Per-life flag: has this player broken any rule of "All at Once" / "The Challenge" this life — a
+     * block broken, a chest or barrel opened, an ender chest opened, damage dealt, an apple held,
+     * non-melon eaten or armor worn? See
+     * {@link games.brennan.dungeontrain.advancement.AllAtOnceAdvancement}. Same shape as
+     * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
+     */
+    public static final Supplier<AttachmentType<Boolean>> ALL_AT_ONCE_LOST_THIS_LIFE =
+        TYPES.register("all_at_once_lost_this_life",
+            () -> AttachmentType.<Boolean>builder(() -> Boolean.FALSE)
+                .serialize(Codec.BOOL)
+                .build()
+        );
+
+    /**
      * Travelled-carriage reading (the same {@code effectiveTravelled} value the carts tiers use) at
      * the moment this player last broke a block this life. The "no block broken" streak is
      * {@code effectiveTravelled - this}, driving the {@code no_break_100} / {@code no_break_1000}
@@ -281,6 +357,35 @@ public final class ModDataAttachments {
         TYPES.register("carts_at_last_block_break",
             () -> AttachmentType.<Integer>builder(() -> 0)
                 .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
+     * How many times this player has paid Tribute to their own photo this life — each one triples the
+     * next one's cost ({@link games.brennan.dungeontrain.compat.photo.OwnPhotoTribute#cost}).
+     *
+     * <p>Serialized so a mid-life logout can't reset the price, and <b>no</b> {@code copyOnDeath} so
+     * every new life starts back at the base cost — the same shape as {@link #CARTS_AT_LAST_CONTAINER_OPEN}.</p>
+     */
+    public static final Supplier<AttachmentType<Integer>> OWN_PHOTO_TRIBUTES_THIS_LIFE =
+        TYPES.register("own_photo_tributes_this_life",
+            () -> AttachmentType.<Integer>builder(() -> 0)
+                .serialize(Codec.INT)
+                .build()
+        );
+
+    /**
+     * A random id for this life, sent with every photo upload and Tribute so the relay can keep the
+     * one-life photo leaderboards ({@link games.brennan.dungeontrain.compat.photo.SharedPhotos#lifeFields}).
+     * Blank until the life's first photo event mints it.
+     *
+     * <p>Serialized so a mid-life logout keeps the same life, and <b>no</b> {@code copyOnDeath} so every
+     * new life gets a new one — the same shape as {@link #OWN_PHOTO_TRIBUTES_THIS_LIFE}.</p>
+     */
+    public static final Supplier<AttachmentType<String>> PHOTO_LIFE_ID =
+        TYPES.register("photo_life_id",
+            () -> AttachmentType.<String>builder(() -> "")
+                .serialize(Codec.STRING)
                 .build()
         );
 

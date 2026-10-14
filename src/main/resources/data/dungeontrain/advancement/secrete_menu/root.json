@@ -4,7 +4,7 @@
     "title": { "translate": "advancements.dungeontrain.dungeon_train.secrete_menu.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.secrete_menu.description" },
     "frame": "challenge",
-    "background": "minecraft:textures/gui/advancements/backgrounds/end.png",
+    "background": "minecraft:textures/block/black_concrete.png",
     "show_toast": false,
     "announce_to_chat": false,
     "hidden": true

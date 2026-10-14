@@ -81,6 +81,13 @@ public final class DebugCommand {
             // /dungeontrain debug physicsfreeze <on|off|status> — toggles the #646 physics-freeze
             // of untracked carriages. `off` restores every frozen body next tick. Drives the Gate 2
             // matched-toggle A/B (freeze off vs on, same seed/path — chunk-gen noise cancels).
+            // Live Eye text filter: behave as if someone were live (so chat/book masking can be tried
+            // without a stream), and walk the strike ladder without typing anything.
+            .then(Commands.literal("live-moderation")
+                .then(Commands.literal("force")
+                    .then(Commands.literal("on").executes(ctx -> setLiveModerationForce(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setLiveModerationForce(ctx.getSource(), false))))
+                .then(Commands.literal("strike").executes(ctx -> liveModerationStrike(ctx.getSource()))))
             .then(Commands.literal("physicsfreeze")
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
@@ -185,6 +192,10 @@ public final class DebugCommand {
             // /dungeontrain debug mix-pick — the mix-zone band each chunk around you generates as (a letter grid,
             // +X to the right), plus the candidate counts. Also logged at INFO for RCON runs.
             .then(Commands.literal("mix-pick").executes(ctx -> MixPickDebug.report(ctx.getSource())))
+            // /dungeontrain debug spider-jockey — spawn spiders through the carriage variant-mob path
+            // at your feet until one rolls a skeleton jockey; reports whether the rider is in the level
+            // and carries the contents tag (regression probe for the ghost-passenger bug).
+            .then(Commands.literal("spider-jockey").executes(ctx -> SpiderJockeyDebug.run(ctx.getSource())))
             .then(Commands.literal("cycle-layout")
                 .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
                 .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))
@@ -201,6 +212,17 @@ public final class DebugCommand {
             // which second-lap mod owns each (WWOO before, Biomes O' Plenty after, odd laps) and a biome
             // census sampled from the overworld source. Also logged at INFO for RCON runs.
             .then(Commands.literal("overworld-laps").executes(ctx -> OverworldLapsDebug.report(ctx.getSource())))
+            // /dungeontrain debug sampler-pool — the shared End-band / sphere sampler pool: threads, jobs
+            // waiting, and what the queue cap has evicted or refused since this world loaded.
+            .then(Commands.literal("sampler-pool").executes(ctx -> {
+                games.brennan.dungeontrain.worldgen.SamplerPool pool = games.brennan.dungeontrain.worldgen.SamplerPool.shared();
+                games.brennan.dungeontrain.worldgen.SamplerPool.Stats stats = pool.stats();
+                ctx.getSource().sendSuccess(() -> Component.literal("[sampler-pool] threads=" + pool.threads()
+                        + " queued=" + stats.queued() + " peak=" + stats.peakQueued()
+                        + " evicted=" + stats.evicted() + " refused=" + stats.refused()
+                        + " dropped=" + stats.dropped()), false);
+                return 1;
+            }))
             // /dungeontrain debug portal-sites [count] — which stretch each overworld dimensional
             // carriage's sample site sits in, old scattered rule vs the stretch rules. INFO-logged too.
             .then(Commands.literal("portal-sites")
@@ -211,6 +233,17 @@ public final class DebugCommand {
                         .executes(ctx -> PortalSitesDebug.probeEnd(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
                 .then(Commands.argument("count", IntegerArgumentType.integer(1, 100_000))
                     .executes(ctx -> PortalSitesDebug.report(ctx.getSource(), IntegerArgumentType.getInteger(ctx, "count")))))
+            // /dungeontrain debug author-rooms [count] [player] — how often the lottery lands on an
+            // author room, the share each rolls and the sub-room that fits it. INFO-logged too.
+            .then(Commands.literal("author-rooms")
+                .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(), AuthorRoomsDebug.DEFAULT_COUNT, null))
+                .then(Commands.argument("count", IntegerArgumentType.integer(1, 100_000))
+                    .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(),
+                        IntegerArgumentType.getInteger(ctx, "count"), null))
+                    .then(Commands.argument("player", net.minecraft.commands.arguments.EntityArgument.player())
+                        .executes(ctx -> AuthorRoomsDebug.report(ctx.getSource(),
+                            IntegerArgumentType.getInteger(ctx, "count"),
+                            net.minecraft.commands.arguments.EntityArgument.getPlayer(ctx, "player"))))))
             .then(Commands.literal("pair")
                 .executes(ctx -> runPair(ctx.getSource(), 0.0))
                 .then(Commands.argument("velocity", DoubleArgumentType.doubleArg())
@@ -387,6 +420,24 @@ public final class DebugCommand {
         return lines.size();
     }
 
+    private static int setLiveModerationForce(CommandSourceStack source, boolean on) {
+        games.brennan.dungeontrain.moderation.LiveModerationScope.devForce = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Live text filter forced " + (on ? "ON — chat and books are checked as if someone were live" : "OFF")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
+    private static int liveModerationStrike(CommandSourceStack source) {
+        ServerPlayer player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("live-moderation strike needs a player."));
+            return 0;
+        }
+        games.brennan.dungeontrain.event.LiveModeration.strike(player, "debug", java.util.List.of("debug"), "/dungeontrain debug live-moderation strike");
+        return 1;
+    }
+
     private static int setPhysicsFreeze(CommandSourceStack source, boolean on) {
         PhysicsFreezeController.ENABLED = on;
         source.sendSuccess(() -> Component.literal(
@@ -523,7 +574,8 @@ public final class DebugCommand {
         boolean configOn = games.brennan.dungeontrain.config.DungeonTrainCommonConfig.isDistantLodLiteDecoration();
         source.sendSuccess(() -> Component.literal(
             "[DungeonTrain] LOD-lite Nether-core decoration: " + describeLodLite(mode)
-                + " (config distantLodLiteDecoration=" + configOn + ")"
+                + " (config distantLodLiteDecoration=" + configOn + "); DH pause-hold: "
+                + games.brennan.dungeontrain.worldgen.LodGenerationHold.describe(System.currentTimeMillis())
         ).withStyle(configOn && mode != LodGeneration.Mode.FORCE_OFF ? ChatFormatting.GREEN : ChatFormatting.GOLD), false);
         return 1;
     }

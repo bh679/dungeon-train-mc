@@ -39,10 +39,33 @@ public final class ContentModeMirror {
 
     private ContentModeMirror() {}
 
+    /** Per-player Livestreaming switch, seeded from the same sync. Absent = not-yet-known = off. */
+    private static final Map<UUID, Boolean> LIVESTREAM = new ConcurrentHashMap<>();
+
     /** Seed / update the mirror from the client's sync packet. Server thread. */
-    public static void set(ServerPlayer player, ContentMode mode) {
+    public static void set(ServerPlayer player, ContentMode mode, boolean livestream) {
         if (player == null || mode == null) return;
         MODES.put(player.getUUID(), mode);
+        LIVESTREAM.put(player.getUUID(), livestream);
+    }
+
+    /** {@code player}'s Livestreaming switch; fail-safe false for an unknown player. */
+    public static boolean isLivestreamOn(ServerPlayer player) {
+        if (player == null) return false;
+        return LIVESTREAM.getOrDefault(player.getUUID(), false);
+    }
+
+    /**
+     * Whether {@code player} may receive the live headpiece from loot: a Kid with Livestreaming off
+     * never does. Pure form for the tests.
+     */
+    public static boolean mayLoot(boolean kid, boolean livestreamOn) {
+        return !kid || livestreamOn;
+    }
+
+    /** {@link #mayLoot(boolean, boolean)} for a real player, with the mirror's fail-safes. */
+    public static boolean mayLootLiveHeadpiece(ServerPlayer player) {
+        return mayLoot(isKid(player), isLivestreamOn(player));
     }
 
     /**
@@ -64,6 +87,7 @@ public final class ContentModeMirror {
     public static void forget(UUID playerId) {
         if (playerId != null) {
             MODES.remove(playerId);
+            LIVESTREAM.remove(playerId);
         }
     }
 
@@ -71,5 +95,6 @@ public final class ContentModeMirror {
     public static void onServerStopped(ServerStoppedEvent event) {
         // Nothing leaks into the next world: every client re-seeds its state on the next login.
         MODES.clear();
+        LIVESTREAM.clear();
     }
 }

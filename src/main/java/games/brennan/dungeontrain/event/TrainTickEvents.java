@@ -365,7 +365,9 @@ public final class TrainTickEvents {
         // edits (mining/placing) that hit the voxel collider in the window.
         // batchedBlockChanges= the per-block updates a carriage stamp deferred and
         // colliderRebuilds= the whole-section uploads that replaced them (ColliderBatch),
-            // blockChangeMs= the wall time of Sable's per-block handling over the window. Lets
+            // blockChangeMs= the wall time of Sable's per-block handling over the window.
+        // stepDeferred= block changes a collision callback made inside Sable's native step,
+        // deferred past it (ColliderBatch#callForced) — each one used to freeze the server. Lets
         // MSPT-vs-resident-carriage scaling and the substep A/B be read straight
         // from the log, no /spark or /tick query. getAverageTickTimeNanos() is
         // server-wide (dominated by the train dimension's physics). See
@@ -394,7 +396,8 @@ public final class TrainTickEvents {
             // needed to attribute a slow physMs while the player is away from the train
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
             PERF_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
-                    + " gcMs={} gcN={} heapUsedMb={} heapMaxMb={} chunkWaitMs={} chunkWaits={} chunksLoaded={} pendingChunkTasks={} entities={} onCarriages={} tickMaxMs={}",
+                    + " gcMs={} gcN={} heapUsedMb={} heapMaxMb={} chunkWaitMs={} chunkWaits={} chunksLoaded={} pendingChunkTasks={} entities={} onCarriages={} tickMaxMs={}"
+                    + " stepDeferred={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size(),
                 String.format("%.2f", physics.avgStepMs(MSPT_LOG_PERIOD_TICKS)),
@@ -408,7 +411,8 @@ public final class TrainTickEvents {
                 load.gcMillis(), load.gcCount(), load.heapUsedMb(), load.heapMaxMb(),
                 String.format("%.2f", load.chunkWaitMs()), load.chunkWaits(),
                 load.chunksLoaded(), load.pendingChunkTasks(), load.entities(), load.onCarriages(),
-                String.format("%.2f", load.tickMaxMs()));
+                String.format("%.2f", load.tickMaxMs()),
+                physics.stepDeferredBlockChanges());
         }
 
         // Kill-ahead runs once per train, against the lead carriage's

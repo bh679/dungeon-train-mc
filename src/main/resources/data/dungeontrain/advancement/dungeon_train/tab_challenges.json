@@ -1,0 +1,28 @@
+{
+  "display": {
+    "icon": {
+      "id": "minecraft:iron_sword"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.dungeon_train.tab_challenges.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.dungeon_train.tab_challenges.description"
+    },
+    "frame": "task",
+    "background": "minecraft:textures/block/polished_blackstone_bricks.png",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": true
+  },
+  "criteria": {
+    "unlocked": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "unlocked"
+    ]
+  ]
+}

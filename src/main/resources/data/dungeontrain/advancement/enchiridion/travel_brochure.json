@@ -1,0 +1,34 @@
+{
+  "parent": "dungeontrain:enchiridion/scenic_route",
+  "display": {
+    "icon": {
+      "id": "minecraft:map"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.travel_brochure.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_biomes.description",
+      "with": [
+        60
+      ]
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "biomes": {
+      "trigger": "dungeontrain:photo_biomes",
+      "conditions": {
+        "threshold": 60
+      }
+    }
+  },
+  "requirements": [
+    [
+      "biomes"
+    ]
+  ]
+}

@@ -13,6 +13,9 @@ public final class EndBandConfig {
     /** Off: every sampled chunk is decorated alone, as the band has always been generated. */
     public static final boolean DEFAULT_FEATURE_SPILL = false;
 
+    /** On: the BetterEnd band's vanilla End patches are remapped to BetterEnd biomes (#1785). */
+    public static final boolean DEFAULT_BETTER_END_ONLY = true;
+
     /** When a sampled band chunk gets its terrain. */
     public enum Terrain {
         /** During the chunk's own generation, on vanilla's worldgen workers: a chunk never exists without its islands. */
@@ -28,6 +31,7 @@ public final class EndBandConfig {
     public static final Terrain DEFAULT_TERRAIN = Terrain.WORLDGEN;
 
     private static ModConfigSpec.BooleanValue featureSpill;
+    private static ModConfigSpec.BooleanValue betterEndOnly;
     private static ModConfigSpec.EnumValue<Terrain> terrain;
 
     private EndBandConfig() {}
@@ -49,6 +53,14 @@ public final class EndBandConfig {
                         "real neighbours and whatever spills over is written into them, the way vanilla does. Only",
                         "chunks generated after the change are affected. Default false (the existing look).")
                 .define("endBandFeatureSpill", DEFAULT_FEATURE_SPILL);
+        betterEndOnly = b
+                .comment("Keep the BetterEnd End band all BetterEnd. BetterEnd's End map keeps vanilla's End biomes",
+                        "alongside its own, and vanilla's end_barrens and small_end_islands place nothing at all, so",
+                        "the band copied them as flat bare end stone beside lush BetterEnd islands. With this on,",
+                        "those vanilla patches are remapped to BetterEnd biomes in the band's samples and labels only;",
+                        "the real End dimension is unchanged. Only chunks generated after the change are affected,",
+                        "so an existing world keeps its vanilla patches next to remapped new chunks. Default true.")
+                .define("endBandBetterEndOnly", DEFAULT_BETTER_END_ONLY);
     }
 
     /** When sampled End-band chunks get their terrain; hardcoded default pre-load. */
@@ -59,6 +71,11 @@ public final class EndBandConfig {
     /** True when a sampled band chunk's terrain is written during its own generation ({@link Terrain#WORLDGEN}). */
     public static boolean terrainInWorldgen() {
         return terrain() == Terrain.WORLDGEN;
+    }
+
+    /** Whether the BetterEnd band's vanilla End patches are remapped to BetterEnd biomes; hardcoded default pre-load. */
+    public static boolean betterEndOnly() {
+        return DungeonTrainCommonConfig.isLoaded() && betterEndOnly != null ? betterEndOnly.get() : DEFAULT_BETTER_END_ONLY;
     }
 
     /** Whether sampled End-band chunks exchange feature spill with their neighbours; hardcoded default pre-load. */

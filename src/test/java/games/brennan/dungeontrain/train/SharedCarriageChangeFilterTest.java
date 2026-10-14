@@ -47,28 +47,28 @@ class SharedCarriageChangeFilterTest {
 
     @Test
     void pressurePlatePoweringIsNotABuildChange() {
-        assertFalse(SharedCarriageChangeFilter.isBuildChange(plate(false), plate(true)));
-        assertFalse(SharedCarriageChangeFilter.isBuildChange(plate(true), plate(false)));
+        assertFalse(SharedCarriageChangeFilter.isBuildChange(plate(false), plate(true), false));
+        assertFalse(SharedCarriageChangeFilter.isBuildChange(plate(true), plate(false), false));
     }
 
     @Test
     void doorSwingingIsNotABuildChange() {
         for (DoubleBlockHalf half : DoubleBlockHalf.values()) {
             assertFalse(SharedCarriageChangeFilter.isBuildChange(
-                    oakDoor(half, false, false), oakDoor(half, true, true)),
+                    oakDoor(half, false, false), oakDoor(half, true, true), false),
                     "closed → open+powered on the " + half + " half");
             assertFalse(SharedCarriageChangeFilter.isBuildChange(
-                    oakDoor(half, true, true), oakDoor(half, false, false)),
+                    oakDoor(half, true, true), oakDoor(half, false, false), false),
                     "open+powered → closed on the " + half + " half");
             assertFalse(SharedCarriageChangeFilter.isBuildChange(
-                    oakDoor(half, true, false), oakDoor(half, true, true)),
+                    oakDoor(half, true, false), oakDoor(half, true, true), false),
                     "powered alone on the " + half + " half");
         }
     }
 
     @Test
     void aRedundantSetToTheSameStateIsNotABuildChange() {
-        assertFalse(SharedCarriageChangeFilter.isBuildChange(plate(false), plate(false)));
+        assertFalse(SharedCarriageChangeFilter.isBuildChange(plate(false), plate(false), false));
     }
 
     // ---- real edits: ARE build changes ----
@@ -76,7 +76,7 @@ class SharedCarriageChangeFilterTest {
     @Test
     void breakingADoorIsABuildChange() {
         assertTrue(SharedCarriageChangeFilter.isBuildChange(
-                oakDoor(DoubleBlockHalf.LOWER, false, false), AIR));
+                oakDoor(DoubleBlockHalf.LOWER, false, false), AIR, false));
     }
 
     @Test
@@ -84,7 +84,7 @@ class SharedCarriageChangeFilterTest {
         // Carriage 32's single genuine edit: a top slab removed from the ceiling.
         BlockState slab = Blocks.STONE_BRICK_SLAB.defaultBlockState()
                 .setValue(BlockStateProperties.SLAB_TYPE, net.minecraft.world.level.block.state.properties.SlabType.TOP);
-        assertTrue(SharedCarriageChangeFilter.isBuildChange(slab, AIR));
+        assertTrue(SharedCarriageChangeFilter.isBuildChange(slab, AIR, false));
     }
 
     @Test
@@ -92,7 +92,7 @@ class SharedCarriageChangeFilterTest {
         // Same properties, different block — a re-skin is a build change however similar it looks.
         assertTrue(SharedCarriageChangeFilter.isBuildChange(
                 oakDoor(DoubleBlockHalf.LOWER, false, false),
-                door(Blocks.SPRUCE_DOOR.defaultBlockState(), DoubleBlockHalf.LOWER, false, false)));
+                door(Blocks.SPRUCE_DOOR.defaultBlockState(), DoubleBlockHalf.LOWER, false, false), false));
     }
 
     @Test
@@ -101,28 +101,37 @@ class SharedCarriageChangeFilterTest {
         BlockState dry = Blocks.OAK_FENCE.defaultBlockState()
                 .setValue(BlockStateProperties.WATERLOGGED, false);
         assertTrue(SharedCarriageChangeFilter.isBuildChange(
-                dry, dry.setValue(BlockStateProperties.WATERLOGGED, true)));
+                dry, dry.setValue(BlockStateProperties.WATERLOGGED, true), false));
     }
 
     @Test
     void placingAndBreakingPlainBlocksAreBuildChanges() {
-        assertTrue(SharedCarriageChangeFilter.isBuildChange(Blocks.STONE.defaultBlockState(), AIR));
-        assertTrue(SharedCarriageChangeFilter.isBuildChange(AIR, Blocks.STONE.defaultBlockState()));
+        assertTrue(SharedCarriageChangeFilter.isBuildChange(Blocks.STONE.defaultBlockState(), AIR, false));
+        assertTrue(SharedCarriageChangeFilter.isBuildChange(AIR, Blocks.STONE.defaultBlockState(), false));
     }
 
-    // ---- the pre-existing loot rule still holds ----
+    // ---- the loot rule: exempt on a fresh carriage, a change on a relay one ----
 
     @Test
-    void breakingALootContainerIsNotABuildChange() {
-        assertFalse(SharedCarriageChangeFilter.isBuildChange(Blocks.CHEST.defaultBlockState(), AIR));
-        assertFalse(SharedCarriageChangeFilter.isBuildChange(Blocks.BARREL.defaultBlockState(), AIR));
-        assertFalse(SharedCarriageChangeFilter.isBuildChange(Blocks.DECORATED_POT.defaultBlockState(), AIR));
-        assertFalse(SharedCarriageChangeFilter.isBuildChange(Blocks.SUSPICIOUS_SAND.defaultBlockState(), AIR));
+    void breakingALootContainerOnAFreshCarriageIsNotABuildChange() {
+        assertFalse(SharedCarriageChangeFilter.isBuildChange(Blocks.CHEST.defaultBlockState(), AIR, false));
+        assertFalse(SharedCarriageChangeFilter.isBuildChange(Blocks.BARREL.defaultBlockState(), AIR, false));
+        assertFalse(SharedCarriageChangeFilter.isBuildChange(Blocks.DECORATED_POT.defaultBlockState(), AIR, false));
+        assertFalse(SharedCarriageChangeFilter.isBuildChange(Blocks.SUSPICIOUS_SAND.defaultBlockState(), AIR, false));
+    }
+
+    @Test
+    void breakingALootContainerOnARelayCarriageIsABuildChange() {
+        // Already in the pool: the relay copy must lose the container and its contents, or the next
+        // world to lease it is handed the same loot again.
+        assertTrue(SharedCarriageChangeFilter.isBuildChange(Blocks.CHEST.defaultBlockState(), AIR, true));
+        assertTrue(SharedCarriageChangeFilter.isBuildChange(Blocks.SHULKER_BOX.defaultBlockState(), AIR, true));
+        assertTrue(SharedCarriageChangeFilter.isBuildChange(Blocks.BARREL.defaultBlockState(), AIR, true));
     }
 
     @Test
     void placingALootContainerIsStillABuildChange() {
         // The exclusion is one-directional — only breaking one is exempt.
-        assertTrue(SharedCarriageChangeFilter.isBuildChange(AIR, Blocks.CHEST.defaultBlockState()));
+        assertTrue(SharedCarriageChangeFilter.isBuildChange(AIR, Blocks.CHEST.defaultBlockState(), false));
     }
 }

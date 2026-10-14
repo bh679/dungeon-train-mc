@@ -2,6 +2,7 @@
   "id": "wren_halloway_rebuttals",
   "character": "Wren Halloway",
   "story": "Rebuttals",
+  "deferred": true,
   "letters": [
     {
       "index": 1,

@@ -37,8 +37,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * </ul>
  *
  * <p>The container close hook also feeds storage edits to the upload (see {@link #closeAction}): a gift
- * is queued at once; any other change is only flagged locally, and travels when the player leaves the
- * carriage — and then only if somebody block-edited it this session.</p>
+ * is queued at once; any other change is flagged locally and travels in one batch when the player leaves
+ * the carriage or the next block edit (or gift) on it is flushed.</p>
  *
  * <p>(The fourth, {@code drift_own_return}, fires from {@link SharedCarriageEnterEvents} — it is about
  * arriving, not editing.)</p>
@@ -167,11 +167,15 @@ public final class SharedCarriageAdvancementEvents {
         if (action == CloseAction.PARK) {
             // Every half shares the combined signature, so each is parked against the same baseline.
             for (BlockPos cell : cells) inst.parkContainer(cell, opened.contentsSig());
-            LOGGER.debug("[DungeonTrain] storage changed in drifting carriage pIdx={} at {} by {} (parked until they leave).",
+            LOGGER.debug("[DungeonTrain] storage changed in drifting carriage pIdx={} at {} by {} (parked until they leave or a block edit flushes).",
                     inst.pIdx, opened.pos(), player.getGameProfile().getName());
             return;
         }
-        for (BlockPos cell : cells) inst.enqueue(cell);
+        // Uploading these cells now: a later withdrawal must be measured from what was just sent.
+        for (BlockPos cell : cells) {
+            inst.unparkContainer(cell);
+            inst.enqueue(cell);
+        }
         LOGGER.debug("[DungeonTrain] gift left in drifting carriage pIdx={} at {} by {} (queued for upload).",
                 inst.pIdx, opened.pos(), player.getGameProfile().getName());
         cuePhoto(player, "left a gift in a drifting carriage");
@@ -190,12 +194,14 @@ public final class SharedCarriageAdvancementEvents {
      * What a storage edit between open and close leads to.
      *
      * <ul>
-     *   <li>{@link CloseAction#SEND_NOW} — a gift ({@link #isGift}): queued for upload at once, as
-     *       before; it is what shares a fresh carriage in the first place.</li>
-     *   <li>{@link CloseAction#PARK} — any other difference (taking, swapping, rearranging): flagged
-     *       locally. {@code SharedCarriageEnterEvents} releases it when the player leaves, and
-     *       {@code Instance.releaseParked} only lets it travel on a carriage somebody block-edited this
-     *       session — so looting costs no relay traffic and doesn't drain the next world's loot.</li>
+     *   <li>{@link CloseAction#SEND_NOW} — a gift ({@link #isGift}): queued for upload at once; it is what
+     *       shares a fresh carriage in the first place. Taking it back out again is a PARK like any other
+     *       withdrawal, so the relay copy is drained again when the player leaves.</li>
+     *   <li>{@link CloseAction#PARK} — any other difference (taking, swapping, rearranging):
+     *       flagged locally. {@code SharedCarriageEnterEvents} releases it when the player leaves, and
+     *       {@code SharedCarriageEvents} with the next block-edit flush, so a visit costs at most one
+     *       relay delta. Taking items always travels on a carriage already on the relay — the next world
+     *       must not be handed the same loot again (see {@code Instance.releaseParked}).</li>
      *   <li>{@link CloseAction#NONE} — nothing changed, or no open was recorded.</li>
      * </ul>
      */

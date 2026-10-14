@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_100",
+  "parent": "dungeontrain:dungeon_train/root",
   "display": {
     "icon": { "id": "minecraft:stone_brick_stairs" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.roof_run_1.title" },

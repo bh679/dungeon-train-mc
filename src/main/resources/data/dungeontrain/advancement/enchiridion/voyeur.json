@@ -1,0 +1,32 @@
+{
+  "parent": "dungeontrain:enchiridion/appreciating_photos",
+  "display": {
+    "icon": {
+      "id": "minecraft:ender_eye"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.voyeur.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.voyeur.description"
+    },
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "dungeontrain:photo_tribute",
+      "conditions": {
+        "whose": "others",
+        "min_cost": 7
+      }
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

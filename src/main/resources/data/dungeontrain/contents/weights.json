@@ -1,5 +1,9 @@
 {
   "armor": 1,
+  "bedroom": {
+    "weight": 1,
+    "optIn": true
+  },
   "books": 11,
   "cargocontents": 5,
   "cows": 15,
@@ -24,6 +28,11 @@
     "minLevel": 1,
     "optIn": true
   },
+  "enemiesgroup2": {
+    "weight": 5,
+    "minLevel": 1,
+    "optIn": true
+  },
   "featurefancy": {
     "weight": 1,
     "builder": {
@@ -36,7 +45,15 @@
     "weight": 1,
     "name": "ice"
   },
+  "livestream": {
+    "weight": 1,
+    "optIn": true
+  },
   "maze": 4,
+  "mazelong": {
+    "weight": 0,
+    "optIn": true
+  },
   "mild_1": {
     "weight": 1,
     "name": "trap_chest",
@@ -112,7 +129,7 @@
     }
   },
   "sand": 0,
-  "shop": 8,
+  "shop": 6,
   "statue": 1,
   "things": {
     "weight": 5,
@@ -145,6 +162,10 @@
   },
   "vase": 1,
   "very_dangerouds_1": 1,
+  "watchtv2": {
+    "weight": 1,
+    "optIn": true
+  },
   "zombieroom3": {
     "weight": 1,
     "name": "zombiesplit"

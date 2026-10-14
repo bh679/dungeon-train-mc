@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "excluded": [
     "chest",
     "cows",
@@ -9,6 +9,7 @@
     "featurefancy",
     "features",
     "fire",
+    "livestream",
     "nature",
     "pigs",
     "portal",

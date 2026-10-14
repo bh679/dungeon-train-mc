@@ -32,7 +32,7 @@ import java.util.Set;
 public final class NarrativeBookFields {
 
     /** Mirrors {@code STRUCT_STR_KEYS} in {@code scripts/localization/validate-locale.py}. */
-    static final Set<String> STRUCTURAL_KEYS = Set.of("id", "ref", "page", "_translator_note");
+    static final Set<String> STRUCTURAL_KEYS = Set.of("id", "ref", "page", "after", "_translator_note");
 
     /** Retired prose, kept in-file for history — see the class javadoc. */
     static final String UNUSED_KEY = "unused";

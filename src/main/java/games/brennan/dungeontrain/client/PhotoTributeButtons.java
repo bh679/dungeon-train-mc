@@ -1,11 +1,29 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import com.mojang.blaze3d.systems.RenderSystem;
+import games.brennan.dungeontrain.compat.photo.PhotoAdvancementBadges;
+import games.brennan.dungeontrain.mixin.client.ClientAdvancementsAccessor;
+import io.github.mortuusars.exposure.Exposure;
+import io.github.mortuusars.exposure.world.camera.frame.Frame;
+import net.minecraft.ChatFormatting;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.AdvancementProgress;
+import net.minecraft.advancements.AdvancementType;
+import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import games.brennan.dungeontrain.compat.DisposableCamera;
+import games.brennan.dungeontrain.compat.photo.OwnPhotoTribute;
 import games.brennan.dungeontrain.compat.photo.SharedPhotos;
 import games.brennan.dungeontrain.compat.photo.TributePayment;
 import games.brennan.dungeontrain.compat.photo.ViewOrdinal;
+import games.brennan.dungeontrain.client.menu.editorscreen.EditorIcons;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.OwnPhotoTrashPacket;
+import games.brennan.dungeontrain.net.OwnPhotoTributePacket;
 import games.brennan.dungeontrain.net.PhotoTributePacket;
 import io.github.mortuusars.exposure.client.gui.screen.PhotographScreen;
 import net.minecraft.client.Minecraft;
@@ -33,8 +51,9 @@ import org.lwjgl.glfw.GLFW;
  * Adds two buttons under a found player photo while it is open in Exposure's viewer:
  * how many views it has left, the Tribute cost beside an emerald — pay it to keep the photo
  * travelling — and {@code X} to close. Either way the photo burns afterwards. A player's own fresh
- * print, which burns after viewing too, gets just the {@code X}. Space closes either. Each button
- * is only as wide as what is drawn on it.
+ * print, which burns after viewing too, gets the {@code X}; when offered, a Tribute that
+ * posts it to the passenger log; and a trash icon that burns it and, if it was sent to be shared,
+ * takes it back so no one else finds it. Space closes either. Each button is only as wide as what is drawn on it.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PhotoTributeButtons {
@@ -42,16 +61,22 @@ public final class PhotoTributeButtons {
     private static final int HEIGHT = 20;
     private static final int PADDING = 6;
     private static final int GAP = 6;
-    private static final int BOTTOM_MARGIN = 8;
     private static final int ICON_SIZE = 16;
     private static final int CAN_AFFORD_COLOUR = 0x55AAFF;
     private static final int CANNOT_AFFORD_COLOUR = 0xFF5555;
     private static final String CLOSE_MARK = "X";
+    private static final int BADGE_GAP = 4;
+    /** Exposure's {@code PhotographScreen} draws the photo this fraction of the screen height square, centred. */
+    private static final float PHOTO_FRACTION = 0.8f;
+    /** Space kept between the photo's edge and what DT draws beside it. */
+    private static final int PHOTO_CLEARANCE = 2;
 
     /** The viewer the buttons were last added to, and those buttons. Render thread only. */
     private static Screen shownOn;
     private static List<Button> shown = List.of();
     private static ViewCounter viewsShown;
+    /** The photo's advancement badges, drawn above the buttons (see {@link PhotoAdvancementBadges}). */
+    private static List<AdvancementBadge> badgesShown = List.of();
 
     private PhotoTributeButtons() {}
 
@@ -67,20 +92,16 @@ public final class PhotoTributeButtons {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null) return;
+        addBadges(event, screen, player);
         ItemStack photo = heldFoundPhoto(player);
         Font font = minecraft.font;
         Component closeLabel = Component.translatable("gui.dungeontrain.photo_tribute.close");
         int closeWidth = font.width(CLOSE_MARK) + 2 * PADDING;
-        int y = screen.height - HEIGHT - BOTTOM_MARGIN;
+        int y = buttonRowY(screen);
         if (photo.isEmpty()) {
             if (!DisposableCamera.holdsBurnAfterViewing(player.getMainHandItem())
                 && !DisposableCamera.holdsBurnAfterViewing(player.getOffhandItem())) return;
-            Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
-                .bounds((screen.width - closeWidth) / 2, y, closeWidth, HEIGHT)
-                .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
-            event.addListener(close);
-            shownOn = screen;
-            shown = List.of(close);
+            addOwnPrintButtons(event, screen, player, font, closeLabel, closeWidth, y);
             return;
         }
 
@@ -107,6 +128,7 @@ public final class PhotoTributeButtons {
             .append("\n").append(Component.translatable("gui.dungeontrain.photo_tribute.have", emeralds))));
         Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
             .bounds(left + tributeWidth + GAP, y, closeWidth, HEIGHT)
+            .tooltip(Tooltip.create(closeLabel))
             .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
         event.addListener(views);
         event.addListener(tribute);
@@ -116,11 +138,57 @@ public final class PhotoTributeButtons {
         viewsShown = views;
     }
 
+    /**
+     * A player's own fresh print: {@code X}, and — when the server offers it — a Tribute that posts the
+     * photo to the passenger log, its cost tripling with each one this life.
+     */
+    private static void addOwnPrintButtons(ScreenEvent.Init.Post event, Screen screen, LocalPlayer player, Font font,
+                                           Component closeLabel, int closeWidth, int y) {
+        String name = player.getGameProfile().getName();
+        boolean own = OwnPhotoTribute.isOwnPrint(player.getMainHandItem(), name)
+            || OwnPhotoTribute.isOwnPrint(player.getOffhandItem(), name);
+        int cost = own ? OwnPhotoTributeClientState.cost() : 0;
+        int tributeWidth = cost > 0 ? TributeButton.widthFor(font, cost) + GAP : 0;
+        int trashWidth = own ? GAP + TrashButton.SIZE : 0;
+        int left = (screen.width - tributeWidth - closeWidth - trashWidth) / 2;
+        List<Button> buttons = new java.util.ArrayList<>();
+        if (cost > 0) {
+            boolean canAfford = TributePayment.canPay(player.getInventory(), cost);
+            TributeButton tribute = new TributeButton(left, y, tributeWidth - GAP, cost, canAfford, button -> {
+                DungeonTrainNet.sendToServer(new OwnPhotoTributePacket());
+                screen.onClose();
+            });
+            tribute.active = canAfford;
+            tribute.setTooltip(Tooltip.create(TributeButton.LABEL));
+            event.addListener(tribute);
+            buttons.add(tribute);
+        }
+        Button close = Button.builder(Component.literal(CLOSE_MARK), button -> screen.onClose())
+            .bounds(left + tributeWidth, y, closeWidth, HEIGHT)
+            .tooltip(Tooltip.create(closeLabel))
+            .createNarration(message -> Component.translatable("gui.narrate.button", closeLabel)).build();
+        event.addListener(close);
+        buttons.add(close);
+        if (own) {
+            TrashButton trash = new TrashButton(left + tributeWidth + closeWidth + GAP, y, button -> {
+                DungeonTrainNet.sendToServer(new OwnPhotoTrashPacket());
+                screen.onClose();
+            });
+            event.addListener(trash);
+            buttons.add(trash);
+        }
+        shownOn = screen;
+        shown = List.copyOf(buttons);
+    }
+
     /** Exposure's viewer draws only the photo, never its widgets, so the buttons are drawn here. */
     @SubscribeEvent
     public static void onScreenRender(ScreenEvent.Render.Post event) {
         if (event.getScreen() != shownOn) return;
         if (viewsShown != null) viewsShown.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
+        for (AdvancementBadge badge : badgesShown) {
+            badge.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
+        }
         for (Button button : shown) {
             button.render(event.getGuiGraphics(), event.getMouseX(), event.getMouseY(), event.getPartialTick());
         }
@@ -140,6 +208,50 @@ public final class PhotoTributeButtons {
         shownOn = null;
         shown = List.of();
         viewsShown = null;
+        badgesShown = List.of();
+    }
+
+    /** The photograph in hand (main hand first), or an empty stack. */
+    private static ItemStack heldPhotograph(LocalPlayer player) {
+        if (player.getMainHandItem().has(Exposure.DataComponents.PHOTOGRAPH_FRAME)) return player.getMainHandItem();
+        return player.getOffhandItem().has(Exposure.DataComponents.PHOTOGRAPH_FRAME) ? player.getOffhandItem() : ItemStack.EMPTY;
+    }
+
+    /** The photo's bottom edge at Exposure's default zoom. */
+    private static int photoBottom(Screen screen) {
+        return (int) Math.ceil(screen.height * (0.5f + PHOTO_FRACTION / 2));
+    }
+
+    /** The button row: just below the photo so it never covers it, but always on screen. */
+    private static int buttonRowY(Screen screen) {
+        return Math.min(screen.height - HEIGHT - 1, photoBottom(screen) + PHOTO_CLEARANCE);
+    }
+
+    /**
+     * The advancements the held photo earned its photographer, as a column down the photo's left side
+     * (more columns further left when they don't fit). Spoiler-safe: see {@link AdvancementBadge#tooltip}.
+     */
+    private static void addBadges(ScreenEvent.Init.Post event, Screen screen, LocalPlayer player) {
+        ItemStack held = heldPhotograph(player);
+        Frame frame = held.isEmpty() ? null : held.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        List<PhotoAdvancementBadges.Badge> badges = frame == null ? List.of() : PhotoAdvancementBadges.read(frame.extraData());
+        if (badges.isEmpty()) return;
+        int pitch = AdvancementBadge.SIZE + BADGE_GAP;
+        int photoSize = Math.round(screen.height * PHOTO_FRACTION);
+        int photoTop = (screen.height - photoSize) / 2;
+        int photoLeft = (screen.width - photoSize) / 2;
+        int perColumn = Math.max(1, (photoSize + BADGE_GAP) / pitch);
+        List<AdvancementBadge> widgets = new java.util.ArrayList<>();
+        for (int i = 0; i < badges.size(); i++) {
+            int column = i / perColumn;
+            int x = photoLeft - PHOTO_CLEARANCE - BADGE_GAP - AdvancementBadge.SIZE - column * pitch;
+            int y = photoTop + (i % perColumn) * pitch;
+            AdvancementBadge badge = new AdvancementBadge(badges.get(i), Math.max(0, x), y);
+            event.addListener(badge);
+            widgets.add(badge);
+        }
+        shownOn = screen;
+        badgesShown = List.copyOf(widgets);
     }
 
     /** "You're the First." / "You're the 4th." — where this viewer comes in the photo's life. */
@@ -207,6 +319,31 @@ public final class PhotoTributeButtons {
         }
     }
 
+    /**
+     * The square trash icon, set apart by shape from Tribute and {@code X} — the same
+     * {@link EditorIcons#TRASH} glyph as My Builds' delete. The tooltip carries the words.
+     */
+    private static final class TrashButton extends Button {
+
+        static final int SIZE = HEIGHT;
+        private static final Component LABEL = Component.translatable("gui.dungeontrain.own_photo_trash.tooltip");
+
+        TrashButton(int x, int y, OnPress onPress) {
+            super(x, y, SIZE, SIZE, LABEL, onPress, DEFAULT_NARRATION);
+            setTooltip(Tooltip.create(LABEL));
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            Component message = getMessage();
+            setMessage(Component.empty());
+            super.renderWidget(graphics, mouseX, mouseY, partialTick);
+            setMessage(message);
+            int inset = (SIZE - ICON_SIZE) / 2;
+            graphics.blitSprite(EditorIcons.TRASH, getX() + inset, getY() + inset, ICON_SIZE, ICON_SIZE);
+        }
+    }
+
     /** {@code <cost> <emerald>}: the cost is blue when the player carries enough emeralds, red when not. */
     private static final class TributeButton extends Button {
 
@@ -240,6 +377,94 @@ public final class PhotoTributeButtons {
         @Override
         protected MutableComponent createNarrationMessage() {
             return Component.translatable("gui.narrate.button", Component.empty().append(LABEL).append(" " + cost));
+        }
+    }
+
+    /**
+     * One advancement the photo earned its photographer: its tier frame with the icon inside (resolved on
+     * the server when the photo was made, so it draws even for advancements this player hasn't been
+     * sent). The tooltip keeps the photo advancements' secrets — see {@link #tooltip}.
+     */
+    private static final class AdvancementBadge extends AbstractWidget {
+
+        static final int SIZE = 26;
+        private static final int ICON_INSET = 5;
+        private static final String UNKNOWN = "?";
+        private static final int TITLE_COLOUR = 0x55FF55;
+        private static final int CHALLENGE_TITLE_COLOUR = 0xFF55FF;
+
+        private final ItemStack icon;
+        private final AdvancementType type;
+        private final boolean earned;
+
+        AdvancementBadge(PhotoAdvancementBadges.Badge badge, int x, int y) {
+            super(x, y, SIZE, SIZE, Component.literal(badge.id()));
+            ResourceLocation iconId = ResourceLocation.tryParse(badge.icon());
+            Item item = iconId == null ? Items.AIR : BuiltInRegistries.ITEM.get(iconId);
+            this.icon = new ItemStack(item);
+            this.type = typeOf(badge.frame());
+            ResourceLocation id = ResourceLocation.tryParse(badge.id());
+            Visibility seen = visibility(id);
+            this.earned = seen == Visibility.EARNED;
+            setTooltip(Tooltip.create(tooltip(id, seen, type)));
+        }
+
+        /** What this player knows of an advancement: earned it, can see it (their next step), or neither. */
+        enum Visibility { EARNED, VISIBLE, HIDDEN }
+
+        static Visibility visibility(ResourceLocation id) {
+            var connection = Minecraft.getInstance().getConnection();
+            if (id == null || connection == null) return Visibility.HIDDEN;
+            AdvancementHolder holder = connection.getAdvancements().get(id);
+            if (holder == null) return Visibility.HIDDEN; // not sent: still hidden from this player
+            AdvancementProgress progress = ((ClientAdvancementsAccessor) connection.getAdvancements()).dungeontrain$progress().get(holder);
+            return progress != null && progress.isDone() ? Visibility.EARNED : Visibility.VISIBLE;
+        }
+
+        /**
+         * Earned: title + description. Visible but not earned: title + its hint (or "?"). Not yet
+         * visible to this player: "?" + "?" — the icon alone says what kind of thing it was.
+         */
+        static Component tooltip(ResourceLocation id, Visibility seen, AdvancementType type) {
+            String base = id == null ? "" : "advancements." + id.getNamespace() + "." + id.getPath().replace('/', '.');
+            int titleColour = type == AdvancementType.CHALLENGE ? CHALLENGE_TITLE_COLOUR : TITLE_COLOUR;
+            MutableComponent title = seen == Visibility.HIDDEN
+                    ? Component.literal(UNKNOWN)
+                    : Component.translatable(base + ".title");
+            Component detail = switch (seen) {
+                case EARNED -> Component.translatable(base + ".description");
+                case VISIBLE -> I18n.exists(base + ".hint") ? Component.translatable(base + ".hint") : Component.literal(UNKNOWN);
+                case HIDDEN -> Component.literal(UNKNOWN);
+            };
+            return title.withStyle(Style.EMPTY.withColor(titleColour))
+                    .append("\n").append(detail.copy().withStyle(ChatFormatting.GRAY));
+        }
+
+        private static AdvancementType typeOf(String frame) {
+            for (AdvancementType t : AdvancementType.values()) if (t.getSerializedName().equals(frame)) return t;
+            return AdvancementType.TASK;
+        }
+
+        private ResourceLocation frameTexture() {
+            String tier = switch (type) {
+                case CHALLENGE -> "challenge";
+                case GOAL -> "goal";
+                default -> "task";
+            };
+            return ResourceLocation.withDefaultNamespace("textures/gui/sprites/advancements/" + tier
+                    + (earned ? "_frame_obtained" : "_frame_unobtained") + ".png");
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+            RenderSystem.enableBlend();
+            graphics.blit(frameTexture(), getX(), getY(), 0.0f, 0.0f, SIZE, SIZE, SIZE, SIZE);
+            if (!icon.isEmpty()) graphics.renderFakeItem(icon, getX() + ICON_INSET, getY() + ICON_INSET);
+        }
+
+        @Override
+        protected void updateWidgetNarration(NarrationElementOutput output) {
+            defaultButtonNarrationText(output);
         }
     }
 }

@@ -4,11 +4,19 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.player.LifeKey;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
+import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
+import games.brennan.dungeontrain.advancement.GlobalTributeStats;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
+import games.brennan.dungeontrain.discord.PhotoPaperComposite;
+import games.brennan.dungeontrain.discord.PlayerMobPhotoReporter;
 import games.brennan.dungeontrain.discord.PhotoUpscale;
 import games.brennan.dungeontrain.discord.RunPosition;
 import games.brennan.dungeontrain.discord.TributePhotoReporter;
+import games.brennan.dungeontrain.discord.WorldInfoReporter;
+import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
@@ -62,7 +70,7 @@ import java.util.stream.Stream;
 
 /**
  * Community photos — the picture counterpart of shared books. A disposable-camera print is uploaded
- * to the relay, losslessly, when it is printed; photos from other players are kept in a small
+ * to the relay, losslessly, when it is printed (never from a Free Play run); photos from other players are kept in a small
  * pre-decoded pool and handed out as ordinary Exposure photographs when a container rolls
  * {@code dungeontrain:random_playerphoto}.
  *
@@ -95,8 +103,17 @@ public final class SharedPhotos {
     /** Frame extra-data key carrying how many people had opened a found photo when it was handed out. */
     public static final String SHARED_VIEWS_KEY = "dt_shared_photo_views";
 
-    /** Views a photo starts with, and goes back to after a Tribute (the relay's PLAYER_PHOTOS_VIEWS). */
-    public static final int VIEWS_MAX = 10;
+    /** Frame extra-data key carrying the views a Tribute refills a found photo to (more if its photographer boosted it). */
+    public static final String SHARED_MAX_VIEWS_KEY = "dt_shared_photo_max_views";
+
+    /**
+     * Views a photo goes back to after any Tribute, its photographer's own included (the relay's
+     * PLAYER_PHOTOS_VIEWS). Before its first Tribute a photo has fewer (PLAYER_PHOTOS_FRESH_VIEWS, 3).
+     */
+    public static final int VIEWS_MAX = 5;
+
+    /** Frame extra-data key carrying the key a print was uploaded with, so its photographer can boost it later. */
+    public static final String UPLOAD_KEY = "dt_upload_key";
 
     /** Emeralds the first Tribute to a photo costs; each Tribute it has had adds one. */
     public static final int TRIBUTE_BASE_COST = 1;
@@ -105,12 +122,14 @@ public final class SharedPhotos {
     static final String VIEW_PATH = "/photos/view";
     static final String TRIBUTE_PATH = "/photos/tribute";
     static final String RESTORE_PATH = "/photos/restore";
+    static final String BOOST_PATH = "/photos/boost";
+    static final String WITHDRAW_PATH = "/photos/withdraw";
 
     /** Chat line families, keyed {@code <key>.1..N} in the lang files. */
-    private static final int SEND_OFF_LINES = 10;
+    private static final int SEND_OFF_LINES = 5;
     private static final int FAMILIAR_LINES = 5;
     private static final int FAMILIAR_TRIBUTED_LINES = 3;
-    private static final int TRIBUTE_PAID_LINES = 3;
+    private static final int TRIBUTE_PAID_LINES = 4;
 
     /** The client uploads the pixels to the server separately; they can trail the print by a moment. */
     private static final int PIXEL_WAIT_TICKS = 100;
@@ -127,15 +146,22 @@ public final class SharedPhotos {
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1).connectTimeout(REQUEST_TIMEOUT).build();
 
-    private record PendingUpload(UUID playerId, String author, String exposureId, JsonObject meta, int ticksLeft) {
-        PendingUpload tick() { return new PendingUpload(playerId, author, exposureId, meta, ticksLeft - 1); }
+    private record PendingUpload(UUID playerId, String author, String exposureId, String key, JsonObject meta, int ticksLeft) {
+        PendingUpload tick() { return new PendingUpload(playerId, author, exposureId, key, meta, ticksLeft - 1); }
+    }
+
+    /** A PlayerMob's photo of {@code playerId}, waiting for the client's pixels before it is posted to Discord. */
+    private record PendingMobPost(UUID playerId, String photographer, String exposureId, int ticksLeft) {
+        PendingMobPost tick() { return new PendingMobPost(playerId, photographer, exposureId, ticksLeft - 1); }
     }
 
     /** One photo from the relay, decoded. {@code tributedBy} is set on a photographer's own tributed photo. */
-    private record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, PhotoPngCodec.Decoded image) {}
+    private record PoolPhoto(int id, String author, String tributedBy, int tributes, int viewsLeft, int views, int maxViews,
+                             List<String> advancements, PhotoPngCodec.Decoded image) {}
 
     /** Server thread only. */
     private static List<PendingUpload> pendingUploads = List.of();
+    private static List<PendingMobPost> pendingMobPosts = List.of();
     private static volatile List<PoolPhoto> pool = List.of();
     /** Ids already handed out or opened here, oldest first. Guarded by its own monitor. */
     private static final List<Integer> spent = new ArrayList<>();
@@ -143,10 +169,27 @@ public final class SharedPhotos {
     private static final Map<UUID, Set<Integer>> greeted = new HashMap<>();
     private static final AtomicBoolean fetchInFlight = new AtomicBoolean();
     private static int ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
+    /** Approved photos the relay holds, from the last pool answer; -1 until one arrives. */
+    private static volatile int relayTotal = -1;
 
     private SharedPhotos() {}
 
     private static String newKey() { return UUID.randomUUID().toString().replace("-", ""); }
+
+    /**
+     * Which life a photo event happened in, for the relay's one-life photo boards: this life's id
+     * (minted on its first photo event), whether it is Free Play, and the version playing it. The
+     * relay scores a life only when all three are stated and it is not Free Play — the same rule as
+     * every other one-life board. Upload meta already carries the version as {@code version}.
+     */
+    static void lifeFields(ServerPlayer player, JsonObject json, boolean withVersion) {
+        json.addProperty("lifeId", LifeKey.of(player));
+        json.addProperty("freePlay", RunIntegrity.isCheated(player));
+        if (withVersion) {
+            ModList.get().getModContainerById(DungeonTrain.MOD_ID)
+                    .ifPresent(mod -> json.addProperty("modVersion", mod.getModInfo().getVersion().toString()));
+        }
+    }
 
     private static String bare(UUID id) { return id.toString().replace("-", ""); }
 
@@ -159,19 +202,121 @@ public final class SharedPhotos {
 
     /** Called the tick a disposable camera prints: queue the photograph for the relay if it may be shared. */
     public static void queueUpload(ServerPlayer player, ItemStack photograph) {
-        if (photograph.isEmpty() || !SharedBookGate.canContribute(player)) return;
-        Frame frame = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        if (photograph.isEmpty()) return;
+        Frame printed = photograph.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         // Projected frames are images from outside the game — never shared.
-        if (frame == null || frame.isProjected() || !frame.identifier().isId()) return;
+        if (printed == null || printed.isProjected() || !printed.identifier().isId()) return;
+        PhotoSubjectTally.Shot shot = PhotoSubjectTally.takeShot(printed.identifier().id());
+        // The advancements this shot earned ride on the print, so the viewer shows them — shared or not.
+        List<PhotoAdvancementBadges.Badge> badges = PhotoAdvancementBadges.forIds(player.server, shot.advancements());
+        Frame frame = badges.isEmpty() ? printed
+                : printed.toMutable().updateExtraData(tag -> PhotoAdvancementBadges.write(tag, badges)).toImmutable();
+        if (frame != printed) photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
+        if (!SharedBookGate.canContribute(player)) return;
+        PhotoSubjectTally.Subjects subjects = shot.subjects();
+        // This life's tally, for the Faulthurst note that twins the one-life photo boards.
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get())
+                .recordPhotoTaken(subjects.passengers(), subjects.hostile(), subjects.animals());
+        // A Free Play photo stays with its photographer: it is never sent to be found by other players.
+        if (RunIntegrity.isCheated(player)) return;
+        String key = newKey();
+        // The print carries its upload key, so a Tribute from its photographer can boost it later.
+        photograph.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame.toMutable().updateExtraData(tag -> tag.putString(UPLOAD_KEY, key)).toImmutable());
         List<PendingUpload> next = new ArrayList<>(pendingUploads);
         next.add(new PendingUpload(player.getUUID(), player.getGameProfile().getName(),
-                frame.identifier().id(), buildMeta(player, frame.extraData()), PIXEL_WAIT_TICKS));
+                frame.identifier().id(), key, buildMeta(player, frame.extraData(), shot), PIXEL_WAIT_TICKS));
         pendingUploads = List.copyOf(next);
     }
 
+    /**
+     * The photographer paid Tribute to their own print: ask the relay to raise its upload
+     * to {@link #VIEWS_MAX} views, like any first Tribute. Safe to send before the upload itself — the relay holds the
+     * boost until the photo arrives. Returns false when the print was never uploaded (no key).
+     */
+    public static boolean boostOwnUpload(ServerPlayer player, ItemStack print, int cost) {
+        String key = uploadKey(print);
+        if (key.isBlank()) return false;
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", bare(player.getUUID()));
+        body.addProperty("key", key);
+        // Name and price feed the relay's photo leaderboards (Most Photos Tributed, Most Emeralds Tributed).
+        body.addProperty("name", player.getGameProfile().getName());
+        body.addProperty("cost", cost);
+        lifeFields(player, body, true);
+        RelayOutbox.get().enqueue(BOOST_PATH, body.toString());
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
+        return true;
+    }
+
+    /** The upload key a print was queued with, or blank when it was never sent to be shared. */
+    public static String uploadKey(ItemStack print) {
+        Frame frame = print.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        return frame == null ? "" : frame.extraData().getString(UPLOAD_KEY);
+    }
+
+    /**
+     * The photographer trashed their own print: it must never be found. Still waiting here for its
+     * pixels, it is simply dropped; already on its way, the relay is asked to withdraw it — safe to
+     * arrive before the upload, which the relay then refuses. Returns false when it was never queued.
+     */
+    public static boolean withdrawOwnUpload(ServerPlayer player, ItemStack print) {
+        String key = uploadKey(print);
+        if (key.isBlank()) return false;
+        List<PendingUpload> kept = pendingUploads.stream().filter(upload -> !key.equals(upload.key())).toList();
+        if (kept.size() < pendingUploads.size()) {
+            pendingUploads = kept;
+            return true;
+        }
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", bare(player.getUUID()));
+        body.addProperty("key", key);
+        RelayOutbox.get().enqueue(WITHDRAW_PATH, body.toString());
+        return true;
+    }
+
+    /**
+     * A PlayerMob photographed {@code subject} with a gifted camera ({@code PlayerMobPhotoGoal}): post the
+     * picture to the passenger log, credited to the mob, once the subject's client has delivered the
+     * pixels. The subject is the one in the photo, so it is their sharing consent that is asked
+     * ({@link SharedBookGate#canContribute}). Never uploaded to the relay's found-photo pool: the mob
+     * keeps the only print.
+     */
+    public static void queueMobPhotoPost(ServerPlayer subject, String photographer, String exposureId) {
+        if (subject == null || exposureId == null || exposureId.isBlank() || !SharedBookGate.canContribute(subject)) return;
+        List<PendingMobPost> next = new ArrayList<>(pendingMobPosts);
+        next.add(new PendingMobPost(subject.getUUID(), photographer, exposureId, PIXEL_WAIT_TICKS));
+        pendingMobPosts = List.copyOf(next);
+    }
+
+    private static void tickMobPosts(MinecraftServer server) {
+        if (pendingMobPosts.isEmpty()) return;
+        ExposureRepository repository = ExposureServer.exposureRepository();
+        List<PendingMobPost> waiting = new ArrayList<>();
+        for (PendingMobPost post : pendingMobPosts) {
+            Optional<ExposureData> data = repository.load(post.exposureId()).getData();
+            if (data.isPresent()) {
+                encodeThen(server, data.get(), (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, Optional.empty()),
+                        post.exposureId(), png -> {
+                            ServerPlayer subject = server.getPlayerList().getPlayer(post.playerId());
+                            if (subject != null) PlayerMobPhotoReporter.post(subject, post.photographer(), png);
+                        });
+            } else if (post.ticksLeft() > 1) {
+                waiting.add(post.tick());
+            } else {
+                LOGGER.warn("[DungeonTrain] PlayerMob photo {} never reached the server; not posted.", post.exposureId());
+            }
+        }
+        pendingMobPosts = List.copyOf(waiting);
+    }
+
     /** Where and when the photo was taken: the frame's own details plus the photographer's run. */
-    private static JsonObject buildMeta(ServerPlayer player, CompoundTag extraData) {
+    private static JsonObject buildMeta(ServerPlayer player, CompoundTag extraData, PhotoSubjectTally.Shot shot) {
         JsonObject meta = frameMeta(extraData);
+        // Who or what was in the shot, for the relay's passenger / monster / animal photo boards.
+        if (shot.subjects().any()) meta.add("subjects", shot.subjects().toJson());
+        // The Enchiridion advancements this shot earned its photographer, for the website's Tributes page.
+        if (!shot.advancements().isEmpty()) meta.add("advancements", advancementsJson(shot.advancements()));
+        lifeFields(player, meta, false);
         meta.addProperty("takenTs", System.currentTimeMillis());
         ModList.get().getModContainerById(DungeonTrain.MOD_ID)
                 .ifPresent(mod -> meta.addProperty("version", mod.getModInfo().getVersion().toString()));
@@ -186,6 +331,12 @@ public final class SharedPhotos {
             LOGGER.debug("[DungeonTrain] Photo run details unavailable: {}", e.toString());
         }
         return meta;
+    }
+
+    static JsonArray advancementsJson(List<String> advancements) {
+        JsonArray out = new JsonArray();
+        advancements.forEach(out::add);
+        return out;
     }
 
     static JsonObject frameMeta(CompoundTag extraData) {
@@ -216,7 +367,7 @@ public final class SharedPhotos {
             if (data.isPresent()) {
                 encodeThen(server, data.get(), upload.exposureId(), png -> {
                     RelayOutbox.get().enqueue(SUBMIT_PATH,
-                            buildPayload(bare(upload.playerId()), upload.author(), newKey(), png, upload.meta()).toString());
+                            buildPayload(bare(upload.playerId()), upload.author(), upload.key(), png, upload.meta()).toString());
                     ServerPlayer player = server.getPlayerList().getPlayer(upload.playerId());
                     if (player != null) player.sendSystemMessage(line("chat.dungeontrain.shared_photo", SEND_OFF_LINES, player));
                 });
@@ -229,16 +380,25 @@ public final class SharedPhotos {
         pendingUploads = List.copyOf(waiting);
     }
 
-    /** Encode off-thread, then hand the PNG to {@code then} back on the server thread. */
-    private static void encodeThen(MinecraftServer server, ExposureData data, String label, java.util.function.Consumer<byte[]> then) {
-        encodeThen(server, data, false, label, then);
+    /** {@link #discordPng} off-thread, then hand the PNG to {@code then} back on the server thread. */
+    static void encodeForDiscord(MinecraftServer server, ExposureData data, Optional<int[]> paper, String label,
+                                 java.util.function.Consumer<byte[]> then) {
+        encodeThen(server, data, (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, paper), label, then);
     }
 
-    /**
-     * As above; {@code forDiscord} enlarges the picture first ({@link PhotoUpscale}) so it shows at a
-     * viewable size in an embed. Uploads to the relay never set it — those stay the true pixels.
-     */
-    private static void encodeThen(MinecraftServer server, ExposureData data, boolean forDiscord, String label,
+    /** Encode off-thread, then hand the PNG to {@code then} back on the server thread. */
+    private static void encodeThen(MinecraftServer server, ExposureData data, String label, java.util.function.Consumer<byte[]> then) {
+        encodeThen(server, data, PhotoPngCodec::encode, label, then);
+    }
+
+    /** Turns a photo's palette indices into the bytes to send. Runs off the server thread. */
+    @FunctionalInterface
+    private interface Encoder {
+        byte[] encode(int width, int height, byte[] pixels, int[] palette) throws java.io.IOException;
+    }
+
+    /** As above, with the bytes made by {@code encoder} — the relay's true pixels, or {@link #discordPng}. */
+    private static void encodeThen(MinecraftServer server, ExposureData data, Encoder encoder, String label,
                                    java.util.function.Consumer<byte[]> then) {
         int width = data.getWidth();
         int height = data.getHeight();
@@ -247,12 +407,7 @@ public final class SharedPhotos {
         CompletableFuture
                 .supplyAsync(() -> {
                     try {
-                        int factor = forDiscord ? PhotoUpscale.factorFor(width, height) : 1;
-                        if (factor > 1) {
-                            return PhotoPngCodec.encode(width * factor, height * factor,
-                                    PhotoUpscale.nearest(pixels, width, height, factor), palette);
-                        }
-                        return PhotoPngCodec.encode(width, height, pixels, palette);
+                        return encoder.encode(width, height, pixels, palette);
                     } catch (Exception e) {
                         throw new IllegalStateException(e);
                     }
@@ -264,6 +419,26 @@ public final class SharedPhotos {
                         then.accept(png);
                     }
                 }));
+    }
+
+    /**
+     * The photo for Discord: enlarged ({@link PhotoUpscale}) so it shows at a viewable size in an
+     * embed, and laid on its paper with the paper's tears ({@link PhotoPaperComposite}) when the paper
+     * could be read. Only the Discord post uses this; uploads to the relay keep the true pixels.
+     */
+    static byte[] discordPng(int width, int height, byte[] pixels, int[] palette, Optional<int[]> paper) throws java.io.IOException {
+        int factor = PhotoUpscale.factorFor(width, height);
+        int scaledWidth = width * factor;
+        int scaledHeight = height * factor;
+        byte[] scaled = PhotoUpscale.nearest(pixels, width, height, factor);
+        if (paper.isEmpty()) return PhotoPngCodec.encode(scaledWidth, scaledHeight, scaled, palette);
+        int[] argb = new int[scaled.length];
+        for (int i = 0; i < scaled.length; i++) {
+            int index = scaled[i] & 0xFF;
+            argb[i] = index < palette.length ? palette[index] : 0;
+        }
+        PhotoPaperComposite.Composite composite = PhotoPaperComposite.compose(paper.get(), argb, scaledWidth, scaledHeight);
+        return PhotoPngCodec.encodeArgb(composite.width(), composite.height(), composite.argb());
     }
 
     // ---- views and Tribute ----------------------------------------------------
@@ -278,6 +453,12 @@ public final class SharedPhotos {
     public static int viewsLeft(ItemStack stack) {
         Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         return frame == null || !frame.extraData().contains(SHARED_VIEWS_LEFT_KEY) ? VIEWS_MAX : frame.extraData().getInt(SHARED_VIEWS_LEFT_KEY);
+    }
+
+    /** Views a Tribute refills a found photo to, or {@link #VIEWS_MAX} when the relay didn't say. */
+    public static int maxViews(ItemStack stack) {
+        Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
+        return frame == null || !frame.extraData().contains(SHARED_MAX_VIEWS_KEY) ? VIEWS_MAX : frame.extraData().getInt(SHARED_MAX_VIEWS_KEY);
     }
 
     /** How many people had opened a found photo before it was handed out. */
@@ -313,7 +494,7 @@ public final class SharedPhotos {
         Optional<InteractionHand> hand = heldSharedHand(player);
         if (hand.isEmpty()) return false;
         ItemStack held = player.getItemInHand(hand.get());
-        recordView(player, sharedId(held));
+        AdvancementPhotoCapture.during(held, () -> recordView(player, sharedId(held)));
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         StartingBookEvents.dropAndBurn(player, held);
         // As far as this copy knows: the views it came with, less the one just taken.
@@ -325,6 +506,7 @@ public final class SharedPhotos {
     }
 
     private static void recordView(ServerPlayer player, int photoId) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.VIEWED_FOUND_PHOTO);
         markSpent(photoId);
         RelayOutbox.get().enqueue(VIEW_PATH, action(player, photoId).toString());
     }
@@ -347,19 +529,41 @@ public final class SharedPhotos {
         // The photo leaves the hand first: any change from a broken emerald block lands in its slot.
         player.setItemInHand(hand.get(), ItemStack.EMPTY);
         TributePayment.pay(player, cost);
-        recordView(player, photoId);
+        boolean ownPhoto = isOwnPhoto(held, player.getGameProfile().getName());
+        AdvancementPhotoCapture.during(held, () -> {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.TRIBUTED_PHOTO);
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player,
+                    ownPhoto ? EnchiridionAdvancements.TRIBUTED_OWN_PHOTO : EnchiridionAdvancements.TRIBUTED_OTHERS_PHOTO);
+            ModAdvancementTriggers.PHOTO_TRIBUTE.get().trigger(player, ownPhoto, cost);
+            recordView(player, photoId);
+        });
         JsonObject body = action(player, photoId);
         body.addProperty("name", player.getGameProfile().getName());
+        // The price paid, for the relay's Most Emeralds Tributed board.
+        body.addProperty("cost", cost);
+        lifeFields(player, body, true);
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
-        player.sendSystemMessage(line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, VIEWS_MAX));
+        player.sendSystemMessage(tributePaidLine(player, cost, VIEWS_MAX));
+    }
+
+    /**
+     * The chat line for a Tribute just paid, to any photo: {@code %1$s} is the price as a whole clause
+     * ("3 emeralds", in the reader's plural form), {@code %2$s} how many people can now see it.
+     */
+    public static Component tributePaidLine(ServerPlayer player, int cost, int views) {
+        Component emeralds = PluralRules.clause(WorldInfoReporter.clientLanguage(player), "chat.dungeontrain.photo_tribute.emeralds", cost);
+        return line("chat.dungeontrain.photo_tribute.paid", TRIBUTE_PAID_LINES, player, emeralds, views);
     }
 
     /**
      * Show the tributed photo in the public passenger log ({@link TributePhotoReporter}). Clean runs
      * only — a Free Play Tribute still keeps the photo alive, it just isn't announced. The picture
      * comes from this world's copy, the same one {@link #restore} sends back; no copy, no post.
+     * And only a personal best: the most emeralds this player has ever paid for one Tribute
+     * ({@link GlobalTributeStats}). Only Tributes that could post count toward that record.
      */
     private static void announceTribute(ServerPlayer player, ItemStack held, int photoId, int cost) {
         MinecraftServer server = player.getServer();
@@ -374,8 +578,17 @@ public final class SharedPhotos {
             LOGGER.debug("[DungeonTrain] Tributed photo {} has no copy in this world; not posted.", photoId);
             return;
         }
-        encodeThen(server, data.get(), true, exposureId,
-                png -> TributePhotoReporter.post(player, photographer, tributeNumber, cost, png));
+        if (!GlobalTributeStats.recordIfHighest(player.getUUID(), cost)) {
+            LOGGER.debug("[DungeonTrain] Tribute of {} to photo {} is not {}'s best (best {}); not posted.",
+                    cost, photoId, player.getGameProfile().getName(), GlobalTributeStats.highestTributePaid(player.getUUID()));
+            return;
+        }
+        // As the tributer held it: how many hands before theirs, and the paper those views had worn.
+        int hands = viewsSeen(held) + 1;
+        int viewsLeft = viewsLeft(held);
+        Optional<int[]> paper = PhotoPaperTextures.paper(WornPhotographs.forViewsLeft(viewsLeft, maxViews(held), photoId));
+        encodeThen(server, data.get(), (w, h, pixels, palette) -> discordPng(w, h, pixels, palette, paper), exposureId,
+                png -> TributePhotoReporter.post(player, photographer, photoId, tributeNumber, cost, hands, viewsLeft, png));
     }
 
     /** Registration only — no network, no game state. Called once at mod construction. */
@@ -435,6 +648,7 @@ public final class SharedPhotos {
     public static void onServerTick(ServerTickEvent.Post event) {
         MinecraftServer server = event.getServer();
         tickUploads(server);
+        tickMobPosts(server);
         if (--ticksUntilRefresh > 0) return;
         ticksUntilRefresh = REFRESH_PERIOD_TICKS;
         if (SharedBookGate.canDiscover()) refreshPool(server);
@@ -444,6 +658,7 @@ public final class SharedPhotos {
     public static void onServerStopped(ServerStoppedEvent event) {
         pendingUploads = List.of();
         pool = List.of();
+        relayTotal = -1;
         greeted.clear();
         synchronized (spent) { spent.clear(); }
         ticksUntilRefresh = FIRST_REFRESH_DELAY_TICKS;
@@ -477,7 +692,9 @@ public final class SharedPhotos {
     /** Off-thread: download and decode every photo in the response. */
     private static List<PoolPhoto> fetchNew(String base, HttpResponse<String> response) {
         if (response.statusCode() != 200) throw new IllegalStateException("pool answered " + response.statusCode());
-        JsonArray photos = JsonParser.parseString(response.body()).getAsJsonObject().getAsJsonArray("photos");
+        JsonObject body = JsonParser.parseString(response.body()).getAsJsonObject();
+        if (body.has("total")) relayTotal = body.get("total").getAsInt();
+        JsonArray photos = body.getAsJsonArray("photos");
         List<PoolPhoto> fetched = new ArrayList<>();
         for (int i = 0; photos != null && i < photos.size(); i++) {
             JsonObject row = photos.get(i).getAsJsonObject();
@@ -492,7 +709,12 @@ public final class SharedPhotos {
                 int tributes = row.has("tributes") ? row.get("tributes").getAsInt() : 0;
                 int viewsLeft = row.has("viewsLeft") ? row.get("viewsLeft").getAsInt() : VIEWS_MAX;
                 int views = row.has("views") ? row.get("views").getAsInt() : 0;
-                fetched.add(new PoolPhoto(id, author, tributedBy, tributes, viewsLeft, views, PhotoPngCodec.decode(bytes.body())));
+                int maxViews = row.has("maxViews") ? row.get("maxViews").getAsInt() : VIEWS_MAX;
+                // What the photo earned its photographer — shown under it in the viewer (older relays send none).
+                List<String> advancements = PhotoAdvancementBadges.idsFrom(
+                        row.has("advancements") && row.get("advancements").isJsonArray() ? row.getAsJsonArray("advancements") : null);
+                fetched.add(new PoolPhoto(id, author, tributedBy, tributes, viewsLeft, views, maxViews, advancements,
+                        PhotoPngCodec.decode(bytes.body())));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -518,6 +740,16 @@ public final class SharedPhotos {
     }
 
     /** Who took the photo in {@code stack}: a found photo's credited name, else the frame's photographer. Blank if none. */
+    /** True when {@code playerName} took the found photo {@code stack} — the relay can hand you back your own. */
+    static boolean isOwnPhoto(ItemStack stack, String playerName) {
+        return isOwnAuthor(authorOf(stack), playerName);
+    }
+
+    /** Whether a photo's credited author is {@code playerName} (blank authors are nobody's). */
+    static boolean isOwnAuthor(String author, String playerName) {
+        return author != null && !author.isBlank() && author.equals(playerName);
+    }
+
     public static String authorOf(ItemStack stack) {
         Frame frame = stack.get(Exposure.DataComponents.PHOTOGRAPH_FRAME);
         if (frame == null) return "";
@@ -541,6 +773,22 @@ public final class SharedPhotos {
     }
 
     /**
+     * Per-mille chance a photo slot with nothing to hand out becomes a disposable camera instead (the
+     * rest become a player book): the fewer approved photos the relay holds, the likelier. An unknown
+     * count (offline, discovery off, first answer pending) counts as none, so cameras still turn up.
+     */
+    public static int cameraFallbackPerMille() {
+        return cameraFallbackPerMille(relayTotal);
+    }
+
+    static int cameraFallbackPerMille(int total) {
+        if (total < 1_000) return 300;
+        if (total < 5_000) return 125;
+        if (total < 10_000) return 50;
+        return 0;
+    }
+
+    /**
      * A community photo as an Exposure photograph, or {@link ItemStack#EMPTY} when none is available.
      * A photographer's own tributed photo goes out first; each photo is handed out once.
      */
@@ -557,14 +805,18 @@ public final class SharedPhotos {
                 repository.save(exposureId, new ExposureData(image.width(), image.height(), image.pixels(),
                         ColorPalettes.DEFAULT.location(), ExposureData.Tag.EMPTY));
             }
+            List<PhotoAdvancementBadges.Badge> badges = PhotoAdvancementBadges.forIds(
+                    ServerLifecycleHooks.getCurrentServer(), photo.advancements());
             Frame frame = Frame.create()
                     .setIdentifier(ExposureIdentifier.id(exposureId))
                     .updateExtraData(tag -> {
+                        PhotoAdvancementBadges.write(tag, badges);
                         tag.putInt(SHARED_ID_KEY, photo.id());
                         tag.putString(SHARED_AUTHOR_KEY, photo.author());
                         tag.putInt(SHARED_TRIBUTES_KEY, photo.tributes());
                         tag.putInt(SHARED_VIEWS_LEFT_KEY, photo.viewsLeft());
                         tag.putInt(SHARED_VIEWS_KEY, photo.views());
+                        tag.putInt(SHARED_MAX_VIEWS_KEY, photo.maxViews());
                         if (!photo.tributedBy().isBlank()) tag.putString(SHARED_TRIBUTED_BY_KEY, photo.tributedBy());
                     })
                     .toImmutable();

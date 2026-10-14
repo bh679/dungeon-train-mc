@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/photo_wwoo",
+  "display": {
+    "icon": {
+      "id": "minecraft:black_concrete"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_void.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_void.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "photo": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "band:reached_void"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "photo"
+    ]
+  ]
+}

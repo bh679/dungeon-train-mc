@@ -59,4 +59,34 @@ class ChangelogLinesTest {
         assertEquals("Fixes", lines.get(0).text().getString());
         assertEquals(ChangelogLines.COLOUR_HEADING, lines.get(0).colour());
     }
+
+    @Test
+    @DisplayName("the modpack divider and the Read more footer are web-only; the linked title shows as a plain heading")
+    void webOnlyLinesDropped() {
+        String notes = """
+                Dungeon Train modpack v0.1151.0 — bundles Dungeon Train v0.1151.0 + Sable for NeoForge 1.21.1.
+
+                ---
+
+                # [Capture The View](https://brennan.games/dungeontrain/update/)
+
+                - one
+
+                [Read more](https://brennan.games/dungeontrain/update/)
+                """;
+        List<ShaderDetailPane.Line> lines = ChangelogLines.fromMarkdown(notes);
+        assertEquals(List.of(
+                "Dungeon Train modpack v0.1151.0 — bundles Dungeon Train v0.1151.0 + Sable for NeoForge 1.21.1.",
+                "Capture The View",
+                "• one"), texts(lines));
+        assertEquals(ChangelogLines.COLOUR_HEADING, lines.get(1).colour());
+    }
+
+    @Test
+    @DisplayName("an ordinary bullet starting with dashes, other links and update-page links inside a sentence are kept")
+    void otherLinksKept() {
+        assertEquals(List.of("• - nested", "See the wiki", "Get it on our site today"),
+                texts(ChangelogLines.fromMarkdown("- - nested\nSee [the wiki](https://example.org/wiki)\n"
+                        + "Get it on [our site](https://brennan.games/dungeontrain/update/) today")));
+    }
 }

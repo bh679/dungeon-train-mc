@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.echo.EchoDropCredit;
+import games.brennan.dungeontrain.compat.PlayerMobDrops;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -29,6 +30,19 @@ public abstract class EchoDropCreditMixin {
                                              CallbackInfoReturnable<ItemEntity> cir) {
         if ((Object) this instanceof PlayerMobEntity mob) {
             EchoDropCredit.onDrop(mob, stack);
+            // The join event fires inside spawnAtLocation: let it know a PlayerMob is the one dropping,
+            // so a disposable-camera photograph among its death loot / spill lands instead of igniting.
+            PlayerMobDrops.begin();
+        }
+    }
+
+    @Inject(
+            method = "spawnAtLocation(Lnet/minecraft/world/item/ItemStack;F)Lnet/minecraft/world/entity/item/ItemEntity;",
+            at = @At("RETURN"))
+    private void dungeontrain$endPlayerMobDrop(ItemStack stack, float yOffset,
+                                               CallbackInfoReturnable<ItemEntity> cir) {
+        if ((Object) this instanceof PlayerMobEntity) {
+            PlayerMobDrops.end();
         }
     }
 }

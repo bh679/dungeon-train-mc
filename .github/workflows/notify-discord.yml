@@ -22,16 +22,6 @@ on:
         description: "Tag of an EXISTING release to announce (e.g. v0.670.0). Must already have a GitHub Release; this workflow never creates one."
         required: true
         type: string
-      modrinth_version:
-        description: "Modrinth version id, if that upload succeeded. Left empty the message marks Modrinth with a warning instead of a tick."
-        required: false
-        type: string
-        default: ""
-      curseforge_version:
-        description: "CurseForge file id, if that upload succeeded. Left empty the message marks CurseForge with a warning instead of a tick."
-        required: false
-        type: string
-        default: ""
 
 jobs:
   notify:
@@ -41,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Refuse a tag with no release behind it. The message links to the release page and quotes its
+      # Refuse a tag with no release behind it. The message quotes its
       # notes, so announcing a tag that has none would post a broken link to the whole community.
       # This also catches the obvious typo before it is public rather than after.
       - name: Verify the release exists
@@ -83,7 +73,5 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag }}
           REPO: ${{ github.repository }}
           PRERELEASE: ${{ steps.verify.outputs.prerelease }}
-          MODRINTH_VERSION: ${{ inputs.modrinth_version }}
-          CURSEFORGE_VERSION: ${{ inputs.curseforge_version }}
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/notify-discord.sh

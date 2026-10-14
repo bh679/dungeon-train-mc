@@ -52,6 +52,20 @@ public final class SharedCarriageRolls {
         return new Random(mixed).nextDouble() < roomChance;
     }
 
+    /** Salt for the Group-carriage roll, independent of the room and bucket streams. "SHARGRUP". */
+    private static final long SHARED_GROUP_SALT = 0x5348415247525550L;
+
+    /**
+     * Whether the Group carriage at {@code groupIndex} drifts at all — the gate in front of
+     * {@link #bucket} for a group-long build, rolled the way {@link #roomDrifts} is for rooms.
+     */
+    public static boolean groupDrifts(long generationSeed, long groupIndex, double groupChance) {
+        if (groupChance <= 0) return false;
+        if (groupChance >= 1) return true;
+        long mixed = generationSeed ^ (groupIndex * 0x9E3779B97F4A7C15L) ^ SHARED_GROUP_SALT;
+        return new Random(mixed).nextDouble() < groupChance;
+    }
+
     /** The raw [0,1) roll for a slot — exposed so tests can assert the bucket boundaries directly. */
     public static double roll(long generationSeed, int carriagePIdx) {
         long mixed = generationSeed ^ ((long) carriagePIdx * 0x9E3779B97F4A7C15L) ^ SHARED_POOL_SALT;

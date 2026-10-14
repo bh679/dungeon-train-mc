@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.net.ContentModeSyncPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
@@ -47,7 +48,8 @@ public final class ContentModeSyncClient {
     private static void sendModeIfConnected() {
         try {
             if (Minecraft.getInstance().getConnection() == null) return;
-            DungeonTrainNet.sendToServer(new ContentModeSyncPacket(ClientDisplayConfig.getContentMode()));
+            DungeonTrainNet.sendToServer(new ContentModeSyncPacket(
+                ClientDisplayConfig.getContentMode(), LiveFeedClientConfig.streamingEnabled()));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] content-mode sync to server failed: {}", t.toString());
         }

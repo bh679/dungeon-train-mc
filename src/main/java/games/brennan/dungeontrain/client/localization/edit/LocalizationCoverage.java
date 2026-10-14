@@ -60,6 +60,7 @@ public final class LocalizationCoverage {
 
     private static LocalizationCredit.AiCounts compute(String locale) {
         int total = 0;
+        int counted = 0;
         int unreviewed = 0;
         int own = 0;
         for (String namespace : TranslationCatalog.NAMESPACES) {
@@ -75,6 +76,11 @@ public final class LocalizationCoverage {
             keys.addAll(translated.keySet());
             total += keys.size();
             for (String key : keys) {
+                if (!TranslationFilters.isEditorKey(key)) {
+                    counted++;
+                }
+            }
+            for (String key : keys) {
                 if (ProvenanceManifestRegistry.isAiUnreviewedLang(locale, namespace, key)) {
                     unreviewed++;
                 }
@@ -87,6 +93,6 @@ public final class LocalizationCoverage {
         // which lines still want a human, not who wrote them -- authorship lives in the repo-side
         // sidecars, which are not in the jar. Reporting the floor is honest, and the ring reads
         // aiUnreviewed anyway (LocalizationCreditRegistry.RING_METRIC).
-        return new LocalizationCredit.AiCounts(total, unreviewed, unreviewed);
+        return new LocalizationCredit.AiCounts(total, unreviewed, unreviewed, counted);
     }
 }

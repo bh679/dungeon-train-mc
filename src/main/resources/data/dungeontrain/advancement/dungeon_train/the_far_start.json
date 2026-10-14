@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_100",
+  "parent": "dungeontrain:dungeon_train/the_enchiridion",
   "display": {
     "icon": { "id": "minecraft:writable_book" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.the_far_start.title" },

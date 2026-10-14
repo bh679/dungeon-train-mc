@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/photo_floating",
+  "display": {
+    "icon": {
+      "id": "minecraft:oak_log"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_alpha.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.photo_alpha.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "photo": {
+      "trigger": "dungeontrain:photo_subject",
+      "conditions": {
+        "subject": "band:reached_alpha"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "photo"
+    ]
+  ]
+}

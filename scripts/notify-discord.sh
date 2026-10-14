@@ -6,8 +6,6 @@
 #   RELEASE_TAG          e.g. v0.80.0
 #   REPO                 e.g. bh679/dungeon-train-mc
 #   PRERELEASE           "true" or "false" — controls embed color + label.
-#   MODRINTH_VERSION     mc-publish step output; non-empty if Modrinth upload succeeded.
-#   CURSEFORGE_VERSION   mc-publish step output; non-empty if CurseForge upload succeeded.
 #   GH_TOKEN             gh CLI auth (already set by GitHub Actions for `${{ github.token }}`).
 #
 # Optional:
@@ -26,11 +24,6 @@ set -euo pipefail
 : "${REPO:?required}"
 : "${PRERELEASE:?required}"
 
-# Per-platform success markers based on whether mc-publish recorded an
-# uploaded version ID. Empty output → upload didn't happen → ⚠️.
-MR_MARK=$([ -n "${MODRINTH_VERSION:-}" ] && echo "✅" || echo "⚠️")
-CF_MARK=$([ -n "${CURSEFORGE_VERSION:-}" ] && echo "✅" || echo "⚠️")
-
 # Discord embed color: orange for beta builds, Discord-green for stable.
 if [ "$PRERELEASE" = "true" ]; then
   COLOR=16753920    # 0xFF8C00 — orange
@@ -40,56 +33,49 @@ else
   TYPE_LABEL="Release"
 fi
 
-# First ~500 chars of the GitHub release notes, used as the embed body.
+# First ~500 chars of the GitHub release notes, used as the embed body. The notes' title heading
+# stays a heading and links to this release on the update page, like the embed title; the "Read
+# more" footer is dropped, since the Download button already goes there
+# (scripts/release-notes/link-changelog.py).
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 if [ -n "${RELEASE_NOTES:-}" ]; then
-  NOTES=$(printf '%s' "$RELEASE_NOTES" | head -c 500)
+  FULL_NOTES=$RELEASE_NOTES
 else
-  NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body[:500]' 2>/dev/null || echo "")
+  FULL_NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
 fi
+NOTES=$(printf '%s\n' "$FULL_NOTES" | python3 "$SCRIPT_DIR/release-notes/link-changelog.py" --release "$RELEASE_TAG" --no-footer | head -c 500 || true)
 
 LOGO_URL="https://raw.githubusercontent.com/$REPO/main/src/main/resources/logo.png"
-# Embed title links to this tag's release page — a permanent link to the exact build
-# being announced (the wiki Downloads page always shows the newest one instead).
-GH_RELEASE_URL="https://github.com/$REPO/releases/tag/$RELEASE_TAG"
-MODRINTH_URL="https://modrinth.com/mod/dungeon-train/version/$RELEASE_TAG"
-CURSEFORGE_URL="https://www.curseforge.com/minecraft/mc-mods/dungeon-train/files"
-# The modpacks (everything bundled — the easiest install). Project pages, not this tag's pack
-# version, and no ✅/⚠️: the packs are built AFTER this ping fires (the CurseForge pack waits for
-# CurseForge to approve the mod file, up to hours), so a version link would be dead at send time.
-# The project page always shows the newest pack.
-CF_MODPACK_URL="https://www.curseforge.com/minecraft/modpacks/dungeon-train"
-MR_MODPACK_URL="https://modrinth.com/modpack/dungeon-train-pack-a-lore-rich-roguelite-adventure"
+# Every link in the message goes to ONE place, the update page (dp-relay public/dungeontrain/update/):
+# the embed title opens this release on it (#vX.Y.Z), the Download button the page itself. The page shows the newest modpack on CurseForge
+# and Modrinth, the standalone mod, and what changed. Same URL as the in-game notifier
+# (client/version/compare/UpdatePage#BASE_URL). Deliberately no per-platform download fields — one
+# place to go, and it is never stale while a pack awaits CurseForge approval.
+UPDATE_PAGE_URL="https://brennan.games/dungeontrain/update/"
 
 PAYLOAD=$(jq -n \
   --arg title "Dungeon Train $RELEASE_TAG" \
   --arg type "$TYPE_LABEL" \
   --arg notes "$NOTES" \
   --argjson color "$COLOR" \
-  --arg cf_status "$CF_MARK" \
-  --arg mr_status "$MR_MARK" \
-  --arg cf_url "$CURSEFORGE_URL" \
-  --arg mr_url "$MODRINTH_URL" \
-  --arg gh_url "$GH_RELEASE_URL" \
-  --arg cf_pack_url "$CF_MODPACK_URL" \
-  --arg mr_pack_url "$MR_MODPACK_URL" \
+  --arg update_url "$UPDATE_PAGE_URL" \
+  --arg tag "$RELEASE_TAG" \
+  --arg download_label "Download $RELEASE_TAG" \
   --arg logo "$LOGO_URL" \
   '{
     username: "Dungeon Train",
     avatar_url: $logo,
     embeds: [{
       title: $title,
-      url: $gh_url,
+      url: ($update_url + "#" + $tag),
       description: ("**" + $type + "** — a new build is available.\n\n" + $notes),
       color: $color,
       thumbnail: { url: $logo },
-      fields: [
-        { name: "CurseForge", value: ($cf_status + " [Download](" + $cf_url + ")"), inline: true },
-        { name: "Modrinth",   value: ($mr_status + " [Download](" + $mr_url + ")"), inline: true },
-        { name: "GitHub",     value: ("✅ [Download](" + $gh_url + ")"),             inline: true },
-        { name: "Modpack — everything bundled",
-          value: ("[CurseForge](" + $cf_pack_url + ") · [Modrinth](" + $mr_pack_url + ")"), inline: false }
-      ],
       footer: { text: "Powered by Sable" }
+    }],
+    components: [{
+      type: 1,
+      components: [{ type: 2, style: 5, label: $download_label, url: $update_url }]
     }]
   }')
 
@@ -99,5 +85,12 @@ if [ "${DRY_RUN:-}" = "1" ]; then
   exit 0
 fi
 
-curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK_URL" >/dev/null
+# A plain (non-application) webhook drops message components unless the request opts in with
+# with_components=true — without it the Download button silently vanishes. Link buttons need no
+# interaction handler, so this is all a webhook needs.
+case "$DISCORD_WEBHOOK_URL" in
+  *\?*) POST_URL="$DISCORD_WEBHOOK_URL&with_components=true" ;;
+  *)    POST_URL="$DISCORD_WEBHOOK_URL?with_components=true" ;;
+esac
+curl -fsS -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$POST_URL" >/dev/null
 echo "✓ Notified Discord for $RELEASE_TAG"

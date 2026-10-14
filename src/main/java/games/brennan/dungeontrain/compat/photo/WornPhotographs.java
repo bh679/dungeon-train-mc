@@ -27,10 +27,10 @@ public final class WornPhotographs {
         return new PhotographType(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, name));
     }
 
-    /** The paper for photo {@code photoId} with {@code viewsLeft} of {@link SharedPhotos#VIEWS_MAX} views remaining. */
-    public static PhotographType forViewsLeft(int viewsLeft, int photoId) {
-        if (viewsLeft >= SharedPhotos.VIEWS_MAX) return PhotographType.REGULAR;
-        int third = Math.max(1, SharedPhotos.VIEWS_MAX / 3);
+    /** The paper for photo {@code photoId} with {@code viewsLeft} of {@code maxViews} views remaining. */
+    public static PhotographType forViewsLeft(int viewsLeft, int maxViews, int photoId) {
+        if (viewsLeft >= maxViews) return PhotographType.REGULAR;
+        int third = Math.max(1, maxViews / 3);
         if (viewsLeft > 2 * third) return LIGHT;
         int heavy = Math.floorMod(photoId, HEAVY.size());
         // Heavy paper h is drawn on top of medium paper h % 2 (see the paper generator).

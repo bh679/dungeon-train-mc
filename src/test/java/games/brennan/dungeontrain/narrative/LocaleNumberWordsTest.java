@@ -253,6 +253,22 @@ final class LocaleNumberWordsTest {
         check("ru_ru", 123456, "сто двадцать три тысячи четыреста пятьдесят шесть");
     }
 
+    @Test @DisplayName("Ukrainian")
+    void ukrainian() {
+        check("uk_ua", 0, "нуль");
+        check("uk_ua", 15, "п’ятнадцять");
+        check("uk_ua", 21, "двадцять один");
+        check("uk_ua", 200, "двісті");
+        check("uk_ua", 234, "двісті тридцять чотири");
+        check("uk_ua", 1000, "тисяча");
+        check("uk_ua", 2000, "дві тисячі");
+        check("uk_ua", 5000, "п’ять тисяч");
+        check("uk_ua", 21000, "двадцять одна тисяча");
+        check("uk_ua", 22000, "двадцять дві тисячі");
+        check("uk_ua", 100000, "сто тисяч");
+        check("uk_ua", 123456, "сто двадцять три тисячі чотириста п’ятдесят шість");
+    }
+
     @Test @DisplayName("Japanese")
     void japanese() {
         check("ja_jp", 0, "零");

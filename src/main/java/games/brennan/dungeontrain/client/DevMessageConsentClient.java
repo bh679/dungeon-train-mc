@@ -93,10 +93,20 @@ public final class DevMessageConsentClient {
         sendSyncIfConnected();
     }
 
+    /** The Developer chat switch changed (consent card or Options): tell the server now. */
+    public static void resync() {
+        ensureLoaded();
+        sendSyncIfConnected();
+    }
+
     private static void sendSyncIfConnected() {
         try {
             if (Minecraft.getInstance().getConnection() == null) return;
-            DungeonTrainNet.sendToServer(new ConsentSyncPacket(granted, grantSession, (double) lastMsgToDevMs));
+            // The Developer chat switch (consent card / Options) vetoes inbound dev messages too: the
+            // server only delivers to a player whose synced consent is true.
+            boolean devChat = ClientDisplayConfig.isDevChatEnabled();
+            boolean effective = granted && devChat;
+            DungeonTrainNet.sendToServer(new ConsentSyncPacket(effective, grantSession, (double) lastMsgToDevMs, devChat));
         } catch (Throwable t) {
             LOGGER.debug("Dev-message consent: sync to server failed: {}", t.toString());
         }

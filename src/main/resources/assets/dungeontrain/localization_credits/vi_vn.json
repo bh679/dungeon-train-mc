@@ -2,7 +2,8 @@
   "locale": "vi_vn",
   "name": "AI không có sự kiểm duyệt của con người",
   "human_reviewed": false,
-  "total_keys": 4085,
-  "ai_authored": 4055,
-  "ai_unreviewed": 4055
+  "total_keys": 4768,
+  "ai_authored": 4738,
+  "ai_unreviewed": 4738,
+  "counted_keys": 2988
 }

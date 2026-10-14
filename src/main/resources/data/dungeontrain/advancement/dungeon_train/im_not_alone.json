@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/root",
+  "parent": "dungeontrain:dungeon_train/gate_enchiridion",
   "display": {
     "icon": { "id": "minecraft:player_head" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.im_not_alone.title" },

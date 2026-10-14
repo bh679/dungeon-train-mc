@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DeathField;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AllAtOnceAdvancement;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.LifeDisqualification;
 import games.brennan.dungeontrain.cheat.RunIntegrity;
@@ -94,7 +95,8 @@ public final class RunStatsEvents {
     /** Radius (blocks) within which another passenger counts toward "Others?". */
     private static final double PROXIMITY_RADIUS = 4.0;
     /** A PlayerMob whose feeling (0–10 scale, default 5) toward the player exceeds this is the death-screen "friend" (portrait). */
-    private static final float FRIEND_FEELING_MIN = 6.0f;
+    /** A PlayerMob whose feeling toward a player is above this counts as that player's friend (death screen, photos). */
+    public static final float FRIEND_FEELING_MIN = 6.0f;
     /**
      * Upper bound on a single tracked damage event. Command / instakill sources
      * (e.g. {@code /kill} deals {@link Float#MAX_VALUE}) are already excluded by
@@ -117,7 +119,9 @@ public final class RunStatsEvents {
     public static void onMobKilled(LivingDeathEvent event) {
         LivingEntity victim = event.getEntity();
         if (victim.level().isClientSide) return;
-        if (!(event.getSource().getEntity() instanceof ServerPlayer killer)) return;
+        // A knock into the void or lava credits whoever struck it (see KillCredit).
+        if (!(KillCredit.resolveKiller(victim, event.getSource()).orElse(null)
+                instanceof ServerPlayer killer)) return;
         // Don't credit a player for killing themselves (TNT, fall while
         // holding a damaging item, etc.). Stat is "things I killed" not
         // "deaths I caused".
@@ -143,7 +147,9 @@ public final class RunStatsEvents {
         // modded projectiles that don't expose their weapon), fall back to
         // the killer's current mainhand. Bare-hand kills become
         // {@code minecraft:air} and are filtered out of the final pick by
-        // {@link PlayerRunState#mostUsedWeapon()}.
+        // {@link PlayerRunState#mostUsedWeapon()}. A knock-off kill (the void or lava did
+        // the killing) credits no weapon — whatever is in hand when it lands didn't kill it.
+        if (KillCredit.isIndirect(event.getSource())) return;
         Entity direct = event.getSource().getDirectEntity();
         ItemStack weaponStack = null;
         if (direct instanceof AbstractArrow arrow) {
@@ -345,7 +351,8 @@ public final class RunStatsEvents {
         // and those runs are what fill the channel. EXCEPT when an echo did the killing — a
         // cross-player kill is exactly what the feed is for, so it posts at any carriage count.
         // The threaded report above always posts. Applies on dev + release — noise in either.
-        boolean slainByEcho = EchoIdentity.sourcePlayer(source.getEntity()).isPresent();
+        boolean slainByEcho = EchoIdentity.sourcePlayer(
+                KillCredit.resolveKiller(player, source).orElse(null)).isPresent();
         boolean shortRun = suppressPublicShortRun(packet.cartsTravelled(), slainByEcho);
         if (shortRun) {
             LOGGER.debug("[DungeonTrain] {} ended at {} carriages (< {}, no echo kill) — skipping public death feed",
@@ -610,6 +617,7 @@ public final class RunStatsEvents {
             // The first point of damage this life closes every pacifist tier until the next one.
             if (firstDamageThisLife) {
                 LifeDisqualification.notify(dealer, LifeDisqualification.pacifistTiers());
+                AllAtOnceAdvancement.markLost(dealer);
             }
         }
     }

@@ -2,7 +2,7 @@
 """Pull the operator's relay-authored requirement values back into the advancement datapack.
 
 A milestone's number — ``criteria.<c>.conditions.threshold*`` in
-``data/dungeontrain/advancement/dungeon_train/<name>.json`` — can be rewritten from the explorer's
+``data/dungeontrain/advancement/<tab path>/<name>.json`` — can be rewritten from the explorer's
 #/advancements page: the relay serves the override (dp-relay ``advancement-requirements.js`` →
 ``GET /<CAP>/advancement-requirements``), every server and client applies it at its next datapack
 load (``AdvancementRequirementOverrides`` + ``ServerAdvancementManagerRequirementsMixin``), and the
@@ -15,7 +15,8 @@ database restore or a cleared override silently reverts it. This closes that gap
 
 It will not:
 
-* **Write outside the allowlist.** Ids under ``dungeontrain:dungeon_train/`` and the four numeric
+* **Write outside the allowlist.** ``dungeontrain:`` ids outside the Editor tab (any folder — tabs
+  get split and re-parented, so none is named here) and the four numeric
   fields the mod knows — the relay refuses anything else at write time; this is the second list,
   in the repo that deploys separately.
 * **Overwrite an edit made in git.** Every relay row records the jar value it replaced. When the
@@ -50,10 +51,10 @@ from pathlib import Path
 BASE_ENV = "DUNGEONTRAIN_RELAY_ADMIN_BASE"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ADV_DIR = REPO_ROOT / "src/main/resources/data/dungeontrain/advancement/dungeon_train"
+DEFAULT_ADV_DIR = REPO_ROOT / "src/main/resources/data/dungeontrain/advancement"
 
 #: Mirrors dp-relay advancement-requirements.js ID_RE / FIELDS and the mod's RequirementField.
-ADV_ID = re.compile(r"^dungeontrain:dungeon_train/([a-z0-9_]{1,64})$")
+ADV_ID = re.compile(r"^dungeontrain:(?!editor/)([a-z0-9_]{1,64}(?:/[a-z0-9_]{1,64}){1,4})$")
 FIELDS = ("threshold", "thresholdReads", "thresholdMeters", "thresholdTicks")
 MAX_VALUE = 1_000_000_000
 
@@ -120,7 +121,7 @@ def apply_units(units: dict, adv_dir: Path, dry_run: bool = False) -> Result:
         unit = units[adv_id] or {}
         m = ADV_ID.match(adv_id)
         if not m:
-            out.deferred.append(f"{adv_id}: not a dungeon_train advancement")
+            out.deferred.append(f"{adv_id}: not a Dungeon Train (non-editor) advancement")
             continue
         field = unit.get("field")
         value = unit.get("value")
@@ -180,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--relay-base", help=f"admin base URL (default: ${BASE_ENV})")
     parser.add_argument("--cap", default="live", help="relay cap label (default: live)")
     parser.add_argument("--adv-dir", type=Path, default=DEFAULT_ADV_DIR,
-                        help="the dungeon_train advancement directory to write")
+                        help="the datapack's advancement directory (ids resolve to <dir>/<path>.json)")
     parser.add_argument("--deferred-out", type=Path,
                         help="write the overrides that could not be imported to this JSON file")
     parser.add_argument("--dry-run", action="store_true",

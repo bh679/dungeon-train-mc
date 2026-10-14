@@ -657,6 +657,12 @@ public final class BuilderRelayUpload {
                         : "gui.dungeontrain.builder.profile.withdrawn", ChatFormatting.GREEN);
             }
             if (result.inUse()) return msg("gui.dungeontrain.builder.profile.in_use_withdraw", ChatFormatting.YELLOW);
+            if (result.needsVersion()) {
+                // Sent back by the reviewer for a particular version, and this client is not on it.
+                return Component.translatable("gui.dungeontrain.builder.profile.needs_version",
+                        BuilderReviewState.ruleText(result.version(), result.versionOp()).getString())
+                        .withStyle(ChatFormatting.YELLOW);
+            }
             if (result.status() == SharedCarriageClient.CallStatus.UNKNOWN) {
                 return msg("gui.dungeontrain.builder.profile.gone_short", ChatFormatting.YELLOW);
             }

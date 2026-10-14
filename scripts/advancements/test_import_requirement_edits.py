@@ -41,15 +41,16 @@ CARTS = '''{
 
 def workspace() -> Path:
     ws = Path(tempfile.mkdtemp(prefix="import-requirement-test-"))
-    (ws / "carts_1000.json").write_text(CARTS, encoding="utf-8")
-    (ws / "the_upside_down.json").write_text(
+    (ws / "dungeon_train").mkdir()
+    (ws / "dungeon_train" / "carts_1000.json").write_text(CARTS, encoding="utf-8")
+    (ws / "dungeon_train" / "the_upside_down.json").write_text(
         '{"criteria": {"a": {"trigger": "dungeontrain:gameplay_action", "conditions": {"actionId": "x"}}}}\n',
         encoding="utf-8")
     return ws
 
 
 def carts(ws: Path) -> str:
-    return (ws / "carts_1000.json").read_text(encoding="utf-8")
+    return (ws / "dungeon_train" / "carts_1000.json").read_text(encoding="utf-8")
 
 
 def test_clean_import_rewrites_only_the_number():
@@ -67,7 +68,7 @@ def test_already_current_is_unchanged():
 
 def test_repo_edited_since_is_deferred():
     ws = workspace()
-    (ws / "carts_1000.json").write_text(CARTS.replace("1000", "750"), encoding="utf-8")
+    (ws / "dungeon_train" / "carts_1000.json").write_text(CARTS.replace("1000", "750"), encoding="utf-8")
     r = MOD.apply_units({ID: {"field": "threshold", "value": 500, "shipped": 1000}}, ws)
     assert not r.written
     assert "changed since this was written" in r.deferred[0], r.deferred
@@ -84,17 +85,28 @@ def test_bad_rows_are_deferred_by_reason():
     ws = workspace()
     units = {
         "minecraft:story/root": {"field": "threshold", "value": 5},
+        "dungeontrain:editor/carts_1000": {"field": "threshold", "value": 5},
         "dungeontrain:dungeon_train/nope": {"field": "threshold", "value": 5},
         "dungeontrain:dungeon_train/the_upside_down": {"field": "threshold", "value": 5},
         ID + "x": {"field": "count", "value": 5},
     }
     r = MOD.apply_units(units, ws)
-    assert len(r.deferred) == 4 and not r.written, r.deferred
+    assert len(r.deferred) == 5 and not r.written, r.deferred
     r2 = MOD.apply_units({ID: {"field": "thresholdTicks", "value": 5}}, ws)
     assert "carries no thresholdTicks" in r2.deferred[0], r2.deferred
     for bad in (0, -1, 2.5, True, "500", MOD.MAX_VALUE + 1):
         assert MOD.apply_units({ID: {"field": "threshold", "value": bad}}, ws).deferred, bad
     assert carts(ws) == CARTS
+
+
+def test_any_tab_folder_is_importable():
+    """Tabs get split and re-parented; an advancement in any non-editor folder takes its value."""
+    ws = workspace()
+    (ws / "enchiridion").mkdir()
+    (ws / "enchiridion" / "carts_1000.json").write_text(CARTS, encoding="utf-8")
+    r = MOD.apply_units({"dungeontrain:enchiridion/carts_1000": {"field": "threshold", "value": 500, "shipped": 1000}}, ws)
+    assert r.changed == 1, r.deferred
+    assert '"threshold": 500' in (ws / "enchiridion" / "carts_1000.json").read_text(encoding="utf-8")
 
 
 def test_dry_run_writes_nothing():
@@ -137,12 +149,15 @@ def test_against_the_real_datapack_dry_run():
     """Every shipped requirement advancement is locatable — the allowlist and the datapack agree."""
     adv_dir = MOD.DEFAULT_ADV_DIR
     units = {}
-    for path in adv_dir.glob("*.json"):
+    for path in adv_dir.rglob("*.json"):
+        rel = path.relative_to(adv_dir).with_suffix("").as_posix()
+        if rel.startswith("editor/"):
+            continue
         adv = json.loads(path.read_text(encoding="utf-8"))
         for field in MOD.FIELDS:
             found = MOD.locate(adv, field)
             if found:
-                units[f"dungeontrain:dungeon_train/{path.stem}"] = {
+                units[f"dungeontrain:{rel}"] = {
                     "field": field, "value": found[1] + 1, "shipped": found[1]}
     assert len(units) >= 35, len(units)
     r = MOD.apply_units(units, adv_dir, dry_run=True)

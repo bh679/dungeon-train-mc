@@ -19,6 +19,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
@@ -302,7 +303,9 @@ public final class SharedRoomEvents {
         return detached;
     }
 
-    @SubscribeEvent
+    // HIGHEST for the same reason as SharedCarriageEvents.onServerStopping: capture before
+    // ShipShutdownEvents deletes the sub-levels.
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onServerStopping(ServerStoppingEvent event) {
         for (SharedRoomRegistry.Instance inst : SharedRoomRegistry.all()) {
             try {

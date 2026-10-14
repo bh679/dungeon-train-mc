@@ -73,6 +73,10 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 | `tags` | yes | Player-facing classification the in-game Versions page filters by, chosen by the agent from context (see [Tags](#tags)). The type-derived tag is always present (chore/ci/refactor/docs/test derive `internal`), so it is never empty. |
 | `title` | yes | Short headline. |
 | `summary` | yes | Player-facing prose. |
+| `major` | no | `true` makes the entry a major release: it renders first (title as a `#` heading, photo, then `description` — or, without one, the summary plus highlights under "Other significant updates"), above the tag line, so it opens the release body and Discord post. The web update page (brennan.games/dungeontrain/update/) shows it as a headline card with the photo. Log it with `append-entry.py --major`. |
+| `description` | no | Major release only: markdown (headings, `-` bullets, `**bold**`, `*italic*`, `[links](https://…)`) shown under the title in place of summary + highlights. `--description-file` on `append-entry.py` / `set-major.py`. |
+| `image` | no | Major release only: `https://` URL of the release photo. Attach or change it any time, even after the release shipped: `set-major.py --id <entry> --image <url>` (`--clear-image` removes it). |
+| `milestone` | no | Major release only: `true` for a moment rather than an update (a store launch, an approval). The update page labels its card "Milestone". `set-major.py --id <entry> --milestone` (`--not-milestone` drops it). |
 | `highlights` | no | Bullet points. |
 | `addresses` | no | Player-reported issues the change fixes or improves: `lag`, `train_vanished` (`--addresses`, repeatable). A player who reports that issue on the death screen while on an older version is told a newer release addresses it. Omitted when empty. |
 | `pr` | no | PR number. |
@@ -162,6 +166,7 @@ topical tags.
 | `set-tags.py` | Correction pass | Replace the topical tags of listed entries from a reviewed `{id: [tags]}` mapping. `--dry-run` reports, `--show-changes` lists moves, `--report` prints current counts. |
 | `render-unreleased.py` | Release (agent) | Print Markdown of all `released:false` entries, grouped by version (newest first). Empty output when nothing is unreleased. |
 | `mark-released.py` | Release (CI) | Flip every `released:false` entry to released; stamp the tag + timestamp. |
+| `notify-highlights.py` | Release (CI) | Post each `major` entry the tag shipped to Discord #highlights as a plain markdown message (`# title`, description, update-page link, photo uploaded as an attachment — its URL only if the file can't be loaded) via the `DISCORD_HIGHLIGHTS_WEBHOOK_URL` secret. Real releases only; skips when unset. `--entry <id>` re-posts one; `DRY_RUN=1` prints the payload. |
 
 ```bash
 # Gate 3 — log what was built (run on the feature branch before merging):

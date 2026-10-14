@@ -869,20 +869,28 @@ public final class PortalCarriageBuilder {
                                                 BlockPos entryOrigin, int pairKey,
                                                 PortalTwinRegion region,
                                                 games.brennan.dungeontrain.template.GateContext gateCtx,
-                                                boolean ownShelfBoost) {
+                                                boolean ownShelfBoost,
+                                                net.minecraft.server.level.ServerPlayer rider) {
         long seed = level.getSeed();
+        java.util.function.LongFunction<String> pickAt =
+            index -> TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx);
         // The seeded pick, then how often it may answer "a library of the rider's own books" — the
         // one outcome whose weight depends on the run rather than on the room weights alone. See
-        // PortalOwnShelves; at a scale of 1 this is the pick and nothing else.
+        // PortalOwnShelves; at a scale of 1 this is the pick and nothing else. An author room's
+        // share is its parent's split, so that is the Books the lottery reads for one.
         PortalOwnShelves.Outcome picked = PortalOwnShelves.adjust(seed, pairKey,
-            TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, pairKey, gateCtx),
+            pickAt.apply(pairKey),
             () -> TrackVariantRegistry.leafOdds(TrackKind.PORTAL_ROOM, gateCtx),
-            name -> PortalRoomSettings.of(name).books(),
-            index -> TrackVariantRegistry.pickName(TrackKind.PORTAL_ROOM, seed, index, gateCtx),
+            PortalAuthorRooms::lotteryBooks,
+            pickAt,
             DungeonTrainConfig.getOwnLibraryChanceScale(ownShelfBoost));
-        String roomName = picked.roomName();
-        PortalRoomSettings settings = PortalRoomSettings.of(roomName);
-        if (picked.pinnedToSelf()) {
+        // Landing on an author room is one outcome; which of them stands is decided by the parent's
+        // split and what fits it. See PortalAuthorRooms.
+        PortalAuthorRooms.Planned authorRoom = PortalAuthorRooms.plan(
+            level, pairKey, picked.roomName(), picked.pinnedToSelf(), gateCtx, rider, pickAt);
+        String roomName = authorRoom != null ? authorRoom.roomName() : picked.roomName();
+        PortalRoomSettings settings = authorRoom != null ? authorRoom.settings() : PortalRoomSettings.of(roomName);
+        if (authorRoom == null && picked.pinnedToSelf()) {
             settings = settings.withBooks(PortalOwnShelves.selfOnly(settings.books()));
         }
         PortalCorridorKind kind = PortalCarriageSelection.corridorKindFor(level, pairKey);
@@ -2014,6 +2022,10 @@ public final class PortalCarriageBuilder {
                 };
                 VariantState picked = sidecar.resolve(local, worldSeed, cellIndex);
                 if (picked == null) continue;
+                // Every write below goes through the entry's authored facing / half / toggle, as the
+                // carriage stamp does — writing the captured state alone ignored the menu's T/B pick.
+                final int lockId = sidecar.lockIdAt(local);
+                final int rollIndex = cellIndex;
                 if (picked.isMob()) {
                     // The cell itself still has to go: a mob entry carries an empty-placeholder sentinel as
                     // its state so every block applier blanks it without a special case.
@@ -2033,7 +2045,9 @@ public final class PortalCarriageBuilder {
                     // A two-space cell (door / bed / tall plant) writes both of its spaces; an empty
                     // pick clears them. Same no-cascade + eviction rules as the single write below.
                     for (MultiBlockVariants.Write w : MultiBlockVariants.expand(entry.states(), sidecar.spanAt(local), picked, local,
-                            worldSeed, cellIndex, VariantState::state)) {
+                            worldSeed, cellIndex, v -> games.brennan.dungeontrain.editor.RotationApplier.apply(
+                                games.brennan.dungeontrain.train.StagePlacementScope.resolve(v.state()), v,
+                                local, worldSeed, rollIndex, lockId))) {
                         BlockPos wWorld = roomOrigin.offset(w.localPos());
                         if (!wWorld.equals(world) && mask.covers(wWorld)) continue;
                         if (w.isAir()) {
@@ -2042,7 +2056,7 @@ public final class PortalCarriageBuilder {
                             continue;
                         }
                         SilentBlockOps.evictBlockEntity(level.getChunkAt(wWorld), wWorld);
-                        BlockState placedState = games.brennan.dungeontrain.train.StagePlacementScope.resolve(w.state());
+                        BlockState placedState = w.state();
                         ContainerContentsPlacement.place(level, wWorld,
                             placedState, w.entry().blockEntityNbt(),
                             plotKey, w.localPos(), worldSeed, cellIndex, /*diffIndex*/ pairKey,
@@ -2072,7 +2086,9 @@ public final class PortalCarriageBuilder {
                 // The same index the block was picked at, so a flagged chest's contents vary with the
                 // block rather than the block changing over identical loot. Still the pair-and-copy
                 // frame, never the difficulty one — pairKey stays that, see the javadoc above.
-                BlockState placedState = games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state());
+                BlockState placedState = games.brennan.dungeontrain.editor.RotationApplier.apply(
+                    games.brennan.dungeontrain.train.StagePlacementScope.resolve(picked.state()), picked,
+                    local, worldSeed, cellIndex, lockId);
                 ContainerContentsPlacement.place(level, world,
                     placedState, picked.blockEntityNbt(),
                     plotKey, local, worldSeed, cellIndex, /*diffIndex*/ pairKey,

@@ -2,6 +2,7 @@
   "id": "pip_aaro_the_waiting_child",
   "character": "Pip Aaro",
   "story": "The Waiting Child",
+  "weight": 20,
   "letters": [
     {
       "index": 1,

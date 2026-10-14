@@ -1,5 +1,5 @@
 {
-  "parent": "dungeontrain:dungeon_train/carts_100",
+  "parent": "dungeontrain:dungeon_train/tab_challenges",
   "display": {
     "icon": { "id": "minecraft:leather_chestplate" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.leather_over_diamond.title" },

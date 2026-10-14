@@ -48,6 +48,11 @@ public record NetworkConsentSyncPacket(boolean granted) implements CustomPacketP
         ctx.enqueueWork(() -> {
             if (!(ctx.player() instanceof ServerPlayer player)) return;
             NetworkConsentMirror.set(player, packet.granted());
+            // Consent is what lets their own shelf be asked for, so warm it now: the first author
+            // room planned near them can then be fitted to their own count rather than guessed.
+            if (packet.granted()) {
+                games.brennan.dungeontrain.portal.PortalRoomAuthorLocks.prefetchSelf(player, false);
+            }
         });
     }
 }

@@ -1,7 +1,7 @@
 {
   "parent": "dungeontrain:dungeon_train/reboarder",
   "display": {
-    "icon": { "id": "minecraft:iron_sword" },
+    "icon": { "id": "minecraft:netherite_sword" },
     "title": { "translate": "advancements.dungeontrain.dungeon_train.murderous_intent.title" },
     "description": { "translate": "advancements.dungeontrain.dungeon_train.murderous_intent.description" },
     "frame": "goal",
