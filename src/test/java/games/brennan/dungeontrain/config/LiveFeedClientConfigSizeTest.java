@@ -51,6 +51,19 @@ class LiveFeedClientConfigSizeTest {
     }
 
     @Test
+    void handEditedOddCaptureWidthIsEvenedAndClamped() {
+        assertEquals(1280, LiveFeedClientConfig.evenCaptureWidth(1281));
+        assertEquals(320, LiveFeedClientConfig.evenCaptureWidth(321));
+        assertEquals(1918, LiveFeedClientConfig.evenCaptureWidth(1919));
+        assertEquals(LiveFeedClientConfig.CAPTURE_WIDTH_MIN, LiveFeedClientConfig.evenCaptureWidth(1));
+        assertEquals(LiveFeedClientConfig.CAPTURE_WIDTH_MAX, LiveFeedClientConfig.evenCaptureWidth(99_999));
+        for (int w = 300; w <= 1940; w++) {
+            int even = LiveFeedClientConfig.evenCaptureWidth(w);
+            assertTrue(even % 2 == 0 && LiveFeedClientConfig.heightFor(even) % 2 == 0, "even " + w);
+        }
+    }
+
+    @Test
     void videoSizeRowKeepsAHandSetWidth() {
         assertEquals(LiveFeedClientConfig.CAPTURE_SIZES, LiveFeedClientConfig.captureSizeValues(1280));
         assertEquals(List.of(640, 854, 960, 1100, 1280, 1920), LiveFeedClientConfig.captureSizeValues(1100));

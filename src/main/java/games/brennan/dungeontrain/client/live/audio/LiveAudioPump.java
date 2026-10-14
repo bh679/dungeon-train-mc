@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client.live.audio;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.client.live.FfmpegSupport;
 import games.brennan.dungeontrain.client.live.LivePerfStats;
-import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -64,13 +63,14 @@ public final class LiveAudioPump implements AutoCloseable {
     }
 
     /**
-     * Opens the mirror and the listening port for a stream with audio, or null (logged) when this
-     * client cannot — no {@code aac} encoder in Vista's ffmpeg, no loopback OpenAL — and the stream
-     * then goes out without sound, as before.
+     * Render thread (the mirror reads the sound engine): opens the mirror and the listening port for a
+     * stream with audio, or null (logged) when this client cannot — no {@code aac} encoder in Vista's
+     * ffmpeg ({@code aacAvailable}, from {@link FfmpegSupport#aacEncoder()}), no loopback OpenAL — and
+     * the stream then goes out without sound, as before.
      */
     @Nullable
-    public static LiveAudioPump open(FFmpeg ffmpeg) {
-        if (!FfmpegSupport.hasAacEncoder(ffmpeg)) {
+    public static LiveAudioPump open(boolean aacAvailable) {
+        if (!aacAvailable) {
             LOGGER.warn("[DungeonTrain] stream audio off: this ffmpeg has no aac encoder");
             return null;
         }

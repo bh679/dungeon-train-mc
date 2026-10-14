@@ -149,9 +149,14 @@ public final class LiveEncoder implements AutoCloseable {
         }
     }
 
+    /** How long close() waits for the writer thread to hand its last frame back. */
+    private static final long WRITER_JOIN_MS = 1_000;
+
     /**
      * Stop feeding, let ffmpeg finish the last segment (it writes ENDLIST), then kill it — with the
-     * {@link #ASYNC_GRACE_MS} grace, for a teardown off the render thread.
+     * {@link #ASYNC_GRACE_MS} grace, for a teardown off the render thread. Blocks for seconds — never
+     * call it on the render or tick thread. Joins the writer last, so the frame it held is back with
+     * the grabber before the grabber is closed.
      */
     @Override
     public void close() {
@@ -173,6 +178,7 @@ public final class LiveEncoder implements AutoCloseable {
         }
         try {
             if (!process.waitFor(Math.max(0, graceMs), TimeUnit.MILLISECONDS)) process.destroyForcibly();
+            writer.join(WRITER_JOIN_MS);
         } catch (InterruptedException e) {
             process.destroyForcibly();
             Thread.currentThread().interrupt();
