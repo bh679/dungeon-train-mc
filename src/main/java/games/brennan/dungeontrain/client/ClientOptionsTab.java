@@ -115,6 +115,11 @@ public enum ClientOptionsTab {
          * ({@code DiscordAccountState}), so it cannot be fixed enum rows of its own.
          */
         DISCORD_ACCOUNT(null),
+        /**
+         * Stands for the whole Twitch-account block the same way: link state, then the restream and
+         * title opt-ins once linked ({@code TwitchAccountState}). Hidden in Kid mode.
+         */
+        TWITCH_ACCOUNT(null),
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
@@ -269,7 +274,10 @@ public enum ClientOptionsTab {
                 // (both open a page), with it it sits on a line of its own.
                 rows.add(Row.BOOK_LANGUAGES);
             }
-            case ACCOUNT -> rows.add(Row.DISCORD_ACCOUNT);
+            case ACCOUNT -> {
+                rows.add(Row.DISCORD_ACCOUNT);
+                rows.add(Row.TWITCH_ACCOUNT);
+            }
             case BACKUPS -> {
                 // Its own tab: the block outgrew a heading on General once it had four rows and
                 // a sibling mod (Dungeon Backup) owning three of them.

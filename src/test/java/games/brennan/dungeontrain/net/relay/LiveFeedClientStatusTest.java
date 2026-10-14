@@ -91,4 +91,20 @@ class LiveFeedClientStatusTest {
         assertFalse(s.ended());
         assertEquals("https://x/main/s1/seg00004.ts", s.replayUrl());
     }
+
+    @Test
+    void theStreamersTwitchRidesOnStatusAndClaim() {
+        LiveFeedClient.Status s = parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/main/s1/live.m3u8\","
+            + "\"streamer\":\"Pat\",\"twitch\":{\"login\":\"Pat_1\",\"url\":\"https://evil/\"}}");
+        assertEquals("pat_1", s.twitchLogin());
+        assertNull(parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/l.m3u8\",\"streamer\":\"Sam\"}").twitchLogin());
+        assertNull(parse("{\"ok\":true,\"live\":true,\"session\":\"s1\",\"playlistUrl\":\"https://x/l.m3u8\",\"twitch\":{\"login\":\"a b\"}}").twitchLogin());
+
+        JsonObject claim = JsonParser.parseString("{\"ok\":true,\"session\":\"s1\",\"token\":\"t\",\"playlistUrl\":\"https://x/l.m3u8\","
+            + "\"twitch\":{\"login\":\"pat_1\",\"restream\":true,\"setTitle\":false}}").getAsJsonObject();
+        LiveFeedClient.Claim c = LiveFeedClient.parseClaim(new LiveFeedClient.Result(200, claim, null));
+        assertEquals(new LiveFeedClient.Twitch("pat_1", "https://twitch.tv/pat_1", true, false), c.twitch());
+        JsonObject bare = JsonParser.parseString("{\"ok\":true,\"session\":\"s1\",\"token\":\"t\",\"playlistUrl\":\"https://x/l.m3u8\",\"twitch\":null}").getAsJsonObject();
+        assertNull(LiveFeedClient.parseClaim(new LiveFeedClient.Result(200, bare, null)).twitch());
+    }
 }

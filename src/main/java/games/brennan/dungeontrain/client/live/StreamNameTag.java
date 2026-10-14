@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexSorting;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
+import games.brennan.dungeontrain.client.twitch.TwitchAccountState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig.NameTag;
@@ -65,11 +66,23 @@ public final class StreamNameTag {
 
     /** The text to show, or "" for nothing. Discord never falls back to the Minecraft name. */
     public static String text(NameTag tag, String minecraftName, boolean discordLinked, @Nullable String discordName) {
-        return switch (tag) {
+        return text(tag, minecraftName, discordLinked, discordName, null);
+    }
+
+    /**
+     * The text to show, or "" for nothing; with a linked Twitch channel ({@code twitchLogin}) the handle
+     * follows the name — " · twitch.tv/x" — so every viewer, Twitch's included, can find the streamer.
+     * A tag of NONE stays empty: no name means no handle either.
+     */
+    public static String text(NameTag tag, String minecraftName, boolean discordLinked, @Nullable String discordName,
+                              @Nullable String twitchLogin) {
+        String name = switch (tag) {
             case MINECRAFT -> minecraftName == null ? "" : minecraftName.strip();
             case DISCORD -> discordLinked && discordName != null ? discordName.strip() : "";
             case NONE -> "";
         };
+        if (name.isEmpty() || twitchLogin == null || !twitchLogin.matches("[A-Za-z0-9_]{3,25}")) return name;
+        return name + " · twitch.tv/" + twitchLogin.toLowerCase();
     }
 
     /** This client's tag text now, or "". */
@@ -78,13 +91,17 @@ public final class StreamNameTag {
         if (tag == NameTag.NONE) return "";
         CommunityLinkClient.Status discord = DiscordAccountState.status();
         return text(tag, Minecraft.getInstance().getUser().getName(),
-            discord != null && discord.linked(), discord == null ? null : discord.discordName());
+            discord != null && discord.linked(), discord == null ? null : discord.discordName(),
+            TwitchAccountState.linkedLogin());
     }
 
-    /** Stream start: make sure a Discord tag has a name to show (the cache is filled lazily otherwise). */
+    /** Stream start: make sure a Discord tag has a name to show, and the Twitch handle is known (both caches fill lazily otherwise). */
     static void prepare() {
         if (effective(LiveFeedClientConfig.streamNameTag(), ClientDisplayConfig.isKidMode()) == NameTag.DISCORD) {
             DiscordAccountState.refresh(() -> { });
+        }
+        if (effective(LiveFeedClientConfig.streamNameTag(), ClientDisplayConfig.isKidMode()) != NameTag.NONE) {
+            TwitchAccountState.refresh(() -> { });
         }
     }
 

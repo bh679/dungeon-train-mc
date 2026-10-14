@@ -24,6 +24,16 @@ class StreamNameTagTest {
     }
 
     @Test
+    void aLinkedTwitchHandleFollowsTheName() {
+        assertEquals("Steve · twitch.tv/pat_1", text(NameTag.MINECRAFT, "Steve", false, null, "Pat_1"));
+        assertEquals("brennan · twitch.tv/pat_1", text(NameTag.DISCORD, "Steve", true, "brennan", "pat_1"));
+        assertEquals("", text(NameTag.NONE, "Steve", true, "brennan", "pat_1"), "no name, no handle");
+        assertEquals("", text(NameTag.DISCORD, "Steve", false, null, "pat_1"), "Discord unlinked: nothing, handle or not");
+        assertEquals("Steve", text(NameTag.MINECRAFT, "Steve", false, null, "bad login"));
+        assertEquals("Steve", text(NameTag.MINECRAFT, "Steve", false, null, null));
+    }
+
+    @Test
     void discordShowsTheLinkedDiscordName() {
         assertEquals("brennan", text(NameTag.DISCORD, "Steve", true, " brennan "));
     }

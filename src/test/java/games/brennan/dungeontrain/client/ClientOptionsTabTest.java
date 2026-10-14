@@ -81,11 +81,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: forty rows, none of the conditional rows present")
+    @DisplayName("Plain client: forty-one rows, none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(40, rows.size());
+        assertEquals(41, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -93,6 +93,8 @@ final class ClientOptionsTabTest {
         assertTrue(rows.contains(ClientOptionsTab.Row.AI_POLICY));
         // The Discord account block is there for everyone — it is where an unlinked player links.
         assertTrue(rows.contains(ClientOptionsTab.Row.DISCORD_ACCOUNT));
+        // So is the Twitch block (the screen hides it in Kid mode at draw time, not here).
+        assertTrue(rows.contains(ClientOptionsTab.Row.TWITCH_ACCOUNT));
     }
 
     @Test
@@ -195,7 +197,7 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        assertEquals(44, rows.size());
+        assertEquals(45, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -363,7 +365,7 @@ final class ClientOptionsTabTest {
         JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
                 .getAsJsonObject();
         for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
-            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT || row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
+            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT || row == ClientOptionsTab.Row.TWITCH_ACCOUNT || row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
                 assertNull(row.captionKey(), row + " stands for several rows and has no caption of its own");
                 continue;
             }
