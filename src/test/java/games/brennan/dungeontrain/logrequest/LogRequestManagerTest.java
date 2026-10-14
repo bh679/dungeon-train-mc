@@ -23,6 +23,16 @@ class LogRequestManagerTest {
     }
 
     @Test
+    @DisplayName("/version (with full and/or a name) is swallowed; anything else is a message")
+    void versionCommand() {
+        assertTrue(LogRequestManager.isVersionCommand("/version"));
+        assertTrue(LogRequestManager.isVersionCommand(" !VERSION full Steve "));
+        assertFalse(LogRequestManager.isVersionCommand("/version please tell me now"));
+        assertFalse(LogRequestManager.isVersionCommand("what version are you on?"));
+        assertFalse(LogRequestManager.isVersionCommand(null));
+    }
+
+    @Test
     @DisplayName("Kid mode wins over Developer chat off, which wins over an already-pending request")
     void blockOrder() {
         assertEquals(Reason.KID_MODE, LogRequestManager.blockReason(true, true, true));

@@ -25978,25 +25978,8 @@
       "released_at": null
     },
     {
-      "id": "dev-version-ping",
-      "version": "0.1290.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "community"
-      ],
-      "title": "Better bug-report support",
-      "summary": "Small improvements to how bug reports are looked into.",
-      "highlights": [],
-      "pr": 2007,
-      "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
-    },
-    {
       "id": "editor-workbench-pool-moves",
-      "version": "0.1290.0",
+      "version": "0.1291.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -26011,6 +25994,7 @@
         "Move a template between Carriage, Whole and Contents without reshaping it; what cannot travel with it is said.",
         "Whole halves join whole rooms and groups in the editor."
       ],
+      "pr": 2009,
       "date": "2026-10-14",
       "released": false,
       "released_in": null,
