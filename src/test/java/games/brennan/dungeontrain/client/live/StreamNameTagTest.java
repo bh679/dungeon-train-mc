@@ -7,6 +7,7 @@ import static games.brennan.dungeontrain.client.live.StreamNameTag.effective;
 import static games.brennan.dungeontrain.client.live.StreamNameTag.pillInset;
 import static games.brennan.dungeontrain.client.live.StreamNameTag.text;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The name on the stream is the one the streamer chose, never another, and none in Kid mode. */
@@ -85,5 +86,14 @@ class StreamNameTagTest {
         for (int h : new int[] {14, 15, 28, 42}) {
             for (int row = 0; row < h; row++) assertEquals(pillInset(row, h), pillInset(h - 1 - row, h));
         }
+    }
+
+    @Test
+    void labelIsReReadOnceASecondNotEveryGrab() {
+        assertTrue(StreamNameTag.labelStale(Integer.MIN_VALUE, 0), "never read");
+        assertFalse(StreamNameTag.labelStale(100, 100));
+        assertFalse(StreamNameTag.labelStale(100, 100 + StreamNameTag.LABEL_REFRESH_TICKS - 1));
+        assertTrue(StreamNameTag.labelStale(100, 100 + StreamNameTag.LABEL_REFRESH_TICKS));
+        assertTrue(StreamNameTag.labelStale(100, 5), "counter went backwards");
     }
 }

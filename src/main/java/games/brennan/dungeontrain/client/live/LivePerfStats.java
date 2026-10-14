@@ -51,7 +51,7 @@ public final class LivePerfStats {
     static void grab(long ns) { WINDOW.grab(ns); }
     static void grabSkipped() { WINDOW.grabSkipped(); }
     static void encoderWrote(boolean fresh) { WINDOW.encoderWrote(fresh); }
-    static void decoded() { WINDOW.decoded(); }
+    static void decoded(long ns) { WINDOW.decoded(ns); }
     static void decoderRun() { WINDOW.decoderRun(); }
     static void stall() { WINDOW.stall(); }
     static void upload(long ns) { WINDOW.upload(ns); }
@@ -80,6 +80,7 @@ public final class LivePerfStats {
     public static void onClientTick(ClientTickEvent.Post event) {
         LiveStreamController controller = LiveStreamController.get();
         boolean streaming = controller.streaming();
+        LiveFeedSource.MAIN.tick(); // the decoders' stall and idle watchdog, with or without a TV in view
         LiveHlsSession session = LiveFeedSource.MAIN.currentSession();
         int sessions = LiveFeedSource.MAIN.decodingSessions();
         active = streaming || sessions > 0;

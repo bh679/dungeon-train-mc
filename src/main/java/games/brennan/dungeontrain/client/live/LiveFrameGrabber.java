@@ -44,7 +44,8 @@ public final class LiveFrameGrabber implements AutoCloseable {
     private final LivePboRing ring = new LivePboRing(RING);
     private final int[] pbos = new int[RING];
     private final long[] fences = new long[RING];
-    private boolean closed;
+    /** Read by the encoder's writer thread in {@link #recycle}; the pool's lock orders it against {@link #close}. */
+    private volatile boolean closed;
 
     public LiveFrameGrabber(int width, int height) {
         this.width = width;
@@ -123,21 +124,33 @@ public final class LiveFrameGrabber implements AutoCloseable {
         return latest.getAndSet(null);
     }
 
+    /**
+     * Any thread: give a buffer from {@link #latest} back. After {@link #close} it is freed instead —
+     * dropping it leaked a whole frame of native memory (~3.7 MB at 720p) per stream.
+     */
     public void recycle(ByteBuffer buf) {
-        if (buf != null && !closed) pool.offer(buf);
+        if (buf == null) return;
+        synchronized (pool) {
+            if (closed || !pool.offer(buf)) MemoryUtil.memFree(buf);
+        }
     }
 
-    /** Render thread. */
+    /**
+     * Render thread, after the encoder has closed (its writer joined, so it holds no buffer). A
+     * buffer handed back later anyway is freed by {@link #recycle}.
+     */
     @Override
     public void close() {
         if (closed) return;
-        closed = true;
         ring.drain(this::releaseFence);
         GL15C.glDeleteBuffers(pbos);
         target.destroyBuffers();
-        ByteBuffer l = latest.getAndSet(null);
-        if (l != null) MemoryUtil.memFree(l);
-        ByteBuffer b;
-        while ((b = pool.poll()) != null) MemoryUtil.memFree(b);
+        synchronized (pool) {
+            closed = true;
+            ByteBuffer l = latest.getAndSet(null);
+            if (l != null) MemoryUtil.memFree(l);
+            ByteBuffer b;
+            while ((b = pool.poll()) != null) MemoryUtil.memFree(b);
+        }
     }
 }

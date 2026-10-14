@@ -16,6 +16,9 @@ import net.neoforged.neoforge.client.event.RenderFrameEvent;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 
 /**
@@ -62,6 +65,13 @@ public final class LiveRecOverlay {
     private static final Component LABEL = Component.translatable("gui.dungeontrain.live.badge");
     private static final int WHITE = 0xF0FFFFFF;
     private static final int RED = 0xFFE62E2E;
+    /** The corner mask as runs of set pixels, {lx0, lx1, ly} in local space — worked out once, not per frame. */
+    static final int[][] CORNER_SPANS = spans(CORNER_LEN, CORNER_LEN, LiveRecOverlay::inCorner);
+    /** The eye's runs, same layout. */
+    static final int[][] EYE_SPANS = spans(EYE[0].length(), EYE.length, (col, row) -> EYE[row].charAt(col) == '#');
+    /** Reused by {@link #guiPass} each frame instead of two fresh matrices. */
+    private static final Matrix4f SAVED_PROJECTION = new Matrix4f();
+    private static final Matrix4f GUI_PROJECTION = new Matrix4f();
 
     private LiveRecOverlay() {}
 
@@ -87,12 +97,12 @@ public final class LiveRecOverlay {
         Minecraft mc = Minecraft.getInstance();
         int w = mc.getWindow().getGuiScaledWidth();
         int h = mc.getWindow().getGuiScaledHeight();
-        Matrix4f savedProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
+        Matrix4f savedProjection = SAVED_PROJECTION.set(RenderSystem.getProjectionMatrix());
         VertexSorting savedSorting = RenderSystem.getVertexSorting();
         Matrix4fStack modelView = RenderSystem.getModelViewStack();
         modelView.pushMatrix();
         try {
-            RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(0f, w, h, 0f, 1000f, ClientHooks.getGuiFarPlane()),
+            RenderSystem.setProjectionMatrix(GUI_PROJECTION.setOrtho(0f, w, h, 0f, 1000f, ClientHooks.getGuiFarPlane()),
                 VertexSorting.ORTHOGRAPHIC_Z);
             modelView.translation(0f, 0f, 10000f - ClientHooks.getGuiFarPlane());
             RenderSystem.applyModelViewMatrix();
@@ -142,28 +152,38 @@ public final class LiveRecOverlay {
 
     /** From {@code left}: the eye, then the number, both at normal GUI size. */
     private static void viewerCount(GuiGraphics g, Font font, int left, int top, int viewers) {
-        for (int row = 0; row < EYE.length; row++) {
-            for (int col = 0; col < EYE[row].length(); col++) {
-                if (EYE[row].charAt(col) == '#') g.fill(left + col, top + row, left + col + 1, top + row + 1, WHITE);
-            }
-        }
+        for (int[] run : EYE_SPANS) g.fill(left + run[0], top + run[2], left + run[1], top + run[2] + 1, WHITE);
         g.drawString(font, Integer.toString(viewers), left + EYE[0].length() + GLYPH_GAP, top, 0xFFFFFFFF, true);
     }
 
     /**
      * A thick L with a rounded elbow at ({@code ox},{@code oy}); {@code sx}/{@code sy} are ±1 and say
-     * which way the two arms run. The shape is a pixel mask in top-left orientation, mirrored into
-     * place pixel by pixel so every orientation seams exactly the same way.
+     * which way the two arms run. The shape is a pixel mask in top-left orientation
+     * ({@link #CORNER_SPANS}), mirrored into place run by run so every orientation seams exactly the
+     * same way.
      */
     private static void corner(GuiGraphics g, int ox, int oy, int sx, int sy) {
-        for (int lx = 0; lx < CORNER_LEN; lx++) {
-            for (int ly = 0; ly < CORNER_LEN; ly++) {
-                if (!inCorner(lx, ly)) continue;
-                int x0 = sx > 0 ? ox + lx : ox - lx - 1;
-                int y0 = sy > 0 ? oy + ly : oy - ly - 1;
-                g.fill(x0, y0, x0 + 1, y0 + 1, WHITE);
+        for (int[] run : CORNER_SPANS) {
+            int x0 = sx > 0 ? ox + run[0] : ox - run[1];
+            int x1 = sx > 0 ? ox + run[1] : ox - run[0];
+            int y0 = sy > 0 ? oy + run[2] : oy - run[2] - 1;
+            g.fill(x0, y0, x1, y0 + 1, WHITE);
+        }
+    }
+
+    /** A {@code w}×{@code h} mask as horizontal runs {x0 (inclusive), x1 (exclusive), y}. */
+    static int[][] spans(int w, int h, BiPredicate<Integer, Integer> set) {
+        List<int[]> runs = new ArrayList<>();
+        for (int y = 0; y < h; y++) {
+            int x = 0;
+            while (x < w) {
+                if (!set.test(x, y)) { x++; continue; }
+                int start = x;
+                while (x < w && set.test(x, y)) x++;
+                runs.add(new int[] {start, x, y});
             }
         }
+        return runs.toArray(new int[0][]);
     }
 
     /** Local-space membership: the two straight arms past the elbow, plus the quarter ring of the elbow. */

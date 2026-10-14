@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.LiveChatRules;
 import games.brennan.dungeontrain.client.live.LiveClaimInfo;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -48,6 +49,8 @@ public final class LiveFeedClient {
         .build();
     private static final Duration RELAY_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration UPLOAD_TIMEOUT = Duration.ofSeconds(30);
+    /** Immediate re-tries of an upload whose connection failed (see {@link #withTransportRetry}). */
+    private static final int UPLOAD_RETRIES = 2;
 
     private LiveFeedClient() {}
 
@@ -238,6 +241,8 @@ public final class LiveFeedClient {
             if (!e.getValue().isJsonObject()) continue;
             JsonObject o = e.getValue().getAsJsonObject();
             if (!o.has("url")) continue;
+            // Only an https PUT target (or loopback http, a local relay's stand-in bucket).
+            if (!LiveUrls.allowed(o.get("url").getAsString(), "")) continue;
             Map<String, String> headers = new LinkedHashMap<>();
             if (o.has("headers") && o.get("headers").isJsonObject()) {
                 for (Map.Entry<String, JsonElement> h : o.getAsJsonObject("headers").entrySet()) {
@@ -296,9 +301,12 @@ public final class LiveFeedClient {
                 for (JsonElement el : b.getAsJsonArray("messages")) {
                     if (!el.isJsonObject()) continue;
                     JsonObject m = el.getAsJsonObject();
-                    String content = m.has("content") && !m.get("content").isJsonNull() ? m.get("content").getAsString() : "";
+                    // Cleaned here, not trusted from the relay: no § codes, control chars or line breaks, capped.
+                    String content = LiveChatRules.clean(m.has("content") && !m.get("content").isJsonNull() ? m.get("content").getAsString() : null,
+                        LiveChatRules.MAX_CONTENT);
                     if (content.isBlank() || !m.has("seq")) continue;
-                    String author = m.has("author") && !m.get("author").isJsonNull() ? m.get("author").getAsString() : "";
+                    String author = LiveChatRules.clean(m.has("author") && !m.get("author").isJsonNull() ? m.get("author").getAsString() : null,
+                        LiveChatRules.MAX_AUTHOR);
                     String uuid = m.has("uuid") && !m.get("uuid").isJsonNull() ? m.get("uuid").getAsString() : null;
                     Source source = Source.parse(m.has("source") && !m.get("source").isJsonNull() ? m.get("source").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
@@ -389,29 +397,96 @@ public final class LiveFeedClient {
         int viewers = b.has("viewers") ? b.get("viewers").getAsInt() : 0;
         int cap = b.has("cap") ? b.get("cap").getAsInt() : 0;
         boolean slot = !b.has("slot") || b.get("slot").getAsBoolean();
-        String replay = r.str("replayUrl");
-        String replayUrl = replay.isEmpty() ? null : replay;
+        // Relay-supplied URLs a viewer's ffmpeg will fetch: https (or loopback http) to an HLS playlist
+        // or a .ts segment, or nothing. A live status with no usable playlist reads as off air.
+        String replayUrl = LiveUrls.orNull(r.str("replayUrl"), ".ts");
+        String playlistUrl = LiveUrls.orNull(r.str("playlistUrl"), ".m3u8");
+        if (live && playlistUrl == null) {
+            LOGGER.debug("[DungeonTrain] live status: refusing playlistUrl {}", r.str("playlistUrl"));
+            live = false;
+        }
         if (!live) return new Status(false, null, null, null, viewers, cap, slot, replayUrl, false, List.of());
         // Ended: the streamer stopped and the relay keeps the stream on air while viewers play out its
         // tail; replayUrl is where a TV goes once it has reached the end.
         boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
-        return new Status(true, r.str("session"), r.str("playlistUrl"), r.str("streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended, parseVariants(b, r.str("playlistUrl")));
+        return new Status(true, r.str("session"), playlistUrl, r.str("streamer"), viewers, cap, slot,
+            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl));
     }
 
     /** PUT a local file to a signed URL with exactly the signed headers. */
     public static CompletableFuture<Result> upload(SignedPut target, Path file) {
+        return withTransportRetry(client -> put(client, target, () -> HttpRequest.BodyPublishers.ofFile(file)), UPLOAD_RETRIES);
+    }
+
+    /** PUT {@code body} (UTF-8) to a signed URL with exactly the signed headers — a rewritten playlist. */
+    public static CompletableFuture<Result> upload(SignedPut target, String body) {
+        return withTransportRetry(client -> put(client, target, () -> HttpRequest.BodyPublishers.ofString(body)), UPLOAD_RETRIES);
+    }
+
+    /** A request body that may fail to open (a file the encoder already deleted). */
+    private interface Body {
+        HttpRequest.BodyPublisher open() throws Exception;
+    }
+
+    private static CompletableFuture<Result> put(HttpClient client, SignedPut target, Body body) {
+        // Only an https PUT target (or loopback http, a local relay's stand-in bucket).
+        if (!LiveUrls.allowed(target.url(), "")) {
+            return CompletableFuture.completedFuture(new Result(0, null,
+                new IllegalArgumentException("refusing a non-https upload target")));
+        }
         try {
             HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(target.url()))
                 .timeout(UPLOAD_TIMEOUT)
-                .PUT(HttpRequest.BodyPublishers.ofFile(file));
+                .PUT(body.open());
             target.headers().forEach(b::header);
-            return STORAGE.sendAsync(b.build(), HttpResponse.BodyHandlers.ofString())
+            return client.sendAsync(b.build(), HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> new Result(resp.statusCode(), null, null))
                 .exceptionally(t -> new Result(0, null, t));
         } catch (Throwable t) {
             return CompletableFuture.completedFuture(new Result(0, null, t));
         }
+    }
+
+    /**
+     * Run {@code attempt} on the shared storage client; on a transport failure (a pooled keep-alive
+     * socket the far end already closed — "header parser received no bytes" — or a timeout) run it
+     * again straight away, up to {@code retries} more times, each on a fresh client so it cannot pick
+     * up another stale socket. A signed PUT is idempotent. An HTTP status (4xx/5xx) is never retried:
+     * a bad payload stays bad.
+     *
+     * <p>Not {@code jdk.httpclient.keepalive.timeout}: the JDK reads it once per JVM, when the first
+     * HttpClient anywhere is built, and it would change every client.</p>
+     */
+    static CompletableFuture<Result> withTransportRetry(java.util.function.Function<HttpClient, CompletableFuture<Result>> attempt, int retries) {
+        return withTransportRetry(attempt, retries, STORAGE, LiveFeedClient::freshStorageClient);
+    }
+
+    /** As above, with the clients supplied (tests pass null clients and a counting attempt). */
+    static CompletableFuture<Result> withTransportRetry(java.util.function.Function<HttpClient, CompletableFuture<Result>> attempt, int retries,
+                                                       HttpClient first, java.util.function.Supplier<HttpClient> fresh) {
+        return attempt.apply(first).thenCompose(r -> {
+            if (retries <= 0 || !isTransportFailure(r)) return CompletableFuture.completedFuture(r);
+            LOGGER.debug("[DungeonTrain] live upload transport failure, retrying on a fresh connection: {}", String.valueOf(r.error()));
+            HttpClient client = fresh.get();
+            return withTransportRetry(attempt, retries - 1, client, fresh)
+                .whenComplete((ok, t) -> { if (client != null) client.shutdown(); });
+        });
+    }
+
+    /** Status 0 from an I/O error or a timeout — the network, not the server, said no. */
+    static boolean isTransportFailure(Result r) {
+        if (r.status() != 0 || r.error() == null) return false;
+        Throwable t = r.error();
+        while ((t instanceof java.util.concurrent.CompletionException || t instanceof java.util.concurrent.ExecutionException) && t.getCause() != null) {
+            t = t.getCause();
+        }
+        // HttpTimeoutException is an IOException; a missing local file is too, but retrying cannot help it.
+        return t instanceof java.io.IOException
+            && !(t instanceof java.io.FileNotFoundException || t instanceof java.nio.file.NoSuchFileException);
+    }
+
+    private static HttpClient freshStorageClient() {
+        return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     }
 
     private static CompletableFuture<Result> post(String path, JsonObject body) {

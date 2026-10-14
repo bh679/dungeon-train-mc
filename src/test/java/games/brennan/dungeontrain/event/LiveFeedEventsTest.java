@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.event;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,6 +25,16 @@ final class LiveFeedEventsTest {
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.BANNED));
         assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.LEFT));
         assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.FAILED));
+    }
+
+    @Test
+    @DisplayName("a second START for the player already live (login, then the first-tick equip event) is ignored")
+    void alreadyStreamingSkipsTheSecondStart() {
+        UUID me = UUID.randomUUID();
+        assertTrue(LiveFeedEvents.alreadyStreaming(me, me));
+        assertTrue(LiveFeedEvents.alreadyStreaming(me, UUID.fromString(me.toString())));
+        assertFalse(LiveFeedEvents.alreadyStreaming(me, UUID.randomUUID()));
+        assertFalse(LiveFeedEvents.alreadyStreaming(me, null));
     }
 
     @Test

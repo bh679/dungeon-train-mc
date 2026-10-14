@@ -33,6 +33,8 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.UUID;
 
 /**
@@ -162,9 +164,19 @@ public final class LiveFeedEvents {
         if (player != null && streamBlocked(player)) endStream(player, Exit.FREE_PLAY);
     }
 
+    /**
+     * {@code player} already holds the stream. Logging in with the camcorder on starts it, and
+     * vanilla's first-tick equipment sync (EMPTY → camcorder) then reaches the equip path too —
+     * without this the client got two STARTs: two claims, two advancement triggers, two beacons.
+     */
+    static boolean alreadyStreaming(UUID player, @Nullable UUID current) {
+        return player.equals(current);
+    }
+
     private static void startStreaming(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
+        if (alreadyStreaming(player.getUUID(), LiveStreamers.get(server))) return;
         if (streamBlocked(player)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
             burn(player, Exit.FREE_PLAY);
