@@ -118,7 +118,10 @@ public final class PoolMove {
         if (source == null) return Result.of(Outcome.NOT_FOUND);
         Optional<Outcome> refused = refusal(from, to, targetId);
         if (refused.isPresent()) return Result.of(refused.get());
-        if (EditorShipped.isProtected(source)) return Result.of(Outcome.PROTECTED);
+        // A shipped template never moves, dev checkout or not: its bundled copy would stay behind (a
+        // built-in cannot leave its registry) while the move stripped its sidecars out of the source
+        // tree. Save it under a name of your own and move that.
+        if (source.isBuiltin() || EditorShipped.isShipped(source)) return Result.of(Outcome.PROTECTED);
         if (EditorDirtyCheck.unsavedModelIds(overworld, dims, from.dirtyCategoryId()).contains(from.id())) {
             return Result.of(Outcome.UNSAVED_EDITS);
         }
@@ -163,7 +166,9 @@ public final class PoolMove {
                 .flatMap(c -> CarriageContentsStore.get(level, c, CarriageContentsPlacer.interiorSize(box))).orElse(null);
             case WHOLE -> switch (from.tier()) {
                 case ROOM -> WholeCarriageTemplateStore.get(level, new WholeCarriage(from.id()), box).orElse(null);
-                case HALF -> WholeHalfTemplateStore.get(level, new WholeCarriage(from.id()), box).orElse(null);
+                // The half store derives the half box from the world's dims itself.
+                case HALF -> WholeHalfTemplateStore.get(level, new WholeCarriage(from.id()),
+                    DungeonTrainWorldData.get(level).dims()).orElse(null);
                 case GROUP -> CarriageGroupTemplateStore.get(level, new CarriageGroup(from.id()),
                     DungeonTrainWorldData.get(level).dims(), groupSize).orElse(null);
             };

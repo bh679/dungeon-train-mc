@@ -1,12 +1,10 @@
 package games.brennan.dungeontrain.editor.pool;
 
-import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
-import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
 import games.brennan.dungeontrain.editor.ShellWinsStore;
 import games.brennan.dungeontrain.editor.TemplateDeletes;
@@ -15,7 +13,6 @@ import games.brennan.dungeontrain.editor.WholeCarriageEditor;
 import games.brennan.dungeontrain.editor.WholeCarriageTemplateStore;
 import games.brennan.dungeontrain.editor.WholeHalfTemplateStore;
 import games.brennan.dungeontrain.editor.WholeTemplateNew;
-import games.brennan.dungeontrain.editor.WholeVariantBlocks;
 import games.brennan.dungeontrain.template.Template;
 import games.brennan.dungeontrain.train.CarriageContents;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
@@ -29,7 +26,6 @@ import games.brennan.dungeontrain.train.ContentsSize;
 import games.brennan.dungeontrain.train.ShellPool;
 import games.brennan.dungeontrain.train.WholeCarriage;
 import games.brennan.dungeontrain.train.WholeKind;
-import games.brennan.dungeontrain.train.WholeWeights;
 import net.minecraft.server.level.ServerLevel;
 
 import java.io.IOException;
@@ -80,10 +76,8 @@ public final class PoolDeletes {
             case HALF -> WholeHalfTemplateStore.delete(new WholeCarriage(id));
             case ROOM -> WholeCarriageTemplateStore.delete(new WholeCarriage(id));
         };
-        WholeWeights.unset(kind, id);
-        WholeVariantBlocks.delete(kind, id);
-        ContainerContentsStore.deleteConfig(BlockVariantPlot.wholeKey(kind, id));
         boolean wasCustom = !model.isBuiltin();
+        TemplateDeletes.Report cleanup = TemplateDeletes.whole(kind, id, wasCustom);
         if (wasCustom) {
             WholeTemplateNew.unregister(kind, id);
             if (shown) {
@@ -98,7 +92,7 @@ public final class PoolDeletes {
         } else if (shown) {
             CarriageStampGuard.run(() -> WholeCarriageEditor.stampPlot(overworld, model, dims));
         }
-        return new Removed(existed, wasCustom, TemplateDeletes.Report.EMPTY);
+        return new Removed(existed, wasCustom, cleanup);
     }
 
     /** Remove a contents template. {@code shown}: whether the Contents category is on show. */
