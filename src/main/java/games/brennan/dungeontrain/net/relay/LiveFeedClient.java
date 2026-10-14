@@ -48,6 +48,8 @@ public final class LiveFeedClient {
         .build();
     private static final Duration RELAY_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration UPLOAD_TIMEOUT = Duration.ofSeconds(30);
+    /** Immediate re-tries of an upload whose connection failed (see {@link #withTransportRetry}). */
+    private static final int UPLOAD_RETRIES = 2;
 
     private LiveFeedClient() {}
 
@@ -401,17 +403,73 @@ public final class LiveFeedClient {
 
     /** PUT a local file to a signed URL with exactly the signed headers. */
     public static CompletableFuture<Result> upload(SignedPut target, Path file) {
+        return withTransportRetry(client -> put(client, target, () -> HttpRequest.BodyPublishers.ofFile(file)), UPLOAD_RETRIES);
+    }
+
+    /** PUT {@code body} (UTF-8) to a signed URL with exactly the signed headers — a rewritten playlist. */
+    public static CompletableFuture<Result> upload(SignedPut target, String body) {
+        return withTransportRetry(client -> put(client, target, () -> HttpRequest.BodyPublishers.ofString(body)), UPLOAD_RETRIES);
+    }
+
+    /** A request body that may fail to open (a file the encoder already deleted). */
+    private interface Body {
+        HttpRequest.BodyPublisher open() throws Exception;
+    }
+
+    private static CompletableFuture<Result> put(HttpClient client, SignedPut target, Body body) {
         try {
             HttpRequest.Builder b = HttpRequest.newBuilder(URI.create(target.url()))
                 .timeout(UPLOAD_TIMEOUT)
-                .PUT(HttpRequest.BodyPublishers.ofFile(file));
+                .PUT(body.open());
             target.headers().forEach(b::header);
-            return STORAGE.sendAsync(b.build(), HttpResponse.BodyHandlers.ofString())
+            return client.sendAsync(b.build(), HttpResponse.BodyHandlers.ofString())
                 .thenApply(resp -> new Result(resp.statusCode(), null, null))
                 .exceptionally(t -> new Result(0, null, t));
         } catch (Throwable t) {
             return CompletableFuture.completedFuture(new Result(0, null, t));
         }
+    }
+
+    /**
+     * Run {@code attempt} on the shared storage client; on a transport failure (a pooled keep-alive
+     * socket the far end already closed — "header parser received no bytes" — or a timeout) run it
+     * again straight away, up to {@code retries} more times, each on a fresh client so it cannot pick
+     * up another stale socket. A signed PUT is idempotent. An HTTP status (4xx/5xx) is never retried:
+     * a bad payload stays bad.
+     *
+     * <p>Not {@code jdk.httpclient.keepalive.timeout}: the JDK reads it once per JVM, when the first
+     * HttpClient anywhere is built, and it would change every client.</p>
+     */
+    static CompletableFuture<Result> withTransportRetry(java.util.function.Function<HttpClient, CompletableFuture<Result>> attempt, int retries) {
+        return withTransportRetry(attempt, retries, STORAGE, LiveFeedClient::freshStorageClient);
+    }
+
+    /** As above, with the clients supplied (tests pass null clients and a counting attempt). */
+    static CompletableFuture<Result> withTransportRetry(java.util.function.Function<HttpClient, CompletableFuture<Result>> attempt, int retries,
+                                                       HttpClient first, java.util.function.Supplier<HttpClient> fresh) {
+        return attempt.apply(first).thenCompose(r -> {
+            if (retries <= 0 || !isTransportFailure(r)) return CompletableFuture.completedFuture(r);
+            LOGGER.debug("[DungeonTrain] live upload transport failure, retrying on a fresh connection: {}", String.valueOf(r.error()));
+            HttpClient client = fresh.get();
+            return withTransportRetry(attempt, retries - 1, client, fresh)
+                .whenComplete((ok, t) -> { if (client != null) client.shutdown(); });
+        });
+    }
+
+    /** Status 0 from an I/O error or a timeout — the network, not the server, said no. */
+    static boolean isTransportFailure(Result r) {
+        if (r.status() != 0 || r.error() == null) return false;
+        Throwable t = r.error();
+        while ((t instanceof java.util.concurrent.CompletionException || t instanceof java.util.concurrent.ExecutionException) && t.getCause() != null) {
+            t = t.getCause();
+        }
+        // HttpTimeoutException is an IOException; a missing local file is too, but retrying cannot help it.
+        return t instanceof java.io.IOException
+            && !(t instanceof java.io.FileNotFoundException || t instanceof java.nio.file.NoSuchFileException);
+    }
+
+    private static HttpClient freshStorageClient() {
+        return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     }
 
     private static CompletableFuture<Result> post(String path, JsonObject body) {

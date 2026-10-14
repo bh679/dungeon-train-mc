@@ -25792,6 +25792,23 @@
       "released": true,
       "released_in": "v0.1283.0",
       "released_at": "2026-10-13T16:12:02Z"
+    },
+    {
+      "id": "live-feed-missing-segments",
+      "version": "0.1284.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Feed no longer crashes on a shaky connection",
+      "summary": "Live Feed: a shaky connection on the streamer's side no longer makes the stream crash for viewers \u2014 a lost 10-second piece is skipped instead of taking the whole stream down.",
+      "highlights": [],
+      "pr": 1997,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
