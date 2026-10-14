@@ -616,7 +616,9 @@ public final class LiveStreamController {
         // An earlier point that never fired (no GUI pass this frame, or another mod removed the chat
         // layer) drops the frame: reading the finished frame instead could send what was kept back.
         StreamCapture.Point point = INSTANCE.capturePoint();
-        if (point == StreamCapture.Point.FRAME_END) INSTANCE.grabFrame();
+        if (point == StreamCapture.Point.FRAME_END || point == StreamCapture.Point.FRAME_END_HIDE_CHAT) {
+            INSTANCE.grabFrame();
+        }
     }
 
     /**
@@ -629,18 +631,22 @@ public final class LiveStreamController {
     }
 
     /**
-     * Stream chat off (always, in Kid mode): read just before chat draws. Receives cancelled events
-     * for the same reason as {@link #onGuiStart}.
+     * Stream chat off (always, in Kid mode): read just before chat draws, or skip the chat layer
+     * while a listed menu is open. Receives cancelled events for the same reason as {@link #onGuiStart}.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public static void onGuiLayer(RenderGuiLayerEvent.Pre event) {
         if (!VanillaGuiLayers.CHAT.equals(event.getName())) return;
-        if (INSTANCE.capturePoint() == StreamCapture.Point.BEFORE_CHAT) INSTANCE.grabNow(event.getGuiGraphics());
+        switch (INSTANCE.capturePoint()) {
+            case BEFORE_CHAT -> INSTANCE.grabNow(event.getGuiGraphics());
+            case FRAME_END_HIDE_CHAT -> event.setCanceled(true);
+            default -> { }
+        }
     }
 
     /**
-     * A screen open with chat on: read once the HUD is drawn and before the screen is, so the chat
-     * box, a sign or book being written, or any other menu never reaches viewers.
+     * An unlisted screen open with chat on: read once the HUD is drawn and before the screen is, so
+     * the chat box, a sign or book being written, or any other menu never reaches viewers.
      */
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
     public static void onGuiEnd(RenderGuiEvent.Post event) {
@@ -660,7 +666,7 @@ public final class LiveStreamController {
         Minecraft mc = Minecraft.getInstance();
         Screen screen = mc.screen;
         return StreamCapture.point(LiveFeedClientConfig.streamGui(), streamChatShown(),
-            screen != null, mc.options.hideGui);
+            screen != null, StreamableScreens.shown(screen), mc.options.hideGui);
     }
 
     /** The Stream chat switch as it applies to this player — always off in Kid mode. */
