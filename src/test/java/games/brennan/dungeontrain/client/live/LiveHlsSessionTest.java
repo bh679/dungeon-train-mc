@@ -83,14 +83,82 @@ class LiveHlsSessionTest {
 
     @Test
     void ffmpegPipesRgbaSoFramesNeedNoConversion() {
-        List<String> live = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false));
+        List<String> live = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true));
         assertTrue(live.contains("rgba"), "live frames arrive as RGBA");
         assertFalse(live.contains("rgb24"));
         assertTrue(String.join(" ", live).contains("-live_start_index -1"), "join at the newest segment");
 
-        List<String> replay = List.of(LiveHlsSession.args("https://x/seg.ts", 640, 360, true));
+        List<String> replay = List.of(LiveHlsSession.args("https://x/seg.ts", 640, 360, true, true));
         assertTrue(replay.contains("rgba"));
         assertFalse(String.join(" ", replay).contains("rgb24"), "the replay filter ends in rgba too");
+    }
+
+    private static String joined(String url, boolean replay, boolean catchup) {
+        return String.join(" ", LiveHlsSession.args(url, 640, 360, replay, catchup));
+    }
+
+    @Test
+    void ffmpegMaySpeakOnlyHttpsUnlessThePlaylistItselfIsPlainHttp() {
+        assertTrue(joined("https://x/live.m3u8", false, true).contains("-protocol_whitelist https,tls,tcp "));
+        assertTrue(joined("https://x/seg00001.ts", true, true).contains("-protocol_whitelist https,tls,tcp "), "the replay too");
+        assertTrue(joined("http://127.0.0.1:3412/live.m3u8", false, true).contains("-protocol_whitelist http,https,tls,tcp "),
+            "a local relay's stand-in bucket");
+    }
+
+    @Test
+    void everyReadTimesOut() {
+        assertTrue(joined("https://x/live.m3u8", false, true).contains("-rw_timeout " + LiveHlsSession.RW_TIMEOUT_US + " "));
+        assertTrue(joined("https://x/seg00001.ts", true, false).contains("-rw_timeout "));
+        assertEquals(15_000_000L, LiveHlsSession.RW_TIMEOUT_US, "microseconds");
+    }
+
+    @Test
+    void aLiveRunPacesWithCatchUpWhenFfmpegCanElseRe() {
+        List<String> live = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, true));
+        assertFalse(live.contains("-re"), "-re never catches up after a stall");
+        assertTrue(String.join(" ", live).contains("-readrate 1 -readrate_catchup 2"));
+        // The options precede the input they apply to.
+        assertTrue(live.indexOf("-readrate") < live.indexOf("-i"));
+
+        List<String> old = List.of(LiveHlsSession.args("https://x/live.m3u8", 640, 360, false, false));
+        assertTrue(old.contains("-re"), "an ffmpeg before 7.1 has no -readrate_catchup");
+        assertFalse(old.contains("-readrate_catchup"));
+    }
+
+    @Test
+    void theReplayLoopKeepsRe() {
+        List<String> replay = List.of(LiveHlsSession.args("https://x/seg00004.ts", 640, 360, true, true));
+        assertTrue(replay.contains("-re"), "-stream_loop would spin through the clip without it");
+        assertTrue(replay.indexOf("-re") < replay.indexOf("-i"));
+        assertTrue(String.join(" ", replay).contains("-stream_loop -1"));
+        assertFalse(replay.contains("-readrate_catchup"));
+    }
+
+    @Test
+    void aPlaylistOfOurOwnSegmentsIsSafe() {
+        String encoder = "#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:10\n#EXT-X-MEDIA-SEQUENCE:40\n"
+            + "#EXTINF:10.000000,\nseg00040.ts\n#EXTINF:10.000000,\nseg00041.ts\n";
+        assertTrue(LiveHlsSession.safePlaylist(encoder));
+        assertTrue(LiveHlsSession.safePlaylist(encoder + "#EXT-X-ENDLIST\n"));
+        assertTrue(LiveHlsSession.safePlaylist(encoder.replace("\n", "\r\n")), "CRLF");
+        assertTrue(LiveHlsSession.safePlaylist("#EXTM3U\n#EXT-X-TARGETDURATION:10\n"), "no segment yet");
+    }
+
+    @Test
+    void aPlaylistPointingAnywhereElseIsRefused() {
+        String head = "#EXTM3U\n#EXT-X-TARGETDURATION:10\n#EXTINF:10.0,\n";
+        assertFalse(LiveHlsSession.safePlaylist(head + "https://evil.example/seg00001.ts\n"), "an absolute URL");
+        assertFalse(LiveHlsSession.safePlaylist(head + "http://127.0.0.1:8080/seg00001.ts\n"));
+        assertFalse(LiveHlsSession.safePlaylist(head + "//evil.example/seg00001.ts\n"), "scheme-relative");
+        assertFalse(LiveHlsSession.safePlaylist(head + "../other/seg00001.ts\n"), "a path");
+        assertFalse(LiveHlsSession.safePlaylist(head + "seg1.ts\n"), "another name");
+        assertFalse(LiveHlsSession.safePlaylist(head + "seg00001.ts?x=1\n"));
+        assertFalse(LiveHlsSession.safePlaylist(head + "file:///etc/passwd\n"));
+        assertFalse(LiveHlsSession.safePlaylist("#EXTM3U\n#EXT-X-KEY:METHOD=AES-128,URI=\"https://evil.example/k\"\n"
+            + "#EXTINF:10.0,\nseg00001.ts\n"), "a key fetched from elsewhere");
+        assertFalse(LiveHlsSession.safePlaylist("#EXTM3U\n#EXT-X-MAP:uri=\"init.mp4\"\n"), "a map");
+        assertFalse(LiveHlsSession.safePlaylist("<html>not a playlist</html>"));
+        assertFalse(LiveHlsSession.safePlaylist(null));
     }
 
     @Test
