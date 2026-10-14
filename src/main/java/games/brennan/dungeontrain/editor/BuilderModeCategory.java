@@ -29,6 +29,7 @@ public final class BuilderModeCategory {
             case TRACKS_TUNNELS -> EditorCategory.TRACKS;
             case TRAIN_DIMENSIONS -> EditorCategory.PORTALS;
             case BUILDINGS -> EditorCategory.BUILDINGS;
+            case WORKBENCH -> EditorCategory.WORKBENCH;
         };
     }
 

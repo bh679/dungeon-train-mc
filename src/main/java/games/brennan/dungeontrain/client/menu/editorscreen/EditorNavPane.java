@@ -109,10 +109,14 @@ final class EditorNavPane {
      * advanced rest ({@code NavTiles}). Pure so the fit can be tested without a client.
      */
     static List<InventoryEditorLayout.Rect> tiles(InventoryEditorLayout.Rect area) {
+        return tiles(area, BuilderMode.NAV_ORDER);
+    }
+
+    static List<InventoryEditorLayout.Rect> tiles(InventoryEditorLayout.Rect area, List<BuilderMode> order) {
         // Tiles span the column; the cover-cropped art shows a wider slice when height-limited.
         List<InventoryEditorLayout.Rect> out = new ArrayList<>();
         for (games.brennan.dungeontrain.client.builder.NavTiles.Cell c
-                : games.brennan.dungeontrain.client.builder.NavTiles.layout(area.x(), area.y(), area.w(), area.h())) {
+                : games.brennan.dungeontrain.client.builder.NavTiles.layout(order, area.x(), area.y(), area.w(), area.h())) {
             out.add(new InventoryEditorLayout.Rect(c.x(), c.y(), c.w(), c.h()));
         }
         return out;
@@ -156,8 +160,10 @@ final class EditorNavPane {
                            BuilderMode selected, BuilderMode here, int mouseX, int mouseY) {
         InventoryEditorLayout.Rect r = rect(layout);
         g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, theme.subPanel());
-        List<InventoryEditorLayout.Rect> cells = tiles(r);
-        List<BuilderMode> modes = BuilderMode.NAV_ORDER;
+        // A dev checkout leads with the Workbench, the reviewer's bench; a release never lists it.
+        List<BuilderMode> modes = BuilderMode.navOrder(
+            games.brennan.dungeontrain.client.EditorStatusHudOverlay.isDevModeOn());
+        List<InventoryEditorLayout.Rect> cells = tiles(r, modes);
         tileRects.clear();
         for (int i = 0; i < modes.size() && i < cells.size(); i++) {
             BuilderMode mode = modes.get(i);

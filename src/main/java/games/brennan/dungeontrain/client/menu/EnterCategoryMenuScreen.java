@@ -38,14 +38,20 @@ public final class EnterCategoryMenuScreen implements MenuScreen {
 
     @Override public List<CommandMenuEntry> entries() {
         String current = EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT);
-        return List.of(
+        List<CommandMenuEntry> out = new java.util.ArrayList<>(8);
+        // The reviewer's bench leads in a dev checkout; a release never lists it.
+        if (EditorStatusHudOverlay.isDevModeOn()) {
+            out.add(entryFor(MenuLang.t("category.workbench"), "workbench", current));
+        }
+        out.addAll(List.of(
             entryFor(MenuLang.t("category.whole"), "whole", current),
             entryFor(MenuLang.t("category.tracks"), "tracks", current),
             entryFor(MenuLang.t("category.carriages"), "carriages", current),
             entryFor(MenuLang.t("category.contents"), "contents", current),
             entryFor(MenuLang.t("category.dimensions"), "portals", current),
             new CommandMenuEntry.Back(MenuLang.t("common.back"))
-        );
+        ));
+        return out;
     }
 
     /**
