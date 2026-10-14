@@ -148,6 +148,12 @@ public final class LiveChatBridge {
             cursor = page.seq(); // joined: start from now
             return;
         }
+        if (LiveChatRules.restarted(cursor, page.seq())) {
+            // The relay was redeployed: its ring starts again at 1 while the stream carries on. Follow
+            // the new head or every later poll asks for seqs that will never come and chat goes silent.
+            cursor = page.seq();
+            signatures.clear();
+        }
         if (mc.player == null || mc.level == null) return;
         UUID me = mc.getUser() != null ? mc.getUser().getProfileId() : null;
         // The tab list, not level.players(): that only holds players within render range.
@@ -174,7 +180,7 @@ public final class LiveChatBridge {
             MessageSignature sig = signatures.take(seq);
             if (sig != null) chat.deleteMessage(sig);
         }
-        cursor = Math.max(cursor, page.seq());
+        cursor = LiveChatRules.nextCursor(cursor, page.seq());
     }
 
     private static String base(boolean streaming) {

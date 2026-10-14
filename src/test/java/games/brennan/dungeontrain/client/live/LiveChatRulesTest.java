@@ -60,6 +60,44 @@ class LiveChatRulesTest {
     }
 
     @Test
+    @DisplayName("clean: § codes, control characters and line breaks go; the rest is stripped and capped")
+    void clean() {
+        assertEquals("", LiveChatRules.clean(null, 10));
+        assertEquals("hi there", LiveChatRules.clean("§ahi §kthere§r", 100));
+        assertEquals("one[Dev] two", LiveChatRules.clean("one\n[Dev] two\r", 100), "a forged second line folds into one");
+        assertEquals("ab", LiveChatRules.clean("a\u0000\u0007\u007fb\t", 100));
+        assertEquals("tail", LiveChatRules.clean("tail§", 100), "a lone trailing § is dropped");
+        assertEquals("héllo 🎉", LiveChatRules.clean("  héllo 🎉  ", 100), "unicode is untouched");
+        assertEquals(LiveChatRules.MAX_AUTHOR, LiveChatRules.clean("n".repeat(99), LiveChatRules.MAX_AUTHOR).length());
+        assertEquals(LiveChatRules.MAX_CONTENT, LiveChatRules.clean("x".repeat(600), LiveChatRules.MAX_CONTENT).length());
+    }
+
+    @Test
+    @DisplayName("cursor: joins at the head, grows, ignores a failed poll, and follows a relay restart")
+    void cursorFollowsRelayRestart() {
+        assertEquals(42, LiveChatRules.nextCursor(-1, 42), "join");
+        assertEquals(50, LiveChatRules.nextCursor(42, 50), "grows");
+        assertEquals(50, LiveChatRules.nextCursor(50, -1), "failed poll leaves it alone");
+        assertEquals(-1, LiveChatRules.nextCursor(-1, -1));
+        assertEquals(3, LiveChatRules.nextCursor(400, 3), "relay redeployed: ring restarts at 1");
+        assertTrue(LiveChatRules.restarted(400, 3));
+        assertFalse(LiveChatRules.restarted(400, 400));
+        assertFalse(LiveChatRules.restarted(-1, 3), "not yet joined");
+        assertFalse(LiveChatRules.restarted(400, -1), "a failed poll is not a restart");
+    }
+
+    @Test
+    @DisplayName("line: a forged author or content still prints as one plain line")
+    void lineIsPlain() {
+        ChatLine l = new ChatLine(1, 0, "Vi§cewer\n[Dev]", null, "hi\n§kthere", Source.DISCORD);
+        assertEquals("chat.dungeontrain.live_chat.prefix Viewer[Dev]: hithere", LiveChatRules.line(l).getString());
+        for (var sib : LiveChatRules.line(l).getSiblings()) {
+            assertNull(sib.getStyle().getClickEvent());
+            assertNull(sib.getStyle().getHoverEvent());
+        }
+    }
+
+    @Test
     @DisplayName("line: [Live] Name: text, the name coloured by room")
     void line() {
         ChatLine l = new ChatLine(1, 0, "Viewer", null, "hi there", Source.DISCORD);

@@ -66,6 +66,26 @@ class LiveFeedClientChatParseTest {
     }
 
     @Test
+    @DisplayName("untrusted text: § codes, control chars and line breaks are stripped and lengths capped on the client")
+    void untrustedText() {
+        String longContent = "x".repeat(600);
+        String longAuthor = "n".repeat(40);
+        ChatPage p = parse(200, """
+            {"ok":true,"live":true,"seq":4,"messages":[
+              {"seq":1,"author":"Vie\\u00a7cwer\\n[Dev]","content":"\\u00a7kx\\n[Dev] hi","source":"discord"},
+              {"seq":2,"author":"A","content":"\\u00a7a","source":"twitch"},
+              {"seq":3,"author":"%s","content":"%s","source":"discord"},
+              {"seq":4,"author":"\\u00a7c","content":"ok","source":"discord"}
+            ]}""".formatted(longAuthor, longContent));
+        assertEquals(3, p.lines().size(), "content that is only a format code is dropped");
+        assertEquals("Viewer[Dev]", p.lines().get(0).author());
+        assertEquals("x[Dev] hi", p.lines().get(0).content());
+        assertEquals(games.brennan.dungeontrain.client.live.LiveChatRules.MAX_AUTHOR, p.lines().get(1).author().length());
+        assertEquals(games.brennan.dungeontrain.client.live.LiveChatRules.MAX_CONTENT, p.lines().get(1).content().length());
+        assertEquals("Someone", p.lines().get(2).author(), "an author that cleans to nothing reads Someone");
+    }
+
+    @Test
     @DisplayName("deleted: the removed seqs come through; junk entries and a missing field give none")
     void deleted() {
         ChatPage p = parse(200, """
