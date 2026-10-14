@@ -70,12 +70,12 @@ class LivePerfWindowTest {
     void viewerLineWithUnknownCpu() {
         LivePerfWindow w = new LivePerfWindow();
         w.decoderRun();
-        w.decoded();
-        w.decoded();
+        w.decoded(MS);
+        w.decoded(3 * MS);
         w.upload(MS / 2);
         String line = LivePerfWindow.format(w.drain(),
             new LivePerfWindow.Context(false, null, null, 1, 640, null, 90));
-        assertEquals("[live] role=view view sessions=1 width=640 decoded=2 stalls=0 runs=1"
+        assertEquals("[live] role=view view sessions=1 width=640 decoded=2 publishMs avg=2.00 max=3.00 stalls=0 runs=1"
             + " uploadMs avg=0.50 max=0.50 decCpu=n/a | fps=90 worstFrameMs=0.00", line);
     }
 
@@ -92,7 +92,7 @@ class LivePerfWindowTest {
     void streamerWatchingTheirOwnBoxIsBoth() {
         LivePerfWindow w = new LivePerfWindow();
         w.grab(MS);
-        w.decoded();
+        w.decoded(MS);
         String line = LivePerfWindow.format(w.drain(),
             new LivePerfWindow.Context(true, "960x540@20", 20.0, 1, 480, 6.0, 80));
         assertTrue(line.startsWith("[live] role=stream+view size=960x540@20"), line);
