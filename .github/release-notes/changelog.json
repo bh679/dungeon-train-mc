@@ -25842,6 +25842,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-smoother-streaming",
+      "version": "0.1284.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "community"
+      ],
+      "title": "Smoother Live Eye streaming",
+      "summary": "Putting on the Live Eye no longer makes the game hitch while the stream starts, and streaming costs less frame time: the on-screen viewfinder and the pinned live box are much cheaper to draw. Logging back in while wearing the Live Eye starts one stream instead of two, a hand-edited odd video width no longer stops the stream, and ending a stream no longer leaks memory.",
+      "highlights": [],
+      "pr": 2001,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
