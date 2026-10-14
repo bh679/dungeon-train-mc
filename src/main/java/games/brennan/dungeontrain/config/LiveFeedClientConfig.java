@@ -49,7 +49,7 @@ public final class LiveFeedClientConfig {
             .comment("Allow this client to broadcast when you put the headpiece on. Off = the headpiece still burns away and takes the channel, but nothing is sent (the feed shows static).")
             .define("streamingEnabled", true);
         STREAM_GUI = b
-            .comment("Show your HUD to viewers. Off = viewers see only the world and your hand. Open menus (the chat box, signs, books, inventories) are never shown.")
+            .comment("Show your HUD and menus (inventories, the pause menu, advancements) to viewers. Off = viewers see only the world and your hand. Screens you type into (the chat box, signs, books, anvils) and other mods' screens are never shown.")
             .define("streamGui", true);
         STREAM_CHAT = b
             .comment("Show the chat lines on your screen to viewers, whispers included. What you type is never shown. Always off in Kid mode, whatever this says.")
@@ -124,7 +124,7 @@ public final class LiveFeedClientConfig {
         STREAMING_ENABLED.save();
     }
 
-    /** Whether viewers see the HUD and open menus. */
+    /** Whether viewers see the HUD and the listed menus ({@code client.live.StreamableScreens}). */
     public static boolean streamGui() { return !loaded() || STREAM_GUI.get(); }
 
     /** The chat switch as set; {@code StreamCapture} still forces chat off in Kid mode. */
