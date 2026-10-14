@@ -446,6 +446,40 @@ public final class TemplateSidecars {
     }
 
     /**
+     * {@link #apply} for a Workbench test's scratch install: the sidecar <b>files</b> only, and the
+     * caches dropped even when there are none to write. No weights — those live in the shared weight
+     * files, and a test must leave nothing behind — and no credit, which is filed by id for good.
+     */
+    public static void applyFilesForTest(BuilderPhotoPaths.Kind kind, String subKind, String id, String doc) {
+        if (doc != null && !doc.isBlank()) {
+            try {
+                applyFiles(kind, subKind, id, SidecarDocCodec.parse(doc));
+                return;
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] Template sidecars: test copy '{}' came with a document that "
+                        + "would not parse — tested without them: {}", id, e.toString());
+            }
+        }
+        invalidateCaches(kind, subKind, id);
+    }
+
+    /**
+     * The weights entry's mode tag in {@code doc} — a portal room's walls, doors and sky — or null.
+     * Read for a Workbench test, which holds it in memory rather than writing the shared weights.
+     */
+    public static String modeOf(String doc) {
+        if (doc == null || doc.isBlank()) return null;
+        try {
+            JsonObject root = SidecarDocCodec.parse(doc);
+            if (!root.has(K_WEIGHTS)) return null;
+            TemplateMeta meta = decodeWeights(root.get(K_WEIGHTS));
+            return meta == null ? null : meta.mode();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
      * File the byline the build arrived with — who <b>originally</b> built it.
      *
      * <p>Laid down before the download path files the row's owner, and

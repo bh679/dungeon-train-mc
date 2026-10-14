@@ -359,6 +359,10 @@ final class EditorScreenActionsTest {
                 ((CommandMenuEntry.DrillIn) entry).target());
             assertEquals("dungeontrain editor test tracks " + modelId + " mossy", check.testCommand());
         }
+        // A Workbench build is offered whatever its kind — the server says if it has no scene.
+        PortalTestSaveCheckScreen workbench = assertInstanceOf(PortalTestSaveCheckScreen.class,
+            EditorScreenActions.testCheckFor(PlotCategory.WORKBENCH, "workbench", "cottage-12"));
+        assertEquals("dungeontrain editor workbench test cottage-12", workbench.testCommand());
         // A model id that is not a piece of the line has nothing to stand up.
         assertNull(EditorScreenActions.testCheckFor(PlotCategory.TRACKS, "portal_room", "mossy"));
         assertNull(EditorScreenActions.testCheckFor(PlotCategory.TRACKS, null, "mossy"));

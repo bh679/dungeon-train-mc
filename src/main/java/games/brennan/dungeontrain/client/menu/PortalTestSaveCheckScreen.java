@@ -34,6 +34,9 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
     /** The same for a carriage or contents template — {@code CarriageTestCommand}. */
     private static final String TEMPLATE_TEST_COMMAND = "dungeontrain editor test";
 
+    /** The Workbench's own node — {@code WorkbenchCommand}: {@code test <id>} and {@code save <id>}. */
+    private static final String WORKBENCH_COMMAND = "dungeontrain editor workbench";
+
     /**
      * Position-resolved save, the same one the File tab's Save row runs. The player is standing in
      * the plot by construction — this screen is only reachable from the menu shown inside it — so
@@ -94,6 +97,16 @@ public final class PortalTestSaveCheckScreen implements MenuScreen {
     public static PortalTestSaveCheckScreen forTrack(String modelId, String name) {
         return new PortalTestSaveCheckScreen("tracks", modelId + "." + name,
             TEMPLATE_TEST_COMMAND + " tracks " + modelId + " " + name);
+    }
+
+    /**
+     * Test a Workbench build as the kind the relay gave it. The server stands it up for the length of
+     * the test without committing it, and refuses kinds with no test scene. Saved by staged id, so
+     * the plot's edits are in the snapshot the test reads.
+     */
+    public static PortalTestSaveCheckScreen forWorkbench(String stagedId) {
+        return new PortalTestSaveCheckScreen("workbench", stagedId,
+            WORKBENCH_COMMAND + " test " + stagedId, WORKBENCH_COMMAND + " save " + stagedId);
     }
 
     /** The command this screen dispatches — visible for testing. */

@@ -78,6 +78,8 @@ public final class WholeWeights {
 
     /** Clamped weight for {@code (kind, id)}; {@link #DEFAULT} when there is no entry. */
     public static synchronized int weightFor(WholeKind kind, String id) {
+        // A Workbench build under test is never drawn — only its test stands it up, by id.
+        if (games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.isScratchId(id)) return MIN;
         TemplateMeta m = metaFor(kind, id);
         return m == null ? DEFAULT : clamp(m.weight());
     }
