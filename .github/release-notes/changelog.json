@@ -25826,6 +25826,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-chat-survives-relay-restart",
+      "version": "0.1284.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Chat keeps working after a relay restart",
+      "summary": "In-game Live Chat no longer goes quiet for the rest of a stream when the relay is restarted mid-stream \u2014 the chat picks up again on its own.",
+      "highlights": [],
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

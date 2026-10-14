@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.LiveChatRules;
 import games.brennan.dungeontrain.client.live.LiveClaimInfo;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -298,9 +299,12 @@ public final class LiveFeedClient {
                 for (JsonElement el : b.getAsJsonArray("messages")) {
                     if (!el.isJsonObject()) continue;
                     JsonObject m = el.getAsJsonObject();
-                    String content = m.has("content") && !m.get("content").isJsonNull() ? m.get("content").getAsString() : "";
+                    // Cleaned here, not trusted from the relay: no § codes, control chars or line breaks, capped.
+                    String content = LiveChatRules.clean(m.has("content") && !m.get("content").isJsonNull() ? m.get("content").getAsString() : null,
+                        LiveChatRules.MAX_CONTENT);
                     if (content.isBlank() || !m.has("seq")) continue;
-                    String author = m.has("author") && !m.get("author").isJsonNull() ? m.get("author").getAsString() : "";
+                    String author = LiveChatRules.clean(m.has("author") && !m.get("author").isJsonNull() ? m.get("author").getAsString() : null,
+                        LiveChatRules.MAX_AUTHOR);
                     String uuid = m.has("uuid") && !m.get("uuid").isJsonNull() ? m.get("uuid").getAsString() : null;
                     Source source = Source.parse(m.has("source") && !m.get("source").isJsonNull() ? m.get("source").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
