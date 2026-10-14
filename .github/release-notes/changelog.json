@@ -25923,6 +25923,24 @@
       "released_at": "2026-10-14T11:36:16Z"
     },
     {
+      "id": "stream-name-pill-below-jade",
+      "version": "0.1287.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Your name on the stream no longer hides under Jade",
+      "summary": "With Jade installed, the \"is live\" name tag on your broadcast now sits just below Jade's tooltip instead of underneath it, and slides back to the top a moment after the tooltip goes.",
+      "highlights": [],
+      "pr": 2004,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "live-eye-links-phones-hidden",
       "version": "0.1287.0",
       "type": "feat",

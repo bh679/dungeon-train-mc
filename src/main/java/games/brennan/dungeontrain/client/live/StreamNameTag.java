@@ -32,7 +32,8 @@ import org.joml.Matrix4fStack;
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
  * ({@link StreamPreview}) — so viewers and the preview see it, the streamer's own screen never does,
  * and it is there on every frame (menus open, GUI off) until the streamer sets it to None. Sized in
- * the stream's own GUI pixels so it matches the HUD viewers see.</p>
+ * the stream's own GUI pixels so it matches the HUD viewers see. When Jade's look-at tooltip is over
+ * that spot the pill drops below it ({@link StreamTagObstruction}).</p>
  *
  * <p>Which name: {@link LiveFeedClientConfig#streamNameTag()}. Kid mode shows none. A Discord tag
  * with no linked Discord name shows nothing rather than falling back to the Minecraft name.</p>
@@ -40,7 +41,7 @@ import org.joml.Matrix4fStack;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class StreamNameTag {
 
-    /** GUI pixels from the top of the picture to the top of the pill. */
+    /** GUI pixels from the top of the picture to the top of the pill, when nothing is in the way. */
     static final int TOP_OFFSET = 4;
     static final String LABEL_KEY = "gui.dungeontrain.live.name_tag";
     static final String LABEL_CHAT_OFF_KEY = "gui.dungeontrain.live.name_tag.chat_off";
@@ -176,7 +177,11 @@ public final class StreamNameTag {
         int pillW = Math.round(groupW + 2 * PAD_X * scale);
         int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
         int pillX = (targetW - pillW) / 2;
-        int pillY = Math.round(TOP_OFFSET * scale);
+        float guiCentre = targetW / scale / 2f;
+        float guiHalfW = pillW / scale / 2f;
+        float guiTop = StreamTagObstruction.top(guiCentre - guiHalfW, guiCentre + guiHalfW, TOP_OFFSET,
+            System.currentTimeMillis());
+        int pillY = Math.round(guiTop * scale);
         int line = Math.max(1, Math.round(scale));
         pill(graphics, pillX, pillY, pillW, pillH, OUTLINE);
         pill(graphics, pillX + line, pillY + line, pillW - 2 * line, pillH - 2 * line, PILL);
