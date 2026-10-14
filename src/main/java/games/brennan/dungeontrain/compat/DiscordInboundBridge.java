@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DevMessageConsent;
 import games.brennan.dungeontrain.logrequest.LogRequestManager;
+import games.brennan.dungeontrain.logrequest.VersionReportText;
+import games.brennan.dungeontrain.logrequest.VersionRequestManager;
 
 import java.util.UUID;
 
@@ -53,6 +55,12 @@ public final class DiscordInboundBridge {
             // "/bug" asks the thread's player for their logs instead of being shown as a message.
             if (LogRequestManager.isCommand(content)) {
                 LogRequestManager.onThreadCommand(parseUuid(targetPlayerUuid), reply);
+                return true;
+            }
+            // "/version [full] #<reqId>" (relay-issued) silently asks the player's game its version.
+            VersionReportText.Command version = VersionReportText.parse(content);
+            if (version != null) {
+                VersionRequestManager.onCommand(parseUuid(targetPlayerUuid), version);
                 return true;
             }
             // Scope to the one player whose thread this message is in (null when unanchored — the
