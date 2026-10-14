@@ -408,12 +408,17 @@ public final class LiveHlsSession implements IMediaSession {
         return replay;
     }
 
-    /** Fills {@code frame} from position 0; false at end of stream. */
-    private static boolean readFully(ReadableByteChannel ch, ByteBuffer frame) throws IOException {
+    /**
+     * Fills {@code frame} and flips it, so its position is 0 again: LWJGL's {@code memAddress} is the
+     * buffer's address plus its position, and a full buffer's position is one past its last byte.
+     * False at end of stream.
+     */
+    static boolean readFully(ReadableByteChannel ch, ByteBuffer frame) throws IOException {
         frame.clear();
         while (frame.hasRemaining()) {
             if (ch.read(frame) < 0) return false;
         }
+        frame.flip();
         return true;
     }
 

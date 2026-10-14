@@ -162,6 +162,22 @@ class LiveHlsSessionTest {
     }
 
     @Test
+    void aFullFrameIsReadyToCopyFromItsStart() throws Exception {
+        // publish() copies from MemoryUtil.memAddress(frame), which is the address plus the position: a
+        // buffer left at its end would copy from one past the frame (a SIGBUS in the dev client).
+        byte[] two = {1, 2, 3, 4, 5, 6, 7, 8};
+        java.nio.ByteBuffer frame = java.nio.ByteBuffer.allocateDirect(4);
+        java.nio.channels.ReadableByteChannel ch = java.nio.channels.Channels.newChannel(new java.io.ByteArrayInputStream(two));
+        assertTrue(LiveHlsSession.readFully(ch, frame));
+        assertEquals(0, frame.position());
+        assertEquals(1, frame.get(0));
+        assertTrue(LiveHlsSession.readFully(ch, frame), "the next frame overwrites from the start");
+        assertEquals(0, frame.position());
+        assertEquals(5, frame.get(0));
+        assertFalse(LiveHlsSession.readFully(ch, frame), "end of stream");
+    }
+
+    @Test
     void closeDuringTheRetryBackoffDoesNotWaitItOut() throws Exception {
         // An "ffmpeg" that fails at once, like a 404 before the first segment: the reader then sleeps 2 s.
         Path fails = Path.of("/usr/bin/false");
