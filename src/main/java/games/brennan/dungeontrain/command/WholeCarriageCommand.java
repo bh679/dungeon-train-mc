@@ -125,6 +125,14 @@ public final class WholeCarriageCommand {
         }
         int n = CarriageGroupRegistry.ids().size();
         source.sendSuccess(() -> Component.literal(n + " whole group(s)"), false);
+        for (String id : games.brennan.dungeontrain.train.WholeHalfRegistry.ids()) {
+            boolean fits = games.brennan.dungeontrain.editor.WholeHalfTemplateStore.get(overworld, new WholeCarriage(id), dims).isPresent();
+            String line = id + "  " + (games.brennan.dungeontrain.train.WholeHalfRegistry.isBundled(id) ? "bundled" : "user")
+                + "  weight=" + WholeWeights.weightFor(WholeKind.HALF, id) + (fits ? "" : "  (does not fit the half box)");
+            source.sendSuccess(() -> Component.literal(line), false);
+        }
+        int halves = games.brennan.dungeontrain.train.WholeHalfRegistry.ids().size();
+        source.sendSuccess(() -> Component.literal(halves + " whole half(ves)"), false);
         return 1;
     }
 }

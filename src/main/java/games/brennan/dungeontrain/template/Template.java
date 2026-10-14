@@ -90,6 +90,7 @@ public sealed interface Template
     permits Template.Carriage,
             Template.Contents,
             Template.WholeCarriage,
+            Template.WholeHalf,
             Template.CarriageGroup,
             Template.Part,
             Template.Track,
@@ -475,6 +476,54 @@ public sealed interface Template
      * {@link WholeKind#GROUP} and stamped over an entire carriage group by
      * {@code WholeGroupSelection} when the group lottery lands.</p>
      */
+    /**
+     * A whole half carriage ({@link games.brennan.dungeontrain.train.WholeKind#HALF}): shell and
+     * interior at the Half box. Everything {@link WholeCarriage} is, one row over — its own store,
+     * registry and weights file, the same plot editor.
+     */
+    record WholeHalf(games.brennan.dungeontrain.train.WholeCarriage wholeCarriage) implements Template {
+        public WholeHalf {
+            Objects.requireNonNull(wholeCarriage, "wholeCarriage");
+        }
+        @Override public String id() { return wholeCarriage.id(); }
+        @Override public String displayName() { return "whole half / " + wholeCarriage.id(); }
+        @Override public TemplateKind kind() { return TemplateKind.WHOLE_HALF; }
+        @Override public boolean isBuiltin() {
+            return games.brennan.dungeontrain.train.WholeHalfRegistry.isBundled(wholeCarriage.id());
+        }
+        @Override public boolean canPromote() {
+            return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.sourceTreeAvailable();
+        }
+        @Override public TemplateStore<WholeHalf> store() {
+            return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.adapter();
+        }
+        @Override public TemplateRegistry<WholeHalf> registry() {
+            return games.brennan.dungeontrain.train.WholeHalfRegistry.adapter();
+        }
+        @Override public int weight() { return WholeWeights.weightFor(WholeKind.HALF, wholeCarriage.id()); }
+        @Override public TemplateGate gate() { return WholeWeights.gateFor(WholeKind.HALF, wholeCarriage.id()); }
+        @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.HALF, wholeCarriage.id()); return s == null ? "" : s; }
+        @Override public String variantName() { return wholeCarriage.id(); }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            WholeCarriageEditor.stampHalfPlot(level, wholeCarriage, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.getBundled(level, wholeCarriage, dims);
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return WholeCarriageEditor.halfPlotOrigin(wholeCarriage, dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return WholeCarriageEditor.plotSize(WholeKind.HALF, dims);
+        }
+        @Override public void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {
+            CarriagePlacer.eraseAt(level, origin, games.brennan.dungeontrain.editor.WholeHalfTemplateStore.halfDims(dims));
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            WholeCarriagePlacer.placeHalfAt(level, origin, wholeCarriage, dims);
+        }
+    }
+
     record CarriageGroup(games.brennan.dungeontrain.train.CarriageGroup group) implements Template {
         public CarriageGroup {
             Objects.requireNonNull(group, "group");

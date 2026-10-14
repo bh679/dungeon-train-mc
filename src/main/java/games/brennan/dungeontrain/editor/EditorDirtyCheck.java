@@ -115,9 +115,8 @@ public final class EditorDirtyCheck {
         for (games.brennan.dungeontrain.template.Template model : EditorCategory.WHOLE.models()) {
             BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
             if (origin == null) continue;
-            boolean group = model instanceof games.brennan.dungeontrain.template.Template.CarriageGroup;
-            games.brennan.dungeontrain.train.WholeKind kind = group
-                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            games.brennan.dungeontrain.train.WholeKind kind = WholeCarriageEditor.kindOf(model);
+            if (kind == null) continue;
             String key = WholeCarriageEditor.snapshotKey(kind, model.id());
             Map<BlockPos, BlockState> snapshot = EditorPlotSnapshots.get(key);
             Vec3i fp = model.plotSize(dims);
@@ -125,12 +124,20 @@ public final class EditorDirtyCheck {
             boolean unsaved = EditorPlotSnapshots.sidecarEdited(key)
                 || (snapshot != null && !regionMatchesSnapshot(key, level, origin,
                     fp.getX(), fp.getY(), fp.getZ(), snapshot, skip));
+            java.nio.file.Path userFile = switch (kind) {
+                case GROUP -> CarriageGroupTemplateStore.fileForId(model.id());
+                case HALF -> WholeHalfTemplateStore.fileForId(model.id());
+                case ROOM -> WholeCarriageTemplateStore.fileForId(model.id());
+            };
+            java.nio.file.Path sourceFile = switch (kind) {
+                case GROUP -> CarriageGroupTemplateStore.sourceFileForId(model.id());
+                case HALF -> WholeHalfTemplateStore.sourceFileForId(model.id());
+                case ROOM -> WholeCarriageTemplateStore.sourceFileForId(model.id());
+            };
             boolean unpromoted = devmode && model.isBuiltin() && WholeCarriageTemplateStore.sourceTreeAvailable()
-                && !filesEqualOrAbsent(
-                    group ? CarriageGroupTemplateStore.fileForId(model.id()) : WholeCarriageTemplateStore.fileForId(model.id()),
-                    group ? CarriageGroupTemplateStore.sourceFileForId(model.id()) : WholeCarriageTemplateStore.sourceFileForId(model.id()));
+                && !filesEqualOrAbsent(userFile, sourceFile);
             if (unsaved || unpromoted) {
-                out.add(new DirtyEntry(group ? "whole_group" : "whole", model.id(), model.displayName(), unsaved, unpromoted));
+                out.add(new DirtyEntry(WholeCarriageEditor.categoryIdOf(kind), model.id(), model.displayName(), unsaved, unpromoted));
             }
         }
     }
@@ -466,13 +473,12 @@ public final class EditorDirtyCheck {
     private static List<DiffEntry> findBlockChanges(ServerLevel overworld, CarriageDims dims,
                                                     String categoryId, String modelId) {
         List<DiffEntry> out = new ArrayList<>();
-        if ("whole".equals(categoryId) || "whole_group".equals(categoryId)) {
-            boolean group = "whole_group".equals(categoryId);
-            games.brennan.dungeontrain.train.WholeKind kind = group
-                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
-            games.brennan.dungeontrain.template.Template model = group
-                ? new games.brennan.dungeontrain.template.Template.CarriageGroup(new games.brennan.dungeontrain.train.CarriageGroup(modelId))
-                : new games.brennan.dungeontrain.template.Template.WholeCarriage(new games.brennan.dungeontrain.train.WholeCarriage(modelId));
+        if ("whole".equals(categoryId) || "whole_group".equals(categoryId) || "whole_half".equals(categoryId)) {
+            games.brennan.dungeontrain.train.WholeKind kind = "whole_group".equals(categoryId)
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP
+                : "whole_half".equals(categoryId) ? games.brennan.dungeontrain.train.WholeKind.HALF
+                : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            games.brennan.dungeontrain.template.Template model = WholeTemplateNew.template(kind, modelId);
             BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
             if (origin == null) return out;
             Vec3i fp = model.plotSize(dims);
@@ -653,7 +659,7 @@ public final class EditorDirtyCheck {
                 ? "portal_room." + room.name()
                 : model.id() + "." + model.variantName();
             // Whole rows are keyed by the bare id under their own category ids — see scanWhole.
-            case WHOLE_CARRIAGE, CARRIAGE_GROUP -> model.id();
+            case WHOLE_CARRIAGE, CARRIAGE_GROUP, WHOLE_HALF -> model.id();
             // Neither is covered by a scan pass yet.
             case CHUNK_FRAME -> ChunkFrameEditor.MODEL_ID + "." + model.variantName();
             case BUILDING -> games.brennan.dungeontrain.building.Buildings.MODEL_ID + "." + model.variantName();

@@ -204,11 +204,14 @@ public record EditorPlotActionPacket(
 
     private static void dispatchWhole(ServerPlayer sender, ServerLevel overworld, CarriageDims dims,
                                       EditorPlotActionPacket packet) throws Exception {
-        boolean group = games.brennan.dungeontrain.editor.PlotCategory.fromId(packet.category)
-            .map(c -> c == games.brennan.dungeontrain.editor.PlotCategory.WHOLE_GROUP).orElse(false);
-        Template model = group
-            ? games.brennan.dungeontrain.train.CarriageGroupRegistry.find(packet.modelId).map(Template.CarriageGroup::new).orElse(null)
-            : games.brennan.dungeontrain.train.WholeCarriageRegistry.find(packet.modelId).map(Template.WholeCarriage::new).orElse(null);
+        games.brennan.dungeontrain.editor.PlotCategory cat = games.brennan.dungeontrain.editor.PlotCategory.fromId(packet.category)
+            .orElse(games.brennan.dungeontrain.editor.PlotCategory.WHOLE);
+        games.brennan.dungeontrain.train.WholeKind kind = cat == games.brennan.dungeontrain.editor.PlotCategory.WHOLE_GROUP
+            ? games.brennan.dungeontrain.train.WholeKind.GROUP
+            : cat == games.brennan.dungeontrain.editor.PlotCategory.WHOLE_HALF ? games.brennan.dungeontrain.train.WholeKind.HALF
+            : games.brennan.dungeontrain.train.WholeKind.ROOM;
+        Template model = games.brennan.dungeontrain.editor.WholeTemplateNew.ids(kind).contains(packet.modelId)
+            ? games.brennan.dungeontrain.editor.WholeTemplateNew.template(kind, packet.modelId) : null;
         if (model == null) {
             LOGGER.warn("[DungeonTrain] EditorPlotAction (whole): unknown id '{}'", packet.modelId);
             return;

@@ -73,11 +73,19 @@ public final class WholeCarriageEditor {
         return groupSize() * dims.length() + EditorLayout.GAP;
     }
 
+    private static int halfStep(CarriageDims dims) {
+        return WholeHalfTemplateStore.halfDims(dims).length() + EditorLayout.GAP;
+    }
+
     /** Footprint of a plot of {@code kind}. */
     public static Vec3i plotSize(WholeKind kind, CarriageDims dims) {
         return switch (kind) {
             case ROOM -> new Vec3i(dims.length(), dims.height(), dims.width());
             case GROUP -> CarriageGroupPlacer.sizeOf(dims, groupSize());
+            case HALF -> {
+                CarriageDims half = WholeHalfTemplateStore.halfDims(dims);
+                yield new Vec3i(half.length(), half.height(), half.width());
+            }
         };
     }
 
@@ -90,6 +98,7 @@ public final class WholeCarriageEditor {
         return switch (kind) {
             case ROOM -> new BlockPos(FIRST_PLOT_X + index * roomStep(dims), PLOT_Y, EditorLayout.WHOLE_ROOM_FIRST_Z);
             case GROUP -> new BlockPos(FIRST_PLOT_X + index * groupStep(dims), PLOT_Y, EditorLayout.WHOLE_GROUP_FIRST_Z);
+            case HALF -> new BlockPos(FIRST_PLOT_X + index * halfStep(dims), PLOT_Y, EditorLayout.WHOLE_HALF_FIRST_Z);
         };
     }
 
@@ -106,9 +115,23 @@ public final class WholeCarriageEditor {
     }
 
     /** Origin for any Whole template; null for other kinds or unregistered ids. */
+    public static BlockPos halfPlotOrigin(WholeCarriage half, CarriageDims dims) {
+        int index = games.brennan.dungeontrain.train.WholeHalfRegistry.ids().indexOf(half.id());
+        return index < 0 ? null : slotOrigin(WholeKind.HALF, index, dims);
+    }
+
     public static BlockPos plotOrigin(Template model, CarriageDims dims) {
         if (model instanceof Template.WholeCarriage w) return roomPlotOrigin(w.wholeCarriage(), dims);
         if (model instanceof Template.CarriageGroup g) return groupPlotOrigin(g.group(), dims);
+        if (model instanceof Template.WholeHalf h) return halfPlotOrigin(h.wholeCarriage(), dims);
+        return null;
+    }
+
+    /** The whole kind {@code model} belongs to, or null for a template of another section. */
+    public static WholeKind kindOf(Template model) {
+        if (model instanceof Template.WholeCarriage) return WholeKind.ROOM;
+        if (model instanceof Template.CarriageGroup) return WholeKind.GROUP;
+        if (model instanceof Template.WholeHalf) return WholeKind.HALF;
         return null;
     }
 
@@ -132,6 +155,14 @@ public final class WholeCarriageEditor {
             if (inBox(pos, slotOrigin(WholeKind.GROUP, i, dims), groupBox)) {
                 return new PlotLocation(WholeKind.GROUP, groups.get(i),
                     new Template.CarriageGroup(new CarriageGroup(groups.get(i))));
+            }
+        }
+        List<String> halves = games.brennan.dungeontrain.train.WholeHalfRegistry.ids();
+        Vec3i halfBox = plotSize(WholeKind.HALF, dims);
+        for (int i = 0; i < halves.size(); i++) {
+            if (inBox(pos, slotOrigin(WholeKind.HALF, i, dims), halfBox)) {
+                return new PlotLocation(WholeKind.HALF, halves.get(i),
+                    new Template.WholeHalf(new WholeCarriage(halves.get(i))));
             }
         }
         return null;
@@ -178,26 +209,54 @@ public final class WholeCarriageEditor {
     }
 
     /** Stamp whichever Whole plot {@code model} is; other kinds are ignored. */
+    public static void stampHalfPlot(ServerLevel overworld, WholeCarriage half, CarriageDims dims) {
+        BlockPos origin = halfPlotOrigin(half, dims);
+        if (origin == null) return;
+        Vec3i box = plotSize(WholeKind.HALF, dims);
+        WholeVariantBlocks.invalidate(WholeKind.HALF, half.id());
+        ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(WholeKind.HALF, half.id()));
+        CarriagePlacer.eraseAt(overworld, origin, WholeHalfTemplateStore.halfDims(dims));
+        EditorPlotEntityClearer.discardNonPlayersIn(overworld, origin, box);
+        WholeCarriagePlacer.placeHalfAt(overworld, origin, half, dims);
+        EditorPlotCage.setOutline(overworld, origin, box, EditorPlotCage.OUTLINE_BLOCK);
+        EditorPlotSnapshots.capture(snapshotKey(WholeKind.HALF, half.id()),
+            overworld, origin, box.getX(), box.getY(), box.getZ());
+    }
+
     public static void stampPlot(ServerLevel overworld, Template model, CarriageDims dims) {
         if (model instanceof Template.WholeCarriage w) stampRoomPlot(overworld, w.wholeCarriage(), dims);
         else if (model instanceof Template.CarriageGroup g) stampGroupPlot(overworld, g.group(), dims);
+        else if (model instanceof Template.WholeHalf h) stampHalfPlot(overworld, h.wholeCarriage(), dims);
     }
 
     /** Erase the plot and its cage. */
     public static void clearPlot(ServerLevel overworld, Template model, CarriageDims dims) {
         BlockPos origin = plotOrigin(model, dims);
         if (origin == null) return;
-        WholeKind kind = model instanceof Template.CarriageGroup ? WholeKind.GROUP : WholeKind.ROOM;
+        WholeKind kind = kindOf(model);
+        if (kind == null) return;
         Vec3i box = plotSize(kind, dims);
-        if (kind == WholeKind.GROUP) CarriageGroupPlacer.eraseAt(overworld, origin, dims, groupSize());
-        else CarriagePlacer.eraseAt(overworld, origin, dims);
+        switch (kind) {
+            case GROUP -> CarriageGroupPlacer.eraseAt(overworld, origin, dims, groupSize());
+            case HALF -> CarriagePlacer.eraseAt(overworld, origin, WholeHalfTemplateStore.halfDims(dims));
+            case ROOM -> CarriagePlacer.eraseAt(overworld, origin, dims);
+        }
         EditorPlotCage.setOutline(overworld, origin, box, Blocks.AIR.defaultBlockState());
         EditorPlotSnapshots.clear(snapshotKey(kind, model.id()));
     }
 
     /** The dirty-check snapshot key for a Whole plot. */
     public static String snapshotKey(WholeKind kind, String id) {
-        return EditorPlotSnapshots.key(kind == WholeKind.GROUP ? "whole_group" : "whole", id);
+        return EditorPlotSnapshots.key(categoryIdOf(kind), id);
+    }
+
+    /** The category id each kind's rows file under: {@code whole}, {@code whole_group}, {@code whole_half}. */
+    public static String categoryIdOf(WholeKind kind) {
+        return switch (kind) {
+            case ROOM -> "whole";
+            case GROUP -> "whole_group";
+            case HALF -> "whole_half";
+        };
     }
 
     // ---- enter ----------------------------------------------------------------------------------
@@ -238,7 +297,9 @@ public final class WholeCarriageEditor {
         CarriageEditor.rememberReturn(player);
         if (stamp) stampPlot(overworld, model, dims);
         Vec3i footprint = model.plotSize(dims);
-        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, dims));
+        // A half's doorways sit on its own, longer box.
+        CarriageDims doorBox = model instanceof Template.WholeHalf ? WholeHalfTemplateStore.halfDims(dims) : dims;
+        BlockPos door = EditorPlotArrival.firstOrNull(CarriageDoorCells.doorBases(origin, doorBox));
         EditorPlotArrival.land(player, overworld, origin, footprint, onTop, inside, door);
         LOGGER.info("[DungeonTrain] Whole editor enter: {} -> {} at {} ({})",
             player.getName().getString(), model.displayName(), origin, onTop ? "top" : "inside");
@@ -272,6 +333,29 @@ public final class WholeCarriageEditor {
     }
 
     /** Capture {@code group}'s plot and persist it. */
+    public static SaveResult saveHalf(ServerPlayer player, WholeCarriage half) throws IOException {
+        ServerLevel overworld = overworldOf(player);
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        BlockPos origin = halfPlotOrigin(half, dims);
+        if (origin == null) throw new IOException("Unknown whole half '" + half.id() + "'.");
+        StructureTemplate template = WholeCarriagePlacer.captureTemplate(overworld, origin, WholeHalfTemplateStore.halfDims(dims));
+        WholeHalfTemplateStore.save(half, template);
+        games.brennan.dungeontrain.train.WholeHalfRegistry.register(half);
+        Vec3i box = plotSize(WholeKind.HALF, dims);
+        saveSidecars(WholeKind.HALF, half.id(), box);
+        EditorPlotSnapshots.capture(snapshotKey(WholeKind.HALF, half.id()),
+            overworld, origin, box.getX(), box.getY(), box.getZ());
+        LOGGER.info("[DungeonTrain] Whole editor save: {} -> half {}", player.getName().getString(), half.id());
+        if (!EditorDevMode.isEnabled()) return SaveResult.skipped();
+        try {
+            WholeHalfTemplateStore.saveToSource(half, template);
+            return SaveResult.written();
+        } catch (IOException e) {
+            LOGGER.warn("[DungeonTrain] Whole editor save: source write failed for {}: {}", half.id(), e.toString());
+            return SaveResult.failed(e.getMessage());
+        }
+    }
+
     public static SaveResult saveGroup(ServerPlayer player, CarriageGroup group) throws IOException {
         ServerLevel overworld = overworldOf(player);
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();

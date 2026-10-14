@@ -665,9 +665,10 @@ public final class EditorTypeMenuInputHandler {
                 NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
             // Whole rooms / groups: Blank / Current. "Current" only when standing in a plot of the
             // same kind — a room id is no source for a group.
-            case WHOLE, WHOLE_GROUP -> new NewSourcePickerScreen(
-                plotCategory == PlotCategory.WHOLE_GROUP
-                    ? NewSourcePickerScreen.Category.WHOLE_GROUP : NewSourcePickerScreen.Category.WHOLE,
+            case WHOLE, WHOLE_GROUP, WHOLE_HALF -> new NewSourcePickerScreen(
+                plotCategory == PlotCategory.WHOLE_GROUP ? NewSourcePickerScreen.Category.WHOLE_GROUP
+                    : plotCategory == PlotCategory.WHOLE_HALF ? NewSourcePickerScreen.Category.WHOLE_HALF
+                    : NewSourcePickerScreen.Category.WHOLE,
                 null, standingKindId(plotCategory));
             // A new building is a bare pad or a copy of the one stood in (shipped or new).
             case BUILDINGS -> new NewSourcePickerScreen(

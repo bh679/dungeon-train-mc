@@ -83,6 +83,26 @@ public final class WholeCarriagePlacer {
      * Sable sub-level relights — and return the footprint the shipyard assembles. Erases first for
      * the reason {@link #placeAt} gives. The caller holds the stage scope.
      */
+    /** As {@link #placeAt} for a whole half: its own store, the Half box. */
+    public static boolean placeHalfAt(ServerLevel level, BlockPos origin, WholeCarriage half, CarriageDims dims) {
+        Optional<StructureTemplate> template =
+            games.brennan.dungeontrain.editor.WholeHalfTemplateStore.get(level, half, dims);
+        if (template.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] No whole-half template for '{}' — placing nothing.", half.id());
+            return false;
+        }
+        CarriageDims box = games.brennan.dungeontrain.editor.WholeHalfTemplateStore.halfDims(dims);
+        CarriageStampGuard.run(() -> {
+            CarriagePlacer.eraseAt(level, origin, box);
+            StructurePlaceSettings settings = new StructurePlaceSettings().setIgnoreEntities(true)
+                .addProcessor(new StagePlaceholderProcessor());
+            template.get().placeInWorld(level, origin, origin, settings, level.getRandom(), CarriageStampGuard.STAMP_FLAGS);
+            TemplateDecor.replace(level, origin, template.get(), new StructurePlaceSettings(),
+                    /*mark*/ null, TemplateDecor.Rule.CARRIAGE);
+        });
+        return true;
+    }
+
     public static java.util.Set<BlockPos> placeForTrain(ServerLevel level, BlockPos origin,
                                                         StructureTemplate template, CarriageDims dims) {
         return CarriageStampGuard.call(() -> {

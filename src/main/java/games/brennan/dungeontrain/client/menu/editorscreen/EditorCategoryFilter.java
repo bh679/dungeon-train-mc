@@ -42,7 +42,7 @@ public enum EditorCategoryFilter {
     public static EditorCategoryFilter forCategory(PlotCategory category) {
         if (category == null) return null;
         return switch (category) {
-            case WHOLE, WHOLE_GROUP -> WHOLE;
+            case WHOLE, WHOLE_GROUP, WHOLE_HALF -> WHOLE;
             case CARRIAGES, PARTS -> CARRIAGES;
             case CONTENTS -> CONTENTS;
             case TRACKS -> TRACKS;

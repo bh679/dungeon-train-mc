@@ -1719,6 +1719,7 @@ public final class EditorCommand {
                                 StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "stage"))))))
                 .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.ROOM))
                 .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.GROUP))
+                .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.HALF))
                 .then(Commands.literal("contents-group")
                     .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
                         .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)

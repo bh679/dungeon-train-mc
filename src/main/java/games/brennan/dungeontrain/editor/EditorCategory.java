@@ -212,6 +212,9 @@ public enum EditorCategory {
         List<Template> out = new ArrayList<>(rooms.size() + groups.size());
         for (games.brennan.dungeontrain.train.WholeCarriage r : rooms) out.add(new Template.WholeCarriage(r));
         for (games.brennan.dungeontrain.train.CarriageGroup g : groups) out.add(new Template.CarriageGroup(g));
+        for (games.brennan.dungeontrain.train.WholeCarriage h : games.brennan.dungeontrain.train.WholeHalfRegistry.all()) {
+            out.add(new Template.WholeHalf(h));
+        }
         return out;
     }
 
@@ -330,6 +333,7 @@ public enum EditorCategory {
             case Template.Carriage c -> CARRIAGES;
             case Template.Part p -> CARRIAGES;
             case Template.WholeCarriage w -> WHOLE;
+            case Template.WholeHalf h -> WHOLE;
             case Template.CarriageGroup g -> WHOLE;
             case Template.Contents c -> CONTENTS;
             case Template.Track t -> TRACKS;

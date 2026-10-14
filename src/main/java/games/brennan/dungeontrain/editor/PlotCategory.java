@@ -36,6 +36,8 @@ public enum PlotCategory {
     WHOLE(EditorCategory.WHOLE),
     /** Carriage groups — addressable in its own right, but stamped as part of {@link #WHOLE}. */
     WHOLE_GROUP(EditorCategory.WHOLE),
+    /** Whole halves — the Half-box row of the Whole section, stamped as part of {@link #WHOLE}. */
+    WHOLE_HALF(EditorCategory.WHOLE),
     CARRIAGES(EditorCategory.CARRIAGES),
     CONTENTS(EditorCategory.CONTENTS),
     TRACKS(EditorCategory.TRACKS),
@@ -79,6 +81,7 @@ public enum PlotCategory {
             case PARTS -> "Parts";
             case CHUNK_FRAMES -> "Frames";
             case WHOLE_GROUP -> "Group";
+            case WHOLE_HALF -> "Half";
             default -> owner.displayName();
         };
     }

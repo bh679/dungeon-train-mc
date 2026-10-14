@@ -64,6 +64,9 @@ public final class EditorLayout {
      */
     public static final int WHOLE_GROUP_FIRST_Z = CarriageDims.MAX_WIDTH + GAP;
 
+    /** First Z slot of the half row inside the WHOLE view — one more max-width band past the groups. */
+    public static final int WHOLE_HALF_FIRST_Z = 2 * (CarriageDims.MAX_WIDTH + GAP);
+
     /**
      * First Z slot of the contents row (CONTENTS view). The shared origin — see the class doc for
      * why this is not past the CARRIAGES view any more.

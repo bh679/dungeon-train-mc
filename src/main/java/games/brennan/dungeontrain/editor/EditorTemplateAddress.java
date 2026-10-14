@@ -32,6 +32,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
     public static final String CONTENTS = "contents";
     public static final String WHOLE = "whole";
     public static final String GROUP = "group";
+    public static final String HALF = "half";
     public static final String PART = "part";
     public static final String TRACK = "track";
     public static final String PILLAR = "pillar";
@@ -56,6 +57,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
             case Template.Contents c -> new EditorTemplateAddress(CONTENTS, "", c.contents().id());
             case Template.WholeCarriage w -> new EditorTemplateAddress(WHOLE, "", w.wholeCarriage().id());
             case Template.CarriageGroup g -> new EditorTemplateAddress(GROUP, "", g.group().id());
+            case Template.WholeHalf h -> new EditorTemplateAddress(HALF, "", h.wholeCarriage().id());
             case Template.Part p -> new EditorTemplateAddress(PART, p.partKind().id(), p.name());
             case Template.Track t -> new EditorTemplateAddress(TRACK, "", t.name());
             case Template.Pillar p -> new EditorTemplateAddress(PILLAR, p.section().id(), p.name());
@@ -78,6 +80,7 @@ public record EditorTemplateAddress(String type, String sub, String name) {
             case CONTENTS -> CarriageContentsRegistry.find(name).map(Template.Contents::new);
             case WHOLE -> WholeCarriageRegistry.find(name).map(Template.WholeCarriage::new);
             case GROUP -> CarriageGroupRegistry.find(name).map(Template.CarriageGroup::new);
+            case HALF -> games.brennan.dungeontrain.train.WholeHalfRegistry.find(name).map(Template.WholeHalf::new);
             case PART -> Optional.ofNullable(CarriagePartKind.fromId(sub))
                     .map(kind -> new Template.Part(kind, name));
             case TRACK -> Optional.of(new Template.Track(name));

@@ -237,6 +237,11 @@ public final class EditorRoster {
             out.add(group(PlotCategory.WHOLE_GROUP.id(), EditorWholeTypeMenus.GROUP_TYPE_NAME, "",
                 EditorWholeTypeMenus.groupRows(groups), null));
         }
+        List<games.brennan.dungeontrain.train.WholeCarriage> halves = games.brennan.dungeontrain.train.WholeHalfRegistry.all();
+        if (!halves.isEmpty()) {
+            out.add(group(PlotCategory.WHOLE_HALF.id(), EditorWholeTypeMenus.HALF_TYPE_NAME, "",
+                EditorWholeTypeMenus.halfRows(halves), null));
+        }
     }
 
     /**

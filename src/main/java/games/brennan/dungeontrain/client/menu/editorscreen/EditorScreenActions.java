@@ -285,6 +285,8 @@ public final class EditorScreenActions {
                 "dungeontrain editor whole label " + id, "", current);
             case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor whole group label " + id, "", current);
+            case WHOLE_HALF -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor whole half label " + id, "", current);
             case CHUNK_FRAMES -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor chunkframe rename " + sel.modelName(), "", sel.modelName());
             case PARTS, TRACKS, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null;
@@ -498,7 +500,7 @@ public final class EditorScreenActions {
         return switch (category) {
             case PORTALS -> new PortalTestSaveCheckScreen(modelName);
             case CHUNK_FRAMES -> PortalTestSaveCheckScreen.forFrame(modelName);
-            case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP ->
+            case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP, WHOLE_HALF ->
                 PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
             case TRACKS -> games.brennan.dungeontrain.track.TrackTestPiece.ofModelId(modelId).isPresent()
                 ? PortalTestSaveCheckScreen.forTrack(modelId, modelName) : null;

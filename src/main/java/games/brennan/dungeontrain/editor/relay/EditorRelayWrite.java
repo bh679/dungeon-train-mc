@@ -122,6 +122,8 @@ public final class EditorRelayWrite {
             // of the same name, which is a different template and must not share its relay entry.
             case Template.WholeCarriage room ->
                     new Naming(BuilderPhotoPaths.Kind.CARRIAGE, WHOLE_ROOM_SUBKIND, room.id());
+            // Whole halves do not ride the relay yet — no sub kind to file them under.
+            case Template.WholeHalf ignored -> null;
 
             // A group rides the relay under its own kind — the same key the Train Builder's save uses.
             case Template.CarriageGroup group ->

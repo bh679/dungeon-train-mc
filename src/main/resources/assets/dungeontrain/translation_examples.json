@@ -13430,6 +13430,14 @@
       ]
     }
   },
+  "chat.dungeontrain.editor.unknown_whole_half": {
+    "1": {
+      "label": "the half id the player typed",
+      "examples": [
+        "short_bunk"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.unknown_whole_group": {
     "1": {
       "label": "the group id the player typed",

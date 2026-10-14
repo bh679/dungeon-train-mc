@@ -27,6 +27,8 @@ public record TemplateArt(BuilderPhotoPaths.Kind kind, String id, CarriagePartKi
             // tile draws the shell twin until whole rooms get a photo kind of their own.
             case WHOLE -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE, key.modelId(), null, null);
             case WHOLE_GROUP -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE_GROUP, key.modelId(), null, null);
+            // A half shares the carriage photo kind with rooms until it has a kind of its own.
+            case WHOLE_HALF -> new TemplateArt(BuilderPhotoPaths.Kind.CARRIAGE, key.modelId(), null, null);
             case CONTENTS -> new TemplateArt(BuilderPhotoPaths.Kind.CONTENTS, key.modelId(), null, null);
             case PARTS -> {
                 CarriagePartKind pk = CarriagePartKind.fromId(key.modelId());

@@ -103,9 +103,10 @@ final class PlotCategoryTest {
             assertFalse(widened == PlotCategory.WHOLE_GROUP);
             assertFalse(widened == PlotCategory.CHUNK_FRAMES);
             assertFalse(widened == PlotCategory.LOST_CITY);
+            assertFalse(widened == PlotCategory.WHOLE_HALF);
         }
-        // PARTS, CHUNK_FRAMES, LOST_CITY and WHOLE_GROUP are exactly the addressable values with no stamping counterpart.
-        assertEquals(EditorCategory.values().length + 4, PlotCategory.values().length);
+        // PARTS, CHUNK_FRAMES, LOST_CITY, WHOLE_GROUP and WHOLE_HALF are exactly the addressable values with no stamping counterpart.
+        assertEquals(EditorCategory.values().length + 5, PlotCategory.values().length);
     }
 
     @Test

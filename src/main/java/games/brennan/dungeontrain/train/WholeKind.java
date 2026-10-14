@@ -22,7 +22,13 @@ import java.util.Locale;
  */
 public enum WholeKind {
     ROOM("room", WholeCarriageTemplateStore.SUBDIR),
-    GROUP("group", CarriageGroupTemplateStore.SUBDIR);
+    GROUP("group", CarriageGroupTemplateStore.SUBDIR),
+    /**
+     * One whole half carriage: shell and interior at the Half box (the long corridor length) — the
+     * Whole section's counterpart of the Half shell pool and Half contents. Editor-only until the
+     * train's half slots learn to draw from it.
+     */
+    HALF("half", games.brennan.dungeontrain.editor.WholeHalfTemplateStore.SUBDIR);
 
     public static final String WEIGHTS_FILE = "weights.json";
 

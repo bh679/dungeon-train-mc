@@ -41,6 +41,7 @@ public final class TemplateFileLocator {
             case CONTENTS -> named(CarriageContentsStore.SUBDIR, id);
             case WHOLE -> named(WholeCarriageTemplateStore.SUBDIR, id);
             case WHOLE_GROUP -> named(CarriageGroupTemplateStore.SUBDIR, id);
+            case WHOLE_HALF -> named(WholeHalfTemplateStore.SUBDIR, id);
             case PARTS -> id.isEmpty() ? Optional.empty()
                 : named(CarriagePartTemplateStore.SUBDIR_BASE + "/" + id, name);
             case TRACKS -> Optional.ofNullable(trackKind(id)).flatMap(k -> named(k.subdir(), name));

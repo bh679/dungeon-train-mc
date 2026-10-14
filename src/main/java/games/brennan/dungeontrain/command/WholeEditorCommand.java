@@ -62,6 +62,16 @@ public final class WholeEditorCommand {
         (ctx, builder) -> SharedSuggestionProvider.suggest(WholeCarriageRegistry.ids(), builder);
     private static final SuggestionProvider<CommandSourceStack> GROUP_SUGGESTIONS =
         (ctx, builder) -> SharedSuggestionProvider.suggest(CarriageGroupRegistry.ids(), builder);
+    private static final SuggestionProvider<CommandSourceStack> HALF_SUGGESTIONS =
+        (ctx, builder) -> SharedSuggestionProvider.suggest(games.brennan.dungeontrain.train.WholeHalfRegistry.ids(), builder);
+
+    private static SuggestionProvider<CommandSourceStack> suggestionsFor(WholeKind kind) {
+        return switch (kind) {
+            case GROUP -> GROUP_SUGGESTIONS;
+            case HALF -> HALF_SUGGESTIONS;
+            case ROOM -> ROOM_SUGGESTIONS;
+        };
+    }
 
     private WholeEditorCommand() {}
 
@@ -71,7 +81,9 @@ public final class WholeEditorCommand {
         attachVerbs(whole, WholeKind.ROOM, ROOM_SUGGESTIONS);
         LiteralArgumentBuilder<CommandSourceStack> group = Commands.literal("group");
         attachVerbs(group, WholeKind.GROUP, GROUP_SUGGESTIONS);
-        return whole.then(group);
+        LiteralArgumentBuilder<CommandSourceStack> half = Commands.literal("half");
+        attachVerbs(half, WholeKind.HALF, HALF_SUGGESTIONS);
+        return whole.then(group).then(half);
     }
 
     private static void attachVerbs(LiteralArgumentBuilder<CommandSourceStack> node, WholeKind kind,
@@ -118,8 +130,8 @@ public final class WholeEditorCommand {
 
     /** {@code /dt editor stage apply whole|whole_group <id> <stage|custom>} — the picker's route. */
     static LiteralArgumentBuilder<CommandSourceStack> stageApplyNode(WholeKind kind) {
-        SuggestionProvider<CommandSourceStack> ids = kind == WholeKind.GROUP ? GROUP_SUGGESTIONS : ROOM_SUGGESTIONS;
-        return Commands.literal(kind == WholeKind.GROUP ? "whole_group" : "whole")
+        SuggestionProvider<CommandSourceStack> ids = suggestionsFor(kind);
+        return Commands.literal(WholeCarriageEditor.categoryIdOf(kind))
             .then(Commands.argument("id", StringArgumentType.word()).suggests(ids)
                 .then(Commands.argument("stage", StringArgumentType.word()).suggests(EditorCommand.STAGE_OR_CUSTOM_SUGGESTIONS)
                     .executes(c -> applyStage(c.getSource(), kind, StringArgumentType.getString(c, "id"),
@@ -221,16 +233,17 @@ public final class WholeEditorCommand {
         Template model = resolve(source, kind, rawId);
         if (model == null) return 0;
         try {
-            boolean existed = kind == WholeKind.GROUP
-                ? CarriageGroupTemplateStore.delete(new CarriageGroup(model.id()))
-                : WholeCarriageTemplateStore.delete(new WholeCarriage(model.id()));
+            boolean existed = switch (kind) {
+                case GROUP -> CarriageGroupTemplateStore.delete(new CarriageGroup(model.id()));
+                case HALF -> games.brennan.dungeontrain.editor.WholeHalfTemplateStore.delete(new WholeCarriage(model.id()));
+                case ROOM -> WholeCarriageTemplateStore.delete(new WholeCarriage(model.id()));
+            };
             WholeWeights.unset(kind, model.id());
             games.brennan.dungeontrain.editor.WholeVariantBlocks.delete(kind, model.id());
             boolean bundled = model.isBuiltin();
             ServerLevel overworld = source.getServer().overworld();
             if (!bundled) {
-                if (kind == WholeKind.GROUP) CarriageGroupRegistry.unregister(model.id());
-                else WholeCarriageRegistry.unregister(model.id());
+                games.brennan.dungeontrain.editor.WholeTemplateNew.unregister(kind, model.id());
                 // The row past it shifts one slot left; restamp what is left standing.
                 for (Template m : EditorCategory.WHOLE.models()) {
                     WholeCarriageEditor.clearPlot(overworld, m, DungeonTrainWorldData.get(overworld).dims());
@@ -296,8 +309,7 @@ public final class WholeEditorCommand {
     }
 
     private static boolean registered(WholeKind kind, String id) {
-        return kind == WholeKind.GROUP ? CarriageGroupRegistry.find(id).isPresent()
-            : WholeCarriageRegistry.find(id).isPresent();
+        return games.brennan.dungeontrain.editor.WholeTemplateNew.ids(kind).contains(id);
     }
 
     /** The id of the {@code kind} plot the player stands in, or null. */
@@ -311,12 +323,15 @@ public final class WholeEditorCommand {
 
     private static Template resolve(CommandSourceStack source, WholeKind kind, String rawId) {
         String id = rawId == null ? "" : rawId.toLowerCase(Locale.ROOT);
-        Optional<? extends Template> found = kind == WholeKind.GROUP
-            ? CarriageGroupRegistry.find(id).map(Template.CarriageGroup::new)
-            : WholeCarriageRegistry.find(id).map(Template.WholeCarriage::new);
+        Optional<? extends Template> found = games.brennan.dungeontrain.editor.WholeTemplateNew.ids(kind).contains(id)
+            ? Optional.of(games.brennan.dungeontrain.editor.WholeTemplateNew.template(kind, id))
+            : Optional.empty();
         if (found.isEmpty()) {
-            source.sendFailure(Component.translatable(kind == WholeKind.GROUP
-                ? "chat.dungeontrain.editor.unknown_whole_group" : "chat.dungeontrain.editor.unknown_whole", rawId));
+            source.sendFailure(Component.translatable(switch (kind) {
+                case GROUP -> "chat.dungeontrain.editor.unknown_whole_group";
+                case HALF -> "chat.dungeontrain.editor.unknown_whole_half";
+                case ROOM -> "chat.dungeontrain.editor.unknown_whole";
+            }, rawId));
             return null;
         }
         return found.get();

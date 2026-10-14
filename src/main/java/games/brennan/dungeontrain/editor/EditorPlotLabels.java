@@ -158,6 +158,16 @@ public final class EditorPlotLabels {
                 games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
                 PlotCategory.WHOLE_GROUP.name(), g.id(), g.id(), false, p.isUser, p.isImported));
         }
+        Vec3i halfFootprint = WholeCarriageEditor.plotSize(games.brennan.dungeontrain.train.WholeKind.HALF, dims);
+        for (games.brennan.dungeontrain.train.WholeCarriage h : games.brennan.dungeontrain.train.WholeHalfRegistry.all()) {
+            BlockPos origin = WholeCarriageEditor.halfPlotOrigin(h, dims);
+            if (origin == null) continue;
+            Provenance p = provenanceOf(WholeHalfTemplateStore.fileForId(h.id()));
+            out.add(new Label(anchorAbove(origin, halfFootprint),
+                games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.HALF, h.id()),
+                games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.HALF, h.id()),
+                PlotCategory.WHOLE_HALF.name(), h.id(), h.id(), false, p.isUser, p.isImported));
+        }
         return out;
     }
 

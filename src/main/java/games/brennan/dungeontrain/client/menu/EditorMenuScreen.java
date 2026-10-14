@@ -691,6 +691,7 @@ public final class EditorMenuScreen implements MenuScreen {
             case CONTENTS -> "dungeontrain editor contents weight " + modelId;
             case WHOLE -> "dungeontrain editor whole weight " + modelId;
             case WHOLE_GROUP -> "dungeontrain editor whole group weight " + modelId;
+            case WHOLE_HALF -> "dungeontrain editor whole half weight " + modelId;
             case BUILDINGS -> named ? "dungeontrain editor buildings weight " + modelName : null;
             case PARTS, CHUNK_FRAMES, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no weight pool
         };
@@ -748,6 +749,7 @@ public final class EditorMenuScreen implements MenuScreen {
             case CONTENTS -> "dungeontrain editor contents " + sub + " " + modelId;
             case WHOLE -> "dungeontrain editor whole " + sub + " " + modelId;
             case WHOLE_GROUP -> "dungeontrain editor whole group " + sub + " " + modelId;
+            case WHOLE_HALF -> "dungeontrain editor whole half " + sub + " " + modelId;
             case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no spawn gate
         };
         if (prefix == null) return null;
@@ -808,6 +810,9 @@ public final class EditorMenuScreen implements MenuScreen {
             case WHOLE_GROUP -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.new"),
                 new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE_GROUP, null, modelId));
+            case WHOLE_HALF -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.new"),
+                new NewSourcePickerScreen(NewSourcePickerScreen.Category.WHOLE_HALF, null, modelId));
             // A new frame is blank or a copy of the one in hand.
             case CHUNK_FRAMES -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.new"),
@@ -861,6 +866,10 @@ public final class EditorMenuScreen implements MenuScreen {
                 MenuLang.t("common.remove"),
                 new ConfirmScreen(MenuLang.t("confirm.remove", model),
                     "dungeontrain editor whole group reset " + modelId));
+            case WHOLE_HALF -> new CommandMenuEntry.DrillIn(
+                MenuLang.t("common.remove"),
+                new ConfirmScreen(MenuLang.t("confirm.remove", model),
+                    "dungeontrain editor whole half reset " + modelId));
             // A frame is addressed by its name; modelId is the shared chunk_frame tag.
             case CHUNK_FRAMES -> model == null || model.isEmpty() ? null : new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.remove"),
@@ -890,7 +899,7 @@ public final class EditorMenuScreen implements MenuScreen {
     public static CommandMenuEntry clearEntryFor(PlotCategory category, String model) {
         if (model == null || model.isEmpty() || category == null) return null;
         return switch (category) {
-            case CARRIAGES, CONTENTS, PARTS, CHUNK_FRAMES, PORTALS, BUILDINGS, WHOLE, WHOLE_GROUP, WORKBENCH -> new CommandMenuEntry.DrillIn(
+            case CARRIAGES, CONTENTS, PARTS, CHUNK_FRAMES, PORTALS, BUILDINGS, WHOLE, WHOLE_GROUP, WHOLE_HALF, WORKBENCH -> new CommandMenuEntry.DrillIn(
                 MenuLang.t("common.clear"),
                 new ConfirmScreen(MenuLang.t("confirm.clear_blocks", model),
                     "dungeontrain editor clear"));
@@ -934,7 +943,7 @@ public final class EditorMenuScreen implements MenuScreen {
                 "dungeontrain editor contents save",
                 "", model);
             // Parts are handled above; the rest have no rename subcommand.
-            case TRACKS, PORTALS, PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WHOLE, WHOLE_GROUP, WORKBENCH -> null;
+            case TRACKS, PORTALS, PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WHOLE, WHOLE_GROUP, WHOLE_HALF, WORKBENCH -> null;
         };
     }
 
