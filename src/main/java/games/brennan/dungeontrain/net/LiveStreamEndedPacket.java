@@ -26,7 +26,9 @@ public record LiveStreamEndedPacket(Reason reason) implements CustomPacketPayloa
         /** The stream could not start or the encoder died: the camcorder goes back in the inventory. */
         FAILED,
         /** Livestreaming is switched off on this client (consent card / Options): the camcorder burns. */
-        DISABLED
+        DISABLED,
+        /** The relay refused the claim: this player is banned from the Live Eye (text-filter ladder). The camcorder burns. */
+        BANNED
     }
 
     public static final Type<LiveStreamEndedPacket> TYPE =

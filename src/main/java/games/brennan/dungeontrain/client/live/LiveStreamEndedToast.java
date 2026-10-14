@@ -26,7 +26,9 @@ public final class LiveStreamEndedToast implements Toast {
         REMOVED("removed"),
         REPLACED("replaced"),
         FREE_PLAY("free_play"),
-        FAILED("failed");
+        FAILED("failed"),
+        /** The Live Eye text filter struck the streamer out: the camcorder burned. */
+        MODERATED("moderated");
 
         final String key;
         /** What /live/stop tells the relay, so the #live-eye "has gone offline" post can say why. */

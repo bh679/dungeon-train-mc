@@ -25899,6 +25899,28 @@
       "released": true,
       "released_in": "v0.1285.0",
       "released_at": "2026-10-14T10:42:59Z"
+    },
+    {
+      "id": "live-eye-text-filter",
+      "version": "0.1286.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books"
+      ],
+      "title": "The Live Eye keeps its broadcast clean",
+      "summary": "While someone is live, words that could get the stream in trouble never make it onto chat or a book page \u2014 they turn to asterisks as you type, and the Live Eye warns you. Push it and the Live Eye burns away; keep pushing and nobody will hand you another for a while. If you think a line was caught by mistake, you can appeal it from the game.",
+      "highlights": [
+        "Chat and book text is checked as it is typed, with no delay to the stream.",
+        "Warnings first, then the Live Eye burns, then a ban.",
+        "Appeal a ban line by line with /liveappeal."
+      ],
+      "pr": 0,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -55,7 +55,7 @@ import java.util.UUID;
 public final class LiveFeedEvents {
 
     /** Why a stream ended, from the server's point of view. */
-    public enum Exit { REMOVED, REPLACED, DIED, LEFT, CUT_OFF, FAILED, DISABLED, FREE_PLAY }
+    public enum Exit { REMOVED, REPLACED, DIED, LEFT, CUT_OFF, FAILED, DISABLED, FREE_PLAY, MODERATED, BANNED }
 
     /** How often (server ticks) the streamer's Free Play state is rechecked mid-stream. */
     private static final int FREE_PLAY_CHECK_TICKS = 20;
@@ -134,6 +134,7 @@ public final class LiveFeedEvents {
             case CUT_OFF -> Exit.CUT_OFF;
             case DISABLED -> Exit.DISABLED;
             case FAILED -> Exit.FAILED;
+            case BANNED -> Exit.BANNED;
         };
         endStream(player, exit);
     }
@@ -181,6 +182,13 @@ public final class LiveFeedEvents {
             burn(player, Exit.FREE_PLAY);
             return;
         }
+        // Banned from the Live Eye by the text-filter ladder (LiveModeration): it burns on the way on.
+        if (LiveModeration.isBanned(player.getUUID())) {
+            burn(player, Exit.BANNED); // its line says how long, and lists the lines to appeal
+            // An approved appeal lifts the ban on the relay; ask again so the next try reflects it.
+            LiveModeration.refresh(player);
+            return;
+        }
         UUID previous = LiveStreamers.setStreamer(server, player.getUUID());
         if (previous != null && !previous.equals(player.getUUID())) {
             ServerPlayer old = server.getPlayerList().getPlayer(previous);
@@ -198,11 +206,21 @@ public final class LiveFeedEvents {
         PacketDistributor.sendToPlayer(player, LiveStreamPacket.start(eyeId));
     }
 
-    /** Ends {@code player}'s stream if they hold it: clear the streamer first so the slot change we cause is ignored. */
-    private static void endStream(ServerPlayer player, Exit exit) {
+    /**
+     * The text-filter ladder struck {@code player} out: the Live Eye burns and the stream ends
+     * ({@link Exit#MODERATED}), or they are banned from it outright ({@link Exit#BANNED}). Either way
+     * the camcorder goes, even when no stream is running — a banned player may not keep one.
+     */
+    public static void endForModeration(ServerPlayer player, boolean banned) {
+        Exit exit = banned ? Exit.BANNED : Exit.MODERATED;
+        if (!endStream(player, exit)) burn(player, exit);
+    }
+
+    /** Ends {@code player}'s stream if they hold it: clear the streamer first so the slot change we cause is ignored. True when they did. */
+    private static boolean endStream(ServerPlayer player, Exit exit) {
         MinecraftServer server = player.getServer();
-        if (server == null) return;
-        if (!LiveStreamers.clearIf(server, player.getUUID())) return;
+        if (server == null) return false;
+        if (!LiveStreamers.clearIf(server, player.getUUID())) return false;
         if (burnsOn(exit)) {
             burn(player, exit);
         } else if (exit == Exit.FAILED) {
@@ -213,8 +231,10 @@ public final class LiveFeedEvents {
             case DIED -> PacketDistributor.sendToPlayer(player, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_DIED, ""));
             case LEFT -> PacketDistributor.sendToPlayer(player, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_LEFT, ""));
             case FREE_PLAY -> PacketDistributor.sendToPlayer(player, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_FREE_PLAY, ""));
+            case MODERATED, BANNED -> PacketDistributor.sendToPlayer(player, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_MODERATED, ""));
             default -> { /* REPLACED is sent by the new streamer's start; CUT_OFF and FAILED came from the client */ }
         }
+        return true;
     }
 
     /**
@@ -235,7 +255,7 @@ public final class LiveFeedEvents {
         level.sendParticles(ParticleTypes.FLAME, player.getX(), player.getEyeY() + 0.3, player.getZ(), 24, 0.3, 0.2, 0.3, 0.02);
         level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getEyeY() + 0.4, player.getZ(), 8, 0.2, 0.1, 0.2, 0.01);
         level.playSound(null, player.blockPosition(), SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.8f, 0.9f);
-        player.sendSystemMessage(Component.translatable(burnLineKey(why)));
+        player.sendSystemMessage(why == Exit.BANNED ? LiveModeration.bannedBurnLine(player) : Component.translatable(burnLineKey(why)));
     }
 
     /** Taken off, handed to the next streamer, or anything else (death, Free Play, Livestreaming off). */
@@ -243,6 +263,8 @@ public final class LiveFeedEvents {
         return switch (why) {
             case REMOVED -> "chat.dungeontrain.live.burns_removed";
             case REPLACED, CUT_OFF -> "chat.dungeontrain.live.burns_next_streamer";
+            case MODERATED -> "chat.dungeontrain.live.burns_moderated";
+            case BANNED -> "chat.dungeontrain.live.burns_banned";
             default -> "chat.dungeontrain.live.headpiece_burns";
         };
     }

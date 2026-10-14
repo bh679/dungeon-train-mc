@@ -216,7 +216,9 @@
     "client.LanguageSelectEntryAccessor",
     "client.I18nAccessor",
     "client.LanguageManagerReapplyMixin",
-    "client.NetworkRegistryReplayPlaybackMixin"
+    "client.NetworkRegistryReplayPlaybackMixin",
+    "client.ChatScreenAccessor",
+    "client.BookEditScreenInvoker"
   ],
   "server": [
     "DedicatedServerPropertiesLevelTypeMixin"
