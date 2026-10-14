@@ -25918,9 +25918,9 @@
       ],
       "pr": 0,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1286.0",
+      "released_at": "2026-10-14T11:36:16Z"
     },
     {
       "id": "live-eye-links-phones-hidden",
