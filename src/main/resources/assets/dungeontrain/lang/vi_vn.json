@@ -639,6 +639,7 @@
   "chat.dungeontrain.live.banned_for": "Bị cấm vì những dòng này:",
   "chat.dungeontrain.live.appeal_link": "[Khiếu nại]",
   "chat.dungeontrain.live.appeal_link_hover": "Khiếu nại dòng này",
+  "chat.dungeontrain.live.link_hidden": "Liên kết và số điện thoại được ẩn khi Live Feed đang phát.",
   "chat.dungeontrain.live.appeal_hint": "Bạn nghĩ có dòng nào bị nhầm? Nhấn [Khiếu nại] ở dòng đó hoặc gõ /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Cách dùng: /liveappeal hiện những dòng khiến bạn bị cấm; /liveappeal <số> [lý do] khiếu nại một dòng.",
   "command.dungeontrain.live_appeal.pick": "Chọn dòng bạn muốn được xem xét:",

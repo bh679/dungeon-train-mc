@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.mixin.client.BookEditScreenInvoker;
 import games.brennan.dungeontrain.mixin.client.ChatScreenAccessor;
 import games.brennan.dungeontrain.moderation.LiveModerationScope;
 import games.brennan.dungeontrain.moderation.LiveWordList;
+import games.brennan.dungeontrain.moderation.PatternCensor;
 import games.brennan.dungeontrain.moderation.TextCensor;
 import games.brennan.dungeontrain.net.LiveModerationStrikePacket;
 import games.brennan.dungeontrain.net.LiveModerationStrikePacket.Source;
@@ -61,9 +62,11 @@ public final class LiveTextCensorClient {
         try {
             if (!chatActive()) return;
             TextCensor.Result r = TextCensor.censor(event.getMessage(), LiveWordList.effective());
-            if (!r.changed()) return;
-            event.setMessage(r.text());
-            report(Source.CHAT, event.getOriginalMessage(), r.hits());
+            TextCensor.Result p = PatternCensor.censor(r.text());
+            if (!r.changed() && !p.changed()) return;
+            event.setMessage(p.text());
+            if (r.changed()) report(Source.CHAT, event.getOriginalMessage(), r.hits());
+            if (p.changed()) warnLinkHidden();
         } catch (Throwable t) {
             // Fail open: never eat the player's line over a filter fault.
         }
@@ -103,9 +106,11 @@ public final class LiveTextCensorClient {
         String typed = input.getValue();
         if (typed.isEmpty() || typed.startsWith("/")) return;
         TextCensor.Result r = TextCensor.censorTail(typed, LiveWordList.effective());
-        if (!r.changed()) return;
-        input.setValue(r.text());
-        report(Source.CHAT_FIELD, typed, r.hits());
+        TextCensor.Result p = PatternCensor.censorTail(r.text());
+        if (!r.changed() && !p.changed()) return;
+        input.setValue(p.text());
+        if (r.changed()) report(Source.CHAT_FIELD, typed, r.hits());
+        if (p.changed()) warnLinkHidden();
     }
 
     private static void checkBook(BookEditScreen book) {
@@ -115,10 +120,12 @@ public final class LiveTextCensorClient {
         if (acc.dungeontrain$isSigning()) {
             String title = acc.dungeontrain$getTitle();
             TextCensor.Result r = TextCensor.censorTail(title == null ? "" : title, words);
-            if (r.changed()) {
-                acc.dungeontrain$setTitle(r.text());
+            TextCensor.Result p = PatternCensor.censorTail(r.text());
+            if (r.changed() || p.changed()) {
+                acc.dungeontrain$setTitle(p.text());
                 acc.dungeontrain$getTitleEdit().setCursorToEnd();
-                report(Source.BOOK_FIELD, "[title] " + title, r.hits());
+                if (r.changed()) report(Source.BOOK_FIELD, "[title] " + title, r.hits());
+                if (p.changed()) warnLinkHidden();
             }
         } else {
             List<String> pages = acc.dungeontrain$getPages();
@@ -126,11 +133,13 @@ public final class LiveTextCensorClient {
             if (page < 0 || page >= pages.size()) return;
             String typed = pages.get(page);
             TextCensor.Result r = TextCensor.censorTail(typed, words);
-            if (r.changed()) {
-                inv.dungeontrain$setCurrentPageText(r.text());
+            TextCensor.Result p = PatternCensor.censorTail(r.text());
+            if (r.changed() || p.changed()) {
+                inv.dungeontrain$setCurrentPageText(p.text());
                 acc.dungeontrain$getPageEdit().setCursorToEnd();
                 inv.dungeontrain$clearDisplayCache();
-                report(Source.BOOK_FIELD, typed, r.hits());
+                if (r.changed()) report(Source.BOOK_FIELD, typed, r.hits());
+                if (p.changed()) warnLinkHidden();
             }
         }
     }
@@ -148,6 +157,20 @@ public final class LiveTextCensorClient {
             return !EditorStatusHudOverlay.isActive();
         } catch (Throwable t) {
             return true;
+        }
+    }
+
+    private static long lastLinkWarnMs;
+
+    /** A link or phone number was hidden: say so locally, at most once per 10 s. Never a strike. */
+    private static void warnLinkHidden() {
+        long now = System.currentTimeMillis();
+        if (now - lastLinkWarnMs < REPORT_GAP_MS) return;
+        lastLinkWarnMs = now;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player != null) {
+            mc.player.displayClientMessage(net.minecraft.network.chat.Component.translatable("chat.dungeontrain.live.link_hidden")
+                .withStyle(net.minecraft.ChatFormatting.GRAY), false);
         }
     }
 

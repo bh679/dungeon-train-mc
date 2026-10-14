@@ -639,6 +639,7 @@
   "chat.dungeontrain.live.banned_for": "Na-ban dahil sa mga linyang ito:",
   "chat.dungeontrain.live.appeal_link": "[Umapela]",
   "chat.dungeontrain.live.appeal_link_hover": "Umapela sa linyang ito",
+  "chat.dungeontrain.live.link_hidden": "Nakatago ang mga link at numero ng telepono habang nasa ere ang Live Feed.",
   "chat.dungeontrain.live.appeal_hint": "Sa tingin mo ba'y mali ang isang linya? I-click ang [Umapela] dito o i-type ang /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Paggamit: /liveappeal para makita ang mga linyang dahilan ng ban mo, /liveappeal <numero> [dahilan] para umapela sa isa.",
   "command.dungeontrain.live_appeal.pick": "Piliin ang linyang gusto mong suriin:",

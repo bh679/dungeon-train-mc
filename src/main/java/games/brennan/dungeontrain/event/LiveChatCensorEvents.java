@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.moderation.LiveModerationScope;
 import games.brennan.dungeontrain.moderation.LiveWordList;
+import games.brennan.dungeontrain.moderation.PatternCensor;
 import games.brennan.dungeontrain.moderation.TextCensor;
 import games.brennan.dungeontrain.player.ServerLiveStatus;
 import net.minecraft.network.chat.Component;
@@ -33,9 +34,12 @@ public final class LiveChatCensorEvents {
             if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(server))) return;
             String raw = event.getMessage().getString();
             TextCensor.Result r = TextCensor.censor(raw, LiveWordList.effective());
-            if (!r.changed()) return;
-            event.setMessage(Component.literal(r.text()));
-            LiveModeration.strike(event.getPlayer(), "chat_server", r.hits(), raw);
+            // Links and phone numbers: hidden on the same scope, but never a strike.
+            TextCensor.Result p = PatternCensor.censor(r.text());
+            if (!r.changed() && !p.changed()) return;
+            event.setMessage(Component.literal(p.text()));
+            if (r.changed()) LiveModeration.strike(event.getPlayer(), "chat_server", r.hits(), raw);
+            if (p.changed()) LiveModeration.warnLinkHidden(event.getPlayer());
         } catch (Throwable t) {
             // Fail open: a filter fault must never eat a chat line.
         }

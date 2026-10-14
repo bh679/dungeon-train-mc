@@ -668,6 +668,7 @@
   "chat.dungeontrain.live.banned_for": "Gebannt wegen dieser Zeilen:",
   "chat.dungeontrain.live.appeal_link": "[Einspruch]",
   "chat.dungeontrain.live.appeal_link_hover": "Gegen diese Zeile Einspruch einlegen",
+  "chat.dungeontrain.live.link_hidden": "Links und Telefonnummern werden ausgeblendet, solange der Live-Feed auf Sendung ist.",
   "chat.dungeontrain.live.appeal_hint": "Hältst du eine Zeile für einen Fehler? Klicke bei ihr auf [Einspruch] oder tippe /liveappeal.",
   "command.dungeontrain.live_appeal.usage": "Verwendung: /liveappeal zeigt die Zeilen, für die du gebannt wurdest; /liveappeal <Nummer> [Grund] legt gegen eine Einspruch ein.",
   "command.dungeontrain.live_appeal.pick": "Wähle die Zeile, die geprüft werden soll:",

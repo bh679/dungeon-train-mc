@@ -639,6 +639,7 @@
   "chat.dungeontrain.live.banned_for": "因以下內容被禁：",
   "chat.dungeontrain.live.appeal_link": "[申訴]",
   "chat.dungeontrain.live.appeal_link_hover": "申訴這一條",
+  "chat.dungeontrain.live.link_hidden": "直播進行時，連結和電話號碼會被隱去。",
   "chat.dungeontrain.live.appeal_hint": "覺得哪一條是誤判？點擊它旁邊的 [申訴]，或輸入 /liveappeal。",
   "command.dungeontrain.live_appeal.usage": "用法：/liveappeal 查看導致禁令的內容，/liveappeal <編號> [理由] 申訴其中一條。",
   "command.dungeontrain.live_appeal.pick": "選擇你想要複核的那一條：",

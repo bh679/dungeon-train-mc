@@ -115,6 +115,7 @@ public final class LiveModeration {
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         LAST_STRIKE_MS.remove(event.getEntity().getUUID());
+        LAST_LINK_WARN_MS.remove(event.getEntity().getUUID());
         // The verdict stays cached: a relog within the session must not forget a ban.
     }
 
@@ -122,6 +123,20 @@ public final class LiveModeration {
     public static void onServerStopped(ServerStoppedEvent event) {
         VERDICTS.clear();
         LAST_STRIKE_MS.clear();
+    }
+
+    // --- links and phone numbers (hidden, never a strike) ---------------------------------------
+
+    private static final Map<UUID, Long> LAST_LINK_WARN_MS = new ConcurrentHashMap<>();
+    static final long LINK_WARN_GAP_MS = 10_000L;
+
+    /** Tell {@code player} a link or phone number was hidden — at most once per 10 s, no strike. */
+    public static void warnLinkHidden(ServerPlayer player) {
+        long now = System.currentTimeMillis();
+        Long last = LAST_LINK_WARN_MS.get(player.getUUID());
+        if (last != null && now - last < LINK_WARN_GAP_MS) return;
+        LAST_LINK_WARN_MS.put(player.getUUID(), now);
+        player.sendSystemMessage(Component.translatable(KEY + "link_hidden").withStyle(ChatFormatting.GRAY));
     }
 
     // --- strikes ----------------------------------------------------------------------------------
