@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
+import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -52,7 +53,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
 /**
@@ -76,6 +81,12 @@ public final class LiveStreamController {
     private static final LiveStreamController INSTANCE = new LiveStreamController();
     /** Session dirs a {@link LiveTeardown} is still flushing; the next stream's sweep leaves them be. */
     private static final Set<Path> TEARING_DOWN = ConcurrentHashMap.newKeySet();
+    /** Spawns and restarts the encoder off the render thread, one at a time so two never share a grabber. */
+    private static final ExecutorService STARTER = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "dt-live-start");
+        t.setDaemon(true);
+        return t;
+    });
 
     public enum State { IDLE, WAIT_FFMPEG, CLAIMING, STREAMING, STOPPING }
 
@@ -184,6 +195,7 @@ public final class LiveStreamController {
         generation++;
         state = State.WAIT_FFMPEG;
         waitTicks = 0;
+        FfmpegSupport.aacEncoder(); // probe off-thread now, so it has its answer by the time the claim lands
         headpiece.reset();
         switch (FfmpegSupport.state()) {
             case OFF, FAILED -> {
@@ -298,7 +310,9 @@ public final class LiveStreamController {
             LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode());
         boolean freePlay = mc.player != null && mc.player.hasEffect(ModMobEffects.FREE_PLAY);
         LiveFeedClient.Life life = new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION);
-        LiveFeedClient.claim(uuid, name, eyeId, info, life).thenAcceptAsync(result -> {
+        CompletableFuture<Boolean> aac = LiveFeedClientConfig.streamAudio()
+            ? FfmpegSupport.aacEncoder() : CompletableFuture.completedFuture(false);
+        LiveFeedClient.claim(uuid, name, eyeId, info, life).thenAcceptBothAsync(aac, (result, hasAac) -> {
             if (gen != generation || state != State.CLAIMING) return;
             Claim c = LiveFeedClient.parseClaim(result);
             if (c == null) {
@@ -307,12 +321,19 @@ public final class LiveStreamController {
                 tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
                 return;
             }
-            beginStreaming(c);
+            beginStreaming(c, hasAac);
         }, mc);
     }
 
-    private void beginStreaming(Claim c) {
+    /**
+     * Render thread, still CLAIMING: everything that must happen here (the GL grabber, the sound
+     * mirror) is set up, then ffmpeg is spawned on {@link #STARTER} and {@link #adoptEncoder} flips
+     * to STREAMING back on the render thread. The claim is held from here so a stop meanwhile still
+     * tells the relay.
+     */
+    private void beginStreaming(Claim c, boolean aac) {
         Minecraft mc = Minecraft.getInstance();
+        int gen = generation;
         try {
             sweepStaleDirs();
             Path d = liveRoot().resolve(c.session());
@@ -322,30 +343,72 @@ public final class LiveStreamController {
             var ffmpeg = FfmpegSupport.get();
             if (ffmpeg == null) throw new IOException("ffmpeg vanished");
             StreamNameTag.prepare();
-            grabber = new LiveFrameGrabber(w, h);
-            int fps = LiveFeedClientConfig.captureFps();
-            // Off (the default), not possible here, or an unapproved mod loaded (it could play anything):
-            // the stream goes out without sound, as before.
-            audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(ffmpeg) : null;
-            encoder = new LiveEncoder(ffmpeg, grabber, d, fps,
-                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), audio == null ? 0 : audio.port());
-            if (audio != null) audio.start(encoder::framesWritten, fps);
-            uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
             claim = c;
             dir = d;
-            streamStartedMs = System.currentTimeMillis();
-            state = State.STREAMING;
-            LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}, playlist {}", c.session(), w, h,
-                fps, audio != null ? " with sound" : "", c.playlistUrl());
-            announcedLive = false;
-            if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
+            LiveFrameGrabber grab = new LiveFrameGrabber(w, h);
+            grabber = grab;
+            int fps = LiveFeedClientConfig.captureFps();
+            int bitrate = LiveFeedClientConfig.bitrateKbps();
+            int segment = LiveFeedClientConfig.segmentSeconds();
+            // Off, not possible here, or an unapproved mod loaded (it could play anything):
+            // the stream goes out without sound, as before.
+            audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(aac) : null;
+            int audioPort = audio == null ? 0 : audio.port();
+            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort), STARTER)
+                .whenCompleteAsync((enc, err) -> adoptEncoder(gen, enc, err, fps), mc);
         } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] live stream could not start", e);
-            say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
-            teardown(false, false, null);
-            state = State.IDLE;
-            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+            failStart(e);
         }
+    }
+
+    /** Render thread: the encoder spawned for stream {@code gen} is up (or failed) — go live with it. */
+    private void adoptEncoder(int gen, @Nullable LiveEncoder enc, @Nullable Throwable err, int fps) {
+        if (gen != generation || state != State.CLAIMING) {
+            if (enc != null) closeEncoderAsync(enc); // stopped meanwhile; the teardown already ran
+            return;
+        }
+        Claim c = claim;
+        Path d = dir;
+        if (err != null || enc == null || c == null || d == null) {
+            failStart(err != null ? err : new IllegalStateException("stream state lost while starting"));
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        encoder = enc;
+        if (audio != null) audio.start(enc::framesWritten, fps);
+        uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
+        streamStartedMs = System.currentTimeMillis();
+        state = State.STREAMING;
+        LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}, playlist {}", c.session(),
+            grabber == null ? 0 : grabber.width(), grabber == null ? 0 : grabber.height(),
+            fps, audio != null ? " with sound" : "", c.playlistUrl());
+        announcedLive = false;
+        if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
+    }
+
+    /** Render thread: the stream could not start — say so, free what was set up, hand the headpiece back. */
+    private void failStart(Throwable e) {
+        LOGGER.error("[DungeonTrain] live stream could not start", e);
+        say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
+        generation++;
+        teardown(false, false, null);
+        state = State.IDLE;
+        tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+    }
+
+    /** {@link #STARTER} thread: spawning ffmpeg can take a while, so never on the render thread. */
+    private static LiveEncoder spawnEncoder(FFmpeg ffmpeg, LiveFrameGrabber grab, Path d, int fps, int bitrate,
+                                            int segment, int audioPort) {
+        try {
+            return new LiveEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort);
+        } catch (IOException e) {
+            throw new CompletionException(e);
+        }
+    }
+
+    /** An encoder nobody will use: closed on the teardown thread (closing blocks for seconds). */
+    private static void closeEncoderAsync(LiveEncoder enc) {
+        LiveTeardown.runAsync(List.of(new LiveTeardown.Step("stray encoder", enc::close)), () -> { });
     }
 
     /**
@@ -353,24 +416,44 @@ public final class LiveStreamController {
      * sound input. Rather than end the broadcast, start the encoder again without sound, as it would
      * have been with the setting off. Only before the first upload: a fresh encoder numbers its
      * segments from 0 again. True when the stream carries on.
+     *
+     * <p>Closing the old encoder and sound blocks for seconds, so it runs on {@link #STARTER}, as does
+     * the new spawn; the tick's died-check skips while {@code encoder} is null in between.</p>
      */
     private boolean restartWithoutSound() {
-        LiveAudioPump snd = audio;
-        audio = null;
-        snd.close();
         LiveUploader up = uploader;
         var ffmpeg = FfmpegSupport.get();
-        if (up == null || up.segmentsUploaded() > 0 || ffmpeg == null || grabber == null || dir == null) return false;
+        LiveFrameGrabber grab = grabber;
+        Path d = dir;
+        LiveEncoder old = encoder;
+        LiveAudioPump snd = audio;
+        if (up == null || up.segmentsUploaded() > 0 || ffmpeg == null || grab == null || d == null
+            || old == null || snd == null) return false;
         LOGGER.warn("[DungeonTrain] live encoder failed with stream sound on; carrying on without sound");
-        try {
-            encoder.close();
-            encoder = new LiveEncoder(ffmpeg, grabber, dir, LiveFeedClientConfig.captureFps(),
-                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), 0);
-            return true;
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] live encoder could not restart without sound", e);
-            return false;
-        }
+        audio = null;
+        encoder = null;
+        int gen = generation;
+        int fps = LiveFeedClientConfig.captureFps();
+        int bitrate = LiveFeedClientConfig.bitrateKbps();
+        int segment = LiveFeedClientConfig.segmentSeconds();
+        CompletableFuture.supplyAsync(() -> {
+            snd.close();
+            old.close();
+            return spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, 0);
+        }, STARTER).whenCompleteAsync((enc, err) -> {
+            if (gen != generation || state != State.STREAMING) {
+                if (enc != null) closeEncoderAsync(enc);
+                return;
+            }
+            if (err != null || enc == null) {
+                LOGGER.error("[DungeonTrain] live encoder could not restart without sound", err);
+                stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED), LiveStreamEndedToast.Reason.FAILED);
+                tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+                return;
+            }
+            encoder = enc;
+        }, Minecraft.getInstance());
+        return true;
     }
 
     /** How often a stream with sound re-checks the loaded mods against the approved list. */
