@@ -158,6 +158,8 @@ public enum ClientOptionsTab {
         STREAM_NAME_TAG("gui.dungeontrain.options.stream_name_tag"),
         /** The stream's Discord chat in your chat, and yours back to it. Locked off in Kid mode. */
         LIVE_CHAT("gui.dungeontrain.options.live_chat"),
+        /** The "drop your Twitch in chat for a shout-out" line at stream start, while no Twitch is saved. */
+        TWITCH_HINT("gui.dungeontrain.options.twitch_hint"),
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** The live feed pinned top-right on the HUD; the preview outlines it. */
@@ -311,6 +313,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_AUDIO);
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.LIVE_CHAT);
+                rows.add(Row.TWITCH_HINT);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.HEAD_VIEWER_SIZE);
             }

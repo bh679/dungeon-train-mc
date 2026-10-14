@@ -15599,5 +15599,61 @@
         "twitch.tv/brennanhattongames"
       ]
     }
+  },
+  "chat.dungeontrain.twitch.save_offer": {
+    "1": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.saved": {
+    "1": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.saved_verify": {
+    "1": {
+      "label": "the /twitch command, shown as a clickable command",
+      "examples": [
+        "/twitch"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.linked_unverified": {
+    "1": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.unknown_channel": {
+    "1": {
+      "label": "the Twitch username the player typed",
+      "examples": [
+        "steve_streams"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.bad_login": {
+    "1": {
+      "label": "what the player typed, as typed",
+      "examples": [
+        "steve streams!"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.account.twitch_unverified": {
+    "1": {
+      "label": "the name of the saved Twitch channel",
+      "examples": [
+        "SteveStreams"
+      ]
+    }
   }
 }

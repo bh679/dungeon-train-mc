@@ -82,6 +82,7 @@ final class ClientOptionsIcons {
             case STREAM_AUDIO -> Icon.item(Items.JUKEBOX);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
             case LIVE_CHAT -> Icon.item(Items.BELL);
+            case TWITCH_HINT -> TWITCH;
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
 

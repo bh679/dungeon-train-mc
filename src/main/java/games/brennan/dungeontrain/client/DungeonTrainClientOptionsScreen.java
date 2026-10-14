@@ -485,9 +485,12 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             }
             return;
         }
-        Component twitch = status.linked()
-                ? Component.translatable("gui.dungeontrain.options.account.twitch", status.display().isEmpty() ? status.login() : status.display())
-                : Component.translatable("gui.dungeontrain.options.account.twitch_none");
+        String shown = status.display().isEmpty() ? status.login() : status.display();
+        Component twitch = !status.linked()
+                ? Component.translatable("gui.dungeontrain.options.account.twitch_none")
+                : status.verified()
+                        ? Component.translatable("gui.dungeontrain.options.account.twitch", shown)
+                        : Component.translatable("gui.dungeontrain.options.account.twitch_unverified", shown);
         list.addWidget(caption(twitch));
         if (!status.linked()) {
             Component why = Component.translatable("gui.dungeontrain.options.account.twitch.not_linked");
@@ -507,17 +510,22 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         if (TwitchAccountState.toggleFailed()) {
             list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.toggle_failed")));
         }
+        // A typed handle (unverified) has no Twitch grant: the two switches need the real link first.
+        boolean verified = status.verified();
+        Component verifyTip = Component.translatable("gui.dungeontrain.options.account.twitch.verify_tip");
+        if (!verified) list.addWidget(caption(verifyTip));
         String restreamKey = "gui.dungeontrain.options.account.twitch.restream";
+        CycleButton<Boolean> restream = onOff(Component.translatable(restreamKey), status.restream(), on -> TwitchAccountState.setRestream(on, this::rebuildIfShown));
+        restream.active = verified;
         list.addSetting(ClientOptionsIcons.TWITCH, Component.translatable(restreamKey),
-                Component.translatable(restreamKey + ".hint"),
-                onOff(Component.translatable(restreamKey), status.restream(), on -> TwitchAccountState.setRestream(on, this::rebuildIfShown)),
-                Component.translatable(restreamKey + ".tip"));
+                Component.translatable(restreamKey + ".hint"), restream,
+                verified ? Component.translatable(restreamKey + ".tip") : verifyTip);
         String titleKey = "gui.dungeontrain.options.account.twitch.set_title";
         CycleButton<Boolean> title = onOff(Component.translatable(titleKey), status.setTitle(),
                 on -> TwitchAccountState.setTitle(on, this::rebuildIfShown));
-        title.active = status.restream();
+        title.active = verified && status.restream();
         list.addSetting(ClientOptionsIcons.TWITCH, Component.translatable(titleKey),
-                Component.translatable(titleKey + ".hint"), title, Component.translatable(titleKey + ".tip"));
+                Component.translatable(titleKey + ".hint"), title, verified ? Component.translatable(titleKey + ".tip") : verifyTip);
         Component unlinkHint = Component.translatable("gui.dungeontrain.options.account.twitch.unlink.hint");
         Button unlink = Button.builder(Component.translatable("gui.dungeontrain.options.account.twitch.unlink"), b ->
                         TwitchLinkClient.unlink().whenComplete((r, err) -> this.minecraft.execute(() -> {
@@ -693,6 +701,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                         LiveFeedClientConfig::setLiveChat);
                 liveChat.active = !kid;
                 yield Setting.of(liveChat, kid ? key + ".kid_tip" : key + ".tip");
+            }
+
+            // The shout-out reminder at stream start; moot once a Twitch is saved, never shown in Kid mode.
+            case TWITCH_HINT -> {
+                boolean kid = ClientDisplayConfig.isKidMode();
+                CycleButton<Boolean> hint = onOff(Component.translatable(key), !kid && LiveFeedClientConfig.twitchShoutoutHint(),
+                        LiveFeedClientConfig::setTwitchShoutoutHint);
+                hint.active = !kid;
+                yield Setting.of(hint, kid ? key + ".kid_tip" : key + ".tip");
             }
 
             // Broadcast width; the preview re-captures at it on the next frame.

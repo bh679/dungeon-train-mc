@@ -19,6 +19,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAM_AUDIO;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
+    public static final ModConfigSpec.BooleanValue TWITCH_SHOUTOUT_HINT;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
@@ -63,6 +64,9 @@ public final class LiveFeedClientConfig {
         LIVE_CHAT = b
             .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
+        TWITCH_SHOUTOUT_HINT = b
+            .comment("When you go live without a Twitch saved, say in chat that dropping your Twitch username or URL there gets you a shout-out on the official Dungeon Train Twitch. Never shown once a Twitch is saved, or in Kid mode.")
+            .define("twitchShoutoutHint", true);
         CAPTURE_WIDTH = b
             .comment("Width of the broadcast picture in pixels (16:9). 1280 = 720p. Lower if encoding costs you frame rate.")
             .defineInRange("captureWidth", 1280, CAPTURE_WIDTH_MIN, CAPTURE_WIDTH_MAX);
@@ -157,6 +161,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || STREAM_CHAT.get() == value) return;
         STREAM_CHAT.set(value);
         STREAM_CHAT.save();
+    }
+
+    /** The shout-out reminder at stream start ({@code LiveStreamController}); only matters while no Twitch is saved. */
+    public static boolean twitchShoutoutHint() { return !loaded() || TWITCH_SHOUTOUT_HINT.get(); }
+
+    public static void setTwitchShoutoutHint(boolean value) {
+        if (!loaded() || TWITCH_SHOUTOUT_HINT.get() == value) return;
+        TWITCH_SHOUTOUT_HINT.set(value);
+        TWITCH_SHOUTOUT_HINT.save();
     }
 
     /** The Discord live chat switch as set; {@code LiveChatBridge} still forces it off in Kid mode. */

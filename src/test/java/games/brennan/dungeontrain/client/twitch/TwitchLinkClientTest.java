@@ -26,16 +26,29 @@ class TwitchLinkClientTest {
 
     @Test
     void statusParsesTheLinkAndOptIns() {
-        Status s = TwitchLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"login\":\"Pat_1\",\"display\":\"Pat\",\"restream\":true,\"setTitle\":false}");
-        assertEquals(new Status(true, true, "pat_1", "Pat", true, false, Error.NONE), s);
+        Status s = TwitchLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"verified\":true,\"login\":\"Pat_1\",\"display\":\"Pat\",\"restream\":true,\"setTitle\":false}");
+        assertEquals(new Status(true, true, true, "pat_1", "Pat", true, false, Error.NONE), s);
+        Status typed = TwitchLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"verified\":false,\"login\":\"steve_streams\",\"display\":\"SteveStreams\"}");
+        assertEquals(new Status(true, true, false, "steve_streams", "SteveStreams", false, false, Error.NONE), typed);
         assertEquals("https://twitch.tv/pat_1", s.url());
         Status off = TwitchLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":false,\"login\":\"x\",\"restream\":true}");
-        assertEquals(new Status(true, false, "", "", false, false, Error.NONE), off, "unlinked carries nothing, whatever else the body says");
+        assertEquals(new Status(true, false, false, "", "", false, false, Error.NONE), off, "unlinked carries nothing, whatever else the body says");
         assertEquals("", off.url());
         assertEquals(Error.FAILED, TwitchLinkClient.parseStatus(200, "{\"ok\":true}").error(), "no readable linked");
         assertEquals(Error.FAILED, TwitchLinkClient.parseStatus(200, "{\"ok\":true,\"linked\":true,\"login\":\"bad login\"}").error(), "login outside Twitch's alphabet");
         assertEquals(Error.NOT_LINKED, TwitchLinkClient.parseStatus(404, "{\"error\":\"not_linked\"}").error());
         assertEquals(Error.UNSUPPORTED, TwitchLinkClient.parseStatus(404, "<html>").error(), "an older relay 404s the path");
+    }
+
+    @Test
+    void claimParsesATypedHandleAndItsRefusals() {
+        Status s = TwitchLinkClient.parseClaim(200, "{\"ok\":true,\"login\":\"Steve_Streams\",\"display\":\"SteveStreams\",\"verified\":false}");
+        assertEquals(new Status(true, true, false, "steve_streams", "SteveStreams", false, false, Error.NONE), s);
+        assertEquals(Error.UNKNOWN_CHANNEL, TwitchLinkClient.parseClaim(404, "{\"error\":\"unknown_channel\"}").error());
+        assertEquals(Error.ALREADY_VERIFIED, TwitchLinkClient.parseClaim(409, "{\"error\":\"already_verified\",\"login\":\"pat_1\"}").error());
+        assertEquals(Error.BAD_LOGIN, TwitchLinkClient.parseClaim(400, "{\"error\":\"bad_login\"}").error());
+        assertEquals(Error.NOT_VERIFIED, TwitchLinkClient.parseStatus(403, "{\"error\":\"not_verified\"}").error());
+        assertEquals(Error.UNSUPPORTED, TwitchLinkClient.parseClaim(404, "nope").error(), "an older relay");
     }
 
     @Test

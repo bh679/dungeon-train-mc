@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.client.twitch;
 
 import com.mojang.brigadier.CommandDispatcher;
 import games.brennan.dungeontrain.DungeonTrain;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
@@ -65,7 +67,13 @@ public final class TwitchLinkCommand {
                 .then(Commands.literal("title")
                         .then(Commands.literal("on").executes(ctx -> settings(null, true)))
                         .then(Commands.literal("off").executes(ctx -> settings(null, false))))
-                .then(Commands.literal("unlink").executes(ctx -> unlink())));
+                .then(Commands.literal("unlink").executes(ctx -> unlink()))
+                // The chat-capture's "[Yes]" (TwitchHandleCapture) and a hand-typed save of a handle.
+                .then(Commands.literal("save")
+                        .then(Commands.argument("login", StringArgumentType.word()).executes(ctx -> save(StringArgumentType.getString(ctx, "login")))))
+                .then(Commands.literal("hint")
+                        .then(Commands.literal("on").executes(ctx -> hint(true)))
+                        .then(Commands.literal("off").executes(ctx -> hint(false)))));
     }
 
     private static boolean kid() {
@@ -87,6 +95,7 @@ public final class TwitchLinkCommand {
                 TwitchLinkClient.Status status = asked.status();
                 TwitchLinkClient.Start start = asked.start();
                 boolean wasLinked = status != null && status.ok() && status.linked();
+                boolean verified = wasLinked && status.verified();
                 if (wasLinked) {
                     say(linkedLines(status));
                 }
@@ -94,8 +103,8 @@ public final class TwitchLinkCommand {
                     if (!wasLinked) say(error(start.error()));
                     return;
                 }
-                say(codeLines(start, wasLinked));
-                if (!wasLinked) watch(++watchGeneration, 0);
+                say(codeLines(start, verified));
+                if (!verified) watch(++watchGeneration, 0);
             }));
         return 1;
     }
@@ -115,6 +124,41 @@ public final class TwitchLinkCommand {
             }
             say(linkedLines(s));
         }));
+        return 1;
+    }
+
+    /** {@code /twitch save <login>} — a typed handle: shout-out surfaces only, until verified. */
+    private static int save(String raw) {
+        if (kid()) return 0;
+        var login = TwitchHandle.accept(raw.startsWith("@") ? raw.substring(1) : raw);
+        if (login.isEmpty()) {
+            say(Component.translatable("chat.dungeontrain.twitch.bad_login", raw).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+        TwitchLinkClient.claim(login.get()).whenComplete((s, err) -> onClient(() -> {
+            TwitchAccountState.invalidate();
+            if (err != null || s == null) { say(error(TwitchLinkClient.Error.FAILED)); return; }
+            if (s.ok()) {
+                TwitchHandleCapture.close();
+                say(Component.translatable("chat.dungeontrain.twitch.saved", channelLink(s.login())).withStyle(ChatFormatting.GREEN));
+                say(Component.translatable("chat.dungeontrain.twitch.saved_verify", command(COMMAND)).withStyle(ChatFormatting.GRAY));
+                return;
+            }
+            switch (s.error()) {
+                case UNKNOWN_CHANNEL -> say(Component.translatable("chat.dungeontrain.twitch.unknown_channel", login.get()).withStyle(ChatFormatting.YELLOW));
+                case ALREADY_VERIFIED -> say(Component.translatable("chat.dungeontrain.twitch.already_verified").withStyle(ChatFormatting.YELLOW));
+                case BAD_LOGIN -> say(Component.translatable("chat.dungeontrain.twitch.bad_login", raw).withStyle(ChatFormatting.RED));
+                default -> say(error(s.error()));
+            }
+        }));
+        return 1;
+    }
+
+    /** {@code /twitch hint on|off} — the shout-out reminder at stream start (Options → Stream too). */
+    private static int hint(boolean on) {
+        LiveFeedClientConfig.setTwitchShoutoutHint(on);
+        if (!on) TwitchHandleCapture.close();
+        say(Component.translatable(on ? "chat.dungeontrain.twitch.hint_on" : "chat.dungeontrain.twitch.hint_off").withStyle(ChatFormatting.GRAY));
         return 1;
     }
 
@@ -173,8 +217,13 @@ public final class TwitchLinkCommand {
                 .append(Component.translatable("chat.dungeontrain.twitch.instructions").withStyle(ChatFormatting.GRAY));
     }
 
-    /** "Twitch linked: twitch.tv/x. Restream: on/off (/twitch restream …). Title: …" */
+    /** "Twitch linked: twitch.tv/x. Restream: on/off (/twitch restream …). Title: …" — or, unverified, what verifying adds. */
     static Component linkedLines(TwitchLinkClient.Status s) {
+        if (!s.verified()) {
+            return Component.translatable("chat.dungeontrain.twitch.linked_unverified", channelLink(s.login())).withStyle(ChatFormatting.GREEN)
+                    .append("\n").append(Component.translatable("chat.dungeontrain.twitch.saved_verify", command(COMMAND)).withStyle(ChatFormatting.GRAY))
+                    .append("\n").append(Component.translatable("chat.dungeontrain.twitch.options_hint", command(COMMAND + " unlink")).withStyle(ChatFormatting.GRAY));
+        }
         MutableComponent out = Component.translatable("chat.dungeontrain.twitch.linked", channelLink(s.login())).withStyle(ChatFormatting.GREEN);
         out.append("\n").append(Component.translatable(s.restream() ? "chat.dungeontrain.twitch.restream_on" : "chat.dungeontrain.twitch.restream_off",
                 command(COMMAND + (s.restream() ? " restream off" : " restream on"))).withStyle(ChatFormatting.GRAY));

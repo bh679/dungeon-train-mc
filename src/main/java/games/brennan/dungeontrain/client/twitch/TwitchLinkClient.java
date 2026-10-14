@@ -47,11 +47,12 @@ public final class TwitchLinkClient {
     static final String STATUS_PATH = "/twitch/link/status";
     static final String SETTINGS_PATH = "/twitch/link/settings";
     static final String UNLINK_PATH = "/twitch/link/unlink";
+    static final String CLAIM_PATH = "/twitch/link/claim";
     /** An older relay (or one without the feature): 404/405/501 on the path. */
     private static final Set<Integer> ENDPOINT_MISSING = Set.of(404, 405, 501);
 
     /** Why a call did not do what was asked. {@code NONE} on success. */
-    public enum Error { NONE, NO_CONSENT, RATE_LIMITED, UNSUPPORTED, DISABLED, NOT_LINKED, FAILED }
+    public enum Error { NONE, NO_CONSENT, RATE_LIMITED, UNSUPPORTED, DISABLED, NOT_LINKED, NOT_VERIFIED, UNKNOWN_CHANNEL, ALREADY_VERIFIED, BAD_LOGIN, FAILED }
 
     /** A minted code, the page that takes it, and how long it lives; {@code ok} false with an {@link Error} otherwise. */
     public record Start(boolean ok, String code, String url, int expiresInSec, Error error) {
@@ -62,17 +63,18 @@ public final class TwitchLinkClient {
 
     /**
      * Whether this uuid has a Twitch channel linked, which ({@code login} is the twitch.tv handle,
-     * {@code display} the name Twitch shows), and the two opt-ins: {@code restream} (also push the
-     * stream to that channel) and {@code setTitle} (set its title/category while live).
+     * {@code display} the name Twitch shows), whether that link is {@code verified} (a Twitch grant, as
+     * opposed to a handle typed in chat — shout-out only), and the two opt-ins: {@code restream} (also
+     * push the stream to that channel) and {@code setTitle} (set its title/category while live).
      */
-    public record Status(boolean ok, boolean linked, String login, String display, boolean restream, boolean setTitle, Error error) {
+    public record Status(boolean ok, boolean linked, boolean verified, String login, String display, boolean restream, boolean setTitle, Error error) {
         public Status {
             login = login == null ? "" : login;
             display = display == null ? "" : display;
         }
 
         static Status of(Error error) {
-            return new Status(false, false, "", "", false, false, error);
+            return new Status(false, false, false, "", "", false, false, error);
         }
 
         /** {@code https://twitch.tv/<login>}, or "" when unlinked. */
@@ -121,6 +123,18 @@ public final class TwitchLinkClient {
         if (restream != null) body.addProperty("restream", restream);
         if (setTitle != null) body.addProperty("setTitle", setTitle);
         return post(SETTINGS_PATH, body, TwitchLinkClient::parseStatus, Status.of(Error.FAILED), "settings");
+    }
+
+    /**
+     * Save a handle the player typed in chat — the shout-out path, no Twitch grant. The relay checks
+     * the channel exists; a verified link is never replaced this way. Resolves off-thread.
+     */
+    public static CompletableFuture<Status> claim(String login) {
+        String uuid = ownUuid();
+        if (uuid == null) return CompletableFuture.completedFuture(Status.of(Error.NO_CONSENT));
+        JsonObject body = payload(uuid);
+        body.addProperty("login", login == null ? "" : login);
+        return post(CLAIM_PATH, body, TwitchLinkClient::parseClaim, Status.of(Error.FAILED), "claim");
     }
 
     /** Forget the link (the relay also tells Twitch to drop the grant). Resolves off-thread. */
@@ -189,8 +203,19 @@ public final class TwitchLinkClient {
             boolean on = linked.getAsBoolean();
             String login = on ? str(o.get("login")).trim().toLowerCase() : "";
             if (on && !login.matches("[a-z0-9_]{3,25}")) return Status.of(Error.FAILED);
-            return new Status(true, on, login, on ? str(o.get("display")).trim() : "",
+            return new Status(true, on, on && bool(o.get("verified")), login, on ? str(o.get("display")).trim() : "",
                 on && bool(o.get("restream")), on && bool(o.get("setTitle")), Error.NONE);
+        }
+        return Status.of(errorFor(status, body));
+    }
+
+    /** A saved typed handle: 2xx with a login → linked, unverified, opt-ins off. */
+    static Status parseClaim(int status, String body) {
+        if (status / 100 == 2) {
+            JsonObject o = object(body);
+            String login = o == null ? "" : str(o.get("login")).trim().toLowerCase();
+            if (!login.matches("[a-z0-9_]{3,25}")) return Status.of(Error.FAILED);
+            return new Status(true, true, false, login, str(o.get("display")).trim(), false, false, Error.NONE);
         }
         return Status.of(errorFor(status, body));
     }
@@ -200,14 +225,20 @@ public final class TwitchLinkClient {
         return new Unlink(false, errorFor(status, body));
     }
 
-    /** 404 is "no link" only when the relay says so — an older relay 404s the path too. */
+    /** 404 is "no link" / "no such channel" only when the relay says so — an older relay 404s the path too. */
     private static Error errorFor(int status, String body) {
         if (status == 429) return Error.RATE_LIMITED;
         if (status == 503) return Error.DISABLED;
+        JsonObject o = object(body);
+        String code = o == null ? "" : str(o.get("error"));
         if (status == 404) {
-            JsonObject o = object(body);
-            return o != null && "not_linked".equals(str(o.get("error"))) ? Error.NOT_LINKED : Error.UNSUPPORTED;
+            if ("not_linked".equals(code)) return Error.NOT_LINKED;
+            if ("unknown_channel".equals(code)) return Error.UNKNOWN_CHANNEL;
+            return Error.UNSUPPORTED;
         }
+        if (status == 403 && "not_verified".equals(code)) return Error.NOT_VERIFIED;
+        if (status == 409 && "already_verified".equals(code)) return Error.ALREADY_VERIFIED;
+        if (status == 400 && "bad_login".equals(code)) return Error.BAD_LOGIN;
         if (ENDPOINT_MISSING.contains(status)) return Error.UNSUPPORTED;
         return Error.FAILED;
     }
