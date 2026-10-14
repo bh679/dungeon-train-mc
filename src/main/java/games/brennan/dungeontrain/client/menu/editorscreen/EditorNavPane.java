@@ -161,8 +161,7 @@ final class EditorNavPane {
         InventoryEditorLayout.Rect r = rect(layout);
         g.fill(r.x() - 1, r.y() - 1, r.right() + 1, r.bottom() + 1, theme.subPanel());
         // A dev checkout leads with the Workbench, the reviewer's bench; a release never lists it.
-        List<BuilderMode> modes = BuilderMode.navOrder(
-            games.brennan.dungeontrain.client.EditorStatusHudOverlay.isDevModeOn());
+        List<BuilderMode> modes = BuilderMode.navOrder();
         List<InventoryEditorLayout.Rect> cells = tiles(r, modes);
         tileRects.clear();
         for (int i = 0; i < modes.size() && i < cells.size(); i++) {

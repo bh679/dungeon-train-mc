@@ -490,7 +490,7 @@ public final class EditorMenuScreen implements MenuScreen {
     private static List<CommandMenuEntry> navRows(Ctx ctx) {
         List<CommandMenuEntry> out = new ArrayList<>();
         // A dev checkout keeps the Workbench one press away at the top; a release never lists it.
-        if (EditorStatusHudOverlay.isDevModeOn() && ctx.category() != PlotCategory.WORKBENCH) {
+        if (games.brennan.dungeontrain.DungeonTrain.isDevBuild() && ctx.category() != PlotCategory.WORKBENCH) {
             out.add(new CommandMenuEntry.Run(MenuLang.t("category.workbench"), "dungeontrain editor workbench"));
         }
         out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.enter"), new EnterCategoryMenuScreen()));

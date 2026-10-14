@@ -40,7 +40,7 @@ public final class EnterCategoryMenuScreen implements MenuScreen {
         String current = EditorStatusHudOverlay.category().toLowerCase(Locale.ROOT);
         List<CommandMenuEntry> out = new java.util.ArrayList<>(8);
         // The reviewer's bench leads in a dev checkout; a release never lists it.
-        if (EditorStatusHudOverlay.isDevModeOn()) {
+        if (games.brennan.dungeontrain.DungeonTrain.isDevBuild()) {
             out.add(entryFor(MenuLang.t("category.workbench"), "workbench", current));
         }
         out.addAll(List.of(

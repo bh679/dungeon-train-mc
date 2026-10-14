@@ -472,20 +472,24 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Nav carries Enter and Exit; Test the Carriage for portals, carriages and contents")
     void nav_tab_holdsNavigationRows() {
+        // A dev checkout (every test run is one) leads the tab with the Workbench row.
         List<String> carriages = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), carriages);
+        assertEquals(List.of("Workbench", "Enter", "Test the Carriage", "Exit"), carriages);
         List<String> contents = labelsIn(tabsFor(PlotCategory.CONTENTS, "library").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), contents);
+        assertEquals(List.of("Workbench", "Enter", "Test the Carriage", "Exit"), contents);
         List<String> parts = labelsIn(tabsFor(PlotCategory.PARTS, "oak").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Exit"), parts);
+        assertEquals(List.of("Workbench", "Enter", "Exit"), parts);
+        // Standing in the Workbench, the row would only lead where the player already is.
+        List<String> workbench = labelsIn(tabsFor(PlotCategory.WORKBENCH, "staged").get(EditorMenuTab.NAV));
+        assertEquals("Enter", workbench.get(0));
 
         List<CommandMenuEntry> portalNav = tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV);
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), labelsIn(portalNav));
+        assertEquals(List.of("Workbench", "Enter", "Test the Carriage", "Exit"), labelsIn(portalNav));
 
         // Test drills into the save prompt rather than dispatching the command — a dirty room has
         // to be offered a save before it is stamped from its last one.
         assertInstanceOf(PortalTestSaveCheckScreen.class,
-            assertInstanceOf(CommandMenuEntry.DrillIn.class, portalNav.get(1)).target());
+            assertInstanceOf(CommandMenuEntry.DrillIn.class, portalNav.get(2)).target());
     }
 
     @Test

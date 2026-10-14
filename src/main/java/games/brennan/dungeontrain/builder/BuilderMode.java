@@ -58,6 +58,11 @@ public enum BuilderMode {
     public static final java.util.List<BuilderMode> NAV_ORDER = java.util.List.of(
         WHOLE_CARRIAGES, TRAIN_DIMENSIONS, TRAIN_OUTSIDE, INSIDE_CARRIAGE, TRACKS_TUNNELS, BUILDINGS);
 
+    /** The picker's order for this build — see {@link #navOrder(boolean)}. */
+    public static java.util.List<BuilderMode> navOrder() {
+        return navOrder(games.brennan.dungeontrain.DungeonTrain.isDevBuild());
+    }
+
     /** The picker's order for this build: a dev checkout leads with the Workbench, a release never shows it. */
     public static java.util.List<BuilderMode> navOrder(boolean dev) {
         if (!dev) return NAV_ORDER;
