@@ -49,6 +49,7 @@ public final class LiveUploader implements AutoCloseable {
     static final long FAIL_BACKOFF_MS = 3000;
     static final long PRESIGN_BACKOFF_MIN_MS = 1000;
     static final long PRESIGN_BACKOFF_MAX_MS = 10_000;
+    private static final long JOIN_MARGIN_MS = 100;
     /** PUT attempts per segment before it is given up. */
     static final int MAX_TRIES = 2;
     /** How long a clean stop off the render thread waits for the final pass. */
@@ -285,7 +286,8 @@ public final class LiveUploader implements AutoCloseable {
             wake.notifyAll();
         }
         try {
-            thread.join(Math.max(1, budgetMs));
+            // The deadline ends the thread's last call at budgetMs; a moment more lets it get out.
+            thread.join(Math.max(1, budgetMs) + JOIN_MARGIN_MS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
