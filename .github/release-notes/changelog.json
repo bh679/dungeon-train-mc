@@ -25976,6 +25976,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dev-version-ping",
+      "version": "0.1290.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Quicker help with your bug reports",
+      "summary": "When you report a problem, the developer can now check which version of Dungeon Train you're running, so a fix can start straight away. Only the game's version and your installed mods are read. Nothing appears on your screen, and it is never asked in Kid mode.",
+      "highlights": [],
+      "pr": 2007,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
