@@ -25842,6 +25842,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-feed-decoder-hardening",
+      "version": "0.1285.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "community"
+      ],
+      "title": "Live Feed TVs play only safe streams, and recover on their own",
+      "summary": "TVs showing the Live Feed now only play a stream made of its own video pieces from Dungeon Train's storage. A stream that tries to point elsewhere shows static instead. A feed that freezes now restarts by itself even when no TV is in view, a stream nobody is watching stops downloading, and each frame of the picture is far cheaper to prepare.",
+      "highlights": [
+        "A tampered or unsafe stream shows static instead of playing",
+        "A frozen feed restarts on its own, even when you're not looking at a TV",
+        "Watching the feed costs much less per frame, most noticeable at the highest TV resolution"
+      ],
+      "pr": 2000,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
