@@ -25921,6 +25921,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-links-phones-hidden",
+      "version": "0.1287.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "The Live Eye keeps links and phone numbers off air",
+      "summary": "While someone is live, web links and phone numbers typed into chat or a book turn to asterisks before anyone sees them, and the Live Eye quietly says so. It is a courtesy, not a warning: nothing counts against you.",
+      "highlights": [
+        "Links, invites and phone numbers are hidden as you type, with no delay to the stream.",
+        "Never a strike \u2014 share them again once the stream is over."
+      ],
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
