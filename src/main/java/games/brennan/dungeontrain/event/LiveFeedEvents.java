@@ -174,6 +174,8 @@ public final class LiveFeedEvents {
         if (LiveModeration.isBanned(player.getUUID())) {
             player.sendSystemMessage(LiveModeration.bannedLine(player));
             burn(player, Exit.BANNED);
+            // An approved appeal lifts the ban on the relay; ask again so the next try reflects it.
+            LiveModeration.refresh(player);
             return;
         }
         UUID previous = LiveStreamers.setStreamer(server, player.getUUID());
@@ -250,7 +252,8 @@ public final class LiveFeedEvents {
         return switch (why) {
             case REMOVED -> "chat.dungeontrain.live.burns_removed";
             case REPLACED, CUT_OFF -> "chat.dungeontrain.live.burns_next_streamer";
-            case MODERATED, BANNED -> "chat.dungeontrain.live.burns_moderated";
+            case MODERATED -> "chat.dungeontrain.live.burns_moderated";
+            case BANNED -> "chat.dungeontrain.live.burns_banned";
             default -> "chat.dungeontrain.live.headpiece_burns";
         };
     }

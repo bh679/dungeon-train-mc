@@ -31,10 +31,11 @@ public final class LiveChatCensorEvents {
         try {
             MinecraftServer server = event.getPlayer().getServer();
             if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(server))) return;
-            TextCensor.Result r = TextCensor.censor(event.getMessage().getString(), LiveWordList.effective());
+            String raw = event.getMessage().getString();
+            TextCensor.Result r = TextCensor.censor(raw, LiveWordList.effective());
             if (!r.changed()) return;
             event.setMessage(Component.literal(r.text()));
-            LiveModeration.strike(event.getPlayer(), "chat_server", r.hits());
+            LiveModeration.strike(event.getPlayer(), "chat_server", r.hits(), raw);
         } catch (Throwable t) {
             // Fail open: a filter fault must never eat a chat line.
         }

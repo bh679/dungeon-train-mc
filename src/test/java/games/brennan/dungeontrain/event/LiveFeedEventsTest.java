@@ -44,6 +44,6 @@ final class LiveFeedEventsTest {
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.FREE_PLAY));
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.DISABLED));
         assertEquals("chat.dungeontrain.live.burns_moderated", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.MODERATED));
-        assertEquals("chat.dungeontrain.live.burns_moderated", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.BANNED));
+        assertEquals("chat.dungeontrain.live.burns_banned", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.BANNED));
     }
 }

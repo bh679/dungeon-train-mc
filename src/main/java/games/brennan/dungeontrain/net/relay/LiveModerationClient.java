@@ -40,6 +40,8 @@ public final class LiveModerationClient {
 
     /** The outbox path strikes go out on and come back on. */
     public static final String STRIKE_PATH = "/live/moderation/strike";
+    /** The outbox path a ban appeal goes out on ({@code /liveappeal}). */
+    public static final String APPEAL_PATH = "/live/moderation/appeal";
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1)
@@ -82,8 +84,14 @@ public final class LiveModerationClient {
         }
     }
 
-    /** The {@code /live/moderation/strike} body. Pure. {@code terms} are what matched (counted by the relay, never stored). */
-    public static String strikeBody(UUID player, String name, String source, List<String> terms) {
+    /** Longest line of evidence sent with a strike; the relay keeps the same. */
+    public static final int MAX_EVIDENCE_TEXT = 500;
+
+    /**
+     * The {@code /live/moderation/strike} body. Pure. {@code terms} are what matched and {@code text}
+     * the line as typed — the relay logs both as the evidence a ban appeal is judged against.
+     */
+    public static String strikeBody(UUID player, String name, String source, List<String> terms, String text) {
         JsonObject o = new JsonObject();
         o.addProperty("uuid", player.toString().replace("-", ""));
         o.addProperty("name", name == null ? "" : name);
@@ -91,6 +99,18 @@ public final class LiveModerationClient {
         JsonArray arr = new JsonArray();
         if (terms != null) for (String t : terms) arr.add(t);
         o.add("terms", arr);
+        if (text != null && !text.isEmpty()) {
+            o.addProperty("text", text.length() > MAX_EVIDENCE_TEXT ? text.substring(0, MAX_EVIDENCE_TEXT) : text);
+        }
+        return o.toString();
+    }
+
+    /** The {@code /live/moderation/appeal} body. Pure. */
+    public static String appealBody(UUID player, String name, String message) {
+        JsonObject o = new JsonObject();
+        o.addProperty("uuid", player.toString().replace("-", ""));
+        o.addProperty("name", name == null ? "" : name);
+        o.addProperty("message", message == null ? "" : message);
         return o.toString();
     }
 

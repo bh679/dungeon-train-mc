@@ -315,8 +315,10 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(serverPlayer.getServer()))) return;
             var words = LiveWordList.effective();
             java.util.List<String> hits = new java.util.ArrayList<>();
+            StringBuilder evidence = new StringBuilder();
             TextCensor.Result t = TextCensor.censor(title.raw(), words);
             hits.addAll(t.hits());
+            if (t.changed()) evidence.append("[title] ").append(title.raw());
             java.util.List<String> out = new java.util.ArrayList<>(pages.size());
             boolean changed = t.changed();
             for (FilteredText page : pages) {
@@ -324,11 +326,12 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
                 out.add(r.text());
                 hits.addAll(r.hits());
                 changed |= r.changed();
+                if (r.changed() && evidence.length() < 400) evidence.append(evidence.length() > 0 ? " | " : "").append(page.raw());
             }
             if (!changed) return;
             this.dungeontrain$censoredTitle = t.text();
             this.dungeontrain$censoredPages = List.copyOf(out);
-            LiveModeration.strike(serverPlayer, "book_sign", hits);
+            LiveModeration.strike(serverPlayer, "book_sign", hits, evidence.toString());
         } catch (Throwable e) {
             DUNGEONTRAIN$LOGGER.debug("[DungeonTrain] live text filter skipped a book: {}", e.toString());
         }

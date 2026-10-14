@@ -63,7 +63,7 @@ public final class LiveTextCensorClient {
             TextCensor.Result r = TextCensor.censor(event.getMessage(), LiveWordList.effective());
             if (!r.changed()) return;
             event.setMessage(r.text());
-            report(Source.CHAT);
+            report(Source.CHAT, event.getOriginalMessage(), r.hits());
         } catch (Throwable t) {
             // Fail open: never eat the player's line over a filter fault.
         }
@@ -105,35 +105,34 @@ public final class LiveTextCensorClient {
         TextCensor.Result r = TextCensor.censorTail(typed, LiveWordList.effective());
         if (!r.changed()) return;
         input.setValue(r.text());
-        report(Source.CHAT_FIELD);
+        report(Source.CHAT_FIELD, typed, r.hits());
     }
 
     private static void checkBook(BookEditScreen book) {
         BookEditScreenAccessor acc = (BookEditScreenAccessor) book;
         BookEditScreenInvoker inv = (BookEditScreenInvoker) book;
         var words = LiveWordList.effective();
-        boolean changed = false;
         if (acc.dungeontrain$isSigning()) {
             String title = acc.dungeontrain$getTitle();
             TextCensor.Result r = TextCensor.censorTail(title == null ? "" : title, words);
             if (r.changed()) {
                 acc.dungeontrain$setTitle(r.text());
                 acc.dungeontrain$getTitleEdit().setCursorToEnd();
-                changed = true;
+                report(Source.BOOK_FIELD, "[title] " + title, r.hits());
             }
         } else {
             List<String> pages = acc.dungeontrain$getPages();
             int page = acc.dungeontrain$getCurrentPage();
             if (page < 0 || page >= pages.size()) return;
-            TextCensor.Result r = TextCensor.censorTail(pages.get(page), words);
+            String typed = pages.get(page);
+            TextCensor.Result r = TextCensor.censorTail(typed, words);
             if (r.changed()) {
                 inv.dungeontrain$setCurrentPageText(r.text());
                 acc.dungeontrain$getPageEdit().setCursorToEnd();
                 inv.dungeontrain$clearDisplayCache();
-                changed = true;
+                report(Source.BOOK_FIELD, typed, r.hits());
             }
         }
-        if (changed) report(Source.BOOK_FIELD);
     }
 
     // ---- scope + report -------------------------------------------------------------------------
@@ -152,11 +151,12 @@ public final class LiveTextCensorClient {
         }
     }
 
-    private static void report(Source source) {
+    /** Tell the server, with the line as typed and the terms that matched (the relay's evidence). */
+    private static void report(Source source, String typed, List<String> hits) {
         long now = System.currentTimeMillis();
         if (now - lastReportMs < REPORT_GAP_MS) return;
         lastReportMs = now;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveModerationStrikePacket(source));
+        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveModerationStrikePacket(source, typed, hits));
     }
 }

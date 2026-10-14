@@ -44,7 +44,7 @@ public final class LiveWordList {
 
     /** The strike ladder as the player hears it; the relay's answer is authoritative, these are the words to say. */
     public record Ladder(int removeAtStrike, int banAfterRemovals, List<Integer> banDays, int strikeDecayDays) {
-        public static final Ladder DEFAULT = new Ladder(4, 3, List.of(30, 90, 0), 30);
+        public static final Ladder DEFAULT = new Ladder(4, 3, List.of(7, 30, 0), 30);
 
         /** How many warnings a player gets before the Live Eye burns. */
         public int warningsBeforeRemoval() {

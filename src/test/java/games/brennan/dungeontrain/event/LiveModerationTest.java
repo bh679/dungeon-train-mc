@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** The warning names the step; the cached verdict decides who may wear a Live Eye. */
@@ -28,12 +29,22 @@ final class LiveModerationTest {
     void warningLines() {
         assertEquals("chat.dungeontrain.live.censored", key(LiveModeration.warning("chat", 1, LADDER)));
         assertEquals("chat.dungeontrain.live.censored", key(LiveModeration.warning("chat", 3, LADDER)));
-        assertEquals("chat.dungeontrain.live.censored_final", key(LiveModeration.warning("chat", 4, LADDER)));
+        assertNull(LiveModeration.warning("chat", 4, LADDER));
+        assertNull(LiveModeration.warning("book", 9, LADDER));
         assertEquals("chat.dungeontrain.live.censored_book", key(LiveModeration.warning("book_field", 2, LADDER)));
-        assertEquals("chat.dungeontrain.live.censored_book_final", key(LiveModeration.warning("book", 9, LADDER)));
         Object[] args = ((TranslatableContents) LiveModeration.warning("chat", 2, LADDER).getContents()).getArgs();
         assertEquals(2, args[0]);
         assertEquals(3, args[1]);
+    }
+
+    @Test
+    @DisplayName("the relay's answer to an appeal maps to one chat line each")
+    void appealLines() {
+        assertEquals("command.dungeontrain.live_appeal.received", LiveModeration.appealLineKey(200, "{\"ok\":true}"));
+        assertEquals("command.dungeontrain.live_appeal.not_banned", LiveModeration.appealLineKey(409, "{\"error\":\"not_banned\"}"));
+        assertEquals("command.dungeontrain.live_appeal.pending", LiveModeration.appealLineKey(409, "{\"error\":\"appeal_pending\"}"));
+        assertEquals("command.dungeontrain.live_appeal.denied", LiveModeration.appealLineKey(409, "{\"error\":\"appeal_denied\"}"));
+        assertEquals("command.dungeontrain.live_appeal.failed", LiveModeration.appealLineKey(500, "nope"));
     }
 
     @Test

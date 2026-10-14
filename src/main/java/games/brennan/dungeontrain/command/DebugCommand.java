@@ -434,7 +434,7 @@ public final class DebugCommand {
             source.sendFailure(Component.literal("live-moderation strike needs a player."));
             return 0;
         }
-        games.brennan.dungeontrain.event.LiveModeration.strike(player, "debug", java.util.List.of("debug"));
+        games.brennan.dungeontrain.event.LiveModeration.strike(player, "debug", java.util.List.of("debug"), "/dungeontrain debug live-moderation strike");
         return 1;
     }
 

@@ -24,6 +24,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -67,6 +68,7 @@ public final class LiveModeration {
     /** Register the outbox response handler. Called once at mod setup. */
     public static void register() {
         RelayOutbox.get().onResponse(LiveModerationClient.STRIKE_PATH, LiveModeration::onStrikeResponse);
+        RelayOutbox.get().onResponse(LiveModerationClient.APPEAL_PATH, LiveModeration::onAppealResponse);
     }
 
     // --- state ------------------------------------------------------------------------------------
@@ -96,7 +98,11 @@ public final class LiveModeration {
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        if (event.getEntity() instanceof ServerPlayer player) refresh(player);
+    }
+
+    /** Ask the relay for {@code player}'s verdict again (login, and each refused Live Eye while banned). */
+    public static void refresh(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         UUID uuid = player.getUUID();
@@ -117,20 +123,20 @@ public final class LiveModeration {
 
     // --- strikes ----------------------------------------------------------------------------------
 
-    /** The server itself masked a word in {@code player}'s chat line or book. */
-    public static void strike(ServerPlayer player, String source, List<String> hits) {
-        record(player, source, hits);
+    /** The server itself masked a word in {@code player}'s chat line or book; {@code text} is the line as typed. */
+    public static void strike(ServerPlayer player, String source, List<String> hits, String text) {
+        record(player, source, hits, text);
     }
 
     /** The player's client says it masked a word as they typed. Counted only while the filter is on for them. */
-    public static void strikeFromClient(ServerPlayer player, LiveModerationStrikePacket.Source source, List<String> hits) {
+    public static void strikeFromClient(ServerPlayer player, LiveModerationStrikePacket.Source source, String text, List<String> hits) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         if (!LiveModerationScope.serverActive(ServerLiveStatus.isAnyoneLive(server))) return;
-        record(player, source.relayName(), hits);
+        record(player, source.relayName(), hits, text);
     }
 
-    private static void record(ServerPlayer player, String source, List<String> hits) {
+    private static void record(ServerPlayer player, String source, List<String> hits, String text) {
         long now = System.currentTimeMillis();
         UUID uuid = player.getUUID();
         Long last = LAST_STRIKE_MS.get(uuid);
@@ -140,25 +146,29 @@ public final class LiveModeration {
         Cached c = VERDICTS.get(uuid);
         int strikesAfter = (c == null ? 0 : c.verdict().strikes()) + 1;
         LiveWordList.Ladder ladder = LiveWordList.ladder();
-        player.sendSystemMessage(warning(source, strikesAfter, ladder));
+        Component line = warning(source, strikesAfter, ladder);
+        if (line != null) player.sendSystemMessage(line);
         LOGGER.info("[DungeonTrain] live moderation: {} masked in {}'s {} (local strike {} of {})",
             hits.size(), player.getGameProfile().getName(), source, strikesAfter, ladder.removeAtStrike());
 
         try {
             RelayOutbox.get().enqueue(LiveModerationClient.STRIKE_PATH,
-                LiveModerationClient.strikeBody(uuid, player.getGameProfile().getName(), source, hits));
+                LiveModerationClient.strikeBody(uuid, player.getGameProfile().getName(), source, hits, text));
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] live moderation strike could not be queued: {}", t.toString());
         }
     }
 
-    /** The line a player hears when a word is masked: which warning this is, and what the next step costs. */
+    /**
+     * The line a player hears when a word is masked: which warning this is, out of how many. On the
+     * strike that uses the last one up there is no warning — the Live Eye's burn line says it all
+     * ({@code chat.dungeontrain.live.burns_moderated}), so null here.
+     */
+    @Nullable
     static Component warning(String source, int strikesAfter, LiveWordList.Ladder ladder) {
+        if (LiveModerationLadder.decideLocally(strikesAfter, ladder) == Action.REMOVE) return null;
         boolean book = source != null && source.startsWith("book");
         int shown = Math.min(strikesAfter, ladder.warningsBeforeRemoval());
-        if (LiveModerationLadder.decideLocally(strikesAfter, ladder) == Action.REMOVE) {
-            return Component.translatable(KEY + (book ? "censored_book_final" : "censored_final")).withStyle(ChatFormatting.RED);
-        }
         return Component.translatable(KEY + (book ? "censored_book" : "censored"),
             shown, ladder.warningsBeforeRemoval()).withStyle(ChatFormatting.RED);
     }
@@ -192,14 +202,55 @@ public final class LiveModeration {
         });
     }
 
-    /** "You can't wear the Live Eye for another N days" / "…no longer wear the Live Eye". */
+    /**
+     * "You can't wear the Live Eye for another N days" / "…no longer wear the Live Eye", followed by
+     * how to appeal.
+     */
     public static Component bannedLine(ServerPlayer player) {
         long left = banRemainingSec(player.getUUID());
+        Component line;
         if (left == Long.MAX_VALUE) {
-            return Component.translatable(KEY + "banned_permanent").withStyle(ChatFormatting.RED);
+            line = Component.translatable(KEY + "banned_permanent").withStyle(ChatFormatting.RED);
+        } else {
+            String locale = WorldInfoReporter.clientLanguage(player);
+            line = Component.translatable(KEY + "banned",
+                PresenceLine.agoComponent(locale, Duration.ofSeconds(Math.max(1L, left)))).withStyle(ChatFormatting.RED);
         }
-        String locale = WorldInfoReporter.clientLanguage(player);
-        return Component.translatable(KEY + "banned",
-            PresenceLine.agoComponent(locale, Duration.ofSeconds(Math.max(1L, left)))).withStyle(ChatFormatting.RED);
+        return line.copy().append(" ").append(Component.translatable(KEY + "appeal_hint").withStyle(ChatFormatting.GRAY));
+    }
+
+    // --- appeals ----------------------------------------------------------------------------------
+
+    /** What the relay said to a {@code /liveappeal}, turned into the chat line the player hears. */
+    static void onAppealResponse(String requestBody, int status, String responseBody) {
+        if (status < 0) return; // never delivered; the outbox retries
+        UUID player = LiveModerationClient.playerOf(requestBody);
+        if (player == null) return;
+        String key = appealLineKey(status, responseBody);
+        if (key == null) return;
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return;
+        server.execute(() -> {
+            ServerPlayer online = server.getPlayerList().getPlayer(player);
+            if (online != null) online.sendSystemMessage(Component.translatable(key).withStyle(ChatFormatting.GRAY));
+        });
+    }
+
+    /** The lang key for a relay answer to an appeal; null when there is nothing to say. Pure. */
+    static String appealLineKey(int status, String responseBody) {
+        if (status / 100 == 2) return "command.dungeontrain.live_appeal.received";
+        String error = "";
+        try {
+            var o = com.google.gson.JsonParser.parseString(responseBody == null ? "" : responseBody).getAsJsonObject();
+            if (o.has("error")) error = o.get("error").getAsString();
+        } catch (Throwable t) {
+            // fall through to the generic line
+        }
+        return switch (error) {
+            case "not_banned" -> "command.dungeontrain.live_appeal.not_banned";
+            case "appeal_pending" -> "command.dungeontrain.live_appeal.pending";
+            case "appeal_denied" -> "command.dungeontrain.live_appeal.denied";
+            default -> "command.dungeontrain.live_appeal.failed";
+        };
     }
 }

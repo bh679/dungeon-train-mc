@@ -19,7 +19,8 @@ final class LiveModerationClientTest {
     @Test
     @DisplayName("strike body: undashed uuid, name, source, terms")
     void body() {
-        JsonObject o = JsonParser.parseString(LiveModerationClient.strikeBody(P, "Dev", "chat", List.of("x", "y"))).getAsJsonObject();
+        JsonObject o = JsonParser.parseString(LiveModerationClient.strikeBody(P, "Dev", "chat", List.of("x", "y"), "you x and y")).getAsJsonObject();
+        assertEquals("you x and y", o.get("text").getAsString());
         assertEquals("3f2a9c1e000040008000" + "00000000abcd", o.get("uuid").getAsString());
         assertEquals("Dev", o.get("name").getAsString());
         assertEquals("chat", o.get("source").getAsString());
@@ -29,7 +30,8 @@ final class LiveModerationClientTest {
     @Test
     @DisplayName("the player is read back from the request body; junk reads as null")
     void playerOf() {
-        assertEquals(P, LiveModerationClient.playerOf(LiveModerationClient.strikeBody(P, null, null, null)));
+        assertEquals(P, LiveModerationClient.playerOf(LiveModerationClient.strikeBody(P, null, null, null, null)));
+        assertEquals(P, LiveModerationClient.playerOf(LiveModerationClient.appealBody(P, "Dev", "sorry")));
         assertNull(LiveModerationClient.playerOf("{\"uuid\":\"short\"}"));
         assertNull(LiveModerationClient.playerOf("nope"));
         assertNull(LiveModerationClient.playerOf(null));

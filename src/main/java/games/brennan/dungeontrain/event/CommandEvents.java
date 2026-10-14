@@ -53,6 +53,8 @@ public final class CommandEvents {
         // /reportcarriage [reason] — player-facing report of the shared carriage underfoot (also a
         // subcommand of the op-gated /dungeontrain root). Any player, any game mode.
         ReportCarriageCommand.register(event.getDispatcher());
+        // /liveappeal <reason> — a player banned from the Live Eye by the text filter asks for review.
+        games.brennan.dungeontrain.command.LiveAppealCommand.register(event.getDispatcher());
         // Dev-only: a relay-free way to drive the remote-echo encounter journal end-to-end.
         // Never registered in production, and only when PlayerMob (whose types the command
         // references) is present.

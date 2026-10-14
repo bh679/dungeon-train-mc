@@ -15,12 +15,25 @@ final class LiveModerationStrikePacketTest {
     void roundTrip() {
         for (LiveModerationStrikePacket.Source s : LiveModerationStrikePacket.Source.values()) {
             FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
-            LiveModerationStrikePacket.STREAM_CODEC.encode(buf, new LiveModerationStrikePacket(s));
-            assertEquals(s, LiveModerationStrikePacket.STREAM_CODEC.decode(buf).source());
+            LiveModerationStrikePacket p = new LiveModerationStrikePacket(s, "you zorp", java.util.List.of("zorp"));
+            LiveModerationStrikePacket.STREAM_CODEC.encode(buf, p);
+            assertEquals(p, LiveModerationStrikePacket.STREAM_CODEC.decode(buf));
         }
         FriendlyByteBuf bad = new FriendlyByteBuf(Unpooled.buffer());
         bad.writeVarInt(42);
+        bad.writeUtf("x");
+        bad.writeVarInt(0);
         assertEquals(LiveModerationStrikePacket.Source.CHAT, LiveModerationStrikePacket.STREAM_CODEC.decode(bad).source());
+    }
+
+    @Test
+    @DisplayName("evidence is capped: text to 500 chars, terms to 20")
+    void caps() {
+        String longText = "a".repeat(900);
+        java.util.List<String> many = java.util.stream.IntStream.range(0, 40).mapToObj(i -> "t" + i).toList();
+        LiveModerationStrikePacket p = new LiveModerationStrikePacket(LiveModerationStrikePacket.Source.CHAT, longText, many);
+        assertEquals(500, p.text().length());
+        assertEquals(20, p.terms().size());
     }
 
     @Test
