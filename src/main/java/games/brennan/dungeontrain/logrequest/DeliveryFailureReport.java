@@ -56,7 +56,21 @@ public final class DeliveryFailureReport {
      */
     public static void report(@Nullable DiscordCommandHooks.Reply reply, @Nullable ServerPlayer player,
                               @Nullable String playerName, Reason reason) {
+        report(reply, player, playerName, reason, true);
+    }
+
+    /**
+     * {@link #report(DiscordCommandHooks.Reply, ServerPlayer, String, Reason)}, Discord only when
+     * {@code toDiscord}: a rate-limited livestream request that has already been reported is logged
+     * and nothing more, so a looping client cannot turn the notice into a flood of posts.
+     */
+    public static void report(@Nullable DiscordCommandHooks.Reply reply, @Nullable ServerPlayer player,
+                              @Nullable String playerName, Reason reason, boolean toDiscord) {
         String text = line(playerName, reason);
+        if (!toDiscord) {
+            LOGGER.info("[DungeonTrain] {} (already reported; not posted)", text);
+            return;
+        }
         try {
             if (reply != null) {
                 reply.send(text);
