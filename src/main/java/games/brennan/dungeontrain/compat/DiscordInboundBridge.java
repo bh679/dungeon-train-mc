@@ -55,6 +55,10 @@ public final class DiscordInboundBridge {
                 LogRequestManager.onThreadCommand(parseUuid(targetPlayerUuid), reply);
                 return true;
             }
+            // "/version" is the relay's private lookup, answered from its own records: never a message.
+            if (LogRequestManager.isVersionCommand(content)) {
+                return true;
+            }
             // Scope to the one player whose thread this message is in (null when unanchored — the
             // consent flow then shows it to nobody in-game). Never a global broadcast.
             DevMessageConsent.onDevMessage(parseUuid(targetPlayerUuid), content, reply);

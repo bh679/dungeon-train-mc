@@ -83,6 +83,16 @@ public final class LogRequestManager {
     }
 
     /**
+     * Whether {@code content} is the relay's Developer {@code /version} lookup ({@code /version}, optionally
+     * {@code full} and a name). The relay answers it from its own records; the mod only has to make sure
+     * a typed one is never shown to the player as a developer message.
+     */
+    public static boolean isVersionCommand(@Nullable String content) {
+        if (content == null) return false;
+        return content.trim().toLowerCase(Locale.ROOT).matches("[/!]version(\\s+\\S+){0,2}");
+    }
+
+    /**
      * Brennan typed {@code /bug} in the thread of {@code owner}. Called on the Discord network thread.
      * With no world loaded nothing is in game to ask, so Brennan is told so straight away.
      */
