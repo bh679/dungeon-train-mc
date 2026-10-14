@@ -518,7 +518,6 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         title.active = status.restream();
         list.addSetting(ClientOptionsIcons.TWITCH, Component.translatable(titleKey),
                 Component.translatable(titleKey + ".hint"), title, Component.translatable(titleKey + ".tip"));
-        list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.twitch.raid_hint")));
         Component unlinkHint = Component.translatable("gui.dungeontrain.options.account.twitch.unlink.hint");
         Button unlink = Button.builder(Component.translatable("gui.dungeontrain.options.account.twitch.unlink"), b ->
                         TwitchLinkClient.unlink().whenComplete((r, err) -> this.minecraft.execute(() -> {

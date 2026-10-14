@@ -22,8 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * {@code /twitch} — connect this player's Twitch channel from chat, so that while they wear the Live
  * Eye the people watching can find them: their name links to the channel on the Live page, in the
- * Discord post and in the Dungeon Train Twitch chat, the stream title names it, and when their ride
- * ends while their own channel is live, Dungeon Train raids them.
+ * Discord post and in the Dungeon Train Twitch chat, and the stream title names it.
  *
  * <ul>
  *   <li>{@code /twitch} — says whether this player is linked, then mints a code and gives the link
@@ -174,14 +173,13 @@ public final class TwitchLinkCommand {
                 .append(Component.translatable("chat.dungeontrain.twitch.instructions").withStyle(ChatFormatting.GRAY));
     }
 
-    /** "Twitch linked: twitch.tv/x. Restream: on/off (/twitch restream …). Title: … Raids: …" */
+    /** "Twitch linked: twitch.tv/x. Restream: on/off (/twitch restream …). Title: …" */
     static Component linkedLines(TwitchLinkClient.Status s) {
         MutableComponent out = Component.translatable("chat.dungeontrain.twitch.linked", channelLink(s.login())).withStyle(ChatFormatting.GREEN);
         out.append("\n").append(Component.translatable(s.restream() ? "chat.dungeontrain.twitch.restream_on" : "chat.dungeontrain.twitch.restream_off",
                 command(COMMAND + (s.restream() ? " restream off" : " restream on"))).withStyle(ChatFormatting.GRAY));
         out.append("\n").append(Component.translatable(s.setTitle() ? "chat.dungeontrain.twitch.title_on" : "chat.dungeontrain.twitch.title_off",
                 command(COMMAND + (s.setTitle() ? " title off" : " title on"))).withStyle(ChatFormatting.GRAY));
-        out.append("\n").append(Component.translatable("chat.dungeontrain.twitch.raid_hint").withStyle(ChatFormatting.GRAY));
         out.append("\n").append(Component.translatable("chat.dungeontrain.twitch.options_hint", command(COMMAND + " unlink")).withStyle(ChatFormatting.GRAY));
         return out;
     }
