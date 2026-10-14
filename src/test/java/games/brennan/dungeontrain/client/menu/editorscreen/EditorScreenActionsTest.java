@@ -113,9 +113,10 @@ final class EditorScreenActionsTest {
             new ArrayList<>(icons.keySet()));
         assertEquals("dungeontrain save", command(icons.get("save").entry()));
         assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
-        // Carriages have no sub-variant groups, so there is nowhere to move one.
-        assertFalse(icons.get("move").enabled());
-        assertEquals(EditorScreenLang.DISABLED_NO_GROUPS, icons.get("move").disabledKey());
+        // A shell moves between pools (carriage · whole · contents) at its own size: the icon opens the picker.
+        assertTrue(icons.get("move").enabled());
+        CommandMenuEntry.DrillIn move = assertInstanceOf(CommandMenuEntry.DrillIn.class, icons.get("move").entry());
+        assertInstanceOf(games.brennan.dungeontrain.client.menu.PoolMovePickerScreen.class, move.target());
         assertEquals("dungeontrain reset", command(icons.get("reset").entry()));
         // Undo and Redo follow the server's history stack, which is empty here — see historyIcon.
         assertFalse(icons.get("undo").enabled());

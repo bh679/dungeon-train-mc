@@ -13430,6 +13430,166 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_screen.pool.keep_name": {
+    "1": {
+      "label": "the pool's name",
+      "examples": [
+        "Whole"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.pool.as_new": {
+    "1": {
+      "label": "the pool's name",
+      "examples": [
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.moved": {
+    "1": {
+      "label": "the template's old id",
+      "examples": [
+        "cargo"
+      ]
+    },
+    "2": {
+      "label": "the destination pool's name",
+      "examples": [
+        "Contents"
+      ]
+    },
+    "3": {
+      "label": "the id it landed under",
+      "examples": [
+        "cargo_rooms"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.dropped": {
+    "1": {
+      "label": "the sidecars that could not travel, comma-separated",
+      "examples": [
+        "parts assignment, contents allow-list"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.same_pool": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "cargo"
+      ]
+    },
+    "2": {
+      "label": "the pool's name",
+      "examples": [
+        "Whole"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.not_found": {
+    "1": {
+      "label": "the pool's name",
+      "examples": [
+        "Carriage"
+      ]
+    },
+    "2": {
+      "label": "the id the player typed",
+      "examples": [
+        "cargo"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.name_taken": {
+    "1": {
+      "label": "the id the player asked for",
+      "examples": [
+        "cargo"
+      ]
+    },
+    "2": {
+      "label": "the pool's name",
+      "examples": [
+        "Contents"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.not_movable": {
+    "1": {
+      "label": "the shell id",
+      "examples": [
+        "flatbed"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.protected": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "standard"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.unsaved": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "cargo"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.box_mismatch": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "cargo"
+      ]
+    },
+    "2": {
+      "label": "the size name",
+      "examples": [
+        "Half"
+      ]
+    },
+    "3": {
+      "label": "the box dimensions",
+      "examples": [
+        "13×7×7"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.group_size": {
+    "1": {
+      "label": "the template id",
+      "examples": [
+        "triple"
+      ]
+    },
+    "2": {
+      "label": "this world's carriages per group",
+      "examples": [
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.no_shell": {
+    "1": {
+      "label": "the missing shell id",
+      "examples": [
+        "standard_half"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.pool_move.failed": {
+    "1": {
+      "label": "the error message",
+      "examples": [
+        "No server context."
+      ]
+    }
+  },
   "chat.dungeontrain.editor.unknown_whole_half": {
     "1": {
       "label": "the half id the player typed",

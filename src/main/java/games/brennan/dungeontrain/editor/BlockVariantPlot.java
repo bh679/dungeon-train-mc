@@ -292,11 +292,11 @@ public interface BlockVariantPlot {
      * is what made a second, drifting copy of the string concatenation worth avoiding — see
      * {@link ContainerContentsStore#trackPlotKey} for the bug the last one caused.
      */
-    static String carriageKey(String variantId) {
+    public static String carriageKey(String variantId) {
         return "carriage:" + variantId;
     }
 
-    static String contentsKey(String contentsId) {
+    public static String contentsKey(String contentsId) {
         return "contents:" + contentsId;
     }
 
@@ -309,7 +309,7 @@ public interface BlockVariantPlot {
     }
 
     /** {@code whole:<id>} for a room, {@code whole_group:<id>} for a group — also the containers-store key. */
-    static String wholeKey(games.brennan.dungeontrain.train.WholeKind kind, String id) {
+    public static String wholeKey(games.brennan.dungeontrain.train.WholeKind kind, String id) {
         return WholeCarriageEditor.categoryIdOf(kind) + ":" + id;
     }
 

@@ -170,6 +170,8 @@ public final class TemplateDataSheet {
         out.add(sizeLine(summary, roomRows, key, pending));
         Line shellSize = shellSizeLine(tile, key);
         if (shellSize != null) out.add(shellSize);
+        Line pool = poolLine(tile, key);
+        if (pool != null) out.add(pool);
         Line shellWins = shellWinsLine(tile, key);
         if (shellWins != null) out.add(shellWins);
         out.add(blocksLine(summary, pending));
@@ -277,6 +279,43 @@ public final class TemplateDataSheet {
      * cell a click that resizes it ({@code editor shell-size}). Null for anything but a carriage
      * template, or before the roster has said its size.
      */
+    /**
+     * Pool: Carriage · Whole · Contents — the lit cell is where this template lives, the other two
+     * move it there at its own size (see {@link games.brennan.dungeontrain.editor.pool.PoolMove}).
+     * Only top-level shells, whole carriages and contents have one; a sub-variant moves with its parent,
+     * and a flatbed or portal shell keeps the shape the train cuts.
+     */
+    static Line poolLine(EditorRosterIndex.Tile tile, VariantKey key) {
+        if (tile == null || key == null || key.isSubVariant()) return null;
+        games.brennan.dungeontrain.editor.pool.Pool current = poolOf(key.category());
+        if (current == null) return null;
+        if (current == games.brennan.dungeontrain.editor.pool.Pool.CARRIAGE && !tile.extras().hasShellSize()) return null;
+        String tip = EditorScreenLang.text(EditorScreenLang.SHEET_POOL_TIP);
+        List<Cell> cells = new ArrayList<>(3);
+        for (games.brennan.dungeontrain.editor.pool.Pool pool : games.brennan.dungeontrain.editor.pool.Pool.values()) {
+            String name = EditorScreenLang.text(EditorScreenLang.poolName(pool));
+            cells.add(new Cell(name, new Action.Run(poolMoveCommand(current, key.modelId(), pool)),
+                pool == current).withTooltip(tip));
+        }
+        return new Line(EditorScreenLang.text(EditorScreenLang.SHEET_POOL), cells);
+    }
+
+    /** The pool a category's templates live in, or null for the categories with none. */
+    public static games.brennan.dungeontrain.editor.pool.Pool poolOf(PlotCategory category) {
+        return switch (category) {
+            case CARRIAGES -> games.brennan.dungeontrain.editor.pool.Pool.CARRIAGE;
+            case WHOLE, WHOLE_HALF, WHOLE_GROUP -> games.brennan.dungeontrain.editor.pool.Pool.WHOLE;
+            case CONTENTS -> games.brennan.dungeontrain.editor.pool.Pool.CONTENTS;
+            default -> null;
+        };
+    }
+
+    /** The command that moves {@code id} from {@code from} to {@code to} under its own name. */
+    public static String poolMoveCommand(games.brennan.dungeontrain.editor.pool.Pool from, String id,
+                                         games.brennan.dungeontrain.editor.pool.Pool to) {
+        return "dungeontrain editor pool-move " + from.key() + " " + id + " " + to.key();
+    }
+
     static Line shellSizeLine(EditorRosterIndex.Tile tile, VariantKey key) {
         if (tile == null || key == null || key.category() != PlotCategory.CARRIAGES) return null;
         if (!tile.extras().hasShellSize()) return null;

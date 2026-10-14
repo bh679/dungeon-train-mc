@@ -233,28 +233,9 @@ public final class WholeEditorCommand {
         Template model = resolve(source, kind, rawId);
         if (model == null) return 0;
         try {
-            boolean existed = switch (kind) {
-                case GROUP -> CarriageGroupTemplateStore.delete(new CarriageGroup(model.id()));
-                case HALF -> games.brennan.dungeontrain.editor.WholeHalfTemplateStore.delete(new WholeCarriage(model.id()));
-                case ROOM -> WholeCarriageTemplateStore.delete(new WholeCarriage(model.id()));
-            };
-            WholeWeights.unset(kind, model.id());
-            games.brennan.dungeontrain.editor.WholeVariantBlocks.delete(kind, model.id());
-            boolean bundled = model.isBuiltin();
             ServerLevel overworld = source.getServer().overworld();
-            if (!bundled) {
-                games.brennan.dungeontrain.editor.WholeTemplateNew.unregister(kind, model.id());
-                // The row past it shifts one slot left; restamp what is left standing.
-                for (Template m : EditorCategory.WHOLE.models()) {
-                    WholeCarriageEditor.clearPlot(overworld, m, DungeonTrainWorldData.get(overworld).dims());
-                }
-                WholeCarriageEditor.clearPlot(overworld, model, DungeonTrainWorldData.get(overworld).dims());
-                for (Template m : EditorCategory.WHOLE.models()) {
-                    WholeCarriageEditor.stampPlot(overworld, m, DungeonTrainWorldData.get(overworld).dims());
-                }
-            } else {
-                WholeCarriageEditor.stampPlot(overworld, model, DungeonTrainWorldData.get(overworld).dims());
-            }
+            boolean existed = games.brennan.dungeontrain.editor.pool.PoolDeletes.whole(overworld,
+                DungeonTrainWorldData.get(overworld).dims(), kind, model, true).existed();
             source.sendSuccess(() -> existed
                 ? Component.translatable("chat.dungeontrain.editor.deleted_template", model.displayName())
                 : Component.translatable("chat.dungeontrain.editor.no_template_delete", model.displayName()), true);

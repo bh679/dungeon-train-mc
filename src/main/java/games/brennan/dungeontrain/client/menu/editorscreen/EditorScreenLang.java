@@ -268,6 +268,18 @@ public final class EditorScreenLang {
     public static final String MOVE_NO_TARGETS = PREFIX + "move.no_targets";
     public static final String MOVE_BACK = PREFIX + "move.back";
 
+    // ---- Pool moves (carriage · whole · contents) ----
+    public static final String SHEET_POOL = PREFIX + "sheet.pool";
+    public static final String SHEET_POOL_TIP = PREFIX + "sheet.pool.tip";
+    public static final String POOL_TITLE = PREFIX + "pool.title";
+    public static final String POOL_KEEP_NAME = PREFIX + "pool.keep_name";
+    public static final String POOL_AS_NEW = PREFIX + "pool.as_new";
+
+    /** The key of a pool's name — {@code pool.carriage}, {@code pool.whole}, {@code pool.contents}. */
+    public static String poolName(games.brennan.dungeontrain.editor.pool.Pool pool) {
+        return PREFIX + "pool." + pool.key();
+    }
+
     // ---- Workbench ----
     public static final String CREATOR_LOAD_WORKBENCH = PREFIX + "creator.load_workbench";
     public static final String CREATOR_AUTOLOAD = PREFIX + "creator.autoload";

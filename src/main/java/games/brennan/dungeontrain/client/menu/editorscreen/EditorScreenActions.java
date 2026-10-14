@@ -315,7 +315,14 @@ public final class EditorScreenActions {
 
     /** The same picker for any key, under a caller's label — the Layout tab's cell is shorter. */
     public static CommandMenuEntry moveEntryFor(VariantKey sel, String label) {
-        if (sel == null || !GroupParentPickerScreen.supports(sel.category())) return null;
+        if (sel == null) return null;
+        // A shell or whole carriage moves between pools (carriage · whole · contents) at its own size;
+        // contents keep the sub-variant picker, and reach the pools from the data sheet's Pool line.
+        if (games.brennan.dungeontrain.client.menu.PoolMovePickerScreen.supports(sel)) {
+            return new CommandMenuEntry.DrillIn(label,
+                new games.brennan.dungeontrain.client.menu.PoolMovePickerScreen(sel.category(), sel.modelId()));
+        }
+        if (!GroupParentPickerScreen.supports(sel.category())) return null;
         // Contents groups are keyed by the contents id; a room by its name under the portal kind.
         String childId = sel.category() == PlotCategory.PORTALS ? sel.modelName() : sel.modelId();
         return new CommandMenuEntry.DrillIn(label,

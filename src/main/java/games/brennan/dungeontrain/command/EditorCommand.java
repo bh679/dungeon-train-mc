@@ -605,6 +605,7 @@ public final class EditorCommand {
             .then(ChunkFrameCommand.build())
             .then(BuildingCommand.build())
             .then(WorkbenchCommand.build())
+            .then(PoolMoveCommand.build())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -3856,30 +3857,11 @@ public final class EditorCommand {
             ServerLevel overworld = source.getServer().overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-            // Capture the +X row state BEFORE registry mutation so the
-            // restamp pass knows which positions are dirty (the deleted
-            // variant's slot plus every slot to the right that just shifted
-            // left by one).
-            // Where its plot stood, taken before it leaves the registry and its row closes up.
-            CarriageEditor.RowSpot oldSpot = CarriageEditor.spotOf(variant, dims);
-
-            // Plot erase + row restamp are DT's own rewrites — guarded so observers in the
-            // touched plots stay quiet (ObserverBlockStampMixin).
-            CarriageStampGuard.run(() -> CarriageEditor.clearPlot(overworld, variant, dims));
-            boolean deleted = CarriageTemplateStore.delete(variant);
-            // Sidecars and weight — and in dev mode the bundled copies of each.
-            TemplateDeletes.Report cleanup = TemplateDeletes.carriage(variant);
-            boolean wasCustom = !variant.isBuiltin();
-            if (wasCustom) {
-                CarriageVariantRegistry.unregister(variant.id());
-                games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.forget(variant.id());
-                games.brennan.dungeontrain.editor.ShellWinsStore.forget(variant.id());
-                games.brennan.dungeontrain.train.ShellPool.forget(variant.id());
-                if (oldSpot != null) {
-                    CarriageStampGuard.run(() ->
-                        CarriageEditor.restampRowAfterDeletion(overworld, oldSpot, dims));
-                }
-            }
+            games.brennan.dungeontrain.editor.pool.PoolDeletes.Removed removed =
+                games.brennan.dungeontrain.editor.pool.PoolDeletes.carriage(overworld, dims, variant, true);
+            boolean deleted = removed.existed();
+            TemplateDeletes.Report cleanup = removed.cleanup();
+            boolean wasCustom = removed.wasCustom();
             source.sendSuccess(() -> (deleted
                     ? Component.translatable("chat.dungeontrain.editor.deleted_template", variant.id(),
                         Component.translatable(wasCustom ? "chat.dungeontrain.editor.and_removed_from_registry" : "chat.dungeontrain.common.full_stop"))
@@ -4837,26 +4819,11 @@ public final class EditorCommand {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        // Only a top-level template holds a row slot; its row is its size's. Capture where every plot
-        // after it stands now, so the restamp can clear exactly those once the row closes up.
-        games.brennan.dungeontrain.train.ContentsSize rowSize = CarriageContentsPlacer.sizeOf(contents);
-        int oldSlot = CarriageContentsEditor.topLevelSlotOf(contents.id());
-        List<CarriageContentsEditor.StandingPlot> standing = oldSlot >= 0
-            ? CarriageContentsEditor.plotsFrom(rowSize, oldSlot, dims) : List.of();
-
-        CarriageStampGuard.run(() -> CarriageContentsEditor.clearPlot(overworld, contents, dims));
-        boolean deleted = CarriageContentsStore.delete(contents);
-        // Sidecars, weight, group slot — and in dev mode the bundled copies of each.
-        TemplateDeletes.Report cleanup = TemplateDeletes.contents(contents);
-        boolean wasCustom = !contents.isBuiltin();
-        if (wasCustom) {
-            CarriageContentsRegistry.unregister(contents.id());
-            games.brennan.dungeontrain.editor.TemplateSizeStore.CONTENTS.forget(contents.id());
-            if (oldSlot >= 0) {
-                CarriageStampGuard.run(() ->
-                    CarriageContentsEditor.restampRowAfterDeletion(overworld, rowSize, oldSlot, standing, dims));
-            }
-        }
+        games.brennan.dungeontrain.editor.pool.PoolDeletes.Removed removed =
+            games.brennan.dungeontrain.editor.pool.PoolDeletes.contents(overworld, dims, contents, true);
+        boolean deleted = removed.existed();
+        TemplateDeletes.Report cleanup = removed.cleanup();
+        boolean wasCustom = removed.wasCustom();
         return (deleted
                 ? Component.translatable("chat.dungeontrain.editor.deleted_contents_template", contents.id(),
                     Component.translatable(wasCustom ? "chat.dungeontrain.editor.and_removed_from_registry" : "chat.dungeontrain.common.full_stop"))
