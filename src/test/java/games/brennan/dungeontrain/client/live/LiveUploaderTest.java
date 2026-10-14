@@ -196,4 +196,147 @@ class LiveUploaderTest {
         assertEquals(List.of("seg00000.ts", "seg00002.ts"), s.last().segments());
         assertFalse(s.segmentPuts.contains("seg00001.ts"));
     }
+
+    // ---- presign back-off ---------------------------------------------------------------------
+
+    private final java.util.concurrent.atomic.AtomicLong now = new java.util.concurrent.atomic.AtomicLong(5_000_000L);
+
+    private LiveUploader clocked(FakeStorage s) {
+        return new LiveUploader(dir, "tok", by -> { }, s, now::get, false);
+    }
+
+    @Test
+    void unansweredPresignBacksOffExponentiallyUpToTenSeconds() throws Exception {
+        FakeStorage s = new FakeStorage();
+        s.presignStatus = 503;
+        LiveUploader u = clocked(s);
+        encoderWrites(0, 1, false);
+        List<Long> waits = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            u.pass(false);
+            waits.add(u.notBeforeMs() - now.get());
+            now.set(u.notBeforeMs());
+        }
+        assertEquals(List.of(1000L, 2000L, 4000L, 8000L, 10_000L, 10_000L), waits);
+    }
+
+    @Test
+    void noPresignInsideTheBackOff() throws Exception {
+        CountingStorage s = new CountingStorage(new FakeStorage());
+        s.inner.presignStatus = 503;
+        LiveUploader u = new LiveUploader(dir, "tok", by -> { }, s, now::get, false);
+        encoderWrites(0, 1, false);
+        u.pass(false);
+        now.addAndGet(500);
+        u.pass(false);
+        u.pass(false);
+        assertEquals(1, s.presigns.get(), "presign asked again inside the back-off");
+    }
+
+    @Test
+    void anAnsweredPresignResetsTheBackOff() throws Exception {
+        FakeStorage s = new FakeStorage();
+        s.presignStatus = 503;
+        LiveUploader u = clocked(s);
+        encoderWrites(0, 1, false);
+        u.pass(false);
+        now.set(u.notBeforeMs());
+        u.pass(false);
+        assertEquals(2000L, u.presignBackoffMs());
+
+        s.presignStatus = 200;
+        now.set(u.notBeforeMs());
+        u.pass(false);
+        assertEquals(0L, u.presignBackoffMs());
+        assertEquals(1, u.segmentsUploaded());
+    }
+
+    // ---- close: the final pass belongs to the uploader thread -----------------------------------
+
+    @Test
+    void finalFlushRunsOnceOnTheUploaderThreadNeverBesideAPass() throws Exception {
+        CountingStorage s = new CountingStorage(new FakeStorage());
+        s.presignDelayMs = 150; // keep a pass in flight when close() arrives
+        encoderWrites(0, 1, false);
+        LiveUploader u = new LiveUploader(dir, "tok", by -> { }, s, true);
+        assertTrue(waitFor(() -> s.presigns.get() >= 1), "uploader never polled");
+
+        encoderWrites(0, 2, true); // ffmpeg's last write: ENDLIST
+        u.close(true, 5_000);
+
+        assertTrue(u.finished(), "close returned with the uploader still running");
+        assertEquals(1, s.maxConcurrent.get(), "two passes overlapped");
+        assertTrue(s.inner.last().ended(), "the ENDLIST playlist never went out");
+        assertTrue(s.threads.stream().allMatch("dt-live-uploader"::equals), "a pass ran off the uploader thread: " + s.threads);
+    }
+
+    @Test
+    void closeKeepsItsBudgetWhenTheRelayHangs() throws Exception {
+        CountingStorage s = new CountingStorage(new FakeStorage());
+        s.hang = true;
+        encoderWrites(0, 1, false);
+        LiveUploader u = new LiveUploader(dir, "tok", by -> { }, s, true);
+        assertTrue(waitFor(() -> s.presigns.get() >= 1), "uploader never polled");
+
+        long start = System.nanoTime();
+        u.close(true, 600);
+        long tookMs = java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        assertTrue(tookMs < 2_000, "close took " + tookMs + " ms");
+        // The deadline also cut the call in flight, so the thread ends soon after.
+        assertTrue(waitFor(u::finished), "uploader thread outlived its deadline");
+    }
+
+    private static boolean waitFor(java.util.function.BooleanSupplier ok) throws InterruptedException {
+        long end = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < end) {
+            if (ok.getAsBoolean()) return true;
+            Thread.sleep(20);
+        }
+        return ok.getAsBoolean();
+    }
+
+    /** {@link FakeStorage}, counting presigns and the threads that call, slowed or hung on request. */
+    private static final class CountingStorage implements LiveUploader.Storage {
+        final FakeStorage inner;
+        volatile long presignDelayMs;
+        volatile boolean hang;
+        final java.util.concurrent.atomic.AtomicInteger presigns = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.concurrent.atomic.AtomicInteger inFlight = new java.util.concurrent.atomic.AtomicInteger();
+        final java.util.concurrent.atomic.AtomicInteger maxConcurrent = new java.util.concurrent.atomic.AtomicInteger();
+        final List<String> threads = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+        CountingStorage(FakeStorage inner) {
+            this.inner = inner;
+        }
+
+        @Override
+        public CompletableFuture<Result> presign(String token, List<String> files) {
+            // Every pass opens with a presign, held for presignDelayMs: two passes at once overlap here.
+            maxConcurrent.accumulateAndGet(inFlight.incrementAndGet(), Math::max);
+            threads.add(Thread.currentThread().getName());
+            presigns.incrementAndGet();
+            try {
+                if (hang) return new CompletableFuture<>();
+                if (presignDelayMs > 0) Thread.sleep(presignDelayMs);
+                return inner.presign(token, files);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return CompletableFuture.completedFuture(new Result(0, null, e));
+            } finally {
+                inFlight.decrementAndGet();
+            }
+        }
+
+        @Override
+        public CompletableFuture<Result> upload(SignedPut target, Path file) {
+            threads.add(Thread.currentThread().getName());
+            return inner.upload(target, file);
+        }
+
+        @Override
+        public CompletableFuture<Result> upload(SignedPut target, String body) {
+            threads.add(Thread.currentThread().getName());
+            return inner.upload(target, body);
+        }
+    }
 }

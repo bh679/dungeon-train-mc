@@ -46,6 +46,10 @@ public final class LiveEncoder implements AutoCloseable {
     static final int AUDIO_KBPS = 96;
     /** Input queue for each input when there are two, so neither blocks ffmpeg's reader on the other. */
     static final int INPUT_QUEUE = 512;
+    /** ffmpeg's time to finish after its input ends, on a teardown off the render thread. */
+    public static final long ASYNC_GRACE_MS = 15_000;
+    /** The same on game shutdown or the render thread, where nothing may wait long. */
+    public static final long SHUTDOWN_GRACE_MS = 3_000;
 
     private final LiveFrameGrabber grabber;
     private final Process process;
@@ -149,12 +153,22 @@ public final class LiveEncoder implements AutoCloseable {
     private static final long WRITER_JOIN_MS = 1_000;
 
     /**
-     * Stop feeding, let ffmpeg finish the last segment (it writes ENDLIST), then kill it. Blocks for
-     * up to a few seconds — never call it on the render or tick thread. Joins the writer last, so the
-     * frame it held is back with the grabber before the grabber is closed.
+     * Stop feeding, let ffmpeg finish the last segment (it writes ENDLIST), then kill it — with the
+     * {@link #ASYNC_GRACE_MS} grace, for a teardown off the render thread. Blocks for seconds — never
+     * call it on the render or tick thread. Joins the writer last, so the frame it held is back with
+     * the grabber before the grabber is closed.
      */
     @Override
     public void close() {
+        close(ASYNC_GRACE_MS);
+    }
+
+    /**
+     * {@link #close()} with {@code graceMs} for ffmpeg to drain its input queue and write the last
+     * segment and ENDLIST: a CPU-starved streamer can have many seconds of frames still queued
+     * ({@link #INPUT_QUEUE}), so only game shutdown, with its own deadline, uses the short grace.
+     */
+    public void close(long graceMs) {
         running = false;
         writer.interrupt();
         try {
@@ -163,7 +177,7 @@ public final class LiveEncoder implements AutoCloseable {
             // already closed
         }
         try {
-            if (!process.waitFor(3, TimeUnit.SECONDS)) process.destroyForcibly();
+            if (!process.waitFor(Math.max(0, graceMs), TimeUnit.MILLISECONDS)) process.destroyForcibly();
             writer.join(WRITER_JOIN_MS);
         } catch (InterruptedException e) {
             process.destroyForcibly();

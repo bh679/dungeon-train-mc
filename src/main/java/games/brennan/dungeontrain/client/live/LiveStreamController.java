@@ -58,6 +58,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
@@ -81,6 +82,15 @@ public final class LiveStreamController {
     private static final LiveStreamController INSTANCE = new LiveStreamController();
     /** Session dirs a {@link LiveTeardown} is still flushing; the next stream's sweep leaves them be. */
     private static final Set<Path> TEARING_DOWN = ConcurrentHashMap.newKeySet();
+    /** Game shutdown's whole budget for ending a stream, so a bad link cannot hang the quit. */
+    static final long SHUTDOWN_BUDGET_MS = 8_000;
+    /** Of that budget, what the final upload leaves for the relay stop. */
+    private static final long RELAY_STOP_RESERVE_MS = 1_500;
+    private static final long RELAY_STOP_MIN_MS = 500;
+    /** The relay stop's wait on a teardown off the render thread. */
+    private static final long RELAY_STOP_TIMEOUT_MS = 10_000;
+    /** {@code deadlineMs} of a teardown that runs on its own thread, with each step's own timeout. */
+    private static final long ASYNC = 0;
     /** Spawns and restarts the encoder off the render thread, one at a time so two never share a grabber. */
     private static final ExecutorService STARTER = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "dt-live-start");
@@ -391,7 +401,7 @@ public final class LiveStreamController {
         LOGGER.error("[DungeonTrain] live stream could not start", e);
         say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
         generation++;
-        teardown(false, false, null);
+        teardown(false, ASYNC, null);
         state = State.IDLE;
         tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
     }
@@ -477,7 +487,7 @@ public final class LiveStreamController {
     private void cutOff(String by) {
         if (state != State.STREAMING) return;
         // Silent here: the server burns the Live Eye on CUT_OFF and its burn line says why.
-        stop(null, false, false, LiveStreamEndedToast.Reason.REPLACED);
+        stop(null, false, ASYNC, LiveStreamEndedToast.Reason.REPLACED);
         tellServerEnded(LiveStreamEndedPacket.Reason.CUT_OFF);
     }
 
@@ -493,22 +503,23 @@ public final class LiveStreamController {
     }
 
     private void stop(@Nullable Component why, @Nullable LiveStreamEndedToast.Reason ended) {
-        stop(why, true, false, ended);
+        stop(why, true, ASYNC, ended);
     }
 
     /**
      * {@code ended} raises the top-right "Livestream ended" pop-up, but only for a stream that had
      * gone live: a start that never reached STREAMING says why in chat instead. Raised after the
-     * state is IDLE, so the broadcast never captures it.
+     * state is IDLE, so the broadcast never captures it. {@code deadlineMs} other than {@link #ASYNC}
+     * tears down on this thread and is done by then (game shutdown).
      */
-    private void stop(@Nullable Component why, boolean clean, boolean wait, @Nullable LiveStreamEndedToast.Reason ended) {
+    private void stop(@Nullable Component why, boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended) {
         if (state == State.IDLE) return;
         boolean wasLive = state == State.STREAMING;
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
-        teardown(clean, wait, ended);
+        teardown(clean, deadlineMs, ended);
         state = State.IDLE;
         if (why != null) say(why);
         if (!wasLive || ended == null) return;
@@ -523,10 +534,12 @@ public final class LiveStreamController {
      * Hands this stream's encoder, uploader, relay claim and directory to {@link LiveTeardown} and
      * clears them, so the controller is IDLE at once. The steps block for seconds — ffmpeg's last
      * segment, the final upload pass, the relay stop — and on the render thread that froze the game
-     * every time the Live Eye came off, so they run on their own thread. {@code wait} runs them here
-     * instead: game shutdown only, where a daemon thread would die before the ENDLIST went out.
+     * every time the Live Eye came off, so they run on their own thread. A {@code deadlineMs} runs them
+     * here instead, every wait cut to fit before it: game shutdown only, where a daemon thread would
+     * die before the ENDLIST went out and a bad link must not hang the quit.
      */
-    private void teardown(boolean clean, boolean wait, @Nullable LiveStreamEndedToast.Reason ended) {
+    private void teardown(boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended) {
+        boolean wait = deadlineMs != ASYNC;
         LiveEncoder enc = encoder;
         LiveAudioPump snd = audio;
         LiveUploader up = uploader;
@@ -541,12 +554,15 @@ public final class LiveStreamController {
         dir = null;
 
         List<LiveTeardown.Step> steps = new ArrayList<>();
-        // Sound first: ffmpeg finishes only once every input has ended, and the encoder gives it 3 s.
+        // Sound first: ffmpeg finishes only once every input has ended.
         if (snd != null) steps.add(new LiveTeardown.Step("audio", snd::close));
-        if (enc != null) steps.add(new LiveTeardown.Step("encoder", enc::close));
-        if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean)));
+        if (enc != null) steps.add(new LiveTeardown.Step("encoder", () -> enc.close(wait
+            ? Math.min(LiveEncoder.SHUTDOWN_GRACE_MS, left(deadlineMs)) : LiveEncoder.ASYNC_GRACE_MS)));
+        if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean, wait
+            ? Math.max(0, left(deadlineMs) - RELAY_STOP_RESERVE_MS) : LiveUploader.CLOSE_BUDGET_MS)));
         String reason = ended == null ? null : ended.relayReason;
-        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> LiveFeedClient.stop(c.token(), reason)));
+        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> relayStop(c.token(), reason, wait
+            ? Math.max(RELAY_STOP_MIN_MS, left(deadlineMs)) : RELAY_STOP_TIMEOUT_MS)));
         if (d != null) steps.add(new LiveTeardown.Step("delete session dir", () -> deleteTree(d)));
         // GL buffers belong to the render thread; freed only once the encoder has stopped reading them.
         if (grab != null) steps.add(new LiveTeardown.Step("frame grabber",
@@ -560,6 +576,19 @@ public final class LiveStreamController {
             done.run();
         } else {
             LiveTeardown.runAsync(steps, done);
+        }
+    }
+
+    private static long left(long deadlineMs) {
+        return Math.max(0, deadlineMs - System.currentTimeMillis());
+    }
+
+    /** Tells the relay the stream is over and waits up to {@code timeoutMs} for it to hear. */
+    private static void relayStop(String token, @Nullable String reason, long timeoutMs) {
+        try {
+            LiveFeedClient.stop(token, reason).orTimeout(timeoutMs, TimeUnit.MILLISECONDS).join();
+        } catch (CompletionException e) {
+            LOGGER.warn("[DungeonTrain] live stop: relay did not answer within {} ms", timeoutMs);
         }
     }
 
@@ -650,7 +679,15 @@ public final class LiveStreamController {
 
     @SubscribeEvent
     public static void onGameShuttingDown(GameShuttingDownEvent event) {
-        INSTANCE.stop(null, true, true, null);
+        long start = System.currentTimeMillis();
+        long deadline = start + SHUTDOWN_BUDGET_MS;
+        boolean live = INSTANCE.state != State.IDLE;
+        INSTANCE.stop(null, true, deadline, null);
+        // A stream that ended just before (quit right after leaving the world) may still be uploading.
+        boolean earlierDone = LiveTeardown.awaitLast(left(deadline));
+        if (live || !earlierDone) {
+            LOGGER.info("[DungeonTrain] live stop on shutdown took {} ms", System.currentTimeMillis() - start);
+        }
     }
 
     // ---- helpers ------------------------------------------------------------------------------

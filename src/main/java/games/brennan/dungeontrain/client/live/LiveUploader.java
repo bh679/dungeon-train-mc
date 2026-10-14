@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 /**
  * Ships what the encoder writes: watches {@code live.m3u8}, and whenever it changes, asks the relay
@@ -35,15 +36,28 @@ import java.util.function.Consumer;
  * <p>Each presign is the relay heartbeat. A 403 means someone else took the channel: the uploader
  * stops and tells the controller who. A failed segment is retried on later polls (after a
  * {@value #FAIL_BACKOFF_MS} ms back-off); after {@value #MAX_FAILED_PASSES} failed passes it is
- * skipped — viewers see a jump, not a crash.</p>
+ * skipped — viewers see a jump, not a crash. An unanswered presign (relay down, 5xx) backs off
+ * 1 s, 2 s, 4 s … up to 10 s instead of asking again every poll.</p>
+ *
+ * <p>Every pass runs on the uploader's own thread — the final one on a clean stop too, so two passes
+ * never touch the upload bookkeeping at once; {@link #close(boolean, long)} only waits for it, and
+ * cuts every call short at its deadline.</p>
  */
 public final class LiveUploader implements AutoCloseable {
 
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final long POLL_MS = 500;
-    private static final long CALL_TIMEOUT_S = 20;
+    private static final long ERROR_PAUSE_MS = 2000;
+    private static final long CALL_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(20);
+    /** How often a waiting call re-checks a deadline {@link #close(boolean, long)} may have pulled in. */
+    private static final long AWAIT_SLICE_NS = TimeUnit.MILLISECONDS.toNanos(250);
+    private static final long JOIN_MARGIN_MS = 100;
     static final long FAIL_BACKOFF_MS = 3000;
+    static final long PRESIGN_BACKOFF_MIN_MS = 1000;
+    static final long PRESIGN_BACKOFF_MAX_MS = 10_000;
     static final int MAX_FAILED_PASSES = 4;
+    /** How long a clean stop off the render thread waits for the final pass. */
+    public static final long CLOSE_BUDGET_MS = 60_000;
 
     /** The relay and storage calls, so tests can stand in for them. */
     interface Storage {
@@ -62,13 +76,18 @@ public final class LiveUploader implements AutoCloseable {
     private final String token;
     private final Consumer<String> onCutOff;
     private final Storage storage;
+    private final LongSupplier clock;
+    private final Object wake = new Object();
     private final Thread thread;
     private final Set<String> uploaded = new HashSet<>();
     private final Map<String, Integer> failures = new java.util.HashMap<>();
     /** Sequence numbers of segments given up on: never on storage, never in a published playlist. */
     private final NavigableSet<Long> skippedSeqs = new TreeSet<>();
     private String lastPublished;
+    private long presignBackoffMs; // uploader thread only
     private volatile boolean running = true;
+    private volatile boolean flushRequested;
+    private volatile long deadlineNs = Long.MAX_VALUE;
     private volatile long lastPlaylistMtime = -1;
     private volatile long notBeforeMs;
     private volatile int segmentsUploaded;
@@ -79,10 +98,16 @@ public final class LiveUploader implements AutoCloseable {
     }
 
     LiveUploader(Path dir, String token, Consumer<String> onCutOff, Storage storage, boolean start) {
+        this(dir, token, onCutOff, storage, System::currentTimeMillis, start);
+    }
+
+    /** {@code start} false = the thread is not started; the caller drives {@link #pass} (tests). */
+    LiveUploader(Path dir, String token, Consumer<String> onCutOff, Storage storage, LongSupplier clock, boolean start) {
         this.dir = dir;
         this.token = token;
         this.onCutOff = onCutOff;
         this.storage = storage;
+        this.clock = clock;
         this.thread = new Thread(this::loop, "dt-live-uploader");
         this.thread.setDaemon(true);
         if (start) this.thread.start();
@@ -97,22 +122,54 @@ public final class LiveUploader implements AutoCloseable {
         return viewers;
     }
 
+    long notBeforeMs() {
+        return notBeforeMs;
+    }
+
+    long presignBackoffMs() {
+        return presignBackoffMs;
+    }
+
+    /** True once the uploader thread has finished, or was never started (tests). */
+    boolean finished() {
+        return !thread.isAlive();
+    }
+
     private void loop() {
-        while (running) {
-            try {
-                pass();
-                Thread.sleep(POLL_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                return;
-            } catch (CutOff c) {
-                running = false;
-                onCutOff.accept(c.by);
-                return;
-            } catch (Exception e) {
-                LOGGER.warn("[DungeonTrain] live upload pass failed: {}", e.toString());
-                try { Thread.sleep(2000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); return; }
+        try {
+            while (running) {
+                try {
+                    pass();
+                    pause(POLL_MS);
+                } catch (CutOff c) {
+                    running = false;
+                    flushRequested = false;
+                    onCutOff.accept(c.by);
+                    return;
+                } catch (InterruptedException e) {
+                    throw e;
+                } catch (Exception e) {
+                    LOGGER.warn("[DungeonTrain] live upload pass failed: {}", e.toString());
+                    pause(ERROR_PAUSE_MS);
+                }
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+        }
+        if (flushRequested) {
+            try {
+                pass(true);
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] live final upload failed: {}", e.toString());
+            }
+        }
+    }
+
+    /** Sleeps between passes; {@link #close} wakes it at once. */
+    private void pause(long ms) throws InterruptedException {
+        synchronized (wake) {
+            if (running) wake.wait(ms);
         }
     }
 
@@ -121,12 +178,12 @@ public final class LiveUploader implements AutoCloseable {
     }
 
     /**
-     * One pass; also called once more on clean stop ({@code last}) so the final segments and the
+     * One pass; run once more after a clean stop ({@code last}) so the final segments and the
      * ENDLIST playlist go out — viewers behind real time play right up to it, so the last pass
      * ignores a failure backoff.
      */
     void pass(boolean last) throws IOException, CutOff {
-        if (!last && System.currentTimeMillis() < notBeforeMs) return;
+        if (!last && clock.getAsLong() < notBeforeMs) return;
         Path playlist = dir.resolve(LivePlaylist.FILE_NAME);
         if (!Files.exists(playlist)) return;
         long mtime = Files.getLastModifiedTime(playlist).toMillis();
@@ -152,9 +209,10 @@ public final class LiveUploader implements AutoCloseable {
         int count = LiveFeedClient.parseViewerCount(r);
         if (count >= 0) viewers = count;
         if (urls.isEmpty()) {
-            LOGGER.debug("[DungeonTrain] live presign unanswered (status {}), retrying next poll", r.status());
+            presignFailed(r);
             return;
         }
+        presignBackoffMs = 0;
         boolean allDone = true;
         for (Map.Entry<String, Long> e : pending.entrySet()) {
             String seg = e.getKey();
@@ -173,7 +231,7 @@ public final class LiveUploader implements AutoCloseable {
                 skip(seg, e.getValue(), "gave up after " + failed + " failed uploads");
             } else {
                 allDone = false;
-                notBeforeMs = System.currentTimeMillis() + FAIL_BACKOFF_MS;
+                notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
             }
         }
         Optional<String> publish = LivePlaylist.publishable(text, uploaded, skippedSeqs);
@@ -187,7 +245,7 @@ public final class LiveUploader implements AutoCloseable {
             } else {
                 // Storage said no (or the network did): wait before asking the relay to sign again,
                 // or a dead bucket turns into two presign calls a second.
-                notBeforeMs = System.currentTimeMillis() + FAIL_BACKOFF_MS;
+                notBeforeMs = clock.getAsLong() + FAIL_BACKOFF_MS;
                 LOGGER.warn("[DungeonTrain] live playlist upload → {} (retry in {} s)", put.status(), FAIL_BACKOFF_MS / 1000);
             }
         }
@@ -206,11 +264,32 @@ public final class LiveUploader implements AutoCloseable {
         return skippedSeqs.size();
     }
 
-    private static Result await(CompletableFuture<Result> f) {
+    /** The relay did not sign (down, 5xx, garbled): back off 1 s, 2 s, 4 s … 10 s, not every poll. */
+    private void presignFailed(Result r) {
+        presignBackoffMs = presignBackoffMs == 0 ? PRESIGN_BACKOFF_MIN_MS
+            : Math.min(PRESIGN_BACKOFF_MAX_MS, presignBackoffMs * 2);
+        notBeforeMs = clock.getAsLong() + presignBackoffMs;
+        if (running) {
+            LOGGER.info("[DungeonTrain] live presign failed (status {}{}); retrying in {} s", r.status(),
+                r.error() == null ? "" : ": " + r.error(), presignBackoffMs / 1000);
+        }
+    }
+
+    /** Waits for a call until its own timeout or the close deadline, whichever comes first. */
+    private Result await(CompletableFuture<Result> f) {
+        long callEnd = System.nanoTime() + CALL_TIMEOUT_NS;
         try {
-            return f.get(CALL_TIMEOUT_S, TimeUnit.SECONDS);
-        } catch (TimeoutException | ExecutionException e) {
-            return new Result(0, null, e);
+            while (true) {
+                long left = Math.min(callEnd, deadlineNs) - System.nanoTime();
+                if (left <= 0) return new Result(0, null, new TimeoutException("live call timed out"));
+                try {
+                    return f.get(Math.min(left, AWAIT_SLICE_NS), TimeUnit.NANOSECONDS);
+                } catch (TimeoutException e) {
+                    // re-check: close() may have pulled the deadline in
+                }
+            }
+        } catch (ExecutionException e) {
+            return new Result(0, null, e.getCause());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return new Result(0, null, e);
@@ -218,21 +297,37 @@ public final class LiveUploader implements AutoCloseable {
     }
 
     /**
-     * Stop polling. {@code flush} = run one final pass first (clean stop: ships the last segments and
-     * the ENDLIST playlist), after the polling thread has let go so the two never upload at once.
+     * Stop polling. {@code flush} = the uploader thread runs one final pass (clean stop: ships the last
+     * segments and the ENDLIST playlist) and this waits up to {@code budgetMs} for it; every call it
+     * makes from now on is cut off at that deadline. Without {@code flush} the thread is interrupted
+     * and not waited for.
      */
-    public void close(boolean flush) {
+    public void close(boolean flush, long budgetMs) {
+        deadlineNs = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(Math.max(0, budgetMs));
+        flushRequested = flush;
         running = false;
-        thread.interrupt();
-        if (flush) {
-            try { thread.join(TimeUnit.SECONDS.toMillis(CALL_TIMEOUT_S)); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-            try { pass(true); } catch (Exception e) { LOGGER.warn("[DungeonTrain] live final upload failed: {}", e.toString()); }
+        if (!thread.isAlive()) return;
+        if (!flush) {
+            thread.interrupt();
+            return;
+        }
+        synchronized (wake) {
+            wake.notifyAll();
+        }
+        try {
+            // The deadline ends the thread's last call at budgetMs; a moment more lets it get out.
+            thread.join(Math.max(1, budgetMs) + JOIN_MARGIN_MS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        if (thread.isAlive()) {
+            LOGGER.warn("[DungeonTrain] live uploader still busy after {} ms; the final playlist may not go out", budgetMs);
         }
     }
 
     @Override
     public void close() {
-        close(false);
+        close(false, 0);
     }
 
     static final class CutOff extends Exception {

@@ -25882,6 +25882,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-quits-quickly",
+      "version": "0.1285.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Quitting while streaming no longer hangs",
+      "summary": "Live Eye: quitting the game mid-stream on a bad connection now closes within a few seconds instead of hanging for up to a minute and a half, and the end of the stream reaches viewers more reliably when you leave a world or quit straight after. When the stream server can't be reached, the game also waits longer between retries instead of trying twice a second.",
+      "highlights": [],
+      "pr": 2002,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
