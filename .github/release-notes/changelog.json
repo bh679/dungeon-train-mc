@@ -26041,6 +26041,48 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-needs-internet-consent",
+      "version": "0.1293.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye asks before going online",
+      "summary": "Putting on the Live Eye while the game's internet connection is switched off no longer destroys it. It goes back into your inventory, and a link in chat reopens the internet choice so you can turn it on.",
+      "highlights": [
+        "With internet off, the Live Eye returns to your inventory instead of burning",
+        "A \"turn it on\" link in chat opens the internet and Adult/Kid choice",
+        "Turning the internet on takes effect straight away, with no need to rejoin the world"
+      ],
+      "pr": 2013,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "workbench-test-any-build",
+      "version": "0.1294.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test Workbench builds before committing them",
+      "summary": "Test the Carriage now works on every build in the editor's Workbench. A build waiting for review stands up just as it would once committed, so you can walk through it, reroll it and judge it before deciding what it becomes. Nothing is installed by testing it.",
+      "highlights": [
+        "Test any Workbench build in place: carriages, contents, carriage groups, track pieces and dimensional carriages.",
+        "Reseed and Back work exactly as they do for committed templates."
+      ],
+      "pr": 2012,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

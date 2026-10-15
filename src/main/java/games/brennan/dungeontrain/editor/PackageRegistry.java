@@ -148,6 +148,9 @@ public final class PackageRegistry {
 
     /** Working folder of the active package — where new files should be written. */
     public static Path activeWriteDir() {
+        // A Workbench test writing its scratch install: every store save lands in that folder.
+        Path scratch = games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.writeOverride();
+        if (scratch != null) return scratch;
         return active().workingDir();
     }
 

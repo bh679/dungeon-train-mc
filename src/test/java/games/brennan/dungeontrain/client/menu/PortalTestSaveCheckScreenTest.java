@@ -84,6 +84,19 @@ final class PortalTestSaveCheckScreenTest {
             PortalTestSaveCheckScreen.forTemplate("contents", "library").testCommand());
         assertEquals("dungeontrain editor test tracks pillar_top mossy",
             PortalTestSaveCheckScreen.forTrack("pillar_top", "mossy").testCommand());
+        assertEquals("dungeontrain editor workbench test cottage-12",
+            PortalTestSaveCheckScreen.forWorkbench("cottage-12").testCommand());
+    }
+
+    @Test
+    @DisplayName("A Workbench build checks the Workbench scan's row, keyed by its staged id")
+    void forWorkbench_checksStagedRow() {
+        PortalTestSaveCheckScreen check = PortalTestSaveCheckScreen.forWorkbench("cottage-12");
+        assertEquals("cottage-12", check.checkedKey());
+        EditorDirtyCheck.DirtyEntry row = new EditorDirtyCheck.DirtyEntry(
+            "workbench", "cottage-12", "workbench / cottage-12", true, false);
+        assertTrue(PortalTestSaveCheckScreen.isDirty(List.of(row), "workbench", check.checkedKey()));
+        assertFalse(PortalTestSaveCheckScreen.isDirty(List.of(row), "workbench", "other-3"));
     }
 
     @Test

@@ -951,6 +951,9 @@ public final class CarriagePlacer {
     }
 
     public static ContentsSize sizeOf(CarriageVariant variant) {
+        // A Workbench carriage under test was measured when it was stood up; it has no sizes.json row.
+        ContentsSize scratch = games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shellSizeOf(variant.id());
+        if (scratch != null) return scratch;
         // A template's pool is its size (ShellPool). One in the Room folder may still carry a size
         // declaration: the portal corridors, and a Group carriage made before the pools existed.
         ShellPool pool = ShellPool.poolOf(variant.id());

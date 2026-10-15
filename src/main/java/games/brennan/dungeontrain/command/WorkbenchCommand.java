@@ -14,6 +14,8 @@ import games.brennan.dungeontrain.editor.EditorPlotArrival;
 import games.brennan.dungeontrain.editor.WorkbenchEditor;
 import games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild;
 import games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore;
+import games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch;
+import games.brennan.dungeontrain.train.CarriageTestSession;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -62,6 +64,9 @@ final class WorkbenchCommand {
             .then(Commands.literal("save")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGED)
                     .executes(ctx -> save(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
+            .then(Commands.literal("test")
+                .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGED)
+                    .executes(ctx -> test(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
             .then(Commands.literal("remove")
                 .then(Commands.argument("id", StringArgumentType.word()).suggests(STAGED)
                     .executes(ctx -> remove(ctx.getSource(), StringArgumentType.getString(ctx, "id")))))
@@ -130,6 +135,35 @@ final class WorkbenchCommand {
             source.sendFailure(Component.translatable("chat.dungeontrain.workbench.failed", e.getMessage()));
             return 0;
         }
+    }
+
+    /**
+     * Test the Carriage for a staged build, as the kind the relay gave it — stood up as a scratch
+     * template for the length of the test ({@link WorkbenchTestScratch}), never committed.
+     */
+    private static int test(CommandSourceStack source, String id) {
+        if (EditorCommand.playerOrNull(source) == null) return 0;
+        WorkbenchTestScratch.Result result = WorkbenchTestScratch.install(source.getServer().overworld(), id);
+        if (!result.ok()) {
+            source.sendFailure(Component.translatable(result.failKey(), result.failArg()));
+            return 0;
+        }
+        WorkbenchTestScratch.Installed in = result.installed();
+        String scratchId = in.scratchId();
+        int ran = switch (in.scene()) {
+            case CARRIAGE -> CarriageTestCommand.runTest(source, CarriageTestSession.Kind.CARRIAGE, scratchId, false);
+            case CONTENTS -> CarriageTestCommand.runTest(source, CarriageTestSession.Kind.CONTENTS, scratchId, false);
+            case WHOLE_GROUP -> CarriageTestCommand.runTest(source, CarriageTestSession.Kind.WHOLE_GROUP, scratchId, false);
+            case TRACK -> in.trackModelId()
+                .map(model -> CarriageTestCommand.runTrackCommand(source, model, scratchId)).orElse(0);
+            case PORTAL_ROOM -> PortalTestCommand.runTest(source, scratchId, false);
+        };
+        // A refused test leaves the scratch unnamed; the sweep takes it down within the second.
+        if (ran != 0 && in.prefabsMissing() > 0) {
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.workbench.test_prefabs_missing",
+                in.prefabsMissing()).withStyle(ChatFormatting.YELLOW), false);
+        }
+        return ran;
     }
 
     private static int remove(CommandSourceStack source, String id) {

@@ -15543,6 +15543,14 @@
       ]
     }
   },
+  "chat.dungeontrain.live.needs_internet": {
+    "1": {
+      "label": "the clickable link that opens the internet consent card, already translated (chat.dungeontrain.live.needs_internet.link)",
+      "examples": [
+        "turn it on"
+      ]
+    }
+  },
   "chat.dungeontrain.live_chat.connected": {
     "1": {
       "label": "the clickable settings path, already translated (chat.dungeontrain.live_chat.path)",
@@ -15771,6 +15779,31 @@
       "label": "the Workbench id that was asked for",
       "examples": [
         "brick_cabin-4271"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.test_no_scene": {
+    "1": {
+      "label": "the build's kind as the relay names it",
+      "examples": [
+        "part",
+        "building"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.test_wrong_size": {
+    "1": {
+      "label": "the build's size, length x height x width",
+      "examples": [
+        "12x9x5"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.test_prefabs_missing": {
+    "1": {
+      "label": "how many loot prefabs are missing",
+      "examples": [
+        "3"
       ]
     }
   },

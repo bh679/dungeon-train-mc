@@ -247,7 +247,7 @@ public final class CarriageTestCommand {
             plan.shell().id(), contentsId, shellSeed, contentsSeed,
             planB.shell().id(), contentsIdB, shellSeedB, contentsSeedB);
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
-            id, plan.shell().id(), contentsId).withStyle(ChatFormatting.AQUA), false);
+            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id), games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(plan.shell().id()), games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(contentsId)).withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
@@ -284,7 +284,7 @@ public final class CarriageTestCommand {
     }
 
     /** {@code editor test tracks <model> <name>}: refuse a model id that is not a piece of the line. */
-    private static int runTrackCommand(CommandSourceStack source, String modelId, String name) {
+    static int runTrackCommand(CommandSourceStack source, String modelId, String name) {
         Optional<TrackTestPiece> piece = TrackTestPiece.ofModelId(modelId);
         if (piece.isEmpty()) return failCode(source, "chat.dungeontrain.track_test.unknown_piece", modelId);
         // A name the kind doesn't have would stamp the built-in fallback and look like a test of it.
@@ -380,7 +380,7 @@ public final class CarriageTestCommand {
             shell.id(), contentsId, band.phase(), band.level(), testSeed, sceneSeed);
         Component bandName = Component.translatable(
             "gui.dungeontrain.editor_menu.phase." + band.phase().name().toLowerCase(java.util.Locale.ROOT));
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.track_test.standing_in", name, bandName)
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.track_test.standing_in", games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(name), bandName)
             .withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
@@ -424,7 +424,7 @@ public final class CarriageTestCommand {
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
-        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, id,
+        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id),
             DungeonTrainWorldData.get(overworld).isPortalTestReseed()));
     }
 
@@ -505,7 +505,7 @@ public final class CarriageTestCommand {
             kind.literal(), id, origin, player.getName().getString(), shellSeed,
             room ? ", second roll seed=" + seedB : "");
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.carriage_test.standing_in",
-            id, id, "none").withStyle(ChatFormatting.AQUA), false);
+            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id), games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id), "none").withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
@@ -703,7 +703,7 @@ public final class CarriageTestCommand {
             player.getName().getString(), cleared, discarded, session.kind().literal(), session.templateId());
         // A piece of the line is filed as model:name; the author knows it by its name.
         String shown = TrackTestPiece.parseTemplateId(session.templateId())
-            .map(TrackTestPiece.Named::name).orElse(session.templateId());
+            .map(TrackTestPiece.Named::name).map(games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch::shownName).orElse(games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(session.templateId()));
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has",
             shown).withStyle(ChatFormatting.GRAY), false);
         return 1;

@@ -157,6 +157,8 @@ public final class CarriageContentsPlacer {
         for (int depth = 0; depth <= MAX_GROUP_DEPTH; depth++) {
             Optional<String> parent = CarriageContentsGroupStore.findParentOf(current);
             if (parent.isEmpty()) {
+                ContentsSize scratch = games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.contentsSizeOf(current);
+                if (scratch != null) return scratch;
                 return games.brennan.dungeontrain.editor.TemplateSizeStore.CONTENTS.sizeOf(current);
             }
             current = parent.get();
