@@ -26199,8 +26199,30 @@
       "released_at": null
     },
     {
-      "id": "live-stream-shows-photos",
+      "id": "live-feed-performance-settings",
       "version": "0.1300.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "ui"
+      ],
+      "title": "Live Feed settings on the Performance tab",
+      "summary": "The Performance tab now has the Live Feed switches that cost the most frame rate, so you can find them when the game feels slow.",
+      "highlights": [
+        "Turn off Watch live feeds to stop playing streams on TVs",
+        "Turn off Livestreaming, or lower the stream's Video size, right from the Performance tab",
+        "Lag reports now include your frame rate and stutters, so slowdowns are easier to track down"
+      ],
+      "pr": 2022,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-stream-shows-photos",
+      "version": "0.1301.0",
       "type": "feat",
       "tags": [
         "feature",
