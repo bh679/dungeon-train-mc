@@ -152,6 +152,7 @@
     "CreateWorldScreenWorldTabMixin",
     "client.CreateWorldScreenMixin",
     "client.CreateWorldScreenDefaultPresetMixin",
+    "client.CreateWorldScreenDifficultyMixin",
     "client.CreateWorldScreenCustomContentMixin",
     "client.CreateWorldScreenInvoker",
     "client.CreativeModeInventoryScreenPrefabMixin",

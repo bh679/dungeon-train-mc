@@ -36,6 +36,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.LevelSettings;
@@ -221,11 +222,24 @@ public final class DeathScreenLayoutHandler {
             gameRules.getRule(GameRules.RULE_DO_IMMEDIATE_RESPAWN).set(true, null);
         }
         GameType gameType = forceSurvival ? GameType.SURVIVAL : cur.gameType();
+        // The next run starts on the difficulty the player last chose (Options > General, or the
+        // difficulty prompt's "Save for next run" / "Restart now"), not the dying world's — that is
+        // how a difficulty change saved for the next run takes effect. Hardcore stays pinned to Hard.
+        // Never chosen (an install from before the setting) → keep the dying world's and remember it.
+        Difficulty difficulty = cur.difficulty();
+        if (!cur.hardcore()) {
+            Difficulty remembered = ClientDisplayConfig.getNewRunDifficultyOrNull();
+            if (remembered != null) {
+                difficulty = remembered;
+            } else {
+                ClientDisplayConfig.setNewRunDifficulty(difficulty);
+            }
+        }
         LevelSettings settings = new LevelSettings(
                 name,
                 gameType,
                 cur.hardcore(),
-                cur.difficulty(),
+                difficulty,
                 cur.allowCommands(),
                 gameRules,
                 worldData.getDataConfiguration());

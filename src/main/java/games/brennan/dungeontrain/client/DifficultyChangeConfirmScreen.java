@@ -1,7 +1,5 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.net.DifficultyConfirmResponsePacket;
-import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -14,9 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * "Change difficulty to X?" — the confirmation shown before a difficulty change commits, because
- * committing takes the player's whole carried loadout and Ender Chest off them (see
+ * "Change difficulty to X?" — shown before a difficulty change commits (see
  * {@code DifficultyChangeConfirmEvents}).
+ *
+ * <p>In a singleplayer run it offers <b>Save for next run</b> and <b>Abandon run &amp; restart now</b>
+ * ({@link DifficultyChangeConfirmClient}); elsewhere (a remote server, the Train Editor) it offers
+ * <b>Change difficulty</b> in place, plus Save for next run where a next world can be created here.
+ * With {@code difficultyIsolatedStash} on, the loss lines say what switching profiles costs.</p>
  *
  * <p>Drawn with the same vanilla tooltip frame as {@link FreePlayConfirmScreen} so the two
  * confirmations read as one family of prompt. Cancel (or ESC) returns to {@link #parent()} — for the
@@ -48,6 +50,11 @@ public final class DifficultyChangeConfirmScreen extends Screen {
     private final Difficulty from;
     private final Difficulty to;
     private final boolean targetEmpty;
+    private final boolean isolated;
+    /** A singleplayer run: "restart now" is on offer and "change in place" is not. */
+    private final boolean runWorld;
+    /** An integrated server: this client creates the next world, so "save for next run" means something. */
+    private final boolean singleplayer;
     private boolean responded = false;
 
     // Layout, computed in init() and reused by render().
@@ -57,12 +64,36 @@ public final class DifficultyChangeConfirmScreen extends Screen {
     private List<FormattedCharSequence> lossLines = List.of();
     private List<FormattedCharSequence> noteLines = List.of();
 
-    public DifficultyChangeConfirmScreen(Screen parent, Difficulty from, Difficulty to, boolean targetEmpty) {
+    public DifficultyChangeConfirmScreen(Screen parent, Difficulty from, Difficulty to, boolean targetEmpty,
+                                         boolean isolated, boolean runWorld, boolean singleplayer) {
         super(Component.translatable("gui.dungeontrain.difficulty_confirm.title", to.getDisplayName()));
         this.parent = parent;
         this.from = from;
         this.to = to;
         this.targetEmpty = targetEmpty;
+        this.isolated = isolated;
+        this.runWorld = runWorld;
+        this.singleplayer = singleplayer;
+    }
+
+    /** One answer: its label and what it does. */
+    private record Choice(String key, Runnable action) {}
+
+    /** The answers on offer here, in button order (Cancel is always added last). */
+    private List<Choice> choices() {
+        List<Choice> out = new ArrayList<>();
+        if (singleplayer) {
+            out.add(new Choice("gui.dungeontrain.difficulty_confirm.next_run",
+                    () -> DifficultyChangeConfirmClient.saveForNextRun(to)));
+        }
+        if (runWorld) {
+            out.add(new Choice("gui.dungeontrain.difficulty_confirm.restart_now",
+                    () -> DifficultyChangeConfirmClient.restartNow(to)));
+        } else {
+            out.add(new Choice("gui.dungeontrain.difficulty_confirm.change",
+                    () -> DifficultyChangeConfirmClient.applyNow(to)));
+        }
+        return out;
     }
 
     /** The screen the prompt was opened over — restored when it closes. */
@@ -76,51 +107,75 @@ public final class DifficultyChangeConfirmScreen extends Screen {
         int innerW = panelW - 2 * PADDING;
         int lh = this.font.lineHeight;
 
-        bodyLines = this.font.split(Component.translatable("gui.dungeontrain.difficulty_confirm.body"), innerW);
+        bodyLines = this.font.split(Component.translatable(runWorld
+                ? "gui.dungeontrain.difficulty_confirm.body_run"
+                : "gui.dungeontrain.difficulty_confirm.body"), innerW);
 
-        List<FormattedCharSequence> loss = new ArrayList<>(
-            this.font.split(Component.translatable("gui.dungeontrain.difficulty_confirm.loss"), innerW));
-        if (targetEmpty) {
-            loss.addAll(this.font.split(
-                Component.translatable("gui.dungeontrain.difficulty_confirm.empty", to.getDisplayName()), innerW));
+        List<FormattedCharSequence> loss = new ArrayList<>();
+        if (runWorld) {
+            // Restarting ends this run for real — say so before anything about gear.
+            loss.addAll(this.font.split(Component.translatable(
+                "gui.dungeontrain.difficulty_confirm.restart_dies", from.getDisplayName()), innerW));
+        }
+        if (isolated) {
+            loss.addAll(this.font.split(Component.translatable(runWorld
+                ? "gui.dungeontrain.difficulty_confirm.loss_run"
+                : "gui.dungeontrain.difficulty_confirm.loss"), innerW));
+            if (targetEmpty) {
+                loss.addAll(this.font.split(
+                    Component.translatable("gui.dungeontrain.difficulty_confirm.empty", to.getDisplayName()), innerW));
+            }
         }
         lossLines = List.copyOf(loss);
 
-        noteLines = this.font.split(
-            Component.translatable("gui.dungeontrain.difficulty_confirm.kept", from.getDisplayName()), innerW);
+        noteLines = isolated
+            ? this.font.split(
+                Component.translatable("gui.dungeontrain.difficulty_confirm.kept", from.getDisplayName()), innerW)
+            : this.font.split(Component.translatable("gui.dungeontrain.difficulty_confirm.stats"), innerW);
+        List<Choice> choices = choices();
 
         int y = PADDING;
         titleRelY = y;   y += lh + TITLE_SEP_GAP;
         bodyRelY = y;    y += bodyLines.size() * (lh + LINE_GAP) + SECTION_GAP;
         lossRelY = y;    y += lossLines.size() * (lh + LINE_GAP) + SECTION_GAP;
         noteRelY = y;    y += noteLines.size() * (lh + LINE_GAP) + SECTION_GAP;
-        int confirmRelY = y; y += BUTTON_H + BUTTON_GAP;
-        int cancelRelY = y;  y += BUTTON_H + PADDING;
+        int buttonsRelY = y;
+        y += (choices.size() + 1) * (BUTTON_H + BUTTON_GAP) - BUTTON_GAP + PADDING;
         panelH = y;
 
         panelX = (this.width - panelW) / 2;
         panelY = (this.height - panelH) / 2;
 
+        int by = panelY + buttonsRelY;
+        for (Choice choice : choices) {
+            addRenderableWidget(Button.builder(Component.translatable(choice.key()), b -> respond(choice.action()))
+                .bounds(panelX + PADDING, by, innerW, BUTTON_H).build());
+            by += BUTTON_H + BUTTON_GAP;
+        }
         addRenderableWidget(Button.builder(
-                Component.translatable("gui.dungeontrain.difficulty_confirm.change"), b -> respond(true))
-            .bounds(panelX + PADDING, panelY + confirmRelY, innerW, BUTTON_H).build());
-        addRenderableWidget(Button.builder(
-                Component.translatable("gui.dungeontrain.difficulty_confirm.cancel"), b -> respond(false))
-            .bounds(panelX + PADDING, panelY + cancelRelY, innerW, BUTTON_H).build());
+                Component.translatable("gui.dungeontrain.difficulty_confirm.cancel"), b -> onClose())
+            .bounds(panelX + PADDING, by, innerW, BUTTON_H).build());
     }
 
-    private void respond(boolean confirmed) {
+    /**
+     * Act, then go back to the screen the prompt opened over — acting first so that screen re-inits
+     * showing the remembered difficulty. "Restart now" closes every screen itself, and that is left be.
+     */
+    private void respond(Runnable action) {
         if (responded) return;
         responded = true;
-        DungeonTrainNet.sendToServer(new DifficultyConfirmResponsePacket(confirmed));
-        onClose();
+        action.run();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen == this) {
+            mc.setScreen(parent);
+        }
     }
 
     @Override
     public void onClose() {
         if (!responded) {
             responded = true;
-            DungeonTrainNet.sendToServer(new DifficultyConfirmResponsePacket(false));
+            DifficultyChangeConfirmClient.cancel();
         }
         // Back to where the player was — re-initialising the Options screen resyncs its Difficulty
         // button with the difficulty that is actually in force.

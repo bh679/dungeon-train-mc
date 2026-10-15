@@ -16,9 +16,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  *
  * <p>Carries both difficulties so the prompt can name them, plus {@code targetEmpty}: true when the
  * player has never played the target difficulty, i.e. it starts them with nothing. Only the server
- * can know that (it holds the loadout locker), so it is decided there and shipped here.</p>
+ * can know that (it holds the loadout locker), so it is decided there and shipped here. {@code isolated}
+ * mirrors {@code difficultyIsolatedStash}: off, a change costs no gear, so the prompt says nothing about
+ * losing it.</p>
  */
-public record ShowDifficultyConfirmPacket(Difficulty from, Difficulty to, boolean targetEmpty)
+public record ShowDifficultyConfirmPacket(Difficulty from, Difficulty to, boolean targetEmpty, boolean isolated)
     implements CustomPacketPayload {
 
     public static final Type<ShowDifficultyConfirmPacket> TYPE =
@@ -30,9 +32,10 @@ public record ShowDifficultyConfirmPacket(Difficulty from, Difficulty to, boolea
                 buf.writeByte(pkt.from().getId());
                 buf.writeByte(pkt.to().getId());
                 buf.writeBoolean(pkt.targetEmpty());
+                buf.writeBoolean(pkt.isolated());
             },
             buf -> new ShowDifficultyConfirmPacket(
-                Difficulty.byId(buf.readByte()), Difficulty.byId(buf.readByte()), buf.readBoolean()));
+                Difficulty.byId(buf.readByte()), Difficulty.byId(buf.readByte()), buf.readBoolean(), buf.readBoolean()));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -41,6 +44,7 @@ public record ShowDifficultyConfirmPacket(Difficulty from, Difficulty to, boolea
 
     /** Client-bound — only runs on the physical client (mirrors {@link ShowFreePlayConfirmPacket}). */
     public static void handle(ShowDifficultyConfirmPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> DifficultyChangeConfirmClient.onShow(packet.from(), packet.to(), packet.targetEmpty()));
+        ctx.enqueueWork(() -> DifficultyChangeConfirmClient.onShow(
+            packet.from(), packet.to(), packet.targetEmpty(), packet.isolated()));
     }
 }

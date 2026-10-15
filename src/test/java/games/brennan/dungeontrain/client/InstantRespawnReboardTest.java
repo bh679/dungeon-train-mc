@@ -90,4 +90,15 @@ final class InstantRespawnReboardTest {
     void staleAbandonDoesNotBlockTheReboard() {
         assertEquals(Outcome.NEW_WORLD, decide(true, true, false, true, false, false));
     }
+
+    @Test
+    @DisplayName("difficulty restart-now reboards even when a death screen would open")
+    void restartNowReboardsPastTheDeathScreen() {
+        assertEquals(Outcome.NEW_WORLD, InstantRespawnReboard.decide(true, true, true, true, false, false, true));
+        // Still only once, only singleplayer, only the client-thread pass, only our own death.
+        assertEquals(Outcome.VANILLA, InstantRespawnReboard.decide(true, true, true, true, true, false, true));
+        assertEquals(Outcome.VANILLA, InstantRespawnReboard.decide(true, true, true, false, false, false, true));
+        assertEquals(Outcome.VANILLA, InstantRespawnReboard.decide(false, true, true, true, false, false, true));
+        assertEquals(Outcome.VANILLA, InstantRespawnReboard.decide(true, false, true, true, false, false, true));
+    }
 }

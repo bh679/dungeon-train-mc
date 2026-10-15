@@ -79,6 +79,12 @@ public enum ClientOptionsTab {
     /** One row of the options screen — identity only; the screen decides what widget renders it. */
     public enum Row {
         // --- General ---
+        /**
+         * The difficulty every new run starts on, remembered locally. In a singleplayer run, changing it
+         * asks whether to save it for the next run or abandon and restart now — see
+         * {@code DifficultyChangeConfirmScreen}.
+         */
+        DIFFICULTY("gui.dungeontrain.options.difficulty"),
         CONTENT_MODE("gui.dungeontrain.options.content_mode"),
         /** Chat with the developer, both ways — the consent card's Developer chat switch (Adult only). */
         DEV_CHAT("gui.dungeontrain.options.dev_chat"),
@@ -242,6 +248,8 @@ public enum ClientOptionsTab {
         List<Row> rows = new ArrayList<>();
         switch (tab) {
             case GENERAL -> {
+                // First: the one setting here that changes the game itself, not the client around it.
+                rows.add(Row.DIFFICULTY);
                 rows.add(Row.CONTENT_MODE);
                 if (chineseLocale) {
                     rows.add(Row.POLITICAL_FILTER);

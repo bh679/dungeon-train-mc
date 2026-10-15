@@ -94,11 +94,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: forty-four rows (three repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: forty-five rows (three repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(44, rows.size());
+        assertEquals(45, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -114,7 +114,8 @@ final class ClientOptionsTabTest {
         List<ClientOptionsTab.Row> general =
                 ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, false, true);
 
-        assertEquals(List.of(ClientOptionsTab.Row.CONTENT_MODE,
+        assertEquals(List.of(ClientOptionsTab.Row.DIFFICULTY,
+                        ClientOptionsTab.Row.CONTENT_MODE,
                         ClientOptionsTab.Row.POLITICAL_FILTER,
                         ClientOptionsTab.Row.DEV_CHAT,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
@@ -210,8 +211,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 45 rows, three of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(48, rows.size());
+        // 46 rows, three of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(49, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }

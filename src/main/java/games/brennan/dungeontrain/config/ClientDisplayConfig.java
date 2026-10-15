@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.config;
 import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
+import net.minecraft.world.Difficulty;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -329,6 +330,11 @@ public final class ClientDisplayConfig {
     public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_PREFERENCE;
     /** The last answer actually given, whether or not it was remembered. */
     public static final ModConfigSpec.EnumValue<CustomContentPreference> CUSTOM_CONTENT_LAST_ANSWER;
+    /**
+     * The difficulty every new run starts on — remembered locally, so it survives the
+     * new-world-per-run reboard and the title screen's New World. See {@link #getNewRunDifficulty()}.
+     */
+    public static final ModConfigSpec.ConfigValue<String> NEW_RUN_DIFFICULTY;
 
     /**
      * Whether the player wants community content the relay tagged as politically sensitive filtered
@@ -425,6 +431,7 @@ public final class ClientDisplayConfig {
         DEV_CHAT_ENABLED = pair.getLeft().devChatEnabled;
         CUSTOM_CONTENT_PREFERENCE = pair.getLeft().customContentPreference;
         CUSTOM_CONTENT_LAST_ANSWER = pair.getLeft().customContentLastAnswer;
+        NEW_RUN_DIFFICULTY = pair.getLeft().newRunDifficulty;
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
@@ -849,6 +856,18 @@ public final class ClientDisplayConfig {
                 .define("hideOtherTabs", true);
         b.pop();
 
+        b.push("run");
+        ModConfigSpec.ConfigValue<String> newRunDifficulty = b
+                .comment("The difficulty every new world starts on: the title screen's New World, the reboard",
+                         "after a death, and Minecraft's own Create New World screen. Each difficulty is its own",
+                         "profile (gear, Ender Chest, advancements, advancement stats). Remembered from the last",
+                         "difficulty you chose; changeable in Options > Dungeon Train > General.",
+                         "peaceful | easy | normal | hard. Empty = not chosen yet: the reboard keeps the dying",
+                         "world's difficulty (and remembers it), everything else starts on normal.")
+                .define("newRunDifficulty", "", v -> v instanceof String str
+                        && (str.isEmpty() || Difficulty.byName(str) != null));
+        b.pop();
+
         return new Holder(allScale, worldspaceChannel, hudChannel, developerPopupShownBefore, developerPopupOptedOut, freePlayConfirmOptedOut,
                 devConsentGranted, devConsentGrantSession, devConsentLastMsgToDev, openedAdvancementsBefore,
                 rideSnapshotsEnabled, rideSnapshotIntervalSeconds, rideSnapshotMaxStored, rideSnapshotChatLog,
@@ -871,7 +890,7 @@ public final class ClientDisplayConfig {
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
                 editorScreenTheme,
-                confirmBuildRestore, humanOnlyTranslations);
+                confirmBuildRestore, humanOnlyTranslations, newRunDifficulty);
     }
 
     /**
@@ -1861,6 +1880,36 @@ public final class ClientDisplayConfig {
     }
 
     /**
+     * The difficulty the next new world starts on, or {@code null} when the player has never chosen
+     * one (or pre-load). Null lets the reboard keep the dying world's difficulty, so a player who was
+     * already playing Hard before this setting existed stays on Hard.
+     */
+    public static Difficulty getNewRunDifficultyOrNull() {
+        if (!isLoaded()) return null;
+        String raw = NEW_RUN_DIFFICULTY.get();
+        return raw == null || raw.isEmpty() ? null : Difficulty.byName(raw);
+    }
+
+    /** {@link #getNewRunDifficultyOrNull()}, falling back to Normal — vanilla's own new-world default. */
+    public static Difficulty getNewRunDifficulty() {
+        Difficulty d = getNewRunDifficultyOrNull();
+        return d != null ? d : Difficulty.NORMAL;
+    }
+
+    /**
+     * Remember {@code difficulty} for every new world from here on. Written by the Options row, the
+     * difficulty-change prompt (both answers), and any difficulty change that commits in a
+     * singleplayer world. Idempotent; no-op pre-load.
+     */
+    public static void setNewRunDifficulty(Difficulty difficulty) {
+        if (!isLoaded() || difficulty == null) return;
+        String key = difficulty.getKey();
+        if (key.equals(NEW_RUN_DIFFICULTY.get())) return;
+        NEW_RUN_DIFFICULTY.set(key);
+        NEW_RUN_DIFFICULTY.save();
+    }
+
+    /**
      * The last answer the player actually gave the prompt, recorded on every answer rather than
      * only on "Remember decision". {@link CustomContentPreference#ASK} means never answered.
      *
@@ -2077,6 +2126,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.EnumValue<EditorMenuSpace> blockVariantMenuSpace,
             ModConfigSpec.EnumValue<EditorScreenTheme> editorScreenTheme,
             ModConfigSpec.BooleanValue confirmBuildRestore,
-            ModConfigSpec.BooleanValue humanOnlyTranslations
+            ModConfigSpec.BooleanValue humanOnlyTranslations,
+            ModConfigSpec.ConfigValue<String> newRunDifficulty
     ) {}
 }
