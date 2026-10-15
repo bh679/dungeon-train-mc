@@ -26276,6 +26276,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-streams-through-death",
+      "version": "0.1304.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Your Live Eye stream carries on after you die",
+      "summary": "Dying live no longer cuts your stream. Your viewers watch your death screens with you, the last few seconds before you died loop behind the first one, and an End Stream button lets you stop when you're ready. Anyone watching with a TV on their head can take the Live Eye and go live in your place: first click wins.",
+      "highlights": [
+        "Your stream keeps going through the death screens; End Stream, next to LIVE, ends it",
+        "The moment you died loops behind the first death screen, and in the #live-eye offline post",
+        "Viewers wearing a TV get [Take the Live Eye]: the first to click becomes the streamer"
+      ],
+      "pr": 2028,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

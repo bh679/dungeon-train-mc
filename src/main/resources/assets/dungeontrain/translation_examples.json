@@ -15549,6 +15549,21 @@
       ]
     }
   },
+  "chat.dungeontrain.live.takeover.offer": {
+    "1": {
+      "label": "the player name of the streamer who died",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    },
+    "2": {
+      "label": "the clickable [Take over the stream] button (chat.dungeontrain.live.takeover.button)",
+      "examples": [
+        "[Take over the stream]"
+      ]
+    }
+  },
   "chat.dungeontrain.live.took_over": {
     "1": {
       "label": "the player name of the broadcaster who was cut off",
