@@ -41,9 +41,14 @@ public final class DiscordEmojiCache {
     private static final Logger LOGGER = LogUtils.getLogger();
     static final int FIRST_SLOT = 0x100000;
     static final int MAX_SLOTS = 4096;
+    /** Never an emoji: the provider's always-present blank glyph (see DiscordEmojiGlyphProvider#KEEPALIVE). */
+    static final int KEEPALIVE_SLOT = FIRST_SLOT;
     static final int SIZE = 32;
     private static final int MAX_BYTES = 256 * 1024;
     private static final Pattern ID = Pattern.compile("\\d{5,25}");
+    private static final String CDN = "https://cdn.discordapp.com/emojis/";
+    /** Test seam, like {@code DUNGEONTRAIN_RELAY_BASE_URL}: a local stub serving {@code <id>.png}. */
+    private static final String CDN_ENV = "DUNGEONTRAIN_EMOJI_CDN_BASE";
     private static final HttpClient HTTP = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(5)).followRedirects(HttpClient.Redirect.NEVER).build();
 
@@ -51,7 +56,7 @@ public final class DiscordEmojiCache {
     private static final Map<Integer, NativeImage> IMAGE_BY_SLOT = new ConcurrentHashMap<>();
     private static final Set<String> REQUESTED = ConcurrentHashMap.newKeySet();
     private static final List<Consumer<String>> LISTENERS = new CopyOnWriteArrayList<>();
-    private static int nextSlot = FIRST_SLOT;
+    private static int nextSlot = FIRST_SLOT + 1;
 
     private DiscordEmojiCache() {}
 
@@ -77,7 +82,7 @@ public final class DiscordEmojiCache {
         if (id == null || !ID.matcher(id).matches() || SLOT_BY_ID.containsKey(id)) return;
         if (!DiscordPresenceClientConfig.isGranted()) return;
         if (REQUESTED.size() >= MAX_SLOTS || !REQUESTED.add(id)) return; // one attempt per id per session
-        HttpRequest req = HttpRequest.newBuilder(URI.create("https://cdn.discordapp.com/emojis/" + id + ".png?size=" + SIZE))
+        HttpRequest req = HttpRequest.newBuilder(URI.create(cdnBase() + id + ".png?size=" + SIZE))
             .timeout(Duration.ofSeconds(10)).GET().build();
         HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofByteArray()).thenAccept(resp -> {
             if (resp.statusCode() != 200 || resp.body().length == 0 || resp.body().length > MAX_BYTES) {
@@ -96,6 +101,11 @@ public final class DiscordEmojiCache {
             LOGGER.debug("[DungeonTrain] custom emoji {} fetch failed: {}", id, t.toString());
             return null;
         });
+    }
+
+    private static String cdnBase() {
+        String override = System.getenv(CDN_ENV);
+        return override != null && !override.isBlank() ? override : CDN;
     }
 
     private static void install(String id, NativeImage image) {

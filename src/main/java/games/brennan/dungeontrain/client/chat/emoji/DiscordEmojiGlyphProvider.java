@@ -22,13 +22,16 @@ import java.util.function.Function;
  *
  * <p>Registered as its own font-provider type through NeoForge's enum extension of
  * {@link GlyphProviderType} ({@code META-INF/enumextensions.json} → {@link #ENUM_PARAMS}); the font file
- * {@code assets/dungeontrain/font/discord_emoji.json} names it. Every slot is declared supported so the
- * FontSet keeps the provider; an unloaded slot answers null, and {@link EmojiText} never writes one.</p>
+ * {@code assets/dungeontrain/font/discord_emoji.json} names it. A FontSet probes every declared character
+ * when it (re)loads and drops a provider that answers none — at startup no emoji has loaded yet — so the
+ * first slot is a permanent blank ({@link #KEEPALIVE}) that keeps this provider in. Any other unloaded slot
+ * answers null, and {@link EmojiText} never writes one.</p>
  */
 public final class DiscordEmojiGlyphProvider implements GlyphProvider {
 
     private static final float ADVANCE = 9.0F;
     private static final float OVERSAMPLE = DiscordEmojiCache.SIZE / 8.0F;
+    private static final GlyphInfo KEEPALIVE = (GlyphInfo.SpaceGlyphInfo) () -> 0.0F;
 
     /** The provider definition the font JSON's {@code "type": "dungeontrain:discord_emoji"} decodes to. */
     public record Definition() implements GlyphProviderDefinition {
@@ -53,6 +56,7 @@ public final class DiscordEmojiGlyphProvider implements GlyphProvider {
     @Nullable
     @Override
     public GlyphInfo getGlyph(int character) {
+        if (character == DiscordEmojiCache.KEEPALIVE_SLOT) return KEEPALIVE;
         NativeImage image = DiscordEmojiCache.image(character);
         return image == null ? null : new Glyph(image);
     }

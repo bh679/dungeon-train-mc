@@ -162,8 +162,10 @@ public final class ChatReactionTracker {
         if (mc.screen instanceof ChatScreen) return; // chat is open: the chip itself is in view
         if (age >= 0 && age < ChatLineEditor.FADE_TICKS) return; // the line is still on screen
         MutableComponent emoji = EmojiText.reactionEmoji(event.name(), event.id(), Style.EMPTY);
-        mc.gui.getChat().addMessage(Component.translatable(NOTICE_KEY, event.userName(), emoji, line.snippet)
-            .withStyle(ChatFormatting.GRAY));
+        // Converted as a whole so emoji inside the quoted snippet draw in colour too.
+        Component notice = Component.translatable(NOTICE_KEY, event.userName(), emoji, line.snippet)
+            .withStyle(ChatFormatting.GRAY);
+        mc.gui.getChat().addMessage(EmojiText.convert(notice).component());
     }
 
     /** Re-draws {@code line} from its source; returns the line's age in GUI ticks, -1 if gone. */
