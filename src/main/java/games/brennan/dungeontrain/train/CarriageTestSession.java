@@ -83,6 +83,9 @@ public final class CarriageTestSession {
 
     public static boolean has(UUID player) { return SESSIONS.containsKey(player); }
 
+    /** Every running test — what the Workbench's scratch sweep reads to see which builds are in use. */
+    public static java.util.List<Session> all() { return java.util.List.copyOf(SESSIONS.values()); }
+
     public static boolean anyActive() { return !SESSIONS.isEmpty(); }
 
     /**

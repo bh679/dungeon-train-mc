@@ -180,7 +180,10 @@ public final class UserContentPaths {
         if (games.brennan.dungeontrain.cheat.EditorContentIntegrity.isSuppressed()) {
             return List.of();
         }
-        List<Path> out = new ArrayList<>();
+        // A Workbench build under test is read ahead of everything — its ids are reserved, so it
+        // shadows nothing, and it is only here while a test stands on it.
+        List<Path> out = new ArrayList<>(
+            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.liveDirs(subSlug));
         // Active package wins first. If the registry hasn't been populated yet
         // (e.g. very early server start before DtpacksMigration has run), the
         // active fallback is the legacy user/ folder.

@@ -104,6 +104,8 @@ public record CarriageContentsWeights(Map<String, TemplateMeta> byId) {
      * Always in {@code [MIN, MAX]}.
      */
     public int weightFor(String id) {
+        // A Workbench build under test is never drawn — only its test stands it up, by id.
+        if (games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.isScratchId(id)) return MIN;
         TemplateMeta m = byId.get(id);
         if (m == null) return DEFAULT;
         return clamp(m.weight());

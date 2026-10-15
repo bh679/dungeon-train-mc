@@ -346,6 +346,8 @@ public final class EditorRoster {
     ) {
         List<EditorRosterPacket.Entry> entries = new ArrayList<>(rows.size());
         for (EditorTypeMenusPacket.Variant v : rows) {
+            // A Workbench build standing in a test is the Workbench's row, not a second one here.
+            if (games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.isScratchId(v.modelName())) continue;
             int self = selfWeight == null ? EditorPlotLabelsPacket.NO_WEIGHT : selfWeight.of(v);
             entries.add(withShellSizeData(categoryId, withFlipData(categoryId, withRoomData(categoryId,
                 new EditorRosterPacket.Entry(v, self, relayIdFor(categoryId, modelId, v))))));
