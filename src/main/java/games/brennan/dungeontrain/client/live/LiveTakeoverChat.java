@@ -72,7 +72,14 @@ public final class LiveTakeoverChat {
         open = null;
     }
 
-    /** The line to print for a vote line from the room; it also tracks whether a vote is open. */
+    /** The vote whose result this client has printed, so the requester's own copy and the room's never both show. */
+    @Nullable private static volatile String resultShown;
+
+    /**
+     * The line to print for a vote line from the room, or null when there is nothing to print (a result
+     * already shown); it also tracks whether a vote is open.
+     */
+    @Nullable
     static Component onPollLine(PollLine p, @Nullable UUID me) {
         if (p.open()) {
             open = p;
@@ -80,7 +87,28 @@ public final class LiveTakeoverChat {
         }
         PollLine cur = open;
         if (cur != null && cur.id().equals(p.id())) open = null;
-        return result(p);
+        if (!"approved".equals(p.state()) && !"rejected".equals(p.state())) {
+            return LiveChatRules.systemLine(Component.translatable(KEY + "withdrawn", p.requester()).withStyle(ChatFormatting.GOLD));
+        }
+        showResult(p.id(), "approved".equals(p.state()), p.yes(), p.no(), p.requester(), p.holder());
+        return null;
+    }
+
+    /**
+     * The verdict and the tally — "Takeover approved. Bob takes the Live Eye." then "5 - Yes | 2 - No" —
+     * once per vote, whether it came from the room or the requester's own status poll.
+     */
+    static void showResult(String id, boolean approved, int yes, int no, String requester, String holder) {
+        if (id.equals(resultShown)) return;
+        resultShown = id;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null) return;
+        Component verdict = approved
+            ? Component.translatable(KEY + "result_approved", requester)
+            : Component.translatable(KEY + "result_rejected", holder);
+        mc.gui.getChat().addMessage(LiveChatRules.systemLine(verdict.copy().withStyle(ChatFormatting.GOLD)));
+        mc.gui.getChat().addMessage(LiveChatRules.systemLine(
+            Component.translatable(KEY + "tally", Math.max(0, yes), Math.max(0, no)).withStyle(ChatFormatting.GOLD)));
     }
 
     private static Component opening(PollLine p, @Nullable UUID me) {
@@ -90,15 +118,6 @@ public final class LiveTakeoverChat {
         boolean holder = me != null && p.holderUuid() != null && p.holderUuid().equalsIgnoreCase(me.toString().replace("-", ""));
         if (holder) line.append(" ").append(Component.translatable(KEY + "your_weight", p.holderWeight()).withStyle(ChatFormatting.GRAY));
         return LiveChatRules.systemLine(line);
-    }
-
-    private static Component result(PollLine p) {
-        Component body = switch (p.state()) {
-            case "approved" -> Component.translatable(KEY + "approved", Math.max(0, p.yes()), Math.max(0, p.no()), p.requester());
-            case "rejected" -> Component.translatable(KEY + "rejected", Math.max(0, p.yes()), Math.max(0, p.no()), p.holder());
-            default -> Component.translatable(KEY + "withdrawn", p.requester());
-        };
-        return LiveChatRules.systemLine(body.copy().withStyle(ChatFormatting.GOLD));
     }
 
     private static Component button(String choice, ChatFormatting colour) {

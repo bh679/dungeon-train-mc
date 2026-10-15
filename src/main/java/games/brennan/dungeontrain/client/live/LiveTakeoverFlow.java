@@ -161,6 +161,11 @@ public final class LiveTakeoverFlow {
     private static void settle(@Nullable Poll p) {
         LiveStreamController c = LiveStreamController.get();
         pollId = null;
+        // The requester sees the result even if their chat is mid-reconnect as the Live Eye changes.
+        if (p != null && (p.approved() || p.rejected()) && holder != null) {
+            String me = Minecraft.getInstance().getUser().getName();
+            LiveTakeoverChat.showResult(p.id(), p.approved(), p.yes(), p.no(), me, holder.holder());
+        }
         dismissScreen();
         if (p != null && p.approved() && p.ticket() != null) {
             c.retryClaim(false, p.ticket());

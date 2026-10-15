@@ -185,7 +185,8 @@ public final class LiveChatBridge {
         boolean streaming = LiveStreamController.get().streaming();
         for (ChatLine line : page.lines()) {
             if (line.poll() != null) {
-                chat.addMessage(LiveTakeoverChat.onPollLine(line.poll(), me), signatures.sign(line.seq()), tag);
+                Component shown = LiveTakeoverChat.onPollLine(line.poll(), me);
+                if (shown != null) chat.addMessage(shown, signatures.sign(line.seq()), tag);
                 continue;
             }
             if (LiveChatRules.shouldShow(line, me, here, names)) {

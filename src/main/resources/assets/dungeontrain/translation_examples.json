@@ -15947,7 +15947,24 @@
       ]
     }
   },
-  "chat.dungeontrain.live.takeover_approved": {
+  "chat.dungeontrain.live.takeover_result_approved": {
+    "1": {
+      "label": "the player who asked to take over",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.takeover_result_rejected": {
+    "1": {
+      "label": "the player streaming now",
+      "examples": [
+        "Alex"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.takeover_tally": {
     "1": {
       "label": "weighted yes votes",
       "examples": [
@@ -15957,34 +15974,7 @@
     "2": {
       "label": "weighted no votes",
       "examples": [
-        "3"
-      ]
-    },
-    "3": {
-      "label": "the player who asked to take over",
-      "examples": [
-        "Steve",
-        "brennan_hatton"
-      ]
-    }
-  },
-  "chat.dungeontrain.live.takeover_rejected": {
-    "1": {
-      "label": "weighted yes votes",
-      "examples": [
         "2"
-      ]
-    },
-    "2": {
-      "label": "weighted no votes",
-      "examples": [
-        "4"
-      ]
-    },
-    "3": {
-      "label": "the player streaming now",
-      "examples": [
-        "Alex"
       ]
     }
   },
