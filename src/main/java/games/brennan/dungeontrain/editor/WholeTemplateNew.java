@@ -97,9 +97,11 @@ public final class WholeTemplateNew {
 
     private static StructureTemplate sourceGeometry(ServerLevel overworld, WholeKind kind, String sourceId,
                                                     CarriageDims dims) throws IOException {
-        java.util.Optional<StructureTemplate> found = kind == WholeKind.GROUP
-            ? CarriageGroupTemplateStore.get(overworld, new CarriageGroup(sourceId), dims, WholeCarriageEditor.groupSize())
-            : WholeCarriageTemplateStore.get(overworld, new WholeCarriage(sourceId), dims);
+        java.util.Optional<StructureTemplate> found = switch (kind) {
+            case GROUP -> CarriageGroupTemplateStore.get(overworld, new CarriageGroup(sourceId), dims, WholeCarriageEditor.groupSize());
+            case HALF -> WholeHalfTemplateStore.get(overworld, new WholeCarriage(sourceId), dims);
+            case ROOM -> WholeCarriageTemplateStore.get(overworld, new WholeCarriage(sourceId), dims);
+        };
         return found.orElseThrow(() -> new IOException(
             "'" + sourceId + "' has no saved geometry that fits this world's carriage size."));
     }
@@ -111,18 +113,25 @@ public final class WholeTemplateNew {
             CarriageGroupPlacer.eraseAt(overworld, origin, dims, n);
             return CarriageGroupPlacer.captureTemplate(overworld, origin, dims, n);
         }
-        CarriagePlacer.eraseAt(overworld, origin, dims);
-        return WholeCarriagePlacer.captureTemplate(overworld, origin, dims);
+        CarriageDims box = kind == WholeKind.HALF ? WholeHalfTemplateStore.halfDims(dims) : dims;
+        CarriagePlacer.eraseAt(overworld, origin, box);
+        return WholeCarriagePlacer.captureTemplate(overworld, origin, box);
     }
 
     /** User tier, plus the source tree in dev mode — the same pair {@link WholeCarriageEditor} saves write. */
     private static void save(WholeKind kind, String id, StructureTemplate geometry) throws IOException {
-        if (kind == WholeKind.GROUP) CarriageGroupTemplateStore.save(new CarriageGroup(id), geometry);
-        else WholeCarriageTemplateStore.save(new WholeCarriage(id), geometry);
+        switch (kind) {
+            case GROUP -> CarriageGroupTemplateStore.save(new CarriageGroup(id), geometry);
+            case HALF -> WholeHalfTemplateStore.save(new WholeCarriage(id), geometry);
+            case ROOM -> WholeCarriageTemplateStore.save(new WholeCarriage(id), geometry);
+        }
         if (!EditorDevMode.isEnabled()) return;
         try {
-            if (kind == WholeKind.GROUP) CarriageGroupTemplateStore.saveToSource(new CarriageGroup(id), geometry);
-            else WholeCarriageTemplateStore.saveToSource(new WholeCarriage(id), geometry);
+            switch (kind) {
+                case GROUP -> CarriageGroupTemplateStore.saveToSource(new CarriageGroup(id), geometry);
+                case HALF -> WholeHalfTemplateStore.saveToSource(new WholeCarriage(id), geometry);
+                case ROOM -> WholeCarriageTemplateStore.saveToSource(new WholeCarriage(id), geometry);
+            }
         } catch (IOException e) {
             LOGGER.warn("[DungeonTrain] Whole editor new: source write failed for {}: {}", id, e.toString());
         }
@@ -174,26 +183,42 @@ public final class WholeTemplateNew {
 
     // ---- registry -------------------------------------------------------------------------------
 
-    private static Template template(WholeKind kind, String id) {
-        return kind == WholeKind.GROUP
-            ? new Template.CarriageGroup(new CarriageGroup(id))
-            : new Template.WholeCarriage(new WholeCarriage(id));
+    /** The model for {@code id} under {@code kind}. */
+    public static Template template(WholeKind kind, String id) {
+        return switch (kind) {
+            case GROUP -> new Template.CarriageGroup(new CarriageGroup(id));
+            case HALF -> new Template.WholeHalf(new WholeCarriage(id));
+            case ROOM -> new Template.WholeCarriage(new WholeCarriage(id));
+        };
+    }
+
+    /** Every registered id under {@code kind}, in row order. */
+    public static List<String> ids(WholeKind kind) {
+        return switch (kind) {
+            case GROUP -> CarriageGroupRegistry.ids();
+            case HALF -> games.brennan.dungeontrain.train.WholeHalfRegistry.ids();
+            case ROOM -> WholeCarriageRegistry.ids();
+        };
     }
 
     private static List<Template> row(WholeKind kind) {
-        List<String> ids = kind == WholeKind.GROUP ? CarriageGroupRegistry.ids() : WholeCarriageRegistry.ids();
-        return ids.stream().map(id -> template(kind, id)).toList();
+        return ids(kind).stream().map(id -> template(kind, id)).toList();
     }
 
-    private static boolean register(WholeKind kind, String id) {
-        return kind == WholeKind.GROUP
-            ? CarriageGroupRegistry.register(new CarriageGroup(id))
-            : WholeCarriageRegistry.register(new WholeCarriage(id));
+    public static boolean register(WholeKind kind, String id) {
+        return switch (kind) {
+            case GROUP -> CarriageGroupRegistry.register(new CarriageGroup(id));
+            case HALF -> games.brennan.dungeontrain.train.WholeHalfRegistry.register(new WholeCarriage(id));
+            case ROOM -> WholeCarriageRegistry.register(new WholeCarriage(id));
+        };
     }
 
-    private static void unregister(WholeKind kind, String id) {
-        if (kind == WholeKind.GROUP) CarriageGroupRegistry.unregister(id);
-        else WholeCarriageRegistry.unregister(id);
+    public static void unregister(WholeKind kind, String id) {
+        switch (kind) {
+            case GROUP -> CarriageGroupRegistry.unregister(id);
+            case HALF -> games.brennan.dungeontrain.train.WholeHalfRegistry.unregister(id);
+            case ROOM -> WholeCarriageRegistry.unregister(id);
+        }
     }
 
     private static void restampRow(ServerLevel overworld, WholeKind kind, CarriageDims dims) {

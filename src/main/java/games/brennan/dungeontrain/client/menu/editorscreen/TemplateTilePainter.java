@@ -57,6 +57,19 @@ public final class TemplateTilePainter {
      * down the wire is the one the relay actually holds. Zero means "no relay build here" and this
      * is the ordinary template path.</p>
      */
+    /** A Workbench tile: the staged snapshot's picture, else the relay's copy of the row, else initials. */
+    public static void drawStaged(GuiGraphics g, Font font, String stagedId, String name, int weight,
+                                  int x, int y, int size, float yaw, Marks marks, int relayId) {
+        g.fill(x, y, x + size, y + size, MODEL_BACKDROP);
+        boolean drawn = games.brennan.dungeontrain.client.builder.WorkbenchPreviews.draw(
+            g, stagedId, x + 1, y + 1, size - 2, size - 2, yaw, FILL);
+        if (drawn) {
+            finish(g, font, name, weight, x, y, size, marks);
+            return;
+        }
+        draw(g, font, null, name, weight, x, y, size, yaw, marks, relayId);
+    }
+
     public static void draw(GuiGraphics g, Font font, TemplateArt art, String name, int weight,
                             int x, int y, int size, float yaw, Marks marks, int relayId) {
         boolean drawn = false;
@@ -75,6 +88,11 @@ public final class TemplateTilePainter {
             g.drawString(font, initials, x + (size - font.width(initials)) / 2,
                 y + (size - font.lineHeight) / 2, 0xFFB0B8C0, false);
         }
+        finish(g, font, name, weight, x, y, size, marks);
+    }
+
+    /** The dims, badges and border every tile wears over its picture. */
+    private static void finish(GuiGraphics g, Font font, String name, int weight, int x, int y, int size, Marks marks) {
         // A ghost is dimmed whether or not it is hovered — the fade IS what says it was filtered
         // out — and the ordinary idle dim is skipped under it rather than stacked, which would take
         // it well past the 70% it is meant to read at.

@@ -43,7 +43,13 @@ public enum BuilderMode {
      * The Lost City / WWOO buildings — the editor's BUILDINGS category. Editor-only: there is no builder
      * world for a building, so the builder-world flow shows it disabled ({@link #hasBuilderWorld}).
      */
-    BUILDINGS("buildings", 0);
+    BUILDINGS("buildings", 0),
+    /**
+     * The Workbench — the editor's staging category, where relay builds of any kind are loaded to test,
+     * edit and commit. Editor-only like Buildings, and offered only in a dev checkout: it is the
+     * reviewer's bench, not a place a player builds. Declared last so saved ordinals keep their meaning.
+     */
+    WORKBENCH("workbench", 0);
 
     /**
      * The picker's tile order — the two big tiles first, then the short "advanced" ones, Buildings last.
@@ -51,6 +57,25 @@ public enum BuilderMode {
      */
     public static final java.util.List<BuilderMode> NAV_ORDER = java.util.List.of(
         WHOLE_CARRIAGES, TRAIN_DIMENSIONS, TRAIN_OUTSIDE, INSIDE_CARRIAGE, TRACKS_TUNNELS, BUILDINGS);
+
+    /** The picker's order for this build — see {@link #navOrder(boolean)}. */
+    public static java.util.List<BuilderMode> navOrder() {
+        return navOrder(games.brennan.dungeontrain.DungeonTrain.isDevBuild());
+    }
+
+    /** The picker's order for this build: a dev checkout leads with the Workbench, a release never shows it. */
+    public static java.util.List<BuilderMode> navOrder(boolean dev) {
+        if (!dev) return NAV_ORDER;
+        java.util.List<BuilderMode> out = new java.util.ArrayList<>(NAV_ORDER.size() + 1);
+        out.add(WORKBENCH);
+        out.addAll(NAV_ORDER);
+        return java.util.List.copyOf(out);
+    }
+
+    /** Offered only in a dev checkout — see {@link #WORKBENCH}. */
+    public boolean devOnly() {
+        return this == WORKBENCH;
+    }
 
     /** The modes a Train Builder world can be in, in declaration order — its strip and its cycle button. */
     public static final java.util.List<BuilderMode> BUILDER_MODES = java.util.Arrays.stream(values())
@@ -83,7 +108,7 @@ public enum BuilderMode {
 
     /** Whether a Train Builder world can be made in this mode. Buildings are authored in the editor only. */
     public boolean hasBuilderWorld() {
-        return this != BUILDINGS;
+        return this != BUILDINGS && this != WORKBENCH;
     }
 
     /** Stable lower-case token — used in world names, logs, and (later) commands. */

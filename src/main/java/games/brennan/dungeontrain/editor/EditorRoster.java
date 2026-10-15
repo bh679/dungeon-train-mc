@@ -58,6 +58,7 @@ public final class EditorRoster {
             addPortals(out);
             addChunkFrames(out);
             addBuildings(out);
+            addWorkbench(out);
             return out;
         } finally {
             RELAY_ROWS.set(null);
@@ -170,6 +171,11 @@ public final class EditorRoster {
      * kind over time, so both are asked.</p>
      */
     private static int relayIdFor(String categoryId, String groupModelId, EditorTypeMenusPacket.Variant v) {
+        // A staged build knows its own row: it came off the relay and is in no store the keys below name.
+        if (PlotCategory.WORKBENCH.id().equals(categoryId)) {
+            return games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.find(v.modelName())
+                .map(games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild::relayId).orElse(0);
+        }
         games.brennan.dungeontrain.builder.relay.BuilderRelayBuilds rows = RELAY_ROWS.get();
         if (rows == null) return 0;
         for (String key : relayKeysFor(categoryId, groupModelId, v.modelId(), v.modelName())) {
@@ -230,6 +236,11 @@ public final class EditorRoster {
         if (!groups.isEmpty()) {
             out.add(group(PlotCategory.WHOLE_GROUP.id(), EditorWholeTypeMenus.GROUP_TYPE_NAME, "",
                 EditorWholeTypeMenus.groupRows(groups), null));
+        }
+        List<games.brennan.dungeontrain.train.WholeCarriage> halves = games.brennan.dungeontrain.train.WholeHalfRegistry.all();
+        if (!halves.isEmpty()) {
+            out.add(group(PlotCategory.WHOLE_HALF.id(), EditorWholeTypeMenus.HALF_TYPE_NAME, "",
+                EditorWholeTypeMenus.halfRows(halves), null));
         }
     }
 
@@ -306,6 +317,15 @@ public final class EditorRoster {
     }
 
     /** The buildings, one group — shipped Lost City buildings first, then new ones. */
+    /** The Workbench shelf: one group, one row per staged build, named by staged id. */
+    private static void addWorkbench(List<EditorRosterPacket.Group> out) {
+        List<games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild> staged =
+            games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.list();
+        if (staged.isEmpty()) return;
+        out.add(group(PlotCategory.WORKBENCH.id(), EditorTypeMenus.WORKBENCH_TYPE_NAME,
+            WorkbenchEditor.MODEL_ID, EditorTypeMenus.workbenchRows(staged), null));
+    }
+
     private static void addBuildings(List<EditorRosterPacket.Group> out) {
         List<String> names = games.brennan.dungeontrain.building.BuildingRegistry.names();
         if (!names.isEmpty()) {

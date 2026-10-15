@@ -25976,6 +25976,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-workbench-pool-moves",
+      "version": "0.1291.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "The Workbench, and templates that change pools",
+      "summary": "The editor gains a Workbench: a staging ground where builds of any kind can be loaded from the relay to walk through, edit and commit as whatever template they should become, without anything moving around. A new Workbench tab in the templates menu lists every build awaiting review and loads them all in one press. Templates can now also move between the carriage, whole and contents pools at their own size, and the Whole section gets a Half row.",
+      "highlights": [
+        "Load builds awaiting review into one space, test them, then commit each as the template kind you choose.",
+        "Move a template between Carriage, Whole and Contents without reshaping it; what cannot travel with it is said.",
+        "Whole halves join whole rooms and groups in the editor."
+      ],
+      "pr": 2009,
+      "date": "2026-10-14",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

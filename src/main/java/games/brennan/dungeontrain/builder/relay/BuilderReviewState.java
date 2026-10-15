@@ -71,6 +71,12 @@ public final class BuilderReviewState {
         return NONE;
     }
 
+    /** Whether a build with this state is in the review queue — what the Workbench tab lists. */
+    public static boolean isPending(String review) {
+        String state = of(review);
+        return SUBMITTED.equals(state) || RESUBMIT.equals(state);
+    }
+
     /** Waiting on a person: the blue of Minecraft's own §b, which reads as "in progress", not "wrong". */
     public static final int BORDER_SUBMITTED = 0xFF55AAFF;
     /** In the game — §a. */

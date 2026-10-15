@@ -23,6 +23,12 @@ final class BuilderReviewStateTest {
         assertEquals(BuilderReviewState.DECLINED, BuilderReviewState.of("declined"));
         assertEquals(BuilderReviewState.FEEDBACK, BuilderReviewState.of("feedback"));
         assertEquals(BuilderReviewState.RESUBMIT, BuilderReviewState.of("resubmit"));
+        // A resubmit is back in the queue; feedback is not.
+        org.junit.jupiter.api.Assertions.assertTrue(BuilderReviewState.isPending("submitted"));
+        org.junit.jupiter.api.Assertions.assertTrue(BuilderReviewState.isPending("resubmit"));
+        org.junit.jupiter.api.Assertions.assertFalse(BuilderReviewState.isPending("feedback"));
+        org.junit.jupiter.api.Assertions.assertFalse(BuilderReviewState.isPending("accepted"));
+        org.junit.jupiter.api.Assertions.assertFalse(BuilderReviewState.isPending(null));
 
         // A relay that predates the queue sends no field at all, which SharedCarriageClient reads as
         // the empty string — the commonest of these by far while the relay rolls out.

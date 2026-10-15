@@ -61,7 +61,8 @@ final class EditorFilterBarTest {
     @Test
     @DisplayName("the status cycle wraps and an unknown state restarts it")
     void statusCycle() {
-        assertEquals(BuilderReviewState.NONE, EditorFilterBar.nextStatus(BuilderProfileFilters.ALL));
+        assertEquals(BuilderProfileFilters.PENDING, EditorFilterBar.nextStatus(BuilderProfileFilters.ALL));
+        assertEquals(BuilderReviewState.NONE, EditorFilterBar.nextStatus(BuilderProfileFilters.PENDING));
         assertEquals(BuilderProfileFilters.ALL, EditorFilterBar.nextStatus(BuilderReviewState.DECLINED));
         assertEquals(BuilderProfileFilters.ALL, EditorFilterBar.nextStatus("nonsense"));
     }

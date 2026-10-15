@@ -665,16 +665,18 @@ public final class EditorTypeMenuInputHandler {
                 NewSourcePickerScreen.Category.PORTALS, first.modelId(), "");
             // Whole rooms / groups: Blank / Current. "Current" only when standing in a plot of the
             // same kind — a room id is no source for a group.
-            case WHOLE, WHOLE_GROUP -> new NewSourcePickerScreen(
-                plotCategory == PlotCategory.WHOLE_GROUP
-                    ? NewSourcePickerScreen.Category.WHOLE_GROUP : NewSourcePickerScreen.Category.WHOLE,
+            case WHOLE, WHOLE_GROUP, WHOLE_HALF -> new NewSourcePickerScreen(
+                plotCategory == PlotCategory.WHOLE_GROUP ? NewSourcePickerScreen.Category.WHOLE_GROUP
+                    : plotCategory == PlotCategory.WHOLE_HALF ? NewSourcePickerScreen.Category.WHOLE_HALF
+                    : NewSourcePickerScreen.Category.WHOLE,
                 null, standingKindId(plotCategory));
             // A new building is a bare pad or a copy of the one stood in (shipped or new).
             case BUILDINGS -> new NewSourcePickerScreen(
                 NewSourcePickerScreen.Category.BUILDINGS, first.modelId(),
                 first.modelId().equals(EditorStatusHudOverlay.modelId()) ? EditorStatusHudOverlay.modelName() : "");
             // Official buildings are never a source; no models to seed from in architecture.
-            case LOST_CITY, ARCHITECTURE -> null;
+            // The Workbench is filled from the relay, never by New.
+            case LOST_CITY, ARCHITECTURE, WORKBENCH -> null;
         };
         if (picker == null) {
             LOGGER.warn("[DungeonTrain] EditorTypeMenu New: unsupported category '{}'", category);

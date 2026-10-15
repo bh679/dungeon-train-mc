@@ -234,7 +234,8 @@ public final class EditorBrowserPane {
                 selection, standing, seconds, hovered.kind() == tileKind && hovered.index() == i,
                 firstIsGhost && i == 0);
         }
-        if (grid.isVisible(count, scroll)) {
+        // No "+" under the Workbench: its builds come from the relay, never from New.
+        if (offersNew() && grid.isVisible(count, scroll)) {
             TemplateTilePainter.drawNew(g, font, grid.xFor(count), grid.yFor(count, scroll), grid.tile(),
                 hovered.kind() == newKind);
         }
@@ -255,8 +256,18 @@ public final class EditorBrowserPane {
         float yaw = spin.advance(art == null ? key.toString() : art.spinKey(), hov, seconds);
         int weight = asSelf ? tile.selfWeight() : v.weight();
         String name = asSelf ? EditorScreenLang.text(EditorScreenLang.TILE_SELF, v.displayName()) : v.displayName();
-        TemplateTilePainter.draw(g, font, art, name, weight, x, y, size, yaw,
-            new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup(), ghost));
+        TemplateTilePainter.Marks marks = new TemplateTilePainter.Marks(selected, hov, here, dirty, !asSelf && tile.isGroup(), ghost);
+        if (cat == PlotCategory.WORKBENCH) {
+            // A staged build's picture is its own snapshot; the relay's copy stands in off this machine.
+            TemplateTilePainter.drawStaged(g, font, key.modelName(), name, weight, x, y, size, yaw, marks, tile.relayId());
+        } else {
+            TemplateTilePainter.draw(g, font, art, name, weight, x, y, size, yaw, marks);
+        }
+    }
+
+    /** Whether the grid ends in a "+" tile — every cell but the Workbench, whose builds are staged, not made. */
+    private static boolean offersNew() {
+        return EditorScreenState.category() != EditorCategoryFilter.WORKBENCH;
     }
 
     /** Whether the point is on tile {@code i}'s star rather than the picture behind it. */
@@ -319,7 +330,10 @@ public final class EditorBrowserPane {
         }
         int mainCount = tiles.size() + 1;
         int m = mainGrid.indexAt(mx, my, scroll, mainCount);
-        if (m >= 0) return m < tiles.size() ? new Hit(HitKind.TILE, m) : new Hit(HitKind.NEW, -1);
+        if (m >= 0) {
+            if (m < tiles.size()) return new Hit(HitKind.TILE, m);
+            return offersNew() ? new Hit(HitKind.NEW, -1) : Hit.NONE;
+        }
         if (subParent != null) {
             int subCount = subTiles.size() + 2;
             int s = subGrid.indexAt(mx, my, scroll, subCount);
