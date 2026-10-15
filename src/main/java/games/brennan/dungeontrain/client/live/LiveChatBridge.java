@@ -77,7 +77,9 @@ public final class LiveChatBridge {
             return;
         }
         boolean streaming = LiveStreamController.get().streaming();
-        boolean wearingTv = !streaming && TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD));
+        // A Live Eye waiting on a takeover works as a TV: its wearer reads the room, and sees the vote.
+        boolean wearingTv = !streaming && (TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD))
+            || LiveStreamController.get().watchingWithEye());
         boolean setting = LiveFeedClientConfig.liveChat();
         boolean kid = ClientDisplayConfig.isKidMode();
         // A worn TV keeps the status fresh even with the pinned viewer hidden; the poll also counts
@@ -106,6 +108,13 @@ public final class LiveChatBridge {
         if (!connected) return;
         String content = LiveChatRules.outbound(event.getMessage());
         if (content == null) return;
+        // A takeover vote stays hidden until the result: not in vanilla chat either (LiveTakeoverChat).
+        String vote = LiveTakeoverChat.voteOpen() ? LiveTakeoverChat.voteOf(content) : null;
+        if (vote != null) {
+            event.setCanceled(true);
+            LiveTakeoverChat.vote(vote);
+            return;
+        }
         long now = System.currentTimeMillis();
         if (now - lastSendMs < SEND_GAP_MS) return;
         lastSendMs = now;
@@ -132,6 +141,7 @@ public final class LiveChatBridge {
 
     private static void disconnect() {
         connected = false;
+        LiveTakeoverChat.reset();
         cursor = -1;
         signatures.clear();
         ChatReactionTracker.forgetLive();
@@ -174,6 +184,10 @@ public final class LiveChatBridge {
         String myName = mc.getUser() != null ? mc.getUser().getName() : "";
         boolean streaming = LiveStreamController.get().streaming();
         for (ChatLine line : page.lines()) {
+            if (line.poll() != null) {
+                chat.addMessage(LiveTakeoverChat.onPollLine(line.poll(), me), signatures.sign(line.seq()), tag);
+                continue;
+            }
             if (LiveChatRules.shouldShow(line, me, here, names)) {
                 boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
                 Component shown = ChatReactionTracker.printLive(line.seq(), LiveChatRules.line(line), mine, line.content());
@@ -193,7 +207,9 @@ public final class LiveChatBridge {
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
     }
 
-    private static String base(boolean streaming) {
-        return streaming ? DungeonTrain.relayBaseUrl() : LiveFeedClient.viewerBase(LiveStatusPoller.channel());
+    static String base(boolean streaming) {
+        // A Live Eye waiting on a takeover claimed on the streamer's relay: its vote is in that room.
+        boolean ownRelay = streaming || LiveStreamController.get().watchingWithEye();
+        return ownRelay ? DungeonTrain.relayBaseUrl() : LiveFeedClient.viewerBase(LiveStatusPoller.channel());
     }
 }

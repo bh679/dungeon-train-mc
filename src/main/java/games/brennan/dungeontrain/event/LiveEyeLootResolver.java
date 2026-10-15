@@ -130,7 +130,7 @@ public final class LiveEyeLootResolver {
     }
 
     /** Vista's TV — a required dependency, so the lookup only misses in a broken install. */
-    private static ItemStack tv() {
+    static ItemStack tv() {
         var item = BuiltInRegistries.ITEM.get(TV_ID);
         return item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
     }

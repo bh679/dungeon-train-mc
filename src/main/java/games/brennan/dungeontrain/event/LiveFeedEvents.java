@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveLifePacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
+import games.brennan.dungeontrain.net.LiveTakeoverPacket;
 import games.brennan.dungeontrain.player.LifeKey;
 import games.brennan.dungeontrain.player.LiveWatchTally;
 import games.brennan.dungeontrain.player.LiveStreamers;
@@ -42,15 +43,18 @@ import java.util.UUID;
  * Server half of the Live Feed: the broadcast camcorder.
  *
  * <p>Wearing the camcorder is the only way to become the streamer. The server sees the HEAD slot
- * change, remembers the wearer in {@link LiveStreamers}, burns the camcorder off any previous
- * streamer on this server, and sends the wearer {@link LiveStreamPacket.Action#START}. The wearer's
- * client then claims the channel from the relay — which is where cross-world takeover is decided;
- * two single-player worlds each have a "streamer", and the relay's last claim wins.</p>
+ * change, remembers the wearer as pending in {@link LiveStreamers} and sends them
+ * {@link LiveStreamPacket.Action#START}. Their client claims the channel from the relay — which is
+ * where takeover is decided, across worlds: a streamer's first ten minutes are protected (the wearer
+ * may ask the audience to vote), and after that the wearer is still asked before taking it. Once the
+ * relay gives them the channel, the client says so ({@link LiveTakeoverPacket.Result#LIVE}) and they
+ * become the streamer; the previous streamer on this server is told, and their Live Eye becomes a TV.</p>
  *
  * <p>The camcorder stays on while the stream runs and burns away the moment it comes off — taken
- * off, swapped for a helmet, replaced by another streamer, death or a relay cut-off
- * ({@link #burnsOn(Exit)}). Only a stream that never started hands it back, and a logout leaves it
- * on so logging back in resumes.</p>
+ * off, swapped for a helmet, death ({@link #burnsOn(Exit)}). Losing the channel to another streamer
+ * ({@link Exit#REPLACED}, {@link Exit#CUT_OFF}), losing a takeover vote or choosing to stay a viewer
+ * turns it into a TV instead, so its wearer keeps watching. Only a stream that never started hands it
+ * back, and a logout leaves it on so logging back in resumes.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LiveFeedEvents {
@@ -72,7 +76,12 @@ public final class LiveFeedEvents {
      * is on the consent card and in Options, and the client says so in chat.
      */
     static boolean burnsOn(Exit exit) {
-        return exit != Exit.FAILED && exit != Exit.LEFT;
+        return exit != Exit.FAILED && exit != Exit.LEFT && !becomesTv(exit);
+    }
+
+    /** Another streamer took the channel: the Live Eye becomes a TV, so its wearer keeps watching. */
+    static boolean becomesTv(Exit exit) {
+        return exit == Exit.REPLACED || exit == Exit.CUT_OFF;
     }
 
     /** Every server level learns that the feed id lives at the block-less live location. */
@@ -90,10 +99,7 @@ public final class LiveFeedEvents {
         if (isOn && !wasOn) {
             // Read before the stream starts: once it does, this player is the one live.
             boolean fromWatching = TvItems.isTv(event.getFrom()) && ServerLiveStatus.isSomeoneElseLive(player.getServer(), player);
-            startStreaming(player);
-            if (fromWatching && player.getServer() != null && player.getUUID().equals(LiveStreamers.get(player.getServer()))) {
-                LiveTvAdvancements.onTookOverFromTv(player);
-            }
+            startStreaming(player, fromWatching);
         } else if (wasOn && !isOn) {
             // Taken off by the player — or just burned/returned by us, in which case the streamer
             // was already cleared and this is a no-op.
@@ -106,7 +112,7 @@ public final class LiveFeedEvents {
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         sendLife(player);
-        if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) startStreaming(player);
+        if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) startStreaming(player, false);
     }
 
     /** A respawn is a new life: tell the client its id for the one-life Live Feed boards. */
@@ -177,10 +183,11 @@ public final class LiveFeedEvents {
         return player.equals(current);
     }
 
-    private static void startStreaming(ServerPlayer player) {
+    private static void startStreaming(ServerPlayer player, boolean fromWatching) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         if (alreadyStreaming(player.getUUID(), LiveStreamers.get(server))) return;
+        if (LiveStreamers.isPending(server, player.getUUID())) return;
         if (streamBlocked(player)) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY));
             burn(player, Exit.FREE_PLAY);
@@ -201,21 +208,44 @@ public final class LiveFeedEvents {
             player.sendSystemMessage(needsInternetLine());
             return;
         }
+        // Pending until the relay gives them the channel (onTakeoverResult LIVE): someone else may hold it.
+        LiveStreamers.addPending(server, player.getUUID(), fromWatching);
+        String eyeId = LiveEyeId.ensure(player.getItemBySlot(EquipmentSlot.HEAD));
+        PacketDistributor.sendToPlayer(player, LiveStreamPacket.start(eyeId));
+    }
+
+    /**
+     * The client heard back from the relay about its claim ({@link LiveTakeoverPacket}). Only a pending
+     * wearer is listened to: anyone else's packet is stale or forged.
+     */
+    public static void onTakeoverResult(ServerPlayer player, LiveTakeoverPacket.Result result) {
+        MinecraftServer server = player.getServer();
+        if (server == null || !isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) return;
+        Boolean fromWatching = LiveStreamers.takePending(server, player.getUUID());
+        if (fromWatching == null) return;
+        switch (result) {
+            case LIVE -> goLive(server, player, fromWatching);
+            case REJECTED -> toTv(player, "chat.dungeontrain.live.takeover_rejected_tv");
+            case STAYED_VIEWER -> toTv(player, "chat.dungeontrain.live.stayed_viewer_tv");
+        }
+    }
+
+    /** {@code player} holds the channel now: they are this server's streamer, and the previous one's Live Eye becomes a TV. */
+    private static void goLive(MinecraftServer server, ServerPlayer player, boolean fromWatching) {
         UUID previous = LiveStreamers.setStreamer(server, player.getUUID());
         if (previous != null && !previous.equals(player.getUUID())) {
             ServerPlayer old = server.getPlayerList().getPlayer(previous);
             if (old != null) {
-                burn(old, Exit.REPLACED);
+                toTv(old, burnLineKey(Exit.REPLACED));
                 PacketDistributor.sendToPlayer(old, LiveStreamPacket.stop(LiveStreamPacket.Action.STOP_REPLACED,
                     player.getGameProfile().getName()));
             }
         }
         LiveTvAdvancements.onStreamStarted(player);
+        if (fromWatching) LiveTvAdvancements.onTookOverFromTv(player);
         ServerLevel level = player.serverLevel();
         level.playSound(null, player.blockPosition(), SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.5f, 1.6f);
         // No chat line here: the client says "You are now live" once the relay has a viewer count.
-        String eyeId = LiveEyeId.ensure(player.getItemBySlot(EquipmentSlot.HEAD));
-        PacketDistributor.sendToPlayer(player, LiveStreamPacket.start(eyeId));
     }
 
     /**
@@ -250,8 +280,13 @@ public final class LiveFeedEvents {
     private static boolean endStream(ServerPlayer player, Exit exit) {
         MinecraftServer server = player.getServer();
         if (server == null) return false;
-        if (!LiveStreamers.clearIf(server, player.getUUID())) return false;
-        if (burnsOn(exit)) {
+        // A pending wearer (still claiming, or watching while deciding on a takeover) ends the same way:
+        // taking the Live Eye off burns it.
+        boolean held = LiveStreamers.clearIf(server, player.getUUID());
+        if (!held && LiveStreamers.takePending(server, player.getUUID()) == null) return false;
+        if (becomesTv(exit)) {
+            toTv(player, burnLineKey(exit));
+        } else if (burnsOn(exit)) {
             burn(player, exit);
         } else if (exit == Exit.FAILED) {
             handBack(player);
@@ -288,11 +323,47 @@ public final class LiveFeedEvents {
         player.sendSystemMessage(why == Exit.BANNED ? LiveModeration.bannedBurnLine(player) : Component.translatable(burnLineKey(why)));
     }
 
+    /**
+     * The Live Eye becomes a switched-on Vista TV where it is — the head slot, or the cursor or inventory
+     * slot it was just pulled to — so its wearer keeps watching. A puff of smoke, no flame; {@code lineKey}
+     * says why. Without Vista's TV it burns instead. Callers clear the player from {@link LiveStreamers}
+     * first, so the slot change this causes is ignored.
+     */
+    private static void toTv(ServerPlayer player, String lineKey) {
+        ItemStack tv = LiveEyeLootResolver.tv();
+        if (tv.isEmpty()) {
+            burn(player, Exit.REPLACED);
+            return;
+        }
+        tv = TvItems.withOn(tv, true);
+        if (isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) {
+            player.setItemSlot(EquipmentSlot.HEAD, tv);
+        } else if (isCamcorder(player.containerMenu.getCarried())) {
+            player.containerMenu.setCarried(tv);
+        } else {
+            int slot = findCamcorder(player);
+            if (slot < 0) return;
+            player.getInventory().setItem(slot, tv);
+        }
+        ServerLevel level = player.serverLevel();
+        level.sendParticles(ParticleTypes.SMOKE, player.getX(), player.getEyeY() + 0.4, player.getZ(), 8, 0.2, 0.1, 0.2, 0.01);
+        level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.5f, 1.4f);
+        player.sendSystemMessage(Component.translatable(lineKey));
+    }
+
+    private static int findCamcorder(ServerPlayer player) {
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            if (isCamcorder(inv.getItem(i))) return i;
+        }
+        return -1;
+    }
+
     /** Taken off, handed to the next streamer, or anything else (death, Free Play, Livestreaming off). */
     static String burnLineKey(Exit why) {
         return switch (why) {
             case REMOVED -> "chat.dungeontrain.live.burns_removed";
-            case REPLACED, CUT_OFF -> "chat.dungeontrain.live.burns_next_streamer";
+            case REPLACED, CUT_OFF -> "chat.dungeontrain.live.becomes_tv_next_streamer";
             case MODERATED -> "chat.dungeontrain.live.burns_moderated";
             case BANNED -> "chat.dungeontrain.live.burns_banned";
             default -> "chat.dungeontrain.live.headpiece_burns";

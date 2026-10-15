@@ -119,6 +119,12 @@ public final class LiveChatRules {
             .append(Component.literal(clean(line.content(), MAX_CONTENT)).withStyle(ChatFormatting.WHITE));
     }
 
+    /** {@code [Live] text} — a line from the room itself (a takeover vote), no name or icon. */
+    public static MutableComponent systemLine(Component body) {
+        return Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY)
+            .append(Component.literal(" ")).append(body);
+    }
+
     /**
      * Whether a poll shows the relay's chat ring restarted (a deploy): its head seq fell below the
      * cursor. Everything the bridge remembers about seqs is then stale.

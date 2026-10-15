@@ -111,9 +111,14 @@ public final class LiveFeedClient {
      * tells the rooms apart, and {@code via} (game lines only, may be null) how its player is in the room.
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
-                           @Nullable LogRequest logRequest, @Nullable Via via) {
+                           @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll) {
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source) {
-            this(seq, ts, author, uuid, content, source, null, null);
+            this(seq, ts, author, uuid, content, source, null, null, null);
+        }
+
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, null);
         }
 
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
@@ -266,11 +271,20 @@ public final class LiveFeedClient {
         return DungeonTrain.relayBaseUrl();
     }
 
+    /**
+     * Take the channel. This mod always asks to be told who holds it first ({@code confirmFlow}: a 409
+     * the claim reads with {@link LiveTakeoverClient#parseBlocked}); {@code takeover} is the player's
+     * "Take over" past the holder's protected minutes, {@code ticket} an approved vote's pass.
+     */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
-                                                  LiveClaimInfo info, @Nullable Life life) {
+                                                  LiveClaimInfo info, @Nullable Life life,
+                                                  boolean takeover, @Nullable String ticket) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
+        body.addProperty("confirmFlow", true);
+        if (takeover) body.addProperty("takeover", true);
+        if (ticket != null && !ticket.isEmpty()) body.addProperty("ticket", ticket);
         // Which life this stream is in, for the one-life "Longest Stream" board. A death ends the
         // stream, so a session never spans two lives.
         if (life != null) {
@@ -384,7 +398,8 @@ public final class LiveFeedClient {
                     Source source = Source.parse(m.has("source") && !m.get("source").isJsonNull() ? m.get("source").getAsString() : null);
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
-                        author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via));
+                        author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
+                        LiveTakeoverClient.parsePollLine(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();
@@ -563,8 +578,15 @@ public final class LiveFeedClient {
         return HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     }
 
-    private static CompletableFuture<Result> post(String path, JsonObject body) {
+    static CompletableFuture<Result> post(String path, JsonObject body) {
         return post(base(), path, body);
+    }
+
+    /** GET {@code path} on the streamer's relay. */
+    static CompletableFuture<Result> get(String path) {
+        HttpRequest req = HttpRequest.newBuilder(URI.create(base() + path))
+            .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
+        return send(RELAY, req);
     }
 
     private static CompletableFuture<Result> post(String base, String path, JsonObject body) {
