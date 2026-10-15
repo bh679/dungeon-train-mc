@@ -626,6 +626,8 @@
   "chat.dungeontrain.live.unreachable": "Walang brodkast: hindi maabot ang feed.",
   "chat.dungeontrain.live.disabled": "Naka-off ang livestreaming, i-on ito sa %s",
   "chat.dungeontrain.live.disabled.path": "Mga opsyon / Dungeon Train / Pangkalahatan / Livestreaming",
+  "chat.dungeontrain.live.needs_internet": "Kailangan ng Camcorder ng Broadcast ang internet, %s",
+  "chat.dungeontrain.live.needs_internet.link": "i-on ito",
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Nakakonekta ang live chat sa Discord. I-off ito sa %s",
   "chat.dungeontrain.live_chat.path": "Options / Dungeon Train / Stream / Live chat",

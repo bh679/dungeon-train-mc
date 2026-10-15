@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
+import games.brennan.dungeontrain.editor.workbench.WorkbenchStagedPlot;
 import games.brennan.dungeontrain.net.PortalRoomSkyPacket;
 import games.brennan.dungeontrain.portal.PlayerSkyRegions;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
@@ -68,17 +69,31 @@ public final class EditorPlotSky {
      * server-wide.
      */
     private static PortalRoomSkyPacket regionFor(ServerPlayer player, CarriageDims dims) {
+        BlockPos origin;
+        Vec3i size;
+        PortalRoomSettings settings;
         String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
-        if (name == null) return null;
+        if (name != null) {
+            origin = PortalRoomEditor.plotOrigin(name, dims);
+            if (origin == null) return null;
+            size = PortalRoomEditor.plotSize(name, dims);
+            settings = PortalRoomSettings.of(name);
+        } else {
+            // A room staged in the Workbench is lit by its own settings, as it would be in Dimensions.
+            WorkbenchStagedPlot staged = WorkbenchEditor.plotContaining(player.serverLevel(), player.blockPosition())
+                .flatMap(id -> WorkbenchStagedPlot.of(player.serverLevel(), id))
+                .filter(WorkbenchStagedPlot::isRoom)
+                .orElse(null);
+            if (staged == null) return null;
+            origin = staged.origin();
+            size = staged.size();
+            settings = WorkbenchStagedPlot.roomSettings(staged.stagedId());
+        }
 
         // The same two gates the live sender applies, so a room that is dark in the world is dark on
         // its plot and the server-wide off switch means off everywhere.
-        PortalRoomSky sky = PortalRoomSettings.of(name).sky();
+        PortalRoomSky sky = settings.sky();
         if (!sky.lights() || !DungeonTrainConfig.isPortalRoomDaylight()) return null;
-
-        BlockPos origin = PortalRoomEditor.plotOrigin(name, dims);
-        if (origin == null) return null;
-        Vec3i size = PortalRoomEditor.plotSize(name, dims);
 
         // The room's own extent, inclusive — the plot's outline cage and the margin around it are
         // not the room, and lighting them would light the gap an author walks between plots.

@@ -58,4 +58,13 @@ final class LiveFeedEventsTest {
         assertEquals("chat.dungeontrain.live.burns_moderated", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.MODERATED));
         assertEquals("chat.dungeontrain.live.burns_banned", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.BANNED));
     }
+
+    @Test
+    @DisplayName("internet off on the consent card refuses the Live Eye; an unsynced or granted player goes on")
+    void internetGate() {
+        assertTrue(LiveFeedEvents.needsInternet(true, false));
+        assertFalse(LiveFeedEvents.needsInternet(true, true));
+        // Login sync not landed yet: let it start, the client checks its own consent.
+        assertFalse(LiveFeedEvents.needsInternet(false, false));
+    }
 }

@@ -264,6 +264,8 @@
       "chat.dungeontrain.live.unreachable",
       "chat.dungeontrain.live.disabled",
       "chat.dungeontrain.live.disabled.path",
+      "chat.dungeontrain.live.needs_internet",
+      "chat.dungeontrain.live.needs_internet.link",
       "chat.dungeontrain.live_chat.prefix",
       "chat.dungeontrain.live_chat.connected",
       "chat.dungeontrain.live_chat.path",

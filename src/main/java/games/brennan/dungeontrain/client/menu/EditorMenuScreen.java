@@ -87,6 +87,11 @@ public final class EditorMenuScreen implements MenuScreen {
         boolean isParts()   { return category == PlotCategory.PARTS; }
         boolean isChunkFrames() { return category == PlotCategory.CHUNK_FRAMES; }
         boolean isPortals() { return category == PlotCategory.PORTALS; }
+        /** A dimensional carriage room staged in the Workbench — the status carries its box only then. */
+        boolean isStagedRoom() {
+            return category == PlotCategory.WORKBENCH
+                && EditorStatusHudOverlay.roomLength() != games.brennan.dungeontrain.net.EditorStatusPacket.NO_SIZE;
+        }
     }
 
     @Override public List<CommandMenuEntry> entries() {
@@ -284,7 +289,8 @@ public final class EditorMenuScreen implements MenuScreen {
             weightTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(), ctx.weight());
         if (weightRow != null) out.add(weightRow);
 
-        if (ctx.isPortals()) out.addAll(portalRows());
+        // A staged room gets the same block, sent to the same stood-in root the server routes to it.
+        if (ctx.isPortals() || ctx.isStagedRoom()) out.addAll(portalRows());
 
         // Spawn gate — gated on exactly the same condition as Weight (weighted, addressable
         // models). When the model is linked to a Stage the editable cells are hidden and only the

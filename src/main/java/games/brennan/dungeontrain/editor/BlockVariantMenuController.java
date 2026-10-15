@@ -296,8 +296,12 @@ public final class BlockVariantMenuController {
         if (room == null) {
             return BlockVariantPlot.resolveByKey(level, variantId, dims);
         }
-        String roomKey = ContainerContentsStore.trackPlotKey(
-            games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, room);
+        // A staged room's own plot is its Workbench plot, not a Dimensions one.
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(room);
+        String roomKey = stagedId != null
+            ? games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.keyFor(stagedId)
+            : ContainerContentsStore.trackPlotKey(
+                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, room);
         BlockVariantPlot roomPlot = BlockVariantPlot.resolveByKey(level, roomKey, dims);
         if (roomPlot == null) return null;
         return copiesPlotFor(room,

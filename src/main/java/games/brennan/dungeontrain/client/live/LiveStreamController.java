@@ -15,6 +15,7 @@ import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
+import games.brennan.dungeontrain.event.LiveFeedEvents;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -195,9 +196,16 @@ public final class LiveStreamController {
         LOGGER.info("[DungeonTrain] live stream requested by the server (ffmpeg {})", FfmpegSupport.state());
         if (state != State.IDLE) stop(null);
         // Livestreaming is a line on the first-launch consent card: the master "use the internet?"
-        // switch and the Livestreaming switch both have to be on. Either off → the server hands the
-        // headpiece back (FAILED is the no-burn exit) and nothing is sent.
-        if (!LiveFeedClientConfig.streamingEnabled() || !DiscordPresenceClientConfig.isGranted()) {
+        // switch and the Livestreaming switch both have to be on. Internet off → the headpiece goes
+        // back in the inventory (FAILED, the no-burn exit) and chat links to the card; the server
+        // usually refused it already, this covers a login before the consent sync landed.
+        // Livestreaming off → DISABLED, which burns it.
+        if (!DiscordPresenceClientConfig.isGranted()) {
+            say(LiveFeedEvents.needsInternetLine());
+            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+            return;
+        }
+        if (!LiveFeedClientConfig.streamingEnabled()) {
             say(Component.translatable("chat.dungeontrain.live.disabled",
                     LiveOptionsCommand.pathLink("chat.dungeontrain.live.disabled.path"))
                 .withStyle(ChatFormatting.GRAY));

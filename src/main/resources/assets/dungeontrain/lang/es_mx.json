@@ -655,6 +655,8 @@
   "chat.dungeontrain.live.unreachable": "Sin transmisión: no se pudo alcanzar la señal.",
   "chat.dungeontrain.live.disabled": "La transmisión en vivo está desactivada; actívala en %s",
   "chat.dungeontrain.live.disabled.path": "Opciones / Dungeon Train / General / Transmisión en vivo",
+  "chat.dungeontrain.live.needs_internet": "La videocámara de transmisión necesita internet, %s",
+  "chat.dungeontrain.live.needs_internet.link": "actívalo",
   "chat.dungeontrain.live_chat.prefix": "[En vivo]",
   "chat.dungeontrain.live_chat.connected": "Chat en vivo conectado a Discord. Desactívalo en %s",
   "chat.dungeontrain.live_chat.path": "Opciones / Dungeon Train / Stream / Chat en vivo",

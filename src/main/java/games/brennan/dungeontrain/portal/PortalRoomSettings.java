@@ -242,6 +242,11 @@ public record PortalRoomSettings(PortalRoomMode mode, PortalRoomCopies copies,
 
     /** The settings a named room variant is authored with. */
     public static PortalRoomSettings of(String roomName) {
+        // A room staged in the Workbench carries its settings in its own sidecar document.
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(roomName);
+        if (stagedId != null) {
+            return games.brennan.dungeontrain.editor.workbench.WorkbenchStagedPlot.roomSettings(stagedId);
+        }
         return parse(TrackVariantWeights.modeFor(TrackKind.PORTAL_ROOM, roomName));
     }
 

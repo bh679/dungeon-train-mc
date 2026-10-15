@@ -35,6 +35,7 @@ import java.util.stream.Stream;
  * workbench/&lt;stagedId&gt;/meta.json      WorkbenchStagedBuild minus the two documents below
  * workbench/&lt;stagedId&gt;/sidecars.json  the relay's sidecar document, verbatim
  * workbench/&lt;stagedId&gt;/prefabs.json   the loot prefabs it carried, id → document
+ * workbench/&lt;stagedId&gt;/containers.json the chest store while staged, folded into sidecars.json on commit
  * </pre>
  *
  * <p>Nothing here is a template. No registry scans this folder, no weights file names it, the
@@ -57,6 +58,7 @@ public final class WorkbenchStagingStore {
     static final String META = "meta.json";
     static final String SIDECARS = "sidecars.json";
     static final String PREFABS = "prefabs.json";
+    static final String CONTAINERS = "containers.json";
 
     private static final Map<String, WorkbenchStagedBuild> CACHE = new LinkedHashMap<>();
     private static boolean scanned = false;
@@ -137,6 +139,30 @@ public final class WorkbenchStagingStore {
             Files.writeString(folder.resolve(META), GSON.toJson(metaJson(resized)), StandardCharsets.UTF_8);
             CACHE.put(stagedId.toLowerCase(Locale.ROOT), resized);
         }
+    }
+
+    /**
+     * Replace only the sidecar document of {@code stagedId} — what an edit made with a type's own
+     * tools in the Workbench (a variant pool, a room setting) is written back through, so a later
+     * commit carries it.
+     */
+    public static synchronized void replaceSidecars(String stagedId, String sidecars) throws IOException {
+        WorkbenchStagedBuild build = find(stagedId).orElseThrow(
+                () -> new IOException("No staged build '" + stagedId + "'"));
+        Path folder = folderFor(stagedId);
+        Files.createDirectories(folder);
+        String doc = sidecars == null ? "" : sidecars;
+        Files.writeString(folder.resolve(SIDECARS), doc, StandardCharsets.UTF_8);
+        CACHE.put(stagedId.toLowerCase(Locale.ROOT), build.withSidecars(doc));
+    }
+
+    /**
+     * Where {@code stagedId}'s container store lives while it is staged — beside its other files, so
+     * the chest menu edits it like any plot's and {@code WorkbenchSidecarFold} folds it back into
+     * the document before a commit.
+     */
+    public static Path containersFile(String stagedId) {
+        return folderFor(stagedId).resolve(CONTAINERS);
     }
 
     /** The block snapshot tag of {@code stagedId}, or empty when the folder or file is missing. */
