@@ -26083,6 +26083,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-chat-source-icons",
+      "version": "0.1295.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live chat shows where each message came from",
+      "summary": "Live chat messages now start with a small icon showing where they were typed: an eye for the streamer, a TV for viewers watching through one, a globe for the website, and the Discord or Twitch logo. The same icons show in-game, on the website and in the Discord stream chat.",
+      "highlights": [
+        "Tell the streamer apart from TV viewers at a glance",
+        "Icons match across in-game chat, the website and Discord"
+      ],
+      "pr": 2015,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
