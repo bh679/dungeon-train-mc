@@ -268,9 +268,20 @@ public final class LiveFeedClient {
 
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life) {
+        return claim(uuid, name, eyeId, info, life, null);
+    }
+
+    /**
+     * {@code takeoverTicket} (nullable): this player won a dead streamer's takeover
+     * ({@link #acceptTakeover}), which carries the claim past the relay's tenure check, once.
+     */
+    public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
+                                                  LiveClaimInfo info, @Nullable Life life,
+                                                  @Nullable String takeoverTicket) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
+        if (takeoverTicket != null && !takeoverTicket.isEmpty()) body.addProperty("takeoverTicket", takeoverTicket);
         // Which life this stream is in, for the one-life "Longest Stream" board. A death ends the
         // stream, so a session never spans two lives.
         if (life != null) {
@@ -489,6 +500,56 @@ public final class LiveFeedClient {
         body.addProperty("token", token);
         if (reason != null && !reason.isEmpty()) body.addProperty("reason", reason);
         return post("/live/stop", body);
+    }
+
+    // ---- death takeover --------------------------------------------------------------------------
+
+    /**
+     * The streamer died (they may stream on through the death screens): the relay offers the stream
+     * to every in-game viewer, and the first to accept takes it over.
+     */
+    public static CompletableFuture<Result> died(String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        return post("/live/died", body);
+    }
+
+    /** A dead streamer's stream on offer: {@code id} to accept it, {@code from} who died, open {@code untilMs} more. */
+    public record Takeover(String id, String from, long untilMs) {}
+
+    /** The {@code takeover} offer in a status body, or null (none, or from an older relay). */
+    @Nullable
+    public static Takeover parseTakeover(Result r) {
+        if (!r.ok() || !r.body().has("takeover") || !r.body().get("takeover").isJsonObject()) return null;
+        JsonObject t = r.body().getAsJsonObject("takeover");
+        String id = str(t, "id");
+        if (!id.matches("[0-9a-f]{8,64}")) return null;
+        long until;
+        try {
+            until = t.has("untilMs") ? t.get("untilMs").getAsLong() : 0L;
+        } catch (RuntimeException e) {
+            return null;
+        }
+        if (until <= 0) return null;
+        return new Takeover(id, LiveChatRules.clean(str(t, "from"), 32), until);
+    }
+
+    /** First to accept wins: 200 {@code {ticket}}; 409 {@code taken} / {@code gone} for everyone after. */
+    public static CompletableFuture<Result> acceptTakeover(Channel channel, String id, UUID uuid, String name) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        return post(viewerBase(channel), "/live/takeover/accept", body);
+    }
+
+    /** The winner's game server, before it swaps their TV for a Live Eye: is {@code ticket} theirs and unspent? */
+    public static CompletableFuture<Boolean> verifyTakeover(String ticket, UUID uuid) {
+        if (!ticket.matches("[0-9a-f]{16,128}")) return CompletableFuture.completedFuture(false);
+        HttpRequest req = HttpRequest.newBuilder(URI.create(base() + "/live/takeover/verify?ticket=" + ticket + "&uuid=" + uuid))
+            .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
+        return send(RELAY, req).handle((r, t) -> r != null && r.ok()
+            && r.body().has("valid") && r.body().get("valid").getAsBoolean());
     }
 
     /** Which Live Feed channel a viewer watches: the public one, or the dev one Free Play TVs show. */

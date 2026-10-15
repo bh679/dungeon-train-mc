@@ -30,6 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class LiveStatusPoller {
 
     private static final long INTERVAL_MS = 15_000;
+    /** While a dead streamer's stream is on offer ({@link LiveTakeoverOffer}), so the race is seen quickly. */
+    private static final long OFFER_INTERVAL_MS = 3_000;
     private static final long INTEREST_MS = 15_000;
 
     private static volatile Status current = Status.OFFLINE;
@@ -59,15 +61,16 @@ public final class LiveStatusPoller {
             freePlay = fp;
             reset();
         }
-        if (now - lastPollMs >= INTERVAL_MS && inFlight.compareAndSet(false, true)) {
+        long interval = LiveTakeoverOffer.open() ? OFFER_INTERVAL_MS : INTERVAL_MS;
+        if (now - lastPollMs >= interval && inFlight.compareAndSet(false, true)) {
             lastPollMs = now;
             UUID me = mc.getUser() != null ? mc.getUser().getProfileId() : null;
             CompletableFuture<Status> devLive = fp
-                ? poll(null, Channel.DEV)
+                ? poll(null, Channel.DEV, false)
                 : CompletableFuture.completedFuture(Status.OFFLINE);
             devLive.thenCompose(dev -> {
                     Channel ch = LiveFeedClient.viewerChannel(fp, dev.live());
-                    return poll(me, ch).thenApply(status -> new Polled(status, ch));
+                    return poll(me, ch, true).thenApply(status -> new Polled(status, ch));
                 })
                 .whenComplete((polled, t) -> {
                     // A reply begun before Free Play flipped must not land on the other side.
@@ -103,13 +106,23 @@ public final class LiveStatusPoller {
         });
     }
 
-    /** One status poll; a failed request reads as offline. */
-    private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel) {
+    /**
+     * One status poll; a failed request reads as offline. {@code offers}: this is the channel the
+     * world's TVs show, so a dead streamer's takeover offer in it goes to {@link LiveTakeoverOffer}.
+     */
+    private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel, boolean offers) {
         // Watching counts toward the "Longest Viewer" boards only behind the master internet consent.
         LiveFeedClient.Life ranked = DiscordPresenceClientConfig.isGranted()
             ? new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION) : null;
         return LiveFeedClient.status(viewer, channel, ranked)
-            .handle((r, t) -> r == null ? Status.OFFLINE : LiveFeedClient.parseStatus(r));
+            .handle((r, t) -> {
+                if (r == null) return Status.OFFLINE;
+                if (offers) {
+                    LiveFeedClient.Takeover offer = LiveFeedClient.parseTakeover(r);
+                    Minecraft.getInstance().execute(() -> LiveTakeoverOffer.polled(offer, channel));
+                }
+                return LiveFeedClient.parseStatus(r);
+            });
     }
 
     public static Status current() {

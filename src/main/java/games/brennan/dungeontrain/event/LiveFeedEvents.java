@@ -236,6 +236,30 @@ public final class LiveFeedEvents {
             .withStyle(ChatFormatting.GRAY);
     }
 
+    /** Players whose takeover ticket is being checked with the relay, so one cannot be sent twice at once. */
+    private static final java.util.Set<UUID> TAKEOVER_CHECKS = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * A viewer won a dead streamer's takeover (relay ticket, {@code net/LiveTakeoverPacket}): once the
+     * relay vouches for the ticket, the TV on their head becomes a Live Eye — consumed, the way a
+     * helmet swap burns a camcorder — and {@link #onEquipmentChange} starts their stream from there.
+     * Nothing happens without a worn TV, so a modified client cannot mint Live Eyes.
+     */
+    public static void onTakeoverWon(ServerPlayer player, String ticket) {
+        MinecraftServer server = player.getServer();
+        if (server == null || !TvItems.isTv(player.getItemBySlot(EquipmentSlot.HEAD))) return;
+        UUID uuid = player.getUUID();
+        if (!TAKEOVER_CHECKS.add(uuid)) return;
+        games.brennan.dungeontrain.net.relay.LiveFeedClient.verifyTakeover(ticket, uuid).whenComplete((valid, err) ->
+            server.execute(() -> {
+                TAKEOVER_CHECKS.remove(uuid);
+                ServerPlayer p = server.getPlayerList().getPlayer(uuid);
+                if (p == null || !Boolean.TRUE.equals(valid)) return;
+                if (!p.isAlive() || !TvItems.isTv(p.getItemBySlot(EquipmentSlot.HEAD))) return;
+                p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(ModItems.LIVE_HEADPIECE.get()));
+            }));
+    }
+
     /**
      * The text-filter ladder struck {@code player} out: the Live Eye burns and the stream ends
      * ({@link Exit#MODERATED}), or they are banned from it outright ({@link Exit#BANNED}). Either way
