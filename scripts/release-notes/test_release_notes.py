@@ -201,6 +201,29 @@ def test_append_creates_file_when_missing() -> None:
     assert len(read_changelog(ws)["entries"]) == 1
 
 
+def test_append_rejects_non_positive_pr() -> None:
+    # The schema requires pr >= 1; "--pr 0" once slipped into the ledger and broke the schema test.
+    for bad in ("0", "-5"):
+        ws = make_workspace()
+        write_gradle(ws, "0.290.3")
+        r = run(
+            APPEND, ws,
+            "--id", "bad-pr", "--type", "fix", "--title", "t", "--summary", "s",
+            "--no-topical-tags", "--pr", bad,
+        )
+        assert r.returncode != 0
+        assert "--pr" in r.stderr
+        assert not os.path.exists(changelog_path(ws))
+
+
+def test_make_entry_rejects_non_positive_pr() -> None:
+    try:
+        changelog_io.make_entry("x", "1.0.0", "fix", "t", "s", "2026-01-01", pr=0)
+    except ValueError:
+        return
+    raise AssertionError("make_entry accepted pr=0")
+
+
 def test_append_type_derived_tag_always_present() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")

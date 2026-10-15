@@ -259,6 +259,8 @@ def make_entry(
     addresses: list[str] | None = None,
 ) -> dict:
     """Build a normalized, unreleased entry. Keys are inserted in display order."""
+    if pr is not None and pr < 1:
+        raise ValueError(f"pr must be a real PR number (>= 1), got {pr}")
     entry: dict = {
         "id": entry_id,
         "version": version,

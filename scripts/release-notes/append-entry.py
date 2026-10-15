@@ -50,6 +50,19 @@ import sys
 import changelog_io
 
 
+def positive_int(value: str) -> int:
+    """argparse type for --pr: the schema requires pr >= 1, so 0 / negatives never reach the ledger."""
+    try:
+        n = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{value}' is not an integer")
+    if n < 1:
+        raise argparse.ArgumentTypeError(
+            f"must be a real PR number (>= 1), got {n}; omit --pr if the PR number isn't known yet"
+        )
+    return n
+
+
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Append a changelog ledger entry.")
     p.add_argument(
@@ -93,7 +106,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="A player-reported issue this change fixes (repeatable). One of: "
         + ", ".join(changelog_io.VALID_ISSUES) + ".",
     )
-    p.add_argument("--pr", type=int, default=None, help="PR number (optional).")
+    p.add_argument("--pr", type=positive_int, default=None, help="PR number (optional).")
     p.add_argument(
         "--major",
         action="store_true",
