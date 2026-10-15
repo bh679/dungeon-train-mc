@@ -13,12 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class LiveFeedEventsTest {
 
     @Test
-    @DisplayName("taking it off, replacement, death and cut-off burn the camcorder; a failed start or a logout keeps it")
+    @DisplayName("taking it off and death burn the camcorder; another streamer turns it into a TV; a failed start or a logout keeps it")
     void whichExitsBurn() {
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.REMOVED));
-        assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.REPLACED));
+        assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.REPLACED));
+        assertTrue(LiveFeedEvents.becomesTv(LiveFeedEvents.Exit.REPLACED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.DIED));
-        assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.CUT_OFF));
+        assertFalse(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.CUT_OFF));
+        assertTrue(LiveFeedEvents.becomesTv(LiveFeedEvents.Exit.CUT_OFF));
+        assertFalse(LiveFeedEvents.becomesTv(LiveFeedEvents.Exit.REMOVED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.DISABLED));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.FREE_PLAY));
         assertTrue(LiveFeedEvents.burnsOn(LiveFeedEvents.Exit.MODERATED));
@@ -47,11 +50,11 @@ final class LiveFeedEventsTest {
     }
 
     @Test
-    @DisplayName("the burn line says why: taken off, moved to the next streamer, or the generic flare")
+    @DisplayName("the line says why: taken off, a TV now the next streamer has it, or the generic flare")
     void burnLineSaysWhy() {
         assertEquals("chat.dungeontrain.live.burns_removed", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.REMOVED));
-        assertEquals("chat.dungeontrain.live.burns_next_streamer", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.REPLACED));
-        assertEquals("chat.dungeontrain.live.burns_next_streamer", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.CUT_OFF));
+        assertEquals("chat.dungeontrain.live.becomes_tv_next_streamer", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.REPLACED));
+        assertEquals("chat.dungeontrain.live.becomes_tv_next_streamer", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.CUT_OFF));
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.DIED));
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.FREE_PLAY));
         assertEquals("chat.dungeontrain.live.headpiece_burns", LiveFeedEvents.burnLineKey(LiveFeedEvents.Exit.DISABLED));
