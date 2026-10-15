@@ -8,6 +8,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Server side of a streamer's Live Eye gift (relay {@code live-gift.js}): the viewer accepted, so
  * check they may have one, redeem the gift with the relay — 200 once, only for the uuid it was made out
- * to — and hand over a fresh Live Eye.
+ * to — and put a fresh Live Eye on their head, which takes them live.
  *
  * <p>Refused, with a line saying why, for a Kid or a player with Livestreaming off (the relay never
  * offers those, this is the backstop), a player banned from the Live Eye, and one who already holds
@@ -83,9 +84,15 @@ public final class LiveGiftServer {
         return true;
     }
 
+    /**
+     * Put the Live Eye straight on {@code player}'s head — wearing it is what starts the stream
+     * ({@link LiveFeedEvents#onEquipmentChange}). Whatever was worn there, normally the TV they were
+     * watching on, goes to the inventory, or at their feet when it is full.
+     */
     private static void grant(ServerPlayer player, String from) {
-        ItemStack eye = new ItemStack(ModItems.LIVE_HEADPIECE.get());
-        if (!player.getInventory().add(eye)) player.drop(eye, false);
+        ItemStack worn = player.getItemBySlot(EquipmentSlot.HEAD).copy();
+        player.setItemSlot(EquipmentSlot.HEAD, new ItemStack(ModItems.LIVE_HEADPIECE.get()));
+        if (!worn.isEmpty() && !player.getInventory().add(worn)) player.drop(worn, false);
         LiveEyeLootResolver.markSeen(player);
         String giver = from == null || from.isBlank() ? "Someone" : from;
         player.sendSystemMessage(Component.translatable(KEY + "received", giver).withStyle(ChatFormatting.GOLD));
