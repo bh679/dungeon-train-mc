@@ -28,8 +28,14 @@ public final class LiveTakeoverClient {
      * Who is in the way of a claim, for the takeover prompt: {@code holder} has been on air
      * {@code tenureMs} (carried across their re-wears), protected until {@code takeoverMinMs}; this is
      * their {@code streamCount}th time streaming. {@code voteNeeded}: still inside the protected minutes.
+     * {@code pollEndsMs}: another player's takeover vote closes then (0 when none is running).
      */
-    public record Holder(String holder, long tenureMs, long takeoverMinMs, int streamCount, boolean voteNeeded) {
+    public record Holder(String holder, long tenureMs, long takeoverMinMs, int streamCount, boolean voteNeeded,
+                         long pollEndsMs) {
+        public Holder(String holder, long tenureMs, long takeoverMinMs, int streamCount, boolean voteNeeded) {
+            this(holder, tenureMs, takeoverMinMs, streamCount, voteNeeded, 0L);
+        }
+
         /** Whether the vote is still needed {@code elapsedMs} after this was read (the prompt's live counter). */
         public boolean voteNeededAfter(long elapsedMs) {
             return tenureMs + elapsedMs < takeoverMinMs;
@@ -63,7 +69,7 @@ public final class LiveTakeoverClient {
         JsonObject b = r.body();
         String holder = LiveChatRules.clean(r.str("holder"), LiveChatRules.MAX_AUTHOR);
         return new Holder(holder.isBlank() ? "Someone" : holder, num(b, "tenureMs"), num(b, "takeoverMinMs"),
-            (int) Math.max(1, num(b, "streamCount")), tooSoon);
+            (int) Math.max(1, num(b, "streamCount")), tooSoon, num(b, "pollEndsTs"));
     }
 
     /** Ask the audience to let this player take over. 200 → {@link #parsePoll}; 409 not_needed / busy / too_soon. */

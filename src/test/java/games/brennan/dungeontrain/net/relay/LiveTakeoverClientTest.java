@@ -26,6 +26,9 @@ class LiveTakeoverClientTest {
         Holder soon = LiveTakeoverClient.parseBlocked(result(409,
             "{\"error\":\"too_soon\",\"holder\":\"Alice\",\"tenureMs\":240000,\"takeoverMinMs\":600000,\"streamCount\":3,\"retryAfterMs\":360000}"));
         assertEquals(new Holder("Alice", 240000, 600000, 3, true), soon);
+        Holder duringVote = LiveTakeoverClient.parseBlocked(result(409,
+            "{\"error\":\"too_soon\",\"holder\":\"Alice\",\"tenureMs\":1,\"takeoverMinMs\":2,\"streamCount\":1,\"pollEndsTs\":999}"));
+        assertEquals(999, duringVote.pollEndsMs(), "another player's vote is running: the prompt waits for it");
         Holder occupied = LiveTakeoverClient.parseBlocked(result(409,
             "{\"error\":\"occupied\",\"holder\":\"Alice\",\"tenureMs\":700000,\"takeoverMinMs\":600000,\"streamCount\":1}"));
         assertFalse(occupied.voteNeeded());

@@ -112,8 +112,12 @@ public final class LiveTakeoverChat {
     }
 
     private static Component opening(PollLine p, @Nullable UUID me) {
-        MutableComponent line = Component.translatable(KEY + "poll", p.requester(), p.holder()).withStyle(ChatFormatting.GOLD)
-            .append(" ").append(button("yes", ChatFormatting.GREEN))
+        MutableComponent line = Component.translatable(KEY + "poll", p.requester(), p.holder()).withStyle(ChatFormatting.GOLD);
+        // The requester is not asked to vote on their own request: no buttons for them.
+        Minecraft mc = Minecraft.getInstance();
+        boolean mine = mc.getUser() != null && mc.getUser().getName().equalsIgnoreCase(p.requester());
+        if (mine) return LiveChatRules.systemLine(line);
+        line.append(" ").append(button("yes", ChatFormatting.GREEN))
             .append(" ").append(button("no", ChatFormatting.RED));
         boolean holder = me != null && p.holderUuid() != null && p.holderUuid().equalsIgnoreCase(me.toString().replace("-", ""));
         if (holder) line.append(" ").append(Component.translatable(KEY + "your_weight", p.holderWeight()).withStyle(ChatFormatting.GRAY));

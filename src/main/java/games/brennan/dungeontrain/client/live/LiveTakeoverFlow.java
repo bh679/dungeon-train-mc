@@ -51,11 +51,25 @@ public final class LiveTakeoverFlow {
 
     private LiveTakeoverFlow() {}
 
-    /** The claim found {@code h} on air: show the prompt (unless this Live Eye already asked). */
+    /** Another player's vote was running when the claim was blocked: ask again this long after it closes. */
+    private static final long AFTER_OTHER_VOTE_MS = 1500;
+    /** When to claim again because another player's vote was running; 0 = not waiting. */
+    private static long retryAtMs;
+
+    /**
+     * The claim found {@code h} on air: show the prompt. While another player's takeover vote is running
+     * there is nothing to ask yet — the Live Eye stays a TV and claims again once that vote has closed,
+     * since its result may have changed who holds the channel.
+     */
     static void blocked(Holder h) {
         holder = h;
         holderReadMs = System.currentTimeMillis();
         pollId = null;
+        if (h.pollEndsMs() > holderReadMs) {
+            retryAtMs = h.pollEndsMs() + AFTER_OTHER_VOTE_MS;
+            return;
+        }
+        retryAtMs = 0;
         open();
     }
 
@@ -82,7 +96,8 @@ public final class LiveTakeoverFlow {
             return (int) Math.max(0, (voteEndsMs - now + 999) / 1000);
         }
         long ends = LiveTakeoverChat.openVoteEndsMs();
-        return ends < 0 ? -1 : (int) Math.max(0, (ends - now + 999) / 1000);
+        if (ends < 0 && retryAtMs > 0 && holder != null) ends = holder.pollEndsMs();
+        return ends < 0 || ends < now - 1000 ? -1 : (int) Math.max(0, (ends - now + 999) / 1000);
     }
 
     /** Request takeover: open the vote. The prompt has closed; the countdown shows over the live box. */
@@ -133,6 +148,10 @@ public final class LiveTakeoverFlow {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         LiveStreamController c = LiveStreamController.get();
+        if (retryAtMs > 0 && System.currentTimeMillis() >= retryAtMs) {
+            retryAtMs = 0;
+            if (c.state() == LiveStreamController.State.BLOCKED) c.retryClaim(false, null);
+        }
         if (c.state() != LiveStreamController.State.VOTING || pollId == null) return;
         long now = System.currentTimeMillis();
         if (now - lastPollMs < POLL_MS || !inFlight.compareAndSet(false, true)) return;
@@ -183,6 +202,7 @@ public final class LiveTakeoverFlow {
         if (id != null && me != null) LiveTakeoverClient.cancel(id, me);
         pollId = null;
         holder = null;
+        retryAtMs = 0;
         dismissScreen();
     }
 

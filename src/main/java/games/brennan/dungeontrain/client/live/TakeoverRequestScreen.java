@@ -85,7 +85,7 @@ public final class TakeoverRequestScreen extends Screen {
         addRenderableWidget(takeButton);
         addRenderableWidget(Button.builder(Component.translatable(KEY + "stay_viewer"), b -> stayViewer())
             .bounds(innerLeft + buttonW + BUTTON_GAP, buttonsY, innerWidth - buttonW - BUTTON_GAP, BUTTON_H)
-            .tooltip(Tooltip.create(Component.translatable(KEY + "stay_viewer.tooltip", holder.holder())))
+            .tooltip(Tooltip.create(Component.translatable(KEY + "stay_viewer.tooltip")))
             .build());
     }
 

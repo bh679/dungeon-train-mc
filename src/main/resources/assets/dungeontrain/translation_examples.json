@@ -16105,15 +16105,6 @@
       ]
     }
   },
-  "screen.dungeontrain.live_takeover.stay_viewer.tooltip": {
-    "1": {
-      "label": "the player streaming now",
-      "examples": [
-        "Steve",
-        "brennan_hatton"
-      ]
-    }
-  },
   "screen.dungeontrain.live_takeover.voting": {
     "1": {
       "label": "seconds left in the vote",
