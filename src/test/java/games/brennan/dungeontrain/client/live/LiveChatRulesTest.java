@@ -62,6 +62,25 @@ class LiveChatRulesTest {
     }
 
     @Test
+    @DisplayName("outbound: a line tagging the dev is a ping to Brennan, not stream chat")
+    void outboundSkipsDevMentions() {
+        assertNull(LiveChatRules.outbound("@dev hi"));
+        assertNull(LiveChatRules.outbound("hey @BrennanHatton look"));
+        assertNull(LiveChatRules.outbound("@开发者 你好"));
+        assertNull(LiveChatRules.outbound("me@devnull"), "substring, as DiscordPresence matches (it pings too)");
+        assertEquals("dev is cool", LiveChatRules.outbound("dev is cool"));
+    }
+
+    @Test
+    @DisplayName("shouldShow: another world's dev ping is hidden; Discord/Twitch lines are not filtered")
+    void shouldShowHidesGameDevMentions() {
+        ChatLine gamePing = new ChatLine(1, 0, "Other", LiveChatRules.undashed(OTHER), "@DEV help", Source.GAME);
+        ChatLine discordPing = new ChatLine(2, 0, "Viewer", null, "@dev hi", Source.DISCORD);
+        assertFalse(LiveChatRules.shouldShow(gamePing, ME, Set.of(), Set.of()));
+        assertTrue(LiveChatRules.shouldShow(discordPing, ME, Set.of(), Set.of()));
+    }
+
+    @Test
     @DisplayName("clean: § codes, control characters and line breaks go; the rest is stripped and capped")
     void clean() {
         assertEquals("", LiveChatRules.clean(null, 10));
