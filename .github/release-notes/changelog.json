@@ -26257,8 +26257,29 @@
       "released_at": null
     },
     {
-      "id": "live-eye-streams-through-death",
+      "id": "live-eye-gift-to-tv-viewer",
       "version": "0.1303.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Gift your Live Eye to a TV viewer",
+      "summary": "Streaming when someone tunes in on a TV who has never had a Live Eye? You can now hand yours over. If they accept, your stream ends and they go live.",
+      "highlights": [
+        "When a TV viewer who has never streamed joins your stream's chat, you can gift them your Live Eye (you're asked at most once every 12 minutes).",
+        "They choose whether to take it. If they do, the Live Eye goes straight on their head and they're live.",
+        "Viewers in Kid mode or with Livestreaming off are never offered one."
+      ],
+      "pr": 2026,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-streams-through-death",
+      "version": "0.1304.0",
       "type": "feat",
       "tags": [
         "feature",

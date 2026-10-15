@@ -373,6 +373,90 @@ public final class LiveFeedClient {
         return post(base, "/live/chat/send", body);
     }
 
+    /**
+     * A TV viewer who has never streamed joined the chat (the relay's {@code joins[]}, streamer only):
+     * {@code joinId} is what the streamer gifts. {@code uuid} is dashes-stripped, lower-case.
+     */
+    public record GiftJoin(long seq, String joinId, String uuid, String name) {}
+
+    /** The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}). */
+    public record GiftOffer(long seq, String giftId, String target, String from) {}
+
+    /** A chat poll's gift notices; both empty on any failure or from an older relay. */
+    public record GiftNotices(List<GiftJoin> joins, List<GiftOffer> gifts) {
+        public static final GiftNotices EMPTY = new GiftNotices(List.of(), List.of());
+    }
+
+    /** A joinId / giftId as the relay mints them; anything else is dropped before it reaches a command. */
+    private static final java.util.regex.Pattern GIFT_ID = java.util.regex.Pattern.compile("[jg]-[A-Za-z0-9_-]{8,24}");
+
+    /** Whether {@code id} has the shape of a relay join or gift id. */
+    public static boolean isGiftId(@Nullable String id) {
+        return id != null && GIFT_ID.matcher(id).matches();
+    }
+
+    /** The {@code joins} / {@code gifts} arrays of a chat poll; malformed entries are skipped. */
+    public static GiftNotices parseGiftNotices(Result r) {
+        if (!r.ok()) return GiftNotices.EMPTY;
+        JsonObject b = r.body();
+        try {
+            List<GiftJoin> joins = new ArrayList<>();
+            if (b.has("joins") && b.get("joins").isJsonArray()) {
+                for (JsonElement el : b.getAsJsonArray("joins")) {
+                    if (!el.isJsonObject()) continue;
+                    JsonObject o = el.getAsJsonObject();
+                    String id = str(o, "joinId");
+                    if (!isGiftId(id) || !o.has("seq")) continue;
+                    String name = LiveChatRules.clean(str(o, "name"), LiveChatRules.MAX_AUTHOR);
+                    joins.add(new GiftJoin(o.get("seq").getAsLong(), id, str(o, "uuid"), name.isBlank() ? "Someone" : name));
+                }
+            }
+            List<GiftOffer> gifts = new ArrayList<>();
+            if (b.has("gifts") && b.get("gifts").isJsonArray()) {
+                for (JsonElement el : b.getAsJsonArray("gifts")) {
+                    if (!el.isJsonObject()) continue;
+                    JsonObject o = el.getAsJsonObject();
+                    String id = str(o, "giftId");
+                    String target = str(o, "target");
+                    if (!isGiftId(id) || target.isBlank() || !o.has("seq")) continue;
+                    String from = LiveChatRules.clean(str(o, "from"), LiveChatRules.MAX_AUTHOR);
+                    gifts.add(new GiftOffer(o.get("seq").getAsLong(), id, target, from.isBlank() ? "Someone" : from));
+                }
+            }
+            return new GiftNotices(List.copyOf(joins), List.copyOf(gifts));
+        } catch (RuntimeException e) {
+            return GiftNotices.EMPTY;
+        }
+    }
+
+    /**
+     * This client joined the stream's chat through a TV. {@code eligible}: not Kid mode and Livestreaming
+     * on — only then may the streamer be offered to gift it a Live Eye.
+     */
+    public static CompletableFuture<Result> chatJoin(String base, UUID uuid, String name, boolean eligible) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        body.addProperty("eligible", eligible);
+        return post(base, "/live/chat/join", body);
+    }
+
+    /** The streamer (proved by its stream {@code token}) offers the viewer of {@code joinId} a Live Eye. */
+    public static CompletableFuture<Result> gift(String base, String token, String joinId) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("joinId", joinId);
+        return post(base, "/live/gift", body);
+    }
+
+    /** The viewer's server redeems {@code giftId} for {@code uuid}: 200 once, only for the gift's viewer. */
+    public static CompletableFuture<Result> giftClaim(String base, String giftId, UUID uuid) {
+        JsonObject body = new JsonObject();
+        body.addProperty("giftId", giftId);
+        body.addProperty("uuid", uuid.toString());
+        return post(base, "/live/gift/claim", body);
+    }
+
     /** A chat poll's page; {@link ChatPage#EMPTY} on any failure (seq −1 keeps the cursor untouched). */
     public static ChatPage parseChat(Result r) {
         if (!r.ok()) return ChatPage.EMPTY;

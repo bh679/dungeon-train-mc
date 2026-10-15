@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "133";
+    public static final String PROTOCOL_VERSION = "134";
 
     private DungeonTrainNet() {}
 
@@ -230,6 +230,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(LogRequestPromptPacket.TYPE, LogRequestPromptPacket.STREAM_CODEC, LogRequestPromptPacket::handle);
         registrar.playToServer(LogRequestAnswerPacket.TYPE, LogRequestAnswerPacket.STREAM_CODEC, LogRequestAnswerPacket::handle);
         registrar.playToServer(LogRequestFromLivePacket.TYPE, LogRequestFromLivePacket.STREAM_CODEC, LogRequestFromLivePacket::handle);
+        registrar.playToServer(LiveGiftAcceptPacket.TYPE, LiveGiftAcceptPacket.STREAM_CODEC, LiveGiftAcceptPacket::handle);
 
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);
