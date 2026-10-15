@@ -18,8 +18,10 @@ import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.event.LiveFeedEvents;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
+import games.brennan.dungeontrain.net.LiveClaimResultPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
+import games.brennan.dungeontrain.net.relay.LiveTakeoverClient;
 import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -67,7 +69,14 @@ import java.util.stream.Stream;
  *
  * <pre>
  * IDLE --START--> WAIT_FFMPEG --ready--> CLAIMING --200--> STREAMING --stop--> IDLE
+ *                                           |  ^
+ *                                       409 v  | take over / ticket / void
+ *                                         BLOCKED --request--> VOTING --rejected--> IDLE (a TV)
+ *                                           '-- stay a viewer --> IDLE (a TV)
  * </pre>
+ *
+ * <p>BLOCKED and VOTING: someone else is on air, so the Live Eye works as a TV while its wearer
+ * decides — {@link LiveTakeoverFlow} runs the prompt and the vote, and calls back here.</p>
  *
  * <p>Everything relay-facing happens here: claim the channel, then grab → encode → upload until
  * the server says stop, the relay says someone else took over (403 on presign), the player logs
@@ -99,7 +108,7 @@ public final class LiveStreamController {
         return t;
     });
 
-    public enum State { IDLE, WAIT_FFMPEG, CLAIMING, STREAMING, STOPPING }
+    public enum State { IDLE, WAIT_FFMPEG, CLAIMING, BLOCKED, VOTING, STREAMING, STOPPING }
 
     private volatile State state = State.IDLE;
     private int generation; // bumps on every start/stop so a late async reply cannot act on a newer stream
@@ -145,6 +154,11 @@ public final class LiveStreamController {
 
     public boolean streaming() {
         return state == State.STREAMING;
+    }
+
+    /** The Live Eye is on, but someone else is live: it works as a TV while its wearer decides. */
+    public boolean watchingWithEye() {
+        return state == State.BLOCKED || state == State.VOTING;
     }
 
     /** Render thread: the running encoder, or null — for the {@code [live]} perf line. */
@@ -241,6 +255,7 @@ public final class LiveStreamController {
 
     private void start(String eyeId) {
         this.eyeId = eyeId == null ? "" : eyeId;
+        LiveTakeoverFlow.newEye();
         LOGGER.info("[DungeonTrain] live stream requested by the server (ffmpeg {})", FfmpegSupport.state());
         if (state != State.IDLE) stop(null);
         // Livestreaming is a line on the first-launch consent card: the master "use the internet?"
@@ -274,7 +289,7 @@ public final class LiveStreamController {
             case DOWNLOADING -> say(Component.translatable("chat.dungeontrain.live.preparing").withStyle(ChatFormatting.GRAY));
             // No claim until the Live Eye is on: claiming cuts off whoever streams in another world.
             // Not on yet (login: the inventory may land after START) → the tick claims once it is.
-            case READY -> { if (headpieceWorn()) claimChannel(); }
+            case READY -> { if (headpieceWorn()) claimChannel(false, null); }
         }
     }
 
@@ -326,7 +341,7 @@ public final class LiveStreamController {
         if (state != State.IDLE && state != State.STOPPING && !postMortem.active() && checkHeadpiece()) return;
         if (state == State.WAIT_FFMPEG) {
             if (FfmpegSupport.state() == FfmpegSupport.State.READY) {
-                if (headpieceWorn()) claimChannel();
+                if (headpieceWorn()) claimChannel(false, null);
                 return;
             }
             if (++waitTicks % 20 != 0) return;
@@ -385,7 +400,11 @@ public final class LiveStreamController {
         }
     }
 
-    private void claimChannel() {
+    /**
+     * {@code takeover}: the player chose Take over past the holder's protected minutes; {@code ticket}:
+     * an approved vote's pass. Without either, a claim against someone on air comes back as the prompt.
+     */
+    private void claimChannel(boolean takeover, @Nullable String ticket) {
         Minecraft mc = Minecraft.getInstance();
         UUID uuid = mc.getUser() != null ? mc.getUser().getProfileId() : null;
         String name = mc.getUser() != null ? mc.getUser().getName() : "";
@@ -400,10 +419,18 @@ public final class LiveStreamController {
         LiveFeedClient.Life life = new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION);
         CompletableFuture<Boolean> aac = LiveFeedClientConfig.streamAudio()
             ? FfmpegSupport.aacEncoder() : CompletableFuture.completedFuture(false);
-        // Won a dead streamer's takeover: the ticket carries the claim past the relay's tenure check.
-        String ticket = LiveTakeoverOffer.takeTicket(System.currentTimeMillis());
-        LiveFeedClient.claim(uuid, name, eyeId, info, life, ticket).thenAcceptBothAsync(aac, (result, hasAac) -> {
+        // Won a dead streamer's takeover: that ticket carries the claim past the relay's tenure check
+        // (an approved takeover vote's ticket does the same).
+        String deathTicket = LiveTakeoverOffer.takeTicket(System.currentTimeMillis());
+        LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket).thenAcceptBothAsync(aac, (result, hasAac) -> {
             if (gen != generation || state != State.CLAIMING) return;
+            LiveTakeoverClient.Holder holder = LiveTakeoverClient.parseBlocked(result);
+            if (holder != null) {
+                // Someone else is on air: the Live Eye works as a TV while its wearer decides.
+                state = State.BLOCKED;
+                LiveTakeoverFlow.blocked(holder);
+                return;
+            }
             if (result.forbidden() && "banned".equals(result.str("error"))) {
                 // The text-filter ladder has this player banned from the Live Eye; the server burns it
                 // on BANNED and says for how long.
@@ -418,8 +445,53 @@ public final class LiveStreamController {
                 tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
                 return;
             }
+            // The channel is ours: the server makes this player its streamer (and turns the previous
+            // one's Live Eye into a TV).
+            tellServerTakeover(LiveClaimResultPacket.Result.LIVE);
             beginStreaming(c, hasAac);
         }, mc);
+    }
+
+    // ---- takeover (LiveTakeoverFlow) -----------------------------------------------------------
+
+    /** Request takeover pressed: the vote is running. False when not blocked. */
+    boolean beginVote() {
+        if (state != State.BLOCKED) return false;
+        state = State.VOTING;
+        return true;
+    }
+
+    /** The vote could not open: back to deciding. */
+    void backToBlocked() {
+        if (state == State.VOTING) state = State.BLOCKED;
+    }
+
+    /** Claim again — Take over, an approved vote's ticket, or a vote that came back void. */
+    void retryClaim(boolean takeover, @Nullable String ticket) {
+        if (state != State.BLOCKED && state != State.VOTING) return;
+        if (!headpieceWorn()) return; // the guard ends it on its own
+        claimChannel(takeover, ticket);
+    }
+
+    /** Stay a viewer: the server turns the Live Eye into a TV. */
+    void stayViewer() {
+        if (state != State.BLOCKED && state != State.VOTING) return;
+        generation++;
+        state = State.IDLE;
+        tellServerTakeover(LiveClaimResultPacket.Result.STAYED_VIEWER);
+    }
+
+    /** The audience voted it down: the server turns the Live Eye into a TV. */
+    void takeoverRejected() {
+        if (state != State.VOTING) return;
+        generation++;
+        state = State.IDLE;
+        tellServerTakeover(LiveClaimResultPacket.Result.REJECTED);
+    }
+
+    private static void tellServerTakeover(LiveClaimResultPacket.Result result) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result));
     }
 
     /**
@@ -609,6 +681,7 @@ public final class LiveStreamController {
     private void stop(@Nullable Component why, boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended) {
         if (state == State.IDLE) return;
         boolean wasLive = state == State.STREAMING;
+        if (watchingWithEye()) LiveTakeoverFlow.abandon();
         postMortem.clear();
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
