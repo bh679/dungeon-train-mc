@@ -19,9 +19,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MessageSignature;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientChatEvent;
+import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
@@ -40,6 +42,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * {@code [Live] Name: text}. Every non-command line typed in chat goes out through
  * {@code POST /live/chat/send}, at most one a second, fire-and-forget. Which relay: the streamer's own
  * (the channel it claimed); a viewer's, whatever channel its TVs show ({@link LiveStatusPoller#channel()}).</p>
+ *
+ * <p>While connected, DiscordPresence's "whispers into the void" auto-responses are dropped
+ * ({@link LiveChatRules#isVoidWhisper}) — the player's words are reaching the stream.</p>
  *
  * <p>A line the relay later lists as {@code deleted} (a Twitch mod removed it) becomes vanilla's grey
  * "deleted" marker, through {@link LiveChatSignatures}.</p>
@@ -119,6 +124,14 @@ public final class LiveChatBridge {
                 LOGGER.warn("[DungeonTrain] live chat send failed (status {}); further failures this session are silent", r.status());
             }
         });
+    }
+
+    /** Connected, the player is being heard: DiscordPresence's "into the void" whispers would say otherwise. */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onSystemChat(ClientChatReceivedEvent.System event) {
+        if (connected && !event.isOverlay() && LiveChatRules.isVoidWhisper(event.getMessage())) {
+            event.setCanceled(true);
+        }
     }
 
     private static void connect(Minecraft mc) {
