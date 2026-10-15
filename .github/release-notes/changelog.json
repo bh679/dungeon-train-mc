@@ -26041,6 +26041,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-needs-internet-consent",
+      "version": "0.1293.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye asks before going online",
+      "summary": "Putting on the Live Eye while the game's internet connection is switched off no longer destroys it. It goes back into your inventory, and a link in chat reopens the internet choice so you can turn it on.",
+      "highlights": [
+        "With internet off, the Live Eye returns to your inventory instead of burning",
+        "A \"turn it on\" link in chat opens the internet and Adult/Kid choice",
+        "Turning the internet on takes effect straight away, with no need to rejoin the world"
+      ],
+      "pr": 2013,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

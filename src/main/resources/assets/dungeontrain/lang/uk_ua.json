@@ -740,6 +740,8 @@
   "chat.dungeontrain.live.unreachable": "Немає трансляції: не вдалося зв'язатися з потоком.",
   "chat.dungeontrain.live.disabled": "Пряму трансляцію вимкнено, увімкни її в %s",
   "chat.dungeontrain.live.disabled.path": "Налаштування / Dungeon Train / Загальні / Пряма трансляція",
+  "chat.dungeontrain.live.needs_internet": "Трансляційній відеокамері потрібен інтернет, %s",
+  "chat.dungeontrain.live.needs_internet.link": "увімкніть його",
   "chat.dungeontrain.live_chat.prefix": "[Ефір]",
   "chat.dungeontrain.live_chat.connected": "Чат ефіру під'єднано до Discord. Вимкнути: %s",
   "chat.dungeontrain.live_chat.path": "Налаштування / Dungeon Train / Стрім / Чат ефіру",

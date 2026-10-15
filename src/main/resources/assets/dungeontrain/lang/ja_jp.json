@@ -626,6 +626,8 @@
   "chat.dungeontrain.live.unreachable": "放送できない：配信先に接続できなかった。",
   "chat.dungeontrain.live.disabled": "ライブ配信はオフになっています。%s でオンにしてください",
   "chat.dungeontrain.live.disabled.path": "設定 / Dungeon Train / 一般 / ライブ配信",
+  "chat.dungeontrain.live.needs_internet": "放送カムコーダーにはインターネットが必要です、%s",
+  "chat.dungeontrain.live.needs_internet.link": "オンにする",
   "chat.dungeontrain.live_chat.prefix": "[ライブ]",
   "chat.dungeontrain.live_chat.connected": "ライブチャットがDiscordに接続しました。%s でオフにできます",
   "chat.dungeontrain.live_chat.path": "設定 / Dungeon Train / 配信 / ライブチャット",

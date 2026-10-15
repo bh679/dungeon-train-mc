@@ -16,6 +16,7 @@ import games.brennan.dungeontrain.item.LiveHeadpiecePendingTag;
 import games.brennan.dungeontrain.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -59,11 +60,14 @@ public final class LiveFeedEvents {
 
     /** How often (server ticks) the streamer's Free Play state is rechecked mid-stream. */
     private static final int FREE_PLAY_CHECK_TICKS = 20;
+    /** Client command that reopens the internet consent card ({@code LiveOptionsCommand}). */
+    public static final String CONSENT_COMMAND = "/dungeontrain-consent";
 
     private LiveFeedEvents() {}
 
     /**
      * Everything burns the camcorder except a failed start (handed back) and a logout (stays on).
+     * Internet off on the consent card never gets this far: it is handed back before the stream starts.
      * Putting it on with Livestreaming switched off ({@link Exit#DISABLED}) burns it too: the switch
      * is on the consent card and in Options, and the client says so in chat.
      */
@@ -189,6 +193,14 @@ public final class LiveFeedEvents {
             LiveModeration.refresh(player);
             return;
         }
+        // Internet switched off on the consent card: the Live Eye won't go on. It goes back in the
+        // inventory and chat links to the card; once they accept, putting it on again streams.
+        UUID id = player.getUUID();
+        if (needsInternet(NetworkConsentMirror.isKnown(id), NetworkConsentMirror.isGranted(player))) {
+            handBack(player);
+            player.sendSystemMessage(needsInternetLine());
+            return;
+        }
         UUID previous = LiveStreamers.setStreamer(server, player.getUUID());
         if (previous != null && !previous.equals(player.getUUID())) {
             ServerPlayer old = server.getPlayerList().getPlayer(previous);
@@ -204,6 +216,24 @@ public final class LiveFeedEvents {
         // No chat line here: the client says "You are now live" once the relay has a viewer count.
         String eyeId = LiveEyeId.ensure(player.getItemBySlot(EquipmentSlot.HEAD));
         PacketDistributor.sendToPlayer(player, LiveStreamPacket.start(eyeId));
+    }
+
+    /**
+     * The player's client has told us internet is off. Unknown (login sync not landed yet) lets the
+     * stream start: the client checks its own consent and hands the Live Eye back the same way.
+     */
+    static boolean needsInternet(boolean known, boolean granted) {
+        return known && !granted;
+    }
+
+    /** "The Live Eye needs the internet — [turn it on]", the link opening the consent card. */
+    public static Component needsInternetLine() {
+        return Component.translatable("chat.dungeontrain.live.needs_internet",
+                Component.translatable("chat.dungeontrain.live.needs_internet.link").withStyle(style -> style
+                    .withUnderlined(true)
+                    .withColor(ChatFormatting.AQUA)
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, CONSENT_COMMAND))))
+            .withStyle(ChatFormatting.GRAY);
     }
 
     /**
