@@ -17,6 +17,8 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -26,8 +28,8 @@ import java.util.UUID;
  * as a hat ({@code wore_tv}), keeping it on ({@code wore_tv_15_min}), and streaming without a
  * break ({@code livestream_15_min}) or for a lifetime total ({@code livestream_total}). The one-shot ones fire where the action happens —
  * {@code started_livestream} via {@link #onStreamStarted} from {@link LiveFeedEvents},
- * {@code toggled_placed_tv} in {@code mixin/vista/TVBlockMixin}, {@code toggled_held_tv} in
- * {@code net/TvHeldTogglePacket}.
+ * {@code toggled_placed_tv} in {@code mixin/vista/TVBlockMixin}, {@code toggled_held_tv} and
+ * {@code held_tv_while_live} via {@link #onHeldTvToggled} from {@code net/TvHeldTogglePacket}.
  *
  * <p>Both timers are continuous and in memory only: taking the TV off, the stream ending, a
  * logout or a server stop starts them again from zero. The minutes needed are the advancement
@@ -69,6 +71,25 @@ public final class LiveTvAdvancements {
     /** Swapped the TV on their head for a Live Eye while someone else was live, and went live ({@link LiveFeedEvents}). */
     static void onTookOverFromTv(ServerPlayer player) {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "tv_to_live_eye");
+    }
+
+    /**
+     * Switched a TV in their hand on or off ({@code net/TvHeldTogglePacket}). Switching it on while
+     * they are the one streaming — the Live Eye on their head — puts their own stream in their hands.
+     */
+    public static void onHeldTvToggled(ServerPlayer player, boolean on) {
+        ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "toggled_held_tv");
+        if (watchingOwnStream(on, LiveStreamers.get(player.server), player.getUUID())) {
+            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, "held_tv_while_live");
+        }
+    }
+
+    /**
+     * A held TV switched on by this server's streamer. Only the streamer counts: taking the Live Eye
+     * off ends the stream ({@link LiveFeedEvents}). Pure, for the tests.
+     */
+    static boolean watchingOwnStream(boolean switchedOn, @Nullable UUID streamer, UUID player) {
+        return switchedOn && player.equals(streamer);
     }
 
     @SubscribeEvent

@@ -26180,6 +26180,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "hidden-advancement-held-screen",
+      "version": "0.1299.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "One more hidden advancement",
+      "summary": "There's a new hidden advancement waiting in the Dark Room tab. You'll know it when you see it.",
+      "highlights": [],
+      "pr": 2021,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
