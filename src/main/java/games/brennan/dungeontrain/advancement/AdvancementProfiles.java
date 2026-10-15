@@ -136,6 +136,8 @@ public final class AdvancementProfiles {
         Set<ResourceLocation> shared = new LinkedHashSet<>();
         for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
             if (!shouldPersist(holder)) continue;
+            // Tab copies follow their originals (TabGateways.sync) — never banked, as on earn.
+            if (TabGateways.isLinked(holder.id())) continue;
             // Don't absorb a cheated world's gameplay/vanilla earns into the
             // cross-world profile; editor/* authoring still flows through.
             if (!RunIntegrity.persistsAdvancement(player, holder)) continue;
@@ -251,9 +253,11 @@ public final class AdvancementProfiles {
     }
 
     /**
-     * Revoke every persisted advancement except the shared editor tab and the tab gateways (which
-     * follow their originals — {@link TabGateways#sync}). Partial progress goes too: a profile's
-     * half-finished multi-criteria advancement is that profile's, not the next one's.
+     * Revoke every persisted advancement except the shared editor tab, the tab gateways (which
+     * follow their originals — {@link TabGateways#sync}) and tab roots. A root is the tab's entry —
+     * Dungeon Train's is "boarded the train", which only re-fires on the next boarding — so revoking
+     * it mid-ride would hide the whole tab. Partial progress goes too: a profile's half-finished
+     * multi-criteria advancement is that profile's, not the next one's.
      */
     private static int clearProfile(ServerPlayer player) {
         MinecraftServer server = player.getServer();
@@ -263,6 +267,7 @@ public final class AdvancementProfiles {
         for (AdvancementHolder holder : server.getAdvancements().getAllAdvancements()) {
             if (!shouldPersist(holder)) continue;
             if (GlobalAchievementStore.isShared(holder.id()) || TabGateways.isLinked(holder.id())) continue;
+            if (holder.value().parent().isEmpty()) continue; // tab root
             boolean any = false;
             for (String criterion : holder.value().criteria().keySet()) {
                 any |= advancements.revoke(holder, criterion);
