@@ -26197,6 +26197,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-stream-shows-photos",
+      "version": "0.1300.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "compatibility"
+      ],
+      "title": "Photos show on your Live stream",
+      "summary": "When you stream with Show GUI on, viewers now see the photos you hold up to look at, including ones opened from an album. Photo albums stay off the stream, so the notes you write in them stay private.",
+      "highlights": [],
+      "pr": 2024,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
