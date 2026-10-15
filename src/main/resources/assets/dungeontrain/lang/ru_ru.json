@@ -689,6 +689,8 @@
   "chat.dungeontrain.live.unreachable": "Нет трансляции: не удалось связаться с потоком.",
   "chat.dungeontrain.live.disabled": "Прямая трансляция выключена, включи её в %s",
   "chat.dungeontrain.live.disabled.path": "Настройки / Dungeon Train / Основные / Прямая трансляция",
+  "chat.dungeontrain.live.needs_internet": "Вещательной видеокамере нужен интернет, %s",
+  "chat.dungeontrain.live.needs_internet.link": "включите его",
   "chat.dungeontrain.live_chat.prefix": "[Эфир]",
   "chat.dungeontrain.live_chat.connected": "Чат эфира подключён к Discord. Отключить: %s",
   "chat.dungeontrain.live_chat.path": "Настройки / Dungeon Train / Стрим / Чат эфира",

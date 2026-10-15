@@ -740,6 +740,8 @@
   "chat.dungeontrain.live.unreachable": "Fără transmisie: fluxul nu a putut fi contactat.",
   "chat.dungeontrain.live.disabled": "Transmisia live este oprită, pornește-o în %s",
   "chat.dungeontrain.live.disabled.path": "Opțiuni / Dungeon Train / General / Transmisie live",
+  "chat.dungeontrain.live.needs_internet": "Camera video de transmisie are nevoie de internet, %s",
+  "chat.dungeontrain.live.needs_internet.link": "pornește-l",
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Chatul live este conectat la Discord. Dezactivează-l în %s",
   "chat.dungeontrain.live_chat.path": "Opțiuni / Dungeon Train / Stream / Chat live",

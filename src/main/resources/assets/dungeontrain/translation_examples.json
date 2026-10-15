@@ -15543,6 +15543,14 @@
       ]
     }
   },
+  "chat.dungeontrain.live.needs_internet": {
+    "1": {
+      "label": "the clickable link that opens the internet consent card, already translated (chat.dungeontrain.live.needs_internet.link)",
+      "examples": [
+        "turn it on"
+      ]
+    }
+  },
   "chat.dungeontrain.live_chat.connected": {
     "1": {
       "label": "the clickable settings path, already translated (chat.dungeontrain.live_chat.path)",

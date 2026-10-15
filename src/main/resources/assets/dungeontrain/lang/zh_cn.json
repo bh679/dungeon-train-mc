@@ -626,6 +626,8 @@
   "chat.dungeontrain.live.unreachable": "无法直播：无法连接到信号源。",
   "chat.dungeontrain.live.disabled": "直播已关闭，请在 %s 中开启",
   "chat.dungeontrain.live.disabled.path": "选项 / Dungeon Train / 通用 / 直播",
+  "chat.dungeontrain.live.needs_internet": "直播摄像机需要联网，%s",
+  "chat.dungeontrain.live.needs_internet.link": "开启网络",
   "chat.dungeontrain.live_chat.prefix": "[直播]",
   "chat.dungeontrain.live_chat.connected": "直播聊天已连接到 Discord。可在 %s 关闭",
   "chat.dungeontrain.live_chat.path": "选项 / Dungeon Train / 直播 / 直播聊天",
