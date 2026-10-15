@@ -359,6 +359,15 @@ public interface BlockVariantPlot {
 
     static @Nullable BlockVariantPlot resolveByKey(String key, CarriageDims dims) {
         if (key == null) return null;
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.stagedIdOfKey(key);
+        if (stagedId != null) {
+            // A staged build is not in any registry; where it stands is the overworld's record of the
+            // Workbench, which every caller here (undo, the link propagator) can reach without a level.
+            net.minecraft.server.MinecraftServer server =
+                net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            return server == null ? null
+                : games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.ofStaged(server.overworld(), stagedId);
+        }
         if (key.startsWith("carriage:")) {
             String id = key.substring("carriage:".length());
             return games.brennan.dungeontrain.train.CarriageVariantRegistry.find(id)
@@ -469,6 +478,11 @@ public interface BlockVariantPlot {
             games.brennan.dungeontrain.builder.BuilderCarriagePlot builderPlot =
                 games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, pos, dims);
             if (builderPlot != null) return builderPlot;
+            // A staged build answers as its own kind's plot would — the Workbench's arm, resident-gated
+            // like every other ({@link WorkbenchEditor#plotContaining}).
+            games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot staged =
+                games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.at(level, pos);
+            if (staged != null) return staged;
         }
         WholeCarriageEditor.PlotLocation whole = WholeCarriageEditor.plotContaining(pos, dims);
         if (whole != null) {

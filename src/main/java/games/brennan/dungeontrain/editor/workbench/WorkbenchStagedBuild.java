@@ -57,6 +57,12 @@ public record WorkbenchStagedBuild(String stagedId, int relayId, String relayKin
                 ownerUuid, ownerName, mine, newSize, sidecars, lootPrefabs, stagedAt);
     }
 
+    /** This build carrying a different sidecar document — after an edit made with its type's tools. */
+    public WorkbenchStagedBuild withSidecars(String newSidecars) {
+        return new WorkbenchStagedBuild(stagedId, relayId, relayKind, subKind, buildName, stage,
+                ownerUuid, ownerName, mine, size, newSidecars, lootPrefabs, stagedAt);
+    }
+
     /**
      * A staged id for {@code buildName} from relay row {@code relayId}: the name lower-cased and
      * reduced to {@code [a-z0-9_-]}, with the relay id appended so two builds of the same name from

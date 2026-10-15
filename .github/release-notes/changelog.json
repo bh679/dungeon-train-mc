@@ -26019,6 +26019,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "workbench-type-tools",
+      "version": "0.1293.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Workbench builds get their own editing tools",
+      "summary": "A build waiting in the editor's Workbench now gets the same tools it would have in its own editor mode, so you can finish it there before committing it.",
+      "highlights": [
+        "Dimensional carriage rooms show their ghost doors, and carriages and contents show their entry and exit doorways",
+        "Rooms get the full room controls: size, walls, copies, sky, exits, books and moving the doors",
+        "Block variants, the variant clipboard, mirroring and chest loot work on every Workbench build",
+        "Everything you set carries over when the build is committed"
+      ],
+      "pr": 2011,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

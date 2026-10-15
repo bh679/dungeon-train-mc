@@ -132,7 +132,9 @@ public final class WorkbenchCommit {
         }
 
         BuilderPhotoPaths.Kind fromKind = BuilderRelayKinds.kindOf(staged.relayKind());
-        String sidecars = TemplateSidecars.retargeted(staged.sidecars(), fromKind, staged.subKind(), kind, request.subKind());
+        // What the build's tools wrote while it stood here (its chests) folded in first, so it commits as left.
+        String stagedSidecars = games.brennan.dungeontrain.editor.workbench.WorkbenchSidecarFold.fold(staged.stagedId());
+        String sidecars = TemplateSidecars.retargeted(stagedSidecars, fromKind, staged.subKind(), kind, request.subKind());
         boolean wholeRoom = BuilderRelayWholeRoom.requested(request.parentId()) && BuilderRelayWholeRoom.supports(kind);
         BuilderRelayInstall.Outcome installed = wholeRoom
                 ? BuilderRelayWholeRoom.install(level, kind, request.name(), staged.stage(), template,

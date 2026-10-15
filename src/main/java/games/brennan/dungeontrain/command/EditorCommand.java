@@ -7254,9 +7254,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomSettings settings
     ) {
         try {
-            games.brennan.dungeontrain.track.variant.TrackVariantWeights.setMode(
-                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name,
-                settings.toTag());
+            games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.writeSettings(name, settings);
         } catch (IOException e) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.could_not_save_settings", name, e.getMessage()));
             return 0;
@@ -7358,6 +7356,10 @@ public final class EditorCommand {
         if (player == null) return null;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        // A room staged in the Workbench answers to every room setting a Dimensions room does.
+        if (name == null) {
+            name = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.roomUnder(player).orElse(null);
+        }
         if (name == null) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.stand_dimensional_carriage_plot"));
         }
