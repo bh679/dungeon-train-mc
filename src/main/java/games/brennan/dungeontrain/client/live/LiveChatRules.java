@@ -1,10 +1,13 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
@@ -24,6 +27,19 @@ public final class LiveChatRules {
     public static final int MAX_CONTENT = 500;
     /** Longest author name shown; anything longer is cut. */
     public static final int MAX_AUTHOR = 32;
+    /** The bitmap font holding the source icons ({@code assets/dungeontrain/font/live_chat_icons.json}). */
+    public static final ResourceLocation ICON_FONT = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_chat_icons");
+
+    /** The source icon before a name: one glyph each in {@link #ICON_FONT}. */
+    public enum Icon {
+        EYE('\uE000'), TV('\uE001'), WEB('\uE002'), DISCORD('\uE003'), TWITCH('\uE004');
+
+        public final char glyph;
+
+        Icon(char glyph) {
+            this.glyph = glyph;
+        }
+    }
 
     private LiveChatRules() {}
 
@@ -83,12 +99,21 @@ public final class LiveChatRules {
     }
 
     /**
-     * {@code [Live] Name: text} — the prefix grey, the text plain, the name coloured by room so the
-     * reader knows where to answer: Discord aqua, Twitch light purple, another world green. Plain
-     * literals with no click or hover events, cleaned again here in case a line was built elsewhere.
+     * {@code [Live] <icon> Name: text} — the prefix grey, the source icon, the text plain, the name
+     * coloured by room so the reader knows where to answer: Discord aqua, Twitch light purple, another
+     * world green. Plain literals with no click or hover events, cleaned again here in case a line was
+     * built elsewhere.
      */
     public static MutableComponent line(ChatLine line) {
-        return Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY)
+        MutableComponent out = Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY);
+        Icon icon = icon(line);
+        if (icon != null) {
+            // White so the glyph's own colours show; text colour tints a bitmap glyph.
+            out.append(Component.literal(" "))
+                .append(Component.literal(String.valueOf(icon.glyph))
+                    .withStyle(s -> s.withFont(ICON_FONT).withColor(ChatFormatting.WHITE)));
+        }
+        return out
             .append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
             .append(Component.literal(clean(line.content(), MAX_CONTENT)).withStyle(ChatFormatting.WHITE));
@@ -117,7 +142,23 @@ public final class LiveChatRules {
         return switch (source) {
             case TWITCH -> ChatFormatting.LIGHT_PURPLE;
             case GAME -> ChatFormatting.GREEN;
-            case DISCORD, OTHER -> ChatFormatting.AQUA;
+            case DISCORD, WEB, OTHER -> ChatFormatting.AQUA;
+        };
+    }
+
+    /**
+     * The source icon for a line: a game line's player in the Live Eye (the streamer) or a TV — a TV
+     * when an older relay says neither — the website's globe, the Discord and Twitch logos. Null for a
+     * source this client doesn't know.
+     */
+    @Nullable
+    public static Icon icon(ChatLine line) {
+        return switch (line.source()) {
+            case GAME -> line.via() == Via.EYE ? Icon.EYE : Icon.TV;
+            case WEB -> Icon.WEB;
+            case DISCORD -> Icon.DISCORD;
+            case TWITCH -> Icon.TWITCH;
+            case OTHER -> null;
         };
     }
 
