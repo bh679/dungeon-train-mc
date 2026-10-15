@@ -26237,6 +26237,24 @@
       "released": true,
       "released_in": "v0.1301.0",
       "released_at": "2026-10-15T11:36:14Z"
+    },
+    {
+      "id": "options-tooltips-current-text",
+      "version": "0.1302.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Settings tooltips show their current text",
+      "summary": "Hovering some settings in Options \u2192 Dungeon Train showed an older, longer explanation instead of the current one. The Backpack Button, Photo resolution and Photo chat line tooltips now show their up-to-date text, in English and in every translated language.",
+      "highlights": [],
+      "pr": 2025,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

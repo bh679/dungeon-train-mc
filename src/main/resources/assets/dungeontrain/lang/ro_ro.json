@@ -3151,7 +3151,6 @@
   "gui.dungeontrain.options.backpack_auto_collect.off": "Oprit",
   "gui.dungeontrain.options.backpack_auto_collect.while_open": "Când e deschis",
   "gui.dungeontrain.options.backpack_auto_collect.always": "Mereu",
-  "gui.dungeontrain.options.backpack_button.tip": "Afișează butonul de deschidere/închidere Edible Backpacks pe ecranul de inventar, deasupra slotului pentru mâna secundară. Dezactivarea doar ascunde butonul — panourile rucsacului se deschid în continuare cu tasta Edible Backpacks, pe care o poți asocia la Comenzi. Poziția butonului se stabilește în config/ediblebackpacks-client.toml.",
   "gui.dungeontrain.options.book_file_buttons": "Butoane de fișier pentru carte",
   "gui.dungeontrain.options.book_file_buttons.hint": "Salvează și încarcă cărți ca fișiere",
   "gui.dungeontrain.options.book_file_buttons.tip": "Afișează pe ecranul cărții cu pană butoanele care salvează cartea pe care o scrii într-un fișier pe computer și o încarcă înapoi. Dezactivat implicit. Se aplică de la următoarea deschidere a unei cărți.",

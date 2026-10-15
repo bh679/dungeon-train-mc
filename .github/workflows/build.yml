@@ -179,6 +179,13 @@ jobs:
       - name: Every locale carries every English key
         run: python3 scripts/localization/check-lang-parity.py
 
+      # Every check below loads a lang file into a dict first, which silently keeps the LAST of a
+      # repeated key — so a duplicate is a dead line nothing can see. #1938 added its shorter
+      # options tooltips above the old ones instead of replacing them, and the old text kept
+      # shipping in every locale for two months with all of these green.
+      - name: No lang file or provenance sidecar repeats a key
+        run: python3 scripts/localization/check-lang-duplicates.py
+
       # The full structural suite: key sets, file sets, and shape against the es_es template,
       # plus the value checks (placeholders, empty strings, trigger-book title length, note
       # offsets). It ran --values-only until the AIN overlay debt it was tripping over was paid
@@ -218,6 +225,7 @@ jobs:
           python3 scripts/advancements/test_import_requirement_edits.py
           python3 scripts/advancements/editor/test_apply.py
           python3 scripts/localization/test_lang_format.py
+          python3 scripts/localization/test_check_lang_duplicates.py
           python3 scripts/localization/test_book_format.py
           python3 scripts/localization/test_check_book_placeholders.py
           python3 scripts/localization/test_plural_forms.py
