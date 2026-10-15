@@ -212,7 +212,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "O teu equipamento fica em %s e volta se regressares.",
   "gui.dungeontrain.difficulty_confirm.change": "Mudar dificuldade",
   "gui.dungeontrain.difficulty_confirm.cancel": "Cancelar",
-  "chat.dungeontrain.difficulty_profile.swapped": "Agora viajas em %s. Cada dificuldade guarda o seu próprio equipamento, XP e Baú de Ender — o que levavas contigo fica à tua espera em %s.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Agora viajas em %s. Cada dificuldade guarda o seu próprio equipamento, XP, Baú de Ender e progressos — o que levavas contigo fica à tua espera em %s.",
   "chat.dungeontrain.free_play.ais_changed": "Alterado: %s",
   "chat.dungeontrain.free_play.ais_fix": "Clica aqui para repor as predefinições e depois reinicia o jogo para jogares normalmente.",
   "command.dungeontrain.fix_ais.success": "Predefinições do Adventure Item Stats repostas. Reinicia o jogo (ou o servidor) para voltares a jogar normalmente.",
