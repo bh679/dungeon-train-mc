@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.editor.workbench.WorkbenchStagedPlot;
 import games.brennan.dungeontrain.net.EditorDoorGhostsPacket;
 import games.brennan.dungeontrain.portal.PortalRoomDoorCells;
 import games.brennan.dungeontrain.train.CarriageContents;
@@ -114,6 +116,7 @@ public final class EditorDoorGhosts {
             case PORTALS -> portalSnapshot(dims);
             case CARRIAGES -> carriageSnapshot(dims);
             case CONTENTS -> contentsSnapshot(dims);
+            case WORKBENCH -> workbenchSnapshot(dims);
             default -> List.of();
         };
     }
@@ -171,6 +174,69 @@ public final class EditorDoorGhosts {
         }
     }
 
+    /**
+     * The doors of every staged build, each drawn the way its own kind's category draws them — a
+     * staged room's corridor mouths as ghost doors at its own settings' offsets, a staged carriage's
+     * or contents build's two ends as named outlines. Kinds with no two ends to name (track, parts,
+     * groups) contribute nothing, as their categories do.
+     */
+    private static List<EditorDoorGhostsPacket.Door> workbenchSnapshot(CarriageDims dims) {
+        List<EditorDoorGhostsPacket.Door> out = new ArrayList<>();
+        for (WorkbenchStagedPlot plot : stagedPlots()) {
+            if (plot.isRoom()) {
+                List<BlockPos> bases = PortalRoomEditor.doorBases(
+                    WorkbenchStagedPlot.roomSettings(plot.stagedId()), plot.origin(), plot.size(), dims);
+                for (int i = 0; i < bases.size(); i++) {
+                    out.add(new EditorDoorGhostsPacket.Door(bases.get(i), /*entry*/ i == 0, /*model*/ true));
+                }
+                continue;
+            }
+            CarriageDims box = carriageBoxOf(plot);
+            if (box != null) addCarriageDoors(out, plot.shellOrigin(), box);
+        }
+        return out;
+    }
+
+    /**
+     * The carriage box a staged carriage or contents build's doors are cut in, or null for any other
+     * kind — and for one whose size no carriage could be ({@link CarriageDims} refuses it), which
+     * has no doorway line to mark.
+     */
+    static CarriageDims carriageBoxOf(WorkbenchStagedPlot plot) {
+        if (plot.kind() != BuilderPhotoPaths.Kind.CARRIAGE && plot.kind() != BuilderPhotoPaths.Kind.CONTENTS) {
+            return null;
+        }
+        Vec3i shell = plot.shellSize();
+        try {
+            // Staged sizes are (length, height, width); CarriageDims takes (length, width, height).
+            return new CarriageDims(shell.getX(), shell.getZ(), shell.getY());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    /** Every staged build with a slot, on the running server — empty off it. */
+    private static List<WorkbenchStagedPlot> stagedPlots() {
+        net.minecraft.server.MinecraftServer server =
+            net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        return server == null ? List.of() : WorkbenchStagedPlot.all(server.overworld());
+    }
+
+    /** Each staged build's kind, box and — for a room — settings tag: everything its doors are a function of. */
+    private static String workbenchKey(CarriageDims dims) {
+        StringBuilder sb = new StringBuilder();
+        for (WorkbenchStagedPlot plot : stagedPlots()) {
+            sb.append(plot.stagedId()).append('@').append(plot.kind()).append('@')
+              .append(plot.origin().getX()).append(',').append(plot.origin().getY()).append(',')
+              .append(plot.origin().getZ()).append('/')
+              .append(plot.size().getX()).append(',').append(plot.size().getY()).append(',')
+              .append(plot.size().getZ());
+            if (plot.isRoom()) sb.append('/').append(WorkbenchStagedPlot.roomSettings(plot.stagedId()).toTag());
+            sb.append(';');
+        }
+        return sb.toString();
+    }
+
     private static List<EditorDoorGhostsPacket.Door> portalSnapshot(CarriageDims dims) {
         List<String> names = PortalRoomEditor.names();
         List<EditorDoorGhostsPacket.Door> out = new ArrayList<>(names.size() * 2);
@@ -226,6 +292,7 @@ public final class EditorDoorGhosts {
             case PORTALS -> "portals/" + portalKey(dims);
             case CARRIAGES -> "carriages/" + carriageKey(dims);
             case CONTENTS -> "contents/" + contentsKey(dims);
+            case WORKBENCH -> "workbench/" + workbenchKey(dims);
             default -> "";
         };
     }

@@ -159,7 +159,8 @@ public final class VariantOverlayRenderer {
      * Entrance / Exit word over the doorway the author has already cut.
      */
     private static final java.util.Set<EditorCategory> DOOR_GHOST_CATEGORIES =
-        java.util.EnumSet.of(EditorCategory.PORTALS, EditorCategory.CARRIAGES, EditorCategory.CONTENTS);
+        java.util.EnumSet.of(EditorCategory.PORTALS, EditorCategory.CARRIAGES, EditorCategory.CONTENTS,
+            EditorCategory.WORKBENCH);
 
     /**
      * Per-player dedup key for the door markers — {@link EditorDoorGhosts#key}, which encodes the
@@ -347,6 +348,19 @@ public final class VariantOverlayRenderer {
             pushOutlineSnapshot(player);
 
             BlockPos playerPos = player.blockPosition();
+
+            // A staged Workbench build: its own document, through the same plot every Workbench menu
+            // resolves (BlockVariantPlot.resolveAtPos's Workbench arm) rather than a third copy.
+            games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot stagedPlot =
+                games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.at(level, playerPos);
+            if (stagedPlot != null) {
+                PartPositionMenuController.forget(player);
+                Vec3i stagedSize = stagedPlot.footprint();
+                updateHoverPacket(player, stagedPlot.origin(),
+                    pos -> inBounds(pos, stagedSize),
+                    stagedPlot::statesAt);
+                continue;
+            }
 
             // Carriage plot takes first priority — drives the parts menu
             // controller and the variant-blocks icon HUD.
@@ -588,16 +602,20 @@ public final class VariantOverlayRenderer {
         // Authored room size — portal rooms only; every other kind's plot is fixed by its kind.
         // In the key as well as the packet, or a resize would not re-send and the steppers would
         // keep reading the old numbers.
-        net.minecraft.core.Vec3i roomSize = l.category() == EditorCategory.PORTALS
-            ? PortalRoomEditor.plotSize(modelName, dims)
-            : null;
+        // A room staged in the Workbench carries the same two facts, under its staged room name, so
+        // the X menu and the plot panel offer it the Dimensions rows.
+        String roomName = l.category() == EditorCategory.PORTALS ? modelName
+            : l.model() instanceof Template.Staged staged && isStagedRoom(staged.stagedId())
+                ? games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.nameFor(staged.stagedId())
+                : null;
+        net.minecraft.core.Vec3i roomSize = roomName == null ? null : PortalRoomEditor.plotSize(roomName, dims);
         int roomLength = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getX();
         int roomWidth = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getZ();
         int roomHeight = roomSize == null ? EditorStatusPacket.NO_SIZE : roomSize.getY();
         // Resolved rather than passed through raw, so the row shows the mode the room will actually
         // behave as even when the tag on disk is absent or misspelt.
         String roomMode = roomSize == null ? EditorStatusPacket.NO_MODE
-            : games.brennan.dungeontrain.portal.PortalRoomSettings.of(modelName).toTag();
+            : games.brennan.dungeontrain.portal.PortalRoomSettings.of(roomName).toTag();
 
         // Random-flip options — contents only; every other kind's stamp is never flipped, so its
         // mask stays NO_FLIP and the client renders no Flip row. In the key so a toggle refreshes.
@@ -612,7 +630,7 @@ public final class VariantOverlayRenderer {
         // command dispatch never sees the label.
         String headerName = l.model() instanceof Template.Contents cm
             ? games.brennan.dungeontrain.train.CarriageContentsWeights.current().nameFor(cm.contents().id())
-            : l.category() == EditorCategory.PORTALS && roomSize != null
+            : l.category() == EditorCategory.PORTALS
                 ? games.brennan.dungeontrain.track.variant.TrackVariantWeights.nameFor(
                     games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, modelName)
                 : l.model().displayName();
@@ -633,6 +651,14 @@ public final class VariantOverlayRenderer {
             devmode, weight, minLevel, maxLevel, phaseMask, partMenuEnabled,
             mirror[0], mirror[1], mirror[2], mirror[3], excludedContents, stageId,
             roomLength, roomWidth, roomHeight, roomMode, flipMask));
+    }
+
+    /** Whether {@code stagedId} is a dimensional carriage room — the staged kind with room settings. */
+    private static boolean isStagedRoom(String stagedId) {
+        return games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.find(stagedId)
+            .map(b -> games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.kindOf(b.relayKind())
+                == games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.PORTAL_ROOM)
+            .orElse(false);
     }
 
     /**
@@ -1247,12 +1273,14 @@ public final class VariantOverlayRenderer {
      * keyed on the boxes, like {@link #pushDoorGhostsSnapshot}: a steady editor sends nothing.
      */
     private static void pushTunnelEnvelopeSnapshot(ServerPlayer player, CarriageDims dims) {
-        if (!EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) {
+        boolean workbench = EditorStampedCategoryState.isActive(EditorCategory.WORKBENCH);
+        if (!workbench && !EditorStampedCategoryState.isActive(EditorCategory.TRACKS)) {
             clearTunnelEnvelopeIfStale(player);
             return;
         }
-        List<net.minecraft.world.level.levelgen.structure.BoundingBox> boxes =
-            EditorTunnelEnvelopes.snapshot(dims);
+        List<net.minecraft.world.level.levelgen.structure.BoundingBox> boxes = workbench
+            ? EditorTunnelEnvelopes.workbenchSnapshot(dims)
+            : EditorTunnelEnvelopes.snapshot(dims);
         if (boxes.isEmpty()) {
             clearTunnelEnvelopeIfStale(player);
             return;

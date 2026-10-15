@@ -244,7 +244,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "Твоє спорядження залишиться на складності %s і повернеться, якщо ти перемкнешся назад.",
   "gui.dungeontrain.difficulty_confirm.change": "Змінити складність",
   "gui.dungeontrain.difficulty_confirm.cancel": "Відмінити",
-  "chat.dungeontrain.difficulty_profile.swapped": "Тепер ти їдеш на %s. Кожна складність зберігає власне спорядження, досвід і скриню Краю — усе, що ти носив, чекає на тебе на %s.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Тепер ти їдеш на %s. Кожна складність зберігає власне спорядження, досвід, скриню Краю й досягнення — усе, що ти носив, чекає на тебе на %s.",
   "chat.dungeontrain.free_play.ais_changed": "Змінено: %s",
   "chat.dungeontrain.free_play.ais_fix": "Натисни тут, щоб відновити стандартні налаштування, а потім перезапусти гру, щоб грати як звично.",
   "chat.dungeontrain.free_play.cause.portal_rate": "У цьому світі змінено частоту появи вимірних вагонів.",
