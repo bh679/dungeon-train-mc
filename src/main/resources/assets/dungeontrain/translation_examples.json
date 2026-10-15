@@ -15610,6 +15610,21 @@
       ]
     }
   },
+  "chat.dungeontrain.live.takeover.offer": {
+    "1": {
+      "label": "the player name of the streamer who died",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    },
+    "2": {
+      "label": "the clickable [Take over the stream] button (chat.dungeontrain.live.takeover.button)",
+      "examples": [
+        "[Take over the stream]"
+      ]
+    }
+  },
   "chat.dungeontrain.live.took_over": {
     "1": {
       "label": "the player name of the broadcaster who was cut off",
@@ -15640,6 +15655,51 @@
       "label": "the clickable settings path, already translated (chat.dungeontrain.live_chat.path)",
       "examples": [
         "Options / Dungeon Train / Stream / Live chat"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.prompt": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.offered": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.give_failed": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.offer": {
+    "1": {
+      "label": "the streamer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.received": {
+    "1": {
+      "label": "the streamer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
       ]
     }
   },

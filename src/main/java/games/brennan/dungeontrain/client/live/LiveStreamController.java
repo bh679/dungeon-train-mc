@@ -128,6 +128,10 @@ public final class LiveStreamController {
      * LoggingOut fires, so one raised there would never be seen.
      */
     @Nullable private LiveStreamEndedToast.Reason endedAfterLeave;
+    /** The streamer died and the broadcast carries on through the death screens ({@link LivePostMortem}). */
+    private final LivePostMortem postMortem = new LivePostMortem();
+    /** Render thread: inside {@link #onLoggingOut}, so any ended pop-up waits for the title screen. */
+    private boolean leaving;
 
     private LiveStreamController() {}
 
@@ -173,6 +177,13 @@ public final class LiveStreamController {
         return state == State.STREAMING && c != null ? c.playlistUrl() : null;
     }
 
+    /** The stream's relay token (proves this client is the streamer, e.g. for a Live Eye gift), or null when not streaming. */
+    @Nullable
+    public String streamToken() {
+        Claim c = claim;
+        return state == State.STREAMING && c != null ? c.token() : null;
+    }
+
     // ---- server packets -----------------------------------------------------------------------
 
     public void onServerSaid(LiveStreamPacket packet) {
@@ -180,13 +191,50 @@ public final class LiveStreamController {
             case START -> start(packet.eyeId());
             // The ended pop-up says why; the server's burn line describes the Live Eye.
             case STOP_REPLACED -> stop(null, LiveStreamEndedToast.Reason.REPLACED);
-            case STOP_DIED -> stop(null, LiveStreamEndedToast.Reason.DIED);
+            case STOP_DIED -> died();
             case STOP_LEFT -> stop(null, LiveStreamEndedToast.Reason.LEFT);
             case STOP_REMOVED -> stop(null, LiveStreamEndedToast.Reason.REMOVED);
             case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY), LiveStreamEndedToast.Reason.FREE_PLAY);
             // The server's burn line and strike warning already said why.
             case STOP_MODERATED -> stop(null, LiveStreamEndedToast.Reason.MODERATED);
         }
+    }
+
+    // ---- post mortem --------------------------------------------------------------------------
+
+    /**
+     * The server says the streamer died (it has burned the Live Eye and cleared the streamer). A
+     * broadcast that is already on air carries on through the death screens until the streamer ends
+     * it (End Stream, {@link LiveRecOverlay}) or leaves; the relay offers it to viewers meanwhile, and
+     * the first to accept cuts this one off. Anything not yet on air stops as before.
+     */
+    private void died() {
+        Claim c = claim;
+        if (state != State.STREAMING || c == null) {
+            stop(null, LiveStreamEndedToast.Reason.DIED);
+            return;
+        }
+        LOGGER.info("[DungeonTrain] live: streamer died; streaming on through the death screens");
+        postMortem.begin();
+        LiveFeedClient.died(c.token());
+        // The moment of death, cut from this stream's own segments: the first death page's backdrop
+        // and the #live-eye offline post's GIF.
+        LiveEncoder enc = encoder;
+        Path d = dir;
+        if (enc != null && d != null) {
+            LiveDeathClip.begin(d, enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps()),
+                LiveFeedClientConfig.segmentSeconds(), c.token());
+        }
+    }
+
+    /** Streaming on after death — the death screens are what goes out. */
+    public boolean postMortem() {
+        return state == State.STREAMING && postMortem.active();
+    }
+
+    /** The End Stream button. */
+    public void endPostMortem() {
+        if (postMortem()) stop(null, LiveStreamEndedToast.Reason.DIED);
     }
 
     // ---- lifecycle ----------------------------------------------------------------------------
@@ -263,11 +311,19 @@ public final class LiveStreamController {
     }
 
     private void tick() {
+        LiveDeathClip.tick();
         if (endedAfterLeave != null && Minecraft.getInstance().level == null) {
             Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(endedAfterLeave));
             endedAfterLeave = null;
         }
-        if (state != State.IDLE && state != State.STOPPING && checkHeadpiece()) return;
+        if (postMortem.active()) {
+            if (state != State.STREAMING) {
+                postMortem.clear();
+            } else if (tickPostMortem()) {
+                return;
+            }
+        }
+        if (state != State.IDLE && state != State.STOPPING && !postMortem.active() && checkHeadpiece()) return;
         if (state == State.WAIT_FFMPEG) {
             if (FfmpegSupport.state() == FfmpegSupport.State.READY) {
                 if (headpieceWorn()) claimChannel();
@@ -291,6 +347,18 @@ public final class LiveStreamController {
             // The approved list can change under a running stream (the relay's overlay revokes a mod).
             if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
         }
+    }
+
+    /** Ends a post-mortem stream nobody is watching the death screens of any more. True when it ended. */
+    private boolean tickPostMortem() {
+        Minecraft mc = Minecraft.getInstance();
+        Screen screen = mc.screen;
+        boolean dead = mc.player != null && mc.player.isDeadOrDying();
+        boolean alive = mc.player != null && mc.player.isAlive();
+        if (!postMortem.tick(screen == null ? null : screen.getClass(), dead, alive)) return false;
+        LOGGER.info("[DungeonTrain] live: post-mortem stream ended ({})", alive ? "respawned" : "no death screen");
+        stop(null, LiveStreamEndedToast.Reason.DIED);
+        return true;
     }
 
     /**
@@ -332,7 +400,9 @@ public final class LiveStreamController {
         LiveFeedClient.Life life = new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION);
         CompletableFuture<Boolean> aac = LiveFeedClientConfig.streamAudio()
             ? FfmpegSupport.aacEncoder() : CompletableFuture.completedFuture(false);
-        LiveFeedClient.claim(uuid, name, eyeId, info, life).thenAcceptBothAsync(aac, (result, hasAac) -> {
+        // Won a dead streamer's takeover: the ticket carries the claim past the relay's tenure check.
+        String ticket = LiveTakeoverOffer.takeTicket(System.currentTimeMillis());
+        LiveFeedClient.claim(uuid, name, eyeId, info, life, ticket).thenAcceptBothAsync(aac, (result, hasAac) -> {
             if (gen != generation || state != State.CLAIMING) return;
             if (result.forbidden() && "banned".equals(result.str("error"))) {
                 // The text-filter ladder has this player banned from the Live Eye; the server burns it
@@ -363,6 +433,7 @@ public final class LiveStreamController {
         int gen = generation;
         try {
             sweepStaleDirs();
+            LiveDeathClip.forget();
             Path d = liveRoot().resolve(c.session());
             Files.createDirectories(d);
             int w = LiveFeedClientConfig.captureWidth();
@@ -503,6 +574,12 @@ public final class LiveStreamController {
 
     private void cutOff(String by) {
         if (state != State.STREAMING) return;
+        if (postMortem.active()) {
+            // A viewer took the dead streamer's stream over: the server already let go of this one.
+            LOGGER.info("[DungeonTrain] live: post-mortem stream taken over by {}", by);
+            stop(null, false, ASYNC, LiveStreamEndedToast.Reason.REPLACED);
+            return;
+        }
         // Silent here: the server burns the Live Eye on CUT_OFF and its burn line says why.
         stop(null, false, ASYNC, LiveStreamEndedToast.Reason.REPLACED);
         tellServerEnded(LiveStreamEndedPacket.Reason.CUT_OFF);
@@ -532,6 +609,7 @@ public final class LiveStreamController {
     private void stop(@Nullable Component why, boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended) {
         if (state == State.IDLE) return;
         boolean wasLive = state == State.STREAMING;
+        postMortem.clear();
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
@@ -540,7 +618,7 @@ public final class LiveStreamController {
         state = State.IDLE;
         if (why != null) say(why);
         if (!wasLive || ended == null) return;
-        if (ended == LiveStreamEndedToast.Reason.LEFT) {
+        if (ended == LiveStreamEndedToast.Reason.LEFT || leaving) {
             endedAfterLeave = ended;
         } else {
             Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(ended));
@@ -670,10 +748,15 @@ public final class LiveStreamController {
 
     private StreamCapture.Point capturePoint() {
         // Not worn → nothing goes out, from the first frame; the guard's grace only delays ending.
-        if (state != State.STREAMING || !headpieceWorn()) return StreamCapture.Point.SKIP;
+        // Post mortem the Live Eye has burned: the death screens are what goes out.
+        if (state != State.STREAMING) return StreamCapture.Point.SKIP;
+        boolean afterDeath = postMortem.active();
+        if (!afterDeath && !headpieceWorn()) return StreamCapture.Point.SKIP;
         Minecraft mc = Minecraft.getInstance();
         Screen screen = mc.screen;
-        return StreamCapture.point(LiveFeedClientConfig.streamGui(), streamChatShown(),
+        // The death screens are the show: they go out even with Show GUI to viewers off.
+        boolean deathScreen = afterDeath && screen != null && LivePostMortem.isDeathScreen(screen.getClass().getName());
+        return StreamCapture.point(LiveFeedClientConfig.streamGui() || deathScreen, streamChatShown(),
             screen != null, StreamableScreens.shown(screen), mc.options.hideGui);
     }
 
@@ -696,8 +779,14 @@ public final class LiveStreamController {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        // Save & quit, disconnect or kick: the pop-up carries over to the title screen.
-        INSTANCE.stop(null, LiveStreamEndedToast.Reason.LEFT);
+        // Save & quit, disconnect or kick: the pop-up carries over to the title screen. Leaving the
+        // death screens (Start again) ends a post-mortem stream: it ended because they died.
+        INSTANCE.leaving = true;
+        try {
+            INSTANCE.stop(null, INSTANCE.postMortem() ? LiveStreamEndedToast.Reason.DIED : LiveStreamEndedToast.Reason.LEFT);
+        } finally {
+            INSTANCE.leaving = false;
+        }
     }
 
     @SubscribeEvent

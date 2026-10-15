@@ -103,12 +103,13 @@ public final class LiveEyeLootResolver {
     }
 
     /** A real (resolved) Live Eye in the inventory — worn included — or the ender chest. */
-    static boolean holdsLiveEye(ServerPlayer player) {
+    public static boolean holdsLiveEye(ServerPlayer player) {
         return countRealLiveEyes(player.getInventory()) > 0
             || countRealLiveEyes(player.getEnderChestInventory()) > 0;
     }
 
-    private static int countRealLiveEyes(Container container) {
+    /** Resolved (not pending) Live Eyes in {@code container} — any side, so a client can count its own inventory. */
+    public static int countRealLiveEyes(Container container) {
         int n = 0;
         for (int i = 0; i < container.getContainerSize(); i++) {
             ItemStack stack = container.getItem(i);
@@ -121,7 +122,8 @@ public final class LiveEyeLootResolver {
         return onCooldown(player.getData(ModDataAttachments.LIVE_EYE_SEEN_AT.get()), now(player));
     }
 
-    private static void markSeen(ServerPlayer player) {
+    /** Start {@code player}'s Live Eye cooldown now (a granted or gifted eye). */
+    public static void markSeen(ServerPlayer player) {
         player.setData(ModDataAttachments.LIVE_EYE_SEEN_AT.get(), now(player));
     }
 
