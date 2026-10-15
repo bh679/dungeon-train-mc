@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.TextColor;
 import org.junit.jupiter.api.DisplayName;
@@ -90,7 +91,7 @@ class LiveChatRulesTest {
     @DisplayName("line: a forged author or content still prints as one plain line")
     void lineIsPlain() {
         ChatLine l = new ChatLine(1, 0, "Vi§cewer\n[Dev]", null, "hi\n§kthere", Source.DISCORD);
-        assertEquals("chat.dungeontrain.live_chat.prefix Viewer[Dev]: hithere", LiveChatRules.line(l).getString());
+        assertEquals("chat.dungeontrain.live_chat.prefix \uE003 Viewer[Dev]: hithere", LiveChatRules.line(l).getString());
         for (var sib : LiveChatRules.line(l).getSiblings()) {
             assertNull(sib.getStyle().getClickEvent());
             assertNull(sib.getStyle().getHoverEvent());
@@ -98,16 +99,44 @@ class LiveChatRulesTest {
     }
 
     @Test
-    @DisplayName("line: [Live] Name: text, the name coloured by room")
+    @DisplayName("line: [Live] <icon> Name: text, the icon in the icon font, the name coloured by room")
     void line() {
         ChatLine l = new ChatLine(1, 0, "Viewer", null, "hi there", Source.DISCORD);
-        assertEquals("chat.dungeontrain.live_chat.prefix Viewer: hi there", LiveChatRules.line(l).getString());
+        assertEquals("chat.dungeontrain.live_chat.prefix \uE003 Viewer: hi there", LiveChatRules.line(l).getString());
         ChatLine t = new ChatLine(2, 0, "Twitcher", null, "yo", Source.TWITCH);
-        assertEquals("chat.dungeontrain.live_chat.prefix Twitcher: yo", LiveChatRules.line(t).getString());
-        assertEquals(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE), LiveChatRules.line(t).getSiblings().get(0).getStyle().getColor());
+        assertEquals("chat.dungeontrain.live_chat.prefix \uE004 Twitcher: yo", LiveChatRules.line(t).getString());
+        var glyph = LiveChatRules.line(t).getSiblings().get(1).getStyle();
+        assertEquals(LiveChatRules.ICON_FONT, glyph.getFont());
+        assertEquals(TextColor.fromLegacyFormat(ChatFormatting.WHITE), glyph.getColor(), "white, so the glyph keeps its colours");
+        assertEquals(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE), LiveChatRules.line(t).getSiblings().get(2).getStyle().getColor());
+        ChatLine o = new ChatLine(3, 0, "Bot", null, "?", Source.OTHER);
+        assertEquals("chat.dungeontrain.live_chat.prefix Bot: ?", LiveChatRules.line(o).getString(), "an unknown room has no icon");
+        assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.WEB));
         assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.DISCORD));
         assertEquals(ChatFormatting.AQUA, LiveChatRules.nameColour(Source.OTHER));
         assertEquals(ChatFormatting.LIGHT_PURPLE, LiveChatRules.nameColour(Source.TWITCH));
         assertEquals(ChatFormatting.GREEN, LiveChatRules.nameColour(Source.GAME));
+    }
+
+    @Test
+    @DisplayName("icon: Live Eye for the streamer, TV for other game lines (and old relays), then globe / Discord / Twitch")
+    void icon() {
+        assertEquals(LiveChatRules.Icon.EYE, LiveChatRules.icon(new ChatLine(1, 0, "S", null, "x", Source.GAME, null, Via.EYE)));
+        assertEquals(LiveChatRules.Icon.TV, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.GAME, null, Via.TV)));
+        assertEquals(LiveChatRules.Icon.TV, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.GAME)));
+        assertEquals(LiveChatRules.Icon.WEB, LiveChatRules.icon(new ChatLine(1, 0, "W", null, "x", Source.WEB)));
+        assertEquals(LiveChatRules.Icon.DISCORD, LiveChatRules.icon(new ChatLine(1, 0, "D", null, "x", Source.DISCORD)));
+        assertEquals(LiveChatRules.Icon.TWITCH, LiveChatRules.icon(new ChatLine(1, 0, "T", null, "x", Source.TWITCH)));
+        assertNull(LiveChatRules.icon(new ChatLine(1, 0, "O", null, "x", Source.OTHER)));
+    }
+
+    @Test
+    @DisplayName("parse: the relay's web source and via field")
+    void parse() {
+        assertEquals(Source.WEB, Source.parse("web"));
+        assertEquals(Via.EYE, Via.parse("eye"));
+        assertEquals(Via.TV, Via.parse("tv"));
+        assertNull(Via.parse(null));
+        assertNull(Via.parse("telescope"));
     }
 }

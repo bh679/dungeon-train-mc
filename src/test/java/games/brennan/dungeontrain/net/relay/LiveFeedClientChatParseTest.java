@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +44,23 @@ class LiveFeedClientChatParseTest {
         assertEquals(Source.TWITCH, p.lines().get(2).source());
         assertFalse(p.lines().get(2).fromGame());
         assertEquals(Source.OTHER, p.lines().get(3).source(), "an unknown room is still shown");
+    }
+
+    @Test
+    @DisplayName("a game line's via (Live Eye / TV) and the website's web source are read; an older relay's line has no via")
+    void viaAndWeb() {
+        ChatPage p = parse(200, """
+            {"ok":true,"live":true,"seq":4,"messages":[
+              {"seq":1,"author":"Streamer","uuid":"11111111222233334444555555555555","content":"a","source":"game","via":"eye"},
+              {"seq":2,"author":"Watcher","uuid":"aaaaaaaabbbbccccddddeeeeeeeeeeee","content":"b","source":"game","via":"tv"},
+              {"seq":3,"author":"Old","uuid":"aaaaaaaabbbbccccddddeeeeeeeeeeee","content":"c","source":"game"},
+              {"seq":4,"author":"Browser","content":"d","source":"web"}
+            ]}""");
+        assertEquals(Via.EYE, p.lines().get(0).via());
+        assertEquals(Via.TV, p.lines().get(1).via());
+        assertNull(p.lines().get(2).via());
+        assertEquals(Source.WEB, p.lines().get(3).source());
+        assertNull(p.lines().get(3).via());
     }
 
     @Test
