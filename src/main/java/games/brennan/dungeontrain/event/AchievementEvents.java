@@ -14,6 +14,7 @@ import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
 import games.brennan.dungeontrain.advancement.GlobalPlayerStats;
 import games.brennan.dungeontrain.advancement.LeatherOverDiamondAdvancement;
+import games.brennan.dungeontrain.advancement.AdvancementProfiles;
 import games.brennan.dungeontrain.advancement.AllAtOnceAdvancement;
 import games.brennan.dungeontrain.advancement.LifeChallengeAdvancements;
 import games.brennan.dungeontrain.advancement.LifeDisqualification;
@@ -105,7 +106,7 @@ import java.util.UUID;
  *   <li>{@link AdvancementEvent.AdvancementEarnEvent} → append any granted
  *       GUI-visible advancement (vanilla, Dungeon Train, or other mod) to the
  *       sidecar so it survives world deletion; the hidden recipe tree is
- *       excluded (see {@link #shouldPersist}).</li>
+ *       excluded (see {@link AdvancementProfiles#shouldPersist}).</li>
  * </ul>
  *
  * <p>Static notify methods are called by other event classes:
@@ -158,17 +159,6 @@ public final class AchievementEvents {
     /** Per-player last-right-clicked chest pos + tick, for debouncing only. */
     private static final Map<UUID, BlockPos> LAST_CHEST_POS = new HashMap<>();
     private static final Map<UUID, Long> LAST_CHEST_TICK = new HashMap<>();
-
-    /**
-     * Set while {@link #onPlayerLoggedIn} replays the cross-world sidecar onto
-     * this world's advancements. That replay calls {@code award(...)}, which
-     * re-fires {@link AdvancementEvent.AdvancementEarnEvent} for every
-     * previously-earned advancement — without this guard the keybind hint would
-     * spam the joining player on every login. Server-thread scoped (login and
-     * award both run on the server thread), mirroring the gamerule / Discord
-     * announce suppression that wraps the same loop.
-     */
-    private static volatile boolean replaying = false;
 
     private AchievementEvents() {}
 
@@ -969,29 +959,18 @@ public final class AchievementEvents {
     }
 
     // ---------------- Global sidecar ↔ vanilla mirror ----------------
-
-    /**
-     * Persistence policy for the cross-world {@link GlobalAchievementStore}: an
-     * advancement is persisted iff it appears in the advancements screen (has a
-     * display). This captures vanilla, Dungeon Train, and other mods'
-     * advancements alike, while excluding the hidden display-less
-     * {@code recipes/*} tree — the same partition
-     * {@link CompletionistAdvancement} uses to skip recipe-style advancements.
-     * Single source of truth for the three sidecar call sites: earn-append
-     * ({@link #onAdvancementEarn}), login back-fill
-     * ({@link #absorbWorldAdvancementsIntoSidecar}), and logout revoke-reconcile
-     * ({@link #onPlayerLoggedOut}).
-     */
-    private static boolean shouldPersist(AdvancementHolder holder) {
-        return holder.value().display().isPresent();
-    }
+    // Partitioning, persist policy, absorb / replay / reconcile: AdvancementProfiles.
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        // Multiplayer-join grant runs first, independent of the sidecar replay
+        // Before anything is granted: if this world's tree mirrors another difficulty's advancement
+        // profile (a world from before the split, or a difficulty changed while offline), bank it
+        // there and swap in this difficulty's. First, so a fresh world's tree is still empty.
+        AdvancementProfiles.alignOnLogin(player);
+        // Multiplayer-join grant runs next, independent of the sidecar replay
         // below — a first-time joiner has an empty sidecar and would otherwise
-        // be skipped by the early-return inside replaySidecarAdvancements.
+        // be skipped by the early-return inside AdvancementProfiles.replay.
         awardMultiplayerJoinIfApplicable(player);
         // Absorb this world's story reads into the cross-world global record,
         // then re-evaluate the story advancements (which read the global store)
@@ -1004,7 +983,7 @@ public final class AchievementEvents {
         // updated player's complete vanilla / other-mod trees, which will never
         // re-fire AdvancementEarnEvent — is captured before the replay below
         // mirrors the store back onto this world.
-        absorbWorldAdvancementsIntoSidecar(player);
+        AdvancementProfiles.absorb(player, AdvancementProfiles.currentKey(player));
         // Replay the cross-world sidecar onto this world's advancements, then
         // re-evaluate the "Everything Burrito" capstone. The capstone check runs
         // last and unconditionally: a player who finished every other advancement
@@ -1012,7 +991,7 @@ public final class AchievementEvents {
         // earn to fire the live check in onAdvancementEarn, so login is the only
         // place that backfill can happen. It reads this world's restored
         // (post-replay) progress and grants normally (replaying is false here).
-        replaySidecarAdvancements(player);
+        AdvancementProfiles.replay(player, AdvancementProfiles.currentKey(player));
         // Tab copies follow their originals as restored above (or revoked by Start Again).
         TabGateways.sync(player);
         TabCompleteAdvancements.checkAndGrant(player);
@@ -1026,100 +1005,6 @@ public final class AchievementEvents {
         // After the replay above so an advancement restored from the sidecar is not reported as
         // disqualified — re-derived from persisted per-life state, so a mid-life relog agrees.
         LifeDisqualification.sync(player);
-    }
-
-    /**
-     * Replay the cross-world {@link GlobalAchievementStore} sidecar onto this
-     * world's {@code PlayerAdvancements}, re-granting every advancement the
-     * player earned on this instance regardless of which world it happened in.
-     * No-op when the sidecar is empty.
-     *
-     * <p>The replay {@code award(...)} calls re-fire
-     * {@link AdvancementEvent.AdvancementEarnEvent}; {@link #replaying} guards
-     * the keybind-hint and capstone re-check side effects for the duration,
-     * while the announce gamerule + Discord suppression keep the replay silent
-     * so a rejoining player isn't spammed for advancements already earned.</p>
-     */
-    private static void replaySidecarAdvancements(ServerPlayer player) {
-        UUID uuid = player.getUUID();
-        Set<ResourceLocation> granted = GlobalAchievementStore.read(uuid);
-        if (granted.isEmpty()) return;
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerAdvancementManager mgr = server.getAdvancements();
-        // Suppress vanilla's chat broadcast on each award() by temporarily
-        // disabling the gamerule that gates it. Toasts are already silenced
-        // by vanilla: the first flushDirty packet after login carries
-        // isFirstPacket=true → shouldReset=true, and the client skips toast
-        // emission for reset packets.
-        GameRules.BooleanValue announce =
-            server.getGameRules().getRule(GameRules.RULE_ANNOUNCE_ADVANCEMENTS);
-        boolean wasAnnouncing = announce.get();
-        if (wasAnnouncing) announce.set(false, server);
-        // Mirror that silence to the bundled Discord Presence channel. Its
-        // AdvancementEarnEvent listener is independent of the announce gamerule,
-        // so without this each replayed grant would re-post the advancement to
-        // Discord — double-announcing one the player already earned in a prior
-        // world. The gate is thread-local and scoped to just this replay loop:
-        // genuine first-time earns, and a server's global announce setting, are
-        // unaffected. (replayed is an int[] holder so the lambda can mutate it.)
-        int[] replayed = {0};
-        replaying = true;
-        try {
-            DiscordService.runWithAdvancementAnnounceSuppressed(() -> {
-                for (ResourceLocation id : granted) {
-                    AdvancementHolder holder = mgr.get(id);
-                    if (holder == null) {
-                        LOGGER.warn("[DungeonTrain] Globally-granted advancement {} not in registry — skipping",
-                            id);
-                        continue;
-                    }
-                    for (String key : holder.value().criteria().keySet()) {
-                        if (player.getAdvancements().award(holder, key)) replayed[0]++;
-                    }
-                }
-            });
-        } finally {
-            replaying = false;
-            if (wasAnnouncing) announce.set(true, server);
-        }
-        if (replayed[0] > 0) {
-            LOGGER.info("[DungeonTrain] Replayed {} criteria from global store for {} (silent)",
-                replayed[0], player.getName().getString());
-        }
-    }
-
-    /**
-     * Absorb every already-earned, GUI-visible advancement in this world into the
-     * cross-world {@link GlobalAchievementStore}, so it survives into other
-     * worlds. Complements {@link #onAdvancementEarn}, which only captures
-     * advancements earned <em>after</em> this store began tracking: a player who
-     * updated to this version already has complete vanilla / other-mod trees that
-     * will never re-fire {@link AdvancementEvent.AdvancementEarnEvent}, so without
-     * this login-time sweep they'd never enter the store. Mirrors the
-     * {@link #absorbWorldStoryProgressIntoGlobal} pattern. Idempotent set-union,
-     * batched into a single {@link GlobalAchievementStore#appendAll} write, and
-     * filtered by {@link #shouldPersist}.
-     */
-    private static void absorbWorldAdvancementsIntoSidecar(ServerPlayer player) {
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerAdvancementManager mgr = server.getAdvancements();
-        Set<ResourceLocation> done = new LinkedHashSet<>();
-        for (AdvancementHolder holder : mgr.getAllAdvancements()) {
-            if (!shouldPersist(holder)) continue;
-            // Don't absorb a cheated world's gameplay/vanilla earns into the
-            // cross-world profile; editor/* authoring still flows through.
-            if (!RunIntegrity.persistsAdvancement(player, holder)) continue;
-            if (player.getAdvancements().getOrStartProgress(holder).isDone()) {
-                done.add(holder.id());
-            }
-        }
-        int added = GlobalAchievementStore.appendAll(player.getUUID(), done);
-        if (added > 0) {
-            LOGGER.info("[DungeonTrain] Absorbed {} already-earned advancement(s) into global store for {}",
-                added, player.getName().getString());
-        }
     }
 
     /**
@@ -1143,21 +1028,7 @@ public final class AchievementEvents {
         GlobalPlayerStats.evict(uuid);
         GlobalBookBurnStats.flush(uuid);
         GlobalBookBurnStats.evict(uuid);
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerAdvancementManager mgr = server.getAdvancements();
-        Set<ResourceLocation> sidecar = GlobalAchievementStore.read(uuid);
-        int removed = 0;
-        for (ResourceLocation id : sidecar) {
-            AdvancementHolder holder = mgr.get(id);
-            if (holder == null) continue; // removed mod/datapack — leave it (may return)
-            if (player.getAdvancements().getOrStartProgress(holder).isDone()) continue;
-            if (GlobalAchievementStore.remove(uuid, id)) removed++;
-        }
-        if (removed > 0) {
-            LOGGER.info("[DungeonTrain] Logout reconcile: removed {} revoked advancement(s) from sidecar for {}",
-                removed, player.getName().getString());
-        }
+        AdvancementProfiles.reconcileRevokes(player);
     }
 
     /**
@@ -1261,7 +1132,7 @@ public final class AchievementEvents {
         AdvancementHolder advancement = event.getAdvancement();
         ResourceLocation id = advancement.id();
         // An Enchiridion camera advancement remembers the photo that earned it (client keeps the copy).
-        games.brennan.dungeontrain.compat.photo.AdvancementPhotoCapture.onEarn(player, id, replaying);
+        games.brennan.dungeontrain.compat.photo.AdvancementPhotoCapture.onEarn(player, id, AdvancementProfiles.isReplaying());
         // An advancement that unlocks a tab earns that tab's head (a copy, or an unlockedBy link). Those
         // heads follow their source, not achievements: no persistence, hint, accolade or capstone check.
         TabGateways.onEarned(player, id);
@@ -1271,9 +1142,7 @@ public final class AchievementEvents {
         // hidden display-less recipe tree is filtered out by shouldPersist.
         // Cheated runs earn live but don't write to the cross-world profile
         // (editor/* authoring stays exempt) — see RunIntegrity.
-        if (shouldPersist(advancement)
-                && RunIntegrity.persistsAdvancement(player, advancement)
-                && GlobalAchievementStore.append(player.getUUID(), id)) {
+        if (AdvancementProfiles.record(player, advancement)) {
             LOGGER.info("[DungeonTrain] Wrote global achievement {} for {}",
                 id, player.getName().getString());
         }
@@ -1286,7 +1155,7 @@ public final class AchievementEvents {
         // creative-mode dev tab. The client
         // decides whether to actually display it (gated on its local "opened
         // advancements" flag) and renders it with the live keybind.
-        if (!replaying
+        if (!AdvancementProfiles.isReplaying()
                 && id.getNamespace().equals(DungeonTrain.MOD_ID)
                 && !id.getPath().startsWith("editor/")) {
             // Death-screen "accolades": record this genuine, non-editor Dungeon Train

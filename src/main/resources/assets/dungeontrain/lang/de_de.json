@@ -212,7 +212,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "Deine Ausrüstung bleibt auf %s und ist wieder da, wenn du zurückwechselst.",
   "gui.dungeontrain.difficulty_confirm.change": "Schwierigkeit ändern",
   "gui.dungeontrain.difficulty_confirm.cancel": "Abbrechen",
-  "chat.dungeontrain.difficulty_profile.swapped": "Du fährst jetzt auf %s. Jede Schwierigkeit behält ihre eigene Ausrüstung, Erfahrung und Endertruhe — was du getragen hast, wartet drüben auf %s auf dich.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Du fährst jetzt auf %s. Jede Schwierigkeit behält ihre eigene Ausrüstung, Erfahrung, Endertruhe und Fortschritte — was du getragen hast, wartet drüben auf %s auf dich.",
   "chat.dungeontrain.free_play.ais_changed": "Geändert: %s",
   "chat.dungeontrain.free_play.ais_fix": "Klicke hier, um die Standardeinstellungen wiederherzustellen, und starte dann das Spiel neu, um normal zu spielen.",
   "command.dungeontrain.fix_ais.success": "Standardeinstellungen von Adventure Item Stats wiederhergestellt. Starte das Spiel (oder den Server) neu, um normal weiterzuspielen.",

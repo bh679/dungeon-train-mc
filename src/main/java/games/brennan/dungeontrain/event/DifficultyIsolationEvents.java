@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.AdvancementProfiles;
 import games.brennan.dungeontrain.compat.EnderChestLockBridge;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.DifficultyPartition;
@@ -19,8 +20,9 @@ import org.slf4j.Logger;
 
 /**
  * Swaps every online player onto the new difficulty's profile when the world difficulty changes: their
- * carried inventory + XP ({@link LoadoutStore}) and their Ender Chest (via
- * {@link EnderChestLockBridge#engage}, which drives EnderChestPersistence's live slot swap).
+ * carried inventory + XP ({@link LoadoutStore}), their Ender Chest (via
+ * {@link EnderChestLockBridge#engage}, which drives EnderChestPersistence's live slot swap) and their
+ * advancements ({@link AdvancementProfiles#swap}).
  *
  * <p>Each vanilla difficulty is a self-contained run — see {@link DifficultyPartition}. Dungeon Train
  * carries gear across runs (a new world per death, with {@code keepInventory}) and keeps the Ender Chest
@@ -72,6 +74,8 @@ public final class DifficultyIsolationEvents {
                 LoadoutStore.swap(player, fromKey, toKey);
                 // ECP re-resolves the slot key, which now carries the new difficulty's suffix.
                 EnderChestLockBridge.engage(player);
+                // And the advancement tree: bank this difficulty's, put the new one's in its place.
+                AdvancementProfiles.swap(player, fromKey, toKey);
                 player.sendSystemMessage(Component.translatable(
                     "chat.dungeontrain.difficulty_profile.swapped",
                     Component.translatable(to.getKey()),

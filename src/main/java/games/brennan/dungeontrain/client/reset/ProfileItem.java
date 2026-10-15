@@ -57,7 +57,7 @@ public enum ProfileItem {
     /** True when this item has something to remove — drives both the list and "nothing to reset". */
     public boolean present(UUID uuid) {
         return switch (this) {
-            case ADVANCEMENTS -> Files.isRegularFile(GlobalAchievementStore.file(uuid));
+            case ADVANCEMENTS -> GlobalAchievementStore.hasAny(uuid);
             case STATS -> Files.isRegularFile(GlobalPlayerStats.file(uuid));
             case BOOKS_BURNED -> Files.isRegularFile(GlobalBookBurnStats.file(uuid));
             case NARRATIVE -> Files.isRegularFile(GlobalNarrativeProgress.file());

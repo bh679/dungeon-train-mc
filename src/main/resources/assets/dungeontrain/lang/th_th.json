@@ -189,7 +189,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "ของของคุณจะยังอยู่ที่ %s และกลับมาเมื่อคุณสลับกลับ",
   "gui.dungeontrain.difficulty_confirm.change": "เปลี่ยนความยาก",
   "gui.dungeontrain.difficulty_confirm.cancel": "ยกเลิก",
-  "chat.dungeontrain.difficulty_profile.swapped": "ตอนนี้คุณกำลังโดยสารบน %s แต่ละความยากเก็บของ ค่าประสบการณ์ และหีบเอนเดอร์ของตัวเองไว้ — สิ่งที่คุณถืออยู่ก่อนหน้ารอคุณอยู่ที่ %s",
+  "chat.dungeontrain.difficulty_profile.swapped": "ตอนนี้คุณกำลังโดยสารบน %s แต่ละความยากเก็บของ ค่าประสบการณ์ หีบเอนเดอร์ และความก้าวหน้าของตัวเองไว้ — สิ่งที่คุณถืออยู่ก่อนหน้ารอคุณอยู่ที่ %s",
   "chat.dungeontrain.free_play.ais_changed": "เปลี่ยนแปลง: %s",
   "chat.dungeontrain.free_play.ais_fix": "คลิกที่นี่เพื่อคืนค่าการตั้งค่าเริ่มต้น จากนั้นรีสตาร์ตเกมเพื่อเล่นตามปกติ",
   "command.dungeontrain.fix_ais.success": "คืนค่าการตั้งค่าเริ่มต้นของ Adventure Item Stats แล้ว รีสตาร์ตเกม (หรือเซิร์ฟเวอร์) เพื่อกลับไปเล่นตามปกติ",

@@ -189,7 +189,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "装備は%sに残り、戻ってくればまた手元に返ります。",
   "gui.dungeontrain.difficulty_confirm.change": "難易度を変更",
   "gui.dungeontrain.difficulty_confirm.cancel": "キャンセル",
-  "chat.dungeontrain.difficulty_profile.swapped": "今は%sで乗車中。難易度ごとに装備、経験値、エンダーチェストは別々に保たれる——持っていたものは%sで君を待っている。",
+  "chat.dungeontrain.difficulty_profile.swapped": "今は%sで乗車中。難易度ごとに装備、経験値、エンダーチェスト、進捗は別々に保たれる——持っていたものは%sで君を待っている。",
   "chat.dungeontrain.free_play.ais_changed": "変更点: %s",
   "chat.dungeontrain.free_play.ais_fix": "ここをクリックしてデフォルト設定に戻し、その後ゲームを再起動すれば通常プレイに戻れる。",
   "command.dungeontrain.fix_ais.success": "Adventure Item Statsのデフォルト設定を復元した。ゲーム(またはサーバー)を再起動すれば通常プレイに戻る。",

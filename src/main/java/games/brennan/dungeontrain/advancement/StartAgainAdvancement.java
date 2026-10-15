@@ -113,7 +113,7 @@ public final class StartAgainAdvancement {
         AdvancementHolder capstone = mgr.get(CompletionistAdvancement.ID);
         AdvancementHolder self = mgr.get(ID);
         if (capstone == null || self == null) return false; // data not loaded (e.g. datapack stripped)
-        Set<ResourceLocation> banked = GlobalAchievementStore.read(player.getUUID());
+        Set<ResourceLocation> banked = GlobalAchievementStore.read(player.getUUID(), AdvancementProfiles.currentKey(player));
         if (!shouldArm(banked.contains(ID),
                        player.getAdvancements().getOrStartProgress(capstone).isDone(),
                        banked.contains(CompletionistAdvancement.ID))) {
@@ -214,7 +214,7 @@ public final class StartAgainAdvancement {
         AdvancementHolder capstone = server.getAdvancements().get(CompletionistAdvancement.ID);
         if (capstone == null) return false; // capstone data not loaded (e.g. datapack stripped)
         return player.getAdvancements().getOrStartProgress(capstone).isDone()
-            && GlobalAchievementStore.read(player.getUUID()).contains(CompletionistAdvancement.ID);
+            && GlobalAchievementStore.read(player.getUUID(), AdvancementProfiles.currentKey(player)).contains(CompletionistAdvancement.ID);
     }
 
     /**
@@ -254,7 +254,7 @@ public final class StartAgainAdvancement {
                 + "— live only, NOT banked: Free Play run", player.getName().getString());
             return;
         }
-        GlobalAchievementStore.append(player.getUUID(), ID);
+        GlobalAchievementStore.append(player.getUUID(), AdvancementProfiles.currentKey(player), ID);
         LOGGER.info("[DungeonTrain] Granted start-again advancement (It's Not That Simple) to {} (banked)",
             player.getName().getString());
     }
