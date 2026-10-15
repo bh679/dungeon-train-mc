@@ -86,14 +86,15 @@ public final class LiveTakeoverOffer {
 
     /**
      * Who may take over: wearing a TV on their head (it becomes the Live Eye), not Free Play (a Free
-     * Play run never goes live), Live Eye streaming switched on behind the internet consent, ffmpeg
-     * usable, and not streaming already.
+     * Play run never goes live, dev builds aside), Live Eye streaming switched on behind the internet
+     * consent, ffmpeg usable, and not streaming already.
      */
     static boolean eligible() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || !mc.player.isAlive()) return false;
         return eligible(TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD)),
-            mc.player.hasEffect(ModMobEffects.FREE_PLAY),
+            // Dev builds stream in Free Play for testing, as the server allows (LiveFeedEvents#streamBlocked).
+            mc.player.hasEffect(ModMobEffects.FREE_PLAY) && !DungeonTrain.isDevBuild(),
             DiscordPresenceClientConfig.isGranted() && LiveFeedClientConfig.streamingEnabled(),
             FfmpegSupport.state() != FfmpegSupport.State.OFF && FfmpegSupport.state() != FfmpegSupport.State.FAILED,
             LiveStreamController.get().state() == LiveStreamController.State.IDLE);
