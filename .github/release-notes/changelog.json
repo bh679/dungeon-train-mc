@@ -26105,6 +26105,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "release-announce-needs-release",
+      "version": "0.1295.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "No more announcements for releases that didn't ship",
+      "summary": "If a release fails to build, Discord is no longer told about it. Announcements only go out once the release actually exists to download.",
+      "highlights": [],
+      "pr": 2016,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
