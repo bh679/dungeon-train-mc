@@ -189,7 +189,7 @@
   "gui.dungeontrain.difficulty_confirm.kept": "Nananatili ang gamit mo sa %s at babalik ito kapag bumalik ka roon.",
   "gui.dungeontrain.difficulty_confirm.change": "Palitan ang hirap",
   "gui.dungeontrain.difficulty_confirm.cancel": "Kanselahin",
-  "chat.dungeontrain.difficulty_profile.swapped": "Nakasakay ka na ngayon sa %s. Bawat antas ng hirap ay may sariling gamit, XP at Ender Chest — naghihintay sa iyo sa %s ang mga dala mo kanina.",
+  "chat.dungeontrain.difficulty_profile.swapped": "Nakasakay ka na ngayon sa %s. Bawat antas ng hirap ay may sariling gamit, XP, Ender Chest at mga advancement — naghihintay sa iyo sa %s ang mga dala mo kanina.",
   "chat.dungeontrain.free_play.ais_changed": "Binago: %s",
   "chat.dungeontrain.free_play.ais_fix": "I-click ito para ibalik ang mga default na setting, pagkatapos ay i-restart ang laro para makapaglaro nang normal.",
   "command.dungeontrain.fix_ais.success": "Naibalik ang mga default na setting ng Adventure Item Stats. I-restart ang laro (o server) para makapaglaro ulit nang normal.",

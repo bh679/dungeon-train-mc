@@ -4007,6 +4007,7 @@
     "dungeontrain": [
       "gui.dungeontrain.enderchest.expand",
       "gui.dungeontrain.enderchest.expand.tooltip",
+      "chat.dungeontrain.difficulty_profile.swapped",
       "gui.dungeontrain.loading.story.2.line.3",
       "gui.dungeontrain.loading.story.3.line.4",
       "gui.dungeontrain.loading.story.3.line.5",
