@@ -77,6 +77,7 @@ The auto-release cascade dispatches `release.yml` with `auto=true`. The mark ste
 | `description` | no | Major release only: markdown (headings, `-` bullets, `**bold**`, `*italic*`, `[links](https://…)`) shown under the title in place of summary + highlights. `--description-file` on `append-entry.py` / `set-major.py`. |
 | `image` | no | Major release only: `https://` URL of the release photo. Attach or change it any time, even after the release shipped: `set-major.py --id <entry> --image <url>` (`--clear-image` removes it). |
 | `milestone` | no | Major release only: `true` for a moment rather than an update (a store launch, an approval). The update page labels its card "Milestone". `set-major.py --id <entry> --milestone` (`--not-milestone` drops it). |
+| `notable` | no | Major release only: `true` for the middle tier between a major and a minor update. It still leads the release notes and posts to Discord #highlights, but the update page shows it as a smaller, milestone-sized "Notable update" card (green, with its version and changes). Never with `milestone`. Log it with `append-entry.py --notable` (implies `--major`), or `set-major.py --id <entry> --notable` (`--not-notable` makes it a full major again). |
 | `highlights` | no | Bullet points. |
 | `addresses` | no | Player-reported issues the change fixes or improves: `lag`, `train_vanished` (`--addresses`, repeatable). A player who reports that issue on the death screen while on an older version is told a newer release addresses it. Omitted when empty. |
 | `pr` | no | PR number. |

@@ -38,6 +38,8 @@ Optional:
                     card on the web update page. With it:
   --description-file PATH  Markdown description (replaces summary + highlights).
   --image URL       https:// URL of the release photo.
+  --notable         The middle tier: a major that the web update page shows as a
+                    smaller "Notable update" card (milestone-sized). Implies --major.
   Attach or change these later with set-major.py.
 
 Paths honour CHANGELOG_FILE / GRADLE_PROPERTIES_FILE env overrides.
@@ -97,6 +99,12 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         action="store_true",
         help="Major release: renders first in the release notes and the Discord post, "
         "and as the headline card on the web update page.",
+    )
+    p.add_argument(
+        "--notable",
+        action="store_true",
+        help="Notable update (between major and minor): implies --major, but the web update "
+        "page shows it as a smaller 'Notable update' card.",
     )
     p.add_argument(
         "--description-file",
@@ -183,13 +191,17 @@ def main(argv: list[str] | None = None) -> int:
         addresses=args.addresses,
         tags=args.tags,
     )
+    if args.notable:
+        args.major = True
     if (args.description_file or args.image) and not args.major:
         print("::error::--description-file / --image need --major", file=sys.stderr)
         return 1
     if args.major:
         try:
             description = read_text(args.description_file) if args.description_file else None
-            entry = changelog_io.with_major(entry, description=description, image=args.image)
+            entry = changelog_io.with_major(
+                entry, description=description, image=args.image, notable=args.notable or None
+            )
         except (OSError, ValueError) as e:
             print(f"::error::{e}", file=sys.stderr)
             return 1

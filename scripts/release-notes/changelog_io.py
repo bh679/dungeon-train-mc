@@ -28,7 +28,8 @@ Public surface:
   unreleased_entries / mark_all_released — the released-flag boundary.
   render_markdown(entries) — player-facing Markdown: major releases first,
       then a tag-count line, then entries grouped by version desc.
-  validate_major_fields / with_major — a major release's description + photo.
+  validate_major_fields / with_major — a major release's description + photo
+    (and its milestone / notable sub-flags).
   write_github_output(**kv) — append step outputs to $GITHUB_OUTPUT.
 
 Env overrides (mirror scripts/auto-release for testability):
@@ -369,22 +370,31 @@ def with_major(
     image: str | None = None,
     clear_image: bool = False,
     milestone: bool | None = None,
+    notable: bool | None = None,
 ) -> dict:
     """Return a copy of `entry` marked as a major release.
 
     `description` / `image` replace the current values when given; `clear_image`
     drops the photo; `milestone` True/False sets or drops the milestone flag (a
-    moment, not an update — the update page labels it "Milestone"). Raises
-    ValueError (see validate_major_fields).
+    moment, not an update — the update page labels it "Milestone"); `notable`
+    True/False sets or drops the notable flag (the middle tier: a smaller
+    "Notable update" card on the update page). An entry is never both a
+    milestone and notable. Raises ValueError (see validate_major_fields).
     """
     validate_major_fields(description, image)
     out = {
         k: v for k, v in entry.items()
-        if not (clear_image and k == "image") and not (milestone is False and k == "milestone")
+        if not (clear_image and k == "image")
+        and not (milestone is False and k == "milestone")
+        and not (notable is False and k == "notable")
     }
     out["major"] = True
     if milestone:
         out["milestone"] = True
+    if notable:
+        out["notable"] = True
+    if out.get("milestone") and out.get("notable"):
+        raise ValueError("an entry can't be both a milestone and a notable update")
     if description is not None:
         out["description"] = description.strip()
     if image is not None:
@@ -448,7 +458,8 @@ def render_markdown(entries: list[dict]) -> str:
     """
     if not entries:
         return ""
-    majors = [e for e in entries if e.get("major")]
+    # Full majors headline; notable updates (the middle tier) follow them.
+    majors = sorted((e for e in entries if e.get("major")), key=lambda e: bool(e.get("notable")))
     entries = [e for e in entries if not e.get("major")]
     sections: list[str] = [_render_major(e) for e in majors]
     groups: dict[str, list[dict]] = {}
