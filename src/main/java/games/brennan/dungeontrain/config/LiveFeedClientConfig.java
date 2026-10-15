@@ -124,6 +124,17 @@ public final class LiveFeedClientConfig {
         STREAMING_ENABLED.save();
     }
 
+    /**
+     * Persist whether this client decodes the live feed onto TVs and the pinned viewer. Off = they
+     * show static and no decoder runs (the idle watchdog stops one already running). Driven by the
+     * Options row on the Stream and Performance tabs; idempotent, no-op pre-load.
+     */
+    public static void setViewingEnabled(boolean value) {
+        if (!loaded() || VIEWING_ENABLED.get() == value) return;
+        VIEWING_ENABLED.set(value);
+        VIEWING_ENABLED.save();
+    }
+
     /** Whether viewers see the HUD and the listed menus ({@code client.live.StreamableScreens}). */
     public static boolean streamGui() { return !loaded() || STREAM_GUI.get(); }
 
