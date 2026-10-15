@@ -1,19 +1,12 @@
 package games.brennan.dungeontrain.compat;
 
-import games.brennan.discordpresence.compat.DiscordChatHooks;
 import games.brennan.discordpresence.compat.DiscordCommandHooks;
-import games.brennan.discordpresence.compat.DiscordReactionHooks;
 import games.brennan.discordpresence.compat.InboundDiscordHooks;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.discord.chat.ChatReaction;
-import games.brennan.dungeontrain.discord.chat.ChatReactionEvent;
-import games.brennan.dungeontrain.discord.chat.DiscordChatLines;
 import games.brennan.dungeontrain.echo.RemoteEchoEncounters;
 import games.brennan.dungeontrain.event.DevMessageConsent;
 import games.brennan.dungeontrain.logrequest.LogRequestManager;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -42,10 +35,9 @@ import java.util.UUID;
  * seam (InboundDiscordHooks: 0.41.0+, DiscordCommandHooks: 0.43.0+) degrades to whichever guard is
  * still available rather than crashing.</p>
  *
- * <p>Discord reactions in chat (DP 0.69.0+: {@link DiscordChatHooks}, {@link DiscordReactionHooks} and
- * the message-id-carrying {@code DiscordCommandHooks.ContextHandler}) — every line that reaches in-game
- * chat from or to a player's Discord thread keeps its Discord message id, so reactions added in Discord
- * show on it ({@link DiscordChatLines}).</p>
+ * <p>Discord reactions in chat (DP 0.69.0+: {@link DiscordChatSeams}) — every line that reaches in-game chat
+ * from or to a player's Discord thread keeps its Discord message id, so reactions added in Discord show
+ * on it. On an older DP the original command seam is used and those lines simply carry no reactions.</p>
  */
 public final class DiscordInboundBridge {
 
@@ -58,44 +50,40 @@ public final class DiscordInboundBridge {
                 RemoteEchoEncounters.markDevContact();
             }
         });
-        DiscordCommandHooks.installContext((ctx, reply) -> {
-            String authorId = ctx.authorId();
-            String content = ctx.content();
-            String targetPlayerUuid = ctx.targetPlayerUuid();
-            if (!DungeonTrain.BRENNAN_DISCORD_ID.equals(authorId)) {
-                return false;
-            }
-            // "/bug" asks the thread's player for their logs instead of being shown as a message.
-            if (LogRequestManager.isCommand(content)) {
-                LogRequestManager.onThreadCommand(parseUuid(targetPlayerUuid), reply);
-                return true;
-            }
-            // "/version" is the relay's private lookup, answered from its own records: never a message.
-            if (LogRequestManager.isVersionCommand(content)) {
-                return true;
-            }
-            // Scope to the one player whose thread this message is in (null when unanchored — the
-            // consent flow then shows it to nobody in-game). Never a global broadcast.
-            DevMessageConsent.onDevMessage(parseUuid(targetPlayerUuid), ctx.messageId(), content, reply);
-            return true; // suppress DiscordPresence's own relay — the consent flow now owns delivery
-        });
-        DiscordChatHooks.installPosted((player, rawText, channelId, messageId) ->
-            DiscordChatLines.onGameChatPosted(player, rawText, messageId));
-        DiscordChatHooks.installDeliverer((recipient, ctx, defaultLine) -> {
-            if (ctx.messageId() == null) return false;
-            DiscordChatLines.deliver(recipient, ctx.messageId(), defaultLine);
+        try {
+            // DP 0.69.0+: the message id rides along, so the line can carry its Discord reactions.
+            DiscordChatSeams.install();
+        } catch (LinkageError older) {
+            // An older DP (a CurseForge pack can ship one beside DT's nested copy): dev messages
+            // still arrive through the original seam, without reactions.
+            DiscordCommandHooks.install((authorId, authorName, content, targetPlayerUuid, reply) ->
+                onCommand(authorId, content, targetPlayerUuid, null, reply));
+        }
+    }
+
+    /**
+     * A relayed Discord message, offered to DT before DP's own relay. Returns true when DT took it:
+     * the dev's {@code /bug} and {@code /version}, and every other dev message (the consent flow owns
+     * its delivery). {@code messageId} is null on a DP older than 0.69.0.
+     */
+    static boolean onCommand(String authorId, String content, String targetPlayerUuid, String messageId,
+                             DiscordCommandHooks.Reply reply) {
+        if (!DungeonTrain.BRENNAN_DISCORD_ID.equals(authorId)) {
+            return false;
+        }
+        // "/bug" asks the thread's player for their logs instead of being shown as a message.
+        if (LogRequestManager.isCommand(content)) {
+            LogRequestManager.onThreadCommand(parseUuid(targetPlayerUuid), reply);
             return true;
-        });
-        DiscordReactionHooks.install(snapshot -> {
-            List<ChatReaction> list = new ArrayList<>();
-            for (DiscordReactionHooks.Reaction r : snapshot.list()) {
-                list.add(new ChatReaction(r.name(), r.id() == null ? "" : r.id(), r.animated(), r.count(), r.users()));
-            }
-            DiscordReactionHooks.ReactionEvent e = snapshot.event();
-            ChatReactionEvent event = e == null ? null
-                : new ChatReactionEvent(e.action(), e.name(), e.id() == null ? "" : e.id(), e.userName());
-            DiscordChatLines.onReactions(snapshot.messageId(), list, event);
-        });
+        }
+        // "/version" is the relay's private lookup, answered from its own records: never a message.
+        if (LogRequestManager.isVersionCommand(content)) {
+            return true;
+        }
+        // Scope to the one player whose thread this message is in (null when unanchored — the
+        // consent flow then shows it to nobody in-game). Never a global broadcast.
+        DevMessageConsent.onDevMessage(parseUuid(targetPlayerUuid), messageId, content, reply);
+        return true; // suppress DiscordPresence's own relay — the consent flow now owns delivery
     }
 
     /** The Minecraft player UUID the inbound seam carries, or null when it's absent or malformed. */
