@@ -37,6 +37,11 @@ def test_majors_for_picks_only_this_tags_majors():
     assert [e["id"] for e in nh.majors_for([MAJOR, MINOR, OLD_MAJOR], "v1.2.0")] == ["release-x"]
 
 
+def test_notable_update_posts_like_a_major():
+    notable = {**MAJOR, "id": "release-mid", "notable": True}
+    assert [e["id"] for e in nh.majors_for([notable, MINOR], "v1.2.0")] == ["release-mid"]
+
+
 REPO_IMAGE = ("https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/"
               ".github/release-notes/images/albums.jpg")
 
