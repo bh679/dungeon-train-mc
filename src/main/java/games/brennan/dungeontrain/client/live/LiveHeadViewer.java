@@ -108,8 +108,13 @@ public final class LiveHeadViewer {
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_head_viewer"), (g, delta) -> {
             Minecraft mc = Minecraft.getInstance();
-            if (!shown(mc) || LiveStreamController.get().streaming() || mc.options.hideGui) return;
-            draw(g, LiveFeedSource.MAIN.frame(mc.player.tickCount, delta.getGameTimeDeltaPartialTick(false), false));
+            if (mc.level == null || mc.player == null || LiveStreamController.get().streaming() || mc.options.hideGui) return;
+            if (shown(mc)) {
+                draw(g, LiveFeedSource.MAIN.frame(mc.player.tickCount, delta.getGameTimeDeltaPartialTick(false), false));
+            } else {
+                // Box switched off: a running takeover vote's countdown still shows where it would be.
+                voteBanner(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false)), mc.font);
+            }
         });
     }
 
@@ -186,6 +191,22 @@ public final class LiveHeadViewer {
                 System.currentTimeMillis());
             countdown(g, b, font, n);
         }
+        voteBanner(g, b, font);
+    }
+
+    /**
+     * The wearer's takeover vote is running ({@link LiveTakeoverFlow}): "The viewers are voting… 14 s" on a
+     * dark strip along the top of the box, over the stream they are asking to take.
+     */
+    private static void voteBanner(GuiGraphics g, Box b, Font font) {
+        int seconds = LiveTakeoverFlow.voteCountdownSeconds();
+        if (seconds < 0) return;
+        Component text = Component.translatable("screen.dungeontrain.live_takeover.voting", seconds);
+        int pad = 3;
+        int h = font.lineHeight + 2 * pad;
+        g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + h, BLACKOUT);
+        int w = font.width(text);
+        g.drawString(font, text, b.x() + Math.max(pad, (b.w() - w) / 2), b.y() + pad + 1, 0xFFFFFFFF, true);
     }
 
     /** The box is playing this client's own broadcast (live, not the dark-channel replay). */

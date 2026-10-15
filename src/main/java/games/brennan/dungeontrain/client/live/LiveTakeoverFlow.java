@@ -23,7 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>{@link LiveStreamController} hands over here when its claim finds someone else on air
  * ({@link #blocked}). The Live Eye then works as a TV and {@link TakeoverRequestScreen} asks once.
- * <b>Request takeover</b> opens a vote on the relay and polls it every second: approved → claim with
+ * <b>Request takeover</b> closes the prompt, opens a vote on the relay (its countdown shows over the
+ * live box, {@link #voteCountdownSeconds}) and polls it every second: approved → claim with
  * the vote's ticket; rejected → the Live Eye becomes a TV; void (the holder left) → claim again.
  * <b>Take over</b> claims straight away. <b>Stay a viewer</b> gives the Live Eye up for a TV. One
  * request per Live Eye: once asked, the prompt does not come back.</p>
@@ -70,17 +71,18 @@ public final class LiveTakeoverFlow {
         mc.setScreen(screen);
     }
 
-    /** Whether {@code s} is showing a running vote. */
-    static boolean votingFor(TakeoverRequestScreen s) {
-        return pollId != null && s == screen && LiveStreamController.get().state() == LiveStreamController.State.VOTING;
+    /**
+     * Whole seconds left in this wearer's running takeover vote, for the countdown over the live box
+     * ({@link LiveHeadViewer}); −1 when none is running.
+     */
+    static int voteCountdownSeconds() {
+        if (pollId == null || LiveStreamController.get().state() != LiveStreamController.State.VOTING) return -1;
+        return (int) Math.max(0, (voteEndsMs - System.currentTimeMillis() + 999) / 1000);
     }
 
-    static long voteEndsMs() {
-        return voteEndsMs;
-    }
-
-    /** Request takeover: open the vote. */
-    static void request(TakeoverRequestScreen from) {
+    /** Request takeover: open the vote. The prompt has closed; the countdown shows over the live box. */
+    static void request() {
+        screen = null;
         LiveStreamController c = LiveStreamController.get();
         UUID me = myUuid();
         if (me == null || !c.beginVote()) return;
@@ -93,7 +95,6 @@ public final class LiveTakeoverFlow {
                 pollId = p.id();
                 voteEndsMs = p.endsTs();
                 lastPollMs = System.currentTimeMillis();
-                from.refresh();
                 return;
             }
             String error = r.str("error");

@@ -17,8 +17,9 @@ import java.util.List;
  * <p>Inside the holder's protected first minutes the choice is <b>Request takeover</b> — the audience
  * votes — and past them <b>Take over</b>, the wearer's own call; the button changes over the moment the
  * counter passes the line. <b>Stay a viewer</b> gives the Live Eye up: it becomes a TV. Esc is the same
- * as Stay a viewer. While a vote runs the card stays up as its countdown, and closes on the result
- * ({@link LiveTakeoverFlow}). No dimming or blur: the wearer is watching the feed behind it.</p>
+ * as Stay a viewer. Requesting closes the card: the vote's countdown shows over the live box
+ * ({@link LiveHeadViewer}, {@link LiveTakeoverFlow}). No dimming or blur: the wearer is watching the
+ * feed behind it.</p>
  */
 public final class TakeoverRequestScreen extends Screen {
 
@@ -60,22 +61,16 @@ public final class TakeoverRequestScreen extends Screen {
         return Math.max(0, System.currentTimeMillis() - readAtMs);
     }
 
-    private boolean voting() {
-        return LiveTakeoverFlow.votingFor(this);
-    }
-
     @Override
     protected void init() {
         int innerWidth = CARD_W - 2 * PAD;
         bodyLines = font.split(body(), innerWidth);
-        boolean voting = voting();
-        int contentH = font.lineHeight + GAP_TITLE + bodyLines.size() * LINE_STEP + (voting ? 0 : GAP_BODY + BUTTON_H);
+        int contentH = font.lineHeight + GAP_TITLE + bodyLines.size() * LINE_STEP + GAP_BODY + BUTTON_H;
         panelH = PAD + contentH + PAD;
         panelX = (width - CARD_W) / 2;
         panelY = Math.max(16, (height - panelH) / 2);
         centerX = panelX + CARD_W / 2;
         builtForVote = holder.voteNeededAfter(elapsedMs());
-        if (voting) return;
         int buttonsY = panelY + PAD + font.lineHeight + GAP_TITLE + bodyLines.size() * LINE_STEP + GAP_BODY;
         int innerLeft = panelX + PAD;
         int buttonW = (innerWidth - BUTTON_GAP) / 2;
@@ -94,14 +89,9 @@ public final class TakeoverRequestScreen extends Screen {
             .build());
     }
 
-    /** The holder line, then what the main button will do — or, while a vote runs, its countdown. */
+    /** The holder line, then what the main button will do. */
     private Component body() {
         Component line = LiveTakeoverText.holderLine(holder.holder(), holder.tenureMs() + elapsedMs(), holder.streamCount());
-        if (voting()) {
-            long left = Math.max(0, (LiveTakeoverFlow.voteEndsMs() - System.currentTimeMillis() + 999) / 1000);
-            return Component.empty().append(line).append("\n\n")
-                .append(Component.translatable(KEY + "voting", left));
-        }
         String note = holder.voteNeededAfter(elapsedMs()) ? "note.vote" : "note.decide";
         return Component.empty().append(line).append("\n\n").append(Component.translatable(KEY + note, holder.holder()));
     }
@@ -110,7 +100,7 @@ public final class TakeoverRequestScreen extends Screen {
     public void tick() {
         super.tick();
         // The counter moves; the button changes over when the protected minutes run out.
-        if (!voting() && holder.voteNeededAfter(elapsedMs()) != builtForVote) {
+        if (holder.voteNeededAfter(elapsedMs()) != builtForVote) {
             rebuildWidgets();
         } else {
             bodyLines = font.split(body(), CARD_W - 2 * PAD);
@@ -119,12 +109,11 @@ public final class TakeoverRequestScreen extends Screen {
 
     private void takeOver() {
         decided = true;
+        this.minecraft.setScreen(null);
         if (holder.voteNeededAfter(elapsedMs())) {
-            LiveTakeoverFlow.request(this);
-            rebuildWidgets();
+            LiveTakeoverFlow.request();
         } else {
             LiveTakeoverFlow.takeOver();
-            this.minecraft.setScreen(null);
         }
     }
 
@@ -138,11 +127,6 @@ public final class TakeoverRequestScreen extends Screen {
     void dismiss() {
         decided = true;
         if (this.minecraft != null && this.minecraft.screen == this) this.minecraft.setScreen(null);
-    }
-
-    /** Re-layout once the vote has started (the buttons give way to the countdown). */
-    void refresh() {
-        if (this.minecraft != null && this.minecraft.screen == this) rebuildWidgets();
     }
 
     @Override
@@ -174,7 +158,7 @@ public final class TakeoverRequestScreen extends Screen {
         return false;
     }
 
-    /** Esc (or any close without a choice) is Stay a viewer; once a vote is running it only hides the card. */
+    /** Esc (or any close without a choice) is Stay a viewer. */
     @Override
     public void onClose() {
         if (!decided) {
