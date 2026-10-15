@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "16f862c9a11ca26e"},
   "chat.dungeontrain.log_request.expired": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "6b6b191a289a086d"},
   "chat.dungeontrain.dev_message.prefix": {"author": "Opus 4.8 (Claude)", "reviewer": "老本願", "source_hash": "fe976869b151cd23"},
+  "chat.dungeontrain.discord_react.notice": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "8d1dd9a9176c7980"},
   "chat.dungeontrain.presence.online_now": {"author": "老本願", "reviewer": "老本願", "source_hash": "c2fa0f3577f7f46f"},
   "chat.dungeontrain.presence.was_online": {"author": "老本願", "reviewer": "老本願", "source_hash": "c36021a1ce040f12"},
   "chat.dungeontrain.presence.last_seen": {"author": "老本願", "reviewer": "老本願", "source_hash": "1693bccaf785cbc3"},

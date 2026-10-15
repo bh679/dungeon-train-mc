@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": "Oke — tidak ada yang dikirim.",
   "chat.dungeontrain.log_request.expired": "Permintaan itu sudah kedaluwarsa.",
   "chat.dungeontrain.dev_message.prefix": "[Pengembang] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s bereaksi %2$s pada \"%3$s\"",
   "chat.dungeontrain.presence.online_now": "Brennan sedang online di Discord sekarang!",
   "chat.dungeontrain.presence.was_online": "Brennan online %s yang lalu.",
   "chat.dungeontrain.presence.last_seen": "Brennan terakhir terlihat online %s yang lalu.",

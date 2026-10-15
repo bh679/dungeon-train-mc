@@ -5,6 +5,7 @@ import games.brennan.discordpresence.compat.DiscordCommandHooks;
 import games.brennan.dungeontrain.discord.DevMessageReport;
 import games.brennan.dungeontrain.logrequest.DeliveryFailureReport;
 import org.jetbrains.annotations.Nullable;
+import games.brennan.dungeontrain.discord.chat.DiscordChatLines;
 import games.brennan.dungeontrain.net.ConsentUpdatePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.ChatFormatting;
@@ -90,7 +91,7 @@ public final class DevMessageConsent {
     private static final Map<UUID, Mirror> MIRRORS = new ConcurrentHashMap<>();
 
     /** Developer messages held awaiting this player's consent (delivered in order once accepted). */
-    private static final Map<UUID, Deque<String>> PENDING = new ConcurrentHashMap<>();
+    private static final Map<UUID, Deque<DevLine>> PENDING = new ConcurrentHashMap<>();
 
     /**
      * How long, after {@code @Dev} is typed, to hold back the accepted messages before flushing them
@@ -102,7 +103,10 @@ public final class DevMessageConsent {
     private static final long DELIVERY_DELAY_TICKS = 12L; // ~0.6 s at 20 TPS, just past the presence beat
 
     /** An accepted batch waiting out its delay: deliver {@code messages} to {@code playerId} at {@code dueTick}. */
-    private record PendingDelivery(long dueTick, UUID playerId, List<String> messages) {}
+    private record PendingDelivery(long dueTick, UUID playerId, List<DevLine> messages) {}
+
+    /** One held Developer message: its Discord id (null when unknown) so reactions can follow it in chat. */
+    private record DevLine(@Nullable String messageId, String content) {}
 
     /** Accepted batches deferred a beat so they land after the {@code @Dev} line + presence reply. Server-thread only. */
     private static final Queue<PendingDelivery> DELIVERIES = new ConcurrentLinkedQueue<>();
@@ -144,8 +148,8 @@ public final class DevMessageConsent {
             if (now < d.dueTick()) return false; // not yet due
             ServerPlayer p = server.getPlayerList().getPlayer(d.playerId());
             if (p != null) {
-                for (String content : d.messages()) {
-                    p.sendSystemMessage(deliveredLine(content));
+                for (DevLine line : d.messages()) {
+                    DiscordChatLines.deliver(p, line.messageId(), deliveredLine(line.content()));
                     AchievementEvents.notifyCreatorAnswered(p);
                 }
             }
@@ -205,9 +209,11 @@ public final class DevMessageConsent {
      * @param owner   the Minecraft UUID of the player whose thread the message is in. {@code null}
      *                when the message isn't anchored to a player's thread (e.g. a top-level channel
      *                post) — such a message is shown to nobody in-game.
+     * @param messageId the Discord message id, so the line can carry its reactions; null when unknown.
      * @param content the message text.
      */
-    public static void onDevMessage(UUID owner, String content, @Nullable DiscordCommandHooks.Reply reply) {
+    public static void onDevMessage(UUID owner, @Nullable String messageId, String content,
+                                    @Nullable DiscordCommandHooks.Reply reply) {
         if (owner == null || content == null || content.isBlank()) return;
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return; // at the main menu there is no in-game surface; menu chat has it
@@ -229,18 +235,18 @@ public final class DevMessageConsent {
                 return;
             }
             if (isValid(player.getUUID())) {
-                player.sendSystemMessage(deliveredLine(content));
+                DiscordChatLines.deliver(player, messageId, deliveredLine(content));
                 AchievementEvents.notifyCreatorAnswered(player);
             } else {
-                holdAndPrompt(player, content);
+                holdAndPrompt(player, new DevLine(messageId, content));
             }
         });
     }
 
-    private static void holdAndPrompt(ServerPlayer player, String content) {
-        Deque<String> queue = PENDING.computeIfAbsent(player.getUUID(), k -> new ArrayDeque<>());
+    private static void holdAndPrompt(ServerPlayer player, DevLine line) {
+        Deque<DevLine> queue = PENDING.computeIfAbsent(player.getUUID(), k -> new ArrayDeque<>());
         boolean firstPending = queue.isEmpty();
-        queue.addLast(content);
+        queue.addLast(line);
         if (firstPending) {
             player.sendSystemMessage(Component.translatable("chat.dungeontrain.dev_message.consent_prompt",
                     Component.translatable(DEV_TAG_KEY))
@@ -251,7 +257,7 @@ public final class DevMessageConsent {
 
     /** Whether {@code playerId} has a Developer message held awaiting consent. */
     public static boolean hasPending(UUID playerId) {
-        Deque<String> queue = PENDING.get(playerId);
+        Deque<DevLine> queue = PENDING.get(playerId);
         return queue != null && !queue.isEmpty();
     }
 
@@ -261,7 +267,7 @@ public final class DevMessageConsent {
      * persist. Called from {@link MentionPresenceEvents}'s chat listener on the server thread.
      */
     public static void onConsentAccepted(ServerPlayer player) {
-        Deque<String> queue = PENDING.remove(player.getUUID());
+        Deque<DevLine> queue = PENDING.remove(player.getUUID());
         if (queue == null || queue.isEmpty()) return; // nothing was awaiting consent — plain mention
 
         long now = System.currentTimeMillis();

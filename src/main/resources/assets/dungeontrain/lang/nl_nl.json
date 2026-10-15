@@ -1989,6 +1989,7 @@
   "chat.dungeontrain.log_request.declined": "Oké — er is niets verstuurd.",
   "chat.dungeontrain.log_request.expired": "Dat verzoek is verlopen.",
   "chat.dungeontrain.dev_message.prefix": "[Ontwikkelaar] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s reageerde met %2$s op \"%3$s\"",
   "chat.dungeontrain.presence.online_now": "Brennan is nu online op Discord!",
   "chat.dungeontrain.presence.was_online": "Brennan was %s geleden online.",
   "chat.dungeontrain.presence.last_seen": "Brennan werd %s geleden voor het laatst online gezien.",

@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": "Được — không có gì được gửi.",
   "chat.dungeontrain.log_request.expired": "Yêu cầu đó đã hết hạn.",
   "chat.dungeontrain.dev_message.prefix": "[Nhà phát triển] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s đã bày tỏ cảm xúc %2$s với \"%3$s\"",
   "chat.dungeontrain.presence.online_now": "Brennan đang trực tuyến trên Discord ngay bây giờ!",
   "chat.dungeontrain.presence.was_online": "Brennan đã trực tuyến %s trước.",
   "chat.dungeontrain.presence.last_seen": "Brennan được thấy trực tuyến lần cuối %s trước.",

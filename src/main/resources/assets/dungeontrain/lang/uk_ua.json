@@ -2517,6 +2517,7 @@
   "chat.dungeontrain.log_request.declined": "Гаразд — нічого не надіслано.",
   "chat.dungeontrain.log_request.expired": "Термін цього запиту минув.",
   "chat.dungeontrain.dev_message.prefix": "[Розробник] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s відреагував(ла) %2$s на «%3$s»",
   "chat.dungeontrain.presence.online_now": "Бреннан зараз онлайн у Discord!",
   "chat.dungeontrain.presence.was_online": "Бреннан був онлайн %s тому.",
   "chat.dungeontrain.presence.last_seen": "Бреннана востаннє бачили онлайн %s тому.",

@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": "Sige — walang naipadala.",
   "chat.dungeontrain.log_request.expired": "Nag-expire na ang hiling na iyon.",
   "chat.dungeontrain.dev_message.prefix": "[Developer] ",
+  "chat.dungeontrain.discord_react.notice": "Nag-react si %1$s ng %2$s sa \"%3$s\"",
   "chat.dungeontrain.presence.online_now": "Online si Brennan sa Discord ngayon!",
   "chat.dungeontrain.presence.was_online": "Online si Brennan %s ang nakalipas.",
   "chat.dungeontrain.presence.last_seen": "Huling nakitang online si Brennan %s ang nakalipas.",

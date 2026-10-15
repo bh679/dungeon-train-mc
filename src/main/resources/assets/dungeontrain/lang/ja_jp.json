@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": "了解です。何も送信されていません。",
   "chat.dungeontrain.log_request.expired": "このリクエストは期限切れです。",
   "chat.dungeontrain.dev_message.prefix": "[開発者] ",
+  "chat.dungeontrain.discord_react.notice": "%1$sが「%3$s」に%2$sでリアクションしました",
   "chat.dungeontrain.presence.online_now": "Brennanは今、Discordにオンラインです！",
   "chat.dungeontrain.presence.was_online": "Brennanは%s前にオンラインでした。",
   "chat.dungeontrain.presence.last_seen": "Brennanが最後にオンラインだったのは%s前です。",

@@ -2036,6 +2036,7 @@
   "chat.dungeontrain.log_request.declined": "Хорошо — ничего не отправлено.",
   "chat.dungeontrain.log_request.expired": "Срок этого запроса истёк.",
   "chat.dungeontrain.dev_message.prefix": "[Разработчик] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s отреагировал(а) %2$s на «%3$s»",
   "chat.dungeontrain.presence.online_now": "Brennan сейчас онлайн в Discord!",
   "chat.dungeontrain.presence.was_online": "Бреннан был в сети %s назад.",
   "chat.dungeontrain.presence.last_seen": "Бреннан был в сети последний раз %s назад.",

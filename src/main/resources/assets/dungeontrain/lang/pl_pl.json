@@ -2031,6 +2031,7 @@
   "chat.dungeontrain.log_request.declined": "Dobrze — nic nie zostało wysłane.",
   "chat.dungeontrain.log_request.expired": "Ta prośba wygasła.",
   "chat.dungeontrain.dev_message.prefix": "[Deweloper] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s zareagował(a) %2$s na „%3$s”",
   "chat.dungeontrain.presence.online_now": "Brennan jest teraz online na Discordzie!",
   "chat.dungeontrain.presence.was_online": "Brennan był online %s temu.",
   "chat.dungeontrain.presence.last_seen": "Brennan był ostatnio widziany online %s temu.",

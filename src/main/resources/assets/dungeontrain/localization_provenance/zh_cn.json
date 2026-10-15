@@ -1254,6 +1254,7 @@
       "chat.dungeontrain.log_request.sent",
       "chat.dungeontrain.log_request.declined",
       "chat.dungeontrain.log_request.expired",
+      "chat.dungeontrain.discord_react.notice",
       "chat.dungeontrain.editor_welcome.title",
       "chat.dungeontrain.editor_welcome.line1",
       "chat.dungeontrain.editor_welcome.line2",
