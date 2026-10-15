@@ -3144,7 +3144,7 @@
   "gui.dungeontrain.options.dev_hud.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8698386f746b5ecd"},
   "gui.dungeontrain.options.backpack_button": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "9e9e4458c839bc94"},
   "gui.dungeontrain.options.backpack_button.hint": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "c0be8c8fe1f9f138"},
-  "gui.dungeontrain.options.backpack_button.tip": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "09901e1e891ac138"},
+  "gui.dungeontrain.options.backpack_button.tip": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "cf195bd170e49b95"},
   "gui.dungeontrain.options.backpack_auto_collect": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "07756993b045d4de"},
   "gui.dungeontrain.options.backpack_auto_collect.hint": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "d87cad8eb3accd46"},
   "gui.dungeontrain.options.backpack_auto_collect.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f593ccf683d1d8e8"},
