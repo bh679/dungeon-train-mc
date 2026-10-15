@@ -26255,6 +26255,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-takeover-vote",
+      "version": "0.1303.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Asking for the Live Eye",
+      "summary": "Putting on a Live Eye while someone else is streaming no longer cuts them off. You're shown who's live and can ask to take over: early in their stream the viewers vote on it in chat, and after that it's your call. Lose the stream and your Live Eye becomes a TV, so you can keep watching.",
+      "highlights": [
+        "New streamers get their first minutes to themselves, and the viewers decide whether someone can take over early",
+        "Vote Yes or No in the Live chat, wherever you're watching; votes stay hidden until the result",
+        "A countdown shows over the live feed while the vote runs",
+        "Losing the stream, or choosing to stay a viewer, turns your Live Eye into a TV instead of burning it"
+      ],
+      "pr": 2029,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
