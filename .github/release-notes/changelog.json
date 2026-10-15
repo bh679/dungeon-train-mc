@@ -26298,6 +26298,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-chat-skip-dev-mentions",
+      "version": "0.1304.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Developer pings stay out of Live chat",
+      "summary": "Messages that tag the developer (@dev or @brennanhatton) no longer show up in Live chat. They still reach the developer as before, but stream viewers won't see them.",
+      "highlights": [],
+      "pr": 2030,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
