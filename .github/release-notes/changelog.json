@@ -26252,9 +26252,9 @@
       "highlights": [],
       "pr": 2025,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
     },
     {
       "id": "live-eye-gift-to-tv-viewer",
@@ -26273,9 +26273,9 @@
       ],
       "pr": 2026,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
     },
     {
       "id": "live-eye-streams-through-death",
@@ -26295,9 +26295,9 @@
       ],
       "pr": 2028,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
     },
     {
       "id": "live-chat-skip-dev-mentions",
@@ -26312,9 +26312,9 @@
       "highlights": [],
       "pr": 2030,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
     },
     {
       "id": "live-eye-takeover-vote",
@@ -26335,9 +26335,9 @@
       ],
       "pr": 2029,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
     },
     {
       "id": "advancement-promote-from-relay",
@@ -26356,9 +26356,9 @@
       ],
       "pr": 2031,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
     },
     {
       "id": "release-pass-the-live-eye",
@@ -26371,9 +26371,9 @@
       "summary": "The Live Eye no longer stops with you. Keep streaming through your death, hand it to a first-time viewer, or ask to take over someone else's stream.",
       "highlights": [],
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z",
       "major": true,
       "notable": true,
       "description": "Dungeon Train TV keeps going. The Live Eye now passes from player to player instead of just cutting off.\n\nDie live and your stream carries on. Your viewers watch the death screens with you while your last few seconds loop behind them, and anyone watching on a TV can take the Live Eye and go live in your place. First click wins.\n\nPut on a Live Eye while someone else is streaming and you're asked whether to take over. Early in their stream the viewers vote in chat; after that it's your call. And if a newcomer tunes in on a TV while you're live, you can gift them yours.\n\n## Other significant updates\n\n- Lose a takeover, or choose to stay a viewer, and your Live Eye turns into a TV instead of burning\n- Live chat has emoji: react to messages from the Live page's new emoji button, see Discord reactions on chat lines in-game, and Discord emoji now show in colour\n- Developer pings stay out of Live chat\n- Move your old advancements to the difficulty you earned them on, when the developer sends you the offer\n- Settings tooltips show their current text\n- Bug fixes",
