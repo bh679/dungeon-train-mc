@@ -10,6 +10,9 @@ import games.brennan.dungeontrain.logrequest.LogRequestClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftJoin;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftNotices;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.GiftOffer;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.GuiMessageTag;
 import net.minecraft.client.Minecraft;
@@ -48,6 +51,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * <p>A line the relay later lists as {@code deleted} (a Twitch mod removed it) becomes vanilla's grey
  * "deleted" marker, through {@link LiveChatSignatures}.</p>
+ *
+ * <p>Joining through a TV also tells the relay ({@code POST /live/chat/join}), so a viewer who has never
+ * streamed can be offered a Live Eye by the streamer; each poll's gift notices go to {@link LiveGiftClient}.</p>
  *
  * <p>Failures are quiet: a bad poll is retried next interval, a failed send is logged once per session.
  * Nothing here touches the stream itself.</p>
@@ -93,13 +99,13 @@ public final class LiveChatBridge {
             if (connected) disconnect();
             return;
         }
-        if (!connected) connect(mc);
+        if (!connected) connect(mc, wearingTv);
         long now = System.currentTimeMillis();
         if (now - lastPollMs < POLL_MS || !inFlight.compareAndSet(false, true)) return;
         lastPollMs = now;
         LiveFeedClient.chat(base(streaming), cursor).thenAcceptAsync(r -> {
             inFlight.set(false);
-            if (connected) deliver(mc, LiveFeedClient.parseChat(r));
+            if (connected) deliver(mc, LiveFeedClient.parseChat(r), LiveFeedClient.parseGiftNotices(r));
         }, mc).exceptionally(t -> {
             inFlight.set(false);
             return null;
@@ -134,13 +140,18 @@ public final class LiveChatBridge {
         }
     }
 
-    private static void connect(Minecraft mc) {
+    private static void connect(Minecraft mc, boolean viaTv) {
         connected = true;
         cursor = -1;
         lastPollMs = 0;
         signatures.clear();
         mc.gui.getChat().addMessage(Component.translatable(LiveChatRules.CONNECTED_KEY,
             LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY));
+        if (viaTv && mc.getUser() != null) {
+            // Only a viewer who can take a Live Eye may be offered one (LiveGiftClient#canReceive).
+            LiveFeedClient.chatJoin(base(false), mc.getUser().getProfileId(), mc.getUser().getName(),
+                LiveGiftClient.canReceive(mc));
+        }
     }
 
     private static void disconnect() {
@@ -157,7 +168,7 @@ public final class LiveChatBridge {
         sendFailureLogged = false;
     }
 
-    private static void deliver(Minecraft mc, ChatPage page) {
+    private static void deliver(Minecraft mc, ChatPage page, GiftNotices gifts) {
         if (page.seq() < 0) return; // a failed poll leaves the cursor alone
         if (cursor < 0) {
             cursor = page.seq(); // joined: start from now
@@ -195,6 +206,13 @@ public final class LiveChatBridge {
             if (line.logRequest() != null && line.logRequest().isFor(myName, streaming)) {
                 LogRequestClient.onLiveRequest(line.logRequest().id());
             }
+        }
+        if (streaming) {
+            for (GiftJoin join : gifts.joins()) LiveGiftClient.onJoin(join);
+        }
+        String myId = me != null ? me.toString().replace("-", "") : null;
+        for (GiftOffer offer : gifts.gifts()) {
+            if (myId != null && offer.target().equalsIgnoreCase(myId)) LiveGiftClient.onOffer(offer, LiveStatusPoller.channel());
         }
         for (long seq : page.deleted()) {
             MessageSignature sig = signatures.take(seq);

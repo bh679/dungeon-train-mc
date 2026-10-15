@@ -173,6 +173,13 @@ public final class LiveStreamController {
         return state == State.STREAMING && c != null ? c.playlistUrl() : null;
     }
 
+    /** The stream's relay token (proves this client is the streamer, e.g. for a Live Eye gift), or null when not streaming. */
+    @Nullable
+    public String streamToken() {
+        Claim c = claim;
+        return state == State.STREAMING && c != null ? c.token() : null;
+    }
+
     // ---- server packets -----------------------------------------------------------------------
 
     public void onServerSaid(LiveStreamPacket packet) {

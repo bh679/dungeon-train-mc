@@ -15582,6 +15582,51 @@
       ]
     }
   },
+  "chat.dungeontrain.live_gift.prompt": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.offered": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.give_failed": {
+    "1": {
+      "label": "the TV viewer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.offer": {
+    "1": {
+      "label": "the streamer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
+  "chat.dungeontrain.live_gift.received": {
+    "1": {
+      "label": "the streamer's Minecraft player name",
+      "examples": [
+        "Steve",
+        "Alex_42"
+      ]
+    }
+  },
   "chat.dungeontrain.live.watching.one": {
     "1": {
       "label": "how many are watching (always 1)",
