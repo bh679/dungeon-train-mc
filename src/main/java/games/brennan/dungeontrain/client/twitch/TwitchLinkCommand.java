@@ -181,7 +181,8 @@ public final class TwitchLinkCommand {
         CompletableFuture.delayedExecutor(POLL_SECONDS, TimeUnit.SECONDS).execute(() -> {
             if (generation != watchGeneration) return;
             TwitchLinkClient.status().whenComplete((s, err) -> {
-                if (err == null && s != null && s.ok() && s.linked()) {
+                // Verified only: a handle saved from chat meanwhile (unverified) is not the link this code is waiting for.
+                if (err == null && s != null && s.ok() && s.linked() && s.verified()) {
                     onClient(() -> {
                         TwitchAccountState.invalidate();
                         if (generation == watchGeneration) {
