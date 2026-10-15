@@ -108,7 +108,8 @@ public final class LiveEyeLootResolver {
             || countRealLiveEyes(player.getEnderChestInventory()) > 0;
     }
 
-    private static int countRealLiveEyes(Container container) {
+    /** Resolved (not pending) Live Eyes in {@code container} — any side, so a client can count its own inventory. */
+    public static int countRealLiveEyes(Container container) {
         int n = 0;
         for (int i = 0; i < container.getContainerSize(); i++) {
             ItemStack stack = container.getItem(i);

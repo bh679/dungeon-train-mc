@@ -2,8 +2,8 @@
   "locale": "pl_pl",
   "name": "SI bez ludzkiej weryfikacji",
   "human_reviewed": false,
-  "total_keys": 4925,
-  "ai_authored": 4925,
-  "ai_unreviewed": 4925,
-  "counted_keys": 3110
+  "total_keys": 4922,
+  "ai_authored": 4922,
+  "ai_unreviewed": 4922,
+  "counted_keys": 3107
 }

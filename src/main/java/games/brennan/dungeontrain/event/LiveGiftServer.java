@@ -22,10 +22,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * check they may have one, redeem the gift with the relay — 200 once, only for the uuid it was made out
  * to — and put a fresh Live Eye on their head, which takes them live.
  *
- * <p>Refused, with a line saying why, for a Kid or a player with Livestreaming off (the relay never
- * offers those, this is the backstop), a player banned from the Live Eye, and one who already holds
- * one (one at a time, as for loot — {@link LiveEyeLootResolver}). The checks run before the redeem, so a
- * refusal leaves the gift unspent, and again after it, since the reply lands later.</p>
+ * <p>Nobody who can't take one is ever offered one: the viewer's client only joins as eligible — and only
+ * shows or accepts an offer — while it is not a Kid, has Livestreaming on and carries no Live Eye
+ * ({@code LiveGiftClient#canReceive}), and the relay skips banned players. The same checks run here as an
+ * anti-cheat backstop only: a refusal is logged, never shown, and leaves the gift unspent.</p>
  */
 public final class LiveGiftServer {
 
@@ -51,7 +51,7 @@ public final class LiveGiftServer {
     /** {@code player} accepted gift {@code giftId} from {@code channel}'s stream. Server thread. */
     public static void onAccept(ServerPlayer player, String giftId, Channel channel) {
         if (!LiveFeedClient.isGiftId(giftId)) return;
-        if (refuse(player)) return;
+        if (refused(player)) return;
         UUID uuid = player.getUUID();
         if (!IN_FLIGHT.add(uuid)) return;
         MinecraftServer server = player.server;
@@ -66,21 +66,18 @@ public final class LiveGiftServer {
                     .withStyle(ChatFormatting.GRAY));
                 return;
             }
-            if (refuse(p)) return;
+            if (refused(p)) return;
             grant(p, r.str("from"));
         }));
     }
 
-    private static boolean refuse(ServerPlayer player) {
+    /** The backstop: true (and logged) when {@code player} can't take a Live Eye. Never reached by an honest client. */
+    private static boolean refused(ServerPlayer player) {
         Refusal why = refusal(ContentModeMirror.isKid(player), ContentModeMirror.isLivestreamOn(player),
-            LiveModeration.isBanned(player.getUUID()), LiveEyeLootResolver.holdsLiveEye(player));
+            LiveModeration.isBanned(player.getUUID()), LiveEyeLootResolver.countRealLiveEyes(player.getInventory()) > 0);
         if (why == null) return false;
-        String key = switch (why) {
-            case NOT_ALLOWED -> KEY + "not_allowed";
-            case BANNED -> KEY + "banned";
-            case HOLDS_ONE -> KEY + "holds_one";
-        };
-        player.sendSystemMessage(Component.translatable(key).withStyle(ChatFormatting.GRAY));
+        LOGGER.warn("[DungeonTrain] Live Eye gift accept from {} refused ({}) — its client should not have offered it",
+            player.getGameProfile().getName(), why);
         return true;
     }
 

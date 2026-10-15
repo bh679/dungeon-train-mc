@@ -20,4 +20,13 @@ class LiveGiftClientTest {
         assertTrue(LiveGiftClient.shouldPrompt(last, last + LiveGiftClient.PROMPT_GAP_MS));
         assertTrue(LiveGiftClient.shouldPrompt(last, last - 1), "a clock that ran backwards does not lock it out");
     }
+
+    @Test
+    @DisplayName("only a player who can take a Live Eye joins as eligible, sees or accepts an offer")
+    void canReceive() {
+        assertTrue(LiveGiftClient.canReceive(false, true, false));
+        assertFalse(LiveGiftClient.canReceive(true, true, false), "Kid mode");
+        assertFalse(LiveGiftClient.canReceive(false, false, false), "Livestreaming off");
+        assertFalse(LiveGiftClient.canReceive(false, true, true), "already carries one");
+    }
 }

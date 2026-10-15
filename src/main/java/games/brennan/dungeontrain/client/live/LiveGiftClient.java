@@ -2,6 +2,9 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.LiveFeedClientConfig;
+import games.brennan.dungeontrain.event.LiveEyeLootResolver;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.LiveGiftAcceptPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -57,6 +60,21 @@ public final class LiveGiftClient {
 
     private LiveGiftClient() {}
 
+    /**
+     * Whether a player can take a gifted Live Eye: not a Kid, Livestreaming on, none carried or worn.
+     * Only then does it join as eligible, see an offer, or accept one — so nobody is offered what they
+     * can't take. Pure for the tests.
+     */
+    public static boolean canReceive(boolean kid, boolean streamingOn, boolean holdsLiveEye) {
+        return !kid && streamingOn && !holdsLiveEye;
+    }
+
+    /** {@link #canReceive} for this client right now. Client thread. */
+    public static boolean canReceive(Minecraft mc) {
+        return mc.player != null && canReceive(ClientDisplayConfig.isKidMode(), LiveFeedClientConfig.streamingEnabled(),
+            LiveEyeLootResolver.countRealLiveEyes(mc.player.getInventory()) > 0);
+    }
+
     /** Whether a join at {@code now} may prompt, the last prompt having been at {@code lastMs} (−1 = never). */
     public static boolean shouldPrompt(long lastMs, long now) {
         return lastMs < 0 || now < lastMs || now - lastMs >= PROMPT_GAP_MS;
@@ -78,6 +96,8 @@ public final class LiveGiftClient {
     public static void onOffer(GiftOffer offer, Channel channel) {
         if (!SEEN_GIFTS.add(offer.giftId())) return;
         if (SEEN_GIFTS.size() > CAP) SEEN_GIFTS.remove(SEEN_GIFTS.iterator().next());
+        // Joined as eligible, but no longer (found a Live Eye, switched Livestreaming off): never offered.
+        if (!canReceive(Minecraft.getInstance())) return;
         put(OFFERS, offer.giftId(), new Offer(offer.from(), channel));
         MutableComponent line = Component.translatable(KEY + "offer", offer.from()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
@@ -122,7 +142,7 @@ public final class LiveGiftClient {
     private static int answer(String giftId, boolean accept) {
         Minecraft mc = Minecraft.getInstance();
         Offer offer = OFFERS.remove(giftId);
-        if (offer == null || mc.getConnection() == null) {
+        if (offer == null || mc.getConnection() == null || (accept && !canReceive(mc))) {
             say(mc, Component.translatable(KEY + "expired").withStyle(ChatFormatting.GRAY));
             return 0;
         }

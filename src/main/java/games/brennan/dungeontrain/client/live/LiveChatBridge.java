@@ -135,9 +135,9 @@ public final class LiveChatBridge {
         mc.gui.getChat().addMessage(Component.translatable(LiveChatRules.CONNECTED_KEY,
             LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY));
         if (viaTv && mc.getUser() != null) {
-            // Only a viewer who could stream may be offered a Live Eye: not Kid mode, Livestreaming on.
-            boolean eligible = !ClientDisplayConfig.isKidMode() && LiveFeedClientConfig.streamingEnabled();
-            LiveFeedClient.chatJoin(base(false), mc.getUser().getProfileId(), mc.getUser().getName(), eligible);
+            // Only a viewer who can take a Live Eye may be offered one (LiveGiftClient#canReceive).
+            LiveFeedClient.chatJoin(base(false), mc.getUser().getProfileId(), mc.getUser().getName(),
+                LiveGiftClient.canReceive(mc));
         }
     }
 
