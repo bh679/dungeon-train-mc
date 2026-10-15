@@ -26012,7 +26012,8 @@
       "summary": "Like your Ender Chest and gear, your advancements are now kept separately for each difficulty. Switching difficulty swaps in that difficulty's advancements \u2014 and your others are waiting for you when you switch back.",
       "highlights": [
         "Everything you earned before this update stays on Normal; Peaceful, Easy and Hard start fresh",
-        "Train Editor advancements are shared across every difficulty"
+        "Train Editor advancements are shared across every difficulty",
+        "Your advancements are backed up before they're split, and a copy is kept for good"
       ],
       "pr": 2010,
       "date": "2026-10-15",
