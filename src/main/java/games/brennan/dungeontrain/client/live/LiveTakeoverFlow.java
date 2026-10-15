@@ -72,12 +72,17 @@ public final class LiveTakeoverFlow {
     }
 
     /**
-     * Whole seconds left in this wearer's running takeover vote, for the countdown over the live box
-     * ({@link LiveHeadViewer}); −1 when none is running.
+     * Whole seconds left in a running takeover vote, for the countdown over the live box
+     * ({@link LiveHeadViewer}); −1 when none is running. The requester's own vote, else one this client
+     * saw open in Live Chat — the streamer being voted on and the viewers watching see it too.
      */
     static int voteCountdownSeconds() {
-        if (pollId == null || LiveStreamController.get().state() != LiveStreamController.State.VOTING) return -1;
-        return (int) Math.max(0, (voteEndsMs - System.currentTimeMillis() + 999) / 1000);
+        long now = System.currentTimeMillis();
+        if (pollId != null && LiveStreamController.get().state() == LiveStreamController.State.VOTING) {
+            return (int) Math.max(0, (voteEndsMs - now + 999) / 1000);
+        }
+        long ends = LiveTakeoverChat.openVoteEndsMs();
+        return ends < 0 ? -1 : (int) Math.max(0, (ends - now + 999) / 1000);
     }
 
     /** Request takeover: open the vote. The prompt has closed; the countdown shows over the live box. */

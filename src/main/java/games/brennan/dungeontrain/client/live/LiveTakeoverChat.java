@@ -61,6 +61,12 @@ public final class LiveTakeoverChat {
         return true;
     }
 
+    /** When the open vote this client has seen closes, or −1 when none is open. */
+    static long openVoteEndsMs() {
+        PollLine p = open;
+        return p != null && voteOpen() ? p.endsTs() : -1;
+    }
+
     /** Logout / leaving the chat: forget the open vote. */
     static void reset() {
         open = null;

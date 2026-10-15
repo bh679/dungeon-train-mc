@@ -203,10 +203,16 @@ public final class LiveHeadViewer {
         if (seconds < 0) return;
         Component text = Component.translatable("screen.dungeontrain.live_takeover.voting", seconds);
         int pad = 3;
-        int h = font.lineHeight + 2 * pad;
+        // Shrunk to fit a narrow box (the streamer's own is smaller), so the seconds are never cut off.
+        float scale = Math.min(1f, (b.w() - 2f * pad) / Math.max(1, font.width(text)));
+        int h = Math.round(font.lineHeight * scale) + 2 * pad;
         g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + h, BLACKOUT);
-        int w = font.width(text);
-        g.drawString(font, text, b.x() + Math.max(pad, (b.w() - w) / 2), b.y() + pad + 1, 0xFFFFFFFF, true);
+        float w = font.width(text) * scale;
+        g.pose().pushPose();
+        g.pose().translate(b.x() + (b.w() - w) / 2f, b.y() + pad + 0.5f, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.drawString(font, text, 0, 0, 0xFFFFFFFF, true);
+        g.pose().popPose();
     }
 
     /** The box is playing this client's own broadcast (live, not the dark-channel replay). */
