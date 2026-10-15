@@ -26162,6 +26162,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "curseforge-pack-discord-presence-069",
+      "version": "0.1298.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "compatibility"
+      ],
+      "title": "Discord reactions in the CurseForge modpack",
+      "summary": "Players on the CurseForge modpack now see Discord reactions on in-game chat lines too.",
+      "highlights": [],
+      "pr": 2019,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
