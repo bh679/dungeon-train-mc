@@ -45,6 +45,15 @@ class StreamableScreensTest {
     }
 
     @Test
+    void photosAreShownButAlbumsAreNot() {
+        String photo = "io.github.mortuusars.exposure.client.gui.screen.PhotographScreen";
+        assertTrue(shown(line(photo, SCREEN), false));
+        assertTrue(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.ChildPhotographScreen", photo, SCREEN), false));
+        assertFalse(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.AlbumScreen", CONTAINER, SCREEN), false));
+        assertFalse(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.AlbumViewScreen", SCREEN), false));
+    }
+
+    @Test
     void aListedMenuIsNotShownWhileTyping() {
         assertFalse(shown(line(CONTAINER, SCREEN), true));
         assertFalse(shown(line("net.minecraft.client.gui.screens.PauseScreen", SCREEN), true));

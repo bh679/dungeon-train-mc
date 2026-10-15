@@ -18,13 +18,14 @@ import java.util.Set;
 
 /**
  * The menus a Live Eye stream may show while Show GUI to viewers is on: inventories and containers,
- * the pause menu and advancements. Anything else — the chat box, signs, books, anvils, command
- * blocks, other mods' screens — is read before it draws ({@link StreamCapture}), and so is a listed
+ * the pause menu, advancements and Exposure's photo viewer. Anything else — the chat box, signs,
+ * books, anvils, photo albums (their notes are typed text), command blocks, other mods' screens — is
+ * read before it draws ({@link StreamCapture}), and so is a listed
  * menu while the player is typing into it (a focused text box, the creative search tab, a recipe
  * book search). What the player types never goes out.
  *
  * <p>Matched by class name, superclasses included, so Better Advancements (optional) needs no
- * compile-time link. NeoForge runs with Mojang names, so vanilla names match in production too.</p>
+ * compile-time link, nor does Exposure. NeoForge runs with Mojang names, so vanilla names match in production too.</p>
  */
 public final class StreamableScreens {
 
@@ -35,11 +36,15 @@ public final class StreamableScreens {
         "net.minecraft.client.gui.screens.inventory.AbstractContainerScreen",
         "net.minecraft.client.gui.screens.PauseScreen",
         "net.minecraft.client.gui.screens.advancements.AdvancementsScreen",
-        "betteradvancements.common.gui.BetterAdvancementsScreen");
+        "betteradvancements.common.gui.BetterAdvancementsScreen",
+        // A photograph held up to view, or one opened full size from an album (ChildPhotographScreen)
+        "io.github.mortuusars.exposure.client.gui.screen.PhotographScreen");
 
     /** …unless it is, or extends, one of these: a container with a text field of its own. */
     static final Set<String> UNLISTED = Set.of(
-        "net.minecraft.client.gui.screens.inventory.AnvilScreen");
+        "net.minecraft.client.gui.screens.inventory.AnvilScreen",
+        // Album notes are typed into Exposure's own TextBox, which the EditBox check cannot see
+        "io.github.mortuusars.exposure.client.gui.screen.album.AlbumScreen");
 
     /** {@code RecipeBookComponent.searchBox}; null once it could not be read (then: fail closed). */
     @Nullable
