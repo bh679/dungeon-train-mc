@@ -26159,9 +26159,9 @@
       "highlights": [],
       "pr": 2020,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
     },
     {
       "id": "curseforge-pack-discord-presence-069",
@@ -26177,9 +26177,9 @@
       "highlights": [],
       "pr": 2019,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
     },
     {
       "id": "hidden-advancement-held-screen",
@@ -26194,9 +26194,9 @@
       "highlights": [],
       "pr": 2021,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
     },
     {
       "id": "live-feed-performance-settings",
@@ -26216,9 +26216,9 @@
       ],
       "pr": 2022,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
     },
     {
       "id": "live-stream-shows-photos",
@@ -26234,9 +26234,9 @@
       "highlights": [],
       "pr": 2024,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
     },
     {
       "id": "options-tooltips-current-text",
