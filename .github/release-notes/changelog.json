@@ -26207,8 +26207,8 @@
         "community",
         "compatibility"
       ],
-      "title": "Photos show on your Live stream",
-      "summary": "When you stream with Show GUI on, viewers now see the photos you hold up to look at, including ones opened from an album. Photo albums stay off the stream, so the notes you write in them stay private.",
+      "title": "Books, photos and albums show on your Live stream",
+      "summary": "When you stream with Show GUI on, viewers now see the books you read and write, lecterns, the photos you hold up to look at and your photo albums. Book writing is filtered by the Live Eye as you type; album notes and titles aren't, so the stream steps away while you write those.",
       "highlights": [],
       "pr": 2024,
       "date": "2026-10-15",

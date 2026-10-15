@@ -32,8 +32,6 @@ class StreamableScreensTest {
     void typingScreensAndUnknownScreensAreNot() {
         assertFalse(shown(line("net.minecraft.client.gui.screens.ChatScreen", SCREEN), false));
         assertFalse(shown(line("net.minecraft.client.gui.screens.inventory.SignEditScreen", SCREEN), false));
-        assertFalse(shown(line("net.minecraft.client.gui.screens.inventory.BookEditScreen", SCREEN), false));
-        assertFalse(shown(line("net.minecraft.client.gui.screens.inventory.BookViewScreen", SCREEN), false));
         assertFalse(shown(line("net.minecraft.client.gui.screens.inventory.CommandBlockEditScreen", SCREEN), false));
         assertFalse(shown(line("some.mod.AccountScreen", SCREEN), false));
     }
@@ -45,12 +43,25 @@ class StreamableScreensTest {
     }
 
     @Test
-    void photosAreShownButAlbumsAreNot() {
+    void booksPhotosAndAlbumsAreShown() {
+        String view = "net.minecraft.client.gui.screens.inventory.BookViewScreen";
         String photo = "io.github.mortuusars.exposure.client.gui.screen.PhotographScreen";
+        String albumView = "io.github.mortuusars.exposure.client.gui.screen.album.AlbumViewScreen";
+        assertTrue(shown(line(view, SCREEN), false));
+        assertTrue(shown(line("net.minecraft.client.gui.screens.inventory.LecternScreen", view, SCREEN), false));
+        assertTrue(shown(line(StreamableScreens.BOOK_EDIT, SCREEN), false));
         assertTrue(shown(line(photo, SCREEN), false));
         assertTrue(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.ChildPhotographScreen", photo, SCREEN), false));
-        assertFalse(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.AlbumScreen", CONTAINER, SCREEN), false));
-        assertFalse(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.AlbumViewScreen", SCREEN), false));
+        assertTrue(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.AlbumScreen", CONTAINER, SCREEN), false));
+        assertTrue(shown(line(albumView, SCREEN), false));
+        assertTrue(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.LecternAlbumScreen", albumView, SCREEN), false));
+    }
+
+    @Test
+    void albumSigningAndUnfilteredWritingAreNot() {
+        assertFalse(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.AlbumSigningScreen", SCREEN), false));
+        assertFalse(shown(line("io.github.mortuusars.exposure.client.gui.screen.album.AlbumScreen", CONTAINER, SCREEN), true));
+        assertFalse(shown(line(StreamableScreens.BOOK_EDIT, SCREEN), true));
     }
 
     @Test
