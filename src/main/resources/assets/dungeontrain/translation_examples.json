@@ -15782,6 +15782,31 @@
       ]
     }
   },
+  "chat.dungeontrain.workbench.test_no_scene": {
+    "1": {
+      "label": "the build's kind as the relay names it",
+      "examples": [
+        "part",
+        "building"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.test_wrong_size": {
+    "1": {
+      "label": "the build's size, length x height x width",
+      "examples": [
+        "12x9x5"
+      ]
+    }
+  },
+  "chat.dungeontrain.workbench.test_prefabs_missing": {
+    "1": {
+      "label": "how many loot prefabs are missing",
+      "examples": [
+        "3"
+      ]
+    }
+  },
   "chat.dungeontrain.workbench.bad_kind": {
     "1": {
       "label": "the kind word that was typed",

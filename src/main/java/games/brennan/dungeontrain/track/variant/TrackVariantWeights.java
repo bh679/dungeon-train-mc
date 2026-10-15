@@ -83,6 +83,8 @@ public final class TrackVariantWeights {
     /** Clamped weight for {@code (kind, name)}; {@link #DEFAULT} if no entry. */
     public static synchronized int weightFor(TrackKind kind, String name) {
         if (name == null) return DEFAULT;
+        // A Workbench build under test is never drawn — only its test stands it up, by id.
+        if (games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.isScratchId(name)) return MIN;
         TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
         if (m == null) return DEFAULT;
         return clamp(m.weight());
@@ -173,6 +175,8 @@ public final class TrackVariantWeights {
      */
     public static synchronized String modeFor(TrackKind kind, String name) {
         if (name == null) return null;
+        // A Workbench room under test keeps the mode it arrived with in memory, never in this file.
+        if (games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.isScratchId(name)) return games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.modeFor(name);
         TemplateMeta m = CURRENT.get(kind).get(name.toLowerCase(Locale.ROOT));
         return m == null ? null : m.mode();
     }

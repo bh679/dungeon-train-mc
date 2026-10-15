@@ -498,6 +498,7 @@ public final class EditorScreenActions {
      * stand up: a dimensional carriage, a carriage, a contents template and a whole room or group can
      * be walked into; a piece of the line — track tile, pillar section, staircase, tunnel piece — is
      * stood up in a stretch of track with a carriage on it; a part is only ever a piece of a carriage.
+     * A Workbench build is stood up as whichever of those its relay kind is.
      *
      * @param modelId the selection's model id — only a piece of the line needs it, since one name
      *                can belong to several of its kinds
@@ -509,6 +510,8 @@ public final class EditorScreenActions {
             case CHUNK_FRAMES -> PortalTestSaveCheckScreen.forFrame(modelName);
             case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP, WHOLE_HALF ->
                 PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
+            // A staged build tests as the kind the relay gave it; the server refuses a part or building.
+            case WORKBENCH -> PortalTestSaveCheckScreen.forWorkbench(modelName);
             case TRACKS -> games.brennan.dungeontrain.track.TrackTestPiece.ofModelId(modelId).isPresent()
                 ? PortalTestSaveCheckScreen.forTrack(modelId, modelName) : null;
             default -> null;

@@ -26064,6 +26064,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "workbench-test-any-build",
+      "version": "0.1294.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test Workbench builds before committing them",
+      "summary": "Test the Carriage now works on every build in the editor's Workbench. A build waiting for review stands up just as it would once committed, so you can walk through it, reroll it and judge it before deciding what it becomes. Nothing is installed by testing it.",
+      "highlights": [
+        "Test any Workbench build in place: carriages, contents, carriage groups, track pieces and dimensional carriages.",
+        "Reseed and Back work exactly as they do for committed templates."
+      ],
+      "pr": 2012,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
