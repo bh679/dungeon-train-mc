@@ -25999,6 +25999,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancements-per-difficulty",
+      "version": "0.1292.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Each difficulty keeps its own advancements",
+      "summary": "Like your Ender Chest and gear, your advancements are now kept separately for each difficulty. Switching difficulty swaps in that difficulty's advancements \u2014 and your others are waiting for you when you switch back.",
+      "highlights": [
+        "Everything you earned before this update stays on Normal; Peaceful, Easy and Hard start fresh",
+        "Train Editor advancements are shared across every difficulty"
+      ],
+      "pr": 2010,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
