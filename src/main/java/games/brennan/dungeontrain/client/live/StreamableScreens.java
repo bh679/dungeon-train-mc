@@ -37,10 +37,9 @@ public final class StreamableScreens {
         "net.minecraft.client.gui.screens.advancements.AdvancementsScreen",
         "betteradvancements.common.gui.BetterAdvancementsScreen",
         // The death screens, for a stream that carries on after death (LivePostMortem): the moment,
-        // the stream-on choice, the recap pages and their ride photos. The recap's feedback and
-        // mod-recommendation boxes fall under the typing rule like any other text box.
+        // the recap pages and their ride photos. The recap's feedback and mod-recommendation boxes
+        // fall under the typing rule like any other text box.
         "games.brennan.dungeontrain.client.DeathMomentScreen",
-        "games.brennan.dungeontrain.client.live.LivePostMortemChoiceScreen",
         "games.brennan.dungeontrain.client.NarrativeDeathScreen",
         "games.brennan.dungeontrain.client.snapshot.RideGalleryScreen");
 

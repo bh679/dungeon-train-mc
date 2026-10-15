@@ -78,6 +78,8 @@ public final class LiveHlsSession implements IMediaSession {
     private final String playlistUrl;
     private final String mediaUrl;
     private final boolean replay;
+    /** A clip on this computer ({@link #localLoop}), looped in colour; never a URL anyone else chose. */
+    private final boolean local;
     private final int width, height;
     /** Guarded by {@code lock}: the newest whole frame. */
     private NativeImage back;
@@ -118,13 +120,28 @@ public final class LiveHlsSession implements IMediaSession {
      * renditions of it.
      */
     public LiveHlsSession(String playlistUrl, String mediaUrl, int width, int height, boolean replay) {
+        this(playlistUrl, mediaUrl, width, height, replay, false);
+    }
+
+    private LiveHlsSession(String playlistUrl, String mediaUrl, int width, int height, boolean replay, boolean local) {
         this.playlistUrl = playlistUrl;
         this.mediaUrl = mediaUrl;
         this.replay = replay;
+        this.local = local;
         this.width = width;
         this.height = height;
         this.back = new NativeImage(NativeImage.Format.RGBA, width, height, false);
         this.staging = new NativeImage(NativeImage.Format.RGBA, width, height, false);
+    }
+
+    /**
+     * A video file this client made itself (the streamer's death clip, {@link LiveDeathClip}), looped
+     * forever in colour. It behaves like a replay — no playlist check, no stall watchdog, no end — but
+     * ffmpeg may read only local files.
+     */
+    public static LiveHlsSession localLoop(java.nio.file.Path file, int width, int height) {
+        String path = file.toAbsolutePath().toString();
+        return new LiveHlsSession(path, path, width, height, true, true);
     }
 
     /** The source playlist this session stands for (not necessarily what it decodes). */
@@ -319,7 +336,7 @@ public final class LiveHlsSession implements IMediaSession {
                 }
                 LOGGER.info("[DungeonTrain] live decoder: {} at {}x{}{}", mediaUrl, width, height,
                     mediaUrl.equals(playlistUrl) ? "" : " (a rendition of " + playlistUrl + ")");
-                p = ffmpeg.runFFmpeg(args(mediaUrl, width, height, replay, catchup));
+                p = ffmpeg.runFFmpeg(local ? localArgs(mediaUrl, width, height) : args(mediaUrl, width, height, replay, catchup));
                 LivePerfStats.decoderRun();
                 lastProgressMs = System.currentTimeMillis(); // a fresh run gets a whole stall window
                 process = p;
@@ -402,6 +419,13 @@ public final class LiveHlsSession implements IMediaSession {
         }
         a.addAll(List.of("-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgba", "-"));
         return a.toArray(new String[0]);
+    }
+
+    /** {@link #localLoop}'s ffmpeg: a file on this computer and nothing else, looped at real time, in colour. */
+    static String[] localArgs(String path, int width, int height) {
+        return new String[] {"-hide_banner", "-loglevel", "error", "-nostdin", "-protocol_whitelist", "file",
+            "-re", "-stream_loop", "-1", "-i", path, "-an", "-vf", "scale=" + width + ":" + height,
+            "-f", "image2pipe", "-vcodec", "rawvideo", "-pix_fmt", "rgba", "-"};
     }
 
     public boolean isReplay() {

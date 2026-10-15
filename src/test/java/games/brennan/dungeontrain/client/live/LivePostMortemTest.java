@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import static games.brennan.dungeontrain.client.live.LivePostMortem.SCREEN_GRACE_TICKS;
 import static games.brennan.dungeontrain.client.live.LivePostMortem.shouldEnd;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,15 +17,13 @@ class LivePostMortemTest {
     void deathScreenNamesMatchTheRealClasses() {
         assertTrue(LivePostMortem.isDeathScreen(DeathMomentScreen.class.getName()));
         assertTrue(LivePostMortem.isDeathScreen(NarrativeDeathScreen.class.getName()));
-        assertTrue(LivePostMortem.isDeathScreen(LivePostMortemChoiceScreen.class.getName()));
         assertFalse(LivePostMortem.isDeathScreen("net.minecraft.client.gui.screens.DeathScreen"));
         assertFalse(LivePostMortem.isDeathScreen(null));
     }
 
     @Test
     void deathScreensMayBeStreamed() {
-        for (Class<?> c : new Class<?>[] {DeathMomentScreen.class, NarrativeDeathScreen.class,
-                LivePostMortemChoiceScreen.class, RideGalleryScreen.class}) {
+        for (Class<?> c : new Class<?>[] {DeathMomentScreen.class, NarrativeDeathScreen.class, RideGalleryScreen.class}) {
             assertTrue(StreamableScreens.shown(StreamableScreens.lineage(c), false), c.getName());
             assertFalse(StreamableScreens.shown(StreamableScreens.lineage(c), true), "typing hides " + c.getName());
         }
@@ -46,18 +43,14 @@ class LivePostMortemTest {
     }
 
     @Test
-    void phases() {
+    void activeUntilCleared() {
         LivePostMortem pm = new LivePostMortem();
         assertFalse(pm.active());
-        pm.choseContinue();
-        assertEquals(LivePostMortem.Phase.NONE, pm.phase(), "nothing to continue before a death");
+        assertFalse(pm.tick(null, false, true), "inactive never ends anything");
         pm.begin();
-        assertEquals(LivePostMortem.Phase.CHOOSING, pm.phase());
-        pm.choseContinue();
-        assertEquals(LivePostMortem.Phase.CONTINUING, pm.phase());
+        assertTrue(pm.active());
         assertFalse(pm.tick(NarrativeDeathScreen.class, true, false));
         pm.clear();
         assertFalse(pm.active());
-        assertFalse(pm.tick(null, false, true), "inactive never ends anything");
     }
 }

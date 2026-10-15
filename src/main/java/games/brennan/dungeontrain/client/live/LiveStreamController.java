@@ -197,9 +197,9 @@ public final class LiveStreamController {
 
     /**
      * The server says the streamer died (it has burned the Live Eye and cleared the streamer). A
-     * broadcast that is already on air carries on through the death screens until the streamer
-     * chooses ({@link LivePostMortemChoiceScreen}); the relay offers it to viewers meanwhile, and the
-     * first to accept cuts this one off. Anything not yet on air stops as before.
+     * broadcast that is already on air carries on through the death screens until the streamer ends
+     * it (End Stream, {@link LiveRecOverlay}) or leaves; the relay offers it to viewers meanwhile, and
+     * the first to accept cuts this one off. Anything not yet on air stops as before.
      */
     private void died() {
         Claim c = claim;
@@ -210,6 +210,14 @@ public final class LiveStreamController {
         LOGGER.info("[DungeonTrain] live: streamer died; streaming on through the death screens");
         postMortem.begin();
         LiveFeedClient.died(c.token());
+        // The moment of death, cut from this stream's own segments: the first death page's backdrop
+        // and the #live-eye offline post's GIF.
+        LiveEncoder enc = encoder;
+        Path d = dir;
+        if (enc != null && d != null) {
+            LiveDeathClip.begin(d, enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps()),
+                LiveFeedClientConfig.segmentSeconds(), c.token());
+        }
     }
 
     /** Streaming on after death — the death screens are what goes out. */
@@ -217,17 +225,7 @@ public final class LiveStreamController {
         return state == State.STREAMING && postMortem.active();
     }
 
-    /** Dead and not yet decided: the choice screen comes before the first death page. */
-    public boolean postMortemChoicePending() {
-        return postMortem() && postMortem.phase() == LivePostMortem.Phase.CHOOSING;
-    }
-
-    /** "Continue streaming post mortem". */
-    public void continuePostMortem() {
-        if (postMortem()) postMortem.choseContinue();
-    }
-
-    /** "End stream" on the choice screen, or the End Stream button. */
+    /** The End Stream button. */
     public void endPostMortem() {
         if (postMortem()) stop(null, LiveStreamEndedToast.Reason.DIED);
     }
@@ -306,6 +304,7 @@ public final class LiveStreamController {
     }
 
     private void tick() {
+        LiveDeathClip.tick();
         if (endedAfterLeave != null && Minecraft.getInstance().level == null) {
             Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(endedAfterLeave));
             endedAfterLeave = null;
@@ -427,6 +426,7 @@ public final class LiveStreamController {
         int gen = generation;
         try {
             sweepStaleDirs();
+            LiveDeathClip.forget();
             Path d = liveRoot().resolve(c.session());
             Files.createDirectories(d);
             int w = LiveFeedClientConfig.captureWidth();
