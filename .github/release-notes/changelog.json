@@ -25936,9 +25936,9 @@
       "highlights": [],
       "pr": 2004,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "live-eye-links-phones-hidden",
@@ -25955,9 +25955,9 @@
         "Never a strike \u2014 share them again once the stream is over."
       ],
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "live-eye-streams-menus",
@@ -25973,9 +25973,9 @@
       "highlights": [],
       "pr": 2006,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "editor-workbench-pool-moves",
@@ -25996,9 +25996,9 @@
       ],
       "pr": 2009,
       "date": "2026-10-14",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "advancements-per-difficulty",
@@ -26017,9 +26017,9 @@
       ],
       "pr": 2010,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "workbench-type-tools",
@@ -26039,9 +26039,9 @@
       ],
       "pr": 2011,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "live-eye-needs-internet-consent",
@@ -26061,9 +26061,9 @@
       ],
       "pr": 2013,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "workbench-test-any-build",
@@ -26081,9 +26081,9 @@
       ],
       "pr": 2012,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "live-chat-source-icons",
@@ -26102,9 +26102,9 @@
       ],
       "pr": 2015,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "release-announce-needs-release",
@@ -26119,9 +26119,9 @@
       "highlights": [],
       "pr": 2016,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     },
     {
       "id": "discord-reacts-emojis-ingame",
@@ -26142,9 +26142,9 @@
       ],
       "pr": 2018,
       "date": "2026-10-15",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
     }
   ]
 }
