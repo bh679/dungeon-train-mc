@@ -19,7 +19,7 @@ import java.util.WeakHashMap;
  * <p>A player who has put a Live Eye on but is not live yet — their client is still claiming, or
  * someone else holds the channel and they are deciding whether to take it over — is <em>pending</em>.
  * They become the streamer only when their client says the relay gave them the channel
- * ({@code net/LiveTakeoverPacket}).</p>
+ * ({@code net/LiveClaimResultPacket}).</p>
  */
 public final class LiveStreamers {
 

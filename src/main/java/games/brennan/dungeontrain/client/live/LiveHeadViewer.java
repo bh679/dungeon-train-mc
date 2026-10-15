@@ -111,6 +111,7 @@ public final class LiveHeadViewer {
             if (mc.level == null || mc.player == null || LiveStreamController.get().streaming() || mc.options.hideGui) return;
             if (shown(mc)) {
                 draw(g, LiveFeedSource.MAIN.frame(mc.player.tickCount, delta.getGameTimeDeltaPartialTick(false), false));
+                LiveTakeoverButton.draw(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false)));
             } else {
                 // Box switched off: a running takeover vote's countdown still shows where it would be.
                 voteBanner(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false)), mc.font);
@@ -145,6 +146,10 @@ public final class LiveHeadViewer {
         boolean streaming = LiveStreamController.get().streaming();
         Box b = layout(mc.getWindow().getGuiScaledWidth(), LiveFeedClientConfig.headViewerWidth(streaming));
         if (streaming && LiveStreamSettingsButton.click(event.getScreen(), b, event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (!streaming && LiveTakeoverButton.click(b, event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
             return;
         }

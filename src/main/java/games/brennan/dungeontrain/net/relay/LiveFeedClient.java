@@ -271,20 +271,30 @@ public final class LiveFeedClient {
         return DungeonTrain.relayBaseUrl();
     }
 
+    /** A plain claim: no takeover choice or ticket yet. */
+    public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
+                                                  LiveClaimInfo info, @Nullable Life life) {
+        return claim(uuid, name, eyeId, info, life, false, null, null);
+    }
+
     /**
      * Take the channel. This mod always asks to be told who holds it first ({@code confirmFlow}: a 409
      * the claim reads with {@link LiveTakeoverClient#parseBlocked}); {@code takeover} is the player's
-     * "Take over" past the holder's protected minutes, {@code ticket} an approved vote's pass.
+     * "Take over" past the holder's protected minutes, {@code ticket} an approved takeover vote's pass,
+     * {@code takeoverTicket} a won dead streamer's takeover ({@link #acceptTakeover}). Either ticket carries
+     * the claim past the relay's tenure check, once.
      */
     public static CompletableFuture<Result> claim(UUID uuid, String name, String eyeId,
                                                   LiveClaimInfo info, @Nullable Life life,
-                                                  boolean takeover, @Nullable String ticket) {
+                                                  boolean takeover, @Nullable String ticket,
+                                                  @Nullable String takeoverTicket) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid.toString());
         body.addProperty("name", name);
         body.addProperty("confirmFlow", true);
         if (takeover) body.addProperty("takeover", true);
         if (ticket != null && !ticket.isEmpty()) body.addProperty("ticket", ticket);
+        if (takeoverTicket != null && !takeoverTicket.isEmpty()) body.addProperty("takeoverTicket", takeoverTicket);
         // Which life this stream is in, for the one-life "Longest Stream" board. A death ends the
         // stream, so a session never spans two lives.
         if (life != null) {
@@ -376,6 +386,90 @@ public final class LiveFeedClient {
         return post(base, "/live/chat/send", body);
     }
 
+    /**
+     * A TV viewer who has never streamed joined the chat (the relay's {@code joins[]}, streamer only):
+     * {@code joinId} is what the streamer gifts. {@code uuid} is dashes-stripped, lower-case.
+     */
+    public record GiftJoin(long seq, String joinId, String uuid, String name) {}
+
+    /** The streamer {@code from} offered the viewer {@code target} a Live Eye (the relay's {@code gifts[]}). */
+    public record GiftOffer(long seq, String giftId, String target, String from) {}
+
+    /** A chat poll's gift notices; both empty on any failure or from an older relay. */
+    public record GiftNotices(List<GiftJoin> joins, List<GiftOffer> gifts) {
+        public static final GiftNotices EMPTY = new GiftNotices(List.of(), List.of());
+    }
+
+    /** A joinId / giftId as the relay mints them; anything else is dropped before it reaches a command. */
+    private static final java.util.regex.Pattern GIFT_ID = java.util.regex.Pattern.compile("[jg]-[A-Za-z0-9_-]{8,24}");
+
+    /** Whether {@code id} has the shape of a relay join or gift id. */
+    public static boolean isGiftId(@Nullable String id) {
+        return id != null && GIFT_ID.matcher(id).matches();
+    }
+
+    /** The {@code joins} / {@code gifts} arrays of a chat poll; malformed entries are skipped. */
+    public static GiftNotices parseGiftNotices(Result r) {
+        if (!r.ok()) return GiftNotices.EMPTY;
+        JsonObject b = r.body();
+        try {
+            List<GiftJoin> joins = new ArrayList<>();
+            if (b.has("joins") && b.get("joins").isJsonArray()) {
+                for (JsonElement el : b.getAsJsonArray("joins")) {
+                    if (!el.isJsonObject()) continue;
+                    JsonObject o = el.getAsJsonObject();
+                    String id = str(o, "joinId");
+                    if (!isGiftId(id) || !o.has("seq")) continue;
+                    String name = LiveChatRules.clean(str(o, "name"), LiveChatRules.MAX_AUTHOR);
+                    joins.add(new GiftJoin(o.get("seq").getAsLong(), id, str(o, "uuid"), name.isBlank() ? "Someone" : name));
+                }
+            }
+            List<GiftOffer> gifts = new ArrayList<>();
+            if (b.has("gifts") && b.get("gifts").isJsonArray()) {
+                for (JsonElement el : b.getAsJsonArray("gifts")) {
+                    if (!el.isJsonObject()) continue;
+                    JsonObject o = el.getAsJsonObject();
+                    String id = str(o, "giftId");
+                    String target = str(o, "target");
+                    if (!isGiftId(id) || target.isBlank() || !o.has("seq")) continue;
+                    String from = LiveChatRules.clean(str(o, "from"), LiveChatRules.MAX_AUTHOR);
+                    gifts.add(new GiftOffer(o.get("seq").getAsLong(), id, target, from.isBlank() ? "Someone" : from));
+                }
+            }
+            return new GiftNotices(List.copyOf(joins), List.copyOf(gifts));
+        } catch (RuntimeException e) {
+            return GiftNotices.EMPTY;
+        }
+    }
+
+    /**
+     * This client joined the stream's chat through a TV. {@code eligible}: not Kid mode and Livestreaming
+     * on — only then may the streamer be offered to gift it a Live Eye.
+     */
+    public static CompletableFuture<Result> chatJoin(String base, UUID uuid, String name, boolean eligible) {
+        JsonObject body = new JsonObject();
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        body.addProperty("eligible", eligible);
+        return post(base, "/live/chat/join", body);
+    }
+
+    /** The streamer (proved by its stream {@code token}) offers the viewer of {@code joinId} a Live Eye. */
+    public static CompletableFuture<Result> gift(String base, String token, String joinId) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("joinId", joinId);
+        return post(base, "/live/gift", body);
+    }
+
+    /** The viewer's server redeems {@code giftId} for {@code uuid}: 200 once, only for the gift's viewer. */
+    public static CompletableFuture<Result> giftClaim(String base, String giftId, UUID uuid) {
+        JsonObject body = new JsonObject();
+        body.addProperty("giftId", giftId);
+        body.addProperty("uuid", uuid.toString());
+        return post(base, "/live/gift/claim", body);
+    }
+
     /** A chat poll's page; {@link ChatPage#EMPTY} on any failure (seq −1 keeps the cursor untouched). */
     public static ChatPage parseChat(Result r) {
         if (!r.ok()) return ChatPage.EMPTY;
@@ -420,6 +514,56 @@ public final class LiveFeedClient {
         body.addProperty("token", token);
         if (reason != null && !reason.isEmpty()) body.addProperty("reason", reason);
         return post("/live/stop", body);
+    }
+
+    // ---- death takeover --------------------------------------------------------------------------
+
+    /**
+     * The streamer died (they may stream on through the death screens): the relay offers the stream
+     * to every in-game viewer, and the first to accept takes it over.
+     */
+    public static CompletableFuture<Result> died(String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        return post("/live/died", body);
+    }
+
+    /** A dead streamer's stream on offer: {@code id} to accept it, {@code from} who died, open {@code untilMs} more. */
+    public record Takeover(String id, String from, long untilMs) {}
+
+    /** The {@code takeover} offer in a status body, or null (none, or from an older relay). */
+    @Nullable
+    public static Takeover parseTakeover(Result r) {
+        if (!r.ok() || !r.body().has("takeover") || !r.body().get("takeover").isJsonObject()) return null;
+        JsonObject t = r.body().getAsJsonObject("takeover");
+        String id = str(t, "id");
+        if (!id.matches("[0-9a-f]{8,64}")) return null;
+        long until;
+        try {
+            until = t.has("untilMs") ? t.get("untilMs").getAsLong() : 0L;
+        } catch (RuntimeException e) {
+            return null;
+        }
+        if (until <= 0) return null;
+        return new Takeover(id, LiveChatRules.clean(str(t, "from"), 32), until);
+    }
+
+    /** First to accept wins: 200 {@code {ticket}}; 409 {@code taken} / {@code gone} for everyone after. */
+    public static CompletableFuture<Result> acceptTakeover(Channel channel, String id, UUID uuid, String name) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", id);
+        body.addProperty("uuid", uuid.toString());
+        body.addProperty("name", name);
+        return post(viewerBase(channel), "/live/takeover/accept", body);
+    }
+
+    /** The winner's game server, before it swaps their TV for a Live Eye: is {@code ticket} theirs and unspent? */
+    public static CompletableFuture<Boolean> verifyTakeover(String ticket, UUID uuid) {
+        if (!ticket.matches("[0-9a-f]{16,128}")) return CompletableFuture.completedFuture(false);
+        HttpRequest req = HttpRequest.newBuilder(URI.create(base() + "/live/takeover/verify?ticket=" + ticket + "&uuid=" + uuid))
+            .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
+        return send(RELAY, req).handle((r, t) -> r != null && r.ok()
+            && r.body().has("valid") && r.body().get("valid").getAsBoolean());
     }
 
     /** Which Live Feed channel a viewer watches: the public one, or the dev one Free Play TVs show. */

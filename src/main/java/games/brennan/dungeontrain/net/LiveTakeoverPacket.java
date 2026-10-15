@@ -10,41 +10,20 @@ import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * Client → server: what the relay made of this player's Live Eye claim.
- *
- * <p>Putting a Live Eye on no longer makes its wearer the streamer at once. Their client claims the
- * channel first; when someone else holds it they are asked whether to take over (a vote inside the
- * holder's first ten minutes, their own call after). The server owns the item on their head, so it
- * hears the outcome: {@link Result#LIVE} makes them the streamer (and turns the previous one's Live Eye
- * into a TV), {@link Result#REJECTED} and {@link Result#STAYED_VIEWER} turn theirs into a TV. The
- * server only acts if the sender is wearing a pending Live Eye.</p>
+ * Client → server: I won a dead streamer's takeover; here is the relay's ticket. The server checks
+ * it with the relay and swaps the TV on the sender's head for a Live Eye
+ * ({@link LiveFeedEvents#onTakeoverWon}), which then goes live like any other.
  */
-public record LiveTakeoverPacket(Result result) implements CustomPacketPayload {
+public record LiveTakeoverPacket(String ticket) implements CustomPacketPayload {
 
-    public enum Result {
-        /** The relay gave this player the channel: they are live. */
-        LIVE,
-        /** The audience voted the takeover down: the Live Eye becomes a TV. */
-        REJECTED,
-        /** The player chose to stay a viewer: the Live Eye becomes a TV. */
-        STAYED_VIEWER
-    }
+    /** Relay tickets are 48 hex characters; anything far longer is not one. */
+    static final int MAX_TICKET = 128;
 
     public static final Type<LiveTakeoverPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_takeover"));
 
     public static final StreamCodec<FriendlyByteBuf, LiveTakeoverPacket> STREAM_CODEC =
-        StreamCodec.of(LiveTakeoverPacket::encode, LiveTakeoverPacket::decode);
-
-    private static void encode(FriendlyByteBuf buf, LiveTakeoverPacket p) {
-        buf.writeVarInt(p.result.ordinal());
-    }
-
-    private static LiveTakeoverPacket decode(FriendlyByteBuf buf) {
-        int ord = buf.readVarInt();
-        Result[] all = Result.values();
-        return new LiveTakeoverPacket(ord >= 0 && ord < all.length ? all[ord] : Result.STAYED_VIEWER);
-    }
+        StreamCodec.of((buf, p) -> buf.writeUtf(p.ticket, MAX_TICKET), buf -> new LiveTakeoverPacket(buf.readUtf(MAX_TICKET)));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {
@@ -54,7 +33,7 @@ public record LiveTakeoverPacket(Result result) implements CustomPacketPayload {
     public static void handle(LiveTakeoverPacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             if (ctx.player() instanceof ServerPlayer sender) {
-                LiveFeedEvents.onTakeoverResult(sender, packet.result());
+                LiveFeedEvents.onTakeoverWon(sender, packet.ticket());
             }
         });
     }

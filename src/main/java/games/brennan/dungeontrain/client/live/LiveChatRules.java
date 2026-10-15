@@ -11,6 +11,7 @@ import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -60,6 +61,7 @@ public final class LiveChatRules {
      */
     public static boolean shouldShow(ChatLine line, @Nullable UUID me, Set<UUID> playersHere, Set<String> namesHere) {
         if (!line.fromGame()) return true;
+        if (isDevMention(line.content())) return false; // an older client's dev ping (see #outbound)
         if (line.uuid() != null) {
             if (me != null && line.uuid().equalsIgnoreCase(undashed(me))) return false;
             for (UUID p : playersHere) {
@@ -72,12 +74,16 @@ public final class LiveChatRules {
         return true;
     }
 
-    /** An in-game chat line worth sending: not a command, not blank; trimmed and capped. Null = skip. */
+    /**
+     * An in-game chat line worth sending: not a command, not blank, not a dev ping; trimmed and capped.
+     * Null = skip. A line tagging the dev ({@link #isDevMention}) is a message to Brennan through
+     * DiscordPresence, not to the stream, so it stays out of Live chat.
+     */
     @Nullable
     public static String outbound(@Nullable String typed) {
         if (typed == null) return null;
         String t = typed.strip();
-        if (t.isEmpty() || t.startsWith("/")) return null;
+        if (t.isEmpty() || t.startsWith("/") || isDevMention(t)) return null;
         return t.length() > MAX_CONTENT ? t.substring(0, MAX_CONTENT) : t;
     }
 
@@ -124,6 +130,19 @@ public final class LiveChatRules {
     public static MutableComponent systemLine(Component body) {
         return Component.translatable(PREFIX_KEY).withStyle(ChatFormatting.DARK_GRAY)
             .append(Component.literal(" ")).append(body);
+    }
+
+    /**
+     * Whether text tags the dev: any of {@link DungeonTrain#MENTION_TOKENS}, matched the way
+     * DiscordPresence matches them (case-insensitive substring), so exactly the lines that ping Brennan.
+     */
+    public static boolean isDevMention(@Nullable String text) {
+        if (text == null || text.isEmpty()) return false;
+        String lower = text.toLowerCase(Locale.ROOT);
+        for (String token : DungeonTrain.MENTION_TOKENS) {
+            if (lower.contains(token.toLowerCase(Locale.ROOT))) return true;
+        }
+        return false;
     }
 
     /** DiscordPresence's "into the void" auto-response keys (alone, group, the tag-the-dev hint). */

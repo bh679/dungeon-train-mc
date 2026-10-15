@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.snapshot;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.resources.ResourceLocation;
 
 /**
  * Draws the per-page ride-photo background for the death screen. Cover-fits the
@@ -53,7 +54,12 @@ public final class DeathBackgroundPainter {
     }
 
     private static void drawCover(GuiGraphics g, RideSnapshot shot, int screenW, int screenH) {
-        float imgAspect = shot.aspect();
+        drawCover(g, shot.texture(), shot.width(), shot.height(), screenW, screenH);
+    }
+
+    /** Cover-fit any {@code texW}×{@code texH} texture across the screen (centre-crop, no distortion). */
+    public static void drawCover(GuiGraphics g, ResourceLocation texture, int texW, int texH, int screenW, int screenH) {
+        float imgAspect = (float) texW / Math.max(1, texH);
         float scrAspect = (float) screenW / Math.max(1, screenH);
         int dw, dh;
         if (scrAspect > imgAspect) { // screen wider than photo → match width, overflow height
@@ -66,6 +72,6 @@ public final class DeathBackgroundPainter {
         int dx = (screenW - dw) / 2;
         int dy = (screenH - dh) / 2;
         // Scale the whole texture into the dw×dh destination rect.
-        g.blit(shot.texture(), dx, dy, dw, dh, 0.0f, 0.0f, shot.width(), shot.height(), shot.width(), shot.height());
+        g.blit(texture, dx, dy, dw, dh, 0.0f, 0.0f, texW, texH, texW, texH);
     }
 }

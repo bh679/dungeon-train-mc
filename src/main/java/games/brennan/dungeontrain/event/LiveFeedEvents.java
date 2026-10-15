@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.compat.vista.LiveBroadcastLocation;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveLifePacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
-import games.brennan.dungeontrain.net.LiveTakeoverPacket;
+import games.brennan.dungeontrain.net.LiveClaimResultPacket;
 import games.brennan.dungeontrain.player.LifeKey;
 import games.brennan.dungeontrain.player.LiveWatchTally;
 import games.brennan.dungeontrain.player.LiveStreamers;
@@ -47,7 +47,7 @@ import java.util.UUID;
  * {@link LiveStreamPacket.Action#START}. Their client claims the channel from the relay — which is
  * where takeover is decided, across worlds: a streamer's first ten minutes are protected (the wearer
  * may ask the audience to vote), and after that the wearer is still asked before taking it. Once the
- * relay gives them the channel, the client says so ({@link LiveTakeoverPacket.Result#LIVE}) and they
+ * relay gives them the channel, the client says so ({@link LiveClaimResultPacket.Result#LIVE}) and they
  * become the streamer; the previous streamer on this server is told, and their Live Eye becomes a TV.</p>
  *
  * <p>The camcorder stays on while the stream runs and burns away the moment it comes off — taken
@@ -215,10 +215,10 @@ public final class LiveFeedEvents {
     }
 
     /**
-     * The client heard back from the relay about its claim ({@link LiveTakeoverPacket}). Only a pending
+     * The client heard back from the relay about its claim ({@link LiveClaimResultPacket}). Only a pending
      * wearer is listened to: anyone else's packet is stale or forged.
      */
-    public static void onTakeoverResult(ServerPlayer player, LiveTakeoverPacket.Result result) {
+    public static void onTakeoverResult(ServerPlayer player, LiveClaimResultPacket.Result result) {
         MinecraftServer server = player.getServer();
         if (server == null || !isCamcorder(player.getItemBySlot(EquipmentSlot.HEAD))) return;
         Boolean fromWatching = LiveStreamers.takePending(server, player.getUUID());
@@ -264,6 +264,30 @@ public final class LiveFeedEvents {
                     .withColor(ChatFormatting.AQUA)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, CONSENT_COMMAND))))
             .withStyle(ChatFormatting.GRAY);
+    }
+
+    /** Players whose takeover ticket is being checked with the relay, so one cannot be sent twice at once. */
+    private static final java.util.Set<UUID> TAKEOVER_CHECKS = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /**
+     * A viewer won a dead streamer's takeover (relay ticket, {@code net/LiveTakeoverPacket}): once the
+     * relay vouches for the ticket, the TV on their head becomes a Live Eye — consumed, the way a
+     * helmet swap burns a camcorder — and {@link #onEquipmentChange} starts their stream from there.
+     * Nothing happens without a worn TV, so a modified client cannot mint Live Eyes.
+     */
+    public static void onTakeoverWon(ServerPlayer player, String ticket) {
+        MinecraftServer server = player.getServer();
+        if (server == null || !TvItems.isTv(player.getItemBySlot(EquipmentSlot.HEAD))) return;
+        UUID uuid = player.getUUID();
+        if (!TAKEOVER_CHECKS.add(uuid)) return;
+        games.brennan.dungeontrain.net.relay.LiveFeedClient.verifyTakeover(ticket, uuid).whenComplete((valid, err) ->
+            server.execute(() -> {
+                TAKEOVER_CHECKS.remove(uuid);
+                ServerPlayer p = server.getPlayerList().getPlayer(uuid);
+                if (p == null || !Boolean.TRUE.equals(valid)) return;
+                if (!p.isAlive() || !TvItems.isTv(p.getItemBySlot(EquipmentSlot.HEAD))) return;
+                p.setItemSlot(EquipmentSlot.HEAD, new ItemStack(ModItems.LIVE_HEADPIECE.get()));
+            }));
     }
 
     /**
