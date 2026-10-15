@@ -35,7 +35,9 @@ import java.util.Set;
  * <p><b>Streamer:</b> a TV viewer who has never streamed joined the chat (a {@code joins[]} notice from
  * {@link LiveChatBridge}). At most one every {@link #PROMPT_GAP_MS} (12 minutes) prints
  * "X joins via a TV, they have never had the Live Eye. <b>[Gift it to them]</b>"; the rest are dropped.
- * The button runs {@code /dtlivegift give <joinId>}, which offers it through the relay.</p>
+ * The button runs {@code /dtlivegift give <joinId>}, which offers this streamer's own Live Eye through the
+ * relay. It is a donation: when the viewer accepts, the relay ends this stream, so the next upload is
+ * refused and the server burns the Live Eye ("moves onto the next streamer") as theirs goes on.</p>
  *
  * <p><b>Viewer:</b> an offer made out to this player (a {@code gifts[]} notice) prints
  * <b>[Accept]</b> / <b>[No thanks]</b>; accepting asks this player's own server to redeem it
