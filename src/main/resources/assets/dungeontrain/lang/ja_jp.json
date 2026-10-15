@@ -633,7 +633,6 @@
   "chat.dungeontrain.live_chat.path": "設定 / Dungeon Train / 配信 / ライブチャット",
   "chat.dungeontrain.live_gift.prompt": "%sがテレビから参加しました。まだ放送カムコーダーを持ったことがありません。",
   "chat.dungeontrain.live_gift.give": "プレゼントする",
-  "chat.dungeontrain.live_gift.give.tip": "あなたの放送カムコーダーを譲ります。受け取られると、あなたの配信は終わり、相手の配信が始まります。",
   "chat.dungeontrain.live_gift.offered": "%sにあなたの放送カムコーダーを譲ろうとしています…",
   "chat.dungeontrain.live_gift.give_failed": "%sに放送カムコーダーを譲れませんでした。もういないのかもしれません。",
   "chat.dungeontrain.live_gift.give_expired": "そのプレゼントはもう送れません。",

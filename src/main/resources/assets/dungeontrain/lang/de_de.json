@@ -662,7 +662,6 @@
   "chat.dungeontrain.live_chat.path": "Optionen / Dungeon Train / Stream / Live-Chat",
   "chat.dungeontrain.live_gift.prompt": "%s schaut über einen Fernseher zu und hatte noch nie einen Sende-Camcorder.",
   "chat.dungeontrain.live_gift.give": "Schenk ihn",
-  "chat.dungeontrain.live_gift.give.tip": "Schenk ihnen deinen Sende-Camcorder. Wenn sie annehmen, endet dein Stream und ihrer beginnt.",
   "chat.dungeontrain.live_gift.offered": "%s wird dein Sende-Camcorder angeboten …",
   "chat.dungeontrain.live_gift.give_failed": "%s konnte dein Sende-Camcorder nicht angeboten werden. Vielleicht sind sie weg.",
   "chat.dungeontrain.live_gift.give_expired": "Dieses Geschenk kann nicht mehr verschickt werden.",

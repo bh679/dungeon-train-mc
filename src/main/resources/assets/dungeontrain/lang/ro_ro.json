@@ -747,7 +747,6 @@
   "chat.dungeontrain.live_chat.path": "Opțiuni / Dungeon Train / Stream / Chat live",
   "chat.dungeontrain.live_gift.prompt": "%s se alătură printr-un televizor și n-a avut niciodată o cameră video de transmisie.",
   "chat.dungeontrain.live_gift.give": "Dăruiește-i-o",
-  "chat.dungeontrain.live_gift.give.tip": "Dă-i camera ta video de transmisie. Dacă acceptă, transmisiunea ta se încheie și începe a lui.",
   "chat.dungeontrain.live_gift.offered": "Se oferă camera ta video de transmisie lui %s…",
   "chat.dungeontrain.live_gift.give_failed": "Nu s-a putut oferi camera ta video de transmisie lui %s. Poate a plecat.",
   "chat.dungeontrain.live_gift.give_expired": "Cadoul acela nu mai poate fi trimis.",

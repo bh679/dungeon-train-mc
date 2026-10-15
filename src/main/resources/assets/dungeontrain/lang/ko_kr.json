@@ -633,7 +633,6 @@
   "chat.dungeontrain.live_chat.path": "설정 / Dungeon Train / 스트림 / 라이브 채팅",
   "chat.dungeontrain.live_gift.prompt": "%s 님이 TV로 들어왔어요. 아직 방송 캠코더를 가져 본 적이 없어요.",
   "chat.dungeontrain.live_gift.give": "선물하기",
-  "chat.dungeontrain.live_gift.give.tip": "내 방송 캠코더를 넘겨줘요. 받으면 내 방송은 끝나고 그들의 방송이 시작돼요.",
   "chat.dungeontrain.live_gift.offered": "%s 님에게 내 방송 캠코더를 넘기는 중…",
   "chat.dungeontrain.live_gift.give_failed": "%s 님에게 방송 캠코더를 넘기지 못했어요. 이미 나갔을 수도 있어요.",
   "chat.dungeontrain.live_gift.give_expired": "그 선물은 더 이상 보낼 수 없어요.",

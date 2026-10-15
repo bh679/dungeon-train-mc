@@ -633,7 +633,6 @@
   "chat.dungeontrain.live_chat.path": "Pilihan / Dungeon Train / Strim / Sembang langsung",
   "chat.dungeontrain.live_gift.prompt": "%s menyertai melalui TV dan belum pernah memiliki Camcorder Siaran.",
   "chat.dungeontrain.live_gift.give": "Hadiahkan",
-  "chat.dungeontrain.live_gift.give.tip": "Berikan Camcorder Siaran anda kepada mereka. Jika diterima, siaran anda tamat dan siaran mereka bermula.",
   "chat.dungeontrain.live_gift.offered": "Menawarkan Camcorder Siaran anda kepada %s…",
   "chat.dungeontrain.live_gift.give_failed": "Tidak dapat menawarkan Camcorder Siaran anda kepada %s. Mungkin mereka sudah pergi.",
   "chat.dungeontrain.live_gift.give_expired": "Hadiah itu tidak boleh dihantar lagi.",

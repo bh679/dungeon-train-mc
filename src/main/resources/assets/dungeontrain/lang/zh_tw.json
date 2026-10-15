@@ -633,7 +633,6 @@
   "chat.dungeontrain.live_chat.path": "選項 / Dungeon Train / 直播 / 直播聊天",
   "chat.dungeontrain.live_gift.prompt": "%s 透過電視加入了，他們還從沒擁有過直播攝影機。",
   "chat.dungeontrain.live_gift.give": "送給他們",
-  "chat.dungeontrain.live_gift.give.tip": "把你的直播攝影機送給他們。他們接受後，你的直播結束，他們的直播開始。",
   "chat.dungeontrain.live_gift.offered": "正在把你的直播攝影機送給 %s…",
   "chat.dungeontrain.live_gift.give_failed": "沒能把你的直播攝影機送給 %s，他們可能已經離開了。",
   "chat.dungeontrain.live_gift.give_expired": "這份禮物已經無法送出。",

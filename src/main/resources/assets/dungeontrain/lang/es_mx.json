@@ -662,7 +662,6 @@
   "chat.dungeontrain.live_chat.path": "Opciones / Dungeon Train / Stream / Chat en vivo",
   "chat.dungeontrain.live_gift.prompt": "%s se une desde una tele y nunca ha tenido una videocámara de transmisión.",
   "chat.dungeontrain.live_gift.give": "Regalársela",
-  "chat.dungeontrain.live_gift.give.tip": "Dale tu videocámara de transmisión. Si la acepta, tu transmisión termina y empieza la suya.",
   "chat.dungeontrain.live_gift.offered": "Ofreciendo tu videocámara de transmisión a %s…",
   "chat.dungeontrain.live_gift.give_failed": "No se pudo ofrecer tu videocámara de transmisión a %s. Puede que se haya ido.",
   "chat.dungeontrain.live_gift.give_expired": "Ese regalo ya no se puede enviar.",

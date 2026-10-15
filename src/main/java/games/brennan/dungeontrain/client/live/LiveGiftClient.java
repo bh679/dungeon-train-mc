@@ -90,7 +90,7 @@ public final class LiveGiftClient {
         put(PROMPTED_JOINS, join.joinId(), join.name());
         MutableComponent line = Component.translatable(KEY + "prompt", join.name()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
-            .append(button(KEY + "give", "/" + COMMAND + " give " + join.joinId(), ChatFormatting.GOLD));
+            .append(button(KEY + "give", "/" + COMMAND + " give " + join.joinId(), ChatFormatting.GOLD, false));
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
@@ -103,9 +103,9 @@ public final class LiveGiftClient {
         put(OFFERS, offer.giftId(), new Offer(offer.from(), channel));
         MutableComponent line = Component.translatable(KEY + "offer", offer.from()).withStyle(ChatFormatting.LIGHT_PURPLE)
             .append(Component.literal(" "))
-            .append(button(KEY + "accept", "/" + COMMAND + " accept " + offer.giftId(), ChatFormatting.GREEN))
+            .append(button(KEY + "accept", "/" + COMMAND + " accept " + offer.giftId(), ChatFormatting.GREEN, true))
             .append(Component.literal(" "))
-            .append(button(KEY + "decline", "/" + COMMAND + " decline " + offer.giftId(), ChatFormatting.GRAY));
+            .append(button(KEY + "decline", "/" + COMMAND + " decline " + offer.giftId(), ChatFormatting.GRAY, true));
         Minecraft.getInstance().gui.getChat().addMessage(line);
     }
 
@@ -166,10 +166,13 @@ public final class LiveGiftClient {
         while (map.size() > CAP) map.remove(map.keySet().iterator().next());
     }
 
-    private static Component button(String key, String command, ChatFormatting colour) {
+    /** A clickable {@code [label]}; {@code tip} adds the {@code key + ".tip"} hover text. */
+    private static Component button(String key, String command, ChatFormatting colour, boolean tip) {
         return Component.literal("[").append(Component.translatable(key)).append("]")
-            .withStyle(s -> s.withColor(colour).withBold(true)
-                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command))
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(key + ".tip"))));
+            .withStyle(s -> {
+                var style = s.withColor(colour).withBold(true)
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command));
+                return tip ? style.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable(key + ".tip"))) : style;
+            });
     }
 }

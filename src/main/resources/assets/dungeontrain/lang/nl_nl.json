@@ -662,7 +662,6 @@
   "chat.dungeontrain.live_chat.path": "Opties / Dungeon Train / Stream / Livechat",
   "chat.dungeontrain.live_gift.prompt": "%s kijkt mee via een tv en heeft nog nooit een uitzendcamcorder gehad.",
   "chat.dungeontrain.live_gift.give": "Cadeau geven",
-  "chat.dungeontrain.live_gift.give.tip": "Geef ze jouw uitzendcamcorder. Als ze accepteren, stopt jouw stream en begint die van hen.",
   "chat.dungeontrain.live_gift.offered": "%s krijgt jouw uitzendcamcorder aangeboden…",
   "chat.dungeontrain.live_gift.give_failed": "Kon %s jouw uitzendcamcorder niet aanbieden. Misschien zijn ze weg.",
   "chat.dungeontrain.live_gift.give_expired": "Dat cadeau kan niet meer worden verstuurd.",
