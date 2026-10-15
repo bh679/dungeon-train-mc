@@ -18,7 +18,7 @@ import java.util.Set;
 
 /**
  * The menus a Live Eye stream may show while Show GUI to viewers is on: inventories and containers,
- * the pause menu and advancements. Anything else — the chat box, signs, books, anvils, command
+ * the pause menu, advancements and the death screens. Anything else — the chat box, signs, books, anvils, command
  * blocks, other mods' screens — is read before it draws ({@link StreamCapture}), and so is a listed
  * menu while the player is typing into it (a focused text box, the creative search tab, a recipe
  * book search). What the player types never goes out.
@@ -35,7 +35,14 @@ public final class StreamableScreens {
         "net.minecraft.client.gui.screens.inventory.AbstractContainerScreen",
         "net.minecraft.client.gui.screens.PauseScreen",
         "net.minecraft.client.gui.screens.advancements.AdvancementsScreen",
-        "betteradvancements.common.gui.BetterAdvancementsScreen");
+        "betteradvancements.common.gui.BetterAdvancementsScreen",
+        // The death screens, for a stream that carries on after death (LivePostMortem): the moment,
+        // the stream-on choice, the recap pages and their ride photos. The recap's feedback and
+        // mod-recommendation boxes fall under the typing rule like any other text box.
+        "games.brennan.dungeontrain.client.DeathMomentScreen",
+        "games.brennan.dungeontrain.client.live.LivePostMortemChoiceScreen",
+        "games.brennan.dungeontrain.client.NarrativeDeathScreen",
+        "games.brennan.dungeontrain.client.snapshot.RideGalleryScreen");
 
     /** …unless it is, or extends, one of these: a container with a text field of its own. */
     static final Set<String> UNLISTED = Set.of(

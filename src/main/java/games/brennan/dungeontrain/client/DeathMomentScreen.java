@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import games.brennan.dungeontrain.client.live.LivePostMortemChoiceScreen;
+import games.brennan.dungeontrain.client.live.LiveStreamController;
 import games.brennan.dungeontrain.client.snapshot.DeathPhotoUploads;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshotGallery;
@@ -98,6 +100,11 @@ public final class DeathMomentScreen extends Screen {
     private void handOver() {
         if (handedOver || minecraft == null) return;
         handedOver = true;
+        // Died live: the streamer chooses first whether the stream carries on through the death pages.
+        if (LiveStreamController.get().postMortemChoicePending()) {
+            minecraft.setScreen(new LivePostMortemChoiceScreen(NarrativeDeathScreen::new));
+            return;
+        }
         minecraft.setScreen(new NarrativeDeathScreen());
     }
 

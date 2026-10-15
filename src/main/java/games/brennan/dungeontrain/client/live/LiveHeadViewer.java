@@ -110,6 +110,7 @@ public final class LiveHeadViewer {
             Minecraft mc = Minecraft.getInstance();
             if (!shown(mc) || LiveStreamController.get().streaming() || mc.options.hideGui) return;
             draw(g, LiveFeedSource.MAIN.frame(mc.player.tickCount, delta.getGameTimeDeltaPartialTick(false), false));
+            LiveTakeoverButton.draw(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false)));
         });
     }
 
@@ -140,6 +141,10 @@ public final class LiveHeadViewer {
         boolean streaming = LiveStreamController.get().streaming();
         Box b = layout(mc.getWindow().getGuiScaledWidth(), LiveFeedClientConfig.headViewerWidth(streaming));
         if (streaming && LiveStreamSettingsButton.click(event.getScreen(), b, event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (!streaming && LiveTakeoverButton.click(b, event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
             return;
         }

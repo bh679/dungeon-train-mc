@@ -1,7 +1,13 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import org.lwjgl.glfw.GLFW;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -35,6 +41,10 @@ import java.util.function.Consumer;
  * viewfinder never reaches the broadcast. On screen it still sits above the HUD, above any open
  * screen such as the inventory, and above other mods' corner widgets; {@link LiveHeadViewer}
  * (LOWEST) layers over it. F1 hides it with the rest of the HUD only while no screen is open.</p>
+ *
+ * <p>While the stream carries on after death ({@link LivePostMortem}) an End Stream button sits right
+ * of LIVE. It is drawn in the same pass, so it never reaches the broadcast either; being outside any
+ * screen's widget list, its click is caught in {@link #onMousePressed}.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveRecOverlay {
@@ -63,6 +73,14 @@ public final class LiveRecOverlay {
         "....###....",
     };
     private static final Component LABEL = Component.translatable("gui.dungeontrain.live.badge");
+    private static final Component END_STREAM = Component.translatable("gui.dungeontrain.live.end_stream");
+    /** The End Stream button: this far right of LIVE, padded around its label, vanilla button sprites. */
+    static final int END_GAP = 10;
+    static final int END_PAD_X = 6;
+    static final int END_H = 20;
+    private static final ResourceLocation BUTTON = ResourceLocation.withDefaultNamespace("widget/button");
+    private static final ResourceLocation BUTTON_HOVER = ResourceLocation.withDefaultNamespace("widget/button_highlighted");
+    private static final int END_TEXT = 0xFFFF5555;
     private static final int WHITE = 0xF0FFFFFF;
     private static final int RED = 0xFFE62E2E;
     /** The corner mask as runs of set pixels, {lx0, lx1, ly} in local space — worked out once, not per frame. */
@@ -146,8 +164,42 @@ public final class LiveRecOverlay {
         g.pose().scale(BADGE_SCALE, BADGE_SCALE, 1f);
         g.drawString(font, LABEL, 0, 0, 0xFFFFFFFF, true);
         g.pose().popPose();
+        if (LiveStreamController.get().postMortem()) endStreamButton(g, font);
         int viewers = LiveStreamController.get().viewerCount();
         if (viewers >= 0) viewerCount(g, font, left, countTop(font.lineHeight), viewers);
+    }
+
+    /** The End Stream button's place: right of LIVE, centred on it. */
+    static LiveHeadViewer.Box endStreamBox(Font font) {
+        int innerTop = MARGIN + LINE + BADGE_PAD;
+        int textH = Math.round(font.lineHeight * BADGE_SCALE);
+        int labelRight = innerLeft() + 2 * DOT_RADIUS + LABEL_GAP + Math.round(font.width(LABEL) * BADGE_SCALE);
+        int w = font.width(END_STREAM) + 2 * END_PAD_X;
+        return new LiveHeadViewer.Box(labelRight + END_GAP, innerTop + (textH - END_H) / 2, w, END_H);
+    }
+
+    private static void endStreamButton(GuiGraphics g, Font font) {
+        LiveHeadViewer.Box b = endStreamBox(font);
+        Minecraft mc = Minecraft.getInstance();
+        Window window = mc.getWindow();
+        double mx = mc.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth();
+        double my = mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight();
+        boolean hover = LiveStreamSettingsButton.contains(b, mx, my);
+        g.blitSprite(hover ? BUTTON_HOVER : BUTTON, b.x(), b.y(), b.w(), b.h());
+        g.drawString(font, END_STREAM, b.x() + END_PAD_X, b.y() + (b.h() - font.lineHeight) / 2 + 1, END_TEXT, true);
+    }
+
+    /** A click on the End Stream button ends the post-mortem stream and goes no further. */
+    @SubscribeEvent
+    public static void onMousePressed(ScreenEvent.MouseButtonPressed.Pre event) {
+        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+        LiveStreamController live = LiveStreamController.get();
+        if (!live.postMortem()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (!LiveStreamSettingsButton.contains(endStreamBox(mc.font), event.getMouseX(), event.getMouseY())) return;
+        event.setCanceled(true);
+        mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1f));
+        live.endPostMortem();
     }
 
     /** From {@code left}: the eye, then the number, both at normal GUI size. */
