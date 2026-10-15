@@ -177,6 +177,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Create GitHub Release
+        id: gh_release
         uses: softprops/action-gh-release@v2
         with:
           name: Dungeon Train ${{ env.RELEASE_TAG }}
@@ -546,13 +547,18 @@ jobs:
           fi
 
       # always() so partial-failure releases still notify (with ⚠️ markers
-      # on the platforms that didn't get the upload). RELEASE_TAG guard
-      # suppresses notify if the workflow exploded before tag verification.
+      # on the platforms that didn't get the upload). The gh_release guard is
+      # what makes it a release at all: the GitHub Release is created before
+      # every platform upload, so if it did not succeed nothing shipped and
+      # there is nothing to announce. v0.1295.0's build failed, no release was
+      # created, and Discord was pinged anyway — the old guard was RELEASE_TAG,
+      # which is the dispatch input and is always set. The same gh_release
+      # guard sits on every always() step below.
       # notify_discord guard: the auto-release cascade always passes
       # notify_discord=false so cascade ticks skip this step entirely; manual
       # releases default to true and can override to false for a quiet hotfix.
       - name: Notify Discord
-        if: ${{ always() && steps.discord_check.outputs.ready == 'true' && env.RELEASE_TAG != '' && inputs.notify_discord }}
+        if: ${{ always() && steps.gh_release.outcome == 'success' && steps.discord_check.outputs.ready == 'true' && inputs.notify_discord }}
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           RELEASE_TAG: ${{ env.RELEASE_TAG }}
@@ -568,7 +574,7 @@ jobs:
       # the secret is unset. Re-post or preview one entry by hand:
       #   DRY_RUN=1 python3 scripts/release-notes/notify-highlights.py --tag vX --entry <id>
       - name: Post major release to #highlights
-        if: ${{ always() && env.RELEASE_TAG != '' && inputs.notify_discord && inputs.auto == false && inputs.test_release == false }}
+        if: ${{ always() && steps.gh_release.outcome == 'success' && inputs.notify_discord && inputs.auto == false && inputs.test_release == false }}
         continue-on-error: true
         env:
           DISCORD_HIGHLIGHTS_WEBHOOK_URL: ${{ secrets.DISCORD_HIGHLIGHTS_WEBHOOK_URL }}
@@ -581,9 +587,10 @@ jobs:
       # the builder search and profile counts leave them out (relay: bundled_fingerprints). The set is
       # cumulative on the relay, so every release adds only what changed. Never blocks a release:
       # a relay hiccup here means the next release's push catches up. always() so an earlier
-      # failure (e.g. a lost changelog push race) doesn't also skip this.
+      # failure (e.g. a lost changelog push race) doesn't also skip this — but only once the GitHub
+      # Release exists (gh_release): a failed build ships nothing to fingerprint.
       - name: Push shipped-template fingerprints to the relay
-        if: ${{ always() && env.RELEASE_TAG != '' }}
+        if: ${{ always() && steps.gh_release.outcome == 'success' }}
         continue-on-error: true
         env:
           DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
@@ -600,7 +607,7 @@ jobs:
       # Upserts only, so a re-run is harmless. Never blocks a release: a relay hiccup here is a
       # warning, and the next release (or scripts/relay/sync-template-credits.py by hand) catches up.
       - name: Sync template builder credits to the relay
-        if: ${{ always() && env.RELEASE_TAG != '' }}
+        if: ${{ always() && steps.gh_release.outcome == 'success' }}
         continue-on-error: true
         env:
           DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
@@ -617,7 +624,7 @@ jobs:
       # safe; never blocks a release — a refused or unreachable relay is a warning to act on by hand
       # (scripts/relay/retire-leaderboard-era.py, or node scripts/retire-leaderboard-era.js on the box).
       - name: Retire the leaderboard era on the relay
-        if: ${{ always() && env.RELEASE_TAG != '' && inputs.leaderboard_reset && inputs.test_release == false && inputs.auto == false }}
+        if: ${{ always() && steps.gh_release.outcome == 'success' && inputs.leaderboard_reset && inputs.test_release == false && inputs.auto == false }}
         continue-on-error: true
         env:
           DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}

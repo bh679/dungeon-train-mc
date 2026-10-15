@@ -74,16 +74,33 @@ public final class LiveFeedClient {
 
     /** Where a chat line was typed: the relay's {@code source} field. */
     public enum Source {
-        GAME, DISCORD, TWITCH, OTHER;
+        GAME, DISCORD, TWITCH, WEB, OTHER;
 
-        /** {@code "game"} → GAME, {@code "discord"} → DISCORD, {@code "twitch"} → TWITCH; anything else OTHER. */
+        /** {@code "game"} → GAME, {@code "discord"} → DISCORD, {@code "twitch"} → TWITCH, {@code "web"} → WEB; anything else OTHER. */
         public static Source parse(@Nullable String s) {
             if (s == null) return OTHER;
             return switch (s) {
                 case "game" -> GAME;
                 case "discord" -> DISCORD;
                 case "twitch" -> TWITCH;
+                case "web" -> WEB;
                 default -> OTHER;
+            };
+        }
+    }
+
+    /** How a game line's player is in the room: the relay's {@code via} — the Live Eye (the streamer) or a TV. */
+    public enum Via {
+        EYE, TV;
+
+        /** {@code "eye"} → EYE, {@code "tv"} → TV; anything else (or none, from an older relay) null. */
+        @Nullable
+        public static Via parse(@Nullable String s) {
+            if (s == null) return null;
+            return switch (s) {
+                case "eye" -> EYE;
+                case "tv" -> TV;
+                default -> null;
             };
         }
     }
@@ -91,12 +108,17 @@ public final class LiveFeedClient {
     /**
      * One line of the stream's chat room. {@code uuid} is the Minecraft player who typed it when it
      * came from the game (dashes stripped, lower-case), null for a Discord or Twitch post; {@code source}
-     * tells the rooms apart.
+     * tells the rooms apart, and {@code via} (game lines only, may be null) how its player is in the room.
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
-                           @Nullable LogRequest logRequest) {
+                           @Nullable LogRequest logRequest, @Nullable Via via) {
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source) {
-            this(seq, ts, author, uuid, content, source, null);
+            this(seq, ts, author, uuid, content, source, null, null);
+        }
+
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest) {
+            this(seq, ts, author, uuid, content, source, logRequest, null);
         }
 
         /** Typed in some Minecraft world (and so possibly already shown by vanilla chat). */
@@ -360,8 +382,9 @@ public final class LiveFeedClient {
                         LiveChatRules.MAX_AUTHOR);
                     String uuid = m.has("uuid") && !m.get("uuid").isJsonNull() ? m.get("uuid").getAsString() : null;
                     Source source = Source.parse(m.has("source") && !m.get("source").isJsonNull() ? m.get("source").getAsString() : null);
+                    Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
-                        author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m)));
+                        author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via));
                 }
             }
             List<Long> deleted = new ArrayList<>();

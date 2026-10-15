@@ -26012,7 +26012,8 @@
       "summary": "Like your Ender Chest and gear, your advancements are now kept separately for each difficulty. Switching difficulty swaps in that difficulty's advancements \u2014 and your others are waiting for you when you switch back.",
       "highlights": [
         "Everything you earned before this update stays on Normal; Peaceful, Easy and Hard start fresh",
-        "Train Editor advancements are shared across every difficulty"
+        "Train Editor advancements are shared across every difficulty",
+        "Your advancements are backed up before they're split, and a copy is kept for good"
       ],
       "pr": 2010,
       "date": "2026-10-15",
@@ -26059,6 +26060,64 @@
         "Turning the internet on takes effect straight away, with no need to rejoin the world"
       ],
       "pr": 2013,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "workbench-test-any-build",
+      "version": "0.1294.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test Workbench builds before committing them",
+      "summary": "Test the Carriage now works on every build in the editor's Workbench. A build waiting for review stands up just as it would once committed, so you can walk through it, reroll it and judge it before deciding what it becomes. Nothing is installed by testing it.",
+      "highlights": [
+        "Test any Workbench build in place: carriages, contents, carriage groups, track pieces and dimensional carriages.",
+        "Reseed and Back work exactly as they do for committed templates."
+      ],
+      "pr": 2012,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-chat-source-icons",
+      "version": "0.1295.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live chat shows where each message came from",
+      "summary": "Live chat messages now start with a small icon showing where they were typed: an eye for the streamer, a TV for viewers watching through one, a globe for the website, and the Discord or Twitch logo. The same icons show in-game, on the website and in the Discord stream chat.",
+      "highlights": [
+        "Tell the streamer apart from TV viewers at a glance",
+        "Icons match across in-game chat, the website and Discord"
+      ],
+      "pr": 2015,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "release-announce-needs-release",
+      "version": "0.1295.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "No more announcements for releases that didn't ship",
+      "summary": "If a release fails to build, Discord is no longer told about it. Announcements only go out once the release actually exists to download.",
+      "highlights": [],
+      "pr": 2016,
       "date": "2026-10-15",
       "released": false,
       "released_in": null,

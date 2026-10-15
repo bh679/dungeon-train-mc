@@ -185,7 +185,7 @@ public final class PortalTestCommand {
      * @param freshRoll salt the rolls whatever the world switch says — a reseed of the test the
      *                  author is already standing in
      */
-    private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll) {
+    static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll) {
         return runTest(source, roomArg, freshRoll, true);
     }
 
@@ -396,7 +396,7 @@ public final class PortalTestCommand {
 
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
-        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, roomName,
+        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(roomName),
             worldData.isPortalTestReseed()));
         // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
         // live pair's room, on the same box; a test session is not a pair, so nothing there sees
@@ -407,7 +407,7 @@ public final class PortalTestCommand {
             roomName, roomSize.getX(), roomSize.getY(), roomSize.getZ(), structure.origin(),
             player.getName().getString(), arrival, structure.seedSalt());
 
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.you_re_doorway_corridor", roomName).withStyle(ChatFormatting.AQUA), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.you_re_doorway_corridor", games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(roomName)).withStyle(ChatFormatting.AQUA), false);
         return 1;
     }
 
@@ -625,7 +625,7 @@ public final class PortalTestCommand {
                 + "mob(s) of '{}'",
             player.getName().getString(), fmt(session.pos()), cleared, removed, session.roomName());
 
-        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has", session.roomName()).withStyle(ChatFormatting.GRAY), false);
+        source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has", games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(session.roomName())).withStyle(ChatFormatting.GRAY), false);
         return 1;
     }
 
