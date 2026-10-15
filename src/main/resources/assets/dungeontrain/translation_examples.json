@@ -88,6 +88,67 @@
       ]
     }
   },
+  "gui.dungeontrain.adv_promote.body": {
+    "1": {
+      "label": "the difficulty the advancements will count on",
+      "examples": [
+        "Hard",
+        "Easy"
+      ]
+    }
+  },
+  "gui.dungeontrain.adv_promote.body_move": {
+    "1": {
+      "label": "the difficulty the advancements will count on",
+      "examples": [
+        "Hard",
+        "Easy"
+      ]
+    }
+  },
+  "gui.dungeontrain.adv_promote.copy.tooltip": {
+    "1": {
+      "label": "the difficulty the advancements will count on",
+      "examples": [
+        "Hard",
+        "Easy"
+      ]
+    }
+  },
+  "gui.dungeontrain.adv_promote.move.tooltip": {
+    "1": {
+      "label": "the difficulty the advancements will count on",
+      "examples": [
+        "Hard",
+        "Easy"
+      ]
+    }
+  },
+  "gui.dungeontrain.adv_promote.promote": {
+    "1": {
+      "label": "how many advancements",
+      "examples": [
+        "12",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.adv_promote.done.body": {
+    "1": {
+      "label": "how many advancements",
+      "examples": [
+        "12",
+        "1"
+      ]
+    },
+    "2": {
+      "label": "the difficulty the advancements will count on",
+      "examples": [
+        "Hard",
+        "Easy"
+      ]
+    }
+  },
   "chat.dungeontrain.free_play.unapproved_mods": {
     "1": {
       "label": "the installed mods that are not on the approved list, comma-separated",

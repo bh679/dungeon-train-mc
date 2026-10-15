@@ -26338,6 +26338,46 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-promote-from-relay",
+      "version": "0.1306.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Move your old advancements to the difficulty you earned them on",
+      "summary": "If you earned most of your advancements on a different difficulty before they were split by difficulty, the developer can now send you a one-time offer to move them there. It appears on the title screen, and you pick exactly which ones to bring over.",
+      "highlights": [
+        "Tick the advancements that should count on the new difficulty, and choose for each whether Normal keeps it too",
+        "Not Now saves the offer for your next launch; it can only be used once"
+      ],
+      "pr": 2031,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "release-pass-the-live-eye",
+      "version": "0.1306.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Pass the Live Eye",
+      "summary": "The Live Eye no longer stops with you. Keep streaming through your death, hand it to a first-time viewer, or ask to take over someone else's stream.",
+      "highlights": [],
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "Dungeon Train TV keeps going. The Live Eye now passes from player to player instead of just cutting off.\n\nDie live and your stream carries on. Your viewers watch the death screens with you while your last few seconds loop behind them, and anyone watching on a TV can take the Live Eye and go live in your place. First click wins.\n\nPut on a Live Eye while someone else is streaming and you're asked whether to take over. Early in their stream the viewers vote in chat; after that it's your call. And if a newcomer tunes in on a TV while you're live, you can gift them yours.\n\n## Other significant updates\n\n- Lose a takeover, or choose to stay a viewer, and your Live Eye turns into a TV instead of burning\n- Live chat has emoji: react to messages from the Live page's new emoji button, see Discord reactions on chat lines in-game, and Discord emoji now show in colour\n- Developer pings stay out of Live chat\n- Move your old advancements to the difficulty you earned them on, when the developer sends you the offer\n- Settings tooltips show their current text\n- Bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.gif"
     }
   ]
 }

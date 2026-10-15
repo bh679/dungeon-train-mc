@@ -70,6 +70,10 @@
           "type": "boolean",
           "description": "Major release only: a moment rather than an update (a store launch, an approval). The web update page labels its card 'Milestone' instead of 'Major release'."
         },
+        "notable": {
+          "type": "boolean",
+          "description": "Major release only: the middle tier between major and minor. It still leads the release notes and posts to #highlights, but the web update page shows a smaller, milestone-sized 'Notable update' card. Never together with milestone."
+        },
         "addresses": {
           "type": "array",
           "uniqueItems": true,
