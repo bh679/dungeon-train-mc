@@ -589,6 +589,11 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_AUDIO -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamAudio(),
                     LiveFeedClientConfig::setStreamAudio), key + ".tip");
 
+            // Decoding live feeds onto TVs and the pinned viewer; off = static, and the idle
+            // watchdog stops the decoder. On the Performance tab too, as a frame-rate cost.
+            case LIVE_FEED_VIEWING -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.viewingEnabled(),
+                    LiveFeedClientConfig::setViewingEnabled), key + ".tip");
+
             // Whose name viewers see above the hotbar. Kid mode shows None, greyed, whatever is stored.
             case STREAM_NAME_TAG -> {
                 boolean kid = ClientDisplayConfig.isKidMode();

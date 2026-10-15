@@ -11,12 +11,12 @@ package games.brennan.dungeontrain.client.live;
  * the frame can be read at the point that leaves out what must not be shown:</p>
  *
  * <ul>
- *   <li>A screen open that is not on the {@link StreamableScreens} list (the chat box, a sign, a
- *       book, an anvil, another mod's menu): never broadcast. The frame is read before the screen
+ *   <li>A screen open that is not on the {@link StreamableScreens} list (the chat box, a sign, an
+ *       anvil, another mod's menu): never broadcast. The frame is read before the screen
  *       draws, as the Options preview does ({@link #previewPoint}) — after the GUI with chat on,
  *       before the chat layer with it off.</li>
  *   <li>GUI off: before the GUI — the world and the hand only, never a HUD or a menu.</li>
- *   <li>A listed screen (inventories, the pause menu, advancements) with chat off: the finished
+ *   <li>A listed screen (inventories, the pause menu, advancements, books, photos) with chat off: the finished
  *       frame, with the chat layer skipped that frame — those screens dim the HUD rather than
  *       cover it, so the chat lines would show through.</li>
  *   <li>Chat off: just before the chat layer — the HUD, but no chat lines or tab list.</li>

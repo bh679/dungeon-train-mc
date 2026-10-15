@@ -18,17 +18,22 @@ import java.util.Set;
 
 /**
  * The menus a Live Eye stream may show while Show GUI to viewers is on: inventories and containers,
- * the pause menu, advancements and the death screens. Anything else — the chat box, signs, books, anvils, command
- * blocks, other mods' screens — is read before it draws ({@link StreamCapture}), and so is a listed
- * menu while the player is typing into it (a focused text box, the creative search tab, a recipe
- * book search). What the player types never goes out.
+ * the pause menu, advancements, books and lecterns, Exposure's photos and albums, and the death
+ * screens. Anything else — the chat box, signs, anvils, command blocks, album signing, other mods'
+ * screens — is read before it draws ({@link StreamCapture}), and so is a listed menu while the player
+ * is typing into it (a focused text box, an album note, the creative search tab, a recipe book
+ * search). What the player types never goes out — except into a book, which the Live Eye word filter
+ * masks as it is typed ({@link LiveTextCensorClient#bookFiltered}); where it does not, the book stays
+ * off the stream too.
  *
- * <p>Matched by class name, superclasses included, so Better Advancements (optional) needs no
+ * <p>Matched by class name, superclasses included, so Better Advancements and Exposure need no
  * compile-time link. NeoForge runs with Mojang names, so vanilla names match in production too.</p>
  */
 public final class StreamableScreens {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    static final String BOOK_EDIT = "net.minecraft.client.gui.screens.inventory.BookEditScreen";
 
     /** A screen that is, or extends, one of these is a listed menu. */
     static final Set<String> LISTED = Set.of(
@@ -36,6 +41,13 @@ public final class StreamableScreens {
         "net.minecraft.client.gui.screens.PauseScreen",
         "net.minecraft.client.gui.screens.advancements.AdvancementsScreen",
         "betteradvancements.common.gui.BetterAdvancementsScreen",
+        // Reading a book or a lectern (LecternScreen), and writing one while the word filter is on
+        "net.minecraft.client.gui.screens.inventory.BookViewScreen",
+        BOOK_EDIT,
+        // A photograph held up to view, or one opened full size from an album (ChildPhotographScreen)
+        "io.github.mortuusars.exposure.client.gui.screen.PhotographScreen",
+        // A signed album, or one on a lectern (LecternAlbumScreen); the album itself is a container
+        "io.github.mortuusars.exposure.client.gui.screen.album.AlbumViewScreen",
         // The death screens, for a stream that carries on after death (LivePostMortem): the moment,
         // the recap pages and their ride photos. The recap's feedback and mod-recommendation boxes
         // fall under the typing rule like any other text box.
@@ -46,6 +58,9 @@ public final class StreamableScreens {
     /** …unless it is, or extends, one of these: a container with a text field of its own. */
     static final Set<String> UNLISTED = Set.of(
         "net.minecraft.client.gui.screens.inventory.AnvilScreen");
+
+    /** Exposure's album note box: its own widget, not an {@link EditBox}, and not word-filtered. */
+    static final String EXPOSURE_TEXT_BOX = "io.github.mortuusars.exposure.client.gui.screen.element.textbox.TextBox";
 
     /** {@code RecipeBookComponent.searchBox}; null once it could not be read (then: fail closed). */
     @Nullable
@@ -80,6 +95,8 @@ public final class StreamableScreens {
     private static boolean typing(Screen screen) {
         GuiEventListener focused = screen.getFocused();
         if (focused instanceof EditBox) return true;
+        if (focused != null && lineage(focused.getClass()).contains(EXPOSURE_TEXT_BOX)) return true;
+        if (lineage(screen.getClass()).contains(BOOK_EDIT) && !LiveTextCensorClient.bookFiltered()) return true;
         if (screen instanceof CreativeModeInventoryScreen && creativeSearchTab()) return true;
         if (screen instanceof RecipeUpdateListener listener) return recipeSearchInUse(listener.getRecipeBookComponent());
         return false;

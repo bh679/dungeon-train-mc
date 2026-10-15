@@ -24,8 +24,9 @@ import java.util.List;
  *       viewers see the HUD and chat — with a preview of what they would see.</li>
  *   <li>{@link #EDITOR} — the three display-scale channels the in-world editor menus and HUD
  *       render at, plus where each of the four editor menus (X/V/C/Z) draws itself.</li>
- *   <li>{@link #PERFORMANCE} — the low-memory notice, then the lag tips the death screen's bug-report
- *       card offers, checked against this player's setup, each with a button to where the setting lives.</li>
+ *   <li>{@link #PERFORMANCE} — the low-memory notice, the Live Feed switches that cost frame rate
+ *       (watching, broadcasting, broadcast size — the Stream tab's own rows), then the lag tips the
+ *       death screen's bug-report card offers, checked against this player's setup, each with a button to where the setting lives.</li>
  * </ul>
  *
  * <p>Kept free of Minecraft types on purpose. Three rows are conditional — {@link Row#POLITICAL_FILTER}
@@ -153,6 +154,8 @@ public enum ClientOptionsTab {
         STREAM_NAME_TAG("gui.dungeontrain.options.stream_name_tag"),
         /** The stream's Discord chat in your chat, and yours back to it. Locked off in Kid mode. */
         LIVE_CHAT("gui.dungeontrain.options.live_chat"),
+        /** Whether this client decodes live feeds onto TVs and the pinned viewer. Also on Performance. */
+        LIVE_FEED_VIEWING("gui.dungeontrain.options.live_feed_viewing"),
         /** The broadcast's picture size; the preview shows it. */
         STREAM_SIZE("gui.dungeontrain.options.stream_size"),
         /** The live feed pinned top-right on the HUD; the preview outlines it. */
@@ -303,6 +306,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_AUDIO);
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.LIVE_CHAT);
+                rows.add(Row.LIVE_FEED_VIEWING);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.HEAD_VIEWER_SIZE);
             }
@@ -323,6 +327,12 @@ public enum ClientOptionsTab {
                 // The one performance NOTICE sits above the tips: it is about this machine's setup,
                 // not about the client or the player, so it reads as part of this tab's subject.
                 rows.add(Row.LOW_MEMORY_NOTICE_CHAT);
+                // The Live Feed's three frame-rate costs, the same rows as on the Stream tab: what a
+                // player who came here to stop lag would otherwise have to know to look for there.
+                // Watching (decoder) and broadcasting (encoder) pair on one line; the size follows.
+                rows.add(Row.LIVE_FEED_VIEWING);
+                rows.add(Row.LIVESTREAM);
+                rows.add(Row.STREAM_SIZE);
                 rows.add(Row.PERFORMANCE_TIPS);
             }
         }

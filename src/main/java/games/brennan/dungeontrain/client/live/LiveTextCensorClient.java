@@ -91,7 +91,7 @@ public final class LiveTextCensorClient {
             if (screen instanceof ChatScreen chat) {
                 if (chatActive()) checkChatBox(chat);
             } else if (screen instanceof BookEditScreen book) {
-                if (bookActive()) checkBook(book);
+                if (bookFiltered()) checkBook(book);
             }
         } catch (Throwable t) {
             // Fail open.
@@ -151,7 +151,7 @@ public final class LiveTextCensorClient {
     }
 
     /** A book is on stream only on the writer's own stream; prop books in an editor plot are authored content. */
-    private static boolean bookActive() {
+    static boolean bookFiltered() {
         if (!LiveModerationScope.bookFieldActive(LiveStreamController.get().streaming())) return false;
         try {
             return !EditorStatusHudOverlay.isActive();
