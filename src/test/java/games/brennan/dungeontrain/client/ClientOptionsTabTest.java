@@ -59,13 +59,26 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("No row appears in two tabs, or twice in one")
+    @DisplayName("No row appears twice in one tab; only the Live Feed's frame-rate costs appear in two tabs")
     void noDuplicateRows() {
+        // Stream is their home; Performance repeats them for players who came there to stop lag.
+        Set<ClientOptionsTab.Row> sharedWithPerformance = Set.of(ClientOptionsTab.Row.LIVE_FEED_VIEWING,
+                ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_SIZE);
         for (boolean chinese : BOOLS) {
             for (boolean translate : BOOLS) {
-                List<ClientOptionsTab.Row> rows = allRows(chinese, translate, true);
-                assertEquals(rows.size(), Set.copyOf(rows).size(),
-                        "duplicate at chinese=" + chinese + " translate=" + translate);
+                List<ClientOptionsTab.Row> seen = new ArrayList<>();
+                Set<ClientOptionsTab.Row> repeated = new java.util.HashSet<>();
+                for (ClientOptionsTab tab : ClientOptionsTab.values()) {
+                    List<ClientOptionsTab.Row> rows = ClientOptionsTab.rowsFor(tab, chinese, translate, true);
+                    assertEquals(rows.size(), Set.copyOf(rows).size(),
+                            "duplicate in " + tab + " at chinese=" + chinese + " translate=" + translate);
+                    for (ClientOptionsTab.Row row : rows) {
+                        if (seen.contains(row)) repeated.add(row);
+                        seen.add(row);
+                    }
+                }
+                assertEquals(sharedWithPerformance, repeated,
+                        "rows in two tabs at chinese=" + chinese + " translate=" + translate);
             }
         }
     }
@@ -81,11 +94,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: forty rows, none of the conditional rows present")
+    @DisplayName("Plain client: forty-four rows (three repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(40, rows.size());
+        assertEquals(44, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -136,9 +149,11 @@ final class ClientOptionsTabTest {
     }
 
     @Test
-    @DisplayName("The low-memory notice leads the Performance tab, above the tips")
+    @DisplayName("The low-memory notice leads the Performance tab, then the Live Feed's costs, above the tips")
     void lowMemoryNoticeLeadsPerformance() {
-        assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT, ClientOptionsTab.Row.PERFORMANCE_TIPS),
+        assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT,
+                        ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.LIVESTREAM,
+                        ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.PERFORMANCE_TIPS),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, true, true)
                 .contains(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT));
@@ -195,7 +210,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        assertEquals(44, rows.size());
+        // 45 rows, three of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(48, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -205,7 +221,7 @@ final class ClientOptionsTabTest {
     void streamTabRows() {
         assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
                         ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO, ClientOptionsTab.Row.STREAM_NAME_TAG, ClientOptionsTab.Row.LIVE_CHAT,
-                        ClientOptionsTab.Row.STREAM_SIZE,
+                        ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.STREAM_SIZE,
                         ClientOptionsTab.Row.HEAD_VIEWER_SIZE),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
