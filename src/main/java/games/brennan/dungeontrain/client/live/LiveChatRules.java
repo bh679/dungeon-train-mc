@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
@@ -117,6 +118,20 @@ public final class LiveChatRules {
             .append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
             .append(Component.literal(clean(line.content(), MAX_CONTENT)).withStyle(ChatFormatting.WHITE));
+    }
+
+    /** DiscordPresence's "into the void" auto-response keys (alone, group, the tag-the-dev hint). */
+    static final String VOID_WHISPER_KEY_PREFIX = "discordpresence.autoresponse.";
+
+    /**
+     * Whether a system line is one of DiscordPresence's "whispers into the void, will anyone answer?"
+     * auto-responses. While Live chat is connected the player is being heard, so the bridge drops them.
+     * Only the localized form (DP's default) is recognisable; an operator's literal lines still show.
+     */
+    public static boolean isVoidWhisper(@Nullable Component message) {
+        return message != null
+            && message.getContents() instanceof TranslatableContents t
+            && t.getKey().startsWith(VOID_WHISPER_KEY_PREFIX);
     }
 
     /**

@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.TextColor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -138,5 +139,18 @@ class LiveChatRulesTest {
         assertEquals(Via.TV, Via.parse("tv"));
         assertNull(Via.parse(null));
         assertNull(Via.parse("telescope"));
+    }
+
+    @Test
+    @DisplayName("isVoidWhisper: DiscordPresence's auto-response keys, grey or not; nothing else")
+    void isVoidWhisper() {
+        assertTrue(LiveChatRules.isVoidWhisper(Component.translatable("discordpresence.autoresponse.alone.0", "Steve")));
+        assertTrue(LiveChatRules.isVoidWhisper(Component.translatable("discordpresence.autoresponse.group.2", "Steve")));
+        assertTrue(LiveChatRules.isVoidWhisper(Component.translatable("discordpresence.autoresponse.mention_hint.7", "Steve", "@dev")
+            .copy().withStyle(ChatFormatting.GRAY)));
+        assertFalse(LiveChatRules.isVoidWhisper(Component.translatable("discordpresence.chattag.dev")));
+        assertFalse(LiveChatRules.isVoidWhisper(Component.translatable(LiveChatRules.CONNECTED_KEY)));
+        assertFalse(LiveChatRules.isVoidWhisper(Component.literal("Steve whispers into the void, will anyone answer?")));
+        assertFalse(LiveChatRules.isVoidWhisper(null));
     }
 }
