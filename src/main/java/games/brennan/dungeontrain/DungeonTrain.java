@@ -350,6 +350,8 @@ public class DungeonTrain {
         ModSounds.register(modBus);
         games.brennan.dungeontrain.registry.ModStructureProcessors.register(modBus);
         ModMenuTypes.register(modBus);
+        // The photo album recipe's disposable-camera slot (compat/DisposableCameraIngredient).
+        games.brennan.dungeontrain.registry.ModIngredientTypes.register(modBus);
         // Strips BetterNether/BetterEnd/BoP gear and ores from all loot (see compat.DisabledModContent).
         games.brennan.dungeontrain.compat.StripDisabledItemsLootModifier.register(modBus);
 
