@@ -25916,7 +25916,7 @@
         "Warnings first, then the Live Eye burns, then a ban.",
         "Appeal a ban line by line with /liveappeal."
       ],
-      "pr": 0,
+      "pr": 2003,
       "date": "2026-10-14",
       "released": true,
       "released_in": "v0.1286.0",
