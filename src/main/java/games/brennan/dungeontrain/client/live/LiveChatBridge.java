@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.chat.ChatReactionTracker;
 import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
@@ -133,6 +134,7 @@ public final class LiveChatBridge {
         connected = false;
         cursor = -1;
         signatures.clear();
+        ChatReactionTracker.forgetLive();
     }
 
     /** Logout / world change: forget the cursor and the connected line. */
@@ -153,6 +155,7 @@ public final class LiveChatBridge {
             // the new head or every later poll asks for seqs that will never come and chat goes silent.
             cursor = page.seq();
             signatures.clear();
+            ChatReactionTracker.forgetLive();
         }
         if (mc.player == null || mc.level == null) return;
         UUID me = mc.getUser() != null ? mc.getUser().getProfileId() : null;
@@ -171,7 +174,11 @@ public final class LiveChatBridge {
         String myName = mc.getUser() != null ? mc.getUser().getName() : "";
         boolean streaming = LiveStreamController.get().streaming();
         for (ChatLine line : page.lines()) {
-            if (LiveChatRules.shouldShow(line, me, here, names)) chat.addMessage(LiveChatRules.line(line), signatures.sign(line.seq()), tag);
+            if (LiveChatRules.shouldShow(line, me, here, names)) {
+                boolean mine = me != null && line.uuid() != null && line.uuid().equalsIgnoreCase(me.toString().replace("-", ""));
+                Component shown = ChatReactionTracker.printLive(line.seq(), LiveChatRules.line(line), mine, line.content());
+                chat.addMessage(shown, signatures.sign(line.seq()), tag);
+            }
             if (line.logRequest() != null && line.logRequest().isFor(myName, streaming)) {
                 LogRequestClient.onLiveRequest(line.logRequest().id());
             }
@@ -179,6 +186,9 @@ public final class LiveChatBridge {
         for (long seq : page.deleted()) {
             MessageSignature sig = signatures.take(seq);
             if (sig != null) chat.deleteMessage(sig);
+        }
+        for (LiveFeedClient.LineReactions r : page.reactions()) {
+            ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
         }
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
     }

@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": "好的——没有发送任何内容。",
   "chat.dungeontrain.log_request.expired": "该请求已过期。",
   "chat.dungeontrain.dev_message.prefix": "[开发者] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s 对“%3$s”回应了 %2$s",
   "chat.dungeontrain.presence.online_now": "Brennan 此刻在线（Discord）！",
   "chat.dungeontrain.presence.was_online": "Brennan 于%s前在线。",
   "chat.dungeontrain.presence.last_seen": "Brennan 最后一次上线是在%s前。",

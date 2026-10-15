@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": "ตกลง — ไม่ได้ส่งอะไรไป",
   "chat.dungeontrain.log_request.expired": "คำขอนี้หมดอายุแล้ว",
   "chat.dungeontrain.dev_message.prefix": "[นักพัฒนา] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s แสดงความรู้สึก %2$s ต่อ \"%3$s\"",
   "chat.dungeontrain.presence.online_now": "Brennan กำลังออนไลน์บน Discord อยู่ตอนนี้!",
   "chat.dungeontrain.presence.was_online": "Brennan ออนไลน์เมื่อ %s ที่แล้ว",
   "chat.dungeontrain.presence.last_seen": "Brennan ออนไลน์ล่าสุดเมื่อ %s ที่แล้ว",

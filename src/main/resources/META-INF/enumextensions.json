@@ -1,0 +1,13 @@
+{
+  "entries": [
+    {
+      "enum": "net/minecraft/client/gui/font/providers/GlyphProviderType",
+      "name": "DUNGEONTRAIN_DISCORD_EMOJI",
+      "constructor": "(Ljava/lang/String;Lcom/mojang/serialization/MapCodec;)V",
+      "parameters": {
+        "class": "games/brennan/dungeontrain/client/chat/emoji/DiscordEmojiGlyphProvider",
+        "field": "ENUM_PARAMS"
+      }
+    }
+  ]
+}

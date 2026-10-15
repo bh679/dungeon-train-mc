@@ -2112,6 +2112,29 @@
       ]
     }
   },
+  "chat.dungeontrain.discord_react.notice": {
+    "1": {
+      "label": "the Discord display name of whoever reacted",
+      "examples": [
+        "Brennan",
+        "Sam"
+      ]
+    },
+    "2": {
+      "label": "the reaction emoji, drawn as a small picture",
+      "examples": [
+        "👍",
+        "🔥"
+      ]
+    },
+    "3": {
+      "label": "the start of the player's own chat line that was reacted to, cut short with …",
+      "examples": [
+        "anyone found the nether…",
+        "gg"
+      ]
+    }
+  },
   "chat.dungeontrain.presence.was_online": {
     "1": {
       "label": "how long ago, as a whole clause",

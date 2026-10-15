@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": "Baik — tiada apa yang dihantar.",
   "chat.dungeontrain.log_request.expired": "Permintaan itu telah tamat tempoh.",
   "chat.dungeontrain.dev_message.prefix": "[Pembangun] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s bertindak balas %2$s pada \"%3$s\"",
   "chat.dungeontrain.presence.online_now": "Brennan sedang dalam talian di Discord sekarang!",
   "chat.dungeontrain.presence.was_online": "Brennan dalam talian %s yang lalu.",
   "chat.dungeontrain.presence.last_seen": "Brennan kali terakhir dilihat dalam talian %s yang lalu.",

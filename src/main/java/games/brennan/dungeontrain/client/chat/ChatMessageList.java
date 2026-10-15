@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.chat;
 
+import games.brennan.dungeontrain.client.chat.emoji.EmojiText;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -210,7 +211,9 @@ public final class ChatMessageList extends AbstractWidget {
 
         if (m.content() != null && !m.content().isBlank()) {
             String shown = MenuChatFilter.prettifyMentions(m.content()); // "<@123…>" → "@dev"
-            for (FormattedCharSequence l : font.split(Component.literal(shown), wrap)) {
+            // Discord emoji in colour (custom ones once their image has loaded on a later rebuild).
+            Component text = EmojiText.convert(shown, net.minecraft.network.chat.Style.EMPTY, false);
+            for (FormattedCharSequence l : font.split(text, wrap)) {
                 e.lines.add(new Line(l, CONTENT, 0));
             }
         }

@@ -1,0 +1,5 @@
+{
+  "providers": [
+    { "type": "dungeontrain:discord_emoji" }
+  ]
+}

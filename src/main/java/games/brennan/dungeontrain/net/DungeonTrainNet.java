@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "131";
+    public static final String PROTOCOL_VERSION = "132";
 
     private DungeonTrainNet() {}
 
@@ -334,6 +334,12 @@ public final class DungeonTrainNet {
         // server → client push when consent is granted in-game so the client persists it.
         registrar.playToServer(ConsentSyncPacket.TYPE, ConsentSyncPacket.STREAM_CODEC, ConsentSyncPacket::handle);
         registrar.playToClient(ConsentUpdatePacket.TYPE, ConsentUpdatePacket.STREAM_CODEC, ConsentUpdatePacket::handle);
+
+        // Discord reactions + emoji in chat: a posted chat line's Discord id (to every client), a
+        // Discord-sourced line printed client-side so it can be found again, and reaction snapshots.
+        registrar.playToClient(DiscordLineBindPacket.TYPE, DiscordLineBindPacket.STREAM_CODEC, DiscordLineBindPacket::handle);
+        registrar.playToClient(DiscordChatLinePacket.TYPE, DiscordChatLinePacket.STREAM_CODEC, DiscordChatLinePacket::handle);
+        registrar.playToClient(DiscordReactionsPacket.TYPE, DiscordReactionsPacket.STREAM_CODEC, DiscordReactionsPacket::handle);
 
         // Network-access consent (community shared books): client → server login sync of the player's
         // Discord Presence "use the internet?" consent, so the server can gate book uploads.

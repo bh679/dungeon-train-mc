@@ -1989,6 +1989,7 @@
   "chat.dungeontrain.log_request.declined": "Listo, no se envió nada.",
   "chat.dungeontrain.log_request.expired": "Esa solicitud ya expiró.",
   "chat.dungeontrain.dev_message.prefix": "[Desarrollador] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s reaccionó con %2$s a \"%3$s\"",
   "chat.dungeontrain.presence.online_now": "¡Brennan está en línea en Discord ahora mismo!",
   "chat.dungeontrain.presence.was_online": "Brennan estuvo en línea hace %s.",
   "chat.dungeontrain.presence.last_seen": "A Brennan se le vio por última vez en línea hace %s.",

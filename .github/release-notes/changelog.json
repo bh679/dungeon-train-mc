@@ -26122,6 +26122,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-reacts-emojis-ingame",
+      "version": "0.1296.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Discord reactions and emoji in your chat",
+      "summary": "When someone reacts to your chat in Discord, you'll see it in-game \u2014 and emoji from Discord now show up properly, in colour.",
+      "highlights": [
+        "Reactions added in Discord appear on the chat line they were added to: your own messages, replies from Discord, Developer messages and Live stream chat. Hover a reaction to see who added it.",
+        "If a reaction lands after a line has faded, a short note tells you who reacted.",
+        "Emoji in chat now draw in full colour, including skin tones, flags and a server's own custom emoji.",
+        "Type :fire:, :+1: and other shortcodes in chat and they become emoji, both in-game and in Discord."
+      ],
+      "pr": 2018,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

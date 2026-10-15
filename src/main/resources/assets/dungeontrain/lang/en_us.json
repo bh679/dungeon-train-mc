@@ -2477,6 +2477,7 @@
   "chat.dungeontrain.log_request.declined": "Okay — nothing was sent.",
   "chat.dungeontrain.log_request.expired": "That request has expired.",
   "chat.dungeontrain.dev_message.prefix": "[Developer] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s reacted %2$s to “%3$s”",
   "chat.dungeontrain.presence.online_now": "Brennan is online on Discord right now!",
   "chat.dungeontrain.presence.was_online": "Brennan was online %s ago.",
   "chat.dungeontrain.presence.last_seen": "Brennan was last seen online %s ago.",

@@ -8,6 +8,9 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.live.LiveChatRules;
 import games.brennan.dungeontrain.client.live.LiveClaimInfo;
+import games.brennan.dungeontrain.discord.chat.ChatReaction;
+import games.brennan.dungeontrain.discord.chat.ChatReactionCodec;
+import games.brennan.dungeontrain.discord.chat.ChatReactionEvent;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -151,12 +154,60 @@ public final class LiveFeedClient {
      * A chat poll: whether anyone is on air, the ring's head seq, the lines after {@code since}, and the
      * seqs of earlier lines removed since then ({@code deleted} — a Twitch mod deleted them).
      */
-    public record ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted) {
-        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of());
+    public record ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted, List<LineReactions> reactions) {
+        public static final ChatPage EMPTY = new ChatPage(false, -1, List.of(), List.of(), List.of());
 
         public ChatPage(boolean live, long seq, List<ChatLine> lines) {
-            this(live, seq, lines, List.of());
+            this(live, seq, lines, List.of(), List.of());
         }
+
+        public ChatPage(boolean live, long seq, List<ChatLine> lines, List<Long> deleted) {
+            this(live, seq, lines, deleted, List.of());
+        }
+    }
+
+    /** The current Discord reactions on an earlier chat line ({@code line} = its seq), and what changed. */
+    public record LineReactions(long line, List<ChatReaction> list, @Nullable ChatReactionEvent event) {}
+
+    /** The {@code reactions} array of a chat page; malformed entries are skipped. Package-private for tests. */
+    static List<LineReactions> parseReactions(JsonObject b) {
+        if (!b.has("reactions") || !b.get("reactions").isJsonArray()) return List.of();
+        List<LineReactions> out = new ArrayList<>();
+        for (JsonElement el : b.getAsJsonArray("reactions")) {
+            if (!el.isJsonObject()) continue;
+            JsonObject o = el.getAsJsonObject();
+            if (!o.has("line") || !o.get("line").isJsonPrimitive()) continue;
+            List<ChatReaction> list = new ArrayList<>();
+            if (o.has("list") && o.get("list").isJsonArray()) {
+                for (JsonElement re : o.getAsJsonArray("list")) {
+                    if (!re.isJsonObject() || list.size() >= ChatReactionCodec.MAX_EMOJI) continue;
+                    JsonObject r = re.getAsJsonObject();
+                    String name = str(r, "name");
+                    if (name.isBlank()) continue;
+                    List<String> users = new ArrayList<>();
+                    if (r.has("users") && r.get("users").isJsonArray()) {
+                        for (JsonElement u : r.getAsJsonArray("users")) {
+                            if (u.isJsonPrimitive()) users.add(LiveChatRules.clean(u.getAsString(), 32));
+                        }
+                    }
+                    int count = r.has("count") && r.get("count").isJsonPrimitive() ? r.get("count").getAsInt() : users.size();
+                    boolean animated = r.has("animated") && r.get("animated").isJsonPrimitive() && r.get("animated").getAsBoolean();
+                    list.add(new ChatReaction(name, str(r, "id"), animated, Math.max(count, users.size()), users));
+                }
+            }
+            ChatReactionEvent event = null;
+            if (o.has("event") && o.get("event").isJsonObject()) {
+                JsonObject e = o.getAsJsonObject("event");
+                event = new ChatReactionEvent(str(e, "action"), str(e, "name"), str(e, "id"),
+                    LiveChatRules.clean(str(e, "userName"), 32));
+            }
+            out.add(new LineReactions(o.get("line").getAsLong(), List.copyOf(list), event));
+        }
+        return List.copyOf(out);
+    }
+
+    private static String str(JsonObject o, String key) {
+        return o.has(key) && o.get(key).isJsonPrimitive() ? o.get(key).getAsString() : "";
     }
 
     /**
@@ -342,7 +393,7 @@ public final class LiveFeedClient {
                     if (el.isJsonPrimitive() && el.getAsJsonPrimitive().isNumber()) deleted.add(el.getAsLong());
                 }
             }
-            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted));
+            return new ChatPage(live, seq, List.copyOf(lines), List.copyOf(deleted), parseReactions(b));
         } catch (RuntimeException e) {
             return ChatPage.EMPTY;
         }

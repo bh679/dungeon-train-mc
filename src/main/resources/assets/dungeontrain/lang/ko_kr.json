@@ -1947,6 +1947,7 @@
   "chat.dungeontrain.log_request.declined": "알겠어요 — 아무것도 보내지 않았습니다.",
   "chat.dungeontrain.log_request.expired": "이 요청은 만료되었습니다.",
   "chat.dungeontrain.dev_message.prefix": "[개발자] ",
+  "chat.dungeontrain.discord_react.notice": "%1$s님이 \"%3$s\"에 %2$s 반응을 남겼습니다",
   "chat.dungeontrain.presence.online_now": "Brennan이 지금 Discord에 접속해 있습니다!",
   "chat.dungeontrain.presence.was_online": "Brennan이 %s 전에 접속해 있었습니다.",
   "chat.dungeontrain.presence.last_seen": "Brennan이 마지막으로 접속한 것은 %s 전입니다.",

@@ -2410,6 +2410,7 @@
       "chat.dungeontrain.log_request.declined",
       "chat.dungeontrain.log_request.expired",
       "chat.dungeontrain.dev_message.prefix",
+      "chat.dungeontrain.discord_react.notice",
       "chat.dungeontrain.presence.online_now",
       "chat.dungeontrain.presence.was_online",
       "chat.dungeontrain.presence.last_seen",
