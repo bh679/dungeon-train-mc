@@ -48,6 +48,13 @@ public final class LiveDeathClip {
     static final double AFTER_S = 0.5;
     /** The clip's width; height follows (16:9). */
     static final int WIDTH = 640;
+    /**
+     * The segments carry the broadcast's own "Name is live" pill top-middle ({@link StreamNameTag});
+     * behind the death page it would sit over the title, so the clip keeps the centre-bottom of the
+     * picture and drops this share of the top (16:9 kept): the pill ends about 18% down at the usual
+     * GUI scales.
+     */
+    static final double CROP = 0.22;
     /** On top of one segment, how long to wait for the death's segment to finish before giving up. */
     static final long EXTRA_WAIT_MS = 10_000;
     static final long CUT_TIMEOUT_S = 30;
@@ -94,7 +101,8 @@ public final class LiveDeathClip {
             "-i", concat.toString(),
             "-ss", String.format(Locale.ROOT, "%.3f", w.offsetS()),
             "-t", String.format(Locale.ROOT, "%.3f", w.durationS()),
-            "-an", "-vf", "scale=" + WIDTH + ":-2", "-c:v", "libx264", "-preset", "ultrafast",
+            "-an", "-vf", String.format(Locale.ROOT, "crop=iw*%.2f:ih*%.2f:iw*%.2f:ih*%.2f,scale=%d:-2",
+                1 - CROP, 1 - CROP, CROP / 2, CROP, WIDTH), "-c:v", "libx264", "-preset", "ultrafast",
             "-pix_fmt", "yuv420p", "-movflags", "+faststart", out.toAbsolutePath().toString()};
     }
 

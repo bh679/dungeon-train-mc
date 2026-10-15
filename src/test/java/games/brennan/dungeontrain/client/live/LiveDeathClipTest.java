@@ -58,7 +58,7 @@ class LiveDeathClipTest {
         assertTrue(args.contains("-i concat:/w/seg00001.ts|/w/seg00002.ts"), args);
         assertTrue(args.contains("-ss 6.000 -t 5.500"), args);
         assertTrue(args.contains("-an"), args);
-        assertTrue(args.contains("scale=640:-2"), args);
+        assertTrue(args.contains("crop=iw*0.78:ih*0.78:iw*0.11:ih*0.22,scale=640:-2"), "drops the name pill, keeps 16:9: " + args);
         assertTrue(args.endsWith("/c/out.mp4"), args);
     }
 
