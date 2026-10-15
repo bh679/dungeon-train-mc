@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.live;
 
+import games.brennan.discordpresence.client.NetworkConsentScreen;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientOptionsTab;
 import games.brennan.dungeontrain.client.DungeonTrainClientOptionsScreen;
@@ -17,7 +18,8 @@ import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 /**
  * {@code /dungeontrain-options}: opens Dungeon Train's Options screen on its General tab. Exists so a
  * chat line can carry a clickable path to a setting — vanilla chat clicks can run a command and
- * nothing else — starting with the "Live-streaming is disabled" notice.
+ * nothing else — starting with the "Live-streaming is disabled" notice. {@code /dungeontrain-consent}
+ * opens the internet consent card, for the "Live Eye needs the internet" line.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveOptionsCommand {
@@ -35,6 +37,15 @@ public final class LiveOptionsCommand {
             mc.execute(() -> {
                 ClientOptionsTab.select(ClientOptionsTab.GENERAL);
                 mc.setScreen(new DungeonTrainClientOptionsScreen(null));
+            });
+            return 1;
+        }));
+        // The "Live Eye needs the internet" line's link: the consent card, as Options → Content opens it.
+        event.getDispatcher().register(Commands.literal("dungeontrain-consent").executes(ctx -> {
+            Minecraft mc = Minecraft.getInstance();
+            mc.execute(() -> {
+                DungeonTrain.markConsentCardReopened();
+                mc.setScreen(new NetworkConsentScreen(null));
             });
             return 1;
         }));

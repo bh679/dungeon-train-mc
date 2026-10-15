@@ -626,6 +626,8 @@
   "chat.dungeontrain.live.unreachable": "Không phát sóng: không thể kết nối tới nguồn phát.",
   "chat.dungeontrain.live.disabled": "Phát trực tiếp đang tắt, hãy bật trong %s",
   "chat.dungeontrain.live.disabled.path": "Tùy chọn / Dungeon Train / Chung / Phát trực tiếp",
+  "chat.dungeontrain.live.needs_internet": "Máy quay phát sóng cần internet, %s",
+  "chat.dungeontrain.live.needs_internet.link": "bật lên",
   "chat.dungeontrain.live_chat.prefix": "[Trực tiếp]",
   "chat.dungeontrain.live_chat.connected": "Đã kết nối trò chuyện trực tiếp với Discord. Tắt tại %s",
   "chat.dungeontrain.live_chat.path": "Tùy chọn / Dungeon Train / Phát trực tiếp / Trò chuyện trực tiếp",

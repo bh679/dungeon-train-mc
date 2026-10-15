@@ -626,6 +626,8 @@
   "chat.dungeontrain.live.unreachable": "ไม่มีการถ่ายทอด: ติดต่อฟีดไม่ได้",
   "chat.dungeontrain.live.disabled": "การถ่ายทอดสดถูกปิดอยู่ เปิดได้ที่ %s",
   "chat.dungeontrain.live.disabled.path": "ตัวเลือก / Dungeon Train / ทั่วไป / การถ่ายทอดสด",
+  "chat.dungeontrain.live.needs_internet": "กล้องวิดีโอถ่ายทอดต้องใช้อินเทอร์เน็ต %s",
+  "chat.dungeontrain.live.needs_internet.link": "เปิดใช้งาน",
   "chat.dungeontrain.live_chat.prefix": "[ไลฟ์]",
   "chat.dungeontrain.live_chat.connected": "เชื่อมต่อแชทไลฟ์กับ Discord แล้ว ปิดได้ที่ %s",
   "chat.dungeontrain.live_chat.path": "ตัวเลือก / Dungeon Train / สตรีม / แชทไลฟ์",

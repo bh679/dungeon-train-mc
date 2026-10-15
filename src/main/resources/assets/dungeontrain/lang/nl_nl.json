@@ -655,6 +655,8 @@
   "chat.dungeontrain.live.unreachable": "Geen uitzending: de feed was niet bereikbaar.",
   "chat.dungeontrain.live.disabled": "Livestreamen staat uit, zet het aan in %s",
   "chat.dungeontrain.live.disabled.path": "Opties / Dungeon Train / Algemeen / Livestreamen",
+  "chat.dungeontrain.live.needs_internet": "De uitzendcamcorder heeft internet nodig, %s",
+  "chat.dungeontrain.live.needs_internet.link": "zet het aan",
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Livechat verbonden met Discord. Zet hem uit in %s",
   "chat.dungeontrain.live_chat.path": "Opties / Dungeon Train / Stream / Livechat",

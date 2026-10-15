@@ -626,6 +626,8 @@
   "chat.dungeontrain.live.unreachable": "Tidak ada siaran: feed tidak dapat dijangkau.",
   "chat.dungeontrain.live.disabled": "Siaran langsung dimatikan, nyalakan di %s",
   "chat.dungeontrain.live.disabled.path": "Opsi / Dungeon Train / Umum / Siaran langsung",
+  "chat.dungeontrain.live.needs_internet": "Camcorder Siaran butuh internet, %s",
+  "chat.dungeontrain.live.needs_internet.link": "nyalakan",
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Obrolan langsung terhubung ke Discord. Matikan di %s",
   "chat.dungeontrain.live_chat.path": "Opsi / Dungeon Train / Stream / Obrolan langsung",

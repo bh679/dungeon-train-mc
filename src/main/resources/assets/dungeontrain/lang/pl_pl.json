@@ -684,6 +684,8 @@
   "chat.dungeontrain.live.unreachable": "Brak transmisji: nie udało się połączyć z przekazem.",
   "chat.dungeontrain.live.disabled": "Transmisja na żywo jest wyłączona, włącz ją w %s",
   "chat.dungeontrain.live.disabled.path": "Opcje / Dungeon Train / Ogólne / Transmisja na żywo",
+  "chat.dungeontrain.live.needs_internet": "Kamera transmisyjna potrzebuje internetu, %s",
+  "chat.dungeontrain.live.needs_internet.link": "włącz go",
   "chat.dungeontrain.live_chat.prefix": "[Na żywo]",
   "chat.dungeontrain.live_chat.connected": "Czat na żywo połączony z Discordem. Wyłącz go w %s",
   "chat.dungeontrain.live_chat.path": "Opcje / Dungeon Train / Stream / Czat na żywo",

@@ -711,6 +711,8 @@
   "chat.dungeontrain.live.unreachable": "No broadcast: the feed could not be reached.",
   "chat.dungeontrain.live.disabled": "Live-streaming is disabled, turn it on in %s",
   "chat.dungeontrain.live.disabled.path": "Options / Dungeon Train / General / Livestreaming",
+  "chat.dungeontrain.live.needs_internet": "The Live Eye needs the internet, %s",
+  "chat.dungeontrain.live.needs_internet.link": "turn it on",
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Live chat connected. Turn it off in %s",
   "chat.dungeontrain.live_chat.path": "Options / Dungeon Train / Stream / Live chat",
