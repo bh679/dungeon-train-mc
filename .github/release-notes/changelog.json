@@ -26338,6 +26338,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-promote-from-relay",
+      "version": "0.1306.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Move your old advancements to the difficulty you earned them on",
+      "summary": "If you earned most of your advancements on a different difficulty before they were split by difficulty, the developer can now send you a one-time offer to move them there. It appears on the title screen, and you pick exactly which ones to bring over.",
+      "highlights": [
+        "Tick the advancements that should count on the new difficulty, and choose for each whether Normal keeps it too",
+        "Not Now saves the offer for your next launch; it can only be used once"
+      ],
+      "pr": 2031,
+      "date": "2026-10-15",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
