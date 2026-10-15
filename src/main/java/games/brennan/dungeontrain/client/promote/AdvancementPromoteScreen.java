@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.promote;
 import games.brennan.dungeontrain.advancement.AdvancementPromotion;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.net.relay.AdvancementPromoteClient;
+import games.brennan.dungeontrain.player.DifficultyPartition;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -80,18 +81,22 @@ public final class AdvancementPromoteScreen extends Screen {
         this.moving = promote.mode() == AdvancementPromotion.Mode.MOVE ? Set.copyOf(candidates) : Set.of();
     }
 
+    /** Per-advancement Copy / Move — only on a copy promote, and never into Normal, where move is copy. */
     private boolean perRowMode() {
-        return promote.mode() == AdvancementPromotion.Mode.COPY;
+        return promote.mode() == AdvancementPromotion.Mode.COPY
+            && !DifficultyPartition.LEGACY_KEY.equals(promote.target());
     }
 
     @Override
     protected void init() {
         panelW = Math.min(PANEL_W, this.width - 32);
         int inner = panelW - PAD * 2;
-        Component body = Component.translatable("gui.dungeontrain.adv_promote.body", difficulty.getString())
-            .append(" ").append(Component.translatable(perRowMode()
-                ? "gui.dungeontrain.adv_promote.body_copy"
-                : "gui.dungeontrain.adv_promote.body_move", difficulty.getString()));
+        var body = Component.translatable("gui.dungeontrain.adv_promote.body", difficulty.getString());
+        if (perRowMode()) {
+            body.append(" ").append(Component.translatable("gui.dungeontrain.adv_promote.body_copy"));
+        } else if (promote.mode() == AdvancementPromotion.Mode.MOVE) {
+            body.append(" ").append(Component.translatable("gui.dungeontrain.adv_promote.body_move", difficulty.getString()));
+        }
         bodyLines = this.font.split(body, inner);
         int bodyH = bodyLines.size() * (this.font.lineHeight + 1);
         int chrome = PAD + this.font.lineHeight + GAP   // title
