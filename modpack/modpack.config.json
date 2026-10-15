@@ -615,15 +615,15 @@
       "mod_ids": [
         "discordpresence"
       ],
-      "sha1": "96090682c7645c0adc1c0c01f367462620e6cc0d",
+      "sha1": "30c11e40841b0caaa5045f440815ade5c9ee3405",
       "packages": [
         "games.brennan"
       ],
       "project_id": 1573749,
-      "file_id": 9146819,
+      "file_id": 9189057,
       "required": true,
       "dependency_type": "required",
-      "version": "0.68.0",
+      "version": "0.69.0",
       "gradle_property": "discordpresence_min_version",
       "curseforge_only": true
     },
