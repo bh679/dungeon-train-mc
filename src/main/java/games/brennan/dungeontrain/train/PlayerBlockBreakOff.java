@@ -73,12 +73,50 @@ public final class PlayerBlockBreakOff {
 
     private PlayerBlockBreakOff() {}
 
+    /** The most bamboo cells stacked above a broken stalk that come off with it (vanilla's max height). */
+    private static final int MAX_BAMBOO_ABOVE = 16;
+
     /**
      * Break the player-added block at plot position {@code plotPos} of {@code subLevel} off the train:
      * remove it from the carriage and drop it (and a container's contents) at world cell
      * {@code worldPos}. Returns whether a block was removed.
+     *
+     * <p>Bamboo breaks where it was hit, and the stalk above the hit comes off with it, each cell
+     * dropping at its own world position. Left alone, vanilla's bamboo tick would destroy that
+     * unsupported stalk with {@code destroyBlock} at its plot position, spawning the drops where
+     * nobody can reach them. Broken top-down so no cell is ever left unsupported to schedule that tick.</p>
      */
-    public static boolean breakOff(ServerLevel level, ServerSubLevel subLevel, BlockPos plotPos, BlockPos worldPos) {
+    public static boolean breakOff(ServerLevel level, ManagedShip ship, ServerSubLevel subLevel,
+                                   BlockPos plotPos, BlockPos worldPos) {
+        BlockState hit = CarriageDeck.blockInPlot(subLevel.getPlot(), plotPos);
+        if (hit.is(Blocks.BAMBOO)) {
+            int above = 0;
+            while (above < MAX_BAMBOO_ABOVE
+                && CarriageDeck.blockInPlot(subLevel.getPlot(), plotPos.above(above + 1)).is(Blocks.BAMBOO)) {
+                above++;
+            }
+            for (int i = above; i >= 1; i--) {
+                BlockPos cell = plotPos.above(i);
+                removeAndDrop(level, subLevel, cell, worldCell(ship, cell));
+            }
+        }
+        if (!removeAndDrop(level, subLevel, plotPos, worldPos)) return false;
+        logBreakOff(level, hit, worldPos);
+        return true;
+    }
+
+    /** The world cell containing the centre of plot cell {@code plotPos}. */
+    private static BlockPos worldCell(ManagedShip ship, BlockPos plotPos) {
+        Vector3d centre = ship.shipToWorld(
+            new Vector3d(plotPos.getX() + 0.5, plotPos.getY() + 0.5, plotPos.getZ() + 0.5));
+        return BlockPos.containing(centre.x, centre.y, centre.z);
+    }
+
+    /**
+     * Remove the block at plot position {@code plotPos} and drop it (and a container's contents) at
+     * world cell {@code worldPos}, with break particles and sound there. Returns whether a block was removed.
+     */
+    private static boolean removeAndDrop(ServerLevel level, ServerSubLevel subLevel, BlockPos plotPos, BlockPos worldPos) {
         LevelChunk chunk = CarriageDeck.chunkInPlot(subLevel.getPlot(), plotPos);
         if (chunk == null) return false;
         BlockState state = chunk.getBlockState(plotPos);
@@ -104,7 +142,6 @@ public final class PlayerBlockBreakOff {
 
         level.levelEvent(2001, worldPos, Block.getId(state)); // break particles + sound
         for (ItemStack stack : drops) Block.popResource(level, worldPos, stack);
-        logBreakOff(level, state, worldPos);
         return true;
     }
 
@@ -136,10 +173,7 @@ public final class PlayerBlockBreakOff {
             for (BlockPos plotPos : PlayerPlacedTrainBlocks.plotPositions(subLevel)) {
                 if (CarriageDeck.blockInPlot(subLevel.getPlot(), plotPos).isAir()) continue;
                 if (!touchesAny(ship, plotPos, near)) continue;
-                Vector3d centre = ship.shipToWorld(
-                    new Vector3d(plotPos.getX() + 0.5, plotPos.getY() + 0.5, plotPos.getZ() + 0.5));
-                BlockPos worldPos = BlockPos.containing(centre.x, centre.y, centre.z);
-                if (breakOff(level, subLevel, plotPos, worldPos) && ++broke >= budget) return broke;
+                if (breakOff(level, ship, subLevel, plotPos, worldCell(ship, plotPos)) && ++broke >= budget) return broke;
             }
         }
         return broke;
