@@ -655,7 +655,10 @@ public final class BlockVariantMenuRenderer {
             BlockVariantMenu.CellKind.GROWTH_OPTION, hovered);
     }
 
-    /** A Grow-style popup: labelled rows of toggle buttons / {@code − n +} steppers above the panel. */
+    /**
+     * A Grow-style popup: labelled rows of toggle buttons, single number cells (Grow Min / Max) or
+     * the painting popup's {@code − n +} choice steppers, above the panel.
+     */
     private static void drawPopupRows(PoseStack ps, MultiBufferSource buffer, Font font,
                                       List<GrowthPopupLayout.Row> rows, BlockVariantMenu.CellKind optionKind,
                                       BlockVariantMenu.Hit hovered) {
@@ -670,7 +673,9 @@ public final class BlockVariantMenuRenderer {
             for (int i = 0; i < row.buttons().length; i++) {
                 double bL = row.buttonLeft(i);
                 double bR = bL + row.buttonWidth();
-                boolean value = stepper && i == GrowthPopupLayout.STEPPER_VALUE;
+                // The middle of a painting − n + stepper is a read-out, not a button. A lone
+                // number cell (Grow Min / Max) is a button: it is the number itself.
+                boolean value = stepper && row.buttons().length == 3 && i == PaintingPopupLayout.STEPPER_VALUE;
                 boolean selected = i == row.selected();
                 boolean hover = !value && hovered.kind() == optionKind
                     && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);

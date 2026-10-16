@@ -58,10 +58,10 @@ public final class BlockVariantMenuScreen extends PanelScreenHost {
     }
 
     @Override
-    protected void click(double localX, double localY, boolean shift) {
+    protected void click(double localX, double localY, boolean shift, int button) {
         BlockVariantMenu.Hit hit = hitAt(localX, localY);
         if (hit.kind() == BlockVariantMenu.CellKind.NONE) return;
-        BlockVariantMenuInputHandler.dispatch(hit, shift);
+        BlockVariantMenuInputHandler.dispatch(hit, shift, button);
     }
 
     /** The panel has two faces — the variant list and the Add-search list — with their own layouts. */

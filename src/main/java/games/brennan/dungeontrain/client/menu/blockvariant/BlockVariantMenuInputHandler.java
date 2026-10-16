@@ -2,6 +2,13 @@ package games.brennan.dungeontrain.client.menu.blockvariant;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
+import games.brennan.dungeontrain.client.menu.number.NumberField;
+import games.brennan.dungeontrain.client.menu.number.NumberPad;
+import games.brennan.dungeontrain.client.menu.number.NumberStepper;
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
+import games.brennan.dungeontrain.editor.VariantDifficulty;
+import games.brennan.dungeontrain.editor.VariantGrowth;
 import games.brennan.dungeontrain.editor.RotationApplier;
 import games.brennan.dungeontrain.editor.VariantRotation;
 import games.brennan.dungeontrain.net.BlockVariantEditPacket;
@@ -31,9 +38,11 @@ import java.util.List;
  *
  * <ul>
  *   <li>Left-click <i>release</i> on a hovered cell dispatches the
- *       appropriate action — toolbar buttons, weight bumps (with shift
- *       for decrement), lock toggle, entry-removal X, and search-result
- *       clicks.</li>
+ *       appropriate action — toolbar buttons, lock toggle, entry-removal X,
+ *       and search-result clicks. Number cells (weight, difficulty band, Grow
+ *       lengths) go through {@link NumberStepper}: click steps up, shift- or
+ *       right-click steps down, cmd-click types. A right-click anywhere else
+ *       is swallowed, as it always was.</li>
  *   <li>While the panel is active and the click is on a cell, attack /
  *       use interactions are cancelled so the player doesn't accidentally
  *       break / place blocks while clicking the panel.</li>
@@ -49,6 +58,8 @@ public final class BlockVariantMenuInputHandler {
 
     private static boolean pressArmed;
     private static boolean pressShift;
+    /** Which mouse button armed the press — only its own release dispatches. */
+    private static int pressButton;
 
     /**
      * Ceiling for a typed weight. The stepper has no cap of its own — this is a sanity bound on
@@ -66,6 +77,7 @@ public final class BlockVariantMenuInputHandler {
         event.setCanceled(true);
         event.setSwingHand(false);
         pressArmed = true;
+        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
         pressShift = Minecraft.getInstance().screen == null
             && (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
                 || GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
@@ -88,16 +100,16 @@ public final class BlockVariantMenuInputHandler {
         }
         if (Minecraft.getInstance().screen != null) return;
         int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
         if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
+        if (!pressArmed || btn != pressButton) return;
         pressArmed = false;
         boolean shift = pressShift
             || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
 
         BlockVariantMenu.Hit hit = BlockVariantMenu.hovered();
         if (hit.kind() == BlockVariantMenu.CellKind.NONE) return;
-        dispatch(hit, shift);
+        dispatch(hit, shift, btn);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -132,7 +144,10 @@ public final class BlockVariantMenuInputHandler {
      * Act on a hit cell. Package-visible because {@link BlockVariantMenuScreen} dispatches
      * through this same body — the screen-space path differs only in where the Hit came from.
      */
-    static void dispatch(BlockVariantMenu.Hit hit, boolean shift) {
+    static void dispatch(BlockVariantMenu.Hit hit, boolean shift, int button) {
+        // Right-click is a number cell's step-down and nothing else — on any other cell it is
+        // swallowed (the press was already cancelled so nothing is placed).
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit)) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
             mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
@@ -140,13 +155,23 @@ public final class BlockVariantMenuInputHandler {
         }
 
         if (BlockVariantMenu.screen() == BlockVariantMenu.Screen.ROOT) {
-            dispatchRoot(hit, shift);
+            dispatchRoot(hit, shift, button);
         } else {
             dispatchSearch(hit);
         }
     }
 
-    private static void dispatchRoot(BlockVariantMenu.Hit hit, boolean shift) {
+    /** Whether {@code hit} is one of this panel's numbers. */
+    private static boolean isNumberCell(BlockVariantMenu.Hit hit) {
+        if (BlockVariantMenu.screen() != BlockVariantMenu.Screen.ROOT) return false;
+        return switch (hit.kind()) {
+            case ENTRY_WEIGHT, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
+            case GROWTH_OPTION -> hit.secondary() >= 0 && GrowthPopupLayout.isNumber(hit.secondary() / 10);
+            default -> false;
+        };
+    }
+
+    private static void dispatchRoot(BlockVariantMenu.Hit hit, boolean shift, int button) {
         net.minecraft.core.BlockPos local = BlockVariantMenu.localPos();
         if (local == null) return;
         String variantId = BlockVariantMenu.variantId();
@@ -196,14 +221,24 @@ public final class BlockVariantMenuInputHandler {
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
                 BlockState parsed = BlockVariantMenu.parseState(e.stateString());
                 if (parsed == null) return;
-                if (code / 10 != GrowthPopupLayout.SECTION_ON && code % 10 == GrowthPopupLayout.STEPPER_VALUE
-                    && (code / 10 == GrowthPopupLayout.SECTION_MIN || code / 10 == GrowthPopupLayout.SECTION_MAX)) {
+                int row = hit.index();
+                int section = code / 10;
+                VariantGrowth current = VariantGrowth.fromInt(e.growth());
+                if (GrowthPopupLayout.isNumber(section)) {
+                    int value = GrowthPopupLayout.length(current, section);
+                    java.util.function.IntConsumer setLength = v -> DungeonTrainNet.sendToServer(
+                        new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_GROWTH, variantId, local, row, "",
+                            GrowthPopupLayout.withLength(current, section, v).toInt()));
+                    NumberStepper.click(new NumberField(
+                            NumberTitle.of(section == GrowthPopupLayout.SECTION_MIN ? "grow_min" : "grow_max"),
+                            value, 1, VariantGrowth.MAX_LENGTH, false,
+                            () -> setLength.accept(value + 1), () -> setLength.accept(value - 1), setLength),
+                        button, shift, MenuClickModifiers.cmdDown(), pad());
                     return;
                 }
-                games.brennan.dungeontrain.editor.VariantGrowth next = GrowthPopupLayout.apply(
-                    games.brennan.dungeontrain.editor.VariantGrowth.fromInt(e.growth()), parsed, code / 10, code % 10);
+                VariantGrowth next = GrowthPopupLayout.apply(current, parsed, section, code % 10);
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.SET_GROWTH, variantId, local, hit.index(), "", next.toInt()));
+                    BlockVariantEditPacket.Op.SET_GROWTH, variantId, local, row, "", next.toInt()));
             }
             case PAINTING_OPTION -> {
                 // Same modal rules as GROWTH_OPTION: -2 closes, -1 is the popup's own margin.
@@ -241,31 +276,11 @@ public final class BlockVariantMenuInputHandler {
             case CLEAR -> DungeonTrainNet.sendToServer(
                 new BlockVariantEditPacket(BlockVariantEditPacket.Op.CLEAR, variantId, local, -1, "", 0));
             case CLOSE -> DungeonTrainNet.sendToServer(new BlockVariantMenuTogglePacket(false));
-            case ENTRY_WEIGHT -> {
+            case ENTRY_WEIGHT, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
-                int row = hit.index();
-                // Cmd-click types the weight instead of stepping it — a walk from 1 to 40 is
-                // otherwise thirty-nine clicks.
-                if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) {
-                    openWeightEntry(variantId, local, row,
-                        BlockVariantMenu.entries().get(row).weight());
-                    return;
-                }
-                int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.BUMP_WEIGHT, variantId, local, row, "", delta));
-            }
-            case ENTRY_DIFF_MIN -> {
-                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
-                int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.BUMP_DIFF_MIN, variantId, local, hit.index(), "", delta));
-            }
-            case ENTRY_DIFF_MAX -> {
-                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
-                int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                    BlockVariantEditPacket.Op.BUMP_DIFF_MAX, variantId, local, hit.index(), "", delta));
+                NumberField field = rowNumber(hit.kind(), variantId, local, hit.index(),
+                    BlockVariantMenu.entries().get(hit.index()));
+                NumberStepper.click(field, button, shift, MenuClickModifiers.cmdDown(), pad());
             }
             case ENTRY_REMOVE_X -> {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
@@ -396,18 +411,45 @@ public final class BlockVariantMenuInputHandler {
     }
 
     /**
-     * Open the typed-weight pad for one row. Returns to the panel screen when the menu is
+     * The number behind one row's weight or difficulty cell: click and shift/right-click send the
+     * stepping op, cmd-click types an absolute value with its SET twin.
+     */
+    private static NumberField rowNumber(BlockVariantMenu.CellKind kind, String variantId,
+                                         net.minecraft.core.BlockPos local, int row,
+                                         BlockVariantSyncPacket.Entry entry) {
+        record Ops(BlockVariantEditPacket.Op bump, BlockVariantEditPacket.Op set) {}
+        Ops ops = switch (kind) {
+            case ENTRY_DIFF_MIN -> new Ops(BlockVariantEditPacket.Op.BUMP_DIFF_MIN, BlockVariantEditPacket.Op.SET_DIFF_MIN);
+            case ENTRY_DIFF_MAX -> new Ops(BlockVariantEditPacket.Op.BUMP_DIFF_MAX, BlockVariantEditPacket.Op.SET_DIFF_MAX);
+            default -> new Ops(BlockVariantEditPacket.Op.BUMP_WEIGHT, BlockVariantEditPacket.Op.SET_WEIGHT);
+        };
+        Runnable inc = () -> send(ops.bump(), variantId, local, row, 1);
+        Runnable dec = () -> send(ops.bump(), variantId, local, row, -1);
+        java.util.function.IntConsumer set = v -> send(ops.set(), variantId, local, row, v);
+        return switch (kind) {
+            case ENTRY_DIFF_MIN -> new NumberField(NumberTitle.of("min_level"), entry.minDiff(), 0,
+                entry.maxDiff() < 0 ? VariantDifficulty.MAX_TIER : entry.maxDiff(), false, inc, dec, set);
+            case ENTRY_DIFF_MAX -> new NumberField(NumberTitle.of("max_level"),
+                entry.maxDiff() < 0 ? NumberField.ALL : entry.maxDiff(), 0, VariantDifficulty.MAX_TIER, true,
+                inc, dec, set);
+            default -> new NumberField(NumberTitle.of("weight"), entry.weight(), 1, TYPED_WEIGHT_MAX, false,
+                inc, dec, set);
+        };
+    }
+
+    private static void send(BlockVariantEditPacket.Op op, String variantId, net.minecraft.core.BlockPos local,
+                             int row, int value) {
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(op, variantId, local, row, "", value));
+    }
+
+    /**
+     * Cmd-click types into the number pad, returning to the panel screen when the menu is
      * screen-space and to the world when it is world-space — same rule as the Save cell, whose
      * panel is a HUD overlay that is still drawn behind the modal.
      */
-    private static void openWeightEntry(String variantId, net.minecraft.core.BlockPos local,
-                                        int row, int currentWeight) {
-        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
-            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
-            currentWeight, 1, TYPED_WEIGHT_MAX,
-            value -> DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
-                BlockVariantEditPacket.Op.SET_WEIGHT, variantId, local, row, "", value)),
-            BlockVariantMenu.space().isScreenspace() ? new BlockVariantMenuScreen() : null));
+    private static NumberStepper.Typing pad() {
+        return NumberPad.returningToBuilt(
+            () -> BlockVariantMenu.space().isScreenspace() ? new BlockVariantMenuScreen() : null);
     }
 
     private static VariantRotation.Mode decodeMode(byte raw) {

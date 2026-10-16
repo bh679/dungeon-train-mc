@@ -71,9 +71,30 @@ public record NumberField(String title, int value, int min, int max, boolean all
     /** {@link #ofCommand(String, String, int, int, int, boolean)} with the command sink injected. */
     public static NumberField ofCommand(String title, String prefix, int value, int min, int max,
                                         boolean allowAll, Consumer<String> run) {
+        return ofTokens(title, value, min, max, allowAll, token -> prefix + " " + token, run);
+    }
+
+    /**
+     * A number edited by a command that takes {@code inc}, {@code dec} or an integer somewhere
+     * other than the end: {@code commandFor} splices the token in and may return null when the
+     * row has no command, in which case the click does nothing.
+     */
+    public static NumberField ofTokens(String title, int value, int min, int max, boolean allowAll,
+                                       java.util.function.Function<String, String> commandFor) {
+        return ofTokens(title, value, min, max, allowAll, commandFor, CommandRunner::run);
+    }
+
+    /** {@link #ofTokens(String, int, int, int, boolean, java.util.function.Function)} with the sink injected. */
+    public static NumberField ofTokens(String title, int value, int min, int max, boolean allowAll,
+                                       java.util.function.Function<String, String> commandFor,
+                                       Consumer<String> run) {
+        Consumer<String> send = token -> {
+            String command = commandFor.apply(token);
+            if (command != null) run.accept(command);
+        };
         return new NumberField(title, value, min, max, allowAll,
-            () -> run.accept(prefix + " inc"),
-            () -> run.accept(prefix + " dec"),
-            v -> run.accept(prefix + " " + v));
+            () -> send.accept("inc"),
+            () -> send.accept("dec"),
+            v -> send.accept(Integer.toString(v)));
     }
 }
