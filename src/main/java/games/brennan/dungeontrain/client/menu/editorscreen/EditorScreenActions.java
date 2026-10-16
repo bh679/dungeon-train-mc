@@ -132,7 +132,8 @@ public final class EditorScreenActions {
     }
 
     /**
-     * Save · Rename · Move · Remove | Undo · Redo | Open files | Reset · Clear | Submit, in that order.
+     * Save · Rename · Move · Remove | Undo · Redo | Open files | (contents: Reroll carriage) | Reset ·
+     * Clear | Submit, in that order.
      *
      * <p>{@code relayId} is the selected template's row on the relay, which the pane it is drawn in
      * already holds for the version strip. Zero means this template has never been uploaded, which is
@@ -167,6 +168,9 @@ public final class EditorScreenActions {
             EditorHistoryState.redoLabel(), EditorScreenLang.REDO_NOTHING));
 
         out.add(openFilesIcon(ctx));
+
+        // Contents only: which carriage stands around the plot is a contents question.
+        if (cat == PlotCategory.CONTENTS) out.add(rerollShellIcon(ctx));
 
         out.add(new Icon("reset", EditorScreenLang.ICON_RESET,
             here && cat != PlotCategory.PARTS ? new CommandMenuEntry.Stay(MenuLang.t("editor.reset"), "dungeontrain reset")
@@ -241,6 +245,23 @@ public final class EditorScreenActions {
             "template folder for " + loc.basename());
         return new Icon("open_files", EditorScreenLang.ICON_OPEN_FILES,
             new CommandMenuEntry.ClientAction(label, open), null, loc.subdir() + "/" + loc.basename());
+    }
+
+    /** The command behind {@link #rerollShellIcon}, addressed by the contents id. */
+    static final String RESHELL_COMMAND = "dungeontrain editor contents reshell ";
+
+    /**
+     * <b>Reroll carriage</b>: stand the selected contents template's plot in another carriage that
+     * would carry it on the train, drawn by weight. Addressed by id, so it works from anywhere; the
+     * server says so in chat when no other carriage carries it.
+     */
+    static Icon rerollShellIcon(Ctx ctx) {
+        String label = EditorScreenLang.text(EditorScreenLang.ICON_REROLL_SHELL);
+        CommandMenuEntry entry = ctx.hasSelection()
+            ? new CommandMenuEntry.Stay(label, RESHELL_COMMAND + ctx.selection().modelId())
+            : null;
+        return new Icon("reroll_shell", EditorScreenLang.ICON_REROLL_SHELL, entry,
+            EditorScreenLang.DISABLED_NOT_HERE, EditorScreenLang.text(EditorScreenLang.ICON_REROLL_SHELL_DETAIL));
     }
 
     /**

@@ -12,6 +12,7 @@ public final class EditorIcons {
     public static final ResourceLocation UNDO = mod("icon/undo");
     public static final ResourceLocation REDO = mod("icon/redo");
     public static final ResourceLocation RESET = mod("icon/reset");
+    public static final ResourceLocation REROLL = mod("icon/reroll");
     public static final ResourceLocation CLEAR = mod("icon/clear");
     public static final ResourceLocation PACKAGE = mod("icon/folder");
     /** Out to the train, and back to your own profile — the two directions of one decision. */
@@ -43,6 +44,7 @@ public final class EditorIcons {
             case "undo" -> UNDO;
             case "redo" -> REDO;
             case "reset" -> RESET;
+            case "reroll_shell" -> REROLL;
             case "clear" -> CLEAR;
             case "package", "open_files" -> PACKAGE;
             // Re-parenting is a group operation, so it wears the group sprite.

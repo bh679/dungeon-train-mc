@@ -251,6 +251,9 @@ public final class EditorScreenLang {
     public static final String ICON_PACKAGE = PREFIX + "icon.package";
     public static final String ICON_MOVE = PREFIX + "icon.move";
     public static final String ICON_OPEN_FILES = PREFIX + "icon.open_files";
+    /** Reroll carriage: stand a contents plot in another carriage that carries it. */
+    public static final String ICON_REROLL_SHELL = PREFIX + "icon.reroll_shell";
+    public static final String ICON_REROLL_SHELL_DETAIL = PREFIX + "icon.reroll_shell.detail";
     public static final String SHEET_ID = PREFIX + "sheet.id";
     /** "Built by" — who originally made the template; a picker in dev mode. */
     public static final String SHEET_BUILDER = PREFIX + "sheet.builder";

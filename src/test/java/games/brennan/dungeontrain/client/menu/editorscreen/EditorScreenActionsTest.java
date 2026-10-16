@@ -208,6 +208,24 @@ final class EditorScreenActionsTest {
     }
 
     @Test
+    @DisplayName("contents get Reroll carriage before Reset, addressed by id; other kinds do not")
+    void rerollShellOnlyForContents() {
+        VariantKey contents = VariantKey.of(PlotCategory.CONTENTS, "copper", "copper");
+        Map<String, EditorScreenActions.Icon> icons = iconsById(
+            ctx(contents, gated("CONTENTS", "copper", "copper", 3, List.of()), null, PlotCategory.CARRIAGES), new ArrayList<>());
+        List<String> order = new ArrayList<>(icons.keySet());
+        assertEquals(order.indexOf("open_files") + 1, order.indexOf("reroll_shell"));
+        assertEquals(order.indexOf("reroll_shell") + 1, order.indexOf("reset"));
+        assertEquals("dungeontrain editor contents reshell copper", command(icons.get("reroll_shell").entry()));
+        assertNotNull(icons.get("reroll_shell").detail());
+
+        VariantKey carriage = VariantKey.of(PlotCategory.CARRIAGES, "windowed", "windowed");
+        icons = iconsById(ctx(carriage, gated("CARRIAGES", "windowed", "windowed", 20, List.of()), carriage,
+            PlotCategory.CARRIAGES), new ArrayList<>());
+        assertFalse(icons.containsKey("reroll_shell"));
+    }
+
+    @Test
     @DisplayName("nothing selected: nothing in the row is live")
     void iconsNoSelection() {
         Map<String, EditorScreenActions.Icon> icons = iconsById(ctx(null, null, null, null), new ArrayList<>());

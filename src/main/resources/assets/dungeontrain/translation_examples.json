@@ -9812,6 +9812,31 @@
       ]
     }
   },
+  "chat.dungeontrain.editor.contents_reshell_done": {
+    "1": {
+      "label": "the contents template's name",
+      "examples": [
+        "Library",
+        "Wheat Farm"
+      ]
+    },
+    "2": {
+      "label": "the carriage it now stands in",
+      "examples": [
+        "Standard",
+        "Glass Carriage"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor.contents_reshell_none": {
+    "1": {
+      "label": "the contents template's name",
+      "examples": [
+        "Library",
+        "Wheat Farm"
+      ]
+    }
+  },
   "chat.dungeontrain.editor.saved_contents_template_config": {
     "1": {
       "label": "a template or stage id",
