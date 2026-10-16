@@ -13,7 +13,7 @@ import java.util.WeakHashMap;
 
 /**
  * Makes a Vista TV a latch instead of a follower: a redstone pulse (button) flips it on or off and
- * a steady signal no longer matters, and an empty-hand click flips it too — the way a copper bulb
+ * a steady signal no longer matters, and a right-click flips it too (whatever is in hand) — the way a copper bulb
  * behaves. Vista's block recomputes its power state from {@code level.hasNeighborSignal} on every
  * neighbour change; {@code mixin/vista/TVBlockMixin} redirects that read here, so Vista's own grid
  * propagation, sounds and screen merging keep running on the answer we give.
@@ -44,7 +44,7 @@ public final class TvPowerToggle {
         return (rising || clicked) != currentlyOn;
     }
 
-    /** Server side: flip this TV now (an empty-hand click). Routes through Vista's own neighbour handler. */
+    /** Server side: flip this TV now (a right-click). Routes through Vista's own neighbour handler. */
     public static void toggle(Level level, BlockPos pos) {
         if (level.isClientSide) return;
         FLIP.computeIfAbsent(level, l -> Collections.synchronizedSet(new HashSet<>())).add(GlobalPos.of(level.dimension(), pos.immutable()));

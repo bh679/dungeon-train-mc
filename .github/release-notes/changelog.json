@@ -26500,7 +26500,7 @@
     },
     {
       "id": "standard-number-steppers",
-      "version": "0.1309.0",
+      "version": "0.1310.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -26515,6 +26515,22 @@
         "Leave a max level or max fill empty to set it back to \"all\""
       ],
       "pr": 2041,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "tv-right-click-any-item",
+      "version": "0.1310.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Switch a TV on or off with anything in hand",
+      "summary": "Right-click a placed TV to turn it on or off, whatever you're holding \u2014 your item isn't used or placed. Sneak to place a block against it instead.",
+      "highlights": [],
+      "pr": 2046,
       "date": "2026-10-16",
       "released": false,
       "released_in": null,
