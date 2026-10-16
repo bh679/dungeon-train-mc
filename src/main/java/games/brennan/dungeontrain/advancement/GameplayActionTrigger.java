@@ -58,6 +58,9 @@ import java.util.Optional;
  *   <li>{@code toggled_held_tv} — switched a held TV on or off ({@code TvHeldTogglePacket})</li>
  *   <li>{@code held_tv_while_live} — switched a held TV on while livestreaming with the Live Eye</li>
  *   <li>{@code tv_to_live_eye} — swapped a worn TV for a Live Eye while someone else was live, and went live</li>
+ *   <li>{@code gifted_live_eye} — offered their Live Eye to a viewer who never had one ({@code LiveGiftClient})</li>
+ *   <li>{@code voted_live_takeover} / {@code voted_live_takeover_winner} — cast a counted vote in a Live Eye
+ *       takeover; voted for the side that won ({@code LiveTakeoverChat})</li>
  *   <li>{@code wore_tv} / {@code wore_tv_15_min} — put a TV on as a hat; kept it on for
  *       {@code threshold} minutes ({@code LiveTvAdvancements})</li>
  * </ul>

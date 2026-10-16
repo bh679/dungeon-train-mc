@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.event.LiveEyeLootResolver;
+import games.brennan.dungeontrain.net.ClientActionPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.LiveGiftAcceptPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
@@ -136,7 +137,11 @@ public final class LiveGiftClient {
         }
         say(mc, Component.translatable(KEY + "offered", name).withStyle(ChatFormatting.GRAY));
         LiveFeedClient.gift(DungeonTrain.relayBaseUrl(), token, joinId).thenAcceptAsync(r -> {
-            if (!r.ok()) say(mc, Component.translatable(KEY + "give_failed", name).withStyle(ChatFormatting.GRAY));
+            if (!r.ok()) {
+                say(mc, Component.translatable(KEY + "give_failed", name).withStyle(ChatFormatting.GRAY));
+            } else if (mc.getConnection() != null) {
+                DungeonTrainNet.sendToServer(new ClientActionPacket("gifted_live_eye")); // Pass It On
+            }
         }, mc);
         return 1;
     }
