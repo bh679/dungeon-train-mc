@@ -26768,6 +26768,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "streamer-chat-command",
+      "version": "0.1315.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Ask who's streaming",
+      "summary": "Type /streamer in the Live chat, in game, on the website, on Discord or on Twitch, to see who's on air: their Minecraft, Twitch and Discord names, how long they've been live, how many times they've streamed before and their game language. Everyone in the chat sees the answer.",
+      "highlights": [],
+      "pr": 2059,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
