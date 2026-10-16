@@ -26593,6 +26593,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "difficulty-next-run-or-restart",
+      "version": "0.1310.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Pick your difficulty for the next run, or restart on it now",
+      "summary": "Changing difficulty mid-run now asks what you want: keep this run going and start the next one on the new difficulty, or abandon this run and board a fresh train on it straight away. Dungeon Train remembers your choice for every new world, and the Options menu has a Difficulty setting of its own.",
+      "highlights": [
+        "Save a difficulty change for your next run, or restart on it now.",
+        "Your chosen difficulty carries over to every new world.",
+        "Advancement stats are now kept for each difficulty."
+      ],
+      "pr": 2051,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
