@@ -26701,17 +26701,20 @@
         "content",
         "mobs"
       ],
-      "title": "New company in the carriages",
-      "summary": "Several new rooms full of trouble join the train, and some only turn up further down the line.",
+      "title": "New Mobs",
+      "summary": "New creatures have boarded the train. Some carriages now hold mobs you've never met on the line before, and some wait much further down the line.",
       "highlights": [
-        "New enemy rooms to stumble into",
+        "New mobs to run into",
         "Some wait in the stranger stretches of the journey"
       ],
       "pr": 2055,
       "date": "2026-10-16",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "New creatures have boarded the train.\n\nSome carriages now hold mobs you've never met on the line before. A few turn up early, and some wait much further down the line, in the stranger stretches of the journey. Keep your eyes open and your sword ready.\n\n## Other significant updates\n\n- Your Live stream shares your advancements, photos and books in Live chat on Discord, Twitch and the website, with a switch for each on the Stream tab\n- Builders: Test the Carriage can now bring your frozen mobs to life\n- Bug fixes"
     },
     {
       "id": "variant-unsupported-no-drops",
