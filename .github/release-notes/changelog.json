@@ -26479,7 +26479,7 @@
     },
     {
       "id": "signed-book-loot-entry",
-      "version": "0.1309.0",
+      "version": "0.1310.0",
       "type": "fix",
       "tags": [
         "fix",
