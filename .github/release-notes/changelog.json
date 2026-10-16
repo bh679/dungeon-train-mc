@@ -26537,6 +26537,26 @@
       "released_at": null
     },
     {
+      "id": "bed-death-message-name",
+      "version": "0.1310.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Bed explosion deaths show a proper death message",
+      "summary": "Dying to a bed explosion now shows a real death message on the death screen instead of a raw game id. Fall deaths now read like the chat message too, so you can see how you fell or who knocked you off.",
+      "highlights": [
+        "Bed explosion: \"You were killed by [Intentional Game Design]\"",
+        "Falls: \"You fell from a high place\", \"You were doomed to fall by Zombie\""
+      ],
+      "pr": 2048,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "release-announce-live-chat",
       "version": "0.1310.0",
       "type": "ci",

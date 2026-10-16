@@ -226,8 +226,8 @@ public final class RunStatsEvents {
         DeathNarrative narrative = rollNarrative(player, event.getSource(), run, narrativeDeaths);
 
         // The second-person death cause ("You fell from a high place"), shown as the
-        // fall-page title. Built from the same DamageSource the Discord report uses.
-        String deathCause = secondPersonCause(player, event.getSource());
+        // fall-page title. Built from the same death message the Discord report uses.
+        String deathCause = secondPersonCause(player);
 
         // Snapshot armor at death — the keep-inventory gamerule and respawn both run AFTER
         // LivingDeathEvent, so the equipment slots still reflect what the player died wearing.
@@ -320,10 +320,21 @@ public final class RunStatsEvents {
      * "was …" verb agreement ("You was" → "You were"). If the message doesn't begin with
      * the player's name (an unusual modded format), it is returned unchanged.
      */
-    private static String secondPersonCause(ServerPlayer player, DamageSource source) {
-        String msg = source.getLocalizedDeathMessage(player).getString();
+    private static String secondPersonCause(ServerPlayer player) {
+        String msg = deathMessage(player);
         String name = player.getDisplayName().getString();
         return SecondPersonDeathMessage.rewrite(msg, name);
+    }
+
+    /**
+     * The player's death message exactly as vanilla words it in chat and on its own death screen.
+     * Read from the combat tracker, not {@code DamageSource#getLocalizedDeathMessage}: that only
+     * asks for {@code death.attack.<id>}, so a damage type with the "intentional game design"
+     * message shape (a bed or respawn anchor exploding, {@code badRespawnPoint}) came out as the raw
+     * key. Called from {@code LivingDeathEvent}, which fires before the tracker is cleared.
+     */
+    private static String deathMessage(ServerPlayer player) {
+        return player.getCombatTracker().getDeathMessage().getString();
     }
 
     /**
@@ -333,7 +344,7 @@ public final class RunStatsEvents {
      */
     private static void postRunSummary(ServerPlayer player, DamageSource source, DeathStatsPacket packet,
                                        boolean cheated) {
-        String cause = source.getLocalizedDeathMessage(player).getString();
+        String cause = deathMessage(player);
         String title = "💀 " + player.getGameProfile().getName() + " — Run Ended";
         List<DeathField> fields = runFields(packet);
         List<ItemStack> icons = runIcons(packet);
