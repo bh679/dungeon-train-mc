@@ -86,6 +86,7 @@ public final class DungeonTrainWorldData extends SavedData {
     private static final String TAG_PORTAL_TEST_RESEED = "portalTestReseed";
     private static final String TAG_EDITOR_OBSERVERS_ON = "editorObserversOn";
     private static final String TAG_EDITOR_MOBS_LIVE = "editorMobsLive";
+    private static final String TAG_TEST_MOBS_LIVE = "testMobsLive";
     private static final String TAG_DEBUG_GRANTS = "DebugGrants";
     private static final String TAG_EDITOR_PLOTS_STAMPED = "editorPlotsStamped";
     private static final String TAG_EDITOR_PORTAL_PLOT_BOXES = "editorPortalPlotBoxes";
@@ -330,6 +331,13 @@ public final class DungeonTrainWorldData extends SavedData {
      * See {@code FrozenMobs}.
      */
     private boolean editorMobsLive = false;
+
+    /**
+     * Editor Settings → Test Mobs: Frozen ({@code false}, default) / Live. Live thaws the editor's
+     * frozen mobs inside a Test-the-Carriage copy, so the author sees them move. See
+     * {@code TestCopyMobs}.
+     */
+    private boolean testMobsLive = false;
 
     /**
      * Transient scheduling set of chunk keys ({@link net.minecraft.world.level.ChunkPos#toLong}) whose
@@ -654,6 +662,9 @@ public final class DungeonTrainWorldData extends SavedData {
         if (tag.contains(TAG_EDITOR_MOBS_LIVE)) {
             data.editorMobsLive = tag.getBoolean(TAG_EDITOR_MOBS_LIVE);
         }
+        if (tag.contains(TAG_TEST_MOBS_LIVE)) {
+            data.testMobsLive = tag.getBoolean(TAG_TEST_MOBS_LIVE);
+        }
         if (tag.contains(TAG_HELP_PANEL_DISMISSED)) {
             net.minecraft.nbt.ListTag dismissed =
                     tag.getList(TAG_HELP_PANEL_DISMISSED, net.minecraft.nbt.Tag.TAG_STRING);
@@ -775,6 +786,7 @@ public final class DungeonTrainWorldData extends SavedData {
         if (portalTestReseed) tag.putBoolean(TAG_PORTAL_TEST_RESEED, true);
         if (!editorObserversOn) tag.putBoolean(TAG_EDITOR_OBSERVERS_ON, false);
         if (editorMobsLive) tag.putBoolean(TAG_EDITOR_MOBS_LIVE, true);
+        if (testMobsLive) tag.putBoolean(TAG_TEST_MOBS_LIVE, true);
         return tag;
     }
 
@@ -809,6 +821,18 @@ public final class DungeonTrainWorldData extends SavedData {
     public void setEditorMobsLive(boolean live) {
         if (editorMobsLive == live) return;
         editorMobsLive = live;
+        setDirty();
+    }
+
+    /** True when Test the Carriage copies spawn the editor's frozen mobs alive. */
+    public boolean isTestMobsLive() {
+        return testMobsLive;
+    }
+
+    /** Editor Settings → Test Mobs Frozen ({@code false}) / Live ({@code true}). */
+    public void setTestMobsLive(boolean live) {
+        if (testMobsLive == live) return;
+        testMobsLive = live;
         setDirty();
     }
 
