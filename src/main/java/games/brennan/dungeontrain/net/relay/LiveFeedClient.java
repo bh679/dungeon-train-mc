@@ -121,7 +121,13 @@ public final class LiveFeedClient {
      * tells the rooms apart, and {@code via} (game lines only, may be null) how its player is in the room.
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
-                           @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll) {
+                           @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                           @Nullable Moment moment) {
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, null);
+        }
+
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source) {
             this(seq, ts, author, uuid, content, source, null, null, null);
         }
@@ -140,6 +146,50 @@ public final class LiveFeedClient {
         public boolean fromGame() {
             return source == Source.GAME;
         }
+    }
+
+    /** What a streamer's moment line is about: the relay's {@code moment.kind}. */
+    public enum MomentKind {
+        ADVANCEMENT("advancement"), PHOTO("photo"), BOOK("book");
+
+        public final String wire;
+
+        MomentKind(String wire) {
+            this.wire = wire;
+        }
+
+        /** {@code "advancement"} / {@code "photo"} / {@code "book"}; anything else (a newer relay's kind) null. */
+        @Nullable
+        public static MomentKind parse(@Nullable String s) {
+            if (s == null) return null;
+            for (MomentKind k : values()) {
+                if (k.wire.equals(s)) return k;
+            }
+            return null;
+        }
+    }
+
+    /**
+     * A streamer's moment the relay attached to a game line ({@code moment}): an advancement earned, a
+     * photo taken or a book written. {@code title} is the advancement or book title (empty for a photo),
+     * {@code excerpt} a book's first lines (empty otherwise). Both already cleaned.
+     */
+    public record Moment(MomentKind kind, String title, String excerpt) {}
+
+    /** Longest moment title kept; the relay caps at the same length. */
+    public static final int MAX_MOMENT_TITLE = 80;
+    /** Longest book excerpt kept; the relay caps at the same length. */
+    public static final int MAX_MOMENT_EXCERPT = 240;
+
+    /** The moment on a chat-line object, or null when it carries none (or one this client doesn't know). */
+    @Nullable
+    static Moment parseMoment(JsonObject m) {
+        if (!m.has("moment") || !m.get("moment").isJsonObject()) return null;
+        JsonObject o = m.getAsJsonObject("moment");
+        MomentKind kind = MomentKind.parse(str(o, "kind"));
+        if (kind == null) return null;
+        return new Moment(kind, LiveChatRules.clean(str(o, "title"), MAX_MOMENT_TITLE),
+            LiveChatRules.clean(str(o, "excerpt"), MAX_MOMENT_EXCERPT));
     }
 
     /**
@@ -414,6 +464,22 @@ public final class LiveFeedClient {
     }
 
     /**
+     * Share one of the streamer's moments into the stream's chat. {@code token} (the stream's upload
+     * token) proves the poster is on air; the relay names them from its claim. {@code png} may be null
+     * (no image, or not a photo).
+     */
+    public static CompletableFuture<Result> chatMoment(String base, String token, MomentKind kind, String title,
+                                                       String excerpt, @Nullable byte[] png) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        body.addProperty("kind", kind.wire);
+        if (!title.isEmpty()) body.addProperty("title", title);
+        if (!excerpt.isEmpty()) body.addProperty("excerpt", excerpt);
+        if (png != null && png.length > 0) body.addProperty("image", java.util.Base64.getEncoder().encodeToString(png));
+        return post(base, "/live/chat/moment", body);
+    }
+
+    /**
      * A TV viewer who has never streamed joined the chat (the relay's {@code joins[]}, streamer only):
      * {@code joinId} is what the streamer gifts. {@code uuid} is dashes-stripped, lower-case.
      */
@@ -520,7 +586,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();

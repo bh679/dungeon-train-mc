@@ -61,6 +61,9 @@ public final class LiveChatRules {
      */
     public static boolean shouldShow(ChatLine line, @Nullable UUID me, Set<UUID> playersHere, Set<String> namesHere) {
         if (!line.fromGame()) return true;
+        // A streamer's moment (advancement, photo, book) is for Discord, Twitch and the website: in game
+        // the original vanilla message is the only one shown.
+        if (line.moment() != null) return false;
         if (isDevMention(line.content())) return false; // an older client's dev ping (see #outbound)
         if (line.uuid() != null) {
             if (me != null && line.uuid().equalsIgnoreCase(undashed(me))) return false;
