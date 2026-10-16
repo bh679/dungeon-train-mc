@@ -16480,5 +16480,57 @@
         "11"
       ]
     }
+  },
+  "gui.dungeontrain.editor_screen.test.stage": {
+    "1": {
+      "label": "the stage tests stand up at, or Auto",
+      "examples": [
+        "Auto",
+        "Deep Mines"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.test.level": {
+    "1": {
+      "label": "the difficulty level tests stand up at, or Auto with the level it stands for",
+      "examples": [
+        "12",
+        "Auto (0)"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.test.band": {
+    "1": {
+      "label": "the band of the route tests stand up in, or Auto",
+      "examples": [
+        "Auto",
+        "Nether"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_screen.test.auto_value": {
+    "1": {
+      "label": "the difficulty level Auto stands for",
+      "examples": [
+        "0",
+        "3"
+      ]
+    }
+  },
+  "chat.dungeontrain.test_settings.unknown_stage": {
+    "1": {
+      "label": "the stage name the player typed",
+      "examples": [
+        "caves"
+      ]
+    }
+  },
+  "chat.dungeontrain.test_settings.unknown_band": {
+    "1": {
+      "label": "the band name the player typed",
+      "examples": [
+        "moon"
+      ]
+    }
   }
 }

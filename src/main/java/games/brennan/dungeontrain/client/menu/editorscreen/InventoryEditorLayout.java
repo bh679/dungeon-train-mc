@@ -12,7 +12,7 @@ public record InventoryEditorLayout(
     Rect tabs, Rect panel,
     Rect filter, Rect categoryStrip, Rect typeStrip, Rect grid,
     Rect header, Rect preview, Rect sheet, Rect icons, Rect settings, Rect test,
-    int tile
+    int tile, Rect testIcons
 ) {
 
     /** An axis-aligned rectangle in logical pixels. */
@@ -124,7 +124,23 @@ public record InventoryEditorLayout(
 
         int tile = panel.h() < 210 ? TILE_SMALL : TILE_LARGE;
         return new InventoryEditorLayout(tabs, panel, filter, category, strip, grid,
-            header, preview, sheet, icons, settings, test, tile);
+            header, preview, sheet, icons, settings, test, tile,
+            new Rect(right.x(), icons.bottom(), right.w(), 0));
+    }
+
+    /**
+     * This layout with the test toolbar: a second icon row under the editing one, for the controls
+     * that change how a running test stands up rather than the template. The preview gives the row
+     * its height, as it gives way first everywhere else — but never below {@link #PREVIEW_MIN_H}
+     * while it has that much to give; past that the row takes it anyway, since the row is what the
+     * author came to the pane for while testing.
+     */
+    public InventoryEditorLayout withTestRow() {
+        int take = ICONS_H + 1;
+        Rect row = new Rect(icons.x(), icons.bottom() + 1, icons.w(), ICONS_H);
+        Rect shifted = new Rect(preview.x(), preview.y() + take, preview.w(), Math.max(0, preview.h() - take));
+        return new InventoryEditorLayout(tabs, panel, filter, categoryStrip, typeStrip, grid,
+            header, shifted, sheet, icons, settings, test, tile, row);
     }
 
     private static int clamp(int v, int lo, int hi) {

@@ -18,6 +18,13 @@ public final class PortalTestSessionState {
     private static boolean active = false;
     private static String roomName = "";
     private static boolean reseed = false;
+    /** The test settings rows: the author's picks ("" / -1 for Auto) and what Auto stands for. */
+    private static String stage = "";
+    private static int level = -1;
+    private static int phase = -1;
+    private static int autoLevel = 0;
+    private static java.util.List<String> stageIds = java.util.List.of();
+    private static java.util.List<String> stageNames = java.util.List.of();
 
     private PortalTestSessionState() {}
 
@@ -26,6 +33,12 @@ public final class PortalTestSessionState {
         active = packet.active();
         roomName = packet.roomName();
         reseed = packet.reseed();
+        stage = packet.stage();
+        level = packet.level();
+        phase = packet.phase();
+        autoLevel = packet.autoLevel();
+        stageIds = packet.stageIds();
+        stageNames = packet.stageNames();
         // A test puts Skybox Blocks back however the author's switch is set, and that changes what
         // they cull as well as what they draw. The meshes standing when it starts or ends were
         // built against the other answer, so they are rebuilt — but only when the switch is off,
@@ -45,4 +58,20 @@ public final class PortalTestSessionState {
 
     /** The world's reseed-on-test switch, for the editor's toggle beside Test the Carriage. */
     public static boolean reseed() { return reseed; }
+
+    /** The stage the author picked for tests, or "" for Auto. */
+    public static String stage() { return stage; }
+
+    /** The Diff-Level the author picked for tests, or -1 for Auto. */
+    public static int level() { return level; }
+
+    /** The band ({@code TrainPhase} ordinal) the author picked for tests, or -1 for Auto. */
+    public static int phase() { return phase; }
+
+    /** The Diff-Level a test stands at on Auto. */
+    public static int autoLevel() { return autoLevel; }
+
+    /** The stages there are to pick from, lowest level first, and their names alongside. */
+    public static java.util.List<String> stageIds() { return stageIds; }
+    public static java.util.List<String> stageNames() { return stageNames; }
 }
