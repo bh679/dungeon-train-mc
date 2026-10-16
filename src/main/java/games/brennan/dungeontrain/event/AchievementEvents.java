@@ -383,7 +383,7 @@ public final class AchievementEvents {
      * progress including the admin difficulty offset, exactly as
      * {@link #notifyCartAdvance} feeds {@link ModAdvancementTriggers#CARTS_IN_RUN}.
      */
-    private static int effectiveTravelled(PlayerRunState run) {
+    public static int effectiveTravelled(PlayerRunState run) {
         return Math.abs(DifficultyProgression.effectiveTravelled(run.travelledCarriageIndex()));
     }
 

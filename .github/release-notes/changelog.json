@@ -26638,6 +26638,22 @@
       "released_at": null
     },
     {
+      "id": "challenge-melon-flatbeds",
+      "version": "0.1311.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Something for the road",
+      "summary": "Some travellers may find the train has left them a small kindness.",
+      "highlights": [],
+      "pr": 2052,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "live-eye-moments-in-live-chat",
       "version": "0.1312.0",
       "type": "feat",

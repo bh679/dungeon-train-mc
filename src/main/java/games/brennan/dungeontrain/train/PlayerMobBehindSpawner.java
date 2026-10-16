@@ -95,7 +95,7 @@ public final class PlayerMobBehindSpawner {
     }
 
     /** The group whose world AABB contains {@code (x,y,z)} (with a little slack), or null. */
-    private static Trains.Carriage groupContaining(List<Trains.Carriage> groups, double x, double y, double z) {
+    static Trains.Carriage groupContaining(List<Trains.Carriage> groups, double x, double y, double z) {
         for (Trains.Carriage c : groups) {
             var bb = c.ship().worldAABB();
             if (bb == null) continue;
