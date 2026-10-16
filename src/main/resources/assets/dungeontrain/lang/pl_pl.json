@@ -753,6 +753,7 @@
   "chat.dungeontrain.live_chat.prefix": "[Na żywo]",
   "chat.dungeontrain.live_chat.connected": "Czat na żywo połączony z Discordem. Wyłącz go w %s",
   "chat.dungeontrain.live_chat.path": "Opcje / Dungeon Train / Stream / Czat na żywo",
+  "chat.dungeontrain.live_chat.streamer_off": "/streamer działa, gdy Czat na żywo jest włączony: kiedy streamujesz albo nosisz telewizor, gdy ktoś nadaje na żywo.",
   "chat.dungeontrain.live_gift.prompt": "%s dołącza przez telewizor i nigdy nie miał kamery transmisyjnej.",
   "chat.dungeontrain.live_gift.give": "Podaruj",
   "chat.dungeontrain.live_gift.offered": "Oferowanie twojej kamery transmisyjnej graczowi %s…",

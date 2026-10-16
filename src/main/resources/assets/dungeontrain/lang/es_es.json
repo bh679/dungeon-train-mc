@@ -721,6 +721,7 @@
   "chat.dungeontrain.live_chat.prefix": "[En vivo]",
   "chat.dungeontrain.live_chat.connected": "Chat en vivo conectado a Discord. Desactívalo en %s",
   "chat.dungeontrain.live_chat.path": "Opciones / Dungeon Train / Stream / Chat en vivo",
+  "chat.dungeontrain.live_chat.streamer_off": "/streamer funciona mientras el Chat en vivo está activo: cuando retransmites o llevas una TV mientras alguien está en directo.",
   "chat.dungeontrain.live_gift.prompt": "%s se une desde una tele y nunca ha tenido una videocámara de emisión.",
   "chat.dungeontrain.live_gift.give": "Regalársela",
   "chat.dungeontrain.live_gift.offered": "Ofreciendo tu videocámara de emisión a %s…",

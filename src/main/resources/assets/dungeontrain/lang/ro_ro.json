@@ -809,6 +809,7 @@
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Chatul live este conectat la Discord. Dezactivează-l în %s",
   "chat.dungeontrain.live_chat.path": "Opțiuni / Dungeon Train / Stream / Chat live",
+  "chat.dungeontrain.live_chat.streamer_off": "/streamer funcționează cât timp Chatul live este pornit: când transmiți sau porți un televizor în timp ce cineva e live.",
   "chat.dungeontrain.live_gift.prompt": "%s se alătură printr-un televizor și n-a avut niciodată o cameră video de transmisie.",
   "chat.dungeontrain.live_gift.give": "Dăruiește-i-o",
   "chat.dungeontrain.live_gift.offered": "Se oferă camera ta video de transmisie lui %s…",

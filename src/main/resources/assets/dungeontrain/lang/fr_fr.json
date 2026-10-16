@@ -721,6 +721,7 @@
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Chat en direct connecté à Discord. Désactivez-le dans %s",
   "chat.dungeontrain.live_chat.path": "Options / Dungeon Train / Stream / Chat en direct",
+  "chat.dungeontrain.live_chat.streamer_off": "/streamer fonctionne quand le Chat en direct est activé : quand tu diffuses, ou que tu portes une télé pendant que quelqu'un est en direct.",
   "chat.dungeontrain.live_gift.prompt": "%s rejoint via une télé et n'a jamais eu de caméscope de diffusion.",
   "chat.dungeontrain.live_gift.give": "Le lui offrir",
   "chat.dungeontrain.live_gift.offered": "Proposition de ton caméscope de diffusion à %s…",

@@ -689,6 +689,7 @@
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Nakakonekta ang live chat sa Discord. I-off ito sa %s",
   "chat.dungeontrain.live_chat.path": "Options / Dungeon Train / Stream / Live chat",
+  "chat.dungeontrain.live_chat.streamer_off": "Gumagana ang /streamer habang naka-on ang Live chat: kapag nag-i-stream ka, o suot mo ang TV habang may naka-live.",
   "chat.dungeontrain.live_gift.prompt": "Sumali si %s sa pamamagitan ng TV, at hindi pa siya nagkaka-Camcorder ng Broadcast.",
   "chat.dungeontrain.live_gift.give": "Iregalo sa kanila",
   "chat.dungeontrain.live_gift.offered": "Inaalok kay %s ang iyong Camcorder ng Broadcast…",

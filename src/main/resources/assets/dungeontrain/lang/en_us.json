@@ -777,6 +777,7 @@
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Live chat connected. Turn it off in %s",
   "chat.dungeontrain.live_chat.path": "Options / Dungeon Train / Stream / Live chat",
+  "chat.dungeontrain.live_chat.streamer_off": "/streamer works while Live chat is on: when you stream, or wear a TV while someone is live.",
   "chat.dungeontrain.live_gift.prompt": "%s joins via a TV, they have never had the Live Eye.",
   "chat.dungeontrain.live_gift.give": "Gift it to them",
   "chat.dungeontrain.live_gift.offered": "Offering %s your Live Eye…",

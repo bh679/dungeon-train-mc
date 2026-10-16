@@ -689,6 +689,7 @@
   "chat.dungeontrain.live_chat.prefix": "[Langsung]",
   "chat.dungeontrain.live_chat.connected": "Sembang langsung disambungkan ke Discord. Matikan di %s",
   "chat.dungeontrain.live_chat.path": "Pilihan / Dungeon Train / Strim / Sembang langsung",
+  "chat.dungeontrain.live_chat.streamer_off": "/streamer berfungsi semasa Sembang langsung dihidupkan: apabila anda menstrim, atau memakai TV semasa seseorang sedang live.",
   "chat.dungeontrain.live_gift.prompt": "%s menyertai melalui TV dan belum pernah memiliki Camcorder Siaran.",
   "chat.dungeontrain.live_gift.give": "Hadiahkan",
   "chat.dungeontrain.live_gift.offered": "Menawarkan Camcorder Siaran anda kepada %s…",
