@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/every_vote_counts",
   "display": {
     "icon": {
-      "id": "vista:television"
+      "id": "minecraft:enchanted_book"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.called_it.title"

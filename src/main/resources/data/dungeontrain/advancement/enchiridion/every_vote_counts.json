@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/square_eyes",
   "display": {
     "icon": {
-      "id": "vista:television"
+      "id": "minecraft:lectern"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.every_vote_counts.title"

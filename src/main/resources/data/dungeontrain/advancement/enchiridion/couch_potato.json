@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/square_eyes",
   "display": {
     "icon": {
-      "id": "vista:television"
+      "id": "minecraft:potato"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.couch_potato.title"
