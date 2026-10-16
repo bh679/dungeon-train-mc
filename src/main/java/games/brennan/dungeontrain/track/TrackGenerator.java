@@ -457,6 +457,18 @@ public final class TrackGenerator {
             return resolveSidecar(sidecar, base, xMod, y, zOff);
         }
 
+        /** The tile template's block at {@code p}; air outside it or where the template captured air. */
+        private static BlockState cellOrAir(Optional<BlockState[][][]> source, BlockPos p) {
+            if (source.isEmpty()) return Blocks.AIR.defaultBlockState();
+            BlockState[][][] c = source.get();
+            if (p.getX() < 0 || p.getX() >= c.length) return Blocks.AIR.defaultBlockState();
+            BlockState[][] col = c[p.getX()];
+            if (p.getY() < 0 || p.getY() >= col.length) return Blocks.AIR.defaultBlockState();
+            BlockState[] row = col[p.getY()];
+            if (p.getZ() < 0 || p.getZ() >= row.length || row[p.getZ()] == null) return Blocks.AIR.defaultBlockState();
+            return row[p.getZ()];
+        }
+
         /** The entry this cell rolled when it is one that grows, else null (see {@link #noteTileColumn}). */
         @Nullable
         games.brennan.dungeontrain.editor.VariantState growingEntry(int xMod, int y, int zOff) {
@@ -470,8 +482,18 @@ public final class TrackGenerator {
         private BlockState resolveSidecar(TrackVariantBlocks sc, BlockState base, int xMod, int y, int zOff) {
             if (sc == null || sc.isEmpty() || base == null) return base;
             BlockPos local = new BlockPos(xMod, y, zOff);
-            games.brennan.dungeontrain.editor.VariantState picked = sc.resolve(
-                local, worldSeed, (int) tileIndex);
+            games.brennan.dungeontrain.editor.VariantState picked;
+            // Track tiles are generated per block, so a condition reads its non-variant neighbours from
+            // the tile template's own cells — never the world. Only gated cells pay for the scope.
+            if (games.brennan.dungeontrain.editor.VariantConditions.anyConditional(sc.groupRefs().statesAt(local))) {
+                Optional<BlockState[][][]> source = sc == netherSidecar ? netherCells : cells;
+                try (games.brennan.dungeontrain.editor.VariantConditions.Scope conds =
+                         games.brennan.dungeontrain.editor.VariantConditions.open(p -> cellOrAir(source, p))) {
+                    picked = sc.resolve(local, worldSeed, (int) tileIndex);
+                }
+            } else {
+                picked = sc.resolve(local, worldSeed, (int) tileIndex);
+            }
             if (picked == null) return base;
             if (picked.isMob()) {
                 TrackVariantMobs.warnDropped("tile", local, picked.entityId());

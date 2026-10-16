@@ -92,6 +92,10 @@ public final class BlockVariantMenu {
         PAINTING_OPTION,
         ENTRY_DIFF_MIN,
         ENTRY_DIFF_MAX,
+        /** The row's If pill — opens the condition popup for that row. */
+        ENTRY_COND,
+        /** A button in the If popup; {@code secondary} = {@code GrowthPopupLayout.encode}. */
+        COND_OPTION,
         ROT_DIR_OPTION,
         SEARCH_FIELD,
         SEARCH_RESULT,
@@ -126,6 +130,8 @@ public final class BlockVariantMenu {
     private static boolean growthSupported;
     /** -1 = closed; otherwise the row whose Grow popup is open. */
     private static int growthPopupRow = -1;
+    /** -1 = closed; otherwise the row whose If (condition) popup is open. */
+    private static int condPopupRow = -1;
     private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
     private static games.brennan.dungeontrain.editor.VariantSpan spanMode =
         games.brennan.dungeontrain.editor.VariantSpan.NONE;
@@ -195,6 +201,13 @@ public final class BlockVariantMenu {
     }
     public static void toggleGrowthPopup(int row) { growthPopupRow = growthPopupRow == row ? -1 : row; }
     public static void closeGrowthPopup() { growthPopupRow = -1; }
+
+    /** The row whose If popup is open, or -1 — also -1 once that row is gone. */
+    public static int condPopupRow() {
+        return condPopupRow >= 0 && condPopupRow < entries.size() ? condPopupRow : -1;
+    }
+    public static void toggleCondPopup(int row) { condPopupRow = condPopupRow == row ? -1 : row; }
+    public static void closeCondPopup() { condPopupRow = -1; }
 
     /**
      * True when {@code entry} is a painting row — it shows the Painting pill and popup in the Grow
@@ -338,6 +351,7 @@ public final class BlockVariantMenu {
             connectSupported = false;
             growthSupported = false;
             growthPopupRow = -1;
+            condPopupRow = -1;
             copyScope = VariantCopyScope.BOTH;
             screen = Screen.ROOT;
             removeMode = false;
@@ -375,6 +389,7 @@ public final class BlockVariantMenu {
             rotPopupRowIndex = -1;
             spanPopupOpen = false;
             growthPopupRow = -1;
+            condPopupRow = -1;
             // Drop the parse cache so old cells' states don't accumulate
             // (cache is cheap to rebuild — at most ~32 entries per cell).
             PARSED_STATE_CACHE.clear();

@@ -26822,6 +26822,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "block-variant-conditions",
+      "version": "0.1317.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Block variants can depend on their neighbours",
+      "summary": "In the editor, a block variant option can now say when it is allowed to appear: only next to certain blocks, or only when another locked group rolled certain blocks. Torches only on walls, glass only above planks, and matching sets that follow each other are now easy to build.",
+      "highlights": [
+        "New If button on each block variant option, with a choice of touching sides or a locked group",
+        "Pick the sides with the same clicks as choosing bands: click to toggle one, shift-click to toggle the rest",
+        "Add the blocks to look for from your hand, or switch on blocks from the chosen group"
+      ],
+      "pr": 2062,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
