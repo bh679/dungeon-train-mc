@@ -26574,6 +26574,27 @@
       "released_at": null
     },
     {
+      "id": "live-eye-popups-on-stream",
+      "version": "0.1310.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Advancement pop-ups on your Live stream",
+      "summary": "Viewers now see your advancement pop-ups even when you stream with chat hidden, and the pop-ups sit on top of your name at the top of the stream instead of under it.",
+      "highlights": [
+        "Pop-ups reach the stream with Stream chat off, Kid mode included",
+        "Pop-ups show over your name on the stream; turn this off with \"Pop-ups over your name\" on the Stream or Performance tab"
+      ],
+      "pr": 2049,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "dimensional-carriage-chests-reroll",
       "version": "0.1311.0",
       "type": "fix",
