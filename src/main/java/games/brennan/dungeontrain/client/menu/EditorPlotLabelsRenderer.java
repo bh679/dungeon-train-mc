@@ -70,24 +70,21 @@ public final class EditorPlotLabelsRenderer {
         NONE,
         /** Name row — clicking teleports the player to this template's plot (lands on top by default). Always clickable. */
         NAME,
-        WEIGHT_DEC,
-        WEIGHT_INC,
+        /**
+         * A number row — the whole row is one cell: click steps up, shift- or right-click steps
+         * down, cmd-click types it ({@link games.brennan.dungeontrain.client.menu.number.NumberStepper}).
+         */
+        WEIGHT_NUMBER,
         ACTION_SAVE,
         ACTION_RESET,
         ACTION_CLEAR,
         BUTTON_CONTENTS,
         /** "Enter" row — clicking teleports the player INSIDE the plot (under the cage). Visible only when already inPlot. */
         BUTTON_ENTER_INSIDE,
-        LENGTH_DEC,
-        LENGTH_INC,
-        WIDTH_DEC,
-        WIDTH_INC,
-        HEIGHT_DEC,
-        HEIGHT_INC,
-        /** The number between a dimension row's arrows — opens a typing field for that axis alone. */
-        LENGTH_TYPE,
-        WIDTH_TYPE,
-        HEIGHT_TYPE,
+        /** A room dimension row — one number cell, like {@link #WEIGHT_NUMBER}. */
+        LENGTH_NUMBER,
+        WIDTH_NUMBER,
+        HEIGHT_NUMBER,
         /** The whole mode row — one button, clicking it steps to the next mode. */
         MODE_CYCLE,
         /** The seal row — only shown while the mode seals. Takes the block from the hand. */
@@ -98,9 +95,8 @@ public final class EditorPlotLabelsRenderer {
         COPIES_FLOOR_HELD,
         /** The Edit half of that row — opens the Block Variant menu on the floor palette. */
         COPIES_FLOOR_EDIT,
-        /** The [-] and [+] between the floor's icon and its Edit button — how deep the floor is laid. */
-        COPIES_FLOOR_HEIGHT_DEC,
-        COPIES_FLOOR_HEIGHT_INC,
+        /** The number between the floor's icon and its Edit button — how deep the floor is laid. */
+        COPIES_FLOOR_HEIGHT_NUMBER,
         /** The roof row — the same two halves, aimed at the plane over the player's head. */
         COPIES_ROOF_HELD,
         COPIES_ROOF_EDIT,
@@ -120,14 +116,10 @@ public final class EditorPlotLabelsRenderer {
         ROOM_BOOKS_EDIT,
         /** The extra-corridors row — only shown while the walls repeat. */
         EXITS_CYCLE,
-        /** The stepper for how far apart those extra corridors go. */
-        EXIT_EVERY_DEC,
-        EXIT_EVERY_INC,
-        EXIT_EVERY_TYPE,
-        /** The stepper for how often the base pair's exit is walled off. */
-        EXIT_MOVE_DEC,
-        EXIT_MOVE_INC,
-        EXIT_MOVE_TYPE,
+        /** How far apart those extra corridors go — one number cell. */
+        EXIT_EVERY_NUMBER,
+        /** How often the base pair's exit is walled off — one number cell. */
+        EXIT_MOVE_NUMBER,
         /** Top-right {@code ↻} on the name row — face the player; shift resets to the grid. */
         FACE
     }
@@ -361,24 +353,20 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
-     * Where the Floor row's depth stepper starts: just right of the icon's slot. The stepper runs
-     * from here to the Edit split, in thirds — [-] depth [+] — so the row reads
-     * {@code Floor: [icon] [-] 3 [+] [Edit]}. The Roof row has no stepper and keeps its two halves.
+     * Where the Floor row's depth number starts: just right of the icon's slot. The number runs
+     * from here to the Edit split, so the row reads {@code Floor: [icon] [3] [Edit]}. The Roof row
+     * has no number and keeps its two halves.
      */
     static double copiesFloorStepperLeft(double halfW) {
         return copiesIconCentre(halfW) + COPIES_ICON_SLOT * 0.5;
     }
 
-    /** The Floor row's cell at {@code hitX}: held value, depth [-], depth [+], or Edit. */
+    /** The Floor row's cell at {@code hitX}: held value, the depth number, or Edit. */
     public static CellKind copiesFloorCell(double halfW, double hitX) {
         if (copiesBlockHitIsEdit(halfW, hitX)) return CellKind.COPIES_FLOOR_EDIT;
         double left = copiesFloorStepperLeft(halfW);
         if (hitX < left) return CellKind.COPIES_FLOOR_HELD;
-        double third = (copiesEditLeft(halfW) - left) / 3.0;
-        if (hitX < left + third) return CellKind.COPIES_FLOOR_HEIGHT_DEC;
-        if (hitX >= copiesEditLeft(halfW) - third) return CellKind.COPIES_FLOOR_HEIGHT_INC;
-        // The number itself is display only — stepping covers the few values a room can hold.
-        return CellKind.NONE;
+        return CellKind.COPIES_FLOOR_HEIGHT_NUMBER;
     }
 
     /**
@@ -708,7 +696,6 @@ public final class EditorPlotLabelsRenderer {
 
     private static final int NAME_COLOR = 0xFFFFFFFF;
     private static final int WEIGHT_COLOR = 0xFFFFEEBB;
-    private static final int ARROW_COLOR = 0xFFFFFFFF;
     private static final int BUTTON_TEXT_COLOR = 0xFFFFFFFF;
     private static final int BUTTON_TEXT_DIM_COLOR = 0xFFAAAAAA;
     /** The Copies Block row's "nothing here yet" hint — dimmer than a value. */
@@ -963,12 +950,12 @@ public final class EditorPlotLabelsRenderer {
             case NAME -> entry.category().isEmpty() ? CellKind.NONE : CellKind.NAME;
             // Weight is always visible (display only) but its arrows are clickable only from
             // inside the plot.
-            case WEIGHT -> hasWeightArrows(entry) ? weightRowCell(hitX, halfW) : CellKind.NONE;
+            case WEIGHT -> hasWeightArrows(entry) ? CellKind.WEIGHT_NUMBER : CellKind.NONE;
             // The number between the arrows types that row's axis on its own — the panel has no
             // keyboard entry of its own, and stepping from 13 to 48 is thirty-five taps.
-            case LENGTH -> stepperCell(hitX, halfW, CellKind.LENGTH_DEC, CellKind.LENGTH_INC, CellKind.LENGTH_TYPE);
-            case WIDTH -> stepperCell(hitX, halfW, CellKind.WIDTH_DEC, CellKind.WIDTH_INC, CellKind.WIDTH_TYPE);
-            case HEIGHT -> stepperCell(hitX, halfW, CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC, CellKind.HEIGHT_TYPE);
+            case LENGTH -> CellKind.LENGTH_NUMBER;
+            case WIDTH -> CellKind.WIDTH_NUMBER;
+            case HEIGHT -> CellKind.HEIGHT_NUMBER;
             // One button rather than a stepper: there are three modes, and naming the one you want
             // costs no more clicks than aiming at an arrow for it.
             case MODE -> CellKind.MODE_CYCLE;
@@ -989,31 +976,12 @@ public final class EditorPlotLabelsRenderer {
             case ROOM_FOG -> CellKind.ROOM_FOG_CYCLE;
             case ROOM_DRIFT -> CellKind.ROOM_DRIFT_CYCLE;
             case EXITS -> CellKind.EXITS_CYCLE;
-            case EXIT_EVERY -> stepperCell(hitX, halfW,
-                CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC, CellKind.EXIT_EVERY_TYPE);
-            case EXIT_MOVE -> stepperCell(hitX, halfW,
-                CellKind.EXIT_MOVE_DEC, CellKind.EXIT_MOVE_INC, CellKind.EXIT_MOVE_TYPE);
+            case EXIT_EVERY -> CellKind.EXIT_EVERY_NUMBER;
+            case EXIT_MOVE -> CellKind.EXIT_MOVE_NUMBER;
             case ENTER -> CellKind.BUTTON_ENTER_INSIDE;
             case ACTION -> actionRowCell(hitX, halfW);
             case CONTENTS -> CellKind.BUTTON_CONTENTS;
         };
-    }
-
-    private static CellKind weightRowCell(double hitX, double halfW) {
-        return stepperCell(hitX, halfW, CellKind.WEIGHT_DEC, CellKind.WEIGHT_INC, CellKind.NONE);
-    }
-
-    /**
-     * Thirds split shared by every {@code [-] N [+]} row: decrement on the left third, increment on
-     * the right third, and {@code middle} for the number between them — {@link CellKind#NONE} where
-     * the number is display-only.
-     */
-    private static CellKind stepperCell(double hitX, double halfW, CellKind dec, CellKind inc,
-                                        CellKind middle) {
-        double third = (halfW * 2.0) / 3.0;
-        if (hitX < -halfW + third) return dec;
-        if (hitX > halfW - third) return inc;
-        return middle;
     }
 
     /**
@@ -1146,35 +1114,19 @@ public final class EditorPlotLabelsRenderer {
                 case WEIGHT -> {
                     drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
                     if (hasWeightArrows(entry)) {
-                        drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY,
-                            hovered, CellKind.WEIGHT_DEC, CellKind.WEIGHT_INC);
+                        drawNumberCell(ps, buffer, halfW, rTop, rBot, hovered == CellKind.WEIGHT_NUMBER);
                     }
                     drawCenteredText(ps, buffer, font, "×" + entry.weight(), 0, rCY, WEIGHT_COLOR);
                 }
-                // Room size — portal rooms only. Same [-] N [+] geometry as weight.
+                // Room size — portal rooms only. One number cell, like weight.
                 case LENGTH, WIDTH, HEIGHT -> {
-                    CellKind dec = switch (rowKind) {
-                        case LENGTH -> CellKind.LENGTH_DEC;
-                        case WIDTH -> CellKind.WIDTH_DEC;
-                        default -> CellKind.HEIGHT_DEC;
-                    };
-                    CellKind inc = switch (rowKind) {
-                        case LENGTH -> CellKind.LENGTH_INC;
-                        case WIDTH -> CellKind.WIDTH_INC;
-                        default -> CellKind.HEIGHT_INC;
+                    CellKind cell = switch (rowKind) {
+                        case LENGTH -> CellKind.LENGTH_NUMBER;
+                        case WIDTH -> CellKind.WIDTH_NUMBER;
+                        default -> CellKind.HEIGHT_NUMBER;
                     };
                     drawQuad(ps, buffer, -halfW, rTop - 0.005, halfW, rTop + 0.005, ROW_SEP_COLOR);
-                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered, dec, inc);
-                    CellKind type = switch (rowKind) {
-                        case LENGTH -> CellKind.LENGTH_TYPE;
-                        case WIDTH -> CellKind.WIDTH_TYPE;
-                        default -> CellKind.HEIGHT_TYPE;
-                    };
-                    if (hovered == type) {
-                        double third = (halfW * 2.0) / 3.0;
-                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
-                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
-                    }
+                    drawNumberCell(ps, buffer, halfW, rTop, rBot, hovered == cell);
                     drawCenteredText(ps, buffer, font,
                         dimensionLabel(rowKind) + " " + dimensionValue(entry, rowKind),
                         0, rCY, WEIGHT_COLOR);
@@ -1289,29 +1241,16 @@ public final class EditorPlotLabelsRenderer {
                     drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005, bg);
                     drawCenteredText(ps, buffer, font, exitsLabel(entry.roomMode()), 0, rCY, WEIGHT_COLOR);
                 }
-                // How far apart those go. Same [-] N [+] geometry as the dimension rows, and the
-                // number types on its own for the same reason: stepping 8 → 40 is thirty-two taps.
+                // How far apart those go. One number cell, like the dimension rows.
                 case EXIT_EVERY -> {
-                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
-                        CellKind.EXIT_EVERY_DEC, CellKind.EXIT_EVERY_INC);
-                    if (hovered == CellKind.EXIT_EVERY_TYPE) {
-                        double third = (halfW * 2.0) / 3.0;
-                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
-                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
-                    }
+                    drawNumberCell(ps, buffer, halfW, rTop, rBot, hovered == CellKind.EXIT_EVERY_NUMBER);
                     drawCenteredText(ps, buffer, font, exitEveryLabel(entry.roomMode()),
                         0, rCY, WEIGHT_COLOR);
                 }
                 // How often this room walls off the base pair's exit, so the only ways onward are
                 // the copies. Random only — the lattice is predictable enough to walk.
                 case EXIT_MOVE -> {
-                    drawStepperArrows(ps, buffer, font, halfW, rTop, rBot, rCY, hovered,
-                        CellKind.EXIT_MOVE_DEC, CellKind.EXIT_MOVE_INC);
-                    if (hovered == CellKind.EXIT_MOVE_TYPE) {
-                        double third = (halfW * 2.0) / 3.0;
-                        drawQuad(ps, buffer, -halfW + third + 0.005, rBot + 0.005,
-                            halfW - third - 0.005, rTop - 0.005, HOVER_COLOR);
-                    }
+                    drawNumberCell(ps, buffer, halfW, rTop, rBot, hovered == CellKind.EXIT_MOVE_NUMBER);
                     drawCenteredText(ps, buffer, font, exitMoveLabel(entry.roomMode()),
                         0, rCY, WEIGHT_COLOR);
                 }
@@ -1337,21 +1276,16 @@ public final class EditorPlotLabelsRenderer {
         ps.popPose();
     }
 
-    /** The {@code [-]} / {@code [+]} cells shared by the weight row and every dimension row. */
-    private static void drawStepperArrows(
-        PoseStack ps, MultiBufferSource buffer, Font font, double halfW,
-        double rTop, double rBot, double rCY, CellKind hovered, CellKind dec, CellKind inc
+    /**
+     * The button behind a number row — the weight row and every dimension / exit row. The whole
+     * row is the one cell, so it lights whole on hover; the caller draws the label over it.
+     */
+    private static void drawNumberCell(
+        PoseStack ps, MultiBufferSource buffer, double halfW,
+        double rTop, double rBot, boolean hovered
     ) {
-        double third = (halfW * 2.0) / 3.0;
-        double leftR = -halfW + third;
-        double rightL = halfW - third;
-        if (hovered == dec) {
-            drawQuad(ps, buffer, -halfW + 0.005, rBot + 0.005, leftR - 0.005, rTop - 0.005, HOVER_COLOR);
-        } else if (hovered == inc) {
-            drawQuad(ps, buffer, rightL + 0.005, rBot + 0.005, halfW - 0.005, rTop - 0.005, HOVER_COLOR);
-        }
-        drawCenteredText(ps, buffer, font, "-", (-halfW + leftR) / 2.0, rCY, ARROW_COLOR);
-        drawCenteredText(ps, buffer, font, "+", (rightL + halfW) / 2.0, rCY, ARROW_COLOR);
+        drawQuad(ps, buffer, -halfW + 0.01, rBot + 0.005, halfW - 0.01, rTop - 0.005,
+            hovered ? HOVER_COLOR : BUTTON_BG);
     }
 
     /** The {@code [Save 70%][R 15%][C 15%]} row. */
@@ -1392,8 +1326,8 @@ public final class EditorPlotLabelsRenderer {
      * assumes when it splits both of them at {@link #copiesEditLeft}.</p>
      */
     /**
-     * The Floor row's depth stepper, drawn over the value half's right end: {@code [-] N [+]} in the
-     * thirds {@link #copiesFloorCell} answers for. Its own quad separates it from the held-value
+     * The Floor row's depth number, drawn over the value half's right end — the one cell
+     * {@link #copiesFloorCell} answers for there. Its own quad separates it from the held-value
      * cell to its left, so a click on the number is visibly not a click on the icon.
      */
     private static void drawCopiesFloorHeight(
@@ -1403,16 +1337,9 @@ public final class EditorPlotLabelsRenderer {
     ) {
         double left = copiesFloorStepperLeft(halfW);
         double right = copiesEditLeft(halfW) - 0.005;
-        double third = (right - left) / 3.0;
-        drawQuad(ps, buffer, left, rBot + 0.005, right, rTop - 0.005, BUTTON_BG);
-        if (hovered == CellKind.COPIES_FLOOR_HEIGHT_DEC) {
-            drawQuad(ps, buffer, left + 0.005, rBot + 0.005, left + third - 0.005, rTop - 0.005, HOVER_COLOR);
-        } else if (hovered == CellKind.COPIES_FLOOR_HEIGHT_INC) {
-            drawQuad(ps, buffer, right - third + 0.005, rBot + 0.005, right - 0.005, rTop - 0.005, HOVER_COLOR);
-        }
-        drawCenteredText(ps, buffer, font, "-", left + third * 0.5, rCY, ARROW_COLOR);
-        drawCenteredText(ps, buffer, font, Integer.toString(height), left + third * 1.5, rCY, WEIGHT_COLOR);
-        drawCenteredText(ps, buffer, font, "+", right - third * 0.5, rCY, ARROW_COLOR);
+        drawQuad(ps, buffer, left, rBot + 0.005, right, rTop - 0.005,
+            hovered == CellKind.COPIES_FLOOR_HEIGHT_NUMBER ? HOVER_COLOR : BUTTON_BG);
+        drawCenteredText(ps, buffer, font, Integer.toString(height), (left + right) / 2.0, rCY, WEIGHT_COLOR);
     }
 
     private static void drawCopiesPlaneRow(

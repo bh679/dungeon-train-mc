@@ -438,18 +438,15 @@ final class EditorScreenActionsTest {
     @DisplayName("a sub-variant's weight uses its group's verb, on the sheet")
     void subVariantWeight() {
         VariantKey member = new VariantKey(PlotCategory.CONTENTS, "armor5", "armor5", "armor");
-        CommandMenuEntry.Triple weight = assertInstanceOf(CommandMenuEntry.Triple.class,
+        CommandMenuEntry.Number weight = assertInstanceOf(CommandMenuEntry.Number.class,
             EditorScreenActions.weightRow(member, 6));
-        assertEquals("dungeontrain editor contents group set-weight armor armor5 inc",
-            ((CommandMenuEntry.Stay) weight.rightEntry()).command());
-        assertEquals("dungeontrain editor contents group set-weight armor armor5",
-            ((CommandMenuEntry.TypeArg) weight.middleEntry()).commandPrefix());
+        assertEquals("dungeontrain editor contents group set-weight armor armor5 inc", weight.incCommand());
+        assertEquals("dungeontrain editor contents group set-weight armor armor5", weight.prefix());
 
         VariantKey roomMember = new VariantKey(PlotCategory.PORTALS, "portal_room", "evilhouse", "house");
-        CommandMenuEntry.Triple rw = assertInstanceOf(CommandMenuEntry.Triple.class,
+        CommandMenuEntry.Number rw = assertInstanceOf(CommandMenuEntry.Number.class,
             EditorScreenActions.weightRow(roomMember, 1));
-        assertEquals("dungeontrain editor portals group set-weight house evilhouse dec",
-            ((CommandMenuEntry.Stay) rw.leftEntry()).command());
+        assertEquals("dungeontrain editor portals group set-weight house evilhouse dec", rw.decCommand());
 
         // A sub-variant has no rows of its own left: its weight is the sheet's Weight line.
         EditorTypeMenusPacket.Variant v = new EditorTypeMenusPacket.Variant("armor5", 6, "CONTENTS", "armor5", "armor5", false, false);

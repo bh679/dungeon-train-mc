@@ -35,7 +35,7 @@ import java.util.List;
  * two could disagree.</p>
  *
  * <p>Command strings are never written here. Every editable cell takes its command from the same
- * builders the old menu's rows use ({@code EditorMenuScreen.weightTripleFor} and friends), read
+ * builders the old menu's rows use ({@code EditorMenuScreen.weightRowFor} and friends), read
  * back out of the row they return, so the two surfaces cannot drift apart.</p>
  */
 public final class TemplateDataSheet {
@@ -60,13 +60,25 @@ public final class TemplateDataSheet {
         record Run(String command) implements Action {}
 
         /**
-         * A number that steps: click runs {@code inc}, shift-click runs {@code dec}, and cmd-click
-         * types a value over the cell with {@code prefix} — the same three gestures as the weight
-         * cell in the world-space menus and on the Layout tab.
+         * A number: click runs {@code inc}, shift- or right-click runs {@code dec}, and cmd-click
+         * types a value over the cell with {@code prefix} — the same three gestures as every editor
+         * number ({@link games.brennan.dungeontrain.client.menu.number.NumberStepper}). A blank typed
+         * value on an {@code allowAll} cell sends {@code -1}, "no limit".
          */
-        record Step(String prefix, String dec, String inc) implements Action {
+        record Step(String prefix, String dec, String inc, boolean allowAll) implements Action {
+            Step(String prefix, String dec, String inc) {
+                this(prefix, dec, inc, false);
+            }
+
             static Step of(Stepper stepper) {
-                return new Step(stepper.prefix(), stepper.dec(), stepper.inc());
+                return new Step(stepper.prefix(), stepper.dec(), stepper.inc(), stepper.allowAll());
+            }
+
+            /** This cell as a field whose commands go to {@code run}; typing is the caller's. */
+            games.brennan.dungeontrain.client.menu.number.NumberField field(java.util.function.Consumer<String> run) {
+                return new games.brennan.dungeontrain.client.menu.number.NumberField(prefix, 0,
+                    Integer.MIN_VALUE, Integer.MAX_VALUE, allowAll,
+                    () -> run.accept(inc), () -> run.accept(dec), v -> run.accept(prefix + " " + v));
             }
         }
 
@@ -352,15 +364,15 @@ public final class TemplateDataSheet {
             new Action.Type("dungeontrain editor size " + axis), true).withTooltip(warning);
     }
 
-    /** The three room dimensions as typeable cells, read out of the rows the old menu builds. */
+    /** The three room dimensions as number cells, read out of the rows the old menu builds. */
     private static List<Cell> roomSizeCells(List<CommandMenuEntry> roomRows) {
         List<Cell> cells = new ArrayList<>(5);
         for (CommandMenuEntry row : roomRows) {
             Stepper stepper = Stepper.of(row);
             if (stepper == null || !stepper.isRoomAxis()) continue;
             if (!cells.isEmpty()) cells.add(Cell.plain("×"));
-            cells.add(new Cell(stepper.value(), new Action.Type(stepper.prefix()), true)
-                .withTooltip(stepper.axisName()));
+            cells.add(new Cell(stepper.value(), Action.Step.of(stepper), true)
+                .withTooltip(stepper.axisName() + "\n" + EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
         }
         return cells;
     }
@@ -466,7 +478,7 @@ public final class TemplateDataSheet {
         return String.format(java.util.Locale.ROOT, "%.1f", value);
     }
 
-    /** Weight: the number steps (cmd-click types), and a pair of nudge buttons sits after it. */
+    /** Weight: one number cell — click steps up, shift- or right-click down, cmd-click types. */
     static Line weightLine(EditorRosterIndex.Tile tile, VariantKey key, String pending) {
         String label = EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT);
         EditorTypeMenusPacket.Variant v = tile.variant();
@@ -480,10 +492,6 @@ public final class TemplateDataSheet {
         } else {
             cells.add(new Cell(Integer.toString(weight), Action.Step.of(stepper), true)
                 .withTooltip(EditorScreenLang.text(EditorScreenLang.LAYOUT_WEIGHT_TIP)));
-            cells.add(new Cell("-", new Action.Run(stepper.dec()), true)
-                .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_DOWN)));
-            cells.add(new Cell("+", new Action.Run(stepper.inc()), true)
-                .withTooltip(EditorScreenLang.text(EditorScreenLang.SHEET_WEIGHT_UP)));
         }
         if (tile.isGroup()) {
             cells.add(Cell.plain(EditorScreenLang.text(EditorScreenLang.SHEET_SHARE, v.subVariants().size())));
@@ -508,9 +516,11 @@ public final class TemplateDataSheet {
         boolean linked = v.isStageLinked();
         MenuScreen picker = new StagePickerScreen(key.category(), key.modelId(), key.modelName(),
             linked ? v.primaryStageId() : "");
-        Stepper min = Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel())));
+        Stepper min = Stepper.of(EditorScreenActions.levelRow(key, "minlevel", Integer.toString(v.minLevel()),
+            v.minLevel(), v.minLevel()));
         Stepper max = Stepper.of(EditorScreenActions.levelRow(key, "maxlevel",
-            v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel())));
+            v.maxLevel() < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(v.maxLevel()),
+            v.maxLevel(), v.minLevel()));
         PhaseCommand phases = (p, on) -> EditorPlotTeleport.phaseCommandFor(key.category(),
             key.modelId(), key.modelName(), p.token(), on ? "off" : "on");
         return stageLines(v.minLevel(), v.maxLevel(), v.phaseMask(), linked ? v.primaryStageId() : "", picker,
@@ -751,15 +761,15 @@ public final class TemplateDataSheet {
      * <p>Reading these back out of the row the old menu builds is what keeps one definition of each
      * command shape. Nothing here spells a command out.</p>
      */
-    record Stepper(String prefix, String dec, String inc, String value, String label) {
+    record Stepper(String prefix, String dec, String inc, String value, String label, boolean allowAll) {
+
+        Stepper(String prefix, String dec, String inc, String value, String label) {
+            this(prefix, dec, inc, value, label, false);
+        }
 
         static Stepper of(CommandMenuEntry row) {
-            if (!(row instanceof CommandMenuEntry.Triple t)) return null;
-            if (!(t.middleEntry() instanceof CommandMenuEntry.TypeArg middle)) return null;
-            if (!(t.leftEntry() instanceof CommandMenuEntry.Stay left)) return null;
-            if (!(t.rightEntry() instanceof CommandMenuEntry.Stay right)) return null;
-            return new Stepper(middle.commandPrefix(), left.command(), right.command(),
-                valueIn(middle.label()), middle.label());
+            if (!(row instanceof CommandMenuEntry.Number n)) return null;
+            return new Stepper(n.prefix(), n.decCommand(), n.incCommand(), valueIn(n.label()), n.label(), n.allowAll());
         }
 
         /** The axis this row sets, for its cell's tooltip: the label without its value. */

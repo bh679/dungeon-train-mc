@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
+
 import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.client.menu.CarriageContentsAllowScreen;
 import games.brennan.dungeontrain.net.EditorStatusPacket;
@@ -641,7 +643,7 @@ public final class EditorScreenActions {
     public static CommandMenuEntry weightRow(VariantKey sel, int weight) {
         if (sel == null || weight == EditorPlotLabelsPacket.NO_WEIGHT) return null;
         if (!sel.isSubVariant()) {
-            return EditorMenuScreen.weightTripleFor(sel.category(), sel.modelId(), sel.modelName(), weight);
+            return EditorMenuScreen.weightRowFor(sel.category(), sel.modelId(), sel.modelName(), weight);
         }
         String dec;
         String inc;
@@ -662,18 +664,20 @@ public final class EditorScreenActions {
                 return null;
             }
         }
-        return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Stay("-", dec),
-            new CommandMenuEntry.TypeArg(EditorScreenLang.text(EditorScreenLang.WEIGHT, weight), "0-100", prefix),
-            new CommandMenuEntry.Stay("+", inc),
-            0.10, 0.90);
+        // The member steppers are their own verbs; the typed value goes to set-weight.
+        return new CommandMenuEntry.Number(EditorScreenLang.text(EditorScreenLang.WEIGHT, weight),
+            NumberTitle.of("weight"), prefix, weight, EditorMenuScreen.WEIGHT_MIN, EditorMenuScreen.WEIGHT_MAX,
+            false, inc, dec);
     }
 
-    /** A level-bound stepper for a key, for the sheet to take apart. */
-    public static CommandMenuEntry levelRow(VariantKey sel, String sub, String shown) {
+    /**
+     * A level-bound number row for a key, for the sheet to take apart. {@code value} is the bound
+     * ({@code -1} = all for the max) and {@code minLevel} the gate's min.
+     */
+    public static CommandMenuEntry levelRow(VariantKey sel, String sub, String shown, int value, int minLevel) {
         if (sel == null || sel.isSubVariant()) return null;
-        return EditorMenuScreen.levelTripleFor(sel.category(), sel.modelId(), sel.modelName(),
-            sub, "(" + shown + ")", sub.equals("minlevel") ? "0-1000" : "-1..1000");
+        return EditorMenuScreen.levelRowFor(sel.category(), sel.modelId(), sel.modelName(),
+            sub, "(" + shown + ")", value, minLevel);
     }
 
     /**

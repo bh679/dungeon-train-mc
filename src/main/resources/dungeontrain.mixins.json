@@ -71,6 +71,8 @@
     "SpreadingSnowyDirtBlockUpsideDownMixin",
     "SnowLayerBlockUpsideDownMixin",
     "CropBlockCarriageSurviveMixin",
+    "BambooStalkGrowthMixin",
+    "BambooSaplingGrowthMixin",
     "FastPaintingStampSurviveMixin",
     "ForcedConnectShapeMixin",
     "ObserverBlockStampMixin",

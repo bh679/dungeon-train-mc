@@ -26413,12 +26413,112 @@
         "Going live without a Twitch saved? Drop your Twitch in chat for a shout-out \u2014 one click saves it; a Stream setting turns the reminder off"
       ],
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1309.0",
+      "released_at": "2026-10-16T05:25:18Z",
       "major": true,
       "notable": true,
-      "description": "Dungeon Train TV now knows who you are on Twitch.\n\nType `/twitch` in game, connect your Twitch account on the page it opens, and every time you wear the Live Eye the official Dungeon Train stream names you: your channel goes in the stream title, the chat bot shouts you out, the website's Live page and the Discord go-live post link to you, and your name tag on the stream carries your channel.\n\nStreamers can go one step further. Turn on **Also stream to my channel** and your ride is pushed to your own Twitch channel at the same time, with an optional title and category set for you. Both switches live on the new Account tab, next to Discord, and `/twitch unlink` takes it all back at any time. Your stream key is never stored.\n\nNo account? When you go live without a Twitch saved, the game asks you to drop your Twitch in chat for a shout-out. One click saves it. The reminder can be turned off in Stream settings and never shows in Kid mode."
+      "description": "Dungeon Train TV can now connect to your Twitch.\n\nLet the stream give your channel a shout-out whenever you hold the Live Eye! You get a shout-out in chat, and your channel is featured in the livestream name and pill for all viewers to see.\n\nStreamers can go one step further. Turn on **Also stream to my channel** and your ride is pushed to your own Twitch channel at the same time, with an optional title and category set for you. Both switches live on the new Account tab, next to Discord, and /twitch unlink takes it all back at any time. Your stream key is never stored.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/twitch-integration.jpg"
+    },
+    {
+      "id": "grown-bamboo-breaks-off",
+      "version": "0.1308.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Bamboo on the train snaps off when it hits something",
+      "summary": "Bamboo growing on the train no longer bulldozes through the terrain. When a stalk grows too tall and hits something, it snaps off where it hit, and the bamboo drops right there for you to grab. The rest of the plant stays put.",
+      "highlights": [],
+      "pr": 2038,
+      "date": "2026-10-16",
+      "released": true,
+      "released_in": "v0.1309.0",
+      "released_at": "2026-10-16T05:25:18Z"
+    },
+    {
+      "id": "live-pill-above-jade",
+      "version": "0.1308.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Your live name tag stays on top",
+      "summary": "While you're live, the name tag at the top of the screen now stays in place and the block info tooltip moves down under it instead of covering it. You now see the tag on your own screen too, so you always know what viewers see.",
+      "highlights": [
+        "The block info tooltip moves under the live name tag while you stream",
+        "Streamers see their own live name tag on screen"
+      ],
+      "pr": 2039,
+      "date": "2026-10-16",
+      "released": true,
+      "released_in": "v0.1309.0",
+      "released_at": "2026-10-16T05:25:18Z"
+    },
+    {
+      "id": "prefab-name-title-blur",
+      "version": "0.1309.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Sharp titles on the prefab save screen",
+      "summary": "The title and name hint on the editor's Save Prefab screen are no longer smeared into the blurred background.",
+      "highlights": [],
+      "pr": 2042,
+      "date": "2026-10-16",
+      "released": true,
+      "released_in": "v0.1309.0",
+      "released_at": "2026-10-16T05:25:18Z"
+    },
+    {
+      "id": "signed-book-loot-entry",
+      "version": "0.1310.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "loot",
+        "books"
+      ],
+      "title": "Signed books in loot tables keep their words",
+      "summary": "Adding a signed book to a chest's loot in the editor now puts that exact book in the chest \u2014 its title, author and every page \u2014 instead of a blank written book.",
+      "highlights": [
+        "The editor's loot list shows the book's title next to it"
+      ],
+      "pr": 2040,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "standard-number-steppers",
+      "version": "0.1310.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Every editor number works the same way",
+      "summary": "Every number you can change in the Train Editor now works the same way: click to raise it, shift-click or right-click to lower it, and Cmd-click (Ctrl-click on Windows and Linux) to type an exact value. That now includes a mob's min and max level, container fill and drop chances, room sizes, exit spacing and more. Rows that had separate \u2212 and + buttons are now a single number, and a typed max level or max fill left empty goes back to \"all\".",
+      "highlights": [
+        "Cmd-click any editor number to type it \u2014 including a mob's min and max level",
+        "Right-click lowers a number, the same as shift-click",
+        "Leave a max level or max fill empty to set it back to \"all\""
+      ],
+      "pr": 2041,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -112,10 +112,11 @@ public final class LootPrefabDiff {
         return out;
     }
 
-    /** What makes two entries "the same slot" across the sides: the item, and the potion if any. */
+    /** What makes two entries "the same slot" across the sides: the item, and the potion or book if any. */
     private static String matchKey(ContainerContentsEntry e) {
         ResourceLocation potion = e.potionId();
-        return e.itemId() + (potion == null ? "" : "#" + potion);
+        return e.itemId() + (potion == null ? "" : "#" + potion)
+                + (e.book() == null ? "" : "#book:" + e.book().title());
     }
 
     /** Whether the whole comparison found nothing different — never true for a conflict, but cheap to ask. */

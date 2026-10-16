@@ -6620,23 +6620,6 @@
       ]
     }
   },
-  "gui.dungeontrain.editor_menu.common.label_with_unit": {
-    "1": {
-      "label": "the stepper's label, already translated",
-      "examples": [
-        "Length",
-        "Exits"
-      ]
-    },
-    "2": {
-      "label": "the unit or range hint",
-      "examples": [
-        "blocks",
-        "tiles",
-        "0-10"
-      ]
-    }
-  },
   "gui.dungeontrain.editor_menu.new_source.title_kind_source": {
     "1": {
       "label": "the part kind being created",

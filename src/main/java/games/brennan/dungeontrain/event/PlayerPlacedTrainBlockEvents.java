@@ -1,14 +1,9 @@
 package games.brennan.dungeontrain.event;
 
-import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.ship.sable.CarriagePlotResolver;
-import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import games.brennan.dungeontrain.train.PlayerPlacedTrainBlocks;
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.ChunkPos;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -41,22 +36,16 @@ public final class PlayerPlacedTrainBlockEvents {
         // every cell it filled.
         if (event instanceof BlockEvent.EntityMultiPlaceEvent multi) {
             for (BlockSnapshot snapshot : multi.getReplacedBlockSnapshots()) {
-                markIfCarriage(level, snapshot.getPos());
+                PlayerPlacedTrainBlocks.markIfCarriage(level, snapshot.getPos());
             }
             return;
         }
-        markIfCarriage(level, event.getPos());
+        PlayerPlacedTrainBlocks.markIfCarriage(level, event.getPos());
     }
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         PlayerPlacedTrainBlocks.clear();
         games.brennan.dungeontrain.train.ForcedConnectCells.clear();
-    }
-
-    private static void markIfCarriage(ServerLevel level, BlockPos pos) {
-        ServerSubLevel subLevel = CarriagePlotResolver.subLevelAt(level, new ChunkPos(pos));
-        if (subLevel == null || !SableManagedShip.isDungeonTrainManaged(subLevel)) return;
-        PlayerPlacedTrainBlocks.mark(subLevel, pos.immutable());
     }
 }

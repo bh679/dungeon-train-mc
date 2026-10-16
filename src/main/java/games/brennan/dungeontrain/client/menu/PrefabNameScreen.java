@@ -148,13 +148,14 @@ public final class PrefabNameScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+        // Screen.render draws the blurred menu background itself, so text goes on after it —
+        // drawn first, the blur pass smears it away.
+        super.render(g, mouseX, mouseY, partialTick);
         int titleY = this.height / 2 - 50;
         g.drawCenteredString(this.font, this.title, this.width / 2, titleY, 0xFFFFFFFF);
         g.drawCenteredString(this.font,
             Component.translatable("gui.dungeontrain.prefab_save.name_label"),
             this.width / 2, this.height / 2 - 25, 0xFFAAAAAA);
-        super.render(g, mouseX, mouseY, partialTick);
     }
 
     @Override

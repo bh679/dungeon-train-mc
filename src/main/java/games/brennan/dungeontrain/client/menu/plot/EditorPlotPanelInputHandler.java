@@ -12,7 +12,16 @@ import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.CellKind;
 import games.brennan.dungeontrain.client.menu.EditorPlotLabelsRenderer.Hovered;
 import games.brennan.dungeontrain.client.menu.EditorPanelFacing;
 import games.brennan.dungeontrain.client.menu.EditorPanelFacingEvents;
+import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
+import games.brennan.dungeontrain.client.menu.number.NumberField;
+import games.brennan.dungeontrain.client.menu.number.NumberPad;
+import games.brennan.dungeontrain.client.menu.number.NumberStepper;
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
 import games.brennan.dungeontrain.client.menu.parts.PartPositionMenu;
+import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
+import games.brennan.dungeontrain.portal.PortalRoomExits;
+import games.brennan.dungeontrain.portal.PortalRoomLayout;
+import games.brennan.dungeontrain.portal.PortalRoomSettings;
 import games.brennan.dungeontrain.editor.PlotCategory;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.EditorPlotActionPacket;
@@ -65,6 +74,9 @@ public final class EditorPlotPanelInputHandler {
 
     /** True only when a press fired while the panel was hovered and we're awaiting its release. */
     private static boolean pressArmed;
+    /** Shift at press time, and which button armed the press — only its own release dispatches. */
+    private static boolean pressShift;
+    private static int pressButton;
 
     private EditorPlotPanelInputHandler() {}
 
@@ -77,7 +89,12 @@ public final class EditorPlotPanelInputHandler {
         event.setCanceled(true);
         event.setSwingHand(false);
         pressArmed = true;
+        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
         Minecraft mc = Minecraft.getInstance();
+        long win = mc.getWindow().getWindow();
+        pressShift = mc.screen == null
+            && (GLFW.glfwGetKey(win, GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
+                || GLFW.glfwGetKey(win, GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
         if (mc.player != null) {
             mc.hitResult = BlockHitResult.miss(
                 mc.player.getEyePosition(),
@@ -95,14 +112,18 @@ public final class EditorPlotPanelInputHandler {
             return;
         }
         if (Minecraft.getInstance().screen != null) return;
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+        int btn = event.getButton();
+        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
         if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
+        if (!pressArmed || btn != pressButton) return;
         pressArmed = false;
+        boolean shift = pressShift || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
 
         Hovered hit = EditorPlotLabelsRenderer.hovered();
         if (hit.cell() == CellKind.NONE) return;
-        dispatch(hit);
+        // Right-click is a number row's step-down and nothing else.
+        if (btn == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit.cell())) return;
+        dispatch(hit, shift, btn);
     }
 
     /** Belt-and-braces — block any LeftClickBlock that slipped past the press cancel. */
@@ -133,7 +154,16 @@ public final class EditorPlotPanelInputHandler {
         return true;
     }
 
-    private static void dispatch(Hovered hit) {
+    /** The panel's number rows. */
+    private static boolean isNumberCell(CellKind cell) {
+        return switch (cell) {
+            case WEIGHT_NUMBER, LENGTH_NUMBER, WIDTH_NUMBER, HEIGHT_NUMBER,
+                 EXIT_EVERY_NUMBER, EXIT_MOVE_NUMBER, COPIES_FLOOR_HEIGHT_NUMBER -> true;
+            default -> false;
+        };
+    }
+
+    private static void dispatch(Hovered hit, boolean shift, int button) {
         List<EditorPlotLabelsPacket.Entry> entries = EditorPlotLabelsRenderer.entries();
         if (hit.entryIndex() < 0 || hit.entryIndex() >= entries.size()) return;
         EditorPlotLabelsPacket.Entry entry = entries.get(hit.entryIndex());
@@ -151,19 +181,14 @@ public final class EditorPlotPanelInputHandler {
                     new Vec3(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5),
                     EditorPanelFacing.plotPanel());
             }
-            // Cmd-click either arrow types the weight instead of stepping it — a walk from 1 to
-            // 40 is otherwise thirty-nine clicks. Both arrows open the same pad.
-            case WEIGHT_DEC -> { if (!openWeightEntry(entry)) dispatchWeight(entry, "dec"); }
-            case WEIGHT_INC -> { if (!openWeightEntry(entry)) dispatchWeight(entry, "inc"); }
-            case LENGTH_DEC -> dispatchDimension(entry, "length", "dec");
-            case LENGTH_INC -> dispatchDimension(entry, "length", "inc");
-            case WIDTH_DEC -> dispatchDimension(entry, "width", "dec");
-            case WIDTH_INC -> dispatchDimension(entry, "width", "inc");
-            case HEIGHT_DEC -> dispatchDimension(entry, "height", "dec");
-            case HEIGHT_INC -> dispatchDimension(entry, "height", "inc");
-            case LENGTH_TYPE -> openAxisEntry(entry, "length", MenuLang.t("editor.length"), entry.roomLength());
-            case WIDTH_TYPE -> openAxisEntry(entry, "width", MenuLang.t("editor.width"), entry.roomWidth());
-            case HEIGHT_TYPE -> openAxisEntry(entry, "height", MenuLang.t("editor.height"), entry.roomHeight());
+            // Number rows: click steps up, shift- or right-click steps down, cmd-click types.
+            case WEIGHT_NUMBER, LENGTH_NUMBER, WIDTH_NUMBER, HEIGHT_NUMBER,
+                 EXIT_EVERY_NUMBER, EXIT_MOVE_NUMBER, COPIES_FLOOR_HEIGHT_NUMBER -> {
+                NumberField field = rowNumber(hit.cell(), entry);
+                if (field != null) {
+                    NumberStepper.click(field, button, shift, MenuClickModifiers.cmdDown(), NumberPad.returningTo(null));
+                }
+            }
             case MODE_CYCLE -> dispatchModeCycle(entry);
             case LOCK_HELD -> dispatchLockHeld(entry);
             case COPIES_CYCLE -> dispatchCopiesCycle(entry);
@@ -171,8 +196,6 @@ public final class EditorPlotPanelInputHandler {
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
             case COPIES_FLOOR_EDIT -> dispatchCopiesBlockEdit(entry,
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
-            case COPIES_FLOOR_HEIGHT_DEC -> dispatchCopiesFloorHeight(entry, "dec");
-            case COPIES_FLOOR_HEIGHT_INC -> dispatchCopiesFloorHeight(entry, "inc");
             case COPIES_ROOF_HELD -> dispatchCopiesBlockHeld(entry,
                 games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
             case COPIES_ROOF_EDIT -> dispatchCopiesBlockEdit(entry,
@@ -185,12 +208,6 @@ public final class EditorPlotPanelInputHandler {
             case ROOM_FOG_CYCLE -> dispatchRoomFogCycle(entry);
             case ROOM_DRIFT_CYCLE -> dispatchRoomDriftCycle(entry);
             case EXITS_CYCLE -> dispatchExitsCycle(entry);
-            case EXIT_EVERY_DEC -> dispatchExitEvery(entry, "dec");
-            case EXIT_EVERY_INC -> dispatchExitEvery(entry, "inc");
-            case EXIT_EVERY_TYPE -> openExitEveryEntry(entry);
-            case EXIT_MOVE_DEC -> dispatchExitMove(entry, "dec");
-            case EXIT_MOVE_INC -> dispatchExitMove(entry, "inc");
-            case EXIT_MOVE_TYPE -> openExitMoveEntry(entry);
             case ACTION_SAVE -> dispatchAction(entry, EditorPlotActionPacket.Action.SAVE);
             case ACTION_RESET -> dispatchAction(entry, EditorPlotActionPacket.Action.RESET);
             case ACTION_CLEAR -> dispatchAction(entry, EditorPlotActionPacket.Action.CLEAR);
@@ -212,25 +229,6 @@ public final class EditorPlotPanelInputHandler {
         CommandRunner.run(cmd);
     }
 
-    /**
-     * Dispatch the slash-command form of {@code weight inc|dec} via the
-     * shared {@link EditorPlotTeleport#weightCommandFor(String, String, String, String)}
-     * routing helper.
-     */
-    /**
-     * Open the typing field for one axis of the portal room the player is standing in.
-     *
-     * <p>The panel itself cannot take keyboard input, so it hands off to a keyboard menu screen —
-     * the same move {@code + New} makes to reach the name picker. One axis per button, so setting
-     * a width never disturbs the length someone just dialled in.</p>
-     */
-    private static void openAxisEntry(EditorPlotLabelsPacket.Entry entry, String axis,
-                                      String label, int current) {
-        if (entry.plotCategory() == null || !entry.plotCategory().hasRoomBox()) return;
-        CommandMenuState.openAt(
-            new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(axis, label, current));
-    }
-
     /** Step the portal room the player is standing in to its next mode. */
     private static void dispatchModeCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.modeCycleCommandFor(entry.plotCategory());
@@ -248,14 +246,6 @@ public final class EditorPlotPanelInputHandler {
     /** Step the portal room the player is standing in to its next copies sub-mode. */
     private static void dispatchCopiesCycle(EditorPlotLabelsPacket.Entry entry) {
         String cmd = EditorPlotTeleport.copiesCycleCommandFor(entry.plotCategory());
-        if (cmd == null) return;
-        CommandRunner.run(cmd);
-    }
-
-    /** Set the Copies block of the portal room the player is standing in to what they are holding. */
-    /** Step how deep the stood-in room's Single floor is laid. */
-    private static void dispatchCopiesFloorHeight(EditorPlotLabelsPacket.Entry entry, String dir) {
-        String cmd = EditorPlotTeleport.copiesFloorHeightCommandFor(entry.plotCategory(), dir);
         if (cmd == null) return;
         CommandRunner.run(cmd);
     }
@@ -338,79 +328,53 @@ public final class EditorPlotPanelInputHandler {
         CommandRunner.run(cmd);
     }
 
-    /** Nudge how far apart the room's extra corridors go. */
-    private static void dispatchExitEvery(EditorPlotLabelsPacket.Entry entry, String dir) {
-        String cmd = EditorPlotTeleport.exitEveryCommandFor(entry.plotCategory(), dir);
-        if (cmd == null) return;
-        CommandRunner.run(cmd);
-    }
-
     /**
-     * Open the typing field for the exits spacing.
+     * The number behind one of the panel's number rows, or null when the row has none to edit
+     * (no weight pool, or not a portal room). Every command here takes {@code inc}, {@code dec} or
+     * an outright value in the same slot, so stepping and typing differ only in the token.
      *
-     * <p>The current value comes off the room's own settings tag, which the panel already carries —
-     * the same source the row's label reads, so the field cannot open showing a different number
-     * from the one next to it.</p>
+     * <p>Room sizes offer the parser's loosest window; {@code PortalRoomLayout.clampSize} on the
+     * server is what holds a typed size inside this world's floors and ceilings, visibly.</p>
      */
-    private static void openExitEveryEntry(EditorPlotLabelsPacket.Entry entry) {
-        if (entry.plotCategory() == null || !entry.plotCategory().hasRoomBox()) return;
-        int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
-            .exits().every();
-        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
-            "exitevery", MenuLang.t("plot.exits_short"), MenuLang.t("common.unit_tiles"), current));
+    private static NumberField rowNumber(CellKind cell, EditorPlotLabelsPacket.Entry entry) {
+        PlotCategory category = entry.plotCategory();
+        return switch (cell) {
+            case WEIGHT_NUMBER -> entry.weight() == EditorPlotLabelsPacket.NO_WEIGHT
+                || EditorPlotTeleport.weightCommandFor(category, entry.modelId(), entry.modelName(), "inc") == null
+                ? null
+                : NumberField.ofTokens(NumberTitle.of("weight"), entry.weight(), 0, 100, false,
+                    token -> EditorPlotTeleport.weightCommandFor(category, entry.modelId(), entry.modelName(), token));
+            case LENGTH_NUMBER -> dimension(category, "length", "length", entry.roomLength());
+            case WIDTH_NUMBER -> dimension(category, "width", "width", entry.roomWidth());
+            case HEIGHT_NUMBER -> dimension(category, "height", "height", entry.roomHeight());
+            case EXIT_EVERY_NUMBER -> roomNumber(category, NumberTitle.of("exit_every"),
+                PortalRoomSettings.parse(entry.roomMode()).exits().every(),
+                PortalRoomExits.MIN_EVERY, PortalRoomExits.MAX_EVERY,
+                token -> EditorPlotTeleport.exitEveryCommandFor(category, token));
+            case EXIT_MOVE_NUMBER -> roomNumber(category, NumberTitle.of("exit_move"),
+                PortalRoomSettings.parse(entry.roomMode()).exits().moveChance(),
+                PortalRoomExits.MOVE_NEVER, PortalRoomExits.MOVE_ALWAYS,
+                token -> EditorPlotTeleport.exitMoveCommandFor(category, token));
+            case COPIES_FLOOR_HEIGHT_NUMBER -> roomNumber(category, NumberTitle.of("floor_height"),
+                entry.copiesFloorHeight(),
+                PortalRoomCopiesVariant.MIN_FLOOR_HEIGHT, PortalRoomCopiesVariant.MAX_FLOOR_HEIGHT,
+                token -> EditorPlotTeleport.copiesFloorHeightCommandFor(category, token));
+            default -> null;
+        };
     }
 
-    /** Nudge how often the room walls off the base pair's exit. */
-    private static void dispatchExitMove(EditorPlotLabelsPacket.Entry entry, String dir) {
-        String cmd = EditorPlotTeleport.exitMoveCommandFor(entry.plotCategory(), dir);
-        if (cmd == null) return;
-        CommandRunner.run(cmd);
+    private static NumberField dimension(PlotCategory category, String axis, String title, int value) {
+        return roomNumber(category, NumberTitle.of(title), value,
+            Math.min(PortalRoomLayout.MIN_LENGTH, PortalRoomLayout.MIN_HEIGHT),
+            Math.max(PortalRoomLayout.MAX_LENGTH, Math.max(PortalRoomLayout.MAX_WIDTH, PortalRoomLayout.MAX_HEIGHT)),
+            token -> EditorPlotTeleport.dimensionCommandFor(category, axis, token));
     }
 
-    /** Open the typing field for the moved-exit chance, prefilled from the room's own tag. */
-    private static void openExitMoveEntry(EditorPlotLabelsPacket.Entry entry) {
-        if (entry.plotCategory() == null || !entry.plotCategory().hasRoomBox()) return;
-        int current = games.brennan.dungeontrain.portal.PortalRoomSettings.parse(entry.roomMode())
-            .exits().moveChance();
-        CommandMenuState.openAt(new games.brennan.dungeontrain.client.menu.PortalRoomAxisScreen(
-            "exitmove", MenuLang.t("plot.moved_exit_short"), "0-10", current));
-    }
-
-    /** Step one axis of the portal room the player is standing in. */
-    private static void dispatchDimension(EditorPlotLabelsPacket.Entry entry, String axis, String dir) {
-        String cmd = EditorPlotTeleport.dimensionCommandFor(entry.plotCategory(), axis, dir);
-        if (cmd == null) return;
-        CommandRunner.run(cmd);
-    }
-
-    /**
-     * Open the typed-weight pad for this row, or return false when the click was not a cmd-click
-     * (or the row has no weight to type) so the caller steps the arrow as usual.
-     *
-     * <p>Range: every weight pool behind these cells is 0-100 and the command tree rejects
-     * anything outside it, so the pad offers exactly that window.</p>
-     */
-    private static boolean openWeightEntry(EditorPlotLabelsPacket.Entry entry) {
-        if (!games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()) return false;
-        if (entry.weight() == EditorPlotLabelsPacket.NO_WEIGHT) return false;
-        if (EditorPlotTeleport.weightCommandFor(
-                entry.plotCategory(), entry.modelId(), entry.modelName(), "inc") == null) {
-            return false;
-        }
-        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
-            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
-            entry.weight(), 0, 100,
-            value -> dispatchWeight(entry, Integer.toString(value)),
-            null));
-        return true;
-    }
-
-    /** Step or set this row's weight — {@code dir} is {@code inc}, {@code dec} or a number. */
-    private static void dispatchWeight(EditorPlotLabelsPacket.Entry entry, String dir) {
-        String cmd = EditorPlotTeleport.weightCommandFor(entry.plotCategory(), entry.modelId(), entry.modelName(), dir);
-        if (cmd == null) return;
-        LOGGER.debug("[DungeonTrain] EditorPlotPanel weight: {}", cmd);
-        CommandRunner.run(cmd);
+    /** A setting of the portal room the player stands in; null outside one. */
+    private static NumberField roomNumber(PlotCategory category, String title, int value, int min, int max,
+                                          java.util.function.Function<String, String> commandFor) {
+        if (category == null || !category.hasRoomBox()) return null;
+        return NumberField.ofTokens(title, value, min, max, false, commandFor);
     }
 
     private static void dispatchAction(EditorPlotLabelsPacket.Entry entry,

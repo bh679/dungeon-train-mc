@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.client.builder;
 
+import games.brennan.dungeontrain.client.menu.number.NumberField;
+import games.brennan.dungeontrain.client.menu.number.NumberPad;
+import games.brennan.dungeontrain.client.menu.number.NumberStepper;
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
@@ -18,11 +22,10 @@ import net.neoforged.api.distmarker.OnlyIn;
  * trade for someone who knows their own library by its photos. The grid itself fills the window, so
  * what this picks is how that width is divided — bigger tiles or more of them.</p>
  *
- * <p>Left-click for more; right-click or shift-click for fewer. A pair of arrow cells would be the
- * obvious shape and there is no room for one beside the 200px control block, so the second mouse
- * button carries the second direction — the same trade, for the same reason, as
- * {@link BuilderRoomSizeButton} — and shift-click is there beside it because that is what vanilla's
- * own cycling buttons do. Both are in the tooltip, since nothing about the chip shows either.</p>
+ * <p>Left-click for more; right-click or shift-click for fewer; cmd-click to type the count — the
+ * gestures every editor number shares ({@link NumberStepper}). A pair of arrow cells would be the
+ * obvious shape and there is no room for one beside the 200px control block. All three are in the
+ * tooltip, since nothing about the chip shows them.</p>
  *
  * <p>The count cycles rather than stopping: it is a short range you flick through to find the one
  * you want, and a hard stop at the top means walking all the way back down to reach the bottom.</p>
@@ -47,11 +50,10 @@ final class BuilderTilesPerRowButton extends Button {
      * @param onChange    run after the new count is persisted; the screen rebuilds itself on it
      */
     BuilderTilesPerRowButton(int x, int y, int height, int screenWidth, Runnable onChange) {
-        // Shift-click goes the other way, which is vanilla CycleButton's own gesture (its onClick
-        // cycles by -1 on shift) — so it is one players already have from the video settings, and
-        // the chip doesn't need to teach a third idiom of its own.
         super(x, y, WIDTH, height, Component.empty(),
-                b -> step(screenWidth, Screen.hasShiftDown() ? -1 : +1, onChange), DEFAULT_NARRATION);
+                b -> NumberStepper.click(field(screenWidth, onChange), 0, Screen.hasShiftDown(),
+                    Screen.hasControlDown(), NumberPad.overCurrent()),
+                DEFAULT_NARRATION);
         this.screenWidth = screenWidth;
         this.onChange = onChange;
         setTooltip(Tooltip.create(Component.translatable(
@@ -68,11 +70,23 @@ final class BuilderTilesPerRowButton extends Button {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 1 && this.visible && this.active && isMouseOver(mouseX, mouseY)) {
-            step(screenWidth, -1, onChange);
+            NumberStepper.click(field(screenWidth, onChange), 1, Screen.hasShiftDown(),
+                Screen.hasControlDown(), NumberPad.overCurrent());
             playDownSound(Minecraft.getInstance().getSoundManager());
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    /** The chip's count as a number: steps wrap (see {@link #step}); a typed count is clamped by its range. */
+    private static NumberField field(int screenWidth, Runnable onChange) {
+        return new NumberField(NumberTitle.of("tiles_per_row"), effectiveColumns(screenWidth),
+            BuilderTemplateGridLayout.MIN_COLUMNS, BuilderTemplateGridLayout.maxColumnsFor(screenWidth), false,
+            () -> step(screenWidth, +1, onChange), () -> step(screenWidth, -1, onChange),
+            v -> {
+                ClientDisplayConfig.setBuilderTilesPerRow(v);
+                onChange.run();
+            });
     }
 
     /**

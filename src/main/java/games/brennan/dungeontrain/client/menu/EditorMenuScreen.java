@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
+
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.EditorMenusModeState;
 import games.brennan.dungeontrain.client.EditorObserversState;
@@ -282,11 +284,10 @@ public final class EditorMenuScreen implements MenuScreen {
             out.add(new CommandMenuEntry.DrillIn("Chunk dimensions…", new ChunkFrameRoomsScreen(ctx.modelName())));
         }
 
-        // Weight — Triple row: [-] / Weight (N) / [+] for every category that has a weight pool.
-        // Side cells nudge by 1 server-side and stay open so the player can tap-tap-tap; middle
-        // cell drops into typing mode for an exact value.
+        // Weight — one number row for every category that has a weight pool: click +1, shift- or
+        // right-click −1, cmd-click to type an exact value. It stays open so the player can tap-tap-tap.
         CommandMenuEntry weightRow =
-            weightTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(), ctx.weight());
+            weightRowFor(ctx.category(), ctx.modelId(), ctx.modelName(), ctx.weight());
         if (weightRow != null) out.add(weightRow);
 
         // A staged room gets the same block, sent to the same stood-in root the server routes to it.
@@ -361,9 +362,9 @@ public final class EditorMenuScreen implements MenuScreen {
         // Size — a portal room is the one plot whose box the author chooses: length outright (it is
         // the distance walked underneath a portal, not a footprint) and width and height above the
         // floor the corridor mouth sets.
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("length", MenuLang.t("editor.length"), length, prefix));
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("width", MenuLang.t("editor.width"), width, prefix));
-        addIfPresent(out, EditorMenuPortalRows.sizeTripleFor("height", MenuLang.t("editor.height"), height, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeRowFor("length", MenuLang.t("editor.length"), length, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeRowFor("width", MenuLang.t("editor.width"), width, prefix));
+        addIfPresent(out, EditorMenuPortalRows.sizeRowFor("height", MenuLang.t("editor.height"), height, prefix));
 
         addIfPresent(out, EditorMenuPortalRows.wallsModeRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.lockRowFor(mode, prefix));
@@ -379,8 +380,8 @@ public final class EditorMenuScreen implements MenuScreen {
         addIfPresent(out, EditorMenuPortalRows.roomSkyRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.roomFogRowFor(mode, prefix));
         addIfPresent(out, EditorMenuPortalRows.exitsRowFor(mode, prefix));
-        addIfPresent(out, EditorMenuPortalRows.exitEveryTripleFor(mode, prefix));
-        addIfPresent(out, EditorMenuPortalRows.exitMoveTripleFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.exitEveryRowFor(mode, prefix));
+        addIfPresent(out, EditorMenuPortalRows.exitMoveRowFor(mode, prefix));
 
         return out;
     }
@@ -403,11 +404,11 @@ public final class EditorMenuScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         int minLv = EditorStatusHudOverlay.minLevel();
         int maxLv = EditorStatusHudOverlay.maxLevel();
-        addIfPresent(out, levelTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(),
-            "minlevel", MenuLang.t("editor.min_level", minLv), "0-1000"));
-        addIfPresent(out, levelTripleFor(ctx.category(), ctx.modelId(), ctx.modelName(),
+        addIfPresent(out, levelRowFor(ctx.category(), ctx.modelId(), ctx.modelName(),
+            "minlevel", MenuLang.t("editor.min_level", minLv), minLv, minLv));
+        addIfPresent(out, levelRowFor(ctx.category(), ctx.modelId(), ctx.modelName(),
             "maxlevel", MenuLang.t("editor.max_level", maxLv < 0 ? MenuLang.t("editor.max_level_all") : Integer.toString(maxLv)),
-            "-1..1000"));
+            maxLv, minLv));
         out.add(new CommandMenuEntry.DrillIn(MenuLang.t("editor.phases"),
             new PhaseSelectScreen(ctx.category(), ctx.modelId(), ctx.modelName())));
         // Stage / Custom picker — link this template to a Stage preset (or stay Custom).
@@ -564,23 +565,21 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>Applies in a template and between plots, and in both On and Auto; Auto layers its own
      * tighter in-template rule on top, so the smaller of the two is what you see there.</p>
      *
-     * <p>{@link CommandMenuEntry.ClientAction} cells rather than slash commands: the value is a
+     * <p>A {@link CommandMenuEntry.ClientNumber} rather than a slash command: the value is a
      * client display preference in {@code dungeontrain-client.toml}, with no server state to sync,
-     * and the action leaves the menu open so the panels around you appear and vanish as you step
-     * it. Same {@code Triple} geometry as the weight and room-size steppers.</p>
+     * and the row stays open so the panels around you appear and vanish as you step it. Same
+     * gestures as every editor number; a step snaps to the next multiple of eight.</p>
      */
     private static CommandMenuEntry menuDistanceRow() {
         int current = ClientDisplayConfig.getMenuRenderDistance();
-        CommandMenuEntry minus = new CommandMenuEntry.ClientAction("-",
-            () -> ClientDisplayConfig.setMenuRenderDistance(
-                ClientDisplayConfig.stepMenuRenderDistanceDown(
-                    ClientDisplayConfig.getMenuRenderDistance())));
-        CommandMenuEntry middle = new CommandMenuEntry.Label(MenuLang.t("editor.menu_distance", current));
-        CommandMenuEntry plus = new CommandMenuEntry.ClientAction("+",
-            () -> ClientDisplayConfig.setMenuRenderDistance(
-                ClientDisplayConfig.stepMenuRenderDistanceUp(
-                    ClientDisplayConfig.getMenuRenderDistance())));
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+        return new CommandMenuEntry.ClientNumber(MenuLang.t("editor.menu_distance", current),
+            new games.brennan.dungeontrain.client.menu.number.NumberField(NumberTitle.of("menu_distance"), current,
+                ClientDisplayConfig.MIN_MENU_RENDER_DISTANCE, ClientDisplayConfig.MAX_MENU_RENDER_DISTANCE, false,
+                () -> ClientDisplayConfig.setMenuRenderDistance(
+                    ClientDisplayConfig.stepMenuRenderDistanceUp(ClientDisplayConfig.getMenuRenderDistance())),
+                () -> ClientDisplayConfig.setMenuRenderDistance(
+                    ClientDisplayConfig.stepMenuRenderDistanceDown(ClientDisplayConfig.getMenuRenderDistance())),
+                ClientDisplayConfig::setMenuRenderDistance));
     }
 
     /**
@@ -677,7 +676,7 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Build a {@link CommandMenuEntry.Triple} for the active model's weight, or null when the
+     * Build a {@link CommandMenuEntry.Number} row for the active model's weight, or null when the
      * category has no weight pool / no addressable model. Extracted so the unit test can pin command
      * strings without standing up the full menu.
      *
@@ -691,7 +690,7 @@ public final class EditorMenuScreen implements MenuScreen {
      * <p>{@code modelId} (not {@code model}) is spliced into commands so track-side models with
      * friendly path strings ({@code "track / track2"}) don't break the parser.</p>
      */
-    public static CommandMenuEntry weightTripleFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
+    public static CommandMenuEntry weightRowFor(PlotCategory category, String modelId, String modelName, int currentWeight) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         boolean named = modelName != null && !modelName.isEmpty();
         String prefix = switch (category) {
@@ -707,11 +706,13 @@ public final class EditorMenuScreen implements MenuScreen {
         };
         if (prefix == null) return null;
         String label = currentWeight >= 0 ? MenuLang.t("editor.weight_n", currentWeight) : MenuLang.t("editor.weight");
-        CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
-        CommandMenuEntry weight = new CommandMenuEntry.TypeArg(label, "0-100", prefix);
-        CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
-        return new CommandMenuEntry.Triple(minus, weight, plus, 0.10, 0.90);
+        return CommandMenuEntry.Number.of(label, NumberTitle.of("weight"), prefix,
+            Math.max(0, currentWeight), WEIGHT_MIN, WEIGHT_MAX, false);
     }
+
+    /** Every weight pool behind these rows is 0-100, and the command tree rejects anything outside. */
+    public static final int WEIGHT_MIN = 0;
+    public static final int WEIGHT_MAX = 100;
 
     /**
      * The Save icon at the right of the breadcrumb band — one tap from any tab, where the
@@ -742,14 +743,15 @@ public final class EditorMenuScreen implements MenuScreen {
     }
 
     /**
-     * Build a {@link CommandMenuEntry.Triple} stepper for a per-template spawn-gate level bound,
-     * or null when the category has no gate / no addressable model. {@code sub} is the gate
-     * subcommand ({@code minlevel} / {@code maxlevel}); {@code label} is the pre-rendered cell
-     * label (caller formats the current value); {@code hint} is the typing-mode placeholder.
-     * Command shapes mirror {@link #weightTripleFor}.
+     * Build a {@link CommandMenuEntry.Number} row for a per-template spawn-gate level bound, or null
+     * when the category has no gate / no addressable model. {@code sub} is the gate subcommand
+     * ({@code minlevel} / {@code maxlevel}); {@code label} is the pre-rendered row label (caller
+     * formats the current value); {@code value} is the bound ({@code -1} = all for the max) and
+     * {@code minLevel} the gate's min, which a typed max may not go under. Command shapes mirror
+     * {@link #weightRowFor}.
      */
-    public static CommandMenuEntry levelTripleFor(PlotCategory category, String modelId, String modelName,
-                                           String sub, String label, String hint) {
+    public static CommandMenuEntry levelRowFor(PlotCategory category, String modelId, String modelName,
+                                               String sub, String label, int value, int minLevel) {
         if (modelId == null || modelId.isEmpty() || category == null) return null;
         boolean named = modelName != null && !modelName.isEmpty();
         String prefix = switch (category) {
@@ -763,10 +765,20 @@ public final class EditorMenuScreen implements MenuScreen {
             case PARTS, CHUNK_FRAMES, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null; // no spawn gate
         };
         if (prefix == null) return null;
-        CommandMenuEntry minus  = new CommandMenuEntry.Stay("-", prefix + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(label, hint, prefix);
-        CommandMenuEntry plus   = new CommandMenuEntry.Stay("+", prefix + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+        return levelNumber(label, prefix, sub, value, minLevel);
+    }
+
+    /**
+     * A level bound as a number row: {@code minlevel} runs 0..MAX_LEVEL; {@code maxlevel} runs from
+     * the gate's min to MAX_LEVEL and takes a blank value as "all" ({@code -1}).
+     */
+    public static CommandMenuEntry.Number levelNumber(String label, String prefix, String sub, int value, int minLevel) {
+        int max = games.brennan.dungeontrain.template.TemplateGate.MAX_LEVEL;
+        return "maxlevel".equals(sub)
+            ? CommandMenuEntry.Number.of(label, NumberTitle.of("max_level"), prefix,
+                value < 0 ? games.brennan.dungeontrain.client.menu.number.NumberField.ALL : value,
+                Math.max(0, minLevel), max, true)
+            : CommandMenuEntry.Number.of(label, NumberTitle.of("min_level"), prefix, Math.max(0, value), 0, max, false);
     }
 
     /**

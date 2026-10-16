@@ -144,20 +144,28 @@ final class EditorLayoutPane {
      */
     boolean mouseClicked(InventoryEditorLayout layout, EditorRosterIndex index, double mouseX, double mouseY,
                          EditorModalHost modal, InlineEdit inlineEdit) {
+        return mouseClicked(layout, index, mouseX, mouseY, modal, inlineEdit, 0);
+    }
+
+    /**
+     * As above with the mouse button. The weight cell works as every editor number does: click +1,
+     * shift- or right-click −1, cmd-click to type. The typed value goes through the inline field
+     * over the cell — the modal host's typing path would close the whole screen on Enter. A
+     * right-click anywhere else on the tab does nothing.
+     */
+    boolean mouseClicked(InventoryEditorLayout layout, EditorRosterIndex index, double mouseX, double mouseY,
+                         EditorModalHost modal, InlineEdit inlineEdit, int button) {
         Hit hit = hitTest(layout, index, mouseX, mouseY);
         if (hit == null) return false;
-        // The weight cell works as it does in the world-space menus: click +1, shift-click −1,
-        // cmd-click to type. The typed value goes through the inline field over the cell — the
-        // modal host's typing path would close the whole screen on Enter.
         TemplateDataSheet.Stepper stepper = hit.row().weight();
         if (hit.sub() == EditorLayoutPage.WEIGHT_CELL && stepper != null) {
-            if (MenuClickModifiers.cmdDown()) {
-                inlineEdit.begin(stepper.prefix(), hit.cell().label(), hit.cellRect());
-            } else {
-                modal.runAndStay(Screen.hasShiftDown() ? stepper.dec() : stepper.inc());
-            }
+            TemplateDataSheet.Action.Step step = TemplateDataSheet.Action.Step.of(stepper);
+            games.brennan.dungeontrain.client.menu.number.NumberStepper.click(step.field(modal::runAndStay),
+                button, Screen.hasShiftDown(), MenuClickModifiers.cmdDown(),
+                f -> inlineEdit.begin(step.prefix(), hit.cell().label(), hit.cellRect(), step.allowAll()));
             return true;
         }
+        if (button == 1) return false;
         modal.dispatch(hit.row().entry(), hit.sub());
         return true;
     }
