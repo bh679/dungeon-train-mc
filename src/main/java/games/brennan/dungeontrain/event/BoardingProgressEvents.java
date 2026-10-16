@@ -17,6 +17,7 @@ import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.portal.PortalTripTracker;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.train.ChallengeMelonSpawner;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import net.minecraft.core.Holder;
@@ -215,6 +216,7 @@ public final class BoardingProgressEvents {
                     AchievementEvents.notifyRunTrainTime(p, runTrainTicks);
                 }
                 accumulateBoardedDistance(p, !glidingOutside.contains(uuid));
+                ChallengeMelonSpawner.tick(level, carriages, p);
                 sampleBoardedBiome(level, p);
             }
         }
