@@ -26555,6 +26555,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "release-announce-live-chat",
+      "version": "0.1310.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "New versions are announced in the Live chat",
+      "summary": "When a new version of Dungeon Train comes out, the Live chat now says so: on the website's live page, in the Discord live room, and in Twitch chat while someone is streaming. If you're in game you still see the usual update notice, just once.",
+      "highlights": [],
+      "pr": 2047,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
