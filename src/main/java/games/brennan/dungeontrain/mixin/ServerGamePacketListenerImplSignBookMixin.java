@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
 import games.brennan.dungeontrain.discord.SharedBookReporter;
 import games.brennan.dungeontrain.discord.WorldInfoReporter;
 import games.brennan.dungeontrain.editor.EditorPlotScope;
+import games.brennan.dungeontrain.event.LiveMomentEvents;
 import games.brennan.dungeontrain.event.ReadingLanguagesMirror;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.LiveModeration;
@@ -206,6 +207,10 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             List<String> pageStrs = this.dungeontrain$censoredPages != null
                     ? this.dungeontrain$censoredPages
                     : pages.stream().map(FilteredText::raw).toList();
+
+            // The Live Eye streamer's book goes to the stream's Live chat (title + first lines, already
+            // masked above) whichever branch below takes it; their client decides whether to share.
+            LiveMomentEvents.onBookSigned(serverPlayer, titleStr, pageStrs);
 
             // Lectern letter — the sign was opened from a lectern (LetterLecternEvents recorded it on the
             // right-click). A lectern sign is always a letter, taking priority over the Death Note /

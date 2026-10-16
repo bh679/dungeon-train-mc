@@ -19,6 +19,9 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAM_AUDIO;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
+    public static final ModConfigSpec.BooleanValue LIVE_MOMENT_ADVANCEMENTS;
+    public static final ModConfigSpec.BooleanValue LIVE_MOMENT_PHOTOS;
+    public static final ModConfigSpec.BooleanValue LIVE_MOMENT_BOOKS;
     public static final ModConfigSpec.BooleanValue TWITCH_SHOUTOUT_HINT;
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
@@ -64,6 +67,15 @@ public final class LiveFeedClientConfig {
         LIVE_CHAT = b
             .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
+        LIVE_MOMENT_ADVANCEMENTS = b
+            .comment("While you stream with the Live Eye, say in the stream's Live chat (Discord, Twitch, the website and TV wearers) when you earn an advancement. Always off in Kid mode.")
+            .define("liveMomentAdvancements", true);
+        LIVE_MOMENT_PHOTOS = b
+            .comment("While you stream with the Live Eye, share each photo you take into the stream's Live chat (the picture on Discord and the website). Always off in Kid mode.")
+            .define("liveMomentPhotos", true);
+        LIVE_MOMENT_BOOKS = b
+            .comment("While you stream with the Live Eye, share each book you sign into the stream's Live chat: its title and first lines. Always off in Kid mode.")
+            .define("liveMomentBooks", true);
         TWITCH_SHOUTOUT_HINT = b
             .comment("When you go live without a Twitch saved, say in chat that dropping your Twitch username or URL there gets you a shout-out on the official Dungeon Train Twitch. Never shown once a Twitch is saved, or in Kid mode.")
             .define("twitchShoutoutHint", true);
@@ -191,6 +203,27 @@ public final class LiveFeedClientConfig {
         if (!loaded() || LIVE_CHAT.get() == value) return;
         LIVE_CHAT.set(value);
         LIVE_CHAT.save();
+    }
+
+    /** Share advancements into Live chat while streaming; {@code LiveMoments} still forces it off in Kid mode. */
+    public static boolean liveMomentAdvancements() { return !loaded() || LIVE_MOMENT_ADVANCEMENTS.get(); }
+
+    /** Share photos into Live chat while streaming; {@code LiveMoments} still forces it off in Kid mode. */
+    public static boolean liveMomentPhotos() { return !loaded() || LIVE_MOMENT_PHOTOS.get(); }
+
+    /** Share signed books into Live chat while streaming; {@code LiveMoments} still forces it off in Kid mode. */
+    public static boolean liveMomentBooks() { return !loaded() || LIVE_MOMENT_BOOKS.get(); }
+
+    public static void setLiveMomentAdvancements(boolean value) { setBool(LIVE_MOMENT_ADVANCEMENTS, value); }
+
+    public static void setLiveMomentPhotos(boolean value) { setBool(LIVE_MOMENT_PHOTOS, value); }
+
+    public static void setLiveMomentBooks(boolean value) { setBool(LIVE_MOMENT_BOOKS, value); }
+
+    private static void setBool(ModConfigSpec.BooleanValue v, boolean value) {
+        if (!loaded() || v.get() == value) return;
+        v.set(value);
+        v.save();
     }
 
     /**

@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "137";
+    public static final String PROTOCOL_VERSION = "138";
 
     private DungeonTrainNet() {}
 
@@ -47,6 +47,7 @@ public final class DungeonTrainNet {
         // Dev-HUD read-out: is time on the train banking, and if not, which idle rule stopped it.
         registrar.playToClient(ActivityStatePacket.TYPE, ActivityStatePacket.STREAM_CODEC, ActivityStatePacket::handle);
         registrar.playToClient(LiveStreamPacket.TYPE, LiveStreamPacket.STREAM_CODEC, LiveStreamPacket::handle);
+        registrar.playToClient(LiveMomentPacket.TYPE, LiveMomentPacket.STREAM_CODEC, LiveMomentPacket::handle);
         registrar.playToClient(LiveLifePacket.TYPE, LiveLifePacket.STREAM_CODEC, LiveLifePacket::handle);
         registrar.playToServer(LiveWatchedPacket.TYPE, LiveWatchedPacket.STREAM_CODEC, LiveWatchedPacket::handle);
         registrar.playToServer(LiveStreamEndedPacket.TYPE, LiveStreamEndedPacket.STREAM_CODEC, LiveStreamEndedPacket::handle);

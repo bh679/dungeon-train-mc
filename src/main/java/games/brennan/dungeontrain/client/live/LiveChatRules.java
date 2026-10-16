@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.resources.ResourceLocation;
@@ -25,6 +27,9 @@ public final class LiveChatRules {
     public static final String PREFIX_KEY = "chat.dungeontrain.live_chat.prefix";
     public static final String CONNECTED_KEY = "chat.dungeontrain.live_chat.connected";
     public static final String PATH_KEY = "chat.dungeontrain.live_chat.path";
+    public static final String MOMENT_ADVANCEMENT_KEY = "chat.dungeontrain.live_moment.advancement";
+    public static final String MOMENT_PHOTO_KEY = "chat.dungeontrain.live_moment.photo";
+    public static final String MOMENT_BOOK_KEY = "chat.dungeontrain.live_moment.book";
     /** Longest line the bridge sends; the relay caps at the same length. */
     public static final int MAX_CONTENT = 500;
     /** Longest author name shown; anything longer is cut. */
@@ -120,10 +125,29 @@ public final class LiveChatRules {
                 .append(Component.literal(String.valueOf(icon.glyph))
                     .withStyle(s -> s.withFont(ICON_FONT).withColor(ChatFormatting.WHITE)));
         }
+        out.append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())));
+        if (line.moment() != null) return out.append(Component.literal(" ")).append(momentBody(line.moment()));
         return out
-            .append(Component.literal(" " + clean(line.author(), MAX_AUTHOR)).withStyle(nameColour(line.source())))
             .append(Component.literal(": ").withStyle(ChatFormatting.GRAY))
             .append(Component.literal(clean(line.content(), MAX_CONTENT)).withStyle(ChatFormatting.WHITE));
+    }
+
+    /**
+     * A streamer's moment after their name, in this reader's language: {@code earned [Title]},
+     * {@code took a photo}, {@code wrote “Title”}. A book's first lines show on hover so the chat stays one line.
+     */
+    public static MutableComponent momentBody(LiveFeedClient.Moment moment) {
+        String title = clean(moment.title(), LiveFeedClient.MAX_MOMENT_TITLE);
+        MutableComponent body = switch (moment.kind()) {
+            case ADVANCEMENT -> Component.translatable(MOMENT_ADVANCEMENT_KEY, title).withStyle(ChatFormatting.YELLOW);
+            case PHOTO -> Component.translatable(MOMENT_PHOTO_KEY).withStyle(ChatFormatting.YELLOW);
+            case BOOK -> Component.translatable(MOMENT_BOOK_KEY, title).withStyle(ChatFormatting.YELLOW);
+        };
+        String excerpt = clean(moment.excerpt(), LiveFeedClient.MAX_MOMENT_EXCERPT);
+        if (moment.kind() == LiveFeedClient.MomentKind.BOOK && !excerpt.isEmpty()) {
+            body.withStyle(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(excerpt))));
+        }
+        return body;
     }
 
     /** {@code [Live] text} — a line from the room itself (a takeover vote), no name or icon. */
