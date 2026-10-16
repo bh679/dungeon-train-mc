@@ -117,7 +117,9 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      SET_PAINTING,
                      // Typed mob difficulty band from the cmd-click number pad: delta is the value
                      // outright; SET_DIFF_MAX takes -1 for "all". Same clamps as the BUMP twins.
-                     SET_DIFF_MIN, SET_DIFF_MAX }
+                     SET_DIFF_MIN, SET_DIFF_MAX,
+                     // Middle-click a group-reference row: entryIndex's group goes to the hotbar as a clipboard.
+                     COPY_GROUP_ENTRY }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

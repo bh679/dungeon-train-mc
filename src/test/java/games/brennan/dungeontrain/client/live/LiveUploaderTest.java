@@ -153,6 +153,31 @@ class LiveUploaderTest {
     }
 
     @Test
+    void publishedThroughFollowsWhatIsOnStorage() throws Exception {
+        FakeStorage s = new FakeStorage();
+        LiveUploader u = uploader(s, new AtomicReference<>());
+        assertEquals(-1, u.publishedThrough());
+        encoderWrites(0, 3, false);
+        s.failing.add("seg00001.ts");
+        u.pass(false);
+        // seg00002 is up but cannot be listed past the one still retrying.
+        assertEquals(0, u.publishedThrough());
+
+        s.failing.clear();
+        passNow(u);
+        assertEquals(2, u.publishedThrough());
+
+        // A segment given up on leaves a gap; the index still comes from the names.
+        encoderWrites(1, 4, false);
+        s.failing.add("seg00004.ts");
+        for (int i = 0; i < LiveUploader.MAX_FAILED_PASSES; i++) passNow(u);
+        assertEquals(3, u.publishedThrough());
+        encoderWrites(2, 4, false);
+        passNow(u);
+        assertEquals(5, u.publishedThrough());
+    }
+
+    @Test
     void unchangedPlaylistIsNotUploadedAgain() throws Exception {
         FakeStorage s = new FakeStorage();
         LiveUploader u = uploader(s, new AtomicReference<>());
