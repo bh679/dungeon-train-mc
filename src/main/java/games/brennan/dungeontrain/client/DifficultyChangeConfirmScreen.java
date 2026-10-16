@@ -3,7 +3,10 @@ package games.brennan.dungeontrain.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.CycleButton;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.Difficulty;
@@ -76,22 +79,22 @@ public final class DifficultyChangeConfirmScreen extends Screen {
         this.singleplayer = singleplayer;
     }
 
-    /** One answer: its label and what it does. */
-    private record Choice(String key, Runnable action) {}
+    /** One answer: its label, what it does, and whether this world keeps its difficulty. */
+    private record Choice(String key, Runnable action, boolean declines) {}
 
     /** The answers on offer here, in button order (Cancel is always added last). */
     private List<Choice> choices() {
         List<Choice> out = new ArrayList<>();
         if (singleplayer) {
             out.add(new Choice("gui.dungeontrain.difficulty_confirm.next_run",
-                    () -> DifficultyChangeConfirmClient.saveForNextRun(to)));
+                    () -> DifficultyChangeConfirmClient.saveForNextRun(to), true));
         }
         if (runWorld) {
             out.add(new Choice("gui.dungeontrain.difficulty_confirm.restart_now",
-                    () -> DifficultyChangeConfirmClient.restartNow(to)));
+                    () -> DifficultyChangeConfirmClient.restartNow(to), true));
         } else {
             out.add(new Choice("gui.dungeontrain.difficulty_confirm.change",
-                    () -> DifficultyChangeConfirmClient.applyNow(to)));
+                    () -> DifficultyChangeConfirmClient.applyNow(to), false));
         }
         return out;
     }
@@ -148,7 +151,7 @@ public final class DifficultyChangeConfirmScreen extends Screen {
 
         int by = panelY + buttonsRelY;
         for (Choice choice : choices) {
-            addRenderableWidget(Button.builder(Component.translatable(choice.key()), b -> respond(choice.action()))
+            addRenderableWidget(Button.builder(Component.translatable(choice.key()), b -> respond(choice))
                 .bounds(panelX + PADDING, by, innerW, BUTTON_H).build());
             by += BUTTON_H + BUTTON_GAP;
         }
@@ -158,16 +161,35 @@ public final class DifficultyChangeConfirmScreen extends Screen {
     }
 
     /**
-     * Act, then go back to the screen the prompt opened over — acting first so that screen re-inits
-     * showing the remembered difficulty. "Restart now" closes every screen itself, and that is left be.
+     * Act, then go back to the screen the prompt opened over — acting first so that screen shows
+     * the remembered difficulty. "Restart now" closes every screen itself, and that is left be.
      */
-    private void respond(Runnable action) {
+    private void respond(Choice choice) {
         if (responded) return;
         responded = true;
-        action.run();
+        choice.action().run();
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen == this) {
+            if (choice.declines()) resyncVanillaButton();
             mc.setScreen(parent);
+        }
+    }
+
+    /**
+     * Showing a screen again does not re-run its {@code init()} in 1.21 — {@code Screen#init} only
+     * repositions — so the vanilla Options screen's Difficulty button would keep the value the player
+     * cycled to. When this world keeps its difficulty, put the button back on the one in force.
+     * (Dungeon Train's own Options row rebuilds itself on return; see its {@code onReturn}.)
+     */
+    private void resyncVanillaButton() {
+        Minecraft mc = Minecraft.getInstance();
+        if (!(parent instanceof OptionsScreen) || mc.level == null) return;
+        for (GuiEventListener child : parent.children()) {
+            if (child instanceof CycleButton<?> button && button.getValue() instanceof Difficulty) {
+                @SuppressWarnings("unchecked")
+                CycleButton<Difficulty> difficulty = (CycleButton<Difficulty>) button;
+                difficulty.setValue(mc.level.getDifficulty());
+            }
         }
     }
 
@@ -176,9 +198,9 @@ public final class DifficultyChangeConfirmScreen extends Screen {
         if (!responded) {
             responded = true;
             DifficultyChangeConfirmClient.cancel();
+            resyncVanillaButton();
         }
-        // Back to where the player was — re-initialising the Options screen resyncs its Difficulty
-        // button with the difficulty that is actually in force.
+        // Back to where the player was, its Difficulty control showing what is actually in force.
         Minecraft.getInstance().setScreen(parent);
     }
 
