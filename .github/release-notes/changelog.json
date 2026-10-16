@@ -26894,8 +26894,8 @@
         "fix",
         "train"
       ],
-      "title": "Dimensional carriages keep the illusion further along the line",
-      "summary": "In some of the stranger stretches of the journey, a dimensional carriage could show a bare bedrock floor through its windows, or the world it was meant to be hidden from. Those views are gone: the carriage now looks out on open sky wherever it stands.",
+      "title": "Dimensional carriage visual fix",
+      "summary": "Fixed a visual glitch in some dimensional carriages.",
       "highlights": [],
       "pr": 2065,
       "date": "2026-10-16",
