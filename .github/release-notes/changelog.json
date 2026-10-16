@@ -26457,6 +26457,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "prefab-name-title-blur",
+      "version": "0.1309.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Sharp titles on the prefab save screen",
+      "summary": "The title and name hint on the editor's Save Prefab screen are no longer smeared into the blurred background.",
+      "highlights": [],
+      "pr": 2042,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
