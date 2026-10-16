@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 10,
+  "variants": {
+    "2,0,3": ["dungeontrain:variant_placeholder", {"entity": "minecraft:magma_cube", "difficulty": {"min": 6, "max": "all"}}],
+    "5,0,1": ["dungeontrain:variant_placeholder", {"entity": "minecraft:magma_cube", "difficulty": {"min": 6, "max": "all"}}, {"entity": "minecraft:blaze", "difficulty": {"min": 13, "max": "all"}}],
+    "3,0,1": ["minecraft:fire[age=1,east=false,north=false,south=false,up=false,west=false]", "dungeontrain:variant_placeholder"],
+    "4,0,3": ["minecraft:fire[age=1,east=false,north=false,south=false,up=false,west=false]", "dungeontrain:variant_placeholder"],
+    "0,0,3": ["minecraft:fire[age=1,east=false,north=false,south=false,up=false,west=false]", "dungeontrain:variant_placeholder"],
+    "0,0,0": ["minecraft:fire[age=1,east=false,north=false,south=false,up=false,west=false]", "dungeontrain:variant_placeholder"],
+    "6,0,0": ["minecraft:fire[age=1,east=false,north=false,south=false,up=false,west=false]", "dungeontrain:variant_placeholder"],
+    "6,0,4": ["minecraft:fire[age=1,east=false,north=false,south=false,up=false,west=false]", "dungeontrain:variant_placeholder"],
+    "4,0,4": ["dungeontrain:variant_placeholder", {"entity": "minecraft:blaze", "difficulty": {"min": 12, "max": "all"}}]
+  }
+}

@@ -742,6 +742,9 @@ public final class EditorCommand {
             .then(Commands.literal("mobs")
                 .then(Commands.literal("blocks").executes(ctx -> runMobsMode(ctx.getSource(), false)))
                 .then(Commands.literal("live").executes(ctx -> runMobsMode(ctx.getSource(), true))))
+            .then(Commands.literal("testmobs")
+                .then(Commands.literal("frozen").executes(ctx -> runTestMobs(ctx.getSource(), false)))
+                .then(Commands.literal("live").executes(ctx -> runTestMobs(ctx.getSource(), true))))
             .then(Commands.literal("carriage-contents")
                 .then(Commands.argument("variant", StringArgumentType.word())
                     .suggests(CARRIAGE_VARIANT_SUGGESTIONS)
@@ -4242,6 +4245,26 @@ public final class EditorCommand {
             games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
         }
         source.sendSuccess(() -> (live ? Component.translatable("chat.dungeontrain.editor.mobs_live_spawn_eggs") : Component.translatable("chat.dungeontrain.editor.mobs_blocks_spawn_eggs")).withStyle(live ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    /**
+     * Settings → Test Mobs Frozen / Live for this world. Live: mobs frozen by Mobs | Blocks come
+     * alive inside a Test-the-Carriage copy ({@link games.brennan.dungeontrain.editor.TestCopyMobs});
+     * Frozen keeps them statues there, as in the plot. Applies from the next test or Reseed.
+     */
+    private static int runTestMobs(CommandSourceStack source, boolean live) {
+        net.minecraft.server.MinecraftServer server = source.getServer();
+        games.brennan.dungeontrain.world.DungeonTrainWorldData.get(server.overworld())
+            .setTestMobsLive(live);
+        games.brennan.dungeontrain.net.EditorTestMobsPacket packet =
+            new games.brennan.dungeontrain.net.EditorTestMobsPacket(live);
+        for (ServerPlayer online : server.getPlayerList().getPlayers()) {
+            games.brennan.dungeontrain.net.DungeonTrainNet.sendTo(online, packet);
+        }
+        source.sendSuccess(() -> Component.translatable(live
+                ? "chat.dungeontrain.editor.test_mobs_live" : "chat.dungeontrain.editor.test_mobs_frozen")
+            .withStyle(live ? ChatFormatting.YELLOW : ChatFormatting.GREEN), false);
         return 1;
     }
 

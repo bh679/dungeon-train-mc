@@ -45,7 +45,26 @@
     {
       "id": "slimes",
       "weight": 9,
-      "maxLevel": 20
+      "maxLevel": 20,
+      "phases": [
+        "OVERWORLD",
+        "NETHER",
+        "VOID",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
     },
     {
       "id": "bogged",
@@ -198,6 +217,58 @@
     {
       "id": "new",
       "weight": 1
+    },
+    {
+      "id": "nagaspawn",
+      "weight": 8,
+      "minLevel": 3,
+      "phases": [
+        "NETHER",
+        "SPHERES",
+        "STACKS",
+        "FLOATING"
+      ]
+    },
+    {
+      "id": "jungleskel",
+      "weight": 8,
+      "minLevel": 3,
+      "phases": [
+        "NETHER",
+        "SPHERES",
+        "STACKS",
+        "LOST_CITY"
+      ]
+    },
+    {
+      "id": "piglings",
+      "weight": 2,
+      "phases": [
+        "NETHER",
+        "SPHERES",
+        "STACKS"
+      ]
+    },
+    {
+      "id": "endslime",
+      "weight": 5,
+      "phases": [
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "SPHERES",
+        "STACKS",
+        "FLOATING"
+      ]
+    },
+    {
+      "id": "shadowwalker",
+      "weight": 2,
+      "minLevel": 5,
+      "phases": [
+        "VOID",
+        "END"
+      ]
     }
   ]
 }

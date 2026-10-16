@@ -26674,6 +26674,46 @@
       "released_at": null
     },
     {
+      "id": "editor-test-mobs-setting",
+      "version": "0.1312.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test the Carriage can bring your mobs to life",
+      "summary": "A new editor setting lets your frozen mobs wake up when you test a carriage, so you can see how a room plays with its creatures moving. Your build plots keep them still.",
+      "highlights": [
+        "New Test Mobs setting in the editor",
+        "Works for every kind of template you can test"
+      ],
+      "pr": 2055,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "new-enemy-rooms-oct-2026",
+      "version": "0.1312.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "mobs"
+      ],
+      "title": "New company in the carriages",
+      "summary": "Several new rooms full of trouble join the train, and some only turn up further down the line.",
+      "highlights": [
+        "New enemy rooms to stumble into",
+        "Some wait in the stranger stretches of the journey"
+      ],
+      "pr": 2055,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "variant-unsupported-no-drops",
       "version": "0.1313.0",
       "type": "fix",
