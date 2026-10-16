@@ -26887,8 +26887,25 @@
       "released_at": "2026-10-16T15:45:50Z"
     },
     {
-      "id": "live-eye-hidden-advancements-2066",
+      "id": "attic-carriage-bedrock-hidden",
       "version": "0.1319.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage visual fix",
+      "summary": "Fixed a visual glitch in some dimensional carriages.",
+      "highlights": [],
+      "pr": 2065,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-hidden-advancements-2066",
+      "version": "0.1320.0",
       "type": "feat",
       "tags": [
         "feature",

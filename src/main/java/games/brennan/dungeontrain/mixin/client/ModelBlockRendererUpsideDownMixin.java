@@ -4,6 +4,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import games.brennan.dungeontrain.client.ClientPortalSeal;
 import games.brennan.dungeontrain.client.UpsideDownRenderFlip;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
@@ -25,6 +26,9 @@ import org.spongepowered.asm.mixin.Mixin;
  * actually calls during chunk meshing (it bypasses both {@code BlockRenderDispatcher.renderBatched} and
  * the vanilla 10-arg {@code tesselateBlock}).</p>
  *
+ * <p>Also where the portal seal's block trim lands: a block {@link ClientPortalSeal#hidesBlock} names
+ * contributes no quads, which is how the bedrock lid under an attic twin disappears from inside it.</p>
+ *
  * <p><b>This is the vanilla-pipeline half of the flip only.</b> Sodium replaces chunk meshing wholesale
  * and never calls {@code tesselateBlock}, so the same swap is applied on Sodium's own entry point by
  * {@code mixin.client.sodium.BlockRendererUpsideDownMixin}. Both delegate to the same predicate; which
@@ -39,6 +43,8 @@ public abstract class ModelBlockRendererUpsideDownMixin {
                                                  boolean checkSides, RandomSource random, long seed,
                                                  int packedOverlay, ModelData modelData, RenderType renderType,
                                                  Operation<Void> original) {
+        // Sealed world in a section the portal seal keeps: no quads at all (see ClientPortalSeal#hidesBlock).
+        if (ClientPortalSeal.hidesBlock(pos.getX(), pos.getY(), pos.getZ())) return;
         original.call(level, UpsideDownRenderFlip.apply(model, pos), state, pos, poseStack, consumer,
                 checkSides, random, seed, packedOverlay, modelData, renderType);
     }

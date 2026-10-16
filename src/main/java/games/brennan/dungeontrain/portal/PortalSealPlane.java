@@ -18,17 +18,30 @@ package games.brennan.dungeontrain.portal;
  * wholly beyond either plane is hidden.</p>
  *
  * <h2>Which side the seal row itself belongs to</h2>
- * <p>The seal rows are ordinary world, so they are kept — with one deliberate exception. The bedrock
- * row is hidden from <i>underneath</i>, because a rock ceiling is exactly what a player in a twin must
- * not see; seen from above it is the world's own floor and stays. The band's lid stays from both
- * sides: it is the attic's floor ({@link PortalTwinRegion#attic} bases the region on that very row),
- * and hiding it would hang the twin over a hole.</p>
+ * <p>A seal row is hidden from the sealed side and kept from the world's side. The bedrock row is
+ * hidden from <i>underneath</i>, because a rock ceiling is exactly what a player in a twin must not
+ * see; seen from above it is the world's own floor and stays. The band's lid is the mirror image:
+ * kept from below, where it is the upside-down world's sky, and hidden from the attic above it,
+ * where it would be a bedrock floor stretching away under every window. The twin hangs over open
+ * sky there just as the basement's twin hangs under it — its own underside sits on the row above
+ * the lid ({@link PortalTwinLanes#FLOOR_MARGIN}), so nothing of the room goes with it.</p>
+ *
+ * <h2>Rows a section-sized cut cannot reach</h2>
+ * <p>Chunk sections are culled whole, so a plane that falls mid-section leaves the rows between it
+ * and the section edge drawn. From inside a twin those rows are part of the sealed-off world — the
+ * mirrored ceiling under the lid, with its top faces culled against bedrock that is no longer
+ * drawn — so the cuts that apply <i>inside</i> sealed space also carry a {@link Cut#trimMinY trim}:
+ * rows whose blocks the mesher skips one by one. The world view never trims: its cut moves with
+ * the train, and a trim that changed would rebuild a whole layer of sections each time.</p>
  *
  * <p>No Minecraft types, so it unit-tests without a NeoForge bootstrap — the same convention as
  * {@link PortalTwinRegion} and {@link PortalGeometry}. The client half, which knows where the camera
  * is, which world it is in and where that world's planes are, is {@code ClientPortalSeal}.</p>
  */
 public final class PortalSealPlane {
+
+    /** Height of a chunk section — the granularity every box-level cut is exact to. */
+    private static final int SECTION = 16;
 
     private PortalSealPlane() {}
 
@@ -41,15 +54,40 @@ public final class PortalSealPlane {
      * @param roofY   hide anything whose bottom is at or above this. {@link Integer#MAX_VALUE} for
      *                "nothing above is hidden"
      */
-    public record Cut(boolean sealed, int floorY, int roofY) {
+    public record Cut(boolean sealed, int floorY, int roofY, int trimMinY, int trimMaxY) {
 
         /** Draw everything — outside a sealed world, and whenever the feature is switched off. */
-        public static final Cut NONE = new Cut(false, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        public static final Cut NONE = new Cut(false, Integer.MIN_VALUE, Integer.MAX_VALUE, 1, 0);
 
-        /** The cut bounded by these two planes, or {@link #NONE} when neither bounds anything. */
+        /** The cut bounded by these two planes, with no trim, or {@link #NONE} when neither bounds anything. */
         public static Cut between(int floorY, int roofY) {
             if (floorY == Integer.MIN_VALUE && roofY == Integer.MAX_VALUE) return NONE;
-            return new Cut(true, floorY, roofY);
+            return new Cut(true, floorY, roofY, 1, 0);
+        }
+
+        /**
+         * The cut bounded by these two planes, plus the rows of the sections straddling them that lie
+         * on the hidden side — for a camera inside sealed space, where those rows are sealed world.
+         * At most one plane is bounded in every such cut, so the trim is one contiguous range.
+         */
+        public static Cut trimmed(int floorY, int roofY) {
+            Cut cut = between(floorY, roofY);
+            if (!cut.sealed) return cut;
+            if (floorY != Integer.MIN_VALUE) {
+                int from = Math.floorDiv(floorY, SECTION) * SECTION;       // rows [from, floorY) are hidden
+                return new Cut(true, floorY, roofY, from, floorY - 1);
+            }
+            int to = Math.floorDiv(roofY, SECTION) * SECTION + SECTION - 1; // rows [roofY, to] are hidden
+            boolean aligned = Math.floorMod(roofY, SECTION) == 0;           // the section goes whole already
+            return aligned ? cut : new Cut(true, floorY, roofY, roofY, to);
+        }
+
+        /**
+         * Whether the block row {@code y} is in this cut's trim — drawn by no section the cut keeps.
+         * Read from chunk-build threads for every block meshed, so it is one range test.
+         */
+        public boolean hidesBlock(int y) {
+            return y >= trimMinY && y <= trimMaxY;
         }
 
         /**
@@ -82,9 +120,10 @@ public final class PortalSealPlane {
      * standing on the lid, eyes well over that, is in the attic and one crouched beneath it is not.
      * The three cases are exhaustive and ordered from the bottom of the world up.</p>
      *
-     * @param lidHere whether a lid is actually stamped at this world-X. Outside the band there is no
-     *                attic and no ceiling to hide anything over — every mountainside would otherwise
-     *                answer yes.
+     * @param lidHere whether the camera can be in an attic here: inside the band, where the lid is
+     *                stamped, or inside a twin the train has carried on past it into the Reassembly.
+     *                Anywhere else there is no attic and no ceiling to hide anything over — every
+     *                mountainside would otherwise answer yes.
      */
     /**
      * The cut near the sunk Amplified band, whose terrain runs down to {@code floorY} (the band's own
@@ -99,8 +138,8 @@ public final class PortalSealPlane {
      * @param atticHere whether the camera's column is in the band's slot, where the lid is stamped
      */
     public static Cut cutForAmplified(int floorY, int lidY, boolean atticHere, double cameraY) {
-        if (cameraY < floorY) return Cut.between(Integer.MIN_VALUE, floorY);
-        if (atticHere && cameraY > lidY + 1) return Cut.between(lidY, Integer.MAX_VALUE);
+        if (cameraY < floorY) return Cut.trimmed(Integer.MIN_VALUE, floorY);
+        if (atticHere && cameraY > lidY + 1) return Cut.trimmed(lidY + 1, Integer.MAX_VALUE);
         return Cut.between(floorY, Integer.MAX_VALUE);
     }
 
@@ -110,10 +149,11 @@ public final class PortalSealPlane {
 
         // In the basement: the bedrock row over your head goes with everything above it, and there is
         // nothing below you to hide.
-        if (hasFloor && cameraY < bedrockY) return Cut.between(Integer.MIN_VALUE, bedrockY);
+        if (hasFloor && cameraY < bedrockY) return Cut.trimmed(Integer.MIN_VALUE, bedrockY);
 
-        // In the attic: the lid under your feet stays, and the mirrored world below it goes.
-        if (hasLid && cameraY > roofY + 1) return Cut.between(roofY, Integer.MAX_VALUE);
+        // In the attic: the lid under the room goes, and the mirrored world below it with it — the
+        // room's own underside is the row above the lid, so the twin stands whole over open sky.
+        if (hasLid && cameraY > roofY + 1) return Cut.trimmed(roofY + 1, Integer.MAX_VALUE);
 
         // In the world between them — on the train, or anywhere else a player ordinarily stands. Both
         // seals are kept, and the sealed space beyond each of them is not drawn: this is the half that
