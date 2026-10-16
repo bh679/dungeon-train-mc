@@ -50,7 +50,7 @@ Needs Pillow (`pip install pillow`) for the icons, and a workspace that has buil
 |---|---|
 | Parent / tab | the advancement's `"parent"` line in `data/dungeontrain/advancement/**.json` |
 | Required value | the `threshold*` number on its criterion |
-| Icon | `display.icon.id` (the page stores picks as item ids) |
+| Icon | `display.icon.id` (the page stores picks as item ids; the search offers only registered items, never a clock or compass animation frame, and `AdvancementIconIdsTest` fails the build on any icon that is not an item) |
 | Background | the tab root's `display.background` |
 | Title / description / hint | `en_us.json`, at the advancement's own lang keys (other locales: see below) |
 | Tab name, tab order, tab copies | `src/main/resources/dungeontrain/advancement_tabs.json` (+ an `en_us` key for a name) |

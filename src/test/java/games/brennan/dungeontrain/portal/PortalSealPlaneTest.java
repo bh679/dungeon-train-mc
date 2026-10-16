@@ -75,19 +75,84 @@ final class PortalSealPlaneTest {
     }
 
     @Test
-    @DisplayName("over the band's lid, the lid stays and everything under it goes")
-    void atticHidesBelowButKeepsTheLid() {
+    @DisplayName("over the band's lid, the lid and everything under it goes")
+    void atticHidesTheLidAndBelow() {
         PortalSealPlane.Cut cut = PortalSealPlane.cutFor(BEDROCK_Y, ROOF_Y, true, IN_THE_ATTIC);
 
         assertTrue(cut.sealed());
-        // The lid row spans [roofY, roofY + 1) and is the attic's floor — hiding it would hang the
-        // twin over a hole.
-        assertFalse(cut.hides(ROOF_Y, ROOF_Y + 1));
+        // The lid row spans [roofY, roofY + 1): a bedrock floor under every window, and the complaint.
+        assertTrue(cut.hides(ROOF_Y, ROOF_Y + 1));
         // The mirrored world under it goes.
         assertTrue(cut.hides(ROOF_Y - 16, ROOF_Y));
         assertTrue(cut.hides(0, 20));
-        // And the twin standing on the lid is untouched.
+        // The twin's own bedrock underside sits on the row above the lid, and stays with the room.
+        assertFalse(cut.hides(ROOF_Y + 1, ROOF_Y + 2));
         assertFalse(cut.hides(ROOF_Y + 1, ROOF_Y + 8));
+    }
+
+    @Test
+    @DisplayName("from the attic, the rows the lid's section keeps are trimmed block by block")
+    void atticTrimsTheLidsSection() {
+        PortalSealPlane.Cut cut = PortalSealPlane.cutFor(BEDROCK_Y, ROOF_Y, true, IN_THE_ATTIC);
+        int sectionFloor = 96; // the section [96, 112) holds the lid at 110 and the room's underside at 111
+
+        // That section straddles the plane, so it is kept whole...
+        assertFalse(cut.hides(sectionFloor, sectionFloor + 16));
+        // ...and its rows from the section floor up to and including the lid are skipped one by one.
+        assertTrue(cut.hidesBlock(sectionFloor));
+        assertTrue(cut.hidesBlock(ROOF_Y - 1));
+        assertTrue(cut.hidesBlock(ROOF_Y));
+        // The room's underside and everything over it are drawn.
+        assertFalse(cut.hidesBlock(ROOF_Y + 1));
+        assertFalse(cut.hidesBlock(ROOF_Y + 5));
+        // Rows in sections the cut already drops need no trim.
+        assertFalse(cut.hidesBlock(sectionFloor - 1));
+    }
+
+    @Test
+    @DisplayName("a lid on a section's top row is hidden with its whole section")
+    void atticLidOnASectionTopNeedsNoRoomRows() {
+        int roof = 111; // section [96, 112) ends on the lid, so the room starts the next section
+        PortalSealPlane.Cut cut = PortalSealPlane.cutFor(BEDROCK_Y, roof, true, roof + 2.6);
+        assertTrue(cut.hides(96, 112));
+        assertFalse(cut.hides(112, 128));
+        assertFalse(cut.hidesBlock(roof + 1));
+    }
+
+    @Test
+    @DisplayName("the basement's plane is a section floor, so it trims nothing")
+    void basementNeedsNoTrim() {
+        PortalSealPlane.Cut cut = PortalSealPlane.cutFor(BEDROCK_Y, ROOF_Y, false, IN_BASEMENT);
+        for (int y = BEDROCK_Y - 20; y < BEDROCK_Y + 20; y++) assertFalse(cut.hidesBlock(y));
+    }
+
+    @Test
+    @DisplayName("the world view never trims — its cut moves with the train")
+    void worldViewNeverTrims() {
+        PortalSealPlane.Cut cut = PortalSealPlane.cutFor(BEDROCK_Y, ROOF_Y, true, ON_THE_TRAIN);
+        for (int y = -64; y < 320; y++) assertFalse(cut.hidesBlock(y));
+        assertFalse(PortalSealPlane.Cut.NONE.hidesBlock(0));
+    }
+
+    @Test
+    @DisplayName("the sunk band trims its attic over the lid and its basement under the sunk floor")
+    void amplifiedTrims() {
+        int floor = -20, lid = 200;
+        PortalSealPlane.Cut attic = PortalSealPlane.cutForAmplified(floor, lid, true, lid + 2.6);
+        assertTrue(attic.hidesBlock(lid));
+        assertTrue(attic.hidesBlock(192));
+        assertFalse(attic.hidesBlock(lid + 1));
+
+        // Below a sunk floor that is not a section floor: rows [floor, -16) go one by one.
+        PortalSealPlane.Cut basement = PortalSealPlane.cutForAmplified(floor, lid, true, floor - 10.0);
+        assertTrue(basement.hidesBlock(floor));
+        assertTrue(basement.hidesBlock(-17));
+        assertFalse(basement.hidesBlock(-16));
+        assertFalse(basement.hidesBlock(floor - 1));
+
+        // From the world over the sunk band, nothing is trimmed.
+        PortalSealPlane.Cut world = PortalSealPlane.cutForAmplified(floor, lid, true, 60.0);
+        assertFalse(world.hidesBlock(floor - 1));
     }
 
     @Test
