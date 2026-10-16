@@ -45,8 +45,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * would need a re-entrancy flag and would tangle with the Free Play confirmation's own re-dispatch
  * ({@code CheatDetectionEvents}), which already gates {@code /difficulty} for a clean run.</p>
  *
- * <p>The whole feature is inert when {@code difficultyIsolatedStash} is off: nothing is swapped, so
- * there is nothing to warn about and difficulty changes stay instant.</p>
+ * <p>In singleplayer the prompt is always shown, isolation on or off: a run is a world there, so the
+ * player chooses between <b>saving the difficulty for the next run</b> (the client remembers it and the
+ * next world starts on it — nothing changes now) and <b>abandoning this run to restart on it now</b>
+ * (the client kills the run and reboards). Both answers reach the server as a decline; only a
+ * multiplayer client's "Change difficulty" applies the change here. On a dedicated server with
+ * {@code difficultyIsolatedStash} off nothing is swapped, so changes there stay instant.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DifficultyChangeConfirmEvents {
@@ -70,20 +74,24 @@ public final class DifficultyChangeConfirmEvents {
      * @return true when the change was held (the caller must cancel it), false to let it run
      */
     public static boolean request(ServerPlayer player, Difficulty to, boolean force, boolean announce) {
-        if (!DungeonTrainConfig.getDifficultyIsolatedStash()) {
-            return false; // one shared stash — a difficulty change costs nothing
-        }
         MinecraftServer server = player.getServer();
         if (server == null) {
+            return false;
+        }
+        boolean isolated = DungeonTrainConfig.getDifficultyIsolatedStash();
+        // Singleplayer always asks: a run is a world there, so the player picks between saving the
+        // difficulty for the next run and abandoning this one to restart on it now. A dedicated server
+        // with one shared stash has nothing to warn about, so its changes stay instant.
+        if (!isolated && server.isDedicatedServer()) {
             return false;
         }
         Difficulty from = server.getWorldData().getDifficulty();
         if (from == to) {
             return false;
         }
-        boolean targetEmpty = !LoadoutStore.has(player.getUUID(), DifficultyPartition.keyFor(to));
+        boolean targetEmpty = isolated && !LoadoutStore.has(player.getUUID(), DifficultyPartition.keyFor(to));
         PENDING.put(player.getUUID(), new Pending(to, force, announce));
-        DungeonTrainNet.sendTo(player, new ShowDifficultyConfirmPacket(from, to, targetEmpty));
+        DungeonTrainNet.sendTo(player, new ShowDifficultyConfirmPacket(from, to, targetEmpty, isolated));
         return true;
     }
 

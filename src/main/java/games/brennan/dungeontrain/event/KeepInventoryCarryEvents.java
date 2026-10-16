@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.player.DifficultyPartition;
+import games.brennan.dungeontrain.player.LoadoutStore;
 import games.brennan.dungeontrain.player.PendingInventory;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -42,13 +44,18 @@ public final class KeepInventoryCarryEvents {
             return;
         }
         // Each difficulty is its own profile (see DifficultyPartition) — a carry captured on one
-        // difficulty must never land on another. Normally moot (the new world inherits the difficulty),
-        // so a mismatch means something changed it in between; drop the carry rather than leak it.
+        // difficulty must never land on another. A mismatch is now routine: the player saved a new
+        // difficulty for the next run, or abandoned and restarted on it. The carry belongs to the
+        // difficulty it was captured on, so it is banked there (restore, then swap it out into that
+        // partition's locker) and this difficulty's own loadout — or nothing, if never played — comes in.
+        String captured = PendingInventory.capturedPartition();
         if (!PendingInventory.matchesPartition(player)) {
-            LOGGER.info("[DungeonTrain] keepInventory carry discarded: captured on difficulty {}, "
-                    + "logging in on {}", PendingInventory.capturedPartition(),
-                DifficultyPartition.keyFor(player.level()));
-            PendingInventory.clear();
+            PendingInventory.restore(player);
+            if (DungeonTrainConfig.getDifficultyIsolatedStash()) {
+                String current = DifficultyPartition.keyFor(player.level());
+                LoadoutStore.swap(player, captured, current);
+                LOGGER.info("[DungeonTrain] keepInventory carry banked on {}, loaded {}'s loadout", captured, current);
+            }
             return;
         }
         PendingInventory.restore(player);

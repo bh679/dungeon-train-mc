@@ -52,6 +52,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.options.OptionsSubScreen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.Difficulty;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -633,6 +634,23 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
     private Setting build(ClientOptionsTab.Row row) {
         String key = row.captionKey();
         return switch (row) {
+            // The difficulty new runs start on, remembered locally. Out of a world (or on a remote
+            // server) a change is just remembered; in a singleplayer world on another difficulty it goes
+            // through the server's difficulty prompt — save for next run, or abandon and restart now —
+            // and the row shows the answer when the prompt returns here. Showing this screen again does
+            // not re-run init() (see onReturn), so arm a rebuild: Cancel must snap the row back.
+            case DIFFICULTY -> new Setting(
+                    CycleButton.<Difficulty>builder(Difficulty::getDisplayName)
+                            .withValues(Difficulty.values())
+                            .withInitialValue(ClientDisplayConfig.getNewRunDifficulty())
+                            .displayOnlyValue()
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key), (btn, difficulty) -> {
+                                if (DifficultyChangeConfirmClient.onOptionsRowChanged(difficulty)) {
+                                    this.onReturn = () -> {};
+                                }
+                            }),
+                    Component.translatable(key + ".tip"));
+
             // Adult / Kid content mode — the second home for the choice made once on the first-launch
             // consent card, so a player who dismissed that card (or an existing install that answered
             // consent before this feature shipped, and so never sees it) can still find the setting.
