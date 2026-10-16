@@ -763,6 +763,7 @@
   "chat.dungeontrain.live.watching.other": "%s people watching",
   "chat.dungeontrain.live.viewers.one": "You have %s viewer",
   "chat.dungeontrain.live.viewers.other": "You have %s viewers",
+  "chat.dungeontrain.live.one_eye": "You can only carry one Live Eye. The extra turned into a TV.",
   "chat.dungeontrain.live.free_play": "Free Play runs can't go live.",
   "chat.dungeontrain.live.took_over": "%s was cut off.",
   "chat.dungeontrain.live.preparing": "Preparing the broadcast equipment...",

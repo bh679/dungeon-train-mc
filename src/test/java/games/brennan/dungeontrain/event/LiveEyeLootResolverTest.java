@@ -57,4 +57,13 @@ final class LiveEyeLootResolverTest {
         assertFalse(LiveEyeLootResolver.onCooldown(seen, seen + 18_000L));
         assertFalse(LiveEyeLootResolver.onCooldown(seen, seen - 1L));
     }
+
+    @Test
+    @DisplayName("one Live Eye per player: every eye past the first is an extra")
+    void oneEyeCap() {
+        assertEquals(0, LiveEyeLootResolver.extrasOver(0));
+        assertEquals(0, LiveEyeLootResolver.extrasOver(1));
+        assertEquals(1, LiveEyeLootResolver.extrasOver(2));
+        assertEquals(4, LiveEyeLootResolver.extrasOver(5));
+    }
 }

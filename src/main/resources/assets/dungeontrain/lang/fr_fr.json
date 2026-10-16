@@ -707,6 +707,7 @@
   "chat.dungeontrain.live.watching.other": "%s personnes regardent",
   "chat.dungeontrain.live.viewers.one": "Vous avez %s spectateur",
   "chat.dungeontrain.live.viewers.other": "Vous avez %s spectateurs",
+  "chat.dungeontrain.live.one_eye": "Tu ne peux porter qu'un seul caméscope de diffusion. Celui en trop est devenu une télé.",
   "chat.dungeontrain.live.free_play": "Les parties en Jeu Libre ne peuvent pas passer en direct.",
   "chat.dungeontrain.live.took_over": "%s a été coupé.",
   "chat.dungeontrain.live.preparing": "Préparation du matériel de diffusion...",

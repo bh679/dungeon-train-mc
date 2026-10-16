@@ -707,6 +707,7 @@
   "chat.dungeontrain.live.watching.other": "%s Personen schauen zu",
   "chat.dungeontrain.live.viewers.one": "Du hast %s Zuschauer",
   "chat.dungeontrain.live.viewers.other": "Du hast %s Zuschauer",
+  "chat.dungeontrain.live.one_eye": "Du kannst nur einen Sende-Camcorder tragen. Der zweite wurde zu einem Fernseher.",
   "chat.dungeontrain.live.free_play": "Freies-Spiel-Runden können nicht live gehen.",
   "chat.dungeontrain.live.took_over": "%s wurde abgeschnitten.",
   "chat.dungeontrain.live.preparing": "Die Übertragungsausrüstung wird vorbereitet...",

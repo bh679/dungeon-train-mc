@@ -675,6 +675,7 @@
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
   "chat.dungeontrain.live.watching.other": "%s người đang xem",
   "chat.dungeontrain.live.viewers.other": "Bạn có %s người xem",
+  "chat.dungeontrain.live.one_eye": "Bạn chỉ có thể mang một máy quay phát sóng. Chiếc thừa đã biến thành TV.",
   "chat.dungeontrain.live.free_play": "Lượt chơi Tự Do không thể phát trực tiếp.",
   "chat.dungeontrain.live.took_over": "%s đã bị cắt sóng.",
   "chat.dungeontrain.live.preparing": "Đang chuẩn bị thiết bị phát sóng...",
