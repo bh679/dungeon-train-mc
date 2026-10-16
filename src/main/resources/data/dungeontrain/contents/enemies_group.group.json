@@ -22,7 +22,7 @@
     },
     {
       "id": "basitan",
-      "weight": 1,
+      "weight": 4,
       "minLevel": 1,
       "phases": [
         "NETHER",
