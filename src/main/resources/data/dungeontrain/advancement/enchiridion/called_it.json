@@ -1,0 +1,31 @@
+{
+  "parent": "dungeontrain:enchiridion/every_vote_counts",
+  "display": {
+    "icon": {
+      "id": "minecraft:enchanted_book"
+    },
+    "title": {
+      "translate": "advancements.dungeontrain.enchiridion.called_it.title"
+    },
+    "description": {
+      "translate": "advancements.dungeontrain.enchiridion.called_it.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": true
+  },
+  "criteria": {
+    "action": {
+      "trigger": "dungeontrain:gameplay_action",
+      "conditions": {
+        "actionId": "voted_live_takeover_winner"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "action"
+    ]
+  ]
+}
