@@ -140,6 +140,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_GROWTH = "gr";
     private static final String NBT_PAINTING = "pt";
     private static final String NBT_HUNG = "hg";
+    /** Per-entry placement condition token ({@code VariantCondition#id}). Absent when none. */
+    private static final String NBT_CONDITION = "if";
 
     /** Pool sub-keys, kept short for compact NBT. */
     private static final String NBT_POOL_FILL_MIN = "fmin";
@@ -448,6 +450,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.active().isDefault()) {
                 entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
             }
+            if (s.isConditional()) {
+                entry.putString(NBT_CONDITION, s.condition().id());
+            }
             if (!s.connect().isDefault()) {
                 entry.putByte(NBT_CONNECT_MODE, (byte) s.connect().ordinal());
             }
@@ -593,6 +598,9 @@ public final class VariantClipboardItem extends Item {
                     : games.brennan.dungeontrain.editor.VariantDifficulty.ALL;
                 difficulty = new games.brennan.dungeontrain.editor.VariantDifficulty(dmin, dmax);
             }
+            games.brennan.dungeontrain.editor.VariantCondition condition =
+                games.brennan.dungeontrain.editor.VariantCondition.parse(
+                    entry.contains(NBT_CONDITION, Tag.TAG_STRING) ? entry.getString(NBT_CONDITION) : null);
             // v7 mob entry: presence of NBT_ENTITY_ID drives the mob branch.
             if (entry.contains(NBT_ENTITY_ID, Tag.TAG_STRING)) {
                 String eidStr = entry.getString(NBT_ENTITY_ID);
@@ -601,7 +609,8 @@ public final class VariantClipboardItem extends Item {
                     LOGGER.warn("[DungeonTrain] VariantClipboard: skipping bad entity id '{}'", eidStr);
                     continue;
                 }
-                out.add(VariantState.ofMob(eid, beNbt, weight, rotation).withHalf(half).withDifficulty(difficulty));
+                out.add(VariantState.ofMob(eid, beNbt, weight, rotation).withHalf(half).withDifficulty(difficulty)
+                    .withCondition(condition));
                 continue;
             }
             String stateStr = entry.getString(NBT_STATE);
@@ -635,7 +644,8 @@ public final class VariantClipboardItem extends Item {
                 games.brennan.dungeontrain.editor.HungPainting.parse(
                     entry.contains(NBT_HUNG, Tag.TAG_STRING) ? entry.getString(NBT_HUNG) : null),
                 groupRef > 0 && entry.contains(NBT_GROUP_STATES, Tag.TAG_COMPOUND)
-                    ? decodeStates(entry.getCompound(NBT_GROUP_STATES)) : List.of()));
+                    ? decodeStates(entry.getCompound(NBT_GROUP_STATES)) : List.of(),
+                condition));
         }
         return out;
     }

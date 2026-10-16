@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriagePartVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.VariantConditions;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.template.TemplateDecor;
 import games.brennan.dungeontrain.worldgen.SilentBlockOps;
@@ -216,7 +217,9 @@ public final class CarriagePartPlacer {
             net.minecraft.world.level.levelgen.structure.BoundingBox.fromCorners(cornerA, cornerB);
         java.util.function.Predicate<BlockPos> within = partBox::isInside;
         try (ConnectPass.Scope ignored = ConnectPass.open();
-             GrowthPass.Scope grown = GrowthPass.open()) {
+             GrowthPass.Scope grown = GrowthPass.open();
+             VariantConditions.Scope conds = VariantConditions.open(VariantConditions.stamped(
+                 level, local -> transformLocal(stampOrigin, local, p.mirror(), partSize), partSize))) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(entry.localPos());
@@ -304,12 +307,15 @@ public final class CarriagePartPlacer {
             if (sidecar.isEmpty()) continue;
             CarriagePartKind.Placement p = placements.get(i);
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
-            for (var entry : sidecar.entries()) {
-                VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
-                if (picked == null || !picked.isMob()) continue;
-                BlockPos world = transformLocal(stampOrigin, entry.localPos(), p.mirror(), partSize);
-                if (CarriageContentsPlacer.spawnVariantMob(level, world, picked, carriageIndex)) {
-                    spawnedTotal++;
+            try (VariantConditions.Scope conds = VariantConditions.open(VariantConditions.stamped(
+                     level, local -> transformLocal(stampOrigin, local, p.mirror(), partSize), partSize))) {
+                for (var entry : sidecar.entries()) {
+                    VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
+                    if (picked == null || !picked.isMob()) continue;
+                    BlockPos world = transformLocal(stampOrigin, entry.localPos(), p.mirror(), partSize);
+                    if (CarriageContentsPlacer.spawnVariantMob(level, world, picked, carriageIndex)) {
+                        spawnedTotal++;
+                    }
                 }
             }
         }
