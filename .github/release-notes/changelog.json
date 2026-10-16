@@ -26642,11 +26642,10 @@
       "version": "0.1311.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "loot"
+        "feature"
       ],
-      "title": "A little help for the hardest runs",
-      "summary": "Taking on a run with nothing but melon to eat and none of the usual comforts? The train now looks after you: once you're well underway, the odd melon slice turns up on a flatbed ahead, waiting as you reach it.",
+      "title": "Something for the road",
+      "summary": "Some travellers may find the train has left them a small kindness.",
       "highlights": [],
       "pr": 2052,
       "date": "2026-10-16",
