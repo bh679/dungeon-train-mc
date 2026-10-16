@@ -123,7 +123,9 @@ public final class NumberInputScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+        // Text after super.render: Screen.render draws the (blurred) background itself, so text
+        // drawn before it is blurred away along with the world behind.
+        super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFFFF);
         g.drawCenteredString(this.font,
             Component.translatable("gui.dungeontrain.number_input.range", this.field.min(), this.field.max()),
@@ -133,7 +135,6 @@ public final class NumberInputScreen extends Screen {
                 Component.translatable("gui.dungeontrain.number_input.all_hint"),
                 this.width / 2, this.height / 2 + 48, 0xFFAAAAAA);
         }
-        super.render(g, mouseX, mouseY, partialTick);
     }
 
     @Override
