@@ -284,7 +284,8 @@ public final class ContainerContentsMenuController {
                 e.slotOverride(),
                 e.potionId() == null ? "" : e.potionId().toString(),
                 e.scaleWithDistance(),
-                e.potionForm().ordinal()));
+                e.potionForm().ordinal(),
+                e.book() == null ? "" : e.book().title()));
         }
         return new ContainerContentsSyncPacket(plot.key(), localPos, entries,
             pool.fillMin(), pool.fillMax(), containerSize, anchor, right, up, link);
@@ -389,6 +390,7 @@ public final class ContainerContentsMenuController {
                 ResourceLocation id;
                 int count;
                 ResourceLocation potionId = null;
+                StoredBook book = null;
                 if (packet.itemId() != null && !packet.itemId().isEmpty()) {
                     id = ResourceLocation.tryParse(packet.itemId());
                     if (id == null) {
@@ -410,13 +412,15 @@ public final class ContainerContentsMenuController {
                     // A potion added from the hand keeps its exact potion — a Potion of
                     // Healing spawns as one, not as a bare bottle for the roller to reinterpret.
                     potionId = ContainerContentsPotions.potionIdOf(held);
+                    // Likewise a signed book keeps its title, author and pages.
+                    book = ContainerContentsBooks.bookOf(held, player.registryAccess());
                 }
                 if (current.size() >= ContainerContentsPool.MAX_ENTRIES) {
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.contents_menu.pool_full", ContainerContentsPool.MAX_ENTRIES),
                         ChatFormatting.YELLOW);
                     return;
                 }
-                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId));
+                next = current.added(new ContainerContentsEntry(id, count, 1).withPotion(potionId).withBook(book));
                 dirty = true;
             }
             case REMOVE -> {
