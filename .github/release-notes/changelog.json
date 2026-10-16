@@ -26669,9 +26669,9 @@
       ],
       "pr": 2053,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "editor-test-mobs-setting",
@@ -26689,9 +26689,9 @@
       ],
       "pr": 2055,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "new-enemy-rooms-oct-2026",
@@ -26709,9 +26709,9 @@
       ],
       "pr": 2055,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z",
       "major": true,
       "notable": true,
       "description": "New creatures have boarded the train. The first of many more to come.\n\nSome carriages now hold mobs you\u2019ve never met on the line before. A few turn up early, and some wait much further down the line, in the stranger stretches of the journey. Keep your eyes open and your sword ready.\n\n## Other significant updates\n\n- Your Live stream shares your advancements, photos and books in Live chat on Discord, Twitch and the website, with a switch for each on the Stream tab\n- One Live Eye per player, and /streamer in Live chat shows who's on air\n- Builders: test controls let you try a build at any stage, difficulty level or band, and Test the Carriage can bring your frozen mobs to life\n- Builders: block variants can depend on their neighbours, and a dice button swaps the carriage around your contents\n- Bug fixes",
@@ -26731,9 +26731,9 @@
       "highlights": [],
       "pr": 2057,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "live-eye-one-per-player",
@@ -26748,9 +26748,9 @@
       "highlights": [],
       "pr": 2056,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "variant-group-refs-outlive-cells",
@@ -26769,9 +26769,9 @@
       ],
       "pr": 2058,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "streamer-chat-command",
@@ -26786,9 +26786,9 @@
       "highlights": [],
       "pr": 2059,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "live-eye-takeover-after-death-seen",
@@ -26803,9 +26803,9 @@
       "highlights": [],
       "pr": 2060,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "contents-reroll-carriage",
@@ -26823,9 +26823,9 @@
       ],
       "pr": 2061,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "block-variant-conditions",
@@ -26844,9 +26844,9 @@
       ],
       "pr": 2062,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "editor-test-toolbar-settings",
@@ -26866,9 +26866,9 @@
       ],
       "pr": 2063,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     },
     {
       "id": "test-back-returns-to-tested-plot",
@@ -26882,9 +26882,9 @@
       "summary": "Leaving Test the Carriage now puts you back in the room you were testing, even when you started the test from another plot. Rooms inside a group come back with their group open, so you can carry straight on editing.",
       "highlights": [],
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1318.0",
+      "released_at": "2026-10-16T15:45:50Z"
     }
   ]
 }
