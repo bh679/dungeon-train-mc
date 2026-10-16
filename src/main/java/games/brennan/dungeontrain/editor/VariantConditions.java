@@ -7,8 +7,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 
@@ -108,7 +110,8 @@ public final class VariantConditions {
 
     /**
      * {@code states} minus every entry whose condition fails at {@code localPos}. Returns
-     * {@code states} itself when nothing carries a condition. Each target is evaluated once.
+     * {@code states} itself when nothing carries a condition. Each neighbour and group is evaluated
+     * once however many entries ask about it.
      */
     public static List<VariantState> eligible(List<VariantState> states, BlockPos localPos,
                                               VariantGroupResolver view, long worldSeed, int index) {
@@ -116,16 +119,9 @@ public final class VariantConditions {
         if (!resolving.add(localPos)) return states;
         try {
             List<VariantState> out = new ArrayList<>(states.size());
-            java.util.Map<String, BlockState> targets = new java.util.HashMap<>();
+            Map<Object, BlockState> seen = new HashMap<>();
             for (VariantState s : states) {
-                if (!s.isConditional()) {
-                    out.add(s);
-                    continue;
-                }
-                VariantCondition c = s.condition();
-                BlockState target = targets.computeIfAbsent(c.targetToken(),
-                    k -> targetBlock(c, localPos, view, worldSeed, index));
-                if (c.matches(target)) out.add(s);
+                if (!s.isConditional() || passes(s.condition(), localPos, view, worldSeed, index, seen)) out.add(s);
             }
             return out;
         } finally {
@@ -133,15 +129,25 @@ public final class VariantConditions {
         }
     }
 
-    /** What ends up at {@code c}'s target, seen from the cell at {@code localPos}. */
-    @Nullable
-    static BlockState targetBlock(VariantCondition c, BlockPos localPos,
-                                  VariantGroupResolver view, long worldSeed, int index) {
+    /**
+     * Whether {@code c} holds for the cell at {@code localPos}: a group target when that group rolled
+     * a listed block, a touching target when <i>any</i> selected side holds one.
+     */
+    static boolean passes(VariantCondition c, BlockPos localPos, VariantGroupResolver view,
+                          long worldSeed, int index, Map<Object, BlockState> seen) {
         if (c.isGroupTarget()) {
-            BlockPos anchor = view.anchorOf(c.groupId());
-            return anchor == null ? null : rolledAt(anchor, view, worldSeed, index);
+            BlockState rolled = seen.computeIfAbsent(c.groupId(), k -> {
+                BlockPos anchor = view.anchorOf(c.groupId());
+                BlockState b = anchor == null ? null : rolledAt(anchor, view, worldSeed, index);
+                return b == null ? Blocks.AIR.defaultBlockState() : b;
+            });
+            return c.matches(rolled);
         }
-        return blockAt(localPos.relative(c.direction()), view, worldSeed, index);
+        for (Direction d : c.sides()) {
+            BlockState there = seen.computeIfAbsent(d, k -> blockAt(localPos.relative(d), view, worldSeed, index));
+            if (c.matches(there)) return true;
+        }
+        return false;
     }
 
     /** The block placed at {@code pos}: its variant roll, or the template's block. */

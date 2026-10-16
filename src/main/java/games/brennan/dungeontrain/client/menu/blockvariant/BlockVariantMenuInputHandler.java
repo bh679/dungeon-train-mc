@@ -255,7 +255,7 @@ public final class BlockVariantMenuInputHandler {
                 BlockVariantMenu.closeGrowthPopup();
                 BlockVariantMenu.toggleCondPopup(hit.index());
             }
-            case COND_OPTION -> dispatchCondition(hit, variantId, local);
+            case COND_OPTION -> dispatchCondition(hit, variantId, local, shift);
             case GROWTH_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.
@@ -488,7 +488,8 @@ public final class BlockVariantMenuInputHandler {
      * A button in the If popup. Same modal rules as the Grow popup: -2 closes, -1 is the popup's own
      * margin. The popup stays open so several values can be added in a row.
      */
-    private static void dispatchCondition(BlockVariantMenu.Hit hit, String variantId, net.minecraft.core.BlockPos local) {
+    private static void dispatchCondition(BlockVariantMenu.Hit hit, String variantId, net.minecraft.core.BlockPos local,
+                                          boolean shift) {
         int code = hit.secondary();
         if (code == -1) return;
         int row = hit.index();
@@ -509,18 +510,29 @@ public final class BlockVariantMenuInputHandler {
                 toGroup ? games.brennan.dungeontrain.editor.VariantConditionEdits.GROUP_NEXT
                     : games.brennan.dungeontrain.editor.VariantCondition.DEFAULT_DIRECTION.getSerializedName(), 0);
         } else if (section == ConditionPopupLayout.SECTION_TOUCHING) {
+            // Same clicks as the band picker: plain toggles this side, shift toggles all but this side.
+            String side = ConditionPopupLayout.touching(option).getSerializedName();
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
-                ConditionPopupLayout.touching(option).getSerializedName(), 0);
+                (shift ? games.brennan.dungeontrain.editor.VariantConditionEdits.OTHERS_PREFIX
+                    : games.brennan.dungeontrain.editor.VariantConditionEdits.TOGGLE_PREFIX) + side, 0);
         } else if (section == ConditionPopupLayout.SECTION_GROUP) {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 ConditionPopupLayout.groupToken(option), 0);
         } else if (section == ConditionPopupLayout.SECTION_BLOCKS) {
-            // Clicking an icon drops that block; the "–" placeholder of an empty list does nothing.
-            if (option >= ConditionPopupLayout.blocks(token).size()) return;
-            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.REMOVE_COND_VALUE, variantId, local, row,
-                "", option);
+            List<net.minecraft.resources.ResourceLocation> strip =
+                ConditionPopupLayout.strip(BlockVariantMenu.entries().get(row));
+            // The "–" placeholder of an empty strip does nothing.
+            if (option >= strip.size()) return;
+            // Group mode switches one of the group's blocks on or off; Touching mode drops the value.
+            packet = groupMode
+                ? new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
+                    strip.get(option).toString(), 0)
+                : new BlockVariantEditPacket(BlockVariantEditPacket.Op.REMOVE_COND_VALUE, variantId, local, row,
+                    "", option);
         } else if (section == ConditionPopupLayout.SECTION_ACTIONS) {
-            packet = new BlockVariantEditPacket(option == ConditionPopupLayout.ACTION_ADD
+            // Group mode's action row is Clear alone.
+            boolean add = !groupMode && option == ConditionPopupLayout.ACTION_ADD;
+            packet = new BlockVariantEditPacket(add
                 ? BlockVariantEditPacket.Op.ADD_COND_VALUE : BlockVariantEditPacket.Op.CLEAR_COND,
                 variantId, local, row, "", 0);
         } else {

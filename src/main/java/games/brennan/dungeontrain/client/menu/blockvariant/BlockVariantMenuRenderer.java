@@ -577,10 +577,12 @@ public final class BlockVariantMenuRenderer {
         // If popup, floating just above the panel like the Grow popup.
         int condRow = BlockVariantMenu.condPopupRow();
         if (condRow >= 0) {
-            String token = entries.get(condRow).condition();
-            List<GrowthPopupLayout.Row> condRows = ConditionPopupLayout.rows(token, panelW, halfH);
-            drawPopupRows(ps, buffer, font, condRows, BlockVariantMenu.CellKind.COND_OPTION, hovered);
-            drawConditionBlockStrip(ps, buffer, font, condRows, ConditionPopupLayout.blocks(token), hovered, icons);
+            BlockVariantSyncPacket.Entry condEntry = entries.get(condRow);
+            List<GrowthPopupLayout.Row> condRows = ConditionPopupLayout.rows(condEntry, panelW, halfH);
+            drawPopupRows(ps, buffer, font, condRows, BlockVariantMenu.CellKind.COND_OPTION, hovered,
+                (row, i) -> ConditionPopupLayout.isSelected(condEntry, row, i));
+            drawConditionBlockStrip(ps, buffer, font, condRows, ConditionPopupLayout.strip(condEntry),
+                !ConditionPopupLayout.isGroupMode(condEntry.condition()), hovered, icons);
         }
 
         // OPTIONS popup is drawn last so it shadows the row underneath.
@@ -649,6 +651,7 @@ public final class BlockVariantMenuRenderer {
     private static void drawConditionBlockStrip(PoseStack ps, MultiBufferSource buffer, Font font,
                                                 List<GrowthPopupLayout.Row> rows,
                                                 List<net.minecraft.resources.ResourceLocation> blocks,
+                                                boolean clickRemoves,
                                                 BlockVariantMenu.Hit hovered, @Nullable PanelIconBatch icons) {
         for (GrowthPopupLayout.Row row : rows) {
             if (row.section() != ConditionPopupLayout.SECTION_BLOCKS) continue;
@@ -658,7 +661,7 @@ public final class BlockVariantMenuRenderer {
                 double bR = bL + row.buttonWidth();
                 boolean hover = hovered.kind() == BlockVariantMenu.CellKind.COND_OPTION
                     && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);
-                if (hover) {
+                if (hover && clickRemoves) {
                     drawCenteredText(ps, buffer, font, "✕", (bL + bR) / 2.0, cy, 0xFFFF6060);
                     continue;
                 }
@@ -754,6 +757,14 @@ public final class BlockVariantMenuRenderer {
     private static void drawPopupRows(PoseStack ps, MultiBufferSource buffer, Font font,
                                       List<GrowthPopupLayout.Row> rows, BlockVariantMenu.CellKind optionKind,
                                       BlockVariantMenu.Hit hovered) {
+        drawPopupRows(ps, buffer, font, rows, optionKind, hovered, (row, i) -> i == row.selected());
+    }
+
+    /** {@link #drawPopupRows} with the lit buttons decided by {@code isSelected} — for multi-select rows. */
+    private static void drawPopupRows(PoseStack ps, MultiBufferSource buffer, Font font,
+                                      List<GrowthPopupLayout.Row> rows, BlockVariantMenu.CellKind optionKind,
+                                      BlockVariantMenu.Hit hovered,
+                                      java.util.function.BiPredicate<GrowthPopupLayout.Row, Integer> isSelected) {
         double[] r = GrowthPopupLayout.rect(rows);
         drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
         for (GrowthPopupLayout.Row row : rows) {
@@ -764,14 +775,14 @@ public final class BlockVariantMenuRenderer {
             // The If popup's block strip is a row of icon buttons, never a − n + stepper.
             boolean stepper = row.selected() < 0
                 && !(optionKind == BlockVariantMenu.CellKind.COND_OPTION
-                    && row.section() == ConditionPopupLayout.SECTION_BLOCKS);
+                    && row.section() != ConditionPopupLayout.SECTION_GROUP);
             for (int i = 0; i < row.buttons().length; i++) {
                 double bL = row.buttonLeft(i);
                 double bR = bL + row.buttonWidth();
                 // The middle of a painting − n + stepper is a read-out, not a button. A lone
                 // number cell (Grow Min / Max) is a button: it is the number itself.
                 boolean value = stepper && row.buttons().length == 3 && i == PaintingPopupLayout.STEPPER_VALUE;
-                boolean selected = i == row.selected();
+                boolean selected = isSelected.test(row, i);
                 boolean hover = !value && hovered.kind() == optionKind
                     && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);
                 int tint = value ? 0x00000000

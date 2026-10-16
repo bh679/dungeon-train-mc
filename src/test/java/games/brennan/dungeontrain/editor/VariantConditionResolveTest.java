@@ -94,6 +94,21 @@ final class VariantConditionResolveTest {
     }
 
     @Test
+    @DisplayName("several sides pass when any one of them holds a listed block")
+    void anySide() {
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantCondition northOrDown = below(Blocks.OAK_PLANKS).toggleSide(Direction.NORTH);
+        sc.put(CELL, List.of(of(Blocks.STONE).withCondition(below(Blocks.DIRT)), of(Blocks.GLASS).withCondition(northOrDown)));
+        // Planks only to the north, nothing below: still passes.
+        try (VariantConditions.Scope ignored = VariantConditions.open(
+                p -> p.equals(CELL.north()) ? Blocks.OAK_PLANKS.defaultBlockState() : Blocks.AIR.defaultBlockState())) {
+            assertEquals(Blocks.GLASS, blockOf(sc.resolve(CELL, 3, 3)));
+        }
+        // Planks on neither side: gated out, and so is stone — the cell is empty.
+        assertTrue(CarriageVariantBlocks.isEmptyPlaceholder(sc.resolve(CELL, 3, 3).state()));
+    }
+
+    @Test
     @DisplayName("every entry gated out leaves the cell empty")
     void allGatedIsEmpty() {
         CarriageVariantBlocks sc = CarriageVariantBlocks.empty();

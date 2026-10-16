@@ -67,6 +67,24 @@ final class VariantConditionTest {
     }
 
     @Test
+    @DisplayName("sides are a multi-select with the band picker's clicks: toggle one, shift toggles the others")
+    void sideMultiSelect() {
+        VariantCondition down = VariantCondition.NONE.withValueAdded(OAK);
+        VariantCondition downNorth = down.toggleSide(Direction.NORTH);
+        assertEquals(List.of(Direction.DOWN, Direction.NORTH), downNorth.sides());
+        assertEquals("down+north=minecraft:oak_planks", downNorth.id());
+        assertEquals(downNorth, VariantCondition.parse(downNorth.id()));
+        // Shift on DOWN from {DOWN}: every other side flips on.
+        assertEquals(VariantCondition.ALL_SIDES, down.toggleOtherSides(Direction.DOWN).sideMask());
+        // ...and again flips them back off, soloing DOWN.
+        assertEquals(List.of(Direction.DOWN), down.toggleOtherSides(Direction.DOWN)
+            .toggleOtherSides(Direction.DOWN).sides());
+        // Clearing the last side normalises to every side, like an empty band set.
+        assertEquals(VariantCondition.ALL_SIDES, down.toggleSide(Direction.DOWN).sideMask());
+        assertEquals("*", down.toggleSide(Direction.DOWN).targetLabel());
+    }
+
+    @Test
     @DisplayName("unknown block ids are dropped; a malformed target is no condition")
     void parseIsForgiving() {
         VariantCondition c = VariantCondition.parse("up=minecraft:oak_planks,nosuchmod:thing");
@@ -119,16 +137,20 @@ final class VariantConditionTest {
     @DisplayName("touching targets turn with plot rotation and mirror; group targets do not")
     void transforms() {
         VariantCondition north = VariantCondition.NONE.withDirection(Direction.NORTH).withValueAdded(OAK);
-        assertEquals(Direction.EAST, north.rotated(Rotation.CLOCKWISE_90).direction());
-        assertEquals(Direction.SOUTH, north.reflected(false, false, true).direction());
-        assertEquals(Direction.NORTH, north.reflected(true, true, false).direction());
+        assertEquals(List.of(Direction.EAST), north.rotated(Rotation.CLOCKWISE_90).sides());
+        assertEquals(List.of(Direction.SOUTH), north.reflected(false, false, true).sides());
+        assertEquals(List.of(Direction.NORTH), north.reflected(true, true, false).sides());
+        VariantCondition northDown = north.toggleSide(Direction.DOWN);
+        assertEquals(List.of(Direction.DOWN, Direction.UP), northDown.reflected(false, false, false)
+            .withSides(VariantCondition.bit(Direction.DOWN) | VariantCondition.bit(Direction.UP)).sides());
+        assertEquals(List.of(Direction.UP, Direction.SOUTH), northDown.reflected(false, true, true).sides());
         VariantCondition group = north.withGroup(4);
         assertEquals(group, group.rotated(Rotation.CLOCKWISE_90));
         assertEquals(group, group.reflected(true, true, true));
 
         VariantState glass = VariantState.of(Blocks.GLASS.defaultBlockState()).withCondition(north);
         assertEquals(Direction.SOUTH,
-            EditorMirror.reflectVariant(glass, false, false, true).condition().direction());
+            EditorMirror.reflectVariant(glass, false, false, true).condition().sides().get(0));
     }
 
     @Test
@@ -152,6 +174,18 @@ final class VariantConditionTest {
         assertNull(VariantConditionEdits.addHeld(added.condition(), new ItemStack(Items.DIAMOND)).condition());
         assertEquals(ResourceLocation.withDefaultNamespace("air"),
             VariantConditionEdits.addHeld(VariantCondition.NONE, ItemStack.EMPTY).condition().blocks().get(0));
+
+        VariantCondition g2 = VariantCondition.NONE.withGroup(2);
+        VariantCondition on = VariantConditionEdits.toggleValue(g2, "minecraft:oak_planks").condition();
+        assertEquals(List.of(OAK), on.blocks());
+        assertTrue(VariantConditionEdits.toggleValue(on, "minecraft:oak_planks").condition().blocks().isEmpty());
+        assertNull(VariantConditionEdits.toggleValue(g2, "nosuchmod:thing").condition());
+        assertEquals(List.of(OAK, ResourceLocation.withDefaultNamespace("air")), VariantConditionEdits.groupValues(List.of(
+            VariantState.of(Blocks.OAK_PLANKS.defaultBlockState()),
+            VariantState.of(Blocks.OAK_PLANKS.defaultBlockState()),
+            VariantState.of(CarriageVariantBlocks.emptyPlaceholder()))));
+        assertEquals(List.of(Direction.NORTH, Direction.EAST), VariantConditionEdits.setTarget(
+            VariantCondition.NONE.withDirection(Direction.NORTH), "toggle:east", groups, 1).condition().sides());
 
         assertTrue(VariantConditionEdits.isLive(VariantCondition.NONE.withGroup(2), groups, 1));
         assertFalse(VariantConditionEdits.isLive(VariantCondition.NONE.withGroup(9), groups, 1));

@@ -370,13 +370,25 @@ public final class BlockVariantMenuController {
                 s.painting().isDefault() ? "" : s.painting().id(),
                 // Sent even with no values so the popup keeps the target the author picked.
                 s.condition().id(),
-                VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId)));
+                VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
+                groupValuesToken(plot, s.condition())));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
             (byte) plot.spanAt(localPos).toByte(),
             plot.supportsConnectMode(), plot.supportsGrowth());
+    }
+
+    /** Group mode's togglable values — the target group's distinct blocks, comma-joined; blank otherwise. */
+    private static String groupValuesToken(BlockVariantPlot plot, VariantCondition c) {
+        if (!c.isGroupTarget()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (var id : VariantConditionEdits.groupValues(plot.groupRefs().statesForLockId(c.groupId()))) {
+            if (sb.length() > 0) sb.append(',');
+            sb.append(id);
+        }
+        return sb.toString();
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -941,7 +953,7 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
-            case SET_COND_TARGET, ADD_COND_VALUE, REMOVE_COND_VALUE, CLEAR_COND -> {
+            case SET_COND_TARGET, ADD_COND_VALUE, REMOVE_COND_VALUE, CLEAR_COND, TOGGLE_COND_VALUE -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
@@ -950,6 +962,7 @@ public final class BlockVariantMenuController {
                     case SET_COND_TARGET -> VariantConditionEdits.setTarget(entry.condition(),
                         packet.stateString(), plot.groupRefs().lockIdsInUse(), plot.lockIdAt(localPos));
                     case ADD_COND_VALUE -> VariantConditionEdits.addHeld(entry.condition(), player.getMainHandItem());
+                    case TOGGLE_COND_VALUE -> VariantConditionEdits.toggleValue(entry.condition(), packet.stateString());
                     case REMOVE_COND_VALUE -> new VariantConditionEdits.Result(
                         entry.condition().withValueRemoved(packet.delta()), null);
                     default -> new VariantConditionEdits.Result(VariantCondition.NONE, null);

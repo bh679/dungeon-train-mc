@@ -130,7 +130,7 @@ public final class BlockVariantMenuRaycast {
         int condRow = BlockVariantMenu.condPopupRow();
         if (condRow >= 0) {
             BlockVariantMenu.Hit condHit = popupRowsHit(
-                ConditionPopupLayout.rows(entries.get(condRow).condition(), panelW, halfH),
+                ConditionPopupLayout.rows(entries.get(condRow), panelW, halfH),
                 BlockVariantMenu.CellKind.COND_OPTION, condRow, hitX, hitY, halfW, halfH);
             return condHit;
         }

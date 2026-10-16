@@ -127,7 +127,9 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      ADD_COND_VALUE,
                      // delta = index of the value to drop.
                      REMOVE_COND_VALUE,
-                     CLEAR_COND }
+                     CLEAR_COND,
+                     // Group mode: stateString = block id to switch on / off in the condition.
+                     TOGGLE_COND_VALUE }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
