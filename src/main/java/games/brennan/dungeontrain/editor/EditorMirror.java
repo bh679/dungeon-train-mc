@@ -244,7 +244,8 @@ public final class EditorMirror {
             reflectRotation(v.rotation(), v.state(), flipX, flipY, flipZ),
             v.linkedLootPrefabId(), v.entityId(),
             reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active(), v.connect(),
-            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth(), v.painting(), v.hung());
+            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth(), v.painting(), v.hung(),
+            v.groupStates());
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */
