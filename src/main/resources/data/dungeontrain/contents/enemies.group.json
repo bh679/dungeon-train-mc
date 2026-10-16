@@ -220,7 +220,7 @@
     },
     {
       "id": "nagaspawn",
-      "weight": 8,
+      "weight": 7,
       "minLevel": 3,
       "phases": [
         "NETHER",
@@ -231,18 +231,19 @@
     },
     {
       "id": "jungleskel",
-      "weight": 8,
-      "minLevel": 3,
+      "weight": 7,
+      "minLevel": 4,
       "phases": [
         "NETHER",
         "SPHERES",
         "STACKS",
+        "FLOATING",
         "LOST_CITY"
       ]
     },
     {
       "id": "piglings",
-      "weight": 2,
+      "weight": 4,
       "phases": [
         "NETHER",
         "SPHERES",
@@ -263,11 +264,15 @@
     },
     {
       "id": "shadowwalker",
-      "weight": 2,
-      "minLevel": 5,
+      "weight": 4,
+      "minLevel": 7,
       "phases": [
         "VOID",
-        "END"
+        "END",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FLOATING"
       ]
     }
   ]
