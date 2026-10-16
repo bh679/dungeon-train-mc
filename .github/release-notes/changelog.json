@@ -26494,9 +26494,9 @@
       ],
       "pr": 2040,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
     },
     {
       "id": "standard-number-steppers",
@@ -26516,9 +26516,9 @@
       ],
       "pr": 2041,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
     },
     {
       "id": "tv-right-click-any-item",
@@ -26532,9 +26532,9 @@
       "highlights": [],
       "pr": 2046,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
     },
     {
       "id": "bed-death-message-name",
@@ -26552,9 +26552,9 @@
       ],
       "pr": 2048,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
     },
     {
       "id": "release-announce-live-chat",
@@ -26569,9 +26569,9 @@
       "highlights": [],
       "pr": 2047,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
     },
     {
       "id": "live-eye-popups-on-stream",
@@ -26590,9 +26590,9 @@
       ],
       "pr": 2049,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
     },
     {
       "id": "dimensional-carriage-chests-reroll",
