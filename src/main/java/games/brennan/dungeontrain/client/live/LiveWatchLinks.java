@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.live;
 
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient;
+import org.jetbrains.annotations.Nullable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -33,14 +35,41 @@ final class LiveWatchLinks {
 
     /** The line for this build. */
     static Component line() {
-        String branch = VersionInfo.BRANCH;
+        return line(null);
+    }
+
+    /**
+     * The line for this build; with the streamer's own channel ({@code own}, their linked Twitch, when
+     * they opted in to the restream) it ends "…and on your channel [twitch.tv/x]".
+     */
+    static Component line(@Nullable LiveFeedClient.Twitch own) {
+        return line(VersionInfo.BRANCH, own);
+    }
+
+    static Component line(String branch, @Nullable LiveFeedClient.Twitch own) {
         String twitch = twitchUrlForBranch(branch);
         MutableComponent tv = link("chat.dungeontrain.live.link.tv", tvUrlForBranch(branch));
-        MutableComponent line = twitch == null
-            ? Component.translatable("chat.dungeontrain.live.watch_link", tv)
-            : Component.translatable("chat.dungeontrain.live.watch_links",
-                link("chat.dungeontrain.live.link.twitch", twitch), tv);
+        boolean ownChannel = own != null && own.restream();
+        MutableComponent line;
+        if (twitch == null) {
+            line = ownChannel
+                ? Component.translatable("chat.dungeontrain.live.watch_link_own", tv, ownLink(own))
+                : Component.translatable("chat.dungeontrain.live.watch_link", tv);
+        } else {
+            MutableComponent tw = link("chat.dungeontrain.live.link.twitch", twitch);
+            line = ownChannel
+                ? Component.translatable("chat.dungeontrain.live.watch_links_own", tw, tv, ownLink(own))
+                : Component.translatable("chat.dungeontrain.live.watch_links", tw, tv);
+        }
         return line.withStyle(ChatFormatting.GREEN);
+    }
+
+    /** "twitch.tv/login" as a link. */
+    private static MutableComponent ownLink(LiveFeedClient.Twitch own) {
+        return Component.literal("twitch.tv/" + own.login())
+            .withStyle(s -> s.withColor(ChatFormatting.AQUA).withUnderlined(true)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, own.url()))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(own.url()))));
     }
 
     private static boolean isLiveCap(String branch) {

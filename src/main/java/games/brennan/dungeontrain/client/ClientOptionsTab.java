@@ -116,6 +116,11 @@ public enum ClientOptionsTab {
          * ({@code DiscordAccountState}), so it cannot be fixed enum rows of its own.
          */
         DISCORD_ACCOUNT(null),
+        /**
+         * Stands for the whole Twitch-account block the same way: link state, then the restream and
+         * title opt-ins once linked ({@code TwitchAccountState}). Hidden in Kid mode.
+         */
+        TWITCH_ACCOUNT(null),
 
         // --- Backups (widgets built by Dungeon Backup's BackupOptionsWidgets) ---
         /** Where restore points of builds and progress are written. */
@@ -154,6 +159,8 @@ public enum ClientOptionsTab {
         STREAM_NAME_TAG("gui.dungeontrain.options.stream_name_tag"),
         /** The stream's Discord chat in your chat, and yours back to it. Locked off in Kid mode. */
         LIVE_CHAT("gui.dungeontrain.options.live_chat"),
+        /** The "drop your Twitch in chat for a shout-out" line at stream start, while no Twitch is saved. */
+        TWITCH_HINT("gui.dungeontrain.options.twitch_hint"),
         /** Whether this client decodes live feeds onto TVs and the pinned viewer. Also on Performance. */
         LIVE_FEED_VIEWING("gui.dungeontrain.options.live_feed_viewing"),
         /** The broadcast's picture size; the preview shows it. */
@@ -272,7 +279,10 @@ public enum ClientOptionsTab {
                 // (both open a page), with it it sits on a line of its own.
                 rows.add(Row.BOOK_LANGUAGES);
             }
-            case ACCOUNT -> rows.add(Row.DISCORD_ACCOUNT);
+            case ACCOUNT -> {
+                rows.add(Row.DISCORD_ACCOUNT);
+                rows.add(Row.TWITCH_ACCOUNT);
+            }
             case BACKUPS -> {
                 // Its own tab: the block outgrew a heading on General once it had four rows and
                 // a sibling mod (Dungeon Backup) owning three of them.
@@ -306,6 +316,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_AUDIO);
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.LIVE_CHAT);
+                rows.add(Row.TWITCH_HINT);
                 rows.add(Row.LIVE_FEED_VIEWING);
                 rows.add(Row.STREAM_SIZE);
                 rows.add(Row.HEAD_VIEWER_SIZE);
