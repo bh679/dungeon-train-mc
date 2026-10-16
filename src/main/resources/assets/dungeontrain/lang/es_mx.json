@@ -3449,7 +3449,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Contiguo",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Grupo",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Es",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "o",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ Mano",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Borrar",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Cuadro",

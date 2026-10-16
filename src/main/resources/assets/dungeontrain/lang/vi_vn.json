@@ -3393,7 +3393,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Liền kề",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Nhóm",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Là",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "hoặc",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ Cầm",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Xóa",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Tranh",

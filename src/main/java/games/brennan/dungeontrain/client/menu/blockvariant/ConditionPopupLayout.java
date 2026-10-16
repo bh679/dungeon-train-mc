@@ -14,24 +14,24 @@ import java.util.List;
  * Geometry + labels of the Z menu's If popup for one row, drawn and hit-tested through the Grow
  * popup's {@link GrowthPopupLayout.Row} shape so the renderer and raycaster share one layout.
  *
- * <p>Top to bottom: <b>Touching</b> (N S E W U D), <b>Group</b> ({@code ◂ G3 ▸}), one row per value
- * ({@code oak_planks ✕}, OR'd together), then <b>+ Held</b> and <b>Clear</b>.</p>
+ * <p>Top to bottom: the <b>mode</b> ({@code Touching | Group}), that mode's picker ({@code N S E W U D}
+ * or {@code ◂ G3 ▸}), the <b>block list</b> as a horizontal strip of icons (OR'd; click one to drop
+ * it), then <b>+ Held</b> and <b>Clear</b>.</p>
  */
 final class ConditionPopupLayout {
 
-    static final int SECTION_TOUCHING = 0;
-    static final int SECTION_GROUP = 1;
-    static final int SECTION_ACTIONS = 2;
-    /** Value rows are {@code SECTION_VALUE_BASE + valueIndex}. */
-    static final int SECTION_VALUE_BASE = 10;
+    static final int SECTION_MODE = 0;
+    static final int SECTION_TOUCHING = 1;
+    static final int SECTION_GROUP = 2;
+    static final int SECTION_BLOCKS = 3;
+    static final int SECTION_ACTIONS = 4;
 
+    static final int MODE_TOUCHING = 0;
+    static final int MODE_GROUP = 1;
     static final int ACTION_ADD = 0;
     static final int ACTION_CLEAR = 1;
-    static final int VALUE_REMOVE = 1;
     static final int GROUP_PREV = 0;
-    static final int GROUP_NEXT = 2;
 
-    private static final int MAX_NAME = 14;
     private static final String[] TOUCHING_LABELS = {"N", "S", "E", "W", "U", "D"};
 
     private ConditionPopupLayout() {}
@@ -39,17 +39,19 @@ final class ConditionPopupLayout {
     /** The visible sections for the row's condition token, top to bottom, positioned like the Grow popup. */
     static List<GrowthPopupLayout.Row> rows(String token, double panelW, double halfH) {
         VariantCondition c = VariantCondition.parse(token);
-        List<Object[]> spec = new ArrayList<>(4 + c.blocks().size());
-        spec.add(new Object[] {SECTION_TOUCHING, MenuLang.t("block_variant.condition_touching"),
-            TOUCHING_LABELS.clone(), c.isGroupTarget() ? -1 : touchingIndex(c.direction())});
-        String group = c.isGroupTarget() ? "G" + c.groupId() : "–";
-        spec.add(new Object[] {SECTION_GROUP, MenuLang.t("block_variant.condition_group"),
-            new String[] {"◂", group, "▸"}, c.isGroupTarget() ? 1 : -1});
-        for (int i = 0; i < c.blocks().size(); i++) {
-            String label = MenuLang.t(i == 0 ? "block_variant.condition_is" : "block_variant.condition_or");
-            spec.add(new Object[] {SECTION_VALUE_BASE + i, label,
-                new String[] {blockName(c.blocks().get(i)), "✕"}, -1});
+        List<Object[]> spec = new ArrayList<>(4);
+        spec.add(new Object[] {SECTION_MODE, MenuLang.t("block_variant.condition"),
+            new String[] {MenuLang.t("block_variant.condition_touching"), MenuLang.t("block_variant.condition_group")},
+            c.isGroupTarget() ? MODE_GROUP : MODE_TOUCHING});
+        if (c.isGroupTarget()) {
+            spec.add(new Object[] {SECTION_GROUP, "", new String[] {"◂", "G" + c.groupId(), "▸"}, -1});
+        } else {
+            spec.add(new Object[] {SECTION_TOUCHING, "", TOUCHING_LABELS.clone(), touchingIndex(c.direction())});
         }
+        // One icon slot per value; the labels stay blank because the renderer draws the icons.
+        String[] slots = c.blocks().isEmpty() ? new String[] {"–"} : new String[c.blocks().size()];
+        for (int i = 0; i < c.blocks().size(); i++) slots[i] = "";
+        spec.add(new Object[] {SECTION_BLOCKS, MenuLang.t("block_variant.condition_is"), slots, -1});
         spec.add(new Object[] {SECTION_ACTIONS, "",
             new String[] {MenuLang.t("block_variant.condition_add_held"), MenuLang.t("block_variant.condition_clear")}, -1});
 
@@ -64,6 +66,16 @@ final class ConditionPopupLayout {
                 left, left + GrowthPopupLayout.POPUP_WIDTH, bottom, bottom + GrowthPopupLayout.ROW_HEIGHT));
         }
         return rows;
+    }
+
+    /** The block ids shown in the {@link #SECTION_BLOCKS} strip, in slot order. */
+    static List<ResourceLocation> blocks(String token) {
+        return VariantCondition.parse(token).blocks();
+    }
+
+    /** True when the row's condition targets a group (Group mode). */
+    static boolean isGroupMode(String token) {
+        return VariantCondition.parse(token).isGroupTarget();
     }
 
     /** The touching target a button in {@link #SECTION_TOUCHING} sets. */
@@ -92,11 +104,5 @@ final class ConditionPopupLayout {
             if (VariantConditions.TOUCHING[i] == d) return i;
         }
         return -1;
-    }
-
-    /** The block's path, cut short to fit a button ({@code minecraft:oak_planks} → {@code oak_planks}). */
-    static String blockName(ResourceLocation id) {
-        String path = id.getPath();
-        return path.length() <= MAX_NAME ? path : path.substring(0, MAX_NAME - 1) + "…";
     }
 }

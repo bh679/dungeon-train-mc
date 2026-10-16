@@ -3449,7 +3449,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Adiacente",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Gruppo",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "È",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "o",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ Mano",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Svuota",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Dipinto",

@@ -3407,7 +3407,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "相鄰",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "組",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "是",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "或",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ 手持",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "清空",
   "gui.dungeontrain.editor_menu.block_variant.painting": "畫",

@@ -460,20 +460,31 @@ public final class BlockVariantMenuInputHandler {
         }
         int section = code / 10;
         int option = code % 10;
+        String token = BlockVariantMenu.entries().get(row).condition();
+        boolean groupMode = ConditionPopupLayout.isGroupMode(token);
         BlockVariantEditPacket packet;
-        if (section == ConditionPopupLayout.SECTION_TOUCHING) {
+        if (section == ConditionPopupLayout.SECTION_MODE) {
+            // Switching mode keeps the block list; Group picks the first other lock group.
+            boolean toGroup = option == ConditionPopupLayout.MODE_GROUP;
+            if (toGroup == groupMode) return;
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
+                toGroup ? games.brennan.dungeontrain.editor.VariantConditionEdits.GROUP_NEXT
+                    : games.brennan.dungeontrain.editor.VariantCondition.DEFAULT_DIRECTION.getSerializedName(), 0);
+        } else if (section == ConditionPopupLayout.SECTION_TOUCHING) {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 ConditionPopupLayout.touching(option).getSerializedName(), 0);
         } else if (section == ConditionPopupLayout.SECTION_GROUP) {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 ConditionPopupLayout.groupToken(option), 0);
+        } else if (section == ConditionPopupLayout.SECTION_BLOCKS) {
+            // Clicking an icon drops that block; the "–" placeholder of an empty list does nothing.
+            if (option >= ConditionPopupLayout.blocks(token).size()) return;
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.REMOVE_COND_VALUE, variantId, local, row,
+                "", option);
         } else if (section == ConditionPopupLayout.SECTION_ACTIONS) {
             packet = new BlockVariantEditPacket(option == ConditionPopupLayout.ACTION_ADD
                 ? BlockVariantEditPacket.Op.ADD_COND_VALUE : BlockVariantEditPacket.Op.CLEAR_COND,
                 variantId, local, row, "", 0);
-        } else if (section >= ConditionPopupLayout.SECTION_VALUE_BASE && option == ConditionPopupLayout.VALUE_REMOVE) {
-            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.REMOVE_COND_VALUE, variantId, local, row,
-                "", section - ConditionPopupLayout.SECTION_VALUE_BASE);
         } else {
             return;
         }

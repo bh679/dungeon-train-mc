@@ -3393,7 +3393,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "ติดกัน",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "กลุ่ม",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "คือ",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "หรือ",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ ในมือ",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "ล้าง",
   "gui.dungeontrain.editor_menu.block_variant.painting": "ภาพวาด",

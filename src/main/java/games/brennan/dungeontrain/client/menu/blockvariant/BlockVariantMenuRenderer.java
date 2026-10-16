@@ -577,9 +577,10 @@ public final class BlockVariantMenuRenderer {
         // If popup, floating just above the panel like the Grow popup.
         int condRow = BlockVariantMenu.condPopupRow();
         if (condRow >= 0) {
-            drawPopupRows(ps, buffer, font,
-                ConditionPopupLayout.rows(entries.get(condRow).condition(), panelW, halfH),
-                BlockVariantMenu.CellKind.COND_OPTION, hovered);
+            String token = entries.get(condRow).condition();
+            List<GrowthPopupLayout.Row> condRows = ConditionPopupLayout.rows(token, panelW, halfH);
+            drawPopupRows(ps, buffer, font, condRows, BlockVariantMenu.CellKind.COND_OPTION, hovered);
+            drawConditionBlockStrip(ps, buffer, font, condRows, ConditionPopupLayout.blocks(token), hovered, icons);
         }
 
         // OPTIONS popup is drawn last so it shadows the row underneath.
@@ -638,6 +639,63 @@ public final class BlockVariantMenuRenderer {
         drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
         drawCenteredText(ps, buffer, font, GrowthPopupLayout.shortLabel(growth, parsed),
             (cellL + cellR) / 2.0, rowCY, growth.on() || hover ? 0xFFFFFFFF : 0xFF888888);
+    }
+
+    /**
+     * The If popup's block list: one icon per value, left to right, in the slots
+     * {@link #drawPopupRows} already tinted. Hovering a slot shows the ✕ that clicking it does.
+     * Air (an empty-hand value) has no item, so it reads as a dash.
+     */
+    private static void drawConditionBlockStrip(PoseStack ps, MultiBufferSource buffer, Font font,
+                                                List<GrowthPopupLayout.Row> rows,
+                                                List<net.minecraft.resources.ResourceLocation> blocks,
+                                                BlockVariantMenu.Hit hovered, @Nullable PanelIconBatch icons) {
+        for (GrowthPopupLayout.Row row : rows) {
+            if (row.section() != ConditionPopupLayout.SECTION_BLOCKS) continue;
+            double cy = (row.bottom() + row.top()) / 2.0;
+            for (int i = 0; i < blocks.size(); i++) {
+                double bL = row.buttonLeft(i);
+                double bR = bL + row.buttonWidth();
+                boolean hover = hovered.kind() == BlockVariantMenu.CellKind.COND_OPTION
+                    && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);
+                if (hover) {
+                    drawCenteredText(ps, buffer, font, "✕", (bL + bR) / 2.0, cy, 0xFFFF6060);
+                    continue;
+                }
+                ItemStack stack = conditionIcon(blocks.get(i));
+                if (stack == null) {
+                    drawCenteredText(ps, buffer, font, "∅", (bL + bR) / 2.0, cy, 0xFFFFFFFF);
+                    continue;
+                }
+                double size = Math.min(ICON_SIZE, row.buttonWidth() * 0.8);
+                double centerX = (bL + bR) / 2.0;
+                if (icons != null) {
+                    icons.add(ps, stack, centerX, cy, size);
+                    continue;
+                }
+                Minecraft mc = Minecraft.getInstance();
+                ps.pushPose();
+                ps.translate(centerX, cy, 0.002);
+                ps.scale((float) size, (float) size, (float) size);
+                mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GUI, LightTexture.FULL_BRIGHT,
+                    OverlayTexture.NO_OVERLAY, ps, buffer, mc.level, 0);
+                ps.popPose();
+            }
+        }
+    }
+
+    /** The item a condition value shows as; {@code null} for air. Liquids show their bucket. */
+    @Nullable
+    private static ItemStack conditionIcon(net.minecraft.resources.ResourceLocation id) {
+        net.minecraft.world.level.block.Block block =
+            net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(id);
+        if (block == null || block == net.minecraft.world.level.block.Blocks.AIR) return null;
+        Item item = block.asItem();
+        if (item == null || item == Items.AIR) {
+            Item bucket = games.brennan.dungeontrain.editor.VariantLiquids.bucketIcon(block.defaultBlockState());
+            if (bucket != null) item = bucket;
+        }
+        return new ItemStack(item == null || item == Items.AIR ? Items.BARRIER : item);
     }
 
     /**
@@ -703,7 +761,10 @@ public final class BlockVariantMenuRenderer {
             double bTop = row.top() - 0.02;
             double cy = (bBot + bTop) / 2.0;
             drawLeftText(ps, buffer, font, row.label(), row.left() + GrowthPopupLayout.PAD + 0.03, cy, 0xFFCCCCCC);
-            boolean stepper = row.selected() < 0;
+            // The If popup's block strip is a row of icon buttons, never a − n + stepper.
+            boolean stepper = row.selected() < 0
+                && !(optionKind == BlockVariantMenu.CellKind.COND_OPTION
+                    && row.section() == ConditionPopupLayout.SECTION_BLOCKS);
             for (int i = 0; i < row.buttons().length; i++) {
                 double bL = row.buttonLeft(i);
                 double bR = bL + row.buttonWidth();

@@ -3510,7 +3510,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Рядом",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Группа",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Это",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "или",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ В руке",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Очистить",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Картина",

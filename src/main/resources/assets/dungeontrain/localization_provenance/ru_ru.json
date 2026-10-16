@@ -2731,7 +2731,6 @@
       "gui.dungeontrain.editor_menu.block_variant.condition_touching",
       "gui.dungeontrain.editor_menu.block_variant.condition_group",
       "gui.dungeontrain.editor_menu.block_variant.condition_is",
-      "gui.dungeontrain.editor_menu.block_variant.condition_or",
       "gui.dungeontrain.editor_menu.block_variant.condition_add_held",
       "gui.dungeontrain.editor_menu.block_variant.condition_clear",
       "gui.dungeontrain.editor_menu.block_variant.painting",

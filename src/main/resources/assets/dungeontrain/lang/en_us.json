@@ -4044,7 +4044,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Touching",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Group",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Is",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "or",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ Held",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Clear",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Painting",

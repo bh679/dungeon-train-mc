@@ -4098,7 +4098,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Поруч",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Група",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Це",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "або",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ У руці",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Очистити",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Картина",

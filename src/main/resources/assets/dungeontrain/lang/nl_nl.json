@@ -3449,7 +3449,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Aangrenzend",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Groep",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Is",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "of",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ Hand",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Wissen",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Schilderij",

@@ -4101,7 +4101,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Alăturat",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Grup",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Este",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "sau",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ Mână",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Golește",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Pictură",

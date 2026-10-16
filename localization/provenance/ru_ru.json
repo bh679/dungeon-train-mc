@@ -3510,7 +3510,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "dbd9a9d75173f8be"},
   "gui.dungeontrain.editor_menu.block_variant.condition_group": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "34ca0e76608842ff"},
   "gui.dungeontrain.editor_menu.block_variant.condition_is": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f5985de1fd3a3b13"},
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "7175517a370b5cd2"},
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "bb0163bd26d11eb0"},
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "83b12c2216efb4fd"},
   "gui.dungeontrain.editor_menu.block_variant.painting": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3c080b85b195f820"},

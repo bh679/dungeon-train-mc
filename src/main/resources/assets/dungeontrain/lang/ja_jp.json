@@ -3393,7 +3393,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "隣接",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "グループ",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "一致",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "または",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ 手持ち",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "クリア",
   "gui.dungeontrain.editor_menu.block_variant.painting": "絵画",

@@ -3449,7 +3449,6 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Contigu",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Groupe",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Est",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "ou",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ Main",
   "gui.dungeontrain.editor_menu.block_variant.condition_clear": "Vider",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Tableau",
