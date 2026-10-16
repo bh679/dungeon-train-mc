@@ -501,6 +501,54 @@ public final class ContainerContentsMenuController {
                 next = current.withFillMax(next0).withFillMin(newMin);
                 dirty = true;
             }
+            // Typed values from the cmd-click number pad. Same bounds as the steppers, so typing
+            // can't reach a value the clicks couldn't.
+            case SET_FILL_MIN -> {
+                int upperBound = current.fillMax() == ContainerContentsPool.FILL_ALL
+                    ? ContainerContentsPool.MAX_FILL_BOUND
+                    : current.fillMax();
+                int next0 = Math.max(0, Math.min(upperBound, packet.delta()));
+                if (next0 == current.fillMin()) return;
+                next = current.withFillMin(next0);
+                dirty = true;
+            }
+            case SET_FILL_MAX -> {
+                int next0 = packet.delta() < 0
+                    ? ContainerContentsPool.FILL_ALL
+                    : Math.min(ContainerContentsPool.MAX_FILL_BOUND, packet.delta());
+                if (next0 == current.fillMax()) return;
+                int newMin = current.fillMin();
+                if (next0 != ContainerContentsPool.FILL_ALL && newMin > next0) newMin = next0;
+                next = current.withFillMax(next0).withFillMin(newMin);
+                dirty = true;
+            }
+            case SET_COUNT -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                int newCount = Math.max(1, Math.min(64, packet.delta()));
+                if (newCount == e.count()) return;
+                next = current.replaced(idx, e.withCount(newCount));
+                dirty = true;
+            }
+            case SET_DUR_CHANCE -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                int chance = Math.max(0, Math.min(100, packet.delta()));
+                if (chance == e.durabilityChance()) return;
+                next = current.replaced(idx, e.withDurabilityChance(chance));
+                dirty = true;
+            }
+            case SET_ENCH_CHANCE -> {
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= current.size()) return;
+                ContainerContentsEntry e = current.entries().get(idx);
+                int chance = Math.max(0, Math.min(100, packet.delta()));
+                if (chance == e.enchantmentChance()) return;
+                next = current.replaced(idx, e.withEnchantmentChance(chance));
+                dirty = true;
+            }
             case TOGGLE_RAND_DUR -> {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= current.size()) return;

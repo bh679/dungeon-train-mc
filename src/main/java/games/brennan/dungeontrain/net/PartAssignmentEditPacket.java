@@ -38,7 +38,12 @@ public record PartAssignmentEditPacket(Op op, String variantId, CarriagePartKind
         ADD, REMOVE, CLEAR, BUMP_WEIGHT, CYCLE_SIDE_MODE, PREVIEW_ENTRY, CYCLE_END_MODE,
         BUMP_MIN_LEVEL, BUMP_MAX_LEVEL, TOGGLE_PHASE, TOGGLE_OTHER_PHASES,
         /** Link the entry {@code name} to Stage {@code stageId} (empty = detach to Custom). */
-        SET_STAGE
+        SET_STAGE,
+        /**
+         * Typed values from the cmd-click number pad: {@code delta} is the value outright, and
+         * SET_MAX_LEVEL takes -1 for "all". Same clamps as the BUMP twins.
+         */
+        SET_WEIGHT, SET_MIN_LEVEL, SET_MAX_LEVEL
     }
 
     /** Back-compat constructor for the non-stage ops — leaves {@code stageId} empty. */

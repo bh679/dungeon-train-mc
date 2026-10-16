@@ -47,7 +47,12 @@ public record ContainerContentsEditPacket(Op op, String plotKey, BlockPos localP
         /** Flip a random-potion placeholder entry's scale-with-distance toggle. */
         TOGGLE_SCALE,
         /** Step a random-potion placeholder entry's bottle form (Any → Potion → Splash → Lingering). */
-        CYCLE_POTION_FORM
+        CYCLE_POTION_FORM,
+        /**
+         * Typed values from the cmd-click number pad — {@code delta} is the value outright, and the
+         * fill max takes {@code FILL_ALL} for "all". Same clamps as their BUMP twins.
+         */
+        SET_FILL_MIN, SET_FILL_MAX, SET_COUNT, SET_DUR_CHANCE, SET_ENCH_CHANCE
     }
 
     public static final Type<ContainerContentsEditPacket> TYPE =
