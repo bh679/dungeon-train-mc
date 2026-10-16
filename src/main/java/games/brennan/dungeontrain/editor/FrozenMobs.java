@@ -124,11 +124,15 @@ public final class FrozenMobs {
 
     /**
      * What every template → entity restore site calls: the NBT to create the entity from. Frozen
-     * NBT stays frozen inside editor space and is thawed anywhere else.
+     * NBT stays frozen inside editor space and is thawed anywhere else — and inside a Test-the-Carriage
+     * copy too, while the Test Mobs setting is Live ({@link TestCopyMobs}).
      */
     public static CompoundTag prepareForSpawn(CompoundTag nbt, ServerLevel level, BlockPos at) {
         if (!carriesTag(nbt)) return nbt;
-        return isEditorSpace(level, at) ? nbt : thaw(nbt);
+        boolean editorSpace = isEditorSpace(level, at);
+        boolean testLive = editorSpace && TestCopyMobs.isLive(level);
+        boolean inTestCopy = testLive && TestCopyMobs.isInTestCopy(level, at);
+        return TestCopyMobs.shouldThaw(editorSpace, testLive, inTestCopy) ? thaw(nbt) : nbt;
     }
 
     private static boolean carriesTag(CompoundTag nbt) {

@@ -466,6 +466,7 @@ public final class EditorMenuScreen implements MenuScreen {
         // Mobs — Blocks places a frozen, one-hit mob from a spawn egg and ghosts the mob entries of
         // variant cells; Live is vanilla eggs. World state like Observers, so a server round-trip.
         out.add(mobsRow());
+        out.add(testMobsRow());
 
         // Welcome Panel — the onboarding board floating beside the first nav menu. Its own close
         // (X) button writes the same per-player, per-world flag; this row is the only way back,
@@ -638,6 +639,16 @@ public final class EditorMenuScreen implements MenuScreen {
             new CommandMenuEntry.Label(MenuLang.t("editor.mobs")),
             new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_blocks"), "dungeontrain editor mobs blocks", !live),
             new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_live"), "dungeontrain editor mobs live", live),
+            0.46, 0.73);
+    }
+
+    /** Test Mobs | Frozen | Live — whether frozen mobs come alive in a Test-the-Carriage copy. */
+    private static CommandMenuEntry testMobsRow() {
+        boolean live = games.brennan.dungeontrain.client.EditorTestMobsState.live();
+        return new CommandMenuEntry.Triple(
+            new CommandMenuEntry.Label(MenuLang.t("editor.test_mobs")),
+            new CommandMenuEntry.Stay(MenuLang.t("editor.test_mobs_frozen"), "dungeontrain editor testmobs frozen", !live),
+            new CommandMenuEntry.Stay(MenuLang.t("editor.mobs_live"), "dungeontrain editor testmobs live", live),
             0.46, 0.73);
     }
 

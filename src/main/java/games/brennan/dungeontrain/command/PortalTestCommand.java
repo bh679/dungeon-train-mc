@@ -629,8 +629,11 @@ public final class PortalTestCommand {
         return 1;
     }
 
-    /** The footprint and every copy the tiler grew around it, as one box. */
-    private static BoundingBox windowBox(ServerLevel level, PortalStructure structure,
+    /**
+     * The footprint and every copy the tiler grew around it, as one box. Public for
+     * {@code editor.TestCopyMobs}, which asks whether a spawn lands inside a test copy.
+     */
+    public static BoundingBox windowBox(ServerLevel level, PortalStructure structure,
                                          CarriageDims dims) {
         BoundingBox footprint = PortalCarriageBuilder.footprintOf(level, structure, dims);
         PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
