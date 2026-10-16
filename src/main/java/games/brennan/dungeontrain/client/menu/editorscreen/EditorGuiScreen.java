@@ -1,5 +1,9 @@
 package games.brennan.dungeontrain.client.menu.editorscreen;
 
+import games.brennan.dungeontrain.client.menu.MenuEntryDispatcher;
+
+import games.brennan.dungeontrain.client.menu.number.NumberStepper;
+
 import games.brennan.dungeontrain.builder.relay.BuilderReviewState;
 import games.brennan.dungeontrain.client.builder.BuildRenderCapture;
 import games.brennan.dungeontrain.client.builder.BuilderProfilePrefabConflictScreen;
@@ -839,10 +843,17 @@ public final class EditorGuiScreen extends Screen {
     // Input
     // ------------------------------------------------------------------
 
+    /**
+     * The button of the click being handled — read by the number cells, which step down on a
+     * right-click. Everything else on this screen only ever sees a left click.
+     */
+    private int clickButton;
+
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        clickButton = button == GLFW.GLFW_MOUSE_BUTTON_RIGHT ? 1 : 0;
         if (modal.isOpen()) {
-            return modal.mouseClicked(mouseX, mouseY);
+            return modal.mouseClicked(mouseX, mouseY, clickButton);
         }
         if (search.isOpen()) {
             onSearchClick(search.mouseClicked(mouseX, mouseY));
@@ -851,6 +862,7 @@ public final class EditorGuiScreen extends Screen {
         // A click anywhere else abandons a half-typed value rather than leaving it hanging over
         // a cell whose row may be about to change underneath it.
         if (inlineEdit.active()) inlineEdit.cancel();
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && rightClickNumber(mouseX, mouseY)) return true;
         if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
             return super.mouseClicked(mouseX, mouseY, button);
         }
@@ -1333,6 +1345,63 @@ public final class EditorGuiScreen extends Screen {
         return true;
     }
 
+    /**
+     * A right-click: the step-down of whichever number cell is under the cursor — a sheet number, a
+     * Layout weight, a number row in a pane — and nothing anywhere else. Probed without acting on
+     * what is not a number, so a right-click never selects, opens or toggles.
+     */
+    private boolean rightClickNumber(double mouseX, double mouseY) {
+        if (layout == null) return false;
+        EditorScreenPage page = EditorScreenState.page();
+        if (page.isBrowser() || onNav() || EditorCreatorBuilds.active()) return false;
+        if (page == EditorScreenPage.SETTINGS) {
+            EditorSettingsPane.Hit hit = settingsPane.hitTest(layout, mouseX, mouseY);
+            if (hit == null || !MenuEntryDispatcher.isNumber(hit.entry(), hit.sub())) return false;
+            click();
+            modal.dispatch(hit.entry(), hit.sub(), 1);
+            return true;
+        }
+        if (page == EditorScreenPage.LAYOUT) {
+            if (!layoutPane.mouseClicked(layout, EditorRosterClient.index(), mouseX, mouseY, modal, inlineEdit, 1)) {
+                return false;
+            }
+            click();
+            return true;
+        }
+        if (onStages()) {
+            EditorStageDetailPane.Hit stageHit = stageDetail.hitTest(mouseX, mouseY);
+            if (stageHit.kind() != EditorStageDetailPane.HitKind.SHEET) return false;
+            return rightClickSheet(stageDetail.sheetCell(stageHit.index()));
+        }
+        if (onGroups()) {
+            EditorGroupsTab.Click hit = groupsTab.numberAt(mouseX, mouseY);
+            if (hit instanceof EditorGroupsTab.Click.Sheet s) return rightClickSheet(s.placed());
+            if (hit instanceof EditorGroupsTab.Click.Entry e) {
+                click();
+                modal.dispatch(e.entry(), 0, 1);
+                return true;
+            }
+            return false;
+        }
+        EditorDetailPane.Hit hit = detail.hitTest(mouseX, mouseY);
+        if (hit.kind() == EditorDetailPane.HitKind.SHEET) return rightClickSheet(detail.sheetCell(hit.index()));
+        if (hit.kind() == EditorDetailPane.HitKind.ROW) {
+            CommandMenuEntry row = detail.rows().get(hit.index());
+            if (!MenuEntryDispatcher.isNumber(row, hit.sub())) return false;
+            click();
+            modal.dispatch(row, hit.sub(), 1);
+            return true;
+        }
+        return false;
+    }
+
+    /** A right-click on a sheet cell: steps a number down; anything else is left alone. */
+    private boolean rightClickSheet(TemplateDataSheet.Placed placed) {
+        if (placed == null || !(placed.cell().action() instanceof TemplateDataSheet.Action.Step)) return false;
+        if (onSheetCell(placed)) click();
+        return true;
+    }
+
     /** A click on a data-sheet cell: type over it, run its command, or open its picker. */
     private boolean onSheetCell(TemplateDataSheet.Placed placed) {
         TemplateDataSheet.Action action = placed.cell().action();
@@ -1346,16 +1415,17 @@ public final class EditorGuiScreen extends Screen {
             afterCommand();
             return true;
         }
-        // Same gestures as the Layout tab's weight cell: click +1, shift-click −1, cmd-click
-        // types. The typed value goes through the inline field over the cell, as Type does.
+        // Every editor number's gestures: click +1, shift- or right-click −1, cmd-click types. The
+        // typed value goes through the inline field over the cell, as Type does.
         if (action instanceof TemplateDataSheet.Action.Step step) {
-            if (MenuClickModifiers.cmdDown()) {
-                inlineEdit.begin(step.prefix(), placed.cell().text(), placed.rect());
-                setFocused(null);
-            } else {
-                CommandRunner.run(Screen.hasShiftDown() ? step.dec() : step.inc());
-                afterCommand();
-            }
+            NumberStepper.click(step.field(command -> {
+                    CommandRunner.run(command);
+                    afterCommand();
+                }), clickButton, Screen.hasShiftDown(), MenuClickModifiers.cmdDown(),
+                f -> {
+                    inlineEdit.begin(step.prefix(), placed.cell().text(), placed.rect(), step.allowAll());
+                    setFocused(null);
+                });
             return true;
         }
         if (action instanceof TemplateDataSheet.Action.Open open) {
@@ -1395,7 +1465,7 @@ public final class EditorGuiScreen extends Screen {
 
     private void dispatchAt(CommandMenuEntry entry, int sub) {
         if (entry == null) return;
-        modal.dispatch(entry, sub);
+        modal.dispatch(entry, sub, clickButton);
     }
 
     private void click() {

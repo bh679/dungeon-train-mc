@@ -21,6 +21,8 @@ public final class InlineEdit {
     static final int MAX_LENGTH = 6;
 
     private String prefix = "";
+    /** Whether a blank submit means "no limit" ({@code -1}) rather than "nothing typed". */
+    private boolean allowAll;
     private String buffer = "";
     private String shown = "";
     private InventoryEditorLayout.Rect rect;
@@ -45,6 +47,15 @@ public final class InlineEdit {
      * @param shown  what the cell was showing, drawn faintly until typing starts
      */
     public void begin(String prefix, String shown, InventoryEditorLayout.Rect rect) {
+        begin(prefix, shown, rect, false);
+    }
+
+    /**
+     * As {@link #begin(String, String, InventoryEditorLayout.Rect)}; on an {@code allowAll} cell (a
+     * max level) Enter on an empty field sets it back to "all", as the number pad does.
+     */
+    public void begin(String prefix, String shown, InventoryEditorLayout.Rect rect, boolean allowAll) {
+        this.allowAll = allowAll;
         this.prefix = prefix == null ? "" : prefix;
         this.buffer = "";
         this.shown = shown == null ? "" : shown;
@@ -52,15 +63,24 @@ public final class InlineEdit {
     }
 
     public void cancel() {
+        allowAll = false;
         prefix = "";
         buffer = "";
         shown = "";
         rect = null;
     }
 
-    /** The command to run, or null when nothing was typed. Ends the edit either way. */
+    /**
+     * The command to run, or null when nothing was typed. A blank submit on an all-capable cell is
+     * {@code -1}, "no limit". Ends the edit either way.
+     */
     public String submit() {
-        String command = buffer.isEmpty() || "-".equals(buffer) ? null : prefix + " " + buffer;
+        String command;
+        if (buffer.isEmpty() || "-".equals(buffer)) {
+            command = allowAll && buffer.isEmpty() ? prefix + " -1" : null;
+        } else {
+            command = prefix + " " + buffer;
+        }
         cancel();
         return command;
     }

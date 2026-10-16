@@ -435,12 +435,12 @@ public final class CommandMenuGuiScreen extends Screen {
         }
         int hovered = CommandMenuState.hoveredIdx();
         if (hovered >= 0) {
-            CommandMenuState.activate(hovered, CommandMenuState.hoveredSubIdx());
+            CommandMenuState.activate(hovered, CommandMenuState.hoveredSubIdx(), button);
             return true;
         }
         int sideHovered = CommandMenuState.sideHoveredIdx();
         if (sideHovered >= 0) {
-            CommandMenuState.activateSide(sideHovered, CommandMenuState.sideHoveredSubIdx());
+            CommandMenuState.activateSide(sideHovered, CommandMenuState.sideHoveredSubIdx(), button);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);

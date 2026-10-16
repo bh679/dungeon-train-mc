@@ -56,6 +56,40 @@ public sealed interface CommandMenuEntry {
     }
 
     /**
+     * An editable number backed by a command: click runs {@code incCommand}, shift- or right-click
+     * runs {@code decCommand}, cmd-click types a value and runs {@code prefix + " " + value} — the
+     * same three gestures as every editor number
+     * ({@link games.brennan.dungeontrain.client.menu.number.NumberStepper}). Commands run through
+     * the menu's own host, so the row stays open and refreshes like a {@link Stay}.
+     *
+     * @param label    what the row reads, e.g. {@code "Weight (20)"}
+     * @param title    the typing prompt's heading — already translated
+     * @param allowAll whether a blank typed value means "no limit" ({@code prefix + " -1"})
+     */
+    record Number(String label, String title, String prefix, int value, int min, int max, boolean allowAll,
+                  String incCommand, String decCommand) implements CommandMenuEntry {
+
+        /** A number whose command takes {@code inc}, {@code dec} or a value after {@code prefix}. */
+        public static Number of(String label, String title, String prefix, int value, int min, int max,
+                                boolean allowAll) {
+            return new Number(label, title, prefix, value, min, max, allowAll, prefix + " inc", prefix + " dec");
+        }
+
+        /** The field this row edits, sending its commands through {@code run}. */
+        public games.brennan.dungeontrain.client.menu.number.NumberField field(java.util.function.Consumer<String> run) {
+            return new games.brennan.dungeontrain.client.menu.number.NumberField(title, value, min, max, allowAll,
+                () -> run.accept(incCommand), () -> run.accept(decCommand), v -> run.accept(prefix + " " + v));
+        }
+    }
+
+    /**
+     * An editable number that is not a command — a client-side setting such as the menu distance.
+     * Same gestures as {@link Number}; the field's own actions do the work.
+     */
+    record ClientNumber(String label, games.brennan.dungeontrain.client.menu.number.NumberField field)
+        implements CommandMenuEntry {}
+
+    /**
      * Navigates into a nested {@link MenuScreen}. The optional
      * {@code highlighted} flag draws a persistent accent tint behind the row
      * — used to mark "the player is already inside this category" in the

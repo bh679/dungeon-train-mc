@@ -199,83 +199,83 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Weight for carriages uses modelId, not the friendly path string")
     void weight_carriages_usesModelId() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", 10);
-        assertEquals("dungeontrain editor weight standard dec", commandFor(triple.leftEntry()));
-        assertEquals("dungeontrain editor weight standard", typePrefixFor(triple.middleEntry()));
-        assertEquals("dungeontrain editor weight standard inc", commandFor(triple.rightEntry()));
+        CommandMenuEntry.Number row = weightRowAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", 10);
+        assertEquals("dungeontrain editor weight standard dec", row.decCommand());
+        assertEquals("dungeontrain editor weight standard", row.prefix());
+        assertEquals("dungeontrain editor weight standard inc", row.incCommand());
     }
 
     @Test
     @DisplayName("Weight for tracks splices kind + name into the tracks weight subcommand")
     void weight_tracks_track() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.TRACKS, "track", "default", 1);
-        assertEquals("dungeontrain editor tracks weight track default dec", commandFor(triple.leftEntry()));
-        assertEquals("dungeontrain editor tracks weight track default", typePrefixFor(triple.middleEntry()));
-        assertEquals("dungeontrain editor tracks weight track default inc", commandFor(triple.rightEntry()));
+        CommandMenuEntry.Number row = weightRowAssertingPresent(PlotCategory.TRACKS, "track", "default", 1);
+        assertEquals("dungeontrain editor tracks weight track default dec", row.decCommand());
+        assertEquals("dungeontrain editor tracks weight track default", row.prefix());
+        assertEquals("dungeontrain editor tracks weight track default inc", row.incCommand());
     }
 
     @Test
     @DisplayName("Weight for pillar uses pillar_<section> + variant name")
     void weight_tracks_pillar() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.TRACKS, "pillar_bottom", "stone", 2);
-        assertEquals("dungeontrain editor tracks weight pillar_bottom stone dec", commandFor(triple.leftEntry()));
-        assertEquals("dungeontrain editor tracks weight pillar_bottom stone", typePrefixFor(triple.middleEntry()));
-        assertEquals("dungeontrain editor tracks weight pillar_bottom stone inc", commandFor(triple.rightEntry()));
+        CommandMenuEntry.Number row = weightRowAssertingPresent(PlotCategory.TRACKS, "pillar_bottom", "stone", 2);
+        assertEquals("dungeontrain editor tracks weight pillar_bottom stone dec", row.decCommand());
+        assertEquals("dungeontrain editor tracks weight pillar_bottom stone", row.prefix());
+        assertEquals("dungeontrain editor tracks weight pillar_bottom stone inc", row.incCommand());
     }
 
     @Test
     @DisplayName("Weight for tunnel uses tunnel_<variant> + variant name")
     void weight_tracks_tunnel() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.TRACKS, "tunnel_section", "default", 1);
-        assertEquals("dungeontrain editor tracks weight tunnel_section default dec", commandFor(triple.leftEntry()));
-        assertEquals("dungeontrain editor tracks weight tunnel_section default", typePrefixFor(triple.middleEntry()));
-        assertEquals("dungeontrain editor tracks weight tunnel_section default inc", commandFor(triple.rightEntry()));
+        CommandMenuEntry.Number row = weightRowAssertingPresent(PlotCategory.TRACKS, "tunnel_section", "default", 1);
+        assertEquals("dungeontrain editor tracks weight tunnel_section default dec", row.decCommand());
+        assertEquals("dungeontrain editor tracks weight tunnel_section default", row.prefix());
+        assertEquals("dungeontrain editor tracks weight tunnel_section default inc", row.incCommand());
     }
 
     @Test
     @DisplayName("Weight for contents uses contents id")
     void weight_contents() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.CONTENTS, "default", "default", 1);
-        assertEquals("dungeontrain editor contents weight default dec", commandFor(triple.leftEntry()));
-        assertEquals("dungeontrain editor contents weight default", typePrefixFor(triple.middleEntry()));
-        assertEquals("dungeontrain editor contents weight default inc", commandFor(triple.rightEntry()));
+        CommandMenuEntry.Number row = weightRowAssertingPresent(PlotCategory.CONTENTS, "default", "default", 1);
+        assertEquals("dungeontrain editor contents weight default dec", row.decCommand());
+        assertEquals("dungeontrain editor contents weight default", row.prefix());
+        assertEquals("dungeontrain editor contents weight default inc", row.incCommand());
     }
 
     @Test
     @DisplayName("Weight label reflects current weight when >= 0")
     void weight_label_includesCurrentWeight() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", 42);
-        CommandMenuEntry.TypeArg middle = (CommandMenuEntry.TypeArg) triple.middleEntry();
+        CommandMenuEntry.Number row = weightRowAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", 42);
+        CommandMenuEntry.Number middle = row;
         assertEquals("Weight (42)", middle.label());
     }
 
     @Test
     @DisplayName("Weight label is bare 'Weight' when current weight is the NO_WEIGHT sentinel")
     void weight_label_handlesNoWeightSentinel() {
-        CommandMenuEntry.Triple triple = weightTripleAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", -1);
-        CommandMenuEntry.TypeArg middle = (CommandMenuEntry.TypeArg) triple.middleEntry();
+        CommandMenuEntry.Number row = weightRowAssertingPresent(PlotCategory.CARRIAGES, "standard", "standard", -1);
+        CommandMenuEntry.Number middle = row;
         assertEquals("Weight", middle.label());
     }
 
     @Test
     @DisplayName("Weight returns null for empty modelId (player not in a plot)")
     void weight_emptyModelId_returnsNull() {
-        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.CARRIAGES, "", "", 1));
-        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.TRACKS, "", "", 1));
-        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.CONTENTS, "", "", 1));
+        assertNull(EditorMenuScreen.weightRowFor(PlotCategory.CARRIAGES, "", "", 1));
+        assertNull(EditorMenuScreen.weightRowFor(PlotCategory.TRACKS, "", "", 1));
+        assertNull(EditorMenuScreen.weightRowFor(PlotCategory.CONTENTS, "", "", 1));
     }
 
     @Test
     @DisplayName("Weight returns null for tracks when modelName is empty")
     void weight_tracks_emptyModelName_returnsNull() {
-        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.TRACKS, "track", "", 1));
+        assertNull(EditorMenuScreen.weightRowFor(PlotCategory.TRACKS, "track", "", 1));
     }
 
     @Test
     @DisplayName("Weight returns null for unknown / weight-less categories")
     void weight_unknownCategory_returnsNull() {
-        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.ARCHITECTURE, "x", "x", 1));
-        assertNull(EditorMenuScreen.weightTripleFor(PlotCategory.PARTS, "floor:x", "x", 1));
+        assertNull(EditorMenuScreen.weightRowFor(PlotCategory.ARCHITECTURE, "x", "x", 1));
+        assertNull(EditorMenuScreen.weightRowFor(PlotCategory.PARTS, "floor:x", "x", 1));
     }
 
     // ---- helpers ----
@@ -293,36 +293,36 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("portals: weight and the three size steppers all route through the portals prefix")
     void portals_weightAndSizeCommands() {
-        CommandMenuEntry.Triple weight =
-            weightTripleAssertingPresent(PlotCategory.PORTALS, "portal_room", "default", 3);
-        assertEquals("Weight (3)", weight.middleEntry().label());
-        assertEquals("dungeontrain editor portals weight portal_room default dec", commandFor(weight.leftEntry()));
-        assertEquals("dungeontrain editor portals weight portal_room default inc", commandFor(weight.rightEntry()));
+        CommandMenuEntry.Number weight =
+            weightRowAssertingPresent(PlotCategory.PORTALS, "portal_room", "default", 3);
+        assertEquals("Weight (3)", weight.label());
+        assertEquals("dungeontrain editor portals weight portal_room default dec", weight.decCommand());
+        assertEquals("dungeontrain editor portals weight portal_room default inc", weight.incCommand());
 
         // A portal room is the only plot whose box the author chooses, so it is the only category
         // with size steppers. Position-resolved, so no model id is spliced in.
-        CommandMenuEntry.Triple length = (CommandMenuEntry.Triple)
-            EditorMenuPortalRows.sizeTripleFor("length", "Length", 11);
-        assertEquals("Length (11)", length.middleEntry().label());
-        assertEquals("dungeontrain editor portals length dec", commandFor(length.leftEntry()));
-        assertEquals("dungeontrain editor portals length inc", commandFor(length.rightEntry()));
-        assertEquals("dungeontrain editor portals length", typePrefixFor(length.middleEntry()));
+        CommandMenuEntry.Number length = (CommandMenuEntry.Number)
+            EditorMenuPortalRows.sizeRowFor("length", "Length", 11);
+        assertEquals("Length (11)", length.label());
+        assertEquals("dungeontrain editor portals length dec", length.decCommand());
+        assertEquals("dungeontrain editor portals length inc", length.incCommand());
+        assertEquals("dungeontrain editor portals length", length.prefix());
 
-        CommandMenuEntry.Triple width = (CommandMenuEntry.Triple)
-            EditorMenuPortalRows.sizeTripleFor("width", "Width", 13);
-        assertEquals("Width (13)", width.middleEntry().label());
-        assertEquals("dungeontrain editor portals width inc", commandFor(width.rightEntry()));
+        CommandMenuEntry.Number width = (CommandMenuEntry.Number)
+            EditorMenuPortalRows.sizeRowFor("width", "Width", 13);
+        assertEquals("Width (13)", width.label());
+        assertEquals("dungeontrain editor portals width inc", width.incCommand());
 
-        CommandMenuEntry.Triple height = (CommandMenuEntry.Triple)
-            EditorMenuPortalRows.sizeTripleFor("height", "Height", 7);
-        assertEquals("Height (7)", height.middleEntry().label());
-        assertEquals("dungeontrain editor portals height dec", commandFor(height.leftEntry()));
+        CommandMenuEntry.Number height = (CommandMenuEntry.Number)
+            EditorMenuPortalRows.sizeRowFor("height", "Height", 7);
+        assertEquals("Height (7)", height.label());
+        assertEquals("dungeontrain editor portals height dec", height.decCommand());
     }
 
     @Test
     @DisplayName("No reported size means no stepper — every category but portals")
     void sizeTriple_absentWithoutASize() {
-        assertNull(EditorMenuPortalRows.sizeTripleFor("length", "Length",
+        assertNull(EditorMenuPortalRows.sizeRowFor("length", "Length",
             games.brennan.dungeontrain.net.EditorStatusPacket.NO_SIZE));
     }
 
@@ -333,39 +333,39 @@ final class EditorMenuScreenTest {
         assertEquals("Exits: On", assertInstanceOf(CommandMenuEntry.Stay.class, exits).label());
         assertEquals("dungeontrain editor portals exits next", commandFor(exits));
 
-        CommandMenuEntry.Triple every = (CommandMenuEntry.Triple)
-            EditorMenuPortalRows.exitEveryTripleFor("endless_repetition");
-        assertEquals("Every 8", every.middleEntry().label());
-        assertEquals("dungeontrain editor portals exitevery dec", commandFor(every.leftEntry()));
-        assertEquals("dungeontrain editor portals exitevery inc", commandFor(every.rightEntry()));
-        assertEquals("dungeontrain editor portals exitevery", typePrefixFor(every.middleEntry()));
+        CommandMenuEntry.Number every = (CommandMenuEntry.Number)
+            EditorMenuPortalRows.exitEveryRowFor("endless_repetition");
+        assertEquals("Every 8", every.label());
+        assertEquals("dungeontrain editor portals exitevery dec", every.decCommand());
+        assertEquals("dungeontrain editor portals exitevery inc", every.incCommand());
+        assertEquals("dungeontrain editor portals exitevery", every.prefix());
 
         // Random reads the same number the other way round, so the row cannot be misread.
-        assertEquals("1 in 5", ((CommandMenuEntry.Triple)
-            EditorMenuPortalRows.exitEveryTripleFor("endless_repetition/exact/off/random:5"))
-            .middleEntry().label());
+        assertEquals("1 in 5", ((CommandMenuEntry.Number)
+            EditorMenuPortalRows.exitEveryRowFor("endless_repetition/exact/off/random:5"))
+            .label());
     }
 
     @Test
     @DisplayName("portals: the moved-exit stepper shows under Random alone")
     void portals_exitMoveCommands() {
-        CommandMenuEntry.Triple move = (CommandMenuEntry.Triple)
-            EditorMenuPortalRows.exitMoveTripleFor("endless_repetition/exact/off/random:8:7");
-        assertEquals("Moved exit: 7/10", move.middleEntry().label());
-        assertEquals("dungeontrain editor portals exitmove dec", commandFor(move.leftEntry()));
-        assertEquals("dungeontrain editor portals exitmove inc", commandFor(move.rightEntry()));
-        assertEquals("dungeontrain editor portals exitmove", typePrefixFor(move.middleEntry()));
+        CommandMenuEntry.Number move = (CommandMenuEntry.Number)
+            EditorMenuPortalRows.exitMoveRowFor("endless_repetition/exact/off/random:8:7");
+        assertEquals("Moved exit: 7/10", move.label());
+        assertEquals("dungeontrain editor portals exitmove dec", move.decCommand());
+        assertEquals("dungeontrain editor portals exitmove inc", move.incCommand());
+        assertEquals("dungeontrain editor portals exitmove", move.prefix());
 
         // It still shows at zero — that is the dial's own "never", not an absent control.
-        assertEquals("Moved exit: 0/10", ((CommandMenuEntry.Triple)
-            EditorMenuPortalRows.exitMoveTripleFor("endless_repetition/exact/off/random")).
-            middleEntry().label());
+        assertEquals("Moved exit: 0/10", ((CommandMenuEntry.Number)
+            EditorMenuPortalRows.exitMoveRowFor("endless_repetition/exact/off/random")).
+            label());
 
         // …but never under the lattice, under Off, or on a room with no Exits control at all.
-        assertNull(EditorMenuPortalRows.exitMoveTripleFor("endless_repetition"));
-        assertNull(EditorMenuPortalRows.exitMoveTripleFor("endless_repetition/exact/off/off"));
-        assertNull(EditorMenuPortalRows.exitMoveTripleFor("bedrock"));
-        assertNull(EditorMenuPortalRows.exitMoveTripleFor(
+        assertNull(EditorMenuPortalRows.exitMoveRowFor("endless_repetition"));
+        assertNull(EditorMenuPortalRows.exitMoveRowFor("endless_repetition/exact/off/off"));
+        assertNull(EditorMenuPortalRows.exitMoveRowFor("bedrock"));
+        assertNull(EditorMenuPortalRows.exitMoveRowFor(
             games.brennan.dungeontrain.net.EditorStatusPacket.NO_MODE));
     }
 
@@ -382,8 +382,8 @@ final class EditorMenuScreenTest {
         assertEquals("Exits: Off",
             assertInstanceOf(CommandMenuEntry.Stay.class,
                 EditorMenuPortalRows.exitsRowFor("endless_open")).label());
-        assertNull(EditorMenuPortalRows.exitEveryTripleFor("endless_open"));
-        assertNull(EditorMenuPortalRows.exitEveryTripleFor("endless_repetition/exact/off/off"));
+        assertNull(EditorMenuPortalRows.exitEveryRowFor("endless_open"));
+        assertNull(EditorMenuPortalRows.exitEveryRowFor("endless_repetition/exact/off/off"));
     }
 
     @Test
@@ -394,12 +394,12 @@ final class EditorMenuScreenTest {
         assertNotNull(EditorMenuScreen.removeEntryFor(PlotCategory.PORTALS, "portal_room", "portal room / default"));
     }
 
-    private static CommandMenuEntry.Triple weightTripleAssertingPresent(
+    private static CommandMenuEntry.Number weightRowAssertingPresent(
         PlotCategory category, String modelId, String modelName, int currentWeight
     ) {
-        CommandMenuEntry entry = EditorMenuScreen.weightTripleFor(category, modelId, modelName, currentWeight);
-        assertNotNull(entry, "weightTripleFor returned null for " + category + "/" + modelId + "/" + modelName);
-        return assertInstanceOf(CommandMenuEntry.Triple.class, entry);
+        CommandMenuEntry entry = EditorMenuScreen.weightRowFor(category, modelId, modelName, currentWeight);
+        assertNotNull(entry, "weightRowFor returned null for " + category + "/" + modelId + "/" + modelName);
+        return assertInstanceOf(CommandMenuEntry.Number.class, entry);
     }
 
     private static String commandFor(CommandMenuEntry e) {
@@ -634,7 +634,9 @@ final class EditorMenuScreenTest {
         if (row instanceof CommandMenuEntry.Stay s) out.add(s.command());
         else if (row instanceof CommandMenuEntry.Run r) out.add(r.command());
         else if (row instanceof CommandMenuEntry.TypeArg t) out.add(t.commandPrefix());
-        else if (row instanceof CommandMenuEntry.Triple t) {
+        else if (row instanceof CommandMenuEntry.Number n) {
+            out.add(n.decCommand()); out.add(n.prefix()); out.add(n.incCommand());
+        } else if (row instanceof CommandMenuEntry.Triple t) {
             out.addAll(commandsOf(t.leftEntry())); out.addAll(commandsOf(t.middleEntry())); out.addAll(commandsOf(t.rightEntry()));
         } else if (row instanceof CommandMenuEntry.Split s) {
             out.addAll(commandsOf(s.leftEntry())); out.addAll(commandsOf(s.rightEntry()));

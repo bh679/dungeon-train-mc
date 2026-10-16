@@ -73,7 +73,7 @@ final class EditorGroupsTab {
     /** The right column's pages, in button order. */
     enum Page { GROUP, ENTRANCES, SECTIONS }
 
-    private enum Kind { GROUP_ROW, NEW_ROW, PAGE, ICON, TOGGLE, WEIGHT, DEC, INC, TEST, BUTTON }
+    private enum Kind { GROUP_ROW, NEW_ROW, PAGE, ICON, TOGGLE, WEIGHT, TEST, BUTTON }
 
     /** Row height of the page buttons at the top of the body. */
     private static final int PAGE_BTN_H = 14;
@@ -466,10 +466,9 @@ final class EditorGroupsTab {
             if (!selected.isEmpty()) {
                 right = cell(g, font, m != null ? "[x]" : "[ ]", right, ty, Kind.TOGGLE, kindId, name, mx, my);
             }
+            // One number cell: click steps up, shift- or right-click down, cmd-click types.
             if (m != null) {
-                right = cell(g, font, "+", right - GAP, ty, Kind.INC, kindId, name, mx, my);
-                right = cell(g, font, "-", right - 1, ty, Kind.DEC, kindId, name, mx, my);
-                right = cell(g, font, "×" + m.weight(), right - 1, ty, Kind.WEIGHT, kindId, name, mx, my);
+                right = cell(g, font, "×" + m.weight(), right - GAP, ty, Kind.WEIGHT, kindId, name, mx, my);
             }
             String shown = font.plainSubstrByWidth(displayOf(kindId, name), Math.max(0, right - row.x() - ICON - 8));
             g.drawString(font, shown, row.x() + ICON + 5, ty, m != null ? 0xFFFFFFFF : 0xB0FFFFFF, false);
@@ -534,7 +533,7 @@ final class EditorGroupsTab {
         TemplateDataSheet.Stepper min = new TemplateDataSheet.Stepper(minPrefix, minPrefix + " dec", minPrefix + " inc",
             minShown, "(" + minShown + ")");
         TemplateDataSheet.Stepper max = new TemplateDataSheet.Stepper(maxPrefix, maxPrefix + " dec", maxPrefix + " inc",
-            maxShown, "(" + maxShown + ")");
+            maxShown, "(" + maxShown + ")", true);
         TemplateDataSheet.PhaseCommand phases = (p, on) ->
             ROOT + " phase " + id + " " + p.token() + " " + (on ? "off" : "on");
         MenuScreen picker = games.brennan.dungeontrain.client.menu.StagePickerScreen.forCommand(
@@ -545,11 +544,7 @@ final class EditorGroupsTab {
 
     private static List<TemplateDataSheet.Cell> stepper(int value, String prefix, String tip) {
         TemplateDataSheet.Action.Step step = new TemplateDataSheet.Action.Step(prefix, prefix + " dec", prefix + " inc");
-        List<TemplateDataSheet.Cell> cells = new ArrayList<>(3);
-        cells.add(new TemplateDataSheet.Cell(Integer.toString(value), step, true).withTooltip(tip));
-        cells.add(new TemplateDataSheet.Cell("-", new TemplateDataSheet.Action.Run(prefix + " dec"), true));
-        cells.add(new TemplateDataSheet.Cell("+", new TemplateDataSheet.Action.Run(prefix + " inc"), true));
-        return cells;
+        return List.of(new TemplateDataSheet.Cell(Integer.toString(value), step, true).withTooltip(tip));
     }
 
     /** The command prefix for a member's weight: inside a named group, or its own weight when ungrouped. */
@@ -561,6 +556,24 @@ final class EditorGroupsTab {
 
     // ------------------------------------------------------------------ input
 
+    /**
+     * The number under {@code (mx, my)} — a sheet number or a member's weight — or null. Unlike
+     * {@link #click} this never changes the tab (no selection, no page turn), so a right-click can
+     * probe with it and do nothing when there is no number.
+     */
+    Click numberAt(double mx, double my) {
+        for (TemplateDataSheet.Placed p : sheetCells) {
+            if (p.rect().contains(mx, my) && p.cell().action() instanceof TemplateDataSheet.Action.Step) {
+                return new Click.Sheet(p);
+            }
+        }
+        for (Hit hit : hits) {
+            if (hit.kind() != Kind.WEIGHT || !hit.rect().contains(mx, my) || !bodyRect.contains(mx, my)) continue;
+            return click(mx, my);
+        }
+        return null;
+    }
+
     /** The click at {@code (mx, my)}, or null when it lands on nothing of this tab. */
     Click click(double mx, double my) {
         for (TemplateDataSheet.Placed p : sheetCells) {
@@ -570,8 +583,7 @@ final class EditorGroupsTab {
             if (!hit.rect().contains(mx, my)) continue;
             boolean inList = hit.kind() == Kind.GROUP_ROW || hit.kind() == Kind.NEW_ROW;
             if (inList && !leftRect.contains(mx, my)) continue;   // scrolled out of view
-            boolean inBody = hit.kind() == Kind.ICON || hit.kind() == Kind.TOGGLE || hit.kind() == Kind.WEIGHT
-                || hit.kind() == Kind.DEC || hit.kind() == Kind.INC;
+            boolean inBody = hit.kind() == Kind.ICON || hit.kind() == Kind.TOGGLE || hit.kind() == Kind.WEIGHT;
             if (inBody && !bodyRect.contains(mx, my)) continue;
             switch (hit.kind()) {
                 case GROUP_ROW -> {
@@ -591,21 +603,14 @@ final class EditorGroupsTab {
                     return new Click.Entry(new CommandMenuEntry.Stay("Toggle",
                         ROOT + " toggle " + hit.kindId() + " " + hit.name() + " " + selected, false));
                 }
+                // A number row: the screen steps or types it with the click's own gesture.
                 case WEIGHT -> {
-                    String prefix = weightPrefix(hit.kindId(), hit.name());
-                    if (MenuClickModifiers.cmdDown()) {
-                        return new Click.Entry(new CommandMenuEntry.TypeArg("Weight", "weight", prefix, "", ""));
-                    }
-                    return new Click.Entry(new CommandMenuEntry.Stay("Weight",
-                        prefix + (Screen.hasShiftDown() ? " dec" : " inc"), false));
-                }
-                case DEC -> {
-                    return new Click.Entry(new CommandMenuEntry.Stay("-",
-                        weightPrefix(hit.kindId(), hit.name()) + " dec", false));
-                }
-                case INC -> {
-                    return new Click.Entry(new CommandMenuEntry.Stay("+",
-                        weightPrefix(hit.kindId(), hit.name()) + " inc", false));
+                    EditorRosterPacket.TunnelGroups.Member m = memberOf(selected, hit.kindId(), hit.name());
+                    return new Click.Entry(CommandMenuEntry.Number.of("Weight",
+                        games.brennan.dungeontrain.client.menu.number.NumberTitle.of("weight"),
+                        weightPrefix(hit.kindId(), hit.name()), m == null ? 1 : m.weight(),
+                        games.brennan.dungeontrain.client.menu.EditorMenuScreen.WEIGHT_MIN,
+                        games.brennan.dungeontrain.client.menu.EditorMenuScreen.WEIGHT_MAX, false));
                 }
                 case TEST -> {
                     String token = selected.isEmpty() ? UNGROUPED_TOKEN : selected;
