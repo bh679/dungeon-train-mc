@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/prime_time",
   "display": {
     "icon": {
-      "id": "dungeontrain:live_headpiece"
+      "id": "minecraft:compass"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.for_the_fans.title"

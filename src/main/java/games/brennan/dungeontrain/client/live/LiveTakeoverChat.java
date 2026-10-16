@@ -2,6 +2,8 @@ package games.brennan.dungeontrain.client.live;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.net.ClientActionPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveTakeoverClient.PollLine;
 import net.minecraft.ChatFormatting;
@@ -28,6 +30,9 @@ import java.util.UUID;
  * vote counts. Votes are chat lines — {@code yes} / {@code no} — that the relay counts and keeps out of
  * the room. A vote typed in chat while one is open is taken off vanilla chat too, so players in the same
  * world don't see it either; only this player's own "vote recorded" line shows, until the result.</p>
+ *
+ * <p>A counted vote earns Every Vote Counts, and voting for the side that wins earns Called It — both
+ * through {@link ClientActionPacket}, since only this client sees the relay's replies.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveTakeoverChat {
@@ -67,9 +72,19 @@ public final class LiveTakeoverChat {
         return p != null && voteOpen() ? p.endsTs() : -1;
     }
 
+    /** This player's last counted vote — the vote's id and {@code yes} / {@code no} — until its result, or null. */
+    private record MyVote(String id, String choice) {}
+    @Nullable private static volatile MyVote myVote;
+
     /** Logout / leaving the chat: forget the open vote. */
     static void reset() {
         open = null;
+        myVote = null;
+    }
+
+    /** Whether {@code myChoice}, cast in vote {@code myId}, is the winning side of vote {@code id}. Pure for the tests. */
+    static boolean votedWinner(@Nullable String myId, @Nullable String myChoice, String id, boolean approved) {
+        return myId != null && myId.equals(id) && (approved ? "yes" : "no").equals(myChoice);
     }
 
     /** The vote whose result this client has printed, so the requester's own copy and the room's never both show. */
@@ -101,6 +116,11 @@ public final class LiveTakeoverChat {
     static void showResult(String id, boolean approved, int yes, int no, String requester, String holder) {
         if (id.equals(resultShown)) return;
         resultShown = id;
+        MyVote mine = myVote;
+        if (mine != null && mine.id().equals(id)) {
+            myVote = null;
+            if (votedWinner(mine.id(), mine.choice(), id, approved)) sendAction("voted_live_takeover_winner");
+        }
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null) return;
         Component verdict = approved
@@ -136,6 +156,8 @@ public final class LiveTakeoverChat {
         Minecraft mc = Minecraft.getInstance();
         if (mc.getUser() == null) return;
         UUID me = mc.getUser().getProfileId();
+        PollLine poll = open;
+        String pollId = poll == null ? null : poll.id();
         LiveFeedClient.chatSend(LiveChatBridge.base(LiveStreamController.get().streaming()), me, mc.getUser().getName(), choice)
             .thenAcceptAsync(r -> {
                 if (mc.player == null) return;
@@ -143,6 +165,8 @@ public final class LiveTakeoverChat {
                 Component said;
                 if ("yes".equals(counted) || "no".equals(counted)) {
                     said = Component.translatable(KEY + "voted", Component.translatable(KEY + "vote_" + counted));
+                    if (pollId != null) myVote = new MyVote(pollId, counted); // a changed vote replaces the first
+                    sendAction("voted_live_takeover");
                 } else if ("requester".equals(r.str("voteReason"))) {
                     said = Component.translatable(KEY + "own_request");
                 } else {
@@ -150,6 +174,11 @@ public final class LiveTakeoverChat {
                 }
                 mc.player.displayClientMessage(said.copy().withStyle(ChatFormatting.GRAY), false);
             }, mc);
+    }
+
+    /** Fires a vote advancement on this player's server. Client thread. */
+    private static void sendAction(String actionId) {
+        if (Minecraft.getInstance().getConnection() != null) DungeonTrainNet.sendToServer(new ClientActionPacket(actionId));
     }
 
     @SubscribeEvent

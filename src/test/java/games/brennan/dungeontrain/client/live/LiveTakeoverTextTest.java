@@ -4,7 +4,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LiveTakeoverTextTest {
 
@@ -46,5 +48,16 @@ class LiveTakeoverTextTest {
         assertNull(LiveTakeoverChat.voteOf("no way"));
         assertNull(LiveTakeoverChat.voteOf(""));
         assertNull(LiveTakeoverChat.voteOf(null));
+    }
+
+    @Test
+    @DisplayName("Called It: only a vote cast in this very vote, for the side that won")
+    void votedWinner() {
+        assertTrue(LiveTakeoverChat.votedWinner("p1", "yes", "p1", true));
+        assertTrue(LiveTakeoverChat.votedWinner("p1", "no", "p1", false));
+        assertFalse(LiveTakeoverChat.votedWinner("p1", "no", "p1", true));
+        assertFalse(LiveTakeoverChat.votedWinner("p1", "yes", "p1", false));
+        assertFalse(LiveTakeoverChat.votedWinner("p0", "yes", "p1", true));
+        assertFalse(LiveTakeoverChat.votedWinner(null, null, "p1", true));
     }
 }

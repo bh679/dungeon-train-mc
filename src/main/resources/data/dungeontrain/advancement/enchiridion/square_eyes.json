@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/pocket_telly",
   "display": {
     "icon": {
-      "id": "vista:television"
+      "id": "minecraft:player_head"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.square_eyes.title"
