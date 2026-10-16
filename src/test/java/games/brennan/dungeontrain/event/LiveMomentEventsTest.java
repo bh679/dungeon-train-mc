@@ -42,6 +42,8 @@ class LiveMomentEventsTest {
             "a one-page book shown whole has no ellipsis");
         assertEquals("Day one. The train…", LiveMomentEvents.excerpt(List.of("  ", "Day one.\n\nThe train", "later")),
             "more pages follow: ellipsis");
+        assertEquals("not even the driver…", LiveMomentEvents.excerpt(List.of("not even the driver.", "page two")),
+            "a full stop gives way to the ellipsis");
         String word = "word ";
         String longPage = word.repeat(100);
         String cut = LiveMomentEvents.excerpt(List.of(longPage));

@@ -75,9 +75,13 @@ public final class LiveMomentEvents {
         String flat = written.get(0).replaceAll("\\s+", " ").strip();
         if (flat.length() > EXCERPT_CHARS) {
             int cut = flat.lastIndexOf(' ', EXCERPT_CHARS);
-            flat = (cut > EXCERPT_CHARS / 2 ? flat.substring(0, cut) : flat.substring(0, EXCERPT_CHARS)).strip();
-            return flat + "…";
+            return withEllipsis(cut > EXCERPT_CHARS / 2 ? flat.substring(0, cut) : flat.substring(0, EXCERPT_CHARS));
         }
-        return written.size() > 1 ? flat + "…" : flat;
+        return written.size() > 1 ? withEllipsis(flat) : flat;
+    }
+
+    /** {@code text…}, never {@code text.…}: a trailing full stop, comma, colon or semicolon gives way to the ellipsis. */
+    static String withEllipsis(String text) {
+        return text.strip().replaceAll("[.,;:]+$", "") + "…";
     }
 }
