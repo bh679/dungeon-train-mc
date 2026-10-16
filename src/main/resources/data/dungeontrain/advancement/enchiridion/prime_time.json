@@ -2,7 +2,7 @@
   "parent": "dungeontrain:enchiridion/the_eye_of_the_living",
   "display": {
     "icon": {
-      "id": "minecraft:clock_57"
+      "id": "minecraft:clock"
     },
     "title": {
       "translate": "advancements.dungeontrain.enchiridion.prime_time.title"
