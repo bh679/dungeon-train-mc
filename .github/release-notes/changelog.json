@@ -26733,6 +26733,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "test-back-returns-to-tested-plot",
+      "version": "0.1313.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Back from a test returns you to the room you tested",
+      "summary": "Leaving Test the Carriage now puts you back in the room you were testing, even when you started the test from another plot. Rooms inside a group come back with their group open, so you can carry straight on editing.",
+      "highlights": [],
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

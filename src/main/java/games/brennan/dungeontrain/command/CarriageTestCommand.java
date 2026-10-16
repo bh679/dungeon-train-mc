@@ -412,7 +412,7 @@ public final class CarriageTestCommand {
      * should not be pulled into that room a moment later.
      */
     private static void leaveCurrentTests(CommandSourceStack source, ServerPlayer player) {
-        if (CarriageTestSession.has(player.getUUID())) runBack(source);
+        if (CarriageTestSession.has(player.getUUID())) runBack(source, false);
         if (PortalTestSession.has(player.getUUID())) PortalTestCommand.runBack(source);
         games.brennan.dungeontrain.portal.PortalTestPending.cancel(player.getUUID());
     }
@@ -677,6 +677,16 @@ public final class CarriageTestCommand {
 
     /** {@code editor test back} — return the author to where they were and sweep the copy away. */
     static int runBack(CommandSourceStack source) {
+        return runBack(source, true);
+    }
+
+    /**
+     * @param toTestedPlot whether a contents test started from another editor plot lands the author in
+     *                     the tested template's own plot (see {@link #contentsPlotToReturnTo}). Only
+     *                     the Back the author presses does; the Back a re-test or Reseed runs first
+     *                     keeps them where they stood, or every Reseed would restamp a plot.
+     */
+    static int runBack(CommandSourceStack source, boolean toTestedPlot) {
         ServerPlayer player = playerOf(source);
         if (player == null) return 0;
         CarriageTestSession.Session session = CarriageTestSession.take(player.getUUID());
@@ -694,6 +704,14 @@ public final class CarriageTestCommand {
         if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
             player.setGameMode(session.previousGameType());
         }
+        CarriageContents testedPlot = toTestedPlot ? contentsPlotToReturnTo(session, overworld) : null;
+        if (testedPlot != null) {
+            // In at the plot's doorway, and the X menu then selects the tested template — a group
+            // member included, with its group's sub-grid open. No restamp: the plot is standing,
+            // and a restamp would throw away edits the author has not saved yet.
+            games.brennan.dungeontrain.editor.CarriageContentsEditor.enter(player, testedPlot, null,
+                /*onTop*/ false, /*stamp*/ false);
+        }
         DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none(
             DungeonTrainWorldData.get(overworld).isPortalTestReseed()));
 
@@ -707,6 +725,25 @@ public final class CarriageTestCommand {
         source.sendSuccess(() -> Component.translatable("chat.dungeontrain.portal.back_plot_test_has",
             shown).withStyle(ChatFormatting.GRAY), false);
         return 1;
+    }
+
+    /**
+     * The contents template whose editor plot Back should land the author in, or {@code null} to
+     * return them to where they stood. Test the Carriage runs from anywhere in the X menu, so the
+     * spot they pressed it from is often a neighbouring plot — a group's parent while they were
+     * editing one of its members — and coming back there loses the template they were working on.
+     * Only for a contents test begun inside a contents plot of the editor; begun in the tested
+     * template's own plot, the spot they stood on is already the right place.
+     */
+    private static CarriageContents contentsPlotToReturnTo(CarriageTestSession.Session session,
+                                                           ServerLevel overworld) {
+        if (session.kind() != CarriageTestSession.Kind.CONTENTS) return null;
+        if (!session.dimension().equals(overworld.dimension())) return null;
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        CarriageContents startedIn = games.brennan.dungeontrain.editor.CarriageContentsEditor.plotContaining(
+            BlockPos.containing(session.pos()), dims);
+        if (startedIn == null || startedIn.id().equals(session.templateId())) return null;
+        return CarriageContentsRegistry.find(session.templateId()).orElse(null);
     }
 
     /**
