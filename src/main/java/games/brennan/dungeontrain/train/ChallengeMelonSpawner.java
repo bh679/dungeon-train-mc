@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.advancement.AllAtOnceAdvancement;
-import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.event.AchievementEvents;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
@@ -97,7 +96,7 @@ public final class ChallengeMelonSpawner {
     }
 
     private static boolean isEligible(ServerPlayer player) {
-        if (!player.isAlive() || RunIntegrity.isCheated(player)) return false;
+        if (!player.isAlive()) return false;
         if (AllAtOnceAdvancement.anyRuleBroken(player)) return false;
         if (isEarned(player)) return false;
         int travelled = AchievementEvents.effectiveTravelled(
