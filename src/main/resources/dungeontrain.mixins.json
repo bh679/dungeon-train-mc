@@ -203,6 +203,7 @@
     "client.LightTexturePortalCrossingMixin",
     "client.LevelGetShadeMixin",
     "client.ModelBlockRendererUpsideDownMixin",
+    "client.BlockRenderDispatcherLiquidSealMixin",
     "client.SectionCompilerNoLevelGuardMixin",
     "client.VertexBufferUnuploadedDrawGuardMixin",
     "client.SectionRebuildUploadFailureMixin",

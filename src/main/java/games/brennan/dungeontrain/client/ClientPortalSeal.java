@@ -1,10 +1,13 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.portal.PortalSealPlane;
 import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.core.SectionPos;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
 
@@ -28,29 +31,105 @@ public final class ClientPortalSeal {
     /** Volatile: written on the render thread, read from chunk-build threads through the frustum. */
     private static volatile PortalSealPlane.Cut cut = PortalSealPlane.Cut.NONE;
 
+    /**
+     * Camera column of this frame, in blocks, and how far from it a block may be trimmed. Volatile
+     * for the same reason as {@link #cut}; the three are read together only by {@link #hidesBlock}.
+     */
+    private static volatile int trimCentreX;
+    private static volatile int trimCentreZ;
+    private static volatile int trimReach;
+
+    /**
+     * Blocks beyond the render distance a trim still reaches — slack for the section the camera
+     * stands in and for sections meshed a frame late. Sable sub-levels sit in plots millions of
+     * blocks out, so any finite reach keeps their meshes out of the trim; their plot Y is a world Y.
+     */
+    private static final int TRIM_REACH_SLACK = 32;
+
     private ClientPortalSeal() {}
 
     /**
      * Re-evaluate the cut for this frame's camera. Called from {@code PortalSealEvents} before the
      * level is drawn, so the frame a portal swap lands on is already cut correctly.
      */
-    public static void beginFrame(double cameraX, double cameraY) {
+    public static void beginFrame(double cameraX, double cameraY, double cameraZ) {
+        PortalSealPlane.Cut before = cut;
+        trimCentreX = Mth.floor(cameraX);
+        trimCentreZ = Mth.floor(cameraZ);
+        trimReach = viewReach() + TRIM_REACH_SLACK;
+        cut = computeCut(cameraX, cameraY, cameraZ);
+        if (!sameTrim(before, cut)) rebuildTrimmedSections(before, cut, cameraX, cameraZ);
+    }
+
+    private static PortalSealPlane.Cut computeCut(double cameraX, double cameraY, double cameraZ) {
         if (!ClientDisplayConfig.isPortalTwinSealCulling() || !inTheSyncedWorld()) {
-            cut = PortalSealPlane.Cut.NONE;
-            return;
+            return PortalSealPlane.Cut.NONE;
         }
         int camX = Mth.floor(cameraX);
         AmplifiedDrop drop = ClientUpsideDownBand.amplifiedDrop();
         if (drop != null && ClientUpsideDownBand.isSunkZoneWithin(camX, viewReach())) {
-            cut = PortalSealPlane.cutForAmplified(drop.floorY(ClientUpsideDownBand.bedrockY()), drop.lidY(),
+            return PortalSealPlane.cutForAmplified(drop.floorY(ClientUpsideDownBand.bedrockY()), drop.lidY(),
                 ClientUpsideDownBand.isInSunkZone(camX), cameraY);
-            return;
         }
-        cut = PortalSealPlane.cutFor(
+        return PortalSealPlane.cutFor(
             ClientUpsideDownBand.bedrockY(),
             ClientUpsideDownBand.roofY(),
-            ClientUpsideDownBand.isInBand(Mth.floor(cameraX)),
+            atticCanBeHere(camX, cameraX, cameraY, cameraZ),
             cameraY);
+    }
+
+    /**
+     * Whether a camera here can be in an attic: inside the band, where the lid is stamped — or inside
+     * a dimensional carriage, wherever it is.
+     *
+     * <p>The second half is the Reassembly. A twin stamped in the attic stays there while the train
+     * carries its pair on past the band's end, and {@link ClientUpsideDownBand#isInBand} stops at that
+     * end, so a player in such a twin got the world's cut and saw the whole world under the room. The
+     * structure box is the server's own answer to "is this camera in a twin", so it cannot mistake a
+     * Reassembly mountaintop over the lid height for an attic the way a bare height test would.</p>
+     */
+    private static boolean atticCanBeHere(int camX, double cameraX, double cameraY, double cameraZ) {
+        if (ClientUpsideDownBand.isInBand(camX)) return true;
+        return DungeonTrainCommonConfig.isUpsideDownBedrockRoof()
+            && ClientPortalRoomDepth.isInsideStructure(cameraX, cameraY, cameraZ);
+    }
+
+    private static boolean sameTrim(PortalSealPlane.Cut a, PortalSealPlane.Cut b) {
+        return a.trimMinY() == b.trimMinY() && a.trimMaxY() == b.trimMaxY();
+    }
+
+    /**
+     * Re-mesh the section layers whose trimmed rows just changed, so the blocks the trim skips go (or
+     * come back) on the next compile rather than whenever those sections next happen to change.
+     *
+     * <p>A trim only exists for a camera inside sealed space, so this runs on the frame a portal swap
+     * crosses a seal — the arrival the swap already treats as a loading moment — and never while
+     * riding: one layer of sections across the view. Both renderers rebuild through
+     * {@link LevelRenderer#setSectionDirty}; Sodium redirects it to its own scheduler.</p>
+     */
+    private static void rebuildTrimmedSections(PortalSealPlane.Cut before, PortalSealPlane.Cut after,
+                                               double cameraX, double cameraZ) {
+        LevelRenderer renderer = Minecraft.getInstance().levelRenderer;
+        if (renderer == null || Minecraft.getInstance().level == null) return;
+        int radius = Minecraft.getInstance().options.getEffectiveRenderDistance() + 1;
+        int centreX = SectionPos.blockToSectionCoord(Mth.floor(cameraX));
+        int centreZ = SectionPos.blockToSectionCoord(Mth.floor(cameraZ));
+        markLayers(renderer, before, centreX, centreZ, radius);
+        markLayers(renderer, after, centreX, centreZ, radius);
+    }
+
+    private static void markLayers(LevelRenderer renderer, PortalSealPlane.Cut cut,
+                                   int centreX, int centreZ, int radius) {
+        if (cut.trimMinY() > cut.trimMaxY()) return;
+        int fromY = SectionPos.blockToSectionCoord(cut.trimMinY());
+        int toY = SectionPos.blockToSectionCoord(cut.trimMaxY());
+        for (int sy = fromY; sy <= toY; sy++) {
+            for (int sx = centreX - radius; sx <= centreX + radius; sx++) {
+                for (int sz = centreZ - radius; sz <= centreZ + radius; sz++) {
+                    renderer.setSectionDirty(sx, sy, sz);
+                }
+            }
+        }
     }
 
     /**
@@ -86,6 +165,20 @@ public final class ClientPortalSeal {
     /** Whether anything is being hidden at all — the early-out every hook opens with. */
     public static boolean sealed() {
         return cut.sealed();
+    }
+
+    /**
+     * Whether the chunk mesher should skip the block (or fluid) at {@code (x, y, z)} — a row of sealed
+     * world inside a section the cut keeps. Called for every block meshed, from build threads.
+     *
+     * <p>Bounded to the camera's surroundings as well as by row, because the mesher also builds Sable
+     * sub-levels: a carriage's plot keeps world Y, so a row test alone would strip a train passing
+     * through those heights. Their plots are far beyond any render distance.</p>
+     */
+    public static boolean hidesBlock(int x, int y, int z) {
+        if (!cut.hidesBlock(y)) return false;
+        int reach = trimReach;
+        return Math.abs(x - trimCentreX) <= reach && Math.abs(z - trimCentreZ) <= reach;
     }
 
     /** Whether a box spanning {@code [minY, maxY]} is wholly on the hidden side of this frame's cut. */

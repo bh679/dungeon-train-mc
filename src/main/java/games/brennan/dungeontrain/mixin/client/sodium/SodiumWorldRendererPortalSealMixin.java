@@ -43,7 +43,7 @@ public abstract class SodiumWorldRendererPortalSealMixin {
     private void dungeontrain$sealFromThisFramesCamera(CallbackInfo ci) {
         Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
         PortalSealPlane.Cut before = ClientPortalSeal.cut();
-        ClientPortalSeal.beginFrame(camera.x, camera.y);
+        ClientPortalSeal.beginFrame(camera.x, camera.y, camera.z);
         dungeontrain$trace(before, camera.y);
     }
 
