@@ -26394,6 +26394,31 @@
       "released": true,
       "released_in": "v0.1307.0",
       "released_at": "2026-10-15T14:26:57Z"
+    },
+    {
+      "id": "twitch-account-link",
+      "version": "0.1308.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Twitch integration",
+      "summary": "Connect your Twitch account with /twitch: the official Dungeon Train stream names you and links your channel whenever you wear the Live Eye, and streamers can push their ride to their own channel too.",
+      "highlights": [
+        "/twitch links your Twitch account through a web sign-in; your channel appears in the stream title, the chat shout-out, the Live page, the Discord go-live post and your on-stream name tag",
+        "Opt-in restream: wear the Live Eye and your ride also goes out on your own Twitch channel, with an optional title and category set for you",
+        "New Account tab in settings with the Twitch switches beside Discord; /twitch unlink disconnects at any time and the stream key is never stored",
+        "Going live without a Twitch saved? Drop your Twitch in chat for a shout-out \u2014 one click saves it; a Stream setting turns the reminder off"
+      ],
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "major": true,
+      "notable": true,
+      "description": "Dungeon Train TV now knows who you are on Twitch.\n\nType `/twitch` in game, connect your Twitch account on the page it opens, and every time you wear the Live Eye the official Dungeon Train stream names you: your channel goes in the stream title, the chat bot shouts you out, the website's Live page and the Discord go-live post link to you, and your name tag on the stream carries your channel.\n\nStreamers can go one step further. Turn on **Stream to my channel** and your ride is pushed to your own Twitch channel at the same time, with an optional title and category set for you. Both switches live on the new Account tab, next to Discord, and `/twitch unlink` takes it all back at any time. Your stream key is never stored.\n\nNo account? When you go live without a Twitch saved, the game asks you to drop your Twitch in chat for a shout-out. One click saves it. The reminder can be turned off in Stream settings and never shows in Kid mode."
     }
   ]
 }
