@@ -41,7 +41,12 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 if [ -n "${RELEASE_NOTES:-}" ]; then
   FULL_NOTES=$RELEASE_NOTES
 else
-  FULL_NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body' 2>/dev/null || echo "")
+  # No release, no announcement: a missing release used to fall back to empty notes and ping the
+  # community anyway (v0.1295.0, whose build failed). Same refusal as notify-discord.yml.
+  if ! FULL_NOTES=$(gh release view "$RELEASE_TAG" --repo "$REPO" --json body --jq '.body'); then
+    echo "::error::No GitHub Release found for $RELEASE_TAG — not announcing. Once it exists, announce it with: gh workflow run notify-discord.yml -f tag=$RELEASE_TAG"
+    exit 1
+  fi
 fi
 NOTES=$(printf '%s\n' "$FULL_NOTES" | python3 "$SCRIPT_DIR/release-notes/link-changelog.py" --release "$RELEASE_TAG" --no-footer | head -c 500 || true)
 

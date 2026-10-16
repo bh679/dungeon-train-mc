@@ -16,6 +16,11 @@ public enum EditorScreenPage {
     NAV(EditorScreenLang.TAB_NAV),
     /** Tunnel template groups — shown only while the editor is on Tracks, see {@link EditorGroupsTab}. */
     GROUPS(EditorScreenLang.TAB_GROUPS),
+    /**
+     * The relay's builds awaiting review, from every builder, with one button that stages them all on
+     * the Workbench. A browser page: the grid and filter bar are the Templates tab's, in creator mode.
+     */
+    WORKBENCH(EditorScreenLang.TAB_WORKBENCH),
     SETTINGS(EditorScreenLang.TAB_SETTINGS);
 
     private final String langKey;
@@ -30,6 +35,6 @@ public enum EditorScreenPage {
 
     /** Whether this page shows the tile browser — only Templates does. */
     public boolean isBrowser() {
-        return this == TEMPLATES;
+        return this == TEMPLATES || this == WORKBENCH;
     }
 }

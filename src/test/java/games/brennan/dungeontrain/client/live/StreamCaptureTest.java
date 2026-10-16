@@ -8,6 +8,7 @@ import static games.brennan.dungeontrain.client.live.StreamCapture.point;
 import static games.brennan.dungeontrain.client.live.StreamCapture.previewPoint;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** No grabbed frame may carry what the streamer's settings (or Kid mode) keep from viewers. */
@@ -22,38 +23,46 @@ class StreamCaptureTest {
     }
 
     @Test
-    void guiAndChatOnSendsTheFinishedFrame() {
+    void guiAndChatOnInWorldSendsTheFinishedFrame() {
         assertEquals(Point.FRAME_END, point(true, true, false, false, false));
-        assertEquals(Point.FRAME_END, point(true, true, true, true, false));
-        assertEquals(Point.FRAME_END, point(true, true, true, false, true));
+        assertEquals(Point.FRAME_END, point(true, true, false, false, true));
     }
 
     @Test
     void guiOffAlwaysReadsBeforeTheGui() {
         for (boolean chat : new boolean[]{true, false})
             for (boolean screen : new boolean[]{true, false})
-                for (boolean chatScreen : new boolean[]{true, false})
-                    for (boolean hide : new boolean[]{true, false})
-                        assertEquals(Point.BEFORE_GUI, point(false, chat, screen, chatScreen, hide));
+                for (boolean hide : new boolean[]{true, false})
+                    assertEquals(Point.BEFORE_GUI, point(false, chat, screen, false, hide));
     }
 
     @Test
-    void chatOffInWorldOrTypingReadsBeforeChatDraws() {
+    void chatOffInWorldReadsBeforeChatDraws() {
         assertEquals(Point.BEFORE_CHAT, point(true, false, false, false, false));
-        assertEquals(Point.BEFORE_CHAT, point(true, false, true, true, false));
     }
 
     @Test
-    void chatOffWithAMenuOpenHidesTheChatBehindIt() {
-        assertEquals(Point.FRAME_END_HIDE_CHAT, point(true, false, true, false, false));
-    }
-
-    @Test
-    void chatOffWithTheGuiHidden() {
+    void chatOffWithTheGuiHiddenInWorld() {
+        // F1 hides the chat lines; with no screen open there is no chat box either.
         assertEquals(Point.FRAME_END, point(true, false, false, false, true));
-        assertEquals(Point.FRAME_END, point(true, false, true, false, true));
-        // F1 hides the chat lines but not the chat box being typed in.
-        assertEquals(Point.SKIP, point(true, false, true, true, true));
+    }
+
+    /**
+     * The chat box, a sign or book being written, /msg being typed, another mod's account screen:
+     * an unlisted screen is read before it draws — whatever the chat switch says.
+     */
+    @Test
+    void anUnlistedScreenIsNeverBroadcast() {
+        for (boolean gui : new boolean[]{true, false})
+            for (boolean chat : new boolean[]{true, false})
+                for (boolean hide : new boolean[]{true, false}) {
+                    Point p = point(gui, chat, true, false, hide);
+                    assertNotEquals(Point.FRAME_END, p);
+                    assertNotEquals(Point.SKIP, p);
+                    assertEquals(previewPoint(gui, chat), p);
+                }
+        assertEquals(Point.AFTER_GUI, point(true, true, true, false, false));
+        assertEquals(Point.BEFORE_CHAT, point(true, false, true, false, false));
     }
 
     @Test
@@ -62,5 +71,32 @@ class StreamCaptureTest {
         assertEquals(Point.BEFORE_GUI, previewPoint(false, false));
         assertEquals(Point.BEFORE_CHAT, previewPoint(true, false));
         assertEquals(Point.AFTER_GUI, previewPoint(true, true));
+    }
+
+    /** Inventories, the pause menu, advancements: shown with the GUI on, never with it off. */
+    @Test
+    void aListedScreenIsShownWithTheGui() {
+        assertEquals(Point.FRAME_END, point(true, true, true, true, false));
+        assertEquals(Point.FRAME_END, point(true, true, true, true, true));
+        for (boolean chat : new boolean[]{true, false})
+            for (boolean hide : new boolean[]{true, false})
+                assertEquals(Point.BEFORE_GUI, point(false, chat, true, true, hide));
+    }
+
+    /** Chat off: a listed menu dims the HUD rather than covering it, so the chat layer is skipped. */
+    @Test
+    void aListedScreenWithChatOffSkipsTheChatLayer() {
+        assertEquals(Point.FRAME_END_HIDE_CHAT, point(true, false, true, true, false));
+        // F1 draws no chat lines, and a listed menu has no chat box.
+        assertEquals(Point.FRAME_END, point(true, false, true, true, true));
+    }
+
+    /** screenShown means nothing with no screen open. */
+    @Test
+    void screenShownIsIgnoredWithNoScreen() {
+        for (boolean gui : new boolean[]{true, false})
+            for (boolean chat : new boolean[]{true, false})
+                for (boolean hide : new boolean[]{true, false})
+                    assertEquals(point(gui, chat, false, false, hide), point(gui, chat, false, true, hide));
     }
 }

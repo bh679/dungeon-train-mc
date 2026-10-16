@@ -140,6 +140,9 @@ public final class LiveFeedSource implements IVideoSource {
         if (ffmpeg == null) return Frame.STATIC;
         LiveHlsSession s = sessionFor(url, replay, status, ffmpeg);
         s.touch(ffmpeg);
+        LiveHlsSession next = pending;
+        // A playlist listing anything but its own segments is never shown (LiveHlsSession#safePlaylist).
+        if (s.refused() || (next != null && next.refused())) return Frame.STATIC;
         LiveFeedTexture tex = texture;
         if (tex == null) return new Frame(Kind.WAITING, url, replay, -1, false);
         MediaStatus st = tex.uploadFrameAtTime(animationTick, partialTick, paused);
@@ -247,6 +250,17 @@ public final class LiveFeedSource implements IVideoSource {
         if (t != null) { t.unregister(); t.close(); texture = null; }
         LiveHlsSession s = session;
         if (s != null) { s.close(); session = null; }
+    }
+
+    /**
+     * Client tick: run each decoder's stall and idle watchdog, so a stalled or unwatched ffmpeg is
+     * ended even when no TV renders the feed (rendering is what calls {@link LiveHlsSession#touch}).
+     */
+    public void tick() {
+        long now = System.currentTimeMillis();
+        LiveHlsSession s = session, p = pending;
+        if (s != null) s.watchdog(now);
+        if (p != null) p.watchdog(now);
     }
 
     /** Render thread: the session on screen, or null — for the {@code [live]} perf line. */

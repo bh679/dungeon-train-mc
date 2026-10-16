@@ -78,7 +78,8 @@ public final class EditorStampedCategoryState {
      * Buildings layer while Buildings is the stamped category ({@link EditorLayout#isAtPlotHeight(int, boolean)}).
      */
     public static boolean atPlotHeight(int y) {
-        return EditorLayout.isAtPlotHeight(y, isActive(EditorCategory.BUILDINGS));
+        return EditorLayout.isAtPlotHeight(y,
+            isActive(EditorCategory.BUILDINGS) || isActive(EditorCategory.WORKBENCH));
     }
 
     public static boolean isActive(EditorCategory category) {

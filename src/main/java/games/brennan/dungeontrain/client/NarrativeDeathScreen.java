@@ -42,6 +42,7 @@ import games.brennan.dungeontrain.net.RideGalleryPacket;
 import games.brennan.dungeontrain.client.sound.TrainEngineSound;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundAssigner;
 import games.brennan.dungeontrain.client.snapshot.DeathPhotoUploads;
+import games.brennan.dungeontrain.client.live.DeathClipBackground;
 import games.brennan.dungeontrain.client.snapshot.DeathBackgroundPainter;
 import games.brennan.dungeontrain.client.snapshot.RideGalleryScreen;
 import games.brennan.dungeontrain.client.snapshot.RideSnapshot;
@@ -317,6 +318,9 @@ public final class NarrativeDeathScreen extends Screen {
     private boolean swapped = false;       // page switch already applied this transition
     private boolean pendingInitialFade = false; // seed the opening fade-in on first frame
     private RideSnapshot fromShot, toShot; // held (old) photo, and the one we switch to
+    // The pages fromShot/toShot belong to, and the page the recap opened on: a live streamer's death
+    // clip (DeathClipBackground) loops behind the opening page in place of its photo.
+    private int fromPage = -1, toPage = -1, openingPage = -1;
     private float uiAlpha = 0.0f;          // 0..1 — how present the chrome/text is this frame
     private float photoBlack = 0.0f;       // 0..1 — black fill laid over the photo (the dip)
     private boolean photoNew = false;      // show the incoming photo (true) vs the held one (false)
@@ -629,6 +633,8 @@ public final class NarrativeDeathScreen extends Screen {
             pendingPage = -1;
             fromShot = bgFor(currentPage);
             toShot = null;
+            openingPage = currentPage;
+            fromPage = currentPage;
             // Funnel: the opening page's first view (usually FALL). Fired once — inside !opened —
             // so a later rebuildWidgets/init doesn't re-log it. Page changes go through
             // startTransition; close through removed().
@@ -757,8 +763,12 @@ public final class NarrativeDeathScreen extends Screen {
         RideSnapshot photo = photoNew && toShot != null
                 ? toShot
                 : (fromShot != null ? fromShot : bgFor(currentPage));
-        if (photo != null) {
-            DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height);
+        int backdropPage = photoNew && toShot != null ? toPage : (fromShot != null ? fromPage : currentPage);
+        // A live streamer's death clip loops behind the opening page, under the same dip-to-black.
+        boolean clip = backdropPage == openingPage && openingPage >= 0
+            && DeathClipBackground.draw(g, this.width, this.height, ticksOpen, partialTick);
+        if (clip || photo != null) {
+            if (!clip) DeathBackgroundPainter.drawPhoto(g, photo, this.width, this.height);
             if (photoBlack > 0.0f) {
                 int a = Math.min(255, Math.round(photoBlack * 255.0f));
                 g.fill(0, 0, this.width, this.height, a << 24);
@@ -983,6 +993,8 @@ public final class NarrativeDeathScreen extends Screen {
         dipStartBlack = photoBlack;     // carry current darkness (advancing mid-rise won't snap)
         fromShot = bgFor(currentPage);
         toShot = bgFor(target);
+        fromPage = currentPage;
+        toPage = target;
         pendingPage = target;
         swapped = false;
         transStartMs = Util.getMillis();

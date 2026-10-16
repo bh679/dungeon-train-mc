@@ -126,6 +126,7 @@ public final class EditorPlotLabels {
             case TRACKS -> trackLabels(dims);
             case PORTALS -> portalLabels(dims);
             case BUILDINGS -> buildingLabels();
+            case WORKBENCH -> workbenchLabels(dims);
             case ARCHITECTURE -> Collections.emptyList();
         };
     }
@@ -156,6 +157,16 @@ public final class EditorPlotLabels {
                 games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
                 games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.GROUP, g.id()),
                 PlotCategory.WHOLE_GROUP.name(), g.id(), g.id(), false, p.isUser, p.isImported));
+        }
+        Vec3i halfFootprint = WholeCarriageEditor.plotSize(games.brennan.dungeontrain.train.WholeKind.HALF, dims);
+        for (games.brennan.dungeontrain.train.WholeCarriage h : games.brennan.dungeontrain.train.WholeHalfRegistry.all()) {
+            BlockPos origin = WholeCarriageEditor.halfPlotOrigin(h, dims);
+            if (origin == null) continue;
+            Provenance p = provenanceOf(WholeHalfTemplateStore.fileForId(h.id()));
+            out.add(new Label(anchorAbove(origin, halfFootprint),
+                games.brennan.dungeontrain.train.WholeWeights.nameFor(games.brennan.dungeontrain.train.WholeKind.HALF, h.id()),
+                games.brennan.dungeontrain.train.WholeWeights.weightFor(games.brennan.dungeontrain.train.WholeKind.HALF, h.id()),
+                PlotCategory.WHOLE_HALF.name(), h.id(), h.id(), false, p.isUser, p.isImported));
         }
         return out;
     }
@@ -284,42 +295,70 @@ public final class EditorPlotLabels {
         return out;
     }
 
+    /** One label per staged build, over its recorded plot: the relay's name, no weight. */
+    private static List<Label> workbenchLabels(CarriageDims dims) {
+        net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return Collections.emptyList();
+        net.minecraft.server.level.ServerLevel overworld = server.overworld();
+        List<Label> out = new ArrayList<>();
+        String category = EditorCategory.WORKBENCH.name();
+        for (games.brennan.dungeontrain.editor.workbench.WorkbenchStagedBuild build
+                : games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore.list()) {
+            BlockPos origin = WorkbenchEditor.plotOrigin(overworld, build.stagedId());
+            if (origin == null) continue;
+            Label label = new Label(anchorAbove(origin, build.size()), build.stagedId(), EditorPlotLabelsPacket.NO_WEIGHT,
+                category, WorkbenchEditor.MODEL_ID, build.stagedId(), false, true, false);
+            // A staged room's panel carries what a Dimensions room's does, so it gets the same rows.
+            boolean room = games.brennan.dungeontrain.builder.relay.BuilderRelayKinds.kindOf(build.relayKind())
+                == games.brennan.dungeontrain.builder.BuilderPhotoPaths.Kind.PORTAL_ROOM;
+            out.add(room ? withRoomFacts(label,
+                games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.nameFor(build.stagedId()), dims) : label);
+        }
+        return out;
+    }
+
     private static List<Label> portalLabels(CarriageDims dims) {
         List<Label> out = new ArrayList<>();
         addTrackKindLabels(out, TrackKind.PORTAL_ROOM, dims, EditorCategory.PORTALS);
         // A portal room is the one plot whose box AND boundary the author chooses, so its label
         // carries the live size for the [-] N [+] rows and the mode for the Walls button.
         for (int i = 0; i < out.size(); i++) {
-            Label l = out.get(i);
-            Vec3i size = PortalRoomSizes.sizeOf(l.modelName(), dims);
-            // Resolved rather than passed through raw, so the row shows the mode the room will
-            // actually behave as even when the tag on disk is absent or misspelt.
-            String mode = games.brennan.dungeontrain.portal.PortalRoomSettings
-                .of(l.modelName()).toTag();
-            // The Copies blocks travel with the label so the two rows can draw their icons without
-            // a packet of their own: the rows already live on this panel, and each is one short id,
-            // empty for every room that is not repeating a block.
-            games.brennan.dungeontrain.portal.PortalRoomSettings settings =
-                games.brennan.dungeontrain.portal.PortalRoomSettings.parse(mode);
-            boolean single = settings.effectiveCopies().repeatsOneBlock();
-            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant palettes = single
-                ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant
-                    .forRoom(l.modelName(), settings.copies())
-                : games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.empty();
-            String copiesFloorBlock = palettes.iconBlockId(
-                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
-            String copiesRoofBlock = palettes.iconBlockId(
-                games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
-            // As the stamp will lay it: clamped to the room, so the row never promises a depth
-            // the roof would not survive.
-            int copiesFloorHeight = games.brennan.dungeontrain.portal.PortalRoomSinglePlanes
-                .floorHeightFor(palettes, size);
-            out.set(i, new Label(l.worldPos(), l.name(), l.weight(), l.category(),
-                l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
-                size.getX(), size.getZ(), size.getY(), mode, copiesFloorBlock, copiesRoofBlock,
-                copiesFloorHeight));
+            out.set(i, withRoomFacts(out.get(i), out.get(i).modelName(), dims));
         }
         return out;
+    }
+
+    /**
+     * {@code l} carrying room {@code roomName}'s live size, settings tag and Copies blocks — what the
+     * [-] N [+] rows, the Walls button and the Copies rows draw from. {@code roomName} is a Dimensions
+     * room's name or a staged room's ({@link games.brennan.dungeontrain.editor.workbench.WorkbenchRooms}).
+     */
+    private static Label withRoomFacts(Label l, String roomName, CarriageDims dims) {
+        Vec3i size = PortalRoomSizes.sizeOf(roomName, dims);
+        // Resolved rather than passed through raw, so the row shows the mode the room will
+        // actually behave as even when the tag on disk is absent or misspelt.
+        String mode = games.brennan.dungeontrain.portal.PortalRoomSettings.of(roomName).toTag();
+        // The Copies blocks travel with the label so the two rows can draw their icons without
+        // a packet of their own: the rows already live on this panel, and each is one short id,
+        // empty for every room that is not repeating a block.
+        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
+            games.brennan.dungeontrain.portal.PortalRoomSettings.parse(mode);
+        boolean single = settings.effectiveCopies().repeatsOneBlock();
+        games.brennan.dungeontrain.portal.PortalRoomCopiesVariant palettes = single
+            ? games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.forRoom(roomName, settings.copies())
+            : games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.empty();
+        String copiesFloorBlock = palettes.iconBlockId(
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.FLOOR);
+        String copiesRoofBlock = palettes.iconBlockId(
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.Plane.ROOF);
+        // As the stamp will lay it: clamped to the room, so the row never promises a depth
+        // the roof would not survive.
+        int copiesFloorHeight = games.brennan.dungeontrain.portal.PortalRoomSinglePlanes
+            .floorHeightFor(palettes, size);
+        return new Label(l.worldPos(), l.name(), l.weight(), l.category(),
+            l.modelId(), l.modelName(), l.inPlot(), l.isUser(), l.isImported(),
+            size.getX(), size.getZ(), size.getY(), mode, copiesFloorBlock, copiesRoofBlock,
+            copiesFloorHeight);
     }
 
     private static void addTrackKindLabels(List<Label> out, TrackKind kind, CarriageDims dims) {

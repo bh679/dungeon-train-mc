@@ -29,7 +29,7 @@ final class BuilderPickerLayoutTest {
         for (int[] size : SIZES) {
             List<BuilderPickerLayout.Rect> tiles = layoutFor(size[0], size[1]).tiles();
             assertEquals(BuilderPickerLayout.COLUMNS * BuilderPickerLayout.ROWS, tiles.size());
-            assertTrue(tiles.size() >= BuilderMode.values().length, "every mode gets a tile at " + label(size));
+            assertTrue(tiles.size() >= BuilderMode.NAV_ORDER.size(), "every public mode gets a tile at " + label(size));
             assertEquals(tiles.get(0).x(), tiles.get(1).x(), "one column at " + label(size));
             assertTrue(tiles.get(0).bottom() <= tiles.get(BuilderPickerLayout.COLUMNS).y(), "rows overlap at " + label(size));
             assertEquals(tiles.get(0).w(), tiles.get(3).w(), "tiles differ in size at " + label(size));

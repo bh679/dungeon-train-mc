@@ -24,14 +24,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class EditorCategoryTest {
 
     @Test
-    @DisplayName("exactly six constants, WHOLE first — PARTS is deliberately not one of them")
-    void constants_areFrozenAtSix() {
+    @DisplayName("exactly eight constants, WHOLE first — PARTS is deliberately not one of them")
+    void constants_areFrozenAtEight() {
         // Parts are addressable in the UI but are not their own plot set: they live inside the
         // CARRIAGES set (carriageModels folds Template.Part in, locate() reports CARRIAGES for a
         // part plot). A PARTS constant here would add a category-bar button and a
         // /dt editor parts token that stamp nothing. The UI-facing vocabulary that DOES include
         // parts is PlotCategory.
-        assertEquals(7, EditorCategory.values().length);
+        // WORKBENCH (0.1130.0) is the placed-plots category for staged relay builds — see WorkbenchEditor.
+        assertEquals(8, EditorCategory.values().length);
         assertEquals(EditorCategory.WHOLE, EditorCategory.values()[0], "Whole is first in the row");
         assertFalse(EditorCategory.fromId("parts").isPresent(),
             "PARTS belongs to PlotCategory, not EditorCategory");

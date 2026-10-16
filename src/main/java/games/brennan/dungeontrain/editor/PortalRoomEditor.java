@@ -98,8 +98,15 @@ public final class PortalRoomEditor {
      * the reverse, would be the editor contradicting itself about where its own door is.</p>
      */
     public static List<BlockPos> doorBases(String name, BlockPos origin, Vec3i size, CarriageDims dims) {
-        games.brennan.dungeontrain.portal.PortalRoomSettings settings =
-            games.brennan.dungeontrain.portal.PortalRoomSettings.of(name);
+        return doorBases(games.brennan.dungeontrain.portal.PortalRoomSettings.of(name), origin, size, dims);
+    }
+
+    /**
+     * As above, for a room whose settings are not under a registered name — a room staged in the
+     * Workbench, whose settings travel in its own sidecar document.
+     */
+    public static List<BlockPos> doorBases(games.brennan.dungeontrain.portal.PortalRoomSettings settings,
+                                           BlockPos origin, Vec3i size, CarriageDims dims) {
         int offset = PortalRoomLayout.clampDoorOffset(dims, size.getZ(), settings.doorOffset().value());
         int heightOffset = PortalRoomLayout.clampDoorHeightOffset(
             dims, size.getY(), settings.doorHeightOffset().value());
@@ -604,6 +611,9 @@ public final class PortalRoomEditor {
     public static Vec3i setSize(ServerLevel overworld, String name, PortalRoomResize.Axis axis,
                                 int value, CarriageDims dims) {
         Vec3i current = plotSize(name, dims);
+        if (games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(name) != null) {
+            return resizeStaged(overworld, name, PortalRoomResize.with(current, axis, value), dims);
+        }
         Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims,
             PortalRoomLayout.heldForAuthoring(current, PortalRoomResize.with(current, axis, value))));
         applySteps(overworld, name, dims, PortalRoomResize.plan(dims, axis, current,
@@ -788,6 +798,9 @@ public final class PortalRoomEditor {
      * @return the size actually applied, after clamping to what this world's corridor allows
      */
     public static Vec3i setSize(ServerLevel overworld, String name, Vec3i wanted, CarriageDims dims) {
+        if (games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(name) != null) {
+            return resizeStaged(overworld, name, wanted, dims);
+        }
         Vec3i clamped = heldUnderTheSky(overworld, dims, PortalRoomLayout.clampSize(dims,
             PortalRoomLayout.heldForAuthoring(plotSize(name, dims), wanted)));
         applySteps(overworld, name, dims,
@@ -796,6 +809,24 @@ public final class PortalRoomEditor {
             name, clamped.getX(), clamped.getY(), clamped.getZ(),
             wanted.getX(), wanted.getY(), wanted.getZ());
         return clamped;
+    }
+
+    /**
+     * A room staged in the Workbench resized in its own slot ({@link
+     * games.brennan.dungeontrain.editor.workbench.WorkbenchRooms#resize}) — the steppers and the typed
+     * size reach it through the same two entry points a Dimensions room's do.
+     */
+    private static Vec3i resizeStaged(ServerLevel overworld, String name, Vec3i wanted, CarriageDims dims) {
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(name);
+        Vec3i current = plotSize(name, dims);
+        try {
+            Vec3i applied = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.resize(
+                overworld, stagedId, wanted, dims);
+            return applied == null ? current : applied;
+        } catch (java.io.IOException e) {
+            LOGGER.warn("[DungeonTrain] Workbench room '{}' could not be resized: {}", stagedId, e.toString());
+            return current;
+        }
     }
 
     /**

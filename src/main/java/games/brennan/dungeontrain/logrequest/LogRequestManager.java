@@ -70,7 +70,7 @@ public final class LogRequestManager {
     }
 
     private static final Map<UUID, Pending> PENDING = new ConcurrentHashMap<>();
-    private static final Map<UUID, Long> LAST_LIVE_MS = new ConcurrentHashMap<>();
+    private static final Map<UUID, LiveRequestThrottle.State> LIVE = new ConcurrentHashMap<>();
     private static final AtomicInteger NEXT_ID = new AtomicInteger(1);
 
     private LogRequestManager() {}
@@ -80,6 +80,16 @@ public final class LogRequestManager {
         if (content == null) return false;
         String c = content.trim().toLowerCase(Locale.ROOT);
         return c.equals("/bug") || c.equals("!bug");
+    }
+
+    /**
+     * Whether {@code content} is the relay's Developer {@code /version} lookup ({@code /version}, optionally
+     * {@code full} and a name). The relay answers it from its own records; the mod only has to make sure
+     * a typed one is never shown to the player as a developer message.
+     */
+    public static boolean isVersionCommand(@Nullable String content) {
+        if (content == null) return false;
+        return content.trim().toLowerCase(Locale.ROOT).matches("[/!]version(\\s+\\S+){0,2}");
     }
 
     /**
@@ -102,24 +112,30 @@ public final class LogRequestManager {
         });
     }
 
-    /** The player's client saw a livestream-chat request aimed at them. Server thread. */
+    /**
+     * The player's client saw a livestream-chat request aimed at them. Server thread. Rate-limited per
+     * player, and the Discord notice for a refused or blocked request is throttled too
+     * ({@link LiveRequestThrottle}) — the packet comes from the client, so it cannot be trusted not to loop.
+     */
     public static void onLiveRequest(ServerPlayer player) {
-        long now = System.currentTimeMillis();
-        Long last = LAST_LIVE_MS.get(player.getUUID());
-        if (last != null && now - last < LIVE_GAP_MS) {
-            DeliveryFailureReport.report(null, player, name(player), Reason.TOO_SOON);
+        UUID uuid = player.getUUID();
+        LiveRequestThrottle.Decision d = LiveRequestThrottle.arrive(
+                LIVE.getOrDefault(uuid, LiveRequestThrottle.State.NONE), System.currentTimeMillis(), LIVE_GAP_MS);
+        LIVE.put(uuid, d.next());
+        if (d.tooSoon()) {
+            DeliveryFailureReport.report(null, player, name(player), Reason.TOO_SOON, d.post());
             return;
         }
-        LAST_LIVE_MS.put(player.getUUID(), now);
         request(player, Origin.LIVE, null);
     }
 
     private static void request(ServerPlayer player, Origin origin, @Nullable DiscordCommandHooks.Reply reply) {
+        UUID uuid = player.getUUID();
+        Pending pending = PENDING.get(uuid);
         Reason blocked = blockReason(ContentModeMirror.isKid(player),
-                DevMessageConsent.isDevChatOff(player.getUUID()),
-                PENDING.containsKey(player.getUUID()));
+                DevMessageConsent.isDevChatOff(uuid), pending != null);
         if (blocked != null) {
-            DeliveryFailureReport.report(reply, player, name(player), blocked);
+            DeliveryFailureReport.report(reply, player, name(player), blocked, postBlocked(uuid, origin, blocked, pending));
             return;
         }
         int id = NEXT_ID.getAndIncrement();
@@ -127,6 +143,15 @@ public final class LogRequestManager {
                 new Pending(id, origin, System.currentTimeMillis() + ANSWER_WINDOW_MS, false, reply));
         DungeonTrainNet.sendTo(player, new LogRequestPromptPacket(id));
         LOGGER.info("[DungeonTrain] Developer log request #{} ({}) sent to {}", id, origin, name(player));
+    }
+
+    /** Whether a blocked request's notice goes to Discord: always from a thread, throttled from the stream. */
+    private static boolean postBlocked(UUID uuid, Origin origin, Reason blocked, @Nullable Pending pending) {
+        if (origin != Origin.LIVE) return true;
+        LiveRequestThrottle.Decision d = LiveRequestThrottle.blocked(
+                LIVE.getOrDefault(uuid, LiveRequestThrottle.State.NONE), blocked, pending == null ? -1 : pending.id());
+        LIVE.put(uuid, d.next());
+        return d.post();
     }
 
     /** Why a request can't be shown, or null when it can. Package-private for unit tests. */
@@ -207,7 +232,7 @@ public final class LogRequestManager {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         PENDING.clear();
-        LAST_LIVE_MS.clear();
+        LIVE.clear();
     }
 
     private static String name(ServerPlayer player) {

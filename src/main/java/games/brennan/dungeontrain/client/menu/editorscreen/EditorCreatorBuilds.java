@@ -41,6 +41,8 @@ import java.util.Set;
 public final class EditorCreatorBuilds {
 
     private static String uuid = "";
+    /** Whether the pooled listing on show is the submission queue alone (the Workbench tab's view). */
+    private static boolean pendingOnly;
     private static String name = "";
     private static List<BuilderProfilePacket.Entry> builds = List.of();
     private static BuilderProfilePacket.Status status;
@@ -133,10 +135,15 @@ public final class EditorCreatorBuilds {
         // nobody's profile and so not a builder that screen could open.
         BuilderProfileState.setViewed(pooled() ? "" : uuid, pooled() ? "" : name);
         if (pooled()) {
-            DungeonTrainNet.sendToServer(BuilderProfileRequestPacket.all(BuilderProfileState.live()));
+            DungeonTrainNet.sendToServer(poolRequest());
         } else if (!uuid.isEmpty()) {
             DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket(uuid, BuilderProfileState.live()));
         }
+    }
+
+    private static BuilderProfileRequestPacket poolRequest() {
+        boolean live = BuilderProfileState.live();
+        return pendingOnly ? BuilderProfileRequestPacket.pending(live) : BuilderProfileRequestPacket.all(live);
     }
 
     /**
@@ -148,7 +155,19 @@ public final class EditorCreatorBuilds {
      * drops an answer about somebody else.</p>
      */
     public static void showAll() {
+        pendingOnly = false;
         show(BuilderProfileRequestPacket.ALL, "");
+    }
+
+    /** The submission queue alone, pooled across builders — what the Workbench tab reviews. */
+    public static void showPending() {
+        pendingOnly = true;
+        show(BuilderProfileRequestPacket.ALL, "");
+    }
+
+    /** Whether the pooled listing on show was asked for as the submission queue. */
+    public static boolean pendingOnly() {
+        return pooled() && pendingOnly;
     }
 
     /**
@@ -160,7 +179,7 @@ public final class EditorCreatorBuilds {
      */
     public static void refresh() {
         if (pooled()) {
-            DungeonTrainNet.sendToServer(BuilderProfileRequestPacket.all(BuilderProfileState.live()));
+            DungeonTrainNet.sendToServer(poolRequest());
         } else if (active()) {
             DungeonTrainNet.sendToServer(new BuilderProfileRequestPacket(uuid, BuilderProfileState.live()));
         }
@@ -371,7 +390,11 @@ public final class EditorCreatorBuilds {
         List<BuilderProfilePacket.Entry> out = new ArrayList<>();
         for (BuilderProfilePacket.Entry entry : builds) {
             if (!admits(filter, entry.kind())) continue;
-            if (!needle.isEmpty() && !entry.buildName().toLowerCase(Locale.ROOT).contains(needle)) continue;
+            // The build's name or its builder's: the pooled listing is browsed by who made what.
+            if (!needle.isEmpty() && !entry.buildName().toLowerCase(Locale.ROOT).contains(needle)
+                    && !(entry.ownerName() != null && entry.ownerName().toLowerCase(Locale.ROOT).contains(needle))) {
+                continue;
+            }
             if (!BuilderProfileFilters.matches(entry, BuilderProfileFilters.ALL, review)) continue;
             if (starredOnly && !starred(entry)) continue;
             out.add(entry);

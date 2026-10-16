@@ -113,9 +113,10 @@ final class EditorScreenActionsTest {
             new ArrayList<>(icons.keySet()));
         assertEquals("dungeontrain save", command(icons.get("save").entry()));
         assertInstanceOf(CommandMenuEntry.TypeArg.class, icons.get("rename").entry());
-        // Carriages have no sub-variant groups, so there is nowhere to move one.
-        assertFalse(icons.get("move").enabled());
-        assertEquals(EditorScreenLang.DISABLED_NO_GROUPS, icons.get("move").disabledKey());
+        // A shell moves between pools (carriage · whole · contents) at its own size: the icon opens the picker.
+        assertTrue(icons.get("move").enabled());
+        CommandMenuEntry.DrillIn move = assertInstanceOf(CommandMenuEntry.DrillIn.class, icons.get("move").entry());
+        assertInstanceOf(games.brennan.dungeontrain.client.menu.PoolMovePickerScreen.class, move.target());
         assertEquals("dungeontrain reset", command(icons.get("reset").entry()));
         // Undo and Redo follow the server's history stack, which is empty here — see historyIcon.
         assertFalse(icons.get("undo").enabled());
@@ -358,6 +359,10 @@ final class EditorScreenActionsTest {
                 ((CommandMenuEntry.DrillIn) entry).target());
             assertEquals("dungeontrain editor test tracks " + modelId + " mossy", check.testCommand());
         }
+        // A Workbench build is offered whatever its kind — the server says if it has no scene.
+        PortalTestSaveCheckScreen workbench = assertInstanceOf(PortalTestSaveCheckScreen.class,
+            EditorScreenActions.testCheckFor(PlotCategory.WORKBENCH, "workbench", "cottage-12"));
+        assertEquals("dungeontrain editor workbench test cottage-12", workbench.testCommand());
         // A model id that is not a piece of the line has nothing to stand up.
         assertNull(EditorScreenActions.testCheckFor(PlotCategory.TRACKS, "portal_room", "mossy"));
         assertNull(EditorScreenActions.testCheckFor(PlotCategory.TRACKS, null, "mossy"));

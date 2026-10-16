@@ -350,6 +350,8 @@ public class DungeonTrain {
         ModSounds.register(modBus);
         games.brennan.dungeontrain.registry.ModStructureProcessors.register(modBus);
         ModMenuTypes.register(modBus);
+        // The photo album recipe's disposable-camera slot (compat/DisposableCameraIngredient).
+        games.brennan.dungeontrain.registry.ModIngredientTypes.register(modBus);
         // Strips BetterNether/BetterEnd/BoP gear and ores from all loot (see compat.DisabledModContent).
         games.brennan.dungeontrain.compat.StripDisabledItemsLootModifier.register(modBus);
 
@@ -480,6 +482,8 @@ public class DungeonTrain {
         // is refused and pauses their uploads, and the writer is told in chat (see
         // SharedBookSubmitResponses). Registration only — no network, no game state.
         games.brennan.dungeontrain.net.relay.SharedBookSubmitResponses.register();
+        // Live Eye text filter: the relay's verdict on a reported strike (warn / Live Eye burns / ban).
+        games.brennan.dungeontrain.event.LiveModeration.register();
         games.brennan.dungeontrain.compat.photo.SharedPhotos.registerResponses();
 
         // Point the bundled Discord Presence at Dungeon Train's central relay feed: every DT install

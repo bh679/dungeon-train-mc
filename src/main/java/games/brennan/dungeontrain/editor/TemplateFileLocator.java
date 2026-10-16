@@ -41,6 +41,7 @@ public final class TemplateFileLocator {
             case CONTENTS -> named(CarriageContentsStore.SUBDIR, id);
             case WHOLE -> named(WholeCarriageTemplateStore.SUBDIR, id);
             case WHOLE_GROUP -> named(CarriageGroupTemplateStore.SUBDIR, id);
+            case WHOLE_HALF -> named(WholeHalfTemplateStore.SUBDIR, id);
             case PARTS -> id.isEmpty() ? Optional.empty()
                 : named(CarriagePartTemplateStore.SUBDIR_BASE + "/" + id, name);
             case TRACKS -> Optional.ofNullable(trackKind(id)).flatMap(k -> named(k.subdir(), name));
@@ -48,7 +49,8 @@ public final class TemplateFileLocator {
             case CHUNK_FRAMES -> named(ChunkFrameStore.SUBDIR, name);
             case BUILDINGS -> named(games.brennan.dungeontrain.building.Buildings.SUBDIR, name);
             // Official buildings have no file of the player's — Big Lost City's live only in its jar.
-            case LOST_CITY, ARCHITECTURE -> Optional.empty();
+            // A staged build's folder is not a template file — see WorkbenchStagingStore.
+            case LOST_CITY, ARCHITECTURE, WORKBENCH -> Optional.empty();
         };
     }
 

@@ -65,6 +65,15 @@ public final class EditorScreenState {
      */
     private static boolean selectStandingPending;
 
+    /**
+     * Whether the Workbench tab is the one that pooled every builder's uploads into creator mode. It
+     * puts the Templates tab back as it was on the way out — but only what it changed: a pool the
+     * reviewer had opened by hand through Find a Builder stays open.
+     */
+    private static boolean workbenchOpenedPool;
+    /** Whether the Workbench tab switched the profile screens to the live relay, to switch back on leave. */
+    private static boolean workbenchFlippedLive;
+
     private EditorScreenState() {}
 
     public static EditorScreenPage page() { return page; }
@@ -122,7 +131,55 @@ public final class EditorScreenState {
     /** Change tab. The type strip is left alone: it belongs to the category, not the page. */
     public static void setPage(EditorScreenPage next) {
         if (next == null || next == page) return;
+        EditorScreenPage previous = page;
         page = next;
+        if (next == EditorScreenPage.WORKBENCH) enterWorkbenchTab();
+        else if (previous == EditorScreenPage.WORKBENCH) leaveWorkbenchTab();
+    }
+
+    /**
+     * The Workbench tab's view: every builder's uploads, narrowed to the ones awaiting review, in the
+     * category the author is standing in — every kind when that is the Workbench itself, which holds
+     * every kind. The strip and the status chip stay live: these are defaults, not locks.
+     */
+    static void enterWorkbenchTab() {
+        // Submissions are reviewed on the live relay; the dev one is where the author's own test
+        // uploads go. The tab reads live and puts the switch back when it is left.
+        if (!games.brennan.dungeontrain.client.builder.BuilderProfileState.live()) {
+            EditorSettingsPage.setRelay(true);
+            workbenchFlippedLive = true;
+        }
+        if (!EditorCreatorBuilds.pooled()) {
+            EditorCreatorBuilds.showPending();
+            workbenchOpenedPool = true;
+        } else if (workbenchFlippedLive || !EditorCreatorBuilds.pendingOnly()) {
+            // The pool on show was the dev relay's, or the whole pool: ask the live queue.
+            EditorCreatorBuilds.showPending();
+        }
+        creatorReview = BuilderProfileFilters.PENDING;
+        EditorRosterIndex index = EditorRosterClient.index();
+        games.brennan.dungeontrain.editor.PlotCategory standing = index == null ? null : index.stampedCategory();
+        EditorCategoryFilter cell = standing == null || standing == games.brennan.dungeontrain.editor.PlotCategory.WORKBENCH
+            ? EditorCategoryFilter.ALL
+            : EditorCategoryFilter.forCategory(standing);
+        setCategory(cell == null ? EditorCategoryFilter.ALL : cell);
+    }
+
+    static void leaveWorkbenchTab() {
+        if (workbenchOpenedPool) {
+            EditorCreatorBuilds.clear();
+            workbenchOpenedPool = false;
+        }
+        if (workbenchFlippedLive) {
+            EditorSettingsPage.setRelay(false);
+            workbenchFlippedLive = false;
+        }
+        if (BuilderProfileFilters.PENDING.equals(creatorReview)) creatorReview = BuilderProfileFilters.ALL;
+    }
+
+    /** Whether the Workbench tab is the page being looked at. */
+    public static boolean onWorkbenchTab() {
+        return page == EditorScreenPage.WORKBENCH;
     }
 
     /** Change category cell; the remembered type strip goes with the old one. */
@@ -199,7 +256,8 @@ public final class EditorScreenState {
     private static void browseTo(VariantKey key, EditorRosterPacket.Group group) {
         EditorCategoryFilter target = EditorCategoryFilter.forCategory(key.category());
         if (target != null) category = target;
-        page = EditorScreenPage.TEMPLATES;
+        // Through setPage, so leaving the Workbench tab puts its pool and status chip back.
+        setPage(EditorScreenPage.TEMPLATES);
         typeName = group != null ? group.typeName() : "";
     }
 
@@ -221,6 +279,13 @@ public final class EditorScreenState {
             selectStandingPending = false;
             VariantKey here = standingIn();
             if (here != null) {
+                // The plot under the author's feet is the subject, so somebody else's uploads step
+                // aside: creator mode would otherwise keep the right pane on a relay build.
+                if (EditorCreatorBuilds.active()) {
+                    EditorCreatorBuilds.clear();
+                    workbenchOpenedPool = false;
+                    if (BuilderProfileFilters.PENDING.equals(creatorReview)) creatorReview = BuilderProfileFilters.ALL;
+                }
                 selection = index.find(here) != null ? index.find(here).key() : here;
                 // The category and strip move to it, but the FILTERS stay: the browser now keeps
                 // the standing template at the front of the grid however they are set, so clearing

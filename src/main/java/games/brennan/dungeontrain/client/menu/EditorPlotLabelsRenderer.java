@@ -188,6 +188,15 @@ public final class EditorPlotLabelsRenderer {
     }
 
     /**
+     * Whether {@code entry} is a dimensional carriage room's panel — a Dimensions plot, or a room
+     * staged in the Workbench. A Workbench panel only carries a room size and mode when its build is
+     * a room, so the size / mode checks beside this keep every other staged kind out.
+     */
+    static boolean isRoomPanel(EditorPlotLabelsPacket.Entry entry) {
+        return entry.plotCategory() == PlotCategory.PORTALS || entry.plotCategory() == PlotCategory.WORKBENCH;
+    }
+
+    /**
      * What this room does at its walls — portal rooms only, and only while the player is standing in
      * the plot, on the same reasoning as the dimension rows.
      *
@@ -196,7 +205,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasModeRow(EditorPlotLabelsPacket.Entry entry) {
         return entry.inPlot()
-            && entry.plotCategory() == PlotCategory.PORTALS
+            && isRoomPanel(entry)
             && !EditorPlotLabelsPacket.NO_MODE.equals(entry.roomMode());
     }
 
@@ -207,7 +216,7 @@ public final class EditorPlotLabelsRenderer {
      */
     public static boolean hasDimensionRows(EditorPlotLabelsPacket.Entry entry) {
         return entry.inPlot()
-            && entry.plotCategory() == PlotCategory.PORTALS
+            && isRoomPanel(entry)
             && entry.roomLength() != EditorPlotLabelsPacket.NO_SIZE;
     }
 

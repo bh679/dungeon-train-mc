@@ -32,7 +32,11 @@ public final class NavTiles {
 
     /** The tiles, in nav order, spanning the area's width and centred in its height. */
     public static List<Cell> layout(int x, int y, int w, int h) {
-        List<BuilderMode> order = BuilderMode.NAV_ORDER;
+        return layout(BuilderMode.NAV_ORDER, x, y, w, h);
+    }
+
+    /** The same, for an explicit order — a dev checkout's, which leads with the Workbench. */
+    public static List<Cell> layout(List<BuilderMode> order, int x, int y, int w, int h) {
         int big = (int) order.stream().filter(BuilderMode::primary).count();
         int small = order.size() - big;
         int gaps = GAP * (order.size() - 1) + (big > 0 && small > 0 ? GAP : 0);

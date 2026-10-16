@@ -167,6 +167,7 @@
     "client.ProgressScreenThemeMixin",
     "client.WorldOpenFlowsDelayMixin",
     "client.AdvancementsScreenAccessor",
+    "client.NativeImageAccessor",
     "client.AdvancementsScreenClickMixin",
     "client.AdvancementsScreenEditorTabMixin",
     "client.AdvancementTabTitleMixin",
@@ -215,7 +216,10 @@
     "client.LanguageSelectEntryAccessor",
     "client.I18nAccessor",
     "client.LanguageManagerReapplyMixin",
-    "client.NetworkRegistryReplayPlaybackMixin"
+    "client.NetworkRegistryReplayPlaybackMixin",
+    "client.ChatScreenAccessor",
+    "client.ChatComponentAccessor",
+    "client.BookEditScreenInvoker"
   ],
   "server": [
     "DedicatedServerPropertiesLevelTypeMixin"

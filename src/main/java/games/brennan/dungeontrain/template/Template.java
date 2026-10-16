@@ -90,6 +90,7 @@ public sealed interface Template
     permits Template.Carriage,
             Template.Contents,
             Template.WholeCarriage,
+            Template.WholeHalf,
             Template.CarriageGroup,
             Template.Part,
             Template.Track,
@@ -99,7 +100,8 @@ public sealed interface Template
             Template.PortalRoom,
             Template.ChunkFrame,
             Template.Building,
-            Template.LostCity {
+            Template.LostCity,
+            Template.Staged {
 
     /** Stable command-token identifier — used by EditorMenuScreen + commands. */
     String id();
@@ -474,6 +476,54 @@ public sealed interface Template
      * {@link WholeKind#GROUP} and stamped over an entire carriage group by
      * {@code WholeGroupSelection} when the group lottery lands.</p>
      */
+    /**
+     * A whole half carriage ({@link games.brennan.dungeontrain.train.WholeKind#HALF}): shell and
+     * interior at the Half box. Everything {@link WholeCarriage} is, one row over — its own store,
+     * registry and weights file, the same plot editor.
+     */
+    record WholeHalf(games.brennan.dungeontrain.train.WholeCarriage wholeCarriage) implements Template {
+        public WholeHalf {
+            Objects.requireNonNull(wholeCarriage, "wholeCarriage");
+        }
+        @Override public String id() { return wholeCarriage.id(); }
+        @Override public String displayName() { return "whole half / " + wholeCarriage.id(); }
+        @Override public TemplateKind kind() { return TemplateKind.WHOLE_HALF; }
+        @Override public boolean isBuiltin() {
+            return games.brennan.dungeontrain.train.WholeHalfRegistry.isBundled(wholeCarriage.id());
+        }
+        @Override public boolean canPromote() {
+            return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.sourceTreeAvailable();
+        }
+        @Override public TemplateStore<WholeHalf> store() {
+            return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.adapter();
+        }
+        @Override public TemplateRegistry<WholeHalf> registry() {
+            return games.brennan.dungeontrain.train.WholeHalfRegistry.adapter();
+        }
+        @Override public int weight() { return WholeWeights.weightFor(WholeKind.HALF, wholeCarriage.id()); }
+        @Override public TemplateGate gate() { return WholeWeights.gateFor(WholeKind.HALF, wholeCarriage.id()); }
+        @Override public String stageId() { String s = WholeWeights.stageIdFor(WholeKind.HALF, wholeCarriage.id()); return s == null ? "" : s; }
+        @Override public String variantName() { return wholeCarriage.id(); }
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            WholeCarriageEditor.stampHalfPlot(level, wholeCarriage, dims);
+        }
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.WholeHalfTemplateStore.getBundled(level, wholeCarriage, dims);
+        }
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return WholeCarriageEditor.halfPlotOrigin(wholeCarriage, dims);
+        }
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return WholeCarriageEditor.plotSize(WholeKind.HALF, dims);
+        }
+        @Override public void eraseEditorPlot(ServerLevel level, BlockPos origin, CarriageDims dims) {
+            CarriagePlacer.eraseAt(level, origin, games.brennan.dungeontrain.editor.WholeHalfTemplateStore.halfDims(dims));
+        }
+        @Override public void placeAt(ServerLevel level, BlockPos origin, CarriageDims dims, PlaceContext ctx) {
+            WholeCarriagePlacer.placeHalfAt(level, origin, wholeCarriage, dims);
+        }
+    }
+
     record CarriageGroup(games.brennan.dungeontrain.train.CarriageGroup group) implements Template {
         public CarriageGroup {
             Objects.requireNonNull(group, "group");
@@ -1143,6 +1193,60 @@ public sealed interface Template
         @Override public Vec3i plotSize(CarriageDims dims) {
             net.minecraft.server.MinecraftServer server = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
             return games.brennan.dungeontrain.building.LostCityReferences.sizeOf(server, name);
+        }
+    }
+
+    /**
+     * A relay build parked in the editor's <b>Workbench</b> — not yet a template of any kind.
+     *
+     * <p>Named by its staged id ({@link games.brennan.dungeontrain.editor.workbench.WorkbenchStagingStore}).
+     * Its plot is wherever the world says it was placed ({@code DungeonTrainWorldData.workbenchPlotBox}):
+     * the Workbench is the one category whose plots are placed rather than laid out, so this record
+     * reads its origin from that record instead of computing it. It has no weight, no gate and no
+     * bundled tier; a save re-captures the staged snapshot, and the only way out is a commit.</p>
+     */
+    record Staged(String stagedId) implements Template {
+        public Staged {
+            Objects.requireNonNull(stagedId, "stagedId");
+        }
+
+        @Override public String id() { return games.brennan.dungeontrain.editor.WorkbenchEditor.MODEL_ID; }
+
+        @Override public String displayName() { return "workbench / " + stagedId; }
+
+        @Override public TemplateKind kind() { return TemplateKind.STAGED; }
+
+        @Override public boolean isBuiltin() { return false; }
+
+        @Override public boolean canPromote() { return false; }
+
+        @Override public TemplateStore<Staged> store() {
+            return games.brennan.dungeontrain.editor.WorkbenchTemplates.store();
+        }
+        @Override public TemplateRegistry<Staged> registry() {
+            return games.brennan.dungeontrain.editor.WorkbenchTemplates.registry();
+        }
+
+        @Override public int weight() { return games.brennan.dungeontrain.net.EditorStatusPacket.NO_WEIGHT; }
+
+        @Override public String variantName() { return stagedId; }
+
+        @Override public boolean hasBundledTier() { return false; }
+
+        @Override public void restampPlot(ServerLevel level, CarriageDims dims) {
+            games.brennan.dungeontrain.editor.WorkbenchEditor.stampPlot(level, stagedId);
+        }
+
+        @Override public Optional<StructureTemplate> bundled(ServerLevel level, CarriageDims dims) {
+            return Optional.empty();
+        }
+
+        @Override public BlockPos editorPlotOrigin(ServerLevel level, CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.WorkbenchEditor.plotOrigin(level, stagedId);
+        }
+
+        @Override public Vec3i plotSize(CarriageDims dims) {
+            return games.brennan.dungeontrain.editor.WorkbenchEditor.plotSize(stagedId);
         }
     }
 }

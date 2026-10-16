@@ -604,6 +604,8 @@ public final class EditorCommand {
             .then(WholeEditorCommand.build())
             .then(ChunkFrameCommand.build())
             .then(BuildingCommand.build())
+            .then(WorkbenchCommand.build())
+            .then(PoolMoveCommand.build())
             .then(Commands.literal("architecture")
                 .executes(ctx -> runEnterCategory(ctx.getSource(), EditorCategory.ARCHITECTURE)))
             .then(Commands.literal("enter")
@@ -1718,6 +1720,7 @@ public final class EditorCommand {
                                 StringArgumentType.getString(c, "id"), StringArgumentType.getString(c, "stage"))))))
                 .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.ROOM))
                 .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.GROUP))
+                .then(WholeEditorCommand.stageApplyNode(games.brennan.dungeontrain.train.WholeKind.HALF))
                 .then(Commands.literal("contents-group")
                     .then(Commands.argument("parent", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
                         .then(Commands.argument("child", StringArgumentType.word()).suggests(CONTENTS_SUGGESTIONS)
@@ -3128,6 +3131,22 @@ public final class EditorCommand {
         java.util.Optional<Template> first = category.firstModel();
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        if (first.isEmpty() && category == EditorCategory.WORKBENCH) {
+            // An empty Workbench still has to open: builds are loaded into it from Find a Builder.
+            List<EditorStampQueue.Job> erases = EditorCategory.clearAllPlotJobs(overworld, dims, category);
+            EditorStampedCategoryState.set(overworld, category);
+            for (EditorStampQueue.Job job : erases) job.work().run();
+            EditorCategory.layerSweepJob(overworld, dims, null).work().run();
+            net.minecraft.core.BlockPos origin = new net.minecraft.core.BlockPos(
+                games.brennan.dungeontrain.editor.workbench.WorkbenchPlacement.FIRST_X,
+                games.brennan.dungeontrain.editor.workbench.WorkbenchPlacement.PLOT_Y,
+                games.brennan.dungeontrain.editor.workbench.WorkbenchPlacement.ROW_Z);
+            games.brennan.dungeontrain.editor.EditorPlotArrival.land(player, overworld, origin,
+                new net.minecraft.core.Vec3i(dims.length(), 1, dims.width()), true,
+                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR, null);
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.workbench.empty"), true);
+            return 1;
+        }
         if (first.isEmpty() && category == EditorCategory.WHOLE) {
             // The Whole pool starts empty on a fresh install; the section still has to open so the
             // player can load a build into it. Erase whatever was resident and land at the row origin.
@@ -3159,6 +3178,11 @@ public final class EditorCommand {
         // now; the entering category's own erases are left out because every stamp erases its own
         // footprint first.
         List<EditorStampQueue.Job> erases = EditorCategory.clearAllPlotJobs(overworld, dims, category);
+        // The Workbench's layout is its record of placed boxes: bring it in line with the shelf before
+        // a single plot is stamped from it.
+        if (category == EditorCategory.WORKBENCH) {
+            games.brennan.dungeontrain.editor.WorkbenchEditor.reconcile(overworld);
+        }
 
         Template head = first.get();
         // Remember which category is resident so VariantOverlayRenderer can keep the floating plot
@@ -3241,6 +3265,9 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.BuildingEditor.walkTo(player, player.serverLevel(), b.name(), false);
         } else if (head instanceof Template.LostCity l) {
             games.brennan.dungeontrain.editor.LostCityReferenceEditor.walkTo(player, player.serverLevel(), l.name(), false);
+        } else if (head instanceof Template.Staged s) {
+            games.brennan.dungeontrain.editor.WorkbenchEditor.enter(player, player.getServer().overworld(), s.stagedId(), true,
+                games.brennan.dungeontrain.editor.EditorPlotArrival.Inside.FRONT_DOOR);
         }
     }
 
@@ -3265,6 +3292,8 @@ public final class EditorCommand {
             games.brennan.dungeontrain.editor.BuildingEditor.stampPlot(overworld, b.name());
         } else if (model instanceof Template.LostCity l) {
             games.brennan.dungeontrain.editor.LostCityReferenceEditor.stampPlot(overworld, l.name());
+        } else if (model instanceof Template.Staged s) {
+            games.brennan.dungeontrain.editor.WorkbenchEditor.stampPlot(overworld, s.stagedId());
         }
     }
 
@@ -3828,30 +3857,11 @@ public final class EditorCommand {
             ServerLevel overworld = source.getServer().overworld();
             CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-            // Capture the +X row state BEFORE registry mutation so the
-            // restamp pass knows which positions are dirty (the deleted
-            // variant's slot plus every slot to the right that just shifted
-            // left by one).
-            // Where its plot stood, taken before it leaves the registry and its row closes up.
-            CarriageEditor.RowSpot oldSpot = CarriageEditor.spotOf(variant, dims);
-
-            // Plot erase + row restamp are DT's own rewrites — guarded so observers in the
-            // touched plots stay quiet (ObserverBlockStampMixin).
-            CarriageStampGuard.run(() -> CarriageEditor.clearPlot(overworld, variant, dims));
-            boolean deleted = CarriageTemplateStore.delete(variant);
-            // Sidecars and weight — and in dev mode the bundled copies of each.
-            TemplateDeletes.Report cleanup = TemplateDeletes.carriage(variant);
-            boolean wasCustom = !variant.isBuiltin();
-            if (wasCustom) {
-                CarriageVariantRegistry.unregister(variant.id());
-                games.brennan.dungeontrain.editor.TemplateSizeStore.SHELLS.forget(variant.id());
-                games.brennan.dungeontrain.editor.ShellWinsStore.forget(variant.id());
-                games.brennan.dungeontrain.train.ShellPool.forget(variant.id());
-                if (oldSpot != null) {
-                    CarriageStampGuard.run(() ->
-                        CarriageEditor.restampRowAfterDeletion(overworld, oldSpot, dims));
-                }
-            }
+            games.brennan.dungeontrain.editor.pool.PoolDeletes.Removed removed =
+                games.brennan.dungeontrain.editor.pool.PoolDeletes.carriage(overworld, dims, variant, true);
+            boolean deleted = removed.existed();
+            TemplateDeletes.Report cleanup = removed.cleanup();
+            boolean wasCustom = removed.wasCustom();
             source.sendSuccess(() -> (deleted
                     ? Component.translatable("chat.dungeontrain.editor.deleted_template", variant.id(),
                         Component.translatable(wasCustom ? "chat.dungeontrain.editor.and_removed_from_registry" : "chat.dungeontrain.common.full_stop"))
@@ -4809,26 +4819,11 @@ public final class EditorCommand {
         ServerLevel overworld = source.getServer().overworld();
         CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
 
-        // Only a top-level template holds a row slot; its row is its size's. Capture where every plot
-        // after it stands now, so the restamp can clear exactly those once the row closes up.
-        games.brennan.dungeontrain.train.ContentsSize rowSize = CarriageContentsPlacer.sizeOf(contents);
-        int oldSlot = CarriageContentsEditor.topLevelSlotOf(contents.id());
-        List<CarriageContentsEditor.StandingPlot> standing = oldSlot >= 0
-            ? CarriageContentsEditor.plotsFrom(rowSize, oldSlot, dims) : List.of();
-
-        CarriageStampGuard.run(() -> CarriageContentsEditor.clearPlot(overworld, contents, dims));
-        boolean deleted = CarriageContentsStore.delete(contents);
-        // Sidecars, weight, group slot — and in dev mode the bundled copies of each.
-        TemplateDeletes.Report cleanup = TemplateDeletes.contents(contents);
-        boolean wasCustom = !contents.isBuiltin();
-        if (wasCustom) {
-            CarriageContentsRegistry.unregister(contents.id());
-            games.brennan.dungeontrain.editor.TemplateSizeStore.CONTENTS.forget(contents.id());
-            if (oldSlot >= 0) {
-                CarriageStampGuard.run(() ->
-                    CarriageContentsEditor.restampRowAfterDeletion(overworld, rowSize, oldSlot, standing, dims));
-            }
-        }
+        games.brennan.dungeontrain.editor.pool.PoolDeletes.Removed removed =
+            games.brennan.dungeontrain.editor.pool.PoolDeletes.contents(overworld, dims, contents, true);
+        boolean deleted = removed.existed();
+        TemplateDeletes.Report cleanup = removed.cleanup();
+        boolean wasCustom = removed.wasCustom();
         return (deleted
                 ? Component.translatable("chat.dungeontrain.editor.deleted_contents_template", contents.id(),
                     Component.translatable(wasCustom ? "chat.dungeontrain.editor.and_removed_from_registry" : "chat.dungeontrain.common.full_stop"))
@@ -7259,9 +7254,7 @@ public final class EditorCommand {
         games.brennan.dungeontrain.portal.PortalRoomSettings settings
     ) {
         try {
-            games.brennan.dungeontrain.track.variant.TrackVariantWeights.setMode(
-                games.brennan.dungeontrain.track.variant.TrackKind.PORTAL_ROOM, name,
-                settings.toTag());
+            games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.writeSettings(name, settings);
         } catch (IOException e) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.could_not_save_settings", name, e.getMessage()));
             return 0;
@@ -7363,6 +7356,10 @@ public final class EditorCommand {
         if (player == null) return null;
         CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
         String name = PortalRoomEditor.plotContaining(player.blockPosition(), dims);
+        // A room staged in the Workbench answers to every room setting a Dimensions room does.
+        if (name == null) {
+            name = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.roomUnder(player).orElse(null);
+        }
         if (name == null) {
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.stand_dimensional_carriage_plot"));
         }

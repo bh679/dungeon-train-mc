@@ -38,6 +38,8 @@ Optional:
                     card on the web update page. With it:
   --description-file PATH  Markdown description (replaces summary + highlights).
   --image URL       https:// URL of the release photo.
+  --notable         The middle tier: a major that the web update page shows as a
+                    smaller "Notable update" card (milestone-sized). Implies --major.
   Attach or change these later with set-major.py.
 
 Paths honour CHANGELOG_FILE / GRADLE_PROPERTIES_FILE env overrides.
@@ -46,6 +48,19 @@ import argparse
 import sys
 
 import changelog_io
+
+
+def positive_int(value: str) -> int:
+    """argparse type for --pr: the schema requires pr >= 1, so 0 / negatives never reach the ledger."""
+    try:
+        n = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"'{value}' is not an integer")
+    if n < 1:
+        raise argparse.ArgumentTypeError(
+            f"must be a real PR number (>= 1), got {n}; omit --pr if the PR number isn't known yet"
+        )
+    return n
 
 
 def parse_args(argv: list[str] | None) -> argparse.Namespace:
@@ -91,12 +106,18 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
         help="A player-reported issue this change fixes (repeatable). One of: "
         + ", ".join(changelog_io.VALID_ISSUES) + ".",
     )
-    p.add_argument("--pr", type=int, default=None, help="PR number (optional).")
+    p.add_argument("--pr", type=positive_int, default=None, help="PR number (optional).")
     p.add_argument(
         "--major",
         action="store_true",
         help="Major release: renders first in the release notes and the Discord post, "
         "and as the headline card on the web update page.",
+    )
+    p.add_argument(
+        "--notable",
+        action="store_true",
+        help="Notable update (between major and minor): implies --major, but the web update "
+        "page shows it as a smaller 'Notable update' card.",
     )
     p.add_argument(
         "--description-file",
@@ -183,13 +204,17 @@ def main(argv: list[str] | None = None) -> int:
         addresses=args.addresses,
         tags=args.tags,
     )
+    if args.notable:
+        args.major = True
     if (args.description_file or args.image) and not args.major:
         print("::error::--description-file / --image need --major", file=sys.stderr)
         return 1
     if args.major:
         try:
             description = read_text(args.description_file) if args.description_file else None
-            entry = changelog_io.with_major(entry, description=description, image=args.image)
+            entry = changelog_io.with_major(
+                entry, description=description, image=args.image, notable=args.notable or None
+            )
         except (OSError, ValueError) as e:
             print(f"::error::{e}", file=sys.stderr)
             return 1

@@ -9,6 +9,8 @@ import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import com.mojang.blaze3d.platform.NativeImage;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
@@ -68,6 +70,10 @@ public final class LiveHeadViewer {
     private static final int DARK = 0xFF181818;
     private static final int BLACKOUT = 0xC8000000;
     private static final Random NOISE = new Random();
+    /** Side of the pre-rolled speckle texture, in cells; wider than the largest box (720 / {@link #NOISE_CELL}). */
+    static final int NOISE_SIZE = 256;
+    private static final ResourceLocation NOISE_TEXTURE = ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live/noise");
+    private static boolean noiseReady; // render thread
 
     private LiveHeadViewer() {}
 
@@ -102,8 +108,14 @@ public final class LiveHeadViewer {
     public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
         event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_head_viewer"), (g, delta) -> {
             Minecraft mc = Minecraft.getInstance();
-            if (!shown(mc) || LiveStreamController.get().streaming() || mc.options.hideGui) return;
-            draw(g, LiveFeedSource.MAIN.frame(mc.player.tickCount, delta.getGameTimeDeltaPartialTick(false), false));
+            if (mc.level == null || mc.player == null || LiveStreamController.get().streaming() || mc.options.hideGui) return;
+            if (shown(mc)) {
+                draw(g, LiveFeedSource.MAIN.frame(mc.player.tickCount, delta.getGameTimeDeltaPartialTick(false), false));
+                LiveTakeoverButton.draw(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false)));
+            } else {
+                // Box switched off: a running takeover vote's countdown still shows where it would be.
+                voteBanner(g, layout(g.guiWidth(), LiveFeedClientConfig.headViewerWidth(false)), mc.font);
+            }
         });
     }
 
@@ -134,6 +146,10 @@ public final class LiveHeadViewer {
         boolean streaming = LiveStreamController.get().streaming();
         Box b = layout(mc.getWindow().getGuiScaledWidth(), LiveFeedClientConfig.headViewerWidth(streaming));
         if (streaming && LiveStreamSettingsButton.click(event.getScreen(), b, event.getMouseX(), event.getMouseY())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (!streaming && LiveTakeoverButton.click(b, event.getMouseX(), event.getMouseY())) {
             event.setCanceled(true);
             return;
         }
@@ -180,6 +196,28 @@ public final class LiveHeadViewer {
                 System.currentTimeMillis());
             countdown(g, b, font, n);
         }
+        voteBanner(g, b, font);
+    }
+
+    /**
+     * The wearer's takeover vote is running ({@link LiveTakeoverFlow}): "The viewers are voting… 14 s" on a
+     * dark strip along the top of the box, over the stream they are asking to take.
+     */
+    private static void voteBanner(GuiGraphics g, Box b, Font font) {
+        int seconds = LiveTakeoverFlow.voteCountdownSeconds();
+        if (seconds < 0) return;
+        Component text = Component.translatable("screen.dungeontrain.live_takeover.voting", seconds);
+        int pad = 3;
+        // Shrunk to fit a narrow box (the streamer's own is smaller), so the seconds are never cut off.
+        float scale = Math.min(1f, (b.w() - 2f * pad) / Math.max(1, font.width(text)));
+        int h = Math.round(font.lineHeight * scale) + 2 * pad;
+        g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + h, BLACKOUT);
+        float w = font.width(text) * scale;
+        g.pose().pushPose();
+        g.pose().translate(b.x() + (b.w() - w) / 2f, b.y() + pad + 0.5f, 0);
+        g.pose().scale(scale, scale, 1f);
+        g.drawString(font, text, 0, 0, 0xFFFFFFFF, true);
+        g.pose().popPose();
     }
 
     /** The box is playing this client's own broadcast (live, not the dark-channel replay). */
@@ -229,14 +267,31 @@ public final class LiveHeadViewer {
         }
     }
 
-    /** Snow for a dark channel — a cheap per-frame grey speckle, not Vista's shader. */
+    /**
+     * Snow for a dark channel: a window of a pre-rolled grey speckle texture, one texel per
+     * {@link #NOISE_CELL} GUI pixels, from a fresh random offset each frame — one blit, where filling
+     * every cell cost thousands of fills a frame.
+     */
     private static void noise(GuiGraphics g, Box b) {
-        for (int y = b.y(); y < b.y() + b.h(); y += NOISE_CELL) {
-            int y1 = Math.min(y + NOISE_CELL, b.y() + b.h());
-            for (int x = b.x(); x < b.x() + b.w(); x += NOISE_CELL) {
+        ensureNoiseTexture();
+        int cellsW = Math.min(NOISE_SIZE, (b.w() + NOISE_CELL - 1) / NOISE_CELL);
+        int cellsH = Math.min(NOISE_SIZE, (b.h() + NOISE_CELL - 1) / NOISE_CELL);
+        int u = NOISE.nextInt(NOISE_SIZE - cellsW + 1);
+        int v = NOISE.nextInt(NOISE_SIZE - cellsH + 1);
+        g.blit(NOISE_TEXTURE, b.x(), b.y(), b.w(), b.h(), u, v, cellsW, cellsH, NOISE_SIZE, NOISE_SIZE);
+    }
+
+    /** Render thread: rolls the speckle once and registers it (nearest-filtered, so cells stay crisp). */
+    private static void ensureNoiseTexture() {
+        if (noiseReady) return;
+        NativeImage image = new NativeImage(NOISE_SIZE, NOISE_SIZE, false);
+        for (int y = 0; y < NOISE_SIZE; y++) {
+            for (int x = 0; x < NOISE_SIZE; x++) {
                 int v = 40 + NOISE.nextInt(160);
-                g.fill(x, y, Math.min(x + NOISE_CELL, b.x() + b.w()), y1, 0xFF000000 | v << 16 | v << 8 | v);
+                image.setPixelRGBA(x, y, 0xFF000000 | v << 16 | v << 8 | v); // grey, so ABGR order doesn't matter
             }
         }
+        Minecraft.getInstance().getTextureManager().register(NOISE_TEXTURE, new DynamicTexture(image));
+        noiseReady = true;
     }
 }

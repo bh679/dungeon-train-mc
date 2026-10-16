@@ -370,6 +370,19 @@ public final class PortalRoomCopiesVariant {
     }
 
     private static PortalRoomCopiesVariant loadFromDisk(String roomName) {
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(roomName);
+        if (stagedId != null) {
+            // A staged room's palettes travel in its sidecar document, never in a file of their own.
+            java.util.Optional<String> text =
+                games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.copiesText(stagedId);
+            if (text.isEmpty()) return empty();
+            try {
+                return parse(new java.io.StringReader(text.get()), roomName, "workbench " + stagedId);
+            } catch (RuntimeException e) {
+                LOGGER.error("[DungeonTrain] Failed to read staged copies variant {}: {}", stagedId, e.toString());
+                return empty();
+            }
+        }
         Path cfg = UserContentPaths.findFile(TrackKind.PORTAL_ROOM.subdir(), roomName + COPIES_EXT);
         if (cfg != null) {
             try (Reader r = Files.newBufferedReader(cfg, StandardCharsets.UTF_8)) {
@@ -476,6 +489,12 @@ public final class PortalRoomCopiesVariant {
 
     /** Persist to the user config directory and refresh the session cache. */
     public synchronized void save(String roomName) throws IOException {
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(roomName);
+        if (stagedId != null) {
+            games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.writeCopies(stagedId, toJsonText());
+            CACHE.put(roomName, this);
+            return;
+        }
         Path file = configPathFor(roomName);
         Files.createDirectories(file.getParent());
         try (Writer w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
@@ -492,6 +511,8 @@ public final class PortalRoomCopiesVariant {
      * bundled resource behind.
      */
     public synchronized void saveToSource(String roomName) throws IOException {
+        // A staged room is not a template yet: nothing of it ships until it is committed.
+        if (games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(roomName) != null) return;
         Path file = sourcePathFor(roomName);
         if (file == null) {
             throw new IOException("Source tree not writable — are you running ./gradlew runClient from a checkout?");

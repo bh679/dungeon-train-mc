@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "128";
+    public static final String PROTOCOL_VERSION = "135";
 
     private DungeonTrainNet() {}
 
@@ -50,6 +50,9 @@ public final class DungeonTrainNet {
         registrar.playToClient(LiveLifePacket.TYPE, LiveLifePacket.STREAM_CODEC, LiveLifePacket::handle);
         registrar.playToServer(LiveWatchedPacket.TYPE, LiveWatchedPacket.STREAM_CODEC, LiveWatchedPacket::handle);
         registrar.playToServer(LiveStreamEndedPacket.TYPE, LiveStreamEndedPacket.STREAM_CODEC, LiveStreamEndedPacket::handle);
+        registrar.playToServer(LiveTakeoverPacket.TYPE, LiveTakeoverPacket.STREAM_CODEC, LiveTakeoverPacket::handle);
+        registrar.playToServer(LiveClaimResultPacket.TYPE, LiveClaimResultPacket.STREAM_CODEC, LiveClaimResultPacket::handle);
+        registrar.playToServer(LiveModerationStrikePacket.TYPE, LiveModerationStrikePacket.STREAM_CODEC, LiveModerationStrikePacket::handle);
         registrar.playToClient(EditorStatusPacket.TYPE, EditorStatusPacket.STREAM_CODEC, EditorStatusPacket::handle);
         registrar.playToClient(EditorMirrorPlotPacket.TYPE, EditorMirrorPlotPacket.STREAM_CODEC, EditorMirrorPlotPacket::handle);
         registrar.playToClient(BookSuspensionSyncPacket.TYPE, BookSuspensionSyncPacket.STREAM_CODEC, BookSuspensionSyncPacket::handle);
@@ -228,6 +231,7 @@ public final class DungeonTrainNet {
         registrar.playToClient(LogRequestPromptPacket.TYPE, LogRequestPromptPacket.STREAM_CODEC, LogRequestPromptPacket::handle);
         registrar.playToServer(LogRequestAnswerPacket.TYPE, LogRequestAnswerPacket.STREAM_CODEC, LogRequestAnswerPacket::handle);
         registrar.playToServer(LogRequestFromLivePacket.TYPE, LogRequestFromLivePacket.STREAM_CODEC, LogRequestFromLivePacket::handle);
+        registrar.playToServer(LiveGiftAcceptPacket.TYPE, LiveGiftAcceptPacket.STREAM_CODEC, LiveGiftAcceptPacket::handle);
 
         // Spawn intro cinematic: server → joining player to start it; client → server when it ends.
         registrar.playToClient(CinematicIntroPacket.TYPE, CinematicIntroPacket.STREAM_CODEC, CinematicIntroPacket::handle);
@@ -285,6 +289,10 @@ public final class DungeonTrainNet {
         registrar.playToClient(BuilderProfileDeleteResultPacket.TYPE, BuilderProfileDeleteResultPacket.STREAM_CODEC, BuilderProfileDeleteResultPacket::handle);
         registrar.playToServer(BuilderProfileDownloadPacket.TYPE, BuilderProfileDownloadPacket.STREAM_CODEC, BuilderProfileDownloadPacket::handle);
         registrar.playToClient(BuilderProfileDownloadResultPacket.TYPE, BuilderProfileDownloadResultPacket.STREAM_CODEC, BuilderProfileDownloadResultPacket::handle);
+        // The editor's Workbench: stage a relay build without installing it (the commit that follows is a
+        // command — /dungeontrain editor workbench commit). Answers through the download result packet above.
+        registrar.playToServer(WorkbenchStagePacket.TYPE, WorkbenchStagePacket.STREAM_CODEC, WorkbenchStagePacket::handle);
+        registrar.playToServer(WorkbenchAutoloadPacket.TYPE, WorkbenchAutoloadPacket.STREAM_CODEC, WorkbenchAutoloadPacket::handle);
         // Blocks for a tile-sized picture of somebody's relay build — a read, where the download
         // above is a write. See RelayBuildPreviewRequestPacket.
         registrar.playToServer(RelayBuildPreviewRequestPacket.TYPE, RelayBuildPreviewRequestPacket.STREAM_CODEC, RelayBuildPreviewRequestPacket::handle);
@@ -329,6 +337,12 @@ public final class DungeonTrainNet {
         // server → client push when consent is granted in-game so the client persists it.
         registrar.playToServer(ConsentSyncPacket.TYPE, ConsentSyncPacket.STREAM_CODEC, ConsentSyncPacket::handle);
         registrar.playToClient(ConsentUpdatePacket.TYPE, ConsentUpdatePacket.STREAM_CODEC, ConsentUpdatePacket::handle);
+
+        // Discord reactions + emoji in chat: a posted chat line's Discord id (to every client), a
+        // Discord-sourced line printed client-side so it can be found again, and reaction snapshots.
+        registrar.playToClient(DiscordLineBindPacket.TYPE, DiscordLineBindPacket.STREAM_CODEC, DiscordLineBindPacket::handle);
+        registrar.playToClient(DiscordChatLinePacket.TYPE, DiscordChatLinePacket.STREAM_CODEC, DiscordChatLinePacket::handle);
+        registrar.playToClient(DiscordReactionsPacket.TYPE, DiscordReactionsPacket.STREAM_CODEC, DiscordReactionsPacket::handle);
 
         // Network-access consent (community shared books): client → server login sync of the player's
         // Discord Presence "use the internet?" consent, so the server can gate book uploads.

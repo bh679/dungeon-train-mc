@@ -33,6 +33,7 @@ public final class EditorWholeTypeMenus {
     /** Menu / tab headers — also what {@code MenuLang.typeName} slugs to {@code type_name.room|group}. */
     public static final String ROOM_TYPE_NAME = "Room";
     public static final String GROUP_TYPE_NAME = "Group";
+    public static final String HALF_TYPE_NAME = "Half";
 
     private EditorWholeTypeMenus() {}
 
@@ -57,6 +58,13 @@ public final class EditorWholeTypeMenus {
             out.add(new EditorTypeMenusPacket.Menu(EditorTypeMenus.anchorForXRow(origin, footprint),
                 GROUP_TYPE_NAME, groupRows(groups), false, activeId, bar, strip));
         }
+        List<WholeCarriage> halves = games.brennan.dungeontrain.train.WholeHalfRegistry.all();
+        if (!halves.isEmpty()) {
+            BlockPos origin = WholeCarriageEditor.rowOrigin(WholeKind.HALF, dims);
+            Vec3i footprint = WholeCarriageEditor.plotSize(WholeKind.HALF, dims);
+            out.add(new EditorTypeMenusPacket.Menu(EditorTypeMenus.anchorForXRow(origin, footprint),
+                HALF_TYPE_NAME, halfRows(halves), false, activeId, bar, strip));
+        }
         return out;
     }
 
@@ -72,6 +80,11 @@ public final class EditorWholeTypeMenus {
         if (!groups.isEmpty()) {
             strip.add(new EditorTypeMenusPacket.TypeTab(GROUP_TYPE_NAME, PlotCategory.WHOLE_GROUP.name(),
                 groups.get(0), groups.get(0)));
+        }
+        List<String> halves = games.brennan.dungeontrain.train.WholeHalfRegistry.ids();
+        if (!halves.isEmpty()) {
+            strip.add(new EditorTypeMenusPacket.TypeTab(HALF_TYPE_NAME, PlotCategory.WHOLE_HALF.name(),
+                halves.get(0), halves.get(0)));
         }
         return strip;
     }
@@ -92,6 +105,15 @@ public final class EditorWholeTypeMenus {
         for (CarriageGroup g : groups) {
             rows.add(row(WholeKind.GROUP, PlotCategory.WHOLE_GROUP.name(), g.id(),
                 EditorPlotLabels.provenanceOf(CarriageGroupTemplateStore.fileForId(g.id()))));
+        }
+        return rows;
+    }
+
+    public static List<EditorTypeMenusPacket.Variant> halfRows(List<WholeCarriage> halves) {
+        List<EditorTypeMenusPacket.Variant> rows = new ArrayList<>(halves.size());
+        for (WholeCarriage h : halves) {
+            rows.add(row(WholeKind.HALF, PlotCategory.WHOLE_HALF.name(), h.id(),
+                EditorPlotLabels.provenanceOf(WholeHalfTemplateStore.fileForId(h.id()))));
         }
         return rows;
     }

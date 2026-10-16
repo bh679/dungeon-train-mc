@@ -73,13 +73,14 @@ final class PlotCategoryTest {
         // Matches EditorCategory.locate(), which reports CARRIAGES for a part plot and WHOLE for a group.
         assertSame(EditorCategory.CARRIAGES, PlotCategory.PARTS.owner());
         assertSame(EditorCategory.WHOLE, PlotCategory.WHOLE_GROUP.owner());
+        assertSame(EditorCategory.WHOLE, PlotCategory.WHOLE_HALF.owner());
         assertTrue(PlotCategory.WHOLE_GROUP.browsesUnder(PlotCategory.WHOLE));
         assertTrue(PlotCategory.PARTS.browsesUnder(PlotCategory.CARRIAGES));
         assertFalse(PlotCategory.PARTS.browsesUnder(PlotCategory.WHOLE));
         assertFalse(PlotCategory.CONTENTS.browsesUnder(null));
         for (PlotCategory c : PlotCategory.values()) {
-            if (c == PlotCategory.PARTS || c == PlotCategory.WHOLE_GROUP || c == PlotCategory.CHUNK_FRAMES
-                || c == PlotCategory.LOST_CITY) continue;
+            if (c == PlotCategory.PARTS || c == PlotCategory.WHOLE_GROUP || c == PlotCategory.WHOLE_HALF
+                || c == PlotCategory.CHUNK_FRAMES || c == PlotCategory.LOST_CITY) continue;
             assertEquals(c.name(), c.owner().name(), c + " should own itself");
         }
         // Chunk parts are browsed and stamped with the Dimensions rooms, as carriage parts are with carriages.
@@ -103,9 +104,10 @@ final class PlotCategoryTest {
             assertFalse(widened == PlotCategory.WHOLE_GROUP);
             assertFalse(widened == PlotCategory.CHUNK_FRAMES);
             assertFalse(widened == PlotCategory.LOST_CITY);
+            assertFalse(widened == PlotCategory.WHOLE_HALF);
         }
-        // PARTS, CHUNK_FRAMES, LOST_CITY and WHOLE_GROUP are exactly the addressable values with no stamping counterpart.
-        assertEquals(EditorCategory.values().length + 4, PlotCategory.values().length);
+        // PARTS, CHUNK_FRAMES, LOST_CITY, WHOLE_GROUP and WHOLE_HALF are exactly the addressable values with no stamping counterpart.
+        assertEquals(EditorCategory.values().length + 5, PlotCategory.values().length);
     }
 
     @Test
@@ -123,22 +125,24 @@ final class PlotCategoryTest {
     void capabilities_pinTheAllowlistsTheyReplaced() {
         // EditorPlotLabelsRenderer.hasActionRow was literally:
         //   "CARRIAGES".equals(c) || "CONTENTS".equals(c) || "TRACKS".equals(c) || "PORTALS".equals(c)
-        // — plus the two Whole kinds, which have plots to save and a pool to weight.
+        // — plus the two Whole kinds, which have plots to save and a pool to weight, and the Workbench,
+        // whose staged plots take Save / Reset / Clear / Remove by staged id.
         assertEquals(
-            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
-                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS),
+            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.WHOLE_HALF, PlotCategory.CARRIAGES,
+                PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS,
+                PlotCategory.WORKBENCH),
             matching(PlotCategory::hasActionRow));
 
         // EditorPlotTeleport.weightCommandFor had arms for those same four, default -> null.
         // Buildings: a new building's roster weight (a shipped one has none of its own).
         assertEquals(
-            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
+            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.WHOLE_HALF, PlotCategory.CARRIAGES,
                 PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS, PlotCategory.BUILDINGS),
             matching(PlotCategory::hasWeightPool));
 
         // levelCommandFor / phaseCommandFor / stageApplyCommandFor: same arms, whole rows included.
         assertEquals(
-            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.CARRIAGES,
+            EnumSet.of(PlotCategory.WHOLE, PlotCategory.WHOLE_GROUP, PlotCategory.WHOLE_HALF, PlotCategory.CARRIAGES,
                 PlotCategory.CONTENTS, PlotCategory.TRACKS, PlotCategory.PORTALS),
             matching(PlotCategory::hasGate));
 

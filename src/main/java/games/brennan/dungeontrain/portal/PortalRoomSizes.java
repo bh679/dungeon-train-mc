@@ -64,6 +64,12 @@ public final class PortalRoomSizes {
      */
     public static Vec3i sizeOf(String name, CarriageDims dims) {
         if (name == null) return PortalRoomLayout.builtInSize(dims);
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(name);
+        if (stagedId != null) {
+            // A staged room is exactly as big as it was staged, or last resized, at.
+            Vec3i staged = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.size(stagedId);
+            return staged != null ? staged : PortalRoomLayout.builtInSize(dims);
+        }
         Vec3i pending = PENDING.get(name);
         if (pending != null) return PortalRoomLayout.clampSize(dims, pending);
         Vec3i known = SIZES.get(name);

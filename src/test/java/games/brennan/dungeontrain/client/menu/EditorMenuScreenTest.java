@@ -446,6 +446,12 @@ final class EditorMenuScreenTest {
         }
     }
 
+    private static List<String> withLead(List<String> lead, String... rest) {
+        List<String> out = new ArrayList<>(lead);
+        out.addAll(List.of(rest));
+        return out;
+    }
+
     private static void collectRunCommands(CommandMenuEntry e, List<String> out) {
         if (e instanceof CommandMenuEntry.Split s) {
             collectRunCommands(s.leftEntry(), out);
@@ -472,20 +478,27 @@ final class EditorMenuScreenTest {
     @Test
     @DisplayName("Nav carries Enter and Exit; Test the Carriage for portals, carriages and contents")
     void nav_tab_holdsNavigationRows() {
+        // A dev build leads the tab with the Workbench row; a release (main CI, release.yml) never
+        // lists it, so the expectation follows whichever this test run was built as.
+        List<String> lead = games.brennan.dungeontrain.DungeonTrain.isDevBuild()
+            ? List.of("Workbench") : List.of();
         List<String> carriages = labelsIn(tabsFor(PlotCategory.CARRIAGES, "brass_dining").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), carriages);
+        assertEquals(withLead(lead, "Enter", "Test the Carriage", "Exit"), carriages);
         List<String> contents = labelsIn(tabsFor(PlotCategory.CONTENTS, "library").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), contents);
+        assertEquals(withLead(lead, "Enter", "Test the Carriage", "Exit"), contents);
         List<String> parts = labelsIn(tabsFor(PlotCategory.PARTS, "oak").get(EditorMenuTab.NAV));
-        assertEquals(List.of("Enter", "Exit"), parts);
+        assertEquals(withLead(lead, "Enter", "Exit"), parts);
+        // Standing in the Workbench, the row would only lead where the player already is.
+        List<String> workbench = labelsIn(tabsFor(PlotCategory.WORKBENCH, "staged").get(EditorMenuTab.NAV));
+        assertEquals("Enter", workbench.get(0));
 
         List<CommandMenuEntry> portalNav = tabsFor(PlotCategory.PORTALS, "crypt_hall").get(EditorMenuTab.NAV);
-        assertEquals(List.of("Enter", "Test the Carriage", "Exit"), labelsIn(portalNav));
+        assertEquals(withLead(lead, "Enter", "Test the Carriage", "Exit"), labelsIn(portalNav));
 
         // Test drills into the save prompt rather than dispatching the command — a dirty room has
         // to be offered a save before it is stamped from its last one.
         assertInstanceOf(PortalTestSaveCheckScreen.class,
-            assertInstanceOf(CommandMenuEntry.DrillIn.class, portalNav.get(1)).target());
+            assertInstanceOf(CommandMenuEntry.DrillIn.class, portalNav.get(lead.size() + 1)).target());
     }
 
     @Test

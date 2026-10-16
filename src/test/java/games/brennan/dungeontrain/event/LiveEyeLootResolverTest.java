@@ -15,6 +15,14 @@ final class LiveEyeLootResolverTest {
     private static final float HIGH = 0.99f;
 
     @Test
+    @DisplayName("a player banned from the Live Eye always finds a TV, whatever else is true")
+    void bannedAlwaysTv() {
+        assertEquals(Outcome.TV, LiveEyeLootResolver.decide(true, false, false, false, true, HIGH));
+        assertEquals(Outcome.TV, LiveEyeLootResolver.decide(true, false, false, true, true, LOW));
+        assertEquals(Outcome.LIVE_EYE, LiveEyeLootResolver.decide(true, false, false, false, false, HIGH));
+    }
+
+    @Test
     @DisplayName("no one live: an eligible finder always gets the Live Eye")
     void idleAlwaysEye() {
         assertEquals(Outcome.LIVE_EYE, LiveEyeLootResolver.decide(true, false, false, false, HIGH));

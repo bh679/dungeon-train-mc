@@ -201,6 +201,29 @@ def test_append_creates_file_when_missing() -> None:
     assert len(read_changelog(ws)["entries"]) == 1
 
 
+def test_append_rejects_non_positive_pr() -> None:
+    # The schema requires pr >= 1; "--pr 0" once slipped into the ledger and broke the schema test.
+    for bad in ("0", "-5"):
+        ws = make_workspace()
+        write_gradle(ws, "0.290.3")
+        r = run(
+            APPEND, ws,
+            "--id", "bad-pr", "--type", "fix", "--title", "t", "--summary", "s",
+            "--no-topical-tags", "--pr", bad,
+        )
+        assert r.returncode != 0
+        assert "--pr" in r.stderr
+        assert not os.path.exists(changelog_path(ws))
+
+
+def test_make_entry_rejects_non_positive_pr() -> None:
+    try:
+        changelog_io.make_entry("x", "1.0.0", "fix", "t", "s", "2026-01-01", pr=0)
+    except ValueError:
+        return
+    raise AssertionError("make_entry accepted pr=0")
+
+
 def test_append_type_derived_tag_always_present() -> None:
     ws = make_workspace()
     write_gradle(ws, "0.290.3")
@@ -725,6 +748,41 @@ def test_set_major_milestone_sets_keeps_and_drops() -> None:
     assert r.returncode == 0 and "milestone" not in read_changelog(ws)["entries"][0], r.stderr
 
 
+def test_set_major_notable_sets_keeps_and_drops() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    assert append(ws, "drop").returncode == 0
+    r = run(SET_MAJOR, ws, "--id", "drop", "--notable")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["major"] is True and e["notable"] is True, e
+    r = run(SET_MAJOR, ws, "--id", "drop", "--image", "https://x.test/p.png")
+    assert r.returncode == 0 and read_changelog(ws)["entries"][0]["notable"] is True, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--milestone")
+    assert r.returncode == 1 and "milestone and a notable" in r.stderr, r.stderr
+    r = run(SET_MAJOR, ws, "--id", "drop", "--not-notable")
+    e = read_changelog(ws)["entries"][0]
+    assert r.returncode == 0 and "notable" not in e and e["major"] is True, r.stderr
+
+
+def test_append_notable_implies_major() -> None:
+    ws = make_workspace()
+    write_gradle(ws, "0.290.3")
+    r = append(ws, "mid", "--notable", "--image", "https://x.test/p.png")
+    assert r.returncode == 0, r.stderr
+    e = read_changelog(ws)["entries"][0]
+    assert e["major"] is True and e["notable"] is True and e["image"] == "https://x.test/p.png", e
+
+
+def test_render_full_major_leads_before_notable() -> None:
+    notable = {"id": "n", "version": "1.2.0", "type": "feat", "tags": ["feature"],
+               "title": "Mid Drop", "summary": "Mid.", "major": True, "notable": True}
+    major = {"id": "m", "version": "1.2.0", "type": "feat", "tags": ["feature"],
+             "title": "Big Drop", "summary": "Big.", "major": True}
+    md = changelog_io.render_markdown([notable, major])
+    assert md.startswith("# Big Drop\n\nBig.\n\n# Mid Drop\n\nMid."), md
+
+
 def main() -> int:
     tests = [
         test_link_changelog_links_title_and_appends_read_more,
@@ -761,6 +819,9 @@ def main() -> int:
         test_append_major_with_description_and_image,
         test_set_major_attaches_and_clears_image,
         test_set_major_milestone_sets_keeps_and_drops,
+        test_set_major_notable_sets_keeps_and_drops,
+        test_append_notable_implies_major,
+        test_render_full_major_leads_before_notable,
         test_render_tag_line_empty_when_untagged,
         test_render_groups_by_version_newest_first,
         test_render_only_unreleased,

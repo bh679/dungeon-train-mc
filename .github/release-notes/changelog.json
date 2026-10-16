@@ -25792,6 +25792,608 @@
       "released": true,
       "released_in": "v0.1283.0",
       "released_at": "2026-10-13T16:12:02Z"
+    },
+    {
+      "id": "live-feed-missing-segments",
+      "version": "0.1284.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Feed no longer crashes on a shaky connection",
+      "summary": "Live Feed: a shaky connection on the streamer's side no longer makes the stream crash for viewers \u2014 a lost 10-second piece is skipped instead of taking the whole stream down.",
+      "highlights": [],
+      "pr": 1997,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
+    },
+    {
+      "id": "live-eye-streams-only-while-worn",
+      "version": "0.1284.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Eye only broadcasts while worn",
+      "summary": "The Live Eye now only broadcasts while you are wearing it, and menus you open \u2014 the chat box included \u2014 are never shown to viewers. Viewers see your world and HUD, plus the chat lines on your screen (whispers included) when Show chat to viewers is on.",
+      "highlights": [],
+      "pr": 1998,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
+    },
+    {
+      "id": "live-chat-survives-relay-restart",
+      "version": "0.1284.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Live Chat keeps working after a relay restart",
+      "summary": "In-game Live Chat no longer goes quiet for the rest of a stream when the relay is restarted mid-stream \u2014 the chat picks up again on its own.",
+      "highlights": [],
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
+    },
+    {
+      "id": "live-feed-decoder-hardening",
+      "version": "0.1285.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "community"
+      ],
+      "title": "Live Feed TVs play only safe streams, and recover on their own",
+      "summary": "TVs showing the Live Feed now only play a stream made of its own video pieces from Dungeon Train's storage. A stream that tries to point elsewhere shows static instead. A feed that freezes now restarts by itself even when no TV is in view, a stream nobody is watching stops downloading, and each frame of the picture is far cheaper to prepare.",
+      "highlights": [
+        "A tampered or unsafe stream shows static instead of playing",
+        "A frozen feed restarts on its own, even when you're not looking at a TV",
+        "Watching the feed costs much less per frame, most noticeable at the highest TV resolution"
+      ],
+      "pr": 2000,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
+    },
+    {
+      "id": "live-eye-smoother-streaming",
+      "version": "0.1285.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "community"
+      ],
+      "title": "Smoother Live Eye streaming",
+      "summary": "Putting on the Live Eye no longer makes the game hitch while the stream starts, and streaming costs less frame time: the on-screen viewfinder and the pinned live box are much cheaper to draw. Logging back in while wearing the Live Eye starts one stream instead of two, a hand-edited odd video width no longer stops the stream, and ending a stream no longer leaks memory.",
+      "highlights": [],
+      "pr": 2001,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
+    },
+    {
+      "id": "live-eye-quits-quickly",
+      "version": "0.1285.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Quitting while streaming no longer hangs",
+      "summary": "Live Eye: quitting the game mid-stream on a bad connection now closes within a few seconds instead of hanging for up to a minute and a half, and the end of the stream reaches viewers more reliably when you leave a world or quit straight after. When the stream server can't be reached, the game also waits longer between retries instead of trying twice a second.",
+      "highlights": [],
+      "pr": 2002,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1285.0",
+      "released_at": "2026-10-14T10:42:59Z"
+    },
+    {
+      "id": "live-eye-text-filter",
+      "version": "0.1286.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books"
+      ],
+      "title": "The Live Eye keeps its broadcast clean",
+      "summary": "While someone is live, words that could get the stream in trouble never make it onto chat or a book page \u2014 they turn to asterisks as you type, and the Live Eye warns you. Push it and the Live Eye burns away; keep pushing and nobody will hand you another for a while. If you think a line was caught by mistake, you can appeal it from the game.",
+      "highlights": [
+        "Chat and book text is checked as it is typed, with no delay to the stream.",
+        "Warnings first, then the Live Eye burns, then a ban.",
+        "Appeal a ban line by line with /liveappeal."
+      ],
+      "pr": 2003,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1286.0",
+      "released_at": "2026-10-14T11:36:16Z"
+    },
+    {
+      "id": "stream-name-pill-below-jade",
+      "version": "0.1287.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Your name on the stream no longer hides under Jade",
+      "summary": "With Jade installed, the \"is live\" name tag on your broadcast now sits just below Jade's tooltip instead of underneath it, and slides back to the top a moment after the tooltip goes.",
+      "highlights": [],
+      "pr": 2004,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "live-eye-links-phones-hidden",
+      "version": "0.1288.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "The Live Eye keeps links and phone numbers off air",
+      "summary": "While someone is live, web links and phone numbers typed into chat or a book turn to asterisks before anyone sees them, and the Live Eye quietly says so. It is a courtesy, not a warning: nothing counts against you.",
+      "highlights": [
+        "Links, invites and phone numbers are hidden as you type, with no delay to the stream.",
+        "Never a strike \u2014 share them again once the stream is over."
+      ],
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "live-eye-streams-menus",
+      "version": "0.1289.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Your menus show on stream again",
+      "summary": "With Show GUI to viewers on, the Live Eye streams your inventory, chests and other containers, the pause menu and advancements again. Anything you type, like the chat box, signs, books, anvil names and searches, still never goes out, and with Show chat off no chat lines show behind your inventory.",
+      "highlights": [],
+      "pr": 2006,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "editor-workbench-pool-moves",
+      "version": "0.1291.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community",
+        "ui"
+      ],
+      "title": "The Workbench, and templates that change pools",
+      "summary": "The editor gains a Workbench: a staging ground where builds of any kind can be loaded from the relay to walk through, edit and commit as whatever template they should become, without anything moving around. A new Workbench tab in the templates menu lists every build awaiting review and loads them all in one press. Templates can now also move between the carriage, whole and contents pools at their own size, and the Whole section gets a Half row.",
+      "highlights": [
+        "Load builds awaiting review into one space, test them, then commit each as the template kind you choose.",
+        "Move a template between Carriage, Whole and Contents without reshaping it; what cannot travel with it is said.",
+        "Whole halves join whole rooms and groups in the editor."
+      ],
+      "pr": 2009,
+      "date": "2026-10-14",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "advancements-per-difficulty",
+      "version": "0.1292.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Each difficulty keeps its own advancements",
+      "summary": "Like your Ender Chest and gear, your advancements are now kept separately for each difficulty. Switching difficulty swaps in that difficulty's advancements \u2014 and your others are waiting for you when you switch back.",
+      "highlights": [
+        "Everything you earned before this update stays on Normal; Peaceful, Easy and Hard start fresh",
+        "Train Editor advancements are shared across every difficulty",
+        "Your advancements are backed up before they're split, and a copy is kept for good"
+      ],
+      "pr": 2010,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "workbench-type-tools",
+      "version": "0.1293.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Workbench builds get their own editing tools",
+      "summary": "A build waiting in the editor's Workbench now gets the same tools it would have in its own editor mode, so you can finish it there before committing it.",
+      "highlights": [
+        "Dimensional carriage rooms show their ghost doors, and carriages and contents show their entry and exit doorways",
+        "Rooms get the full room controls: size, walls, copies, sky, exits, books and moving the doors",
+        "Block variants, the variant clipboard, mirroring and chest loot work on every Workbench build",
+        "Everything you set carries over when the build is committed"
+      ],
+      "pr": 2011,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "live-eye-needs-internet-consent",
+      "version": "0.1293.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live Eye asks before going online",
+      "summary": "Putting on the Live Eye while the game's internet connection is switched off no longer destroys it. It goes back into your inventory, and a link in chat reopens the internet choice so you can turn it on.",
+      "highlights": [
+        "With internet off, the Live Eye returns to your inventory instead of burning",
+        "A \"turn it on\" link in chat opens the internet and Adult/Kid choice",
+        "Turning the internet on takes effect straight away, with no need to rejoin the world"
+      ],
+      "pr": 2013,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "workbench-test-any-build",
+      "version": "0.1294.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Test Workbench builds before committing them",
+      "summary": "Test the Carriage now works on every build in the editor's Workbench. A build waiting for review stands up just as it would once committed, so you can walk through it, reroll it and judge it before deciding what it becomes. Nothing is installed by testing it.",
+      "highlights": [
+        "Test any Workbench build in place: carriages, contents, carriage groups, track pieces and dimensional carriages.",
+        "Reseed and Back work exactly as they do for committed templates."
+      ],
+      "pr": 2012,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "live-chat-source-icons",
+      "version": "0.1295.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Live chat shows where each message came from",
+      "summary": "Live chat messages now start with a small icon showing where they were typed: an eye for the streamer, a TV for viewers watching through one, a globe for the website, and the Discord or Twitch logo. The same icons show in-game, on the website and in the Discord stream chat.",
+      "highlights": [
+        "Tell the streamer apart from TV viewers at a glance",
+        "Icons match across in-game chat, the website and Discord"
+      ],
+      "pr": 2015,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "release-announce-needs-release",
+      "version": "0.1295.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "No more announcements for releases that didn't ship",
+      "summary": "If a release fails to build, Discord is no longer told about it. Announcements only go out once the release actually exists to download.",
+      "highlights": [],
+      "pr": 2016,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "discord-reacts-emojis-ingame",
+      "version": "0.1296.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Discord reactions and emoji in your chat",
+      "summary": "When someone reacts to your chat in Discord, you'll see it in-game \u2014 and emoji from Discord now show up properly, in colour.",
+      "highlights": [
+        "Reactions added in Discord appear on the chat line they were added to: your own messages, replies from Discord, Developer messages and Live stream chat. Hover a reaction to see who added it.",
+        "If a reaction lands after a line has faded, a short note tells you who reacted.",
+        "Emoji in chat now draw in full colour, including skin tones, flags and a server's own custom emoji.",
+        "Type :fire:, :+1: and other shortcodes in chat and they become emoji, both in-game and in Discord."
+      ],
+      "pr": 2018,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1296.0",
+      "released_at": "2026-10-15T09:24:53Z"
+    },
+    {
+      "id": "live-chat-hides-void-whispers",
+      "version": "0.1297.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "No more \"into the void\" lines while you're in Live chat",
+      "summary": "When you're connected to the stream's Live chat, the grey \"whispers into the void, will anyone answer?\" lines no longer appear after you speak \u2014 your words are already reaching the stream.",
+      "highlights": [],
+      "pr": 2020,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
+    },
+    {
+      "id": "curseforge-pack-discord-presence-069",
+      "version": "0.1298.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "compatibility"
+      ],
+      "title": "Discord reactions in the CurseForge modpack",
+      "summary": "Players on the CurseForge modpack now see Discord reactions on in-game chat lines too.",
+      "highlights": [],
+      "pr": 2019,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
+    },
+    {
+      "id": "hidden-advancement-held-screen",
+      "version": "0.1299.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "One more hidden advancement",
+      "summary": "There's a new hidden advancement waiting in the Dark Room tab. You'll know it when you see it.",
+      "highlights": [],
+      "pr": 2021,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
+    },
+    {
+      "id": "live-feed-performance-settings",
+      "version": "0.1300.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "performance",
+        "ui"
+      ],
+      "title": "Live Feed settings on the Performance tab",
+      "summary": "The Performance tab now has the Live Feed switches that cost the most frame rate, so you can find them when the game feels slow.",
+      "highlights": [
+        "Turn off Watch live feeds to stop playing streams on TVs",
+        "Turn off Livestreaming, or lower the stream's Video size, right from the Performance tab",
+        "Lag reports now include your frame rate and stutters, so slowdowns are easier to track down"
+      ],
+      "pr": 2022,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
+    },
+    {
+      "id": "live-stream-shows-photos",
+      "version": "0.1301.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "compatibility"
+      ],
+      "title": "Books, photos and albums show on your Live stream",
+      "summary": "When you stream with Show GUI on, viewers now see the books you read and write, lecterns, the photos you hold up to look at and your photo albums. Book writing is filtered by the Live Eye as you type; album notes and titles aren't, so the stream steps away while you write those.",
+      "highlights": [],
+      "pr": 2024,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1301.0",
+      "released_at": "2026-10-15T11:36:14Z"
+    },
+    {
+      "id": "options-tooltips-current-text",
+      "version": "0.1302.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "translations",
+        "ui"
+      ],
+      "title": "Settings tooltips show their current text",
+      "summary": "Hovering some settings in Options \u2192 Dungeon Train showed an older, longer explanation instead of the current one. The Backpack Button, Photo resolution and Photo chat line tooltips now show their up-to-date text, in English and in every translated language.",
+      "highlights": [],
+      "pr": 2025,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
+    },
+    {
+      "id": "live-eye-gift-to-tv-viewer",
+      "version": "0.1303.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Gift your Live Eye to a TV viewer",
+      "summary": "Streaming when someone tunes in on a TV who has never had a Live Eye? You can now hand yours over. If they accept, your stream ends and they go live.",
+      "highlights": [
+        "When a TV viewer who has never streamed joins your stream's chat, you can gift them your Live Eye (you're asked at most once every 12 minutes).",
+        "They choose whether to take it. If they do, the Live Eye goes straight on their head and they're live.",
+        "Viewers in Kid mode or with Livestreaming off are never offered one."
+      ],
+      "pr": 2026,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
+    },
+    {
+      "id": "live-eye-streams-through-death",
+      "version": "0.1304.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Your Live Eye stream carries on after you die",
+      "summary": "Dying live no longer cuts your stream. Your viewers watch your death screens with you, the last few seconds before you died loop behind the first one, and an End Stream button lets you stop when you're ready. Anyone watching with a TV on their head can take the Live Eye and go live in your place: first click wins.",
+      "highlights": [
+        "Your stream keeps going through the death screens; End Stream, next to LIVE, ends it",
+        "The moment you died loops behind the first death screen, and in the #live-eye offline post",
+        "Viewers wearing a TV get [Take the Live Eye]: the first to click becomes the streamer"
+      ],
+      "pr": 2028,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
+    },
+    {
+      "id": "live-chat-skip-dev-mentions",
+      "version": "0.1304.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Developer pings stay out of Live chat",
+      "summary": "Messages that tag the developer (@dev or @brennanhatton) no longer show up in Live chat. They still reach the developer as before, but stream viewers won't see them.",
+      "highlights": [],
+      "pr": 2030,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
+    },
+    {
+      "id": "live-eye-takeover-vote",
+      "version": "0.1305.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Asking for the Live Eye",
+      "summary": "Putting on a Live Eye while someone else is streaming no longer cuts them off. You're shown who's live and can ask to take over: early in their stream the viewers vote on it in chat, and after that it's your call. Lose the stream and your Live Eye becomes a TV, so you can keep watching.",
+      "highlights": [
+        "New streamers get their first minutes to themselves, and the viewers decide whether someone can take over early",
+        "Vote Yes or No in the Live chat, wherever you're watching; votes stay hidden until the result",
+        "A countdown shows over the live feed while the vote runs",
+        "Losing the stream, or choosing to stay a viewer, turns your Live Eye into a TV instead of burning it"
+      ],
+      "pr": 2029,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
+    },
+    {
+      "id": "advancement-promote-from-relay",
+      "version": "0.1306.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Move your old advancements to the difficulty you earned them on",
+      "summary": "If you earned most of your advancements on a different difficulty before they were split by difficulty, the developer can now send you a one-time offer to move them there. It appears on the title screen, and you pick exactly which ones to bring over.",
+      "highlights": [
+        "Tick the advancements that should count on the new difficulty, and choose for each whether Normal keeps it too",
+        "Not Now saves the offer for your next launch; it can only be used once"
+      ],
+      "pr": 2031,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z"
+    },
+    {
+      "id": "release-pass-the-live-eye",
+      "version": "0.1306.0",
+      "type": "docs",
+      "tags": [
+        "internal"
+      ],
+      "title": "Pass the Live Eye",
+      "summary": "The Live Eye no longer stops with you. Keep streaming through your death, hand it to a first-time viewer, or ask to take over someone else's stream.",
+      "highlights": [],
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1306.0",
+      "released_at": "2026-10-15T13:47:41Z",
+      "major": true,
+      "notable": true,
+      "description": "Dungeon Train TV keeps going. The Live Eye now passes from player to player instead of just cutting off.\n\nDie live and your stream carries on. Your viewers watch the death screens with you while your last few seconds loop behind them, and anyone watching on a TV can take the Live Eye and go live in your place. First click wins.\n\nPut on a Live Eye while someone else is streaming and you're asked whether to take over. Early in their stream the viewers vote in chat; after that it's your call. And if a newcomer tunes in on a TV while you're live, you can gift them yours.\n\n## Other significant updates\n\n- Lose a takeover, or choose to stay a viewer, and your Live Eye turns into a TV instead of burning\n- Live chat has emoji: react to messages from the Live page's new emoji button, see Discord reactions on chat lines in-game, and Discord emoji now show in colour\n- Developer pings stay out of Live chat\n- Move your old advancements to the difficulty you earned them on, when the developer sends you the offer\n- Settings tooltips show their current text\n- Bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/pass-the-live-eye.gif"
+    },
+    {
+      "id": "photo-album-from-disposable-camera",
+      "version": "0.1307.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Craft a photo album from a disposable camera",
+      "summary": "You can now make your own photo album: combine a Book and Quill with an unused Disposable Camera at any crafting grid. The album is yours from the moment you take it out.",
+      "highlights": [],
+      "pr": 2035,
+      "date": "2026-10-15",
+      "released": true,
+      "released_in": "v0.1307.0",
+      "released_at": "2026-10-15T14:26:57Z"
     }
   ]
 }

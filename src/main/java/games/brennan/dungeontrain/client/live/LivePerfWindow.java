@@ -21,7 +21,7 @@ final class LivePerfWindow {
     /** Everything a window counted, read once at its end. Times are nanoseconds. */
     record Snapshot(long grabs, long grabNs, long grabMaxNs, long skipped,
                     long encFresh, long encDup,
-                    long decoded, long decoderRuns, long stalls,
+                    long decoded, long publishNs, long publishMaxNs, long decoderRuns, long stalls,
                     long uploads, long uploadNs, long uploadMaxNs,
                     long worstFrameNs,
                     long audioRenders, long audioRenderNs, long audioRenderMaxNs, long audioMirrored,
@@ -48,6 +48,8 @@ final class LivePerfWindow {
     private final LongAdder encFresh = new LongAdder();
     private final LongAdder encDup = new LongAdder();
     private final LongAdder decoded = new LongAdder();
+    private final LongAdder publishNs = new LongAdder();
+    private final AtomicLong publishMaxNs = new AtomicLong();
     private final LongAdder decoderRuns = new LongAdder();
     private final LongAdder stalls = new LongAdder();
     private final LongAdder uploads = new LongAdder();
@@ -66,7 +68,7 @@ final class LivePerfWindow {
     void grab(long ns) { grabs.increment(); grabNs.add(ns); grabMaxNs.accumulateAndGet(ns, Math::max); }
     void grabSkipped() { skipped.increment(); }
     void encoderWrote(boolean fresh) { (fresh ? encFresh : encDup).increment(); }
-    void decoded() { decoded.increment(); }
+    void decoded(long ns) { decoded.increment(); publishNs.add(ns); publishMaxNs.accumulateAndGet(ns, Math::max); }
     void decoderRun() { decoderRuns.increment(); }
     void stall() { stalls.increment(); }
     void upload(long ns) { uploads.increment(); uploadNs.add(ns); uploadMaxNs.accumulateAndGet(ns, Math::max); }
@@ -81,7 +83,7 @@ final class LivePerfWindow {
     Snapshot drain() {
         return new Snapshot(grabs.sumThenReset(), grabNs.sumThenReset(), grabMaxNs.getAndSet(0), skipped.sumThenReset(),
             encFresh.sumThenReset(), encDup.sumThenReset(),
-            decoded.sumThenReset(), decoderRuns.sumThenReset(), stalls.sumThenReset(),
+            decoded.sumThenReset(), publishNs.sumThenReset(), publishMaxNs.getAndSet(0), decoderRuns.sumThenReset(), stalls.sumThenReset(),
             uploads.sumThenReset(), uploadNs.sumThenReset(), uploadMaxNs.getAndSet(0),
             worstFrameNs.getAndSet(0),
             audioRenders.sumThenReset(), audioRenderNs.sumThenReset(), audioRenderMaxNs.getAndSet(0), audioMirrored.sumThenReset(),
@@ -129,7 +131,9 @@ final class LivePerfWindow {
         if (viewing) {
             if (c.streaming() || s.grabs() > 0) b.append(" |");
             b.append(" view sessions=").append(c.sessions()).append(" width=").append(c.decodeWidth())
-                .append(" decoded=").append(s.decoded()).append(" stalls=").append(s.stalls())
+                .append(" decoded=").append(s.decoded())
+                .append(" publishMs avg=").append(ms(avg(s.publishNs(), s.decoded()))).append(" max=").append(ms(s.publishMaxNs()))
+                .append(" stalls=").append(s.stalls())
                 .append(" runs=").append(s.decoderRuns())
                 .append(" uploadMs avg=").append(ms(avg(s.uploadNs(), s.uploads()))).append(" max=").append(ms(s.uploadMaxNs()))
                 .append(" decCpu=").append(pct(c.decCpuPct()));

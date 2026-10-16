@@ -71,6 +71,7 @@ public final class EditorSaveAsKinds {
             case Template.Contents ignored -> CONTENTS;
             case Template.WholeCarriage ignored -> WHOLE;
             case Template.CarriageGroup ignored -> WHOLE;
+            case Template.WholeHalf ignored -> WHOLE;
             case Template.Part ignored -> PART;
             case Template.PortalRoom ignored -> PORTAL_ROOM;
             case Template.Track ignored -> TRACK_SIDE;
@@ -80,6 +81,7 @@ public final class EditorSaveAsKinds {
             case Template.ChunkFrame ignored -> CHUNK_FRAME;
             case Template.Building ignored -> BUILDING;
             case Template.LostCity ignored -> LOST_CITY;
+            case Template.Staged ignored -> STAGED;
         };
     }
 
@@ -233,26 +235,21 @@ public final class EditorSaveAsKinds {
 
     private static final Adapter WHOLE = new Adapter() {
         @Override public String categoryId(Template source) {
-            return kindOf(source) == WholeKind.GROUP ? "whole_group" : "whole";
+            return WholeCarriageEditor.categoryIdOf(kindOf(source));
         }
 
         @Override public Optional<Component> validate(Template source, String name) {
-            boolean group = kindOf(source) == WholeKind.GROUP;
-            boolean valid = group ? CarriageGroup.isValidName(name) : WholeCarriage.isValidName(name);
+            WholeKind kind = kindOf(source);
+            boolean valid = kind == WholeKind.GROUP ? CarriageGroup.isValidName(name) : WholeCarriage.isValidName(name);
             if (!valid) return invalid(name);
-            boolean exists = group ? CarriageGroupRegistry.find(name).isPresent()
-                : WholeCarriageRegistry.find(name).isPresent();
-            return exists ? taken(name) : Optional.empty();
+            return WholeTemplateNew.ids(kind).contains(name) ? taken(name) : Optional.empty();
         }
 
         /** {@link WholeTemplateNew#create} clears and restamps the kind's whole row from disk. */
         @Override public List<Template> reloaded(Template source, String name) {
             List<Template> out = new ArrayList<>();
-            if (kindOf(source) == WholeKind.GROUP) {
-                for (CarriageGroup g : CarriageGroupRegistry.all()) out.add(new Template.CarriageGroup(g));
-            } else {
-                for (WholeCarriage w : WholeCarriageRegistry.all()) out.add(new Template.WholeCarriage(w));
-            }
+            WholeKind kind = kindOf(source);
+            for (String id : WholeTemplateNew.ids(kind)) out.add(WholeTemplateNew.template(kind, id));
             return out;
         }
 
@@ -260,8 +257,11 @@ public final class EditorSaveAsKinds {
             WholeKind kind = kindOf(source);
             String id = source.id();
             List<Path> out = new ArrayList<>();
-            out.add(kind == WholeKind.GROUP ? CarriageGroupTemplateStore.fileForId(id)
-                : WholeCarriageTemplateStore.fileForId(id));
+            out.add(switch (kind) {
+                case GROUP -> CarriageGroupTemplateStore.fileForId(id);
+                case HALF -> WholeHalfTemplateStore.fileForId(id);
+                case ROOM -> WholeCarriageTemplateStore.fileForId(id);
+            });
             out.add(WholeVariantBlocks.configPathFor(kind, id));
             out.add(UserContentPaths.dir(ContainerContentsStore.SUBDIR)
                 .resolve(ContainerContentsStore.basenameFor(BlockVariantPlot.wholeKey(kind, id))));
@@ -271,22 +271,24 @@ public final class EditorSaveAsKinds {
         @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
             WholeKind kind = kindOf(source);
             WholeTemplateNew.create(player, kind, name, source.id());
-            return kind == WholeKind.GROUP
-                ? new Template.CarriageGroup(new CarriageGroup(name))
-                : new Template.WholeCarriage(new WholeCarriage(name));
+            return WholeTemplateNew.template(kind, name);
         }
 
         @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
             WholeKind kind = kindOf(source);
-            if (kind == WholeKind.GROUP) CarriageGroupTemplateStore.clearCache();
-            else WholeCarriageTemplateStore.clearCache();
+            switch (kind) {
+                case GROUP -> CarriageGroupTemplateStore.clearCache();
+                case HALF -> WholeHalfTemplateStore.clearCache();
+                case ROOM -> WholeCarriageTemplateStore.clearCache();
+            }
             WholeVariantBlocks.invalidate(kind, source.id());
             ContainerContentsStore.invalidate(BlockVariantPlot.wholeKey(kind, source.id()));
             WholeCarriageEditor.stampPlot(level, source, dims);
         }
 
         private WholeKind kindOf(Template source) {
-            return source instanceof Template.CarriageGroup ? WholeKind.GROUP : WholeKind.ROOM;
+            WholeKind kind = WholeCarriageEditor.kindOf(source);
+            return kind == null ? WholeKind.ROOM : kind;
         }
     };
 
@@ -553,6 +555,27 @@ public final class EditorSaveAsKinds {
     // ---- official Lost City buildings: never copied ----
 
     /** Refuses at validation, so nothing below it ever runs: Big Lost City's buildings are All Rights Reserved. */
+    /** A staged build is not yet a template of any kind; save-as has nothing to copy it into. Commit it instead. */
+    private static final Adapter STAGED = new Adapter() {
+        @Override public String categoryId(Template source) { return EditorCategory.WORKBENCH.id(); }
+
+        @Override public Optional<Component> validate(Template source, String name) {
+            return Optional.of(Component.translatable("chat.dungeontrain.workbench.save_as_unsupported"));
+        }
+
+        @Override public List<Template> reloaded(Template source, String name) { return List.of(); }
+
+        @Override public List<Path> userFiles(Template source) { return List.of(); }
+
+        @Override public Template copy(ServerPlayer player, Template source, String name) throws IOException {
+            throw new IOException("A staged build cannot be saved as — commit it to a kind first.");
+        }
+
+        @Override public void restoreAndRestamp(ServerLevel level, Template source, CarriageDims dims) {
+            WorkbenchEditor.stampPlot(level, ((Template.Staged) source).stagedId());
+        }
+    };
+
     private static final Adapter LOST_CITY = new Adapter() {
         @Override public String categoryId(Template source) { return null; }
 

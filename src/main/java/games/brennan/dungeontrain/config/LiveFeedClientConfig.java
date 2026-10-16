@@ -40,8 +40,8 @@ public final class LiveFeedClientConfig {
 
     /** The Options → Stream video sizes, as broadcast widths: 360p, 480p, 540p, 720p, 1080p (all even). */
     static final List<Integer> CAPTURE_SIZES = List.of(640, 854, 960, 1280, 1920);
-    private static final int CAPTURE_WIDTH_MIN = 320;
-    private static final int CAPTURE_WIDTH_MAX = 1920;
+    static final int CAPTURE_WIDTH_MIN = 320;
+    static final int CAPTURE_WIDTH_MAX = 1920;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
@@ -50,10 +50,10 @@ public final class LiveFeedClientConfig {
             .comment("Allow this client to broadcast when you put the headpiece on. Off = the headpiece still burns away and takes the channel, but nothing is sent (the feed shows static).")
             .define("streamingEnabled", true);
         STREAM_GUI = b
-            .comment("Show your HUD and open menus to viewers. Off = viewers see only the world and your hand.")
+            .comment("Show your HUD and menus (inventories, the pause menu, advancements) to viewers. Off = viewers see only the world and your hand. Screens you type into (the chat box, signs, books, anvils) and other mods' screens are never shown.")
             .define("streamGui", true);
         STREAM_CHAT = b
-            .comment("Show chat to viewers. Always off in Kid mode, whatever this says.")
+            .comment("Show the chat lines on your screen to viewers, whispers included. What you type is never shown. Always off in Kid mode, whatever this says.")
             .define("streamChat", true);
         STREAM_AUDIO = b
             .comment("Send in-game sounds with your stream: everything you hear from Minecraft and Dungeon Train, music included. Never your microphone, voice chat or other apps. On by default; takes effect from your next stream.")
@@ -108,7 +108,8 @@ public final class LiveFeedClientConfig {
     }
 
     public static boolean streamingEnabled() { return !loaded() || STREAMING_ENABLED.get(); }
-    public static int captureWidth() { return loaded() ? CAPTURE_WIDTH.get() : 1280; }
+    /** Evened here too: a hand-edited odd width would kill libx264's yuv420p output at start. */
+    public static int captureWidth() { return loaded() ? evenCaptureWidth(CAPTURE_WIDTH.get()) : 1280; }
     public static int captureFps() { return loaded() ? CAPTURE_FPS.get() : 20; }
     public static int bitrateKbps() { return loaded() ? BITRATE_KBPS.get() : 2500; }
     public static int segmentSeconds() { return loaded() ? SEGMENT_SECONDS.get() : 10; }
@@ -127,7 +128,18 @@ public final class LiveFeedClientConfig {
         STREAMING_ENABLED.save();
     }
 
-    /** Whether viewers see the HUD and open menus. */
+    /**
+     * Persist whether this client decodes the live feed onto TVs and the pinned viewer. Off = they
+     * show static and no decoder runs (the idle watchdog stops one already running). Driven by the
+     * Options row on the Stream and Performance tabs; idempotent, no-op pre-load.
+     */
+    public static void setViewingEnabled(boolean value) {
+        if (!loaded() || VIEWING_ENABLED.get() == value) return;
+        VIEWING_ENABLED.set(value);
+        VIEWING_ENABLED.save();
+    }
+
+    /** Whether viewers see the HUD and the listed menus ({@code client.live.StreamableScreens}). */
     public static boolean streamGui() { return !loaded() || STREAM_GUI.get(); }
 
     /** The chat switch as set; {@code StreamCapture} still forces chat off in Kid mode. */
@@ -186,11 +198,16 @@ public final class LiveFeedClientConfig {
      * stream picks it up, and the preview follows it straight away.
      */
     public static void setCaptureWidth(int width) {
-        int w = Math.max(CAPTURE_WIDTH_MIN, Math.min(CAPTURE_WIDTH_MAX, width));
-        w -= w % 2;
+        int w = evenCaptureWidth(width);
         if (!loaded() || CAPTURE_WIDTH.get() == w) return;
         CAPTURE_WIDTH.set(w);
         CAPTURE_WIDTH.save();
+    }
+
+    /** {@code width} clamped to the allowed range and rounded down to even (yuv420p needs even dimensions). */
+    static int evenCaptureWidth(int width) {
+        int w = Math.max(CAPTURE_WIDTH_MIN, Math.min(CAPTURE_WIDTH_MAX, width));
+        return w - w % 2;
     }
 
     /** The sizes the Options row offers: the presets, plus {@code current} if it was hand-set off them. */

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Source;
+import games.brennan.dungeontrain.net.relay.LiveFeedClient.Via;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -46,6 +47,23 @@ class LiveFeedClientChatParseTest {
     }
 
     @Test
+    @DisplayName("a game line's via (Live Eye / TV) and the website's web source are read; an older relay's line has no via")
+    void viaAndWeb() {
+        ChatPage p = parse(200, """
+            {"ok":true,"live":true,"seq":4,"messages":[
+              {"seq":1,"author":"Streamer","uuid":"11111111222233334444555555555555","content":"a","source":"game","via":"eye"},
+              {"seq":2,"author":"Watcher","uuid":"aaaaaaaabbbbccccddddeeeeeeeeeeee","content":"b","source":"game","via":"tv"},
+              {"seq":3,"author":"Old","uuid":"aaaaaaaabbbbccccddddeeeeeeeeeeee","content":"c","source":"game"},
+              {"seq":4,"author":"Browser","content":"d","source":"web"}
+            ]}""");
+        assertEquals(Via.EYE, p.lines().get(0).via());
+        assertEquals(Via.TV, p.lines().get(1).via());
+        assertNull(p.lines().get(2).via());
+        assertEquals(Source.WEB, p.lines().get(3).source());
+        assertNull(p.lines().get(3).via());
+    }
+
+    @Test
     @DisplayName("the head-only reply (no since) carries the seq and no lines; a nameless author reads Someone")
     void headOnly() {
         ChatPage p = parse(200, "{\"ok\":true,\"live\":false,\"seq\":42,\"messages\":[]}");
@@ -63,6 +81,26 @@ class LiveFeedClientChatParseTest {
         assertEquals(-1, parse(503, "{\"error\":\"live_chat_unconfigured\"}").seq());
         assertEquals(-1, parse(0, null).seq());
         assertEquals(-1, parse(200, "{\"ok\":true,\"seq\":\"nope\"}").seq());
+    }
+
+    @Test
+    @DisplayName("untrusted text: § codes, control chars and line breaks are stripped and lengths capped on the client")
+    void untrustedText() {
+        String longContent = "x".repeat(600);
+        String longAuthor = "n".repeat(40);
+        ChatPage p = parse(200, """
+            {"ok":true,"live":true,"seq":4,"messages":[
+              {"seq":1,"author":"Vie\\u00a7cwer\\n[Dev]","content":"\\u00a7kx\\n[Dev] hi","source":"discord"},
+              {"seq":2,"author":"A","content":"\\u00a7a","source":"twitch"},
+              {"seq":3,"author":"%s","content":"%s","source":"discord"},
+              {"seq":4,"author":"\\u00a7c","content":"ok","source":"discord"}
+            ]}""".formatted(longAuthor, longContent));
+        assertEquals(3, p.lines().size(), "content that is only a format code is dropped");
+        assertEquals("Viewer[Dev]", p.lines().get(0).author());
+        assertEquals("x[Dev] hi", p.lines().get(0).content());
+        assertEquals(games.brennan.dungeontrain.client.live.LiveChatRules.MAX_AUTHOR, p.lines().get(1).author().length());
+        assertEquals(games.brennan.dungeontrain.client.live.LiveChatRules.MAX_CONTENT, p.lines().get(1).content().length());
+        assertEquals("Someone", p.lines().get(2).author(), "an author that cleans to nothing reads Someone");
     }
 
     @Test

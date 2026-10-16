@@ -292,11 +292,11 @@ public interface BlockVariantPlot {
      * is what made a second, drifting copy of the string concatenation worth avoiding — see
      * {@link ContainerContentsStore#trackPlotKey} for the bug the last one caused.
      */
-    static String carriageKey(String variantId) {
+    public static String carriageKey(String variantId) {
         return "carriage:" + variantId;
     }
 
-    static String contentsKey(String contentsId) {
+    public static String contentsKey(String contentsId) {
         return "contents:" + contentsId;
     }
 
@@ -309,8 +309,8 @@ public interface BlockVariantPlot {
     }
 
     /** {@code whole:<id>} for a room, {@code whole_group:<id>} for a group — also the containers-store key. */
-    static String wholeKey(games.brennan.dungeontrain.train.WholeKind kind, String id) {
-        return (kind == games.brennan.dungeontrain.train.WholeKind.GROUP ? "whole_group:" : "whole:") + id;
+    public static String wholeKey(games.brennan.dungeontrain.train.WholeKind kind, String id) {
+        return WholeCarriageEditor.categoryIdOf(kind) + ":" + id;
     }
 
     // ---------- Resolution ----------
@@ -359,6 +359,15 @@ public interface BlockVariantPlot {
 
     static @Nullable BlockVariantPlot resolveByKey(String key, CarriageDims dims) {
         if (key == null) return null;
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.stagedIdOfKey(key);
+        if (stagedId != null) {
+            // A staged build is not in any registry; where it stands is the overworld's record of the
+            // Workbench, which every caller here (undo, the link propagator) can reach without a level.
+            net.minecraft.server.MinecraftServer server =
+                net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            return server == null ? null
+                : games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.ofStaged(server.overworld(), stagedId);
+        }
         if (key.startsWith("carriage:")) {
             String id = key.substring("carriage:".length());
             return games.brennan.dungeontrain.train.CarriageVariantRegistry.find(id)
@@ -402,16 +411,14 @@ public interface BlockVariantPlot {
         if (key.startsWith(ChunkFramePlot.KEY_PREFIX)) {
             return ChunkFramePlot.of(key.substring(ChunkFramePlot.KEY_PREFIX.length()));
         }
-        if (key.startsWith("whole:") || key.startsWith("whole_group:")) {
-            boolean group = key.startsWith("whole_group:");
-            String id = key.substring(group ? "whole_group:".length() : "whole:".length());
-            games.brennan.dungeontrain.train.WholeKind kind = group
-                ? games.brennan.dungeontrain.train.WholeKind.GROUP : games.brennan.dungeontrain.train.WholeKind.ROOM;
-            games.brennan.dungeontrain.template.Template model = group
-                ? games.brennan.dungeontrain.train.CarriageGroupRegistry.find(id)
-                    .map(games.brennan.dungeontrain.template.Template.CarriageGroup::new).orElse(null)
-                : games.brennan.dungeontrain.train.WholeCarriageRegistry.find(id)
-                    .map(games.brennan.dungeontrain.template.Template.WholeCarriage::new).orElse(null);
+        if (key.startsWith("whole:") || key.startsWith("whole_group:") || key.startsWith("whole_half:")) {
+            games.brennan.dungeontrain.train.WholeKind kind = key.startsWith("whole_group:")
+                ? games.brennan.dungeontrain.train.WholeKind.GROUP
+                : key.startsWith("whole_half:") ? games.brennan.dungeontrain.train.WholeKind.HALF
+                : games.brennan.dungeontrain.train.WholeKind.ROOM;
+            String id = key.substring((WholeCarriageEditor.categoryIdOf(kind) + ":").length());
+            games.brennan.dungeontrain.template.Template model = WholeTemplateNew.ids(kind).contains(id)
+                ? WholeTemplateNew.template(kind, id) : null;
             if (model == null) return null;
             BlockPos origin = WholeCarriageEditor.plotOrigin(model, dims);
             if (origin == null) return null;
@@ -471,6 +478,11 @@ public interface BlockVariantPlot {
             games.brennan.dungeontrain.builder.BuilderCarriagePlot builderPlot =
                 games.brennan.dungeontrain.builder.BuilderCarriagePlot.of(level, pos, dims);
             if (builderPlot != null) return builderPlot;
+            // A staged build answers as its own kind's plot would — the Workbench's arm, resident-gated
+            // like every other ({@link WorkbenchEditor#plotContaining}).
+            games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot staged =
+                games.brennan.dungeontrain.editor.workbench.WorkbenchVariantPlot.at(level, pos);
+            if (staged != null) return staged;
         }
         WholeCarriageEditor.PlotLocation whole = WholeCarriageEditor.plotContaining(pos, dims);
         if (whole != null) {

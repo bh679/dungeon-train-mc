@@ -103,30 +103,30 @@ public final class TemplateSidecars {
             case CARRIAGE -> {
                 // Beside the template, in its pool's folder (ShellPool).
                 String at = games.brennan.dungeontrain.train.ShellPool.path(id);
-                out.add(new Sidecar("variants", CarriageVariantBlocks.SUBDIR,
+                out.add(new Sidecar(ROLE_VARIANTS, CarriageVariantBlocks.SUBDIR,
                         at + CarriageVariantBlocks.EXT));
                 out.add(new Sidecar("parts", CarriageVariantPartsStore.SUBDIR,
                         at + CarriageVariantPartsStore.EXT));
                 out.add(new Sidecar("contents-allow", CarriageVariantBlocks.SUBDIR,
                         at + ContentsAllowStore.EXT));
             }
-            case CONTENTS -> out.add(new Sidecar("variants", CarriageContentsVariantBlocks.SUBDIR,
+            case CONTENTS -> out.add(new Sidecar(ROLE_VARIANTS, CarriageContentsVariantBlocks.SUBDIR,
                     id + CarriageContentsVariantBlocks.EXT));
             case PART -> {
                 CarriagePartKind partKind = CarriagePartKind.fromId(subKind);
                 if (partKind == null) return out;
-                out.add(new Sidecar("variants",
+                out.add(new Sidecar(ROLE_VARIANTS,
                         CarriagePartVariantBlocks.SUBDIR_BASE + "/" + partKind.id(),
                         id + CarriagePartVariantBlocks.EXT));
             }
             case TRACK -> {
                 TrackKind trackKind = TrackKind.fromId(subKind);
                 if (trackKind == null) return out;
-                out.add(new Sidecar("variants", trackKind.subdir(), id + TrackKind.VARIANTS_EXT));
+                out.add(new Sidecar(ROLE_VARIANTS, trackKind.subdir(), id + TrackKind.VARIANTS_EXT));
             }
             case PORTAL_ROOM -> {
                 TrackKind room = TrackKind.PORTAL_ROOM;
-                out.add(new Sidecar("variants", room.subdir(), id + TrackKind.VARIANTS_EXT));
+                out.add(new Sidecar(ROLE_VARIANTS, room.subdir(), id + TrackKind.VARIANTS_EXT));
                 out.add(new Sidecar("contents-allow", room.subdir(), id + ContentsAllowStore.EXT));
                 out.add(new Sidecar("copies", room.subdir(), id + PortalRoomCopiesVariant.COPIES_EXT));
             }
@@ -137,7 +137,7 @@ public final class TemplateSidecars {
             case LOST_CITY -> { }
             // One document for the whole run, beside the group's .nbt — the file the editor's Group
             // plot writes and the train's overlay reads.
-            case CARRIAGE_GROUP -> out.add(new Sidecar("variants", WholeKind.GROUP.userSubdir(),
+            case CARRIAGE_GROUP -> out.add(new Sidecar(ROLE_VARIANTS, WholeKind.GROUP.userSubdir(),
                     id + WholeVariantBlocks.EXT));
         }
         // Every kind with sidecars at all has a containers store, keyed by the same plot key the
@@ -186,14 +186,82 @@ public final class TemplateSidecars {
      * download side reads the chest → prefab links from before the store is on disk.
      */
     public static Optional<String> containersTextOf(String doc) {
-        if (doc == null || doc.isBlank()) return Optional.empty();
+        return fileTextOf(doc, ROLE_CONTAINERS);
+    }
+
+    /** The role every kind's block-variant candidates travel under. */
+    public static final String ROLE_VARIANTS = "variants";
+
+    /** The text {@code doc} carries for {@code role}, or empty when it carries none or will not parse. */
+    public static Optional<String> fileTextOf(String doc, String role) {
+        if (doc == null || doc.isBlank() || role == null) return Optional.empty();
         try {
             JsonObject root = SidecarDocCodec.parse(doc);
             if (!root.has(K_FILES) || !root.get(K_FILES).isJsonObject()) return Optional.empty();
-            JsonElement text = root.getAsJsonObject(K_FILES).get(ROLE_CONTAINERS);
+            JsonElement text = root.getAsJsonObject(K_FILES).get(role);
             return text != null && text.isJsonPrimitive() ? Optional.of(text.getAsString()) : Optional.empty();
         } catch (Exception e) {
             return Optional.empty();
+        }
+    }
+
+    /**
+     * {@code doc} with {@code role}'s file replaced by {@code text} — blank removes the role. What the
+     * Workbench writes a staged build's edits back through, so they ride the document into a commit.
+     * Re-encoded plain: a staged document is a local file, never a wire hop.
+     *
+     * @throws IOException when {@code doc} is not blank and will not parse — overwriting it would
+     *                     lose every other role it carries
+     */
+    public static String withFileText(String doc, String role, String text) throws IOException {
+        JsonObject root = rootOf(doc);
+        JsonObject files = root.has(K_FILES) && root.get(K_FILES).isJsonObject()
+                ? root.getAsJsonObject(K_FILES).deepCopy() : new JsonObject();
+        if (text == null || text.isBlank()) {
+            files.remove(role);
+        } else {
+            files.add(role, new JsonPrimitive(text));
+        }
+        if (files.isEmpty()) {
+            root.remove(K_FILES);
+        } else {
+            root.add(K_FILES, files);
+        }
+        return root.toString();
+    }
+
+    /** The weights entry's {@code mode} tag — a portal room's settings — or empty when it carries none. */
+    public static Optional<String> weightsModeOf(String doc) {
+        if (doc == null || doc.isBlank()) return Optional.empty();
+        try {
+            JsonObject root = SidecarDocCodec.parse(doc);
+            if (!root.has(K_WEIGHTS)) return Optional.empty();
+            return Optional.ofNullable(decodeWeights(root.get(K_WEIGHTS)).mode());
+        } catch (Exception e) {
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * {@code doc} with its weights entry's {@code mode} tag set to {@code mode}, keeping the rest of
+     * the entry. A document with no entry gets a default one carrying just the mode.
+     *
+     * @throws IOException when {@code doc} is not blank and will not parse
+     */
+    public static String withWeightsMode(String doc, String mode) throws IOException {
+        JsonObject root = rootOf(doc);
+        TemplateMeta meta = root.has(K_WEIGHTS) ? decodeWeights(root.get(K_WEIGHTS)) : TemplateMeta.of(TrackVariantWeights.DEFAULT);
+        root.add(K_WEIGHTS, encodeWeights("staged", meta.withMode(mode)));
+        return root.toString();
+    }
+
+    /** {@code doc} parsed into a fresh object — an empty one for a blank document. */
+    private static JsonObject rootOf(String doc) throws IOException {
+        if (doc == null || doc.isBlank()) return new JsonObject();
+        try {
+            return SidecarDocCodec.parse(doc).deepCopy();
+        } catch (RuntimeException e) {
+            throw new IOException("sidecar document will not parse: " + e.getMessage(), e);
         }
     }
 
@@ -257,7 +325,7 @@ public final class TemplateSidecars {
     /** The whole room's variants and containers files, under a carriage document's role names. */
     static List<Sidecar> wholeRoomFiles(String id) {
         return List.of(
-                new Sidecar("variants", WholeKind.ROOM.userSubdir(), id + WholeVariantBlocks.EXT),
+                new Sidecar(ROLE_VARIANTS, WholeKind.ROOM.userSubdir(), id + WholeVariantBlocks.EXT),
                 containers(wholeRoomPlotKey(id)));
     }
 
@@ -446,6 +514,40 @@ public final class TemplateSidecars {
     }
 
     /**
+     * {@link #apply} for a Workbench test's scratch install: the sidecar <b>files</b> only, and the
+     * caches dropped even when there are none to write. No weights — those live in the shared weight
+     * files, and a test must leave nothing behind — and no credit, which is filed by id for good.
+     */
+    public static void applyFilesForTest(BuilderPhotoPaths.Kind kind, String subKind, String id, String doc) {
+        if (doc != null && !doc.isBlank()) {
+            try {
+                applyFiles(kind, subKind, id, SidecarDocCodec.parse(doc));
+                return;
+            } catch (Exception e) {
+                LOGGER.warn("[DungeonTrain] Template sidecars: test copy '{}' came with a document that "
+                        + "would not parse — tested without them: {}", id, e.toString());
+            }
+        }
+        invalidateCaches(kind, subKind, id);
+    }
+
+    /**
+     * The weights entry's mode tag in {@code doc} — a portal room's walls, doors and sky — or null.
+     * Read for a Workbench test, which holds it in memory rather than writing the shared weights.
+     */
+    public static String modeOf(String doc) {
+        if (doc == null || doc.isBlank()) return null;
+        try {
+            JsonObject root = SidecarDocCodec.parse(doc);
+            if (!root.has(K_WEIGHTS)) return null;
+            TemplateMeta meta = decodeWeights(root.get(K_WEIGHTS));
+            return meta == null ? null : meta.mode();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
      * File the byline the build arrived with — who <b>originally</b> built it.
      *
      * <p>Laid down before the download path files the row's owner, and
@@ -597,6 +699,57 @@ public final class TemplateSidecars {
         } catch (Exception e) {
             return false;
         }
+    }
+
+    /**
+     * {@code doc} as it should be applied to a template of {@code toKind}/{@code toSub} when it was
+     * collected from one of {@code fromKind}/{@code fromSub} — the Workbench's commit, which may file
+     * a build under a kind other than the one the relay called it.
+     *
+     * <p>The same kind and sub kind pass through untouched. Otherwise: the byline and the chest →
+     * prefab links always travel (positions in the same box mean the same thing whatever the kind);
+     * every other file role travels only when the target kind has that role at all
+     * ({@link #filesFor}); and the weights entry is dropped, because each kind's weight file has its
+     * own shape and a portal room's doorway tag landing on a contents entry would be read as nonsense.
+     * The result is re-encoded plain (never compressed) — a commit is a local write, not a wire hop.</p>
+     *
+     * <p>Never throws: a document that will not parse is handed back blank, which {@link #apply}
+     * treats as "nothing to apply".</p>
+     */
+    public static String retargeted(String doc, BuilderPhotoPaths.Kind fromKind, String fromSub,
+                                    BuilderPhotoPaths.Kind toKind, String toSub) {
+        if (doc == null || doc.isBlank()) return "";
+        String from = fromSub == null ? "" : fromSub;
+        String to = toSub == null ? "" : toSub;
+        if (fromKind == toKind && from.equals(to)) return doc;
+        JsonObject root;
+        try {
+            root = SidecarDocCodec.parse(doc);
+        } catch (Exception e) {
+            LOGGER.warn("[DungeonTrain] Template sidecars: a document would not parse while retargeting "
+                    + "{} → {} — committed without sidecars: {}", fromKind, toKind, e.toString());
+            return "";
+        }
+        return retargetedRoles(root, toKind, to).toString();
+    }
+
+    /** The pure half of {@link #retargeted}: {@code root} with only the roles {@code toKind} can hold. */
+    static JsonObject retargetedRoles(JsonObject root, BuilderPhotoPaths.Kind toKind, String toSub) {
+        JsonObject out = new JsonObject();
+        if (root.has(K_CREDIT)) out.add(K_CREDIT, root.get(K_CREDIT));
+        if (root.has(K_FILES) && root.get(K_FILES).isJsonObject()) {
+            java.util.Set<String> allowed = new java.util.HashSet<>();
+            // A placeholder id: only the roles matter here, and filesFor needs a non-empty one.
+            for (Sidecar s : filesFor(toKind, toSub, "retarget")) allowed.add(s.role());
+            allowed.add(ROLE_CONTAINERS);
+            JsonObject files = new JsonObject();
+            for (Map.Entry<String, JsonElement> e : root.getAsJsonObject(K_FILES).entrySet()) {
+                if (allowed.contains(e.getKey())) files.add(e.getKey(), e.getValue());
+            }
+            if (!files.isEmpty()) out.add(K_FILES, files);
+        }
+        // K_WEIGHTS deliberately absent — see retargeted.
+        return out;
     }
 
     /** Whether {@code kind} has any sidecar at all — what a caller checks before bothering. */

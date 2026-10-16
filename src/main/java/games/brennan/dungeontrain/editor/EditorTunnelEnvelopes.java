@@ -1,5 +1,8 @@
 package games.brennan.dungeontrain.editor;
 
+import games.brennan.dungeontrain.builder.BuilderPhotoPaths;
+import games.brennan.dungeontrain.editor.workbench.WorkbenchStagedPlot;
+import games.brennan.dungeontrain.track.variant.TrackKind;
 import games.brennan.dungeontrain.track.variant.TrackVariantRegistry;
 import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.tunnel.TunnelPlacer.TunnelVariant;
@@ -34,6 +37,28 @@ public final class EditorTunnelEnvelopes {
             }
         }
         return out;
+    }
+
+    /**
+     * One envelope box per tunnel build staged in the Workbench — the wash its own Tracks plot would
+     * give it. Empty off the server.
+     */
+    public static List<BoundingBox> workbenchSnapshot(CarriageDims dims) {
+        net.minecraft.server.MinecraftServer server =
+            net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+        if (server == null) return List.of();
+        List<BoundingBox> out = new ArrayList<>();
+        for (WorkbenchStagedPlot plot : WorkbenchStagedPlot.all(server.overworld())) {
+            if (isTunnel(plot)) out.add(TunnelTrainEnvelope.worldBox(plot.origin(), dims));
+        }
+        return out;
+    }
+
+    /** Whether {@code plot} is a staged tunnel section or portal. */
+    static boolean isTunnel(WorkbenchStagedPlot plot) {
+        if (plot.kind() != BuilderPhotoPaths.Kind.TRACK) return false;
+        TrackKind kind = TrackKind.fromId(plot.subKind());
+        return kind == TrackKind.TUNNEL_SECTION || kind == TrackKind.TUNNEL_PORTAL;
     }
 
     /**

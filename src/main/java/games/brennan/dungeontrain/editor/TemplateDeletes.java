@@ -203,6 +203,37 @@ public final class TemplateDeletes {
         return steps.report();
     }
 
+    // ---------- whole rooms, halves and groups ----------
+
+    /**
+     * Companion cleanup for a whole-pool delete ({@code WholeCarriageTemplateStore} / half / group
+     * {@code delete}): the variants and container sidecars and the weights row, and in a dev checkout
+     * the bundled copies of a custom's template and sidecars — so a moved or reset whole does not come
+     * back as a shipped template on the next start.
+     */
+    public static Report whole(games.brennan.dungeontrain.train.WholeKind kind, String id, boolean custom) {
+        String key = id.toLowerCase(Locale.ROOT);
+        String plotKey = BlockVariantPlot.wholeKey(kind, key);
+        Steps steps = new Steps();
+        steps.run("variants sidecar", () -> WholeVariantBlocks.delete(kind, key));
+        steps.run("container sidecar", () -> ContainerContentsStore.deleteConfig(plotKey));
+        steps.run("weights entry", () -> games.brennan.dungeontrain.train.WholeWeights.unset(kind, key));
+        if (custom && sourceCleanupOn(WholeCarriageTemplateStore.sourceTreeAvailable())) {
+            steps.run("bundled template", () -> deleteQuietly(wholeSourceFile(kind, key)));
+            steps.run("bundled variants sidecar", () -> deleteQuietly(WholeVariantBlocks.sourcePathFor(kind, key)));
+            steps.run("bundled container sidecar", () -> ContainerContentsStore.deleteFromSource(plotKey));
+        }
+        return steps.report();
+    }
+
+    private static Path wholeSourceFile(games.brennan.dungeontrain.train.WholeKind kind, String id) {
+        return switch (kind) {
+            case ROOM -> WholeCarriageTemplateStore.sourceFileForId(id);
+            case HALF -> WholeHalfTemplateStore.sourceFileForId(id);
+            case GROUP -> CarriageGroupTemplateStore.sourceFileForId(id);
+        };
+    }
+
     // ---------- parts ----------
 
     /** Companion cleanup for {@link CarriagePartTemplateStore#delete}. */

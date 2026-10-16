@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexSorting;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.twitch.TwitchAccountState;
@@ -14,7 +15,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.ClientHooks;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -28,14 +33,16 @@ import org.joml.Matrix4fStack;
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
  * ({@link StreamPreview}) — so viewers and the preview see it, the streamer's own screen never does,
  * and it is there on every frame (menus open, GUI off) until the streamer sets it to None. Sized in
- * the stream's own GUI pixels so it matches the HUD viewers see.</p>
+ * the stream's own GUI pixels so it matches the HUD viewers see. When Jade's look-at tooltip is over
+ * that spot the pill drops below it ({@link StreamTagObstruction}).</p>
  *
  * <p>Which name: {@link LiveFeedClientConfig#streamNameTag()}. Kid mode shows none. A Discord tag
  * with no linked Discord name shows nothing rather than falling back to the Minecraft name.</p>
  */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class StreamNameTag {
 
-    /** GUI pixels from the top of the picture to the top of the pill. */
+    /** GUI pixels from the top of the picture to the top of the pill, when nothing is in the way. */
     static final int TOP_OFFSET = 4;
     static final String LABEL_KEY = "gui.dungeontrain.live.name_tag";
     static final String LABEL_CHAT_OFF_KEY = "gui.dungeontrain.live.name_tag.chat_off";
@@ -57,7 +64,41 @@ public final class StreamNameTag {
     /** The dot's dimmest alpha, out of 1; it peaks at fully opaque. */
     static final double PULSE_MIN = 0.35;
 
+    /** How often (client ticks) the cached label re-reads the settings and the Discord link. */
+    static final int LABEL_REFRESH_TICKS = 20;
+
+    // Render thread. The label is read every grab (20-30 a second); what it depends on changes rarely.
+    private static int ticks;
+    private static int labelTick = Integer.MIN_VALUE;
+    @Nullable private static Component cachedLabel;
+    @Nullable private static GuiGraphics graphics;
+    private static final Matrix4f SAVED_PROJECTION = new Matrix4f();
+    private static final Matrix4f TAG_PROJECTION = new Matrix4f();
+
     private StreamNameTag() {}
+
+    /** Ticks on pause screens too, so the Options preview follows a changed tag. */
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
+        ticks++;
+    }
+
+    /** True when a label read at {@code readTick} is due a re-read at {@code nowTick}. */
+    static boolean labelStale(int readTick, int nowTick) {
+        return readTick == Integer.MIN_VALUE || nowTick - readTick >= LABEL_REFRESH_TICKS || nowTick < readTick;
+    }
+
+    /** The label to draw, or null for none — re-read at most once a second. */
+    @Nullable
+    private static Component label() {
+        if (labelStale(labelTick, ticks)) {
+            String name = currentText();
+            cachedLabel = name.isEmpty() ? null
+                : label(name, chatOff(LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode()));
+            labelTick = ticks;
+        }
+        return cachedLabel;
+    }
 
     /** The tag as it applies: Kid mode never puts a name on the stream. */
     public static NameTag effective(NameTag chosen, boolean kid) {
@@ -98,8 +139,9 @@ public final class StreamNameTag {
     /** Stream start: make sure a Discord tag has a name to show, and the Twitch handle is known (both caches fill lazily otherwise). */
     static void prepare() {
         if (effective(LiveFeedClientConfig.streamNameTag(), ClientDisplayConfig.isKidMode()) == NameTag.DISCORD) {
-            DiscordAccountState.refresh(() -> { });
+            DiscordAccountState.refresh(() -> labelTick = Integer.MIN_VALUE);
         }
+        labelTick = Integer.MIN_VALUE;
         if (effective(LiveFeedClientConfig.streamNameTag(), ClientDisplayConfig.isKidMode()) != NameTag.NONE) {
             TwitchAccountState.refresh(() -> { });
         }
@@ -111,8 +153,8 @@ public final class StreamNameTag {
      * or after the GUI pass.
      */
     static void drawInto(RenderTarget target) {
-        String name = currentText();
-        if (name.isEmpty()) return;
+        Component label = label();
+        if (label == null) return;
         Minecraft mc = Minecraft.getInstance();
         RenderTarget main = mc.getMainRenderTarget();
         if (main == null || main.width <= 0) return;
@@ -121,19 +163,18 @@ public final class StreamNameTag {
         float scale = (float) (mc.getWindow().getGuiScale() * w / main.width);
         if (scale <= 0f) return;
 
-        Matrix4f savedProjection = new Matrix4f(RenderSystem.getProjectionMatrix());
+        Matrix4f savedProjection = SAVED_PROJECTION.set(RenderSystem.getProjectionMatrix());
         VertexSorting savedSorting = RenderSystem.getVertexSorting();
         Matrix4fStack modelView = RenderSystem.getModelViewStack();
         modelView.pushMatrix();
         try {
-            RenderSystem.setProjectionMatrix(new Matrix4f().setOrtho(0f, w, h, 0f, 1000f, ClientHooks.getGuiFarPlane()),
+            RenderSystem.setProjectionMatrix(TAG_PROJECTION.setOrtho(0f, w, h, 0f, 1000f, ClientHooks.getGuiFarPlane()),
                 VertexSorting.ORTHOGRAPHIC_Z);
             modelView.translation(0f, 0f, 10000f - ClientHooks.getGuiFarPlane());
             RenderSystem.applyModelViewMatrix();
             target.bindWrite(true);
-            GuiGraphics graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
-            draw(graphics, mc.font, label(name, chatOff(LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode())),
-                w, scale);
+            if (graphics == null) graphics = new GuiGraphics(mc, mc.renderBuffers().bufferSource());
+            draw(graphics, mc.font, label, w, scale);
             graphics.flush();
         } finally {
             modelView.popMatrix();
@@ -153,7 +194,11 @@ public final class StreamNameTag {
         int pillW = Math.round(groupW + 2 * PAD_X * scale);
         int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
         int pillX = (targetW - pillW) / 2;
-        int pillY = Math.round(TOP_OFFSET * scale);
+        float guiCentre = targetW / scale / 2f;
+        float guiHalfW = pillW / scale / 2f;
+        float guiTop = StreamTagObstruction.top(guiCentre - guiHalfW, guiCentre + guiHalfW, TOP_OFFSET,
+            System.currentTimeMillis());
+        int pillY = Math.round(guiTop * scale);
         int line = Math.max(1, Math.round(scale));
         pill(graphics, pillX, pillY, pillW, pillH, OUTLINE);
         pill(graphics, pillX + line, pillY + line, pillW - 2 * line, pillH - 2 * line, PILL);

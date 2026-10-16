@@ -43,6 +43,13 @@ public final class LiveEyeLootResolver {
     /** The rule, pure for the tests. {@code roll} is uniform in [0, 1). */
     public static Outcome decide(boolean mayLoot, boolean holdsLiveEye, boolean onCooldown,
                                  boolean anyoneLive, float roll) {
+        return decide(mayLoot, holdsLiveEye, onCooldown, anyoneLive, false, roll);
+    }
+
+    /** As above; a player banned from the Live Eye by the text-filter ladder ({@code LiveModeration}) always finds a TV. */
+    public static Outcome decide(boolean mayLoot, boolean holdsLiveEye, boolean onCooldown,
+                                 boolean anyoneLive, boolean banned, float roll) {
+        if (banned) return Outcome.TV;
         if (!mayLoot || holdsLiveEye || onCooldown) return Outcome.TV;
         if (anyoneLive && roll >= LIVE_KEEP_CHANCE) return Outcome.TV;
         return Outcome.LIVE_EYE;
@@ -63,6 +70,7 @@ public final class LiveEyeLootResolver {
             holdsLiveEye(player),
             onCooldown(player),
             ServerLiveStatus.isAnyoneLive(player.server),
+            LiveModeration.isBanned(player.getUUID()),
             player.getRandom().nextFloat());
         if (outcome == Outcome.LIVE_EYE) {
             markSeen(player);
@@ -95,12 +103,13 @@ public final class LiveEyeLootResolver {
     }
 
     /** A real (resolved) Live Eye in the inventory — worn included — or the ender chest. */
-    static boolean holdsLiveEye(ServerPlayer player) {
+    public static boolean holdsLiveEye(ServerPlayer player) {
         return countRealLiveEyes(player.getInventory()) > 0
             || countRealLiveEyes(player.getEnderChestInventory()) > 0;
     }
 
-    private static int countRealLiveEyes(Container container) {
+    /** Resolved (not pending) Live Eyes in {@code container} — any side, so a client can count its own inventory. */
+    public static int countRealLiveEyes(Container container) {
         int n = 0;
         for (int i = 0; i < container.getContainerSize(); i++) {
             ItemStack stack = container.getItem(i);
@@ -113,7 +122,8 @@ public final class LiveEyeLootResolver {
         return onCooldown(player.getData(ModDataAttachments.LIVE_EYE_SEEN_AT.get()), now(player));
     }
 
-    private static void markSeen(ServerPlayer player) {
+    /** Start {@code player}'s Live Eye cooldown now (a granted or gifted eye). */
+    public static void markSeen(ServerPlayer player) {
         player.setData(ModDataAttachments.LIVE_EYE_SEEN_AT.get(), now(player));
     }
 
@@ -122,7 +132,7 @@ public final class LiveEyeLootResolver {
     }
 
     /** Vista's TV — a required dependency, so the lookup only misses in a broken install. */
-    private static ItemStack tv() {
+    static ItemStack tv() {
         var item = BuiltInRegistries.ITEM.get(TV_ID);
         return item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
     }

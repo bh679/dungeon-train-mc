@@ -156,6 +156,7 @@ public final class EditorScreenActions {
         out.add(new Icon("remove", EditorScreenLang.ICON_REMOVE, removeEntry(ctx),
             EditorScreenLang.DISABLED_NOT_HERE));
 
+
         // The history is the player's own and spans every plot, so these are live wherever they
         // stand — and each says what it would step through, read from the server's own stack.
         out.add(historyIcon("undo", EditorScreenLang.ICON_UNDO, "dungeontrain editor undo",
@@ -284,9 +285,11 @@ public final class EditorScreenActions {
                 "dungeontrain editor whole label " + id, "", current);
             case WHOLE_GROUP -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor whole group label " + id, "", current);
+            case WHOLE_HALF -> new CommandMenuEntry.TypeArg(label, "name",
+                "dungeontrain editor whole half label " + id, "", current);
             case CHUNK_FRAMES -> new CommandMenuEntry.TypeArg(label, "name",
                 "dungeontrain editor chunkframe rename " + sel.modelName(), "", sel.modelName());
-            case PARTS, TRACKS, BUILDINGS, LOST_CITY, ARCHITECTURE -> null;
+            case PARTS, TRACKS, BUILDINGS, LOST_CITY, ARCHITECTURE, WORKBENCH -> null;
         };
     }
 
@@ -295,14 +298,31 @@ public final class EditorScreenActions {
      * down under one. Opens {@link GroupParentPickerScreen}; null for the categories that have no
      * groups (the icon shows why).
      */
+    /** Open {@link games.brennan.dungeontrain.client.menu.WorkbenchCommitScreen} for the selected staged build. */
+    static CommandMenuEntry commitEntry(Ctx ctx) {
+        if (!ctx.hasSelection() || ctx.category() != PlotCategory.WORKBENCH) return null;
+        return new CommandMenuEntry.DrillIn(MenuLang.t("editor.commit"),
+            new games.brennan.dungeontrain.client.menu.WorkbenchCommitScreen(
+                ctx.selection().modelName(), ctx.selection().displayName()));
+    }
+
     static CommandMenuEntry moveEntry(Ctx ctx) {
         if (!ctx.hasSelection()) return null;
+        // A staged build "moves" by being committed to a kind: Move is the commit picker here.
+        if (ctx.category() == PlotCategory.WORKBENCH) return commitEntry(ctx);
         return moveEntryFor(ctx.selection(), EditorScreenLang.text(EditorScreenLang.ICON_MOVE));
     }
 
     /** The same picker for any key, under a caller's label — the Layout tab's cell is shorter. */
     public static CommandMenuEntry moveEntryFor(VariantKey sel, String label) {
-        if (sel == null || !GroupParentPickerScreen.supports(sel.category())) return null;
+        if (sel == null) return null;
+        // A shell or whole carriage moves between pools (carriage · whole · contents) at its own size;
+        // contents keep the sub-variant picker, and reach the pools from the data sheet's Pool line.
+        if (games.brennan.dungeontrain.client.menu.PoolMovePickerScreen.supports(sel)) {
+            return new CommandMenuEntry.DrillIn(label,
+                new games.brennan.dungeontrain.client.menu.PoolMovePickerScreen(sel.category(), sel.modelId()));
+        }
+        if (!GroupParentPickerScreen.supports(sel.category())) return null;
         // Contents groups are keyed by the contents id; a room by its name under the portal kind.
         String childId = sel.category() == PlotCategory.PORTALS ? sel.modelName() : sel.modelId();
         return new CommandMenuEntry.DrillIn(label,
@@ -478,6 +498,7 @@ public final class EditorScreenActions {
      * stand up: a dimensional carriage, a carriage, a contents template and a whole room or group can
      * be walked into; a piece of the line — track tile, pillar section, staircase, tunnel piece — is
      * stood up in a stretch of track with a carriage on it; a part is only ever a piece of a carriage.
+     * A Workbench build is stood up as whichever of those its relay kind is.
      *
      * @param modelId the selection's model id — only a piece of the line needs it, since one name
      *                can belong to several of its kinds
@@ -487,8 +508,10 @@ public final class EditorScreenActions {
         return switch (category) {
             case PORTALS -> new PortalTestSaveCheckScreen(modelName);
             case CHUNK_FRAMES -> PortalTestSaveCheckScreen.forFrame(modelName);
-            case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP ->
+            case CARRIAGES, CONTENTS, WHOLE, WHOLE_GROUP, WHOLE_HALF ->
                 PortalTestSaveCheckScreen.forTemplate(category.id(), modelName);
+            // A staged build tests as the kind the relay gave it; the server refuses a part or building.
+            case WORKBENCH -> PortalTestSaveCheckScreen.forWorkbench(modelName);
             case TRACKS -> games.brennan.dungeontrain.track.TrackTestPiece.ofModelId(modelId).isPresent()
                 ? PortalTestSaveCheckScreen.forTrack(modelId, modelName) : null;
             default -> null;

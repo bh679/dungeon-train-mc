@@ -126,7 +126,10 @@ public final class PortalRoomCopiesPlot implements BlockVariantPlot {
     /** A copies setting is part of the room, so an edit here is the room reading as unsaved. */
     @Override
     public String dirtySnapshotKey() {
-        return games.brennan.dungeontrain.editor.PortalRoomEditor.snapshotKey(roomName);
+        String stagedId = games.brennan.dungeontrain.editor.workbench.WorkbenchRooms.stagedIdOf(roomName);
+        return stagedId != null
+            ? games.brennan.dungeontrain.editor.WorkbenchEditor.snapshotKey(stagedId)
+            : games.brennan.dungeontrain.editor.PortalRoomEditor.snapshotKey(roomName);
     }
 
     @Override

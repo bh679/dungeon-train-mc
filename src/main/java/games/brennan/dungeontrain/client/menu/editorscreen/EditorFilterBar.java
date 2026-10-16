@@ -83,6 +83,7 @@ final class EditorFilterBar {
      */
     private static final List<String[]> STATUS_OPTIONS = List.of(
         new String[] {BuilderProfileFilters.ALL, "gui.dungeontrain.builder.profile.status.all"},
+        new String[] {BuilderProfileFilters.PENDING, "gui.dungeontrain.builder.profile.status.pending"},
         new String[] {BuilderReviewState.NONE, "gui.dungeontrain.builder.profile.status.none"},
         new String[] {BuilderReviewState.SUBMITTED, "gui.dungeontrain.builder.profile.status.submitted"},
         new String[] {BuilderReviewState.ACCEPTED, "gui.dungeontrain.builder.profile.status.accepted"},
@@ -170,7 +171,9 @@ final class EditorFilterBar {
         if (category != null && category != EditorCategoryFilter.ALL) {
             out.add(new ActiveChip(ActiveKind.CATEGORY, EditorScreenLang.text(category.langKey())));
         }
-        if (typeName != null && !typeName.isEmpty() && category != EditorCategoryFilter.ALL) {
+        // The Workbench has one strip named like its cell; a second "Workbench" chip says nothing.
+        if (typeName != null && !typeName.isEmpty() && category != EditorCategoryFilter.ALL
+                && category != EditorCategoryFilter.WORKBENCH) {
             out.add(new ActiveChip(ActiveKind.TYPE, typeName));
         }
         if (!creatorMode) {

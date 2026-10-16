@@ -83,6 +83,7 @@ final class ClientOptionsIcons {
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
             case LIVE_CHAT -> Icon.item(Items.BELL);
             case TWITCH_HINT -> TWITCH;
+            case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
 

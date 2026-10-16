@@ -23,6 +23,16 @@ class LogRequestManagerTest {
     }
 
     @Test
+    @DisplayName("/version (with full and/or a name) is swallowed; anything else is a message")
+    void versionCommand() {
+        assertTrue(LogRequestManager.isVersionCommand("/version"));
+        assertTrue(LogRequestManager.isVersionCommand(" !VERSION full Steve "));
+        assertFalse(LogRequestManager.isVersionCommand("/version please tell me now"));
+        assertFalse(LogRequestManager.isVersionCommand("what version are you on?"));
+        assertFalse(LogRequestManager.isVersionCommand(null));
+    }
+
+    @Test
     @DisplayName("Kid mode wins over Developer chat off, which wins over an already-pending request")
     void blockOrder() {
         assertEquals(Reason.KID_MODE, LogRequestManager.blockReason(true, true, true));
@@ -38,5 +48,14 @@ class LogRequestManagerTest {
                 DeliveryFailureReport.line("Steve", Reason.KID_MODE));
         assertEquals("Message didn't land — Developer chat is switched off",
                 DeliveryFailureReport.line(null, Reason.DEV_CHAT_OFF));
+        assertEquals("Message didn't land (Steve) — a log request was sent less than a minute ago",
+                DeliveryFailureReport.line("Steve", Reason.TOO_SOON));
+    }
+
+    @Test
+    @DisplayName("a log-only report never touches Discord (no player, no reply: nothing to post to, no throw)")
+    void logOnlyReport() {
+        DeliveryFailureReport.report(null, null, "Steve", Reason.TOO_SOON, false);
+        DeliveryFailureReport.report(null, null, "Steve", Reason.ALREADY_PENDING, false);
     }
 }

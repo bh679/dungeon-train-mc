@@ -36,7 +36,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * through the admin URL this machine holds, so a jar without one gets {@code UNAVAILABLE} — the same
  * "couldn't ask" an unreachable relay gives, which is what it is.</p>
  */
-public record BuilderProfileRequestPacket(String ownerUuid, boolean live, boolean all)
+public record BuilderProfileRequestPacket(String ownerUuid, boolean live, boolean all, boolean pendingOnly)
         implements CustomPacketPayload {
 
     /**
@@ -55,12 +55,21 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live, boolea
 
     /** One profile, named or own — everything that is not the pooled listing. */
     public BuilderProfileRequestPacket(String ownerUuid, boolean live) {
-        this(ownerUuid, live, false);
+        this(ownerUuid, live, false, false);
     }
 
     /** Every builder's builds, pooled. A dev-build affordance, like naming somebody else's profile. */
     public static BuilderProfileRequestPacket all(boolean live) {
-        return new BuilderProfileRequestPacket(ALL, live, true);
+        return new BuilderProfileRequestPacket(ALL, live, true, false);
+    }
+
+    /**
+     * Only the pooled rows awaiting review — the Workbench tab's ask. Narrowed on the relay rather
+     * than here: the whole live pool is 20 MB and never finished downloading (2026-10-14), while the
+     * submission queue is a few rows.
+     */
+    public static BuilderProfileRequestPacket pending(boolean live) {
+        return new BuilderProfileRequestPacket(ALL, live, true, true);
     }
 
     public static final Type<BuilderProfileRequestPacket> TYPE =
@@ -82,9 +91,10 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live, boolea
                 buf.writeUtf(packet.ownerUuid, MAX_UUID);
                 buf.writeBoolean(packet.live);
                 buf.writeBoolean(packet.all);
+                buf.writeBoolean(packet.pendingOnly);
             },
             buf -> new BuilderProfileRequestPacket(buf.readUtf(MAX_UUID), buf.readBoolean(),
-                    buf.readBoolean())
+                    buf.readBoolean(), buf.readBoolean())
         );
 
     @Override
@@ -114,7 +124,7 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live, boolea
                 return;
             }
             if (allRequested(packet.all)) {
-                answerAll(player, liveRequested(packet.live));
+                answerAll(player, liveRequested(packet.live), packet.pendingOnly);
                 return;
             }
             SharedCarriageClient.listMine(owner, ownProfile(player), relay).thenAccept(rows -> {
@@ -165,8 +175,8 @@ public record BuilderProfileRequestPacket(String ownerUuid, boolean live, boolea
      * is offer the author's own actions on somebody else's build. Each row carries its own owner, so
      * whoever draws them can still say whose each is.</p>
      */
-    private static void answerAll(ServerPlayer player, boolean live) {
-        SharedCarriageClient.listAll(live, MAX_ALL).thenAccept(rows -> {
+    private static void answerAll(ServerPlayer player, boolean live, boolean pendingOnly) {
+        SharedCarriageClient.listAll(live, MAX_ALL, pendingOnly).thenAccept(rows -> {
             if (player.getServer() == null) return;
             player.getServer().execute(() -> {
                 if (player.hasDisconnected()) return;

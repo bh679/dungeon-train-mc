@@ -8,6 +8,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -68,5 +69,19 @@ class LiveStreamTeardownTest {
         LiveTeardown.runAsync(List.of(new LiveTeardown.Step("boom", () -> { throw new RuntimeException("x"); })),
             done::countDown);
         assertTrue(done.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    void shutdownCanWaitForTheLastAsyncTeardownWithABound() throws Exception {
+        CountDownLatch release = new CountDownLatch(1);
+        LiveTeardown.runAsync(List.of(new LiveTeardown.Step("slow upload", release::await)), () -> { });
+
+        long start = System.nanoTime();
+        assertFalse(LiveTeardown.awaitLast(200), "a blocked teardown reported done");
+        long tookMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        assertTrue(tookMs < 2_000, "awaitLast ignored its bound: " + tookMs + " ms");
+
+        release.countDown();
+        assertTrue(LiveTeardown.awaitLast(5_000));
     }
 }

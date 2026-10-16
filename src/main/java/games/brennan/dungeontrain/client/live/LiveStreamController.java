@@ -12,22 +12,27 @@ import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
 import games.brennan.dungeontrain.client.twitch.TwitchAccountState;
 import games.brennan.dungeontrain.client.twitch.TwitchHandleCapture;
+import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.relay.LatestReleaseCache;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
+import games.brennan.dungeontrain.event.LiveFeedEvents;
 import games.brennan.dungeontrain.net.LiveStreamEndedPacket;
 import games.brennan.dungeontrain.net.LiveStreamPacket;
+import games.brennan.dungeontrain.net.LiveClaimResultPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
+import games.brennan.dungeontrain.net.relay.LiveTakeoverClient;
+import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -55,7 +60,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
@@ -63,7 +73,14 @@ import java.util.stream.Stream;
  *
  * <pre>
  * IDLE --START--> WAIT_FFMPEG --ready--> CLAIMING --200--> STREAMING --stop--> IDLE
+ *                                           |  ^
+ *                                       409 v  | take over / ticket / void
+ *                                         BLOCKED --request--> VOTING --rejected--> IDLE (a TV)
+ *                                           '-- stay a viewer --> IDLE (a TV)
  * </pre>
+ *
+ * <p>BLOCKED and VOTING: someone else is on air, so the Live Eye works as a TV while its wearer
+ * decides — {@link LiveTakeoverFlow} runs the prompt and the vote, and calls back here.</p>
  *
  * <p>Everything relay-facing happens here: claim the channel, then grab → encode → upload until
  * the server says stop, the relay says someone else took over (403 on presign), the player logs
@@ -79,8 +96,23 @@ public final class LiveStreamController {
     private static final LiveStreamController INSTANCE = new LiveStreamController();
     /** Session dirs a {@link LiveTeardown} is still flushing; the next stream's sweep leaves them be. */
     private static final Set<Path> TEARING_DOWN = ConcurrentHashMap.newKeySet();
+    /** Game shutdown's whole budget for ending a stream, so a bad link cannot hang the quit. */
+    static final long SHUTDOWN_BUDGET_MS = 8_000;
+    /** Of that budget, what the final upload leaves for the relay stop. */
+    private static final long RELAY_STOP_RESERVE_MS = 1_500;
+    private static final long RELAY_STOP_MIN_MS = 500;
+    /** The relay stop's wait on a teardown off the render thread. */
+    private static final long RELAY_STOP_TIMEOUT_MS = 10_000;
+    /** {@code deadlineMs} of a teardown that runs on its own thread, with each step's own timeout. */
+    private static final long ASYNC = 0;
+    /** Spawns and restarts the encoder off the render thread, one at a time so two never share a grabber. */
+    private static final ExecutorService STARTER = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "dt-live-start");
+        t.setDaemon(true);
+        return t;
+    });
 
-    public enum State { IDLE, WAIT_FFMPEG, CLAIMING, STREAMING, STOPPING }
+    public enum State { IDLE, WAIT_FFMPEG, CLAIMING, BLOCKED, VOTING, STREAMING, STOPPING }
 
     private volatile State state = State.IDLE;
     private int generation; // bumps on every start/stop so a late async reply cannot act on a newer stream
@@ -97,6 +129,8 @@ public final class LiveStreamController {
     private boolean grabbedThisFrame; // render thread: this frame was already read at an earlier point
     private long streamStartedMs;
     private int waitTicks;
+    /** The Live Eye must be on this client's head: the server's START alone is not enough. */
+    private final LiveHeadpieceGuard headpiece = new LiveHeadpieceGuard();
     /** How long the going-live line waits for the relay's first viewer count before saying 0. */
     private static final long LIVE_LINE_FALLBACK_MS = 10_000L;
     private final LiveViewerBands bands = new LiveViewerBands();
@@ -107,6 +141,10 @@ public final class LiveStreamController {
      * LoggingOut fires, so one raised there would never be seen.
      */
     @Nullable private LiveStreamEndedToast.Reason endedAfterLeave;
+    /** The streamer died and the broadcast carries on through the death screens ({@link LivePostMortem}). */
+    private final LivePostMortem postMortem = new LivePostMortem();
+    /** Render thread: inside {@link #onLoggingOut}, so any ended pop-up waits for the title screen. */
+    private boolean leaving;
 
     private LiveStreamController() {}
 
@@ -120,6 +158,11 @@ public final class LiveStreamController {
 
     public boolean streaming() {
         return state == State.STREAMING;
+    }
+
+    /** The Live Eye is on, but someone else is live: it works as a TV while its wearer decides. */
+    public boolean watchingWithEye() {
+        return state == State.BLOCKED || state == State.VOTING;
     }
 
     /** Render thread: the running encoder, or null — for the {@code [live]} perf line. */
@@ -152,6 +195,13 @@ public final class LiveStreamController {
         return state == State.STREAMING && c != null ? c.playlistUrl() : null;
     }
 
+    /** The stream's relay token (proves this client is the streamer, e.g. for a Live Eye gift), or null when not streaming. */
+    @Nullable
+    public String streamToken() {
+        Claim c = claim;
+        return state == State.STREAMING && c != null ? c.token() : null;
+    }
+
     // ---- server packets -----------------------------------------------------------------------
 
     public void onServerSaid(LiveStreamPacket packet) {
@@ -159,23 +209,70 @@ public final class LiveStreamController {
             case START -> start(packet.eyeId());
             // The ended pop-up says why; the server's burn line describes the Live Eye.
             case STOP_REPLACED -> stop(null, LiveStreamEndedToast.Reason.REPLACED);
-            case STOP_DIED -> stop(null, LiveStreamEndedToast.Reason.DIED);
+            case STOP_DIED -> died();
             case STOP_LEFT -> stop(null, LiveStreamEndedToast.Reason.LEFT);
             case STOP_REMOVED -> stop(null, LiveStreamEndedToast.Reason.REMOVED);
             case STOP_FREE_PLAY -> stop(Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY), LiveStreamEndedToast.Reason.FREE_PLAY);
+            // The server's burn line and strike warning already said why.
+            case STOP_MODERATED -> stop(null, LiveStreamEndedToast.Reason.MODERATED);
         }
+    }
+
+    // ---- post mortem --------------------------------------------------------------------------
+
+    /**
+     * The server says the streamer died (it has burned the Live Eye and cleared the streamer). A
+     * broadcast that is already on air carries on through the death screens until the streamer ends
+     * it (End Stream, {@link LiveRecOverlay}) or leaves; the relay offers it to viewers meanwhile, and
+     * the first to accept cuts this one off. Anything not yet on air stops as before.
+     */
+    private void died() {
+        Claim c = claim;
+        if (state != State.STREAMING || c == null) {
+            stop(null, LiveStreamEndedToast.Reason.DIED);
+            return;
+        }
+        LOGGER.info("[DungeonTrain] live: streamer died; streaming on through the death screens");
+        postMortem.begin();
+        LiveFeedClient.died(c.token());
+        // The moment of death, cut from this stream's own segments: the first death page's backdrop
+        // and the #live-eye offline post's GIF.
+        LiveEncoder enc = encoder;
+        Path d = dir;
+        if (enc != null && d != null) {
+            LiveDeathClip.begin(d, enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps()),
+                LiveFeedClientConfig.segmentSeconds(), c.token());
+        }
+    }
+
+    /** Streaming on after death — the death screens are what goes out. */
+    public boolean postMortem() {
+        return state == State.STREAMING && postMortem.active();
+    }
+
+    /** The End Stream button. */
+    public void endPostMortem() {
+        if (postMortem()) stop(null, LiveStreamEndedToast.Reason.DIED);
     }
 
     // ---- lifecycle ----------------------------------------------------------------------------
 
     private void start(String eyeId) {
         this.eyeId = eyeId == null ? "" : eyeId;
+        LiveTakeoverFlow.newEye();
         LOGGER.info("[DungeonTrain] live stream requested by the server (ffmpeg {})", FfmpegSupport.state());
         if (state != State.IDLE) stop(null);
         // Livestreaming is a line on the first-launch consent card: the master "use the internet?"
-        // switch and the Livestreaming switch both have to be on. Either off → the server hands the
-        // headpiece back (FAILED is the no-burn exit) and nothing is sent.
-        if (!LiveFeedClientConfig.streamingEnabled() || !DiscordPresenceClientConfig.isGranted()) {
+        // switch and the Livestreaming switch both have to be on. Internet off → the headpiece goes
+        // back in the inventory (FAILED, the no-burn exit) and chat links to the card; the server
+        // usually refused it already, this covers a login before the consent sync landed.
+        // Livestreaming off → DISABLED, which burns it.
+        if (!DiscordPresenceClientConfig.isGranted()) {
+            say(LiveFeedEvents.needsInternetLine());
+            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+            return;
+        }
+        if (!LiveFeedClientConfig.streamingEnabled()) {
             say(Component.translatable("chat.dungeontrain.live.disabled",
                     LiveOptionsCommand.pathLink("chat.dungeontrain.live.disabled.path"))
                 .withStyle(ChatFormatting.GRAY));
@@ -185,6 +282,8 @@ public final class LiveStreamController {
         generation++;
         state = State.WAIT_FFMPEG;
         waitTicks = 0;
+        FfmpegSupport.aacEncoder(); // probe off-thread now, so it has its answer by the time the claim lands
+        headpiece.reset();
         switch (FfmpegSupport.state()) {
             case OFF, FAILED -> {
                 say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
@@ -192,8 +291,36 @@ public final class LiveStreamController {
                 tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
             }
             case DOWNLOADING -> say(Component.translatable("chat.dungeontrain.live.preparing").withStyle(ChatFormatting.GRAY));
-            case READY -> claimChannel();
+            // No claim until the Live Eye is on: claiming cuts off whoever streams in another world.
+            // Not on yet (login: the inventory may land after START) → the tick claims once it is.
+            case READY -> { if (headpieceWorn()) claimChannel(false, null); }
         }
+    }
+
+    /** The Live Eye is on this client's own head, as far as this client can see. */
+    private static boolean headpieceWorn() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.player != null && mc.player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.LIVE_HEADPIECE.get());
+    }
+
+    /**
+     * Ends a stream whose Live Eye is not on this client's head ({@link LiveHeadpieceGuard}). The
+     * server hears FAILED, the no-burn exit: a real take-off was already burned and cleared by the
+     * server, so this only reaches a server that still thinks it is worn, and that hands it back.
+     * True when the stream ended.
+     */
+    private boolean checkHeadpiece() {
+        LiveHeadpieceGuard.Verdict v = headpiece.tick(headpieceWorn(), state == State.STREAMING);
+        if (v == LiveHeadpieceGuard.Verdict.NONE) return false;
+        if (v == LiveHeadpieceGuard.Verdict.REFUSE) {
+            LOGGER.warn("[DungeonTrain] live stream refused: headpiece not worn");
+            stop(null);
+        } else {
+            LOGGER.info("[DungeonTrain] live stream ended: headpiece no longer worn");
+            stop(null, LiveStreamEndedToast.Reason.REMOVED);
+        }
+        tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+        return true;
     }
 
     /** Client tick: finish waiting for ffmpeg, and watch the encoder while streaming. */
@@ -203,14 +330,26 @@ public final class LiveStreamController {
     }
 
     private void tick() {
+        LiveDeathClip.tick();
         if (endedAfterLeave != null && Minecraft.getInstance().level == null) {
             Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(endedAfterLeave));
             endedAfterLeave = null;
         }
+        if (postMortem.active()) {
+            if (state != State.STREAMING) {
+                postMortem.clear();
+            } else if (tickPostMortem()) {
+                return;
+            }
+        }
+        if (state != State.IDLE && state != State.STOPPING && !postMortem.active() && checkHeadpiece()) return;
         if (state == State.WAIT_FFMPEG) {
+            if (FfmpegSupport.state() == FfmpegSupport.State.READY) {
+                if (headpieceWorn()) claimChannel(false, null);
+                return;
+            }
             if (++waitTicks % 20 != 0) return;
             switch (FfmpegSupport.state()) {
-                case READY -> claimChannel();
                 case OFF, FAILED -> {
                     say(Component.translatable("chat.dungeontrain.live.no_ffmpeg").withStyle(ChatFormatting.RED));
                     state = State.IDLE;
@@ -227,6 +366,18 @@ public final class LiveStreamController {
             // The approved list can change under a running stream (the relay's overlay revokes a mod).
             if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
         }
+    }
+
+    /** Ends a post-mortem stream nobody is watching the death screens of any more. True when it ended. */
+    private boolean tickPostMortem() {
+        Minecraft mc = Minecraft.getInstance();
+        Screen screen = mc.screen;
+        boolean dead = mc.player != null && mc.player.isDeadOrDying();
+        boolean alive = mc.player != null && mc.player.isAlive();
+        if (!postMortem.tick(screen == null ? null : screen.getClass(), dead, alive)) return false;
+        LOGGER.info("[DungeonTrain] live: post-mortem stream ended ({})", alive ? "respawned" : "no death screen");
+        stop(null, LiveStreamEndedToast.Reason.DIED);
+        return true;
     }
 
     /**
@@ -269,7 +420,11 @@ public final class LiveStreamController {
         TwitchHandleCapture.open();
     }
 
-    private void claimChannel() {
+    /**
+     * {@code takeover}: the player chose Take over past the holder's protected minutes; {@code ticket}:
+     * an approved vote's pass. Without either, a claim against someone on air comes back as the prompt.
+     */
+    private void claimChannel(boolean takeover, @Nullable String ticket) {
         Minecraft mc = Minecraft.getInstance();
         UUID uuid = mc.getUser() != null ? mc.getUser().getProfileId() : null;
         String name = mc.getUser() != null ? mc.getUser().getName() : "";
@@ -282,8 +437,27 @@ public final class LiveStreamController {
             LiveFeedClientConfig.liveChat(), ClientDisplayConfig.isKidMode());
         boolean freePlay = mc.player != null && mc.player.hasEffect(ModMobEffects.FREE_PLAY);
         LiveFeedClient.Life life = new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION);
-        LiveFeedClient.claim(uuid, name, eyeId, info, life).thenAcceptAsync(result -> {
+        CompletableFuture<Boolean> aac = LiveFeedClientConfig.streamAudio()
+            ? FfmpegSupport.aacEncoder() : CompletableFuture.completedFuture(false);
+        // Won a dead streamer's takeover: that ticket carries the claim past the relay's tenure check
+        // (an approved takeover vote's ticket does the same).
+        String deathTicket = LiveTakeoverOffer.takeTicket(System.currentTimeMillis());
+        LiveFeedClient.claim(uuid, name, eyeId, info, life, takeover, ticket, deathTicket).thenAcceptBothAsync(aac, (result, hasAac) -> {
             if (gen != generation || state != State.CLAIMING) return;
+            LiveTakeoverClient.Holder holder = LiveTakeoverClient.parseBlocked(result);
+            if (holder != null) {
+                // Someone else is on air: the Live Eye works as a TV while its wearer decides.
+                state = State.BLOCKED;
+                LiveTakeoverFlow.blocked(holder);
+                return;
+            }
+            if (result.forbidden() && "banned".equals(result.str("error"))) {
+                // The text-filter ladder has this player banned from the Live Eye; the server burns it
+                // on BANNED and says for how long.
+                state = State.IDLE;
+                tellServerEnded(LiveStreamEndedPacket.Reason.BANNED);
+                return;
+            }
             Claim c = LiveFeedClient.parseClaim(result);
             if (c == null) {
                 say(Component.translatable("chat.dungeontrain.live.unreachable").withStyle(ChatFormatting.RED));
@@ -291,14 +465,67 @@ public final class LiveStreamController {
                 tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
                 return;
             }
-            beginStreaming(c);
+            // The channel is ours: the server makes this player its streamer (and turns the previous
+            // one's Live Eye into a TV).
+            tellServerTakeover(LiveClaimResultPacket.Result.LIVE);
+            beginStreaming(c, hasAac);
         }, mc);
     }
 
-    private void beginStreaming(Claim c) {
+    // ---- takeover (LiveTakeoverFlow) -----------------------------------------------------------
+
+    /** Request takeover pressed: the vote is running. False when not blocked. */
+    boolean beginVote() {
+        if (state != State.BLOCKED) return false;
+        state = State.VOTING;
+        return true;
+    }
+
+    /** The vote could not open: back to deciding. */
+    void backToBlocked() {
+        if (state == State.VOTING) state = State.BLOCKED;
+    }
+
+    /** Claim again — Take over, an approved vote's ticket, or a vote that came back void. */
+    void retryClaim(boolean takeover, @Nullable String ticket) {
+        if (state != State.BLOCKED && state != State.VOTING) return;
+        if (!headpieceWorn()) return; // the guard ends it on its own
+        claimChannel(takeover, ticket);
+    }
+
+    /** Stay a viewer: the server turns the Live Eye into a TV. */
+    void stayViewer() {
+        if (state != State.BLOCKED && state != State.VOTING) return;
+        generation++;
+        state = State.IDLE;
+        tellServerTakeover(LiveClaimResultPacket.Result.STAYED_VIEWER);
+    }
+
+    /** The audience voted it down: the server turns the Live Eye into a TV. */
+    void takeoverRejected() {
+        if (state != State.VOTING) return;
+        generation++;
+        state = State.IDLE;
+        tellServerTakeover(LiveClaimResultPacket.Result.REJECTED);
+    }
+
+    private static void tellServerTakeover(LiveClaimResultPacket.Result result) {
         Minecraft mc = Minecraft.getInstance();
+        if (mc.getConnection() != null) PacketDistributor.sendToServer(new LiveClaimResultPacket(result));
+    }
+
+    /**
+     * Render thread, still CLAIMING: everything that must happen here (the GL grabber, the sound
+     * mirror) is set up, then ffmpeg is spawned on {@link #STARTER} and {@link #adoptEncoder} flips
+     * to STREAMING back on the render thread. The claim is held from here so a stop meanwhile still
+     * tells the relay.
+     */
+    private void beginStreaming(Claim c, boolean aac) {
+        Minecraft mc = Minecraft.getInstance();
+        int gen = generation;
         try {
             sweepStaleDirs();
+            LiveDeathClip.forget();
             Path d = liveRoot().resolve(c.session());
             Files.createDirectories(d);
             int w = LiveFeedClientConfig.captureWidth();
@@ -306,31 +533,73 @@ public final class LiveStreamController {
             var ffmpeg = FfmpegSupport.get();
             if (ffmpeg == null) throw new IOException("ffmpeg vanished");
             StreamNameTag.prepare();
-        TwitchAccountState.refresh(() -> { }); // a saved handle suppresses the shout-out hint
-            grabber = new LiveFrameGrabber(w, h);
-            int fps = LiveFeedClientConfig.captureFps();
-            // Off (the default), not possible here, or an unapproved mod loaded (it could play anything):
-            // the stream goes out without sound, as before.
-            audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(ffmpeg) : null;
-            encoder = new LiveEncoder(ffmpeg, grabber, d, fps,
-                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), audio == null ? 0 : audio.port());
-            if (audio != null) audio.start(encoder::framesWritten, fps);
-            uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
+            TwitchAccountState.refresh(() -> { }); // a saved handle suppresses the shout-out hint
             claim = c;
             dir = d;
-            streamStartedMs = System.currentTimeMillis();
-            state = State.STREAMING;
-            LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}, playlist {}", c.session(), w, h,
-                fps, audio != null ? " with sound" : "", c.playlistUrl());
-            announcedLive = false;
-            if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
+            LiveFrameGrabber grab = new LiveFrameGrabber(w, h);
+            grabber = grab;
+            int fps = LiveFeedClientConfig.captureFps();
+            int bitrate = LiveFeedClientConfig.bitrateKbps();
+            int segment = LiveFeedClientConfig.segmentSeconds();
+            // Off, not possible here, or an unapproved mod loaded (it could play anything):
+            // the stream goes out without sound, as before.
+            audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(aac) : null;
+            int audioPort = audio == null ? 0 : audio.port();
+            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort), STARTER)
+                .whenCompleteAsync((enc, err) -> adoptEncoder(gen, enc, err, fps), mc);
         } catch (Exception e) {
-            LOGGER.error("[DungeonTrain] live stream could not start", e);
-            say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
-            teardown(false, false, null);
-            state = State.IDLE;
-            tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+            failStart(e);
         }
+    }
+
+    /** Render thread: the encoder spawned for stream {@code gen} is up (or failed) — go live with it. */
+    private void adoptEncoder(int gen, @Nullable LiveEncoder enc, @Nullable Throwable err, int fps) {
+        if (gen != generation || state != State.CLAIMING) {
+            if (enc != null) closeEncoderAsync(enc); // stopped meanwhile; the teardown already ran
+            return;
+        }
+        Claim c = claim;
+        Path d = dir;
+        if (err != null || enc == null || c == null || d == null) {
+            failStart(err != null ? err : new IllegalStateException("stream state lost while starting"));
+            return;
+        }
+        Minecraft mc = Minecraft.getInstance();
+        encoder = enc;
+        if (audio != null) audio.start(enc::framesWritten, fps);
+        uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
+        streamStartedMs = System.currentTimeMillis();
+        state = State.STREAMING;
+        LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}, playlist {}", c.session(),
+            grabber == null ? 0 : grabber.width(), grabber == null ? 0 : grabber.height(),
+            fps, audio != null ? " with sound" : "", c.playlistUrl());
+        announcedLive = false;
+        if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
+    }
+
+    /** Render thread: the stream could not start — say so, free what was set up, hand the headpiece back. */
+    private void failStart(Throwable e) {
+        LOGGER.error("[DungeonTrain] live stream could not start", e);
+        say(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED));
+        generation++;
+        teardown(false, ASYNC, null);
+        state = State.IDLE;
+        tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+    }
+
+    /** {@link #STARTER} thread: spawning ffmpeg can take a while, so never on the render thread. */
+    private static LiveEncoder spawnEncoder(FFmpeg ffmpeg, LiveFrameGrabber grab, Path d, int fps, int bitrate,
+                                            int segment, int audioPort) {
+        try {
+            return new LiveEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort);
+        } catch (IOException e) {
+            throw new CompletionException(e);
+        }
+    }
+
+    /** An encoder nobody will use: closed on the teardown thread (closing blocks for seconds). */
+    private static void closeEncoderAsync(LiveEncoder enc) {
+        LiveTeardown.runAsync(List.of(new LiveTeardown.Step("stray encoder", enc::close)), () -> { });
     }
 
     /**
@@ -338,24 +607,44 @@ public final class LiveStreamController {
      * sound input. Rather than end the broadcast, start the encoder again without sound, as it would
      * have been with the setting off. Only before the first upload: a fresh encoder numbers its
      * segments from 0 again. True when the stream carries on.
+     *
+     * <p>Closing the old encoder and sound blocks for seconds, so it runs on {@link #STARTER}, as does
+     * the new spawn; the tick's died-check skips while {@code encoder} is null in between.</p>
      */
     private boolean restartWithoutSound() {
-        LiveAudioPump snd = audio;
-        audio = null;
-        snd.close();
         LiveUploader up = uploader;
         var ffmpeg = FfmpegSupport.get();
-        if (up == null || up.segmentsUploaded() > 0 || ffmpeg == null || grabber == null || dir == null) return false;
+        LiveFrameGrabber grab = grabber;
+        Path d = dir;
+        LiveEncoder old = encoder;
+        LiveAudioPump snd = audio;
+        if (up == null || up.segmentsUploaded() > 0 || ffmpeg == null || grab == null || d == null
+            || old == null || snd == null) return false;
         LOGGER.warn("[DungeonTrain] live encoder failed with stream sound on; carrying on without sound");
-        try {
-            encoder.close();
-            encoder = new LiveEncoder(ffmpeg, grabber, dir, LiveFeedClientConfig.captureFps(),
-                LiveFeedClientConfig.bitrateKbps(), LiveFeedClientConfig.segmentSeconds(), 0);
-            return true;
-        } catch (IOException e) {
-            LOGGER.error("[DungeonTrain] live encoder could not restart without sound", e);
-            return false;
-        }
+        audio = null;
+        encoder = null;
+        int gen = generation;
+        int fps = LiveFeedClientConfig.captureFps();
+        int bitrate = LiveFeedClientConfig.bitrateKbps();
+        int segment = LiveFeedClientConfig.segmentSeconds();
+        CompletableFuture.supplyAsync(() -> {
+            snd.close();
+            old.close();
+            return spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, 0);
+        }, STARTER).whenCompleteAsync((enc, err) -> {
+            if (gen != generation || state != State.STREAMING) {
+                if (enc != null) closeEncoderAsync(enc);
+                return;
+            }
+            if (err != null || enc == null) {
+                LOGGER.error("[DungeonTrain] live encoder could not restart without sound", err);
+                stop(Component.translatable("chat.dungeontrain.live.encoder_died").withStyle(ChatFormatting.RED), LiveStreamEndedToast.Reason.FAILED);
+                tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
+                return;
+            }
+            encoder = enc;
+        }, Minecraft.getInstance());
+        return true;
     }
 
     /** How often a stream with sound re-checks the loaded mods against the approved list. */
@@ -378,8 +667,14 @@ public final class LiveStreamController {
 
     private void cutOff(String by) {
         if (state != State.STREAMING) return;
+        if (postMortem.active()) {
+            // A viewer took the dead streamer's stream over: the server already let go of this one.
+            LOGGER.info("[DungeonTrain] live: post-mortem stream taken over by {}", by);
+            stop(null, false, ASYNC, LiveStreamEndedToast.Reason.REPLACED);
+            return;
+        }
         // Silent here: the server burns the Live Eye on CUT_OFF and its burn line says why.
-        stop(null, false, false, LiveStreamEndedToast.Reason.REPLACED);
+        stop(null, false, ASYNC, LiveStreamEndedToast.Reason.REPLACED);
         tellServerEnded(LiveStreamEndedPacket.Reason.CUT_OFF);
     }
 
@@ -395,26 +690,29 @@ public final class LiveStreamController {
     }
 
     private void stop(@Nullable Component why, @Nullable LiveStreamEndedToast.Reason ended) {
-        stop(why, true, false, ended);
+        stop(why, true, ASYNC, ended);
     }
 
     /**
      * {@code ended} raises the top-right "Livestream ended" pop-up, but only for a stream that had
      * gone live: a start that never reached STREAMING says why in chat instead. Raised after the
-     * state is IDLE, so the broadcast never captures it.
+     * state is IDLE, so the broadcast never captures it. {@code deadlineMs} other than {@link #ASYNC}
+     * tears down on this thread and is done by then (game shutdown).
      */
-    private void stop(@Nullable Component why, boolean clean, boolean wait, @Nullable LiveStreamEndedToast.Reason ended) {
+    private void stop(@Nullable Component why, boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended) {
         if (state == State.IDLE) return;
         boolean wasLive = state == State.STREAMING;
+        if (watchingWithEye()) LiveTakeoverFlow.abandon();
+        postMortem.clear();
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());
         state = State.STOPPING;
-        teardown(clean, wait, ended);
+        teardown(clean, deadlineMs, ended);
         state = State.IDLE;
         if (why != null) say(why);
         if (!wasLive || ended == null) return;
-        if (ended == LiveStreamEndedToast.Reason.LEFT) {
+        if (ended == LiveStreamEndedToast.Reason.LEFT || leaving) {
             endedAfterLeave = ended;
         } else {
             Minecraft.getInstance().getToasts().addToast(new LiveStreamEndedToast(ended));
@@ -425,10 +723,12 @@ public final class LiveStreamController {
      * Hands this stream's encoder, uploader, relay claim and directory to {@link LiveTeardown} and
      * clears them, so the controller is IDLE at once. The steps block for seconds — ffmpeg's last
      * segment, the final upload pass, the relay stop — and on the render thread that froze the game
-     * every time the Live Eye came off, so they run on their own thread. {@code wait} runs them here
-     * instead: game shutdown only, where a daemon thread would die before the ENDLIST went out.
+     * every time the Live Eye came off, so they run on their own thread. A {@code deadlineMs} runs them
+     * here instead, every wait cut to fit before it: game shutdown only, where a daemon thread would
+     * die before the ENDLIST went out and a bad link must not hang the quit.
      */
-    private void teardown(boolean clean, boolean wait, @Nullable LiveStreamEndedToast.Reason ended) {
+    private void teardown(boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended) {
+        boolean wait = deadlineMs != ASYNC;
         TwitchHandleCapture.close();
         LiveEncoder enc = encoder;
         LiveAudioPump snd = audio;
@@ -444,12 +744,15 @@ public final class LiveStreamController {
         dir = null;
 
         List<LiveTeardown.Step> steps = new ArrayList<>();
-        // Sound first: ffmpeg finishes only once every input has ended, and the encoder gives it 3 s.
+        // Sound first: ffmpeg finishes only once every input has ended.
         if (snd != null) steps.add(new LiveTeardown.Step("audio", snd::close));
-        if (enc != null) steps.add(new LiveTeardown.Step("encoder", enc::close));
-        if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean)));
+        if (enc != null) steps.add(new LiveTeardown.Step("encoder", () -> enc.close(wait
+            ? Math.min(LiveEncoder.SHUTDOWN_GRACE_MS, left(deadlineMs)) : LiveEncoder.ASYNC_GRACE_MS)));
+        if (up != null) steps.add(new LiveTeardown.Step("final upload", () -> up.close(clean, wait
+            ? Math.max(0, left(deadlineMs) - RELAY_STOP_RESERVE_MS) : LiveUploader.CLOSE_BUDGET_MS)));
         String reason = ended == null ? null : ended.relayReason;
-        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> LiveFeedClient.stop(c.token(), reason)));
+        if (clean && c != null) steps.add(new LiveTeardown.Step("relay stop", () -> relayStop(c.token(), reason, wait
+            ? Math.max(RELAY_STOP_MIN_MS, left(deadlineMs)) : RELAY_STOP_TIMEOUT_MS)));
         if (d != null) steps.add(new LiveTeardown.Step("delete session dir", () -> deleteTree(d)));
         // GL buffers belong to the render thread; freed only once the encoder has stopped reading them.
         if (grab != null) steps.add(new LiveTeardown.Step("frame grabber",
@@ -463,6 +766,19 @@ public final class LiveStreamController {
             done.run();
         } else {
             LiveTeardown.runAsync(steps, done);
+        }
+    }
+
+    private static long left(long deadlineMs) {
+        return Math.max(0, deadlineMs - System.currentTimeMillis());
+    }
+
+    /** Tells the relay the stream is over and waits up to {@code timeoutMs} for it to hear. */
+    private static void relayStop(String token, @Nullable String reason, long timeoutMs) {
+        try {
+            LiveFeedClient.stop(token, reason).orTimeout(timeoutMs, TimeUnit.MILLISECONDS).join();
+        } catch (CompletionException e) {
+            LOGGER.warn("[DungeonTrain] live stop: relay did not answer within {} ms", timeoutMs);
         }
     }
 
@@ -497,7 +813,7 @@ public final class LiveStreamController {
 
     /**
      * Stream chat off (always, in Kid mode): read just before chat draws, or skip the chat layer
-     * while a menu is open. Receives cancelled events for the same reason as {@link #onGuiStart}.
+     * while a listed menu is open. Receives cancelled events for the same reason as {@link #onGuiStart}.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public static void onGuiLayer(RenderGuiLayerEvent.Pre event) {
@@ -509,6 +825,15 @@ public final class LiveStreamController {
         }
     }
 
+    /**
+     * An unlisted screen open with chat on: read once the HUD is drawn and before the screen is, so
+     * the chat box, a sign or book being written, or any other menu never reaches viewers.
+     */
+    @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
+    public static void onGuiEnd(RenderGuiEvent.Post event) {
+        if (INSTANCE.capturePoint() == StreamCapture.Point.AFTER_GUI) INSTANCE.grabNow(event.getGuiGraphics());
+    }
+
     private void grabNow(GuiGraphics graphics) {
         if (grabbedThisFrame) return;
         graphics.flush(); // the HUD drawn so far is still batched; put it in the framebuffer first
@@ -517,11 +842,17 @@ public final class LiveStreamController {
     }
 
     private StreamCapture.Point capturePoint() {
+        // Not worn → nothing goes out, from the first frame; the guard's grace only delays ending.
+        // Post mortem the Live Eye has burned: the death screens are what goes out.
         if (state != State.STREAMING) return StreamCapture.Point.SKIP;
+        boolean afterDeath = postMortem.active();
+        if (!afterDeath && !headpieceWorn()) return StreamCapture.Point.SKIP;
         Minecraft mc = Minecraft.getInstance();
         Screen screen = mc.screen;
-        return StreamCapture.point(LiveFeedClientConfig.streamGui(), streamChatShown(),
-            screen != null, screen instanceof ChatScreen, mc.options.hideGui);
+        // The death screens are the show: they go out even with Show GUI to viewers off.
+        boolean deathScreen = afterDeath && screen != null && LivePostMortem.isDeathScreen(screen.getClass().getName());
+        return StreamCapture.point(LiveFeedClientConfig.streamGui() || deathScreen, streamChatShown(),
+            screen != null, StreamableScreens.shown(screen), mc.options.hideGui);
     }
 
     /** The Stream chat switch as it applies to this player — always off in Kid mode. */
@@ -543,13 +874,27 @@ public final class LiveStreamController {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        // Save & quit, disconnect or kick: the pop-up carries over to the title screen.
-        INSTANCE.stop(null, LiveStreamEndedToast.Reason.LEFT);
+        // Save & quit, disconnect or kick: the pop-up carries over to the title screen. Leaving the
+        // death screens (Start again) ends a post-mortem stream: it ended because they died.
+        INSTANCE.leaving = true;
+        try {
+            INSTANCE.stop(null, INSTANCE.postMortem() ? LiveStreamEndedToast.Reason.DIED : LiveStreamEndedToast.Reason.LEFT);
+        } finally {
+            INSTANCE.leaving = false;
+        }
     }
 
     @SubscribeEvent
     public static void onGameShuttingDown(GameShuttingDownEvent event) {
-        INSTANCE.stop(null, true, true, null);
+        long start = System.currentTimeMillis();
+        long deadline = start + SHUTDOWN_BUDGET_MS;
+        boolean live = INSTANCE.state != State.IDLE;
+        INSTANCE.stop(null, true, deadline, null);
+        // A stream that ended just before (quit right after leaving the world) may still be uploading.
+        boolean earlierDone = LiveTeardown.awaitLast(left(deadline));
+        if (live || !earlierDone) {
+            LOGGER.info("[DungeonTrain] live stop on shutdown took {} ms", System.currentTimeMillis() - start);
+        }
     }
 
     // ---- helpers ------------------------------------------------------------------------------
