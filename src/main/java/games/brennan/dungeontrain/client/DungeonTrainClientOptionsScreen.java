@@ -9,6 +9,8 @@ import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
+import games.brennan.dungeontrain.client.twitch.TwitchAccountState;
+import games.brennan.dungeontrain.client.twitch.TwitchLinkClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsClient;
 import games.brennan.dungeontrain.client.credits.DonationPrefsState;
 import games.brennan.dungeontrain.client.display.DisplayScaleOption;
@@ -122,6 +124,8 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
      * survives {@code rebuildWidgets()} — the answer's own rebuild must not ask again.
      */
     private boolean accountRequested = false;
+    /** Same for the Twitch block of the Account tab ({@link TwitchAccountState}). */
+    private boolean twitchRequested = false;
     /**
      * Set when this screen opens a child that can change what it shows (the consent card, the Discord
      * link screen): run when this screen is shown again, then rebuild. Showing a screen again does NOT
@@ -306,6 +310,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         switch (row) {
             case PERFORMANCE_TIPS -> addPerformanceTips(list);
             case DISCORD_ACCOUNT -> addDiscordAccount(list);
+            case TWITCH_ACCOUNT -> addTwitchAccount(list);
             default -> {
                 Setting setting = build(row);
                 list.addSetting(ClientOptionsIcons.of(row), Component.translatable(row.captionKey()),
@@ -445,6 +450,92 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             list.addSetting(ClientOptionsIcons.PING, Component.translatable(pingKey(type)), hint, toggle, null);
         }
         addDonationPrefs(list);
+    }
+
+    /**
+     * The Account tab's Twitch block: the player's linked channel as the relay last reported it
+     * ({@link TwitchAccountState}). Not linked → one row saying what linking does, with a button that
+     * runs {@code /twitch} for them (the link itself is finished in a browser). Linked → the channel,
+     * an Unlink button, and the two opt-ins; "Set my title" greys out while restream is off, since it
+     * only applies to the stream on their channel. Nothing in Kid mode: there is no Twitch there.
+     */
+    private void addTwitchAccount(SettingsRowList list) {
+        if (ClientDisplayConfig.isKidMode()) return;
+        if (!this.twitchRequested) {
+            this.twitchRequested = true;
+            TwitchAccountState.refresh(this::rebuildIfShown);
+        }
+        TwitchLinkClient.Status status = TwitchAccountState.status();
+        if (status == null) {
+            if (TwitchAccountState.phase() == TwitchAccountState.Phase.FAILED) {
+                TwitchLinkClient.Error error = TwitchAccountState.error();
+                if (error == TwitchLinkClient.Error.UNSUPPORTED || error == TwitchLinkClient.Error.DISABLED) {
+                    return; // an older relay, or linking switched off: the tab simply has no Twitch block
+                }
+                Component why = Component.translatable(error == TwitchLinkClient.Error.NO_CONSENT
+                        ? "gui.dungeontrain.credits.link.no_consent" : "gui.dungeontrain.credits.link.failed");
+                list.addWidget(PerformanceTipRow.action(this.font, ROW_W, ROW_H, why,
+                        Component.translatable("gui.dungeontrain.options.account.retry"), () -> {
+                            this.twitchRequested = false;
+                            TwitchAccountState.invalidate();
+                            rebuildIfShown();
+                        }));
+            } else {
+                list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.twitch.checking")));
+            }
+            return;
+        }
+        String shown = status.display().isEmpty() ? status.login() : status.display();
+        Component twitch = !status.linked()
+                ? Component.translatable("gui.dungeontrain.options.account.twitch_none")
+                : status.verified()
+                        ? Component.translatable("gui.dungeontrain.options.account.twitch", shown)
+                        : Component.translatable("gui.dungeontrain.options.account.twitch_unverified", shown);
+        list.addWidget(caption(twitch));
+        if (!status.linked()) {
+            Component why = Component.translatable("gui.dungeontrain.options.account.twitch.not_linked");
+            Button link = Button.builder(Component.translatable("gui.dungeontrain.options.account.twitch.get_code"), b -> {
+                        // The code and page land in chat; the Twitch half happens in a browser, and the tab
+                        // asks the relay again next time it opens.
+                        TwitchAccountState.invalidate();
+                        this.twitchRequested = false;
+                        this.minecraft.setScreen(null);
+                        if (this.minecraft.player != null) this.minecraft.player.connection.sendCommand("twitch");
+                    })
+                    .bounds(0, 0, CONTROL_W, ROW_H).build();
+            list.addSetting(ClientOptionsIcons.TWITCH,
+                    Component.translatable("gui.dungeontrain.options.account.twitch.link_action"), why, link, why);
+            return;
+        }
+        if (TwitchAccountState.toggleFailed()) {
+            list.addWidget(caption(Component.translatable("gui.dungeontrain.options.account.toggle_failed")));
+        }
+        // A typed handle (unverified) has no Twitch grant: the two switches need the real link first.
+        boolean verified = status.verified();
+        Component verifyTip = Component.translatable("gui.dungeontrain.options.account.twitch.verify_tip");
+        if (!verified) list.addWidget(caption(verifyTip));
+        String restreamKey = "gui.dungeontrain.options.account.twitch.restream";
+        CycleButton<Boolean> restream = onOff(Component.translatable(restreamKey), status.restream(), on -> TwitchAccountState.setRestream(on, this::rebuildIfShown));
+        restream.active = verified;
+        list.addSetting(ClientOptionsIcons.TWITCH, Component.translatable(restreamKey),
+                Component.translatable(restreamKey + ".hint"), restream,
+                verified ? Component.translatable(restreamKey + ".tip") : verifyTip);
+        String titleKey = "gui.dungeontrain.options.account.twitch.set_title";
+        CycleButton<Boolean> title = onOff(Component.translatable(titleKey), status.setTitle(),
+                on -> TwitchAccountState.setTitle(on, this::rebuildIfShown));
+        title.active = verified && status.restream();
+        list.addSetting(ClientOptionsIcons.TWITCH, Component.translatable(titleKey),
+                Component.translatable(titleKey + ".hint"), title, verified ? Component.translatable(titleKey + ".tip") : verifyTip);
+        Component unlinkHint = Component.translatable("gui.dungeontrain.options.account.twitch.unlink.hint");
+        Button unlink = Button.builder(Component.translatable("gui.dungeontrain.options.account.twitch.unlink"), b ->
+                        TwitchLinkClient.unlink().whenComplete((r, err) -> this.minecraft.execute(() -> {
+                            TwitchAccountState.invalidate();
+                            this.twitchRequested = false;
+                            rebuildIfShown();
+                        })))
+                .bounds(0, 0, CONTROL_W, ROW_H).build();
+        list.addSetting(ClientOptionsIcons.TWITCH, Component.translatable("gui.dungeontrain.options.account.twitch.unlink"),
+                unlinkHint, unlink, unlinkHint);
     }
 
     /**
@@ -615,6 +706,15 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                         LiveFeedClientConfig::setLiveChat);
                 liveChat.active = !kid;
                 yield Setting.of(liveChat, kid ? key + ".kid_tip" : key + ".tip");
+            }
+
+            // The shout-out reminder at stream start; moot once a Twitch is saved, never shown in Kid mode.
+            case TWITCH_HINT -> {
+                boolean kid = ClientDisplayConfig.isKidMode();
+                CycleButton<Boolean> hint = onOff(Component.translatable(key), !kid && LiveFeedClientConfig.twitchShoutoutHint(),
+                        LiveFeedClientConfig::setTwitchShoutoutHint);
+                hint.active = !kid;
+                yield Setting.of(hint, kid ? key + ".kid_tip" : key + ".tip");
             }
 
             // Broadcast width; the preview re-captures at it on the next frame.
@@ -847,6 +947,7 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // Expanded by addRow() into several rows; there is no single control for them.
             case PERFORMANCE_TIPS -> throw new IllegalStateException("PERFORMANCE_TIPS is expanded, not built");
             case DISCORD_ACCOUNT -> throw new IllegalStateException("DISCORD_ACCOUNT is expanded, not built");
+            case TWITCH_ACCOUNT -> throw new IllegalStateException("TWITCH_ACCOUNT is expanded, not built");
         };
     }
 

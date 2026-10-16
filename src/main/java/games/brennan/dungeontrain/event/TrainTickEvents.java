@@ -862,7 +862,7 @@ public final class TrainTickEvents {
                                 action = contactAction(breakBlocks, collide, playerPlaced, y, hardFloorY, broke, breakBudget);
                                 if (action == ContactAction.BREAK_OFF) {
                                     // The world block stands; the player's block is what gives.
-                                    if (PlayerBlockBreakOff.breakOff(level, playerBuilt, local, cursor.immutable())) broke++;
+                                    if (PlayerBlockBreakOff.breakOff(level, ship, playerBuilt, local, cursor.immutable())) broke++;
                                     continue;
                                 }
                             }

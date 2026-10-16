@@ -10,6 +10,8 @@ import games.brennan.dungeontrain.client.live.audio.StreamSoundPolicy;
 import games.brennan.dungeontrain.narrative.PluralRules;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.client.twitch.TwitchAccountState;
+import games.brennan.dungeontrain.client.twitch.TwitchHandleCapture;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
@@ -28,6 +30,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -389,15 +393,31 @@ public final class LiveStreamController {
             int shown = Math.max(0, viewers);
             announcedLive = true;
             bands.start(shown);
-            say(LiveWatchLinks.line());
+            say(LiveWatchLinks.line(claim == null ? null : claim.twitch()));
             say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.watching", shown)
                 .withStyle(ChatFormatting.GREEN));
+            sayShoutoutHint();
             return;
         }
         if (bands.update(viewers, nowMs)) {
             say(PluralRules.clause(ClientLanguage.selected(), "chat.dungeontrain.live.viewers", viewers)
                 .withStyle(ChatFormatting.GRAY));
         }
+    }
+
+    /**
+     * No Twitch saved for this player (the relay said so at claim): "Drop your Twitch username or URL in
+     * chat for a free shout-out…", with a click to turn the reminder off, and open the chat capture
+     * ({@link TwitchHandleCapture}). Not in Kid mode; not when the switch is off.
+     */
+    private void sayShoutoutHint() {
+        if (ClientDisplayConfig.isKidMode() || !LiveFeedClientConfig.twitchShoutoutHint()) return;
+        if (claim == null || claim.twitch() != null || TwitchAccountState.linkedLogin() != null) return;
+        MutableComponent off = Component.literal("[").append(Component.translatable("chat.dungeontrain.twitch.hint_turn_off")).append("]")
+            .withStyle(s -> s.withColor(ChatFormatting.DARK_GRAY)
+                .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/twitch hint off")));
+        say(Component.translatable("chat.dungeontrain.twitch.shoutout_hint").withStyle(ChatFormatting.GRAY).append(" ").append(off));
+        TwitchHandleCapture.open();
     }
 
     /**
@@ -513,6 +533,7 @@ public final class LiveStreamController {
             var ffmpeg = FfmpegSupport.get();
             if (ffmpeg == null) throw new IOException("ffmpeg vanished");
             StreamNameTag.prepare();
+            TwitchAccountState.refresh(() -> { }); // a saved handle suppresses the shout-out hint
             claim = c;
             dir = d;
             LiveFrameGrabber grab = new LiveFrameGrabber(w, h);
@@ -708,6 +729,7 @@ public final class LiveStreamController {
      */
     private void teardown(boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended) {
         boolean wait = deadlineMs != ASYNC;
+        TwitchHandleCapture.close();
         LiveEncoder enc = encoder;
         LiveAudioPump snd = audio;
         LiveUploader up = uploader;
