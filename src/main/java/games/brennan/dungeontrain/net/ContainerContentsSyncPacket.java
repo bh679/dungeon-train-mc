@@ -46,12 +46,25 @@ public record ContainerContentsSyncPacket(
      * {@code potionId} is the stored vanilla potion id for a potion entry, or {@code ""} when none.
      * {@code scaleWithDistance} is the random-potion placeholder's tier toggle and
      * {@code potionForm} its bottle-form ordinal ({@code PotionForm}).
+     * {@code bookTitle} is the title of a written-book entry's stored book (label only — the
+     * pages stay server-side), or {@code ""} when none.
      */
     public record Entry(String itemId, int count, int weight,
                         boolean randomDurability, int durabilityChance,
                         boolean randomEnchantment, int enchantmentChance,
                         int slotOverride, String potionId, boolean scaleWithDistance,
-                        int potionForm) {
+                        int potionForm, String bookTitle) {
+
+        /** Back-compat: entry with no stored book. */
+        public Entry(String itemId, int count, int weight,
+                     boolean randomDurability, int durabilityChance,
+                     boolean randomEnchantment, int enchantmentChance,
+                     int slotOverride, String potionId, boolean scaleWithDistance,
+                     int potionForm) {
+            this(itemId, count, weight, randomDurability, durabilityChance,
+                randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+                potionForm, "");
+        }
 
         /** Back-compat: entry with no stored potion, default scaling. */
         public Entry(String itemId, int count, int weight,
@@ -64,6 +77,10 @@ public record ContainerContentsSyncPacket(
 
         public boolean hasPotion() {
             return potionId != null && !potionId.isEmpty();
+        }
+
+        public boolean hasBook() {
+            return bookTitle != null && !bookTitle.isEmpty();
         }
     }
 
@@ -111,6 +128,7 @@ public record ContainerContentsSyncPacket(
             buf.writeUtf(e.potionId() == null ? "" : e.potionId(), 256);
             buf.writeBoolean(e.scaleWithDistance());
             buf.writeByte(e.potionForm());
+            buf.writeUtf(e.bookTitle() == null ? "" : e.bookTitle(), 64);
         }
         if (linkedPrefabId == null || linkedPrefabId.isEmpty()) {
             buf.writeBoolean(false);
@@ -149,7 +167,8 @@ public record ContainerContentsSyncPacket(
             String potionId = buf.readUtf(256);
             boolean scale = buf.readBoolean();
             int form = buf.readByte();
-            entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form));
+            String bookTitle = buf.readUtf(64);
+            entries.add(new Entry(id, count, weight, randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, bookTitle));
         }
         String link = buf.readBoolean() ? buf.readUtf(64) : null;
         return new ContainerContentsSyncPacket(key, local, entries, fillMin, fillMax, containerSize, anchor, right, up, link);
