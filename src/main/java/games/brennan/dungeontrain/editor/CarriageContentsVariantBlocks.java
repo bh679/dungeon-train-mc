@@ -448,7 +448,8 @@ public final class CarriageContentsVariantBlocks {
     }
 
     public synchronized int nextFreeLockId() {
-        java.util.Set<Integer> used = new java.util.HashSet<>(lockIds.values());
+        // Includes groups kept alive only by a reference, so a new lock never takes over one.
+        java.util.Set<Integer> used = groupRefs.lockIdsInUse();
         int n = 1;
         while (used.contains(n)) n++;
         return n;
@@ -594,7 +595,7 @@ public final class CarriageContentsVariantBlocks {
             if (!first) sb.append(",");
             int lockId = lockIds.getOrDefault(e.getKey(), 0);
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
-            CarriageVariantBlocks.appendCellJson(sb, e.getValue(), lockId,
+            CarriageVariantBlocks.appendCellJson(sb, groupRefs.refreshed(e.getValue(), lockId), lockId,
                 VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH, spanAt(e.getKey()));
             first = false;
         }

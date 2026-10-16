@@ -26749,8 +26749,29 @@
       "released_at": null
     },
     {
+      "id": "variant-group-refs-outlive-cells",
+      "version": "0.1315.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Block variant groups stay alive while a variant refers to them",
+      "summary": "A group you add as an option in a block variant now keeps existing even after every cell of that group is gone from the template, so the option keeps working instead of going dead.",
+      "highlights": [
+        "A group added as a block variant option keeps its options after its last cell is removed or unlocked",
+        "Middle-click a group row in the block variant menu to put that group in your hotbar",
+        "Adding a group you copied from another template works even if this template has no cells in it"
+      ],
+      "pr": 2058,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "streamer-chat-command",
-      "version": "0.1314.0",
+      "version": "0.1315.0",
       "type": "feat",
       "tags": [
         "feature",
