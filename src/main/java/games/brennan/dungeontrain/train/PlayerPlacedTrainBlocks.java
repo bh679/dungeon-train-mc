@@ -2,8 +2,11 @@ package games.brennan.dungeontrain.train;
 
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import games.brennan.dungeontrain.ship.sable.CarriagePlotResolver;
+import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 
 import java.util.ArrayList;
@@ -33,7 +36,10 @@ import java.util.UUID;
  * its mark. Entries are dropped when their sub-level is deleted ({@code SableShipyard.delete}) and
  * everything is cleared at server stop, so the map cannot grow without bound.
  *
- * <p>What sets a mark: a player placing a block ({@code PlayerPlacedTrainBlockEvents}). What clears
+ * <p>What sets a mark: a player placing a block ({@code PlayerPlacedTrainBlockEvents}), and bamboo
+ * growing on a carriage ({@code BambooStalkGrowthMixin}, {@code BambooSaplingGrowthMixin}) — growth is
+ * not part of the train's build, so a stalk that grows out past the carriage breaks off like a
+ * passenger's block instead of ploughing terrain. What clears
  * one: any change of block <em>type</em> at that cell, whatever caused it
  * ({@code SableBlockChangeGuardMixin}). A property flip — a door opening, a lamp lighting — keeps
  * the mark. Server thread only.</p>
@@ -49,6 +55,24 @@ public final class PlayerPlacedTrainBlocks {
     /** Record that a player placed the block at plot position {@code plotPos} of {@code subLevel}. */
     public static void mark(ServerSubLevel subLevel, BlockPos plotPos) {
         mark(subLevel.getUniqueId(), relKey(subLevel.getPlot(), plotPos));
+    }
+
+    /**
+     * Mark plot position {@code plotPos} if it lies on a Dungeon Train carriage; anything else (an
+     * ordinary world cell, another mod's sub-level) is ignored. Returns whether it was marked.
+     */
+    public static boolean markIfCarriage(ServerLevel level, BlockPos plotPos) {
+        ServerSubLevel subLevel = CarriagePlotResolver.subLevelAt(level, new ChunkPos(plotPos));
+        if (subLevel == null || !SableManagedShip.isDungeonTrainManaged(subLevel)) return false;
+        mark(subLevel, plotPos.immutable());
+        return true;
+    }
+
+    /** Whether plot position {@code plotPos} is on a Dungeon Train carriage and marked as a player's. */
+    public static boolean isPlayerPlaced(ServerLevel level, BlockPos plotPos) {
+        ServerSubLevel subLevel = CarriagePlotResolver.subLevelAt(level, new ChunkPos(plotPos));
+        return subLevel != null && SableManagedShip.isDungeonTrainManaged(subLevel)
+            && isPlayerPlaced(subLevel, plotPos);
     }
 
     /** Whether the block at plot position {@code plotPos} of {@code subLevel} was placed by a player. */

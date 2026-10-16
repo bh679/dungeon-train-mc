@@ -15841,6 +15841,189 @@
       ]
     }
   },
+  "gui.dungeontrain.options.account.twitch": {
+    "1": {
+      "label": "the name of the linked Twitch channel",
+      "examples": [
+        "BrennanHattonGames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.code": {
+    "1": {
+      "label": "the 6-character link code, shown as a clickable code",
+      "examples": [
+        "K7QX2M"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.relink_code": {
+    "1": {
+      "label": "the 6-character link code, shown as a clickable code",
+      "examples": [
+        "K7QX2M"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.linked_now": {
+    "1": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.linked": {
+    "1": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.restream_on": {
+    "1": {
+      "label": "the /twitch sub-command to run, shown as a clickable command",
+      "examples": [
+        "/twitch restream off",
+        "/twitch unlink"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.restream_off": {
+    "1": {
+      "label": "the /twitch sub-command to run, shown as a clickable command",
+      "examples": [
+        "/twitch restream off",
+        "/twitch unlink"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.title_on": {
+    "1": {
+      "label": "the /twitch sub-command to run, shown as a clickable command",
+      "examples": [
+        "/twitch restream off",
+        "/twitch unlink"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.title_off": {
+    "1": {
+      "label": "the /twitch sub-command to run, shown as a clickable command",
+      "examples": [
+        "/twitch restream off",
+        "/twitch unlink"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.options_hint": {
+    "1": {
+      "label": "the /twitch sub-command to run, shown as a clickable command",
+      "examples": [
+        "/twitch restream off",
+        "/twitch unlink"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.not_linked": {
+    "1": {
+      "label": "the /twitch command, shown as a clickable command",
+      "examples": [
+        "/twitch"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watch_links_own": {
+    "1": {
+      "label": "the word Twitch, a link to the Dungeon Train Twitch channel",
+      "examples": [
+        "Twitch"
+      ]
+    },
+    "2": {
+      "label": "the words DungeonTrain TV, a link to the website's live page",
+      "examples": [
+        "DungeonTrain TV"
+      ]
+    },
+    "3": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.live.watch_link_own": {
+    "1": {
+      "label": "the words DungeonTrain TV, a link to the website's live page",
+      "examples": [
+        "DungeonTrain TV"
+      ]
+    },
+    "2": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.save_offer": {
+    "1": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.saved": {
+    "1": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.saved_verify": {
+    "1": {
+      "label": "the /twitch command, shown as a clickable command",
+      "examples": [
+        "/twitch"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.linked_unverified": {
+    "1": {
+      "label": "the streamer's Twitch channel, shown as a clickable link",
+      "examples": [
+        "twitch.tv/brennanhattongames"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.unknown_channel": {
+    "1": {
+      "label": "the Twitch username the player typed",
+      "examples": [
+        "steve_streams"
+      ]
+    }
+  },
+  "chat.dungeontrain.twitch.bad_login": {
+    "1": {
+      "label": "what the player typed, as typed",
+      "examples": [
+        "steve streams!"
+      ]
+    }
+  },
+  "gui.dungeontrain.options.account.twitch_unverified": {
+    "1": {
+      "label": "the name of the saved Twitch channel",
+      "examples": [
+        "SteveStreams"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.commit.title": {
     "1": {
       "label": "the staged build's Workbench id",

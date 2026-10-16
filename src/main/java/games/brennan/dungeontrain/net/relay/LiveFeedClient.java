@@ -69,8 +69,18 @@ public final class LiveFeedClient {
     /** One signed upload: URL plus the exact headers to send with it. */
     public record SignedPut(String url, Map<String, String> headers, long expiresAt) {}
 
-    /** What a claim gives the streamer. */
-    public record Claim(String session, String token, String playlistUrl, @Nullable String prevName) {}
+    /**
+     * The streamer's own linked Twitch channel, as the relay knows it at claim time (twitch-links.js):
+     * the handle, and whether they opted in to the restream onto it and to having its title set.
+     */
+    public record Twitch(String login, String url, boolean restream, boolean setTitle) {}
+
+    /** What a claim gives the streamer. {@code twitch} is null when they have not linked a channel. */
+    public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch) {
+        public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
+            this(session, token, playlistUrl, prevName, null);
+        }
+    }
 
     /** Where a chat line was typed: the relay's {@code source} field. */
     public enum Source {
@@ -227,8 +237,13 @@ public final class LiveFeedClient {
      */
     public record Status(boolean live, @Nullable String session, @Nullable String playlistUrl,
                          @Nullable String streamer, int viewers, int cap, boolean slot,
-                         @Nullable String replayUrl, boolean ended, List<Variant> variants) {
-        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of());
+                         @Nullable String replayUrl, boolean ended, List<Variant> variants, @Nullable String twitchLogin) {
+        public static final Status OFFLINE = new Status(false, null, null, null, 0, 0, true, null, false, List.of(), null);
+
+        public Status(boolean live, @Nullable String session, @Nullable String playlistUrl, @Nullable String streamer, int viewers,
+                      int cap, boolean slot, @Nullable String replayUrl, boolean ended, List<Variant> variants) {
+            this(live, session, playlistUrl, streamer, viewers, cap, slot, replayUrl, ended, variants, null);
+        }
 
         /**
          * The playlist to decode at {@code decodeWidth}: the smallest variant at least that wide, else
@@ -318,7 +333,19 @@ public final class LiveFeedClient {
         String session = r.str("session"), token = r.str("token"), url = r.str("playlistUrl");
         if (session.isEmpty() || token.isEmpty() || url.isEmpty()) return null;
         String prev = r.str("prevName");
-        return new Claim(session, token, url, prev.isEmpty() ? null : prev);
+        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()));
+    }
+
+    /** The {@code twitch} object of a claim or status, or null when absent/malformed. The login is checked against Twitch's own alphabet. */
+    @Nullable
+    static Twitch parseTwitch(@Nullable JsonObject body) {
+        if (body == null || !body.has("twitch") || !body.get("twitch").isJsonObject()) return null;
+        JsonObject t = body.getAsJsonObject("twitch");
+        String login = t.has("login") && t.get("login").isJsonPrimitive() ? t.get("login").getAsString().toLowerCase() : "";
+        if (!login.matches("[a-z0-9_]{3,25}")) return null;
+        return new Twitch(login, "https://twitch.tv/" + login,
+            t.has("restream") && t.get("restream").isJsonPrimitive() && t.get("restream").getAsBoolean(),
+            t.has("setTitle") && t.get("setTitle").isJsonPrimitive() && t.get("setTitle").getAsBoolean());
     }
 
     public static CompletableFuture<Result> presign(String token, List<String> files) {
@@ -642,8 +669,9 @@ public final class LiveFeedClient {
         // Ended: the streamer stopped and the relay keeps the stream on air while viewers play out its
         // tail; replayUrl is where a TV goes once it has reached the end.
         boolean ended = b.has("ended") && b.get("ended").getAsBoolean();
+        Twitch tw = parseTwitch(b);
         return new Status(true, r.str("session"), playlistUrl, r.str("streamer"), viewers, cap, slot,
-            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl));
+            ended ? replayUrl : null, ended, parseVariants(b, playlistUrl), tw == null ? null : tw.login());
     }
 
     /** PUT a local file to a signed URL with exactly the signed headers. */
