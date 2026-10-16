@@ -24,7 +24,7 @@
   "ender": 1,
   "enemies": 8,
   "enemies_group": {
-    "weight": 5,
+    "weight": 8,
     "minLevel": 1,
     "optIn": true
   },

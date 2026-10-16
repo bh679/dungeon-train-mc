@@ -22,7 +22,16 @@
     },
     {
       "id": "basitan",
-      "weight": 1
+      "weight": 1,
+      "minLevel": 1,
+      "phases": [
+        "NETHER",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FLOATING",
+        "FAR_LANDS"
+      ]
     }
   ]
 }
