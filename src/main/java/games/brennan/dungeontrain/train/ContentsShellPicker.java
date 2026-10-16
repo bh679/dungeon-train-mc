@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.ToIntFunction;
 
 /**
  * Which carriage a contents template is shown standing in — its editor plot and its Test the
@@ -32,12 +33,20 @@ public final class ContentsShellPicker {
      * consults them at.
      */
     public static Optional<CarriageVariant> pick(String contentsId, long seed) {
+        return drawByWeight(eligible(contentsId), weightOf(), seed);
+    }
+
+    /**
+     * Every carriage that would carry {@code contentsId} on the train today, in registry order: its
+     * size, a weight above zero, real blocks, not a portal part or flatbed, and the contents enabled
+     * on its allow-list.
+     */
+    public static List<CarriageVariant> eligible(String contentsId) {
         String topId = topParentOf(contentsId);
         // A shell only takes contents of its own size, so only shells of this contents' size qualify.
         ContentsSize size = CarriageContentsPlacer.sizeOf(topId);
         CarriageWeights weights = CarriageWeights.current();
         List<CarriageVariant> eligible = new ArrayList<>();
-        int total = 0;
         for (CarriageVariant v : CarriageVariantRegistry.allVariants()) {
             int weight = weights.weightFor(v.id());
             if (weight <= 0 || isPortalPart(v) || isFlatbed(v)) continue;
@@ -49,17 +58,43 @@ public final class ContentsShellPicker {
             boolean allowed = games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.isScratchId(topId)
                 || CarriageVariantContentsAllowStore.get(v)
                 .orElse(CarriageContentsAllowList.EMPTY).isAllowed(topId);
-            if (!allowed) continue;
-            eligible.add(v);
-            total += weight;
+            if (allowed) eligible.add(v);
         }
-        if (eligible.isEmpty()) return Optional.empty();
+        return eligible;
+    }
+
+    /**
+     * Another carriage for {@code contentsId}: the same weighted draw with {@code exclude} taken out,
+     * so a reroll always changes what the author sees. Empty when nothing else would carry it.
+     */
+    public static Optional<CarriageVariant> pickOther(String contentsId, CarriageVariant exclude, long seed) {
+        return drawExcluding(eligible(contentsId), exclude, weightOf(), seed);
+    }
+
+    private static ToIntFunction<CarriageVariant> weightOf() {
+        CarriageWeights weights = CarriageWeights.current();
+        return v -> weights.weightFor(v.id());
+    }
+
+    /** {@link #drawByWeight} over {@code candidates} without {@code exclude}. */
+    static <T> Optional<T> drawExcluding(List<T> candidates, T exclude, ToIntFunction<T> weight, long seed) {
+        List<T> others = new ArrayList<>(candidates);
+        others.remove(exclude);
+        return drawByWeight(others, weight, seed);
+    }
+
+    /** One of {@code candidates}, each in proportion to its weight; empty when there are none. */
+    static <T> Optional<T> drawByWeight(List<T> candidates, ToIntFunction<T> weight, long seed) {
+        if (candidates.isEmpty()) return Optional.empty();
+        int total = 0;
+        for (T v : candidates) total += Math.max(0, weight.applyAsInt(v));
+        if (total <= 0) return Optional.of(candidates.get(0));
         int roll = new Random(seed).nextInt(total);
-        for (CarriageVariant v : eligible) {
-            roll -= weights.weightFor(v.id());
+        for (T v : candidates) {
+            roll -= Math.max(0, weight.applyAsInt(v));
             if (roll < 0) return Optional.of(v);
         }
-        return Optional.of(eligible.get(eligible.size() - 1));
+        return Optional.of(candidates.get(candidates.size() - 1));
     }
 
     /**
