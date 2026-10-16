@@ -62,15 +62,19 @@ public final class DifficultyChangeConfirmClient {
      * server, that is only the remembered new-run difficulty. In a singleplayer world on another
      * difficulty it asks the server to change, so the same prompt (with the server's knowledge of the
      * loadout locker) decides what happens to this run; the row only moves once the player answers.
+     *
+     * @return true when the change went to the server's prompt — the caller must re-read the row
+     *         when it is shown again, since the answer (or Cancel) decides what it should say
      */
-    public static void onOptionsRowChanged(Difficulty to) {
+    public static boolean onOptionsRowChanged(Difficulty to) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.hasSingleplayerServer() && mc.level != null && mc.getConnection() != null
                 && mc.level.getDifficulty() != to && !mc.level.getLevelData().isHardcore()) {
             mc.getConnection().send(new ServerboundChangeDifficultyPacket(to));
-            return;
+            return true;
         }
         ClientDisplayConfig.setNewRunDifficulty(to);
+        return false;
     }
 
     /** "Save for next run": nothing changes now; the next world starts on {@code to}. */

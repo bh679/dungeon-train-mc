@@ -546,14 +546,18 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             // The difficulty new runs start on, remembered locally. Out of a world (or on a remote
             // server) a change is just remembered; in a singleplayer world on another difficulty it goes
             // through the server's difficulty prompt — save for next run, or abandon and restart now —
-            // and the row shows the answer when the prompt returns here (the screen re-inits).
+            // and the row shows the answer when the prompt returns here. Showing this screen again does
+            // not re-run init() (see onReturn), so arm a rebuild: Cancel must snap the row back.
             case DIFFICULTY -> new Setting(
                     CycleButton.<Difficulty>builder(Difficulty::getDisplayName)
                             .withValues(Difficulty.values())
                             .withInitialValue(ClientDisplayConfig.getNewRunDifficulty())
                             .displayOnlyValue()
-                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key),
-                                    (btn, difficulty) -> DifficultyChangeConfirmClient.onOptionsRowChanged(difficulty)),
+                            .create(0, 0, CONTROL_W, ROW_H, Component.translatable(key), (btn, difficulty) -> {
+                                if (DifficultyChangeConfirmClient.onOptionsRowChanged(difficulty)) {
+                                    this.onReturn = () -> {};
+                                }
+                            }),
                     Component.translatable(key + ".tip"));
 
             // Adult / Kid content mode — the second home for the choice made once on the first-launch
