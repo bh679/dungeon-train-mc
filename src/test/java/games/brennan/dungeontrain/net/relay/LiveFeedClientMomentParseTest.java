@@ -6,13 +6,13 @@ import games.brennan.dungeontrain.client.live.LiveChatRules;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.MomentKind;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -47,18 +47,12 @@ class LiveFeedClientMomentParseTest {
     }
 
     @Test
-    @DisplayName("a moment line reads 'Name <translated moment>', a book's first lines on hover")
-    void rendering() {
-        ChatLine adv = new ChatLine(1, 0, "Alice", "aa", "x", LiveFeedClient.Source.GAME, null, LiveFeedClient.Via.EYE, null,
+    @DisplayName("a moment line is never shown in game — the original vanilla message is the only one")
+    void momentsStayOutOfGameChat() {
+        ChatLine moment = new ChatLine(1, 0, "Alice", "aa", "x", LiveFeedClient.Source.GAME, null, LiveFeedClient.Via.EYE, null,
             new LiveFeedClient.Moment(MomentKind.ADVANCEMENT, "Stone Age", ""));
-        assertEquals("chat.dungeontrain.live_chat.prefix  Alice chat.dungeontrain.live_moment.advancement",
-            LiveChatRules.line(adv).getString());
-        ChatLine book = new ChatLine(2, 0, "Alice", "aa", "x", LiveFeedClient.Source.GAME, null, LiveFeedClient.Via.EYE, null,
-            new LiveFeedClient.Moment(MomentKind.BOOK, "Diary", "Day one"));
-        Component body = LiveChatRules.momentBody(book.moment());
-        HoverEvent hover = body.getStyle().getHoverEvent();
-        assertNotNull(hover);
-        assertEquals("Day one", hover.getValue(HoverEvent.Action.SHOW_TEXT).getString());
-        assertTrue(LiveChatRules.momentBody(adv.moment()).getStyle().getHoverEvent() == null);
+        ChatLine typed = new ChatLine(2, 0, "Alice", "aa", "hi", LiveFeedClient.Source.GAME, null, LiveFeedClient.Via.EYE, null);
+        assertFalse(LiveChatRules.shouldShow(moment, null, Set.of(), Set.of()));
+        assertTrue(LiveChatRules.shouldShow(typed, null, Set.of(), Set.of()));
     }
 }

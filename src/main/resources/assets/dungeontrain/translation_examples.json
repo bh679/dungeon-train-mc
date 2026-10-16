@@ -15641,24 +15641,6 @@
       ]
     }
   },
-  "chat.dungeontrain.live_moment.advancement": {
-    "1": {
-      "label": "the advancement's title, in the streamer's game language",
-      "examples": [
-        "Stone Age",
-        "Cross-Country"
-      ]
-    }
-  },
-  "chat.dungeontrain.live_moment.book": {
-    "1": {
-      "label": "the title the streamer gave the book they signed",
-      "examples": [
-        "My Diary",
-        "Day 3 on the train"
-      ]
-    }
-  },
   "chat.dungeontrain.live_gift.prompt": {
     "1": {
       "label": "the TV viewer's Minecraft player name",
