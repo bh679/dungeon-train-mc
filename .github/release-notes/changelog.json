@@ -26593,6 +26593,27 @@
       "released": true,
       "released_in": "v0.1310.0",
       "released_at": "2026-10-16T06:47:44Z"
+    },
+    {
+      "id": "dimensional-carriage-chests-reroll",
+      "version": "0.1311.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train",
+        "loot"
+      ],
+      "title": "Dimensional carriage chests roll their own loot",
+      "summary": "Chests built into a dimensional carriage now fill from the loot their builder set up, so each one you find can hold something different instead of the same items every time. In the editor, Reseed on Test the Carriage now re-rolls those chests too.",
+      "highlights": [
+        "Builders: Reseed (Cmd/Ctrl+R) shows a fresh roll of every chest that has a loot list"
+      ],
+      "pr": 2050,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
