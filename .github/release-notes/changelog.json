@@ -26538,7 +26538,7 @@
     },
     {
       "id": "bed-death-message-name",
-      "version": "0.1311.0",
+      "version": "0.1310.0",
       "type": "fix",
       "tags": [
         "fix",
