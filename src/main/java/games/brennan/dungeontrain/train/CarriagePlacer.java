@@ -494,8 +494,10 @@ public final class CarriagePlacer {
                                     boolean flatbedAtBack, boolean flatbedAtFront) {
         int anchor = GateContext.WORLDX_FROM_PIDX;
         // Placeholders resolve for the stage the editor is previewing, so the test copy matches the
-        // preview (null only when no stages exist ⇒ the default palette).
-        String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
+        // preview (null only when no stages exist ⇒ the default palette) — unless the author has
+        // picked a stage, level or band on the test settings rows.
+        String stage = games.brennan.dungeontrain.template.TestGate.stageInScopeOr(
+            games.brennan.dungeontrain.editor.EditorStageSelection.effective());
         CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
             // A portal corridor is built the way the train builds one — its own geometry, doors and
             // rolled variants, keyed like a pair — with the requested contents laid in after, rather

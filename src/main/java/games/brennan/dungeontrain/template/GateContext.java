@@ -50,7 +50,7 @@ public record GateContext(int level, TrainPhase phase) {
     public static GateContext atWorldX(ServerLevel level, int worldX, int carriageLength) {
         ServerLevel overworld = level.getServer().overworld();
         int diffLevel = DifficultyProgression.levelAtWorldX(worldX, carriageLength);
-        return new GateContext(diffLevel, TrainPhase.phaseAt(overworld, worldX));
+        return new GateContext(diffLevel, TestGate.phaseOr(TrainPhase.phaseAt(overworld, worldX)));
     }
 
     /**
@@ -119,7 +119,7 @@ public record GateContext(int level, TrainPhase phase) {
         int diffLevel = DifficultyProgression.positionTier(groupAnchorPIdx(carriagePIdx, groupSize));
         TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(),
             groupRealStartX(carriagePIdx, groupSize, carriageLength));
-        return new GateContext(diffLevel, phase);
+        return new GateContext(diffLevel, TestGate.phaseOr(phase));
     }
 
     /**
@@ -154,6 +154,6 @@ public record GateContext(int level, TrainPhase phase) {
         int groupSize = DungeonTrainWorldData.get(level.getServer().overworld()).getGenerationConfig().groupSize();
         int diffLevel = DifficultyProgression.positionTier(groupAnchorPIdx(carriagePIdx, groupSize));
         TrainPhase phase = TrainPhase.phaseAt(level.getServer().overworld(), groupAnchorWorldX);
-        return new GateContext(diffLevel, phase);
+        return new GateContext(diffLevel, TestGate.phaseOr(phase));
     }
 }

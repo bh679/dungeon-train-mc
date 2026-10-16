@@ -1081,7 +1081,13 @@ public final class PortalCarriageBuilder {
      * different blocks in a copy than in the room it copies.</p>
      */
     public static String stageIdFor(ServerLevel level, int pairKey, CarriageDims dims) {
-        if (PortalTestSession.isTestStamp(pairKey)) return null;
+        if (PortalTestSession.isTestStamp(pairKey)) {
+            // The default palette, unless the author picked a stage, level or band for the test.
+            // Outside a command scope (the tiler growing the room on later ticks) the settings the
+            // test was stamped with stand in.
+            games.brennan.dungeontrain.template.TestGate gate = games.brennan.dungeontrain.template.TestGate.current();
+            return (gate != null ? gate : games.brennan.dungeontrain.editor.TestOverrides.portalStamp()).stageOr(null);
+        }
         Optional<String> recorded = PortalRegistry.get(level).stampedStageOf(pairKey);
         if (recorded.isPresent()) return recorded.get().isEmpty() ? null : recorded.get();
         return StageResolver.stageIdFor(GateContext.forCarriage(level, pairKey, dims.length()));
