@@ -184,6 +184,7 @@
     "client.SoundOptionsScreenTrainVolumeMixin",
     "client.CameraCinematicMixin",
     "client.GameRendererSnapshotMixin",
+    "client.GameRendererToastsMixin",
     "client.LevelRendererVoidSkyMixin",
     "client.GameRendererCrossfadeMixin",
     "client.LevelRendererSkyboxDepthMixin",

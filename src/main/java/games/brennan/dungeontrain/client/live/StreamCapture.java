@@ -19,7 +19,8 @@ package games.brennan.dungeontrain.client.live;
  *   <li>A listed screen (inventories, the pause menu, advancements, books, photos) with chat off: the finished
  *       frame, with the chat layer skipped that frame — those screens dim the HUD rather than
  *       cover it, so the chat lines would show through.</li>
- *   <li>Chat off: just before the chat layer — the HUD, but no chat lines or tab list.</li>
+ *   <li>Chat off: just before the chat layer — the HUD and the popups (drawn early for it,
+ *       {@link EarlyToasts}), but no chat lines or tab list.</li>
  *   <li>Otherwise: the finished frame.</li>
  * </ul>
  *
