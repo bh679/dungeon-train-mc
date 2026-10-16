@@ -86,6 +86,10 @@
       "name": "Firefly_on_ytb"
     }
   },
+  "nagaspawn": {
+    "weight": 1,
+    "name": "skullspawn"
+  },
   "narrative": 3,
   "new": {
     "weight": 1,
