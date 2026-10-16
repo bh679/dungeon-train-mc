@@ -76,6 +76,7 @@
     "FastPaintingStampSurviveMixin",
     "ForcedConnectShapeMixin",
     "ObserverBlockStampMixin",
+    "BlockUpdateOrDestroyStampMixin",
     "FlowingFluidUpsideDownMixin",
     "FallingBlockUpsideDownMixin",
     "BrushableBlockUpsideDownMixin",
