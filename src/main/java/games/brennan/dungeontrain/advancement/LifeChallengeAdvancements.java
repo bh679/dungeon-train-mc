@@ -162,6 +162,7 @@ public final class LifeChallengeAdvancements {
         player.setData(ModDataAttachments.ATE_NON_MELON_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.WORE_ARMOR_THIS_LIFE.get(), Boolean.FALSE);
         player.setData(ModDataAttachments.ALL_AT_ONCE_LOST_THIS_LIFE.get(), Boolean.FALSE);
+        player.setData(ModDataAttachments.CHALLENGE_MELON_FLATBEDS_THIS_LIFE.get(), List.of());
     }
 
     private static void grant(ServerPlayer player, ResourceLocation id) {

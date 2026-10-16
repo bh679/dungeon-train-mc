@@ -316,6 +316,18 @@ public final class ModDataAttachments {
         );
 
     /**
+     * Per-life list of flatbeds (keyed by the anchor pIdx of the group after each) that have already
+     * left this player a challenge melon. See {@code train.ChallengeMelonSpawner}. Cleared on respawn by
+     * {@code LifeChallengeAdvancements#resetForNewLife}; serialized only while non-empty.
+     */
+    public static final Supplier<AttachmentType<List<Integer>>> CHALLENGE_MELON_FLATBEDS_THIS_LIFE =
+        TYPES.register("challenge_melon_flatbeds_this_life",
+            () -> AttachmentType.<List<Integer>>builder(() -> List.of())
+                .serialize(Codec.INT.listOf(), list -> !list.isEmpty())
+                .build()
+        );
+
+    /**
      * Per-life flag: has this player worn armor (an elytra aside) this life? Rules out the naked challenges. See
      * {@link games.brennan.dungeontrain.advancement.LifeChallengeAdvancements}. Same shape as
      * {@link #OPENED_ENDER_CHEST_THIS_LIFE}: serialized, no {@code copyOnDeath}.
