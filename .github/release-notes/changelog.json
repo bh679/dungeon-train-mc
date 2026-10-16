@@ -26418,7 +26418,8 @@
       "released_at": null,
       "major": true,
       "notable": true,
-      "description": "Dungeon Train TV now knows who you are on Twitch.\n\nType `/twitch` in game, connect your Twitch account on the page it opens, and every time you wear the Live Eye the official Dungeon Train stream names you: your channel goes in the stream title, the chat bot shouts you out, the website's Live page and the Discord go-live post link to you, and your name tag on the stream carries your channel.\n\nStreamers can go one step further. Turn on **Also stream to my channel** and your ride is pushed to your own Twitch channel at the same time, with an optional title and category set for you. Both switches live on the new Account tab, next to Discord, and `/twitch unlink` takes it all back at any time. Your stream key is never stored.\n\nNo account? When you go live without a Twitch saved, the game asks you to drop your Twitch in chat for a shout-out. One click saves it. The reminder can be turned off in Stream settings and never shows in Kid mode."
+      "description": "Dungeon Train TV can now connect to your Twitch.\n\nLet the stream give your channel a shout-out whenever you hold the Live Eye! You get a shout-out in chat, and your channel is featured in the livestream name and pill for all viewers to see.\n\nStreamers can go one step further. Turn on **Also stream to my channel** and your ride is pushed to your own Twitch channel at the same time, with an optional title and category set for you. Both switches live on the new Account tab, next to Discord, and /twitch unlink takes it all back at any time. Your stream key is never stored.",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/twitch-integration.jpg"
     },
     {
       "id": "grown-bamboo-breaks-off",
