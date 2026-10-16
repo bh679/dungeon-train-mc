@@ -26611,9 +26611,9 @@
       ],
       "pr": 2050,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1311.0",
+      "released_at": "2026-10-16T09:27:18Z"
     },
     {
       "id": "difficulty-next-run-or-restart",
@@ -26633,9 +26633,9 @@
       ],
       "pr": 2051,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1311.0",
+      "released_at": "2026-10-16T09:27:18Z"
     },
     {
       "id": "challenge-melon-flatbeds",
@@ -26649,9 +26649,9 @@
       "highlights": [],
       "pr": 2052,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1311.0",
+      "released_at": "2026-10-16T09:27:18Z"
     },
     {
       "id": "live-eye-moments-in-live-chat",
