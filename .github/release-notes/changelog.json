@@ -26730,6 +26730,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-one-per-player",
+      "version": "0.1314.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "One Live Eye per player",
+      "summary": "You can now carry only one Live Eye at a time, and that includes any in your ender chest or packed in a shulker box. Once you have one, chests show a TV where a Live Eye would be, a second one on the ground stays put for someone else, and any extra that slips into your inventory turns into a TV.",
+      "highlights": [],
+      "pr": 2056,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

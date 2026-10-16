@@ -707,6 +707,7 @@
   "chat.dungeontrain.live.watching.other": "%s persone stanno guardando",
   "chat.dungeontrain.live.viewers.one": "Hai %s spettatore",
   "chat.dungeontrain.live.viewers.other": "Hai %s spettatori",
+  "chat.dungeontrain.live.one_eye": "Puoi portare una sola videocamera da trasmissione. Quella in più è diventata una TV.",
   "chat.dungeontrain.live.free_play": "Le partite in Gioco Libero non possono andare in diretta.",
   "chat.dungeontrain.live.took_over": "%s è stato interrotto.",
   "chat.dungeontrain.live.preparing": "Preparazione dell'attrezzatura di trasmissione...",

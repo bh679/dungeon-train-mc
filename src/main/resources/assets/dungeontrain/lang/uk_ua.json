@@ -795,6 +795,7 @@
   "chat.dungeontrain.live.viewers.one": "У тебе %s глядач",
   "chat.dungeontrain.live.viewers.few": "У тебе %s глядачі",
   "chat.dungeontrain.live.viewers.many": "У тебе %s глядачів",
+  "chat.dungeontrain.live.one_eye": "Можна мати лише одну трансляційну відеокамеру. Зайва перетворилася на телевізор.",
   "chat.dungeontrain.live.free_play": "У вільній грі не можна вийти в прямий ефір.",
   "chat.dungeontrain.live.took_over": "Трансляцію %s перервано.",
   "chat.dungeontrain.live.preparing": "Підготовка обладнання для трансляції...",

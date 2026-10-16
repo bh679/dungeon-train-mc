@@ -19,6 +19,12 @@ import net.minecraft.world.item.component.CustomData;
 public final class LiveHeadpiecePendingTag {
 
     public static final String NBT_PENDING = "dt_live_headpiece_pending";
+    /**
+     * A loot Live Eye that resolved to a real one but no player has taken yet. It is re-checked each
+     * time a player sees it, so it turns into a TV for anyone who already holds a Live Eye. Cleared
+     * once it reaches an inventory; eyes a player stores themselves never carry it.
+     */
+    public static final String NBT_UNCLAIMED = "dt_live_eye_unclaimed";
 
     private LiveHeadpiecePendingTag() {}
 
@@ -41,5 +47,26 @@ public final class LiveHeadpiecePendingTag {
     public static void clear(ItemStack stack) {
         if (stack == null || stack.isEmpty()) return;
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.remove(NBT_PENDING));
+    }
+
+    /** Flag a freshly resolved loot Live Eye as not yet taken by anyone. */
+    public static void markUnclaimed(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putBoolean(NBT_UNCLAIMED, true));
+    }
+
+    /** True when {@code stack} is a loot Live Eye no player has taken yet. Safe on any stack. */
+    public static boolean isUnclaimed(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return false;
+        CustomData cd = stack.get(DataComponents.CUSTOM_DATA);
+        if (cd == null || cd.isEmpty()) return false;
+        CompoundTag tag = cd.copyTag();
+        return tag.contains(NBT_UNCLAIMED, Tag.TAG_BYTE) && tag.getBoolean(NBT_UNCLAIMED);
+    }
+
+    /** A player took it: drop the marker. No-op on empty/null stacks. */
+    public static void clearUnclaimed(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) return;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.remove(NBT_UNCLAIMED));
     }
 }

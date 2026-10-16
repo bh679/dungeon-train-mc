@@ -675,6 +675,7 @@
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
   "chat.dungeontrain.live.watching.other": "มีผู้ชม %s คน",
   "chat.dungeontrain.live.viewers.other": "คุณมีผู้ชม %s คน",
+  "chat.dungeontrain.live.one_eye": "พกกล้องวิดีโอถ่ายทอดได้แค่ตัวเดียว ตัวที่เกินกลายเป็นทีวีแล้ว",
   "chat.dungeontrain.live.free_play": "การเล่นแบบเล่นอิสระไม่สามารถถ่ายทอดสดได้",
   "chat.dungeontrain.live.took_over": "%s ถูกตัดสัญญาณแล้ว",
   "chat.dungeontrain.live.preparing": "กำลังเตรียมอุปกรณ์ถ่ายทอด...",

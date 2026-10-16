@@ -675,6 +675,7 @@
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
   "chat.dungeontrain.live.watching.other": "%s人が視聴中",
   "chat.dungeontrain.live.viewers.other": "視聴者は%s人",
+  "chat.dungeontrain.live.one_eye": "放送カムコーダーは1つしか持てません。余分なものはテレビになりました。",
   "chat.dungeontrain.live.free_play": "フリープレイのランではライブ配信できません。",
   "chat.dungeontrain.live.took_over": "%s の放送は打ち切られた。",
   "chat.dungeontrain.live.preparing": "放送機材を準備中...",

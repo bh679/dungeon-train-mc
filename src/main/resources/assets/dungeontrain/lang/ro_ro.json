@@ -795,6 +795,7 @@
   "chat.dungeontrain.live.viewers.one": "Ai %s spectator",
   "chat.dungeontrain.live.viewers.few": "Ai %s spectatori",
   "chat.dungeontrain.live.viewers.other": "Ai %s de spectatori",
+  "chat.dungeontrain.live.one_eye": "Poți avea la tine o singură cameră video de transmisie. Cea în plus a devenit un televizor.",
   "chat.dungeontrain.live.free_play": "Rundele de Joc Liber nu pot transmite live.",
   "chat.dungeontrain.live.took_over": "%s a fost întrerupt.",
   "chat.dungeontrain.live.preparing": "Se pregătește echipamentul de transmisie...",

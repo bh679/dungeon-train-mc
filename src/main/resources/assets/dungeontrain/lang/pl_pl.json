@@ -739,6 +739,7 @@
   "chat.dungeontrain.live.viewers.one": "Masz %s widza",
   "chat.dungeontrain.live.viewers.few": "Masz %s widzów",
   "chat.dungeontrain.live.viewers.many": "Masz %s widzów",
+  "chat.dungeontrain.live.one_eye": "Możesz mieć przy sobie tylko jedną kamerę transmisyjną. Dodatkowa zamieniła się w telewizor.",
   "chat.dungeontrain.live.free_play": "Rozgrywki w Trybie Swobodnym nie mogą nadawać na żywo.",
   "chat.dungeontrain.live.took_over": "%s został odcięty.",
   "chat.dungeontrain.live.preparing": "Przygotowywanie sprzętu do transmisji...",

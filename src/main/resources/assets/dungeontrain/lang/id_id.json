@@ -675,6 +675,7 @@
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
   "chat.dungeontrain.live.watching.other": "%s orang menonton",
   "chat.dungeontrain.live.viewers.other": "Kamu punya %s penonton",
+  "chat.dungeontrain.live.one_eye": "Kamu hanya bisa membawa satu Camcorder Siaran. Yang lebih berubah menjadi TV.",
   "chat.dungeontrain.live.free_play": "Permainan Free Play tidak bisa siaran langsung.",
   "chat.dungeontrain.live.took_over": "%s terputus.",
   "chat.dungeontrain.live.preparing": "Menyiapkan peralatan siaran...",

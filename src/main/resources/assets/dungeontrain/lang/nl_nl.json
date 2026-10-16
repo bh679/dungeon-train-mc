@@ -707,6 +707,7 @@
   "chat.dungeontrain.live.watching.other": "%s mensen kijken",
   "chat.dungeontrain.live.viewers.one": "Je hebt %s kijker",
   "chat.dungeontrain.live.viewers.other": "Je hebt %s kijkers",
+  "chat.dungeontrain.live.one_eye": "Je kunt maar één uitzendcamcorder bij je hebben. De extra is een tv geworden.",
   "chat.dungeontrain.live.free_play": "Vrij Spel-runs kunnen niet live gaan.",
   "chat.dungeontrain.live.took_over": "%s is afgesneden.",
   "chat.dungeontrain.live.preparing": "De uitzendapparatuur wordt klaargezet...",

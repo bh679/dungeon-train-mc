@@ -675,6 +675,7 @@
   "chat.dungeontrain.live.link.tv": "DungeonTrain TV",
   "chat.dungeontrain.live.watching.other": "%s 人正在观看",
   "chat.dungeontrain.live.viewers.other": "你有 %s 名观众",
+  "chat.dungeontrain.live.one_eye": "你只能携带一台直播摄像机。多出的那台变成了电视。",
   "chat.dungeontrain.live.free_play": "自由模式的游戏无法直播。",
   "chat.dungeontrain.live.took_over": "%s 的直播被切断了。",
   "chat.dungeontrain.live.preparing": "正在准备直播设备……",
