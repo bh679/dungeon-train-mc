@@ -5,7 +5,7 @@
     "optIn": true
   },
   "books": 11,
-  "cargocontents": 5,
+  "cargocontents": 10,
   "cows": 15,
   "craft": 7,
   "dangerous_1": {
@@ -17,14 +17,35 @@
     }
   },
   "default": 1,
-  "default_full": 1,
+  "default_full": {
+    "weight": 1,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ]
+  },
   "dirt": 2,
   "dirt2": 2,
   "enchant": 2,
   "ender": 1,
   "enemies": 8,
   "enemies_group": {
-    "weight": 5,
+    "weight": 20,
     "minLevel": 1,
     "optIn": true
   },
@@ -136,7 +157,7 @@
   "shop": 6,
   "statue": 1,
   "things": {
-    "weight": 5,
+    "weight": 10,
     "optIn": true
   },
   "trapmid": {

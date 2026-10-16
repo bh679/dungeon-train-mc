@@ -310,7 +310,7 @@ public final class PortalTestCommand {
         }
         // Or inside a carriage/contents test: the same rule, the other command's way home.
         if (games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
-            CarriageTestCommand.runBack(source);
+            CarriageTestCommand.runBack(source, false);
         }
 
         // The room as authored, so what is tested is what was built: its own size and its own
