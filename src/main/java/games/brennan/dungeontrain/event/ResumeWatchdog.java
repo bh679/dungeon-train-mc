@@ -4,12 +4,10 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.Level;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import org.slf4j.Logger;
 
 /**
@@ -27,15 +25,23 @@ import org.slf4j.Logger;
  *
  * <p>A pause is invisible to {@code getGameTime()} (it doesn't advance while frozen), so
  * this watchdog detects resume by the only signal that survives a freeze: a multi-second
- * <em>wall-clock</em> gap between consecutive server ticks. On a detected resume, for every
- * loaded train it:</p>
+ * <em>wall-clock</em> gap <em>between</em> server ticks — from one tick's
+ * {@link ServerTickEvent.Post} to the next tick's {@link ServerTickEvent.Pre}. While paused,
+ * {@code IntegratedServer.tickServer} runs {@code tickPaused()} instead of the server tick, so
+ * neither event fires and the idle gap grows. A server <em>stall</em> is different: it happens
+ * inside a tick (between Pre and Post), and the catch-up ticks after it run back to back, so
+ * the idle gap stays ~0. Measuring Post→Pre (not tick-to-tick) is what keeps this inert on
+ * lag — a tick-to-tick gap read every multi-second stall as a resume, re-armed the whole-train
+ * hold, whose chunk loads caused the next stall, and so on (player log 14 Oct 2026: 5–20 s
+ * stalls chained after each autosave). On a detected resume, for every loaded train it:</p>
  * <ul>
  *   <li>{@link TrainCarriageAppender#grantResumeGrace} — suppresses the walk-away
  *       force-load release for a short (renewing, capped) window while the flung-off rider
  *       re-anchors, so the transient "not near" can't drop the train; and</li>
- *   <li>{@link TrainCarriageAppender#holdWholeTrainForResume} — pins <em>every</em> carriage
- *       resident (not just the trailing-N) for that window, removing the dependency on Sable
- *       proximity residency that evaporates while the rider is absent.</li>
+ *   <li>{@link TrainCarriageAppender#holdWholeTrainForResume} — pins every <em>at-risk</em>
+ *       carriage resident (not just the trailing-N) for that window: those near a player, which
+ *       depend on the Sable proximity residency that evaporates while the rider is absent, and
+ *       any not yet serialized, which could not be revived after a cull.</li>
  * </ul>
  *
  * <p>Both holds self-drain back to the trailing-N window once the rider is stably aboard
@@ -54,38 +60,47 @@ public final class ResumeWatchdog {
 
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** Wall-clock gap (ms) between consecutive server ticks that counts as a resume-from-pause. */
+    /** Idle wall-clock gap (ms) between two server ticks that counts as a resume-from-pause. */
     private static final long RESUME_GAP_MS = 2_000L;
 
     /** Ticks to hold the force-load window after a resume while the rider re-anchors (~3 s). */
     private static final int RESUME_GRACE_TICKS = 60;
 
-    /** nanoTime of the previous server tick; {@code 0} before the first tick / after a stop. */
-    private static long lastTickNanos = 0L;
+    /** nanoTime at the end of the previous server tick; {@code 0} before the first tick / after a stop. */
+    private static long lastTickEndNanos = 0L;
 
     private ResumeWatchdog() {}
 
+    /**
+     * Pure core: is the idle gap from the previous tick's end ({@code prevTickEndNanos}) to this
+     * tick's start ({@code tickStartNanos}) long enough to be a resume? {@code 0} = no baseline.
+     */
+    static boolean isResumeGap(long prevTickEndNanos, long tickStartNanos) {
+        if (prevTickEndNanos == 0L) return false;
+        return (tickStartNanos - prevTickEndNanos) / 1_000_000L >= RESUME_GAP_MS;
+    }
+
     @SubscribeEvent
-    public static void onLevelTick(LevelTickEvent.Post event) {
-        // Run once per SERVER tick by gating on the overworld server level (mirrors
-        // PlayerJoinEvents.onLevelTick). Client levels never match ServerLevel.
-        if (!(event.getLevel() instanceof ServerLevel level)) return;
-        if (level.dimension() != Level.OVERWORLD) return;
-        MinecraftServer server = level.getServer();
-        if (server.isDedicatedServer()) return; // only the integrated server pauses
+    public static void onServerTickPost(ServerTickEvent.Post event) {
+        if (event.getServer().isDedicatedServer()) return; // only the integrated server pauses
+        lastTickEndNanos = System.nanoTime();
+    }
+
+    @SubscribeEvent
+    public static void onServerTickPre(ServerTickEvent.Pre event) {
+        MinecraftServer server = event.getServer();
+        if (server.isDedicatedServer()) return;
 
         long now = System.nanoTime();
-        long prev = lastTickNanos;
-        lastTickNanos = now;
-        if (prev == 0L) return;                       // first tick after start — no baseline
+        long prev = lastTickEndNanos;
+        if (!isResumeGap(prev, now)) return;          // normal cadence, or a stall's catch-up
         long gapMs = (now - prev) / 1_000_000L;
-        if (gapMs < RESUME_GAP_MS) return;            // normal cadence — not a resume
 
-        // Protect every train on this resume tick: grant the grace window and pin the whole
-        // train resident so the transient rider-fling can't cull (and regenerate) any carriage.
-        // No per-player resolution is needed — the hold is independent of where riders are, and
-        // it self-drains once they re-anchor. This is the same whole-train hold the save guard
-        // applies (MinecraftServerSaveMixin) — shared in TrainCarriageAppender#holdAllLoadedTrains.
+        // Protect every train on this resume tick: grant the grace window and pin the at-risk
+        // groups resident so the transient rider-fling can't cull (and regenerate) any carriage.
+        // No per-player resolution is needed — the hold self-drains once riders re-anchor. This is
+        // the same hold the save guard applies (MinecraftServerSaveMixin) — shared in
+        // TrainCarriageAppender#holdAllLoadedTrains.
         int held = TrainCarriageAppender.holdAllLoadedTrains(server, RESUME_GRACE_TICKS);
         if (held > 0) {
             LOGGER.info("[DungeonTrain] Resume after {}ms pause — held {} train(s) resident through the resume fling (#547)",
@@ -95,6 +110,6 @@ public final class ResumeWatchdog {
 
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
-        lastTickNanos = 0L; // next world's first tick mustn't read a stale (huge) gap
+        lastTickEndNanos = 0L; // next world's first tick mustn't read a stale (huge) gap
     }
 }

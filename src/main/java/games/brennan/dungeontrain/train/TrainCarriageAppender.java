@@ -3545,7 +3545,6 @@ public final class TrainCarriageAppender {
         // is a window (not a fixed cap) it slides with the player and never dumps
         // the near-player set all at once — the mass-release churn a group cap
         // caused once a long ride exceeded it.
-        Set<UUID> target;
         boolean resumeHold = isResumeHoldActive(trainId, level.getGameTime());
         // Tell Sable's own wake-on-chunk-load which groups this train wants this tick; one
         // outside the window stays held until a lane asks for it (see HeldGroupWakeVeto).
@@ -3556,31 +3555,37 @@ public final class TrainCarriageAppender {
         } else {
             HeldGroupWakeVeto.forget(trainId);
         }
+        // The resume/save hold keeps everything already held (nothing is released while the rider
+        // re-anchors), on top of the normal window. It used to target every VISIBLE group instead,
+        // which snowballed: each pinned group loads chunks around it, those chunks wake more held
+        // groups, they become visible and get pinned next tick — the whole train and thousands of
+        // chunks within seconds of an autosave (player log 14 Oct 2026: 16 → 151 groups held,
+        // 9.9 s of chunk waits). holdWholeTrainForResume already pinned the at-risk groups.
+        Set<UUID> target = new HashSet<>();
         if (resumeHold) {
-            target = new HashSet<>(byId.keySet());
-        } else {
-            target = new HashSet<>();
-            if (active) {
-                // The train list is one entry per group/sub-level, so target the
-                // backmost-N GROUPS directly (not × groupSize). Never below the players'
-                // window: a pin there leaves a hole Sable cycles (see trailingCandidates).
-                target.addAll(backmostForceLoadTargets(
-                    trailingCandidates(ids, playerNear, nearMinPIdx), TRAILING_FORCELOAD_GROUPS));
-            }
-            if (needsForward) {
-                // The forward lane's working edge. Near a rider the lead sits inside the
-                // player window below; for a remote player far AHEAD of the registry it does
-                // not, and without this the lead spawned last tick is culled before the next
-                // group can place against it.
-                target.addAll(frontmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS));
-            }
-            if (playerNear) {
-                for (Trains.Carriage c : train) {
-                    TrainTransformProvider p = c.provider();
-                    if (shouldHoldGroupNearPlayer(true, p.getPIdx(), p.getGroupHighestPIdx(),
-                            nearMinPIdx, nearHoldTop(nearMaxPIdx, p.getGroupSize()))) {
-                        target.add(c.ship().subLevelId());
-                    }
+            Set<UUID> held = FORCELOADED_BY_TRAIN.get(trainId);
+            if (held != null) target.addAll(held);
+        }
+        if (active) {
+            // The train list is one entry per group/sub-level, so target the
+            // backmost-N GROUPS directly (not × groupSize). Never below the players'
+            // window: a pin there leaves a hole Sable cycles (see trailingCandidates).
+            target.addAll(backmostForceLoadTargets(
+                trailingCandidates(ids, playerNear, nearMinPIdx), TRAILING_FORCELOAD_GROUPS));
+        }
+        if (needsForward) {
+            // The forward lane's working edge. Near a rider the lead sits inside the
+            // player window below; for a remote player far AHEAD of the registry it does
+            // not, and without this the lead spawned last tick is culled before the next
+            // group can place against it.
+            target.addAll(frontmostForceLoadTargets(ids, TRAILING_FORCELOAD_GROUPS));
+        }
+        if (playerNear) {
+            for (Trains.Carriage c : train) {
+                TrainTransformProvider p = c.provider();
+                if (shouldHoldGroupNearPlayer(true, p.getPIdx(), p.getGroupHighestPIdx(),
+                        nearMinPIdx, nearHoldTop(nearMaxPIdx, p.getGroupSize()))) {
+                    target.add(c.ship().subLevelId());
                 }
             }
         }
@@ -3801,18 +3806,24 @@ public final class TrainCarriageAppender {
     }
 
     /**
-     * Force-load EVERY carriage of {@code train} and track them in
-     * {@link #FORCELOADED_BY_TRAIN}, so a singleplayer pause/resume can't cull any part
-     * of the train while the rider is transiently flung off the deck (Sable carry hasn't
-     * re-grabbed them). The trailing-N window ({@link #maintainTrailingForceLoadWindow})
-     * only force-loads the tail; carriages near/ahead of the player rely on Sable
-     * <em>proximity</em> residency, which evaporates the moment the rider reads as "not
-     * near" — so on a resume they would cull and, if not reloadable, regenerate. Pinning
-     * the whole train here removes that dependency on the (transiently-absent) rider.
+     * Force-load every <em>at-risk</em> carriage of {@code train} and track them in
+     * {@link #FORCELOADED_BY_TRAIN}, so a singleplayer pause/resume (or a save) can't cull them
+     * while the rider is transiently flung off the deck (Sable carry hasn't re-grabbed them).
+     * The trailing-N window ({@link #maintainTrailingForceLoadWindow}) only force-loads the
+     * tail; carriages near/ahead of the player rely on Sable <em>proximity</em> residency,
+     * which evaporates the moment the rider reads as "not near" — so on a resume they would
+     * cull and, if not reloadable, regenerate.
+     *
+     * <p><b>At risk = near a player, or never serialized</b> ({@link #shouldHoldForResume}).
+     * The rest of the train — frozen groups strung out along the track, already on disk — is
+     * left alone: a cull there reloads cleanly, and pinning it was the expensive part. Each
+     * force-loaded group makes Sable inhabit (synchronously load or generate) the chunks
+     * around it, so pinning the whole train after every autosave loaded ~9k chunks and stalled
+     * the server for 5–20 s (player log 14 Oct 2026, 151 groups held).</p>
      *
      * <p>Called by {@code ResumeWatchdog} the instant it detects a resume, alongside
      * {@link #grantResumeGrace}: the grace (renewed in {@link #updateTrain}'s bail)
-     * suppresses the walk-away release while these sticky tickets keep the whole train
+     * suppresses the walk-away release while these sticky tickets keep the at-risk groups
      * resident through the fling. Once the rider re-anchors,
      * {@link #maintainTrailingForceLoadWindow}/{@link #reconcileForceLoads} drain the
      * window back to the trailing-N groups (releasing the now proximity-resident
@@ -3825,18 +3836,55 @@ public final class TrainCarriageAppender {
     public static void holdWholeTrainForResume(ServerLevel level, UUID trainId, List<Trains.Carriage> train) {
         if (train == null || train.isEmpty()) return;
         Shipyard shipyard = Shipyards.of(level);
+        List<ServerPlayer> players = level.players();
         Set<UUID> current = FORCELOADED_BY_TRAIN.computeIfAbsent(trainId, k -> new HashSet<>());
         int held = 0;
+        int skipped = 0;
         for (Trains.Carriage c : train) {
-            if (current.add(c.ship().subLevelId())) {
-                shipyard.forceLoad(c.ship());
-                held++;
+            UUID id = c.ship().subLevelId();
+            if (current.contains(id)) continue;
+            if (!shouldHoldForResume(c.ship().hasSerializationPointer(), isNearAnyPlayer(c, players))) {
+                skipped++;
+                continue;
             }
+            current.add(id);
+            shipyard.forceLoad(c.ship());
+            held++;
         }
-        if (held > 0) {
-            LOGGER.debug("[DungeonTrain] Resume hold: force-loaded {} previously-unticketed carriage(s) of trainId={} ({} total held) so the resume-fling can't cull the train",
-                held, trainId, current.size());
+        if (held > 0 || skipped > 0) {
+            LOGGER.debug("[DungeonTrain] Resume hold: force-loaded {} previously-unticketed carriage(s) of trainId={} ({} total held, {} far + serialized left unpinned) so the resume-fling can't cull the train",
+                held, trainId, current.size(), skipped);
         }
+        if (current.isEmpty()) {
+            FORCELOADED_BY_TRAIN.remove(trainId);
+        }
+    }
+
+    /**
+     * Pure core: should the resume/save hold pin a group that isn't already held? Only when a
+     * cull would hurt — it is near a player (it relies on the rider's proximity residency) or it
+     * has never been serialized (a cull would leave a holding entry that can't be revived, so it
+     * would regenerate). A far, serialized group reloads from disk if culled.
+     */
+    static boolean shouldHoldForResume(boolean serialized, boolean nearPlayer) {
+        return nearPlayer || !serialized;
+    }
+
+    /** Is any of {@code players} within {@link #NEAR_RADIUS} of {@code c}'s world AABB? */
+    private static boolean isNearAnyPlayer(Trains.Carriage c, List<ServerPlayer> players) {
+        AABBdc aabb = c.ship().worldAABB();
+        for (ServerPlayer p : players) {
+            if (aabbDistSq(aabb, p.getX(), p.getY(), p.getZ()) <= NEAR_RADIUS_SQ) return true;
+        }
+        return false;
+    }
+
+    /** Squared distance from a point to an AABB ({@code 0} = inside). */
+    private static double aabbDistSq(AABBdc aabb, double px, double py, double pz) {
+        double dx = Math.max(0, Math.max(aabb.minX() - px, px - aabb.maxX()));
+        double dy = Math.max(0, Math.max(aabb.minY() - py, py - aabb.maxY()));
+        double dz = Math.max(0, Math.max(aabb.minZ() - pz, pz - aabb.maxZ()));
+        return dx * dx + dy * dy + dz * dz;
     }
 
     /**
@@ -5818,11 +5866,7 @@ public final class TrainCarriageAppender {
         Trains.Carriage best = null;
         double bestDistSq = Double.MAX_VALUE;
         for (Trains.Carriage c : train) {
-            AABBdc aabb = c.ship().worldAABB();
-            double dx = Math.max(0, Math.max(aabb.minX() - px, px - aabb.maxX()));
-            double dy = Math.max(0, Math.max(aabb.minY() - py, py - aabb.maxY()));
-            double dz = Math.max(0, Math.max(aabb.minZ() - pz, pz - aabb.maxZ()));
-            double distSq = dx * dx + dy * dy + dz * dz;
+            double distSq = aabbDistSq(c.ship().worldAABB(), px, py, pz);
             if (distSq < bestDistSq) {
                 bestDistSq = distSq;
                 best = c;
