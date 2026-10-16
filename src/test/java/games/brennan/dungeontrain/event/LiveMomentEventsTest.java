@@ -34,11 +34,14 @@ class LiveMomentEventsTest {
     }
 
     @Test
-    @DisplayName("a book's excerpt: first non-blank page, one line, cut at a word")
+    @DisplayName("a book's excerpt: first written page, one line, cut at a word, … when there is more")
     void excerpt() {
         assertEquals("", LiveMomentEvents.excerpt(null));
         assertEquals("", LiveMomentEvents.excerpt(List.of()));
-        assertEquals("Day one. The train", LiveMomentEvents.excerpt(List.of("  ", "Day one.\n\nThe train", "later")));
+        assertEquals("Day one. The train", LiveMomentEvents.excerpt(List.of("  ", "Day one.\n\nThe train", " ")),
+            "a one-page book shown whole has no ellipsis");
+        assertEquals("Day one. The train…", LiveMomentEvents.excerpt(List.of("  ", "Day one.\n\nThe train", "later")),
+            "more pages follow: ellipsis");
         String word = "word ";
         String longPage = word.repeat(100);
         String cut = LiveMomentEvents.excerpt(List.of(longPage));

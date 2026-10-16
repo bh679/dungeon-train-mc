@@ -63,13 +63,21 @@ public final class LiveMomentEvents {
         return display.isPresent() && display.get().shouldAnnounceChat();
     }
 
-    /** The first page's opening, on one line: line breaks become spaces, cut at a word near {@link #EXCERPT_CHARS}. */
+    /**
+     * The first written page's opening, on one line: line breaks become spaces, cut at a word near
+     * {@link #EXCERPT_CHARS}. Ends in {@code …} whenever the book holds more than is shown — the page
+     * was cut, or more written pages follow.
+     */
     static String excerpt(@Nullable List<String> pages) {
         if (pages == null) return "";
-        String first = pages.stream().filter(p -> p != null && !p.isBlank()).findFirst().orElse("");
-        String flat = first.replaceAll("\\s+", " ").strip();
-        if (flat.length() <= EXCERPT_CHARS) return flat;
-        int cut = flat.lastIndexOf(' ', EXCERPT_CHARS);
-        return (cut > EXCERPT_CHARS / 2 ? flat.substring(0, cut) : flat.substring(0, EXCERPT_CHARS)) + "…";
+        List<String> written = pages.stream().filter(p -> p != null && !p.isBlank()).toList();
+        if (written.isEmpty()) return "";
+        String flat = written.get(0).replaceAll("\\s+", " ").strip();
+        if (flat.length() > EXCERPT_CHARS) {
+            int cut = flat.lastIndexOf(' ', EXCERPT_CHARS);
+            flat = (cut > EXCERPT_CHARS / 2 ? flat.substring(0, cut) : flat.substring(0, EXCERPT_CHARS)).strip();
+            return flat + "…";
+        }
+        return written.size() > 1 ? flat + "…" : flat;
     }
 }
