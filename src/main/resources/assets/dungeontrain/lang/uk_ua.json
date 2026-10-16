@@ -809,7 +809,6 @@
   "chat.dungeontrain.live_chat.prefix": "[Ефір]",
   "chat.dungeontrain.live_chat.connected": "Чат ефіру під'єднано до Discord. Вимкнути: %s",
   "chat.dungeontrain.live_chat.path": "Налаштування / Dungeon Train / Стрім / Чат ефіру",
-  "chat.dungeontrain.live_chat.streamer_off": "/streamer працює, поки ввімкнено Чат ефіру: коли ти ведеш трансляцію або носиш телевізор, поки хтось в ефірі.",
   "chat.dungeontrain.live_gift.prompt": "%s дивиться через телевізор, і в нього ніколи не було трансляційної відеокамери.",
   "chat.dungeontrain.live_gift.give": "Подарувати",
   "chat.dungeontrain.live_gift.offered": "Пропонуємо твою трансляційну відеокамеру гравцю %s…",

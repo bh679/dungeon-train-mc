@@ -689,7 +689,6 @@
   "chat.dungeontrain.live_chat.prefix": "[ไลฟ์]",
   "chat.dungeontrain.live_chat.connected": "เชื่อมต่อแชทไลฟ์กับ Discord แล้ว ปิดได้ที่ %s",
   "chat.dungeontrain.live_chat.path": "ตัวเลือก / Dungeon Train / สตรีม / แชทไลฟ์",
-  "chat.dungeontrain.live_chat.streamer_off": "/streamer ใช้ได้เมื่อเปิดแชทไลฟ์อยู่: ขณะที่คุณสตรีม หรือสวมทีวีขณะที่มีคนกำลังไลฟ์",
   "chat.dungeontrain.live_gift.prompt": "%s เข้ามาดูผ่านทีวี และยังไม่เคยมีกล้องวิดีโอถ่ายทอดเลย",
   "chat.dungeontrain.live_gift.give": "มอบให้เขา",
   "chat.dungeontrain.live_gift.offered": "กำลังมอบกล้องวิดีโอถ่ายทอดของคุณให้ %s…",

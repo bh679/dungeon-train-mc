@@ -689,7 +689,6 @@
   "chat.dungeontrain.live_chat.prefix": "[ライブ]",
   "chat.dungeontrain.live_chat.connected": "ライブチャットがDiscordに接続しました。%s でオフにできます",
   "chat.dungeontrain.live_chat.path": "設定 / Dungeon Train / 配信 / ライブチャット",
-  "chat.dungeontrain.live_chat.streamer_off": "/streamer はライブチャットがオンのときに使えます。配信中、または誰かが配信中にテレビをかぶっているときです。",
   "chat.dungeontrain.live_gift.prompt": "%sがテレビから参加しました。まだ放送カムコーダーを持ったことがありません。",
   "chat.dungeontrain.live_gift.give": "プレゼントする",
   "chat.dungeontrain.live_gift.offered": "%sにあなたの放送カムコーダーを譲ろうとしています…",

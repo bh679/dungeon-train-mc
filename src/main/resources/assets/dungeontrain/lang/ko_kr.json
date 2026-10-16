@@ -689,7 +689,6 @@
   "chat.dungeontrain.live_chat.prefix": "[라이브]",
   "chat.dungeontrain.live_chat.connected": "라이브 채팅이 Discord에 연결되었습니다. %s 에서 끌 수 있습니다",
   "chat.dungeontrain.live_chat.path": "설정 / Dungeon Train / 스트림 / 라이브 채팅",
-  "chat.dungeontrain.live_chat.streamer_off": "/streamer는 라이브 채팅이 켜져 있을 때 작동합니다. 방송 중이거나, 누군가 방송 중일 때 TV를 쓰고 있을 때입니다.",
   "chat.dungeontrain.live_gift.prompt": "%s 님이 TV로 들어왔어요. 아직 방송 캠코더를 가져 본 적이 없어요.",
   "chat.dungeontrain.live_gift.give": "선물하기",
   "chat.dungeontrain.live_gift.offered": "%s 님에게 내 방송 캠코더를 넘기는 중…",

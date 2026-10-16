@@ -689,7 +689,6 @@
   "chat.dungeontrain.live_chat.prefix": "[直播]",
   "chat.dungeontrain.live_chat.connected": "直播聊天已連線到 Discord。可在 %s 關閉",
   "chat.dungeontrain.live_chat.path": "選項 / Dungeon Train / 直播 / 直播聊天",
-  "chat.dungeontrain.live_chat.streamer_off": "/streamer 僅在直播聊天開啟時可用：你正在直播，或在有人直播時戴著電視。",
   "chat.dungeontrain.live_gift.prompt": "%s 透過電視加入了，他們還從沒擁有過直播攝影機。",
   "chat.dungeontrain.live_gift.give": "送給他們",
   "chat.dungeontrain.live_gift.offered": "正在把你的直播攝影機送給 %s…",

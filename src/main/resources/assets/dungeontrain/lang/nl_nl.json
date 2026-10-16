@@ -721,7 +721,6 @@
   "chat.dungeontrain.live_chat.prefix": "[Live]",
   "chat.dungeontrain.live_chat.connected": "Livechat verbonden met Discord. Zet hem uit in %s",
   "chat.dungeontrain.live_chat.path": "Opties / Dungeon Train / Stream / Livechat",
-  "chat.dungeontrain.live_chat.streamer_off": "/streamer werkt zolang de Livechat aan staat: als je streamt, of een tv draagt terwijl iemand live is.",
   "chat.dungeontrain.live_gift.prompt": "%s kijkt mee via een tv en heeft nog nooit een uitzendcamcorder gehad.",
   "chat.dungeontrain.live_gift.give": "Cadeau geven",
   "chat.dungeontrain.live_gift.offered": "%s krijgt jouw uitzendcamcorder aangeboden…",

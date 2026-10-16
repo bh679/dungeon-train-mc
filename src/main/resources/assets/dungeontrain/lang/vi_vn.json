@@ -689,7 +689,6 @@
   "chat.dungeontrain.live_chat.prefix": "[Trực tiếp]",
   "chat.dungeontrain.live_chat.connected": "Đã kết nối trò chuyện trực tiếp với Discord. Tắt tại %s",
   "chat.dungeontrain.live_chat.path": "Tùy chọn / Dungeon Train / Phát trực tiếp / Trò chuyện trực tiếp",
-  "chat.dungeontrain.live_chat.streamer_off": "/streamer hoạt động khi Trò chuyện trực tiếp đang bật: khi bạn phát trực tiếp, hoặc đội TV trong lúc có người đang phát.",
   "chat.dungeontrain.live_gift.prompt": "%s tham gia qua TV và chưa từng có máy quay phát sóng.",
   "chat.dungeontrain.live_gift.give": "Tặng cho họ",
   "chat.dungeontrain.live_gift.offered": "Đang tặng máy quay phát sóng của bạn cho %s…",
