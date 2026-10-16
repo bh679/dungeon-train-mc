@@ -872,6 +872,41 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
+            // Typed min level from the cmd-click number pad — clamped under the max, as the
+            // stepper wraps under it.
+            case SET_DIFF_MIN -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.isMob()) return;
+                VariantDifficulty band = entry.difficulty();
+                int upperBound = band.max() == VariantDifficulty.ALL
+                    ? VariantDifficulty.MAX_TIER : band.max();
+                int next0 = Math.max(0, Math.min(upperBound, packet.delta()));
+                if (next0 == band.min()) return;
+                mutated.set(idx, entry.withDifficulty(band.withMin(next0)));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            // Typed max level; -1 is "all". A finite max below the min pulls the min down.
+            case SET_DIFF_MAX -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                if (!entry.isMob()) return;
+                VariantDifficulty band = entry.difficulty();
+                int next0 = packet.delta() < 0
+                    ? VariantDifficulty.ALL
+                    : Math.min(VariantDifficulty.MAX_TIER, packet.delta());
+                if (next0 == band.max()) return;
+                int newMin = band.min();
+                if (next0 != VariantDifficulty.ALL && newMin > next0) newMin = next0;
+                mutated.set(idx, entry.withDifficulty(new VariantDifficulty(newMin, next0)));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
             case BUMP_DIFF_MAX -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();

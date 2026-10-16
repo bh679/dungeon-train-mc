@@ -13,7 +13,8 @@ import java.util.List;
  * the raycaster hit-tests, the same contract as {@link SpanPopupLayout}.
  *
  * <p>Stacked sections floating just above the panel, top to bottom: <b>Grow</b> (Off | On), then —
- * only while on — <b>Min</b> and <b>Max</b> ({@code − n +}), <b>Direction</b> (Up | Down, only for
+ * only while on — <b>Min</b> and <b>Max</b> (one number cell each: click / shift- or right-click /
+ * cmd-click to type, like every editor number), <b>Direction</b> (Up | Down, only for
  * blocks that grow both ways) and <b>Tip</b> (On | Off, only for blocks with a tip form).</p>
  */
 final class GrowthPopupLayout {
@@ -24,8 +25,10 @@ final class GrowthPopupLayout {
     static final int SECTION_DIR = 3;
     static final int SECTION_TIP = 4;
 
-    /** Option index of a stepper's middle (value) button — shown, never an action. */
-    static final int STEPPER_VALUE = 1;
+    /** Whether {@code section} is a number cell (Min / Max) rather than a row of choices. */
+    static boolean isNumber(int section) {
+        return section == SECTION_MIN || section == SECTION_MAX;
+    }
 
     static final double ROW_HEIGHT = SpanPopupLayout.ROW_HEIGHT;
     static final double LABEL_WIDTH = SpanPopupLayout.LABEL_WIDTH;
@@ -62,9 +65,9 @@ final class GrowthPopupLayout {
             new String[] {off, on}, growth.on() ? 1 : 0});
         if (growth.on()) {
             spec.add(new Object[] {SECTION_MIN, MenuLang.t("block_variant.grow_min"),
-                new String[] {"−", Integer.toString(growth.min()), "+"}, -1});
+                new String[] {Integer.toString(growth.min())}, -1});
             spec.add(new Object[] {SECTION_MAX, MenuLang.t("block_variant.grow_max"),
-                new String[] {"−", Integer.toString(growth.max()), "+"}, -1});
+                new String[] {Integer.toString(growth.max())}, -1});
             if (GrowthShapes.growsBothWays(state)) {
                 spec.add(new Object[] {SECTION_DIR, MenuLang.t("block_variant.grow_dir"),
                     new String[] {MenuLang.t("block_variant.grow_up"), MenuLang.t("block_variant.grow_down")},
@@ -96,9 +99,9 @@ final class GrowthPopupLayout {
     }
 
     /**
-     * The growth after clicking {@code option} in {@code section}, starting from {@code current}.
-     * Turning growth on starts at 2–4 so the click visibly does something; the steppers keep
-     * {@code min ≤ max} by moving the other bound along.
+     * The growth after clicking {@code option} in a choice section, starting from {@code current}.
+     * Turning growth on starts at 2–4 so the click visibly does something. Min / Max are numbers —
+     * see {@link #withLength}.
      */
     static VariantGrowth apply(VariantGrowth current, BlockState state, int section, int option) {
         return switch (section) {
@@ -106,23 +109,26 @@ final class GrowthPopupLayout {
                 ? VariantGrowth.of(Math.max(2, current.min()), Math.max(4, current.max()),
                     GrowthShapes.effectiveDir(state, current.dir()), current.tip())
                 : VariantGrowth.NONE;
-            case SECTION_MIN -> {
-                int min = step(current.min(), option);
-                yield current.withRange(min, Math.max(min, current.max()));
-            }
-            case SECTION_MAX -> {
-                int max = step(current.max(), option);
-                yield current.withRange(Math.min(current.min(), max), max);
-            }
             case SECTION_DIR -> current.withDir(VariantGrowth.Dir.values()[option]);
-            default -> current.withTip(option == 0);
+            case SECTION_TIP -> current.withTip(option == 0);
+            default -> current;
         };
     }
 
-    private static int step(int value, int option) {
-        if (option == STEPPER_VALUE) return value;
-        int next = option == 0 ? value - 1 : value + 1;
-        return Math.max(1, Math.min(VariantGrowth.MAX_LENGTH, next));
+    /** The current value of a Min / Max section. */
+    static int length(VariantGrowth growth, int section) {
+        return section == SECTION_MIN ? growth.min() : growth.max();
+    }
+
+    /**
+     * {@code current} with the Min or Max length set to {@code value}, clamped to
+     * {@code 1..MAX_LENGTH}; the other bound moves along so {@code min ≤ max} always holds.
+     */
+    static VariantGrowth withLength(VariantGrowth current, int section, int value) {
+        int v = Math.max(1, Math.min(VariantGrowth.MAX_LENGTH, value));
+        return section == SECTION_MIN
+            ? current.withRange(v, Math.max(v, current.max()))
+            : current.withRange(Math.min(current.min(), v), v);
     }
 
     /** Row pill label: the key word when off, e.g. {@code ↓2-5} when on. */

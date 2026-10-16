@@ -26497,6 +26497,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "standard-number-steppers",
+      "version": "0.1309.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Every editor number works the same way",
+      "summary": "Every number you can change in the Train Editor now works the same way: click to raise it, shift-click or right-click to lower it, and Cmd-click (Ctrl-click on Windows and Linux) to type an exact value. That now includes a mob's min and max level, container fill and drop chances, room sizes, exit spacing and more. Rows that had separate \u2212 and + buttons are now a single number, and a typed max level or max fill left empty goes back to \"all\".",
+      "highlights": [
+        "Cmd-click any editor number to type it \u2014 including a mob's min and max level",
+        "Right-click lowers a number, the same as shift-click",
+        "Leave a max level or max fill empty to set it back to \"all\""
+      ],
+      "pr": 2041,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

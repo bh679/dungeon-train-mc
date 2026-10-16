@@ -60,7 +60,7 @@ public final class PhaseSelectScreen implements MenuScreen {
 
     /**
      * Per-category command prefix up to (but excluding) the phase token, or null when the model
-     * is unaddressable. Mirrors {@code EditorMenuScreen.weightTripleFor}'s command shapes.
+     * is unaddressable. Mirrors {@code EditorMenuScreen.weightRowFor}'s command shapes.
      */
     private String phaseCommandPrefix() {
         if (modelId.isEmpty()) return null;

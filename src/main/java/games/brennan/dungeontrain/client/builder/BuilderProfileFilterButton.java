@@ -75,9 +75,11 @@ final class BuilderProfileFilterButton extends Button {
         setTooltip(Tooltip.create(Component.translatable(tooltipKey)));
     }
 
+    /** A list, not a number, so cmd-click just steps — but the step directions are every number's. */
     @Override
     public void onPress() {
-        step(Screen.hasShiftDown() ? -1 : +1);
+        step(games.brennan.dungeontrain.client.menu.number.NumberGesture.resolve(0, Screen.hasShiftDown(), false)
+            == games.brennan.dungeontrain.client.menu.number.NumberGesture.DEC ? -1 : +1);
     }
 
     /**

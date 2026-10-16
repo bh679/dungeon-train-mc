@@ -91,11 +91,11 @@ public final class EditorStageActions {
         out.add(new TemplateDataSheet.Line(EditorScreenLang.text(EditorScreenLang.SHEET_SPAWNS),
             TemplateDataSheet.levelCells(
                 min, TemplateDataSheet.Stepper.of(levelRow(id, "minlevel",
-                    EditorScreenLang.text(EditorScreenLang.STAGES_MIN_LEVEL, min), "0-1000")),
+                    EditorScreenLang.text(EditorScreenLang.STAGES_MIN_LEVEL, min), min, min)),
                 max, TemplateDataSheet.Stepper.of(levelRow(id, "maxlevel",
                     EditorScreenLang.text(EditorScreenLang.STAGES_MAX_LEVEL,
                         max < 0 ? EditorScreenLang.text(EditorScreenLang.SHEET_LEVELS_ALL) : Integer.toString(max)),
-                    "-1..1000")))));
+                    max, min)))));
         out.add(TemplateDataSheet.bandsLine(stage.stage().phaseMask(),
             (p, on) -> EditorPlotTeleport.stagePhaseCommandFor(id, p.token(), on ? "off" : "on")));
         out.add(TemplateDataSheet.Line.of(EditorScreenLang.text(EditorScreenLang.STAGES_PARTS_LABEL),
@@ -107,12 +107,12 @@ public final class EditorStageActions {
         return out;
     }
 
-    /** {@code - · Min Lv (n) · +}: the ends step, the middle takes a typed value. */
-    static CommandMenuEntry levelRow(String stageId, String sub, String label, String hint) {
-        return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Stay("-", EditorPlotTeleport.stageLevelCommandFor(stageId, sub, "dec")),
-            new CommandMenuEntry.TypeArg(label, hint, "dungeontrain editor stage " + sub + " " + stageId),
-            new CommandMenuEntry.Stay("+", EditorPlotTeleport.stageLevelCommandFor(stageId, sub, "inc")),
-            0.10, 0.90);
+    /**
+     * A Stage's level bound as one number row: click steps up, shift- or right-click down, cmd-click
+     * types ({@code value} {@code -1} = all for the max, {@code minLevel} the max's floor).
+     */
+    static CommandMenuEntry levelRow(String stageId, String sub, String label, int value, int minLevel) {
+        return games.brennan.dungeontrain.client.menu.EditorMenuScreen.levelNumber(label,
+            "dungeontrain editor stage " + sub + " " + stageId, sub, value, minLevel);
     }
 }

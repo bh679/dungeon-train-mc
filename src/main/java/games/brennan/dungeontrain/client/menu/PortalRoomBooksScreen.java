@@ -59,15 +59,15 @@ public final class PortalRoomBooksScreen implements MenuScreen {
         List<CommandMenuEntry> out = new ArrayList<>();
         for (PortalRoomBooks.Share share : PortalRoomBooks.Share.values()) {
             out.add(stepper(MenuLang.named("portal.share", share.id(), share.displayName()), commandFor(share),
-                books.weightFor(share), "0-" + PortalRoomBooks.MAX_WEIGHT));
+                books.weightFor(share), 0, PortalRoomBooks.MAX_WEIGHT));
         }
         out.add(stepper(MenuLang.t("books.min"), "booksmin", books.minBooks(),
-            PortalRoomBooks.MIN_BOOK_BOUND + "-" + PortalRoomBooks.MAX_BOOK_BOUND));
+            PortalRoomBooks.MIN_BOOK_BOUND, PortalRoomBooks.MAX_BOOK_BOUND));
         // Zero reads as "no ceiling", so it is spelled out rather than shown as a bare 0 the author
         // has to guess the meaning of.
         out.add(stepper(MenuLang.t(books.maxBooks() == PortalRoomBooks.NO_MAXIMUM ? "books.max_any" : "books.max"),
             "booksmax", books.maxBooks(),
-            PortalRoomBooks.MIN_BOOK_BOUND + "-" + PortalRoomBooks.MAX_BOOK_BOUND));
+            PortalRoomBooks.MIN_BOOK_BOUND, PortalRoomBooks.MAX_BOOK_BOUND));
         out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }
@@ -77,13 +77,8 @@ public final class PortalRoomBooksScreen implements MenuScreen {
         return "books" + share.id();
     }
 
-    /** One {@code [-] Label: N [+]} row, the same geometry every other portal stepper uses. */
-    private CommandMenuEntry stepper(String label, String token, int value, String hint) {
-        String command = prefix + " " + token;
-        return new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Stay("-", command + " dec"),
-            new CommandMenuEntry.TypeArg(label + ": " + value, hint, command),
-            new CommandMenuEntry.Stay("+", command + " inc"),
-            0.10, 0.90);
+    /** One {@code Label: N} number row, the same gestures every other editor number uses. */
+    private CommandMenuEntry stepper(String label, String token, int value, int min, int max) {
+        return CommandMenuEntry.Number.of(label + ": " + value, label, prefix + " " + token, value, min, max, false);
     }
 }

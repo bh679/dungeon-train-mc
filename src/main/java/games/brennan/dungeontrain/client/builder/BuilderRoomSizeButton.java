@@ -2,6 +2,10 @@ package games.brennan.dungeontrain.client.builder;
 
 import games.brennan.dungeontrain.builder.BuilderRoomResize;
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
+import games.brennan.dungeontrain.client.menu.number.NumberField;
+import games.brennan.dungeontrain.client.menu.number.NumberPad;
+import games.brennan.dungeontrain.client.menu.number.NumberStepper;
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
 import games.brennan.dungeontrain.net.BuilderRoomSizePacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.client.gui.components.Tooltip;
@@ -37,11 +41,28 @@ public final class BuilderRoomSizeButton extends PauseMenuActionButton {
 
     public BuilderRoomSizeButton(int x, int y, int width, int height, BuilderRoomResize.Axis axis) {
         super(x, y, width, height, label(axis), 1.0F, 1.0F, 1.0F, /*visibleWhenShift*/ false,
-                b -> step(axis, +1));
+                b -> click(axis, 0));
         this.axis = axis;
         setTooltip(Tooltip.create(Component.translatable(
                 "gui.dungeontrain.builder.room_size.tooltip", axisName(axis))));
     }
+
+    /**
+     * Every editor number's gestures ({@link NumberStepper}): click grows, shift- or right-click
+     * shrinks, cmd-click types the size. A typed size goes to the server as asked; it clamps.
+     */
+    private static void click(BuilderRoomResize.Axis axis, int button) {
+        int current = currentOf(axis);
+        if (current <= 0) return;   // no room open — the row shouldn't be visible, but a stale click can land
+        NumberStepper.click(new NumberField(NumberTitle.of(axis.id()), current, 1, MAX_TYPED, false,
+                () -> step(axis, +1), () -> step(axis, -1),
+                v -> DungeonTrainNet.sendToServer(new BuilderRoomSizePacket(axis.id(), v))),
+            button, net.minecraft.client.gui.screens.Screen.hasShiftDown(),
+            net.minecraft.client.gui.screens.Screen.hasControlDown(), NumberPad.overCurrent());
+    }
+
+    /** A sanity bound on a typed size; the server's clamp is what holds it to the world. */
+    private static final int MAX_TYPED = 512;
 
     /**
      * Right-click shrinks. Handled here rather than through the click handler because
@@ -51,7 +72,7 @@ public final class BuilderRoomSizeButton extends PauseMenuActionButton {
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (button == 1 && this.visible && this.active && isMouseOver(mouseX, mouseY)) {
-            step(axis, -1);
+            click(axis, 1);
             playDownSound(net.minecraft.client.Minecraft.getInstance().getSoundManager());
             return true;
         }

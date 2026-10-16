@@ -79,15 +79,17 @@ final class TemplateDataSheetTest {
     }
 
     @Test
-    @DisplayName("the weight steps in place (cmd-click types) and carries its own nudge buttons")
+    @DisplayName("the weight is one number cell: it steps in place, and cmd-click types")
     void weightIsEditable() {
         TemplateDataSheet.Line weight = line(carriageSheet(15, List.of()), EditorScreenLang.SHEET_WEIGHT);
         assertNotNull(weight);
-        assertEquals(3, weight.cells().size());
+        assertEquals(1, weight.cells().size());
         assertEquals("15", weight.cells().get(0).text());
         assertEquals("dungeontrain editor weight pen", stepPrefix(weight.cells().get(0)));
-        assertEquals("dungeontrain editor weight pen dec", runCommand(weight.cells().get(1)));
-        assertEquals("dungeontrain editor weight pen inc", runCommand(weight.cells().get(2)));
+        TemplateDataSheet.Action.Step step =
+            assertInstanceOf(TemplateDataSheet.Action.Step.class, weight.cells().get(0).action());
+        assertEquals("dungeontrain editor weight pen dec", step.dec());
+        assertEquals("dungeontrain editor weight pen inc", step.inc());
     }
 
     @Test
@@ -160,14 +162,14 @@ final class TemplateDataSheetTest {
     }
 
     @Test
-    @DisplayName("a room's length, width and height type in place, taken from its own stepper rows")
+    @DisplayName("a room's length, width and height are number cells, taken from its own number rows")
     void roomSizeIsEditable() {
         VariantKey key = VariantKey.of(PlotCategory.PORTALS, "portal_room", "house");
         EditorTypeMenusPacket.Variant v = variant("PORTALS", "portal_room", "house", 1, 0, -1, 1, List.of());
         List<CommandMenuEntry> roomRows = List.of(
-            games.brennan.dungeontrain.client.menu.EditorMenuPortalRows.sizeTripleFor("length", "Length", 5),
-            games.brennan.dungeontrain.client.menu.EditorMenuPortalRows.sizeTripleFor("width", "Width", 7),
-            games.brennan.dungeontrain.client.menu.EditorMenuPortalRows.sizeTripleFor("height", "Height", 4),
+            games.brennan.dungeontrain.client.menu.EditorMenuPortalRows.sizeRowFor("length", "Length", 5),
+            games.brennan.dungeontrain.client.menu.EditorMenuPortalRows.sizeRowFor("width", "Width", 7),
+            games.brennan.dungeontrain.client.menu.EditorMenuPortalRows.sizeRowFor("height", "Height", 4),
             new CommandMenuEntry.Label("not a size row"));
         TemplateDataSheet.Line size = line(
             TemplateDataSheet.lines(tile(v, key), "Dimensions", null,
@@ -175,8 +177,8 @@ final class TemplateDataSheetTest {
             EditorScreenLang.SHEET_SIZE);
         assertNotNull(size);
         assertEquals(List.of("5", "×", "7", "×", "4"), size.cells().stream().map(TemplateDataSheet.Cell::text).toList());
-        assertEquals("dungeontrain editor portals length", typePrefix(size.cells().get(0)));
-        assertEquals("dungeontrain editor portals height", typePrefix(size.cells().get(4)));
+        assertEquals("dungeontrain editor portals length", stepPrefix(size.cells().get(0)));
+        assertEquals("dungeontrain editor portals height", stepPrefix(size.cells().get(4)));
         assertNull(size.cells().get(1).action(), "the separator is not clickable");
     }
 

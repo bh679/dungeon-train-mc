@@ -688,6 +688,18 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
     }
 
     /**
+     * Set the weight of {@code name} in {@code kind}'s list outright — the typed value from the
+     * number pad — clamped to {@code [MIN_WEIGHT, MAX_WEIGHT]}. Unchanged if the name isn't listed.
+     */
+    public CarriagePartAssignment withWeightSet(CarriagePartKind kind, String name, int weight) {
+        int current = entries(kind).stream()
+            .filter(e -> e.name().equals(name == null ? CarriagePartKind.NONE : name.toLowerCase(Locale.ROOT)))
+            .mapToInt(WeightedName::weight).findFirst().orElse(-1);
+        if (current < 0) return this;
+        return withWeight(kind, name, clampWeight(weight) - current);
+    }
+
+    /**
      * Cycle the side-mode of {@code name} in {@code kind}'s list to its
      * {@link SideMode#next} value. Returns {@code this} unchanged if the
      * name isn't in the list. Floors/roofs accept the call but the field
@@ -752,6 +764,16 @@ public record CarriagePartAssignment(List<WeightedName> floor, List<WeightedName
      */
     public CarriagePartAssignment withMaxLevel(CarriagePartKind kind, String name, int delta) {
         return mutateGate(kind, name, g -> delta >= 0 ? g.incMaxLevel() : g.decMaxLevel());
+    }
+
+    /** Set the gate's {@code minLevel} outright (the typed value); the gate's own clamps apply. */
+    public CarriagePartAssignment withMinLevelSet(CarriagePartKind kind, String name, int level) {
+        return mutateGate(kind, name, g -> g.withMinLevel(level));
+    }
+
+    /** Set the gate's {@code maxLevel} outright; {@link TemplateGate#ALL} clears the ceiling. */
+    public CarriagePartAssignment withMaxLevelSet(CarriagePartKind kind, String name, int level) {
+        return mutateGate(kind, name, g -> g.withMaxLevel(level < 0 ? TemplateGate.ALL : level));
     }
 
     /**
