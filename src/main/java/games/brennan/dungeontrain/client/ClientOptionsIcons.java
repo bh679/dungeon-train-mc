@@ -48,6 +48,7 @@ final class ClientOptionsIcons {
     /** The icon for one row. Rows the screen expands into several ({@code DISCORD_ACCOUNT}, {@code PERFORMANCE_TIPS}) have none. */
     static Icon of(ClientOptionsTab.Row row) {
         return switch (row) {
+            case DIFFICULTY -> Icon.item(Items.IRON_SWORD);
             case CONTENT_MODE -> Icon.item(Items.CAKE);
             case DEV_CHAT -> Icon.item(Items.WRITABLE_BOOK);
             case POLITICAL_FILTER -> Icon.item(Items.BARRIER);
@@ -81,6 +82,7 @@ final class ClientOptionsIcons {
             case STREAM_CHAT -> Icon.item(Items.OAK_SIGN);
             case STREAM_AUDIO -> Icon.item(Items.JUKEBOX);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
+            case STREAM_POPUPS_OVER_TAG -> Icon.item(Items.KNOWLEDGE_BOOK);
             case LIVE_CHAT -> Icon.item(Items.BELL);
             case TWITCH_HINT -> TWITCH;
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);

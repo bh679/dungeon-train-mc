@@ -63,7 +63,7 @@ final class ClientOptionsTabTest {
     void noDuplicateRows() {
         // Stream is their home; Performance repeats them for players who came there to stop lag.
         Set<ClientOptionsTab.Row> sharedWithPerformance = Set.of(ClientOptionsTab.Row.LIVE_FEED_VIEWING,
-                ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_SIZE);
+                ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG);
         for (boolean chinese : BOOLS) {
             for (boolean translate : BOOLS) {
                 List<ClientOptionsTab.Row> seen = new ArrayList<>();
@@ -94,11 +94,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: forty-six rows (three repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: forty-nine rows (four repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(46, rows.size());
+        assertEquals(49, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -116,7 +116,8 @@ final class ClientOptionsTabTest {
         List<ClientOptionsTab.Row> general =
                 ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, false, true);
 
-        assertEquals(List.of(ClientOptionsTab.Row.CONTENT_MODE,
+        assertEquals(List.of(ClientOptionsTab.Row.DIFFICULTY,
+                        ClientOptionsTab.Row.CONTENT_MODE,
                         ClientOptionsTab.Row.POLITICAL_FILTER,
                         ClientOptionsTab.Row.DEV_CHAT,
                         ClientOptionsTab.Row.BOOK_AUTHOR_CHAT,
@@ -155,7 +156,8 @@ final class ClientOptionsTabTest {
     void lowMemoryNoticeLeadsPerformance() {
         assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT,
                         ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.LIVESTREAM,
-                        ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.PERFORMANCE_TIPS),
+                        ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG,
+                        ClientOptionsTab.Row.PERFORMANCE_TIPS),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, true, true)
                 .contains(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT));
@@ -212,8 +214,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 47 rows, three of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(50, rows.size());
+        // 49 rows, four of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(53, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -222,7 +224,8 @@ final class ClientOptionsTabTest {
     @DisplayName("The Stream tab holds Livestreaming and the what-viewers-see rows; General no longer does")
     void streamTabRows() {
         assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
-                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO, ClientOptionsTab.Row.STREAM_NAME_TAG, ClientOptionsTab.Row.LIVE_CHAT,
+                        ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO, ClientOptionsTab.Row.STREAM_NAME_TAG,
+                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.LIVE_CHAT,
                         ClientOptionsTab.Row.TWITCH_HINT, ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.STREAM_SIZE,
                         ClientOptionsTab.Row.HEAD_VIEWER_SIZE),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));

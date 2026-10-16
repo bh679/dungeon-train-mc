@@ -39,14 +39,17 @@ public final class AdvancementFirstClient {
     /** The relay's answer: was this the first, and who holds the record (name may be blank). */
     public record Answer(boolean first, String byName) {}
 
-    /** Off-thread; {@code callback} runs on the HTTP thread with the answer, or not at all on failure. */
-    public static void claim(UUID player, String name, String advancementId, Consumer<Answer> callback) {
+    /**
+     * Off-thread; {@code callback} runs on the HTTP thread with the answer, or not at all on failure.
+     *
+     * @param difficulty the vanilla difficulty partition key the earn happened on
+     *                   ({@code DifficultyPartition.keyFor}) — the relay keeps advancement stats per
+     *                   difficulty off this claim, since every clean earn sends one
+     */
+    public static void claim(UUID player, String name, String advancementId, String difficulty,
+                             Consumer<Answer> callback) {
         try {
-            JsonObject body = new JsonObject();
-            body.addProperty("id", advancementId);
-            body.addProperty("uuid", player.toString().replace("-", ""));
-            body.addProperty("name", name);
-            body.addProperty("modVersion", VersionInfo.VERSION);
+            JsonObject body = body(player, name, advancementId, difficulty);
             HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/advancements/first-claim"))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Content-Type", "application/json")
@@ -73,6 +76,19 @@ public final class AdvancementFirstClient {
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] first-claim request failed to start: {}", t.toString());
         }
+    }
+
+    /** The claim's JSON body. */
+    static JsonObject body(UUID player, String name, String advancementId, String difficulty) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", advancementId);
+        body.addProperty("uuid", player.toString().replace("-", ""));
+        body.addProperty("name", name);
+        body.addProperty("modVersion", VersionInfo.VERSION);
+        if (difficulty != null && !difficulty.isEmpty()) {
+            body.addProperty("difficulty", difficulty);
+        }
+        return body;
     }
 
     /** {@code {ok:true, first:bool, by:{name}}} → an answer; anything else → null (treated as not first). */

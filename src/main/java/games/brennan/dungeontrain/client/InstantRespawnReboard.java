@@ -77,6 +77,13 @@ public final class InstantRespawnReboard {
      */
     private static volatile long abandonRequestedAtMillis = 0L;
 
+    /**
+     * Wall-clock stamp of the difficulty prompt's "Abandon run &amp; restart now", or {@code 0}. Like
+     * {@link #abandonRequestedAtMillis} it ends the run by killing the player, but the player asked
+     * for a fresh world straight away, so the death reboards whether or not immediate respawn is on.
+     */
+    private static volatile long restartRequestedAtMillis = 0L;
+
     /** What {@link #interceptDeath} does with a combat-kill packet for the local player. */
     enum Outcome {
         /** Leave the packet to vanilla — it either opens the death screen or respawns in place. */
@@ -94,6 +101,7 @@ public final class InstantRespawnReboard {
     public static void onLoggingIn(ClientPlayerNetworkEvent.LoggingIn event) {
         launchScheduled = false;
         abandonRequestedAtMillis = 0L;
+        restartRequestedAtMillis = 0L;
     }
 
     /**
@@ -103,6 +111,16 @@ public final class InstantRespawnReboard {
      */
     public static void expectAbandonedRun() {
         abandonRequestedAtMillis = System.currentTimeMillis();
+    }
+
+    /**
+     * Called by the difficulty prompt just before {@code AbandonRunPacket} goes out: the next death
+     * ends this run and reboards straight into a fresh world (on the newly chosen difficulty — see
+     * {@code DeathScreenLayoutHandler#launchWorld}), skipping the death screen.
+     */
+    public static void expectRestartRun() {
+        abandonRequestedAtMillis = 0L;
+        restartRequestedAtMillis = System.currentTimeMillis();
     }
 
     /**
@@ -131,7 +149,8 @@ public final class InstantRespawnReboard {
                 player != null && player.shouldShowDeathScreen(),
                 mc.getSingleplayerServer() != null,
                 launchScheduled,
-                abandonArmed());
+                abandonArmed(),
+                restartArmed());
 
         switch (outcome) {
             case DEATH_SCREEN -> {
@@ -145,7 +164,11 @@ public final class InstantRespawnReboard {
             }
             case NEW_WORLD -> {
                 launchScheduled = true;
-                LOGGER.info("InstantRespawnReboard: doImmediateRespawn is on — reboarding into a fresh world");
+                boolean restart = restartArmed();
+                restartRequestedAtMillis = 0L;
+                LOGGER.info(restart
+                        ? "InstantRespawnReboard: run abandoned to change difficulty — reboarding into a fresh world"
+                        : "InstantRespawnReboard: doImmediateRespawn is on — reboarding into a fresh world");
                 // Deferred to the next client-loop task drain rather than run inline: the
                 // reboard tears down the integrated server and the connection this packet
                 // is still being dispatched on.
@@ -167,6 +190,12 @@ public final class InstantRespawnReboard {
             }
         }
         return false;
+    }
+
+    /** True when a difficulty "restart now" is armed and still inside its window. */
+    private static boolean restartArmed() {
+        long stamp = restartRequestedAtMillis;
+        return stamp != 0L && System.currentTimeMillis() - stamp <= ABANDON_WINDOW_MILLIS;
     }
 
     /** True when an "Abandon This Run" click is armed and still inside its window. */
@@ -202,7 +231,26 @@ public final class InstantRespawnReboard {
             boolean launchScheduled,
             boolean abandonRequested
     ) {
-        if (!clientThread || !localPlayerDied || showDeathScreen) return Outcome.VANILLA;
+        return decide(clientThread, localPlayerDied, showDeathScreen, singleplayer, launchScheduled,
+                abandonRequested, false);
+    }
+
+    /**
+     * @param restartRequested this death is the difficulty prompt's "Abandon run &amp; restart now":
+     *                         reboard into a fresh world even when a death screen would open.
+     */
+    static Outcome decide(
+            boolean clientThread,
+            boolean localPlayerDied,
+            boolean showDeathScreen,
+            boolean singleplayer,
+            boolean launchScheduled,
+            boolean abandonRequested,
+            boolean restartRequested
+    ) {
+        if (!clientThread || !localPlayerDied) return Outcome.VANILLA;
+        if (restartRequested && singleplayer && !launchScheduled) return Outcome.NEW_WORLD;
+        if (showDeathScreen) return Outcome.VANILLA;
         if (abandonRequested) return Outcome.DEATH_SCREEN;
         if (singleplayer && !launchScheduled) return Outcome.NEW_WORLD;
         return Outcome.VANILLA;

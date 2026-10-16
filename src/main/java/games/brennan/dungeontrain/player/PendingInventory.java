@@ -92,10 +92,10 @@ public final class PendingInventory {
     /**
      * Whether a present snapshot belongs to {@code player}'s current difficulty profile.
      *
-     * <p>The next world inherits the dying world's difficulty, so in the normal flow this always holds.
-     * It is checked anyway because the consequence of being wrong is the one thing difficulty isolation
-     * exists to prevent — a loadout crossing from one profile into another (say, an operator changing
-     * difficulty on the death screen). A mismatch discards the carry rather than applying it.</p>
+     * <p>The next world starts on the player's remembered new-run difficulty, which differs from the
+     * dying world's whenever they saved a change for the next run. A mismatch must never leave the carry
+     * on the new profile — {@code KeepInventoryCarryEvents} banks it into the captured partition's
+     * locker instead.</p>
      */
     public static boolean matchesPartition(ServerPlayer player) {
         String captured = partition;
