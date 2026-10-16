@@ -5,32 +5,50 @@
     {
       "id": "enemiesgroup2",
       "weight": 1,
-      "minLevel": 3
+      "minLevel": 3,
+      "phases": [
+        "OVERWORLD",
+        "VOID",
+        "END",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
     },
     {
       "id": "betternether",
-      "weight": 5,
+      "weight": 8,
       "minLevel": 5,
       "phases": [
         "NETHER",
         "CHUNCKS",
         "SPHERES",
         "STACKS",
-        "FLOATING",
-        "FAR_LANDS"
+        "FLOATING"
       ]
     },
     {
       "id": "basitan",
-      "weight": 4,
+      "weight": 7,
       "minLevel": 1,
       "phases": [
         "NETHER",
         "CHUNCKS",
         "SPHERES",
         "STACKS",
-        "FLOATING",
-        "FAR_LANDS"
+        "FLOATING"
       ]
     },
     {
