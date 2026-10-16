@@ -26636,6 +26636,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "challenge-melon-flatbeds",
+      "version": "0.1311.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "A little help for the hardest runs",
+      "summary": "Taking on a run with nothing but melon to eat and none of the usual comforts? The train now looks after you: once you're well underway, the odd melon slice turns up on a flatbed ahead, waiting as you reach it.",
+      "highlights": [],
+      "pr": 2052,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
