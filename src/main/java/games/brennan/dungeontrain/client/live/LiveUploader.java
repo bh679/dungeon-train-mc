@@ -25,6 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Ships what the encoder writes: watches {@code live.m3u8}, and whenever it changes, asks the relay
@@ -58,6 +60,7 @@ public final class LiveUploader implements AutoCloseable {
     static final int MAX_FAILED_PASSES = 4;
     /** How long a clean stop off the render thread waits for the final pass. */
     public static final long CLOSE_BUDGET_MS = 60_000;
+    private static final Pattern SEGMENT_INDEX = Pattern.compile("seg(\\d{5})\\.ts");
 
     /** The relay and storage calls, so tests can stand in for them. */
     interface Storage {
@@ -92,6 +95,8 @@ public final class LiveUploader implements AutoCloseable {
     private volatile long notBeforeMs;
     private volatile int segmentsUploaded;
     private volatile int viewers = -1;
+    /** The newest segment index a published playlist names; −1 before the first. */
+    private volatile long publishedThrough = -1;
 
     public LiveUploader(Path dir, String token, Consumer<String> onCutOff) {
         this(dir, token, onCutOff, LIVE, true);
@@ -115,6 +120,15 @@ public final class LiveUploader implements AutoCloseable {
 
     public int segmentsUploaded() {
         return segmentsUploaded;
+    }
+
+    /**
+     * The newest segment ({@code segNNNNN.ts}, numbered from 0, so segment k holds stream time
+     * [kS, (k+1)S)) that a playlist on storage names — the furthest any viewer can have got. −1 before
+     * the first playlist goes up.
+     */
+    public long publishedThrough() {
+        return publishedThrough;
     }
 
     /** Viewers as of the last heartbeat; −1 until the relay has said. */
@@ -242,6 +256,7 @@ public final class LiveUploader implements AutoCloseable {
             if (put.status() >= 200 && put.status() < 300) {
                 lastPublished = publish.get();
                 published = true;
+                publishedThrough = Math.max(publishedThrough, newestSegment(LivePlaylist.parse(lastPublished)));
             } else {
                 // Storage said no (or the network did): wait before asking the relay to sign again,
                 // or a dead bucket turns into two presign calls a second.
@@ -251,6 +266,16 @@ public final class LiveUploader implements AutoCloseable {
         }
         // Only once nothing is left to retry: until then every poll comes back for the pending segments.
         if (allDone && published) lastPlaylistMtime = mtime;
+    }
+
+    /** The highest {@code segNNNNN.ts} index a playlist names, by name (a skipped one leaves a gap); −1 if none. */
+    static long newestSegment(LivePlaylist playlist) {
+        long newest = -1;
+        for (String seg : playlist.segments()) {
+            Matcher m = SEGMENT_INDEX.matcher(seg);
+            if (m.matches()) newest = Math.max(newest, Long.parseLong(m.group(1)));
+        }
+        return newest;
     }
 
     private void skip(String seg, long sn, String why) {
