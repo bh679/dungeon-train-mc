@@ -20,6 +20,8 @@ from PIL import Image
 GRADLE = Path.home() / ".gradle" / "caches"
 #: DT's own item sprites, read from the working tree rather than a jar.
 DT_ITEM_TEXTURES = Path(__file__).resolve().parents[3] / "src/main/resources/assets/dungeontrain/textures/item"
+#: DT's English lang file: its ``item.dungeontrain.*`` keys say which DT ids are items.
+DT_LANG = Path(__file__).resolve().parents[3] / "src/main/resources/assets/dungeontrain/lang/en_us.json"
 
 #: Flat (2D) item renders for block items whose inventory icon is the block texture itself.
 FLAT_BLOCK_ITEMS = {"oak_sapling", "dandelion", "poppy", "oxeye_daisy", "rail", "powered_rail",
@@ -43,6 +45,15 @@ def find_client_jar(version: str) -> Path | None:
 def _mod_jar(pattern: str) -> zipfile.ZipFile | None:
     jars = sorted(GRADLE.glob(f"modules-2/files-2.1/{pattern}"))
     return zipfile.ZipFile(jars[-1]) if jars else None
+
+
+def is_item_name(lang: dict, ns: str, name: str) -> bool:
+    """True when ``ns:name`` names an item: it has an ``item.<ns>.<name>`` or ``block.<ns>.<name>`` lang key.
+
+    Item models and textures also hold animation frames and override sub-models (``clock_57``,
+    ``bow_pulling_0``, trim variants) that are not registered items; none of those has a name.
+    """
+    return f"item.{ns}.{name}" in lang or f"block.{ns}.{name}" in lang
 
 
 def png_uri(img: Image.Image) -> str:
@@ -107,6 +118,7 @@ class Textures:
         }
         self.missing: list[str] = []
         self._icons: dict[str, str] = {}
+        self._langs: dict[str, dict] = {}
 
     # --- raw reads -----------------------------------------------------------
 
@@ -162,6 +174,31 @@ class Textures:
             if path.is_file():
                 return Image.open(path).convert("RGBA")
         return None
+
+    def lang(self, ns: str) -> dict:
+        """``assets/<ns>/lang/en_us.json`` from the jar that owns ``ns`` (DT's from the working tree)."""
+        if ns not in self._langs:
+            import json
+            path = f"assets/{ns}/lang/en_us.json"
+            if ns == "dungeontrain":
+                data = json.loads(DT_LANG.read_text(encoding="utf-8")) if DT_LANG.is_file() else {}
+            elif ns == "minecraft":
+                data = self.mc_json(path) if path in self.names else {}
+            else:
+                jar = self.mods.get(ns)
+                try:
+                    data = json.loads(jar.read(path)) if jar is not None else {}
+                except KeyError:
+                    data = {}
+            self._langs[ns] = data
+        return self._langs[ns]
+
+    def is_item(self, item_id: str) -> bool:
+        """True for a registered item id; False for animation frames and other non-item models."""
+        ns, _, name = item_id.partition(":")
+        if not is_item_name(self.lang(ns), ns, name):
+            return False
+        return ns != "minecraft" or f"assets/minecraft/models/item/{name}.json" in self.names
 
     # --- icons ---------------------------------------------------------------
 
@@ -231,8 +268,10 @@ class Textures:
     def all_item_icons(self, skip: set[str]) -> dict[str, str]:
         """Every item the jars can draw, for the editor's "More icons" list: {item id: data URI}.
 
-        Vanilla item models plus the mods whose textures are read here. An item that can't be drawn is
-        left out (never a magenta square), and nothing is added to ``missing``.
+        Vanilla item models plus the mods whose textures are read here, kept to real items (``is_item``):
+        a clock or compass animation frame is a texture, not an item, and saved as an icon it stops the
+        advancement loading. An item that can't be drawn is left out (never a magenta square), and nothing
+        is added to ``missing``.
         """
         ids = []
         for n in sorted(self.names):
@@ -250,7 +289,7 @@ class Textures:
             ids.append("vista:television")
         out = {}
         for item_id in ids:
-            if item_id in skip or item_id in out:
+            if item_id in skip or item_id in out or not self.is_item(item_id):
                 continue
             try:
                 img = self._render(item_id)
