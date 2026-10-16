@@ -81,6 +81,7 @@ final class ClientOptionsIcons {
             case STREAM_CHAT -> Icon.item(Items.OAK_SIGN);
             case STREAM_AUDIO -> Icon.item(Items.JUKEBOX);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
+            case STREAM_POPUPS_OVER_TAG -> Icon.item(Items.KNOWLEDGE_BOOK);
             case LIVE_CHAT -> Icon.item(Items.BELL);
             case TWITCH_HINT -> TWITCH;
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);

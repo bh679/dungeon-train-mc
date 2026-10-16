@@ -793,7 +793,6 @@ public final class LiveStreamController {
     public static void onRenderFrameEnd(RenderFrameEvent.Post event) {
         boolean handled = INSTANCE.grabbedThisFrame;
         INSTANCE.grabbedThisFrame = false;
-        EarlyToasts.consume(); // normally consumed by the toast draw; never carry it to the next frame
         if (handled) return;
         // An earlier point that never fired (no GUI pass this frame, or another mod removed the chat
         // layer) drops the frame: reading the finished frame instead could send what was kept back.
@@ -815,18 +814,15 @@ public final class LiveStreamController {
     /**
      * Stream chat off (always, in Kid mode): read just before chat draws, or skip the chat layer
      * while a listed menu is open. Receives cancelled events for the same reason as {@link #onGuiStart}.
-     * Before chat, the popups are drawn first ({@link EarlyToasts}) — they would otherwise only draw
-     * at the end of the frame, after the read.
+     * Before chat, the popups are drawn once for the read — they would otherwise only draw at the end
+     * of the frame, after it. They draw again there as usual, so the streamer's screen is unchanged.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public static void onGuiLayer(RenderGuiLayerEvent.Pre event) {
         if (!VanillaGuiLayers.CHAT.equals(event.getName())) return;
         switch (INSTANCE.capturePoint()) {
             case BEFORE_CHAT -> {
-                if (!INSTANCE.grabbedThisFrame) {
-                    Minecraft.getInstance().getToasts().render(event.getGuiGraphics());
-                    EarlyToasts.mark();
-                }
+                if (!INSTANCE.grabbedThisFrame) Minecraft.getInstance().getToasts().render(event.getGuiGraphics());
                 INSTANCE.grabNow(event.getGuiGraphics());
             }
             case FRAME_END_HIDE_CHAT -> event.setCanceled(true);
