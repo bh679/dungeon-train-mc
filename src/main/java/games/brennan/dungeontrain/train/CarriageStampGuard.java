@@ -13,7 +13,8 @@ import net.minecraft.world.level.block.Block;
  * guard is held (the original reason for it, below), and {@code ObserverBlockStampMixin} keeps
  * observers from pulsing at our own placement — only a player or a gameplay cause should fire one —
  * and {@code FastPaintingStampSurviveMixin} keeps block paintings hung while their wall is still being
- * written.
+ * written, and {@code BlockUpdateOrDestroyStampMixin} lets a block that cannot survive where we
+ * wrote it (an unsupported jungle moss variant) vanish without dropping its item.
  * Any loader that writes a template with a cascading flag belongs inside this guard.</p>
  *
  * <p><b>Why:</b> a template is authoritative. Whatever the author saved into the {@code .nbt} is what
