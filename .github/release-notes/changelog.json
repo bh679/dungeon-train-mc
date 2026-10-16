@@ -26420,6 +26420,62 @@
       "notable": true,
       "description": "Dungeon Train TV can now connect to your Twitch.\n\nLet the stream give your channel a shout-out whenever you hold the Live Eye! You get a shout-out in chat, and your channel is featured in the livestream name and pill for all viewers to see.\n\nStreamers can go one step further. Turn on **Also stream to my channel** and your ride is pushed to your own Twitch channel at the same time, with an optional title and category set for you. Both switches live on the new Account tab, next to Discord, and /twitch unlink takes it all back at any time. Your stream key is never stored.",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/twitch-integration.jpg"
+    },
+    {
+      "id": "grown-bamboo-breaks-off",
+      "version": "0.1308.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Bamboo on the train snaps off when it hits something",
+      "summary": "Bamboo growing on the train no longer bulldozes through the terrain. When a stalk grows too tall and hits something, it snaps off where it hit, and the bamboo drops right there for you to grab. The rest of the plant stays put.",
+      "highlights": [],
+      "pr": 2038,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-pill-above-jade",
+      "version": "0.1308.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Your live name tag stays on top",
+      "summary": "While you're live, the name tag at the top of the screen now stays in place and the block info tooltip moves down under it instead of covering it. You now see the tag on your own screen too, so you always know what viewers see.",
+      "highlights": [
+        "The block info tooltip moves under the live name tag while you stream",
+        "Streamers see their own live name tag on screen"
+      ],
+      "pr": 2039,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "prefab-name-title-blur",
+      "version": "0.1309.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Sharp titles on the prefab save screen",
+      "summary": "The title and name hint on the editor's Save Prefab screen are no longer smeared into the blurred background.",
+      "highlights": [],
+      "pr": 2042,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

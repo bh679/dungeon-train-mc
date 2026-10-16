@@ -15,26 +15,29 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.ClientHooks;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 /**
  * "<b>Name</b> is live", top-middle in black on a black-outlined white pill with a pulsing green
- * dot before it ("… is live with chat disabled" when the streamer has Live chat off), drawn into the
- * broadcast picture only.
+ * dot before it ("… is live with chat disabled" when the streamer has Live chat off).
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
- * ({@link StreamPreview}) — so viewers and the preview see it, the streamer's own screen never does,
- * and it is there on every frame (menus open, GUI off) until the streamer sets it to None. Sized in
- * the stream's own GUI pixels so it matches the HUD viewers see. When Jade's look-at tooltip is over
- * that spot the pill drops below it ({@link StreamTagObstruction}).</p>
+ * ({@link StreamPreview}) — so viewers see it on every frame (menus open, GUI off) until the
+ * streamer sets it to None. Sized in the stream's own GUI pixels so it matches the HUD viewers see.
+ * The streamer sees the same pill on their own HUD while live (a GUI layer, hidden by F1).</p>
+ *
+ * <p>The pill owns the top-middle: it never moves. Jade's look-at tooltip moves down under it
+ * instead ({@link LivePillSlot}).</p>
  *
  * <p>Which name: {@link LiveFeedClientConfig#streamNameTag()}. Kid mode shows none. A Discord tag
  * with no linked Discord name shows nothing rather than falling back to the Minecraft name.</p>
@@ -81,6 +84,13 @@ public final class StreamNameTag {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         ticks++;
+    }
+
+    /** The streamer's own copy, above every other HUD layer; F1 hides it like the rest of the HUD. */
+    @SubscribeEvent
+    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_name_tag"),
+            (g, deltaTracker) -> drawHud(g));
     }
 
     /** True when a label read at {@code readTick} is due a re-read at {@code nowTick}. */
@@ -147,6 +157,39 @@ public final class StreamNameTag {
         }
     }
 
+    /** The pill's width in GUI pixels for the current label, or 0 when there is none. */
+    static float pillGuiWidth(Font font) {
+        Component label = label();
+        return label == null ? 0f : groupGuiWidth(font, label) + 2 * PAD_X;
+    }
+
+    /** The pill's height in GUI pixels. */
+    static int pillGuiHeight() {
+        return GLYPH_H + 2 * PAD_Y;
+    }
+
+    /** The dot, its gap and the name, in GUI pixels. */
+    private static int groupGuiWidth(Font font, Component label) {
+        return DOT_SIZE + DOT_GAP + font.width(label) - 1; // drop the trailing 1px advance so the group centres
+    }
+
+    /**
+     * Render thread, HUD pass: the streamer's own pill while live. Drawn in window pixels (the pose
+     * undoes the GUI scale) so its curves match the broadcast copy rather than a GUI-pixel staircase.
+     */
+    private static void drawHud(GuiGraphics g) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.options.hideGui || !LiveStreamController.get().streaming()) return;
+        Component label = label();
+        if (label == null) return;
+        float scale = (float) mc.getWindow().getGuiScale();
+        if (scale <= 0f) return;
+        g.pose().pushPose();
+        g.pose().scale(1f / scale, 1f / scale, 1f);
+        draw(g, mc.font, label, mc.getWindow().getWidth(), scale);
+        g.pose().popPose();
+    }
+
     /**
      * Render thread: draw the tag into {@code target} (already holding this frame), then rebind the
      * main target. Projection and model-view are set here and restored, as the call can land inside
@@ -189,16 +232,11 @@ public final class StreamNameTag {
      * resolution, not a GUI-pixel staircase), then the name in GUI pixels.
      */
     private static void draw(GuiGraphics graphics, Font font, Component label, int targetW, float scale) {
-        int textW = font.width(label) - 1; // drop the trailing 1px advance so the group centres
-        float groupW = (DOT_SIZE + DOT_GAP + textW) * scale;
+        float groupW = groupGuiWidth(font, label) * scale;
         int pillW = Math.round(groupW + 2 * PAD_X * scale);
-        int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
+        int pillH = Math.round(pillGuiHeight() * scale);
         int pillX = (targetW - pillW) / 2;
-        float guiCentre = targetW / scale / 2f;
-        float guiHalfW = pillW / scale / 2f;
-        float guiTop = StreamTagObstruction.top(guiCentre - guiHalfW, guiCentre + guiHalfW, TOP_OFFSET,
-            System.currentTimeMillis());
-        int pillY = Math.round(guiTop * scale);
+        int pillY = Math.round(TOP_OFFSET * scale);
         int line = Math.max(1, Math.round(scale));
         pill(graphics, pillX, pillY, pillW, pillH, OUTLINE);
         pill(graphics, pillX + line, pillY + line, pillW - 2 * line, pillH - 2 * line, PILL);
