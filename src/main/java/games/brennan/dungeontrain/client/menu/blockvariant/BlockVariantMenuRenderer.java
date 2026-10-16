@@ -79,8 +79,8 @@ public final class BlockVariantMenuRenderer {
     static final double ROW_HEIGHT = 0.30;
     static final double HEADER_HEIGHT = 0.32;
     static final double TOOLBAR_HEIGHT = 0.32;
-    /** A grid column = name cell + weight + (optional) X. */
-    static final double COLUMN_WIDTH = 1.7;
+    /** A grid column = name cell + If + weight + (optional) X. */
+    static final double COLUMN_WIDTH = 2.05;
     /** Multi-cell toolbar (Copy/Save/Add/Lock/Remove/Clear/X) needs more width. */
     static final double MIN_PANEL_WIDTH = 3.2;
 
@@ -108,6 +108,8 @@ public final class BlockVariantMenuRenderer {
 
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
+    /** If pill width — "If" or a target and value count such as "G3:2". Every row has one. */
+    static final double COND_CELL_WIDTH = 0.38;
     /** Per-cell width for a mob row's difficulty min / max cells (matches the weight cell). */
     static final double DIFF_CELL_WIDTH = 0.40;
     /** ~20% of {@link #COLUMN_WIDTH} so the L/R/O pill segments are comfortable click targets. */
@@ -377,7 +379,9 @@ public final class BlockVariantMenuRenderer {
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
             double weightCellL = weightCellR - WEIGHT_CELL_WIDTH;
-            double rotDirsCellR = weightCellL;
+            double condCellR = weightCellL;
+            double condCellL = condCellR - COND_CELL_WIDTH;
+            double rotDirsCellR = condCellL;
             double rotDirsCellL = showDirs ? rotDirsCellR - ROT_DIRS_CELL_WIDTH : rotDirsCellR;
             double rotModeCellR = rotDirsCellL;
             double rotModeCellL = rotatable ? rotModeCellR - ROT_MODE_CELL_WIDTH : rotModeCellR;
@@ -528,6 +532,8 @@ public final class BlockVariantMenuRenderer {
                     rowBottom, rowTop, rowCY, hovered);
             }
 
+            drawConditionCell(ps, buffer, font, i, entry, condCellL, condCellR, rowBottom, rowTop, rowCY, hovered);
+
             // Weight cell
             boolean weightHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_WEIGHT && hovered.index() == i;
             int weightTint = weightHover ? 0xC0FFCC33 : 0x40FFFFFF;
@@ -566,6 +572,17 @@ public final class BlockVariantMenuRenderer {
             } else if (growthState != null) {
                 drawGrowthPopup(ps, buffer, font, entries.get(growthRow), growthState, panelW, halfH, hovered);
             }
+        }
+
+        // If popup, floating just above the panel like the Grow popup.
+        int condRow = BlockVariantMenu.condPopupRow();
+        if (condRow >= 0) {
+            BlockVariantSyncPacket.Entry condEntry = entries.get(condRow);
+            List<GrowthPopupLayout.Row> condRows = ConditionPopupLayout.rows(condEntry, panelW, halfH);
+            drawPopupRows(ps, buffer, font, condRows, BlockVariantMenu.CellKind.COND_OPTION, hovered,
+                (row, i) -> ConditionPopupLayout.isSelected(condEntry, row, i));
+            drawConditionBlockStrip(ps, buffer, font, condRows, ConditionPopupLayout.strip(condEntry),
+                !ConditionPopupLayout.isGroupMode(condEntry.condition()), hovered, icons);
         }
 
         // OPTIONS popup is drawn last so it shadows the row underneath.
@@ -627,6 +644,84 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
+     * The If popup's block list: one icon per value, left to right, in the slots
+     * {@link #drawPopupRows} already tinted. Hovering a slot shows the ✕ that clicking it does.
+     * Air (an empty-hand value) has no item, so it reads as a dash.
+     */
+    private static void drawConditionBlockStrip(PoseStack ps, MultiBufferSource buffer, Font font,
+                                                List<GrowthPopupLayout.Row> rows,
+                                                List<net.minecraft.resources.ResourceLocation> blocks,
+                                                boolean clickRemoves,
+                                                BlockVariantMenu.Hit hovered, @Nullable PanelIconBatch icons) {
+        for (GrowthPopupLayout.Row row : rows) {
+            if (row.section() != ConditionPopupLayout.SECTION_BLOCKS) continue;
+            double cy = (row.bottom() + row.top()) / 2.0;
+            for (int i = 0; i < blocks.size(); i++) {
+                double bL = row.buttonLeft(i);
+                double bR = bL + row.buttonWidth();
+                boolean hover = hovered.kind() == BlockVariantMenu.CellKind.COND_OPTION
+                    && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);
+                if (hover && clickRemoves) {
+                    drawCenteredText(ps, buffer, font, "✕", (bL + bR) / 2.0, cy, 0xFFFF6060);
+                    continue;
+                }
+                ItemStack stack = conditionIcon(blocks.get(i));
+                if (stack == null) {
+                    drawCenteredText(ps, buffer, font, "∅", (bL + bR) / 2.0, cy, 0xFFFFFFFF);
+                    continue;
+                }
+                double size = Math.min(ICON_SIZE, row.buttonWidth() * 0.8);
+                double centerX = (bL + bR) / 2.0;
+                if (icons != null) {
+                    icons.add(ps, stack, centerX, cy, size);
+                    continue;
+                }
+                Minecraft mc = Minecraft.getInstance();
+                ps.pushPose();
+                ps.translate(centerX, cy, 0.002);
+                ps.scale((float) size, (float) size, (float) size);
+                mc.getItemRenderer().renderStatic(stack, ItemDisplayContext.GUI, LightTexture.FULL_BRIGHT,
+                    OverlayTexture.NO_OVERLAY, ps, buffer, mc.level, 0);
+                ps.popPose();
+            }
+        }
+    }
+
+    /** The item a condition value shows as; {@code null} for air. Liquids show their bucket. */
+    @Nullable
+    private static ItemStack conditionIcon(net.minecraft.resources.ResourceLocation id) {
+        net.minecraft.world.level.block.Block block =
+            net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(id);
+        if (block == null || block == net.minecraft.world.level.block.Blocks.AIR) return null;
+        Item item = block.asItem();
+        if (item == null || item == Items.AIR) {
+            Item bucket = games.brennan.dungeontrain.editor.VariantLiquids.bucketIcon(block.defaultBlockState());
+            if (bucket != null) item = bucket;
+        }
+        return new ItemStack(item == null || item == Items.AIR ? Items.BARRIER : item);
+    }
+
+    /**
+     * The If pill: "If" in grey when the row always joins the roll, the target and value count in
+     * purple when it is gated, red when its group target no longer exists. Lit while its popup is open.
+     */
+    private static void drawConditionCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                          int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                          double cellL, double cellR,
+                                          double rowBottom, double rowTop, double rowCY,
+                                          BlockVariantMenu.Hit hovered) {
+        boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_COND && hovered.index() == rowIndex;
+        boolean open = BlockVariantMenu.condPopupRow() == rowIndex;
+        boolean set = ConditionPopupLayout.isSet(entry.condition());
+        int tint = !set ? (hover || open ? 0x60AAAAAA : 0x30777777)
+            : !entry.conditionLive() ? (hover || open ? 0xC0FF4040 : 0x80AA2020)
+            : (hover || open ? 0xC0D98CFF : 0x808A4FB3);
+        drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
+        drawCenteredText(ps, buffer, font, ConditionPopupLayout.shortLabel(entry.condition()),
+            (cellL + cellR) / 2.0, rowCY, set || hover ? 0xFFFFFFFF : 0xFF888888);
+    }
+
+    /**
      * The Painting pill: "Painting" when off, the size ({@code 2×1} / {@code Any}) in green when on,
      * lit while its popup is open — the Grow pill's look, in the Grow slot.
      */
@@ -662,6 +757,14 @@ public final class BlockVariantMenuRenderer {
     private static void drawPopupRows(PoseStack ps, MultiBufferSource buffer, Font font,
                                       List<GrowthPopupLayout.Row> rows, BlockVariantMenu.CellKind optionKind,
                                       BlockVariantMenu.Hit hovered) {
+        drawPopupRows(ps, buffer, font, rows, optionKind, hovered, (row, i) -> i == row.selected());
+    }
+
+    /** {@link #drawPopupRows} with the lit buttons decided by {@code isSelected} — for multi-select rows. */
+    private static void drawPopupRows(PoseStack ps, MultiBufferSource buffer, Font font,
+                                      List<GrowthPopupLayout.Row> rows, BlockVariantMenu.CellKind optionKind,
+                                      BlockVariantMenu.Hit hovered,
+                                      java.util.function.BiPredicate<GrowthPopupLayout.Row, Integer> isSelected) {
         double[] r = GrowthPopupLayout.rect(rows);
         drawQuad(ps, buffer, r[0], r[2], r[1], r[3], 0xE0202020);
         for (GrowthPopupLayout.Row row : rows) {
@@ -669,14 +772,17 @@ public final class BlockVariantMenuRenderer {
             double bTop = row.top() - 0.02;
             double cy = (bBot + bTop) / 2.0;
             drawLeftText(ps, buffer, font, row.label(), row.left() + GrowthPopupLayout.PAD + 0.03, cy, 0xFFCCCCCC);
-            boolean stepper = row.selected() < 0;
+            // The If popup's block strip is a row of icon buttons, never a − n + stepper.
+            boolean stepper = row.selected() < 0
+                && !(optionKind == BlockVariantMenu.CellKind.COND_OPTION
+                    && row.section() != ConditionPopupLayout.SECTION_GROUP);
             for (int i = 0; i < row.buttons().length; i++) {
                 double bL = row.buttonLeft(i);
                 double bR = bL + row.buttonWidth();
                 // The middle of a painting − n + stepper is a read-out, not a button. A lone
                 // number cell (Grow Min / Max) is a button: it is the number itself.
                 boolean value = stepper && row.buttons().length == 3 && i == PaintingPopupLayout.STEPPER_VALUE;
-                boolean selected = i == row.selected();
+                boolean selected = isSelected.test(row, i);
                 boolean hover = !value && hovered.kind() == optionKind
                     && hovered.secondary() == GrowthPopupLayout.encode(row.section(), i);
                 int tint = value ? 0x00000000

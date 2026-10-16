@@ -126,6 +126,22 @@ public final class LiveChatBridge {
             LiveTakeoverChat.vote(vote);
             return;
         }
+        send(content);
+    }
+
+    /**
+     * A chat command the relay answers for the whole room ({@code /streamer}): typed in game it is a client
+     * command, which never reaches {@link #onClientChat}, so it is sent from here. False when this client is
+     * not in the chat.
+     */
+    public static boolean sendCommand(String content) {
+        if (!connected) return false;
+        send(content);
+        return true;
+    }
+
+    /** One line to the relay, at most one a second, fire-and-forget. */
+    private static void send(String content) {
         long now = System.currentTimeMillis();
         if (now - lastSendMs < SEND_GAP_MS) return;
         lastSendMs = now;

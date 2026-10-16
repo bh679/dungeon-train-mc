@@ -603,7 +603,8 @@ public final class CarriageVariantBlocks {
                     if (!rawPrefab.isEmpty()) mobLootPrefab = rawPrefab;
                 }
                 VariantState mob = VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
-                return mob.withHalf(mobHalf).withDifficulty(mobDiff).withLinkedLootPrefabId(mobLootPrefab);
+                return mob.withHalf(mobHalf).withDifficulty(mobDiff).withLinkedLootPrefabId(mobLootPrefab)
+                    .withCondition(parseCondition(obj.get("if"), contextId, contextPos));
             }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
@@ -677,12 +678,32 @@ public final class CarriageVariantBlocks {
             JsonElement hungEl = obj.get("hung");
             HungPainting hung = hungEl != null && hungEl.isJsonPrimitive()
                 ? HungPainting.parse(hungEl.getAsString()) : HungPainting.NONE;
+            // Additive placement condition. Absent → always eligible, so older files spawn unchanged.
+            VariantCondition condition = parseCondition(obj.get("if"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung);
+                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung,
+                groupRef > 0 ? parseGroupStates(obj.get("groupStates"), blocks, contextId, contextPos) : List.of(),
+                condition);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
         return null;
+    }
+
+    /**
+     * A reference row's copy of its group's options ({@code "groupStates"}); empty when absent or
+     * malformed. Unparseable options are skipped one by one, like the cell's own list.
+     */
+    private static List<VariantState> parseGroupStates(@javax.annotation.Nullable JsonElement el,
+                                                       HolderLookup.RegistryLookup<net.minecraft.world.level.block.Block> blocks,
+                                                       String contextId, BlockPos contextPos) {
+        if (el == null || !el.isJsonArray()) return List.of();
+        List<VariantState> out = new ArrayList<>();
+        for (JsonElement option : el.getAsJsonArray()) {
+            VariantState parsed = parseVariantElement(option, blocks, contextId, contextPos);
+            if (parsed != null) out.add(parsed);
+        }
+        return out;
     }
 
     private static VariantState parseStateString(String raw,
@@ -863,7 +884,8 @@ public final class CarriageVariantBlocks {
      * Copy / Paste of a clipboard item.
      */
     public synchronized int nextFreeLockId() {
-        java.util.Set<Integer> used = new java.util.HashSet<>(lockIds.values());
+        // Includes groups kept alive only by a reference, so a new lock never takes over one.
+        java.util.Set<Integer> used = groupRefs.lockIdsInUse();
         int n = 1;
         while (used.contains(n)) n++;
         return n;
@@ -1165,7 +1187,7 @@ public final class CarriageVariantBlocks {
             sb.append("\n    \"").append(formatPos(e.getKey())).append("\": ");
             // Cell-object form for locked / spanned cells, bare array (v3 shape) otherwise —
             // byte-identical to the old writer for every cell without a span.
-            appendCellJson(sb, e.getValue(), lockId, VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH,
+            appendCellJson(sb, groupRefs.refreshed(e.getValue(), lockId), lockId, VariantCopyRoll.DEFAULT, VariantCopyScope.BOTH,
                 spanAt(e.getKey()));
             first = false;
         }
@@ -1399,6 +1421,7 @@ public final class CarriageVariantBlocks {
             if (!s.active().isDefault()) {
                 sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
             }
+            appendConditionJson(sb, s.condition());
             sb.append("}");
             return;
         }
@@ -1432,6 +1455,15 @@ public final class CarriageVariantBlocks {
         }
         if (s.isGroupRef()) {
             sb.append(", \"groupRef\": ").append(s.groupRef());
+            if (!s.groupStates().isEmpty()) {
+                // The group's options, so the reference still resolves once no cell carries the id.
+                sb.append(", \"groupStates\": [");
+                for (int i = 0; i < s.groupStates().size(); i++) {
+                    if (i > 0) sb.append(", ");
+                    appendVariantJson(sb, s.groupStates().get(i));
+                }
+                sb.append("]");
+            }
         }
         if (!s.active().isDefault()) {
             sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
@@ -1448,7 +1480,30 @@ public final class CarriageVariantBlocks {
         if (!s.hung().isDefault()) {
             sb.append(", \"hung\": \"").append(s.hung().id()).append("\"");
         }
+        appendConditionJson(sb, s.condition());
         sb.append("}");
+    }
+
+    /** Emit {@code , "if": "<token>"} for a set condition; nothing for none. */
+    private static void appendConditionJson(StringBuilder sb, VariantCondition c) {
+        if (c.isDefault()) return;
+        sb.append(", \"if\": \"").append(escapeJson(c.id())).append("\"");
+    }
+
+    /**
+     * Parse the additive {@code "if"} token. Absent → {@link VariantCondition#NONE}; a token whose
+     * target is malformed or whose every block id is unknown also lands on none, with a warning so
+     * an author can see why a gated row became unconditional.
+     */
+    private static VariantCondition parseCondition(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || !el.isJsonPrimitive()) return VariantCondition.NONE;
+        String raw = el.getAsString();
+        VariantCondition c = VariantCondition.parse(raw);
+        if (c.isDefault() && !raw.isBlank()) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: condition '{}' has no usable target or block, dropping it.",
+                contextId, contextPos, raw);
+        }
+        return c;
     }
 
     /**

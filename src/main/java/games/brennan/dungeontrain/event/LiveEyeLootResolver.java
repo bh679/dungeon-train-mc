@@ -25,6 +25,9 @@ import net.minecraft.world.item.Items;
  *   <li>while anyone is broadcasting on the Live Feed only {@link #LIVE_KEEP_CHANCE} of slots stay a
  *       Live Eye ({@link ServerLiveStatus#isAnyoneLive}).</li>
  * </ul>
+ * A granted eye stays {@link LiveHeadpiecePendingTag#isUnclaimed unclaimed} until a player takes it, and
+ * is checked again on every sighting: anyone already holding a Live Eye sees it become a TV. A player
+ * carries at most one ({@link #extrasOver}; enforced by {@link LiveHeadpieceLootGate}).
  * TVs are ordinary loot and are never limited.
  */
 public final class LiveEyeLootResolver {
@@ -74,24 +77,39 @@ public final class LiveEyeLootResolver {
             player.getRandom().nextFloat());
         if (outcome == Outcome.LIVE_EYE) {
             markSeen(player);
-            return new ItemStack(ModItems.LIVE_HEADPIECE.get());
+            ItemStack eye = new ItemStack(ModItems.LIVE_HEADPIECE.get());
+            LiveHeadpiecePendingTag.markUnclaimed(eye);
+            return eye;
         }
         return tv();
     }
 
     /**
-     * {@code player} sees {@code container}: resolve its pending Live Eyes, and start the cooldown if it
-     * already holds a real one. Returns true when a slot changed (the caller marks the block dirty).
+     * {@code player} sees {@code container}: resolve its pending Live Eyes, turn its unclaimed ones into
+     * TVs when the player already holds a Live Eye, and start the cooldown if a real one is left. Returns
+     * true when a slot changed (the caller marks the block dirty).
      */
     public static boolean resolveContainer(ServerPlayer player, Container container) {
-        if (countRealLiveEyes(container) > 0) markSeen(player);
         boolean changed = false;
+        if (holdsLiveEye(player)) {
+            for (int i = 0; i < container.getContainerSize(); i++) {
+                if (!LiveHeadpiecePendingTag.isUnclaimed(container.getItem(i))) continue;
+                container.setItem(i, tv());
+                changed = true;
+            }
+        }
+        if (countRealLiveEyes(container) > 0) markSeen(player);
         for (int i = 0; i < container.getContainerSize(); i++) {
             if (!LiveHeadpiecePendingTag.isPending(container.getItem(i))) continue;
             container.setItem(i, resolve(player));
             changed = true;
         }
         return changed;
+    }
+
+    /** How many of {@code held} real Live Eyes are over the one a player may carry. */
+    public static int extrasOver(int held) {
+        return Math.max(0, held - 1);
     }
 
     /** True when {@code container} holds a pending or real Live Eye — the only containers worth resolving. */
@@ -102,20 +120,22 @@ public final class LiveEyeLootResolver {
         return false;
     }
 
-    /** A real (resolved) Live Eye in the inventory — worn included — or the ender chest. */
+    /** A real (resolved) Live Eye in the inventory — worn included — or the ender chest, shulkers in either included. */
     public static boolean holdsLiveEye(ServerPlayer player) {
-        return countRealLiveEyes(player.getInventory()) > 0
-            || countRealLiveEyes(player.getEnderChestInventory()) > 0;
+        return heldLiveEyes(player) > 0;
     }
 
-    /** Resolved (not pending) Live Eyes in {@code container} — any side, so a client can count its own inventory. */
+    /** Every real Live Eye {@code player} holds: inventory (worn included) and ender chest, packed ones too. */
+    public static int heldLiveEyes(ServerPlayer player) {
+        return countRealLiveEyes(player.getInventory()) + countRealLiveEyes(player.getEnderChestInventory());
+    }
+
+    /**
+     * Resolved (not pending) Live Eyes in {@code container}, counting those packed in shulker boxes and
+     * bundles ({@link LiveEyeHoldings}) — any side, so a client can count its own inventory.
+     */
     public static int countRealLiveEyes(Container container) {
-        int n = 0;
-        for (int i = 0; i < container.getContainerSize(); i++) {
-            ItemStack stack = container.getItem(i);
-            if (stack.is(ModItems.LIVE_HEADPIECE.get()) && !LiveHeadpiecePendingTag.isPending(stack)) n++;
-        }
-        return n;
+        return LiveEyeHoldings.count(container);
     }
 
     private static boolean onCooldown(ServerPlayer player) {

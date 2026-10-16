@@ -64,6 +64,16 @@ public final class BlockVariantMenuScreen extends PanelScreenHost {
         BlockVariantMenuInputHandler.dispatch(hit, shift, button);
     }
 
+    /** Middle button: copy a group-reference row to the hotbar, as it does on the world-space panel. */
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_MIDDLE
+            && BlockVariantMenuInputHandler.copyGroupRow(hitAt(localX(mouseX), localY(mouseY)))) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
     /** The panel has two faces — the variant list and the Add-search list — with their own layouts. */
     private static BlockVariantMenu.Hit hitAt(double localX, double localY) {
         return BlockVariantMenu.screen() == BlockVariantMenu.Screen.ROOT

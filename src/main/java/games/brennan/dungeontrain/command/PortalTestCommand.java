@@ -99,6 +99,13 @@ public final class PortalTestCommand {
                 .then(Commands.literal("focus").executes(ctx -> runReseedNow(ctx.getSource(), true)))
                 .then(Commands.literal("on").executes(ctx -> runReseed(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> runReseed(ctx.getSource(), false))))
+            // The editor's test toolbar: Reload stands the same rolls up again from the saved
+            // templates; Re-roll others keeps the template under test and rolls what is around it.
+            .then(Commands.literal("reload").executes(ctx -> runReload(ctx.getSource())))
+            .then(Commands.literal("reroll")
+                .then(Commands.literal("others").executes(ctx -> runRestamp(ctx.getSource(), TestReroll.OTHERS))))
+            // The test settings rows: the stage, Diff-Level and band tests stand up at.
+            .then(TestSettingsCommand.build())
             // Naming the room tests one the author is not standing in — what the X menu's button
             // sends, since a tile can be selected from anywhere in the browser.
             .then(Commands.argument("room", StringArgumentType.word())
@@ -115,12 +122,25 @@ public final class PortalTestCommand {
     }
 
     /**
-     * What a focused reseed re-rolls, keeping the rest of the test as it stands: the room (its
-     * contents, on the same chunk and under the same frame roll) or the frame (on the same chunk and
-     * room roll). Null is every other press — the terrain, the room and the frame all follow
-     * {@code freshRoll} and the world switch.
+     * Which of a running test's rolls a re-stamp draws afresh — the room's contents, the chunk
+     * frame's, and a chunk dimension's ground — keeping the others as they stand. Null is every
+     * other press: the terrain, the room and the frame all follow {@code freshRoll} and the world
+     * switch.
      */
-    private enum Focus { ROOM, FRAME }
+    private record Reroll(boolean room, boolean frame, boolean ground) {
+        /**
+         * What {@code reroll} means here. The template under test is the frame in a frame test and
+         * the room otherwise; the others are what stands around it, ground included.
+         */
+        static Reroll of(TestReroll reroll, boolean frameTest) {
+            return switch (reroll) {
+                case ALL -> null;
+                case MAIN -> new Reroll(!frameTest, frameTest, false);
+                case OTHERS -> new Reroll(frameTest, !frameTest, true);
+                case NONE -> new Reroll(false, false, false);
+            };
+        }
+    }
 
     /** The parent every chunk dimension sub-variant hangs under. */
     private static final String CHUNK_DIMENSIONS_GROUP = "chunk_dimension";
@@ -200,7 +220,18 @@ public final class PortalTestCommand {
     }
 
     private static int runTest(CommandSourceStack source, String roomArg, boolean freshRoll,
-                               boolean mayResample, Focus focus) {
+                               boolean mayResample, Reroll reroll) {
+        // Stamped at the stage, Diff-Level and band the author set on the test settings rows.
+        ServerPlayer asked = source.getPlayer();
+        games.brennan.dungeontrain.template.TestGate gate = asked == null
+            ? games.brennan.dungeontrain.template.TestGate.AUTO
+            : games.brennan.dungeontrain.editor.TestOverrides.get(asked.getUUID());
+        return games.brennan.dungeontrain.template.TestGate.with(gate,
+            () -> runTestScoped(source, roomArg, freshRoll, mayResample, reroll));
+    }
+
+    private static int runTestScoped(CommandSourceStack source, String roomArg, boolean freshRoll,
+                                     boolean mayResample, Reroll reroll) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -249,7 +280,7 @@ public final class PortalTestCommand {
         // re-salting the contents alone stamped the same ground back every time.
         games.brennan.dungeontrain.portal.PortalChunkSlice slice = null;
         if (PortalRoomSettings.of(roomName).mode().generatesTerrain()) {
-            if (focus == null && mayResample && (freshRoll || worldData.isPortalTestReseed())) {
+            if (mayResample && (reroll == null ? freshRoll || worldData.isPortalTestReseed() : reroll.ground())) {
                 games.brennan.dungeontrain.portal.PortalChunkTerrain.reroll(PortalTestSession.PAIR_KEY);
             }
             slice = games.brennan.dungeontrain.portal.PortalChunkTerrain.slice(
@@ -350,15 +381,17 @@ public final class PortalTestCommand {
             // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
             PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
-            focus == Focus.FRAME ? keptSalt
-                : focus == Focus.ROOM ? freshSalt(overworld)
-                : saltFor(worldData, overworld, freshRoll));
-        // The frame's roll: a frame reseed alone re-rolls it, a room reseed alone keeps it, and every
-        // other press rolls it with the room.
-        if (focus != Focus.ROOM) {
+            reroll == null ? saltFor(worldData, overworld, freshRoll)
+                : reroll.room() ? freshSalt(overworld) : keptSalt);
+        // The frame's roll: re-rolled when asked for, kept when not, and on every other press
+        // rolled with the room.
+        if (reroll == null || reroll.frame()) {
             games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.salt(PortalTestSession.PAIR_KEY,
-                focus == Focus.FRAME ? freshSalt(overworld) : saltFor(worldData, overworld, freshRoll));
+                reroll != null ? freshSalt(overworld) : saltFor(worldData, overworld, freshRoll));
         }
+        // What the tiler reads when it grows this room on later ticks, outside this scope.
+        games.brennan.dungeontrain.editor.TestOverrides.setPortalStamp(
+            games.brennan.dungeontrain.template.TestGate.current());
 
         // In the ENTRY DOORWAY looking down the room, not dropped in the middle of it — the same
         // view an author gets walking in off the train, which is the one they are building for.
@@ -396,8 +429,8 @@ public final class PortalTestCommand {
 
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
-        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(roomName),
-            worldData.isPortalTestReseed()));
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.active(player,
+            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(roomName)));
         // The room's own light. In play PortalCarriageEvents sends this to whoever stands inside a
         // live pair's room, on the same box; a test session is not a pair, so nothing there sees
         // it, and a room set to Daylight tested dark — which is precisely what the test is for.
@@ -447,10 +480,28 @@ public final class PortalTestCommand {
      * doorway instead.</p>
      */
     /**
-     * @param focus re-roll only the template under test (Shift): see {@link Focus}. Without it a
+     * @param focus re-roll only the template under test (Shift): see {@link TestReroll#MAIN}. Without it a
      *              frame test re-rolls everything, down to which chunk dimension the frame dresses
      */
     private static int runReseedNow(CommandSourceStack source, boolean focus) {
+        return runRestamp(source, focus ? TestReroll.MAIN : TestReroll.ALL);
+    }
+
+    /**
+     * {@code portal test reload} — the same rolls stood up again, read afresh from the saved
+     * templates, so an edit saved in another plot shows up in place.
+     */
+    private static int runReload(CommandSourceStack source) {
+        games.brennan.dungeontrain.editor.CarriageTemplateStore.clearCache();
+        games.brennan.dungeontrain.editor.CarriageContentsStore.clearCache();
+        return runRestamp(source, TestReroll.NONE);
+    }
+
+    /**
+     * Stand the running test up again, re-rolling what {@code reroll} names and keeping the rest,
+     * and leave the author where they stood. Every toolbar button and changed test setting ends here.
+     */
+    static int runRestamp(CommandSourceStack source, TestReroll reroll) {
         ServerPlayer player;
         try {
             player = source.getPlayerOrException();
@@ -461,7 +512,7 @@ public final class PortalTestCommand {
         // The client's Reseed button sends this command whatever kind of test is running; a carriage
         // or contents test is re-rolled by its own command.
         if (games.brennan.dungeontrain.train.CarriageTestSession.has(player.getUUID())) {
-            return CarriageTestCommand.runReseedNow(source, focus);
+            return CarriageTestCommand.runRestamp(source, reroll);
         }
         PortalTestSession.Session session = PortalTestSession.get(player.getUUID());
         if (session == null) {
@@ -478,8 +529,8 @@ public final class PortalTestCommand {
         String frame = games.brennan.dungeontrain.portal.chunkframe.ChunkFramePlacer.forced(
             PortalTestSession.PAIR_KEY);
         int result;
-        if (focus) {
-            result = runTest(source, session.roomName(), false, false, frame != null ? Focus.FRAME : Focus.ROOM);
+        if (reroll != TestReroll.ALL) {
+            result = runTest(source, session.roomName(), false, true, Reroll.of(reroll, frame != null));
         } else if (frame != null) {
             // The whole frame test again: a fresh pick of the chunk dimension, its ground and both rolls.
             result = runFrameTest(source, frame);
@@ -592,8 +643,7 @@ public final class PortalTestCommand {
         if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
             player.setGameMode(session.previousGameType());
         }
-        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none(
-            DungeonTrainWorldData.get(source.getServer().overworld()).isPortalTestReseed()));
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none(player));
         DungeonTrainNet.sendTo(player, games.brennan.dungeontrain.net.PortalRoomSkyPacket.none());
 
         // Take the room's fog, daylight, train audio and depth disguise back. The same call the

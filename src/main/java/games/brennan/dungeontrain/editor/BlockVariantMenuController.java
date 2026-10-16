@@ -348,6 +348,7 @@ public final class BlockVariantMenuController {
         // own, it only ever sees one cell.
         VariantGroupRefs.Graph refGraph = plot.groupRefs().graph();
         int cellLockId = plot.lockIdAt(localPos);
+        java.util.Set<Integer> lockIdsInUse = plot.groupRefs().lockIdsInUse();
 
         List<BlockVariantSyncPacket.Entry> entries = new ArrayList<>(states.size());
         for (VariantState s : states) {
@@ -366,13 +367,28 @@ public final class BlockVariantMenuController {
                 (byte) s.active().mode().ordinal(),
                 (byte) s.connect().ordinal(),
                 s.growth().toInt(),
-                s.painting().isDefault() ? "" : s.painting().id()));
+                s.painting().isDefault() ? "" : s.painting().id(),
+                // Sent even with no values so the popup keeps the target the author picked.
+                s.condition().id(),
+                VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
+                groupValuesToken(plot, s.condition())));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
             (byte) plot.spanAt(localPos).toByte(),
             plot.supportsConnectMode(), plot.supportsGrowth());
+    }
+
+    /** Group mode's togglable values — the target group's distinct blocks, comma-joined; blank otherwise. */
+    private static String groupValuesToken(BlockVariantPlot plot, VariantCondition c) {
+        if (!c.isGroupTarget()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (var id : VariantConditionEdits.groupValues(plot.groupRefs().statesForLockId(c.groupId()))) {
+            if (sb.length() > 0) sb.append(',');
+            sb.append(id);
+        }
+        return sb.toString();
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -436,6 +452,10 @@ public final class BlockVariantMenuController {
             handleCopy(player, plot, localPos);
             return;
         }
+        if (packet.op() == BlockVariantEditPacket.Op.COPY_GROUP_ENTRY) {
+            copyGroupEntry(player, plot, localPos, packet.entryIndex());
+            return;
+        }
         if (packet.op() == BlockVariantEditPacket.Op.PREVIEW_ENTRY) {
             previewEntry(level, plot, localPos, packet.entryIndex());
             return;
@@ -475,14 +495,13 @@ public final class BlockVariantMenuController {
                             ChatFormatting.YELLOW);
                         return;
                     }
-                    List<VariantState> targetStates =
-                        plot.groupRefs().statesForLockId(refGroup);
-                    if (targetStates == null || targetStates.isEmpty()) {
+                    List<VariantState> targetStates = groupOptionsFor(plot, refGroup, held);
+                    if (targetStates == null) {
                         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.no_cell_uses_lock_id", refGroup),
                             ChatFormatting.YELLOW);
                         return;
                     }
-                    if (cellLock > 0 && VariantGroupRefs.reaches(plot.groupRefs(), refGroup, cellLock)) {
+                    if (wouldLoop(plot, targetStates, cellLock)) {
                         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.group_would_loop", refGroup, cellLock), ChatFormatting.YELLOW);
                         return;
                     }
@@ -508,7 +527,9 @@ public final class BlockVariantMenuController {
                     // The placeholder is only ever the editor's icon and the
                     // fallback if the reference is later cleared — the pick
                     // path always follows the reference instead.
-                    mutated.add(VariantState.ofGroupRef(refGroup, targetStates.get(0).state()));
+                    // The reference also carries a copy of the group's options, so
+                    // the group outlives its last cell in this template.
+                    mutated.add(VariantState.ofGroupRef(refGroup, targetStates));
                     actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.added_group_reference", refGroup), ChatFormatting.GREEN);
                     dirty = true;
                     break;
@@ -932,6 +953,30 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
+            case SET_COND_TARGET, ADD_COND_VALUE, REMOVE_COND_VALUE, CLEAR_COND, TOGGLE_COND_VALUE -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                VariantConditionEdits.Result result = switch (packet.op()) {
+                    case SET_COND_TARGET -> VariantConditionEdits.setTarget(entry.condition(),
+                        packet.stateString(), plot.groupRefs().lockIdsInUse(), plot.lockIdAt(localPos));
+                    case ADD_COND_VALUE -> VariantConditionEdits.addHeld(entry.condition(), player.getMainHandItem());
+                    case TOGGLE_COND_VALUE -> VariantConditionEdits.toggleValue(entry.condition(), packet.stateString());
+                    case REMOVE_COND_VALUE -> new VariantConditionEdits.Result(
+                        entry.condition().withValueRemoved(packet.delta()), null);
+                    default -> new VariantConditionEdits.Result(VariantCondition.NONE, null);
+                };
+                if (result.condition() == null) {
+                    if (result.refusalKey() != null) {
+                        actionBar(player, Component.translatable(result.refusalKey()), ChatFormatting.YELLOW);
+                    }
+                    return;
+                }
+                mutated.set(idx, entry.withCondition(result.condition()));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
             default -> {
                 // CYCLE_LOCK_ID and COPY handled above; nothing else expected.
                 return;
@@ -1301,6 +1346,32 @@ public final class BlockVariantMenuController {
         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.copied", clip.summary()), ChatFormatting.GREEN);
     }
 
+    /**
+     * Middle-click on a group-reference row: put that group in the hotbar as a clipboard locked to
+     * it — the same thing Copy on one of the group's own cells produces, so Add makes a reference
+     * and right-click paste rebuilds the group. Works when no cell carries the group any more,
+     * from the options the reference keeps.
+     */
+    private static void copyGroupEntry(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos, int idx) {
+        List<VariantState> rows = plot.statesAt(localPos);
+        if (rows == null || idx < 0 || idx >= rows.size() || !rows.get(idx).isGroupRef()) return;
+        VariantState row = rows.get(idx);
+        int group = row.groupRef();
+        List<VariantState> options = plot.groupRefs().statesForLockId(group);
+        if (options == null || options.isEmpty()) options = row.groupStates();
+        if (options.isEmpty()) {
+            actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.no_cell_uses_lock_id", group),
+                ChatFormatting.YELLOW);
+            return;
+        }
+        ItemStack stack = new ItemStack(ModItems.VARIANT_CLIPBOARD.get());
+        VariantClipboardItem.writeClipboardTag(stack,
+            VariantClipboardItem.encodeStates(plot.groupRefs().refreshed(options, group), group));
+        giveToHotbar(player, new Clipboard(stack, Component.translatable("chat.dungeontrain.editor_bar.clipboard.summary",
+            options.size(), Component.translatable("chat.dungeontrain.editor_bar.clipboard.lock_suffix", group),
+            Component.empty(), Component.empty(), Component.empty())));
+    }
+
     /** A freshly-built clipboard item plus the action-bar summary describing what it captured. */
     private record Clipboard(ItemStack stack, Component summary) {}
 
@@ -1653,12 +1724,12 @@ public final class BlockVariantMenuController {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.cannot_reference_own_group", refGroup), ChatFormatting.YELLOW);
             return null;
         }
-        List<VariantState> targetStates = plot.groupRefs().statesForLockId(refGroup);
-        if (targetStates == null || targetStates.isEmpty()) {
+        List<VariantState> targetStates = groupOptionsFor(plot, refGroup, held);
+        if (targetStates == null) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.no_cell_uses_lock_id", refGroup), ChatFormatting.YELLOW);
             return null;
         }
-        if (cellLock > 0 && VariantGroupRefs.reaches(plot.groupRefs(), refGroup, cellLock)) {
+        if (wouldLoop(plot, targetStates, cellLock)) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.common.group_would_loop", refGroup, cellLock), ChatFormatting.YELLOW);
             return null;
         }
@@ -1672,11 +1743,41 @@ public final class BlockVariantMenuController {
                 return null;
             }
         }
-        VariantState replacement = VariantState.ofGroupRef(refGroup, targetStates.get(0).state())
+        VariantState replacement = VariantState.ofGroupRef(refGroup, targetStates)
             .withWeight(old.weight());
         actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.replaced_with_group_reference", rowName(old), refGroup),
             ChatFormatting.GREEN);
         return replacement;
+    }
+
+    /**
+     * The options a new reference to {@code refGroup} copies: the group as this template knows it
+     * (a cell, or another reference's copy), else the options on the held clipboard — so a group
+     * copied from a template where it no longer has cells, or from another template, can still be
+     * referenced. {@code null} when neither has any. Nested references carry their own copies.
+     */
+    @Nullable
+    private static List<VariantState> groupOptionsFor(BlockVariantPlot plot, int refGroup, ItemStack held) {
+        List<VariantState> known = plot.groupRefs().statesForLockId(refGroup);
+        List<VariantState> options = known != null && !known.isEmpty()
+            ? known
+            : VariantClipboardItem.decodeStates(VariantClipboardItem.readClipboardTag(held));
+        if (options.isEmpty()) return null;
+        return plot.groupRefs().refreshed(options, refGroup);
+    }
+
+    /**
+     * True when referencing a group with {@code options} from a cell in {@code cellLock} would
+     * close a loop. Walks the options themselves rather than the group's id, because a clipboard's
+     * group may not exist in this template yet.
+     */
+    private static boolean wouldLoop(BlockVariantPlot plot, List<VariantState> options, int cellLock) {
+        if (cellLock <= 0) return false;
+        for (VariantState s : options) {
+            if (!s.isGroupRef()) continue;
+            if (VariantGroupRefs.reaches(plot.groupRefs(), s.groupRef(), cellLock)) return true;
+        }
+        return false;
     }
 
     private static Component rowName(VariantState row) {

@@ -26714,7 +26714,7 @@
       "released_at": null,
       "major": true,
       "notable": true,
-      "description": "New creatures have boarded the train. The first of many more to come.\n\nSome carriages now hold mobs you\u2019ve never met on the line before. A few turn up early, and some wait much further down the line, in the stranger stretches of the journey. Keep your eyes open and your sword ready.\n\n## Other significant updates\n\n- Your Live stream shares your advancements, photos and books in Live chat on Discord, Twitch and the website, with a switch for each on the Stream tab\n- Builders: Test the Carriage can now bring your frozen mobs to life\n- Bug fixes",
+      "description": "New creatures have boarded the train. The first of many more to come.\n\nSome carriages now hold mobs you\u2019ve never met on the line before. A few turn up early, and some wait much further down the line, in the stranger stretches of the journey. Keep your eyes open and your sword ready.\n\n## Other significant updates\n\n- Your Live stream shares your advancements, photos and books in Live chat on Discord, Twitch and the website, with a switch for each on the Stream tab\n- One Live Eye per player, and /streamer in Live chat shows who's on air\n- Builders: test controls let you try a build at any stage, difficulty level or band, and Test the Carriage can bring your frozen mobs to life\n- Builders: block variants can depend on their neighbours, and a dice button swaps the carriage around your contents\n- Bug fixes",
       "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/new-mobs.jpg"
     },
     {
@@ -26736,8 +26736,143 @@
       "released_at": null
     },
     {
+      "id": "live-eye-one-per-player",
+      "version": "0.1314.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot"
+      ],
+      "title": "One Live Eye per player",
+      "summary": "You can now carry only one Live Eye at a time, and that includes any in your ender chest or packed in a shulker box. Once you have one, chests show a TV where a Live Eye would be, a second one on the ground stays put for someone else, and any extra that slips into your inventory turns into a TV.",
+      "highlights": [],
+      "pr": 2056,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "variant-group-refs-outlive-cells",
+      "version": "0.1315.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Block variant groups stay alive while a variant refers to them",
+      "summary": "A group you add as an option in a block variant now keeps existing even after every cell of that group is gone from the template, so the option keeps working instead of going dead.",
+      "highlights": [
+        "A group added as a block variant option keeps its options after its last cell is removed or unlocked",
+        "Middle-click a group row in the block variant menu to put that group in your hotbar",
+        "Adding a group you copied from another template works even if this template has no cells in it"
+      ],
+      "pr": 2058,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "streamer-chat-command",
+      "version": "0.1315.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Ask who's streaming",
+      "summary": "Type /streamer in the Live chat, in game, on the website, on Discord or on Twitch, to see who's on air: their Minecraft, Twitch and Discord names, how long they've been live, how many times they've streamed before and their game language. Everyone in the chat sees the answer.",
+      "highlights": [],
+      "pr": 2059,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-takeover-after-death-seen",
+      "version": "0.1316.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Taking over a Live Eye stream waits until you've seen the death",
+      "summary": "When a Live Eye streamer dies, viewers are now offered the stream only after their TV has shown the death, instead of getting the offer before it happened on screen.",
+      "highlights": [],
+      "pr": 2060,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "contents-reroll-carriage",
+      "version": "0.1317.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Reroll the carriage around your contents",
+      "summary": "When you build carriage contents in the Train Editor, a new dice button above the preview swaps the carriage they stand in for another one that carries them on the train. Your unsaved changes stay put.",
+      "highlights": [
+        "New Reroll carriage button in the Train Editor's icon row for contents",
+        "Only picks carriages that would really carry those contents, never the one already shown"
+      ],
+      "pr": 2061,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "block-variant-conditions",
+      "version": "0.1317.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Block variants can depend on their neighbours",
+      "summary": "In the editor, a block variant option can now say when it is allowed to appear: only next to certain blocks, or only when another locked group rolled certain blocks. Torches only on walls, glass only above planks, and matching sets that follow each other are now easy to build.",
+      "highlights": [
+        "New If button on each block variant option, with a choice of touching sides or a locked group",
+        "Pick the sides with the same clicks as choosing bands: click to toggle one, shift-click to toggle the rest",
+        "Add the blocks to look for from your hand, or switch on blocks from the chosen group"
+      ],
+      "pr": 2062,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-test-toolbar-settings",
+      "version": "0.1318.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Test controls in the editor",
+      "summary": "While you test a build from the editor, the template pane now gives you controls for the test itself. Try your build at any stage, difficulty level or band, and re-roll just your build or everything around it, all without changing the template.",
+      "highlights": [
+        "A test toolbar above the preview: Reload, Re-roll the rest, Re-roll this template and Re-roll everything",
+        "Stage, Diff level and Band settings replace the data sheet while a test runs, and changing one re-stands the test on the same rolls",
+        "Reload picks up templates you saved since the test started"
+      ],
+      "pr": 2063,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "test-back-returns-to-tested-plot",
-      "version": "0.1313.0",
+      "version": "0.1318.0",
       "type": "fix",
       "tags": [
         "fix",
