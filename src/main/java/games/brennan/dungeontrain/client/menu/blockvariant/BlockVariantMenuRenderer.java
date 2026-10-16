@@ -79,8 +79,8 @@ public final class BlockVariantMenuRenderer {
     static final double ROW_HEIGHT = 0.30;
     static final double HEADER_HEIGHT = 0.32;
     static final double TOOLBAR_HEIGHT = 0.32;
-    /** A grid column = name cell + weight + (optional) X. */
-    static final double COLUMN_WIDTH = 1.7;
+    /** A grid column = name cell + If + weight + (optional) X. */
+    static final double COLUMN_WIDTH = 2.05;
     /** Multi-cell toolbar (Copy/Save/Add/Lock/Remove/Clear/X) needs more width. */
     static final double MIN_PANEL_WIDTH = 3.2;
 
@@ -108,6 +108,8 @@ public final class BlockVariantMenuRenderer {
 
     static final double X_CELL_WIDTH = 0.30;
     static final double WEIGHT_CELL_WIDTH = 0.40;
+    /** If pill width — "If" or a target and value count such as "G3:2". Every row has one. */
+    static final double COND_CELL_WIDTH = 0.38;
     /** Per-cell width for a mob row's difficulty min / max cells (matches the weight cell). */
     static final double DIFF_CELL_WIDTH = 0.40;
     /** ~20% of {@link #COLUMN_WIDTH} so the L/R/O pill segments are comfortable click targets. */
@@ -377,7 +379,9 @@ public final class BlockVariantMenuRenderer {
             boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
             double weightCellR = colXR - xCellW;
             double weightCellL = weightCellR - WEIGHT_CELL_WIDTH;
-            double rotDirsCellR = weightCellL;
+            double condCellR = weightCellL;
+            double condCellL = condCellR - COND_CELL_WIDTH;
+            double rotDirsCellR = condCellL;
             double rotDirsCellL = showDirs ? rotDirsCellR - ROT_DIRS_CELL_WIDTH : rotDirsCellR;
             double rotModeCellR = rotDirsCellL;
             double rotModeCellL = rotatable ? rotModeCellR - ROT_MODE_CELL_WIDTH : rotModeCellR;
@@ -528,6 +532,8 @@ public final class BlockVariantMenuRenderer {
                     rowBottom, rowTop, rowCY, hovered);
             }
 
+            drawConditionCell(ps, buffer, font, i, entry, condCellL, condCellR, rowBottom, rowTop, rowCY, hovered);
+
             // Weight cell
             boolean weightHover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_WEIGHT && hovered.index() == i;
             int weightTint = weightHover ? 0xC0FFCC33 : 0x40FFFFFF;
@@ -566,6 +572,14 @@ public final class BlockVariantMenuRenderer {
             } else if (growthState != null) {
                 drawGrowthPopup(ps, buffer, font, entries.get(growthRow), growthState, panelW, halfH, hovered);
             }
+        }
+
+        // If popup, floating just above the panel like the Grow popup.
+        int condRow = BlockVariantMenu.condPopupRow();
+        if (condRow >= 0) {
+            drawPopupRows(ps, buffer, font,
+                ConditionPopupLayout.rows(entries.get(condRow).condition(), panelW, halfH),
+                BlockVariantMenu.CellKind.COND_OPTION, hovered);
         }
 
         // OPTIONS popup is drawn last so it shadows the row underneath.
@@ -624,6 +638,26 @@ public final class BlockVariantMenuRenderer {
         drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
         drawCenteredText(ps, buffer, font, GrowthPopupLayout.shortLabel(growth, parsed),
             (cellL + cellR) / 2.0, rowCY, growth.on() || hover ? 0xFFFFFFFF : 0xFF888888);
+    }
+
+    /**
+     * The If pill: "If" in grey when the row always joins the roll, the target and value count in
+     * purple when it is gated, red when its group target no longer exists. Lit while its popup is open.
+     */
+    private static void drawConditionCell(PoseStack ps, MultiBufferSource buffer, Font font,
+                                          int rowIndex, BlockVariantSyncPacket.Entry entry,
+                                          double cellL, double cellR,
+                                          double rowBottom, double rowTop, double rowCY,
+                                          BlockVariantMenu.Hit hovered) {
+        boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_COND && hovered.index() == rowIndex;
+        boolean open = BlockVariantMenu.condPopupRow() == rowIndex;
+        boolean set = ConditionPopupLayout.isSet(entry.condition());
+        int tint = !set ? (hover || open ? 0x60AAAAAA : 0x30777777)
+            : !entry.conditionLive() ? (hover || open ? 0xC0FF4040 : 0x80AA2020)
+            : (hover || open ? 0xC0D98CFF : 0x808A4FB3);
+        drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
+        drawCenteredText(ps, buffer, font, ConditionPopupLayout.shortLabel(entry.condition()),
+            (cellL + cellR) / 2.0, rowCY, set || hover ? 0xFFFFFFFF : 0xFF888888);
     }
 
     /**

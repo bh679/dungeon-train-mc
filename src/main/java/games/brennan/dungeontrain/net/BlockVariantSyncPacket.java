@@ -136,10 +136,33 @@ public record BlockVariantSyncPacket(
                         byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
                         @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
                         int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
-                        int growth, String painting) {
+                        int growth, String painting, String condition, boolean conditionLive) {
+
+        /** Cap on the condition token over the wire: eight namespaced ids and a target. */
+        public static final int CONDITION_MAX_LEN = 1024;
 
         public Entry {
             if (painting == null) painting = "";
+            if (condition == null) condition = "";
+        }
+
+        /**
+         * Backward-compat constructor for call sites that don't carry a placement condition
+         * (defaults to none, the empty token).
+         */
+        public Entry(String stateString, @Nullable String beNbt, int weight,
+                     byte rotMode, byte rotDirMask, @Nullable String linkedLootPrefabId,
+                     @Nullable String entityId, byte halfMode, int minDiff, int maxDiff,
+                     int groupRef, boolean groupRefLive, byte activeMode, byte connectMode,
+                     int growth, String painting) {
+            this(stateString, beNbt, weight, rotMode, rotDirMask, linkedLootPrefabId, entityId,
+                halfMode, minDiff, maxDiff, groupRef, groupRefLive, activeMode, connectMode, growth,
+                painting, "", true);
+        }
+
+        /** True when this row only places if its condition holds. */
+        public boolean isConditional() {
+            return condition.contains("=") && !condition.endsWith("=");
         }
 
         /**
@@ -303,6 +326,8 @@ public record BlockVariantSyncPacket(
             buf.writeByte(e.connectMode());
             buf.writeVarInt(e.growth());
             buf.writeUtf(e.painting(), 256);
+            buf.writeUtf(e.condition(), Entry.CONDITION_MAX_LEN);
+            buf.writeBoolean(e.conditionLive());
         }
     }
 
@@ -347,9 +372,11 @@ public record BlockVariantSyncPacket(
             byte connectMode = buf.readByte();
             int growth = buf.readVarInt();
             String painting = buf.readUtf(256);
+            String condition = buf.readUtf(Entry.CONDITION_MAX_LEN);
+            boolean conditionLive = buf.readBoolean();
             entries.add(new Entry(stateStr, nbt, weight, rotMode, rotDirMask,
                 linkedLootPrefabId, entityId, halfMode, minDiff, maxDiff, groupRef, groupRefLive,
-                activeMode, connectMode, growth, painting));
+                activeMode, connectMode, growth, painting, condition, conditionLive));
         }
         return new BlockVariantSyncPacket(id, local, entries, lockId, anchor, right, up,
             copyRoll, copySettingsSupported, copyScope, spanMode, connectSupported, growthSupported);

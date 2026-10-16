@@ -95,13 +95,13 @@ public record VariantCondition(@Nullable Direction direction, int groupId, List<
 
     /** Turn a touching target with a plot rotation. Group targets have no geometry. */
     public VariantCondition rotated(Rotation rotation) {
-        if (isGroupTarget() || rotation == Rotation.NONE) return this;
+        if (isDefault() || isGroupTarget() || rotation == Rotation.NONE) return this;
         return new VariantCondition(rotation.rotate(direction), 0, blocks);
     }
 
     /** Reflect a touching target across the flipped axes. Group targets have no geometry. */
     public VariantCondition reflected(boolean flipX, boolean flipY, boolean flipZ) {
-        if (isGroupTarget()) return this;
+        if (isDefault() || isGroupTarget()) return this;
         Direction d = direction;
         if (flipX && d.getAxis() == Direction.Axis.X) d = d.getOpposite();
         if (flipY && d.getAxis() == Direction.Axis.Y) d = d.getOpposite();

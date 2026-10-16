@@ -117,7 +117,15 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      SET_PAINTING,
                      // Typed mob difficulty band from the cmd-click number pad: delta is the value
                      // outright; SET_DIFF_MAX takes -1 for "all". Same clamps as the BUMP twins.
-                     SET_DIFF_MIN, SET_DIFF_MAX }
+                     SET_DIFF_MIN, SET_DIFF_MAX,
+                     // Placement condition: stateString = target token (a direction name, or
+                     // "group+" / "group-" to step through the plot's lock groups).
+                     SET_COND_TARGET,
+                     // Adds the held block (empty hand = air) to the condition's values.
+                     ADD_COND_VALUE,
+                     // delta = index of the value to drop.
+                     REMOVE_COND_VALUE,
+                     CLEAR_COND }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

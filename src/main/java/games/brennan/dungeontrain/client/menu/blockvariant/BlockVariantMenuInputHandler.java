@@ -207,8 +207,17 @@ public final class BlockVariantMenuInputHandler {
                 if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
                 BlockVariantMenu.closeRotPopup();
                 BlockVariantMenu.closeSpanPopup();
+                BlockVariantMenu.closeCondPopup();
                 BlockVariantMenu.toggleGrowthPopup(hit.index());
             }
+            case ENTRY_COND -> {
+                if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return;
+                BlockVariantMenu.closeRotPopup();
+                BlockVariantMenu.closeSpanPopup();
+                BlockVariantMenu.closeGrowthPopup();
+                BlockVariantMenu.toggleCondPopup(hit.index());
+            }
+            case COND_OPTION -> dispatchCondition(hit, variantId, local);
             case GROWTH_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.
@@ -435,6 +444,40 @@ public final class BlockVariantMenuInputHandler {
             default -> new NumberField(NumberTitle.of("weight"), entry.weight(), 1, TYPED_WEIGHT_MAX, false,
                 inc, dec, set);
         };
+    }
+
+    /**
+     * A button in the If popup. Same modal rules as the Grow popup: -2 closes, -1 is the popup's own
+     * margin. The popup stays open so several values can be added in a row.
+     */
+    private static void dispatchCondition(BlockVariantMenu.Hit hit, String variantId, net.minecraft.core.BlockPos local) {
+        int code = hit.secondary();
+        if (code == -1) return;
+        int row = hit.index();
+        if (code < 0 || row < 0 || row >= BlockVariantMenu.entries().size()) {
+            BlockVariantMenu.closeCondPopup();
+            return;
+        }
+        int section = code / 10;
+        int option = code % 10;
+        BlockVariantEditPacket packet;
+        if (section == ConditionPopupLayout.SECTION_TOUCHING) {
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
+                ConditionPopupLayout.touching(option).getSerializedName(), 0);
+        } else if (section == ConditionPopupLayout.SECTION_GROUP) {
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
+                ConditionPopupLayout.groupToken(option), 0);
+        } else if (section == ConditionPopupLayout.SECTION_ACTIONS) {
+            packet = new BlockVariantEditPacket(option == ConditionPopupLayout.ACTION_ADD
+                ? BlockVariantEditPacket.Op.ADD_COND_VALUE : BlockVariantEditPacket.Op.CLEAR_COND,
+                variantId, local, row, "", 0);
+        } else if (section >= ConditionPopupLayout.SECTION_VALUE_BASE && option == ConditionPopupLayout.VALUE_REMOVE) {
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.REMOVE_COND_VALUE, variantId, local, row,
+                "", section - ConditionPopupLayout.SECTION_VALUE_BASE);
+        } else {
+            return;
+        }
+        DungeonTrainNet.sendToServer(packet);
     }
 
     private static void send(BlockVariantEditPacket.Op op, String variantId, net.minecraft.core.BlockPos local,

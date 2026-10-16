@@ -157,7 +157,7 @@ public interface EditorPlotTransform {
          */
         private VariantState rotateVariant(VariantState v) {
             VariantCondition condition = v.condition().rotated(vanilla());
-            if (v.isMob()) return v.withCondition(condition);
+            if (v.isMob()) return condition == v.condition() ? v : v.withCondition(condition);
             return new VariantState(
                 v.state().rotate(vanilla()), v.blockEntityNbt(), v.weight(),
                 rotateRotation(v.rotation(), v.state()), v.linkedLootPrefabId(), v.entityId(),

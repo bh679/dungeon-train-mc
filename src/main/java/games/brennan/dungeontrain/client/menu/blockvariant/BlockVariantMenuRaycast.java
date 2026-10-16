@@ -87,6 +87,30 @@ public final class BlockVariantMenuRaycast {
      * mouse cursor, so both modes resolve hover and clicks through this one function. The
      * rotation-options popup is picked from inside here, so it needs no separate seam.
      */
+    /**
+     * Hit-test a Grow-style popup: a button is {@code encode(section, option)}, the popup's own
+     * margin is {@code -1}, anywhere else in the panel is {@code -2} (close), outside both is none.
+     */
+    private static BlockVariantMenu.Hit popupRowsHit(java.util.List<GrowthPopupLayout.Row> rows,
+                                                     BlockVariantMenu.CellKind optionKind, int rowIndex,
+                                                     double hitX, double hitY, double halfW, double halfH) {
+        for (GrowthPopupLayout.Row row : rows) {
+            if (hitY < row.bottom() || hitY > row.top()) continue;
+            double rel = hitX - row.buttonsLeft();
+            if (rel < 0 || rel > GrowthPopupLayout.BUTTONS_WIDTH) continue;
+            int opt = Math.min(row.buttons().length - 1, (int) Math.floor(rel / row.buttonWidth()));
+            return new BlockVariantMenu.Hit(optionKind, rowIndex, GrowthPopupLayout.encode(row.section(), opt));
+        }
+        double[] r = GrowthPopupLayout.rect(rows);
+        if (hitX >= r[0] && hitX <= r[1] && hitY >= r[2] && hitY <= r[3]) {
+            return new BlockVariantMenu.Hit(optionKind, rowIndex, -1);
+        }
+        if (hitX >= -halfW && hitX <= halfW && hitY >= -halfH && hitY <= halfH) {
+            return new BlockVariantMenu.Hit(optionKind, rowIndex, -2);
+        }
+        return BlockVariantMenu.Hit.NONE;
+    }
+
     static BlockVariantMenu.Hit rootHit(double hitX, double hitY) {
         List<BlockVariantSyncPacket.Entry> entries = BlockVariantMenu.entries();
         int n = entries.size();
@@ -101,6 +125,15 @@ public final class BlockVariantMenuRaycast {
         double colActualW = panelW / colCount;
 
         double gridTopAbs = halfH - BlockVariantMenuRenderer.HEADER_HEIGHT - BlockVariantMenuRenderer.TOOLBAR_HEIGHT;
+
+        // If popup — the same modal rules as the Grow popup below.
+        int condRow = BlockVariantMenu.condPopupRow();
+        if (condRow >= 0) {
+            BlockVariantMenu.Hit condHit = popupRowsHit(
+                ConditionPopupLayout.rows(entries.get(condRow).condition(), panelW, halfH),
+                BlockVariantMenu.CellKind.COND_OPTION, condRow, hitX, hitY, halfW, halfH);
+            return condHit;
+        }
 
         // Span option strip (above the panel) — modal like the OPTIONS popup: an option is a pick,
         // anywhere else in the panel closes it (secondary -2), outside both does nothing.
@@ -219,7 +252,9 @@ public final class BlockVariantMenuRaycast {
             && VariantConnect.canConnect(parsed);
         VariantRotation.Mode rowMode = BlockVariantMenuRenderer.decodeMode(entry.rotMode());
         boolean showDirs = rotatable && rowMode != VariantRotation.Mode.RANDOM;
-        double rotDirsCellR = weightCellL;
+        double condCellR = weightCellL;
+        double condCellL = condCellR - BlockVariantMenuRenderer.COND_CELL_WIDTH;
+        double rotDirsCellR = condCellL;
         double rotDirsCellL = showDirs ? rotDirsCellR - BlockVariantMenuRenderer.ROT_DIRS_CELL_WIDTH : rotDirsCellR;
         double rotModeCellR = rotDirsCellL;
         double rotModeCellL = rotatable ? rotModeCellR - BlockVariantMenuRenderer.ROT_MODE_CELL_WIDTH : rotModeCellR;
@@ -252,6 +287,9 @@ public final class BlockVariantMenuRaycast {
         }
         if (hitX >= weightCellL && hitX <= weightCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_WEIGHT, idx);
+        }
+        if (hitX >= condCellL && hitX <= condCellR) {
+            return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_COND, idx);
         }
         if (rotatable && hitX >= rotDirsCellL && hitX <= rotDirsCellR) {
             return new BlockVariantMenu.Hit(BlockVariantMenu.CellKind.ENTRY_ROT_DIRS, idx);
