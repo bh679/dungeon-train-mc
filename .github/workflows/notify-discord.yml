@@ -75,3 +75,19 @@ jobs:
           PRERELEASE: ${{ steps.verify.outputs.prerelease }}
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/notify-discord.sh
+
+      # And the live chat, the same way release.yml does it (website panel + Discord live room +
+      # Twitch; never the game, which has its own update notice).
+      - name: Announce the release in the live chat
+        continue-on-error: true
+        env:
+          DUNGEONTRAIN_RELAY_ADMIN_BASE: ${{ secrets.RELAY_ADMIN_BASE }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$DUNGEONTRAIN_RELAY_ADMIN_BASE" ]; then
+            echo "::warning::RELAY_ADMIN_BASE is not set — release not announced in the live chat."
+            exit 0
+          fi
+          python3 scripts/relay/announce-release-live-chat.py --tag "$RELEASE_TAG" \
+            || echo "::warning::release not announced in the live chat — see the log; re-send it by hand."
