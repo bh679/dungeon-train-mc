@@ -26476,6 +26476,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "signed-book-loot-entry",
+      "version": "0.1309.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "loot",
+        "books"
+      ],
+      "title": "Signed books in loot tables keep their words",
+      "summary": "Adding a signed book to a chest's loot in the editor now puts that exact book in the chest \u2014 its title, author and every page \u2014 instead of a blank written book.",
+      "highlights": [
+        "The editor's loot list shows the book's title next to it"
+      ],
+      "pr": 2040,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
