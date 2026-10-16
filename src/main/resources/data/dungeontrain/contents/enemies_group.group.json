@@ -6,6 +6,23 @@
       "id": "enemiesgroup2",
       "weight": 1,
       "minLevel": 3
+    },
+    {
+      "id": "betternether",
+      "weight": 5,
+      "minLevel": 5,
+      "phases": [
+        "NETHER",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "FLOATING",
+        "FAR_LANDS"
+      ]
+    },
+    {
+      "id": "basitan",
+      "weight": 1
     }
   ]
 }
