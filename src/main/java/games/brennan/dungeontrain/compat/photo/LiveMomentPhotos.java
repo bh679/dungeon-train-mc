@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.LiveMomentEvents;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.MomentKind;
 import io.github.mortuusars.exposure.ExposureServer;
+import io.github.mortuusars.exposure.world.photograph.PhotographType;
 import io.github.mortuusars.exposure.world.camera.frame.Frame;
 import io.github.mortuusars.exposure.world.level.storage.ExposureData;
 import net.minecraft.server.MinecraftServer;
@@ -22,7 +23,7 @@ import java.util.UUID;
 /**
  * A photo the Live Eye streamer takes, shared into the stream's Live chat ({@link LiveMomentEvents}).
  * The shot's pixels reach the server a moment after the frame does, so the photo waits for them here,
- * then goes out as the same Discord-ready PNG the other photo posts use.
+ * then goes out on its photograph paper, framed as the tribute-photos channel shows a photo.
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class LiveMomentPhotos {
@@ -59,7 +60,8 @@ public final class LiveMomentPhotos {
         for (Pending p : pending) {
             Optional<ExposureData> data = ExposureServer.exposureRepository().load(p.exposureId()).getData();
             if (data.isPresent()) {
-                SharedPhotos.encodeForDiscord(server, data.get(), Optional.empty(), p.exposureId(), png -> {
+                // On the paper a fresh print wears, like the tribute-photos channel's posts (OwnPhotoTribute).
+                SharedPhotos.encodeForDiscord(server, data.get(), PhotoPaperTextures.paper(PhotographType.REGULAR), p.exposureId(), png -> {
                     ServerPlayer player = server.getPlayerList().getPlayer(p.player());
                     if (player != null) LiveMomentEvents.share(player, MomentKind.PHOTO, "", "", png);
                 });
