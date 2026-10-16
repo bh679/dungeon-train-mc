@@ -26419,6 +26419,27 @@
       "major": true,
       "notable": true,
       "description": "Dungeon Train TV now knows who you are on Twitch.\n\nType `/twitch` in game, connect your Twitch account on the page it opens, and every time you wear the Live Eye the official Dungeon Train stream names you: your channel goes in the stream title, the chat bot shouts you out, the website's Live page and the Discord go-live post link to you, and your name tag on the stream carries your channel.\n\nStreamers can go one step further. Turn on **Also stream to my channel** and your ride is pushed to your own Twitch channel at the same time, with an optional title and category set for you. Both switches live on the new Account tab, next to Discord, and `/twitch unlink` takes it all back at any time. Your stream key is never stored.\n\nNo account? When you go live without a Twitch saved, the game asks you to drop your Twitch in chat for a shout-out. One click saves it. The reminder can be turned off in Stream settings and never shows in Kid mode."
+    },
+    {
+      "id": "live-pill-above-jade",
+      "version": "0.1309.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility",
+        "ui"
+      ],
+      "title": "Your live name tag stays on top",
+      "summary": "While you're live, the name tag at the top of the screen now stays in place and the block info tooltip moves down under it instead of covering it. You now see the tag on your own screen too, so you always know what viewers see.",
+      "highlights": [
+        "The block info tooltip moves under the live name tag while you stream",
+        "Streamers see their own live name tag on screen"
+      ],
+      "pr": 2039,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
