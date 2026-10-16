@@ -26,7 +26,7 @@ import java.util.Locale;
  * </ul>
  *
  * <p>Layout mirrors the editor weight stepper at
- * {@link EditorMenuScreen#weightTripleFor} (Triple row of
+ * {@link EditorMenuScreen#weightRowFor} (Triple row of
  * {@code [-] / Label (value) / [+]}, each {@code ±} a {@link
  * CommandMenuEntry.ClientAction} so the menu stays open after a click).
  * Effective on-screen size for either channel is

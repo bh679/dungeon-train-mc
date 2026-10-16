@@ -580,6 +580,9 @@ public final class ContainerContentsStore {
                 if (ce.potionForm() != PotionForm.ANY) {
                     sb.append(", \"form\": \"").append(ce.potionForm().id()).append("\"");
                 }
+                if (ce.book() != null) {
+                    sb.append(", \"book\": ").append(ContainerContentsBooks.toJsonText(ce.book()));
+                }
                 sb.append(" }");
                 firstEntry = false;
             }
@@ -716,8 +719,9 @@ public final class ContainerContentsStore {
                         PotionForm form = eo.has("form") && eo.get("form").isJsonPrimitive()
                             ? PotionForm.parse(eo.get("form").getAsString())
                             : ContainerContentsEntry.DEFAULT_POTION_FORM;
+                        StoredBook book = ContainerContentsBooks.fromJson(eo.get("book"));
                         entries.add(new ContainerContentsEntry(id, count, weight,
-                            randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form));
+                            randDur, durChance, randEnch, enchChance, slotOverride, potionId, scale, form, book));
                     }
                     if (!entries.isEmpty()) {
                         out.put(pos.immutable(), new ContainerContentsPool(entries, fillMin, fillMax));

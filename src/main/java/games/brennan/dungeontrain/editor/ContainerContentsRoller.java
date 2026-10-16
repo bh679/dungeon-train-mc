@@ -1086,6 +1086,8 @@ public final class ContainerContentsRoller {
         // A potion entry carries the potion the author added from their hand. Whether
         // that potion is kept or randomised is decided further down.
         ContainerContentsPotions.applyStoredPotion(stack, picked.potionId(), registries);
+        // A written-book entry carries the signed book the author added from their hand.
+        ContainerContentsBooks.applyStoredBook(stack, picked.book(), registries);
 
         if (picked.randomDurability() && stack.isDamageableItem()
             && rollChance(picked.durabilityChance(), localPos, worldSeed,

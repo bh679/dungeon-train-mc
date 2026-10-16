@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.menu;
 
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
+
 import games.brennan.dungeontrain.net.EditorStatusPacket;
 import games.brennan.dungeontrain.portal.PortalRoomCopiesVariant;
 import games.brennan.dungeontrain.portal.PortalRoomSettings;
@@ -102,20 +104,19 @@ public final class EditorMenuPortalRows {
      * The Floor height row — how deep the Single floor is laid — or null when there is no Floor
      * row to sit under.
      *
-     * <p>A {@code [-] Floor height [+]} triple rather than a third cell on the Floor row: that row
-     * is already a value and an Edit button, and this menu carries no palette to show the current
-     * depth, so the middle types a number instead of displaying one. The in-plot panel, which
-     * does know the depth, draws the stepper on the Floor row itself.</p>
+     * <p>A number row of its own rather than a third cell on the Floor row: that row is already a
+     * value and an Edit button. This menu carries no palette to show the current depth, so the
+     * pad opens at the floor's minimum. The in-plot panel, which does know the depth, draws the
+     * number on the Floor row itself.</p>
      */
     public static CommandMenuEntry copiesFloorHeightRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         if (!EditorPlotLabelsRenderer.hasCopiesBlockRowFor(currentMode)) return null;
         String command = prefix + " copies floor height";
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            MenuLang.t("editor.floor_height"), "blocks", command);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+        return CommandMenuEntry.Number.of(MenuLang.t("editor.floor_height"), NumberTitle.of("floor_height"), command,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.MIN_FLOOR_HEIGHT,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.MIN_FLOOR_HEIGHT,
+            games.brennan.dungeontrain.portal.PortalRoomCopiesVariant.MAX_FLOOR_HEIGHT, false);
     }
 
     /**
@@ -219,63 +220,65 @@ public final class EditorMenuPortalRows {
     }
 
     /**
-     * The stepper for the {@code X} in "every X tiles" / "one tile in X", or null when Exits is not
+     * The number row for the {@code X} in "every X tiles" / "one tile in X", or null when Exits is not
      * showing or is set to Off.
      *
      * <p>Hidden rather than greyed out at Off, because a spacing for corridors that are not being
      * laid is a control with nothing on the other end of it — the same reason the Copies row is
      * absent rather than dimmed under a mode that makes no copies.</p>
      */
-    public static CommandMenuEntry exitEveryTripleFor(String currentMode, String prefix) {
+    public static CommandMenuEntry exitEveryRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         PortalRoomSettings settings = PortalRoomSettings.parse(currentMode);
         if (!settings.exitsApply() || !settings.exits().lays()) return null;
 
         String command = prefix + " exitevery";
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            EditorPlotLabelsRenderer.exitEveryLabel(currentMode), "tiles", command);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+        return CommandMenuEntry.Number.of(EditorPlotLabelsRenderer.exitEveryLabel(currentMode),
+            NumberTitle.of("exit_every"), command, settings.exits().every(),
+            games.brennan.dungeontrain.portal.PortalRoomExits.MIN_EVERY,
+            games.brennan.dungeontrain.portal.PortalRoomExits.MAX_EVERY, false);
     }
 
     /**
-     * The moved-exit stepper, or null unless Exits is set to Random.
+     * The moved-exit number row, or null unless Exits is set to Random.
      *
      * <p>Random alone: walling off the way straight back out is only fair when there is something
      * unpredictable to go and find. Under the lattice a player could work out the walk in advance,
      * and under Off it would wall the only way onward there is.</p>
      */
-    public static CommandMenuEntry exitMoveTripleFor(String currentMode, String prefix) {
+    public static CommandMenuEntry exitMoveRowFor(String currentMode, String prefix) {
         if (currentMode == null || EditorStatusPacket.NO_MODE.equals(currentMode)) return null;
         PortalRoomSettings settings = PortalRoomSettings.parse(currentMode);
         if (!settings.exitsApply() || !settings.exits().movesApply()) return null;
 
         String command = prefix + " exitmove";
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            EditorPlotLabelsRenderer.exitMoveLabel(currentMode), "0-10", command);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+        return CommandMenuEntry.Number.of(EditorPlotLabelsRenderer.exitMoveLabel(currentMode),
+            NumberTitle.of("exit_move"), command, settings.exits().moveChance(),
+            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_NEVER,
+            games.brennan.dungeontrain.portal.PortalRoomExits.MOVE_ALWAYS, false);
     }
 
     /**
-     * A stepper for one axis of a portal room's box, or null when the server hasn't reported a size
-     * (i.e. this isn't a portal room plot).
+     * A number row for one axis of a portal room's box, or null when the server hasn't reported a
+     * size (i.e. this isn't a portal room plot).
      *
-     * <p>Side cells nudge by one and keep the menu open so the player can tap; the middle cell drops
-     * into typing mode for an exact value. Values are clamped server-side: width and height cannot
+     * <p>Click nudges up by one and shift- or right-click down, keeping the menu open so the player
+     * can tap; cmd-click types an exact value. Values are clamped server-side: width and height cannot
      * go below what the corridor mouth needs to stay sealed, and height cannot reach into the next
      * portal pair's Y lane. Tapping {@code −} past the floor simply stops.</p>
      */
-    public static CommandMenuEntry sizeTripleFor(String axis, String label, int current, String prefix) {
+    public static CommandMenuEntry sizeRowFor(String axis, String label, int current, String prefix) {
         if (current == EditorStatusPacket.NO_SIZE) return null;
         String command = prefix + " " + axis;
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", command + " dec");
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(
-            MenuLang.t("common.value_in_parens", label, current), "blocks", command);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", command + " inc");
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+        // The parser's loosest window; PortalRoomLayout.clampSize holds a typed size inside this
+        // world's floors and ceilings, visibly.
+        return CommandMenuEntry.Number.of(MenuLang.t("common.value_in_parens", label, current),
+            NumberTitle.of(axis), command, current,
+            Math.min(games.brennan.dungeontrain.portal.PortalRoomLayout.MIN_LENGTH,
+                games.brennan.dungeontrain.portal.PortalRoomLayout.MIN_HEIGHT),
+            Math.max(games.brennan.dungeontrain.portal.PortalRoomLayout.MAX_LENGTH,
+                Math.max(games.brennan.dungeontrain.portal.PortalRoomLayout.MAX_WIDTH,
+                    games.brennan.dungeontrain.portal.PortalRoomLayout.MAX_HEIGHT)), false);
     }
 
     // ------------------------------------------------------------------
@@ -327,14 +330,14 @@ public final class EditorMenuPortalRows {
         return exitsRowFor(currentMode, STOOD_IN_PREFIX);
     }
 
-    /** {@link #exitEveryTripleFor(String, String)} for the room the author is standing in. */
-    public static CommandMenuEntry exitEveryTripleFor(String currentMode) {
-        return exitEveryTripleFor(currentMode, STOOD_IN_PREFIX);
+    /** {@link #exitEveryRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry exitEveryRowFor(String currentMode) {
+        return exitEveryRowFor(currentMode, STOOD_IN_PREFIX);
     }
 
-    /** {@link #exitMoveTripleFor(String, String)} for the room the author is standing in. */
-    public static CommandMenuEntry exitMoveTripleFor(String currentMode) {
-        return exitMoveTripleFor(currentMode, STOOD_IN_PREFIX);
+    /** {@link #exitMoveRowFor(String, String)} for the room the author is standing in. */
+    public static CommandMenuEntry exitMoveRowFor(String currentMode) {
+        return exitMoveRowFor(currentMode, STOOD_IN_PREFIX);
     }
 
     /** {@link #copiesBlockRowFor(String, PortalRoomCopiesVariant.Plane, String)} for the stood-in room. */
@@ -342,8 +345,8 @@ public final class EditorMenuPortalRows {
         return copiesBlockRowFor(currentMode, plane, STOOD_IN_PREFIX);
     }
 
-    /** {@link #sizeTripleFor(String, String, int, String)} for the stood-in room. */
-    public static CommandMenuEntry sizeTripleFor(String axis, String label, int current) {
-        return sizeTripleFor(axis, label, current, STOOD_IN_PREFIX);
+    /** {@link #sizeRowFor(String, String, int, String)} for the stood-in room. */
+    public static CommandMenuEntry sizeRowFor(String axis, String label, int current) {
+        return sizeRowFor(axis, label, current, STOOD_IN_PREFIX);
     }
 }

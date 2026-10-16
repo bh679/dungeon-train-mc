@@ -87,7 +87,7 @@ class EditorPlotLabelsRendererTest {
             assertEquals(CellKind.MODE_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, x, y));
         }
         // And the rows either side of the insertion still resolve to themselves.
-        assertEquals(CellKind.HEIGHT_TYPE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
+        assertEquals(CellKind.HEIGHT_NUMBER, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
             rowCentreY(e, indexOf(rows, RowKind.HEIGHT))));
         assertEquals(CellKind.BUTTON_ENTER_INSIDE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
             rowCentreY(e, indexOf(rows, RowKind.ENTER))));
@@ -350,13 +350,11 @@ class EditorPlotLabelsRendererTest {
             assertEquals(CellKind.EXITS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, x, exitsY));
         }
 
+        // The spacing is one number cell, wherever on the row the click lands.
         double everyY = rowCentreY(e, indexOf(rows, RowKind.EXIT_EVERY));
-        assertEquals(CellKind.EXIT_EVERY_DEC,
-            EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, everyY));
-        assertEquals(CellKind.EXIT_EVERY_TYPE,
-            EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, everyY));
-        assertEquals(CellKind.EXIT_EVERY_INC,
-            EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, everyY));
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.EXIT_EVERY_NUMBER, EditorPlotLabelsRenderer.cellAt(e, halfW, x, everyY));
+        }
 
         // And the rows the pair was inserted between still resolve to themselves.
         assertEquals(CellKind.ROOM_CONTENTS_CYCLE, EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0,
@@ -386,16 +384,14 @@ class EditorPlotLabelsRendererTest {
         assertFalse(EditorPlotLabelsRenderer.hasExitMoveRow(
             entry("PORTALS", true, 1, 11, 13, 7, "bedrock")));
 
-        // Its thirds hit their own cells, and the row above still resolves to itself.
+        // The whole row is its number cell, and the row above still resolves to itself.
         RowKind[] rows = EditorPlotLabelsRenderer.rows(random);
         double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
         double y = rowCentreY(random, indexOf(rows, RowKind.EXIT_MOVE));
-        assertEquals(CellKind.EXIT_MOVE_DEC,
-            EditorPlotLabelsRenderer.cellAt(random, halfW, -halfW + 0.05, y));
-        assertEquals(CellKind.EXIT_MOVE_TYPE, EditorPlotLabelsRenderer.cellAt(random, halfW, 0.0, y));
-        assertEquals(CellKind.EXIT_MOVE_INC,
-            EditorPlotLabelsRenderer.cellAt(random, halfW, halfW - 0.05, y));
-        assertEquals(CellKind.EXIT_EVERY_TYPE, EditorPlotLabelsRenderer.cellAt(random, halfW, 0.0,
+        for (double x : new double[]{-halfW + 0.05, 0.0, halfW - 0.05}) {
+            assertEquals(CellKind.EXIT_MOVE_NUMBER, EditorPlotLabelsRenderer.cellAt(random, halfW, x, y));
+        }
+        assertEquals(CellKind.EXIT_EVERY_NUMBER, EditorPlotLabelsRenderer.cellAt(random, halfW, 0.0,
             rowCentreY(random, indexOf(rows, RowKind.EXIT_EVERY))));
     }
 
@@ -558,7 +554,7 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("The Floor row carries a depth stepper between its icon and its Edit button")
+    @DisplayName("The Floor row carries a depth number between its icon and its Edit button")
     void copiesFloorRowHasDepthStepper() {
         EditorPlotLabelsPacket.Entry e =
             entryWithBlock("endless_open/single", "minecraft:water");
@@ -575,14 +571,10 @@ class EditorPlotLabelsRendererTest {
             EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, y));
         assertEquals(CellKind.COPIES_FLOOR_HELD,
             EditorPlotLabelsRenderer.cellAt(e, halfW, left - 0.01, y));
-        // Then [-] | number | [+], then Edit.
-        assertEquals(CellKind.COPIES_FLOOR_HEIGHT_DEC,
-            EditorPlotLabelsRenderer.cellAt(e, halfW, left + third * 0.5, y));
-        assertEquals(CellKind.NONE,
-            EditorPlotLabelsRenderer.cellAt(e, halfW, left + third * 1.5, y),
-            "the number is display only");
-        assertEquals(CellKind.COPIES_FLOOR_HEIGHT_INC,
-            EditorPlotLabelsRenderer.cellAt(e, halfW, split - third * 0.5, y));
+        // Then the depth number, all the way to the Edit split, then Edit.
+        for (double x : new double[]{left + third * 0.5, left + third * 1.5, split - third * 0.5}) {
+            assertEquals(CellKind.COPIES_FLOOR_HEIGHT_NUMBER, EditorPlotLabelsRenderer.cellAt(e, halfW, x, y));
+        }
         assertEquals(CellKind.COPIES_FLOOR_EDIT,
             EditorPlotLabelsRenderer.cellAt(e, halfW, halfW - 0.05, y));
 
@@ -704,7 +696,7 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("Each stepper row's left third decrements ITS OWN axis and the right third increments it")
+    @DisplayName("Each dimension row is one number cell for ITS OWN axis, wherever it is clicked")
     void dimensionRows_hitTheirOwnAxis() {
         EditorPlotLabelsPacket.Entry e = portalInPlot();
         // halfWidth needs a Font; MIN_HALF_W is the floor and is what a short name resolves to,
@@ -714,24 +706,16 @@ class EditorPlotLabelsRendererTest {
         double right = halfW - 0.05;
 
         RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
-        CellKind[][] expected = {
-            {CellKind.LENGTH_DEC, CellKind.LENGTH_INC, CellKind.LENGTH_TYPE},
-            {CellKind.WIDTH_DEC, CellKind.WIDTH_INC, CellKind.WIDTH_TYPE},
-            {CellKind.HEIGHT_DEC, CellKind.HEIGHT_INC, CellKind.HEIGHT_TYPE},
-        };
+        CellKind[] expected = {CellKind.LENGTH_NUMBER, CellKind.WIDTH_NUMBER, CellKind.HEIGHT_NUMBER};
         RowKind[] axes = {RowKind.LENGTH, RowKind.WIDTH, RowKind.HEIGHT};
 
         for (int a = 0; a < axes.length; a++) {
             int rowIdx = indexOf(rows, axes[a]);
             double y = rowCentreY(e, rowIdx);
-            assertEquals(expected[a][0], EditorPlotLabelsRenderer.cellAt(e, halfW, left, y),
-                axes[a] + " left third must decrement " + axes[a]);
-            assertEquals(expected[a][1], EditorPlotLabelsRenderer.cellAt(e, halfW, right, y),
-                axes[a] + " right third must increment " + axes[a]);
-            // Every cell on the row belongs to that row's axis and no other — the number in the
-            // middle types the same axis its arrows step.
-            assertEquals(expected[a][2], EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, y),
-                axes[a] + " middle cell must type " + axes[a] + " alone");
+            for (double x : new double[]{left, 0.0, right}) {
+                assertEquals(expected[a], EditorPlotLabelsRenderer.cellAt(e, halfW, x, y),
+                    axes[a] + " row must be " + axes[a] + "'s number cell at x=" + x);
+            }
         }
     }
 
@@ -753,7 +737,7 @@ class EditorPlotLabelsRendererTest {
 
         assertEquals(CellKind.NAME,
             EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, rowCentreY(e, indexOf(rows, RowKind.NAME))));
-        assertEquals(CellKind.WEIGHT_DEC,
+        assertEquals(CellKind.WEIGHT_NUMBER,
             EditorPlotLabelsRenderer.cellAt(e, halfW, -halfW + 0.05, rowCentreY(e, indexOf(rows, RowKind.WEIGHT))));
         assertEquals(CellKind.BUTTON_ENTER_INSIDE,
             EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, rowCentreY(e, indexOf(rows, RowKind.ENTER))));
@@ -762,12 +746,12 @@ class EditorPlotLabelsRendererTest {
     }
 
     @Test
-    @DisplayName("The weight row's number stays dead — only dimension rows type")
-    void weightNumberIsNotATypingTarget() {
+    @DisplayName("The weight row is one number cell — the middle is as live as the ends")
+    void weightRowIsOneNumberCell() {
         EditorPlotLabelsPacket.Entry e = portalInPlot();
         double halfW = EditorPlotLabelsRenderer.MIN_HALF_W;
         RowKind[] rows = EditorPlotLabelsRenderer.rows(e);
-        assertEquals(CellKind.NONE,
+        assertEquals(CellKind.WEIGHT_NUMBER,
             EditorPlotLabelsRenderer.cellAt(e, halfW, 0.0, rowCentreY(e, indexOf(rows, RowKind.WEIGHT))));
     }
 

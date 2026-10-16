@@ -3,7 +3,9 @@ package games.brennan.dungeontrain.item;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
+import games.brennan.dungeontrain.editor.ContainerContentsBooks;
 import games.brennan.dungeontrain.editor.ContainerContentsEntry;
+import games.brennan.dungeontrain.editor.StoredBook;
 import games.brennan.dungeontrain.editor.PotionForm;
 import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
@@ -146,6 +148,7 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_POOL_ENTRY_WEIGHT = "w";
     /** Stored vanilla potion id of a potion entry; absent when the entry has none. */
     private static final String NBT_POOL_ENTRY_POTION = "p";
+    private static final String NBT_POOL_ENTRY_BOOK = "b";
     /** Random-potion scale-with-distance toggle; absent means the default (on). */
     private static final String NBT_POOL_ENTRY_SCALE = "s";
     /** Random-potion bottle form id; absent means Any. */
@@ -485,6 +488,7 @@ public final class VariantClipboardItem extends Item {
             if (e.potionId() != null) et.putString(NBT_POOL_ENTRY_POTION, e.potionId().toString());
             if (!e.scaleWithDistance()) et.putBoolean(NBT_POOL_ENTRY_SCALE, false);
             if (e.potionForm() != PotionForm.ANY) et.putString(NBT_POOL_ENTRY_FORM, e.potionForm().id());
+            if (e.book() != null) et.put(NBT_POOL_ENTRY_BOOK, ContainerContentsBooks.toNbt(e.book()));
             entries.add(et);
         }
         tag.put(NBT_POOL_ENTRIES, entries);
@@ -523,8 +527,11 @@ public final class VariantClipboardItem extends Item {
                     || et.getBoolean(NBT_POOL_ENTRY_SCALE);
                 PotionForm form = et.contains(NBT_POOL_ENTRY_FORM, Tag.TAG_STRING)
                     ? PotionForm.parse(et.getString(NBT_POOL_ENTRY_FORM)) : PotionForm.ANY;
+                StoredBook book = et.contains(NBT_POOL_ENTRY_BOOK, Tag.TAG_COMPOUND)
+                    ? ContainerContentsBooks.fromNbt(et.getCompound(NBT_POOL_ENTRY_BOOK)) : null;
                 entries.add(new ContainerContentsEntry(id, count, weight)
-                    .withPotion(potionId).withScaleWithDistance(scale).withPotionForm(form));
+                    .withPotion(potionId).withScaleWithDistance(scale).withPotionForm(form)
+                    .withBook(book));
             }
         }
         return new ContainerContentsPool(entries, fillMin, fillMax);

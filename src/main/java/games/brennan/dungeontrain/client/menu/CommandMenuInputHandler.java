@@ -63,13 +63,13 @@ public final class CommandMenuInputHandler {
         int hovered = CommandMenuState.hoveredIdx();
         int hoveredSub = CommandMenuState.hoveredSubIdx();
         if (hovered >= 0) {
-            CommandMenuState.activate(hovered, hoveredSub);
+            CommandMenuState.activate(hovered, hoveredSub, btn);
             return;
         }
         int sideHovered = CommandMenuState.sideHoveredIdx();
         int sideHoveredSub = CommandMenuState.sideHoveredSubIdx();
         if (sideHovered >= 0) {
-            CommandMenuState.activateSide(sideHovered, sideHoveredSub);
+            CommandMenuState.activateSide(sideHovered, sideHoveredSub, btn);
         }
     }
 

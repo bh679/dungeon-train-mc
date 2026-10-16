@@ -12,7 +12,7 @@ import java.util.TreeSet;
 /**
  * Which tunnel template groups one tunnel section or entrance belongs to — a multi-select list in
  * the {@link StagePickerScreen} idiom: each group is a stay-open {@code [x]}/{@code [ ]} toggle beside
- * its roll weight (click to type a new one), then a row to join a brand-new group and a row for the
+ * its roll weight (click to step, shift- or right-click back, cmd-click to type), then a row to join a brand-new group and a row for the
  * ungrouped pool's weight.
  *
  * <p>A tunnel rolls one group by these weights and builds every section and entrance from its
@@ -114,16 +114,19 @@ public final class TunnelGroupPickerScreen implements MenuScreen {
                 CommandRunner.run(toggleCommand(kindId, name, id));
                 EditorRosterClient.scheduleRefresh(EditorRosterClient.REFRESH_DELAY_TICKS);
             });
-            CommandMenuEntry weightCell = new CommandMenuEntry.TypeArg(
-                "×" + (weight == null ? 1 : weight), "weight", weightCommandPrefix(id), "", "");
+            int w = weight == null ? 1 : weight;
+            CommandMenuEntry weightCell = CommandMenuEntry.Number.of("×" + w,
+                games.brennan.dungeontrain.client.menu.number.NumberTitle.of("weight"), weightCommandPrefix(id), w,
+                EditorMenuScreen.WEIGHT_MIN, EditorMenuScreen.WEIGHT_MAX, false);
             out.add(new CommandMenuEntry.Split(toggle, weightCell, 0.7));
         }
         if (ids.isEmpty()) {
             out.add(new CommandMenuEntry.Label("No groups yet — add this template to a new one."));
         }
         out.add(new CommandMenuEntry.TypeArg("+ New group…", "group id", toggleCommandPrefix(kindId, name), "", ""));
-        out.add(new CommandMenuEntry.TypeArg("Ungrouped tunnels ×" + groups.ungroupedWeight(), "weight",
-            ungroupedCommandPrefix(), "", ""));
+        out.add(CommandMenuEntry.Number.of("Ungrouped tunnels ×" + groups.ungroupedWeight(),
+            games.brennan.dungeontrain.client.menu.number.NumberTitle.of("weight"), ungroupedCommandPrefix(),
+            groups.ungroupedWeight(), EditorMenuScreen.WEIGHT_MIN, EditorMenuScreen.WEIGHT_MAX, false));
         out.add(new CommandMenuEntry.Back(MenuLang.t("common.done")));
         return out;
     }

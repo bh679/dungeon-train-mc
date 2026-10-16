@@ -557,6 +557,9 @@ public final class PartPositionMenuController {
             case CYCLE_END_MODE -> current.cycleEndMode(packet.kind(), packet.name());
             case BUMP_MIN_LEVEL -> current.withMinLevel(packet.kind(), packet.name(), packet.delta());
             case BUMP_MAX_LEVEL -> current.withMaxLevel(packet.kind(), packet.name(), packet.delta());
+            case SET_WEIGHT -> current.withWeightSet(packet.kind(), packet.name(), packet.delta());
+            case SET_MIN_LEVEL -> current.withMinLevelSet(packet.kind(), packet.name(), packet.delta());
+            case SET_MAX_LEVEL -> current.withMaxLevelSet(packet.kind(), packet.name(), packet.delta());
             case TOGGLE_PHASE, TOGGLE_OTHER_PHASES -> {
                 // delta carries the TrainPhase ordinal (see PartAssignmentEditPacket). TOGGLE_PHASE
                 // flips that one dimension; TOGGLE_OTHER_PHASES (shift-click) flips all but it.

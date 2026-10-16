@@ -233,8 +233,6 @@ public final class EditorScreenLang {
     public static final String SHEET_MIN_LEVEL = PREFIX + "sheet.min_level";
     public static final String SHEET_MAX_LEVEL = PREFIX + "sheet.max_level";
     public static final String SHEET_WEIGHT_TOOLTIP = PREFIX + "sheet.weight_tooltip";
-    public static final String SHEET_WEIGHT_UP = PREFIX + "sheet.weight_up";
-    public static final String SHEET_WEIGHT_DOWN = PREFIX + "sheet.weight_down";
     public static final String UNDO_NOTHING = PREFIX + "undo_nothing";
     public static final String REDO_NOTHING = PREFIX + "redo_nothing";
     public static final String SHEET_SOURCE = PREFIX + "sheet.source";

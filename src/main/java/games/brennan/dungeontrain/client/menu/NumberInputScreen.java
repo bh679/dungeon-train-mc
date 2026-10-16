@@ -10,14 +10,17 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.function.IntConsumer;
+import games.brennan.dungeontrain.client.menu.number.NumberField;
 
 import javax.annotation.Nullable;
 
 /**
- * Modal number pad for a panel cell that is otherwise a stepper. Cmd-clicking a weight opens this
+ * Modal number pad for a panel cell that is otherwise a stepper. Cmd-clicking a number opens this
  * prefilled with the current value, so getting from 1 to 40 is a number typed rather than
  * thirty-nine clicks.
+ *
+ * <p>An all-capable field (a max level, a max fill) opens blank when it is unbounded, and a blank
+ * submit sets it back to "all" — the hint line under the title says so.</p>
  *
  * <p>Structured like {@link PrefabNameScreen} — the other modal these panels open — including its
  * parent handling: a world-space caller passes {@code null} and lands back in the world with its
@@ -27,23 +30,23 @@ import javax.annotation.Nullable;
 @OnlyIn(Dist.CLIENT)
 public final class NumberInputScreen extends Screen {
 
-    private final int min;
-    private final int max;
-    private final int current;
-    private final IntConsumer onSubmit;
+    private final NumberField field;
     @Nullable
     private final Screen parent;
 
     private EditBox valueField;
     private Button okButton;
 
+    /** Transitional: a bare typed value with no stepping. Removed once every caller holds a field. */
     public NumberInputScreen(Component title, int current, int min, int max,
-                             IntConsumer onSubmit, @Nullable Screen parent) {
-        super(title);
-        this.current = current;
-        this.min = min;
-        this.max = max;
-        this.onSubmit = onSubmit;
+                             java.util.function.IntConsumer onSubmit, @Nullable Screen parent) {
+        this(new NumberField(title.getString(), current, min, max, false, () -> { }, () -> { }, onSubmit),
+            parent);
+    }
+
+    public NumberInputScreen(NumberField field, @Nullable Screen parent) {
+        super(Component.literal(field.title()));
+        this.field = field;
         this.parent = parent;
     }
 
@@ -63,7 +66,7 @@ public final class NumberInputScreen extends Screen {
         // Digits only, plus the empty string so the field can be cleared while retyping.
         this.valueField.setFilter(s -> s == null || s.matches("[0-9]*"));
         this.valueField.setResponder(s -> updateValidity());
-        this.valueField.setValue(Integer.toString(this.current));
+        this.valueField.setValue(this.field.typedText());
         // Prefill arrives selected, so the first keystroke replaces it rather than appending.
         this.valueField.setHighlightPos(0);
         this.addRenderableWidget(this.valueField);
@@ -95,27 +98,18 @@ public final class NumberInputScreen extends Screen {
         this.okButton.active = parsed() != null;
     }
 
-    /** The typed value, or {@code null} when the field is empty or out of range. */
+    /** The typed value, or {@code null} when it can't be submitted. */
     @Nullable
     private Integer parsed() {
         if (this.valueField == null) return null;
-        String text = this.valueField.getValue();
-        if (text.isEmpty()) return null;
-        int value;
-        try {
-            value = Integer.parseInt(text);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-        if (value < this.min || value > this.max) return null;
-        return value;
+        return this.field.parse(this.valueField.getValue());
     }
 
     private void submit() {
         Integer value = parsed();
         if (value == null) return;
         onClose();
-        this.onSubmit.accept(value);
+        this.field.set().accept(value);
     }
 
     @Override
@@ -129,12 +123,18 @@ public final class NumberInputScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(g, mouseX, mouseY, partialTick);
+        // Text after super.render: Screen.render draws the (blurred) background itself, so text
+        // drawn before it is blurred away along with the world behind.
+        super.render(g, mouseX, mouseY, partialTick);
         g.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFFFF);
         g.drawCenteredString(this.font,
-            Component.translatable("gui.dungeontrain.number_input.range", this.min, this.max),
+            Component.translatable("gui.dungeontrain.number_input.range", this.field.min(), this.field.max()),
             this.width / 2, this.height / 2 - 25, 0xFFAAAAAA);
-        super.render(g, mouseX, mouseY, partialTick);
+        if (this.field.allowAll()) {
+            g.drawCenteredString(this.font,
+                Component.translatable("gui.dungeontrain.number_input.all_hint"),
+                this.width / 2, this.height / 2 + 48, 0xFFAAAAAA);
+        }
     }
 
     @Override

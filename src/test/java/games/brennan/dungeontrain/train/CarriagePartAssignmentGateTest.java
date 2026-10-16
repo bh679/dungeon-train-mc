@@ -156,6 +156,30 @@ final class CarriagePartAssignmentGateTest {
     }
 
     @Test
+    @DisplayName("Typed setters set weight and levels outright, with the steppers' clamps")
+    void typedSetters() {
+        CarriagePartAssignment a = floorOnly(List.of(
+            gated("x", 1, TemplateGate.DEFAULT),
+            gated("y", 1, TemplateGate.DEFAULT)
+        ));
+
+        assertEquals(40, entry(a.withWeightSet(CarriagePartKind.FLOOR, "x", 40), "x").weight());
+        assertEquals(CarriagePartAssignment.MAX_WEIGHT,
+            entry(a.withWeightSet(CarriagePartKind.FLOOR, "x", 5000), "x").weight());
+        assertEquals(1, entry(a.withWeightSet(CarriagePartKind.FLOOR, "y", 40), "x").weight(), "other untouched");
+
+        CarriagePartAssignment min = a.withMinLevelSet(CarriagePartKind.FLOOR, "x", 12);
+        assertEquals(12, entry(min, "x").gate().minLevel());
+
+        CarriagePartAssignment max = min.withMaxLevelSet(CarriagePartKind.FLOOR, "x", 30);
+        assertEquals(30, entry(max, "x").gate().maxLevel());
+        assertEquals(TemplateGate.ALL,
+            entry(max.withMaxLevelSet(CarriagePartKind.FLOOR, "x", -1), "x").gate().maxLevel(), "-1 is all");
+
+        assertSame(a, a.withWeightSet(CarriagePartKind.FLOOR, "missing", 5), "no match → this unchanged");
+    }
+
+    @Test
     @DisplayName("JSON round-trips the gate; a default gate stays compact (back-compat)")
     void jsonRoundTrip() {
         TemplateGate g = new TemplateGate(3, 20, EnumSet.of(TrainPhase.NETHER, TrainPhase.END));

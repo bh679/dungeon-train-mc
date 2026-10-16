@@ -38,6 +38,9 @@ final class SecondPersonDeathMessageTest {
                 Arguments.of("Brennan was blown up by Creeper", "Brennan", "You were blown up by Creeper"),
                 Arguments.of("Brennan was pricked to death", "Brennan", "You were pricked to death"),
                 Arguments.of("Brennan was impaled by a stalactite", "Brennan", "You were impaled by a stalactite"),
+                // Bed / respawn anchor explosion (vanilla's "intentional game design" message).
+                Arguments.of("Brennan was killed by [Intentional Game Design]", "Brennan",
+                        "You were killed by [Intentional Game Design]"),
                 Arguments.of("Brennan was struck by lightning", "Brennan", "You were struck by lightning"),
                 // Inner "was" must survive — only a leading "You was" is rewritten.
                 Arguments.of("Brennan discovered the floor was lava", "Brennan",

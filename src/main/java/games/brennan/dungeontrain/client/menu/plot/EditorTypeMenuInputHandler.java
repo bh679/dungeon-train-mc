@@ -5,6 +5,12 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.PackageListClient;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
+import games.brennan.dungeontrain.client.menu.number.NumberField;
+import games.brennan.dungeontrain.client.menu.number.NumberPad;
+import games.brennan.dungeontrain.client.menu.number.NumberStepper;
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
+import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.client.menu.NewSourcePickerScreen;
 import games.brennan.dungeontrain.client.menu.PackageListScreen;
 import games.brennan.dungeontrain.client.menu.PackageMenuActions;
@@ -59,6 +65,8 @@ public final class EditorTypeMenuInputHandler {
     private static boolean pressArmed;
     /** Captured at press time so the release knows whether it was a shift-click. */
     private static boolean pressShift;
+    /** Which mouse button armed the press — only its own release dispatches. */
+    private static int pressButton;
 
     /**
      * Range offered by the typed-weight pad. Every weight pool behind these cells is 0-100
@@ -79,6 +87,7 @@ public final class EditorTypeMenuInputHandler {
         event.setCanceled(true);
         event.setSwingHand(false);
         pressArmed = true;
+        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
         Minecraft mc = Minecraft.getInstance();
         long win = mc.getWindow().getWindow();
         pressShift = mc.screen == null
@@ -101,15 +110,18 @@ public final class EditorTypeMenuInputHandler {
             return;
         }
         if (Minecraft.getInstance().screen != null) return;
-        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+        int btn = event.getButton();
+        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
         if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
+        if (!pressArmed || btn != pressButton) return;
         pressArmed = false;
         boolean shift = pressShift || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
 
         Hovered hit = EditorTypeMenuRenderer.hovered();
         if (hit.cell() == CellKind.NONE) return;
-        dispatch(hit, shift);
+        // Right-click is a number cell's step-down and nothing else.
+        if (btn == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit.cell())) return;
+        dispatch(hit, shift, btn);
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -135,7 +147,27 @@ public final class EditorTypeMenuInputHandler {
         return true;
     }
 
-    private static void dispatch(Hovered hit, boolean shift) {
+    /** The cells that hold a number — weight and the level bounds, on template and Stage rows alike. */
+    private static boolean isNumberCell(CellKind cell) {
+        return cell == CellKind.WEIGHT || cell == CellKind.MIN_LEVEL || cell == CellKind.MAX_LEVEL;
+    }
+
+    /** The world-space panel is a HUD overlay, so the pad returns to the world with it still up. */
+    private static void clickNumber(NumberField field, int button, boolean shift) {
+        NumberStepper.click(field, button, shift, MenuClickModifiers.cmdDown(), NumberPad.returningTo(null));
+    }
+
+    /** A level bound: {@code max} offers blank for "all" and can't go under the row's min. */
+    private static NumberField levelNumber(String sub, int min, int max,
+                                           java.util.function.Function<String, String> commandFor) {
+        boolean isMax = "maxlevel".equals(sub);
+        return isMax
+            ? NumberField.ofTokens(NumberTitle.of("max_level"),
+                max == TemplateGate.ALL ? NumberField.ALL : max, min, TemplateGate.MAX_LEVEL, true, commandFor)
+            : NumberField.ofTokens(NumberTitle.of("min_level"), min, 0, TemplateGate.MAX_LEVEL, false, commandFor);
+    }
+
+    private static void dispatch(Hovered hit, boolean shift, int button) {
         List<EditorTypeMenusPacket.Menu> menus = EditorTypeMenuRenderer.menus();
         if (hit.menuIdx() < 0 || hit.menuIdx() >= menus.size()) return;
         EditorTypeMenusPacket.Menu menu = menus.get(hit.menuIdx());
@@ -157,7 +189,7 @@ public final class EditorTypeMenuInputHandler {
 
         // Stages management panel — toolbar (Add / Remove) + inline-editable stage rows.
         if (menu.isStagesMenu()) {
-            handleStagesMenu(hit, menu, shift);
+            handleStagesMenu(hit, menu, shift, button);
             return;
         }
 
@@ -318,18 +350,13 @@ public final class EditorTypeMenuInputHandler {
                 LOGGER.debug("[DungeonTrain] EditorTypeMenu part-visible: {}", cmd);
                 CommandRunner.run(cmd);
             }
+            // The commands take a literal value in the same slot as inc / dec, so stepping and
+            // typing differ only in the token spliced in.
             case WEIGHT -> {
-                // Cmd-click types the weight instead of stepping it. The commands take a literal
-                // value in the same slot as inc / dec, so only the token changes.
-                if (games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown()
-                    && variant.weight() != games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT) {
-                    openWeightEntry(menu, variant);
-                    return;
-                }
-                String cmd = weightCommandFor(menu, variant, shift ? "dec" : "inc");
-                if (cmd == null) return;
-                LOGGER.debug("[DungeonTrain] EditorTypeMenu weight: {}", cmd);
-                CommandRunner.run(cmd);
+                if (variant.weight() == games.brennan.dungeontrain.net.EditorPlotLabelsPacket.NO_WEIGHT) return;
+                clickNumber(NumberField.ofTokens(NumberTitle.of("weight"), variant.weight(),
+                    TYPED_WEIGHT_MIN, TYPED_WEIGHT_MAX, false, token -> weightCommandFor(menu, variant, token)),
+                    button, shift);
             }
             // Stage selector cell → open the Stage / Custom picker (chip when linked, ◆? when Custom).
             case STAGE -> openStagePicker(menu, variant);
@@ -339,8 +366,8 @@ public final class EditorTypeMenuInputHandler {
             // Gate cells: while the row is Stage-linked its cells show the Stage's (read-only) gate,
             // so a click opens the picker (re-pick / Custom) instead of editing — which would
             // silently detach. Custom rows edit the inline gate as before.
-            case MIN_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "minlevel", shift); }
-            case MAX_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "maxlevel", shift); }
+            case MIN_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "minlevel", shift, button); }
+            case MAX_LEVEL -> { if (!openPickerIfLinked(menu, variant)) dispatchLevel(menu, variant, "maxlevel", shift, button); }
             case PHASE -> { if (!openPickerIfLinked(menu, variant)) dispatchPhase(menu, variant, hit.slotIdx(), shift); }
             default -> {}
         }
@@ -383,7 +410,7 @@ public final class EditorTypeMenuInputHandler {
      *   <li>A stage row's name → its edit screen (or deletes it while remove-mode is on).</li>
      * </ul>
      */
-    private static void handleStagesMenu(Hovered hit, EditorTypeMenusPacket.Menu menu, boolean shift) {
+    private static void handleStagesMenu(Hovered hit, EditorTypeMenusPacket.Menu menu, boolean shift, int button) {
         switch (hit.cell()) {
             case STAGE_ADD, HEADER -> CommandMenuState.openAt(
                 new games.brennan.dungeontrain.client.menu.StagesListScreen());
@@ -407,15 +434,13 @@ public final class EditorTypeMenuInputHandler {
                     CommandRunner.run("dungeontrain editor stage select " + id);
                 }
             }
-            case MIN_LEVEL -> {
+            case MIN_LEVEL, MAX_LEVEL -> {
                 String id = stageIdAt(menu, hit);
-                if (id != null) CommandRunner.run(EditorPlotTeleport.stageLevelCommandFor(
-                    id, "minlevel", shift ? "dec" : "inc"));
-            }
-            case MAX_LEVEL -> {
-                String id = stageIdAt(menu, hit);
-                if (id != null) CommandRunner.run(EditorPlotTeleport.stageLevelCommandFor(
-                    id, "maxlevel", shift ? "dec" : "inc"));
+                if (id == null) return;
+                EditorTypeMenusPacket.Variant row = menu.variants().get(hit.variantIdx());
+                String sub = hit.cell() == CellKind.MIN_LEVEL ? "minlevel" : "maxlevel";
+                clickNumber(levelNumber(sub, row.minLevel(), row.maxLevel(),
+                    token -> EditorPlotTeleport.stageLevelCommandFor(id, sub, token)), button, shift);
             }
             case PHASE -> {
                 String id = stageIdAt(menu, hit);
@@ -450,24 +475,20 @@ public final class EditorTypeMenuInputHandler {
      * gate (in the parent's {@code .group.json}); elsewhere the top-level template gate.
      */
     private static void dispatchLevel(EditorTypeMenusPacket.Menu menu, EditorTypeMenusPacket.Variant variant,
-                                      String sub, boolean shift) {
-        String dir = shift ? "dec" : "inc";
+                                      String sub, boolean shift, int button) {
+        java.util.function.Function<String, String> commandFor;
         if (isSubVariants(menu)) {
             String parentId = menu.variants().get(0).modelId();
             // Portal rooms carry the same panel one template layer up — same parent/member shape,
             // different command prefix (as in the WEIGHT case above).
-            String cmd = isPortalRoom(variant)
-                ? EditorPlotTeleport.portalRoomGroupLevelCommandFor(parentId, variant.modelId(), sub, dir)
-                : EditorPlotTeleport.groupMemberLevelCommandFor(parentId, variant.modelId(), sub, dir);
-            LOGGER.debug("[DungeonTrain] EditorTypeMenu group {} : {}", sub, cmd);
-            CommandRunner.run(cmd);
-            return;
+            commandFor = isPortalRoom(variant)
+                ? token -> EditorPlotTeleport.portalRoomGroupLevelCommandFor(parentId, variant.modelId(), sub, token)
+                : token -> EditorPlotTeleport.groupMemberLevelCommandFor(parentId, variant.modelId(), sub, token);
+        } else {
+            commandFor = token -> EditorPlotTeleport.levelCommandFor(
+                variant.plotCategory(), variant.modelId(), variant.modelName(), sub, token);
         }
-        String cmd = EditorPlotTeleport.levelCommandFor(
-            variant.plotCategory(), variant.modelId(), variant.modelName(), sub, dir);
-        if (cmd == null) return;
-        LOGGER.debug("[DungeonTrain] EditorTypeMenu {} : {}", sub, cmd);
-        CommandRunner.run(cmd);
+        clickNumber(levelNumber(sub, variant.minLevel(), variant.maxLevel(), commandFor), button, shift);
     }
 
     /**
@@ -551,25 +572,6 @@ public final class EditorTypeMenuInputHandler {
         }
         return EditorPlotTeleport.weightCommandFor(
             variant.plotCategory(), variant.modelId(), variant.modelName(), token);
-    }
-
-    /**
-     * Open the typed-weight pad for one row. The world-space panel is a HUD overlay drawn behind
-     * the modal, so closing returns to the world with the menu still up.
-     */
-
-    private static void openWeightEntry(EditorTypeMenusPacket.Menu menu,
-                                        EditorTypeMenusPacket.Variant variant) {
-        Minecraft.getInstance().setScreen(new games.brennan.dungeontrain.client.menu.NumberInputScreen(
-            net.minecraft.network.chat.Component.translatable("gui.dungeontrain.number_input.weight"),
-            variant.weight(), TYPED_WEIGHT_MIN, TYPED_WEIGHT_MAX,
-            value -> {
-                String cmd = weightCommandFor(menu, variant, Integer.toString(value));
-                if (cmd == null) return;
-                LOGGER.debug("[DungeonTrain] EditorTypeMenu weight (typed): {}", cmd);
-                CommandRunner.run(cmd);
-            },
-            null));
     }
 
     private static boolean isPortalRoom(EditorTypeMenusPacket.Variant variant) {

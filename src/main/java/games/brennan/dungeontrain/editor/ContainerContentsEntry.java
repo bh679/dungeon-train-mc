@@ -41,6 +41,10 @@ import javax.annotation.Nullable;
  * travelled, {@code false} draws uniformly from every tier regardless of
  * distance. Ignored by every other item. {@code potionForm} pins those same
  * placeholders to one bottle type, or {@link PotionForm#ANY} to re-roll it.</p>
+ *
+ * <p>{@code book} is the signed book carried by a {@code minecraft:written_book} entry, captured
+ * from the stack the author added from their hand so the chest spawns that exact book. {@code null}
+ * for every other item and for written-book entries added by id alone (a blank written book).</p>
  */
 public record ContainerContentsEntry(
     ResourceLocation itemId,
@@ -53,7 +57,8 @@ public record ContainerContentsEntry(
     int slotOverride,
     @Nullable ResourceLocation potionId,
     boolean scaleWithDistance,
-    PotionForm potionForm
+    PotionForm potionForm,
+    @Nullable StoredBook book
 ) {
 
     public static final ResourceLocation AIR_ID = ResourceLocation.fromNamespaceAndPath("minecraft", "air");
@@ -92,6 +97,17 @@ public record ContainerContentsEntry(
         if (slotOverride < SLOT_AUTO) slotOverride = SLOT_AUTO;
         if (slotOverride > MAX_SLOT_OVERRIDE) slotOverride = SLOT_AUTO;
         if (potionForm == null) potionForm = DEFAULT_POTION_FORM;
+    }
+
+    /** Back-compat constructor — every field but the stored book. */
+    public ContainerContentsEntry(ResourceLocation itemId, int count, int weight,
+                                  boolean randomDurability, int durabilityChance,
+                                  boolean randomEnchantment, int enchantmentChance,
+                                  int slotOverride, @Nullable ResourceLocation potionId,
+                                  boolean scaleWithDistance, PotionForm potionForm) {
+        this(itemId, count, weight, randomDurability, durabilityChance,
+            randomEnchantment, enchantmentChance, slotOverride, potionId, scaleWithDistance,
+            potionForm, null);
     }
 
     /** Back-compat constructor — stored potion + scaling, default bottle form. */
@@ -157,6 +173,11 @@ public record ContainerContentsEntry(
         return potionId != null;
     }
 
+    /** True when this entry names a specific signed book to spawn. */
+    public boolean hasBook() {
+        return book != null;
+    }
+
     /** Resolve the registered Item, falling back to AIR if the id is unknown. */
     public Item resolveItem() {
         Item item = BuiltInRegistries.ITEM.get(itemId);
@@ -166,61 +187,67 @@ public record ContainerContentsEntry(
     public ContainerContentsEntry withWeight(int newWeight) {
         return new ContainerContentsEntry(itemId, count, newWeight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm);
+            slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withCount(int newCount) {
         return new ContainerContentsEntry(itemId, newCount, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm);
+            slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withRandomDurability(boolean v) {
         return new ContainerContentsEntry(itemId, count, weight,
             v, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm);
+            slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withDurabilityChance(int v) {
         return new ContainerContentsEntry(itemId, count, weight,
             randomDurability, v, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm);
+            slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withRandomEnchantment(boolean v) {
         return new ContainerContentsEntry(itemId, count, weight,
             randomDurability, durabilityChance, v, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, potionForm);
+            slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withEnchantmentChance(int v) {
         return new ContainerContentsEntry(itemId, count, weight,
             randomDurability, durabilityChance, randomEnchantment, v,
-            slotOverride, potionId, scaleWithDistance, potionForm);
+            slotOverride, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withSlotOverride(int v) {
         return new ContainerContentsEntry(itemId, count, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            v, potionId, scaleWithDistance, potionForm);
+            v, potionId, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withPotion(@Nullable ResourceLocation v) {
         return new ContainerContentsEntry(itemId, count, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, v, scaleWithDistance, potionForm);
+            slotOverride, v, scaleWithDistance, potionForm, book);
     }
 
     public ContainerContentsEntry withScaleWithDistance(boolean v) {
         return new ContainerContentsEntry(itemId, count, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, v, potionForm);
+            slotOverride, potionId, v, potionForm, book);
     }
 
     public ContainerContentsEntry withPotionForm(PotionForm v) {
         return new ContainerContentsEntry(itemId, count, weight,
             randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
-            slotOverride, potionId, scaleWithDistance, v);
+            slotOverride, potionId, scaleWithDistance, v, book);
+    }
+
+    public ContainerContentsEntry withBook(@Nullable StoredBook v) {
+        return new ContainerContentsEntry(itemId, count, weight,
+            randomDurability, durabilityChance, randomEnchantment, enchantmentChance,
+            slotOverride, potionId, scaleWithDistance, potionForm, v);
     }
 
     /** Step the bottle form: {@code Any → Potion → Splash → Lingering → Any}. */

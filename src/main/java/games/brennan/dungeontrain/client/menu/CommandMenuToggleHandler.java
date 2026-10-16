@@ -43,9 +43,11 @@ public final class CommandMenuToggleHandler {
         // World-space: no screen of ours is up at all, except the invisible MenuTypingScreen
         // while the player is typing a row's argument. Any OTHER screen means something took
         // over the display, and a world-space panel drawn behind an inventory is just clutter.
+        // The number pad a cmd-clicked number row opens is ours too: it returns to the menu.
         if (CommandMenuState.isOpen() && mc.screen != null
                 && !(mc.screen instanceof CommandMenuGuiScreen)
-                && !(mc.screen instanceof MenuTypingScreen)) {
+                && !(mc.screen instanceof MenuTypingScreen)
+                && !(mc.screen instanceof NumberInputScreen)) {
             CommandMenuState.close();
         }
 
