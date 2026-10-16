@@ -1864,6 +1864,9 @@ public final class PortalCarriageBuilder {
         // explicit entry is the one that should stand — and applyRoomVariants evicts a live block
         // entity before it writes, so a chest this pass just filled cannot spill when it does.
         applyRoomContents(level, roomOrigin, size, roomName, writeMask, variantIndex, pairKey, contents);
+        // The template's own containers, which nothing else rolls — before the variant pass, so an
+        // authored variant cell still has the last word over its chest.
+        PortalRoomPools.apply(level, roomOrigin, roomName, size, writeMask, variantIndex, pairKey);
         applyRoomVariants(level, roomOrigin, roomName, size, writeMask, variantIndex, exactIndex,
             pairKey, tile, liveMobCount);
         // Last, and only a registration: the shelves are stocked by PortalRoomLibrarian on a later
