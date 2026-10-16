@@ -26413,9 +26413,9 @@
         "Going live without a Twitch saved? Drop your Twitch in chat for a shout-out \u2014 one click saves it; a Stream setting turns the reminder off"
       ],
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null,
+      "released": true,
+      "released_in": "v0.1309.0",
+      "released_at": "2026-10-16T05:25:18Z",
       "major": true,
       "notable": true,
       "description": "Dungeon Train TV can now connect to your Twitch.\n\nLet the stream give your channel a shout-out whenever you hold the Live Eye! You get a shout-out in chat, and your channel is featured in the livestream name and pill for all viewers to see.\n\nStreamers can go one step further. Turn on **Also stream to my channel** and your ride is pushed to your own Twitch channel at the same time, with an optional title and category set for you. Both switches live on the new Account tab, next to Discord, and /twitch unlink takes it all back at any time. Your stream key is never stored.",
@@ -26434,9 +26434,9 @@
       "highlights": [],
       "pr": 2038,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1309.0",
+      "released_at": "2026-10-16T05:25:18Z"
     },
     {
       "id": "live-pill-above-jade",
@@ -26455,9 +26455,9 @@
       ],
       "pr": 2039,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1309.0",
+      "released_at": "2026-10-16T05:25:18Z"
     },
     {
       "id": "prefab-name-title-blur",
@@ -26473,9 +26473,9 @@
       "highlights": [],
       "pr": 2042,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1309.0",
+      "released_at": "2026-10-16T05:25:18Z"
     },
     {
       "id": "signed-book-loot-entry",
