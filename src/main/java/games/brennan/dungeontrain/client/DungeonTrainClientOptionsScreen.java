@@ -730,6 +730,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(liveChat, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // Moments shared into Live chat while streaming (LiveMoments); Kid mode keeps them off and greyed.
+            case LIVE_MOMENT_ADVANCEMENTS -> kidLockedToggle(key, LiveFeedClientConfig.liveMomentAdvancements(),
+                    LiveFeedClientConfig::setLiveMomentAdvancements);
+            case LIVE_MOMENT_PHOTOS -> kidLockedToggle(key, LiveFeedClientConfig.liveMomentPhotos(),
+                    LiveFeedClientConfig::setLiveMomentPhotos);
+            case LIVE_MOMENT_BOOKS -> kidLockedToggle(key, LiveFeedClientConfig.liveMomentBooks(),
+                    LiveFeedClientConfig::setLiveMomentBooks);
+
             // The shout-out reminder at stream start; moot once a Twitch is saved, never shown in Kid mode.
             case TWITCH_HINT -> {
                 boolean kid = ClientDisplayConfig.isKidMode();
@@ -978,6 +986,14 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
         return CycleButton.onOffBuilder(initial)
                 .displayOnlyValue()
                 .create(0, 0, CONTROL_W, ROW_H, name, (btn, on) -> set.accept(on));
+    }
+
+    /** An on/off row Kid mode forces off and greys, with its {@code .tip} — or {@code .kid_tip} when locked. */
+    private static Setting kidLockedToggle(String key, boolean value, Consumer<Boolean> set) {
+        boolean kid = ClientDisplayConfig.isKidMode();
+        CycleButton<Boolean> toggle = onOff(Component.translatable(key), !kid && value, set);
+        toggle.active = !kid;
+        return Setting.of(toggle, kid ? key + ".kid_tip" : key + ".tip");
     }
 
     /** The control of a row that opens a page rather than changing a setting: one verb, "Open". */

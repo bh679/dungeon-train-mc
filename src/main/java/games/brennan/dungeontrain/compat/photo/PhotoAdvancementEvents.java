@@ -67,6 +67,7 @@ public final class PhotoAdvancementEvents {
     public static void onFrameAdded(FrameAddedEvent event) {
         if (!(event.getCameraHolderEntity() instanceof ServerPlayer player)) return;
         rememberSubjects(player, event);
+        LiveMomentPhotos.onFrameAdded(player, event.getFrame());
         // Every advancement this shot earns remembers it — see AdvancementPhotoCapture.
         AdvancementPhotoCapture.during(event.getFrame(), () -> photoTriggers(player, event));
     }

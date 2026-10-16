@@ -1137,6 +1137,8 @@ public final class AchievementEvents {
         // heads follow their source, not achievements: no persistence, hint, accolade or capstone check.
         TabGateways.onEarned(player, id);
         if (TabGateways.isLinked(id)) return;
+        // The Live Eye streamer's earn, told to their client for the stream's Live chat (LiveMomentEvents).
+        if (!AdvancementProfiles.isReplaying()) LiveMomentEvents.onAdvancement(player, advancement);
         // Persist across worlds: capture every GUI-visible advancement — vanilla,
         // Dungeon Train, and other mods alike — not just dungeontrain:*. The
         // hidden display-less recipe tree is filtered out by shouldPersist.

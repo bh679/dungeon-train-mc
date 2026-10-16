@@ -26652,6 +26652,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-moments-in-live-chat",
+      "version": "0.1312.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Your Live stream shares your advancements, photos and books",
+      "summary": "While you stream with the Live Eye, the Live chat on Discord, Twitch and the website now shows when you earn an advancement, take a photo or sign a book. Photos show as the picture itself, on its paper, and books show their title and first lines. Nothing extra appears in your own game chat.",
+      "highlights": [
+        "Turn each one off on the Stream tab: Share advancements, Share photos, Share books",
+        "Always off in Kid mode"
+      ],
+      "pr": 2053,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

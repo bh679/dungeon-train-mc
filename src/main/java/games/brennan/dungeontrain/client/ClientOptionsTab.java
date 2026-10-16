@@ -167,6 +167,12 @@ public enum ClientOptionsTab {
         STREAM_POPUPS_OVER_TAG("gui.dungeontrain.options.stream_popups_over_tag"),
         /** The stream's Discord chat in your chat, and yours back to it. Locked off in Kid mode. */
         LIVE_CHAT("gui.dungeontrain.options.live_chat"),
+        /** While streaming, say advancements earned in Live chat. Locked off in Kid mode. */
+        LIVE_MOMENT_ADVANCEMENTS("gui.dungeontrain.options.live_moment_advancements"),
+        /** While streaming, share photos taken into Live chat. Locked off in Kid mode. */
+        LIVE_MOMENT_PHOTOS("gui.dungeontrain.options.live_moment_photos"),
+        /** While streaming, share books signed into Live chat. Locked off in Kid mode. */
+        LIVE_MOMENT_BOOKS("gui.dungeontrain.options.live_moment_books"),
         /** The "drop your Twitch in chat for a shout-out" line at stream start, while no Twitch is saved. */
         TWITCH_HINT("gui.dungeontrain.options.twitch_hint"),
         /** Whether this client decodes live feeds onto TVs and the pinned viewer. Also on Performance. */
@@ -327,6 +333,9 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_NAME_TAG);
                 rows.add(Row.STREAM_POPUPS_OVER_TAG);
                 rows.add(Row.LIVE_CHAT);
+                rows.add(Row.LIVE_MOMENT_ADVANCEMENTS);
+                rows.add(Row.LIVE_MOMENT_PHOTOS);
+                rows.add(Row.LIVE_MOMENT_BOOKS);
                 rows.add(Row.TWITCH_HINT);
                 rows.add(Row.LIVE_FEED_VIEWING);
                 rows.add(Row.STREAM_SIZE);

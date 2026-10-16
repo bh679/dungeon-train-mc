@@ -84,6 +84,9 @@ final class ClientOptionsIcons {
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
             case STREAM_POPUPS_OVER_TAG -> Icon.item(Items.KNOWLEDGE_BOOK);
             case LIVE_CHAT -> Icon.item(Items.BELL);
+            case LIVE_MOMENT_ADVANCEMENTS -> Icon.item(Items.GOLDEN_APPLE);
+            case LIVE_MOMENT_PHOTOS -> Icon.item(Items.PAINTING);
+            case LIVE_MOMENT_BOOKS -> Icon.item(Items.WRITABLE_BOOK);
             case TWITCH_HINT -> TWITCH;
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);
             case STREAM_SIZE -> Icon.item(Items.MAP);
