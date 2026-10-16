@@ -313,6 +313,22 @@ public final class EditorScreenLang {
     public static final String RESEED_TIP_ON = PREFIX + "reseed.tip_on";
     public static final String RESEED_TIP_OFF = PREFIX + "reseed.tip_off";
     public static final String RESEED_TIP_NOW = PREFIX + "reseed.tip_now";
+    // The test toolbar and the test settings rows — see TestModeControls.
+    public static final String TEST_RELOAD = PREFIX + "test.reload";
+    public static final String TEST_RELOAD_TIP = PREFIX + "test.reload.tip";
+    public static final String TEST_REROLL_OTHERS = PREFIX + "test.reroll_others";
+    public static final String TEST_REROLL_OTHERS_TIP = PREFIX + "test.reroll_others.tip";
+    public static final String TEST_REROLL_MAIN = PREFIX + "test.reroll_main";
+    public static final String TEST_REROLL_MAIN_TIP = PREFIX + "test.reroll_main.tip";
+    public static final String TEST_RESEED_ALL = PREFIX + "test.reseed_all";
+    public static final String TEST_RESEED_ALL_TIP = PREFIX + "test.reseed_all.tip";
+    public static final String TEST_STAGE = PREFIX + "test.stage";
+    public static final String TEST_LEVEL = PREFIX + "test.level";
+    public static final String TEST_LEVEL_TITLE = PREFIX + "test.level.title";
+    public static final String TEST_BAND = PREFIX + "test.band";
+    public static final String TEST_AUTO = PREFIX + "test.auto";
+    public static final String TEST_AUTO_VALUE = PREFIX + "test.auto_value";
+    public static final String TEST_SETTINGS_TIP = PREFIX + "test.settings.tip";
     public static final String ENTER = PREFIX + "enter";
     public static final String THEME = PREFIX + "theme";
     public static final String THEME_LIGHT = PREFIX + "theme.light";

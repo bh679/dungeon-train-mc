@@ -157,7 +157,10 @@ public final class CarriageTestCommand {
                             StringArgumentType.getString(ctx, "name"))))))
             .then(Commands.literal("back").executes(ctx -> runBack(ctx.getSource())))
             .then(Commands.literal("reseed").executes(ctx -> runReseedNow(ctx.getSource(), false))
-                .then(Commands.literal("focus").executes(ctx -> runReseedNow(ctx.getSource(), true))));
+                .then(Commands.literal("focus").executes(ctx -> runReseedNow(ctx.getSource(), true))))
+            .then(Commands.literal("reload").executes(ctx -> runReload(ctx.getSource())))
+            .then(Commands.literal("reroll")
+                .then(Commands.literal("others").executes(ctx -> runRestamp(ctx.getSource(), TestReroll.OTHERS))));
     }
 
     /** What a test stands up: the shell, and what goes in it. */
@@ -178,9 +181,26 @@ public final class CarriageTestCommand {
      */
     static int runTest(CommandSourceStack source, CarriageTestSession.Kind kind, String id,
                        boolean freshRoll, boolean focus) {
+        return runTest(source, kind, id, freshRoll, focus ? TestReroll.MAIN : TestReroll.ALL);
+    }
+
+    /**
+     * @param reroll which of the running copy's rolls are drawn afresh; the rest carry over from it.
+     *               {@link TestReroll#ALL} keeps none, which is also every first test
+     */
+    static int runTest(CommandSourceStack source, CarriageTestSession.Kind kind, String id,
+                       boolean freshRoll, TestReroll reroll) {
         ServerPlayer player = playerOf(source);
         if (player == null) return 0;
+        // Stamped at the stage, Diff-Level and band the author set on the test settings rows.
+        return games.brennan.dungeontrain.template.TestGate.with(
+            games.brennan.dungeontrain.editor.TestOverrides.get(player.getUUID()),
+            () -> runTestScoped(source, player, kind, id, freshRoll, reroll));
+    }
 
+    private static int runTestScoped(CommandSourceStack source, ServerPlayer player,
+                                     CarriageTestSession.Kind kind, String id,
+                                     boolean freshRoll, TestReroll reroll) {
         ServerLevel overworld = source.getServer().overworld();
         DungeonTrainWorldData worldData = DungeonTrainWorldData.get(overworld);
         CarriageDims dims = worldData.dims();
@@ -190,15 +210,13 @@ public final class CarriageTestCommand {
         long shellSeed = seedFor(worldData, overworld, freshRoll);
         long contentsSeed = seedFor(worldData, overworld, freshRoll);
         CarriageTestSession.Session current = CarriageTestSession.get(player.getUUID());
-        if (focus && current != null) {
-            // The other half keeps the seed it stood on; only the tested template rolls afresh.
-            // A track test's shell seed is the piece's roll and its contents seed the line's, so
-            // it keeps the line the way a carriage test keeps its contents.
-            if (kind == CarriageTestSession.Kind.CARRIAGE || kind == CarriageTestSession.Kind.TRACKS) {
-                contentsSeed = current.contentsSeed();
-            } else {
-                shellSeed = current.shellSeed();
-            }
+        if (reroll != TestReroll.ALL && current != null && current.kind() == kind) {
+            // Whichever half is asked to keep its roll keeps the seed it stood on. A track test's
+            // shell seed is the piece's roll and its contents seed the line's, so the piece is its
+            // main half the way a carriage test's shell is; a whole room has only the one seed.
+            boolean shellIsMain = kind != CarriageTestSession.Kind.CONTENTS;
+            if (shellIsMain ? reroll.keepsMain() : reroll.keepsOthers()) shellSeed = current.shellSeed();
+            if (shellIsMain ? reroll.keepsOthers() : reroll.keepsMain()) contentsSeed = current.contentsSeed();
         }
         if (kind.isWhole()) return runWholeTest(source, player, overworld, kind, id, shellSeed, contentsSeed);
         if (kind == CarriageTestSession.Kind.TRACKS) {
@@ -335,7 +353,11 @@ public final class CarriageTestCommand {
                 games.brennan.dungeontrain.tunnel.TunnelGroupStore.current().gateOf(forcedGroup.id());
             if (!groupGate.isDefault()) bandGate = groupGate;
         }
-        TrackTestBand band = TrackTestBand.pick(bandGate, sceneSeed);
+        TrackTestBand drawn = TrackTestBand.pick(bandGate, sceneSeed);
+        // The test settings' level and band, where the author picked them, over the drawn ones.
+        TrackTestBand band = new TrackTestBand(
+            games.brennan.dungeontrain.template.TestGate.levelOr(drawn.level()),
+            games.brennan.dungeontrain.template.TestGate.phaseOr(drawn.phase()));
         CarriageDims dims = worldData.dims();
         CarriageGenerationConfig config = worldData.getGenerationConfig();
         CarriageVariant shell = CarriagePlacer.enclosedVariantForIndex(CarriageTestSession.TEST_INDEX,
@@ -396,7 +418,8 @@ public final class CarriageTestCommand {
         int y = TrackTestLayout.trainY();
         BlockPos backPad = corner.offset(layout.backPadX(piece), y, 0);
         BlockPos frontPad = corner.offset(layout.frontPadX(piece), y, 0);
-        String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
+        String stage = games.brennan.dungeontrain.template.TestGate.stageInScopeOr(
+            games.brennan.dungeontrain.editor.EditorStageSelection.effective());
         CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
             CarriagePlacer.placeHalfFlatbedPad(level, backPad, CarriagePlacer.HalfPadSide.BACK, dims);
             CarriagePlacer.placeHalfFlatbedPad(level, frontPad, CarriagePlacer.HalfPadSide.FRONT, dims);
@@ -424,8 +447,8 @@ public final class CarriageTestCommand {
         if (previous != GameType.CREATIVE) player.setGameMode(GameType.CREATIVE);
         player.teleportTo(overworld, arrival.getX() + 0.5, arrival.getY(), arrival.getZ() + 0.5,
             FACE_EAST, 0.0f);
-        DungeonTrainNet.sendTo(player, new PortalTestSessionPacket(true, games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id),
-            DungeonTrainWorldData.get(overworld).isPortalTestReseed()));
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.active(player,
+            games.brennan.dungeontrain.editor.workbench.WorkbenchTestScratch.shownName(id)));
     }
 
     /** A carriage footprint as a size: x = length, y = height, z = width. */
@@ -487,7 +510,8 @@ public final class CarriageTestCommand {
 
         boolean[] placed = {false};
         // Placeholders resolve for the stage the editor is previewing, as in CarriagePlacer#placeForTest.
-        String stage = games.brennan.dungeontrain.editor.EditorStageSelection.effective();
+        String stage = games.brennan.dungeontrain.template.TestGate.stageInScopeOr(
+            games.brennan.dungeontrain.editor.EditorStageSelection.effective());
         CarriageStampGuard.run(() -> StagePlacementScope.run(stage, () -> {
             placed[0] = stampWhole(overworld, place, wholeOrigin, wholeKind, id, size, shellSeed)
                 && (!room || stampWhole(overworld, place, after, wholeKind, id, size, seedB));
@@ -581,7 +605,19 @@ public final class CarriageTestCommand {
      * group; the cart between the corridors and a flatbed hold none.
      */
     private static CarriageContents contentsFor(CarriageVariant shell, long seed) {
-        return contentsFor(shell, seed, null);
+        return contentsFor(shell, seed, settingsGate());
+    }
+
+    /**
+     * The band the test settings put the copy in, for the contents pick — or {@code null} (ungated,
+     * as before) while both level and band are on Auto.
+     */
+    private static games.brennan.dungeontrain.template.GateContext settingsGate() {
+        games.brennan.dungeontrain.template.TestGate g = games.brennan.dungeontrain.template.TestGate.current();
+        if (g == null || (!g.levelSet() && !g.phaseSet())) return null;
+        return new games.brennan.dungeontrain.template.GateContext(
+            g.levelSet() ? g.level() : games.brennan.dungeontrain.difficulty.DifficultyProgression.positionTier(0),
+            g.phaseSet() ? g.phase() : games.brennan.dungeontrain.worldgen.TrainPhase.OVERWORLD);
     }
 
     /** {@link #contentsFor(CarriageVariant, long)} picked within a band — {@code null} for ungated. */
@@ -647,6 +683,24 @@ public final class CarriageTestCommand {
      * {@code PortalTestCommand.runReseedNow} follows.
      */
     static int runReseedNow(CommandSourceStack source, boolean focus) {
+        return runRestamp(source, focus ? TestReroll.MAIN : TestReroll.ALL);
+    }
+
+    /**
+     * {@code editor test reload} — the same rolls, read afresh from the saved templates: drop the
+     * cached shells and contents so a file changed on disk is what stands up, then re-stamp.
+     */
+    static int runReload(CommandSourceStack source) {
+        games.brennan.dungeontrain.editor.CarriageTemplateStore.clearCache();
+        games.brennan.dungeontrain.editor.CarriageContentsStore.clearCache();
+        return runRestamp(source, TestReroll.NONE);
+    }
+
+    /**
+     * Stand the running copy up again, re-rolling what {@code reroll} names and keeping the rest —
+     * Reseed, Reload and Re-roll others — and leave the author where they stood, as reseed does.
+     */
+    static int runRestamp(CommandSourceStack source, TestReroll reroll) {
         ServerPlayer player = playerOf(source);
         if (player == null) return 0;
         CarriageTestSession.Session session = CarriageTestSession.get(player.getUUID());
@@ -661,7 +715,7 @@ public final class CarriageTestCommand {
         float yaw = player.getYRot();
         float pitch = player.getXRot();
 
-        int result = runTest(source, session.kind(), session.templateId(), true, focus);
+        int result = runTest(source, session.kind(), session.templateId(), true, reroll);
         if (result == 0 || !wasHere) return result;
 
         CarriageTestSession.Session fresh = CarriageTestSession.get(player.getUUID());
@@ -694,8 +748,7 @@ public final class CarriageTestCommand {
         if (player.gameMode.getGameModeForPlayer() != session.previousGameType()) {
             player.setGameMode(session.previousGameType());
         }
-        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none(
-            DungeonTrainWorldData.get(overworld).isPortalTestReseed()));
+        DungeonTrainNet.sendTo(player, PortalTestSessionPacket.none(player));
 
         int discarded = discardEntities(overworld, session.box());
         int cleared = PortalClear.clearBox(overworld, session.box(), PortalCorridorMask.NONE);

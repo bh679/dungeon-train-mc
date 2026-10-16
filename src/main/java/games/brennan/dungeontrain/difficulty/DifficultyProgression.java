@@ -269,6 +269,9 @@ public final class DifficultyProgression {
         // then floored at 0 — so the value reaching tierForTravelled would be a perfectly plausible
         // tier 0 and the tripwire below would never fire. Checking here also means the log names the
         // number the CALLER passed, which is the one whose frame is wrong.
+        // A test stamp the author has set a Diff-Level for answers that, wherever it stands.
+        int override = games.brennan.dungeontrain.template.TestGate.levelOr(-1);
+        if (override >= 0) return override;
         if (!isPlausiblePosition(positionIndex)) {
             reportImplausiblePosition(positionIndex);
             return 0;

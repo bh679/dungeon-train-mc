@@ -46,7 +46,7 @@ public final class EditorDetailPane {
     static final int DISABLED_ICON = 0x60FFFFFF;
 
     /** What a click landed on. */
-    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP }
+    public enum HitKind { NONE, ICON, ROW, TEST, RESEED, PREVIEW, SHEET, GO_HERE, OLDER, NEWER, PAGE_PREV, PAGE_NEXT, LOOT_ITEM, EDIT_NOTE, BLOCK_GROUP, TEST_ICON, TEST_ROW }
 
     private final VersionStrip versions = new VersionStrip();
     /** The relay row of the selected template, and the version of it being shown (0 = as it is now). */
@@ -114,10 +114,17 @@ public final class EditorDetailPane {
     private InventoryEditorLayout.Rect goHereRect;
     private CommandMenuEntry goHere;
     private CommandMenuEntry enterCentre;
+    /** While a test runs: its toolbar above the model and its settings rows in place of the sheet. */
+    private boolean testing;
+    private List<EditorScreenActions.Icon> testIcons = List.of();
+    private List<CommandMenuEntry> testRows = List.of();
+    private int[] testIconX = new int[0];
 
     public Hit hovered() { return hovered; }
     public List<EditorScreenActions.Icon> icons() { return icons; }
     public List<CommandMenuEntry> rows() { return rows; }
+    public List<EditorScreenActions.Icon> testIcons() { return testIcons; }
+    public List<CommandMenuEntry> testRows() { return testRows; }
     public CommandMenuEntry testEntry() { return test; }
 
     /** The Reseed cell beside the test button — the world switch, or in a test the re-roll button. */
@@ -134,7 +141,13 @@ public final class EditorDetailPane {
 
     /** Build this frame's rows and icons from the selection. */
     public void layout(InventoryEditorLayout layout, EditorScreenActions.Ctx ctx, long nowMillis) {
-        this.layout = layout;
+        // A running test takes a row under the editing toolbar for its own; the model gives it room.
+        testing = PortalTestSessionState.active();
+        this.layout = testing ? layout.withTestRow() : layout;
+        layout = this.layout;
+        testIcons = testing ? TestModeControls.icons() : List.of();
+        testRows = testing ? TestModeControls.rows() : List.of();
+        testIconX = layoutTestIcons(testIcons.size(), layout.testIcons().x());
         this.ctx = ctx;
         // The relay row of what is selected, which showVersion has already handed this pane for the
         // version strip — it is what the Submit icon acts on.
@@ -206,6 +219,21 @@ public final class EditorDetailPane {
             blockEntries = summary.blockCounts().stream()
                 .map(b -> new BlockGroupsState.Entry(b.block(), b.count())).toList();
         }
+    }
+
+    /**
+     * Where each test toolbar button starts: full-size cells, the two reloads apart from the two
+     * re-rolls. Four buttons fit the narrowest pane at full size, so nothing here gives way.
+     */
+    static int[] layoutTestIcons(int count, int x0) {
+        int[] xs = new int[count];
+        int x = x0;
+        for (int i = 0; i < count; i++) {
+            if (i == 2) x += ICON_GROUP_GAP;
+            xs[i] = x;
+            x += ICON_CELL + ICON_GAP;
+        }
+        return xs;
     }
 
     /** Icon-row geometry: how big each button is, and where each one starts. */
@@ -386,12 +414,20 @@ public final class EditorDetailPane {
             }
             versions.draw(g, font, layout.preview(), relayId, seq, mouseX, mouseY);
             drawUploadNoteOnPreview(g, font, art);
-            sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
-                tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
-                ctx.selection(), roomRows);
-            sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
-            TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
-                hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+            if (testing) {
+                // The test's settings stand where the template's facts do: while testing, how the
+                // copy stands up is the question, and the sheet is back the moment the test ends.
+                sheetLines = List.of();
+                sheetCells = List.of();
+                drawTestRows(g, font);
+            } else {
+                sheetLines = TemplateDataSheet.lines(tile, pathLabel, summary,
+                    tile == null ? EditorRosterIndex.Provenance.BUILTIN : EditorRosterIndex.provenanceOf(tile.variant()),
+                    ctx.selection(), roomRows);
+                sheetCells = TemplateDataSheet.place(sheetLines, layout.sheet(), font);
+                TemplateDataSheet.draw(g, font, layout.sheet(), sheetLines, sheetCells,
+                    hovered.kind() == HitKind.SHEET ? hovered.index() : -1);
+            }
         } else {
             // Nothing of the model page is hittable while another page is up.
             sheetLines = List.of();
@@ -405,7 +441,35 @@ public final class EditorDetailPane {
         }
         if (pages.hasPager()) drawPager(g, font);
         drawIcons(g);
+        drawTestIcons(g);
         drawTest(g, font);
+    }
+
+    /** The test toolbar, drawn like the editing one above it. */
+    private void drawTestIcons(GuiGraphics g) {
+        InventoryEditorLayout.Rect r = layout.testIcons();
+        for (int i = 0; i < testIcons.size(); i++) {
+            int x = testIconX[i];
+            boolean hov = hovered.kind() == HitKind.TEST_ICON && hovered.index() == i;
+            g.fill(x, r.y(), x + ICON_CELL, r.y() + ICON_CELL, hov ? MenuRowPainter.CELL_HOVER : MenuRowPainter.CELL_IDLE);
+            if (hov) tint(g, 0xFF000000);
+            g.blitSprite(EditorIcons.forAction(testIcons.get(i).id()), x + (ICON_CELL - ICON_SIZE) / 2,
+                r.y() + (ICON_CELL - ICON_SIZE) / 2, ICON_SIZE, ICON_SIZE);
+            g.setColor(1f, 1f, 1f, 1f);
+        }
+    }
+
+    /** The test settings rows, from the top of the sheet's rect. */
+    private void drawTestRows(GuiGraphics g, Font font) {
+        InventoryEditorLayout.Rect r = layout.sheet();
+        g.enableScissor(r.x(), r.y(), r.right(), r.bottom());
+        for (int i = 0; i < testRows.size(); i++) {
+            int top = r.y() + i * ROW_H;
+            boolean hov = hovered.kind() == HitKind.TEST_ROW && hovered.index() == i;
+            MenuRowPainter.drawRow(g, font, testRows.get(i), r.x(), top, r.right(), ROW_H - 1,
+                i, hov, hovered.sub(), null);
+        }
+        g.disableScissor();
     }
 
     private void drawHeader(GuiGraphics g, Font font, EditorScreenTheme theme, TemplateArt art) {
@@ -674,7 +738,21 @@ public final class EditorDetailPane {
                 case NONE -> Hit.NONE;
             };
         }
+        InventoryEditorLayout.Rect tr = layout.testIcons();
+        if (testing && my >= tr.y() && my < tr.y() + ICON_CELL) {
+            for (int i = 0; i < testIconX.length; i++) {
+                if (mx >= testIconX[i] && mx < testIconX[i] + ICON_CELL) return new Hit(HitKind.TEST_ICON, i, 0);
+            }
+        }
         if (onModelPage() && layout.preview().contains(mx, my)) return new Hit(HitKind.PREVIEW, 0, 0);
+        if (testing && onModelPage() && layout.sheet().contains(mx, my)) {
+            int i = (int) ((my - layout.sheet().y()) / ROW_H);
+            if (i < testRows.size()) {
+                int sub = MenuRowPainter.hitCell(testRows.get(i), (int) mx, layout.sheet().x(), layout.sheet().right());
+                if (sub >= 0) return new Hit(HitKind.TEST_ROW, i, sub);
+            }
+            return Hit.NONE;
+        }
         int sheetCell = onModelPage() ? TemplateDataSheet.hit(sheetCells, mx, my) : -1;
         if (sheetCell >= 0) return new Hit(HitKind.SHEET, sheetCell, 0);
         InventoryEditorLayout.Rect ir = layout.icons();
@@ -732,6 +810,12 @@ public final class EditorDetailPane {
                     ? List.of() : List.of(placed.cell().tooltip().split("\n"));
             }
             case LOOT_ITEM -> lootItemTooltip(hit.index());
+            case TEST_ICON -> {
+                if (hit.index() < 0 || hit.index() >= testIcons.size()) yield List.of();
+                EditorScreenActions.Icon icon = testIcons.get(hit.index());
+                yield List.of(EditorScreenLang.text(icon.labelKey()), icon.detail());
+            }
+            case TEST_ROW -> List.of(EditorScreenLang.text(EditorScreenLang.TEST_SETTINGS_TIP));
             case BLOCK_GROUP -> {
                 var player = net.minecraft.client.Minecraft.getInstance().player;
                 yield BlocksPage.tooltip(blockEntries, hit.index(), blocksLive,

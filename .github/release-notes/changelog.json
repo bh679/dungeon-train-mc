@@ -26843,6 +26843,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-test-toolbar-settings",
+      "version": "0.1318.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Test controls in the editor",
+      "summary": "While you test a build from the editor, the template pane now gives you controls for the test itself. Try your build at any stage, difficulty level or band, and re-roll just your build or everything around it, all without changing the template.",
+      "highlights": [
+        "A test toolbar above the preview: Reload, Re-roll the rest, Re-roll this template and Re-roll everything",
+        "Stage, Diff level and Band settings replace the data sheet while a test runs, and changing one re-stands the test on the same rolls",
+        "Reload picks up templates you saved since the test started"
+      ],
+      "pr": 2063,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
