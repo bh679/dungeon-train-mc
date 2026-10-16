@@ -699,6 +699,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                 yield Setting.of(nameTag, kid ? key + ".kid_tip" : key + ".tip");
             }
 
+            // Pop-ups copied back over the stream's name tag (LiveToastRects). On the Performance tab too.
+            case STREAM_POPUPS_OVER_TAG -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.popupsOverNameTag(),
+                    LiveFeedClientConfig::setPopupsOverNameTag), key + ".tip");
+
             // The Discord live chat bridge (LiveChatBridge); Kid mode keeps it off and greyed.
             case LIVE_CHAT -> {
                 boolean kid = ClientDisplayConfig.isKidMode();

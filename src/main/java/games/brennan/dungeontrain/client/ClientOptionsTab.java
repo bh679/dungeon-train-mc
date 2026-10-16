@@ -157,6 +157,8 @@ public enum ClientOptionsTab {
         STREAM_AUDIO("gui.dungeontrain.options.stream_audio"),
         /** Which name viewers see above the hotbar. Locked to none in Kid mode. */
         STREAM_NAME_TAG("gui.dungeontrain.options.stream_name_tag"),
+        /** Pop-ups drawn back over the stream's name tag. Also on Performance, as a per-frame cost. */
+        STREAM_POPUPS_OVER_TAG("gui.dungeontrain.options.stream_popups_over_tag"),
         /** The stream's Discord chat in your chat, and yours back to it. Locked off in Kid mode. */
         LIVE_CHAT("gui.dungeontrain.options.live_chat"),
         /** The "drop your Twitch in chat for a shout-out" line at stream start, while no Twitch is saved. */
@@ -315,6 +317,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.STREAM_CHAT);
                 rows.add(Row.STREAM_AUDIO);
                 rows.add(Row.STREAM_NAME_TAG);
+                rows.add(Row.STREAM_POPUPS_OVER_TAG);
                 rows.add(Row.LIVE_CHAT);
                 rows.add(Row.TWITCH_HINT);
                 rows.add(Row.LIVE_FEED_VIEWING);
@@ -338,12 +341,14 @@ public enum ClientOptionsTab {
                 // The one performance NOTICE sits above the tips: it is about this machine's setup,
                 // not about the client or the player, so it reads as part of this tab's subject.
                 rows.add(Row.LOW_MEMORY_NOTICE_CHAT);
-                // The Live Feed's three frame-rate costs, the same rows as on the Stream tab: what a
+                // The Live Feed's frame-rate costs, the same rows as on the Stream tab: what a
                 // player who came here to stop lag would otherwise have to know to look for there.
-                // Watching (decoder) and broadcasting (encoder) pair on one line; the size follows.
+                // Watching (decoder) and broadcasting (encoder) pair on one line; the size and the
+                // pop-ups-over-name copy follow.
                 rows.add(Row.LIVE_FEED_VIEWING);
                 rows.add(Row.LIVESTREAM);
                 rows.add(Row.STREAM_SIZE);
+                rows.add(Row.STREAM_POPUPS_OVER_TAG);
                 rows.add(Row.PERFORMANCE_TIPS);
             }
         }
