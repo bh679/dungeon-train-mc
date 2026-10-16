@@ -26785,6 +26785,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-takeover-after-death-seen",
+      "version": "0.1316.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Taking over a Live Eye stream waits until you've seen the death",
+      "summary": "When a Live Eye streamer dies, viewers are now offered the stream only after their TV has shown the death, instead of getting the offer before it happened on screen.",
+      "highlights": [],
+      "pr": 2060,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
