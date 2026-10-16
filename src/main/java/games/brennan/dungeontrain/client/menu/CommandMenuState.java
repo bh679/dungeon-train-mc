@@ -346,6 +346,14 @@ public final class CommandMenuState {
     }
 
     public static void activate(int idx, int subIdx) {
+        activate(idx, subIdx, 0);
+    }
+
+    /**
+     * Act on row {@code idx}. {@code button} is the mouse button (0 left, 1 right) — a number row
+     * steps down on a right-click; every other row acts the same on either.
+     */
+    public static void activate(int idx, int subIdx, int button) {
         if (idx < 0 || idx >= entries.size()) return;
         CommandMenuEntry entry = entries.get(idx);
         LOGGER.info("Menu activate idx={} subIdx={} entry={}", idx, subIdx, entry);
@@ -356,13 +364,13 @@ public final class CommandMenuState {
         typingOriginRowIdx = idx;
         typingOriginSubIdx = subIdx;
         playClickSound();
-        dispatchEntry(entry, subIdx);
+        dispatchEntry(entry, subIdx, button);
     }
 
     /** Dispatch a single entry's action through the shared {@link MenuEntryDispatcher}. */
-    private static void dispatchEntry(CommandMenuEntry entry, int subIdx) {
+    private static void dispatchEntry(CommandMenuEntry entry, int subIdx, int button) {
         MenuEntryDispatcher.dispatch(entry, subIdx, HOST,
-            net.minecraft.client.gui.screens.Screen.hasShiftDown());
+            net.minecraft.client.gui.screens.Screen.hasShiftDown(), button, MenuClickModifiers.cmdDown());
     }
 
     /**
@@ -534,13 +542,17 @@ public final class CommandMenuState {
      * player backs out.
      */
     public static void activateSide(int idx, int subIdx) {
+        activateSide(idx, subIdx, 0);
+    }
+
+    public static void activateSide(int idx, int subIdx, int button) {
         if (idx < 0 || idx >= sideEntries.size()) return;
         CommandMenuEntry entry = sideEntries.get(idx);
         LOGGER.info("Menu activate (side) idx={} subIdx={} entry={}", idx, subIdx, entry);
         typingOriginRowIdx = idx;
         typingOriginSubIdx = subIdx;
         playClickSound();
-        dispatchEntry(entry, subIdx);
+        dispatchEntry(entry, subIdx, button);
     }
 
     private static void playClickSound() {

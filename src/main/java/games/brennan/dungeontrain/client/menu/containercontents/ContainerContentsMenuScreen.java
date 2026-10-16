@@ -58,10 +58,10 @@ public final class ContainerContentsMenuScreen extends PanelScreenHost {
     }
 
     @Override
-    protected void click(double localX, double localY, boolean shift) {
+    protected void click(double localX, double localY, boolean shift, int button) {
         ContainerContentsMenu.Hit hit = hitAt(localX, localY);
         if (hit.kind() == ContainerContentsMenu.CellKind.NONE) return;
-        ContainerContentsMenuInputHandler.dispatch(hit, shift);
+        ContainerContentsMenuInputHandler.dispatch(hit, shift, button);
     }
 
     /** The panel has two faces — the entry list and the Add-search list — with their own layouts. */

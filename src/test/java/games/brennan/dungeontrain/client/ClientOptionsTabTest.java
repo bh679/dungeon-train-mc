@@ -94,11 +94,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: forty-five rows (three repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: forty-seven rows (three repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(45, rows.size());
+        assertEquals(47, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -106,6 +106,8 @@ final class ClientOptionsTabTest {
         assertTrue(rows.contains(ClientOptionsTab.Row.AI_POLICY));
         // The Discord account block is there for everyone — it is where an unlinked player links.
         assertTrue(rows.contains(ClientOptionsTab.Row.DISCORD_ACCOUNT));
+        // So is the Twitch block (the screen hides it in Kid mode at draw time, not here).
+        assertTrue(rows.contains(ClientOptionsTab.Row.TWITCH_ACCOUNT));
     }
 
     @Test
@@ -211,8 +213,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 46 rows, three of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(49, rows.size());
+        // 47 rows, three of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(50, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -222,7 +224,7 @@ final class ClientOptionsTabTest {
     void streamTabRows() {
         assertEquals(List.of(ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_GUI,
                         ClientOptionsTab.Row.STREAM_CHAT, ClientOptionsTab.Row.STREAM_AUDIO, ClientOptionsTab.Row.STREAM_NAME_TAG, ClientOptionsTab.Row.LIVE_CHAT,
-                        ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.STREAM_SIZE,
+                        ClientOptionsTab.Row.TWITCH_HINT, ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.STREAM_SIZE,
                         ClientOptionsTab.Row.HEAD_VIEWER_SIZE),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)
@@ -380,7 +382,7 @@ final class ClientOptionsTabTest {
         JsonObject en = JsonParser.parseString(Files.readString(RepoPaths.langFile("en_us"), StandardCharsets.UTF_8))
                 .getAsJsonObject();
         for (ClientOptionsTab.Row row : ClientOptionsTab.Row.values()) {
-            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT || row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
+            if (row == ClientOptionsTab.Row.DISCORD_ACCOUNT || row == ClientOptionsTab.Row.TWITCH_ACCOUNT || row == ClientOptionsTab.Row.PERFORMANCE_TIPS) {
                 assertNull(row.captionKey(), row + " stands for several rows and has no caption of its own");
                 continue;
             }

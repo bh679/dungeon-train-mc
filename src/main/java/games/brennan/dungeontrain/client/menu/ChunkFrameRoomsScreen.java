@@ -48,12 +48,11 @@ public final class ChunkFrameRoomsScreen implements MenuScreen {
             String cmd = COMMAND + " room " + frame + " " + room + " ";
             out.add(new CommandMenuEntry.Toggle(room, on, cmd + "on", cmd + "off"));
         }
-        String weight = COMMAND + " weight " + frame + " ";
-        out.add(new CommandMenuEntry.Triple(
-            new CommandMenuEntry.Stay("−", weight + Math.max(1, s.weight() - 1)),
-            new CommandMenuEntry.Label("Weight ×" + s.weight()),
-            new CommandMenuEntry.Stay("+", weight + Math.min(MAX_WEIGHT, s.weight() + 1)),
-            0.25, 0.75));
+        // The weight command takes only an outright value, so the steps are computed here.
+        String weight = COMMAND + " weight " + frame;
+        out.add(new CommandMenuEntry.Number("Weight ×" + s.weight(),
+            games.brennan.dungeontrain.client.menu.number.NumberTitle.of("weight"), weight, s.weight(), 1, MAX_WEIGHT,
+            false, weight + " " + Math.min(MAX_WEIGHT, s.weight() + 1), weight + " " + Math.max(1, s.weight() - 1)));
         out.add(new CommandMenuEntry.Back(MenuLang.t("common.back")));
         return out;
     }

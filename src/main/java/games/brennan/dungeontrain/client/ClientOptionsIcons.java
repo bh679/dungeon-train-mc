@@ -36,6 +36,8 @@ final class ClientOptionsIcons {
     static final Icon DISCORD_LINK = Icon.sprite(ResourceLocation.withDefaultNamespace("icon/invite"), 14);
     /** The master "all pings" switch and each kind of ping. */
     static final Icon PING = Icon.item(Items.BELL);
+    /** The Twitch link row and its two opt-ins on the Account tab. */
+    static final Icon TWITCH = Icon.item(Items.PURPLE_DYE);
     /** How a donation is announced. */
     static final Icon DONATION = Icon.item(Items.EMERALD);
     /** Whether the announcement tags the player's Discord. */
@@ -81,6 +83,7 @@ final class ClientOptionsIcons {
             case STREAM_AUDIO -> Icon.item(Items.JUKEBOX);
             case STREAM_NAME_TAG -> Icon.item(Items.NAME_TAG);
             case LIVE_CHAT -> Icon.item(Items.BELL);
+            case TWITCH_HINT -> TWITCH;
             case LIVE_FEED_VIEWING -> Icon.item(Items.ENDER_EYE);
             case STREAM_SIZE -> Icon.item(Items.MAP);
             case HEAD_VIEWER_SIZE -> Icon.item(Items.GLASS);
@@ -95,7 +98,7 @@ final class ClientOptionsIcons {
             case CREATIVE_MOD_BLOCK_TABS -> FILTER;
             case CREATIVE_MOD_BLOCKS_IN_SEARCH -> SEARCH;
 
-            case DISCORD_ACCOUNT, PERFORMANCE_TIPS ->
+            case DISCORD_ACCOUNT, TWITCH_ACCOUNT, PERFORMANCE_TIPS ->
                     throw new IllegalArgumentException(row + " is expanded into several rows and has no icon of its own");
         };
     }

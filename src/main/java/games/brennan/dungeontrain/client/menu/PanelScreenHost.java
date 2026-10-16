@@ -81,8 +81,11 @@ public abstract class PanelScreenHost extends Screen {
     /** Resolve and store the hovered cell for a cursor at these panel-local coordinates. */
     protected abstract void hover(double localX, double localY);
 
-    /** Dispatch a click at these panel-local coordinates. */
-    protected abstract void click(double localX, double localY, boolean shift);
+    /**
+     * Dispatch a click at these panel-local coordinates. {@code button} is the GLFW mouse button —
+     * left, or right (a number cell's step-down; other cells ignore it).
+     */
+    protected abstract void click(double localX, double localY, boolean shift, int button);
 
     /** False once the server has closed the menu, so the screen can dismiss itself. */
     protected abstract boolean stillActive();
@@ -163,8 +166,8 @@ public abstract class PanelScreenHost extends Screen {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
-            click(localX(mouseX), localY(mouseY), hasShiftDown());
+        if (button == 0 || button == 1) {
+            click(localX(mouseX), localY(mouseY), hasShiftDown(), button);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);

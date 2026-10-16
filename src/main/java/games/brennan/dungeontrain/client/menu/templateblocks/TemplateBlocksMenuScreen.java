@@ -52,9 +52,10 @@ public final class TemplateBlocksMenuScreen extends PanelScreenHost {
     }
 
     @Override
-    protected void click(double localX, double localY, boolean shift) {
+    protected void click(double localX, double localY, boolean shift, int button) {
         TemplateBlocksMenu.Hit hit = TemplateBlocksMenuRaycast.hitTest(localX, localY);
         if (hit.kind() == TemplateBlocksMenu.CellKind.NONE) return;
+        if (button != 0) return;
         TemplateBlocksMenuInputHandler.dispatch(hit);
     }
 

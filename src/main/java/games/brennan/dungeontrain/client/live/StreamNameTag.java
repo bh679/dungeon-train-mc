@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.VertexSorting;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
+import games.brennan.dungeontrain.client.twitch.TwitchAccountState;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig.NameTag;
@@ -14,26 +15,29 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.ClientHooks;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 
 /**
  * "<b>Name</b> is live", top-middle in black on a black-outlined white pill with a pulsing green
- * dot before it ("… is live with chat disabled" when the streamer has Live chat off), drawn into the
- * broadcast picture only.
+ * dot before it ("… is live with chat disabled" when the streamer has Live chat off).
  *
  * <p>It goes into the small capture target after the main frame is blitted down and before it is
  * read back ({@link LiveFrameGrabber}), and into the Options preview the same way
- * ({@link StreamPreview}) — so viewers and the preview see it, the streamer's own screen never does,
- * and it is there on every frame (menus open, GUI off) until the streamer sets it to None. Sized in
- * the stream's own GUI pixels so it matches the HUD viewers see. When Jade's look-at tooltip is over
- * that spot the pill drops below it ({@link StreamTagObstruction}).</p>
+ * ({@link StreamPreview}) — so viewers see it on every frame (menus open, GUI off) until the
+ * streamer sets it to None. Sized in the stream's own GUI pixels so it matches the HUD viewers see.
+ * The streamer sees the same pill on their own HUD while live (a GUI layer, hidden by F1).</p>
+ *
+ * <p>The pill owns the top-middle: it never moves. Jade's look-at tooltip moves down under it
+ * instead ({@link LivePillSlot}).</p>
  *
  * <p>Which name: {@link LiveFeedClientConfig#streamNameTag()}. Kid mode shows none. A Discord tag
  * with no linked Discord name shows nothing rather than falling back to the Minecraft name.</p>
@@ -82,6 +86,13 @@ public final class StreamNameTag {
         ticks++;
     }
 
+    /** The streamer's own copy, above every other HUD layer; F1 hides it like the rest of the HUD. */
+    @SubscribeEvent
+    public static void onRegisterGuiLayers(RegisterGuiLayersEvent event) {
+        event.registerAboveAll(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "live_name_tag"),
+            (g, deltaTracker) -> drawHud(g));
+    }
+
     /** True when a label read at {@code readTick} is due a re-read at {@code nowTick}. */
     static boolean labelStale(int readTick, int nowTick) {
         return readTick == Integer.MIN_VALUE || nowTick - readTick >= LABEL_REFRESH_TICKS || nowTick < readTick;
@@ -106,11 +117,23 @@ public final class StreamNameTag {
 
     /** The text to show, or "" for nothing. Discord never falls back to the Minecraft name. */
     public static String text(NameTag tag, String minecraftName, boolean discordLinked, @Nullable String discordName) {
-        return switch (tag) {
+        return text(tag, minecraftName, discordLinked, discordName, null);
+    }
+
+    /**
+     * The text to show, or "" for nothing; with a linked Twitch channel ({@code twitchLogin}) the handle
+     * follows the name — " · twitch.tv/x" — so every viewer, Twitch's included, can find the streamer.
+     * A tag of NONE stays empty: no name means no handle either.
+     */
+    public static String text(NameTag tag, String minecraftName, boolean discordLinked, @Nullable String discordName,
+                              @Nullable String twitchLogin) {
+        String name = switch (tag) {
             case MINECRAFT -> minecraftName == null ? "" : minecraftName.strip();
             case DISCORD -> discordLinked && discordName != null ? discordName.strip() : "";
             case NONE -> "";
         };
+        if (name.isEmpty() || twitchLogin == null || !twitchLogin.matches("[A-Za-z0-9_]{3,25}")) return name;
+        return name + " · twitch.tv/" + twitchLogin.toLowerCase();
     }
 
     /** This client's tag text now, or "". */
@@ -119,15 +142,52 @@ public final class StreamNameTag {
         if (tag == NameTag.NONE) return "";
         CommunityLinkClient.Status discord = DiscordAccountState.status();
         return text(tag, Minecraft.getInstance().getUser().getName(),
-            discord != null && discord.linked(), discord == null ? null : discord.discordName());
+            discord != null && discord.linked(), discord == null ? null : discord.discordName(),
+            TwitchAccountState.linkedLogin());
     }
 
-    /** Stream start: make sure a Discord tag has a name to show (the cache is filled lazily otherwise). */
+    /** Stream start: make sure a Discord tag has a name to show, and the Twitch handle is known (both caches fill lazily otherwise). */
     static void prepare() {
         if (effective(LiveFeedClientConfig.streamNameTag(), ClientDisplayConfig.isKidMode()) == NameTag.DISCORD) {
             DiscordAccountState.refresh(() -> labelTick = Integer.MIN_VALUE);
         }
         labelTick = Integer.MIN_VALUE;
+        if (effective(LiveFeedClientConfig.streamNameTag(), ClientDisplayConfig.isKidMode()) != NameTag.NONE) {
+            TwitchAccountState.refresh(() -> { });
+        }
+    }
+
+    /** The pill's width in GUI pixels for the current label, or 0 when there is none. */
+    static float pillGuiWidth(Font font) {
+        Component label = label();
+        return label == null ? 0f : groupGuiWidth(font, label) + 2 * PAD_X;
+    }
+
+    /** The pill's height in GUI pixels. */
+    static int pillGuiHeight() {
+        return GLYPH_H + 2 * PAD_Y;
+    }
+
+    /** The dot, its gap and the name, in GUI pixels. */
+    private static int groupGuiWidth(Font font, Component label) {
+        return DOT_SIZE + DOT_GAP + font.width(label) - 1; // drop the trailing 1px advance so the group centres
+    }
+
+    /**
+     * Render thread, HUD pass: the streamer's own pill while live. Drawn in window pixels (the pose
+     * undoes the GUI scale) so its curves match the broadcast copy rather than a GUI-pixel staircase.
+     */
+    private static void drawHud(GuiGraphics g) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.options.hideGui || !LiveStreamController.get().streaming()) return;
+        Component label = label();
+        if (label == null) return;
+        float scale = (float) mc.getWindow().getGuiScale();
+        if (scale <= 0f) return;
+        g.pose().pushPose();
+        g.pose().scale(1f / scale, 1f / scale, 1f);
+        draw(g, mc.font, label, mc.getWindow().getWidth(), scale);
+        g.pose().popPose();
     }
 
     /**
@@ -172,16 +232,11 @@ public final class StreamNameTag {
      * resolution, not a GUI-pixel staircase), then the name in GUI pixels.
      */
     private static void draw(GuiGraphics graphics, Font font, Component label, int targetW, float scale) {
-        int textW = font.width(label) - 1; // drop the trailing 1px advance so the group centres
-        float groupW = (DOT_SIZE + DOT_GAP + textW) * scale;
+        float groupW = groupGuiWidth(font, label) * scale;
         int pillW = Math.round(groupW + 2 * PAD_X * scale);
-        int pillH = Math.round((GLYPH_H + 2 * PAD_Y) * scale);
+        int pillH = Math.round(pillGuiHeight() * scale);
         int pillX = (targetW - pillW) / 2;
-        float guiCentre = targetW / scale / 2f;
-        float guiHalfW = pillW / scale / 2f;
-        float guiTop = StreamTagObstruction.top(guiCentre - guiHalfW, guiCentre + guiHalfW, TOP_OFFSET,
-            System.currentTimeMillis());
-        int pillY = Math.round(guiTop * scale);
+        int pillY = Math.round(TOP_OFFSET * scale);
         int line = Math.max(1, Math.round(scale));
         pill(graphics, pillX, pillY, pillW, pillH, OUTLINE);
         pill(graphics, pillX + line, pillY + line, pillW - 2 * line, pillH - 2 * line, PILL);

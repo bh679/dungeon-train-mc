@@ -1,0 +1,41 @@
+name: Repost to #highlights
+
+# Re-post a shipped major/notable entry to Discord #highlights by hand — for when release.yml's
+# "Mark changelog entries released" lost the push race, so its highlights step found no entry
+# with released_in == tag and posted nothing (v0.1309.0, 2026-10-16). Needs the entry already
+# marked released on main (the bookkeeping repair PR), then: gh workflow run repost-highlights.yml
+# -f tag=vX.Y.Z [-f entry=<id>]. There is no dedupe: it posts again every time it runs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag, e.g. v0.1309.0
+        required: true
+        type: string
+      entry:
+        description: Post only this changelog entry id (default — every major the tag shipped)
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  repost:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Post to #highlights
+        env:
+          DISCORD_HIGHLIGHTS_WEBHOOK_URL: ${{ secrets.DISCORD_HIGHLIGHTS_WEBHOOK_URL }}
+        run: |
+          if [ -n "${{ inputs.entry }}" ]; then
+            python3 scripts/release-notes/notify-highlights.py --tag "${{ inputs.tag }}" --entry "${{ inputs.entry }}"
+          else
+            python3 scripts/release-notes/notify-highlights.py --tag "${{ inputs.tag }}"
+          fi

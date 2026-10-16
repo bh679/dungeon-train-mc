@@ -21,8 +21,8 @@ import snownee.jade.api.WailaPlugin;
  * ({@link LiveEyeContainerEvents#see}) before Jade's own item-storage provider (priority 1000) reads
  * the contents, so the tooltip shows what the player would find on opening it.
  *
- * <p>On the client it also reports where Jade's tooltip is drawn, so the Live stream's name tag
- * sits below it ({@link LiveEyeJadeClient}).</p>
+ * <p>On the client it also moves Jade's tooltip down under the Live stream's name pill while this
+ * player is live ({@link LiveEyeJadeClient}).</p>
  *
  * <p>Optional: Jade finds this class by its {@link WailaPlugin} annotation, so nothing loads it — or
  * any Jade class — when Jade is not installed.</p>
@@ -38,6 +38,7 @@ public final class LiveEyeJadePlugin implements IWailaPlugin {
 
     @Override
     public void registerClient(IWailaClientRegistration registration) {
+        registration.addBeforeRenderCallback(LiveEyeJadeClient.INSTANCE);
         registration.addAfterRenderCallback(LiveEyeJadeClient.INSTANCE);
     }
 

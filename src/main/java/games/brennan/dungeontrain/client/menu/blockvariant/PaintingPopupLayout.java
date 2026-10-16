@@ -25,7 +25,7 @@ final class PaintingPopupLayout {
     static final int SECTION_IMAGE = 2;
 
     /** Option index of a stepper's middle (value) button — shown, never an action. */
-    static final int STEPPER_VALUE = GrowthPopupLayout.STEPPER_VALUE;
+    static final int STEPPER_VALUE = 1;
 
     /** Longest picture name shown in the stepper before it is cut short. */
     private static final int MAX_NAME = 11;

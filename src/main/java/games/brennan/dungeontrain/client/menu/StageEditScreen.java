@@ -35,8 +35,8 @@ public final class StageEditScreen implements MenuScreen {
         int phaseMask = s == null ? TrainPhase.ALL_MASK : s.phaseMask();
 
         // Min / Max Diff-Level steppers — [-] / value (typeable) / [+].
-        out.add(levelTriple("minlevel", MenuLang.t("editor.min_level", minLevel), "0-1000"));
-        out.add(levelTriple("maxlevel", MenuLang.t("editor.max_level", maxLevel < 0 ? MenuLang.t("editor.max_level_all") : Integer.toString(maxLevel)), "-1..1000"));
+        out.add(levelRow("minlevel", MenuLang.t("editor.min_level", minLevel), minLevel, minLevel));
+        out.add(levelRow("maxlevel", MenuLang.t("editor.max_level", maxLevel < 0 ? MenuLang.t("editor.max_level_all") : Integer.toString(maxLevel)), maxLevel, minLevel));
 
         // Dimension toggles — one per TrainPhase; plain click flips one, shift-click "toggle all
         // but that one".
@@ -57,11 +57,9 @@ public final class StageEditScreen implements MenuScreen {
         return out;
     }
 
-    private CommandMenuEntry levelTriple(String sub, String label, String hint) {
-        String prefix = "dungeontrain editor stage " + sub + " " + stageId;
-        CommandMenuEntry minus = new CommandMenuEntry.Stay("-", EditorPlotTeleport.stageLevelCommandFor(stageId, sub, "dec"));
-        CommandMenuEntry middle = new CommandMenuEntry.TypeArg(label, hint, prefix);
-        CommandMenuEntry plus = new CommandMenuEntry.Stay("+", EditorPlotTeleport.stageLevelCommandFor(stageId, sub, "inc"));
-        return new CommandMenuEntry.Triple(minus, middle, plus, 0.10, 0.90);
+    /** One number row: click steps up, shift- or right-click down, cmd-click types. */
+    private CommandMenuEntry levelRow(String sub, String label, int value, int minLevel) {
+        return EditorMenuScreen.levelNumber(label, "dungeontrain editor stage " + sub + " " + stageId,
+            sub, value, minLevel);
     }
 }

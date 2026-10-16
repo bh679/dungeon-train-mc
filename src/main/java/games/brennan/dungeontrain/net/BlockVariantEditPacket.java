@@ -114,7 +114,10 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      REPLACE_WITH_HELD, SET_ACTIVE_MODE, SET_SPAN_MODE, SET_CONNECT_MODE, SET_CONNECT_ARMS,
                      SET_GROWTH,
                      // Painting row: stateString = VariantPainting token ("2x1 random"); "" turns it off.
-                     SET_PAINTING }
+                     SET_PAINTING,
+                     // Typed mob difficulty band from the cmd-click number pad: delta is the value
+                     // outright; SET_DIFF_MAX takes -1 for "all". Same clamps as the BUMP twins.
+                     SET_DIFF_MIN, SET_DIFF_MAX }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));

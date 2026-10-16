@@ -131,8 +131,18 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
 
     /** Dispatch an entry from outside any modal (a pane row, an icon) through this host. */
     public void dispatch(CommandMenuEntry entry, int subIdx) {
+        dispatch(entry, subIdx, 0);
+    }
+
+    /**
+     * {@link #dispatch(CommandMenuEntry, int)} with the mouse button: a number row steps down on a
+     * right-click; any other row ignores one.
+     */
+    public void dispatch(CommandMenuEntry entry, int subIdx, int button) {
+        if (button == 1 && !MenuEntryDispatcher.isNumber(entry, subIdx)) return;
         hoveredRow = -1;
-        MenuEntryDispatcher.dispatch(entry, subIdx, this, Screen.hasShiftDown());
+        MenuEntryDispatcher.dispatch(entry, subIdx, this, Screen.hasShiftDown(), button,
+            games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown());
     }
 
     // ---- typing ----
@@ -337,6 +347,11 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
 
     /** A click while a modal is open; always consumed so nothing underneath reacts. */
     public boolean mouseClicked(double mouseX, double mouseY) {
+        return mouseClicked(mouseX, mouseY, 0);
+    }
+
+    /** As {@link #mouseClicked(double, double)}; a right-click acts on a number row only. */
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
         if (stack.isEmpty()) return false;
         if (typing) return true;
         if (hoveredRow < 0) return true;
@@ -344,7 +359,9 @@ public final class EditorModalHost implements MenuEntryDispatcher.Host {
         if (hoveredRow >= rows.size()) return true;
         int row = hoveredRow;
         int sub = hoveredSub;
-        MenuEntryDispatcher.dispatch(rows.get(row), sub, this, Screen.hasShiftDown());
+        if (button == 1 && !MenuEntryDispatcher.isNumber(rows.get(row), sub)) return true;
+        MenuEntryDispatcher.dispatch(rows.get(row), sub, this, Screen.hasShiftDown(), button,
+            games.brennan.dungeontrain.client.menu.MenuClickModifiers.cmdDown());
         return true;
     }
 

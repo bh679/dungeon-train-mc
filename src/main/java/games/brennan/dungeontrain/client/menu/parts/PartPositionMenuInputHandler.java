@@ -2,6 +2,13 @@ package games.brennan.dungeontrain.client.menu.parts;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
+import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
+import games.brennan.dungeontrain.client.menu.number.NumberField;
+import games.brennan.dungeontrain.client.menu.number.NumberPad;
+import games.brennan.dungeontrain.client.menu.number.NumberStepper;
+import games.brennan.dungeontrain.client.menu.number.NumberTitle;
+import games.brennan.dungeontrain.template.TemplateGate;
+import games.brennan.dungeontrain.train.CarriagePartAssignment;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PartAssignmentEditPacket;
 import games.brennan.dungeontrain.net.PartMenuTogglePacket;
@@ -47,6 +54,8 @@ public final class PartPositionMenuInputHandler {
     private static boolean pressArmed;
     /** Captured at press time so the release knows whether it was a shift-click. */
     private static boolean pressShift;
+    /** Which mouse button armed the press — only its own release dispatches. */
+    private static int pressButton;
 
     private PartPositionMenuInputHandler() {}
 
@@ -62,6 +71,7 @@ public final class PartPositionMenuInputHandler {
         event.setCanceled(true);
         event.setSwingHand(false);
         pressArmed = true;
+        pressButton = event.isUseItem() ? GLFW.GLFW_MOUSE_BUTTON_RIGHT : GLFW.GLFW_MOUSE_BUTTON_LEFT;
         pressShift = Minecraft.getInstance().screen == null
             && (GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS
                 || GLFW.glfwGetKey(Minecraft.getInstance().getWindow().getWindow(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS);
@@ -86,16 +96,16 @@ public final class PartPositionMenuInputHandler {
         }
         if (Minecraft.getInstance().screen != null) return;
         int btn = event.getButton();
-        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
+        if (btn != GLFW.GLFW_MOUSE_BUTTON_LEFT && btn != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
         if (event.getAction() != GLFW.GLFW_RELEASE) return;
-        if (!pressArmed) return;
+        if (!pressArmed || btn != pressButton) return;
         pressArmed = false;
         boolean shift = pressShift
             || (event.getModifiers() & GLFW.GLFW_MOD_SHIFT) != 0;
 
         PartPositionMenu.Hit hit = PartPositionMenu.hovered();
         if (hit.kind() == PartPositionMenu.CellKind.NONE) return;
-        dispatch(hit, shift);
+        dispatch(hit, shift, btn);
     }
 
     /**
@@ -137,7 +147,9 @@ public final class PartPositionMenuInputHandler {
         return true;
     }
 
-    private static void dispatch(PartPositionMenu.Hit hit, boolean shift) {
+    private static void dispatch(PartPositionMenu.Hit hit, boolean shift, int button) {
+        // Right-click is a number cell's step-down and nothing else.
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && !isNumberCell(hit)) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.getSoundManager() != null) {
             mc.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(
@@ -145,13 +157,48 @@ public final class PartPositionMenuInputHandler {
         }
 
         if (PartPositionMenu.screen() == PartPositionMenu.Screen.ROOT) {
-            dispatchRoot(hit, shift);
+            dispatchRoot(hit, shift, button);
         } else {
             dispatchSearch(hit);
         }
     }
 
-    private static void dispatchRoot(PartPositionMenu.Hit hit, boolean shift) {
+    /** Whether {@code hit} is one of this panel's numbers. */
+    private static boolean isNumberCell(PartPositionMenu.Hit hit) {
+        if (PartPositionMenu.screen() != PartPositionMenu.Screen.ROOT) return false;
+        return switch (hit.kind()) {
+            case ENTRY_WEIGHT, ENTRY_MIN_LEVEL, ENTRY_MAX_LEVEL -> true;
+            default -> false;
+        };
+    }
+
+    /**
+     * One entry's weight or level bound: steps with the BUMP op, types with its SET twin. The
+     * panel is a HUD overlay, so the pad returns to the world with it still drawn.
+     */
+    private static NumberField entryNumber(PartPositionMenu.CellKind cell, String variantId,
+                                           CarriagePartKind kind, WeightedName e) {
+        record Spec(String title, int value, int min, int max, boolean all,
+                    PartAssignmentEditPacket.Op bump, PartAssignmentEditPacket.Op set) {}
+        Spec spec = switch (cell) {
+            case ENTRY_MIN_LEVEL -> new Spec("min_level", e.gate().minLevel(), 0, TemplateGate.MAX_LEVEL, false,
+                PartAssignmentEditPacket.Op.BUMP_MIN_LEVEL, PartAssignmentEditPacket.Op.SET_MIN_LEVEL);
+            case ENTRY_MAX_LEVEL -> new Spec("max_level",
+                e.gate().maxLevel() == TemplateGate.ALL ? NumberField.ALL : e.gate().maxLevel(),
+                e.gate().minLevel(), TemplateGate.MAX_LEVEL, true,
+                PartAssignmentEditPacket.Op.BUMP_MAX_LEVEL, PartAssignmentEditPacket.Op.SET_MAX_LEVEL);
+            default -> new Spec("weight", e.weight(), CarriagePartAssignment.MIN_WEIGHT,
+                CarriagePartAssignment.MAX_WEIGHT, false,
+                PartAssignmentEditPacket.Op.BUMP_WEIGHT, PartAssignmentEditPacket.Op.SET_WEIGHT);
+        };
+        String name = e.name();
+        return new NumberField(NumberTitle.of(spec.title()), spec.value(), spec.min(), spec.max(), spec.all(),
+            () -> DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(spec.bump(), variantId, kind, name, 1)),
+            () -> DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(spec.bump(), variantId, kind, name, -1)),
+            v -> DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(spec.set(), variantId, kind, name, v)));
+    }
+
+    private static void dispatchRoot(PartPositionMenu.Hit hit, boolean shift, int button) {
         CarriagePartKind kind = PartPositionMenu.kind();
         if (kind == null) return;
         String variantId = PartPositionMenu.variantId();
@@ -166,13 +213,11 @@ public final class PartPositionMenuInputHandler {
                 new PartAssignmentEditPacket(
                     PartAssignmentEditPacket.Op.CLEAR, variantId, kind, "", 0));
             case CLOSE -> DungeonTrainNet.sendToServer(new PartMenuTogglePacket(false));
-            case ENTRY_WEIGHT -> {
+            case ENTRY_WEIGHT, ENTRY_MIN_LEVEL, ENTRY_MAX_LEVEL -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
                 if (hit.index() < 0 || hit.index() >= entries.size()) return;
-                String name = entries.get(hit.index()).name();
-                int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
-                    PartAssignmentEditPacket.Op.BUMP_WEIGHT, variantId, kind, name, delta));
+                NumberStepper.click(entryNumber(hit.kind(), variantId, kind, entries.get(hit.index())),
+                    button, shift, MenuClickModifiers.cmdDown(), NumberPad.returningTo(null));
             }
             case ENTRY_STAGE -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
@@ -181,22 +226,6 @@ public final class PartPositionMenuInputHandler {
                 // Open the Stage / Custom picker for this entry; it sends a SET_STAGE edit on pick.
                 CommandMenuState.openAt(games.brennan.dungeontrain.client.menu.StagePickerScreen.forParts(
                     variantId, kind, e.name(), e.stageId()));
-            }
-            case ENTRY_MIN_LEVEL -> {
-                List<WeightedName> entries = PartPositionMenu.entries();
-                if (hit.index() < 0 || hit.index() >= entries.size()) return;
-                String name = entries.get(hit.index()).name();
-                int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
-                    PartAssignmentEditPacket.Op.BUMP_MIN_LEVEL, variantId, kind, name, delta));
-            }
-            case ENTRY_MAX_LEVEL -> {
-                List<WeightedName> entries = PartPositionMenu.entries();
-                if (hit.index() < 0 || hit.index() >= entries.size()) return;
-                String name = entries.get(hit.index()).name();
-                int delta = shift ? -1 : 1;
-                DungeonTrainNet.sendToServer(new PartAssignmentEditPacket(
-                    PartAssignmentEditPacket.Op.BUMP_MAX_LEVEL, variantId, kind, name, delta));
             }
             case ENTRY_PHASE -> {
                 List<WeightedName> entries = PartPositionMenu.entries();
