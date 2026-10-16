@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.train;
 
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.AABB;
+import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +29,8 @@ import java.util.function.Predicate;
  */
 public final class CarriageSpawnSpot {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private CarriageSpawnSpot() {}
 
     /**
@@ -38,9 +42,15 @@ public final class CarriageSpawnSpot {
                                                   BlockPos carriageOrigin, CarriageDims dims) {
         BlockPos interiorOrigin = carriageOrigin.offset(1, 1, 1);
         Vec3i size = CarriageContentsPlacer.interiorSize(dims);
-        return find(interiorOrigin, size,
+        Optional<BlockPos> spot = find(interiorOrigin, size,
             feet -> level.noCollision(boxAt(type, feet)),
             cell -> !level.getBlockState(cell).getCollisionShape(level, cell).isEmpty());
+        BlockPos centre = interiorOrigin.offset(size.getX() / 2, 0, size.getZ() / 2);
+        if (spot.isEmpty() || !spot.get().equals(centre)) {
+            LOGGER.debug("[DungeonTrain] Spawn spot: centre {} blocked ({}) on carriage at {} -> {}",
+                centre, level.getBlockState(centre), carriageOrigin, spot.map(BlockPos::toString).orElse("no room"));
+        }
+        return spot;
     }
 
     private static AABB boxAt(EntityType<?> type, BlockPos feet) {
