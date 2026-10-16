@@ -213,8 +213,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 47 rows, three of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(50, rows.size());
+        // 48 rows, three of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(51, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
