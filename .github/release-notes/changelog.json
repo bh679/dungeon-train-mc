@@ -26885,6 +26885,23 @@
       "released": true,
       "released_in": "v0.1318.0",
       "released_at": "2026-10-16T15:45:50Z"
+    },
+    {
+      "id": "live-eye-hidden-advancements-2066",
+      "version": "0.1319.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Three new hidden advancements",
+      "summary": "Three more hidden advancements are waiting to be found by Live Eye streamers and the people watching them.",
+      "highlights": [],
+      "pr": 2066,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
