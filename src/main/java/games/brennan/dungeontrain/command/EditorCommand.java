@@ -793,6 +793,12 @@ public final class EditorCommand {
                             .executes(ctx -> runContentsEnter(ctx.getSource(),
                                 StringArgumentType.getString(ctx, "contents"),
                                 StringArgumentType.getString(ctx, "shell_variant"))))))
+                // The X menu's Reroll carriage: stand the contents in another carriage that carries it.
+                .then(Commands.literal("reshell")
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .suggests(CONTENTS_SUGGESTIONS)
+                        .executes(ctx -> runContentsReshell(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "id")))))
                 .then(Commands.literal("rename")
                     .then(Commands.argument("id", StringArgumentType.word())
                         .suggests(CONTENTS_SUGGESTIONS)
@@ -4687,6 +4693,30 @@ public final class EditorCommand {
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] editor contents enter failed", t);
             source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_enter_failed", t.getClass().getSimpleName(), t.getMessage()).withStyle(ChatFormatting.RED));
+            return 0;
+        }
+    }
+
+    private static int runContentsReshell(CommandSourceStack source, String contentsRaw) {
+        CarriageContents contents = parseContents(source, contentsRaw);
+        if (contents == null) return 0;
+        ServerLevel overworld = source.getServer().overworld();
+        CarriageDims dims = DungeonTrainWorldData.get(overworld).dims();
+        final String label = CarriageContentsWeights.current().nameFor(contents.id());
+        try {
+            java.util.Optional<CarriageVariant> shell = CarriageContentsEditor.rerollShell(overworld, contents, dims);
+            if (shell.isEmpty()) {
+                source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_reshell_none", label));
+                return 0;
+            }
+            final String shellName = CarriageWeights.current().nameFor(shell.get().id());
+            source.sendSuccess(() -> Component.translatable("chat.dungeontrain.editor.contents_reshell_done",
+                label, shellName), false);
+            return 1;
+        } catch (RuntimeException e) {
+            LOGGER.error("[DungeonTrain] editor contents reshell failed for '{}'", contents.id(), e);
+            source.sendFailure(Component.translatable("chat.dungeontrain.editor.contents_enter_failed",
+                e.getClass().getSimpleName(), e.getMessage()).withStyle(ChatFormatting.RED));
             return 0;
         }
     }

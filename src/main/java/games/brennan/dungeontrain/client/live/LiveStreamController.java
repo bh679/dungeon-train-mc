@@ -58,6 +58,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -143,6 +144,8 @@ public final class LiveStreamController {
     @Nullable private LiveStreamEndedToast.Reason endedAfterLeave;
     /** The streamer died and the broadcast carries on through the death screens ({@link LivePostMortem}). */
     private final LivePostMortem postMortem = new LivePostMortem();
+    /** The death's offer to viewers, held until their TVs have shown it; null when none is waiting. */
+    @Nullable private LiveDeathHandover handover;
     /** Render thread: inside {@link #onLoggingOut}, so any ended pop-up waits for the title screen. */
     private boolean leaving;
 
@@ -224,7 +227,8 @@ public final class LiveStreamController {
      * The server says the streamer died (it has burned the Live Eye and cleared the streamer). A
      * broadcast that is already on air carries on through the death screens until the streamer ends
      * it (End Stream, {@link LiveRecOverlay}) or leaves; the relay offers it to viewers meanwhile, and
-     * the first to accept cuts this one off. Anything not yet on air stops as before.
+     * the first to accept cuts this one off. The offer waits until viewers have seen the death
+     * ({@link LiveDeathHandover}). Anything not yet on air stops as before.
      */
     private void died() {
         Claim c = claim;
@@ -234,15 +238,30 @@ public final class LiveStreamController {
         }
         LOGGER.info("[DungeonTrain] live: streamer died; streaming on through the death screens");
         postMortem.begin();
-        LiveFeedClient.died(c.token());
+        LiveEncoder enc = encoder;
+        double deathS = enc == null ? 0 : enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps());
+        int segmentS = LiveFeedClientConfig.segmentSeconds();
+        handover = new LiveDeathHandover(deathS, segmentS, System.currentTimeMillis());
+        LOGGER.info("[DungeonTrain] live: death at {} s into the stream; offering it once segment {} is up",
+            String.format(Locale.ROOT, "%.1f", deathS), handover.targetSegment());
         // The moment of death, cut from this stream's own segments: the first death page's backdrop
         // and the #live-eye offline post's GIF.
-        LiveEncoder enc = encoder;
         Path d = dir;
-        if (enc != null && d != null) {
-            LiveDeathClip.begin(d, enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps()),
-                LiveFeedClientConfig.segmentSeconds(), c.token());
-        }
+        if (enc != null && d != null) LiveDeathClip.begin(d, deathS, segmentS, c.token());
+    }
+
+    /** Post-mortem tick: offer the stream to viewers once they have seen the death. */
+    private void tickHandover() {
+        LiveDeathHandover h = handover;
+        Claim c = claim;
+        if (h == null || c == null) return;
+        long now = System.currentTimeMillis();
+        long published = uploader == null ? -1 : uploader.publishedThrough();
+        if (!h.release(published, now)) return;
+        handover = null;
+        LOGGER.info("[DungeonTrain] live: death on air for viewers (segment {} up, {} s after); offering the stream",
+            published, h.waitedMs(now) / 1000);
+        LiveFeedClient.died(c.token());
     }
 
     /** Streaming on after death — the death screens are what goes out. */
@@ -338,8 +357,11 @@ public final class LiveStreamController {
         if (postMortem.active()) {
             if (state != State.STREAMING) {
                 postMortem.clear();
+                handover = null;
             } else if (tickPostMortem()) {
                 return;
+            } else {
+                tickHandover();
             }
         }
         if (state != State.IDLE && state != State.STOPPING && !postMortem.active() && checkHeadpiece()) return;
@@ -704,6 +726,8 @@ public final class LiveStreamController {
         boolean wasLive = state == State.STREAMING;
         if (watchingWithEye()) LiveTakeoverFlow.abandon();
         postMortem.clear();
+        // A pending offer goes with the stream: the relay stop (reason "died") opens it after the final upload.
+        handover = null;
         generation++;
         LOGGER.info("[DungeonTrain] live stream stopping ({}; {} segment(s) uploaded)", clean ? "clean" : "cut off",
             uploader == null ? 0 : uploader.segmentsUploaded());

@@ -26785,6 +26785,43 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-takeover-after-death-seen",
+      "version": "0.1316.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Taking over a Live Eye stream waits until you've seen the death",
+      "summary": "When a Live Eye streamer dies, viewers are now offered the stream only after their TV has shown the death, instead of getting the offer before it happened on screen.",
+      "highlights": [],
+      "pr": 2060,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "contents-reroll-carriage",
+      "version": "0.1317.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Reroll the carriage around your contents",
+      "summary": "When you build carriage contents in the Train Editor, a new dice button above the preview swaps the carriage they stand in for another one that carries them on the train. Your unsaved changes stay put.",
+      "highlights": [
+        "New Reroll carriage button in the Train Editor's icon row for contents",
+        "Only picks carriages that would really carry those contents, never the one already shown"
+      ],
+      "pr": 2061,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
