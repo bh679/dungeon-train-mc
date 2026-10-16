@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client.sodium;
 
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import games.brennan.dungeontrain.client.ClientPortalSeal;
 import games.brennan.dungeontrain.client.UpsideDownRenderFlip;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
@@ -34,6 +35,8 @@ public abstract class BlockRendererUpsideDownMixin {
     @WrapMethod(method = "renderModel")
     private void dungeontrain$flipUpsideDownBand(BakedModel model, BlockState state, BlockPos pos,
                                                  BlockPos origin, Operation<Void> original) {
+        // The portal seal's block trim, as on the vanilla pipeline (ModelBlockRendererUpsideDownMixin).
+        if (ClientPortalSeal.hidesBlock(pos.getX(), pos.getY(), pos.getZ())) return;
         original.call(UpsideDownRenderFlip.apply(model, pos), state, pos, origin);
     }
 }
