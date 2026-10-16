@@ -3,10 +3,14 @@ package games.brennan.dungeontrain.editor;
 import net.minecraft.core.BlockPos;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Per-sidecar owner of the v9 lock-group reference machinery: a live
@@ -43,15 +47,49 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
         this.lockIds = lockIds;
     }
 
+    /**
+     * Each cell-backed group's options as of the last mutation, kept across
+     * invalidation. Without it, editing a group's cells and then deleting
+     * them would fall back to whatever copy the references were saved with,
+     * losing the edits; with it, a group that has just lost its last cell
+     * keeps the options it had a moment ago. Only consulted for a group that
+     * is still referenced, so it never resurrects a group on its own.
+     */
+    private final Map<Integer, List<VariantState>> lastSeen = new ConcurrentHashMap<>();
+
+    /**
+     * How deep a reference's copy of its group nests copies of further groups.
+     * A backstop: the editor refuses loops, and {@link #refreshed} stops at a
+     * group already on the path, so real chains are far shorter.
+     */
+    private static final int MAX_COPY_DEPTH = 4;
+
     /** Drop the cached graph. Call from every mutator that touches entries or lock-ids. */
     public void invalidate() {
         graphCache = null;
+        rememberCellGroups();
+    }
+
+    /** Record every cell-backed group's current options in {@link #lastSeen}. */
+    private void rememberCellGroups() {
+        Map<Integer, List<VariantState>> current = new HashMap<>();
+        for (Map.Entry<BlockPos, Integer> e : lockIds.entrySet()) {
+            List<VariantState> list = entries.get(e.getKey());
+            if (list != null) current.putIfAbsent(e.getValue(), list);
+        }
+        lastSeen.putAll(current);
     }
 
     /**
      * {@inheritDoc}
      *
-     * <p>A scan of the lock-id map, so author-time callers and
+     * <p>A cell carrying {@code lockId} always answers. When none does, the
+     * group still exists for as long as some option in this sidecar refers to
+     * it: its options are the ones it last had here ({@link #lastSeen}), or
+     * else the copy a reference carries ({@link VariantState#groupStates}) —
+     * which is how a group survives a save and reload with no cell of its own.</p>
+     *
+     * <p>A scan, so author-time callers and
      * {@link VariantGroupRefs#analyse}'s one-shot index build use it freely and
      * nothing on the placement path does — {@code analyse} calls this exactly
      * once per group and hands every later step the index it built, which is
@@ -64,12 +102,117 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
         for (Map.Entry<BlockPos, Integer> e : lockIds.entrySet()) {
             if (e.getValue() == lockId) return entries.get(e.getKey());
         }
+        return detachedStates(lockId);
+    }
+
+    /** True when a cell in this sidecar carries {@code lockId} — the group is not only a reference. */
+    public boolean hasCellFor(int lockId) {
+        return lockId > 0 && lockIds.containsValue(lockId);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The cells' lock-ids plus every group an option refers to that still
+     * has options to give ({@link #statesForLockId}) — so a group kept alive
+     * only by a reference is resolved, and its id is not handed out again by
+     * {@code nextFreeLockId}.</p>
+     */
+    @Override
+    public Set<Integer> lockIdsInUse() {
+        Set<Integer> ids = new LinkedHashSet<>(lockIds.values());
+        Set<Integer> referenced = new LinkedHashSet<>();
+        for (List<VariantState> list : entries.values()) collectRefs(list, referenced, 0);
+        for (int id : referenced) {
+            if (!ids.contains(id) && detachedStates(id) != null) ids.add(id);
+        }
+        return ids;
+    }
+
+    /**
+     * {@code states} with every reference's copy of its group brought up to
+     * date ({@link #statesForLockId}), nested references included. Sidecars
+     * write this rather than the raw list, so the file always holds the
+     * group's current options and the group outlives its last cell.
+     *
+     * @param ownLockId the lock-id of the cell {@code states} belongs to (0 if
+     *                  none) — a copy never nests the group it sits in
+     */
+    public List<VariantState> refreshed(List<VariantState> states, int ownLockId) {
+        Set<Integer> path = new HashSet<>();
+        if (ownLockId > 0) path.add(ownLockId);
+        return refreshed(states, path, 0);
+    }
+
+    private List<VariantState> refreshed(List<VariantState> states, Set<Integer> path, int depth) {
+        if (states == null || !VariantGroupRefs.anyRef(states)) return states;
+        List<VariantState> out = new ArrayList<>(states.size());
+        for (VariantState s : states) {
+            if (!s.isGroupRef()) {
+                out.add(s);
+                continue;
+            }
+            int id = s.groupRef();
+            if (depth >= MAX_COPY_DEPTH || path.contains(id)) {
+                out.add(s.withGroupStates(List.of()));
+                continue;
+            }
+            List<VariantState> group = statesForLockId(id);
+            if (group == null || group.isEmpty()) {
+                out.add(s);
+                continue;
+            }
+            path.add(id);
+            out.add(s.withGroupStates(refreshed(group, path, depth + 1)));
+            path.remove(id);
+        }
+        return out;
+    }
+
+    /**
+     * Options for a group no cell carries: {@code null} unless some option in
+     * this sidecar still refers to it, then the options it last had here, else
+     * the first non-empty copy a reference carries.
+     */
+    @Nullable
+    private List<VariantState> detachedStates(int lockId) {
+        boolean[] referenced = {false};
+        List<VariantState> copy = null;
+        for (List<VariantState> list : entries.values()) {
+            List<VariantState> found = findCopy(list, lockId, referenced, 0);
+            if (found != null) {
+                copy = found;
+                break;
+            }
+        }
+        if (!referenced[0]) return null;
+        List<VariantState> seen = lastSeen.get(lockId);
+        return seen != null ? seen : copy;
+    }
+
+    @Nullable
+    private static List<VariantState> findCopy(List<VariantState> list, int lockId,
+                                               boolean[] referenced, int depth) {
+        if (list == null || depth > MAX_COPY_DEPTH) return null;
+        for (VariantState s : list) {
+            if (!s.isGroupRef()) continue;
+            if (s.groupRef() == lockId) {
+                referenced[0] = true;
+                if (!s.groupStates().isEmpty()) return s.groupStates();
+            }
+            List<VariantState> nested = findCopy(s.groupStates(), lockId, referenced, depth + 1);
+            if (nested != null) return nested;
+        }
         return null;
     }
 
-    @Override
-    public Set<Integer> lockIdsInUse() {
-        return new LinkedHashSet<>(lockIds.values());
+    private static void collectRefs(List<VariantState> list, Set<Integer> out, int depth) {
+        if (list == null || depth > MAX_COPY_DEPTH) return;
+        for (VariantState s : list) {
+            if (!s.isGroupRef()) continue;
+            out.add(s.groupRef());
+            collectRefs(s.groupStates(), out, depth + 1);
+        }
     }
 
     /** True when {@code localPos} is a variant cell of this sidecar. */
@@ -113,6 +256,7 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
     public VariantGroupRefs.Graph graph() {
         VariantGroupRefs.Graph cached = graphCache;
         if (cached == null) {
+            rememberCellGroups();
             cached = VariantGroupRefs.analyse(this);
             graphCache = cached;
         }

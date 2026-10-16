@@ -112,6 +112,44 @@ public final class BlockVariantMenuInputHandler {
         dispatch(hit, shift, btn);
     }
 
+    /**
+     * Middle-click a "→ Group N" row: group N lands in the hotbar as a Variant Clipboard, ready to
+     * Add as a reference on another cell or paste to rebuild the group. Ahead of
+     * {@code VariantCopyPickClient} (whole-cell copy) and vanilla pick-block, and cancelled only
+     * when it acted, so a middle-click anywhere else keeps its old meaning.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onMiddleClick(InputEvent.MouseButton.Pre event) {
+        if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_MIDDLE || event.getAction() != GLFW.GLFW_PRESS) return;
+        if (!shouldHandle() || Minecraft.getInstance().screen != null) return;
+        if (copyGroupRow(BlockVariantMenu.hovered())) event.setCanceled(true);
+    }
+
+    /**
+     * Send the copy for {@code hit} when it is on a group-reference row of the variant list.
+     * Package-visible for {@link BlockVariantMenuScreen}'s middle button. True when it sent one.
+     */
+    static boolean copyGroupRow(BlockVariantMenu.Hit hit) {
+        if (BlockVariantMenu.screen() != BlockVariantMenu.Screen.ROOT) return false;
+        if (!isRowCell(hit.kind())) return false;
+        if (hit.index() < 0 || hit.index() >= BlockVariantMenu.entries().size()) return false;
+        if (!BlockVariantMenu.entries().get(hit.index()).isGroupRef()) return false;
+        net.minecraft.core.BlockPos local = BlockVariantMenu.localPos();
+        if (local == null) return false;
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
+            BlockVariantEditPacket.Op.COPY_GROUP_ENTRY, BlockVariantMenu.variantId(), local, hit.index(), "", 0));
+        return true;
+    }
+
+    /** The cells drawn on a variant row, whose {@code index} is that row. */
+    private static boolean isRowCell(BlockVariantMenu.CellKind kind) {
+        return switch (kind) {
+            case ENTRY_NAME, ENTRY_WEIGHT, ENTRY_REMOVE_X, ENTRY_ROT_MODE, ENTRY_ROT_DIRS,
+                 ENTRY_HALF_MODE, ENTRY_ACTIVE_MODE, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
+            default -> false;
+        };
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
         if (!shouldHandle()) return;

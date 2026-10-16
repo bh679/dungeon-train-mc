@@ -118,6 +118,8 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      // Typed mob difficulty band from the cmd-click number pad: delta is the value
                      // outright; SET_DIFF_MAX takes -1 for "all". Same clamps as the BUMP twins.
                      SET_DIFF_MIN, SET_DIFF_MAX,
+                     // Middle-click a group-reference row: entryIndex's group goes to the hotbar as a clipboard.
+                     COPY_GROUP_ENTRY,
                      // Placement condition: stateString = target token (a direction name, or
                      // "group+" / "group-" to step through the plot's lock groups).
                      SET_COND_TARGET,

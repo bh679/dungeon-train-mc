@@ -162,7 +162,7 @@ public interface EditorPlotTransform {
                 v.state().rotate(vanilla()), v.blockEntityNbt(), v.weight(),
                 rotateRotation(v.rotation(), v.state()), v.linkedLootPrefabId(), v.entityId(),
                 v.half(), v.difficulty(), v.groupRef(), v.active(), v.connect(), v.growth(), v.painting(), v.hung(),
-                condition);
+                v.groupStates().stream().map(this::rotateVariant).toList(), condition);
         }
 
         /**

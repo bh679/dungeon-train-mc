@@ -130,6 +130,8 @@ public final class VariantClipboardItem extends Item {
     private static final String NBT_DIFF_MAX = "dmax";
     /** v9 per-entry lock-group reference — see {@link VariantState#groupRef}. */
     private static final String NBT_GROUP_REF = "gref";
+    /** A reference row's copy of its group's options, encoded as a nested clipboard tag. */
+    private static final String NBT_GROUP_STATES = "gstates";
     /** Per-entry redstone-toggle mode ordinal ({@code VariantActive}). Absent when default INACTIVE. */
     private static final String NBT_ACTIVE_MODE = "am";
     /** Per-entry fence / wall connect-mode ordinal ({@code VariantConnect.Mode}). Absent when Default. */
@@ -441,6 +443,9 @@ public final class VariantClipboardItem extends Item {
             }
             if (s.isGroupRef()) {
                 entry.putInt(NBT_GROUP_REF, s.groupRef());
+                if (!s.groupStates().isEmpty()) {
+                    entry.put(NBT_GROUP_STATES, encodeStates(s.groupStates(), 0));
+                }
             }
             if (!s.active().isDefault()) {
                 entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
@@ -638,6 +643,8 @@ public final class VariantClipboardItem extends Item {
                 painting == null ? games.brennan.dungeontrain.editor.VariantPainting.NONE : painting,
                 games.brennan.dungeontrain.editor.HungPainting.parse(
                     entry.contains(NBT_HUNG, Tag.TAG_STRING) ? entry.getString(NBT_HUNG) : null),
+                groupRef > 0 && entry.contains(NBT_GROUP_STATES, Tag.TAG_COMPOUND)
+                    ? decodeStates(entry.getCompound(NBT_GROUP_STATES)) : List.of(),
                 condition));
         }
         return out;
