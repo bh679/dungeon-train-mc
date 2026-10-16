@@ -5475,12 +5475,6 @@
  "gui.dungeontrain.editor_screen.sheet.weight_tooltip": [
   "unused"
  ],
- "gui.dungeontrain.editor_screen.sheet.weight_up": [
-  "tooltip"
- ],
- "gui.dungeontrain.editor_screen.sheet.weight_down": [
-  "tooltip"
- ],
  "gui.dungeontrain.editor_screen.undo_nothing": [
   "tooltip"
  ],
@@ -9612,28 +9606,6 @@
  ],
  "gui.dungeontrain.editor_menu.books.max_any": [
   "button",
-  "screen",
-  "world"
- ],
- "gui.dungeontrain.editor_menu.plot.exits_short": [
-  "button",
-  "screen",
-  "world"
- ],
- "gui.dungeontrain.editor_menu.plot.moved_exit_short": [
-  "button",
-  "screen",
-  "world"
- ],
- "gui.dungeontrain.editor_menu.common.unit_blocks": [
-  "screen",
-  "world"
- ],
- "gui.dungeontrain.editor_menu.common.unit_tiles": [
-  "screen",
-  "world"
- ],
- "gui.dungeontrain.editor_menu.common.label_with_unit": [
   "screen",
   "world"
  ],
