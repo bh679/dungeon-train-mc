@@ -72,6 +72,43 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
         return new LinkedHashSet<>(lockIds.values());
     }
 
+    /** True when {@code localPos} is a variant cell of this sidecar. */
+    public boolean hasCell(BlockPos localPos) {
+        return entries.containsKey(localPos);
+    }
+
+    /** The candidate list at {@code localPos}, or {@code null} when it is not a variant cell. */
+    @Nullable
+    public List<VariantState> statesAt(BlockPos localPos) {
+        return entries.get(localPos);
+    }
+
+    /** The lock id at {@code localPos}; 0 when unlocked. */
+    public int lockIdAt(BlockPos localPos) {
+        Integer id = lockIds.get(localPos);
+        return id == null ? 0 : id;
+    }
+
+    /**
+     * The cell a group target is judged at: the group's lowest member (by y, then z, then x), so the
+     * choice is stable whatever order the map iterates in. {@code null} when no cell carries the id.
+     */
+    @Nullable
+    public BlockPos anchorOf(int lockId) {
+        if (lockId <= 0) return null;
+        BlockPos best = null;
+        for (Map.Entry<BlockPos, Integer> e : lockIds.entrySet()) {
+            if (e.getValue() != lockId) continue;
+            BlockPos p = e.getKey();
+            if (best == null || p.getY() < best.getY()
+                || (p.getY() == best.getY() && (p.getZ() < best.getZ()
+                    || (p.getZ() == best.getZ() && p.getX() < best.getX())))) {
+                best = p;
+            }
+        }
+        return best;
+    }
+
     /** Cached analysis of this sidecar's reference graph, resolved in subset order. */
     public VariantGroupRefs.Graph graph() {
         VariantGroupRefs.Graph cached = graphCache;
@@ -100,6 +137,12 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
     public VariantState resolve(BlockPos localPos, int lockId, List<VariantState> states,
                                 long worldSeed, int index) {
         if (states == null || states.isEmpty()) return null;
+        if (VariantConditions.anyConditional(states)) {
+            // Gate first: a failed condition drops its entry and the rest roll by weight. Every entry
+            // gated out leaves the cell empty rather than falling back to the template block.
+            states = VariantConditions.eligible(states, localPos, this, worldSeed, index);
+            if (states.isEmpty()) return VariantConditions.EMPTY_PICK;
+        }
         if (!VariantGroupRefs.anyRef(states)) {
             return states.get(pickIndex(localPos, lockId, states, worldSeed, index, null));
         }

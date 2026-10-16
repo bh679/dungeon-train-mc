@@ -603,7 +603,8 @@ public final class CarriageVariantBlocks {
                     if (!rawPrefab.isEmpty()) mobLootPrefab = rawPrefab;
                 }
                 VariantState mob = VariantState.ofMob(eid, mobNbt, mobWeight, mobRot);
-                return mob.withHalf(mobHalf).withDifficulty(mobDiff).withLinkedLootPrefabId(mobLootPrefab);
+                return mob.withHalf(mobHalf).withDifficulty(mobDiff).withLinkedLootPrefabId(mobLootPrefab)
+                    .withCondition(parseCondition(obj.get("if"), contextId, contextPos));
             }
             if (!obj.has("state") || !obj.get("state").isJsonPrimitive()) {
                 LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: object entry missing 'state' field, skipping.",
@@ -677,8 +678,10 @@ public final class CarriageVariantBlocks {
             JsonElement hungEl = obj.get("hung");
             HungPainting hung = hungEl != null && hungEl.isJsonPrimitive()
                 ? HungPainting.parse(hungEl.getAsString()) : HungPainting.NONE;
+            // Additive placement condition. Absent → always eligible, so older files spawn unchanged.
+            VariantCondition condition = parseCondition(obj.get("if"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung);
+                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung, condition);
         }
         LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: unrecognized entry {}, skipping.",
             contextId, contextPos, el);
@@ -1399,6 +1402,7 @@ public final class CarriageVariantBlocks {
             if (!s.active().isDefault()) {
                 sb.append(", \"active\": \"").append(activeModeName(s.active().mode())).append("\"");
             }
+            appendConditionJson(sb, s.condition());
             sb.append("}");
             return;
         }
@@ -1448,7 +1452,30 @@ public final class CarriageVariantBlocks {
         if (!s.hung().isDefault()) {
             sb.append(", \"hung\": \"").append(s.hung().id()).append("\"");
         }
+        appendConditionJson(sb, s.condition());
         sb.append("}");
+    }
+
+    /** Emit {@code , "if": "<token>"} for a set condition; nothing for none. */
+    private static void appendConditionJson(StringBuilder sb, VariantCondition c) {
+        if (c.isDefault()) return;
+        sb.append(", \"if\": \"").append(escapeJson(c.id())).append("\"");
+    }
+
+    /**
+     * Parse the additive {@code "if"} token. Absent → {@link VariantCondition#NONE}; a token whose
+     * target is malformed or whose every block id is unknown also lands on none, with a warning so
+     * an author can see why a gated row became unconditional.
+     */
+    private static VariantCondition parseCondition(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || !el.isJsonPrimitive()) return VariantCondition.NONE;
+        String raw = el.getAsString();
+        VariantCondition c = VariantCondition.parse(raw);
+        if (c.isDefault() && !raw.isBlank()) {
+            LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: condition '{}' has no usable target or block, dropping it.",
+                contextId, contextPos, raw);
+        }
+        return c;
     }
 
     /**

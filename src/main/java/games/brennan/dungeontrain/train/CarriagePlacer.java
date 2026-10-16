@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.editor.CarriagePartTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageVariantBlocks;
 import games.brennan.dungeontrain.editor.CarriageVariantPartsStore;
+import games.brennan.dungeontrain.editor.VariantConditions;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.portal.PortalCarriageBuilder;
@@ -797,14 +798,18 @@ public final class CarriagePlacer {
     private static void spawnShellVariantMobs(ServerLevel level, BlockPos origin,
                                                CarriageVariant variant, CarriageDims dims,
                                                long seed, int carriageIndex) {
-        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, variantDims(variant, dims));
+        CarriageDims sidecarDims = variantDims(variant, dims);
+        CarriageVariantBlocks sidecar = CarriageVariantBlocks.loadFor(variant, sidecarDims);
         if (sidecar.isEmpty()) return;
         int spawned = 0;
-        for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
-            VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
-            if (picked == null || !picked.isMob()) continue;
-            BlockPos world = origin.offset(e.localPos());
-            if (CarriageContentsPlacer.spawnVariantMob(level, world, picked, carriageIndex)) spawned++;
+        try (VariantConditions.Scope conds = VariantConditions.open(
+                 VariantConditions.stamped(level, origin::offset, new net.minecraft.core.Vec3i(sidecarDims.length(), sidecarDims.height(), sidecarDims.width())))) {
+            for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
+                VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
+                if (picked == null || !picked.isMob()) continue;
+                BlockPos world = origin.offset(e.localPos());
+                if (CarriageContentsPlacer.spawnVariantMob(level, world, picked, carriageIndex)) spawned++;
+            }
         }
         if (spawned > 0) {
             LOGGER.info("[DungeonTrain] Mob-variant: spawned {} shell mobs for variant={} pIdx={}",
@@ -991,7 +996,9 @@ public final class CarriagePlacer {
         java.util.function.Predicate<BlockPos> within = GrowthPass.inside(origin,
             sidecarDims.length(), sidecarDims.height(), sidecarDims.width());
         try (ConnectPass.Scope ignored = ConnectPass.open();
-             GrowthPass.Scope grown = GrowthPass.open()) {
+             GrowthPass.Scope grown = GrowthPass.open();
+             VariantConditions.Scope conds = VariantConditions.open(
+                 VariantConditions.stamped(level, origin::offset, new net.minecraft.core.Vec3i(sidecarDims.length(), sidecarDims.height(), sidecarDims.width())))) {
             for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(e.localPos());

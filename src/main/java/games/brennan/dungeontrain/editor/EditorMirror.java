@@ -236,7 +236,9 @@ public final class EditorMirror {
      * up-growing column into a down-growing one.</p>
      */
     public static VariantState reflectVariant(VariantState v, boolean flipX, boolean flipY, boolean flipZ) {
-        if (v.isMob()) return v;
+        // A touching-block condition is geometry and turns with the cell, mob or not.
+        VariantCondition condition = v.condition().reflected(flipX, flipY, flipZ);
+        if (v.isMob()) return v.withCondition(condition);
         return new VariantState(
             flipY ? MultiBlockFootprint.verticalFlip(reflect(v.state(), flipX, true, flipZ))
                 : reflect(v.state(), flipX, false, flipZ),
@@ -244,7 +246,8 @@ public final class EditorMirror {
             reflectRotation(v.rotation(), v.state(), flipX, flipY, flipZ),
             v.linkedLootPrefabId(), v.entityId(),
             reflectHalf(v.half(), flipY), v.difficulty(), v.groupRef(), v.active(), v.connect(),
-            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth(), v.painting(), v.hung());
+            flipY && !v.growth().isDefault() ? v.growth().flipped() : v.growth(), v.painting(), v.hung(),
+            condition);
     }
 
     /** Reflect a whole candidate pool ({@link #reflectVariant} over each entry). */

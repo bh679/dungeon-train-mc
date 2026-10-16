@@ -2005,7 +2005,9 @@ public final class PortalCarriageBuilder {
         boolean baseTile = PortalRoomTiling.Tile.BASE.equals(tile);
         java.util.function.Predicate<BlockPos> within = games.brennan.dungeontrain.editor.GrowthPass
             .inside(roomOrigin, size.getX(), size.getY(), size.getZ()).and(pos -> !mask.covers(pos));
-        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open()) {
+        try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open();
+             games.brennan.dungeontrain.editor.VariantConditions.Scope conds = games.brennan.dungeontrain.editor.VariantConditions.open(
+                 games.brennan.dungeontrain.editor.VariantConditions.stamped(level, roomOrigin::offset, size))) {
             for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
                 BlockPos local = entry.localPos();
                 BlockPos world = roomOrigin.offset(local);
