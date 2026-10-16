@@ -18,6 +18,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.BooleanValue STREAM_CHAT;
     public static final ModConfigSpec.BooleanValue STREAM_AUDIO;
     public static final ModConfigSpec.EnumValue<NameTag> STREAM_NAME_TAG;
+    public static final ModConfigSpec.BooleanValue POPUPS_OVER_NAME_TAG;
     public static final ModConfigSpec.BooleanValue LIVE_CHAT;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_ADVANCEMENTS;
     public static final ModConfigSpec.BooleanValue LIVE_MOMENT_PHOTOS;
@@ -64,6 +65,9 @@ public final class LiveFeedClientConfig {
         STREAM_NAME_TAG = b
             .comment("Your name on the stream, bottom-middle above the hotbar: MINECRAFT, DISCORD (your linked Discord name; nothing if not linked) or NONE. Always NONE in Kid mode.")
             .defineEnum("streamNameTag", NameTag.MINECRAFT);
+        POPUPS_OVER_NAME_TAG = b
+            .comment("Advancement and other pop-ups show on top of your name tag on the stream. Off = your name tag stays on top, and the stream skips copying the pop-ups back over it.")
+            .define("popupsOverNameTag", true);
         LIVE_CHAT = b
             .comment("Mirror the stream's Discord chat into your in-game chat while a stream is on air (as the streamer, or wearing a TV), and post what you type back to it. Always off in Kid mode, whatever this says.")
             .define("liveChat", true);
@@ -173,6 +177,15 @@ public final class LiveFeedClientConfig {
         if (!loaded() || STREAM_NAME_TAG.get() == value) return;
         STREAM_NAME_TAG.set(value);
         STREAM_NAME_TAG.save();
+    }
+
+    /** Pop-ups are copied back over the stream's name tag ({@code LiveToastRects}). On unless turned off. */
+    public static boolean popupsOverNameTag() { return !loaded() || POPUPS_OVER_NAME_TAG.get(); }
+
+    public static void setPopupsOverNameTag(boolean value) {
+        if (!loaded() || POPUPS_OVER_NAME_TAG.get() == value) return;
+        POPUPS_OVER_NAME_TAG.set(value);
+        POPUPS_OVER_NAME_TAG.save();
     }
 
     public static void setStreamGui(boolean value) {

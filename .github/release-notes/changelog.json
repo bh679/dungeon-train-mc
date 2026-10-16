@@ -26494,13 +26494,13 @@
       ],
       "pr": 2040,
       "date": "2026-10-16",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
     },
     {
       "id": "standard-number-steppers",
-      "version": "0.1309.0",
+      "version": "0.1310.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -26515,6 +26515,123 @@
         "Leave a max level or max fill empty to set it back to \"all\""
       ],
       "pr": 2041,
+      "date": "2026-10-16",
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
+    },
+    {
+      "id": "tv-right-click-any-item",
+      "version": "0.1310.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Switch a TV on or off with anything in hand",
+      "summary": "Right-click a placed TV to turn it on or off, whatever you're holding \u2014 your item isn't used or placed. Sneak to place a block against it instead.",
+      "highlights": [],
+      "pr": 2046,
+      "date": "2026-10-16",
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
+    },
+    {
+      "id": "bed-death-message-name",
+      "version": "0.1310.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Bed explosion deaths show a proper death message",
+      "summary": "Dying to a bed explosion now shows a real death message on the death screen instead of a raw game id. Fall deaths now read like the chat message too, so you can see how you fell or who knocked you off.",
+      "highlights": [
+        "Bed explosion: \"You were killed by [Intentional Game Design]\"",
+        "Falls: \"You fell from a high place\", \"You were doomed to fall by Zombie\""
+      ],
+      "pr": 2048,
+      "date": "2026-10-16",
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
+    },
+    {
+      "id": "release-announce-live-chat",
+      "version": "0.1310.0",
+      "type": "ci",
+      "tags": [
+        "community",
+        "internal"
+      ],
+      "title": "New versions are announced in the Live chat",
+      "summary": "When a new version of Dungeon Train comes out, the Live chat now says so: on the website's live page, in the Discord live room, and in Twitch chat while someone is streaming. If you're in game you still see the usual update notice, just once.",
+      "highlights": [],
+      "pr": 2047,
+      "date": "2026-10-16",
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
+    },
+    {
+      "id": "live-eye-popups-on-stream",
+      "version": "0.1310.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Advancement pop-ups on your Live stream",
+      "summary": "Viewers now see your advancement pop-ups even when you stream with chat hidden, and the pop-ups sit on top of your name at the top of the stream instead of under it.",
+      "highlights": [
+        "Pop-ups reach the stream with Stream chat off, Kid mode included",
+        "Pop-ups show over your name on the stream; turn this off with \"Pop-ups over your name\" on the Stream or Performance tab"
+      ],
+      "pr": 2049,
+      "date": "2026-10-16",
+      "released": true,
+      "released_in": "v0.1310.0",
+      "released_at": "2026-10-16T06:47:44Z"
+    },
+    {
+      "id": "dimensional-carriage-chests-reroll",
+      "version": "0.1311.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train",
+        "loot"
+      ],
+      "title": "Dimensional carriage chests roll their own loot",
+      "summary": "Chests built into a dimensional carriage now fill from the loot their builder set up, so each one you find can hold something different instead of the same items every time. In the editor, Reseed on Test the Carriage now re-rolls those chests too.",
+      "highlights": [
+        "Builders: Reseed (Cmd/Ctrl+R) shows a fresh roll of every chest that has a loot list"
+      ],
+      "pr": 2050,
+      "date": "2026-10-16",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "difficulty-next-run-or-restart",
+      "version": "0.1311.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Pick your difficulty for the next run, or restart on it now",
+      "summary": "Changing difficulty mid-run now asks what you want: keep this run going and start the next one on the new difficulty, or abandon this run and board a fresh train on it straight away. Dungeon Train remembers your choice for every new world, and the Options menu has a Difficulty setting of its own.",
+      "highlights": [
+        "Save a difficulty change for your next run, or restart on it now.",
+        "Your chosen difficulty carries over to every new world.",
+        "Advancement stats are now kept for each difficulty."
+      ],
+      "pr": 2051,
       "date": "2026-10-16",
       "released": false,
       "released_in": null,

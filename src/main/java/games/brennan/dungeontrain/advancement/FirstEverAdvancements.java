@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.cheat.RunIntegrity;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.discord.MilestoneAdvancementReporter;
 import games.brennan.dungeontrain.net.relay.AdvancementFirstClient;
+import games.brennan.dungeontrain.player.DifficultyPartition;
 import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.network.chat.Component;
@@ -47,7 +48,10 @@ public final class FirstEverAdvancements {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         String name = player.getGameProfile().getName();
-        AdvancementFirstClient.claim(player.getUUID(), name, id.toString(), answer -> {
+        // The real vanilla difficulty, isolation on or off: the relay's per-difficulty stats ride
+        // on this claim, and a Hard earn is a Hard earn whether or not the profiles are split.
+        String difficulty = DifficultyPartition.keyFor(player.level());
+        AdvancementFirstClient.claim(player.getUUID(), name, id.toString(), difficulty, answer -> {
             if (!answer.first()) return;
             server.execute(() -> celebrate(server, player, advancement));
         });

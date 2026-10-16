@@ -27,14 +27,15 @@ import net.mehvahdjukaar.vista.common.tv.TVBlockEntity;
 import net.minecraft.world.level.block.Block;
 
 /**
- * Vista TVs as latches: a redstone pulse or an empty-hand click toggles them, a steady signal is not
+ * Vista TVs as latches: a redstone pulse or a right-click toggles them, a steady signal is not
  * required — see {@link TvPowerToggle}. Vista's own grid propagation, sounds and screen merging are
  * untouched; only the one {@code hasNeighborSignal} read its neighbour handler makes is answered by
  * the latch instead of the wire.
  *
- * <p>Click rules: empty hand → toggle power. Sneak + empty hand keeps Vista's behaviour (pause while
- * playing, eject the cassette while off) — except that a Live Feed Cassette never ejects. A cassette in
- * hand still inserts.</p>
+ * <p>Click rules: right-click → toggle power, whatever is in hand (the held item is not used or
+ * placed). Sneak + item uses the item as normal (vanilla skips the block then), which is how a block
+ * — or another TV — is placed against one. Sneak + empty hand keeps Vista's behaviour (pause while
+ * playing, eject the cassette while off) — except that a Live Feed Cassette never ejects.</p>
  *
  * <p>A TV that comes on with an empty slot tunes itself: the server puts a Live Feed Cassette in, so
  * switching any TV on shows the broadcast (or the replay) with no setup at all. That cassette is never
@@ -58,23 +59,25 @@ public abstract class TVBlockMixin {
     private void dungeontrain$clickToggles(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
                                            InteractionHand hand, BlockHitResult hit,
                                            CallbackInfoReturnable<ItemInteractionResult> cir) {
+        if (!player.isSecondaryUseActive()) {
+            // Any right-click toggles, held item or not; returning success keeps the item from being used.
+            TvPowerToggle.toggle(level, pos);
+            if (player instanceof ServerPlayer serverPlayer) {
+                ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "toggled_placed_tv");
+            }
+            cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
+            return;
+        }
         if (DisabledModContent.isDisabledItem(stack)) {
             // Vista's own cassettes are hidden content; a TV never takes one, even from /give.
             cir.setReturnValue(ItemInteractionResult.FAIL);
             return;
         }
-        if (stack.isEmpty() && player.isSecondaryUseActive() && !state.getValue(TVBlock.POWER_STATE).isOn()
+        if (stack.isEmpty() && !state.getValue(TVBlock.POWER_STATE).isOn()
                 && dungeontrain$holdsLiveCassette(level, pos, state)) {
             // Vista would eject the cassette of a TV that is off; the Live Feed one stays put.
             cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
-            return;
         }
-        if (!stack.isEmpty() || player.isSecondaryUseActive()) return;
-        TvPowerToggle.toggle(level, pos);
-        if (player instanceof ServerPlayer serverPlayer) {
-            ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(serverPlayer, "toggled_placed_tv");
-        }
-        cir.setReturnValue(ItemInteractionResult.sidedSuccess(level.isClientSide));
     }
 
     private boolean dungeontrain$holdsLiveCassette(Level level, BlockPos pos, BlockState state) {

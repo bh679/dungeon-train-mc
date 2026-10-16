@@ -1273,6 +1273,16 @@
       ]
     }
   },
+  "chat.dungeontrain.difficulty_next_run": {
+    "1": {
+      "label": "the difficulty the next run starts on",
+      "examples": [
+        "Hard",
+        "Peaceful",
+        "Easy"
+      ]
+    }
+  },
   "chat.dungeontrain.difficulty_profile.swapped": {
     "1": {
       "label": "the difficulty just switched to",
@@ -4401,6 +4411,16 @@
         "Hard",
         "Peaceful",
         "Normal"
+      ]
+    }
+  },
+  "gui.dungeontrain.difficulty_confirm.restart_dies": {
+    "1": {
+      "label": "the difficulty the run being abandoned was played on",
+      "examples": [
+        "Normal",
+        "Hard",
+        "Easy"
       ]
     }
   },

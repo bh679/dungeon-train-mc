@@ -10,6 +10,7 @@ import games.brennan.dungeontrain.builder.BuilderWorldLayout;
 import games.brennan.dungeontrain.cheat.EditorContentIntegrity;
 import games.brennan.dungeontrain.client.menu.CustomContentToggleButton;
 import games.brennan.dungeontrain.client.worldgen.PendingWorldPreset;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.train.CarriageDims;
@@ -440,7 +441,7 @@ public final class DevQuickWorldHandler {
                 name,
                 GameType.CREATIVE,
                 false,
-                Difficulty.NORMAL,
+                ClientDisplayConfig.getNewRunDifficulty(),
                 true,
                 new GameRules(),
                 WorldDataConfiguration.DEFAULT);
@@ -481,7 +482,7 @@ public final class DevQuickWorldHandler {
                 name,
                 GameType.SURVIVAL,
                 false,
-                Difficulty.NORMAL,
+                ClientDisplayConfig.getNewRunDifficulty(),
                 false,
                 new GameRules(),
                 WorldDataConfiguration.DEFAULT);

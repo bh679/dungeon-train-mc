@@ -814,12 +814,17 @@ public final class LiveStreamController {
     /**
      * Stream chat off (always, in Kid mode): read just before chat draws, or skip the chat layer
      * while a listed menu is open. Receives cancelled events for the same reason as {@link #onGuiStart}.
+     * Before chat, the popups are drawn once for the read — they would otherwise only draw at the end
+     * of the frame, after it. They draw again there as usual, so the streamer's screen is unchanged.
      */
     @SubscribeEvent(priority = EventPriority.HIGHEST, receiveCanceled = true)
     public static void onGuiLayer(RenderGuiLayerEvent.Pre event) {
         if (!VanillaGuiLayers.CHAT.equals(event.getName())) return;
         switch (INSTANCE.capturePoint()) {
-            case BEFORE_CHAT -> INSTANCE.grabNow(event.getGuiGraphics());
+            case BEFORE_CHAT -> {
+                if (!INSTANCE.grabbedThisFrame) Minecraft.getInstance().getToasts().render(event.getGuiGraphics());
+                INSTANCE.grabNow(event.getGuiGraphics());
+            }
             case FRAME_END_HIDE_CHAT -> event.setCanceled(true);
             default -> { }
         }
