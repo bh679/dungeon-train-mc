@@ -33,7 +33,6 @@ import games.brennan.dungeontrain.client.live.deathpages.CrowdPage;
 import games.brennan.dungeontrain.client.live.deathpages.LiveDeathChrome;
 import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.client.live.life.LiveLifeStats;
-import games.brennan.dungeontrain.client.live.life.LiveRewards;
 import games.brennan.dungeontrain.client.support.RewardsLink;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.DeathNarrative;
@@ -832,9 +831,9 @@ public final class NarrativeDeathScreen extends Screen {
                 case LIVES -> y = drawLives(g, stats, narr, left, contentW, cx, y);
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
                 case BUG_RESPONSE -> y = drawBugResponse(g, left, contentW, cx, y);
-                case BROADCAST -> y = broadcastPage.draw(g, liveStats(), LiveRewards.latest(), Util.getEpochMillis(),
+                case BROADCAST -> y = broadcastPage.draw(g, liveStats(), RewardsLink.rewards(), Util.getEpochMillis(),
                         diedAtMs, left, contentW, cx, y, this.height - 32);
-                case CROWD -> y = crowdPage.draw(g, liveStats(), LiveRewards.latest(), Util.getEpochMillis(),
+                case CROWD -> y = crowdPage.draw(g, liveStats(), RewardsLink.rewards(), Util.getEpochMillis(),
                         diedAtMs, left, contentW, cx, y, this.height - 32);
                 case DONATE -> y = drawDonate(g, left, contentW, cx, y, mouseX, mouseY);
                 case PHOTOS -> y = drawPhotos(g, left, contentW, cx, y, mouseX, mouseY);
