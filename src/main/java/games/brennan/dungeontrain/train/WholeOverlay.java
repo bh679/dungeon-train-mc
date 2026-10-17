@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.editor.GrowthPass;
+import games.brennan.dungeontrain.editor.VariantConditions;
 import games.brennan.dungeontrain.editor.ConnectPass;
 import games.brennan.dungeontrain.editor.MultiBlockVariants;
 import games.brennan.dungeontrain.editor.BlockVariantPlot;
@@ -35,7 +36,9 @@ public final class WholeOverlay {
         java.util.function.Predicate<BlockPos> within =
             GrowthPass.inside(origin, footprint.getX(), footprint.getY(), footprint.getZ());
         try (ConnectPass.Scope ignored = ConnectPass.open();
-             GrowthPass.Scope grown = GrowthPass.open()) {
+             GrowthPass.Scope grown = GrowthPass.open();
+             VariantConditions.Scope conds = VariantConditions.open(
+                 VariantConditions.stamped(level, origin::offset, footprint))) {
             for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(e.localPos());

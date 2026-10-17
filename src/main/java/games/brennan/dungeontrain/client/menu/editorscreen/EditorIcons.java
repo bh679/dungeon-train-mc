@@ -12,6 +12,7 @@ public final class EditorIcons {
     public static final ResourceLocation UNDO = mod("icon/undo");
     public static final ResourceLocation REDO = mod("icon/redo");
     public static final ResourceLocation RESET = mod("icon/reset");
+    public static final ResourceLocation REROLL = mod("icon/reroll");
     public static final ResourceLocation CLEAR = mod("icon/clear");
     public static final ResourceLocation PACKAGE = mod("icon/folder");
     /** Out to the train, and back to your own profile — the two directions of one decision. */
@@ -26,6 +27,9 @@ public final class EditorIcons {
     public static final ResourceLocation PREV = mod("icon/prev");
     public static final ResourceLocation NEXT = mod("icon/next");
     public static final ResourceLocation BAKE = mod("icon/bake");
+    public static final ResourceLocation TEST_RELOAD = mod("icon/test_reload");
+    public static final ResourceLocation TEST_REROLL_MAIN = mod("icon/test_reroll_main");
+    public static final ResourceLocation TEST_REROLL_OTHERS = mod("icon/test_reroll_others");
     public static final ResourceLocation SEARCH = ResourceLocation.withDefaultNamespace("icon/search");
 
     private EditorIcons() {}
@@ -43,6 +47,7 @@ public final class EditorIcons {
             case "undo" -> UNDO;
             case "redo" -> REDO;
             case "reset" -> RESET;
+            case "reroll_shell" -> REROLL;
             case "clear" -> CLEAR;
             case "package", "open_files" -> PACKAGE;
             // Re-parenting is a group operation, so it wears the group sprite.
@@ -57,6 +62,11 @@ public final class EditorIcons {
             case EditorStageActions.PREV -> PREV;
             case EditorStageActions.NEXT -> NEXT;
             case EditorStageActions.REBAKE -> BAKE;
+            // The test toolbar: Reseed wears the die Reroll Shell does, its two halves their own.
+            case TestModeControls.RELOAD -> TEST_RELOAD;
+            case TestModeControls.REROLL_OTHERS -> TEST_REROLL_OTHERS;
+            case TestModeControls.REROLL_MAIN -> TEST_REROLL_MAIN;
+            case TestModeControls.RESEED_ALL -> REROLL;
             default -> SAVE;
         };
     }

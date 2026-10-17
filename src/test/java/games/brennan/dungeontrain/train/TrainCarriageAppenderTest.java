@@ -447,6 +447,27 @@ final class TrainCarriageAppenderTest {
 
     // ---- Resume-grace window state machine (pause/resume regen fix) ----
     //
+    // shouldHoldForResume decides which not-yet-held groups the resume/save hold pins. Pinning
+    // every group snowballed into whole-train chunk loads and 5-20 s stalls after each autosave.
+
+    @Test
+    @DisplayName("shouldHoldForResume: near a player → held (relies on proximity residency)")
+    void resumeHold_nearPlayer_held() {
+        assertTrue(TrainCarriageAppender.shouldHoldForResume(true, true));
+    }
+
+    @Test
+    @DisplayName("shouldHoldForResume: never serialized → held even when far (cull is unrecoverable)")
+    void resumeHold_unserialized_held() {
+        assertTrue(TrainCarriageAppender.shouldHoldForResume(false, false));
+    }
+
+    @Test
+    @DisplayName("shouldHoldForResume: far and serialized → not pinned (reloads cleanly; pinning loads its chunks)")
+    void resumeHold_farSerialized_notHeld() {
+        assertFalse(TrainCarriageAppender.shouldHoldForResume(true, false));
+    }
+
     // withinResumeGrace + shouldRenewResumeGrace are the pure cores behind the updateTrain
     // walk-away bail: on a singleplayer resume, ResumeWatchdog grants a grace deadline; the
     // bail holds the force-loads (and the whole-train resume-hold) while the window is open,

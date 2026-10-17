@@ -8,6 +8,7 @@
   "mixins": [],
   "client": [
     "client.sodium.BlockRendererUpsideDownMixin",
+    "client.sodium.DefaultFluidRendererSealMixin",
     "client.sodium.ViewportPortalSealMixin",
     "client.sodium.SodiumWorldRendererPortalSealMixin",
     "client.sodium.RenderSectionPrewarmMixin",

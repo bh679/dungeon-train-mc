@@ -483,17 +483,27 @@ public final class CarriageContentsVariantBlocks {
     public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex, int tier) {
         List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
+        List<VariantState> eligible = inBand(states, tier);
+        if (eligible.isEmpty()) return null;
+        return pickLive(localPos, worldSeed, carriageIndex, eligible);
+    }
+
+    /**
+     * {@code states} without the mob entries whose difficulty band excludes {@code tier}; the list
+     * itself when nothing is out of band. Also the condition scope's prefilter, so a neighbour's
+     * condition judges the roll this cell really gets.
+     */
+    public static List<VariantState> inBand(List<VariantState> states, int tier) {
         boolean anyGated = false;
         for (VariantState s : states) {
             if (s.isMob() && !s.difficulty().eligible(tier)) { anyGated = true; break; }
         }
-        if (!anyGated) return pickLive(localPos, worldSeed, carriageIndex, states);
+        if (!anyGated) return states;
         List<VariantState> eligible = new ArrayList<>(states.size());
         for (VariantState s : states) {
             if (!s.isMob() || s.difficulty().eligible(tier)) eligible.add(s);
         }
-        if (eligible.isEmpty()) return null;
-        return pickLive(localPos, worldSeed, carriageIndex, eligible);
+        return eligible;
     }
 
     /**
@@ -502,7 +512,8 @@ public final class CarriageContentsVariantBlocks {
      * exactly as before; so does a cell whose every weight came out 0.
      */
     private VariantState pickLive(BlockPos localPos, long worldSeed, int carriageIndex, List<VariantState> states) {
-        int[] weights = liveTvWeights(states, carriageIndex);
+        // A gated cell takes the authored roll: the live reweighting has no notion of conditions.
+        int[] weights = VariantConditions.anyConditional(states) ? null : liveTvWeights(states, carriageIndex);
         if (weights != null) {
             VariantState picked = VariantGroupResolver.resolveWeighted(
                 localPos, lockIdAt(localPos), states, worldSeed, carriageIndex, weights);            if (picked != null) return picked;

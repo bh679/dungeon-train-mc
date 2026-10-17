@@ -79,7 +79,7 @@ public abstract class LevelRendererFrustumRefreshMixin {
     private void dungeontrain$sealFromThisFramesCamera(Camera camera, Frustum frustum,
                                                        boolean hasCapturedFrustum, boolean isSpectator,
                                                        CallbackInfo ci) {
-        ClientPortalSeal.beginFrame(camera.getPosition().x, camera.getPosition().y);
+        ClientPortalSeal.beginFrame(camera.getPosition().x, camera.getPosition().y, camera.getPosition().z);
     }
 
     @ModifyExpressionValue(

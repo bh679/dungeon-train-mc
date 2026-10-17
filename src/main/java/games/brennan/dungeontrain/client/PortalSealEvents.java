@@ -27,7 +27,7 @@ public final class PortalSealEvents {
     @SubscribeEvent
     public static void onComputeCameraAngles(ViewportEvent.ComputeCameraAngles event) {
         Vec3 camera = event.getCamera().getPosition();
-        ClientPortalSeal.beginFrame(camera.x, camera.y);
+        ClientPortalSeal.beginFrame(camera.x, camera.y, camera.z);
     }
 
     @SubscribeEvent

@@ -1271,6 +1271,14 @@ public final class EditorGuiScreen extends Screen {
                 dispatchAt(detail.rows().get(hit.index()), hit.sub());
                 return true;
             }
+            case TEST_ICON -> {
+                dispatch(detail.testIcons().get(hit.index()).entry());
+                return true;
+            }
+            case TEST_ROW -> {
+                dispatchAt(detail.testRows().get(hit.index()), hit.sub());
+                return true;
+            }
             case SHEET -> {
                 TemplateDataSheet.Placed placed = detail.sheetCell(hit.index());
                 if (placed == null) return false;

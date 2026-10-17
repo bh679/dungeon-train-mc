@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Editor plots for {@link CarriageContents} — fixed overworld locations at
@@ -125,6 +126,8 @@ public final class CarriageContentsEditor {
         ContentsSize size = CarriageContentsPlacer.sizeOf(contents);
         CarriageVariant fallback = fallbackShell(size);
         try {
+            Optional<CarriageVariant> rerolled = rerolledShell(contents.id(), size);
+            if (rerolled.isPresent()) return rerolled.get();
             return games.brennan.dungeontrain.train.ContentsShellPicker.stableFor(contents.id())
                 .filter(shell -> CarriagePlacer.sizeOf(shell) == size)
                 .orElse(fallback);
@@ -132,6 +135,77 @@ public final class CarriageContentsEditor {
             LOGGER.warn("[DungeonTrain] Contents plot shell for '{}' fell back to {}: {}",
                 contents.id(), fallback.id(), e.toString());
             return fallback;
+        }
+    }
+
+    /**
+     * The carriage the author rerolled this plot into, while it would still carry these contents —
+     * an allow-list edit, a weight of 0 or a deleted carriage quietly hands the plot back to its
+     * stable pick.
+     */
+    private static Optional<CarriageVariant> rerolledShell(String contentsId, ContentsSize size) {
+        return ContentsShellOverrides.get(contentsId)
+            .flatMap(CarriageVariantRegistry::find)
+            .filter(shell -> CarriagePlacer.sizeOf(shell) == size)
+            .filter(shell -> games.brennan.dungeontrain.train.ContentsShellPicker.eligible(contentsId).contains(shell));
+    }
+
+    /**
+     * The X menu's Reroll carriage: stand {@code contents} in another carriage that would carry it,
+     * drawn by weight from the rest. Empty when nothing else would — a portal corridor's own
+     * furnishing, or contents only one carriage enables.
+     *
+     * <p>When the plot is standing, only its shell is swapped. The interior is captured first and put
+     * back after, so unsaved edits survive and the dirty check still compares against the last
+     * save. Inventories inside are emptied before the swap overwrites their blocks (the capture holds
+     * them) so nothing spills out as items. Entities stay where they are.</p>
+     */
+    public static Optional<CarriageVariant> rerollShell(ServerLevel overworld, CarriageContents contents,
+                                                        CarriageDims dims) {
+        if (CarriageContentsPlacer.portalCorridorKindOf(contents) != null) return Optional.empty();
+        CarriageVariant current = shellFor(contents);
+        Optional<CarriageVariant> next = games.brennan.dungeontrain.train.ContentsShellPicker.pickOther(
+            contents.id(), current, overworld.getRandom().nextLong());
+        if (next.isEmpty()) return Optional.empty();
+        ContentsShellOverrides.set(contents.id(), next.get().id());
+        if (isStanding(contents)) {
+            CarriageStampGuard.run(() -> restampShellOnly(overworld, contents, next.get(), dims));
+        }
+        LOGGER.info("[DungeonTrain] Contents editor: '{}' now stands in {} (was {})",
+            contents.id(), next.get().id(), current.id());
+        return next;
+    }
+
+    /** True when {@code contents}' plot is in the world: its category stamped and its size resident. */
+    private static boolean isStanding(CarriageContents contents) {
+        return EditorStampedCategoryState.isActive(EditorCategory.CONTENTS)
+            && CarriageContentsPlacer.sizeOf(contents) == ContentsResidentSize.current();
+    }
+
+    private static void restampShellOnly(ServerLevel overworld, CarriageContents contents,
+                                         CarriageVariant shell, CarriageDims dims) {
+        BlockPos origin = plotOrigin(contents, dims);
+        if (origin == null) return;
+        CarriageDims box = plotDims(contents, dims);
+        BlockPos interiorOrigin = CarriageContentsPlacer.interiorOrigin(origin);
+        Vec3i interior = CarriageContentsPlacer.interiorSize(box);
+        StructureTemplate kept = new StructureTemplate();
+        kept.fillFromWorld(overworld, interiorOrigin, interior, /*includeEntities*/ false, null);
+        emptyInventories(overworld, interiorOrigin, interior);
+
+        CarriagePlacer.eraseAt(overworld, origin, box);
+        CarriagePlacer.placeAt(overworld, origin, shell, dims);
+        kept.placeInWorld(overworld, interiorOrigin, interiorOrigin,
+            new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings()
+                .setIgnoreEntities(true),
+            overworld.getRandom(), CarriageStampGuard.STAMP_FLAGS);
+        setOutline(overworld, origin, OUTLINE_BLOCK, box);
+    }
+
+    private static void emptyInventories(ServerLevel level, BlockPos origin, Vec3i size) {
+        for (BlockPos pos : BlockPos.betweenClosed(origin,
+                origin.offset(size.getX() - 1, size.getY() - 1, size.getZ() - 1))) {
+            net.minecraft.world.Clearable.tryClear(level.getBlockEntity(pos));
         }
     }
 

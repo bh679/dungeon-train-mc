@@ -179,6 +179,27 @@ final class BlockVariantSyncPacketTest {
         assertEquals("", decoded.entries().get(1).painting());
     }
 
+    @Test
+    @DisplayName("round-trip preserves the condition token and its liveness; short ctor defaults to none")
+    void roundTrip_condition() {
+        String token = "group3=minecraft:oak_planks,minecraft:stone";
+        BlockVariantSyncPacket.Entry gated = new BlockVariantSyncPacket.Entry(
+            "minecraft:glass", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", token, false, "minecraft:oak_planks,minecraft:air");
+        BlockVariantSyncPacket.Entry plain = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "");
+        BlockVariantSyncPacket decoded = roundTrip(new BlockVariantSyncPacket(
+            "carriage:flatbed", new BlockPos(1, 2, 3), List.of(gated, plain), 0,
+            new Vec3(0.5, 0.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0)));
+        assertEquals(token, decoded.entries().get(0).condition());
+        assertEquals(false, decoded.entries().get(0).conditionLive());
+        assertEquals("minecraft:oak_planks,minecraft:air", decoded.entries().get(0).conditionGroupValues());
+        assertEquals(true, decoded.entries().get(0).isConditional());
+        assertEquals("", decoded.entries().get(1).condition());
+        assertEquals(false, decoded.entries().get(1).isConditional());
+    }
+
     private static BlockVariantSyncPacket roundTrip(BlockVariantSyncPacket original) {
         FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
         original.encode(buf);

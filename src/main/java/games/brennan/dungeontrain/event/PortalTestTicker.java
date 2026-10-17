@@ -83,8 +83,11 @@ public final class PortalTestTicker {
             // copies the same way rather than holding them for as long as the session lasts.
             Set<PortalRoomTiling.Tile> standingIn = occupiedTiles(player, dims, layout, structure);
 
-            PortalStructure next = PortalRoomTiler.tick(level, dims, structure, standingIn,
-                PortalRoomTiling.MAX_RADIUS, List.of(), PortalTestSession.PAIR_KEY);
+            // Tiles are stood up at the same test settings as the room they repeat.
+            PortalStructure next = games.brennan.dungeontrain.template.TestGate.with(
+                games.brennan.dungeontrain.editor.TestOverrides.portalStamp(),
+                () -> PortalRoomTiler.tick(level, dims, structure, standingIn,
+                    PortalRoomTiling.MAX_RADIUS, List.of(), PortalTestSession.PAIR_KEY));
             if (next != structure) {
                 PortalTestSession.updateStructure(trip.getKey(), next);
                 // Nothing on the tiling path logs, so a run that grew a window and a run that grew

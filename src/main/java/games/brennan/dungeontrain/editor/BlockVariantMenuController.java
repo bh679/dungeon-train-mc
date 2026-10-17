@@ -348,6 +348,7 @@ public final class BlockVariantMenuController {
         // own, it only ever sees one cell.
         VariantGroupRefs.Graph refGraph = plot.groupRefs().graph();
         int cellLockId = plot.lockIdAt(localPos);
+        java.util.Set<Integer> lockIdsInUse = plot.groupRefs().lockIdsInUse();
 
         List<BlockVariantSyncPacket.Entry> entries = new ArrayList<>(states.size());
         for (VariantState s : states) {
@@ -366,13 +367,28 @@ public final class BlockVariantMenuController {
                 (byte) s.active().mode().ordinal(),
                 (byte) s.connect().ordinal(),
                 s.growth().toInt(),
-                s.painting().isDefault() ? "" : s.painting().id()));
+                s.painting().isDefault() ? "" : s.painting().id(),
+                // Sent even with no values so the popup keeps the target the author picked.
+                s.condition().id(),
+                VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
+                groupValuesToken(plot, s.condition())));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
             (byte) plot.copyScopeAt(localPos).ordinal(),
             (byte) plot.spanAt(localPos).toByte(),
             plot.supportsConnectMode(), plot.supportsGrowth());
+    }
+
+    /** Group mode's togglable values — the target group's distinct blocks, comma-joined; blank otherwise. */
+    private static String groupValuesToken(BlockVariantPlot plot, VariantCondition c) {
+        if (!c.isGroupTarget()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (var id : VariantConditionEdits.groupValues(plot.groupRefs().statesForLockId(c.groupId()))) {
+            if (sb.length() > 0) sb.append(',');
+            sb.append(id);
+        }
+        return sb.toString();
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -934,6 +950,30 @@ public final class BlockVariantMenuController {
                 int newMin = band.min();
                 if (next0 != VariantDifficulty.ALL && newMin > next0) newMin = next0;
                 mutated.set(idx, entry.withDifficulty(new VariantDifficulty(newMin, next0)));
+                VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
+                dirty = true;
+            }
+            case SET_COND_TARGET, ADD_COND_VALUE, REMOVE_COND_VALUE, CLEAR_COND, TOGGLE_COND_VALUE -> {
+                if (wasEmpty) return;
+                int idx = packet.entryIndex();
+                if (idx < 0 || idx >= mutated.size()) return;
+                VariantState entry = mutated.get(idx);
+                VariantConditionEdits.Result result = switch (packet.op()) {
+                    case SET_COND_TARGET -> VariantConditionEdits.setTarget(entry.condition(),
+                        packet.stateString(), plot.groupRefs().lockIdsInUse(), plot.lockIdAt(localPos));
+                    case ADD_COND_VALUE -> VariantConditionEdits.addHeld(entry.condition(), player.getMainHandItem());
+                    case TOGGLE_COND_VALUE -> VariantConditionEdits.toggleValue(entry.condition(), packet.stateString());
+                    case REMOVE_COND_VALUE -> new VariantConditionEdits.Result(
+                        entry.condition().withValueRemoved(packet.delta()), null);
+                    default -> new VariantConditionEdits.Result(VariantCondition.NONE, null);
+                };
+                if (result.condition() == null) {
+                    if (result.refusalKey() != null) {
+                        actionBar(player, Component.translatable(result.refusalKey()), ChatFormatting.YELLOW);
+                    }
+                    return;
+                }
+                mutated.set(idx, entry.withCondition(result.condition()));
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

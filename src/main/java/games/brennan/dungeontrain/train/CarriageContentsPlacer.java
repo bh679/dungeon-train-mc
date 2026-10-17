@@ -19,6 +19,7 @@ import games.brennan.dungeontrain.editor.ContainerContentsPool;
 import games.brennan.dungeontrain.editor.ContainerContentsStore;
 import games.brennan.dungeontrain.editor.EntityVariantApplicator;
 import games.brennan.dungeontrain.editor.LootPrefabStore;
+import games.brennan.dungeontrain.editor.VariantConditions;
 import games.brennan.dungeontrain.editor.VariantState;
 import games.brennan.dungeontrain.narrative.block.NarrativeLecternBlock;
 import games.brennan.dungeontrain.template.FlipOptions;
@@ -621,7 +622,11 @@ public final class CarriageContentsPlacer {
         java.util.function.Predicate<BlockPos> within =
             GrowthPass.inside(origin, size.getX(), size.getY(), size.getZ()).and(pos -> !mask.covers(pos));
         try (ConnectPass.Scope ignored = ConnectPass.open();
-             GrowthPass.Scope grown = GrowthPass.open()) {
+             GrowthPass.Scope grown = GrowthPass.open();
+             VariantConditions.Scope conds = VariantConditions.open(
+                 VariantConditions.stamped(level, p -> origin.offset(ContentsFlip.mapLocal(p, size, flip)), size),
+                 filterByDifficulty ? states -> CarriageContentsVariantBlocks.inBand(states, diffTier)
+                     : java.util.function.UnaryOperator.identity())) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = filterByDifficulty
                     ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
@@ -1459,11 +1464,15 @@ public final class CarriageContentsPlacer {
         // passes agree on which eggs are in-band. (EDITOR_SENTINEL_PIDX already early-returned.)
         int diffTier = DifficultyProgression.positionTier(carriagePIdx);
         int spawned = 0;
-        for (var entry : sidecar.entries()) {
-            VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);
-            if (picked == null || !picked.isMob()) continue;
-            BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
-            if (spawnVariantMob(level, world, picked, carriagePIdx, seed)) spawned++;
+        try (VariantConditions.Scope conds = VariantConditions.open(
+                 VariantConditions.stamped(level, p -> origin.offset(ContentsFlip.mapLocal(p, size, flip)), size),
+                 states -> CarriageContentsVariantBlocks.inBand(states, diffTier))) {
+            for (var entry : sidecar.entries()) {
+                VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);
+                if (picked == null || !picked.isMob()) continue;
+                BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
+                if (spawnVariantMob(level, world, picked, carriagePIdx, seed)) spawned++;
+            }
         }
         if (spawned > 0) {
             LOGGER.info("[DungeonTrain] Mob-variant: spawned {} mobs for contents={} pIdx={} seed={}",

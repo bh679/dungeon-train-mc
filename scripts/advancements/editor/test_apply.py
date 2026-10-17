@@ -381,6 +381,27 @@ def test_more_icons_are_real_drawable_items():
         img = Image.open(io.BytesIO(base64.b64decode(uri.split(",", 1)[1]))).convert("RGBA")
         assert img.getextrema()[3][1] > 0, f"{item_id} draws nothing"
         assert img.getpixel((16, 16)) != (180, 60, 200, 255), f"{item_id} drew the missing-icon square"
+    # Animation frames and override sub-models are textures, not items: saved as an icon, the
+    # advancement fails to load (prime_time shipped "minecraft:clock_57" that way).
+    for frame in ("minecraft:clock_57", "minecraft:compass_16", "minecraft:recovery_compass_00",
+                  "minecraft:bow_pulling_0", "minecraft:light_12", "exposure_polaroid:instant_camera_gui"):
+        assert frame not in more, f"{frame} is offered as an icon but is not an item"
+    assert "minecraft:clock" in more or "minecraft:clock" in bundle["iconIds"], "the real clock went missing"
+
+
+def test_is_item_name_needs_a_lang_name():
+    """Without jars: an id is an item only if its namespace's lang file names it."""
+    try:
+        from textures import is_item_name
+    except ImportError:
+        print("     (skipped: no Pillow)")
+        return
+    lang = {"item.minecraft.clock": "Clock", "block.minecraft.stone": "Stone", "block.vista.television": "TV"}
+    assert is_item_name(lang, "minecraft", "clock")
+    assert is_item_name(lang, "minecraft", "stone")
+    assert is_item_name(lang, "vista", "television")
+    assert not is_item_name(lang, "minecraft", "clock_57")
+    assert not is_item_name(lang, "minecraft", "bow_pulling_0")
 
 
 GOLDEN = MOD.REPO / "src/test/resources/advancement/burrito_required.txt"
