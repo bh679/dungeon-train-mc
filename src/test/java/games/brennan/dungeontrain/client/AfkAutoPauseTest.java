@@ -21,33 +21,35 @@ final class AfkAutoPauseTest {
     @Test
     @DisplayName("pauses on the edge into either AFK reason")
     void pausesOnEdgeIntoAfk() {
-        assertTrue(shouldPause(TRACKING, MOUSE_IDLE, true, false, false));
-        assertTrue(shouldPause(TRACKING, INPUT_IDLE, true, false, false));
-        assertTrue(shouldPause(NO_PROGRESS, MOUSE_IDLE, true, false, false));
-        assertTrue(shouldPause(NONE, MOUSE_IDLE, true, false, false));
+        assertTrue(shouldPause(TRACKING, MOUSE_IDLE, true, false, false, false));
+        assertTrue(shouldPause(TRACKING, INPUT_IDLE, true, false, false, false));
+        assertTrue(shouldPause(NO_PROGRESS, MOUSE_IDLE, true, false, false, false));
+        assertTrue(shouldPause(NONE, MOUSE_IDLE, true, false, false, false));
     }
 
     @Test
     @DisplayName("does not re-pause while AFK persists or moves between AFK reasons")
     void edgeOnly() {
-        assertFalse(shouldPause(MOUSE_IDLE, MOUSE_IDLE, true, false, false));
-        assertFalse(shouldPause(MOUSE_IDLE, INPUT_IDLE, true, false, false));
-        assertFalse(shouldPause(INPUT_IDLE, MOUSE_IDLE, true, false, false));
+        assertFalse(shouldPause(MOUSE_IDLE, MOUSE_IDLE, true, false, false, false));
+        assertFalse(shouldPause(MOUSE_IDLE, INPUT_IDLE, true, false, false, false));
+        assertFalse(shouldPause(INPUT_IDLE, MOUSE_IDLE, true, false, false, false));
     }
 
     @Test
     @DisplayName("non-AFK reasons never pause")
     void nonAfkNeverPauses() {
-        assertFalse(shouldPause(TRACKING, TRACKING, true, false, false));
-        assertFalse(shouldPause(TRACKING, PAUSED, true, false, false));
-        assertFalse(shouldPause(TRACKING, NO_PROGRESS, true, false, false));
+        assertFalse(shouldPause(TRACKING, TRACKING, true, false, false, false));
+        assertFalse(shouldPause(TRACKING, PAUSED, true, false, false, false));
+        assertFalse(shouldPause(TRACKING, NO_PROGRESS, true, false, false, false));
     }
 
     @Test
-    @DisplayName("disabled, screen open, or VR suppresses the pause")
+    @DisplayName("disabled, screen open, Free Play, or VR suppresses the pause")
     void suppressed() {
-        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, false, false, false));
-        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, true, false));
-        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, false, true));
+        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, false, false, false, false));
+        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, true, false, false));
+        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, false, true, false));
+        assertFalse(shouldPause(TRACKING, INPUT_IDLE, true, false, true, false));
+        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, false, false, true));
     }
 }

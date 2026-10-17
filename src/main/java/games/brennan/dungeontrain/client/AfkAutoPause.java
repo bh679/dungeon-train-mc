@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.event.PlayerActivityTracker.Reason;
 import games.brennan.dungeontrain.net.ActivityStatePacket;
+import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.client.Minecraft;
 
 /**
@@ -10,7 +11,9 @@ import net.minecraft.client.Minecraft;
  * ({@link games.brennan.dungeontrain.event.PlayerActivityTracker}) says the player has gone idle —
  * {@link Reason#MOUSE_IDLE} (mouse still 30 s) or {@link Reason#INPUT_IDLE} (no other input 5 min).
  * In singleplayer the integrated server stops ticking behind the pause screen, so the train does not
- * carry an absent player into danger. In multiplayer it only opens the menu.
+ * carry an absent player into danger. In multiplayer it only opens the menu. Never in Free Play
+ * (read from the client-visible Free Play badge, as {@link AdvancementTabGate} does): nothing is at
+ * stake there, so an interruption would only be in the way.
  *
  * <p>Driven by {@link ActivityStatePacket}, which the server already sends on every change of
  * reason — no extra traffic. <b>Edge-triggered:</b> it pauses on the transition into idle, never
@@ -31,12 +34,12 @@ public final class AfkAutoPause {
 
     /**
      * Pure decision: pause only on the edge into AFK, with the setting on, no screen already open
-     * (death screen, inventory, editor menus, an existing pause menu) and not in VR, where a pause
-     * menu dropping into the headset unannounced is jarring.
+     * (death screen, inventory, editor menus, an existing pause menu), not in Free Play, and not in
+     * VR, where a pause menu dropping into the headset unannounced is jarring.
      */
     public static boolean shouldPause(int prevReason, int reason, boolean enabled,
-                                      boolean screenOpen, boolean vrActive) {
-        if (!enabled || screenOpen || vrActive) return false;
+                                      boolean screenOpen, boolean freePlay, boolean vrActive) {
+        if (!enabled || screenOpen || freePlay || vrActive) return false;
         return isAfk(reason) && !isAfk(prevReason);
     }
 
@@ -49,7 +52,8 @@ public final class AfkAutoPause {
             return;
         }
         if (shouldPause(prev, packet.reason(), ClientDisplayConfig.isAfkPauseEnabled(),
-                mc.screen != null, VrCompat.isVivecraftPresent())) {
+                mc.screen != null, mc.player.hasEffect(ModMobEffects.FREE_PLAY),
+                VrCompat.isVivecraftPresent())) {
             mc.pauseGame(false);
         }
     }
