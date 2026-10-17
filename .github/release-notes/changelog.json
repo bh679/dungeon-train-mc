@@ -27140,6 +27140,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-seal-every-band",
+      "version": "0.1330.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages stay sealed off",
+      "summary": "Inside a dimensional carriage, the outside world could sometimes show through below the room after the train moved on. The room now stays closed off however far the train goes.",
+      "highlights": [],
+      "pr": 2082,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
