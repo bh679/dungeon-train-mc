@@ -27125,8 +27125,42 @@
       "released_at": null
     },
     {
-      "id": "disable-mod-enchantments",
+      "id": "train-nether-portal-return",
       "version": "0.1329.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether portal fix",
+      "summary": "Fixed a case where a Nether portal could leave you stranded.",
+      "highlights": [],
+      "pr": 2080,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "journey-advancement-unearnable",
+      "version": "0.1330.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Advancement fix.",
+      "highlights": [],
+      "pr": 2077,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "disable-mod-enchantments",
+      "version": "0.1331.0",
       "type": "feat",
       "tags": [
         "feature",

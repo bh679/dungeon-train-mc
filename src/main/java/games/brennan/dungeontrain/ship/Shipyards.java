@@ -53,6 +53,14 @@ public final class Shipyards {
      * and other code paths that hold a {@link LevelReader} rather than a
      * {@link ServerLevel}. Returns {@code false} on the client.
      */
+    /**
+     * Whether {@code pos} is a ship-plot coordinate rather than a world one — anywhere in the plot
+     * grid, whether or not a ship stands there now. A carriage block's position is one of these.
+     */
+    public static boolean isInPlotGrid(ServerLevel level, BlockPos pos) {
+        return SableShipyard.inPlotGrid(level, pos);
+    }
+
     public static boolean isInShip(LevelReader level, BlockPos pos) {
         if (level instanceof ServerLevel sl) {
             return of(sl).isInShip(pos);
