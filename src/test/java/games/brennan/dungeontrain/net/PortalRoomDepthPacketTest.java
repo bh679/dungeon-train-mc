@@ -21,12 +21,14 @@ final class PortalRoomDepthPacketTest {
 
     /** A structure in the basement of a world whose train runs at 78: floor at -102, shift +180. */
     private static final PortalRoomDepthPacket BASEMENT =
-        new PortalRoomDepthPacket(96, -104, -80, 224, -80, -48, 180);
+        new PortalRoomDepthPacket(96, -104, -80, 224, -80, -48, -160, 180, 64);
 
     @Test
-    @DisplayName("round-trip preserves negative bounds and a positive shift")
+    @DisplayName("round-trip preserves negative bounds and every axis' shift")
     void roundTrip_basement() {
         assertEquals(BASEMENT, roundTrip(BASEMENT));
+        assertEquals(-160, roundTrip(BASEMENT).xShift());
+        assertEquals(64, roundTrip(BASEMENT).zShift());
         assertTrue(roundTrip(BASEMENT).applies());
     }
 
@@ -34,7 +36,7 @@ final class PortalRoomDepthPacketTest {
     @DisplayName("round-trip preserves an attic's negative shift")
     void roundTrip_attic() {
         PortalRoomDepthPacket attic =
-            new PortalRoomDepthPacket(96, 300, -80, 224, 324, -48, -222);
+            new PortalRoomDepthPacket(96, 300, -80, 224, 324, -48, -160, -222, 64);
         assertEquals(attic, roundTrip(attic));
         assertEquals(-222, roundTrip(attic).yShift());
     }

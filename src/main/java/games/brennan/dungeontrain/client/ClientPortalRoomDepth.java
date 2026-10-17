@@ -4,8 +4,8 @@ import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
 
 /**
- * Client-side cache of the portal structure the player is standing in and the Y shift that makes its
- * debug-screen coordinates read as though it stood on the surface — the sibling of
+ * Client-side cache of the portal structure the player is standing in and the shift that makes its
+ * debug-screen coordinates read as though it stood on the surface, centred on its room — the sibling of
  * {@link ClientPortalRoomFog} and {@link ClientPortalRoomSky}, and shaped exactly like them.
  *
  * <p><b>It stores a place, not a state.</b> A player who disconnects inside a dimensional carriage
@@ -34,17 +34,20 @@ public final class ClientPortalRoomDepth {
     }
 
     /**
-     * Blocks to add to a Y displayed for a camera at {@code (x, y, z)}, or {@code 0} for "show the
-     * truth" — outside any structure, or with the disguise switched off in the client config.
+     * Blocks to add to the X, Y and Z displayed for a camera at {@code (x, y, z)}, or
+     * {@link DebugScreenDepthLines.Shift#NONE} for "show the truth": outside any structure, or with
+     * the disguise switched off in the client config.
      *
      * <p>The config is read here rather than at the mixin so that every caller gets the same answer,
      * and so that switching it off takes effect on the next frame without anything having to be
      * re-sent.</p>
      */
-    public static int shiftAt(double x, double y, double z) {
-        if (!ClientDisplayConfig.isPortalRoomSurfaceCoordinates()) return 0;
+    public static DebugScreenDepthLines.Shift shiftAt(double x, double y, double z) {
+        if (!ClientDisplayConfig.isPortalRoomSurfaceCoordinates()) return DebugScreenDepthLines.Shift.NONE;
         PortalRoomDepthPacket r = region;
-        return r.contains(x, y, z) ? r.yShift() : 0;
+        return r.contains(x, y, z)
+            ? new DebugScreenDepthLines.Shift(r.xShift(), r.yShift(), r.zShift())
+            : DebugScreenDepthLines.Shift.NONE;
     }
 
     /**
