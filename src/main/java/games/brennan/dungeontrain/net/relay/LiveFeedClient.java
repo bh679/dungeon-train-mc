@@ -612,6 +612,17 @@ public final class LiveFeedClient {
     // ---- death takeover --------------------------------------------------------------------------
 
     /**
+     * The streamer died this moment: from now their stream protects nothing, so anyone putting a Live
+     * Eye on takes the channel at once. The offer to viewers ({@link #died}) still waits for them to
+     * have seen the death. An older relay answers 404, which changes nothing.
+     */
+    public static CompletableFuture<Result> markDied(String token) {
+        JsonObject body = new JsonObject();
+        body.addProperty("token", token);
+        return post("/live/died/mark", body);
+    }
+
+    /**
      * The streamer died (they may stream on through the death screens): the relay offers the stream
      * to every in-game viewer, and the first to accept takes it over.
      */

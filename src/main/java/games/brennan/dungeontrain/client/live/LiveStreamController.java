@@ -238,6 +238,8 @@ public final class LiveStreamController {
         }
         LOGGER.info("[DungeonTrain] live: streamer died; streaming on through the death screens");
         postMortem.begin();
+        // A Live Eye put on from now wins the channel; the viewers' offer waits for the handover.
+        LiveFeedClient.markDied(c.token());
         LiveEncoder enc = encoder;
         double deathS = enc == null ? 0 : enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps());
         int segmentS = LiveFeedClientConfig.segmentSeconds();
