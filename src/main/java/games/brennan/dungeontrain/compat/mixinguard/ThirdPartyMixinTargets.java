@@ -75,12 +75,6 @@ public final class ThirdPartyMixinTargets {
     private static final String SDF_PRIMITIVE = "Lorg/betterx/bclib/sdf/primitive/SDFPrimitive;";
     private static final String SDF_OPERATOR = "Lorg/betterx/bclib/sdf/operator/";
 
-    private static final String STRUCTURE_TEMPLATE =
-            "net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate";
-    private static final String PLACE_IN_WORLD_DESC =
-            "(Lnet/minecraft/world/level/ServerLevelAccessor;Lnet/minecraft/core/BlockPos;Lnet/minecraft/core/BlockPos;"
-            + "Lnet/minecraft/world/level/levelgen/structure/templatesystem/StructurePlaceSettings;"
-            + "Lnet/minecraft/util/RandomSource;I)Z";
     private static final String MHELPER_SHUFFLE_DESC = "([Ljava/lang/Object;Lnet/minecraft/util/RandomSource;)V";
     private static final MixinTargetRequirement CALLS_MHELPER_SHUFFLE =
             invokes(MixinTargetRequirement.Invokes.ANY_METHOD, "org/betterx/bclib/util/MHelper", "shuffle",
@@ -113,13 +107,6 @@ public final class ThirdPartyMixinTargets {
                 invokes("replacePossibleBiomes", "java/util/Set", "copyOf",
                         "(Ljava/util/Collection;)Ljava/util/Set;"))),
             Map.of(), END_VANILLA, true)),
-        Map.entry(MIXIN_PACKAGE + "wover.WoverTemplateAnchorMixin", new Spec(
-            Map.of("org.betterx.wover.structure.api.StructureNBT", List.of(
-                invokes("generateCentered", STRUCTURE_TEMPLATE, "placeInWorld", PLACE_IN_WORLD_DESC),
-                invokes("generateAt", STRUCTURE_TEMPLATE, "placeInWorld", PLACE_IN_WORLD_DESC))),
-            Map.of(),
-            "BetterNether glow trees may drop their weeping vines as items where two trees overlap in a Nether band",
-            false)),
         Map.entry(MIXIN_PACKAGE + "wover.WoverStartupScreensMixin", new Spec(
             Map.of("org.betterx.wover.ui.impl.client.VersionCheckerClient", List.of(
                 method("presentUpdateScreen", "(Ljava/util/List;)V"))),

@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.mixin;
 
 import games.brennan.dungeontrain.worldgen.WorldFloor;
+import games.brennan.dungeontrain.worldgen.feature.NetherCoreDecoration;
 import games.brennan.dungeontrain.worldgen.feature.OverworldDecorationGuard;
+import games.brennan.dungeontrain.worldgen.feature.StandingBlockKeep;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.WorldGenRegion;
@@ -28,7 +30,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * carvers, surface rules and structure pieces alike — including the block entities it creates on the
  * way, so one guard here covers all of them. {@code addFreshEntity} covers structure-spawned mobs.</p>
  *
- * <p>The same seam keeps overworld decoration out of the Nether core ({@link OverworldDecorationGuard}).</p>
+ * <p>The same seam keeps overworld decoration out of the Nether core ({@link OverworldDecorationGuard}) and,
+ * inside the core's own feature pass, keeps standing blocks under incoming decoration ({@link StandingBlockKeep}).</p>
  *
  * <p><b>A no-op wherever there is no basement.</b> In Compatible Terrain mode, the nether, the end and
  * any other mod's dimension the generator reaches the build floor, so {@code bedrockY} <i>is</i>
@@ -77,6 +80,11 @@ public abstract class WorldGenRegionFloorMixin {
             cir.setReturnValue(false); // same answer vanilla gives for a write outside the world
         } else if (OverworldDecorationGuard.blocksWrite(pos.getX(), pos.getZ())) {
             cir.setReturnValue(false); // an overworld feature writing into the Nether core
+        } else if (NetherCoreDecoration.isActive()) {
+            WorldGenRegion region = (WorldGenRegion) (Object) this;
+            if (StandingBlockKeep.keeps(region.getBlockState(pos), state, region, pos)) {
+                cir.setReturnValue(false); // Nether decoration landing on a tree's vine anchor or chain
+            }
         }
     }
 

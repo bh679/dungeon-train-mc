@@ -19,8 +19,7 @@
     "wover.WoverBiomePickerOrderMixin",
     "wover.WoverBiomePickerSampleMixin",
     "wover.WoverPossibleBiomesCompatOrderMixin",
-    "wover.WoverPossibleBiomesOrderMixin",
-    "wover.WoverTemplateAnchorMixin"
+    "wover.WoverPossibleBiomesOrderMixin"
   ],
   "client": [
     "bclib.BclibFixPromptMixin",

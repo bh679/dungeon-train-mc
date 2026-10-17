@@ -4,9 +4,8 @@ package games.brennan.dungeontrain.worldgen.feature;
  * "Inside Dungeon Train's own Nether-core feature pass" — the real-Nether decoration
  * {@link NetherTransitionFeature#decorateCoreChunkWithNetherFeatures} runs over a core chunk. Same shape
  * as {@link OverworldDecorationGuard#enter}/{@link OverworldDecorationGuard#exit}: a per-thread depth, so a
- * nested pass can't clear its parent's flag. Read by the WorldWeaver template hook
- * ({@code mixin/wover/WoverTemplateAnchorMixin}) to attach {@link TemplateAnchorKeepProcessor} only here,
- * leaving BetterNether's own Nether and DT's other template stamping untouched.
+ * nested pass can't clear its parent's flag. Read by {@code WorldGenRegionFloorMixin} to apply
+ * {@link StandingBlockKeep} only here, leaving BetterNether's own Nether and DT's other stamping untouched.
  */
 public final class NetherCoreDecoration {
 

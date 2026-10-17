@@ -481,7 +481,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                                      NetherBandContext bandCtx) {
         List<Holder<Biome>> biomes = coreChunkBiomes(server, cp, bandCtx);
         if (biomes.isEmpty()) return; // no biome resolvable (data pack stripped?) — never fail worldgen
-        NetherCoreDecoration.begin();   // WorldWeaver template stamps in here keep standing vine anchors
+        NetherCoreDecoration.begin();   // decoration in here never replaces a standing block (StandingBlockKeep)
         try {
             placeCoreFeatures(level, generator, cp, bedY, bandCtx, biomes);
         } finally {

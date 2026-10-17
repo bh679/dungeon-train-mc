@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** A template's decoration never replaces a standing full block — the vine anchors of an overlapped tree stay. */
-final class TemplateAnchorKeepProcessorTest {
+/** Decoration never replaces a standing block in the core pass — vine anchors and chains stay whole. */
+final class StandingBlockKeepTest {
 
     private static final BlockPos POS = new BlockPos(28200, 165, -85);
 
@@ -26,7 +26,7 @@ final class TemplateAnchorKeepProcessorTest {
 
     private static boolean keeps(BlockState existing, BlockState incoming) {
         // Shape lookups for these blocks never read the level; the empty getter satisfies the signature.
-        return TemplateAnchorKeepProcessor.keeps(existing, incoming, EmptyBlockGetter.INSTANCE, POS);
+        return StandingBlockKeep.keeps(existing, incoming, EmptyBlockGetter.INSTANCE, POS);
     }
 
     @Test
@@ -37,6 +37,8 @@ final class TemplateAnchorKeepProcessorTest {
         assertTrue(keeps(Blocks.SHROOMLIGHT.defaultBlockState(), Blocks.WEEPING_VINES.defaultBlockState()));
         assertTrue(keeps(Blocks.CRIMSON_STEM.defaultBlockState(), Blocks.CRIMSON_ROOTS.defaultBlockState()));
         assertTrue(keeps(Blocks.CRIMSON_HYPHAE.defaultBlockState(), Blocks.CRIMSON_FUNGUS.defaultBlockState()));
+        // wall moss keeps a thin collision slab (BetterNether BlockPlantWall#getShape); a ladder is the vanilla twin
+        assertTrue(keeps(Blocks.SHROOMLIGHT.defaultBlockState(), Blocks.LADDER.defaultBlockState()));
     }
 
     @Test
@@ -61,8 +63,23 @@ final class TemplateAnchorKeepProcessorTest {
     }
 
     @Test
-    @DisplayName("decoration over a partial block (a vine body) is written")
-    void decorationOverPartialIsWritten() {
-        assertFalse(keeps(Blocks.WEEPING_VINES_PLANT.defaultBlockState(), Blocks.WEEPING_VINES.defaultBlockState()));
+    @DisplayName("decoration over a vine segment is dropped (the chain under an anchor stays whole)")
+    void decorationOverVineSegmentIsDropped() {
+        assertTrue(keeps(Blocks.WEEPING_VINES_PLANT.defaultBlockState(), Blocks.WEEPING_VINES.defaultBlockState()));
+        assertTrue(keeps(Blocks.WEEPING_VINES_PLANT.defaultBlockState(), Blocks.CRIMSON_ROOTS.defaultBlockState()));
+    }
+
+    @Test
+    @DisplayName("decoration over other decoration (grass, a ladder standing in for wall moss) is written")
+    void decorationOverDecorationIsWritten() {
+        assertFalse(keeps(Blocks.SHORT_GRASS.defaultBlockState(), Blocks.WEEPING_VINES.defaultBlockState()));
+        assertFalse(keeps(Blocks.LADDER.defaultBlockState(), Blocks.WEEPING_VINES_PLANT.defaultBlockState()));
+        assertFalse(keeps(Blocks.CRIMSON_ROOTS.defaultBlockState(), Blocks.LADDER.defaultBlockState()));
+    }
+
+    @Test
+    @DisplayName("a full block over a vine segment is written (the chain below hangs from it)")
+    void fullBlockOverVineIsWritten() {
+        assertFalse(keeps(Blocks.WEEPING_VINES_PLANT.defaultBlockState(), Blocks.CRIMSON_STEM.defaultBlockState()));
     }
 }
