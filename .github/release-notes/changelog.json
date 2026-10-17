@@ -27214,7 +27214,7 @@
     },
     {
       "id": "empty-chests-dont-count",
-      "version": "0.1334.0",
+      "version": "0.1335.0",
       "type": "fix",
       "tags": [
         "fix",
