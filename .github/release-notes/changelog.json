@@ -27220,12 +27220,8 @@
         "feature",
         "ui"
       ],
-      "title": "The game pauses when you step away",
-      "summary": "If you leave the game alone for a while, it now pauses itself, so the train no longer carries you into danger while you are away from the keyboard. It stays out of the way in Free Play, and you can turn it off in the client config.",
-      "highlights": [
-        "Pauses after 30 seconds without moving the mouse, or 5 minutes without any other input",
-        "Never pauses while another menu is open, or in Free Play"
-      ],
+      "title": "Pauses when you step away",
+      "summary": "The game now pauses itself when you are away from the keyboard.",
       "pr": 2090,
       "date": "2026-10-17",
       "released": false,
