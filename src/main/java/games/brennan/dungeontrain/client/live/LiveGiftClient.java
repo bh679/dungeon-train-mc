@@ -3,7 +3,6 @@ package games.brennan.dungeontrain.client.live;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
-import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.event.LiveEyeLootResolver;
 import games.brennan.dungeontrain.net.ClientActionPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
@@ -37,8 +36,9 @@ import java.util.Set;
  * {@link LiveChatBridge}). At most one every {@link #PROMPT_GAP_MS} (12 minutes) prints
  * "X joins via a TV, they have never had the Live Eye. <b>[Gift it to them]</b>"; the rest are dropped.
  * The button runs {@code /dtlivegift give <joinId>}, which offers this streamer's own Live Eye through the
- * relay. It is a donation: when the viewer accepts, the relay ends this stream, so the next upload is
- * refused and the server burns the Live Eye ("moves onto the next streamer") as theirs goes on.</p>
+ * relay. It is a donation: once the viewer's own stream claims the channel, the relay hands it over, so this
+ * stream's next upload is refused and the server burns the Live Eye ("moves onto the next streamer"). A
+ * viewer who accepts but never goes live leaves this stream running.</p>
  *
  * <p><b>Viewer:</b> an offer made out to this player (a {@code gifts[]} notice) prints
  * <b>[Accept]</b> / <b>[No thanks]</b>; accepting asks this player's own server to redeem it
@@ -64,18 +64,20 @@ public final class LiveGiftClient {
     private LiveGiftClient() {}
 
     /**
-     * Whether a player can take a gifted Live Eye: not a Kid, Livestreaming on, none carried or worn.
-     * Only then does it join as eligible, see an offer, or accept one — so nobody is offered what they
-     * can't take. Pure for the tests.
+     * Whether a player can take a gifted Live Eye and go live with it: not a Kid, Livestreaming on behind
+     * the internet consent, not a Free Play run (which burns it on the way on), ffmpeg usable, none carried
+     * or worn. Only then does it join as eligible, see an offer, or accept one — so nobody is offered what
+     * they can't take. Pure for the tests.
      */
-    public static boolean canReceive(boolean kid, boolean streamingOn, boolean holdsLiveEye) {
-        return !kid && streamingOn && !holdsLiveEye;
+    public static boolean canReceive(boolean kid, boolean streamingOn, boolean holdsLiveEye, boolean freePlay, boolean ffmpegUsable) {
+        return !kid && streamingOn && !holdsLiveEye && !freePlay && ffmpegUsable;
     }
 
     /** {@link #canReceive} for this client right now. Client thread. */
     public static boolean canReceive(Minecraft mc) {
-        return mc.player != null && canReceive(ClientDisplayConfig.isKidMode(), LiveFeedClientConfig.streamingEnabled(),
-            LiveEyeLootResolver.countRealLiveEyes(mc.player.getInventory()) > 0);
+        return mc.player != null && canReceive(ClientDisplayConfig.isKidMode(), LiveEyeEligibility.streamingAllowed(),
+            LiveEyeLootResolver.countRealLiveEyes(mc.player.getInventory()) > 0,
+            LiveEyeEligibility.freePlayBlocks(mc.player), LiveEyeEligibility.ffmpegUsable());
     }
 
     /** Whether a join at {@code now} may prompt, the last prompt having been at {@code lastMs} (−1 = never). */

@@ -240,6 +240,8 @@ public final class LiveStreamController {
         LOGGER.info("[DungeonTrain] live: streamer died; streaming on through the death screens");
         postMortem.begin();
         LiveLifeEvents.died();
+        // A Live Eye put on from now wins the channel; the viewers' offer waits for the handover.
+        LiveFeedClient.markDied(c.token());
         LiveEncoder enc = encoder;
         double deathS = enc == null ? 0 : enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps());
         int segmentS = LiveFeedClientConfig.segmentSeconds();
@@ -893,9 +895,13 @@ public final class LiveStreamController {
             screen != null, StreamableScreens.shown(screen), mc.options.hideGui);
     }
 
-    /** The Stream chat switch as it applies to this player — always off in Kid mode. */
+    /**
+     * The Stream chat switch as it applies to this player — always off in Kid mode, and off while a
+     * Discord/Twitch link code may be on the HUD ({@link LinkCodeGuard}).
+     */
     public static boolean streamChatShown() {
-        return StreamCapture.chatShown(LiveFeedClientConfig.streamChat(), ClientDisplayConfig.getContentMode().isKid());
+        return StreamCapture.chatShown(LiveFeedClientConfig.streamChat(), ClientDisplayConfig.getContentMode().isKid())
+            && !LinkCodeGuard.onHud();
     }
 
     private void grabFrame() {

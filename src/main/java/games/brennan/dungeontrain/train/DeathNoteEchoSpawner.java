@@ -90,7 +90,8 @@ public final class DeathNoteEchoSpawner {
      * at the carriage's SHIPYARD interior floor so Sable binds it to the moving carriage. A world-
      * space position (e.g. the player's live coords) leaves the mob off the moving deck and invisible.
      * Returns false (leaving the note to retry next scan) if the target isn't on a resolvable
-     * carriage group yet, or if the group they are standing in holds a portal.
+     * carriage group yet, if the group they are standing in holds a portal, or if the echo's
+     * carriage has no clear floor cell to stand on.
      *
      * <p>{@code noteId} is the relay note this echo came from; it is stamped into the echo's
      * persistent data ({@link #KEY_NOTE_ID}) so the outcome of the fight can be reported back
@@ -120,26 +121,21 @@ public final class DeathNoteEchoSpawner {
             return false;
         }
         TrainTransformProvider provider = group.provider();
-        int anchor = provider.getPIdx();
-        int groupSize = provider.getGroupSize();
-        // Spawn ahead of the player, by one carriage per two lines of note, so a long note has
-        // somewhere to be read FROM: the echo marches back down the train reading, and lands its
-        // last line about when it reaches its target. A note of one or two lines keeps the old
-        // behaviour of appearing in the player's own carriage.
-        //
-        // Clamped into this group's range, so the run-up is only as long as the group is: a
-        // two-carriage group cannot put an echo four carriages away, and a long note in a short
-        // group simply starts closer. Better a shorter run-up than a slot that is not in the group.
-        int pidx = TrainConfinement.carriageIndex(target);
-        if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
-        int lead = NoteSpokenLines.startCarriageGap(spokenLines == null ? 0 : spokenLines.size());
-        pidx = Math.min(pidx + lead - 1, anchor + groupSize - 1);   // -1: a 1-carriage lead IS the player's cart
+        int pidx = echoCarriagePIdx(provider, target, spokenLines);
         if (PortalCarriageSelection.isPortalGroup(level, pidx)) {
             LOGGER.debug("[DungeonTrain] DeathNote echo: {} is in a portal group (pIdx={}) — deferring.",
                     target.getGameProfile().getName(), pidx);
             return false;
         }
-        BlockPos floorPos = interiorFloorPos(provider, pidx);
+        // A clear floor cell in that carriage — a mob dropped into a block suffocates. None is the
+        // same "not placeable yet" deferral as a portal group: the note stays pooled and retries.
+        Optional<BlockPos> spot = clearFloorPos(level, provider, pidx);
+        if (spot.isEmpty()) {
+            LOGGER.debug("[DungeonTrain] DeathNote echo: no room on carriage pIdx={} for {} — deferring.",
+                    pidx, target.getGameProfile().getName());
+            return false;
+        }
+        BlockPos floorPos = spot.get();
         return spawn(level, floorPos, deathCarriage, authorUuid, authorName, target, noteId, kind,
                 spokenLines);
     }
@@ -152,19 +148,40 @@ public final class DeathNoteEchoSpawner {
      * tell "stand somewhere else" from "the spawn is broken". Diagnostics only — nothing branches
      * on it.
      */
-    public static String deferReason(ServerLevel level, ServerPlayer target) {
+    public static String deferReason(ServerLevel level, ServerPlayer target, List<String> spokenLines) {
         Trains.Carriage group = groupContaining(level, target);
         if (group == null) {
             return "not inside any carriage group's world AABB (off the train, or in the gap between groups)";
         }
         TrainTransformProvider provider = group.provider();
-        int anchor = provider.getPIdx();
-        int pidx = TrainConfinement.carriageIndex(target);
-        if (pidx < anchor || pidx >= anchor + provider.getGroupSize()) pidx = anchor;
+        int pidx = echoCarriagePIdx(provider, target, spokenLines);
         if (PortalCarriageSelection.isPortalGroup(level, pidx)) {
             return "standing in a portal group (pIdx=" + pidx + ") — walk out of the portal and retry";
         }
+        if (clearFloorPos(level, provider, pidx).isEmpty()) {
+            return "no clear floor cell on carriage pIdx=" + pidx + " — its contents fill the floor";
+        }
         return null;
+    }
+
+    /**
+     * The carriage the echo appears on: ahead of the player, by one carriage per two lines of note,
+     * so a long note has somewhere to be read FROM — the echo marches back down the train reading,
+     * and lands its last line about when it reaches its target. A note of one or two lines keeps
+     * the old behaviour of appearing in the player's own carriage.
+     *
+     * <p>Clamped into this group's range, so the run-up is only as long as the group is: a
+     * two-carriage group cannot put an echo four carriages away, and a long note in a short group
+     * simply starts closer. Better a shorter run-up than a slot that is not in the group.</p>
+     */
+    private static int echoCarriagePIdx(TrainTransformProvider provider, ServerPlayer target,
+                                        List<String> spokenLines) {
+        int anchor = provider.getPIdx();
+        int groupSize = provider.getGroupSize();
+        int pidx = TrainConfinement.carriageIndex(target);
+        if (pidx < anchor || pidx >= anchor + groupSize) pidx = anchor;
+        int lead = NoteSpokenLines.startCarriageGap(spokenLines == null ? 0 : spokenLines.size());
+        return Math.min(pidx + lead - 1, anchor + groupSize - 1);   // -1: a 1-carriage lead IS the player's cart
     }
 
     /** The train group whose world AABB contains {@code player} (player position is world-space), or null. */
@@ -182,14 +199,21 @@ public final class DeathNoteEchoSpawner {
         return null;
     }
 
-    /** Shipyard interior floor-centre of carriage {@code targetPIdx} within {@code provider}'s group. */
-    private static BlockPos interiorFloorPos(TrainTransformProvider provider, int targetPIdx) {
+    /**
+     * A clear shipyard floor cell on carriage {@code targetPIdx} within {@code provider}'s group,
+     * nearest the interior centre ({@link CarriageSpawnSpot}); empty when the floor is full or
+     * PlayerMob is missing.
+     */
+    private static Optional<BlockPos> clearFloorPos(ServerLevel level, TrainTransformProvider provider,
+                                                    int targetPIdx) {
+        Optional<EntityType<?>> type = EntityType.byString(PLAYER_MOB_ID.toString());
+        if (type.isEmpty()) return Optional.empty();
         CarriageDims dims = provider.dims();
         int slot = targetPIdx - provider.getPIdx();
         int enclosedStartOffset = provider.getGroupSize() > 1 ? CarriagePlacer.halfPadLen(dims) : 0;
         BlockPos carriageOrigin = provider.getShipyardOrigin()
                 .offset(enclosedStartOffset + slot * dims.length(), 0, 0);
-        return PlayerMobGroupSpawner.interiorFloorCentre(carriageOrigin, dims);
+        return CarriageSpawnSpot.clearFloorIn(level, type.get(), carriageOrigin, dims);
     }
 
     /**

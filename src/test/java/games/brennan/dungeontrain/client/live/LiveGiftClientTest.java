@@ -24,9 +24,11 @@ class LiveGiftClientTest {
     @Test
     @DisplayName("only a player who can take a Live Eye joins as eligible, sees or accepts an offer")
     void canReceive() {
-        assertTrue(LiveGiftClient.canReceive(false, true, false));
-        assertFalse(LiveGiftClient.canReceive(true, true, false), "Kid mode");
-        assertFalse(LiveGiftClient.canReceive(false, false, false), "Livestreaming off");
-        assertFalse(LiveGiftClient.canReceive(false, true, true), "already carries one");
+        assertTrue(LiveGiftClient.canReceive(false, true, false, false, true));
+        assertFalse(LiveGiftClient.canReceive(true, true, false, false, true), "Kid mode");
+        assertFalse(LiveGiftClient.canReceive(false, false, false, false, true), "Livestreaming off");
+        assertFalse(LiveGiftClient.canReceive(false, true, true, false, true), "already carries one");
+        assertFalse(LiveGiftClient.canReceive(false, true, false, true, true), "Free Play: it would burn on the way on");
+        assertFalse(LiveGiftClient.canReceive(false, true, false, false, false), "no ffmpeg to stream with");
     }
 }
