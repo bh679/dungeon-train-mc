@@ -84,6 +84,7 @@ public final class LiveDeathPagesPreview {
         if (queue.isEmpty()) {
             current = null;
             screen = null;
+            LiveRewards.preview(null);
             LOGGER.info("[DungeonTrain] death-pages preview done");
             return;
         }
@@ -93,7 +94,7 @@ public final class LiveDeathPagesPreview {
         String life = PREFIX + current;
         LiveLifeStats stats = VARIANTS.get(current).apply(now);
         LiveLifeTracker.update(life, s -> stats, false, now);
-        LiveRewards.set(rewardsFor(current, now));
+        LiveRewards.preview(rewardsFor(current, now));
         screen = NarrativeDeathScreen.livePreview(life);
         Minecraft.getInstance().setScreen(screen);
         step = 0;
@@ -107,7 +108,7 @@ public final class LiveDeathPagesPreview {
             pollFlag(mc);
             return;
         }
-        if (mc.screen != screen) { current = null; return; } // closed by hand
+        if (mc.screen != screen) { current = null; LiveRewards.preview(null); return; } // closed by hand
         if (++ticks < SETTLE_TICKS) return;
         ticks = 0;
         if (step == 0) {
@@ -150,9 +151,10 @@ public final class LiveDeathPagesPreview {
 
     // ---- made-up lives ----------------------------------------------------------------------------
 
-    private static LiveLifeStats watched(long now, long onAirMs, int peak) {
-        return LiveLifeStats.empty("").stintStarted(now - onAirMs - 600_000L, 10)
-            .stintEnded(now - onAirMs, "left").stintStarted(now - onAirMs, 10)
+    /** Two stints: 10 minutes long ago, then one from {@code secondStart} still running. */
+    private static LiveLifeStats watched(long now, long secondStart, int peak) {
+        return LiveLifeStats.empty("").stintStarted(secondStart - 3_600_000L, 10)
+            .stintEnded(secondStart - 3_000_000L, "left").stintStarted(secondStart, 10)
             .heartbeat(now - 5000, peak)
             .moment(false).moment(true).moment(false).moment(true)
             .chat(now - 200_000, "Rook", "keep left").chat(now - 120_000, "Rook", "the bridge!")
@@ -164,15 +166,16 @@ public final class LiveDeathPagesPreview {
     }
 
     private static LiveLifeStats onAir(long now) {
-        return watched(now, 62 * 60_000L, 41).died().taken("Rook", false);
+        return watched(now, now - 62 * 60_000L, 41).died().taken("Rook", false);
     }
 
     private static LiveLifeStats endedEarly(long now) {
-        return watched(now, 48 * 60_000L, 23).stintEnded(now - 2 * 3_600_000L, "left");
+        // 38 + 10 minutes on air, ending two hours before the fall.
+        return watched(now, now - 2 * 3_600_000L - 38 * 60_000L, 23).stintEnded(now - 2 * 3_600_000L, "left");
     }
 
     private static LiveLifeStats taken(long now) {
-        return watched(now, 31 * 60_000L, 17).taken("Rook", true).stintEnded(now - 3_600_000L, "removed");
+        return watched(now, now - 3_600_000L - 21 * 60_000L, 17).taken("Rook", true).stintEnded(now - 3_600_000L, "removed");
     }
 
     private static LiveLifeStats nobody(long now) {

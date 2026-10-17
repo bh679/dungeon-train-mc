@@ -830,9 +830,9 @@ public final class NarrativeDeathScreen extends Screen {
                 case SURVEY -> y = drawSurvey(g, page.survey(), left, contentW, cx, y);
                 case BUG_RESPONSE -> y = drawBugResponse(g, left, contentW, cx, y);
                 case BROADCAST -> y = broadcastPage.draw(g, liveStats(), LiveRewards.latest(), Util.getEpochMillis(),
-                        diedAtMs, left, contentW, cx, y, this.height >= LIVE_TRAIN_MIN_H);
+                        diedAtMs, left, contentW, cx, y, this.height - 32);
                 case CROWD -> y = crowdPage.draw(g, liveStats(), LiveRewards.latest(), Util.getEpochMillis(),
-                        diedAtMs, left, contentW, cx, y, this.height < LIVE_CROWD_FULL_MIN_H);
+                        diedAtMs, left, contentW, cx, y, this.height - 32);
                 case DONATE -> y = drawDonate(g, left, contentW, cx, y, mouseX, mouseY);
                 case PHOTOS -> y = drawPhotos(g, left, contentW, cx, y, mouseX, mouseY);
                 case PLATFORM -> y = drawPlatform(g, narr, left, contentW, cx, y);
@@ -2047,10 +2047,6 @@ public final class NarrativeDeathScreen extends Screen {
         ConfirmLinkScreen.confirmLinkNow(this, UpdatePage.url(InstalledVersion.get(), Platform.current()));
     }
 
-    // Below these scaled heights the Live Eye pages drop their train (and the crowd page its chat
-    // lines) so the pitch and its button stay clear of the Continue row.
-    private static final int LIVE_TRAIN_MIN_H = 300;
-    private static final int LIVE_CROWD_FULL_MIN_H = 380;
     private static final int BTN_PUR_BG = 0xFF5A416B;
     private static final int BTN_PUR_LIGHT = 0xFF8F6EA3;
 

@@ -31,6 +31,8 @@ public record LiveRewards(List<Reward> rewards) {
     public static final LiveRewards NONE = new LiveRewards(List.of());
 
     private static volatile LiveRewards latest = NONE;
+    /** The dev preview's made-up state; while set, summary fetches do not replace what it shows. */
+    @Nullable private static volatile LiveRewards preview;
 
     /** One reward: on until {@code activeUntilMs} (0 = off), bought by {@code by}, later months queued. */
     public record Reward(String id, long activeUntilMs, String by, List<String> queuedBy) {
@@ -46,7 +48,8 @@ public record LiveRewards(List<Reward> rewards) {
 
     /** The latest state seen on a summary fetch; {@link #NONE} until one lands. */
     public static LiveRewards latest() {
-        return latest;
+        LiveRewards p = preview;
+        return p != null ? p : latest;
     }
 
     /** Keep the rewards block of a summary body; a body without one clears it back to none. */
@@ -54,9 +57,9 @@ public record LiveRewards(List<Reward> rewards) {
         latest = parseBody(body);
     }
 
-    /** Tests and the dev preview: set the state directly. */
-    public static void set(LiveRewards rewards) {
-        latest = rewards == null ? NONE : rewards;
+    /** Dev preview only: show {@code rewards} until cleared with null, whatever the relay says. */
+    public static void preview(@Nullable LiveRewards rewards) {
+        preview = rewards;
     }
 
     @Nullable

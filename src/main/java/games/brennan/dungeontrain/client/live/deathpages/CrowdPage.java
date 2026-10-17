@@ -48,20 +48,50 @@ public final class CrowdPage {
         return btnW > 0 && mx >= btnX && mx < btnX + btnW && my >= btnY && my < btnY + BUTTON_H;
     }
 
-    /** Draw the page body from {@code y}; returns the y below it. {@code compact} drops the train and chat. */
+    /**
+     * Draw the page body from {@code y}, keeping it above {@code maxY} (the Continue row): on a short
+     * screen the chat lines go first, then the train, then the podium's "where they watched" line,
+     * then the question over the pitch. Returns the y below it.
+     */
     public int draw(GuiGraphics g, LiveLifeStats s, LiveRewards rewards, long now, long deathMs,
-                    int left, int w, int cx, int y, boolean compact) {
+                    int left, int w, int cx, int y, int maxY) {
         Font font = chrome.font();
         btnW = 0;
+        boolean podium = !s.crowd().isEmpty() && s.peakViewers() > 0;
+        List<ChatMoment> last = s.finalMinute(deathMs > 0 ? deathMs : now, 2);
+        Pitch pitch = LiveDeathStory.pitch(s, rewards, now);
+        boolean quicker = rewards.active(LiveRewards.QUICKER_STREAMS, now);
+        int delay = LiveDeathStory.delaySeconds(s.segmentSeconds(), quicker);
+        String question = question(pitch, rewards, delay);
+        String pitchText = pitchText(pitch, rewards, now);
+
+        int narrH = lines(font, narration(s), w) + 8;
+        int questionH = lines(font, question, w) + 4;
+        int pitchH = lines(font, pitchText, w) + 2;
+        boolean chat = !last.isEmpty(), train = true, source = true, ask = true;
+        int budget = maxY - y;
+        for (int pass = 0; pass < 5; pass++) {
+            int h = DeathScreenText.KICKER_STEP + narrH + 32 + pitchH + 4 + BUTTON_H
+                + (train ? DeathScreenText.TRAIN_STEP : 0)
+                + (podium ? podiumHeight(font, source) + 4 : 0)
+                + (chat ? last.size() * (font.lineHeight + 2) + 8 : 0)
+                + (ask ? questionH : 0);
+            if (h <= budget) break;
+            if (chat) chat = false;
+            else if (train) train = false;
+            else if (source) source = false;
+            else ask = false;
+        }
+
         DeathScreenText.drawCenteredLine(g, font, tr("crowd.kicker"), cx, y, chrome.fade(DeathScreenText.KICKER));
         y += DeathScreenText.KICKER_STEP;
-        if (!compact) {
+        if (train) {
             chrome.train(g, left, w, y);
             y += DeathScreenText.TRAIN_STEP;
         }
         y = DeathScreenText.drawNarration(g, font, narration(s), cx, w, y, chrome.fade(DeathScreenText.NARR));
         y += 4;
-        if (!s.crowd().isEmpty() && s.peakViewers() > 0) y = drawPodium(g, s.crowd(), cx, y) + 4;
+        if (podium) y = drawPodium(g, s.crowd(), cx, y, source) + 4;
 
         int gap = 4;
         int cw = (w - gap * 4) / 5;
@@ -75,20 +105,24 @@ public final class CrowdPage {
         }
         y += 32;
 
-        List<ChatMoment> last = s.finalMinute(deathMs > 0 ? deathMs : now, 2);
-        if (!compact && !last.isEmpty()) y = drawChat(g, last, left, w, y) + 4;
-
-        Pitch pitch = LiveDeathStory.pitch(s, rewards, now);
-        boolean quicker = rewards.active(LiveRewards.QUICKER_STREAMS, now);
-        int delay = LiveDeathStory.delaySeconds(s.segmentSeconds(), quicker);
-        y = DeathScreenText.drawQuestion(g, font, question(pitch, rewards, delay), cx, w, y, chrome.fade(DeathScreenText.QUESTION));
-        y = DeathScreenText.drawNarration(g, font, pitchText(pitch, rewards, now), cx, w, y - 2, chrome.fade(DeathScreenText.NARR));
+        if (chat) y = drawChat(g, last, left, w, y) + 4;
+        if (ask) y = DeathScreenText.drawQuestion(g, font, question, cx, w, y, chrome.fade(DeathScreenText.QUESTION));
+        y = DeathScreenText.drawNarration(g, font, pitchText, cx, w, y - 2, chrome.fade(DeathScreenText.NARR));
         y += 4;
         btnX = cx - BUTTON_W / 2;
-        btnY = y;
+        btnY = Math.min(y, maxY - BUTTON_H); // a translation too long for even the compact page keeps the button clear of Continue
         btnW = BUTTON_W;
         chrome.bevel(g, btnX, btnY, BUTTON_W, BUTTON_H, tr("crowd.button"), LiveDeathChrome.Style.PURPLE);
-        return y + BUTTON_H;
+        return btnY + BUTTON_H;
+    }
+
+    /** Height of {@code text} wrapped as the narration wraps it. */
+    private static int lines(Font font, String text, int w) {
+        return font.split(DeathScreenText.styled(text), w - 8).size() * (font.lineHeight + 2);
+    }
+
+    private static int podiumHeight(Font font, boolean source) {
+        return 24 + 3 + (source ? 3 : 2) * (font.lineHeight + 1);
     }
 
     private static String narration(LiveLifeStats s) {
@@ -102,7 +136,7 @@ public final class CrowdPage {
         };
     }
 
-    private int drawPodium(GuiGraphics g, List<Watcher> top, int cx, int y) {
+    private int drawPodium(GuiGraphics g, List<Watcher> top, int cx, int y, boolean source) {
         Font font = chrome.font();
         int n = Math.min(3, top.size());
         int total = n * PODIUM_W + (n - 1) * PODIUM_GAP;
@@ -120,8 +154,12 @@ public final class CrowdPage {
             ty += font.lineHeight + 1;
             drawFitted(g, duration(wt.seconds() * 1000L), colCx, ty, PODIUM_W - 2, WATCH);
             ty += font.lineHeight + 1;
-            drawFitted(g, str("web".equals(wt.source()) ? "source.web" : "source.game"), colCx, ty, PODIUM_W - 2, DeathScreenText.SUBLINE);
-            bottom = Math.max(bottom, ty + font.lineHeight);
+            if (source) {
+                drawFitted(g, str("web".equals(wt.source()) ? "source.web" : "source.game"), colCx, ty, PODIUM_W - 2, DeathScreenText.SUBLINE);
+                bottom = Math.max(bottom, ty + font.lineHeight);
+            } else {
+                bottom = Math.max(bottom, ty - 1);
+            }
         }
         return bottom;
     }

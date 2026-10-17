@@ -47,22 +47,29 @@ public final class BroadcastPage {
         return linkW > 0 && mx >= linkX && mx < linkX + linkW && my >= linkY && my < linkY + linkH;
     }
 
-    /** Draw the page body from {@code y}; returns the y below it. {@code showTrain} false on short screens. */
+    /**
+     * Draw the page body from {@code y}; returns the y below it. The train is left out when the page
+     * would otherwise reach {@code maxY} (the Continue row).
+     */
     public int draw(GuiGraphics g, LiveLifeStats s, LiveRewards rewards, long now, long deathMs,
-                    int left, int w, int cx, int y, boolean showTrain) {
+                    int left, int w, int cx, int y, int maxY) {
         Font font = chrome.font();
         linkW = 0;
+        boolean quicker = rewards.active(LiveRewards.QUICKER_STREAMS, now);
+        int delay = LiveDeathStory.delaySeconds(s.segmentSeconds(), quicker);
+        Story story = LiveDeathStory.story(s);
+        String narration = narration(story, s, now, deathMs, delay);
+        int narrH = font.split(DeathScreenText.styled(narration), w - 8).size() * (font.lineHeight + 2) + 4;
+        int body = DeathScreenText.KICKER_STEP + narrH + 6 + 32 + CLIP_H + 6 + 2 * (font.lineHeight + 2);
+        boolean showTrain = body + DeathScreenText.TRAIN_STEP <= maxY - y;
+
         DeathScreenText.drawCenteredLine(g, font, tr("broadcast.kicker"), cx, y, chrome.fade(DeathScreenText.KICKER));
         y += DeathScreenText.KICKER_STEP;
         if (showTrain) {
             chrome.train(g, left, w, y);
             y += DeathScreenText.TRAIN_STEP;
         }
-        boolean quicker = rewards.active(LiveRewards.QUICKER_STREAMS, now);
-        int delay = LiveDeathStory.delaySeconds(s.segmentSeconds(), quicker);
-        Story story = LiveDeathStory.story(s);
-        y = DeathScreenText.drawNarration(g, font, narration(story, s, now, deathMs, delay), cx, w, y,
-            chrome.fade(DeathScreenText.NARR));
+        y = DeathScreenText.drawNarration(g, font, narration, cx, w, y, chrome.fade(DeathScreenText.NARR));
         y += 6;
 
         int gap = 4;

@@ -93,6 +93,13 @@ public final class LiveLifeEvents {
         LiveLifeTracker.update(life(), s -> s.taken(by, alive), true, now());
     }
 
+    /** The relay's longest watchers of {@code lifeId}, when the caller pinned the life itself. */
+    public static void crowdFor(String lifeId, List<LiveLifeStats.Watcher> top) {
+        if (top == null || top.isEmpty()) return;
+        life();
+        LiveLifeTracker.update(lifeId, s -> s.crowd(top), true, now());
+    }
+
     /** The relay's longest watchers of this life so far. */
     public static void crowd(List<LiveLifeStats.Watcher> top) {
         if (top == null || top.isEmpty()) return;
