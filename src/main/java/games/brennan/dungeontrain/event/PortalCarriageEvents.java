@@ -1401,8 +1401,8 @@ public final class PortalCarriageEvents {
     }
 
     /**
-     * Tell whoever is inside a structure how far its Y readout has to move for the debug screen to
-     * report the depth they believe they are at.
+     * Tell whoever is inside a structure how far its readouts have to move for the debug screen to
+     * report the depth they believe they are at, with the room's own centre as X 0, Z 0.
      *
      * <p><b>Why the client cannot work this out.</b> A twin corridor is stamped into twin space — the
      * sealed basement under the world's bedrock, or the attic over the upside-down band's lid — and
@@ -1423,10 +1423,17 @@ public final class PortalCarriageEvents {
         AABB box = structureBox(dims, structure);
         // The entry twin's minimum corner is the corridor's floor; the exit twin shares that Y — it
         // is offset along X only — so one shift covers the whole structure.
+        // X and Z centre on the base room, so standing in its middle reads 0, 0; its tiled copies
+        // and the corridors read whatever their distance from that middle is.
+        PortalCarriageLayout layout = PortalCarriageBuilder.layoutFor(dims, structure.kind());
+        BlockPos roomOrigin = structure.roomOrigin(dims, layout);
+        Vec3i room = structure.roomSize();
         PortalRoomDepthPacket region = new PortalRoomDepthPacket(
             (int) Math.floor(box.minX), (int) Math.floor(box.minY), (int) Math.floor(box.minZ),
             (int) Math.ceil(box.maxX), (int) Math.ceil(box.maxY), (int) Math.ceil(box.maxZ),
-            groundY - structure.origin().getY());
+            -(roomOrigin.getX() + room.getX() / 2),
+            groundY - structure.origin().getY(),
+            -(roomOrigin.getZ() + room.getZ() / 2));
 
         for (ServerPlayer player : players) {
             if (!box.contains(player.getX(), player.getY(), player.getZ())) continue;
