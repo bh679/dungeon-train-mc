@@ -26952,12 +26952,9 @@
         "fix",
         "mobs"
       ],
-      "title": "Player mobs no longer spawn stuck inside furniture",
-      "summary": "Player mobs and echoes now appear on an open patch of carriage floor. Before, one could land inside a log, table or pillar in the middle of a carriage and suffocate before you ever met it.",
-      "highlights": [
-        "A blocked carriage centre now moves the spawn to the nearest open spot.",
-        "Low blocks like carpets and slabs are stood on rather than spawned into."
-      ],
+      "title": "Mobs spawn more reliably in carriages",
+      "summary": "Fixed some mobs spawning stuck inside carriage blocks.",
+      "highlights": [],
       "pr": 2069,
       "date": "2026-10-17",
       "released": false,
