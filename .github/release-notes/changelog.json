@@ -27289,8 +27289,24 @@
       "released_at": null
     },
     {
-      "id": "cave-photo-overworld-band",
+      "id": "no-advancements-while-afk",
       "version": "0.1339.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Tweaks",
+      "summary": "Minor improvements.",
+      "highlights": [],
+      "pr": 2087,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cave-photo-overworld-band",
+      "version": "0.1340.0",
       "type": "fix",
       "tags": [
         "fix",
