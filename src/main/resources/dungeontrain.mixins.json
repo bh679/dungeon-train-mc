@@ -19,6 +19,7 @@
     "AdvancementVisibilityEvaluatorMixin",
     "AdvancementTreeOrderMixin",
     "PlayerAdvancementsRehomeMixin",
+    "PlayerAdvancementsAfkGateMixin",
     "ServerAdvancementManagerRequirementsMixin",
     "BedBlockMixin",
     "EnderChestBlockLabelMixin",

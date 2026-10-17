@@ -27267,6 +27267,42 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-enemy-pace",
+      "version": "0.1338.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "balance"
+      ],
+      "title": "Nether newcomers keep a fair pace",
+      "summary": "Some of the new enemies in the Nether were sprinting at you far faster than they should. They now move like the rest of their kind, so you can outrun them again.",
+      "highlights": [
+        "No more impossible chases through the Nether carriages"
+      ],
+      "pr": 2091,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "no-advancements-while-afk",
+      "version": "0.1339.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Tweaks",
+      "summary": "Minor improvements.",
+      "highlights": [],
+      "pr": 2087,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
