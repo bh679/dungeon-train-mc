@@ -481,6 +481,16 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                                                      NetherBandContext bandCtx) {
         List<Holder<Biome>> biomes = coreChunkBiomes(server, cp, bandCtx);
         if (biomes.isEmpty()) return; // no biome resolvable (data pack stripped?) — never fail worldgen
+        NetherCoreDecoration.begin();   // decoration in here never replaces a standing block (StandingBlockKeep)
+        try {
+            placeCoreFeatures(level, generator, cp, bedY, bandCtx, biomes);
+        } finally {
+            NetherCoreDecoration.end();
+        }
+    }
+
+    private void placeCoreFeatures(WorldGenLevel level, ChunkGenerator generator, ChunkPos cp, int bedY,
+                                   NetherBandContext bandCtx, List<Holder<Biome>> biomes) {
 
         // The sampled core terrain occupies this world-Y band (same mapping NetherCoreStamp uses);
         // retarget the Nether features' (y0..128-calibrated) height ranges onto it so they hit the rock.
