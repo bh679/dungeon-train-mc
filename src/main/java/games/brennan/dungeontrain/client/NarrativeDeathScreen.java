@@ -297,6 +297,7 @@ public final class NarrativeDeathScreen extends Screen {
     // Photo count the page set was built with — camera frames ride in the death packet, which can
     // land a tick after the screen opens, so tick() rebuilds when this goes stale.
     private int lastPhotoCount = -1;
+    private boolean lastPhotoStats;
     // ---- Live Eye pages (BROADCAST, CROWD): only on a life that was broadcast at all ----
     // The life this death screen tells, fixed at construction: the server's new life id lands on
     // respawn, while the stream may still be running through these pages.
@@ -470,10 +471,11 @@ public final class NarrativeDeathScreen extends Screen {
         // (see shouldShowDonate). advance()/back() find it by kind(), not index, so the pages
         // after it can move freely.
         list.add(Page.of(Kind.DONATE));
-        // The photo page shows off this run's photos, right before the final page — only when there
-        // are any.
+        // The photo page shows off this run's photos and photo stats, right before the final page,
+        // only when there are photos or any of the stats is above zero.
         lastPhotoCount = photoSet().size();
-        if (lastPhotoCount > 0) list.add(Page.of(Kind.PHOTOS));
+        lastPhotoStats = hasPhotoStats(DeathStatsCache.get());
+        if (lastPhotoCount > 0 || lastPhotoStats) list.add(Page.of(Kind.PHOTOS));
         list.add(Page.of(Kind.PLATFORM));
         return list;
     }
@@ -680,7 +682,8 @@ public final class NarrativeDeathScreen extends Screen {
         // The death packet + survey questions arrive a tick or two after the
         // screen opens. If the survey set changed, rebuild so the pages match.
         if (SurveyClientState.questions().size() != lastSurveyCount
-                || photoSet().size() != lastPhotoCount) {
+                || photoSet().size() != lastPhotoCount
+                || hasPhotoStats(DeathStatsCache.get()) != lastPhotoStats) {
             this.rebuildWidgets();
         }
     }
@@ -2707,7 +2710,29 @@ public final class NarrativeDeathScreen extends Screen {
         y = drawQuestion(g, Component.translatable("gui.dungeontrain.death.photos.title").getString(), cx, w, y);
         drawCenteredStr(g, Component.translatable("gui.dungeontrain.death.photos.subtitle"), cx, y + 2, KICKER);
         y += this.font.lineHeight + 4;
-        return photoStrip.draw(g, this.font, photos(), this.width, y, this.height - 30, mouseX, mouseY, settled());
+        DeathStatsPacket s = DeathStatsCache.get();
+        if (s != null) {
+            y = drawPhotoStats(g, s, left, w, y + 4);
+        }
+        List<DeathPhoto> photos = photos();
+        if (photos.isEmpty()) return y;
+        return photoStrip.draw(g, this.font, photos, this.width, y, this.height - 30, mouseX, mouseY, settled());
+    }
+
+    /** The photo page's four stat tiles in one row. Returns the y below the row. */
+    private int drawPhotoStats(GuiGraphics g, DeathStatsPacket s, int left, int w, int y) {
+        int colW = w / 4;
+        int cellW = Math.min(96, colW - 8);
+        drawCell(g, left + colW / 2, y, Integer.toString(s.photoShots()), "gui.dungeontrain.death.photos.lbl_taken", cellW);
+        drawCell(g, left + colW + colW / 2, y, Integer.toString(s.photosViewed()), "gui.dungeontrain.death.photos.lbl_viewed", cellW);
+        drawCell(g, left + 2 * colW + colW / 2, y, Integer.toString(s.tributesMade()), "gui.dungeontrain.death.photos.lbl_tributes", cellW);
+        drawCell(g, left + 3 * colW + colW / 2, y, Integer.toString(s.tributeEmeralds()), "gui.dungeontrain.death.photos.lbl_emeralds", cellW);
+        return y + 30;
+    }
+
+    /** True when any of the photo page's stats is above zero. */
+    private static boolean hasPhotoStats(DeathStatsPacket s) {
+        return s != null && (s.photoShots() > 0 || s.photosViewed() > 0 || s.tributesMade() > 0 || s.tributeEmeralds() > 0);
     }
 
     /**

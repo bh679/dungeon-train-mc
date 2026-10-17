@@ -17,7 +17,9 @@ import java.util.function.Supplier;
 
 /**
  * Removes {@link DisabledModContent} gear and ores from every generated loot table — chiefly
- * BetterNether's city/wither-tower chests and BetterEnd's End chests, which stock their own gear.
+ * BetterNether's city/wither-tower chests and BetterEnd's End chests, which stock their own gear — and
+ * strips non-vanilla enchantments from what is left, which an {@code enchant_randomly} with no
+ * {@code options} can pick from the whole registry. A book with nothing left stored is dropped.
  * Wired to all tables by {@code data/neoforge/loot_modifiers/global_loot_modifiers.json}.
  */
 public final class StripDisabledItemsLootModifier extends LootModifier {
@@ -43,8 +45,12 @@ public final class StripDisabledItemsLootModifier extends LootModifier {
     protected ObjectArrayList<ItemStack> doApply(ObjectArrayList<ItemStack> generatedLoot, LootContext context) {
         ObjectArrayList<ItemStack> kept = new ObjectArrayList<>(generatedLoot.size());
         for (ItemStack stack : generatedLoot) {
-            if (!DisabledModContent.isDisabledItem(stack)) {
-                kept.add(stack);
+            if (DisabledModContent.isDisabledItem(stack)) {
+                continue;
+            }
+            ItemStack stripped = DisabledModContent.stripDisabledEnchantments(stack);
+            if (!DisabledModContent.isDisabledItem(stripped)) {
+                kept.add(stripped);
             }
         }
         return kept;

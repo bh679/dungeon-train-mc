@@ -27068,6 +27068,113 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-photo-page-stats",
+      "version": "0.1326.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "The photo page counts your photos",
+      "summary": "The photo page on the death screen now tallies the life you just lived: how many photos you took, how many of other players' photos you looked at, how many Tributes you paid and the emeralds they cost. The page now appears whenever there is something to count, even with no photos to show.",
+      "highlights": [],
+      "pr": 2076,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-centred-coordinates",
+      "version": "0.1327.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "ui"
+      ],
+      "title": "Dimensional carriages have coordinates of their own",
+      "summary": "Inside a dimensional carriage, the debug screen (F3) now puts the middle of the room at X 0, Z 0, so it reads as a place of its own rather than a spot along the track.",
+      "highlights": [
+        "The middle of a dimensional carriage reads X 0, Z 0 on F3",
+        "Looking at a block in one shows the same disguised coordinates"
+      ],
+      "pr": 2078,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriages-link-after-autosave",
+      "version": "0.1328.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriages stay linked after a save",
+      "summary": "Dimensional carriages further up a long train could stop working after the game autosaved, leaving the corridor to end at a black wall. They now always open onto their room.",
+      "highlights": [],
+      "pr": 2079,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-nether-portal-return",
+      "version": "0.1329.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether portal fix",
+      "summary": "Fixed a case where a Nether portal could leave you stranded.",
+      "highlights": [],
+      "pr": 2080,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "journey-advancement-unearnable",
+      "version": "0.1330.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Advancement fix.",
+      "highlights": [],
+      "pr": 2077,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "disable-mod-enchantments",
+      "version": "0.1331.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Enchantment tidy-up",
+      "summary": "Tidied up the enchantment pool.",
+      "highlights": [],
+      "pr": 2081,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

@@ -349,9 +349,12 @@ public final class BandAdvancements {
 
     /**
      * How far into the upside-down exit crossfade before {@link #REASSEMBLY} — "well into the
-     * dispersing islands". The default exit fade (10,000 blocks) comfortably contains it.
+     * dispersing islands" — as a fraction of that Reassembly's own length, read off
+     * {@link UpsideDownBand#exitOwReveal}. A fraction, not a block count, because the layout sets each
+     * Reassembly's length: a fixed 3800 blocks outgrew the shipped 3000-block one and stranded the
+     * advancement. One sample proves the depth, so the trigger's own depth is 0.
      */
-    public static final int REASSEMBLY_DEPTH_BLOCKS = 3800;
+    public static final double REASSEMBLY_DEPTH_FRACTION = 0.38;
 
     private static final List<Trigger> TRIGGERS = buildTriggers();
 
@@ -366,7 +369,8 @@ public final class BandAdvancements {
         t.add(entry(VOID, (l, x) -> DisintegrationBand.zoneAt(l, x) == Disintegration.Zone.VOID));
         t.add(entry(END_ISLANDS, BandAdvancements::isInEndIslands));
         t.add(entry(UPSIDE_DOWN, UpsideDownBand::isInBand));
-        t.add(new Trigger(REASSEMBLY, REASSEMBLY_DEPTH_BLOCKS, UpsideDownBand::isInExitFade));
+        t.add(new Trigger(REASSEMBLY, 0, (l, x) -> UpsideDownBand.isInExitFade(l, x)
+                && UpsideDownBand.exitOwReveal(l, x) >= REASSEMBLY_DEPTH_FRACTION));
         t.add(entry(WWOO, (l, x) -> overworldStyle(l, x) == CycleLayout.Style.WWOO));
         t.add(entry(BETTER_NETHER, (l, x) -> NetherBand.isInNetherBiome(l, x)
                 && cycle(l).isBetterNetherAt(x)));
@@ -413,6 +417,9 @@ public final class BandAdvancements {
             case VOID -> (l, x) -> DisintegrationBand.zoneAt(l, x) == Disintegration.Zone.VOID
                     && !cycle(l).isBetterEndAt(x);
             case END_ISLANDS -> (l, x) -> isInEndIslands(l, x) && !cycle(l).isBetterEndAt(x);
+            // Walking back, the Reassembly is entered from its solid-overworld (reveal 1) end.
+            case REASSEMBLY -> (l, x) -> UpsideDownBand.isInExitFade(l, x)
+                    && UpsideDownBand.exitOwReveal(l, x) <= 1.0 - REASSEMBLY_DEPTH_FRACTION;
             default -> forward(forwardId).test();
         };
     }

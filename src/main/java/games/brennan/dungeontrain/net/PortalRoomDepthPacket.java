@@ -9,44 +9,47 @@ import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 /**
- * S2C: the box of a portal structure and how far its Y readout has to move for the debug screen to
- * report the depth the player believes they are at.
+ * S2C: the box of a portal structure and how far its X, Y and Z readouts have to move for the debug
+ * screen to report a dimensional carriage as a place of its own.
  *
  * <p><b>What is being hidden.</b> A dimensional carriage is a twin corridor stamped into <i>twin
- * space</i> — the sealed basement under the world's bedrock, or the attic over the upside-down
- * band's lid (see {@code PortalTwinSpace}). It is stamped in the carriage's own chunk columns, so X
- * and Z already read exactly what the equivalent carriage would give; Y is the one coordinate that
- * gives the trick away, and it does so by about a hundred and fifty blocks. {@link #yShift} is
- * {@code trainY - } the twin's floor, so a player standing in the corridor reads the Y they would
- * have had on the train.</p>
+ * space</i>: the sealed basement under the world's bedrock, or the attic over the upside-down
+ * band's lid (see {@code PortalTwinSpace}). Y gives the trick away by about a hundred and fifty
+ * blocks, so {@link #yShift} is {@code trainY - } the twin's floor and a player standing in the
+ * corridor reads the Y they would have had on the train. X and Z are moved so the centre of the
+ * room itself reads {@code 0, 0}: the room is a space apart, not a spot along the track, so
+ * {@link #xShift} and {@link #zShift} are minus that centre.</p>
  *
- * <p><b>A place, not a state</b> — the same shape {@link PortalRoomFogPacket} and
+ * <p><b>A place, not a state</b>, the same shape {@link PortalRoomFogPacket} and
  * {@link PortalTrainAudioPacket} use, and for the same reason. "Your coordinates are disguised now"
  * / "they are not any more" has one failure mode that matters: a player who disconnects inside a
  * room never receives the second message and comes back with every reading in the next world shifted
  * by whatever this room's lane happened to be. Describing the box instead means walking out costs no
  * message at all, and a disconnect drops the cached region along with everything else.</p>
  *
- * <p>The box is the structure's — corridors and stamped room copies together, the same
- * {@code structureBox} the fog and the engine audio are gated on — because the disguise has to cover
- * the whole walk, not only the room at the end of it.</p>
+ * <p>The box is the structure's (corridors and stamped room copies together, the same
+ * {@code structureBox} the fog and the engine audio are gated on) because the disguise has to cover
+ * the whole walk, not only the room at the end of it. One shift covers the whole box, so the numbers
+ * stay continuous from the corridor into the room and across a twin swap.</p>
  *
  * @param minX   the structure's bounds; outside them this packet does not apply
- * @param yShift blocks to add to a displayed Y inside the box. {@code 0} means "no disguise", which
- *               is also what a fresh client assumes
+ * @param xShift blocks to add to a displayed X inside the box
+ * @param yShift blocks to add to a displayed Y inside the box
+ * @param zShift blocks to add to a displayed Z inside the box. All three {@code 0} means "no
+ *               disguise", which is also what a fresh client assumes
  */
 public record PortalRoomDepthPacket(int minX, int minY, int minZ, int maxX, int maxY, int maxZ,
-                                    int yShift) implements CustomPacketPayload {
+                                    int xShift, int yShift, int zShift) implements CustomPacketPayload {
 
     /** What the server sends to hand the debug screen back its honest numbers. */
     public static PortalRoomDepthPacket none() {
-        return new PortalRoomDepthPacket(0, 0, 0, 0, 0, 0, 0);
+        return new PortalRoomDepthPacket(0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
 
     /**
      * True when this describes a real structure rather than {@link #none()}.
      *
-     * <p>Tested on the box rather than on {@link #yShift}: a shift of zero is a legitimate answer for
+     * <p>Tested on the box rather than on the shifts: a shift of zero is a legitimate answer for
      * a twin that happens to sit level with the train, and treating it as "no structure" would be
      * harmless today but wrong the moment anything else rides this packet.</p>
      */
@@ -74,11 +77,14 @@ public record PortalRoomDepthPacket(int minX, int minY, int minZ, int maxX, int 
                 buf.writeVarInt(packet.maxX);
                 buf.writeVarInt(packet.maxY);
                 buf.writeVarInt(packet.maxZ);
+                buf.writeVarInt(packet.xShift);
                 buf.writeVarInt(packet.yShift);
+                buf.writeVarInt(packet.zShift);
             },
             buf -> new PortalRoomDepthPacket(
                 buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
-                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt(),
+                buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
 
     @Override
     public Type<? extends CustomPacketPayload> type() {

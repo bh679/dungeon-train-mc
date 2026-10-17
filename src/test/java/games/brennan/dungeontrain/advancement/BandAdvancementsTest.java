@@ -107,8 +107,23 @@ final class BandAdvancementsTest {
         assertEquals(new HashSet<>(BandAdvancements.ALL), new HashSet<>(ids));
         assertEquals(ids.size(), new HashSet<>(ids).size());
         for (BandAdvancements.Trigger t : BandAdvancements.triggers()) {
-            assertTrue(t.depth() > 0, t.id());
+            // The Reassembly gates on its own reveal fraction instead (see reassemblyDepthFits).
+            if (!BandAdvancements.REASSEMBLY.equals(t.id())) assertTrue(t.depth() > 0, t.id());
         }
+    }
+
+    @Test
+    @DisplayName("the shipped Reassembly is long enough to reach Reassembly Required in, with room to spare")
+    void reassemblyDepthFits() {
+        CycleLayout layout = parse(CycleLayout.DEFAULT_ORDER);
+        int i = layout.indexOfOccurrence(CycleLayout.Type.UPSIDE_DOWN, 0);
+        assertTrue(i >= 0);
+        long len = layout.udReassembly(layout.slot(i));
+        double f = BandAdvancements.REASSEMBLY_DEPTH_FRACTION;
+        assertTrue(f > 0.0 && f < 1.0);
+        // The scan runs once a second; leave far more than a second of riding past the gate, both ways.
+        assertTrue(len * (1.0 - f) >= 500, "forward window " + len * (1.0 - f));
+        assertTrue(len * f >= 500, "reverse window " + len * f);
     }
 
     // ---- reverse journey ---------------------------------------------------------------------
@@ -152,7 +167,7 @@ final class BandAdvancementsTest {
         List<String> ids = BandAdvancements.reverseTriggers().stream().map(BandAdvancements.Trigger::id).toList();
         assertEquals(SHIPPED_REVERSE, ids);
         for (BandAdvancements.Trigger t : BandAdvancements.reverseTriggers()) {
-            assertTrue(t.depth() > 0, t.id());
+            if (!t.id().equals(BandAdvancements.reverseId(BandAdvancements.REASSEMBLY))) assertTrue(t.depth() > 0, t.id());
             assertTrue(BandAdvancements.isBackwards("secrete_menu/" + t.id()), t.id());
         }
         assertTrue(BandAdvancements.isBackwards("secrete_menu/root"));
