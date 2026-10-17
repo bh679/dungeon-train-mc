@@ -26943,6 +26943,26 @@
       "released": true,
       "released_in": "v0.1322.0",
       "released_at": "2026-10-16T17:52:28Z"
+    },
+    {
+      "id": "playermob-spawn-clear-floor",
+      "version": "0.1323.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Player mobs no longer spawn stuck inside furniture",
+      "summary": "Player mobs and echoes now appear on an open patch of carriage floor. Before, one could land inside a log, table or pillar in the middle of a carriage and suffocate before you ever met it.",
+      "highlights": [
+        "A blocked carriage centre now moves the spawn to the nearest open spot.",
+        "Low blocks like carpets and slabs are stood on rather than spawned into."
+      ],
+      "pr": 2069,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
