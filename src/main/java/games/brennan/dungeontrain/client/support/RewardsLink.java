@@ -20,6 +20,12 @@ public final class RewardsLink {
 
     public static final String COMMAND = "/dungeontrain-rewards";
 
+    /**
+     * Whether the death pages show their way in. Off until the Community Rewards page is finished;
+     * flip it when {@code CommunityRewardsScreen} lands.
+     */
+    public static final boolean PAGE_READY = false;
+
     private RewardsLink() {}
 
     /** Open the Community Rewards page over {@code parent}; Done returns there. */
