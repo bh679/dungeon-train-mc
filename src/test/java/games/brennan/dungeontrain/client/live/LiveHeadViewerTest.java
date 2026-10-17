@@ -83,4 +83,13 @@ class LiveHeadViewerTest {
         assertFalse(LiveHeadViewer.showingOwnBroadcast(waiting, mine), "no picture yet");
         assertFalse(LiveHeadViewer.showingOwnBroadcast(own, null));
     }
+
+    @Test
+    void labelsShrinkToTheBoxAndNeverVanish() {
+        assertEquals(1f, LiveHeadViewer.fitScale(50, 160, 3), "fits: drawn at full size");
+        assertEquals(1f, LiveHeadViewer.fitScale(154, 160, 3), "exactly fits inside the padding");
+        assertEquals(0.5f, LiveHeadViewer.fitScale(148, 80, 3), 1e-6, "twice too wide: half size");
+        assertTrue(LiveHeadViewer.fitScale(100_000, 80, 3) >= 0.1f, "a floor, never invisible");
+        assertEquals(1f, LiveHeadViewer.fitScale(0, 80, 3), "empty text is not a division by zero");
+    }
 }
