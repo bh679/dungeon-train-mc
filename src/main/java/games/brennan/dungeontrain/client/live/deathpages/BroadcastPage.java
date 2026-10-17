@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.client.live.life.LiveDeathStory;
 import games.brennan.dungeontrain.client.live.life.LiveDeathStory.Story;
 import games.brennan.dungeontrain.client.live.life.LiveLifeStats;
 import games.brennan.dungeontrain.client.live.life.LiveRewards;
+import games.brennan.dungeontrain.client.support.RewardsLink;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -24,7 +25,8 @@ import static games.brennan.dungeontrain.client.live.deathpages.LiveDeathText.tr
  * "The broadcast": the death page about the player and their stream. Time on air over every stint of
  * the life, the moments and photos they put on air, how many times they picked the Eye up, the delay
  * their viewers lived with, the death clip and who took the Eye after them, and whether the stream
- * outlives them (Replays Kept), with a small aqua link to the Community Rewards page.
+ * outlives them (Replays Kept), with a small aqua link to the Community Rewards page. The
+ * status line is left out until {@link RewardsLink#PAGE_READY}.
  */
 public final class BroadcastPage {
 
@@ -140,6 +142,7 @@ public final class BroadcastPage {
     }
 
     private int drawStatus(GuiGraphics g, LiveRewards rewards, long now, int cx, int w, int y) {
+        if (!RewardsLink.PAGE_READY) return y;
         Font font = chrome.font();
         LiveRewards.Reward replays = rewards.find(LiveRewards.REPLAYS_KEPT);
         Component status = replays != null && replays.activeUntilMs() > now
