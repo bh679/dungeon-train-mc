@@ -158,6 +158,16 @@ class PlayerActivityTrackerTest {
     }
 
     @Test
+    @DisplayName("paused, mouse idle and input idle are AFK; not getting anywhere is not")
+    void afkReasonsBlockAdvancements() {
+        assertTrue(PlayerActivityTracker.isAfk(Reason.PAUSED));
+        assertTrue(PlayerActivityTracker.isAfk(Reason.MOUSE_IDLE));
+        assertTrue(PlayerActivityTracker.isAfk(Reason.INPUT_IDLE));
+        assertFalse(PlayerActivityTracker.isAfk(Reason.NO_PROGRESS));
+        assertFalse(PlayerActivityTracker.isAfk(Reason.TRACKING));
+    }
+
+    @Test
     @DisplayName("the HUD reads reasons by ordinal — the wire contract must not drift")
     void reasonOrdinalsMatchTheHudSwitch() {
         assertEquals(0, Reason.TRACKING.ordinal());

@@ -64,6 +64,10 @@ import java.util.UUID;
  * turning, so sampled yaw sits still however much the mouse moves. The client reports that case
  * directly — see {@link games.brennan.dungeontrain.net.ClientInputPacket}.</p>
  *
+ * <p>The same signal decides whether a player can earn advancements: {@link #isAfk} (paused, mouse
+ * idle or input idle — but not {@link Reason#NO_PROGRESS}, which is a player at the keyboard) makes
+ * {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion.</p>
+ *
  * <p>All state is transient and keyed by UUID — dropped on logout, seeded on login and respawn. A
  * player the tracker has never seen counts as active, so a missed login can only over-count, never
  * silently freeze someone's timers.</p>
@@ -161,6 +165,19 @@ public final class PlayerActivityTracker {
     /** Which reasons leave time on the train running — only one. */
     public static boolean countsTrain(Reason reason) {
         return reason == Reason.TRACKING;
+    }
+
+    /**
+     * Is a player with this reason away from the keyboard? Paused, mouse idle and input idle are;
+     * {@link Reason#NO_PROGRESS} is not — that player is playing, just not walking the train.
+     */
+    public static boolean isAfk(Reason reason) {
+        return reason == Reason.PAUSED || reason == Reason.MOUSE_IDLE || reason == Reason.INPUT_IDLE;
+    }
+
+    /** Is this player away from the keyboard? Gates advancement earning. */
+    public static boolean isAfk(ServerPlayer player) {
+        return isAfk(reason(player));
     }
 
     /**
