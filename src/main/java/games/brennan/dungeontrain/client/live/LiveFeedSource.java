@@ -129,6 +129,7 @@ public final class LiveFeedSource implements IVideoSource {
         }
         switch (FfmpegSupport.state()) {
             case DOWNLOADING -> {
+                FfmpegSupport.watch();
                 return new Frame(Kind.DOWNLOADING, url, replay, VistaModClient.getFFmpegDownloadProgress(), false);
             }
             case OFF, FAILED -> {
