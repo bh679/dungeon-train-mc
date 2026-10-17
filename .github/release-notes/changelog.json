@@ -27306,7 +27306,7 @@
     },
     {
       "id": "hide-unearnable-advancement",
-      "version": "0.1340.0",
+      "version": "0.1341.0",
       "type": "fix",
       "tags": [
         "fix",
