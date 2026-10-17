@@ -422,6 +422,11 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.tradeeverything.mixins.json"
 
+# VanillaBackport (required dep) — creaking hearts wake and spawn their Creaking by day
+# too, not only at night (see CreakingHeartAlwaysNightMixin).
+[[mixins]]
+    config="${mod_id}.vanillabackport.mixins.json"
+
 # Vista (required dep) — TVs toggle on a redstone pulse or an empty-hand click instead of
 # following a steady signal (see compat/vista/TvPowerToggle).
 [[mixins]]
