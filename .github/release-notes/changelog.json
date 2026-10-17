@@ -27182,11 +27182,10 @@
       "type": "fix",
       "tags": [
         "fix",
-        "performance",
-        "world"
+        "performance"
       ],
-      "title": "Hanging vines in the Nether stay on their trees",
-      "summary": "Riding through one of the Nether stretches, hanging vines were breaking off by the thousand as the land loaded in, and all those dropped vines made the game stutter. The vines now stay put, and the ride is smooth again.",
+      "title": "Less lag in the Nether",
+      "summary": "Thousands of dropped vines were piling up as the land loaded in and slowing the game. They no longer drop.",
       "highlights": [],
       "addresses": [
         "lag"
