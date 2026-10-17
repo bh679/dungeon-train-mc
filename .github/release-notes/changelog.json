@@ -27251,6 +27251,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "afk-auto-pause",
+      "version": "0.1337.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Pauses when you step away",
+      "summary": "The game now pauses itself when you are away from the keyboard.",
+      "pr": 2090,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
