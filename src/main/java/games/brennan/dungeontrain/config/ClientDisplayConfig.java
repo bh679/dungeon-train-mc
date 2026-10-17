@@ -213,6 +213,8 @@ public final class ClientDisplayConfig {
 
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
+    /** Open the pause menu when AFK is detected. See {@link #isAfkPauseEnabled()}. */
+    public static final ModConfigSpec.BooleanValue AFK_PAUSE_ENABLED;
     public static final ModConfigSpec.DoubleValue TRAIN_ENGINE_VOLUME;
     public static final ModConfigSpec.BooleanValue DELETE_WORLD_ON_REBOARD;
     /** Tiles per row in the Train Builder's Open screen grid. See {@link #getBuilderTilesPerRow()}. */
@@ -398,6 +400,7 @@ public final class ClientDisplayConfig {
         PORTAL_ROOM_HIDE_DISTANT_HORIZONS = pair.getLeft().portalRoomHideDistantHorizons;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
+        AFK_PAUSE_ENABLED = pair.getLeft().afkPauseEnabled;
         TRAIN_ENGINE_VOLUME = pair.getLeft().trainEngineVolume;
         DELETE_WORLD_ON_REBOARD = pair.getLeft().deleteWorldOnReboard;
         BUILDER_TILES_PER_ROW = pair.getLeft().builderTilesPerRow;
@@ -551,6 +554,12 @@ public final class ClientDisplayConfig {
                 .comment("Framerate to cap to while paused / unfocused / minimised. This can only ever LOWER your framerate — if your Max Framerate video setting is already below this, that lower value is kept. Lower saves more power; the pause menu still feels responsive well below 30.")
                 .defineInRange("fps", FramerateThrottle.DEFAULT_THROTTLE_FPS,
                         FramerateThrottle.MIN_THROTTLE_FPS, FramerateThrottle.MAX_THROTTLE_FPS);
+        b.pop();
+
+        b.push("afkPause");
+        ModConfigSpec.BooleanValue afkPauseEnabled = b
+                .comment("Open the pause menu when you go AFK: the mouse has not moved for 30 seconds, or there has been no other input for 5 minutes (the same rules that stop your time on the train). Never in Free Play. In singleplayer this freezes the world, so the train does not carry you into danger while you are away. In multiplayer it only opens the menu. Set false to never pause automatically.")
+                .define("enabled", true);
         b.pop();
 
         b.push("sound");
@@ -876,7 +885,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
-                framerateThrottleEnabled, framerateThrottleFps, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
+                framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
                 menuRenderDistance,
@@ -1402,6 +1411,14 @@ public final class ClientDisplayConfig {
      */
     public static boolean isFramerateThrottleEnabled() {
         return isLoaded() && FRAMERATE_THROTTLE_ENABLED.get();
+    }
+
+    /**
+     * Open the pause menu when AFK is detected? Defaults to {@code true}; {@code false} pre-load so
+     * a config that never loads leaves the game unpaused.
+     */
+    public static boolean isAfkPauseEnabled() {
+        return isLoaded() && AFK_PAUSE_ENABLED.get();
     }
 
     /**
@@ -2082,6 +2099,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue portalRoomHideDistantHorizons,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
+            ModConfigSpec.BooleanValue afkPauseEnabled,
             ModConfigSpec.DoubleValue trainEngineVolume,
             ModConfigSpec.BooleanValue skyboxPunchEnabled,
             ModConfigSpec.BooleanValue skyboxBlocksOn,
