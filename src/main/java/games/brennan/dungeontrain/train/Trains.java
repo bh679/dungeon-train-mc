@@ -7,8 +7,10 @@ import net.minecraft.server.level.ServerLevel;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -229,6 +231,42 @@ public final class Trains {
         Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
         if (map == null || !map.containsKey(anchorPIdx)) return;
         map.put(anchorPIdx, ship);
+    }
+
+    /**
+     * Point every stale registry handle at the live instance of the same sub-level, when one is
+     * loaded. Returns the anchors re-pointed, in no particular order (empty when nothing changed).
+     *
+     * <p><b>Why {@link #refreshHandle} alone is not enough.</b> That is called only by DT's own
+     * reload ({@code TrainCarriageAppender.adoptReloadedGroup}). Sable also brings a sub-level back
+     * on its own: an autosave writes the hidden holding chunks to disk and evicts them, and loading
+     * that chunk again (the train rolling back over the spot where the group was culled) restores
+     * it as a NEW instance. That instance shows up in {@code findAll()} and rides with the train,
+     * but the registry kept the removed handle — and every {@link #knownGroups} reader that gates
+     * on {@link ManagedShip#isResident()} passed over the group for good. For a dimensional
+     * carriage that meant the room was never stamped and the corridor ended at the black centre
+     * plate.</p>
+     *
+     * <p>Matches on the stable {@link ManagedShip#subLevelId()} and only ever replaces a
+     * NON-resident handle with a resident one, so a live handle is never swapped and no anchor is
+     * ever added — registration stays the spawn path's job.</p>
+     */
+    public static List<Integer> adoptResurfaced(UUID trainId, Collection<ManagedShip> visible) {
+        Map<Integer, ManagedShip> map = SPAWNED_GROUPS.get(trainId);
+        if (map == null || map.isEmpty() || visible.isEmpty()) return List.of();
+        Map<UUID, ManagedShip> liveById = new HashMap<>(visible.size() * 2);
+        for (ManagedShip ship : visible) {
+            if (ship != null && ship.isResident()) liveById.put(ship.subLevelId(), ship);
+        }
+        List<Integer> adopted = new ArrayList<>();
+        for (Map.Entry<Integer, ManagedShip> e : map.entrySet()) {
+            ManagedShip registered = e.getValue();
+            if (registered == null || registered.isResident()) continue;
+            ManagedShip live = liveById.get(registered.subLevelId());
+            if (live == null || live == registered) continue;
+            if (map.replace(e.getKey(), registered, live)) adopted.add(e.getKey());
+        }
+        return adopted;
     }
 
     /** Clear every train registration. Wired to server stop and to {@code TrainAssembler.deleteAllTrains}. */
