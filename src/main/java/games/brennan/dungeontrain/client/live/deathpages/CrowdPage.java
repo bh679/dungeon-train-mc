@@ -87,13 +87,14 @@ public final class CrowdPage {
 
         int narrH = lines(font, narration(s, top.size()), w) + 8; // the line alone, when nobody is shown
         int questionH = lines(font, question, w) + 4;
-        int pitchH = lines(font, pitchText, w) + 2;
+        boolean selling = RewardsLink.PAGE_READY; // the question, pitch and button wait for Community Rewards
+        int pitchH = selling ? lines(font, pitchText, w) + 2 + 4 + BUTTON_H : 0;
         String narration = narration(s, top.size());
-        boolean chat = !last.isEmpty(), train = true, source = true, ask = true;
+        boolean chat = !last.isEmpty(), train = true, source = true, ask = selling;
         int figureH = FIGURE_H;
         int budget = maxY - y;
         for (int pass = 0; pass < 8; pass++) {
-            int h = DeathScreenText.KICKER_STEP + 32 + pitchH + (RewardsLink.PAGE_READY ? 4 + BUTTON_H : 0)
+            int h = DeathScreenText.KICKER_STEP + 32 + pitchH
                 + (train ? DeathScreenText.TRAIN_STEP : 0)
                 + (podium ? rowHeight(font, narration, top.get(0), w, source, figureH) + 6 : narrH)
                 + (chat ? last.size() * (font.lineHeight + 2) + 8 : 0)
@@ -133,9 +134,9 @@ public final class CrowdPage {
         y += 32;
 
         if (chat) y = drawChat(g, last, left, w, y) + 4;
+        if (!selling) return y;
         if (ask) y = DeathScreenText.drawQuestion(g, font, question, cx, w, y, chrome.fade(DeathScreenText.QUESTION));
         y = DeathScreenText.drawNarration(g, font, pitchText, cx, w, y - 2, chrome.fade(DeathScreenText.NARR));
-        if (!RewardsLink.PAGE_READY) return y;
         y += 4;
         btnX = cx - BUTTON_W / 2;
         btnY = Math.min(y, maxY - BUTTON_H); // a translation too long for even the compact page keeps the button clear of Continue
