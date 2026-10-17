@@ -26977,6 +26977,23 @@
       "released": true,
       "released_in": "v0.1324.0",
       "released_at": "2026-10-17T03:15:02Z"
+    },
+    {
+      "id": "link-codes-off-stream",
+      "version": "0.1325.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Link codes stay off your stream",
+      "summary": "When you link your Discord or Twitch while wearing the Live Eye, your viewers no longer see the code. Chat is briefly hidden from the stream while the code is on your screen, so nobody watching can use it before you do.",
+      "highlights": [],
+      "pr": 2071,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
