@@ -36,13 +36,15 @@ import java.util.Map;
  * @param takenWhileAlive the Eye was taken before the death, not after it
  * @param segmentSeconds the segment length the latest stint ran at
  * @param crowd         the relay's longest watchers of this life, longest first
+ * @param authorInfo    each chat author's {@link Author} (source, uuid), for the podium ranking
  */
 public record LiveLifeStats(String lifeId, long closedOnAirMs, long stintStartMs, long lastBeatMs, int stints,
                             int moments, int photos, int peakViewers, int chatLines,
                             Map<String, Integer> perAuthor, List<ChatMoment> recentChat,
                             Map<Long, Integer> reactions, int votesWon, int votesClosed, List<String> votesSeen,
                             long lastStopMs, String lastStopReason, boolean diedOnAir,
-                            String takenBy, boolean takenWhileAlive, int segmentSeconds, List<Watcher> crowd) {
+                            String takenBy, boolean takenWhileAlive, int segmentSeconds, List<Watcher> crowd,
+                            Map<String, Author> authorInfo) {
 
     /** How many recent chat lines are kept; the page shows two from the final minute. */
     public static final int RECENT_CHAT = 6;
@@ -51,6 +53,9 @@ public record LiveLifeStats(String lifeId, long closedOnAirMs, long stintStartMs
 
     /** One chat line, as the crowd page quotes it. */
     public record ChatMoment(long ts, String author, String text) {}
+
+    /** Where a chat author spoke from ({@code game}, {@code web}, {@code twitch}, {@code discord}) and, in game, who. */
+    public record Author(String source, @Nullable String uuid) {}
 
     /** One of the longest watchers: {@code source} is {@code game} or {@code web}; name/uuid may be null. */
     public record Watcher(@Nullable String name, @Nullable String uuid, String source, long seconds) {}
@@ -64,11 +69,12 @@ public record LiveLifeStats(String lifeId, long closedOnAirMs, long stintStartMs
         lastStopReason = lastStopReason == null ? "" : lastStopReason;
         takenBy = takenBy == null ? "" : takenBy;
         crowd = List.copyOf(crowd == null ? List.of() : crowd);
+        authorInfo = Map.copyOf(authorInfo == null ? Map.of() : authorInfo);
     }
 
     public static LiveLifeStats empty(String lifeId) {
         return new LiveLifeStats(lifeId, 0, 0, 0, 0, 0, 0, 0, 0, Map.of(), List.of(), Map.of(), 0, 0, List.of(),
-            0, "", false, "", false, 0, List.of());
+            0, "", false, "", false, 0, List.of(), Map.of());
     }
 
     /** Whether this life was broadcast at all — the gate for both death pages. */
@@ -114,14 +120,14 @@ public record LiveLifeStats(String lifeId, long closedOnAirMs, long stintStartMs
         if (stintStartMs > 0) return this;
         return new LiveLifeStats(lifeId, closedOnAirMs, now, now, stints + 1, moments, photos, peakViewers, chatLines,
             perAuthor, recentChat, reactions, votesWon, votesClosed, votesSeen, lastStopMs, lastStopReason,
-            diedOnAir, takenBy, takenWhileAlive, segS, crowd);
+            diedOnAir, takenBy, takenWhileAlive, segS, crowd, authorInfo);
     }
 
     public LiveLifeStats stintEnded(long now, @Nullable String reason) {
         if (stintStartMs <= 0) return this;
         return new LiveLifeStats(lifeId, closedOnAirMs + Math.max(0, now - stintStartMs), 0, now, stints, moments, photos,
             peakViewers, chatLines, perAuthor, recentChat, reactions, votesWon, votesClosed, votesSeen, now,
-            reason == null ? "" : reason, diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd);
+            reason == null ? "" : reason, diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd, authorInfo);
     }
 
     /** A stint left running by a crash or a killed game: close it at its last heartbeat. */
@@ -132,24 +138,34 @@ public record LiveLifeStats(String lifeId, long closedOnAirMs, long stintStartMs
     public LiveLifeStats heartbeat(long now, int viewers) {
         return new LiveLifeStats(lifeId, closedOnAirMs, stintStartMs, stintStartMs > 0 ? now : lastBeatMs, stints,
             moments, photos, Math.max(peakViewers, viewers), chatLines, perAuthor, recentChat, reactions, votesWon,
-            votesClosed, votesSeen, lastStopMs, lastStopReason, diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd);
+            votesClosed, votesSeen, lastStopMs, lastStopReason, diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd, authorInfo);
     }
 
     public LiveLifeStats moment(boolean photo) {
         return new LiveLifeStats(lifeId, closedOnAirMs, stintStartMs, lastBeatMs, stints, moments + 1,
             photos + (photo ? 1 : 0), peakViewers, chatLines, perAuthor, recentChat, reactions, votesWon, votesClosed,
-            votesSeen, lastStopMs, lastStopReason, diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd);
+            votesSeen, lastStopMs, lastStopReason, diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd, authorInfo);
     }
 
     public LiveLifeStats chat(long ts, String author, String text) {
+        return chat(ts, author, text, null);
+    }
+
+    /** A chat line, with where its author spoke from (null keeps what is known). */
+    public LiveLifeStats chat(long ts, String author, String text, @Nullable Author from) {
         Map<String, Integer> authors = new LinkedHashMap<>(perAuthor);
         if (authors.containsKey(author) || authors.size() < MAX_KEYS) authors.merge(author, 1, Integer::sum);
+        Map<String, Author> info = authorInfo;
+        if (from != null && authors.containsKey(author)) {
+            info = new LinkedHashMap<>(authorInfo);
+            info.put(author, from);
+        }
         List<ChatMoment> recent = new ArrayList<>(recentChat);
         recent.add(new ChatMoment(ts, author, text));
         if (recent.size() > RECENT_CHAT) recent = recent.subList(recent.size() - RECENT_CHAT, recent.size());
         return new LiveLifeStats(lifeId, closedOnAirMs, stintStartMs, lastBeatMs, stints, moments, photos, peakViewers,
             chatLines + 1, authors, recent, reactions, votesWon, votesClosed, votesSeen, lastStopMs, lastStopReason,
-            diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd);
+            diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd, info);
     }
 
     /** The latest reaction count on one of the streamer's own lines (the relay sends the whole tally). */
@@ -159,7 +175,7 @@ public record LiveLifeStats(String lifeId, long closedOnAirMs, long stintStartMs
         next.put(seq, Math.max(0, count));
         return new LiveLifeStats(lifeId, closedOnAirMs, stintStartMs, lastBeatMs, stints, moments, photos, peakViewers,
             chatLines, perAuthor, recentChat, next, votesWon, votesClosed, votesSeen, lastStopMs, lastStopReason,
-            diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd);
+            diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd, authorInfo);
     }
 
     /** A takeover vote on this streamer's Eye closed; {@code kept} when the room said no. Once per id. */
@@ -170,14 +186,14 @@ public record LiveLifeStats(String lifeId, long closedOnAirMs, long stintStartMs
         if (seen.size() > MAX_KEYS) seen = seen.subList(seen.size() - MAX_KEYS, seen.size());
         return new LiveLifeStats(lifeId, closedOnAirMs, stintStartMs, lastBeatMs, stints, moments, photos, peakViewers,
             chatLines, perAuthor, recentChat, reactions, votesWon + (kept ? 1 : 0), votesClosed + 1, seen, lastStopMs,
-            lastStopReason, diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd);
+            lastStopReason, diedOnAir, takenBy, takenWhileAlive, segmentSeconds, crowd, authorInfo);
     }
 
     public LiveLifeStats died() {
         if (stintStartMs <= 0) return this;
         return new LiveLifeStats(lifeId, closedOnAirMs, stintStartMs, lastBeatMs, stints, moments, photos, peakViewers,
             chatLines, perAuthor, recentChat, reactions, votesWon, votesClosed, votesSeen, lastStopMs, lastStopReason,
-            true, takenBy, takenWhileAlive, segmentSeconds, crowd);
+            true, takenBy, takenWhileAlive, segmentSeconds, crowd, authorInfo);
     }
 
     /** {@code by} took the Eye; {@code alive}: the streamer had not died yet. */
@@ -185,13 +201,13 @@ public record LiveLifeStats(String lifeId, long closedOnAirMs, long stintStartMs
         if (by == null || by.isBlank()) return this;
         return new LiveLifeStats(lifeId, closedOnAirMs, stintStartMs, lastBeatMs, stints, moments, photos, peakViewers,
             chatLines, perAuthor, recentChat, reactions, votesWon, votesClosed, votesSeen, lastStopMs, lastStopReason,
-            diedOnAir, by, alive, segmentSeconds, crowd);
+            diedOnAir, by, alive, segmentSeconds, crowd, authorInfo);
     }
 
     public LiveLifeStats crowd(List<Watcher> top) {
         if (top == null || top.isEmpty()) return this;
         return new LiveLifeStats(lifeId, closedOnAirMs, stintStartMs, lastBeatMs, stints, moments, photos, peakViewers,
             chatLines, perAuthor, recentChat, reactions, votesWon, votesClosed, votesSeen, lastStopMs, lastStopReason,
-            diedOnAir, takenBy, takenWhileAlive, segmentSeconds, top);
+            diedOnAir, takenBy, takenWhileAlive, segmentSeconds, top, authorInfo);
     }
 }

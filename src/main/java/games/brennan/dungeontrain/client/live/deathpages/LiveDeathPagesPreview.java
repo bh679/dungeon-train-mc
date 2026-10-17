@@ -152,17 +152,27 @@ public final class LiveDeathPagesPreview {
     // ---- made-up lives ----------------------------------------------------------------------------
 
     /** Two stints: 10 minutes long ago, then one from {@code secondStart} still running. */
+    private static final String MOTH = "069a79f444e94726a5befca90e38aaf5";
+    private static final String ROOK = "853c80ef3c3749fdaa49938b674adae6";
+    private static final LiveLifeStats.Author GAME_MOTH = new LiveLifeStats.Author("game", MOTH);
+    private static final LiveLifeStats.Author GAME_ROOK = new LiveLifeStats.Author("game", ROOK);
+    private static final LiveLifeStats.Author WEB = new LiveLifeStats.Author("web", null);
+    private static final LiveLifeStats.Author TWITCH = new LiveLifeStats.Author("twitch", null);
+
     private static LiveLifeStats watched(long now, long secondStart, int peak) {
         return LiveLifeStats.empty("").stintStarted(secondStart - 3_600_000L, 10)
             .stintEnded(secondStart - 3_000_000L, "left").stintStarted(secondStart, 10)
             .heartbeat(now - 5000, peak)
             .moment(false).moment(true).moment(false).moment(true)
-            .chat(now - 200_000, "Rook", "keep left").chat(now - 120_000, "Rook", "the bridge!")
-            .chat(now - 40_000, "Moth", "noooo the bridge").chat(now - 20_000, "Kestrel", "gg, that was a long one")
+            .chat(now - 300_000, "Rook", "keep left", GAME_ROOK).chat(now - 250_000, "Rook", "jump", GAME_ROOK)
+            .chat(now - 200_000, "Rook", "left again", GAME_ROOK).chat(now - 120_000, "Rook", "the bridge!", GAME_ROOK)
+            .chat(now - 110_000, "Rook", "go go", GAME_ROOK).chat(now - 100_000, "twitchfan", "pog", TWITCH)
+            .chat(now - 40_000, "Moth", "noooo the bridge", GAME_MOTH).chat(now - 20_000, "Kestrel", "gg, that was a long one", WEB)
             .reacted(101, 5).reacted(102, 4).voteClosed("p1", true)
-            .crowd(List.of(new Watcher("Moth", "069a79f444e94726a5befca90e38aaf5", "game", 4140),
+            .crowd(List.of(new Watcher("Moth", MOTH, "game", 4140),
                 new Watcher("Kestrel", null, "web", 3120),
-                new Watcher(null, null, "web", 2820)));
+                new Watcher(null, null, "web", 2820),
+                new Watcher("Rook", ROOK, "game", 2600)));
     }
 
     private static LiveLifeStats onAir(long now) {

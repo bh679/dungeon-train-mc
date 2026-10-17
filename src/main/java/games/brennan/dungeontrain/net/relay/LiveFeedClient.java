@@ -446,16 +446,19 @@ public final class LiveFeedClient {
 
     /**
      * The longest watchers of the streamer's life so far, from a presign or stop reply's
-     * {@code crowd.top} (dp-relay live-crowd.js), longest first. Empty against an older relay or a
+     * {@code crowd.top} (dp-relay live-crowd.js), longest first, up to {@link #CROWD_MAX}. Empty against an older relay or a
      * malformed reply; malformed entries are skipped.
      */
+    /** How many watchers the relay sends; the mod ranks its own podium from them plus the chat. */
+    static final int CROWD_MAX = 10;
+
     public static List<LiveLifeStats.Watcher> parseCrowd(Result r) {
         if (!r.ok() || !r.body().has("crowd") || !r.body().get("crowd").isJsonObject()) return List.of();
         JsonObject crowd = r.body().getAsJsonObject("crowd");
         if (!crowd.has("top") || !crowd.get("top").isJsonArray()) return List.of();
         List<LiveLifeStats.Watcher> out = new ArrayList<>();
         for (JsonElement e : crowd.getAsJsonArray("top")) {
-            if (!e.isJsonObject() || out.size() >= 3) continue;
+            if (!e.isJsonObject() || out.size() >= CROWD_MAX) continue;
             JsonObject o = e.getAsJsonObject();
             try {
                 long seconds = o.has("seconds") ? o.get("seconds").getAsLong() : 0;

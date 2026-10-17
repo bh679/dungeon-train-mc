@@ -52,7 +52,8 @@ public final class LiveLifeChat {
             } else if (mine(line, myId)) {
                 rememberMine(line.seq());
             } else if (counts(line)) {
-                LiveLifeEvents.chat(line.ts() > 0 ? line.ts() : System.currentTimeMillis(), line.author(), line.content());
+                LiveLifeEvents.chat(line.ts() > 0 ? line.ts() : System.currentTimeMillis(), line.author(), line.content(),
+                    authorOf(line));
             }
         }
     }
@@ -73,6 +74,19 @@ public final class LiveLifeChat {
         if ("approved".equals(p.state()) || "rejected".equals(p.state())) {
             LiveLifeEvents.voteClosed(p.id(), "rejected".equals(p.state()));
         }
+    }
+
+    /** Where {@code line}'s author spoke from, for the podium ranking. */
+    static LiveLifeStats.Author authorOf(ChatLine line) {
+        String source = switch (line.source()) {
+            case GAME -> "game";
+            case WEB -> "web";
+            case TWITCH -> "twitch";
+            case DISCORD -> "discord";
+            default -> "other";
+        };
+        String uuid = line.source() == Source.GAME && line.uuid() != null ? line.uuid().replace("-", "").toLowerCase(java.util.Locale.ROOT) : null;
+        return new LiveLifeStats.Author(source, uuid);
     }
 
     static boolean mine(ChatLine line, @Nullable String myId) {

@@ -69,8 +69,8 @@ public final class LiveLifeEvents {
     }
 
     /** Someone else said {@code text} in the stream's chat. */
-    public static void chat(long ts, String author, String text) {
-        LiveLifeTracker.update(life(), s -> s.chat(ts, author, text), false, now());
+    public static void chat(long ts, String author, String text, LiveLifeStats.Author from) {
+        LiveLifeTracker.update(life(), s -> s.chat(ts, author, text, from), false, now());
     }
 
     /** One of this streamer's own lines now has {@code count} reactions in all. */

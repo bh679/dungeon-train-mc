@@ -2993,6 +2993,7 @@ public final class NarrativeDeathScreen extends Screen {
         TrainEngineSound.deathScreenActive = false;
         TrainEngineSound.deathFade = 1.0f;
         portrait.clear();
+        if (crowdPage != null) crowdPage.clear();
         // Lift the gallery freeze. The world-leave paths clear the gallery anyway, but if the
         // screen is ever dismissed without disconnecting, capture/offload must resume normally.
         RideSnapshotGallery.unfreeze();

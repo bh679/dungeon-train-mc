@@ -1,11 +1,12 @@
 package games.brennan.dungeontrain.client.live.deathpages;
 
 import games.brennan.dungeontrain.client.DeathScreenText;
+import games.brennan.dungeontrain.client.live.life.CrowdRanking;
+import games.brennan.dungeontrain.client.live.life.CrowdRanking.Ranked;
 import games.brennan.dungeontrain.client.live.life.LiveDeathStory;
 import games.brennan.dungeontrain.client.live.life.LiveDeathStory.Pitch;
 import games.brennan.dungeontrain.client.live.life.LiveLifeStats;
 import games.brennan.dungeontrain.client.live.life.LiveLifeStats.ChatMoment;
-import games.brennan.dungeontrain.client.live.life.LiveLifeStats.Watcher;
 import games.brennan.dungeontrain.client.live.life.LiveRewards;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -20,8 +21,10 @@ import static games.brennan.dungeontrain.client.live.deathpages.LiveDeathText.st
 import static games.brennan.dungeontrain.client.live.deathpages.LiveDeathText.tr;
 
 /**
- * "The crowd": the death page about who watched. A podium of the three who watched this life the
- * longest (skin face, name, watch time, where they watched from), the crowd's numbers, two chat
+ * "The crowd": the death page about who watched. A podium of the three most present viewers this
+ * life, by watch time and chat lines ({@link CrowdRanking}): first place stands in the centre as their
+ * whole skin, second and third show their faces, each with name, watch time, lines said and where
+ * they watched from, the crowd's numbers, two chat
  * lines from the final minute, and the community reward pitch, which changes with what happened to
  * the broadcast and what is already on ({@link LiveDeathStory#pitch}). The buyer is thanked by name.
  */
@@ -35,12 +38,21 @@ public final class CrowdPage {
     private static final int PODIUM_GAP = 10;
     private static final int BUTTON_W = 170;
     private static final int BUTTON_H = 16;
+    /** First place's full figure, feet to crown. */
+    private static final int FIGURE_H = 50;
+    private static final int FACE_AREA = 24;
 
     private final LiveDeathChrome chrome;
+    private final WatcherFigure figure = new WatcherFigure();
     private int btnX, btnY, btnW;
 
     public CrowdPage(LiveDeathChrome chrome) {
         this.chrome = chrome;
+    }
+
+    /** Drop the first-place figure's cached entity. Call from the screen's {@code removed()}. */
+    public void clear() {
+        figure.clear();
     }
 
     /** Whether "See Community Rewards" is under the cursor. */
@@ -51,13 +63,15 @@ public final class CrowdPage {
     /**
      * Draw the page body from {@code y}, keeping it above {@code maxY} (the Continue row): on a short
      * screen the chat lines go first, then the train, then the podium's "where they watched" line,
-     * then the question over the pitch. Returns the y below it.
+     * then the question over the pitch, and last first place's full figure (its face instead).
+     * Returns the y below it.
      */
     public int draw(GuiGraphics g, LiveLifeStats s, LiveRewards rewards, long now, long deathMs,
                     int left, int w, int cx, int y, int maxY) {
         Font font = chrome.font();
         btnW = 0;
-        boolean podium = !s.crowd().isEmpty() && s.peakViewers() > 0;
+        List<Ranked> top = CrowdRanking.podium(s);
+        boolean podium = !top.isEmpty();
         List<ChatMoment> last = s.finalMinute(deathMs > 0 ? deathMs : now, 2);
         Pitch pitch = LiveDeathStory.pitch(s, rewards, now);
         boolean quicker = rewards.active(LiveRewards.QUICKER_STREAMS, now);
@@ -65,22 +79,23 @@ public final class CrowdPage {
         String question = question(pitch, rewards, delay);
         String pitchText = pitchText(pitch, rewards, now);
 
-        int narrH = lines(font, narration(s), w) + 8;
+        int narrH = lines(font, narration(s, top.size()), w) + 8;
         int questionH = lines(font, question, w) + 4;
         int pitchH = lines(font, pitchText, w) + 2;
-        boolean chat = !last.isEmpty(), train = true, source = true, ask = true;
+        boolean chat = !last.isEmpty(), train = true, source = true, ask = true, full = true;
         int budget = maxY - y;
-        for (int pass = 0; pass < 5; pass++) {
+        for (int pass = 0; pass < 6; pass++) {
             int h = DeathScreenText.KICKER_STEP + narrH + 32 + pitchH + 4 + BUTTON_H
                 + (train ? DeathScreenText.TRAIN_STEP : 0)
-                + (podium ? podiumHeight(font, source) + 4 : 0)
+                + (podium ? podiumHeight(font, top, source, full) + 4 : 0)
                 + (chat ? last.size() * (font.lineHeight + 2) + 8 : 0)
                 + (ask ? questionH : 0);
             if (h <= budget) break;
             if (chat) chat = false;
             else if (train) train = false;
             else if (source) source = false;
-            else ask = false;
+            else if (ask) ask = false;
+            else full = false;
         }
 
         DeathScreenText.drawCenteredLine(g, font, tr("crowd.kicker"), cx, y, chrome.fade(DeathScreenText.KICKER));
@@ -89,9 +104,9 @@ public final class CrowdPage {
             chrome.train(g, left, w, y);
             y += DeathScreenText.TRAIN_STEP;
         }
-        y = DeathScreenText.drawNarration(g, font, narration(s), cx, w, y, chrome.fade(DeathScreenText.NARR));
+        y = DeathScreenText.drawNarration(g, font, narration(s, top.size()), cx, w, y, chrome.fade(DeathScreenText.NARR));
         y += 4;
-        if (podium) y = drawPodium(g, s.crowd(), cx, y, source) + 4;
+        if (podium) y = drawPodium(g, top, cx, y, source, full) + 4;
 
         int gap = 4;
         int cw = (w - gap * 4) / 5;
@@ -121,14 +136,10 @@ public final class CrowdPage {
         return font.split(DeathScreenText.styled(text), w - 8).size() * (font.lineHeight + 2);
     }
 
-    private static int podiumHeight(Font font, boolean source) {
-        return 24 + 3 + (source ? 3 : 2) * (font.lineHeight + 1);
-    }
-
-    private static String narration(LiveLifeStats s) {
+    private static String narration(LiveLifeStats s, int placed) {
         if (s.peakViewers() <= 0) return str("crowd.narr.nobody");
         String who = num(s.peakViewers());
-        return switch (Math.min(3, s.crowd().size())) {
+        return switch (Math.min(3, placed)) {
             case 3 -> str("crowd.narr.three", who);
             case 2 -> str("crowd.narr.two", who);
             case 1 -> str("crowd.narr.one", who);
@@ -136,32 +147,78 @@ public final class CrowdPage {
         };
     }
 
-    private int drawPodium(GuiGraphics g, List<Watcher> top, int cx, int y, boolean source) {
+    private static int podiumHeight(Font font, List<Ranked> top, boolean source, boolean full) {
+        int rows = 0;
+        for (Ranked r : top) rows = Math.max(rows, detailRows(r, source));
+        return (full ? FIGURE_H : FACE_AREA) + 3 + (1 + rows) * (font.lineHeight + 1);
+    }
+
+    private static int detailRows(Ranked r, boolean source) {
+        return (r.seconds() > 0 ? 1 : 0) + (r.messages() > 0 ? 1 : 0) + (source && sourceKey(r) != null ? 1 : 0);
+    }
+
+    /**
+     * Second, first, third from left to right, the way a podium reads. First place stands as their
+     * whole skin when {@code full}, otherwise as a larger face.
+     */
+    private int drawPodium(GuiGraphics g, List<Ranked> top, int cx, int y, boolean source, boolean full) {
         Font font = chrome.font();
         int n = Math.min(3, top.size());
+        int[] order = n == 1 ? new int[] {0} : n == 2 ? new int[] {1, 0} : new int[] {1, 0, 2};
         int total = n * PODIUM_W + (n - 1) * PODIUM_GAP;
         int x0 = cx - total / 2;
+        int area = full ? FIGURE_H : FACE_AREA;
         int bottom = y;
-        for (int i = 0; i < n; i++) {
-            Watcher wt = top.get(i);
-            int colCx = x0 + i * (PODIUM_W + PODIUM_GAP) + PODIUM_W / 2;
-            int size = i == 0 ? 24 : 18;
-            int fy = y + (24 - size);
-            WatcherFaces.draw(g, "game".equals(wt.source()) ? wt.uuid() : null, colCx - size / 2, fy, size, chrome.alpha());
-            int ty = y + 24 + 3;
-            String name = wt.name() != null ? wt.name() : str("web".equals(wt.source()) ? "viewer.web" : "viewer.game");
-            drawFitted(g, name, colCx, ty, PODIUM_W - 2, NAME);
-            ty += font.lineHeight + 1;
-            drawFitted(g, duration(wt.seconds() * 1000L), colCx, ty, PODIUM_W - 2, WATCH);
-            ty += font.lineHeight + 1;
-            if (source) {
-                drawFitted(g, str("web".equals(wt.source()) ? "source.web" : "source.game"), colCx, ty, PODIUM_W - 2, DeathScreenText.SUBLINE);
-                bottom = Math.max(bottom, ty + font.lineHeight);
-            } else {
-                bottom = Math.max(bottom, ty - 1);
+        for (int col = 0; col < n; col++) {
+            Ranked r = top.get(order[col]);
+            boolean first = order[col] == 0;
+            int colCx = x0 + col * (PODIUM_W + PODIUM_GAP) + PODIUM_W / 2;
+            String uuid = "game".equals(r.source()) ? r.uuid() : null;
+            boolean drawn = false;
+            if (first && full && chrome.alpha() >= 0.95f) {
+                drawn = figure.draw(g, uuid, r.name(), colCx, y + area, FIGURE_H);
             }
+            if (!drawn && !(first && full)) {
+                int size = first ? 24 : 18;
+                WatcherFaces.draw(g, uuid, colCx - size / 2, y + area - size, size, chrome.alpha());
+            } else if (!drawn) {
+                WatcherFaces.draw(g, uuid, colCx - 12, y + area - 24, 24, chrome.alpha());
+            }
+            int ty = y + area + 3;
+            drawFitted(g, displayName(r), colCx, ty, PODIUM_W - 2, NAME);
+            ty += font.lineHeight + 1;
+            if (r.seconds() > 0) {
+                drawFitted(g, duration(r.seconds() * 1000L), colCx, ty, PODIUM_W - 2, WATCH);
+                ty += font.lineHeight + 1;
+            }
+            if (r.messages() > 0) {
+                drawFitted(g, str("crowd.messages", r.messages()), colCx, ty, PODIUM_W - 2, DeathScreenText.NARR);
+                ty += font.lineHeight + 1;
+            }
+            String where = source ? sourceKey(r) : null;
+            if (where != null) {
+                drawFitted(g, where.startsWith("=") ? where.substring(1) : str(where), colCx, ty, PODIUM_W - 2, DeathScreenText.SUBLINE);
+                ty += font.lineHeight + 1;
+            }
+            bottom = Math.max(bottom, ty - 1);
         }
         return bottom;
+    }
+
+    private static String displayName(Ranked r) {
+        if (r.name() != null && !r.name().isBlank()) return r.name();
+        return str("web".equals(r.source()) ? "viewer.web" : "viewer.game");
+    }
+
+    /** The lang key for where they watched, "=Name" for a platform name shown as is, null when unknown. */
+    private static String sourceKey(Ranked r) {
+        return switch (r.source()) {
+            case "game" -> "source.game";
+            case "web" -> "source.web";
+            case "twitch" -> "=Twitch";
+            case "discord" -> "=Discord";
+            default -> null;
+        };
     }
 
     private int drawChat(GuiGraphics g, List<ChatMoment> lines, int left, int w, int y) {

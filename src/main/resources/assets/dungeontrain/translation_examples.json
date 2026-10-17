@@ -16786,5 +16786,14 @@
         "Moth"
       ]
     }
+  },
+  "gui.dungeontrain.death.live.crowd.messages": {
+    "1": {
+      "label": "how many chat lines this viewer said",
+      "examples": [
+        "14",
+        "3"
+      ]
+    }
   }
 }

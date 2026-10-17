@@ -19,16 +19,17 @@ class LiveFeedClientCrowdTest {
     }
 
     @Test
-    void theTopThreeComeBackLongestFirstWithNullsForTheUnnamed() {
+    void theWatchersComeBackLongestFirstWithNullsForTheUnnamed() {
         List<Watcher> top = crowd("{\"ok\":true,\"crowd\":{\"top\":["
             + "{\"name\":\"Moth\",\"uuid\":\"fedcba9876543210fedcba9876543210\",\"source\":\"game\",\"seconds\":4140},"
             + "{\"name\":null,\"uuid\":null,\"source\":\"web\",\"seconds\":3120},"
             + "{\"name\":\"Ash\",\"uuid\":\"not-a-uuid\",\"source\":\"game\",\"seconds\":2820},"
             + "{\"name\":\"Fourth\",\"source\":\"game\",\"seconds\":10}]}}");
-        assertEquals(3, top.size());
+        assertEquals(4, top.size());
         assertEquals(new Watcher("Moth", "fedcba9876543210fedcba9876543210", "game", 4140), top.get(0));
         assertEquals(new Watcher(null, null, "web", 3120), top.get(1));
         assertEquals(new Watcher("Ash", null, "game", 2820), top.get(2));
+        assertEquals(new Watcher("Fourth", null, "game", 10), top.get(3));
     }
 
     @Test

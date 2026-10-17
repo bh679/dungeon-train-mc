@@ -37,7 +37,7 @@ final class WatcherFaces {
         RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     }
 
-    private static PlayerSkin skinOf(@Nullable UUID id) {
+    static PlayerSkin skinOf(@Nullable UUID id) {
         if (id == null) return DefaultPlayerSkin.get(new UUID(0L, 0L));
         ClientPacketListener conn = Minecraft.getInstance().getConnection();
         PlayerInfo info = conn == null ? null : conn.getPlayerInfo(id);
@@ -64,7 +64,7 @@ final class WatcherFaces {
     }
 
     @Nullable
-    private static UUID parse(@Nullable String hex) {
+    static UUID parse(@Nullable String hex) {
         if (hex == null) return null;
         String h = hex.replace("-", "");
         if (!h.matches("[0-9a-fA-F]{32}")) return null;
