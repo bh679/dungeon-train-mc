@@ -27159,8 +27159,26 @@
       "released_at": null
     },
     {
-      "id": "dimensional-carriage-seal-every-band",
+      "id": "disable-mod-enchantments",
       "version": "0.1331.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Enchantment tidy-up",
+      "summary": "Tidied up the enchantment pool.",
+      "highlights": [],
+      "pr": 2081,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-seal-every-band",
+      "version": "0.1332.0",
       "type": "fix",
       "tags": [
         "fix",
