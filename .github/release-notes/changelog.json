@@ -27123,6 +27123,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-nether-portal-return",
+      "version": "0.1329.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "world"
+      ],
+      "title": "Nether portals built on the train bring you back safely",
+      "summary": "Building a Nether portal on a carriage and coming back through it no longer drops you into an endless fall far from the track. The trip back now brings you out beside the rails, like any other portal along the ride.",
+      "highlights": [],
+      "pr": 2080,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
