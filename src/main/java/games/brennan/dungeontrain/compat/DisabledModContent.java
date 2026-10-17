@@ -1,16 +1,22 @@
 package games.brennan.dungeontrain.compat;
 
+import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponentType;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.ElytraItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MaceItem;
 import net.minecraft.world.item.ProjectileWeaponItem;
 import net.minecraft.world.item.ShieldItem;
 import net.minecraft.world.item.TieredItem;
 import net.minecraft.world.item.TridentItem;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -20,7 +26,10 @@ import java.util.regex.Pattern;
  * BetterNether. DT keeps their biomes and blocks but not their parallel gear progression, which would
  * bypass DT's own loot and difficulty balance. Also Exposure's original camera, film and lightroom
  * ({@link #HIDDEN_ITEMS}), replaced by the Polaroid add-on's instant camera, and Vista's Viewfinder, Wave Gate and
- * cassettes — DT's Television shows only the Live Feed.
+ * cassettes — DT's Television shows only the Live Feed. And every non-vanilla enchantment
+ * ({@link #isDisabledEnchantment}) — today BetterNether's Obsidian Breaker and Ruby Fire and BetterEnd's
+ * Resonance and End Veil — kept out of the enchanting table and villager books by the {@code remove} lists in
+ * {@code data/minecraft/tags/enchantment/}, and stripped from loot and creative here.
  *
  * <p>Single source of truth for five enforcement points: recipes ({@code RecipeManagerDisableMixin}),
  * loot ({@link StripDisabledItemsLootModifier}), ore placement ({@code ChunkGeneratorDecorationMixin})
@@ -120,7 +129,55 @@ public final class DisabledModContent {
         if (isPlainInstantCamera(id, DisposableCamera.hasMarker(stack, DisposableCamera.NBT_CAMERA))) {
             return true;
         }
+        if (stack.is(Items.ENCHANTED_BOOK) && storesNoKeptEnchantment(stack.get(DataComponents.STORED_ENCHANTMENTS))) {
+            return true;
+        }
         return isDisabledItem(stack.getItem());
+    }
+
+    /** Any enchantment a mod adds — vanilla's {@code minecraft:} ones are the only ones DT keeps. */
+    public static boolean isDisabledEnchantment(ResourceLocation id) {
+        return id != null && !ResourceLocation.DEFAULT_NAMESPACE.equals(id.getNamespace());
+    }
+
+    private static boolean isDisabledEnchantment(Holder<Enchantment> enchantment) {
+        return enchantment.unwrapKey().map(key -> isDisabledEnchantment(key.location())).orElse(false);
+    }
+
+    /**
+     * {@code stack} without its disabled enchantments, applied or stored — a new copy, or {@code stack}
+     * itself when it carries none. A book left with nothing stored is caught by {@link #isDisabledItem(ItemStack)}.
+     */
+    public static ItemStack stripDisabledEnchantments(ItemStack stack) {
+        if (!hasDisabled(stack.get(DataComponents.ENCHANTMENTS))
+            && !hasDisabled(stack.get(DataComponents.STORED_ENCHANTMENTS))) {
+            return stack;
+        }
+        ItemStack copy = stack.copy();
+        strip(copy, DataComponents.ENCHANTMENTS);
+        strip(copy, DataComponents.STORED_ENCHANTMENTS);
+        return copy;
+    }
+
+    private static void strip(ItemStack stack, DataComponentType<ItemEnchantments> type) {
+        ItemEnchantments enchantments = stack.get(type);
+        if (!hasDisabled(enchantments)) {
+            return;
+        }
+        ItemEnchantments.Mutable kept = new ItemEnchantments.Mutable(enchantments);
+        kept.removeIf(DisabledModContent::isDisabledEnchantment);
+        stack.set(type, kept.toImmutable());
+    }
+
+    private static boolean hasDisabled(ItemEnchantments enchantments) {
+        return enchantments != null
+            && enchantments.keySet().stream().anyMatch(DisabledModContent::isDisabledEnchantment);
+    }
+
+    /** True when a book stores only disabled enchantments, or none left after stripping — nothing worth keeping. */
+    private static boolean storesNoKeptEnchantment(ItemEnchantments stored) {
+        return stored == null
+            || stored.keySet().stream().allMatch(DisabledModContent::isDisabledEnchantment);
     }
 
     /**
