@@ -35,6 +35,12 @@ import org.slf4j.Logger;
  * under which the onboarding screen would have appeared. So this fires on a fresh profile
  * and never again: a dev who turns the volume back up keeps it across relaunches.</p>
  *
+ * <h3>Muted launches (every launch)</h3>
+ * <p>A client launched from the command line by an agent, or through a headless seam
+ * ({@code -PquickWorld}, {@code -PquickJoin}, {@code -PperfTest}, …), gets
+ * {@code -Ddungeontrain.muteSound=true} from {@code build.gradle} and is muted on every
+ * launch, even with an established {@code options.txt}. {@code -PmuteSound=false} opts out.</p>
+ *
  * <p>Dev-vs-release is {@link DungeonTrain#isDevBuild()} — the same branch-ref signal the
  * title-screen dev row ({@link DevQuickWorldHandler}) and the version HUD read. Release
  * builds never enter this path, so players keep the vanilla onboarding.</p>
@@ -43,6 +49,9 @@ import org.slf4j.Logger;
 public final class DevFirstLaunchDefaults {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** Set by {@code build.gradle} for CLI / agent-driven / headless-seam launches. */
+    static final String MUTE_SOUND_PROPERTY = "dungeontrain.muteSound";
 
     private DevFirstLaunchDefaults() {}
 
@@ -58,14 +67,24 @@ public final class DevFirstLaunchDefaults {
 
     private static void applyDevFirstLaunchDefaults() {
         Options options = Minecraft.getInstance().options;
+        if (Boolean.getBoolean(MUTE_SOUND_PROPERTY)) {
+            muteMaster(options);
+            options.save();
+            LOGGER.info("Muted launch (CLI/headless): master volume set to 0%. "
+                    + "Pass -PmuteSound=false to keep the saved volume.");
+        }
         if (!options.onboardAccessibility) {
             return;   // profile already established — leave the dev's own settings alone
         }
-        options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0);
+        muteMaster(options);
         // Vanilla's own "onboarding is done" call: clears the flag AND saves options.txt.
         options.onboardingAccessibilityFinished();
         LOGGER.info("Dev build, fresh profile: skipped the accessibility onboarding screen "
                 + "and set master volume to 0%. Both are one-time — change them in Options "
                 + "and the change sticks.");
+    }
+
+    private static void muteMaster(Options options) {
+        options.getSoundSourceOptionInstance(SoundSource.MASTER).set(0.0);
     }
 }
