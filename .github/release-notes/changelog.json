@@ -27068,6 +27068,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "death-photo-page-stats",
+      "version": "0.1326.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "The photo page counts your photos",
+      "summary": "The photo page on the death screen now tallies the life you just lived: how many photos you took, how many of other players' photos you looked at, how many Tributes you paid and the emeralds they cost. The page now appears whenever there is something to count, even with no photos to show.",
+      "highlights": [],
+      "pr": 2076,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
