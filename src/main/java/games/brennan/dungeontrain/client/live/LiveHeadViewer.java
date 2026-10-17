@@ -66,6 +66,8 @@ public final class LiveHeadViewer {
     static final long DOT_STEP_MS = 350;
 
     private static final Component COUNTDOWN = Component.translatable("gui.dungeontrain.live.countdown");
+    private static final Component DOWNLOADING = Component.translatable("gui.dungeontrain.live.downloading");
+    private static final int LABEL_PAD = 3;
     private static final int BORDER_COLOR = 0xFF101010;
     private static final int DARK = 0xFF181818;
     private static final int BLACKOUT = 0xC8000000;
@@ -185,7 +187,15 @@ public final class LiveHeadViewer {
         switch (frame.kind()) {
             case PICTURE -> g.blit(LiveFeedSource.texture(), b.x(), b.y(), b.w(), b.h(), 0f, 0f, 1, 1, 1, 1);
             case STATIC -> noise(g, b);
-            case DOWNLOADING, WAITING -> g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + b.h(), DARK);
+            case DOWNLOADING -> {
+                g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + b.h(), DARK);
+                downloadingLabel(g, b, font, frame.progress());
+            }
+            case WAITING -> {
+                // First frames still decoding: the same three dots a stalled picture shows.
+                g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + b.h(), DARK);
+                bufferingMark(g, b, bufferingDot(System.currentTimeMillis()));
+            }
         }
         if (frame.kind() == LiveFeedSource.Kind.PICTURE && frame.buffering()) {
             bufferingMark(g, b, bufferingDot(System.currentTimeMillis()));
@@ -207,17 +217,48 @@ public final class LiveHeadViewer {
         int seconds = LiveTakeoverFlow.voteCountdownSeconds();
         if (seconds < 0) return;
         Component text = Component.translatable("screen.dungeontrain.live_takeover.voting", seconds);
-        int pad = 3;
+        int pad = LABEL_PAD;
         // Shrunk to fit a narrow box (the streamer's own is smaller), so the seconds are never cut off.
-        float scale = Math.min(1f, (b.w() - 2f * pad) / Math.max(1, font.width(text)));
+        float scale = fitScale(font.width(text), b.w(), pad);
         int h = Math.round(font.lineHeight * scale) + 2 * pad;
         g.fill(b.x(), b.y(), b.x() + b.w(), b.y() + h, BLACKOUT);
+        centred(g, font, text, b, b.y() + pad + 0.5f, scale);
+    }
+
+    /** The scale that fits {@code textWidth} inside a box {@code boxWidth} wide with {@code pad} each side; at most 1. */
+    static float fitScale(int textWidth, int boxWidth, int pad) {
+        return Math.max(0.1f, Math.min(1f, (boxWidth - 2f * pad) / Math.max(1, textWidth)));
+    }
+
+    /** Draws {@code text} centred across the box at {@code y}, scaled by {@code scale}. */
+    private static void centred(GuiGraphics g, Font font, Component text, Box b, float y, float scale) {
         float w = font.width(text) * scale;
         g.pose().pushPose();
-        g.pose().translate(b.x() + (b.w() - w) / 2f, b.y() + pad + 0.5f, 0);
+        g.pose().translate(b.x() + (b.w() - w) / 2f, y, 0);
         g.pose().scale(scale, scale, 1f);
         g.drawString(font, text, 0, 0, 0xFFFFFFFF, true);
         g.pose().popPose();
+    }
+
+    /**
+     * Vista is still fetching ffmpeg: "Getting video tools" over the percentage when Vista reports
+     * one, else over the stepping dots, so the box is never a bare dark rectangle.
+     */
+    private static void downloadingLabel(GuiGraphics g, Box b, Font font, int progress) {
+        float scale = fitScale(font.width(DOWNLOADING), b.w(), LABEL_PAD);
+        int labelH = Math.round(font.lineHeight * scale);
+        if (progress < 0) {
+            centred(g, font, DOWNLOADING, b, b.y() + (b.h() - labelH) / 2f, scale);
+            bufferingMark(g, b, bufferingDot(System.currentTimeMillis()));
+            return;
+        }
+        Component pct = Component.literal(progress + "%");
+        float pctScale = Math.min(NUMBER_SCALE, fitScale(font.width(pct), b.w(), LABEL_PAD));
+        int pctH = Math.round(font.lineHeight * pctScale);
+        int gap = 3;
+        float top = b.y() + (b.h() - labelH - gap - pctH) / 2f;
+        centred(g, font, DOWNLOADING, b, top, scale);
+        centred(g, font, pct, b, top + labelH + gap, pctScale);
     }
 
     /** The box is playing this client's own broadcast (live, not the dark-channel replay). */

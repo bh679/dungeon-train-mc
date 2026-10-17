@@ -31,6 +31,12 @@ public final class FfmpegSupport {
     private static final long PROBE_TIMEOUT_S = 5;
     @Nullable private static CompletableFuture<Boolean> aac;
     @Nullable private static volatile Boolean readrateCatchup;
+    /** How often {@link #logProgress} writes a line while the download runs. */
+    static final long PROGRESS_LOG_MS = 15_000;
+    /** The Vista future whose outcome is already being logged; Vista hands out one per launch. */
+    @Nullable private static volatile CompletableFuture<FFmpeg> watched;
+    private static volatile long watchedSinceMs;
+    private static volatile long lastProgressLogMs;
 
     public enum State {
         /** Vista has not been asked to fetch ffmpeg (its welcome screen was declined or not yet shown). */
@@ -54,6 +60,40 @@ public final class FfmpegSupport {
     @Nullable
     public static FFmpeg get() {
         return state() == State.READY ? VistaModClient.getFFmpeg() : null;
+    }
+
+    /**
+     * Logs how Vista's download ends, once per future: Vista's own log line is easy to miss, and a
+     * download that never ends writes nothing at all. Any thread; safe to call every frame.
+     */
+    public static void watch() {
+        CompletableFuture<FFmpeg> f = VistaModClient.getFFmpegFuture();
+        if (f == null || f == watched) return;
+        synchronized (FfmpegSupport.class) {
+            if (f == watched) return;
+            watched = f;
+            watchedSinceMs = System.currentTimeMillis();
+            lastProgressLogMs = watchedSinceMs;
+        }
+        if (f.isDone()) return; // ready before anyone asked: nothing to wait for
+        long since = watchedSinceMs;
+        f.whenComplete((ffmpeg, e) -> {
+            long secs = (System.currentTimeMillis() - since) / 1000;
+            if (e == null) LOGGER.info("[DungeonTrain] Vista's ffmpeg is ready ({} s after the Live Feed first waited for it)", secs);
+            else LOGGER.warn("[DungeonTrain] Vista's ffmpeg download failed after {} s: {}", secs, e.toString());
+        });
+    }
+
+    /**
+     * While DOWNLOADING: "waiting for Vista's ffmpeg: 42% (30 s)" every {@link #PROGRESS_LOG_MS},
+     * so a stalled download shows as a flat percentage in the log rather than silence.
+     */
+    public static void logProgress(long nowMs) {
+        if (state() != State.DOWNLOADING || nowMs - lastProgressLogMs < PROGRESS_LOG_MS) return;
+        lastProgressLogMs = nowMs;
+        int pct = VistaModClient.getFFmpegDownloadProgress();
+        LOGGER.info("[DungeonTrain] waiting for Vista's ffmpeg: {} ({} s)",
+            pct >= 0 ? pct + "%" : "no progress reported", (nowMs - watchedSinceMs) / 1000);
     }
 
     /** Resolves to Vista's ffmpeg once ready; fails if Vista's download failed or is off. */
