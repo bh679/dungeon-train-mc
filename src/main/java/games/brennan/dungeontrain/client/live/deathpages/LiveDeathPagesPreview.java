@@ -28,6 +28,10 @@ import java.util.function.Function;
  * Live Eye pages with made-up counters for one variant (on_air, ended_early, taken, nobody, quicker),
  * then saves a window screenshot of each page to {@code screenshots/} — Gate 2 evidence without any
  * desktop capture. {@code all} walks every variant in turn.
+ *
+ * <p>Headless runs, where nobody can type the command, drop a {@code death-pages-preview.flag} file
+ * holding the variant into the game directory: the preview starts once a world has been joined for
+ * {@link #FLAG_DELAY_TICKS} ticks, and the flag is deleted so it runs once.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class LiveDeathPagesPreview {
@@ -37,6 +41,9 @@ public final class LiveDeathPagesPreview {
     private static final long DAY = 86_400_000L;
     /** Ticks to let a page's fade settle before the shot. */
     private static final int SETTLE_TICKS = 50;
+    private static final int FLAG_DELAY_TICKS = 200;
+    private static final String FLAG_FILE = "death-pages-preview.flag";
+    private static int joinedTicks;
 
     private static final Map<String, Function<Long, LiveLifeStats>> VARIANTS = Map.of(
         "on_air", LiveDeathPagesPreview::onAir,
@@ -95,8 +102,11 @@ public final class LiveDeathPagesPreview {
 
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
-        if (current == null) return;
         Minecraft mc = Minecraft.getInstance();
+        if (current == null) {
+            pollFlag(mc);
+            return;
+        }
         if (mc.screen != screen) { current = null; return; } // closed by hand
         if (++ticks < SETTLE_TICKS) return;
         ticks = 0;
@@ -107,6 +117,22 @@ public final class LiveDeathPagesPreview {
         } else {
             grabName = "live-death-" + current + "-crowd.png";
             step = 2;
+        }
+    }
+
+    private static void pollFlag(Minecraft mc) {
+        if (!DungeonTrain.isDevBuild() || mc.player == null) { joinedTicks = 0; return; }
+        if (++joinedTicks != FLAG_DELAY_TICKS) return;
+        java.nio.file.Path flag = mc.gameDirectory.toPath().resolve(FLAG_FILE);
+        if (!java.nio.file.Files.isRegularFile(flag)) return;
+        try {
+            String v = java.nio.file.Files.readString(flag).trim();
+            java.nio.file.Files.deleteIfExists(flag);
+            List<String> run = "all".equals(v) ? ORDER : VARIANTS.containsKey(v) ? List.of(v) : List.of();
+            LOGGER.info("[DungeonTrain] death-pages preview from flag: {}", run);
+            if (!run.isEmpty()) start(run);
+        } catch (java.io.IOException e) {
+            LOGGER.warn("[DungeonTrain] death-pages preview flag unreadable: {}", e.toString());
         }
     }
 
