@@ -25,6 +25,7 @@ import games.brennan.dungeontrain.net.LiveClaimResultPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Claim;
 import games.brennan.dungeontrain.net.relay.LiveTakeoverClient;
+import net.mehvahdjukaar.vista.VistaModClient;
 import net.mehvahdjukaar.vista.client.web.ffmpeg.FFmpeg;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -131,6 +132,8 @@ public final class LiveStreamController {
     private boolean grabbedThisFrame; // render thread: this frame was already read at an earlier point
     private long streamStartedMs;
     private int waitTicks;
+    /** Gives up on a Vista ffmpeg download that stops moving ({@link FfmpegWait#STALL_MS}). */
+    private final FfmpegWait ffmpegWait = new FfmpegWait();
     /** The Live Eye must be on this client's head: the server's START alone is not enough. */
     private final LiveHeadpieceGuard headpiece = new LiveHeadpieceGuard();
     /** How long the going-live line waits for the relay's first viewer count before saying 0. */
@@ -313,7 +316,11 @@ public final class LiveStreamController {
                 state = State.IDLE;
                 tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
             }
-            case DOWNLOADING -> say(Component.translatable("chat.dungeontrain.live.preparing").withStyle(ChatFormatting.GRAY));
+            case DOWNLOADING -> {
+                FfmpegSupport.watch();
+                ffmpegWait.reset(System.currentTimeMillis());
+                say(Component.translatable("chat.dungeontrain.live.preparing").withStyle(ChatFormatting.GRAY));
+            }
             // No claim until the Live Eye is on: claiming cuts off whoever streams in another world.
             // Not on yet (login: the inventory may land after START) → the tick claims once it is.
             case READY -> { if (headpieceWorn()) claimChannel(false, null); }
@@ -381,7 +388,7 @@ public final class LiveStreamController {
                     state = State.IDLE;
                     tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
                 }
-                default -> { /* still downloading */ }
+                default -> giveUpIfStalled(System.currentTimeMillis());
             }
         } else if (state == State.STREAMING && encoder != null && encoder.died()) {
             if (audio != null && restartWithoutSound()) return;
@@ -392,6 +399,23 @@ public final class LiveStreamController {
             // The approved list can change under a running stream (the relay's overlay revokes a mod).
             if (audio != null && ++waitTicks % MOD_RECHECK_TICKS == 0) AudioMirror.setSilenced(!soundAllowedByMods(false));
         }
+    }
+
+    /**
+     * Once a second while WAIT_FFMPEG: Vista's future never completes while its download hangs, so
+     * a percentage that stands still for {@link FfmpegWait#STALL_MS} ends the stream the no-burn way
+     * (the headpiece goes back to the inventory) with a line saying why.
+     */
+    private void giveUpIfStalled(long nowMs) {
+        FfmpegSupport.watch();
+        FfmpegSupport.logProgress(nowMs);
+        if (!ffmpegWait.tick(VistaModClient.getFFmpegDownloadProgress(), nowMs)) return;
+        LOGGER.warn("[DungeonTrain] live stream gave up: Vista's ffmpeg download made no progress for {} s (at {}, {} s in)",
+            FfmpegWait.STALL_MS / 1000, ffmpegWait.lastProgress() >= 0 ? ffmpegWait.lastProgress() + "%" : "no percentage",
+            ffmpegWait.elapsedMs(nowMs) / 1000);
+        say(Component.translatable("chat.dungeontrain.live.ffmpeg_timeout").withStyle(ChatFormatting.RED));
+        state = State.IDLE;
+        tellServerEnded(LiveStreamEndedPacket.Reason.FAILED);
     }
 
     /** Ends a post-mortem stream nobody is watching the death screens of any more. True when it ended. */

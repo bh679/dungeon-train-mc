@@ -27229,6 +27229,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-ffmpeg-download-wait",
+      "version": "0.1336.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "compatibility",
+        "ui"
+      ],
+      "title": "The Live Eye no longer sits on a black box while its video tools download",
+      "summary": "Putting the Live Eye on before the video tools have finished downloading used to leave a blank dark box on screen with no way out. The box now says what it is waiting for, and if the download goes nowhere for a minute and a half the broadcast calls it off, tells you why, and hands the Live Eye back so you can try again once the TVs are playing.",
+      "highlights": [
+        "The pinned box says it is getting the video tools, with a percentage when one is known",
+        "A download that stalls hands the Live Eye back instead of waiting forever"
+      ],
+      "pr": 2089,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
