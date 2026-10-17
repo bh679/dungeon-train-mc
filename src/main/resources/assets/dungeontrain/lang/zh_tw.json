@@ -2462,7 +2462,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "把他人的回聲推下列車，墜入虛空。",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "離開列車，墜入虛無——他們不會再爬回來。",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "遵守規則",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "在單一生命中打開 %s 個不同的箱子。重複打開同一個箱子，連續紀錄便會歸零。",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "在單一生命中打開 %s 個裝有戰利品的不同箱子。重複打開同一個箱子，連續紀錄便會歸零。",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "做筆記",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "打開 %s 本隨機書籍。重複閱讀也算。",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "不知道，也不想知道",

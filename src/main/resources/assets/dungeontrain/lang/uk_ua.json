@@ -3051,7 +3051,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "Зіштовхни чуже відлуння з потяга в порожнечу.",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "З потяга — в ніщо. Назад вони не вилізуть.",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "Шануй правила",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Відкрий %s різних скринь за одне життя. Відкриєш ту саму скриню двічі — серія скидається.",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Відкрий %s різних скринь зі здобиччю всередині за одне життя. Якщо відкриєш ту саму скриню двічі, серія скидається.",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "Робити нотатки",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "Відкрий %s випадкових книг. Перечитування рахуються.",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "Не знаю, І не хочу знати",

@@ -2462,7 +2462,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "他の誰かのエコーを列車から突き落とし、奈落へ。",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "列車から、虚無へ——彼らは戻ってこない。",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "掟を守れ",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "一つの生で%s個の異なるチェストを開ける。同じチェストを二度開けると連続記録はリセットされる。",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "一つの生で、戦利品の入った異なるチェストを%s個開ける。同じチェストを二度開けると連続記録はリセットされる。",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "メモを取る",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "ランダムな本を%s冊開く。読み返しも数に入る。",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "知らない、知りたくもない",

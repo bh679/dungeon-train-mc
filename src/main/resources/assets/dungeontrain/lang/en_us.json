@@ -3001,7 +3001,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "Shove someone else's echo off the train and into the void.",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "Off the train, into the nothing — they won't climb back.",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "Respect The Rules",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Open %s distinct chests in a single life. Open the same chest twice and the streak resets.",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Open %s distinct chests with loot in them in a single life. Open the same chest twice and the streak resets.",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "Taking Notes",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "Open %s random books. Re-reads count.",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "Don't know, Don't wana know",
