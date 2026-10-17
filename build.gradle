@@ -210,6 +210,19 @@ neoForge {
             if (project.hasProperty('tvPoseSwap')) {
                 systemProperty 'dungeontrain.tvPoseSwap', 'true'
             }
+            // Muted-launch seam: CLI / agent-driven dev clients start at master volume 0 on every
+            // launch (client/DevFirstLaunchDefaults). On automatically when an agent shell launched
+            // Gradle (CLAUDECODE / AI_AGENT env) or a headless seam is in use; -PmuteSound forces it
+            // on, -PmuteSound=false forces it off. Decided here, not in the game, because the forked
+            // run inherits the daemon's environment (see relayBaseUrl above).
+            def muteSound = project.findProperty('muteSound')
+            def headlessSeam = ['quickWorld', 'quickJoin', 'perfTest', 'tradeValueIcons', 'shaderSweep', 'tvPoseShots']
+                    .any { project.hasProperty(it) }
+            def agentShell = System.getenv('CLAUDECODE') || System.getenv('AI_AGENT')
+            def muted = muteSound != null ? muteSound.toString() != 'false' : (agentShell || headlessSeam)
+            if (muted) {
+                systemProperty 'dungeontrain.muteSound', 'true'
+            }
             // Item-icon dump for the relay's item-values page: ./gradlew runClient -PtradeValueIcons
             // renders every item to run/trade-values-icons/<ns>/<path>.png at the title screen and
             // quits (client/TradeValueIconDump).
