@@ -26991,9 +26991,9 @@
       "highlights": [],
       "pr": 2071,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "live-eye-gift-safe-handover",
@@ -27008,9 +27008,9 @@
       "highlights": [],
       "pr": 2072,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "creaking-hearts-work-by-day",
@@ -27026,9 +27026,9 @@
       "highlights": [],
       "pr": 2075,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "backpack-emerald-tributes",
@@ -27042,9 +27042,9 @@
       "highlights": [],
       "pr": 2074,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "live-eye-death-pages",
@@ -27065,9 +27065,9 @@
       ],
       "pr": 2073,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "death-photo-page-stats",
@@ -27082,9 +27082,9 @@
       "highlights": [],
       "pr": 2076,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "dimensional-carriage-centred-coordinates",
@@ -27103,9 +27103,9 @@
       ],
       "pr": 2078,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "dimensional-carriages-link-after-autosave",
@@ -27120,9 +27120,9 @@
       "highlights": [],
       "pr": 2079,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "train-nether-portal-return",
@@ -27137,9 +27137,9 @@
       "highlights": [],
       "pr": 2080,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "journey-advancement-unearnable",
@@ -27154,9 +27154,9 @@
       "highlights": [],
       "pr": 2077,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "disable-mod-enchantments",
@@ -27172,9 +27172,9 @@
       "highlights": [],
       "pr": 2081,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "dimensional-carriage-seal-every-band",
@@ -27189,9 +27189,9 @@
       "highlights": [],
       "pr": 2082,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "nether-vines-stay-on-trees",
@@ -27208,9 +27208,9 @@
         "lag"
       ],
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "empty-chests-dont-count",
@@ -27226,9 +27226,9 @@
       "highlights": [],
       "pr": 2088,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "live-eye-ffmpeg-download-wait",
@@ -27248,9 +27248,9 @@
       ],
       "pr": 2089,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "afk-auto-pause",
@@ -27264,9 +27264,9 @@
       "summary": "The game now pauses itself when you are away from the keyboard.",
       "pr": 2090,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "nether-enemy-pace",
@@ -27284,9 +27284,9 @@
       ],
       "pr": 2091,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "no-advancements-while-afk",
@@ -27300,9 +27300,9 @@
       "highlights": [],
       "pr": 2087,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "hide-unearnable-advancement",
@@ -27317,9 +27317,9 @@
       "highlights": [],
       "pr": 2093,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "cave-photo-overworld-band",
@@ -27334,9 +27334,9 @@
       "highlights": [],
       "pr": 2092,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     }
   ]
 }
