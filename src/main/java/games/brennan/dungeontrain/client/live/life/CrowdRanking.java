@@ -23,7 +23,7 @@ import java.util.Map;
 public final class CrowdRanking {
 
     /** One chat line counts as this many seconds of watching. */
-    public static final int MESSAGE_WEIGHT_S = 60;
+    public static final int MESSAGE_WEIGHT_S = 10;
     /** How many the crowd page shows: the one most present viewer. */
     public static final int PODIUM = 1;
 

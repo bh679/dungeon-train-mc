@@ -19,11 +19,11 @@ class CrowdRankingTest {
     @Test
     void aChatterCanOutrankAQuietLongerWatcher() {
         List<Ranked> top = CrowdRanking.rank(
-            List.of(new Watcher("Moth", MOTH, "game", 3000), new Watcher("Rook", ROOK, "game", 2500)),
+            List.of(new Watcher("Moth", MOTH, "game", 3000), new Watcher("Rook", ROOK, "game", 2950)),
             Map.of("Rook", 10), Map.of("Rook", new Author("game", ROOK)), 3);
         assertEquals("Rook", top.get(0).name());
         assertEquals(10, top.get(0).messages());
-        assertEquals(2500 + 10 * CrowdRanking.MESSAGE_WEIGHT_S, top.get(0).score());
+        assertEquals(2950 + 10 * CrowdRanking.MESSAGE_WEIGHT_S, top.get(0).score());
         assertEquals("Moth", top.get(1).name());
     }
 
@@ -41,7 +41,7 @@ class CrowdRankingTest {
     @Test
     void aWebsiteViewerNamedByChatMergesByName() {
         List<Ranked> top = CrowdRanking.rank(
-            List.of(new Watcher("Kestrel", null, "web", 600), new Watcher(null, null, "web", 700)),
+            List.of(new Watcher("Kestrel", null, "web", 600), new Watcher(null, null, "web", 620)),
             Map.of("kestrel", 3), Map.of("kestrel", new Author("web", null)), 3);
         assertEquals(2, top.size());
         assertEquals("Kestrel", top.get(0).name());
