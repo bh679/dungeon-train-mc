@@ -143,6 +143,34 @@ public final class PortalSealPlane {
         return Cut.between(floorY, Integer.MAX_VALUE);
     }
 
+    /**
+     * The cut for a camera inside a dimensional carriage's structure box, answered from where the
+     * carriage <em>is</em> rather than from which band the camera's column happens to be in.
+     *
+     * <p>A twin outlives the band it was stamped for: the train carries its pair on past the band's
+     * end, and the room stays in the attic it was built in. The column tests in {@link #cutFor} and
+     * {@link #cutForAmplified} then answer for the band the room now stands over, and the world below
+     * it is drawn. The box cannot be fooled that way.</p>
+     *
+     * <p>A box under the bedrock row is a basement room. Anything else stands in an attic, over the
+     * highest lid that is still under its floor — a twin's underside sits {@link PortalTwinLanes#FLOOR_MARGIN}
+     * rows over its lid, so a lid at or above {@code boxMinY} is someone else's.</p>
+     *
+     * @param lidYs every lid this world can have stamped (the upside-down band's bedrock lid, the
+     *              sunk band's barrier lid); {@link Integer#MAX_VALUE} for one that is not active
+     * @return the cut, or {@code null} when the box is over no lid this client knows of
+     */
+    public static Cut cutForTwin(int boxMinY, int boxMaxY, int bedrockY, int... lidYs) {
+        if (bedrockY != Integer.MIN_VALUE && boxMaxY < bedrockY) {
+            return Cut.trimmed(Integer.MIN_VALUE, bedrockY);
+        }
+        int lid = Integer.MIN_VALUE;
+        for (int y : lidYs) {
+            if (y != Integer.MAX_VALUE && y < boxMinY && y > lid) lid = y;
+        }
+        return lid == Integer.MIN_VALUE ? null : Cut.trimmed(lid + 1, Integer.MAX_VALUE);
+    }
+
     public static Cut cutFor(int bedrockY, int roofY, boolean lidHere, double cameraY) {
         boolean hasFloor = bedrockY != Integer.MIN_VALUE;
         boolean hasLid = lidHere && roofY != Integer.MAX_VALUE;
