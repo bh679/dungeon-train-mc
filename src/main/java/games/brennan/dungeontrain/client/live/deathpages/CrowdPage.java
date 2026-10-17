@@ -36,6 +36,8 @@ public final class CrowdPage {
     private static final int PERSON_GAP = 10;
     /** The figure's inset from the content column's left edge. */
     private static final int ROW_INDENT = 6;
+    /** The player info column never grows past this; a longer name is cut with an ellipsis. */
+    private static final int INFO_MAX_W = 100;
     private static final int BUTTON_W = 170;
     private static final int BUTTON_H = 16;
     /** First place's full figure, feet to crown. */
@@ -167,28 +169,37 @@ public final class CrowdPage {
         return font.split(DeathScreenText.styled(narration), textW);
     }
 
-    private static List<String> detailLines(Ranked r, boolean source) {
-        List<String> out = new java.util.ArrayList<>();
-        String time = r.seconds() > 0 ? duration(r.seconds() * 1000L) : null;
-        String said = r.messages() > 0 ? str("crowd.messages", r.messages()) : null;
-        if (time != null && said != null) out.add(time + "  " + said);
-        else if (time != null) out.add(time);
-        else if (said != null) out.add(said);
+    /** The info column, one fact per line: name, watch time, lines said, where they watched from. */
+    private record Info(String text, int color) {}
+
+    private static List<Info> infoLines(Ranked r, boolean source) {
+        List<Info> out = new java.util.ArrayList<>();
+        out.add(new Info(displayName(r), NAME));
+        if (r.seconds() > 0) out.add(new Info(duration(r.seconds() * 1000L), WATCH));
+        if (r.messages() > 0) out.add(new Info(str("crowd.messages", r.messages()), DeathScreenText.NARR));
         String where = source ? sourceKey(r) : null;
-        if (where != null) out.add(where.startsWith("=") ? where.substring(1) : str(where));
+        if (where != null) out.add(new Info(where.startsWith("=") ? where.substring(1) : str(where), DeathScreenText.SUBLINE));
         return out;
     }
 
+    private static int infoWidth(Font font, List<Info> info) {
+        int iw = 0;
+        for (Info l : info) iw = Math.max(iw, font.width(l.text()));
+        return Math.min(INFO_MAX_W, iw);
+    }
+
     private static int rowHeight(Font font, String narration, Ranked r, int w, boolean source, int figureH) {
-        int textW = w - figureWidth(figureH) - ROW_INDENT - PERSON_GAP;
+        List<Info> info = infoLines(r, source);
+        int textW = w - ROW_INDENT - figureWidth(figureH) - PERSON_GAP - infoWidth(font, info) - PERSON_GAP;
         int lh = font.lineHeight + 1;
-        int textH = narrationLines(font, narration, textW).size() * (lh + 1) + 4 + (1 + detailLines(r, source).size()) * lh;
-        return Math.max(Math.max(figureH, FACE_AREA), textH);
+        int textH = narrationLines(font, narration, textW).size() * (lh + 1);
+        return Math.max(Math.max(figureH, FACE_AREA), Math.max(info.size() * lh, textH));
     }
 
     /**
-     * The viewer most present this life on the left, as their whole skin {@code figureH} tall (a face
-     * when that is 0), and to its right the line about the whole crowd over their name and stats.
+     * Three columns: the viewer most present this life as their whole skin {@code figureH} tall (a
+     * face when that is 0), their name and stats one per line, then the line about the whole crowd.
+     * Both text columns sit centred on the row.
      */
     private int drawRow(GuiGraphics g, String narration, Ranked r, int left, int w, int y, boolean source, int figureH) {
         Font font = chrome.font();
@@ -198,24 +209,25 @@ public final class CrowdPage {
         int figCx = left + ROW_INDENT + figW / 2;
         boolean drawn = false;
         if (figureH > 0 && chrome.alpha() >= 0.95f) drawn = figure.draw(g, uuid, r.name(), figCx, y + h, figureH);
-        if (!drawn) WatcherFaces.draw(g, uuid, figCx - FACE_AREA / 2, y + h - FACE_AREA, FACE_AREA, chrome.alpha());
+        if (!drawn) WatcherFaces.draw(g, uuid, figCx - FACE_AREA / 2, y + (h - FACE_AREA) / 2, FACE_AREA, chrome.alpha());
 
-        int tx = left + ROW_INDENT + figW + PERSON_GAP;
-        int textW = left + w - tx;
         int lh = font.lineHeight + 1;
-        int ty = y;
-        for (var line : narrationLines(font, narration, textW)) {
+        List<Info> info = infoLines(r, source);
+        int ix = left + ROW_INDENT + figW + PERSON_GAP;
+        int iw = infoWidth(font, info);
+        int iy = y + (h - info.size() * lh) / 2;
+        for (Info line : info) {
+            g.drawString(font, fit(font, line.text(), iw), ix, iy, chrome.fade(line.color()), false);
+            iy += lh;
+        }
+
+        int tx = ix + iw + PERSON_GAP;
+        int textW = left + w - tx;
+        var lines = narrationLines(font, narration, textW);
+        int ty = y + (h - lines.size() * (lh + 1)) / 2;
+        for (var line : lines) {
             g.drawString(font, line, tx, ty, chrome.fade(DeathScreenText.NARR), false);
             ty += lh + 1;
-        }
-        ty += 4;
-        g.drawString(font, fit(font, displayName(r), textW), tx, ty, chrome.fade(NAME), false);
-        ty += lh;
-        List<String> details = detailLines(r, source);
-        for (int k = 0; k < details.size(); k++) {
-            int color = k == 0 && r.seconds() > 0 ? WATCH : DeathScreenText.SUBLINE;
-            g.drawString(font, fit(font, details.get(k), textW), tx, ty, chrome.fade(color), false);
-            ty += lh;
         }
         return y + h;
     }
