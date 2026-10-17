@@ -26943,6 +26943,23 @@
       "released": true,
       "released_in": "v0.1322.0",
       "released_at": "2026-10-16T17:52:28Z"
+    },
+    {
+      "id": "live-eye-wins-death-handover",
+      "version": "0.1323.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "A fresh Live Eye takes over from a fallen streamer",
+      "summary": "When the streamer dies, putting on a Live Eye now takes the stream straight away, with no waiting and no vote.",
+      "highlights": [],
+      "pr": 2070,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
