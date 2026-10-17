@@ -16532,5 +16532,257 @@
         "moon"
       ]
     }
+  },
+  "gui.dungeontrain.death.live.broadcast.narr.to_the_end": {
+    "1": {
+      "label": "how long the player was on air this life",
+      "examples": [
+        "1 h 12 m",
+        "48 m"
+      ]
+    },
+    "2": {
+      "label": "how far behind the viewers watched",
+      "examples": [
+        "31 s",
+        "5 s"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.broadcast.narr.ended_early": {
+    "1": {
+      "label": "how long the player was on air this life",
+      "examples": [
+        "48 m",
+        "1 h 05 m"
+      ]
+    },
+    "2": {
+      "label": "time between the stream ending and the death",
+      "examples": [
+        "2 h 05 m",
+        "12 m"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.broadcast.narr.taken": {
+    "1": {
+      "label": "how long the player was on air this life",
+      "examples": [
+        "31 m",
+        "1 h 02 m"
+      ]
+    },
+    "2": {
+      "label": "the player who took the Live Eye",
+      "examples": [
+        "Rook",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.broadcast.narr.nobody": {
+    "1": {
+      "label": "how long the player was on air this life",
+      "examples": [
+        "19 m",
+        "1 h 02 m"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.secs": {
+    "1": {
+      "label": "a number of seconds",
+      "examples": [
+        "31",
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.dur.hm": {
+    "1": {
+      "label": "hours",
+      "examples": [
+        "1",
+        "2"
+      ]
+    },
+    "2": {
+      "label": "minutes, two digits",
+      "examples": [
+        "12",
+        "05"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.dur.m": {
+    "1": {
+      "label": "minutes",
+      "examples": [
+        "48",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.dur.s": {
+    "1": {
+      "label": "seconds",
+      "examples": [
+        "40",
+        "9"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.votes": {
+    "1": {
+      "label": "takeover votes the player won",
+      "examples": [
+        "2",
+        "0"
+      ]
+    },
+    "2": {
+      "label": "takeover votes that closed",
+      "examples": [
+        "3",
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.clip.after_taken": {
+    "1": {
+      "label": "the player who took the Live Eye",
+      "examples": [
+        "Rook",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.clip.none_tail": {
+    "1": {
+      "label": "the clock time the stream ended",
+      "examples": [
+        "14:02",
+        "09:45"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.clip.taken_head": {
+    "1": {
+      "label": "the player who took the Live Eye",
+      "examples": [
+        "Rook",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.status.replays_on": {
+    "1": {
+      "label": "a day and month",
+      "examples": [
+        "16 Nov",
+        "3 Dec"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.pitch.quicker_ask.q": {
+    "1": {
+      "label": "how far behind the viewers watched, in seconds",
+      "examples": [
+        "31",
+        "21"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.pitch.quicker_ask.p": {
+    "1": {
+      "label": "the delay with Quicker Streams, in seconds",
+      "examples": [
+        "5"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.pitch.quicker_thanks.q": {
+    "1": {
+      "label": "the delay with Quicker Streams, in seconds",
+      "examples": [
+        "5"
+      ]
+    },
+    "2": {
+      "label": "the player who bought Quicker Streams",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.pitch.quicker_thanks.p": {
+    "1": {
+      "label": "a day and month",
+      "examples": [
+        "12 Nov",
+        "3 Dec"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.pitch.quicker_thanks.p_queued": {
+    "1": {
+      "label": "a day and month",
+      "examples": [
+        "12 Nov",
+        "3 Dec"
+      ]
+    },
+    "2": {
+      "label": "the player who bought the following month",
+      "examples": [
+        "Moth",
+        "Ash"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.pitch.nobody.p_on": {
+    "1": {
+      "label": "the player who bought Quicker Streams",
+      "examples": [
+        "Kestrel",
+        "Moth"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.crowd.messages": {
+    "1": {
+      "label": "how many chat lines this viewer said",
+      "examples": [
+        "14",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.crowd.narr.community": {
+    "1": {
+      "label": "the most viewers at once",
+      "examples": [
+        "41",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "how many chat lines the viewers said",
+      "examples": [
+        "216",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.crowd.narr.quiet": {
+    "1": {
+      "label": "the most viewers at once",
+      "examples": [
+        "41",
+        "7"
+      ]
+    }
   }
 }

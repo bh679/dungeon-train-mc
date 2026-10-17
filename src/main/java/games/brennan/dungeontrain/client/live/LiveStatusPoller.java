@@ -114,7 +114,8 @@ public final class LiveStatusPoller {
         // Watching counts toward the "Longest Viewer" boards only behind the master internet consent.
         LiveFeedClient.Life ranked = DiscordPresenceClientConfig.isGranted()
             ? new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION) : null;
-        return LiveFeedClient.status(viewer, channel, ranked)
+        String name = ranked != null && Minecraft.getInstance().getUser() != null ? Minecraft.getInstance().getUser().getName() : null;
+        return LiveFeedClient.status(viewer, channel, ranked, name)
             .handle((r, t) -> {
                 if (r == null) return Status.OFFLINE;
                 if (offers) {

@@ -8,6 +8,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.live.LiveChatRules;
 import games.brennan.dungeontrain.client.live.LiveClaimInfo;
+import games.brennan.dungeontrain.client.live.life.LiveLifeStats;
 import games.brennan.dungeontrain.discord.chat.ChatReaction;
 import games.brennan.dungeontrain.discord.chat.ChatReactionCodec;
 import games.brennan.dungeontrain.discord.chat.ChatReactionEvent;
@@ -444,6 +445,37 @@ public final class LiveFeedClient {
     }
 
     /**
+     * The longest watchers of the streamer's life so far, from a presign or stop reply's
+     * {@code crowd.top} (dp-relay live-crowd.js), longest first, up to {@link #CROWD_MAX}. Empty against an older relay or a
+     * malformed reply; malformed entries are skipped.
+     */
+    /** How many watchers the relay sends; the mod ranks its own podium from them plus the chat. */
+    static final int CROWD_MAX = 10;
+
+    public static List<LiveLifeStats.Watcher> parseCrowd(Result r) {
+        if (!r.ok() || !r.body().has("crowd") || !r.body().get("crowd").isJsonObject()) return List.of();
+        JsonObject crowd = r.body().getAsJsonObject("crowd");
+        if (!crowd.has("top") || !crowd.get("top").isJsonArray()) return List.of();
+        List<LiveLifeStats.Watcher> out = new ArrayList<>();
+        for (JsonElement e : crowd.getAsJsonArray("top")) {
+            if (!e.isJsonObject() || out.size() >= CROWD_MAX) continue;
+            JsonObject o = e.getAsJsonObject();
+            try {
+                long seconds = o.has("seconds") ? o.get("seconds").getAsLong() : 0;
+                String source = o.has("source") && o.get("source").isJsonPrimitive() ? o.get("source").getAsString() : "";
+                if (seconds <= 0 || !("game".equals(source) || "web".equals(source))) continue;
+                String name = o.has("name") && o.get("name").isJsonPrimitive() ? o.get("name").getAsString() : null;
+                String uuid = o.has("uuid") && o.get("uuid").isJsonPrimitive() ? o.get("uuid").getAsString() : null;
+                if (uuid != null && !uuid.matches("[0-9a-fA-F]{32}")) uuid = null;
+                out.add(new LiveLifeStats.Watcher(name == null || name.isBlank() ? null : name, uuid, source, seconds));
+            } catch (RuntimeException ignored) {
+                // a bad entry is skipped, the rest still show
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    /**
      * The stream's Discord chat after {@code since} (a seq; negative = just the head, no backlog), on
      * {@code base} — the streamer's own relay or the viewer channel's.
      */
@@ -707,7 +739,16 @@ public final class LiveFeedClient {
      * Pass it only with the player's consent.
      */
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked) {
-        String path = statusPath(viewer, ranked);
+        return status(viewer, channel, ranked, null);
+    }
+
+    /**
+     * As above; a ranked poll also carries {@code name}, the viewer's own player name, which shows on
+     * the streamer's "the crowd" death page among this life's longest watchers.
+     */
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
+                                                   @Nullable String name) {
+        String path = statusPath(viewer, ranked, name);
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -718,6 +759,17 @@ public final class LiveFeedClient {
      * and {@code life}/{@code fp}/{@code v} say which life it ranks in.
      */
     static String statusPath(@Nullable UUID viewer, @Nullable Life ranked) {
+        return statusPath(viewer, ranked, null);
+    }
+
+    /** {@link #statusPath(UUID, Life)}, plus {@code &name=} on a ranked poll (consent already given). */
+    static String statusPath(@Nullable UUID viewer, @Nullable Life ranked, @Nullable String name) {
+        String path = statusPathBase(viewer, ranked);
+        if (viewer == null || ranked == null || name == null || name.isBlank()) return path;
+        return path + "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private static String statusPathBase(@Nullable UUID viewer, @Nullable Life ranked) {
         if (viewer == null) return "/live/status";
         String path = "/live/status?viewer=" + viewer;
         if (ranked == null) return path;

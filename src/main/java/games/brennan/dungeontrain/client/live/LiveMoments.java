@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.live.life.LiveLifeChat;
+import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
@@ -31,6 +33,11 @@ public final class LiveMoments {
         byte[] png = packet.kind() == MomentKind.PHOTO && packet.png().length > 0 ? packet.png() : null;
         LiveFeedClient.chatMoment(DungeonTrain.relayBaseUrl(), token, packet.kind(), packet.title(), packet.excerpt(), png)
             .thenAccept(r -> {
+                if (r.ok() && !r.body().has("withheld")) {
+                    LiveLifeEvents.moment(packet.kind() == MomentKind.PHOTO);
+                    // Its reactions count toward this life's "the crowd" page.
+                    if (r.body().has("seq") && r.body().get("seq").isJsonPrimitive()) LiveLifeChat.rememberMine(r.body().get("seq").getAsLong());
+                }
                 if (!r.ok() && !failureLogged) {
                     failureLogged = true;
                     LOGGER.warn("[DungeonTrain] live moment share failed (status {}); further failures this session are silent", r.status());

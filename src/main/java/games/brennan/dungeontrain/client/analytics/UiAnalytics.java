@@ -144,10 +144,16 @@ public final class UiAnalytics {
     public static final String PAGE_GEAR = "gear";
     public static final String PAGE_LIVES = "lives";
     public static final String PAGE_SURVEY = "survey";
+    // Reserved: the mod-recommendations page left the death screen, but older jars still send it and
+    // the relay's ui-events.js keeps accepting it.
     public static final String PAGE_MODREC = "modrec";
     public static final String PAGE_DONATE = "donate";
     public static final String PAGE_PLATFORM = "platform";
     public static final String PAGE_CONTRIBUTE = "contribute";
+    // The Live Eye death pages ("the broadcast", "the crowd"). Lock-step with ui-events.js PAGES, which
+    // must accept them before a jar that sends them ships, or those events 400 as bad_page.
+    public static final String PAGE_BROADCAST = "broadcast";
+    public static final String PAGE_CROWD = "crowd";
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
             .version(HttpClient.Version.HTTP_1_1) // relay is HTTP/1.1; avoids h2c against a bare-Node relay (matches RelayChatClient)
