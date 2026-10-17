@@ -2162,6 +2162,10 @@ public final class TrainCarriageAppender {
         List<ServerPlayer> players = level.players();
         if (players.isEmpty()) return;
 
+        // First, so every reader of the registry this tick (portal walk included) sees live
+        // handles. See Trains#adoptResurfaced for the autosave-then-chunk-load path it covers.
+        adoptResurfacedGroups(level);
+
         // Per-tick placement collision tracker — runs every game tick
         // (not gated by the broadcast period) so the 60-tick clean-run
         // counter is precise. Mutates per-carriage state on
@@ -6725,6 +6729,32 @@ public final class TrainCarriageAppender {
             adoptReloadedGroup(level, shipyard, trainId, anchor, uuid);
             LOGGER.debug("[DungeonTrain] Reloaded held group anchor={} (subLevelId={}) for trainId={} — {} lane resumes once it surfaces",
                 anchor, uuid, trainId, forward ? "forward" : "backward");
+        }
+    }
+
+    /**
+     * Re-point registry handles at groups Sable restored on its own (autosave evicts the holding
+     * chunk to disk; the next load of that chunk brings the group back as a new instance). Without
+     * this the registry kept the removed handle and the portal walk skipped the group for good.
+     * See {@link Trains#adoptResurfaced}.
+     */
+    private static void adoptResurfacedGroups(ServerLevel level) {
+        for (Map.Entry<UUID, List<Trains.Carriage>> entry : Trains.byTrainId(level).entrySet()) {
+            UUID trainId = entry.getKey();
+            List<ManagedShip> visible = new ArrayList<>(entry.getValue().size());
+            for (Trains.Carriage c : entry.getValue()) visible.add(c.ship());
+            List<Integer> adopted = Trains.adoptResurfaced(trainId, visible);
+            if (adopted.isEmpty()) continue;
+            Map<Integer, ManagedShip> registry = Trains.knownGroups(trainId);
+            for (Integer anchor : adopted) {
+                ManagedShip live = registry.get(anchor);
+                if (live == null) continue;
+                // Same ownership adoptReloadedGroup takes: the force-load ticket is per instance,
+                // so the window must hold the restored one rather than the dead one.
+                holdGroupResident(level, trainId, live);
+                LOGGER.info("[DungeonTrain] Registry handle for anchor={} re-pointed to resurfaced sub-level {} for trainId={} — Sable restored it from holding without a DT reload",
+                    anchor, live.subLevelId(), trainId);
+            }
         }
     }
 
