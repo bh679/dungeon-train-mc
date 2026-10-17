@@ -27123,6 +27123,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "disable-mod-enchantments",
+      "version": "0.1329.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Only vanilla enchantments",
+      "summary": "Enchantments added by other mods no longer turn up in chests, at the enchanting table, from librarians or in the creative menu. Every enchantment you find is one you already know.",
+      "highlights": [],
+      "pr": 2081,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
