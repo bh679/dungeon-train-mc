@@ -27085,6 +27085,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-centred-coordinates",
+      "version": "0.1327.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "ui"
+      ],
+      "title": "Dimensional carriages have coordinates of their own",
+      "summary": "Inside a dimensional carriage, the debug screen (F3) now puts the middle of the room at X 0, Z 0, so it reads as a place of its own rather than a spot along the track.",
+      "highlights": [
+        "The middle of a dimensional carriage reads X 0, Z 0 on F3",
+        "Looking at a block in one shows the same disguised coordinates"
+      ],
+      "pr": 2078,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
