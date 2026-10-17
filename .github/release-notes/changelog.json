@@ -27211,6 +27211,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "empty-chests-dont-count",
+      "version": "0.1335.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "advancements"
+      ],
+      "title": "Empty chests no longer count",
+      "summary": "A challenge about opening chests now only counts chests that have loot in them. Opening an empty one no longer moves you closer.",
+      "highlights": [],
+      "pr": 2088,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

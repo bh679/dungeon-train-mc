@@ -2512,7 +2512,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "Empuja el eco de otra persona fuera del tren, al vacío.",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "Fuera del tren, a la nada: no volverán a subir.",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "Respeta las reglas",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Abre %s cofres distintos en una sola vida. Abre el mismo cofre dos veces y la racha se reinicia.",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Abre %s cofres distintos con botín dentro en una sola vida. Abre el mismo cofre dos veces y la racha se reinicia.",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "Tomando notas",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "Abre %s libros aleatorios. Las relecturas cuentan.",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "No lo sé, ni quiero saberlo",
