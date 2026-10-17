@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.life.LiveRewards;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.commands.Commands;
@@ -20,7 +21,19 @@ public final class RewardsLink {
 
     public static final String COMMAND = "/dungeontrain-rewards";
 
+    /**
+     * Whether the death pages mention Community Rewards at all: the way in, the pitch, the Replays
+     * Kept line, and any reward the relay reports. Off until the rewards are built and on sale;
+     * flip it when {@code CommunityRewardsScreen} lands.
+     */
+    public static final boolean PAGE_READY = false;
+
     private RewardsLink() {}
+
+    /** The rewards the death pages may show: none while {@link #PAGE_READY} is off. */
+    public static LiveRewards rewards() {
+        return PAGE_READY ? LiveRewards.latest() : LiveRewards.NONE;
+    }
 
     /** Open the Community Rewards page over {@code parent}; Done returns there. */
     public static void open(@Nullable Screen parent) {
