@@ -2512,7 +2512,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "Pousse l'écho de quelqu'un d'autre hors du train, dans le vide.",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "Hors du train, dans le néant — ils ne remonteront pas.",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "Respecte les règles",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Ouvre %s coffres distincts en une seule vie. Ouvre deux fois le même coffre et la série repart à zéro.",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Ouvre %s coffres distincts contenant du butin en une seule vie. Ouvre deux fois le même coffre et la série repart à zéro.",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "Prendre des notes",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "Ouvre %s livres aléatoires. Les relectures comptent.",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "Je ne sais pas, je ne veux pas savoir",

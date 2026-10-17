@@ -2512,7 +2512,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "Stoße das Echo eines anderen vom Zug und in die Leere.",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "Vom Zug, ins Nichts — sie klettern nicht zurück.",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "Respektiere die Regeln",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Öffne %s verschiedene Truhen in einem einzigen Leben. Öffne dieselbe Truhe zweimal, und die Serie beginnt von vorn.",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Öffne %s verschiedene Truhen mit Beute darin in einem einzigen Leben. Öffne dieselbe Truhe zweimal, und die Serie beginnt von vorn.",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "Notizen machen",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "Öffne %s zufällige Bücher. Erneutes Lesen zählt.",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "Weiß nicht, will's nicht wissen",

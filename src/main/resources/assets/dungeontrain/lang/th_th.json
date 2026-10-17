@@ -2460,7 +2460,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "ผลักเสียงสะท้อนของคนอื่นลงจากขบวนรถไฟสู่ห้วงสุญญภาพ",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "ลงจากขบวน สู่ความว่างเปล่า — พวกเขาจะไม่ปีนกลับขึ้นมา",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "เคารพกฎ",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "เปิดหีบที่แตกต่างกัน %s ใบในชีวิตเดียว เปิดหีบเดิมซ้ำแล้วสถิติจะรีเซ็ต",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "เปิดหีบที่มีของอยู่ข้างในซึ่งแตกต่างกัน %s ใบในชีวิตเดียว เปิดหีบเดิมซ้ำแล้วสถิติจะรีเซ็ต",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "จดบันทึก",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "เปิดหนังสือสุ่ม %s เล่ม การอ่านซ้ำก็นับ",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "ไม่รู้ ไม่อยากรู้",

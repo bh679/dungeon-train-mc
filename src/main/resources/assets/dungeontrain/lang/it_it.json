@@ -2512,7 +2512,7 @@
   "advancements.dungeontrain.dungeon_train.remote_echo_void.description": "Spingi l'eco di qualcun altro fuori dal treno, nel vuoto.",
   "advancements.dungeontrain.dungeon_train.remote_echo_void.hint": "Fuori dal treno, nel nulla: non risaliranno.",
   "advancements.dungeontrain.dungeon_train.chests_100_unique.title": "Rispetta le Regole",
-  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Apri %s bauli diversi in una sola vita. Apri lo stesso baule due volte e la serie si azzera.",
+  "advancements.dungeontrain.dungeon_train.chests_100_unique.description": "Apri %s bauli diversi con del bottino dentro in una sola vita. Apri lo stesso baule due volte e la serie si azzera.",
   "advancements.dungeontrain.dungeon_train.taking_notes.title": "Prendere Appunti",
   "advancements.dungeontrain.dungeon_train.taking_notes.description": "Apri %s libri casuali. Le riletture contano.",
   "advancements.dungeontrain.dungeon_train.burned_unread.title": "Non lo So, Non Voglio Saperlo",
