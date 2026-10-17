@@ -1,15 +1,12 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
-import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.compat.vista.TvItems;
-import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.net.LiveTakeoverPacket;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Channel;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Takeover;
-import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.Commands;
@@ -93,10 +90,9 @@ public final class LiveTakeoverOffer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || !mc.player.isAlive()) return false;
         return eligible(TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD)),
-            // Dev builds stream in Free Play for testing, as the server allows (LiveFeedEvents#streamBlocked).
-            mc.player.hasEffect(ModMobEffects.FREE_PLAY) && !DungeonTrain.isDevBuild(),
-            DiscordPresenceClientConfig.isGranted() && LiveFeedClientConfig.streamingEnabled(),
-            FfmpegSupport.state() != FfmpegSupport.State.OFF && FfmpegSupport.state() != FfmpegSupport.State.FAILED,
+            LiveEyeEligibility.freePlayBlocks(mc.player),
+            LiveEyeEligibility.streamingAllowed(),
+            LiveEyeEligibility.ffmpegUsable(),
             LiveStreamController.get().state() == LiveStreamController.State.IDLE);
     }
 

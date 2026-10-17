@@ -20,12 +20,15 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Server side of a streamer's Live Eye gift (relay {@code live-gift.js}): the viewer accepted, so
  * check they may have one, redeem the gift with the relay — 200 once, only for the uuid it was made out
- * to — and put a fresh Live Eye on their head, which takes them live.
+ * to — and put a fresh Live Eye on their head, which takes them live. Redeeming ends nothing: the giver
+ * streams on until this player's own claim takes the channel, so a Live Eye that never goes live costs
+ * the giver nothing.
  *
- * <p>Nobody who can't take one is ever offered one: the viewer's client only joins as eligible — and only
- * shows or accepts an offer — while it is not a Kid, has Livestreaming on and carries no Live Eye
- * ({@code LiveGiftClient#canReceive}), and the relay skips banned players. The same checks run here as an
- * anti-cheat backstop only: a refusal is logged, never shown, and leaves the gift unspent.</p>
+ * <p>Nobody who can't stream is ever offered one: the viewer's client only joins as eligible — and only
+ * shows or accepts an offer — while it is not a Kid, has Livestreaming on, is not in Free Play and carries
+ * no Live Eye ({@code LiveGiftClient#canReceive}), and the relay skips banned players. The same checks run
+ * here, before the redeem, as a backstop — mods older than the Free Play check reach it honestly — so a
+ * refusal leaves the gift unspent and says why.</p>
  */
 public final class LiveGiftServer {
 
@@ -35,16 +38,19 @@ public final class LiveGiftServer {
     /** Players with a redeem in flight: a double-click asks the relay once. */
     private static final Set<UUID> IN_FLIGHT = ConcurrentHashMap.newKeySet();
 
-    public enum Refusal { NOT_ALLOWED, BANNED, HOLDS_ONE }
+    public enum Refusal { NOT_ALLOWED, BANNED, HOLDS_ONE, FREE_PLAY, NO_INTERNET }
 
     private LiveGiftServer() {}
 
     /** Why a player can't take a gifted Live Eye, or null when they can. Pure for the tests. */
     @Nullable
-    public static Refusal refusal(boolean kid, boolean livestreamOn, boolean banned, boolean holdsLiveEye) {
+    public static Refusal refusal(boolean kid, boolean livestreamOn, boolean banned, boolean holdsLiveEye,
+                                  boolean streamBlocked, boolean needsInternet) {
         if (kid || !livestreamOn) return Refusal.NOT_ALLOWED;
         if (banned) return Refusal.BANNED;
         if (holdsLiveEye) return Refusal.HOLDS_ONE;
+        if (streamBlocked) return Refusal.FREE_PLAY;
+        if (needsInternet) return Refusal.NO_INTERNET;
         return null;
     }
 
@@ -71,13 +77,23 @@ public final class LiveGiftServer {
         }));
     }
 
-    /** The backstop: true (and logged) when {@code player} can't take a Live Eye. Never reached by an honest client. */
+    /**
+     * The backstop: true (logged, and told to the player) when {@code player} couldn't go live with a Live
+     * Eye — the same blockers {@code LiveFeedEvents#startStreaming} applies once it is on.
+     */
     private static boolean refused(ServerPlayer player) {
         Refusal why = refusal(ContentModeMirror.isKid(player), ContentModeMirror.isLivestreamOn(player),
-            LiveModeration.isBanned(player.getUUID()), LiveEyeLootResolver.countRealLiveEyes(player.getInventory()) > 0);
+            LiveModeration.isBanned(player.getUUID()), LiveEyeLootResolver.countRealLiveEyes(player.getInventory()) > 0,
+            LiveFeedEvents.streamBlocked(player),
+            LiveFeedEvents.needsInternet(NetworkConsentMirror.isKnown(player.getUUID()), NetworkConsentMirror.isGranted(player)));
         if (why == null) return false;
-        LOGGER.warn("[DungeonTrain] Live Eye gift accept from {} refused ({}) — its client should not have offered it",
+        LOGGER.info("[DungeonTrain] Live Eye gift accept from {} refused ({}); the gift stays unspent",
             player.getGameProfile().getName(), why);
+        player.sendSystemMessage(switch (why) {
+            case FREE_PLAY -> Component.translatable("chat.dungeontrain.live.free_play").withStyle(ChatFormatting.GRAY);
+            case NO_INTERNET -> LiveFeedEvents.needsInternetLine();
+            default -> Component.translatable(KEY + "failed").withStyle(ChatFormatting.GRAY);
+        });
         return true;
     }
 
