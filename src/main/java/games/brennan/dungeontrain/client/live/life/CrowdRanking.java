@@ -10,7 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * The crowd page's podium: the viewers most present for this life, by watch time AND chat. Each chat
+ * Who the crowd page shows: the viewer most present for this life, by watch time AND chat. Each chat
  * line is worth {@link #MESSAGE_WEIGHT_S} seconds of watching, so someone who talked the whole way
  * through can outrank a quiet viewer who watched a little longer.
  *
@@ -24,7 +24,8 @@ public final class CrowdRanking {
 
     /** One chat line counts as this many seconds of watching. */
     public static final int MESSAGE_WEIGHT_S = 60;
-    public static final int PODIUM = 3;
+    /** How many the crowd page shows: the one most present viewer. */
+    public static final int PODIUM = 1;
 
     /** A podium place: who, how they watched or spoke, and the totals behind the score. */
     public record Ranked(@Nullable String name, @Nullable String uuid, String source, long seconds, int messages) {

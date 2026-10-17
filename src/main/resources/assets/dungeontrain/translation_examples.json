@@ -16685,42 +16685,6 @@
       ]
     }
   },
-  "gui.dungeontrain.death.live.crowd.narr.three": {
-    "1": {
-      "label": "the most viewers at once",
-      "examples": [
-        "41",
-        "7"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.live.crowd.narr.two": {
-    "1": {
-      "label": "the most viewers at once",
-      "examples": [
-        "41",
-        "7"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.live.crowd.narr.one": {
-    "1": {
-      "label": "the most viewers at once",
-      "examples": [
-        "41",
-        "7"
-      ]
-    }
-  },
-  "gui.dungeontrain.death.live.crowd.narr.plain": {
-    "1": {
-      "label": "the most viewers at once",
-      "examples": [
-        "41",
-        "7"
-      ]
-    }
-  },
   "gui.dungeontrain.death.live.pitch.quicker_ask.q": {
     "1": {
       "label": "how far behind the viewers watched, in seconds",
@@ -16793,6 +16757,31 @@
       "examples": [
         "14",
         "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.crowd.narr.community": {
+    "1": {
+      "label": "the most viewers at once",
+      "examples": [
+        "41",
+        "7"
+      ]
+    },
+    "2": {
+      "label": "how many chat lines the viewers said",
+      "examples": [
+        "216",
+        "12"
+      ]
+    }
+  },
+  "gui.dungeontrain.death.live.crowd.narr.quiet": {
+    "1": {
+      "label": "the most viewers at once",
+      "examples": [
+        "41",
+        "7"
       ]
     }
   }
