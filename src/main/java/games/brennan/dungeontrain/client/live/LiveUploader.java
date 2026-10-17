@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Result;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.SignedPut;
@@ -222,6 +223,10 @@ public final class LiveUploader implements AutoCloseable {
         Map<String, SignedPut> urls = LiveFeedClient.parsePresign(r);
         int count = LiveFeedClient.parseViewerCount(r);
         if (count >= 0) viewers = count;
+        if (r.ok()) {
+            LiveLifeEvents.heartbeat(count);
+            LiveLifeEvents.crowd(LiveFeedClient.parseCrowd(r));
+        }
         if (urls.isEmpty()) {
             presignFailed(r);
             return;

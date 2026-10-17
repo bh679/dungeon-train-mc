@@ -7,6 +7,7 @@ import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.live.life.LiveRewards;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -140,6 +141,8 @@ public final class DonationSummaryClient {
                                 LOGGER.debug("[DungeonTrain] donations fetch -> HTTP {}", resp.statusCode());
                                 return;
                             }
+                            // The community-rewards state rides the same payload (absent on an older relay).
+                            LiveRewards.remember(resp.body());
                             Summary summary = parse(resp.body());
                             if (summary != null) callback.accept(summary);
                         } catch (Throwable t) {

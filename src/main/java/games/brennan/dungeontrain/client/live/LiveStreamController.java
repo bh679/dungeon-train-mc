@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.live.life.LiveLifeEvents;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientLanguage;
 import games.brennan.dungeontrain.cheat.ApprovedModList;
@@ -238,6 +239,7 @@ public final class LiveStreamController {
         }
         LOGGER.info("[DungeonTrain] live: streamer died; streaming on through the death screens");
         postMortem.begin();
+        LiveLifeEvents.died();
         LiveEncoder enc = encoder;
         double deathS = enc == null ? 0 : enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps());
         int segmentS = LiveFeedClientConfig.segmentSeconds();
@@ -592,6 +594,7 @@ public final class LiveStreamController {
         uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
         streamStartedMs = System.currentTimeMillis();
         state = State.STREAMING;
+        LiveLifeEvents.stintStarted(LiveFeedClientConfig.segmentSeconds());
         LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}, playlist {}", c.session(),
             grabber == null ? 0 : grabber.width(), grabber == null ? 0 : grabber.height(),
             fps, audio != null ? " with sound" : "", c.playlistUrl());
@@ -689,6 +692,7 @@ public final class LiveStreamController {
 
     private void cutOff(String by) {
         if (state != State.STREAMING) return;
+        LiveLifeEvents.taken(by, !postMortem.active());
         if (postMortem.active()) {
             // A viewer took the dead streamer's stream over: the server already let go of this one.
             LOGGER.info("[DungeonTrain] live: post-mortem stream taken over by {}", by);
@@ -724,6 +728,7 @@ public final class LiveStreamController {
     private void stop(@Nullable Component why, boolean clean, long deadlineMs, @Nullable LiveStreamEndedToast.Reason ended) {
         if (state == State.IDLE) return;
         boolean wasLive = state == State.STREAMING;
+        if (wasLive) LiveLifeEvents.stintEnded(ended == null ? null : ended.relayReason);
         if (watchingWithEye()) LiveTakeoverFlow.abandon();
         postMortem.clear();
         // A pending offer goes with the stream: the relay stop (reason "died") opens it after the final upload.
@@ -800,7 +805,8 @@ public final class LiveStreamController {
     /** Tells the relay the stream is over and waits up to {@code timeoutMs} for it to hear. */
     private static void relayStop(String token, @Nullable String reason, long timeoutMs) {
         try {
-            LiveFeedClient.stop(token, reason).orTimeout(timeoutMs, TimeUnit.MILLISECONDS).join();
+            LiveFeedClient.Result r = LiveFeedClient.stop(token, reason).orTimeout(timeoutMs, TimeUnit.MILLISECONDS).join();
+            if (r != null) LiveLifeEvents.crowd(LiveFeedClient.parseCrowd(r));
         } catch (CompletionException e) {
             LOGGER.warn("[DungeonTrain] live stop: relay did not answer within {} ms", timeoutMs);
         }
