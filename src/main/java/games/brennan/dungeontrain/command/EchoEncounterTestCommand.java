@@ -282,7 +282,7 @@ public final class EchoEncounterTestCommand {
         // noteId 0 — a dev spawn has no relay note behind it, so its outcome is reported nowhere.
         // Asked BEFORE the spawn: afterwards the answer is stale, and on success there is no reason
         // to report. Both deferral branches log at DEBUG only, so without this a FALSE is mute.
-        String why = DeathNoteEchoSpawner.deferReason(level, player);
+        String why = DeathNoteEchoSpawner.deferReason(level, player, DEV_SCRIPT);
         boolean ok = DeathNoteEchoSpawner.spawnForTarget(level, player,
             player.getUUID().toString(), player.getGameProfile().getName(), deathCarriage, 0, kind,
             DEV_SCRIPT);
