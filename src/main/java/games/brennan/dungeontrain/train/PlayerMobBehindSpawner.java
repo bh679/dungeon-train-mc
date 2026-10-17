@@ -8,10 +8,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.EntityType;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -74,7 +76,18 @@ public final class PlayerMobBehindSpawner {
         if (behindGroup == null) return;                   // player at the trailing edge — nothing one group back
 
         int targetPIdx = behindAnchor + (groupSize - 1) / 2;            // centre carriage of the behind group
-        BlockPos floorPos = behindFloorPos(behindGroup, targetPIdx);
+        Optional<EntityType<?>> type = PlayerMobGroupSpawner.playerMobType();
+        if (type.isEmpty()) return;                        // warned inside
+        // A clear floor cell in that carriage (a mob dropped into a block suffocates). None → skip:
+        // "exactly one group back" is the point, so no other carriage stands in.
+        Optional<BlockPos> spot = CarriageSpawnSpot.clearFloorIn(
+            level, type.get(), behindCarriageOrigin(behindGroup, targetPIdx), behindGroup.provider().dims());
+        if (spot.isEmpty()) {
+            LOGGER.info("[DungeonTrain] PlayerMob behind-spawn ({}%) for {} at carriagePIdx={} -> no room (floor blocked)",
+                percent, player.getGameProfile().getName(), targetPIdx);
+            return;
+        }
+        BlockPos floorPos = spot.get();
         boolean ok = PlayerMobGroupSpawner.spawnPlayerMob(level, floorPos, targetPIdx, rng, travelDir);
         LOGGER.info("[DungeonTrain] PlayerMob behind-spawn ({}%) for {} (playerPIdx={} dir={}) one group back at carriagePIdx={} pos={} -> {}",
             percent, player.getGameProfile().getName(), pIdx, travelDir, targetPIdx, floorPos, ok ? "spawned" : "FAILED");
@@ -122,16 +135,15 @@ public final class PlayerMobBehindSpawner {
     }
 
     /**
-     * Interior floor-centre {@link BlockPos} (shipyard coords) of the carriage at {@code targetPIdx}
-     * within {@code group}, mirroring the per-carriage layout in {@code TrainAssembler.spawnGroup}.
+     * Shipyard origin of the carriage at {@code targetPIdx} within {@code group}, mirroring the
+     * per-carriage layout in {@code TrainAssembler.spawnGroup}.
      */
-    private static BlockPos behindFloorPos(Trains.Carriage group, int targetPIdx) {
+    private static BlockPos behindCarriageOrigin(Trains.Carriage group, int targetPIdx) {
         TrainTransformProvider provider = group.provider();
         CarriageDims dims = provider.dims();
         int slot = targetPIdx - provider.getPIdx();                      // 0-based slot within the group
         int length = dims.length();
         int enclosedStartOffset = provider.getGroupSize() > 1 ? CarriagePlacer.halfPadLen(dims) : 0;
-        BlockPos carriageOrigin = provider.getShipyardOrigin().offset(enclosedStartOffset + slot * length, 0, 0);
-        return PlayerMobGroupSpawner.interiorFloorCentre(carriageOrigin, dims);
+        return provider.getShipyardOrigin().offset(enclosedStartOffset + slot * length, 0, 0);
     }
 }

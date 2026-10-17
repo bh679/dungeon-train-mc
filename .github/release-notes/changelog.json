@@ -26945,8 +26945,25 @@
       "released_at": "2026-10-16T17:52:28Z"
     },
     {
-      "id": "live-eye-wins-death-handover",
+      "id": "playermob-spawn-clear-floor",
       "version": "0.1323.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs spawn more reliably in carriages",
+      "summary": "Fixed some mobs spawning stuck inside carriage blocks.",
+      "highlights": [],
+      "pr": 2069,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-eye-wins-death-handover",
+      "version": "0.1324.0",
       "type": "feat",
       "tags": [
         "feature",

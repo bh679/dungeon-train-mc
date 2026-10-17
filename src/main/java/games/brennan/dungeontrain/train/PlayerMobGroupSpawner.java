@@ -8,8 +8,8 @@ import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.train.CarriagePlacer.CarriageType;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.playermob.compat.TrainConfinement;
+import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -111,10 +111,29 @@ public final class PlayerMobGroupSpawner {
         RandomSource rng = level.getRandom();
         if (rng.nextInt(oneIn) != 0) return;          // 1-in-N gate (oneIn == 1 → always)
 
-        PendingContentsEntitySpawn host = pickHostCarriage(pending, rng);
-        if (host == null) return;                     // no enclosed carriage to stand in
+        Optional<EntityType<?>> type = playerMobType();
+        if (type.isEmpty()) return;                   // warned inside
 
-        BlockPos spawnPos = interiorFloorCentre(host.shipyardOrigin(), host.dims());
+        // Host carriages in random order; the first with a clear floor cell takes the mob. A
+        // contents template can fill the centre (or the whole floor), and a mob dropped into a
+        // block suffocates — see CarriageSpawnSpot.
+        PendingContentsEntitySpawn host = null;
+        BlockPos spawnPos = null;
+        for (PendingContentsEntitySpawn candidate : hostCarriagesInOrder(pending, rng)) {
+            Optional<BlockPos> spot = CarriageSpawnSpot.clearFloorIn(
+                level, type.get(), candidate.shipyardOrigin(), candidate.dims());
+            if (spot.isPresent()) {
+                host = candidate;
+                spawnPos = spot.get();
+                break;
+            }
+        }
+        if (host == null) {
+            LOGGER.info("[DungeonTrain] PlayerMob group-spawn (1-in-{}) anchorPIdx={} -> no room (every carriage floor is blocked)",
+                oneIn, provider.getPIdx());
+            return;
+        }
+
         // marchDir 0: the forward spawn leaves the mob's normal boarding latch to choose.
         boolean ok = spawnPlayerMob(level, spawnPos, host.carriageIndex(), rng, 0);
         LOGGER.info("[DungeonTrain] PlayerMob group-spawn (1-in-{}) anchorPIdx={} carriagePIdx={} pos={} -> {}",
@@ -128,12 +147,12 @@ public final class PlayerMobGroupSpawner {
     }
 
     /**
-     * Pick a random enclosed (non-FLATBED) carriage from the group so the mob
-     * stands inside a walled interior; fall back to any non-null slot if the
-     * group is somehow all flatbeds.
+     * The group's enclosed (non-FLATBED) carriages in random order, so the mob stands inside a
+     * walled interior; every non-null slot if the group is somehow all flatbeds. The first entry is
+     * the uniform pick the spawn used before it checked for room; the rest are its fallbacks.
      */
-    private static PendingContentsEntitySpawn pickHostCarriage(PendingContentsEntitySpawn[] pending,
-                                                               RandomSource rng) {
+    private static List<PendingContentsEntitySpawn> hostCarriagesInOrder(PendingContentsEntitySpawn[] pending,
+                                                                         RandomSource rng) {
         List<PendingContentsEntitySpawn> enclosed = new ArrayList<>();
         List<PendingContentsEntitySpawn> any = new ArrayList<>();
         for (PendingContentsEntitySpawn p : pending) {
@@ -141,9 +160,19 @@ public final class PlayerMobGroupSpawner {
             any.add(p);
             if (!isFlatbed(p.variant())) enclosed.add(p);
         }
-        List<PendingContentsEntitySpawn> pool = !enclosed.isEmpty() ? enclosed : any;
-        if (pool.isEmpty()) return null;
-        return pool.get(rng.nextInt(pool.size()));
+        List<PendingContentsEntitySpawn> pool = new ArrayList<>(!enclosed.isEmpty() ? enclosed : any);
+        Util.shuffle(pool, rng);
+        return pool;
+    }
+
+    /** The PlayerMob entity type, or empty (with a warning) when the bundled mod is missing. */
+    static Optional<EntityType<?>> playerMobType() {
+        Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
+        if (typeOpt.isEmpty()) {
+            LOGGER.warn("[DungeonTrain] PlayerMob spawn: entity '{}' not registered — is the bundled mod present?",
+                PLAYER_MOB_ID);
+        }
+        return typeOpt;
     }
 
     private static boolean isFlatbed(CarriageVariant variant) {
@@ -151,20 +180,9 @@ public final class PlayerMobGroupSpawner {
     }
 
     /**
-     * Interior floor-centre {@link BlockPos} (shipyard coords) for a carriage at
-     * {@code shipyardOrigin}. Interior origin is {@code shipyardOrigin.offset(1,1,1)}
-     * (inside the walls/floor) per {@link CarriageContentsPlacer}; we centre on
-     * the interior footprint and sit on its floor.
-     */
-    static BlockPos interiorFloorCentre(BlockPos shipyardOrigin, CarriageDims dims) {
-        BlockPos interiorOrigin = shipyardOrigin.offset(1, 1, 1);
-        Vec3i interior = CarriageContentsPlacer.interiorSize(dims);
-        return interiorOrigin.offset(interior.getX() / 2, 0, interior.getZ() / 2);
-    }
-
-    /**
      * Resolve, create, initialise, tag, and add a PlayerMob at {@code floorPos}
-     * (shipyard coords). Mirrors the positioning/persistence of
+     * (shipyard coords). Callers pick {@code floorPos} with {@link CarriageSpawnSpot}, so it is
+     * clear of blocks; this does not check again. Mirrors the positioning/persistence of
      * {@link CarriageContentsPlacer#spawnVariantMob} but additionally calls
      * {@code finalizeSpawn} (rolls personality + skin).
      *
@@ -177,12 +195,8 @@ public final class PlayerMobGroupSpawner {
      */
     static boolean spawnPlayerMob(ServerLevel level, BlockPos floorPos,
                                   int carriagePIdx, RandomSource rng, int marchDir) {
-        Optional<EntityType<?>> typeOpt = EntityType.byString(PLAYER_MOB_ID.toString());
-        if (typeOpt.isEmpty()) {
-            LOGGER.warn("[DungeonTrain] PlayerMob spawn: entity '{}' not registered — is the bundled mod present?",
-                PLAYER_MOB_ID);
-            return false;
-        }
+        Optional<EntityType<?>> typeOpt = playerMobType();
+        if (typeOpt.isEmpty()) return false;
 
         Entity entity;
         try {
