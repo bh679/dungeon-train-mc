@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.credits;
 import com.mojang.brigadier.CommandDispatcher;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.live.LinkCodeGuard;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.CommandSourceStack;
@@ -89,6 +90,7 @@ public final class DiscordLinkCommand {
                     if (!wasLinked) say(error(start.error()));
                     return;
                 }
+                LinkCodeGuard.markShown(); // keeps the code off a Live Eye stream
                 say(codeLines(start.code(), wasLinked));
                 if (!wasLinked) watch(++watchGeneration, 0);
             }));

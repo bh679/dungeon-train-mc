@@ -77,4 +77,10 @@ class StreamableScreensTest {
         assertTrue(names.contains("java.lang.Object"));
         assertEquals("java.util.ArrayList", names.iterator().next());
     }
+
+    @Test
+    void theDiscordLinkScreenNeverGoesOut() {
+        // It shows a link code large: a viewer could spend it first.
+        assertFalse(shown(line("games.brennan.dungeontrain.client.credits.DiscordLinkScreen", SCREEN), false));
+    }
 }

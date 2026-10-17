@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client.twitch;
 import com.mojang.brigadier.CommandDispatcher;
 import games.brennan.dungeontrain.DungeonTrain;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import games.brennan.dungeontrain.client.live.LinkCodeGuard;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import net.minecraft.ChatFormatting;
@@ -103,6 +104,7 @@ public final class TwitchLinkCommand {
                     if (!wasLinked) say(error(start.error()));
                     return;
                 }
+                LinkCodeGuard.markShown(); // keeps the code off a Live Eye stream
                 say(codeLines(start, verified));
                 if (!verified) watch(++watchGeneration, 0);
             }));
