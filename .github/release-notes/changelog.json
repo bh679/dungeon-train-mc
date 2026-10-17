@@ -27133,8 +27133,8 @@
         "loot",
         "balance"
       ],
-      "title": "Only vanilla enchantments",
-      "summary": "Enchantments from other mods are gone.",
+      "title": "Enchantment tidy-up",
+      "summary": "Tidied up the enchantment pool.",
       "highlights": [],
       "pr": 2081,
       "date": "2026-10-17",
