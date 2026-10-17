@@ -27011,6 +27011,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "creaking-hearts-work-by-day",
+      "version": "0.1325.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs",
+        "balance"
+      ],
+      "title": "Creaking hearts wake by day",
+      "summary": "Creaking hearts no longer sleep through the day. Pale Gardens now send out their Creakings at any hour, so a sunny stop is no safer than a night one.",
+      "highlights": [],
+      "pr": 2075,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
