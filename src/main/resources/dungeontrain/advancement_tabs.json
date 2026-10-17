@@ -91,7 +91,7 @@
     "dungeontrain:dungeon_train/reached_far_lands": true,
     "dungeontrain:dungeon_train/reached_floating": true,
     "dungeontrain:dungeon_train/reached_infdev": true,
-    "dungeontrain:dungeon_train/reached_large_biomes": true,
+    "dungeontrain:dungeon_train/reached_large_biomes": false,
     "dungeontrain:dungeon_train/reached_lost_city": true,
     "dungeontrain:dungeon_train/reached_nether": true,
     "dungeontrain:dungeon_train/reached_overworld_again": true,
@@ -213,7 +213,8 @@
     "dungeontrain:enchiridion/wither_watcher": "always",
     "dungeontrain:dungeon_train/completionist": "always",
     "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
-    "dungeontrain:dungeon_train/secrete_menu": "earned"
+    "dungeontrain:dungeon_train/secrete_menu": "earned",
+    "dungeontrain:dungeon_train/reached_large_biomes": "earned"
   },
   "complete": {
     "dungeontrain:dungeon_train/train_explored": "dungeontrain:dungeon_train/tab_train_explorer",
