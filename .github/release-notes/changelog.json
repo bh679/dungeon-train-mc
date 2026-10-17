@@ -27305,8 +27305,25 @@
       "released_at": null
     },
     {
-      "id": "cave-photo-overworld-band",
+      "id": "hide-unearnable-advancement",
       "version": "0.1341.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "An advancement you could never earn is gone",
+      "summary": "One advancement could never actually be earned, yet it sat in your advancement tree and counted toward completing the full set. It's now hidden from everyone who doesn't already have it, and finishing the set no longer needs it. If you already earned it, you keep it.",
+      "highlights": [],
+      "pr": 2093,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "cave-photo-overworld-band",
+      "version": "0.1342.0",
       "type": "fix",
       "tags": [
         "fix",
