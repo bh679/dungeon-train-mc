@@ -36,6 +36,7 @@ import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PhotoBiomesPacket;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import org.slf4j.Logger;
 
 import java.util.HashSet;
@@ -66,6 +67,7 @@ public final class PhotoAdvancementEvents {
     @SubscribeEvent
     public static void onFrameAdded(FrameAddedEvent event) {
         if (!(event.getCameraHolderEntity() instanceof ServerPlayer player)) return;
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotoShots();
         rememberSubjects(player, event);
         LiveMomentPhotos.onFrameAdded(player, event.getFrame());
         // Every advancement this shot earns remembers it — see AdvancementPhotoCapture.

@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.client.live;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.client.live.life.LiveLifeChat;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.chat.ChatReactionTracker;
 import games.brennan.dungeontrain.compat.vista.TvItems;
@@ -223,6 +224,8 @@ public final class LiveChatBridge {
         GuiMessageTag tag = mc.isSingleplayer() ? GuiMessageTag.systemSinglePlayer() : GuiMessageTag.system();
         String myName = mc.getUser() != null ? mc.getUser().getName() : "";
         boolean streaming = LiveStreamController.get().streaming();
+        // This life's "the crowd" death page: who said what in the room while this player was on air.
+        if (streaming) LiveLifeChat.onLines(page.lines(), me != null ? me.toString().replace("-", "") : null);
         for (ChatLine line : page.lines()) {
             if (line.poll() != null) {
                 Component shown = LiveTakeoverChat.onPollLine(line.poll(), me);
@@ -252,6 +255,7 @@ public final class LiveChatBridge {
         for (LiveFeedClient.LineReactions r : page.reactions()) {
             ChatReactionTracker.applyLive(r.line(), r.list(), r.event());
         }
+        if (streaming) LiveLifeChat.onReactions(page.reactions());
         cursor = LiveChatRules.nextCursor(cursor, page.seq());
     }
 

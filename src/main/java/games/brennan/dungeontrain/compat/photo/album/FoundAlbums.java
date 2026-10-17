@@ -9,6 +9,7 @@ import games.brennan.dungeontrain.compat.photo.PhotoPngCodec;
 import games.brennan.dungeontrain.event.SharedBookGate;
 import games.brennan.dungeontrain.event.StartingBookEvents;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.world.item.component.album.AlbumContent;
 import io.github.mortuusars.exposure.world.item.component.album.SignedAlbumContent;
@@ -148,6 +149,7 @@ public final class FoundAlbums {
             if (owner.isEmpty()) continue;
             player.setItemInHand(hand, ItemStack.EMPTY);
             StartingBookEvents.dropAndBurn(player, album);
+            player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosViewed();
             JsonObject body = new JsonObject();
             body.addProperty("uuid", AlbumSavePayload.bare(owner.get()));
             RelayOutbox.get().enqueue(VIEW_PATH, body.toString());
