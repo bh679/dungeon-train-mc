@@ -27031,6 +27031,22 @@
       "released_at": null
     },
     {
+      "id": "backpack-emerald-tributes",
+      "version": "0.1325.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Pay Tributes from your backpack",
+      "summary": "Emeralds and emerald blocks in your backpack slots now count when paying a Tribute, so you no longer have to move them into your inventory first.",
+      "highlights": [],
+      "pr": 2074,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "live-eye-death-pages",
       "version": "0.1326.0",
       "type": "feat",
