@@ -27192,6 +27192,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-vines-stay-on-trees",
+      "version": "0.1333.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Less lag in the Nether",
+      "summary": "Thousands of dropped vines were piling up as the land loaded in and slowing the game. They no longer drop.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
