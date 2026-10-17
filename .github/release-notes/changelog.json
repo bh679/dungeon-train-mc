@@ -27296,8 +27296,8 @@
         "fix",
         "advancements"
       ],
-      "title": "Underground photos count in the right place",
-      "summary": "A photo taken underground now only counts for its advancement when you are in the Overworld, not in other parts of the journey.",
+      "title": "Advancement fix",
+      "summary": "One advancement now checks its conditions more carefully.",
       "highlights": [],
       "pr": 2092,
       "date": "2026-10-17",
