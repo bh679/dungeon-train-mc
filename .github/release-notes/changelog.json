@@ -27011,6 +27011,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-death-pages",
+      "version": "0.1326.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Two new death pages for lives you streamed",
+      "summary": "If you wore the Live Eye at any point in a life, the death screen now tells the story of that broadcast: how long you were on air, what you shared, who took the Eye, and who stayed with you the most.",
+      "highlights": [
+        "The broadcast: your time on air across the whole life, moments and photos shared, how many times you went live, and how far behind your viewers were.",
+        "The crowd: the viewer who was with you most, by watching and chatting, shown in their own skin, plus your peak audience, chat lines and votes won.",
+        "Your death clip, and whoever picked up the Eye after you.",
+        "The mod recommendations page no longer appears after a death."
+      ],
+      "pr": 2073,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
