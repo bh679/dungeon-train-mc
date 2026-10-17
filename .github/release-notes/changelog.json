@@ -26957,9 +26957,9 @@
       "highlights": [],
       "pr": 2069,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1324.0",
+      "released_at": "2026-10-17T03:15:02Z"
     },
     {
       "id": "live-eye-wins-death-handover",
@@ -26974,9 +26974,9 @@
       "highlights": [],
       "pr": 2070,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1324.0",
+      "released_at": "2026-10-17T03:15:02Z"
     }
   ]
 }
