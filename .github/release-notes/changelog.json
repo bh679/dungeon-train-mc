@@ -27149,8 +27149,8 @@
         "fix",
         "train"
       ],
-      "title": "Dimensional carriages stay sealed off",
-      "summary": "Inside a dimensional carriage, the outside world could sometimes show through below the room after the train moved on. The room now stays closed off however far the train goes.",
+      "title": "Dimensional carriage visual fix",
+      "summary": "Fixed a visual glitch in some dimensional carriages.",
       "highlights": [],
       "pr": 2082,
       "date": "2026-10-17",
