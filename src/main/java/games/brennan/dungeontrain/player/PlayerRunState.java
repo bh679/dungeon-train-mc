@@ -218,6 +218,17 @@ public final class PlayerRunState {
     private int photosHostile;
     private int photosAnimals;
     /**
+     * This life's photo stats for the death screen's photo page: every shot with any camera
+     * ({@code PhotoAdvancementEvents}), other players' photos and albums looked at
+     * ({@code SharedPhotos}, {@code FoundAlbums}), every Tribute paid, uploaded or not, and the
+     * emeralds those Tributes cost. Wider than the leaderboard twins above, which count only what
+     * the relay is told. In-memory only, NOT in {@link #CODEC}, for the same 16-field reason.
+     */
+    private int photoShots;
+    private int photosViewed;
+    private int tributesMade;
+    private int tributeEmeralds;
+    /**
      * This life's seconds on the Live Feed — on air with the Live Eye ({@code LiveTvAdvancements}),
      * and watching it ({@code LiveWatchTally}, as the client reports its consented, ranked polls) —
      * the one-life twins of the "Longest Stream" / "Longest Viewer" boards. In-memory only, NOT in
@@ -696,6 +707,28 @@ public final class PlayerRunState {
         return ++photosTributed;
     }
 
+    /** Frames taken this run with any camera. */
+    public int photoShots() { return photoShots; }
+
+    public void incrementPhotoShots() { photoShots++; }
+
+    /** Other players' photos and albums looked at this run. */
+    public int photosViewed() { return photosViewed; }
+
+    public void incrementPhotosViewed() { photosViewed++; }
+
+    /** Tributes paid this run, to found photos and to own prints, uploaded or not. */
+    public int tributesMade() { return tributesMade; }
+
+    /** Emeralds paid in Tributes this run. */
+    public int tributeEmeralds() { return tributeEmeralds; }
+
+    /** One Tribute paid, at {@code cost} emeralds. */
+    public void recordTribute(int cost) {
+        tributesMade++;
+        tributeEmeralds += Math.max(0, cost);
+    }
+
     /** Seconds on air with the Live Eye this run. */
     public long liveStreamSeconds() { return liveStreamSeconds; }
 
@@ -905,6 +938,10 @@ public final class PlayerRunState {
         photosPassengers = 0;
         photosHostile = 0;
         photosAnimals = 0;
+        photoShots = 0;
+        photosViewed = 0;
+        tributesMade = 0;
+        tributeEmeralds = 0;
         liveStreamSeconds = 0L;
         liveWatchSeconds = 0L;
         narrativeLetters.clear();

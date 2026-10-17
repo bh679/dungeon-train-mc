@@ -84,7 +84,13 @@ public record DeathStatsPacket(
         int tamedCount,
         List<ResourceLocation> tamedAnimals,
         // Disposable-camera frames taken this run (capped by PlayerRunState) — the photo page.
-        List<Frame> cameraFrames
+        List<Frame> cameraFrames,
+        // The photo page's stats this run: shots with any camera, others' photos and albums
+        // looked at, Tributes paid, and the emeralds they cost.
+        int photoShots,
+        int photosViewed,
+        int tributesMade,
+        int tributeEmeralds
 ) implements CustomPacketPayload {
 
     public static final Type<DeathStatsPacket> TYPE =
@@ -154,6 +160,10 @@ public record DeathStatsPacket(
         for (int i = 0; i < frames; i++) {
             Frame.STREAM_CODEC.encode(buf, cameraFrames.get(i));
         }
+        buf.writeVarInt(photoShots);
+        buf.writeVarInt(photosViewed);
+        buf.writeVarInt(tributesMade);
+        buf.writeVarInt(tributeEmeralds);
     }
 
     public static DeathStatsPacket decode(RegistryFriendlyByteBuf buf) {
@@ -215,6 +225,10 @@ public record DeathStatsPacket(
         for (int i = 0; i < frameCount; i++) {
             cameraFrames.add(Frame.STREAM_CODEC.decode(buf));
         }
+        int photoShots = buf.readVarInt();
+        int photosViewed = buf.readVarInt();
+        int tributesMade = buf.readVarInt();
+        int tributeEmeralds = buf.readVarInt();
         return new DeathStatsPacket(mobKills, cartsTravelled, distanceBlocks, trainTimeTicks,
                 containersOpened, booksRead, booksWritten, weapon, head, chest, legs, feet,
                 playersEncountered, playersKilled, playersBefriended, damageDealt, damageTaken,
@@ -222,7 +236,7 @@ public record DeathStatsPacket(
                 lifeBooksWritten, lifeContainers, lifeMobKills, lifePlayersKilled,
                 lifePlayersEncountered, lifeEchos, lifeAdvancements, lifeDamageDealt, lifeDamageTaken,
                 narrative, deathCause, side, portrait, earnedAdvancements, tamedCount, tamedAnimals,
-                cameraFrames);
+                cameraFrames, photoShots, photosViewed, tributesMade, tributeEmeralds);
     }
 
     @Override

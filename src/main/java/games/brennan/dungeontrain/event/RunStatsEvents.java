@@ -535,7 +535,11 @@ public final class RunStatsEvents {
                 run.earnedAdvancements(),
                 run.tamedCount(),
                 run.tamedAnimals(),
-                run.cameraFrames()
+                run.cameraFrames(),
+                run.photoShots(),
+                run.photosViewed(),
+                run.tributesMade(),
+                run.tributeEmeralds()
         );
     }
 

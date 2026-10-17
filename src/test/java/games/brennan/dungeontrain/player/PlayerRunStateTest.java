@@ -388,4 +388,28 @@ final class PlayerRunStateTest {
         state.recordCartMovement(2);
         assertEquals(2, state.maxCarriagesNoChest(), "the streak restarts rather than resuming");
     }
+
+    @Test
+    @DisplayName("Photo page stats: shots, views, Tributes and their emeralds add up and reset with the run")
+    void photoPageStatsCountAndReset() {
+        PlayerRunState state = new PlayerRunState();
+        state.incrementPhotoShots();
+        state.incrementPhotoShots();
+        state.incrementPhotosViewed();
+        state.recordTribute(4);
+        state.recordTribute(12);
+        state.recordTribute(-3);
+
+        assertEquals(2, state.photoShots());
+        assertEquals(1, state.photosViewed());
+        assertEquals(3, state.tributesMade());
+        assertEquals(16, state.tributeEmeralds(), "a negative cost never takes emeralds off the total");
+        assertEquals(0, state.photosTributed(), "the leaderboard twin is counted separately, where the relay is told");
+
+        state.resetDeathStats();
+        assertEquals(0, state.photoShots());
+        assertEquals(0, state.photosViewed());
+        assertEquals(0, state.tributesMade());
+        assertEquals(0, state.tributeEmeralds());
+    }
 }

@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.player.LifeKey;
+import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.advancement.EnchiridionAdvancements;
 import games.brennan.dungeontrain.advancement.ModAdvancementTriggers;
@@ -508,6 +509,7 @@ public final class SharedPhotos {
     private static void recordView(ServerPlayer player, int photoId) {
         ModAdvancementTriggers.GAMEPLAY_ACTION.get().trigger(player, EnchiridionAdvancements.VIEWED_FOUND_PHOTO);
         markSpent(photoId);
+        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosViewed();
         RelayOutbox.get().enqueue(VIEW_PATH, action(player, photoId).toString());
     }
 
@@ -543,7 +545,9 @@ public final class SharedPhotos {
         body.addProperty("cost", cost);
         lifeFields(player, body, true);
         RelayOutbox.get().enqueue(TRIBUTE_PATH, body.toString());
-        player.getData(ModDataAttachments.PLAYER_RUN_STATE.get()).incrementPhotosTributed();
+        PlayerRunState run = player.getData(ModDataAttachments.PLAYER_RUN_STATE.get());
+        run.incrementPhotosTributed();
+        run.recordTribute(cost);
         announceTribute(player, held, photoId, cost);
         StartingBookEvents.dropAndBurnApproved(player, held);
         player.sendSystemMessage(tributePaidLine(player, cost, VIEWS_MAX));
