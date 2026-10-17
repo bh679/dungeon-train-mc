@@ -21,7 +21,7 @@ import java.util.Set;
  * missing or failed fetch degrades to a plain alphabetical grid rather than a broken one.</p>
  *
  * <p>The "something not installed" request tile is not part of this list — it is pinned below the
- * grid by {@link ModRecPage} and is never marked sent, since a player may request more than one
+ * grid by the recommendations page and is never marked sent, since a player may request more than one
  * mod.</p>
  *
  * <p>Pure and free of Minecraft types so the ordering rules can be unit-tested directly.</p>
@@ -117,7 +117,7 @@ public final class ModRecState {
             }
         }
         // Requested mods have no modId — the id is synthesised purely so each card is distinct.
-        // They are never selectable (ModRecPage registers no hit for them): there is nothing to
+        // They are never selectable (the page registers no hit for them): there is nothing to
         // change about a mod the player doesn't have, and a second thought is a second request.
         List<String> requests = sentRequests == null ? List.of() : sentRequests;
         for (int i = 0; i < requests.size(); i++) {
