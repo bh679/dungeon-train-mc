@@ -166,6 +166,15 @@ public final class SableShipyard implements Shipyard {
         return out;
     }
 
+    /**
+     * Whether {@code pos} lies anywhere in {@code level}'s sub-level plot grid — a pure coordinate test,
+     * true even where no sub-level currently stands (a culled carriage's plot, an empty one).
+     */
+    public static boolean inPlotGrid(ServerLevel level, BlockPos pos) {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        return container != null && container.inBounds(pos);
+    }
+
     @Override
     @Nullable
     public ManagedShip findAt(BlockPos pos) {
