@@ -27175,6 +27175,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dimensional-carriage-seal-every-band",
+      "version": "0.1332.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage visual fix",
+      "summary": "Fixed a visual glitch in some dimensional carriages.",
+      "highlights": [],
+      "pr": 2082,
+      "date": "2026-10-17",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

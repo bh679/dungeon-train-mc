@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.net.PortalRoomDepthPacket;
 import games.brennan.dungeontrain.portal.PortalSealPlane;
 import games.brennan.dungeontrain.worldgen.legacy.preset.AmplifiedDrop;
 import net.minecraft.client.Minecraft;
@@ -65,8 +66,10 @@ public final class ClientPortalSeal {
         if (!ClientDisplayConfig.isPortalTwinSealCulling() || !inTheSyncedWorld()) {
             return PortalSealPlane.Cut.NONE;
         }
-        int camX = Mth.floor(cameraX);
         AmplifiedDrop drop = ClientUpsideDownBand.amplifiedDrop();
+        PortalSealPlane.Cut inCarriage = carriageCut(drop, cameraX, cameraY, cameraZ);
+        if (inCarriage != null) return inCarriage;
+        int camX = Mth.floor(cameraX);
         if (drop != null && ClientUpsideDownBand.isSunkZoneWithin(camX, viewReach())) {
             return PortalSealPlane.cutForAmplified(drop.floorY(ClientUpsideDownBand.bedrockY()), drop.lidY(),
                 ClientUpsideDownBand.isInSunkZone(camX), cameraY);
@@ -74,24 +77,33 @@ public final class ClientPortalSeal {
         return PortalSealPlane.cutFor(
             ClientUpsideDownBand.bedrockY(),
             ClientUpsideDownBand.roofY(),
-            atticCanBeHere(camX, cameraX, cameraY, cameraZ),
+            ClientUpsideDownBand.isInBand(camX),
             cameraY);
     }
 
     /**
-     * Whether a camera here can be in an attic: inside the band, where the lid is stamped — or inside
-     * a dimensional carriage, wherever it is.
+     * The cut for a camera inside a dimensional carriage, from where the carriage stands — or
+     * {@code null} outside one, leaving the column tests to answer.
      *
-     * <p>The second half is the Reassembly. A twin stamped in the attic stays there while the train
-     * carries its pair on past the band's end, and {@link ClientUpsideDownBand#isInBand} stops at that
-     * end, so a player in such a twin got the world's cut and saw the whole world under the room. The
-     * structure box is the server's own answer to "is this camera in a twin", so it cannot mistake a
-     * Reassembly mountaintop over the lid height for an attic the way a bare height test would.</p>
+     * <p>A twin stays in the attic it was stamped in while the train carries its pair on past the
+     * band that put it there, into whatever band comes next. The column tests answer for that next
+     * band, and a player in such a twin saw the whole world under the room. The structure box is the
+     * server's own answer to "is this camera in a twin", so it cannot mistake a mountaintop over a
+     * lid's height for an attic the way a bare height test would.</p>
      */
-    private static boolean atticCanBeHere(int camX, double cameraX, double cameraY, double cameraZ) {
-        if (ClientUpsideDownBand.isInBand(camX)) return true;
-        return DungeonTrainCommonConfig.isUpsideDownBedrockRoof()
-            && ClientPortalRoomDepth.isInsideStructure(cameraX, cameraY, cameraZ);
+    private static PortalSealPlane.Cut carriageCut(AmplifiedDrop drop,
+                                                   double cameraX, double cameraY, double cameraZ) {
+        PortalRoomDepthPacket box = ClientPortalRoomDepth.structureAt(cameraX, cameraY, cameraZ);
+        if (box == null) return null;
+        int upsideDownLid = DungeonTrainCommonConfig.isUpsideDownBedrockRoof()
+            ? ClientUpsideDownBand.roofY() : Integer.MAX_VALUE;
+        int sunkLid = drop != null ? drop.lidY() : Integer.MAX_VALUE;
+        // Under the sunk band the terrain runs down past the bedrock row, so the basement's seal is
+        // the sunk floor there — the same plane cutForAmplified holds a basement camera to.
+        int bedrockY = ClientUpsideDownBand.bedrockY();
+        int floorY = drop != null && ClientUpsideDownBand.isInSunkZone(Mth.floor(cameraX))
+            ? drop.floorY(bedrockY) : bedrockY;
+        return PortalSealPlane.cutForTwin(box.minY(), box.maxY(), floorY, upsideDownLid, sunkLid);
     }
 
     private static boolean sameTrim(PortalSealPlane.Cut a, PortalSealPlane.Cut b) {
