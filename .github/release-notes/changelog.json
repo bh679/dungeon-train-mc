@@ -27220,8 +27220,8 @@
         "feature",
         "advancements"
       ],
-      "title": "No advancements while AFK",
-      "summary": "Advancements are now only earned while you are actually playing. Step away from the keyboard, sit on the pause menu, or leave the mouse untouched for a while, and any advancement waits until you are back.",
+      "title": "Advancement tweaks",
+      "summary": "Small changes to how advancements are earned.",
       "highlights": [],
       "pr": 2087,
       "date": "2026-10-17",
