@@ -27217,11 +27217,10 @@
       "version": "0.1334.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "advancements"
+        "feature"
       ],
-      "title": "Advancement tweaks",
-      "summary": "Small changes to how advancements are earned.",
+      "title": "Small tweaks",
+      "summary": "Minor improvements.",
       "highlights": [],
       "pr": 2087,
       "date": "2026-10-17",
