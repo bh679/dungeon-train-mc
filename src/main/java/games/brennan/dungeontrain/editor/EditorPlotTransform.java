@@ -156,7 +156,7 @@ public interface EditorPlotTransform {
          * carve-out {@link EditorMirror#reflectVariant} makes.
          */
         private VariantState rotateVariant(VariantState v) {
-            VariantCondition condition = v.condition().rotated(vanilla());
+            VariantConditionSet condition = v.condition().rotated(vanilla());
             if (v.isMob()) return condition == v.condition() ? v : v.withCondition(condition);
             return new VariantState(
                 v.state().rotate(vanilla()), v.blockEntityNbt(), v.weight(),

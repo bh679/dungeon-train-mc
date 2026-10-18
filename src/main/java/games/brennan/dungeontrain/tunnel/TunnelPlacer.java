@@ -411,7 +411,8 @@ public final class TunnelPlacer {
              games.brennan.dungeontrain.editor.VariantConditions.Scope conds = games.brennan.dungeontrain.editor.VariantConditions.open(games.brennan.dungeontrain.editor.VariantConditions.stamped(level,
                  local -> new BlockPos(mirrorX ? origin.getX() + LENGTH - 1 - local.getX() : origin.getX() + local.getX(),
                      origin.getY() + local.getY(), origin.getZ() + local.getZ()),
-                 new Vec3i(LENGTH, HEIGHT, WIDTH)))) {
+                 new Vec3i(LENGTH, HEIGHT, WIDTH)),
+                 games.brennan.dungeontrain.editor.VariantConditions.tierAt(diffIndex))) {
             for (var entry : sidecar.entries()) {
                 int lx = entry.localPos().getX();
                 int ly = entry.localPos().getY();
@@ -513,7 +514,10 @@ public final class TunnelPlacer {
              games.brennan.dungeontrain.editor.VariantConditions.Scope conds = games.brennan.dungeontrain.editor.VariantConditions.open(games.brennan.dungeontrain.editor.VariantConditions.stamped(level,
                  local -> new BlockPos(mirrorX ? origin.getX() + LENGTH - 1 - local.getX() : origin.getX() + local.getX(),
                      origin.getY() + local.getY(), origin.getZ() + local.getZ()),
-                 new Vec3i(LENGTH, HEIGHT, WIDTH)))) {
+                 new Vec3i(LENGTH, HEIGHT, WIDTH)),
+                 // An editor / builder plot stamp (no growth) has no place on the line to ask.
+                 grow ? games.brennan.dungeontrain.editor.VariantConditions.tierAt(diffIndex)
+                     : games.brennan.dungeontrain.editor.VariantConditions.NO_TIER)) {
             for (var entry : sidecar.entries()) {
                 int lx = entry.localPos().getX();
                 int ly = entry.localPos().getY();

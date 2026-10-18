@@ -582,7 +582,7 @@ public final class BlockVariantMenuRenderer {
             drawPopupRows(ps, buffer, font, condRows, BlockVariantMenu.CellKind.COND_OPTION, hovered,
                 (row, i) -> ConditionPopupLayout.isSelected(condEntry, row, i));
             drawConditionBlockStrip(ps, buffer, font, condRows, ConditionPopupLayout.strip(condEntry),
-                !ConditionPopupLayout.isGroupMode(condEntry.condition()), hovered, icons);
+                !ConditionPopupLayout.selected(condEntry).isGroupTarget(), hovered, icons);
         }
 
         // OPTIONS popup is drawn last so it shadows the row underneath.
@@ -702,8 +702,9 @@ public final class BlockVariantMenuRenderer {
     }
 
     /**
-     * The If pill: "If" in grey when the row always joins the roll, the target and value count in
-     * purple when it is gated, red when its group target no longer exists. Lit while its popup is open.
+     * The If pill: "If" in grey when the row always joins the roll, its condition (or how many it
+     * combines) in purple when it is gated, red when a group target no longer exists. Lit while its
+     * popup is open.
      */
     private static void drawConditionCell(PoseStack ps, MultiBufferSource buffer, Font font,
                                           int rowIndex, BlockVariantSyncPacket.Entry entry,
@@ -712,12 +713,12 @@ public final class BlockVariantMenuRenderer {
                                           BlockVariantMenu.Hit hovered) {
         boolean hover = hovered.kind() == BlockVariantMenu.CellKind.ENTRY_COND && hovered.index() == rowIndex;
         boolean open = BlockVariantMenu.condPopupRow() == rowIndex;
-        boolean set = ConditionPopupLayout.isSet(entry.condition());
+        boolean set = ConditionPopupLayout.isSet(entry);
         int tint = !set ? (hover || open ? 0x60AAAAAA : 0x30777777)
             : !entry.conditionLive() ? (hover || open ? 0xC0FF4040 : 0x80AA2020)
             : (hover || open ? 0xC0D98CFF : 0x808A4FB3);
         drawQuad(ps, buffer, cellL + 0.01, rowBottom + 0.02, cellR - 0.01, rowTop - 0.02, tint);
-        drawCenteredText(ps, buffer, font, ConditionPopupLayout.shortLabel(entry.condition()),
+        drawCenteredText(ps, buffer, font, ConditionPopupLayout.shortLabel(entry),
             (cellL + cellR) / 2.0, rowCY, set || hover ? 0xFFFFFFFF : 0xFF888888);
     }
 

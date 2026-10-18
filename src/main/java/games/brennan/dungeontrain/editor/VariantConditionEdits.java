@@ -118,6 +118,14 @@ public final class VariantConditionEdits {
         return Result.ok(current.withValueAdded(id));
     }
 
+    /** True when every group-targeted condition in {@code set} still has a group to look at. */
+    public static boolean isLive(VariantConditionSet set, Set<Integer> lockIdsInUse, int ownLockId) {
+        for (VariantCondition c : set.conditions()) {
+            if (!c.isDefault() && !isLive(c, lockIdsInUse, ownLockId)) return false;
+        }
+        return true;
+    }
+
     /** True when a group-targeted condition still has a group to look at. */
     public static boolean isLive(VariantCondition c, Set<Integer> lockIdsInUse, int ownLockId) {
         if (!c.isGroupTarget()) return true;

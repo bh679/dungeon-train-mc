@@ -7,6 +7,8 @@ import games.brennan.dungeontrain.client.menu.number.NumberField;
 import games.brennan.dungeontrain.client.menu.number.NumberPad;
 import games.brennan.dungeontrain.client.menu.number.NumberStepper;
 import games.brennan.dungeontrain.client.menu.number.NumberTitle;
+import games.brennan.dungeontrain.editor.VariantCondition;
+import games.brennan.dungeontrain.editor.VariantConditionEdits;
 import games.brennan.dungeontrain.editor.VariantDifficulty;
 import games.brennan.dungeontrain.editor.VariantGrowth;
 import games.brennan.dungeontrain.editor.RotationApplier;
@@ -205,6 +207,7 @@ public final class BlockVariantMenuInputHandler {
         return switch (hit.kind()) {
             case ENTRY_WEIGHT, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
             case GROWTH_OPTION -> hit.secondary() >= 0 && GrowthPopupLayout.isNumber(hit.secondary() / 10);
+            case COND_OPTION -> hit.secondary() >= 0 && ConditionPopupLayout.isLevelNumber(hit.secondary() / 10);
             default -> false;
         };
     }
@@ -255,7 +258,7 @@ public final class BlockVariantMenuInputHandler {
                 BlockVariantMenu.closeGrowthPopup();
                 BlockVariantMenu.toggleCondPopup(hit.index());
             }
-            case COND_OPTION -> dispatchCondition(hit, variantId, local, shift);
+            case COND_OPTION -> dispatchCondition(hit, variantId, local, shift, button);
             case GROWTH_OPTION -> {
                 // -2 = clicked elsewhere in the panel (close), -1 = the popup's own margin (ignore).
                 // A button sets that one section and leaves the popup open for the next choice.
@@ -486,10 +489,12 @@ public final class BlockVariantMenuInputHandler {
 
     /**
      * A button in the If popup. Same modal rules as the Grow popup: -2 closes, -1 is the popup's own
-     * margin. The popup stays open so several values can be added in a row.
+     * margin. The popup stays open so several conditions and values can be set in a row. Edits go to
+     * the selected chip ({@link BlockVariantMenu#condIndex}); the Level tab edits the row's band, the
+     * same numbers as its purple cells.
      */
     private static void dispatchCondition(BlockVariantMenu.Hit hit, String variantId, net.minecraft.core.BlockPos local,
-                                          boolean shift) {
+                                          boolean shift, int button) {
         int code = hit.secondary();
         if (code == -1) return;
         int row = hit.index();
@@ -499,52 +504,105 @@ public final class BlockVariantMenuInputHandler {
         }
         int section = code / 10;
         int option = code % 10;
-        String token = BlockVariantMenu.entries().get(row).condition();
-        int mode = ConditionPopupLayout.mode(token);
-        boolean addable = mode == ConditionPopupLayout.MODE_TOUCHING;
-        BlockVariantEditPacket packet;
-        if (section == ConditionPopupLayout.SECTION_MODE) {
-            // Touching <-> Group keeps the block list; Group picks the first other lock group. Kind
-            // swaps the blocks for Solid, or back.
-            if (option == mode) return;
-            String target = switch (option) {
-                case ConditionPopupLayout.MODE_GROUP -> games.brennan.dungeontrain.editor.VariantConditionEdits.GROUP_NEXT;
-                case ConditionPopupLayout.MODE_KIND -> games.brennan.dungeontrain.editor.VariantConditionEdits.MODE_KIND;
-                default -> games.brennan.dungeontrain.editor.VariantConditionEdits.MODE_TOUCHING;
-            };
-            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
-                target, 0);
-        } else if (section == ConditionPopupLayout.SECTION_TOUCHING) {
+        BlockVariantSyncPacket.Entry entry = BlockVariantMenu.entries().get(row);
+        int ci = BlockVariantMenu.condIndex();
+        boolean levelTab = BlockVariantMenu.condLevelTab();
+        VariantCondition selected = ConditionPopupLayout.selected(entry);
+        switch (section) {
+            case ConditionPopupLayout.SECTION_LIST -> dispatchConditionList(entry, variantId, local, row, option, shift);
+            case ConditionPopupLayout.SECTION_MATCH -> sendCond(BlockVariantEditPacket.Op.SET_COND_ANY, variantId, local,
+                row, "", option, ci);
+            case ConditionPopupLayout.SECTION_MODE -> {
+                if (option == ConditionPopupLayout.MODE_LEVEL) {
+                    BlockVariantMenu.selectLevelTab();
+                    return;
+                }
+                BlockVariantMenu.selectCondition(ci);
+                // Retyping keeps what carries over: Touch <-> Group keeps the block list, Group picks
+                // the first other lock group, Kind swaps the blocks for Solid, or back.
+                if (option == ConditionPopupLayout.mode(selected)) return;
+                sendCond(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
+                    ConditionPopupLayout.modeToken(option), 0, ci);
+            }
+            case ConditionPopupLayout.SECTION_LEVEL_MIN, ConditionPopupLayout.SECTION_LEVEL_MAX -> {
+                BlockVariantMenu.CellKind kind = section == ConditionPopupLayout.SECTION_LEVEL_MIN
+                    ? BlockVariantMenu.CellKind.ENTRY_DIFF_MIN : BlockVariantMenu.CellKind.ENTRY_DIFF_MAX;
+                NumberStepper.click(rowNumber(kind, variantId, local, row, entry),
+                    button, shift, MenuClickModifiers.cmdDown(), pad());
+            }
             // Same clicks as the band picker: plain toggles this side, shift toggles all but this side.
-            String side = ConditionPopupLayout.touching(option).getSerializedName();
-            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
-                (shift ? games.brennan.dungeontrain.editor.VariantConditionEdits.OTHERS_PREFIX
-                    : games.brennan.dungeontrain.editor.VariantConditionEdits.TOGGLE_PREFIX) + side, 0);
-        } else if (section == ConditionPopupLayout.SECTION_GROUP) {
-            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
-                ConditionPopupLayout.groupToken(option), 0);
-        } else if (section == ConditionPopupLayout.SECTION_BLOCKS) {
-            List<net.minecraft.resources.ResourceLocation> strip =
-                ConditionPopupLayout.strip(BlockVariantMenu.entries().get(row));
-            // The "–" placeholder of an empty strip does nothing.
-            if (option >= strip.size()) return;
-            // Group mode switches one of the group's blocks on or off; Touching mode drops the value.
-            // By id, not index: the strip leaves out the kind values, so its slots are not list indices.
-            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
-                strip.get(option).toString(), 0);
-        } else if (section == ConditionPopupLayout.SECTION_KIND) {
-            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
-                ConditionPopupLayout.kind(option).toString(), 0);
-        } else if (section == ConditionPopupLayout.SECTION_ACTIONS) {
-            // Group and Kind modes' action row is Clear alone.
-            boolean add = addable && option == ConditionPopupLayout.ACTION_ADD;
-            packet = new BlockVariantEditPacket(add
-                ? BlockVariantEditPacket.Op.ADD_COND_VALUE : BlockVariantEditPacket.Op.CLEAR_COND,
-                variantId, local, row, "", 0);
-        } else {
-            return;
+            case ConditionPopupLayout.SECTION_TOUCHING -> sendCond(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId,
+                local, row, (shift ? VariantConditionEdits.OTHERS_PREFIX : VariantConditionEdits.TOGGLE_PREFIX)
+                    + ConditionPopupLayout.touching(option).getSerializedName(), 0, ci);
+            case ConditionPopupLayout.SECTION_GROUP -> sendCond(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId,
+                local, row, ConditionPopupLayout.groupToken(option), 0, ci);
+            case ConditionPopupLayout.SECTION_BLOCKS -> {
+                List<net.minecraft.resources.ResourceLocation> strip = ConditionPopupLayout.strip(entry);
+                // The "–" placeholder of an empty strip does nothing.
+                if (option >= strip.size()) return;
+                // Group mode switches one of the group's blocks on or off; Touch mode drops the value.
+                // By id, not index: the strip leaves out the kind values, so its slots are not list indices.
+                sendCond(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
+                    strip.get(option).toString(), 0, ci);
+            }
+            case ConditionPopupLayout.SECTION_KIND -> sendCond(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId,
+                local, row, ConditionPopupLayout.kind(option).toString(), 0, ci);
+            case ConditionPopupLayout.SECTION_ACTIONS -> {
+                if (levelTab) {
+                    sendCond(BlockVariantEditPacket.Op.CLEAR_LEVEL, variantId, local, row, "", 0, ci);
+                    return;
+                }
+                // Group and Kind modes' action row is Clear alone.
+                boolean add = ConditionPopupLayout.mode(selected) == ConditionPopupLayout.MODE_TOUCHING
+                    && option == ConditionPopupLayout.ACTION_ADD;
+                sendCond(add ? BlockVariantEditPacket.Op.ADD_COND_VALUE : BlockVariantEditPacket.Op.CLEAR_COND,
+                    variantId, local, row, "", 0, ci);
+            }
+            default -> { }
         }
-        DungeonTrainNet.sendToServer(packet);
+    }
+
+    /**
+     * A chip of the If list: click selects it for the tabs below, shift-click removes it (or resets
+     * the band, for the Level chip); {@code +} starts a new condition in the tab the author is on.
+     */
+    private static void dispatchConditionList(BlockVariantSyncPacket.Entry entry, String variantId,
+                                              net.minecraft.core.BlockPos local, int row, int option, boolean shift) {
+        List<Integer> options = ConditionPopupLayout.listOptions(entry);
+        if (option >= options.size()) return;
+        int chip = options.get(option);
+        int ci = BlockVariantMenu.condIndex();
+        switch (chip) {
+            case ConditionPopupLayout.LIST_ADD -> {
+                int mode = BlockVariantMenu.condLevelTab()
+                    ? ConditionPopupLayout.MODE_TOUCHING : ConditionPopupLayout.mode(ConditionPopupLayout.selected(entry));
+                sendCond(BlockVariantEditPacket.Op.ADD_COND, variantId, local, row,
+                    ConditionPopupLayout.modeToken(mode), 0, ci);
+                BlockVariantMenu.selectCondition(ConditionPopupLayout.set(entry).size());
+            }
+            case ConditionPopupLayout.LIST_LEVEL -> {
+                if (shift) {
+                    sendCond(BlockVariantEditPacket.Op.CLEAR_LEVEL, variantId, local, row, "", 0, ci);
+                } else {
+                    BlockVariantMenu.selectLevelTab();
+                }
+            }
+            case ConditionPopupLayout.LIST_PENDING -> BlockVariantMenu.selectCondition(ci);
+            default -> {
+                if (!shift) {
+                    BlockVariantMenu.selectCondition(chip);
+                    return;
+                }
+                sendCond(BlockVariantEditPacket.Op.CLEAR_COND, variantId, local, row, "", 0, chip);
+                // Keep the same chip selected once the list closes up behind the removed one.
+                if (!BlockVariantMenu.condLevelTab() && chip < ci) BlockVariantMenu.selectCondition(ci - 1);
+            }
+        }
+    }
+
+    private static void sendCond(BlockVariantEditPacket.Op op, String variantId, net.minecraft.core.BlockPos local,
+                                 int row, String token, int value, int condIndex) {
+        DungeonTrainNet.sendToServer(new BlockVariantEditPacket(op, variantId, local, row, token, value, condIndex));
     }
 
     private static void send(BlockVariantEditPacket.Op op, String variantId, net.minecraft.core.BlockPos local,

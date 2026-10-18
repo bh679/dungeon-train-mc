@@ -463,47 +463,21 @@ public final class CarriageContentsVariantBlocks {
     }
 
     /**
-     * Difficulty-aware pick. Mob (spawn-egg) entries whose {@link VariantState#difficulty}
-     * band excludes {@code tier} are dropped from the candidate pool <b>before</b>
-     * the weighted roll, so the cell re-rolls among the in-range candidates
-     * (another egg or a block). Block entries are always eligible. Returns
-     * {@code null} when the cell has no candidate, or when every candidate is an
-     * out-of-band mob — in the latter case the block-placement pass
-     * ({@code CarriageContentsPlacer#applyVariantBlocks}) clears the cell to air
-     * (the mob would have occupied an air cell) and the mob pass spawns nothing.
+     * Difficulty-aware pick: {@link #resolve(BlockPos, long, int)} with the If lists' Level
+     * conditions asking {@code tier}. An entry whose band (AND / OR its other conditions) fails is
+     * dropped before the weighted roll, so the cell re-rolls among the rest; every entry dropped
+     * leaves the cell empty ({@link VariantConditions#EMPTY_PICK}) — no block, no mob.
      *
-     * <p>With the default band on every entry the eligible list equals the
-     * full list, so the pick is bit-identical to
-     * {@link #resolve(BlockPos, long, int)} — pre-v8 sidecars are unaffected.
-     * The block pass and the deferred mob pass call this with the same
-     * {@code (localPos, seed, carriageIndex, tier)} — {@code tier} derived from
-     * the carriage's own index — so they always agree on the result regardless
-     * of when each pass runs.</p>
+     * <p>With no band anywhere the pick is bit-identical to the three-argument form. The block pass
+     * and the deferred mob pass call this with the same {@code (localPos, seed, carriageIndex, tier)}
+     * — {@code tier} derived from the carriage's own index — so they always agree.</p>
      */
     public VariantState resolve(BlockPos localPos, long worldSeed, int carriageIndex, int tier) {
         List<VariantState> states = entries.get(localPos);
         if (states == null || states.isEmpty()) return null;
-        List<VariantState> eligible = inBand(states, tier);
-        if (eligible.isEmpty()) return null;
-        return pickLive(localPos, worldSeed, carriageIndex, eligible);
-    }
-
-    /**
-     * {@code states} without the mob entries whose difficulty band excludes {@code tier}; the list
-     * itself when nothing is out of band. Also the condition scope's prefilter, so a neighbour's
-     * condition judges the roll this cell really gets.
-     */
-    public static List<VariantState> inBand(List<VariantState> states, int tier) {
-        boolean anyGated = false;
-        for (VariantState s : states) {
-            if (s.isMob() && !s.difficulty().eligible(tier)) { anyGated = true; break; }
+        try (VariantConditions.Scope ignored = VariantConditions.withTier(tier)) {
+            return pickLive(localPos, worldSeed, carriageIndex, states);
         }
-        if (!anyGated) return states;
-        List<VariantState> eligible = new ArrayList<>(states.size());
-        for (VariantState s : states) {
-            if (!s.isMob() || s.difficulty().eligible(tier)) eligible.add(s);
-        }
-        return eligible;
     }
 
     /**

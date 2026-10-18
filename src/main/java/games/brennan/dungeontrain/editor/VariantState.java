@@ -94,6 +94,11 @@ import java.util.List;
  *       {@link VariantCondition}: the entry only joins the roll when a touching
  *       block or a lock group ends up as one of the listed blocks. Omitted from
  *       JSON when there is none.</li>
+ *   <li>v10+ (additive, no schema bump) — the condition becomes a
+ *       {@link VariantConditionSet}: several conditions, AND or OR, written in
+ *       the same {@code "if"} string (one condition's token is unchanged). The
+ *       v8 difficulty band joins that list as the Level condition and is now
+ *       honoured — and written — on block entries too.</li>
  * </ul></p>
  */
 public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
@@ -101,7 +106,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
                            @Nullable ResourceLocation entityId, VariantHalf half,
                            VariantDifficulty difficulty, int groupRef, VariantActive active,
                            VariantConnect.Mode connect, VariantGrowth growth, VariantPainting painting,
-                           HungPainting hung, List<VariantState> groupStates, VariantCondition condition) {
+                           HungPainting hung, List<VariantState> groupStates, VariantConditionSet condition) {
 
     public VariantState {
         if (entityId != null) {
@@ -138,7 +143,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         if (hung == null) hung = HungPainting.NONE;
         // Only a reference carries its group's options; on anything else the list is meaningless.
         groupStates = groupRef > 0 && groupStates != null ? List.copyOf(groupStates) : List.of();
-        if (condition == null) condition = VariantCondition.NONE;
+        if (condition == null) condition = VariantConditionSet.NONE;
         // Keep the stored state's redstone toggle in step with the flag so the
         // serialised state string and the mode can never disagree: ACTIVE
         // stores open/lit/powered=true, RANDOM and INACTIVE store false (the
@@ -147,7 +152,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
     }
 
     /**
-     * Fifteen-arg overload defaulting {@code condition} to {@link VariantCondition#NONE}: the entry
+     * Fifteen-arg overload defaulting {@code condition} to {@link VariantConditionSet#NONE}: the entry
      * is always eligible, as before conditions existed.
      */
     public VariantState(BlockState state, @Nullable CompoundTag blockEntityNbt, int weight,
@@ -157,7 +162,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
                         VariantConnect.Mode connect, VariantGrowth growth, VariantPainting painting,
                         HungPainting hung, List<VariantState> groupStates) {
         this(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty,
-            groupRef, active, connect, growth, painting, hung, groupStates, VariantCondition.NONE);
+            groupRef, active, connect, growth, painting, hung, groupStates, VariantConditionSet.NONE);
     }
 
     /**
@@ -373,7 +378,7 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, newHalf, difficulty, groupRef, active, connect, growth, painting, hung, groupStates, condition);
     }
 
-    /** Return a copy with {@code difficulty} replaced (only meaningful for mob entries). */
+    /** Return a copy with {@code difficulty} — the If list's Level condition — replaced. */
     public VariantState withDifficulty(VariantDifficulty newDifficulty) {
         return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, newDifficulty, groupRef, active, connect, growth, painting, hung, groupStates, condition);
     }
@@ -419,14 +424,22 @@ public record VariantState(BlockState state, @Nullable CompoundTag blockEntityNb
         return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect, newGrowth, painting, hung, groupStates, condition);
     }
 
-    /** Return a copy with {@code condition} replaced ({@code null} = none). */
-    public VariantState withCondition(VariantCondition newCondition) {
+    /** Return a copy with the If list replaced ({@code null} = none). */
+    public VariantState withCondition(VariantConditionSet newCondition) {
         return new VariantState(state, blockEntityNbt, weight, rotation, linkedLootPrefabId, entityId, half, difficulty, groupRef, active, connect, growth, painting, hung, groupStates, newCondition);
     }
 
-    /** True when this entry only places if its {@link #condition} holds. */
+    /** Return a copy gated on {@code single} alone ({@code null} = none). */
+    public VariantState withCondition(VariantCondition single) {
+        return withCondition(single == null ? VariantConditionSet.NONE : VariantConditionSet.of(single));
+    }
+
+    /**
+     * True when this entry only places if its If list holds — a gating condition, or a Level band
+     * narrower than every tier. Both are evaluated together by {@link VariantConditions#eligible}.
+     */
     public boolean isConditional() {
-        return !condition.isDefault();
+        return !condition.isDefault() || !difficulty.isDefault();
     }
 
     /**

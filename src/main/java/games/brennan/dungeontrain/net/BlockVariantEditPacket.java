@@ -100,7 +100,14 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * existing slash-command authorisation model.</p>
  */
 public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
-                                     int entryIndex, String stateString, int delta) implements CustomPacketPayload {
+                                     int entryIndex, String stateString, int delta,
+                                     int condIndex) implements CustomPacketPayload {
+
+    /** Every op but the If-list edits: no condition index. */
+    public BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
+                                  int entryIndex, String stateString, int delta) {
+        this(op, variantId, localPos, entryIndex, stateString, delta, 0);
+    }
 
     /**
      * The wire format is the ordinal, so a new op goes on the <b>end</b>:
@@ -129,7 +136,10 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
                      REMOVE_COND_VALUE,
                      CLEAR_COND,
                      // Group mode: stateString = block id to switch on / off in the condition.
-                     TOGGLE_COND_VALUE }
+                     TOGGLE_COND_VALUE,
+                     // If list: append a condition (stateString = optional mode token to start it in),
+                     // AND / OR (delta 1 = OR), reset the Level band.
+                     ADD_COND, SET_COND_ANY, CLEAR_LEVEL }
 
     public static final Type<BlockVariantEditPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "block_variant_edit"));
@@ -149,6 +159,7 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
         buf.writeVarInt(entryIndex);
         buf.writeUtf(stateString == null ? "" : stateString, 256);
         buf.writeVarInt(delta);
+        buf.writeVarInt(condIndex);
     }
 
     public static BlockVariantEditPacket decode(FriendlyByteBuf buf) {
@@ -159,7 +170,8 @@ public record BlockVariantEditPacket(Op op, String variantId, BlockPos localPos,
         int idx = buf.readVarInt();
         String stateStr = buf.readUtf(256);
         int delta = buf.readVarInt();
-        return new BlockVariantEditPacket(op, id, local, idx, stateStr, delta);
+        int condIndex = buf.readVarInt();
+        return new BlockVariantEditPacket(op, id, local, idx, stateStr, delta, condIndex);
     }
 
     @Override

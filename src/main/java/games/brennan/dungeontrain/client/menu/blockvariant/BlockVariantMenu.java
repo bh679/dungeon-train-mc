@@ -132,6 +132,10 @@ public final class BlockVariantMenu {
     private static int growthPopupRow = -1;
     /** -1 = closed; otherwise the row whose If (condition) popup is open. */
     private static int condPopupRow = -1;
+    /** Which condition of the open If list the tabs edit; its size means a new one not yet added. */
+    private static int condIndex;
+    /** True while the If popup's Level tab is up — it edits the row's band, not a list condition. */
+    private static boolean condLevelTab;
     private static VariantCopyScope copyScope = VariantCopyScope.BOTH;
     private static games.brennan.dungeontrain.editor.VariantSpan spanMode =
         games.brennan.dungeontrain.editor.VariantSpan.NONE;
@@ -206,8 +210,27 @@ public final class BlockVariantMenu {
     public static int condPopupRow() {
         return condPopupRow >= 0 && condPopupRow < entries.size() ? condPopupRow : -1;
     }
-    public static void toggleCondPopup(int row) { condPopupRow = condPopupRow == row ? -1 : row; }
+    public static void toggleCondPopup(int row) {
+        condPopupRow = condPopupRow == row ? -1 : row;
+        condIndex = 0;
+        // A row gated by its band alone opens on the Level tab, where that band is.
+        condLevelTab = condPopupRow >= 0 && ConditionPopupLayout.opensOnLevel(entries.get(condPopupRow));
+    }
     public static void closeCondPopup() { condPopupRow = -1; }
+
+    /** The If list condition the popup edits, clamped to the open row's list (its size = a new one). */
+    public static int condIndex() {
+        int row = condPopupRow();
+        if (row < 0) return 0;
+        int size = ConditionPopupLayout.set(entries.get(row)).size();
+        // One past the end is a new condition — unless the list is full.
+        int last = Math.min(size, games.brennan.dungeontrain.editor.VariantConditionSet.MAX_CONDITIONS - 1);
+        return Math.max(0, Math.min(condIndex, last));
+    }
+    public static boolean condLevelTab() { return condLevelTab; }
+    /** Edit list condition {@code index} (leaving the Level tab). */
+    public static void selectCondition(int index) { condIndex = Math.max(0, index); condLevelTab = false; }
+    public static void selectLevelTab() { condLevelTab = true; }
 
     /**
      * True when {@code entry} is a painting row — it shows the Painting pill and popup in the Grow

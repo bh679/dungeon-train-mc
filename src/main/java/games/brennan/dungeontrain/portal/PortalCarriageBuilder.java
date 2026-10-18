@@ -2013,7 +2013,9 @@ public final class PortalCarriageBuilder {
             .inside(roomOrigin, size.getX(), size.getY(), size.getZ()).and(pos -> !mask.covers(pos));
         try (games.brennan.dungeontrain.editor.GrowthPass.Scope grown = games.brennan.dungeontrain.editor.GrowthPass.open();
              games.brennan.dungeontrain.editor.VariantConditions.Scope conds = games.brennan.dungeontrain.editor.VariantConditions.open(
-                 games.brennan.dungeontrain.editor.VariantConditions.stamped(level, roomOrigin::offset, size))) {
+                 games.brennan.dungeontrain.editor.VariantConditions.stamped(level, roomOrigin::offset, size),
+                 // Level asks the entry corridor's real carriage index, never the hashed roll index.
+                 games.brennan.dungeontrain.editor.VariantConditions.tierAt(pairKey))) {
             for (CarriageVariantBlocks.Entry entry : sidecar.entries()) {
                 BlockPos local = entry.localPos();
                 BlockPos world = roomOrigin.offset(local);

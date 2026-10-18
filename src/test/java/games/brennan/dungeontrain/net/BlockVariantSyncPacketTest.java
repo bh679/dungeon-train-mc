@@ -186,9 +186,10 @@ final class BlockVariantSyncPacketTest {
         BlockVariantSyncPacket.Entry gated = new BlockVariantSyncPacket.Entry(
             "minecraft:glass", null, 1, (byte) 1, (byte) 0, null, null,
             (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "", token, false, "minecraft:oak_planks,minecraft:air");
+        // maxDiff -1 is the "all" sentinel: no Level band, so nothing gates this row.
         BlockVariantSyncPacket.Entry plain = new BlockVariantSyncPacket.Entry(
             "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
-            (byte) 0, 0, 0, 0, false, (byte) 0, (byte) 0, 0, "");
+            (byte) 0, 0, -1, 0, false, (byte) 0, (byte) 0, 0, "");
         BlockVariantSyncPacket decoded = roundTrip(new BlockVariantSyncPacket(
             "carriage:flatbed", new BlockPos(1, 2, 3), List.of(gated, plain), 0,
             new Vec3(0.5, 0.5, 0.5), new Vec3(1, 0, 0), new Vec3(0, 1, 0)));
@@ -198,6 +199,11 @@ final class BlockVariantSyncPacketTest {
         assertEquals(true, decoded.entries().get(0).isConditional());
         assertEquals("", decoded.entries().get(1).condition());
         assertEquals(false, decoded.entries().get(1).isConditional());
+        // A Level band alone gates the row too: it is one of the If list's conditions.
+        BlockVariantSyncPacket.Entry banded = new BlockVariantSyncPacket.Entry(
+            "minecraft:stone", null, 1, (byte) 1, (byte) 0, null, null,
+            (byte) 0, 2, -1, 0, false, (byte) 0, (byte) 0, 0, "");
+        assertEquals(true, banded.isConditional());
     }
 
     private static BlockVariantSyncPacket roundTrip(BlockVariantSyncPacket original) {

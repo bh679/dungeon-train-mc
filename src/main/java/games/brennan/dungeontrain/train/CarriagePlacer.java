@@ -805,7 +805,8 @@ public final class CarriagePlacer {
         if (sidecar.isEmpty()) return;
         int spawned = 0;
         try (VariantConditions.Scope conds = VariantConditions.open(
-                 VariantConditions.stamped(level, origin::offset, new net.minecraft.core.Vec3i(sidecarDims.length(), sidecarDims.height(), sidecarDims.width())))) {
+                 VariantConditions.stamped(level, origin::offset, new net.minecraft.core.Vec3i(sidecarDims.length(), sidecarDims.height(), sidecarDims.width())),
+                 VariantConditions.tierAt(carriageIndex))) {
             for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
                 if (picked == null || !picked.isMob()) continue;
@@ -1000,7 +1001,8 @@ public final class CarriagePlacer {
         try (ConnectPass.Scope ignored = ConnectPass.open();
              GrowthPass.Scope grown = GrowthPass.open();
              VariantConditions.Scope conds = VariantConditions.open(
-                 VariantConditions.stamped(level, origin::offset, new net.minecraft.core.Vec3i(sidecarDims.length(), sidecarDims.height(), sidecarDims.width())))) {
+                 VariantConditions.stamped(level, origin::offset, new net.minecraft.core.Vec3i(sidecarDims.length(), sidecarDims.height(), sidecarDims.width())),
+                 VariantConditions.tierAt(carriageIndex))) {
             for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(e.localPos());

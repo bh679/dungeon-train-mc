@@ -611,11 +611,10 @@ public final class CarriageContentsPlacer {
         CarriageContentsVariantBlocks sidecar = CarriageContentsVariantBlocks.loadFor(contents, size);
         if (sidecar.isEmpty()) return;
 
-        // Difficulty gate: drop out-of-band eggs from each cell's candidate pool
-        // before the pick, using the carriage's own positional tier (offset-aware,
-        // so an admin /dungeontrain difficulty re-themes contents in step with the
-        // shell template) so this pass and the deferred mob pass always agree.
-        // Editor previews (sentinel pIdx) are never gated.
+        // Level gate: each row's If list asks the carriage's own positional tier (offset-aware,
+        // so an admin /dungeontrain difficulty re-themes contents in step with the shell template),
+        // so this pass and the deferred mob pass always agree. Editor previews (sentinel pIdx) have
+        // no tier and are never gated by level.
         boolean filterByDifficulty = carriageIndex != EDITOR_SENTINEL_PIDX;
         int diffTier = filterByDifficulty
             ? DifficultyProgression.positionTier(carriageIndex) : 0;
@@ -625,8 +624,7 @@ public final class CarriageContentsPlacer {
              GrowthPass.Scope grown = GrowthPass.open();
              VariantConditions.Scope conds = VariantConditions.open(
                  VariantConditions.stamped(level, p -> origin.offset(ContentsFlip.mapLocal(p, size, flip)), size),
-                 filterByDifficulty ? states -> CarriageContentsVariantBlocks.inBand(states, diffTier)
-                     : java.util.function.UnaryOperator.identity())) {
+                 filterByDifficulty ? diffTier : VariantConditions.NO_TIER)) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = filterByDifficulty
                     ? sidecar.resolve(entry.localPos(), seed, carriageIndex, diffTier)
@@ -637,11 +635,9 @@ public final class CarriageContentsPlacer {
                 BlockPos world = origin.offset(ContentsFlip.mapLocal(entry.localPos(), size, flip));
                 if (mask.covers(world)) continue;
                 if (picked == null) {
-                    // Difficulty-filtered to nothing: the cell's only candidates were mob
-                    // (spawn-egg) entries, all out of band for this carriage's tier. The mob
-                    // would have occupied an air cell, so clear to air rather than leaving the
-                    // stamped interior block. (Only reachable on the difficulty-filtered path;
-                    // the 3-arg editor-preview path never returns null for a populated cell.)
+                    // No candidate at all: clear to air rather than leaving the stamped interior
+                    // block. (A cell whose every row was gated out by its If list arrives as
+                    // VariantConditions.EMPTY_PICK instead, which writes air below.)
                     if (filterByDifficulty) {
                         SilentBlockOps.setBlockSilent(level, world, Blocks.AIR.defaultBlockState());
                     }
@@ -1466,7 +1462,7 @@ public final class CarriageContentsPlacer {
         int spawned = 0;
         try (VariantConditions.Scope conds = VariantConditions.open(
                  VariantConditions.stamped(level, p -> origin.offset(ContentsFlip.mapLocal(p, size, flip)), size),
-                 states -> CarriageContentsVariantBlocks.inBand(states, diffTier))) {
+                 diffTier)) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(entry.localPos(), seed, carriagePIdx, diffTier);
                 if (picked == null || !picked.isMob()) continue;

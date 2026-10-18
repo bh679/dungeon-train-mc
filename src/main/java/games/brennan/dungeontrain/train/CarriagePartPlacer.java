@@ -219,7 +219,8 @@ public final class CarriagePartPlacer {
         try (ConnectPass.Scope ignored = ConnectPass.open();
              GrowthPass.Scope grown = GrowthPass.open();
              VariantConditions.Scope conds = VariantConditions.open(VariantConditions.stamped(
-                 level, local -> transformLocal(stampOrigin, local, p.mirror(), partSize), partSize))) {
+                 level, local -> transformLocal(stampOrigin, local, p.mirror(), partSize), partSize),
+                 VariantConditions.tierAt(carriageIndex))) {
             for (var entry : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(entry.localPos());
@@ -308,7 +309,8 @@ public final class CarriagePartPlacer {
             CarriagePartKind.Placement p = placements.get(i);
             BlockPos stampOrigin = carriageOrigin.offset(p.originOffset());
             try (VariantConditions.Scope conds = VariantConditions.open(VariantConditions.stamped(
-                     level, local -> transformLocal(stampOrigin, local, p.mirror(), partSize), partSize))) {
+                     level, local -> transformLocal(stampOrigin, local, p.mirror(), partSize), partSize),
+                     VariantConditions.tierAt(carriageIndex))) {
                 for (var entry : sidecar.entries()) {
                     VariantState picked = sidecar.resolve(entry.localPos(), seed, carriageIndex);
                     if (picked == null || !picked.isMob()) continue;

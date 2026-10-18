@@ -237,7 +237,7 @@ public final class EditorMirror {
      */
     public static VariantState reflectVariant(VariantState v, boolean flipX, boolean flipY, boolean flipZ) {
         // A touching-block condition is geometry and turns with the cell, mob or not.
-        VariantCondition condition = v.condition().reflected(flipX, flipY, flipZ);
+        VariantConditionSet condition = v.condition().reflected(flipX, flipY, flipZ);
         if (v.isMob()) return condition == v.condition() ? v : v.withCondition(condition);
         return new VariantState(
             flipY ? MultiBlockFootprint.verticalFlip(reflect(v.state(), flipX, true, flipZ))

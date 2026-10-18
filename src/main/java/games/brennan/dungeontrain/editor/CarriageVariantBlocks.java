@@ -678,10 +678,12 @@ public final class CarriageVariantBlocks {
             JsonElement hungEl = obj.get("hung");
             HungPainting hung = hungEl != null && hungEl.isJsonPrimitive()
                 ? HungPainting.parse(hungEl.getAsString()) : HungPainting.NONE;
-            // Additive placement condition. Absent → always eligible, so older files spawn unchanged.
-            VariantCondition condition = parseCondition(obj.get("if"), contextId, contextPos);
+            // Additive placement conditions. Absent → always eligible, so older files spawn unchanged.
+            VariantConditionSet condition = parseCondition(obj.get("if"), contextId, contextPos);
+            // The If list's Level condition. Block rows gained it after mob rows; absent → every tier.
+            VariantDifficulty difficulty = parseDifficulty(obj.get("difficulty"), contextId, contextPos);
             return new VariantState(base.state(), nbt, weight, rotation, lootPrefab, null, half,
-                VariantDifficulty.NONE, groupRef, active, connect, growth, painting, hung,
+                difficulty, groupRef, active, connect, growth, painting, hung,
                 groupRef > 0 ? parseGroupStates(obj.get("groupStates"), blocks, contextId, contextPos) : List.of(),
                 condition);
         }
@@ -1453,6 +1455,9 @@ public final class CarriageVariantBlocks {
         if (!s.half().isDefault()) {
             sb.append(", \"half\": \"").append(halfModeName(s.half().mode())).append("\"");
         }
+        if (!s.difficulty().isDefault()) {
+            appendDifficultyJson(sb, s.difficulty());
+        }
         if (s.isGroupRef()) {
             sb.append(", \"groupRef\": ").append(s.groupRef());
             if (!s.groupStates().isEmpty()) {
@@ -1484,21 +1489,22 @@ public final class CarriageVariantBlocks {
         sb.append("}");
     }
 
-    /** Emit {@code , "if": "<token>"} for a set condition; nothing for none. */
-    private static void appendConditionJson(StringBuilder sb, VariantCondition c) {
-        if (c.isDefault()) return;
-        sb.append(", \"if\": \"").append(escapeJson(c.id())).append("\"");
+    /** Emit {@code , "if": "<token>"} for the gating conditions; nothing when none gate. */
+    private static void appendConditionJson(StringBuilder sb, VariantConditionSet c) {
+        String token = c.storedId();
+        if (token.isEmpty()) return;
+        sb.append(", \"if\": \"").append(escapeJson(token)).append("\"");
     }
 
     /**
-     * Parse the additive {@code "if"} token. Absent → {@link VariantCondition#NONE}; a token whose
+     * Parse the additive {@code "if"} token. Absent → {@link VariantConditionSet#NONE}; a token whose
      * target is malformed or whose every block id is unknown also lands on none, with a warning so
      * an author can see why a gated row became unconditional.
      */
-    private static VariantCondition parseCondition(JsonElement el, String contextId, BlockPos contextPos) {
-        if (el == null || !el.isJsonPrimitive()) return VariantCondition.NONE;
+    private static VariantConditionSet parseCondition(JsonElement el, String contextId, BlockPos contextPos) {
+        if (el == null || !el.isJsonPrimitive()) return VariantConditionSet.NONE;
         String raw = el.getAsString();
-        VariantCondition c = VariantCondition.parse(raw);
+        VariantConditionSet c = VariantConditionSet.parse(raw);
         if (c.isDefault() && !raw.isBlank()) {
             LOGGER.warn("[DungeonTrain] Variant sidecar {} pos {}: condition '{}' has no usable target or block, dropping it.",
                 contextId, contextPos, raw);

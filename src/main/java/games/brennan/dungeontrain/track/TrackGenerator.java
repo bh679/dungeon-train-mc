@@ -445,12 +445,15 @@ public final class TrackGenerator {
         Optional<BlockState[][][]> netherCells,
         TrackVariantBlocks netherSidecar,
         ServerLevel fadeOverworld,
-        long genSeed
+        long genSeed,
+        // The tile's difficulty tier, which a variant row's Level condition asks; NO_TIER for a
+        // named test tile, which has no place on the line.
+        int tier
     ) {
         /** Single-variant tile (no crossfade composite) — Nether source absent. */
         TilePaint(Optional<BlockState[][][]> cells, TrackVariantBlocks sidecar,
-                  long worldSeed, long tileIndex) {
-            this(cells, sidecar, worldSeed, tileIndex, Optional.empty(), null, null, 0L);
+                  long worldSeed, long tileIndex, int tier) {
+            this(cells, sidecar, worldSeed, tileIndex, Optional.empty(), null, null, 0L, tier);
         }
 
         BlockState resolveSidecar(BlockState base, int xMod, int y, int zOff) {
@@ -488,7 +491,7 @@ public final class TrackGenerator {
             if (games.brennan.dungeontrain.editor.VariantConditions.anyConditional(sc.groupRefs().statesAt(local))) {
                 Optional<BlockState[][][]> source = sc == netherSidecar ? netherCells : cells;
                 try (games.brennan.dungeontrain.editor.VariantConditions.Scope conds =
-                         games.brennan.dungeontrain.editor.VariantConditions.open(p -> cellOrAir(source, p))) {
+                         games.brennan.dungeontrain.editor.VariantConditions.open(p -> cellOrAir(source, p), tier)) {
                     picked = sc.resolve(local, worldSeed, (int) tileIndex);
                 }
             } else {
@@ -550,13 +553,13 @@ public final class TrackGenerator {
                 worldSeed, idx,
                 TrackTemplateStore.getCellsFor(level, dims, ntName),
                 TrackVariantBlocks.loadFor(TrackKind.TILE, ntName, tileFootprint),
-                overworld, genSeed);
+                overworld, genSeed, baseCtx.level());
         }
         String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx, baseCtx);
         return new TilePaint(
             TrackTemplateStore.getCellsFor(level, dims, name),
             TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint),
-            worldSeed, idx);
+            worldSeed, idx, baseCtx.level());
     }
 
     /**
@@ -568,7 +571,7 @@ public final class TrackGenerator {
         return new TilePaint(
             TrackTemplateStore.getCellsFor(level, dims, name),
             TrackVariantBlocks.loadFor(TrackKind.TILE, name, TrackKind.TILE.dims(dims)),
-            seed, idx);
+            seed, idx, games.brennan.dungeontrain.editor.VariantConditions.NO_TIER);
     }
 
     /**
@@ -2429,12 +2432,12 @@ public final class TrackGenerator {
             TilePaint paint = tilePaints.computeIfAbsent(
                 tileIndex,
                 idx -> {
-                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
-                        GateContext.atWorldX(level, (int) (idx * TrackPlacer.TILE_LENGTH), dims.length()));
+                    GateContext ctx = GateContext.atWorldX(level, (int) (idx * TrackPlacer.TILE_LENGTH), dims.length());
+                    String name = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx, ctx);
                     Optional<BlockState[][][]> cells = TrackTemplateStore.getCellsFor(level, dims, name);
                     TrackVariantBlocks sidecar =
                         TrackVariantBlocks.loadFor(TrackKind.TILE, name, tileFootprint);
-                    return new TilePaint(cells, sidecar, worldSeed, idx);
+                    return new TilePaint(cells, sidecar, worldSeed, idx, ctx.level());
                 }
             );
             placeTrackColumn(level, chunk, worldX, worldZ, g, paint, null);

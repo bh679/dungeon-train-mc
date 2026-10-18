@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -183,5 +184,87 @@ final class VariantConditionResolveTest {
         }
         assertTrue(differs);
         assertNotEquals(VariantConditions.EMPTY_PICK, gated.resolve(BELOW, 0, 0));
+    }
+
+    private static final VariantDifficulty FROM_TIER_3 = new VariantDifficulty(3, VariantDifficulty.ALL);
+
+    /** Stone, or glass gated on planks below AND / OR level 3 and up. */
+    private static CarriageVariantBlocks glassWithLevel(boolean any) {
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantConditionSet set = VariantConditionSet.of(below(Blocks.OAK_PLANKS)).withAny(any);
+        sc.put(CELL, List.of(of(Blocks.STONE),
+            of(Blocks.GLASS).withCondition(set).withDifficulty(FROM_TIER_3)));
+        return sc;
+    }
+
+    private static boolean glassEver(CarriageVariantBlocks sc, int tier, Block below) {
+        try (VariantConditions.Scope ignored = VariantConditions.open(
+                p -> p.equals(BELOW) ? below.defaultBlockState() : Blocks.AIR.defaultBlockState(), tier)) {
+            for (int seed = 0; seed < SEEDS; seed++) {
+                for (int idx = 0; idx < INDICES; idx++) {
+                    if (blockOf(sc.resolve(CELL, seed, idx)) == Blocks.GLASS) return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    @Test
+    @DisplayName("AND: a block row's Level band and its Touch condition must both hold")
+    void levelAndTouch() {
+        CarriageVariantBlocks sc = glassWithLevel(false);
+        assertTrue(glassEver(sc, 3, Blocks.OAK_PLANKS));
+        assertFalse(glassEver(sc, 2, Blocks.OAK_PLANKS), "under the band");
+        assertFalse(glassEver(sc, 5, Blocks.DIRT), "touch fails");
+    }
+
+    @Test
+    @DisplayName("OR: either the Level band or the Touch condition is enough")
+    void levelOrTouch() {
+        CarriageVariantBlocks sc = glassWithLevel(true);
+        assertTrue(glassEver(sc, 2, Blocks.OAK_PLANKS), "touch alone");
+        assertTrue(glassEver(sc, 5, Blocks.DIRT), "level alone");
+        assertFalse(glassEver(sc, 2, Blocks.DIRT), "neither");
+    }
+
+    @Test
+    @DisplayName("with no tier (the editor) a band is left out: AND rows answer to the rest, band-only rows always roll")
+    void noTierLeavesLevelOut() {
+        assertTrue(glassEver(glassWithLevel(false), VariantConditions.NO_TIER, Blocks.OAK_PLANKS));
+        assertFalse(glassEver(glassWithLevel(true), VariantConditions.NO_TIER, Blocks.DIRT));
+        CarriageVariantBlocks bandOnly = CarriageVariantBlocks.empty();
+        bandOnly.put(CELL, List.of(of(Blocks.GLASS).withDifficulty(FROM_TIER_3), of(Blocks.GLASS).withDifficulty(FROM_TIER_3)));
+        assertEquals(Blocks.GLASS, blockOf(bandOnly.resolve(CELL, 1, 1)));
+    }
+
+    @Test
+    @DisplayName("two Touch conditions AND together: both neighbours must match")
+    void twoConditionsAnd() {
+        VariantCondition northPlanks = VariantCondition.NONE.withDirection(Direction.NORTH)
+            .withValueAdded(BuiltInRegistries.BLOCK.getKey(Blocks.OAK_PLANKS));
+        VariantConditionSet both = VariantConditionSet.of(below(Blocks.STONE)).withAdded(northPlanks);
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        sc.put(CELL, List.of(of(Blocks.GLASS).withCondition(both), of(Blocks.GLASS).withCondition(both)));
+        try (VariantConditions.Scope ignored = VariantConditions.open(p ->
+                p.equals(BELOW) ? Blocks.STONE.defaultBlockState()
+                    : p.equals(CELL.north()) ? Blocks.OAK_PLANKS.defaultBlockState() : Blocks.AIR.defaultBlockState())) {
+            assertEquals(Blocks.GLASS, blockOf(sc.resolve(CELL, 1, 1)));
+        }
+        try (VariantConditions.Scope ignored = VariantConditions.open(p ->
+                p.equals(BELOW) ? Blocks.STONE.defaultBlockState() : Blocks.AIR.defaultBlockState())) {
+            assertTrue(CarriageVariantBlocks.isEmptyPlaceholder(sc.resolve(CELL, 1, 1).state()));
+        }
+    }
+
+    @Test
+    @DisplayName("the contents tier pick drops an out-of-band mob and agrees with its tier scope")
+    void contentsTierPick() {
+        CarriageContentsVariantBlocks sc = CarriageContentsVariantBlocks.empty();
+        VariantState zombie = VariantState.ofMob(net.minecraft.resources.ResourceLocation.withDefaultNamespace("zombie"),
+            null, 1, VariantRotation.NONE).withDifficulty(FROM_TIER_3);
+        sc.put(CELL, List.of(zombie, zombie));
+        assertTrue(sc.resolve(CELL, 4, 4, 5).isMob());
+        assertTrue(CarriageVariantBlocks.isEmptyPlaceholder(sc.resolve(CELL, 4, 4, 1).state()));
+        assertTrue(sc.resolve(CELL, 4, 4).isMob(), "the editor pick has no tier");
     }
 }

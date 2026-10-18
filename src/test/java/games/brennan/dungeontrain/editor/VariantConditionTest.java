@@ -112,11 +112,11 @@ final class VariantConditionTest {
         VariantState block = VariantState.of(Blocks.GLASS.defaultBlockState()).withCondition(c);
         String json = write(block);
         assertTrue(json.contains("\"if\": \"down=minecraft:oak_planks\""), json);
-        assertEquals(c, parse(json).condition());
+        assertEquals(c, parse(json).condition().get(0));
 
         VariantState mob = VariantState.ofMob(ResourceLocation.withDefaultNamespace("zombie"), null, 1,
             VariantRotation.NONE).withCondition(c.withGroup(2));
-        assertEquals(c.withGroup(2), parse(write(mob)).condition());
+        assertEquals(c.withGroup(2), parse(write(mob)).condition().get(0));
     }
 
     @Test
@@ -150,7 +150,7 @@ final class VariantConditionTest {
 
         VariantState glass = VariantState.of(Blocks.GLASS.defaultBlockState()).withCondition(north);
         assertEquals(Direction.SOUTH,
-            EditorMirror.reflectVariant(glass, false, false, true).condition().sides().get(0));
+            EditorMirror.reflectVariant(glass, false, false, true).condition().get(0).sides().get(0));
     }
 
     @Test

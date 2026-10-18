@@ -450,8 +450,9 @@ public final class VariantClipboardItem extends Item {
             if (!s.active().isDefault()) {
                 entry.putByte(NBT_ACTIVE_MODE, (byte) s.active().mode().ordinal());
             }
-            if (s.isConditional()) {
-                entry.putString(NBT_CONDITION, s.condition().id());
+            String conditionToken = s.condition().storedId();
+            if (!conditionToken.isEmpty()) {
+                entry.putString(NBT_CONDITION, conditionToken);
             }
             if (!s.connect().isDefault()) {
                 entry.putByte(NBT_CONNECT_MODE, (byte) s.connect().ordinal());
@@ -598,8 +599,8 @@ public final class VariantClipboardItem extends Item {
                     : games.brennan.dungeontrain.editor.VariantDifficulty.ALL;
                 difficulty = new games.brennan.dungeontrain.editor.VariantDifficulty(dmin, dmax);
             }
-            games.brennan.dungeontrain.editor.VariantCondition condition =
-                games.brennan.dungeontrain.editor.VariantCondition.parse(
+            games.brennan.dungeontrain.editor.VariantConditionSet condition =
+                games.brennan.dungeontrain.editor.VariantConditionSet.parse(
                     entry.contains(NBT_CONDITION, Tag.TAG_STRING) ? entry.getString(NBT_CONDITION) : null);
             // v7 mob entry: presence of NBT_ENTITY_ID drives the mob branch.
             if (entry.contains(NBT_ENTITY_ID, Tag.TAG_STRING)) {

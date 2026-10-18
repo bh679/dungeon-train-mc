@@ -139,8 +139,8 @@ public record BlockVariantSyncPacket(
                         int growth, String painting, String condition, boolean conditionLive,
                         String conditionGroupValues) {
 
-        /** Cap on the condition token over the wire: eight namespaced ids and a target. */
-        public static final int CONDITION_MAX_LEN = 1024;
+        /** Cap on the If list's token over the wire: up to six conditions of twelve ids each. */
+        public static final int CONDITION_MAX_LEN = 8192;
 
         public Entry {
             if (painting == null) painting = "";
@@ -173,9 +173,10 @@ public record BlockVariantSyncPacket(
                 painting, "", true);
         }
 
-        /** True when this row only places if its condition holds. */
+        /** True when this row only places if its If list holds — a gating condition or a Level band. */
         public boolean isConditional() {
-            return condition.contains("=") && !condition.endsWith("=");
+            return !games.brennan.dungeontrain.editor.VariantConditionSet.parse(condition).isDefault()
+                || minDiff != 0 || maxDiff != -1;
         }
 
         /**

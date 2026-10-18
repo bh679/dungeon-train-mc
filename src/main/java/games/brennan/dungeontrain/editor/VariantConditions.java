@@ -23,6 +23,10 @@ import java.util.function.UnaryOperator;
  * matters. For any other touching cell it is the template's block, which only the placer can see:
  * it supplies that through {@link #open}. A group target is the group's roll.</p>
  *
+ * <p>An entry's If list ({@link VariantConditionSet}) is combined AND or OR together with its Level
+ * band ({@link VariantDifficulty}), which asks the scope's difficulty tier. A scope with no tier
+ * ({@link #NO_TIER} — the editor, or a placer with no carriage to measure) lets every band pass.</p>
+ *
  * <p>Cycles (A's condition looks at B, B's looks at A) are cut deterministically: a cell asked about
  * while it is already being resolved on this thread rolls with its conditions ignored.</p>
  */
@@ -36,6 +40,9 @@ public final class VariantConditions {
 
     /** Stand-in pick for a cell whose every entry was gated out: the placers write air for it. */
     public static final VariantState EMPTY_PICK = VariantState.of(CarriageVariantBlocks.emptyPlaceholder());
+
+    /** Tier of a scope that has none: every Level band passes. */
+    public static final int NO_TIER = -1;
 
     private static final TemplateLookup NO_TEMPLATE = p -> Blocks.AIR.defaultBlockState();
     private static final ThreadLocal<Scope> SCOPE = new ThreadLocal<>();
@@ -51,11 +58,14 @@ public final class VariantConditions {
     public static final class Scope implements AutoCloseable {
         private final TemplateLookup template;
         private final UnaryOperator<List<VariantState>> prefilter;
+        private final int tier;
         @Nullable private final Scope previous;
 
-        private Scope(TemplateLookup template, UnaryOperator<List<VariantState>> prefilter, @Nullable Scope previous) {
+        private Scope(TemplateLookup template, UnaryOperator<List<VariantState>> prefilter, int tier,
+                      @Nullable Scope previous) {
             this.template = template;
             this.prefilter = prefilter;
+            this.tier = tier;
             this.previous = previous;
         }
 
@@ -67,13 +77,49 @@ public final class VariantConditions {
     }
 
     public static Scope open(TemplateLookup template) {
-        return open(template, UnaryOperator.identity());
+        return open(template, UnaryOperator.identity(), NO_TIER);
+    }
+
+    /** A scope whose Level conditions ask {@code tier} ({@link #NO_TIER}: every band passes). */
+    public static Scope open(TemplateLookup template, int tier) {
+        return open(template, UnaryOperator.identity(), tier);
     }
 
     public static Scope open(TemplateLookup template, UnaryOperator<List<VariantState>> prefilter) {
-        Scope scope = new Scope(template, prefilter, SCOPE.get());
+        return open(template, prefilter, NO_TIER);
+    }
+
+    public static Scope open(TemplateLookup template, UnaryOperator<List<VariantState>> prefilter, int tier) {
+        Scope scope = new Scope(template, prefilter, tier, SCOPE.get());
         SCOPE.set(scope);
         return scope;
+    }
+
+    /**
+     * The open scope again (or a template-less one) with its tier set to {@code tier} — for a pick
+     * that knows its tier but may be asked outside its placer's scope. Close it like any scope.
+     */
+    public static Scope withTier(int tier) {
+        Scope scope = SCOPE.get();
+        return scope == null ? open(NO_TEMPLATE, UnaryOperator.identity(), tier)
+            : open(scope.template, scope.prefilter, tier);
+    }
+
+    /**
+     * The Level tier for a carriage index: {@link games.brennan.dungeontrain.difficulty.DifficultyProgression#positionTier},
+     * or {@link #NO_TIER} for the editor's sentinel ({@code -1}) and the portal editor's no-pair
+     * ({@link Integer#MIN_VALUE}) — neither is a place on the line, and {@code positionTier(-1)}
+     * would quietly answer for distance 1.
+     */
+    public static int tierAt(int carriageIndex) {
+        if (carriageIndex == -1 || carriageIndex == Integer.MIN_VALUE) return NO_TIER;
+        return games.brennan.dungeontrain.difficulty.DifficultyProgression.positionTier(carriageIndex);
+    }
+
+    /** The open scope's difficulty tier, {@link #NO_TIER} outside a scope or in one without a tier. */
+    public static int tier() {
+        Scope scope = SCOPE.get();
+        return scope == null ? NO_TIER : scope.tier;
     }
 
     /**
@@ -120,13 +166,39 @@ public final class VariantConditions {
         try {
             List<VariantState> out = new ArrayList<>(states.size());
             Map<Object, BlockState> seen = new HashMap<>();
+            int tier = tier();
             for (VariantState s : states) {
-                if (!s.isConditional() || passes(s.condition(), localPos, view, worldSeed, index, seen)) out.add(s);
+                if (!s.isConditional() || passes(s, tier, localPos, view, worldSeed, index, seen)) out.add(s);
             }
             return out;
         } finally {
             resolving.remove(localPos);
         }
+    }
+
+    /**
+     * Whether {@code s}'s If list holds: its gating conditions and its Level band (when narrower than
+     * every tier), all of them for AND, any one for OR. Each test runs only when the answer still
+     * hangs on it.
+     */
+    static boolean passes(VariantState s, int tier, BlockPos localPos, VariantGroupResolver view,
+                          long worldSeed, int index, Map<Object, BlockState> seen) {
+        boolean any = s.condition().any();
+        boolean tested = false;
+        // With no tier to ask, the band is left out rather than passed, so an OR row still answers
+        // to its other conditions.
+        if (!s.difficulty().isDefault() && tier != NO_TIER) {
+            boolean ok = s.difficulty().eligible(tier);
+            if (ok == any) return any;
+            tested = true;
+        }
+        for (VariantCondition c : s.condition().gating()) {
+            boolean ok = passes(c, localPos, view, worldSeed, index, seen);
+            if (ok == any) return any;
+            tested = true;
+        }
+        // AND: nothing failed. OR: nothing passed — fails unless there was nothing to test.
+        return !any || !tested;
     }
 
     /**

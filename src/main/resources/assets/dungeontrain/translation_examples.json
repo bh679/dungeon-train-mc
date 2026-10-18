@@ -6402,6 +6402,22 @@
       ]
     }
   },
+  "gui.dungeontrain.editor_menu.block_variant.condition_level_chip": {
+    "1": {
+      "label": "the row's lowest difficulty level",
+      "examples": [
+        "0",
+        "12"
+      ]
+    },
+    "2": {
+      "label": "the row's highest difficulty level, or the word for no limit",
+      "examples": [
+        "40",
+        "all"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.editor.menu_distance": {
     "1": {
       "label": "how far the world-space menus keep drawing, in blocks",

@@ -368,7 +368,7 @@ public final class BlockVariantMenuController {
                 (byte) s.connect().ordinal(),
                 s.growth().toInt(),
                 s.painting().isDefault() ? "" : s.painting().id(),
-                // Sent even with no values so the popup keeps the target the author picked.
+                // Sent even with no values so the popup keeps the targets the author picked.
                 s.condition().id(),
                 VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
                 groupValuesToken(plot, s.condition())));
@@ -380,15 +380,76 @@ public final class BlockVariantMenuController {
             plot.supportsConnectMode(), plot.supportsGrowth());
     }
 
-    /** Group mode's togglable values — the target group's distinct blocks, comma-joined; blank otherwise. */
-    private static String groupValuesToken(BlockVariantPlot plot, VariantCondition c) {
-        if (!c.isGroupTarget()) return "";
+    /**
+     * Group mode's togglable values per condition, {@code ;}-separated in list order: a group
+     * target's distinct blocks comma-joined, blank for any other condition.
+     */
+    private static String groupValuesToken(BlockVariantPlot plot, VariantConditionSet set) {
         StringBuilder sb = new StringBuilder();
-        for (var id : VariantConditionEdits.groupValues(plot.groupRefs().statesForLockId(c.groupId()))) {
-            if (sb.length() > 0) sb.append(',');
-            sb.append(id);
+        for (int i = 0; i < set.size(); i++) {
+            if (i > 0) sb.append(';');
+            VariantCondition c = set.get(i);
+            if (!c.isGroupTarget()) continue;
+            boolean first = true;
+            for (var id : VariantConditionEdits.groupValues(plot.groupRefs().statesForLockId(c.groupId()))) {
+                if (!first) sb.append(',');
+                sb.append(id);
+                first = false;
+            }
         }
         return sb.toString();
+    }
+
+    /**
+     * One If-list edit on {@code entry}: the list ops (add, AND / OR, clear Level) or an edit of the
+     * condition at {@code packet.condIndex()} — one past the end starts a new condition. {@code null}
+     * when refused (the reason, if any, already on the action bar).
+     */
+    @org.jetbrains.annotations.Nullable
+    private static VariantState editConditions(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos,
+                                               VariantState entry, BlockVariantEditPacket packet) {
+        VariantConditionSet set = entry.condition();
+        switch (packet.op()) {
+            case SET_COND_ANY -> { return entry.withCondition(set.withAny(packet.delta() != 0)); }
+            case CLEAR_LEVEL -> { return entry.withDifficulty(VariantDifficulty.NONE); }
+            case ADD_COND -> {
+                if (set.size() >= VariantConditionSet.MAX_CONDITIONS) {
+                    actionBar(player, Component.translatable(
+                        "chat.dungeontrain.editor_bar.variant_menu.condition_list_full"), ChatFormatting.YELLOW);
+                    return null;
+                }
+                // Start in the tab the author is on: a mode token retypes the fresh condition.
+                VariantCondition fresh = VariantCondition.NONE;
+                if (!packet.stateString().isEmpty()) {
+                    VariantConditionEdits.Result typed = VariantConditionEdits.setTarget(fresh,
+                        packet.stateString(), plot.groupRefs().lockIdsInUse(), plot.lockIdAt(localPos));
+                    if (typed.condition() != null) fresh = typed.condition();
+                }
+                return entry.withCondition(set.withAdded(fresh));
+            }
+            default -> { }
+        }
+        int ci = packet.condIndex();
+        if (ci < 0 || ci > set.size()) return null;
+        if (packet.op() == BlockVariantEditPacket.Op.CLEAR_COND) {
+            return ci < set.size() ? entry.withCondition(set.withRemoved(ci)) : null;
+        }
+        VariantCondition current = set.get(ci);
+        VariantConditionEdits.Result result = switch (packet.op()) {
+            case SET_COND_TARGET -> VariantConditionEdits.setTarget(current,
+                packet.stateString(), plot.groupRefs().lockIdsInUse(), plot.lockIdAt(localPos));
+            case ADD_COND_VALUE -> VariantConditionEdits.addHeld(current, player.getMainHandItem());
+            case TOGGLE_COND_VALUE -> VariantConditionEdits.toggleValue(current, packet.stateString());
+            case REMOVE_COND_VALUE -> new VariantConditionEdits.Result(current.withValueRemoved(packet.delta()), null);
+            default -> new VariantConditionEdits.Result(null, null);
+        };
+        if (result.condition() == null) {
+            if (result.refusalKey() != null) {
+                actionBar(player, Component.translatable(result.refusalKey()), ChatFormatting.YELLOW);
+            }
+            return null;
+        }
+        return entry.withCondition(set.with(ci, result.condition()));
     }
 
     /** Apply a {@link BlockVariantEditPacket} mutation, with OP + plot validation. */
@@ -874,7 +935,6 @@ public final class BlockVariantMenuController {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
                 VariantState entry = mutated.get(idx);
-                if (!entry.isMob()) return;
                 VariantDifficulty band = entry.difficulty();
                 // Wrap min in [0, upperBound] — upperBound is max (or MAX_TIER
                 // when the band is unbounded). Mirrors BUMP_FILL_MIN.
@@ -900,7 +960,6 @@ public final class BlockVariantMenuController {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
                 VariantState entry = mutated.get(idx);
-                if (!entry.isMob()) return;
                 VariantDifficulty band = entry.difficulty();
                 int upperBound = band.max() == VariantDifficulty.ALL
                     ? VariantDifficulty.MAX_TIER : band.max();
@@ -916,7 +975,6 @@ public final class BlockVariantMenuController {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
                 VariantState entry = mutated.get(idx);
-                if (!entry.isMob()) return;
                 VariantDifficulty band = entry.difficulty();
                 int next0 = packet.delta() < 0
                     ? VariantDifficulty.ALL
@@ -933,7 +991,6 @@ public final class BlockVariantMenuController {
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
                 VariantState entry = mutated.get(idx);
-                if (!entry.isMob()) return;
                 VariantDifficulty band = entry.difficulty();
                 // Cycle ALL → 0 → 1 … → MAX_TIER → ALL. Mirrors BUMP_FILL_MAX.
                 int cur = band.max();
@@ -953,27 +1010,15 @@ public final class BlockVariantMenuController {
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }
-            case SET_COND_TARGET, ADD_COND_VALUE, REMOVE_COND_VALUE, CLEAR_COND, TOGGLE_COND_VALUE -> {
+            case SET_COND_TARGET, ADD_COND_VALUE, REMOVE_COND_VALUE, CLEAR_COND, TOGGLE_COND_VALUE,
+                 ADD_COND, SET_COND_ANY, CLEAR_LEVEL -> {
                 if (wasEmpty) return;
                 int idx = packet.entryIndex();
                 if (idx < 0 || idx >= mutated.size()) return;
                 VariantState entry = mutated.get(idx);
-                VariantConditionEdits.Result result = switch (packet.op()) {
-                    case SET_COND_TARGET -> VariantConditionEdits.setTarget(entry.condition(),
-                        packet.stateString(), plot.groupRefs().lockIdsInUse(), plot.lockIdAt(localPos));
-                    case ADD_COND_VALUE -> VariantConditionEdits.addHeld(entry.condition(), player.getMainHandItem());
-                    case TOGGLE_COND_VALUE -> VariantConditionEdits.toggleValue(entry.condition(), packet.stateString());
-                    case REMOVE_COND_VALUE -> new VariantConditionEdits.Result(
-                        entry.condition().withValueRemoved(packet.delta()), null);
-                    default -> new VariantConditionEdits.Result(VariantCondition.NONE, null);
-                };
-                if (result.condition() == null) {
-                    if (result.refusalKey() != null) {
-                        actionBar(player, Component.translatable(result.refusalKey()), ChatFormatting.YELLOW);
-                    }
-                    return;
-                }
-                mutated.set(idx, entry.withCondition(result.condition()));
+                VariantState next = editConditions(player, plot, localPos, entry, packet);
+                if (next == null || next.equals(entry)) return;
+                mutated.set(idx, next);
                 VariantEditorPreviewState.setPinned(plot.key(), localPos, idx);
                 dirty = true;
             }

@@ -38,7 +38,8 @@ public final class WholeOverlay {
         try (ConnectPass.Scope ignored = ConnectPass.open();
              GrowthPass.Scope grown = GrowthPass.open();
              VariantConditions.Scope conds = VariantConditions.open(
-                 VariantConditions.stamped(level, origin::offset, footprint))) {
+                 VariantConditions.stamped(level, origin::offset, footprint),
+                 VariantConditions.tierAt(carriageIndex))) {
             for (CarriageVariantBlocks.Entry e : sidecar.entries()) {
                 VariantState picked = sidecar.resolve(e.localPos(), seed, carriageIndex);
                 int lockId = sidecar.lockIdAt(e.localPos());
