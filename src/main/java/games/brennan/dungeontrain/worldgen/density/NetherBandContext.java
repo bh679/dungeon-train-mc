@@ -54,6 +54,17 @@ public record NetherBandContext(boolean enabled, long generationSeed, int seaLev
 
     private static volatile NetherBandContext current;
 
+    /**
+     * World y of a Deeper Dark core's bedrock floor ({@code OthersideCore#slabBottom}) — the track bed is
+     * {@link #netherTop} less {@code NETHER_TOP_ABOVE_BED}. The Otherside biome label reaches down to here and
+     * no further: the rows under the slab keep their overworld biome, so the chunk still runs DT's overworld
+     * band features (the track bed and the core's own decoration among them).
+     */
+    public int othersideSlabBottom() {
+        return games.brennan.dungeontrain.worldgen.OthersideCore.slabBottom(
+                netherTop - games.brennan.dungeontrain.event.NetherBandContextEvents.NETHER_TOP_ABOVE_BED);
+    }
+
     /** The active context, or {@code null} before {@link #publish} / after {@link #clear}. */
     public static NetherBandContext current() {
         return current;

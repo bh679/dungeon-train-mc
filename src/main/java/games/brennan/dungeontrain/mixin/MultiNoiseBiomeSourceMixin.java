@@ -141,8 +141,10 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 LiveColumnProviders.forContext(ctx));
         if (column.legacy() != null) return column.legacy();
         int blockY = y << 2;
-        // A Deeper Dark core is the Otherside all the way down its slab, under sea level too (its mobs spawn there).
-        if (blockY < ctx.seaLevel() && column.aboveSea() == BandBiomeDecision.Result.NETHER_CORE
+        // A Deeper Dark core is the Otherside all the way down its slab, under sea level too (its mobs spawn there);
+        // below the slab the column keeps its overworld biome, or the chunk would lose DT's overworld features.
+        if (blockY < ctx.seaLevel() && blockY >= ctx.othersideSlabBottom()
+                && column.aboveSea() == BandBiomeDecision.Result.NETHER_CORE
                 && dungeontrain$isOtherside(column.core())) {
             return column.core();
         }
@@ -223,8 +225,9 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         // biome would re-tint the air chunk by chunk. The zone swaps blocks, never the atmosphere.
         WorldGenCycle cycle = ctx.cycle();
         if (blockY < ctx.seaLevel()) {
-            // A Deeper Dark core keeps its Otherside biome below sea level too: decide the column at sea level.
-            if (ctx.netherCoreBiomes() != null && ctx.netherCoreBiomes().hasOtherside()
+            // A Deeper Dark core keeps its Otherside biome below sea level too, down to its bedrock floor:
+            // decide the column at sea level.
+            if (blockY >= ctx.othersideSlabBottom() && ctx.netherCoreBiomes() != null && ctx.netherCoreBiomes().hasOtherside()
                     && BandBiomeDecision.decide(cycle, ctx.generationSeed(), ctx.seaLevel(), true, ctx.endCoreBiomes() != null,
                             blockX, ctx.seaLevel(), blockZ) == BandBiomeDecision.Result.NETHER_CORE) {
                 Holder<Biome> core = ctx.netherCoreBiomes().biomeAt(blockX, blockZ,

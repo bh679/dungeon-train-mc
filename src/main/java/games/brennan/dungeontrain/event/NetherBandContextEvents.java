@@ -67,7 +67,7 @@ public final class NetherBandContextEvents {
 
     /** Nether-space rows sampled above the bed in {@code NetherTransitionFeature}
      *  ({@code NETHER_SAMPLE_Y_MAX 120 − NETHER_CENTER_Y 40}); the mountain tapers to {@code bedY + this}. */
-    private static final int NETHER_TOP_ABOVE_BED = 80;
+    public static final int NETHER_TOP_ABOVE_BED = 80;
 
     private NetherBandContextEvents() {}
 
