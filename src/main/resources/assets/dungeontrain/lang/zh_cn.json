@@ -3495,7 +3495,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "实心",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "空",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "任意方块",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "或",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "类型",
   "gui.dungeontrain.editor_menu.block_variant.painting": "画",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "任意",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "尺寸",

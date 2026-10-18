@@ -2819,7 +2819,7 @@
       "gui.dungeontrain.editor_menu.block_variant.condition_solid",
       "gui.dungeontrain.editor_menu.block_variant.condition_empty",
       "gui.dungeontrain.editor_menu.block_variant.condition_any",
-      "gui.dungeontrain.editor_menu.block_variant.condition_or",
+      "gui.dungeontrain.editor_menu.block_variant.condition_kind",
       "gui.dungeontrain.editor_menu.block_variant.painting",
       "gui.dungeontrain.editor_menu.block_variant.painting_any",
       "gui.dungeontrain.editor_menu.block_variant.painting_size",

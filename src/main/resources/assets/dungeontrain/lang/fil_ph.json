@@ -3481,7 +3481,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "Solido",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "Walang laman",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "Kahit anong block",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "O",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "Uri",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Painting",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "Kahit ano",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "Laki",

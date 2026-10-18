@@ -3537,7 +3537,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "Fest",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "Leer",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "Jeder Block",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "Oder",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "Art",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Gemälde",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "Beliebig",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "Größe",

@@ -4189,7 +4189,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "b8b311b0f2739e0c"},
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "c6c094bc0054f9cb"},
   "gui.dungeontrain.editor_menu.block_variant.condition_any": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "ad9dfd4a8fd4258e"},
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "0568bd03b8eb6cca"},
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f5387f9bb6ed7031"},
   "gui.dungeontrain.editor_menu.block_variant.painting": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "3c080b85b195f820"},
   "gui.dungeontrain.editor_menu.block_variant.painting_any": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "2b505597daa736f1"},
   "gui.dungeontrain.editor_menu.block_variant.painting_size": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "1af851907331c0ed"},

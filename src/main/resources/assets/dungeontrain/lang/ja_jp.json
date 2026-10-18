@@ -3481,7 +3481,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "固体",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "空",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "任意のブロック",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "または",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "種類",
   "gui.dungeontrain.editor_menu.block_variant.painting": "絵画",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "任意",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "サイズ",

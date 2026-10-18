@@ -3481,7 +3481,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "Rắn",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "Trống",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "Khối bất kỳ",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "Hoặc",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "Loại",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Tranh",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "Bất kỳ",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "Kích thước",

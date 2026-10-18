@@ -3481,7 +3481,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "Pepejal",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "Kosong",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "Mana-mana blok",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "Atau",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "Jenis",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Lukisan",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "Mana-mana",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "Saiz",

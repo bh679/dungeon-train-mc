@@ -500,15 +500,20 @@ public final class BlockVariantMenuInputHandler {
         int section = code / 10;
         int option = code % 10;
         String token = BlockVariantMenu.entries().get(row).condition();
-        boolean groupMode = ConditionPopupLayout.isGroupMode(token);
+        int mode = ConditionPopupLayout.mode(token);
+        boolean addable = mode == ConditionPopupLayout.MODE_TOUCHING;
         BlockVariantEditPacket packet;
         if (section == ConditionPopupLayout.SECTION_MODE) {
-            // Switching mode keeps the block list; Group picks the first other lock group.
-            boolean toGroup = option == ConditionPopupLayout.MODE_GROUP;
-            if (toGroup == groupMode) return;
+            // Touching <-> Group keeps the block list; Group picks the first other lock group. Kind
+            // swaps the blocks for Solid, or back.
+            if (option == mode) return;
+            String target = switch (option) {
+                case ConditionPopupLayout.MODE_GROUP -> games.brennan.dungeontrain.editor.VariantConditionEdits.GROUP_NEXT;
+                case ConditionPopupLayout.MODE_KIND -> games.brennan.dungeontrain.editor.VariantConditionEdits.MODE_KIND;
+                default -> games.brennan.dungeontrain.editor.VariantConditionEdits.MODE_TOUCHING;
+            };
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
-                toGroup ? games.brennan.dungeontrain.editor.VariantConditionEdits.GROUP_NEXT
-                    : games.brennan.dungeontrain.editor.VariantCondition.DEFAULT_DIRECTION.getSerializedName(), 0);
+                target, 0);
         } else if (section == ConditionPopupLayout.SECTION_TOUCHING) {
             // Same clicks as the band picker: plain toggles this side, shift toggles all but this side.
             String side = ConditionPopupLayout.touching(option).getSerializedName();
@@ -531,8 +536,8 @@ public final class BlockVariantMenuInputHandler {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
                 ConditionPopupLayout.kind(option).toString(), 0);
         } else if (section == ConditionPopupLayout.SECTION_ACTIONS) {
-            // Group mode's action row is Clear alone.
-            boolean add = !groupMode && option == ConditionPopupLayout.ACTION_ADD;
+            // Group and Kind modes' action row is Clear alone.
+            boolean add = addable && option == ConditionPopupLayout.ACTION_ADD;
             packet = new BlockVariantEditPacket(add
                 ? BlockVariantEditPacket.Op.ADD_COND_VALUE : BlockVariantEditPacket.Op.CLEAR_COND,
                 variantId, local, row, "", 0);

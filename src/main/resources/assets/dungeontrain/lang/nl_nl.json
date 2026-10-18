@@ -3537,7 +3537,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "Vast",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "Leeg",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "Elk blok",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "Of",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "Soort",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Schilderij",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "Elke",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "Grootte",

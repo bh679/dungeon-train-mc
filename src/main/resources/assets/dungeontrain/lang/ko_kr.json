@@ -3481,7 +3481,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "단단한 블록",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "빈 칸",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "아무 블록",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "또는",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "종류",
   "gui.dungeontrain.editor_menu.block_variant.painting": "그림",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "아무거나",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "크기",

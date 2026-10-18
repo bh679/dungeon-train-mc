@@ -20,9 +20,10 @@ import java.util.Locale;
  * ({@link #groupId} &gt; 0), which passes when that group rolled a listed block. The <b>values</b>
  * are block ids, OR'd together, and match on block type alone: a rolled rotation, half or open flag
  * can never fail the condition. {@code minecraft:air} stands for "empty" and also matches the
- * variant placeholder. Two more values stand for a kind of block rather than one block:
- * {@link #SOLID_ID} (any {@link BlockState#isSolid solid} block) and {@link #ANY_ID} (anything not
- * empty) — the If popup's Solid / Empty / Any block checkboxes, Empty being air.</p>
+ * variant placeholder. Three more values stand for a kind of block rather than one block —
+ * {@link #SOLID_ID} (any {@link BlockState#isSolid solid} block), {@link #EMPTY_ID} (air or the
+ * placeholder) and {@link #ANY_ID} (anything not empty). A touching condition holding any of them is
+ * in <b>Kind</b> mode ({@link #isKindMode}), the If popup's Solid / Empty / Any block checkboxes.</p>
  *
  * <p>A condition with no values is no condition ({@link #isDefault}); the target is kept anyway so
  * an author can pick it before adding the first value. A failed condition drops its entry from the
@@ -41,11 +42,11 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
     public static final int MAX_VALUES = 12;
 
     private static final ResourceLocation AIR_ID = ResourceLocation.withDefaultNamespace("air");
-    /** Value: the target is empty (air or the variant placeholder). */
-    public static final ResourceLocation EMPTY_ID = AIR_ID;
-    /** Value: the target is a solid block. */
+    /** Kind value: the target is empty (air or the variant placeholder). */
+    public static final ResourceLocation EMPTY_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "empty");
+    /** Kind value: the target is a solid block. */
     public static final ResourceLocation SOLID_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "solid");
-    /** Value: the target is any block at all, liquids included — anything but empty. */
+    /** Kind value: the target is any block at all, liquids included — anything but empty. */
     public static final ResourceLocation ANY_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "any_block");
     /** The kind values in checkbox order: Solid, Empty, Any block. */
     public static final List<ResourceLocation> KINDS = List.of(SOLID_ID, EMPTY_ID, ANY_ID);
@@ -87,8 +88,30 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         ResourceLocation id = idOf(state);
         if (blocks.contains(id)) return true;
         boolean empty = id.equals(AIR_ID);
-        if (!empty && blocks.contains(ANY_ID)) return true;
-        return !empty && blocks.contains(SOLID_ID) && state.isSolid();
+        if (empty) return blocks.contains(EMPTY_ID);
+        if (blocks.contains(ANY_ID)) return true;
+        return blocks.contains(SOLID_ID) && state.isSolid();
+    }
+
+    /** True for a touching condition that holds a kind value — the If popup's Kind mode. */
+    public boolean isKindMode() {
+        if (isGroupTarget()) return false;
+        for (ResourceLocation id : blocks) if (isKind(id)) return true;
+        return false;
+    }
+
+    /** Kind mode on the same sides: the kind values kept, specific blocks dropped; Solid if none. */
+    public VariantCondition toKindMode() {
+        List<ResourceLocation> kinds = new ArrayList<>(KINDS.size());
+        for (ResourceLocation id : blocks) if (isKind(id)) kinds.add(id);
+        if (kinds.isEmpty()) kinds.add(SOLID_ID);
+        return new VariantCondition(isGroupTarget() ? bit(DEFAULT_DIRECTION) : sideMask, 0, kinds);
+    }
+
+    /** Copy without the kind values — leaving Kind mode for Touching or Group. */
+    public VariantCondition withoutKinds() {
+        List<ResourceLocation> kept = blockValues();
+        return kept.size() == blocks.size() ? this : new VariantCondition(sideMask, groupId, kept);
     }
 
     /** True for a kind value — {@link #SOLID_ID}, {@link #EMPTY_ID} or {@link #ANY_ID}. */

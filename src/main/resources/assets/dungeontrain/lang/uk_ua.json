@@ -4186,7 +4186,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "Твердий",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "Порожньо",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "Будь-який блок",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "Або",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "Тип",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Картина",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "Будь-який",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "Розмір",

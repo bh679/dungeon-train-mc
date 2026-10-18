@@ -3537,7 +3537,7 @@
   "gui.dungeontrain.editor_menu.block_variant.condition_solid": "Solide",
   "gui.dungeontrain.editor_menu.block_variant.condition_empty": "Vide",
   "gui.dungeontrain.editor_menu.block_variant.condition_any": "N'importe quel bloc",
-  "gui.dungeontrain.editor_menu.block_variant.condition_or": "Ou",
+  "gui.dungeontrain.editor_menu.block_variant.condition_kind": "Type",
   "gui.dungeontrain.editor_menu.block_variant.painting": "Tableau",
   "gui.dungeontrain.editor_menu.block_variant.painting_any": "Toute",
   "gui.dungeontrain.editor_menu.block_variant.painting_size": "Taille",

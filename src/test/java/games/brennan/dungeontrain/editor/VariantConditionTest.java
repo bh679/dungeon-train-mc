@@ -194,9 +194,7 @@ final class VariantConditionTest {
     @Test
     @DisplayName("Solid / Empty / Any block kinds: match by kind, round-trip, and stay out of the block values")
     void kindValues() {
-        VariantCondition solid = VariantConditionEdits.toggleValue(VariantCondition.NONE,
-            VariantCondition.SOLID_ID.toString()).condition();
-        assertNotNull(solid);
+        VariantCondition solid = VariantCondition.NONE.withValueAdded(VariantCondition.SOLID_ID);
         assertEquals("down=dungeontrain:solid", solid.id());
         assertEquals(solid, VariantCondition.parse(solid.id()));
         assertTrue(solid.matches(Blocks.STONE.defaultBlockState()));
@@ -215,15 +213,49 @@ final class VariantConditionTest {
         assertFalse(any.matches(CarriageVariantBlocks.emptyPlaceholder()));
 
         VariantCondition empty = VariantCondition.NONE.withValueAdded(VariantCondition.EMPTY_ID);
+        assertEquals(empty, VariantCondition.parse(empty.id()));
+        assertTrue(empty.matches(Blocks.AIR.defaultBlockState()));
         assertTrue(empty.matches(CarriageVariantBlocks.emptyPlaceholder()));
         assertFalse(empty.matches(Blocks.STONE.defaultBlockState()));
 
-        // Kinds OR with listed blocks, and the icon strip only sees the blocks.
-        VariantCondition mixed = solid.withValueAdded(OAK).withValueAdded(VariantCondition.EMPTY_ID);
-        assertEquals(List.of(OAK), mixed.blockValues());
-        assertTrue(mixed.matches(Blocks.AIR.defaultBlockState()));
-        assertTrue(mixed.matches(Blocks.STONE.defaultBlockState()));
-        assertTrue(VariantConditionEdits.toggleValue(mixed, VariantCondition.SOLID_ID.toString())
-            .condition().blocks().equals(List.of(OAK, VariantCondition.EMPTY_ID)));
+        // Kinds OR together; the block strip never sees them.
+        VariantCondition both = solid.withValueAdded(VariantCondition.EMPTY_ID);
+        assertTrue(both.matches(Blocks.AIR.defaultBlockState()));
+        assertTrue(both.matches(Blocks.STONE.defaultBlockState()));
+        assertFalse(both.matches(Blocks.WATER.defaultBlockState()));
+        assertEquals(List.of(OAK), both.withValueAdded(OAK).blockValues());
+    }
+
+    @Test
+    @DisplayName("Kind is a third mode: entering keeps sides and starts on Solid, leaving drops the kinds")
+    void kindMode() {
+        VariantCondition touching = VariantCondition.NONE.toggleSide(Direction.NORTH).withValueAdded(OAK);
+        assertFalse(touching.isKindMode());
+        // Air from an empty hand is a Touching value, not the Empty kind.
+        assertFalse(VariantCondition.NONE.withValueAdded(VariantCondition.valueFor(null)).isKindMode());
+
+        VariantCondition kind = VariantConditionEdits.setTarget(touching, VariantConditionEdits.MODE_KIND,
+            Set.of(), 0).condition();
+        assertNotNull(kind);
+        assertTrue(kind.isKindMode());
+        assertEquals(touching.sideMask(), kind.sideMask());
+        assertEquals(List.of(VariantCondition.SOLID_ID), kind.blocks());
+
+        VariantCondition ticked = VariantConditionEdits.toggleValue(kind, VariantCondition.ANY_ID.toString()).condition();
+        assertEquals(List.of(VariantCondition.SOLID_ID, VariantCondition.ANY_ID), ticked.blocks());
+        // The last box can't be unticked: that would silently drop the row out of Kind mode.
+        assertNull(VariantConditionEdits.toggleValue(kind, VariantCondition.SOLID_ID.toString()).condition());
+
+        VariantCondition back = VariantConditionEdits.setTarget(ticked, VariantConditionEdits.MODE_TOUCHING,
+            Set.of(), 0).condition();
+        assertFalse(back.isKindMode());
+        assertTrue(back.isDefault());
+        assertEquals(touching.sideMask(), back.sideMask());
+
+        VariantCondition group = VariantConditionEdits.setTarget(ticked, VariantConditionEdits.GROUP_NEXT,
+            Set.of(2), 1).condition();
+        assertTrue(group.isGroupTarget());
+        assertFalse(group.isKindMode());
+        assertTrue(group.blocks().isEmpty());
     }
 }
