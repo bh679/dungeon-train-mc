@@ -27623,6 +27623,26 @@
       "released_at": null
     },
     {
+      "id": "dh-queue-spin-pause",
+      "version": "0.1354.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Distant Horizons uses less CPU",
+      "summary": "Distant Horizons kept part of your CPU busy for nothing while you played. That was a Distant Horizons issue, not the train, and Dungeon Train now works around it.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2114,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "tall-plant-cells-bottom-only",
       "version": "0.1355.0",
       "type": "fix",

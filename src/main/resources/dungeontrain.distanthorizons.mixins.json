@@ -7,6 +7,7 @@
   "refmap": "dungeontrain.refmap.json",
   "mixins": [],
   "client": [
+    "client.distanthorizons.DhChunkUpdateQueueSpinMixin",
     "client.distanthorizons.DhGlStateSaveMixin"
   ],
   "server": [],
