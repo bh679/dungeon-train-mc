@@ -27470,6 +27470,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "book-pause-save-throttle",
+      "version": "0.1349.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Smoother book reading",
+      "summary": "Reading books in singleplayer is now smoother.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2106,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
