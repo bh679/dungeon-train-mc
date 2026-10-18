@@ -1191,13 +1191,15 @@ public final class BlockVariantMenuController {
 
     /**
      * SET_SPAN_MODE: the cell-wide multi-space setting — how a single block fills the two spaces
-     * of a cell that also holds a door / bed / tall plant. {@code packed} is
+     * of a cell that also holds a door / bed. A tall-plant cell has no span to set: its single blocks
+     * always take the bottom space. {@code packed} is
      * {@link VariantSpan#toByte}; the menu only sends explicit spans. Not copied to lock-group
      * siblings: each cell's footprint is its own.
      */
     private static void setSpan(ServerPlayer player, BlockVariantPlot plot, BlockPos localPos, int packed) {
         List<VariantState> states = plot.statesAt(localPos);
-        if (states == null || MultiBlockFootprint.cellFootprint(states) == null) {
+        if (states == null || MultiBlockFootprint.cellFootprint(states) == null
+                || MultiBlockFootprint.cellIsTallPlant(states)) {
             actionBar(player, Component.translatable("chat.dungeontrain.editor_bar.variant_menu.span_needs_multiblock"),
                 ChatFormatting.YELLOW);
             return;
