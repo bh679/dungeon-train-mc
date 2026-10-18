@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.client.BookLanguageSignClient;
 import games.brennan.dungeontrain.client.LetterEditorClient;
+import games.brennan.dungeontrain.client.PriorityBookSignToggle;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -29,6 +30,7 @@ public abstract class BookEditScreenSignMixin {
         if (publish) {
             LetterEditorClient.markSigned();
             BookLanguageSignClient.sendForNextSign((BookEditScreen) (Object) this);
+            PriorityBookSignToggle.sendForNextSign((BookEditScreen) (Object) this, true);
         }
     }
 }

@@ -6,6 +6,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The idempotency key on the {@code /books/submit} body — the field that tells the relay a re-sent
@@ -31,5 +32,14 @@ class SharedBookReporterPayloadTest {
                 .has("key"));
         assertFalse(SharedBookReporter.buildPayload(UUID_HEX, "Steve", "T", List.of("p"), "en_us", null)
                 .has("key"));
+    }
+
+    @Test
+    void thePriorityBookChoiceRidesOnlyWhenTicked() {
+        assertTrue(SharedBookReporter.buildPayload(UUID_HEX, "Steve", "T", List.of("p"), "en_us", "k", true)
+                .get("priority").getAsBoolean());
+        // Unticked, the body stays byte-identical to an older jar's, so no relay reads a choice into it.
+        assertFalse(SharedBookReporter.buildPayload(UUID_HEX, "Steve", "T", List.of("p"), "en_us", "k", false)
+                .has("priority"));
     }
 }

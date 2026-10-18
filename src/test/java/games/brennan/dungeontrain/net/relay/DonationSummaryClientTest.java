@@ -94,6 +94,17 @@ final class DonationSummaryClientTest {
     }
 
     @Test
+    @DisplayName("Priority Books waiting ride the you block, and read as none when absent")
+    void parsesBookCredits() {
+        assertEquals(0, DonationSummaryClient.parse(realRelayBody()).youBookCredits());
+        Summary s = DonationSummaryClient.parse("""
+            {"ok":true,"you":{"monthlyUsd":0,"totalUsd":30,"bookCredits":3}}
+            """);
+        assertTrue(s.hasYou());
+        assertEquals(3, s.youBookCredits());
+    }
+
+    @Test
     @DisplayName("the support ladder arrives in relay order, with its active rung named")
     void parsesTheSupportLadder() {
         Summary s = DonationSummaryClient.parse(realRelayBody());

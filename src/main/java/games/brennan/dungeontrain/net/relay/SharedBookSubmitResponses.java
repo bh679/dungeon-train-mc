@@ -58,6 +58,9 @@ public final class SharedBookSubmitResponses {
 
     /** Apply one delivered response: mirror the pause, then tell the player if they are online. */
     static void handle(String requestBody, int status, String responseBody) {
+        // An accepted upload may carry the sign page's Priority Book answer — one handler per path,
+        // so it is read from here (see PriorityBookResponses).
+        PriorityBookResponses.handleSubmit(requestBody, status, responseBody);
         Verdict v = parse(requestBody, status, responseBody);
         if (v == null) return;
         BookUploadSuspensions.apply(v.player(), System.currentTimeMillis() + v.remainingSec() * 1000L, v.strikes());
