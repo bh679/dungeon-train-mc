@@ -27767,6 +27767,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "priority-books-delivered",
+      "version": "0.1360.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "books",
+        "ui"
+      ],
+      "title": "Priority Books arrive",
+      "summary": "If you have given to the dev with a $10 AUD, $30 AUD or $70 AUD gift, the Priority Books that came with it as a thank-you are now yours to use. Each one makes a book you write turn up far more often in other players' trains.",
+      "highlights": [
+        "Press the gold star beside Sign and Close when you sign a book to make it a Priority Book.",
+        "Already shared a book? Open your own copy, turn to the last page, and use one on it there.",
+        "The Contribute page shows how many Priority Books you have waiting."
+      ],
+      "pr": 2122,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
