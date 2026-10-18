@@ -20,7 +20,10 @@ import java.util.Locale;
  * ({@link #groupId} &gt; 0), which passes when that group rolled a listed block. The <b>values</b>
  * are block ids, OR'd together, and match on block type alone: a rolled rotation, half or open flag
  * can never fail the condition. {@code minecraft:air} stands for "empty" and also matches the
- * variant placeholder.</p>
+ * variant placeholder. Three more values stand for a kind of block rather than one block —
+ * {@link #SOLID_ID} (any {@link BlockState#isSolid solid} block), {@link #EMPTY_ID} (air or the
+ * placeholder) and {@link #ANY_ID} (anything not empty). A touching condition holding any of them is
+ * in <b>Kind</b> mode ({@link #isKindMode}), the If popup's Solid / Empty / Any block checkboxes.</p>
  *
  * <p>A condition with no values is no condition ({@link #isDefault}); the target is kept anyway so
  * an author can pick it before adding the first value. A failed condition drops its entry from the
@@ -39,6 +42,14 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
     public static final int MAX_VALUES = 12;
 
     private static final ResourceLocation AIR_ID = ResourceLocation.withDefaultNamespace("air");
+    /** Kind value: the target is empty (air or the variant placeholder). */
+    public static final ResourceLocation EMPTY_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "empty");
+    /** Kind value: the target is a solid block. */
+    public static final ResourceLocation SOLID_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "solid");
+    /** Kind value: the target is any block at all, liquids included — anything but empty. */
+    public static final ResourceLocation ANY_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "any_block");
+    /** The kind values in checkbox order: Solid, Empty, Any block. */
+    public static final List<ResourceLocation> KINDS = List.of(SOLID_ID, EMPTY_ID, ANY_ID);
     private static final String GROUP_PREFIX = "group";
 
     public VariantCondition {
@@ -74,7 +85,45 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
 
     /** True when {@code state} — the block that ends up at a target — is one of the values. */
     public boolean matches(@Nullable BlockState state) {
-        return blocks.contains(idOf(state));
+        ResourceLocation id = idOf(state);
+        if (blocks.contains(id)) return true;
+        boolean empty = id.equals(AIR_ID);
+        if (empty) return blocks.contains(EMPTY_ID);
+        if (blocks.contains(ANY_ID)) return true;
+        return blocks.contains(SOLID_ID) && state.isSolid();
+    }
+
+    /** True for a touching condition that holds a kind value — the If popup's Kind mode. */
+    public boolean isKindMode() {
+        if (isGroupTarget()) return false;
+        for (ResourceLocation id : blocks) if (isKind(id)) return true;
+        return false;
+    }
+
+    /** Kind mode on the same sides: the kind values kept, specific blocks dropped; Solid if none. */
+    public VariantCondition toKindMode() {
+        List<ResourceLocation> kinds = new ArrayList<>(KINDS.size());
+        for (ResourceLocation id : blocks) if (isKind(id)) kinds.add(id);
+        if (kinds.isEmpty()) kinds.add(SOLID_ID);
+        return new VariantCondition(isGroupTarget() ? bit(DEFAULT_DIRECTION) : sideMask, 0, kinds);
+    }
+
+    /** Copy without the kind values — leaving Kind mode for Touching or Group. */
+    public VariantCondition withoutKinds() {
+        List<ResourceLocation> kept = blockValues();
+        return kept.size() == blocks.size() ? this : new VariantCondition(sideMask, groupId, kept);
+    }
+
+    /** True for a kind value — {@link #SOLID_ID}, {@link #EMPTY_ID} or {@link #ANY_ID}. */
+    public static boolean isKind(ResourceLocation id) {
+        return KINDS.contains(id);
+    }
+
+    /** The values that name one block, in order: {@link #blocks} without the kind values. */
+    public List<ResourceLocation> blockValues() {
+        List<ResourceLocation> out = new ArrayList<>(blocks.size());
+        for (ResourceLocation id : blocks) if (!isKind(id)) out.add(id);
+        return out;
     }
 
     /** Block id used for matching; the variant placeholder and {@code null} both count as air. */
@@ -225,9 +274,9 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         return out;
     }
 
-    /** True for air or a registered block — what a value may name. */
+    /** True for air, a kind value or a registered block — what a value may name. */
     public static boolean isKnownValue(ResourceLocation id) {
-        return id.equals(AIR_ID) || BuiltInRegistries.BLOCK.containsKey(id);
+        return isKind(id) || BuiltInRegistries.BLOCK.containsKey(id);
     }
 
     /** Parse just a target token ({@code down}, {@code down+north}, {@code group3}); {@code null} when malformed. */

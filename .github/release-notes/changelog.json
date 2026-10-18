@@ -27489,6 +27489,27 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "variant-if-kind-mode",
+      "version": "0.1349.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Solid, Empty or Any block conditions in the editor",
+      "summary": "Block variants can now check what kind of block sits next to them, not just which exact block. Pick Kind in a variant's If popup and tick Solid, Empty or Any block, so a slab can appear only on solid ground without listing every block it might sit on.",
+      "highlights": [
+        "New Kind option in the If popup, beside Touch and Group",
+        "Solid, Empty and Any block can be ticked together"
+      ],
+      "pr": 2108,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
