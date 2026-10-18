@@ -141,6 +141,11 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 LiveColumnProviders.forContext(ctx));
         if (column.legacy() != null) return column.legacy();
         int blockY = y << 2;
+        // A Deeper Dark core is the Otherside all the way down its slab, under sea level too (its mobs spawn there).
+        if (blockY < ctx.seaLevel() && column.aboveSea() == BandBiomeDecision.Result.NETHER_CORE
+                && dungeontrain$isOtherside(column.core())) {
+            return column.core();
+        }
         if (blockY >= ctx.seaLevel()) {
             switch (column.aboveSea()) {
                 case NETHER_CORE, END_CORE -> {
@@ -199,6 +204,13 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         }
     }
 
+    /** True for one of Deeper Darker's Otherside biomes. */
+    private static boolean dungeontrain$isOtherside(Holder<Biome> biome) {
+        return biome != null && biome.unwrapKey()
+                .map(k -> games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE.equals(k.location().getNamespace()))
+                .orElse(false);
+    }
+
     /** The forced Nether-core / End-core / highland biome, or {@code null} for an ordinary column. */
     private static Holder<Biome> dungeontrain$bandBiome(NetherBandContext ctx, int x, int y, int z) {
         if (!ctx.enabled() || ctx.highlandBiomes() == null) return null;
@@ -210,6 +222,17 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
         // band they picked: vanilla takes sky, fog and water colour from the biome, so a forced Nether / End
         // biome would re-tint the air chunk by chunk. The zone swaps blocks, never the atmosphere.
         WorldGenCycle cycle = ctx.cycle();
+        if (blockY < ctx.seaLevel()) {
+            // A Deeper Dark core keeps its Otherside biome below sea level too: decide the column at sea level.
+            if (ctx.netherCoreBiomes() != null && ctx.netherCoreBiomes().hasOtherside()
+                    && BandBiomeDecision.decide(cycle, ctx.generationSeed(), ctx.seaLevel(), true, ctx.endCoreBiomes() != null,
+                            blockX, ctx.seaLevel(), blockZ) == BandBiomeDecision.Result.NETHER_CORE) {
+                Holder<Biome> core = ctx.netherCoreBiomes().biomeAt(blockX, blockZ,
+                        cycle.netherLookAt(blockX, blockZ, ctx.netherCoreBiomes().seed()));
+                if (dungeontrain$isOtherside(core)) return core;
+            }
+            return null;
+        }
         // The whole per-quart decision — sea-level gate, off-band early-out, waved Nether-core /
         // un-waved End-core / highland ordering — lives in the pure, unit-tested
         // BandBiomeDecision.decide; this shell only maps the result onto the live providers.

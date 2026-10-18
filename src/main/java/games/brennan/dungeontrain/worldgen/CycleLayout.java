@@ -115,7 +115,7 @@ public final class CycleLayout {
      */
     public static final String DEFAULT_ORDER =
             "ow:2750, nether:vanilla=1000~400+bop>bop:2750, ow:wwoo:3250, end:vanilla:1200, end:bop:2000, upside_down:2500:3000, "
-            + "ow:bop:4500, nether:better:4500, legacy:wwoo:lost_city=3000, end:better:5000, spheres:6550, ow:sunk:500, "
+            + "ow:bop:4500, nether:better:4500, nether:otherside:3000, legacy:wwoo:lost_city=3000, end:better:5000, spheres:6550, ow:sunk:500, "
             + "legacy:amplified=4000:beta=2500:far_lands=4320:caves_of_chaos=3500:skylands=4000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 

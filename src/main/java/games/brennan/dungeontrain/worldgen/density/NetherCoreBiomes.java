@@ -66,6 +66,8 @@ public final class NetherCoreBiomes {
     /** Fixed Nether-space Y (block) the climate is sampled at — depth doesn't vary Nether biomes. */
     private static final int SAMPLE_BLOCK_Y = 40;
     private static final int SAMPLE_QUART_Y = QuartPos.fromBlock(SAMPLE_BLOCK_Y);
+    /** Otherside y its biomes are sampled at — the slab's track-bed row ({@code OthersideCore#CENTER_Y}). */
+    private static final int OTHERSIDE_SAMPLE_QUART_Y = QuartPos.fromBlock(games.brennan.dungeontrain.worldgen.OthersideCore.CENTER_Y);
 
     private final BiomeSource netherBiomeSource; // nullable — fallback-only when the Nether is absent
     private final Climate.Sampler netherSampler; // nullable alongside the source
@@ -73,11 +75,15 @@ public final class NetherCoreBiomes {
     private final BetterNetherCoreBiomes<Holder<Biome>> betterNether; // nullable — no BetterNether biomes
     private final BetterNetherCoreBiomes<BiomeSource> bopRegions;     // nullable — no BoP Nether regions
     private final long seed;                     // world seed — the split-seam dither (WorldGenCycle#netherLookAt)
+    private final BiomeSource othersideSource;   // nullable — no Otherside (Deeper Darker) dimension
+    private final Climate.Sampler othersideSampler;
 
     private NetherCoreBiomes(BiomeSource netherBiomeSource, Climate.Sampler netherSampler, Holder<Biome> fallback,
                              BetterNetherCoreBiomes<Holder<Biome>> betterNether, BetterNetherCoreBiomes<BiomeSource> bopRegions,
-                             long seed) {
+                             long seed, BiomeSource othersideSource, Climate.Sampler othersideSampler) {
         this.seed = seed;
+        this.othersideSource = othersideSource;
+        this.othersideSampler = othersideSampler;
         this.netherBiomeSource = netherBiomeSource;
         this.netherSampler = netherSampler;
         this.fallback = fallback;
@@ -94,6 +100,8 @@ public final class NetherCoreBiomes {
      *   <li>{@code BOP} — Biomes O' Plenty's Nether: each {@link BetterNetherCoreBiomes#CELL_BLOCKS}
      *       cell takes one of BoP's TerraBlender Nether regions, and that region's
      *       climate table is sampled like the vanilla Nether — the way a BoP world blends its Nether;</li>
+     *   <li>{@code OTHERSIDE} — Deeper Darker's Otherside, sampled from the live Otherside's own source and
+     *       climate at the same block X/Z the core's terrain is copied from ({@code OthersideCore});</li>
      *   <li>anything else — vanilla.</li>
      * </ul>
      * A look whose biomes are not registered falls back to vanilla.
@@ -114,7 +122,20 @@ public final class NetherCoreBiomes {
         if (style == CycleLayout.Style.BOP && bopRegions != null) {
             return sample(bopRegions.biomeAt(worldX, worldZ), worldX, worldZ, memo);
         }
+        if (style == CycleLayout.Style.OTHERSIDE && othersideSource != null) {
+            return sample(othersideSource, othersideSampler, 0, OTHERSIDE_SAMPLE_QUART_Y, worldX, worldZ, memo);
+        }
         return sample(netherBiomeSource, worldX, worldZ, memo);
+    }
+
+    /** True when the Otherside was found at server start (the Deeper Dark passes will use it). */
+    public boolean hasOtherside() {
+        return othersideSource != null;
+    }
+
+    /** True if {@code style} resolves to the Otherside on this server — a Deeper Dark pass with the level present. */
+    public boolean isOtherside(CycleLayout.Style style) {
+        return style == CycleLayout.Style.OTHERSIDE && othersideSource != null;
     }
 
     /** Climate samples by (source, quart X, quart Z) — one per decoration pass; not thread-safe. */
@@ -140,17 +161,22 @@ public final class NetherCoreBiomes {
     }
 
     private Holder<Biome> sample(BiomeSource source, int worldX, int worldZ, SampleMemo memo) {
-        if (source == null || netherSampler == null) return fallback;
-        int quartX = QuartPos.fromBlock(worldX + SAMPLE_OFFSET_X);
-        int quartZ = QuartPos.fromBlock(worldZ);
-        if (memo == null) return sampleQuart(source, quartX, quartZ);
-        return memo.samples.computeIfAbsent(new SampleMemo.Key(source, quartX, quartZ),
-                k -> sampleQuart(source, quartX, quartZ));
+        return sample(source, netherSampler, SAMPLE_OFFSET_X, SAMPLE_QUART_Y, worldX, worldZ, memo);
     }
 
-    private Holder<Biome> sampleQuart(BiomeSource source, int quartX, int quartZ) {
+    private Holder<Biome> sample(BiomeSource source, Climate.Sampler sampler, int offsetX, int quartY,
+                                 int worldX, int worldZ, SampleMemo memo) {
+        if (source == null || sampler == null) return fallback;
+        int quartX = QuartPos.fromBlock(worldX + offsetX);
+        int quartZ = QuartPos.fromBlock(worldZ);
+        if (memo == null) return sampleQuart(source, sampler, quartX, quartY, quartZ);
+        return memo.samples.computeIfAbsent(new SampleMemo.Key(source, quartX, quartZ),
+                k -> sampleQuart(source, sampler, quartX, quartY, quartZ));
+    }
+
+    private Holder<Biome> sampleQuart(BiomeSource source, Climate.Sampler sampler, int quartX, int quartY, int quartZ) {
         try {
-            return source.getNoiseBiome(quartX, SAMPLE_QUART_Y, quartZ, netherSampler);
+            return source.getNoiseBiome(quartX, quartY, quartZ, sampler);
         } catch (Throwable t) {
             SAMPLE_ERRORS.error(LOGGER,
                     "[DungeonTrain] Nether core biome sample failed; baking nether_wastes fallback instead", t);
@@ -170,20 +196,24 @@ public final class NetherCoreBiomes {
     public static NetherCoreBiomes resolve(MinecraftServer server, Holder<Biome> fallback) {
         BetterNetherCoreBiomes<Holder<Biome>> betterNether = resolveBetterNether(server);
         long seed = server.getWorldData().worldGenOptions().seed();
+        ServerLevel otherside = games.brennan.dungeontrain.worldgen.OthersideCore.level(server);
+        BiomeSource othersideSource = otherside == null ? null : otherside.getChunkSource().getGenerator().getBiomeSource();
+        Climate.Sampler othersideSampler = otherside == null ? null : otherside.getChunkSource().randomState().sampler();
         try {
             ServerLevel nether = server.getLevel(Level.NETHER);
             if (nether == null) {
                 // debug: legitimately fires during the overworld's own Load (Nether not yet
                 // created) before the Nether-Load republish upgrades the snapshot.
                 LOGGER.debug("[DungeonTrain] No Nether dimension — vanilla Nether core stays single-biome (nether_wastes)");
-                return new NetherCoreBiomes(null, null, fallback, betterNether, null, seed);
+                return new NetherCoreBiomes(null, null, fallback, betterNether, null, seed, othersideSource, othersideSampler);
             }
             Climate.Sampler sampler = nether.getChunkSource().randomState().sampler();
             BiomeSource vanilla = vanillaNetherSource(server, nether);
-            return new NetherCoreBiomes(vanilla, sampler, fallback, betterNether, resolveBopRegions(server), seed);
+            return new NetherCoreBiomes(vanilla, sampler, fallback, betterNether, resolveBopRegions(server), seed,
+                    othersideSource, othersideSampler);
         } catch (Throwable t) {
             LOGGER.error("[DungeonTrain] Failed to capture Nether biome source; vanilla core stays single-biome", t);
-            return new NetherCoreBiomes(null, null, fallback, betterNether, null, seed);
+            return new NetherCoreBiomes(null, null, fallback, betterNether, null, seed, othersideSource, othersideSampler);
         }
     }
 

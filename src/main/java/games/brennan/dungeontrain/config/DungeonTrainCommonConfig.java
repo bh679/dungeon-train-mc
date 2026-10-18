@@ -548,7 +548,17 @@ public final class DungeonTrainCommonConfig {
             + "legacy:amplified=5000:beta=3500:far_lands=4320:caves_of_chaos=4000:skylands=5000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
             + "ow:650, chuncks:2000, mix:4000, stacks:5000";
 
-    public static final int CURRENT_CONFIG_VERSION = 15;
+    /**
+     * The {@code worldgenCycleOrder} v15 shipped; v16 adds the Deeper Dark (Deeper Darker's Otherside) on Lap 2,
+     * joined to BetterNether, before Lost City ({@code nether:better:4500, nether:otherside:3000}).
+     */
+    public static final String V15_WORLDGEN_CYCLE_ORDER =
+            "ow:2750, nether:vanilla=1000~400+bop>bop:2750, ow:wwoo:3250, end:vanilla:1200, end:bop:2000, upside_down:2500:3000, "
+            + "ow:bop:4500, nether:better:4500, legacy:wwoo:lost_city=3000, end:better:5000, spheres:6550, ow:sunk:500, "
+            + "legacy:amplified=4000:beta=2500:far_lands=4320:caves_of_chaos=3500:skylands=4000:floating=2000:alpha=2000:infdev=2000:classic=2000:superflat=1000:void=200, "
+            + "ow:650, chuncks:2000, mix:4000, stacks:5000";
+
+    public static final int CURRENT_CONFIG_VERSION = 16;
     public static final boolean DEFAULT_MIX_ENABLED = true;
     public static final String DEFAULT_MIX_EXCLUDE = "";
 
@@ -1445,6 +1455,15 @@ public final class DungeonTrainCommonConfig {
         if (from < 15 && V14_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
             WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
             LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> shorter bands, split Nether.",
+                    from, CURRENT_CONFIG_VERSION);
+            WorldGenCycle.invalidateCache();
+        }
+
+        // v15 -> v16: the Deeper Dark joins Lap 2 between BetterNether and Lost City. Same rule: only an order
+        // still exactly as v15 shipped moves.
+        if (from < 16 && V15_WORLDGEN_CYCLE_ORDER.equals(WORLDGEN_CYCLE_ORDER.get())) {
+            WORLDGEN_CYCLE_ORDER.set(DEFAULT_WORLDGEN_CYCLE_ORDER);
+            LOGGER.info("[DungeonTrain] Common config migration v{}->v{}: worldgenCycleOrder -> Deeper Dark on Lap 2.",
                     from, CURRENT_CONFIG_VERSION);
             WorldGenCycle.invalidateCache();
         }

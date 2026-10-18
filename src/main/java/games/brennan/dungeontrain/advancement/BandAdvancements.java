@@ -244,6 +244,9 @@ public final class BandAdvancements {
                 if (bop) out.add(BOP);
             }
             case NETHER -> {
+                // The Deeper Dark (a Nether slot wearing the Otherside) has no band advancement of its own yet,
+                // and is not the Nether, so it adds nothing — the plain Nether stays the first one met.
+                if (slot.style() == CycleLayout.Style.OTHERSIDE) break;
                 out.add(NETHER);
                 if (better) out.add(BETTER_NETHER);
             }
@@ -298,7 +301,9 @@ public final class BandAdvancements {
                 if (slot.style() == CycleLayout.Style.WWOO) out.add(WWOO);
                 if (slot.style() == CycleLayout.Style.BOP) out.add(BOP);
             }
-            case NETHER -> out.add(better ? BETTER_NETHER : NETHER);
+            case NETHER -> {
+                if (slot.style() != CycleLayout.Style.OTHERSIDE) out.add(better ? BETTER_NETHER : NETHER);
+            }
             case END -> {
                 if (better) {
                     out.add(BETTER_END);
@@ -413,7 +418,8 @@ public final class BandAdvancements {
      */
     private static ColumnTest reverseTest(String forwardId) {
         return switch (forwardId) {
-            case NETHER -> (l, x) -> NetherBand.isInNetherBiome(l, x) && !cycle(l).isBetterNetherAt(x);
+            case NETHER -> (l, x) -> NetherBand.isInNetherBiome(l, x) && !cycle(l).isBetterNetherAt(x)
+                    && cycle(l).netherLookAt(x) != CycleLayout.Style.OTHERSIDE;   // the Deeper Dark is not the Nether
             case VOID -> (l, x) -> DisintegrationBand.zoneAt(l, x) == Disintegration.Zone.VOID
                     && !cycle(l).isBetterEndAt(x);
             case END_ISLANDS -> (l, x) -> isInEndIslands(l, x) && !cycle(l).isBetterEndAt(x);

@@ -243,7 +243,7 @@ public final class TrainTickEvents {
      * {@code chunksFulled>0} so idle / stationary windows (no new chunks generated → nothing to
      * attribute) stay quiet. The window ms are a <b>parallel sum across worldgen worker threads</b>, so
      * they can exceed the wall-clock window and must not be compared to {@code avgTickMs} — the
-     * load-bearing figures are the {@code perChunk} ones. {@code core} and {@code deco} are sub-portions of {@code nether}.
+     * load-bearing figures are the {@code perChunk} ones. {@code core}, {@code deco} and {@code otherside} are sub-portions of {@code nether}.
      */
     private static void logGenTiming(ServerLevel level) {
         GenProfiler.Sample s = GenProfiler.sampleAndReset();
@@ -252,13 +252,14 @@ public final class TrainTickEvents {
         // End-band sampling runs off the gen workers, so a window can have End work and no chunks fulled.
         if (s.chunks() <= 0 && endSampleMs <= 0 && endApplyMs <= 0) return;
         PERF_LOGGER.debug(
-            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} deco={} biome={} pick={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} deco={} biome={} pick={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
+            "[gen.timing] dim={} chunksFulled={} dtGenMs={} perChunkDtMs={} | totals df={} nether={} core={} deco={} otherside={} biome={} pick={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={} sphSample={} sphApply={} endSample={} endApply={} | perChunk df={} nether={} core={} deco={} otherside={} biome={} pick={} mirror={} netherStrip={} track={} disint={} erosion={} chuncks={} spheres={} stacks={} legacy={}",
             level.dimension().location(), s.chunks(),
             String.format("%.2f", s.dtTotalMs()), String.format("%.3f", s.dtTotalPerChunkMs()),
             String.format("%.2f", s.ms(GenProfiler.Bucket.DF)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.NETHER_FEATURE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.CORE_REPLACE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.NETHER_DECO)),
+            String.format("%.2f", s.ms(GenProfiler.Bucket.OTHERSIDE_SAMPLE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.BIOME_FORCE)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.BIOME_PICK)),
             String.format("%.2f", s.ms(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
@@ -278,6 +279,7 @@ public final class TrainTickEvents {
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.NETHER_FEATURE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.CORE_REPLACE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.NETHER_DECO)),
+            String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.OTHERSIDE_SAMPLE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.BIOME_FORCE)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.BIOME_PICK)),
             String.format("%.3f", s.perChunkMs(GenProfiler.Bucket.MIRROR_PRECOMPUTE)),
