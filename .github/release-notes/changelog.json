@@ -27450,6 +27450,23 @@
       "released": true,
       "released_in": "v0.1347.0",
       "released_at": "2026-10-18T08:51:05Z"
+    },
+    {
+      "id": "live-eye-backpack-check",
+      "version": "0.1348.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "One Live Eye each, backpack included",
+      "summary": "A Live Eye kept in your backpack now counts. Vases and chests no longer hand you a second one, and any extra turns into a TV.",
+      "highlights": [],
+      "pr": 2105,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
