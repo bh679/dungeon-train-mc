@@ -34,7 +34,17 @@ public record RunPosition(@Nullable Integer spawnX,
                           @Nullable String band) {
 
     /** Empty result — every field omitted from the payload. */
-    private static final RunPosition NONE = new RunPosition(null, null, null);
+    static final RunPosition NONE = new RunPosition(null, null, null);
+
+    /**
+     * How far a life's forward displacement may run ahead of its boarded odometer
+     * ({@code PlayerRunState#distanceBlocks}) and still be believed. Legit displacement can exceed the
+     * odometer: it books only boarded movement and drops any single jump of 100+ blocks, so the one
+     * forward portal trip (first overworld to the first Nether core, {@code NetherPortalJump}) and
+     * walking off the train never reach it. This covers both with room to spare; the plot-grid
+     * teleport of #2080 (X ~20.48M) was hundreds of times past it.
+     */
+    static final long ODOMETER_SLACK_BLOCKS = 50_000L;
 
     /**
      * Resolve the position fields for {@code player} at their current location. Never throws: any
@@ -62,6 +72,28 @@ public record RunPosition(@Nullable Integer spawnX,
      */
     public long forwardMetres() {
         return distanceTravelled == null ? 0L : Math.max(0L, distanceTravelled.longValue());
+    }
+
+    /**
+     * Whether this life's displacement can be trusted as a score. A life that ended inside the Sable
+     * plot grid ended at a ship-plot coordinate, not a world one, so its X says nothing about how far
+     * the player got (#2080). A displacement far beyond what the odometer and one portal trip allow is
+     * just as wrong. Pure, so the rule is testable without the game.
+     */
+    static boolean isPlausible(boolean endInPlotGrid, long forwardMetres, double odometerBlocks) {
+        if (endInPlotGrid) return false;
+        double odometer = Double.isFinite(odometerBlocks) ? Math.max(0.0, odometerBlocks) : 0.0;
+        return forwardMetres <= odometer + ODOMETER_SLACK_BLOCKS;
+    }
+
+    /**
+     * This position, or {@link #NONE} when {@link #isPlausible} rejects it. Applied once at death so the
+     * lifetime displacement counter and every reporter drop the same bad life together: nothing is
+     * added to the total, and the payloads omit {@code spawnX}, {@code distanceTravelled} and
+     * {@code band} exactly as for a life whose origin was never captured.
+     */
+    public RunPosition screened(boolean endInPlotGrid, double odometerBlocks) {
+        return isPlausible(endInPlotGrid, forwardMetres(), odometerBlocks) ? this : NONE;
     }
 
     /**
