@@ -17,7 +17,8 @@ import java.util.Set;
  *   <li>{@code cave} (underground in one of the train's Overworld bands), {@code dim:<dimension id>}</li>
  *   <li>{@code selfie} — taken in Exposure's selfie mode, the camera facing the photographer</li>
  *   <li>{@code nether} / {@code end} — the train's own Nether or End, or the vanilla dimension</li>
- *   <li>{@code band:<forward band id>} — taken in one of the train's dimensions (either side of spawn)</li>
+ *   <li>{@code band:<forward band id>} — taken in one of the train's dimensions (either side of spawn), or in
+ *       its transition — the Nether's excepted</li>
  *   <li>moments ({@link Scene}): {@code combat} (two creatures fighting each other), {@code pet_own}
  *       (an animal tamed to you), {@code pet_echo} (an animal tamed to an Echo), {@code breeding}
  *       (two animals in love)</li>
@@ -56,10 +57,13 @@ public final class PhotoSubjects {
      *                        does {@code inCave} make a {@link #CAVE} photo)
      * @param dimension    dimension id the photo was taken in, or {@code null}
      * @param band         forward band advancement id the photographer stood in, or {@code null}
+     * @param transitionBands forward band ids the photo earns from a band's transition ({@code PhotoBands});
+     *                        never a Nether, and never the generic {@link #NETHER} / {@link #END}
      */
     public record Facts(Set<String> entityTypes, boolean playerMob, boolean friend, boolean echo, boolean ownEcho,
                         boolean otherEcho, boolean pigmanVillager, boolean killerBunny, boolean technobladePig,
-                        boolean inCave, boolean inOverworldBand, boolean selfie, String dimension, String band) {}
+                        boolean inCave, boolean inOverworldBand, boolean selfie, String dimension, String band,
+                        Set<String> transitionBands) {}
 
     /**
      * What was happening between the creatures in frame, read off the live entities ({@code PhotoScene}).
@@ -104,6 +108,7 @@ public final class PhotoSubjects {
         if ("minecraft:the_nether".equals(f.dimension()) || (f.band() != null && NETHER_BANDS.contains(f.band()))) out.add(NETHER);
         if ("minecraft:the_end".equals(f.dimension()) || (f.band() != null && END_BANDS.contains(f.band()))) out.add(END);
         if (f.band() != null) out.add(BAND_PREFIX + f.band());
+        for (String band : f.transitionBands()) out.add(BAND_PREFIX + band);
         return Set.copyOf(out);
     }
 }

@@ -161,7 +161,7 @@ public final class PhotoAdvancementEvents {
                 .orElse(player.level().dimension().location().toString());
         return new PhotoSubjects.Facts(types, playerMob, friend, echo, ownEcho, otherEcho, pigman, killerBunny,
                 techno, data.getOrDefault(Frame.IN_CAVE, false) || inCave(player), inOverworldBand(player),
-                data.getOrDefault(Frame.SELFIE, false), dimension, bandAt(player));
+                data.getOrDefault(Frame.SELFIE, false), dimension, bandAt(player), transitionBandsAt(player));
     }
 
     /**
@@ -190,6 +190,12 @@ public final class PhotoAdvancementEvents {
     private static String bandAt(ServerPlayer player) {
         if (player.level().dimension() != Level.OVERWORLD) return null;
         return BandAdvancements.bandAt((ServerLevel) player.level(), player.getBlockX());
+    }
+
+    /** The bands a photo in a band's transition counts for — see {@link PhotoBands}. */
+    private static Set<String> transitionBandsAt(ServerPlayer player) {
+        if (player.level().dimension() != Level.OVERWORLD) return Set.of();
+        return PhotoBands.transitionBandsAt((ServerLevel) player.level(), player.getBlockX());
     }
 
     private static void recordBiome(ServerPlayer player, ResourceLocation biome) {
