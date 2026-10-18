@@ -28,6 +28,7 @@ import games.brennan.dungeontrain.net.relay.RelayOutbox;
 import games.brennan.dungeontrain.player.PlayerMobAppearance;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.util.SecondPersonDeathMessage;
 import games.brennan.playermob.entity.PlayerMobEntity;
 import net.minecraft.advancements.AdvancementHolder;
@@ -166,6 +167,29 @@ public final class RunStatsEvents {
     }
 
     /**
+     * This death's {@link RunPosition}, dropped whole when it cannot be a real score: the player died
+     * inside the Sable plot grid (#2080 sent one to X ~20.48M) or got implausibly far past the run's
+     * odometer. See {@link RunPosition#screened}. A failed plot-grid lookup counts as "not in it".
+     */
+    private static RunPosition screenedPosition(ServerPlayer player, PlayerRunState run) {
+        RunPosition raw = RunPosition.of(player);
+        boolean inPlotGrid;
+        try {
+            inPlotGrid = player.level() instanceof ServerLevel level
+                    && Shipyards.isInPlotGrid(level, player.blockPosition());
+        } catch (Throwable t) {
+            inPlotGrid = false;
+        }
+        RunPosition pos = raw.screened(inPlotGrid, run.distanceBlocks());
+        if (pos != raw) {
+            LOGGER.warn("[DungeonTrain] Dropping {}'s life displacement {} (odometer {}, end {} in plot grid {}): not a real score.",
+                    player.getGameProfile().getName(), raw.distanceTravelled(),
+                    Math.round(run.distanceBlocks()), player.blockPosition(), inPlotGrid);
+        }
+        return pos;
+    }
+
+    /**
      * LOW priority so any higher-priority kill-credit / scoring handlers
      * (vanilla and other mods) finish before we snapshot the stats and
      * push them down to the client. Runs only when the victim is the
@@ -189,7 +213,7 @@ public final class RunStatsEvents {
         // Where this life started and where it ended, resolved ONCE — respawn re-stamps the origin
         // it is measured from, so there is exactly one moment this can be read. Shared by the
         // lifetime displacement counter below and by every reporter that describes this death.
-        RunPosition pos = RunPosition.of(player);
+        RunPosition pos = screenedPosition(player, run);
         // Every death counts as a game played, Free Play included — unlike the lifetime counters
         // below, this one answers "how much has this player played", not "how did they score".
         GlobalPlayerStats.addGames(id, 1L);
