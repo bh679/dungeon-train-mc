@@ -27641,6 +27641,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "tall-plant-cells-bottom-only",
+      "version": "0.1355.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "No more floating grass in carriages",
+      "summary": "Grass and flowers that share a spot with tall grass now always grow from the floor, instead of sometimes appearing in the air above it.",
+      "highlights": [],
+      "pr": 2116,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
