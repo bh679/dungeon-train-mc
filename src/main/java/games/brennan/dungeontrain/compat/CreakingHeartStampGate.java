@@ -12,7 +12,8 @@ import net.minecraft.server.level.ServerLevel;
  * Decides each stamped creaking heart's Level / Stage / Band gate once, when its carriage contents
  * land. A block on the train has no level or band of its own to ask for later, so the answer is
  * written into the heart ({@link CreakingHeartSettings#gatedOff}) and the heart stays dormant when
- * it failed. Test the Carriage stamps inside {@code TestGate}, so the test's Stage / Diff level /
+ * it failed. The same pass picks the carriage's Number of Creaking from the heart's range
+ * ({@link CreakingHeartSettings#rolledCount}). Test the Carriage stamps inside {@code TestGate}, so the test's Stage / Diff level /
  * Band overrides are what {@link GateContext#forCarriage} sees.
  */
 public final class CreakingHeartStampGate {
@@ -31,8 +32,19 @@ public final class CreakingHeartStampGate {
                 context = GateContext.forCarriage(level, carriageIndex, length);
             }
             boolean off = !context.allows(effectiveGate(settings));
-            if (off != settings.gatedOff()) holder.dungeontrain$setSettings(settings.withGatedOff(off));
+            int rolled = settings.pickCount(roll(level, carriageIndex, pos.subtract(origin)));
+            CreakingHeartSettings next = settings.withGatedOff(off).withRolledCount(rolled);
+            if (!next.equals(settings)) holder.dungeontrain$setSettings(next);
         }
+    }
+
+    /**
+     * The count pick for the heart at {@code local} in carriage {@code carriageIndex}: seeded so the
+     * same carriage re-stamped keeps its number, and neighbouring carriages differ.
+     */
+    static int roll(ServerLevel level, int carriageIndex, BlockPos local) {
+        long seed = level.getSeed() ^ (carriageIndex * 0x9E3779B97F4A7C15L) ^ local.asLong();
+        return net.minecraft.util.RandomSource.create(seed).nextInt(Integer.MAX_VALUE);
     }
 
     /** The heart's linked Stage's gate, or its own Custom gate. */

@@ -53,6 +53,13 @@ public abstract class CreakingHeartSettingsMixin implements CreakingHeartSetting
     private List<UUID> dungeontrain$extras = List.of();
     @Unique
     private long dungeontrain$age;
+    /**
+     * The count a heart never stamped onto a carriage (an editor plot, a hand-placed heart) picked
+     * the first time it needed one; {@link CreakingHeartSettings#NOT_ROLLED} until then. Kept in
+     * memory only, so a template saved from the plot carries the range, not a pick.
+     */
+    @Unique
+    private int dungeontrain$localRoll = CreakingHeartSettings.NOT_ROLLED;
 
     @Override
     public CreakingHeartSettings dungeontrain$settings() {
@@ -112,16 +119,27 @@ public abstract class CreakingHeartSettingsMixin implements CreakingHeartSetting
     @Override
     public void dungeontrain$tickExtras(ServerLevel server, BlockPos pos) {
         dungeontrain$age++;
-        if (dungeontrain$extras.isEmpty() && dungeontrain$settings.count() <= 1) return;
+        if (dungeontrain$extras.isEmpty() && dungeontrain$settings.maxCount() <= 1) return;
         CreakingHeartBlockEntity heart = (CreakingHeartBlockEntity) (Object) this;
         boolean hasMain = ((CreakingHeartBlockEntityInvoker) heart).dungeontrain$creakingProtector().isPresent();
-        List<UUID> next = CreakingHeartExtras.tick(server, pos, dungeontrain$settings, hasMain,
+        List<UUID> next = CreakingHeartExtras.tick(server, pos, dungeontrain$target(server), hasMain,
             dungeontrain$age, dungeontrain$extras,
             () -> CreakingHeartBlockEntityInvoker.dungeontrain$spawnProtector(server, heart));
         if (next != dungeontrain$extras) {
             dungeontrain$extras = next;
             heart.setChanged();
         }
+    }
+
+    /** The stamp's pick, else this heart's own one-time pick in the range. */
+    @Unique
+    private int dungeontrain$target(ServerLevel server) {
+        CreakingHeartSettings s = dungeontrain$settings;
+        if (s.rolledCount() != CreakingHeartSettings.NOT_ROLLED) return s.rolledCount();
+        if (dungeontrain$localRoll < s.minCount() || dungeontrain$localRoll > s.maxCount()) {
+            dungeontrain$localRoll = s.pickCount(server.getRandom().nextInt(Integer.MAX_VALUE));
+        }
+        return dungeontrain$localRoll;
     }
 
     @Inject(method = "removeProtector", at = @At("HEAD"))

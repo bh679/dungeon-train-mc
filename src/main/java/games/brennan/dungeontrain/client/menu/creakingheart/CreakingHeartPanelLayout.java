@@ -18,7 +18,7 @@ import java.util.List;
  * <pre>
  *  Creaking Heart                 [X]
  *  [Works by Day ] [Works at Night ]
- *  Number of Creaking          [ 3 ]
+ *  Number of Creaking     [1] - [3]
  *  [Stage: Custom ▾                ]
  *  [Min Lv (0)   ] [Max Lv (all)   ]     Custom only
  *  [O][N][V][E]…  band grid, 2 rows      Custom only
@@ -26,7 +26,7 @@ import java.util.List;
  */
 public final class CreakingHeartPanelLayout {
 
-    public enum Kind { NONE, BACKDROP, CLOSE, DAY, NIGHT, COUNT, STAGE, MIN, MAX, BAND, STAGE_OPTION }
+    public enum Kind { NONE, BACKDROP, CLOSE, DAY, NIGHT, COUNT_MIN, COUNT_MAX, STAGE, MIN, MAX, BAND, STAGE_OPTION }
 
     public record Hit(Kind kind, int index) {
         public static final Hit NONE = new Hit(Kind.NONE, -1);
@@ -103,11 +103,17 @@ public final class CreakingHeartPanelLayout {
         cells.add(toggle(Kind.NIGHT, mid + GAP / 2, y, innerR, MenuLang.t("creaking_heart.night"), s.night()));
         y -= ROW + GAP;
 
-        // Number of Creaking.
-        double numL = innerR - 0.30;
-        cells.add(new Cell(Kind.NONE, -1, innerL, y - ROW, numL - GAP, y, MenuLang.t("creaking_heart.count_title"),
+        // Number of Creaking: a min – max range, picked once per carriage.
+        double numW = 0.22;
+        double maxL = innerR - numW;
+        double dashL = maxL - 0.10;
+        double minL = dashL - numW;
+        cells.add(new Cell(Kind.NONE, -1, innerL, y - ROW, minL - GAP, y, MenuLang.t("creaking_heart.count_title"),
             0, 0, TEXT, false));
-        cells.add(new Cell(Kind.COUNT, -1, numL, y - ROW, innerR, y, Integer.toString(s.count()),
+        cells.add(new Cell(Kind.COUNT_MIN, -1, minL, y - ROW, dashL, y, Integer.toString(s.minCount()),
+            NUMBER, NUMBER_HOVER, TEXT, true));
+        cells.add(new Cell(Kind.NONE, -1, dashL, y - ROW, maxL, y, "-", 0, 0, TEXT, true));
+        cells.add(new Cell(Kind.COUNT_MAX, -1, maxL, y - ROW, innerR, y, Integer.toString(s.maxCount()),
             NUMBER, NUMBER_HOVER, TEXT, true));
         y -= ROW + GAP;
 

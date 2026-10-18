@@ -30,7 +30,7 @@ import java.util.function.UnaryOperator;
  *
  * <pre>
  * day|night on|off
- * count inc|dec|&lt;1..8&gt;
+ * mincount|maxcount inc|dec|&lt;1..8&gt;
  * minlevel inc|dec|&lt;n&gt;     maxlevel inc|dec|&lt;n|-1&gt;
  * phase &lt;band&gt; on|off|others
  * stage custom|&lt;stage id&gt;
@@ -45,12 +45,18 @@ public final class CreakingHeartCommand {
             .then(Commands.argument("pos", BlockPosArgument.blockPos())
                 .then(toggle("day", CreakingHeartSettings::withDay))
                 .then(toggle("night", CreakingHeartSettings::withNight))
-                .then(Commands.literal("count")
-                    .then(Commands.literal("inc").executes(c -> edit(c, s -> s.withCount(s.count() + 1))))
-                    .then(Commands.literal("dec").executes(c -> edit(c, s -> s.withCount(s.count() - 1))))
+                .then(Commands.literal("mincount")
+                    .then(Commands.literal("inc").executes(c -> edit(c, s -> s.withMinCount(s.minCount() + 1))))
+                    .then(Commands.literal("dec").executes(c -> edit(c, s -> s.withMinCount(s.minCount() - 1))))
                     .then(Commands.argument("value", IntegerArgumentType.integer(
                             CreakingHeartSettings.MIN_COUNT, CreakingHeartSettings.MAX_COUNT))
-                        .executes(c -> edit(c, s -> s.withCount(IntegerArgumentType.getInteger(c, "value"))))))
+                        .executes(c -> edit(c, s -> s.withMinCount(IntegerArgumentType.getInteger(c, "value"))))))
+                .then(Commands.literal("maxcount")
+                    .then(Commands.literal("inc").executes(c -> edit(c, s -> s.withMaxCount(s.maxCount() + 1))))
+                    .then(Commands.literal("dec").executes(c -> edit(c, s -> s.withMaxCount(s.maxCount() - 1))))
+                    .then(Commands.argument("value", IntegerArgumentType.integer(
+                            CreakingHeartSettings.MIN_COUNT, CreakingHeartSettings.MAX_COUNT))
+                        .executes(c -> edit(c, s -> s.withMaxCount(IntegerArgumentType.getInteger(c, "value"))))))
                 .then(Commands.literal("minlevel")
                     .then(Commands.literal("inc").executes(c -> gate(c, g -> g.withMinLevel(g.minLevel() + 1))))
                     .then(Commands.literal("dec").executes(c -> gate(c, g -> g.withMinLevel(g.minLevel() - 1))))

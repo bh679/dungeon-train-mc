@@ -117,7 +117,8 @@ public final class CreakingHeartPanelInputHandler {
     }
 
     private static void dispatch(CreakingHeartPanelLayout.Hit hit, boolean shift, int button) {
-        boolean number = hit.kind() == CreakingHeartPanelLayout.Kind.COUNT
+        boolean number = hit.kind() == CreakingHeartPanelLayout.Kind.COUNT_MIN
+            || hit.kind() == CreakingHeartPanelLayout.Kind.COUNT_MAX
             || hit.kind() == CreakingHeartPanelLayout.Kind.MIN
             || hit.kind() == CreakingHeartPanelLayout.Kind.MAX;
         // Right-click steps a number down and does nothing else (the press is already swallowed).
@@ -136,8 +137,10 @@ public final class CreakingHeartPanelInputHandler {
             case CLOSE -> CreakingHeartPanel.close();
             case DAY -> run(p + " day " + (s.day() ? "off" : "on"));
             case NIGHT -> run(p + " night " + (s.night() ? "off" : "on"));
-            case COUNT -> clickNumber(NumberField.ofCommand(MenuLang.t("creaking_heart.count_title"), p + " count",
-                s.count(), CreakingHeartSettings.MIN_COUNT, CreakingHeartSettings.MAX_COUNT, false), button, shift);
+            case COUNT_MIN -> clickNumber(NumberField.ofCommand(MenuLang.t("creaking_heart.count_title"), p + " mincount",
+                s.minCount(), CreakingHeartSettings.MIN_COUNT, CreakingHeartSettings.MAX_COUNT, false), button, shift);
+            case COUNT_MAX -> clickNumber(NumberField.ofCommand(MenuLang.t("creaking_heart.count_title"), p + " maxcount",
+                s.maxCount(), s.minCount(), CreakingHeartSettings.MAX_COUNT, false), button, shift);
             case MIN -> clickNumber(NumberField.ofCommand(NumberTitle.of("min_level"), p + " minlevel",
                 g.minLevel(), 0, TemplateGate.MAX_LEVEL, false), button, shift);
             case MAX -> clickNumber(NumberField.ofCommand(NumberTitle.of("max_level"), p + " maxlevel",

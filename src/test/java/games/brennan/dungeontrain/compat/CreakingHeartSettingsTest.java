@@ -47,16 +47,49 @@ final class CreakingHeartSettingsTest {
     }
 
     @Test
-    void countIsClamped() {
-        assertEquals(CreakingHeartSettings.MIN_COUNT, CreakingHeartSettings.DEFAULT.withCount(0).count());
-        assertEquals(CreakingHeartSettings.MAX_COUNT, CreakingHeartSettings.DEFAULT.withCount(99).count());
+    void countRangeIsClampedAndOrdered() {
+        CreakingHeartSettings s = CreakingHeartSettings.DEFAULT.withMinCount(0).withMaxCount(99);
+        assertEquals(CreakingHeartSettings.MIN_COUNT, s.minCount());
+        assertEquals(CreakingHeartSettings.MAX_COUNT, s.maxCount());
+        // Raising min past max drags max up; max never drops below min.
+        CreakingHeartSettings dragged = CreakingHeartSettings.DEFAULT.withMinCount(5);
+        assertEquals(5, dragged.minCount());
+        assertEquals(5, dragged.maxCount());
+        assertEquals(5, dragged.withMaxCount(2).maxCount());
+    }
+
+    @Test
+    void pickStaysInRange() {
+        CreakingHeartSettings s = CreakingHeartSettings.DEFAULT.withMaxCount(4).withMinCount(2);
+        for (int roll = 0; roll < 50; roll++) {
+            int n = s.pickCount(roll);
+            assertTrue(n >= 2 && n <= 4, "pick " + n);
+        }
+    }
+
+    @Test
+    void targetIsTheRollOnceMadeElseTheTopOfTheRange() {
+        CreakingHeartSettings s = CreakingHeartSettings.DEFAULT.withMaxCount(4).withMinCount(2);
+        assertEquals(4, s.targetCount());
+        assertEquals(3, s.withRolledCount(3).targetCount());
+    }
+
+    @Test
+    void legacySingleCountLoadsAsAFixedRange() {
+        CompoundTag legacy = new CompoundTag();
+        legacy.putInt("count", 3);
+        CreakingHeartSettings s = CreakingHeartSettings.load(legacy);
+        assertEquals(3, s.minCount());
+        assertEquals(3, s.maxCount());
     }
 
     @Test
     void roundTripsThroughNbt() {
         CreakingHeartSettings s = CreakingHeartSettings.DEFAULT
             .withDay(false)
-            .withCount(3)
+            .withMaxCount(5)
+            .withMinCount(2)
+            .withRolledCount(4)
             .withGate(new TemplateGate(5, 40, EnumSet.of(TrainPhase.NETHER, TrainPhase.END)))
             .withStage("desert")
             .withGatedOff(true);

@@ -20,7 +20,7 @@ import java.util.function.Supplier;
 
 /**
  * The Creaking a heart keeps beyond VanillaBackport's own one, when its
- * {@link CreakingHeartSettings#count} is above 1.
+ * {@link CreakingHeartSettings#targetCount} is above 1.
  *
  * <p>VanillaBackport tracks a single Creaking per heart. The extras are DT's: spawned the same way
  * (its {@code spawnProtector}, so they are home-bound to the heart), only while that main Creaking
@@ -45,7 +45,7 @@ public final class CreakingHeartExtras {
      *
      * @param spawn spawns one home-bound Creaking for this heart (VB's {@code spawnProtector}), or null
      */
-    public static List<UUID> tick(ServerLevel level, BlockPos pos, CreakingHeartSettings settings,
+    public static List<UUID> tick(ServerLevel level, BlockPos pos, int target,
                                   boolean hasMain, long age, List<UUID> extras,
                                   Supplier<@Nullable Creaking> spawn) {
         if (level.getGameTime() % PERIOD != Math.floorMod(pos.asLong(), PERIOD)) return extras;
@@ -65,7 +65,7 @@ public final class CreakingHeartExtras {
             }
         }
 
-        if (awake && hasMain && kept.size() < settings.count() - 1 && maySpawn(level, pos, home)) {
+        if (awake && hasMain && kept.size() < target - 1 && maySpawn(level, pos, home)) {
             Creaking extra = spawn.get();
             if (extra != null) {
                 kept.add(extra.getUUID());
