@@ -27396,6 +27396,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eyes-gifted-leaderboard",
+      "version": "0.1345.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Most Live Eyes Gifted leaderboard",
+      "summary": "A new leaderboard ranks the players who have given away the most Live Eyes. A gift counts once the person you gave it to goes live with it.",
+      "highlights": [],
+      "pr": 2102,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
