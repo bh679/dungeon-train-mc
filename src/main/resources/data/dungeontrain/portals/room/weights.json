@@ -30,7 +30,7 @@
   },
   "backrooms": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/random:20:10"
   },
   "beam": {
     "weight": 3,
@@ -62,7 +62,7 @@
   "book": {
     "weight": 3,
     "minLevel": 3,
-    "mode": "endless_repetition"
+    "mode": "endless_repetition/exact/off/on:10"
   },
   "chess": {
     "weight": 1,
@@ -250,7 +250,7 @@
   },
   "icebears": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on/off/end"
+    "mode": "endless_repetition/dynamic/off/on:20/off/end"
   },
   "jumps": {
     "weight": 1,
@@ -259,7 +259,7 @@
   "kfc": 1,
   "labrynth": {
     "weight": 2,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/random:20:8"
   },
   "largerlibrary": {
     "weight": 1,
@@ -322,7 +322,7 @@
   },
   "moria": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/on:15"
   },
   "nobeam": {
     "weight": 1,
@@ -347,7 +347,7 @@
   },
   "paths": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/random:10:10"
   },
   "pathsforever": {
     "weight": 1,
@@ -388,7 +388,7 @@
   },
   "romanpillars": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/on:25"
   },
   "room": {
     "weight": 1,
@@ -432,7 +432,7 @@
   },
   "sloped": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic/off/on/off/nether"
+    "mode": "endless_repetition/dynamic/off/on:12/off/nether"
   },
   "smalllibrary": {
     "weight": 1,
@@ -536,7 +536,7 @@
   },
   "woodpillars": {
     "weight": 1,
-    "mode": "endless_repetition"
+    "mode": "endless_repetition/exact/off/on:15"
   },
   "zombies": {
     "weight": 1,
