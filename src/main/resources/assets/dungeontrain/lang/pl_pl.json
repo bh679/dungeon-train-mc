@@ -3154,6 +3154,7 @@
   "item.dungeontrain.random_leaderboard_book": "Losowa księga rankingu",
   "dungeontrain.leaderboard.advancements.header": "Kto zdobył najwięcej osiągnięć?",
   "dungeontrain.leaderboard.builder_time.header": "Kto spędził najwięcej czasu na budowaniu?",
+  "dungeontrain.leaderboard.burrito_fastest.header": "Kto zdobył Burrito ze wszystkim, spędzając na pokładzie najmniej czasu?",
   "dungeontrain.leaderboard.live_stream_time.header": "Kto najdłużej nosił kamerę transmisyjną?",
   "dungeontrain.leaderboard.live_view_time.header": "Kto najdłużej oglądał transmisje w telewizorze?",
   "dungeontrain.leaderboard.live_gifts.header": "Kto najczęściej oddawał kamerę transmisyjną?",
