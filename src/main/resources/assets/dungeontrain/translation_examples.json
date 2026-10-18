@@ -16784,5 +16784,14 @@
         "7"
       ]
     }
+  },
+  "gui.dungeontrain.support.confirm.title.stripe": {
+    "1": {
+      "label": "the price point's amount with its currency",
+      "examples": [
+        "$10 AUD",
+        "$70 AUD"
+      ]
+    }
   }
 }
