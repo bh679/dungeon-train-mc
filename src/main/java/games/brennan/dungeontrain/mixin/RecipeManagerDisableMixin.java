@@ -26,7 +26,8 @@ import java.util.Map;
 /**
  * Drops every recipe whose result is a {@link DisabledModContent} item (BetterNether / BetterEnd / BoP
  * armour, weapons, tools) once the recipe manager has loaded — crafting, smithing, smelting and the mods'
- * own recipe types alike. Runs on every datapack (re)load; recipe viewers read the synced result.
+ * own recipe types alike — plus the recipes {@link DisabledModContent#isDisabledRecipe} turns off by id
+ * (Vista's Picture Tape), whose item is kept. Runs on every datapack (re)load; recipe viewers read the synced result.
  */
 @Mixin(RecipeManager.class)
 public abstract class RecipeManagerDisableMixin {
@@ -47,7 +48,7 @@ public abstract class RecipeManagerDisableMixin {
         List<RecipeHolder<?>> kept = new ArrayList<>();
         int removed = 0;
         for (RecipeHolder<?> holder : getRecipes()) {
-            if (dungeontrain$makesDisabledItem(holder)) {
+            if (DisabledModContent.isDisabledRecipe(holder.id()) || dungeontrain$makesDisabledItem(holder)) {
                 removed++;
                 dungeontrain$LOGGER.debug("[DT-Disable] recipe {} removed", holder.id());
             } else {
