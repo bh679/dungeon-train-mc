@@ -91,7 +91,13 @@ public final class DebugCommand {
             .then(Commands.literal("physicsfreeze")
                 .then(Commands.literal("on").executes(ctx -> setPhysicsFreeze(ctx.getSource(), true)))
                 .then(Commands.literal("off").executes(ctx -> setPhysicsFreeze(ctx.getSource(), false)))
-                .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource()))))
+                .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource())))
+                // rooms <on|off|status> — whether a tracker inside a dimensional carriage counts as
+                // watching. Drives the Gate 2 A/B of parking a train while its rider is in a room.
+                .then(Commands.literal("rooms")
+                    .then(Commands.literal("on").executes(ctx -> setRoomPark(ctx.getSource(), true)))
+                    .then(Commands.literal("off").executes(ctx -> setRoomPark(ctx.getSource(), false)))
+                    .then(Commands.literal("status").executes(ctx -> physicsFreezeStatus(ctx.getSource())))))
             // /dungeontrain debug colliderbatch <on|off|status> — toggles ColliderBatch, the
             // whole-section Sable collider re-upload that replaces per-block updates over a carriage
             // stamp. `off` restores Sable's per-block path from the next spawnGroup. Drives the Gate 2
@@ -468,12 +474,23 @@ public final class DebugCommand {
         return 1;
     }
 
+    private static int setRoomPark(CommandSourceStack source, boolean on) {
+        PhysicsFreezeController.ROOM_PARK_ENABLED = on;
+        source.sendSuccess(() -> Component.literal(
+            "[DungeonTrain] Physics-freeze rooms " + (on
+                ? "ON — a player in a dimensional carriage no longer keeps the carriages above live"
+                : "OFF — any tracker keeps a carriage live")
+        ).withStyle(on ? ChatFormatting.GREEN : ChatFormatting.GRAY), true);
+        return 1;
+    }
+
     private static int physicsFreezeStatus(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal(String.format(
-            "[DungeonTrain] Physics-freeze %s — resident=%d active=%d frozen=%d",
+            "[DungeonTrain] Physics-freeze %s (rooms %s) — resident=%d active=%d frozen=%d secluded=%d",
             PhysicsFreezeController.ENABLED ? "ON" : "OFF",
+            PhysicsFreezeController.ROOM_PARK_ENABLED ? "ON" : "OFF",
             PhysicsFreezeController.lastResident(), PhysicsFreezeController.lastActive(),
-            PhysicsFreezeController.lastFrozen())), false);
+            PhysicsFreezeController.lastFrozen(), PhysicsFreezeController.lastSecluded())), false);
         return 1;
     }
 

@@ -96,6 +96,13 @@ public final class ResumeWatchdog {
         if (!isResumeGap(prev, now)) return;          // normal cadence, or a stall's catch-up
         long gapMs = (now - prev) / 1_000_000L;
 
+        // Nobody near a train (e.g. reading books in a portal room's Stat Room): there is no rider to
+        // fling, so skip the hold and the force-loads it would cost on every resume.
+        if (!TrainCarriageAppender.anyPlayerNearLoadedTrain(server)) {
+            LOGGER.info("[DungeonTrain] Resume after {}ms pause — no player near a train, hold skipped", gapMs);
+            return;
+        }
+
         // Protect every train on this resume tick: grant the grace window and pin the at-risk
         // groups resident so the transient rider-fling can't cull (and regenerate) any carriage.
         // No per-player resolution is needed — the hold self-drains once riders re-anchor. This is

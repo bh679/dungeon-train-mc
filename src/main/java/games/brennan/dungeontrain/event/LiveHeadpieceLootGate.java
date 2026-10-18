@@ -14,16 +14,18 @@ import net.neoforged.neoforge.common.util.TriState;
 import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.neoforge.items.ItemStackHandler;
 
 /**
  * The last chance to resolve a loot-rolled Live Eye: one that reached a player's inventory still
  * {@link LiveHeadpiecePendingTag pending} — taken from a hopper, a shattered vase, a shared carriage, or
- * any other route that skipped {@link LiveEyeContainerEvents}. On an equip, or the throttled inventory
+ * any other route that skipped {@link LiveEyeContainerEvents} (straight into the Edible Backpack
+ * included). On an equip, or the throttled inventory
  * sweep, each pending stack becomes whatever {@link LiveEyeLootResolver} gives this player: a Live Eye,
  * or a TV when they can't have one.
  *
- * <p>It also holds every player to one Live Eye, counting the ender chest and anything packed in a
- * shulker box: a second one can't be picked up off the ground, and any that arrives another way (out
+ * <p>It also holds every player to one Live Eye, counting the ender chest, the backpack and anything
+ * packed in a shulker box: a second one can't be picked up off the ground, and any that arrives another way (out
  * of a chest, say) becomes a TV. The worn one is always the one kept. Creative players are exempt.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -74,6 +76,17 @@ public final class LiveHeadpieceLootGate {
             if (!LiveHeadpiecePendingTag.isPending(stack)) continue;
             inv.setItem(i, LiveEyeLootResolver.resolve(player));
         }
+        ItemStackHandler backpack = LiveEyeLootResolver.backpack(player);
+        for (int i = 0; i < backpack.getSlots(); i++) {
+            ItemStack stack = backpack.getStackInSlot(i);
+            if (LiveHeadpiecePendingTag.isUnclaimed(stack)) {
+                ItemStack claimed = stack.copy();
+                LiveHeadpiecePendingTag.clearUnclaimed(claimed);
+                backpack.setStackInSlot(i, claimed);
+            }
+            if (!LiveHeadpiecePendingTag.isPending(stack)) continue;
+            backpack.setStackInSlot(i, LiveEyeLootResolver.resolve(player));
+        }
         enforceOne(player);
     }
 
@@ -91,6 +104,10 @@ public final class LiveHeadpieceLootGate {
         Container ender = player.getEnderChestInventory();
         for (int i = 0; i < ender.getContainerSize(); i++) {
             converted += LiveEyeHoldings.cap(ender, i, allowance, LiveEyeLootResolver::tv);
+        }
+        ItemStackHandler backpack = LiveEyeLootResolver.backpack(player);
+        for (int i = 0; i < backpack.getSlots(); i++) {
+            converted += LiveEyeHoldings.cap(backpack, i, allowance, LiveEyeLootResolver::tv);
         }
         if (converted > 0) {
             player.sendSystemMessage(Component.translatable(KEY_ONE_EYE).withStyle(ChatFormatting.GRAY));

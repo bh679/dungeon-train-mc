@@ -57,6 +57,15 @@ public enum SupportTier {
         return LABEL_PREFIX + key;
     }
 
+    /**
+     * The bare price with its currency (e.g. "$30 AUD"), for the payment confirm's question line.
+     * A separate key from the label on purpose: the label carries a name as well as a figure, and
+     * "Open Stripe checkout for $30 A Big Fan?" is not a sentence.
+     */
+    public String amountKey() {
+        return LABEL_PREFIX + key + ".amount";
+    }
+
     /** Hover copy spelling out what the tier is for — the label alone has no room for it. */
     public String tooltipKey() {
         return LABEL_PREFIX + key + ".tooltip";
