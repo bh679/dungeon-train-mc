@@ -1049,6 +1049,8 @@ public final class EditorCommand {
             .then(maxLevelSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(phaseSingle(CARRIAGE_VARIANT_SUGGESTIONS, EditorCommand::applyCarriageGate))
             .then(buildStageSubtree())
+            // One creaking heart's settings — its Creative right-click menu runs these.
+            .then(CreakingHeartCommand.build())
             .then(buildVariantSubtree(buildContext));
     }
 

@@ -422,8 +422,9 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.tradeeverything.mixins.json"
 
-# VanillaBackport (required dep) — creaking hearts wake and spawn their Creaking by day
-# too, not only at night (see CreakingHeartAlwaysNightMixin).
+# VanillaBackport (required dep) — creaking hearts carry per-heart settings (day / night,
+# number of Creaking, level / stage / band) and work on a moving train and in Test the
+# Carriage (see CreakingHeartSettingsMixin, CreakingHeartBlockEntityMixin).
 [[mixins]]
     config="${mod_id}.vanillabackport.mixins.json"
 

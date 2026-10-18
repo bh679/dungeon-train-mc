@@ -16784,5 +16784,23 @@
         "7"
       ]
     }
+  },
+  "gui.dungeontrain.editor_menu.creaking_heart.count": {
+    "1": {
+      "label": "how many Creaking the heart keeps",
+      "examples": [
+        "1",
+        "3"
+      ]
+    }
+  },
+  "gui.dungeontrain.editor_menu.creaking_heart.stage": {
+    "1": {
+      "label": "the linked stage's name, or Custom",
+      "examples": [
+        "Custom",
+        "Nether Depths"
+      ]
+    }
   }
 }
