@@ -4655,7 +4655,7 @@
   "gui.dungeontrain.priority_book.sign.one": "Prioritätsbuch einsetzen (noch %s)",
   "gui.dungeontrain.priority_book.sign.other": "Prioritätsbuch einsetzen (noch %s)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Ein Dankeschön für deine Spende. Dein Buch taucht viel häufiger in den Zügen anderer Spieler auf.",
-  "gui.dungeontrain.priority_book.sign_note": "Als Dank für deine Spende wird dieses Buch ein Prioritätsbuch! Es erreicht andere Spieler so öfter.",
+  "gui.dungeontrain.priority_book.sign_note": "Als Dank für deine Spende wird dieses Buch ein Prioritätsbuch! Es erreicht andere Spieler öfter.",
   "gui.dungeontrain.priority_book.make.one": "Zum Prioritätsbuch machen (noch %s)",
   "gui.dungeontrain.priority_book.make.other": "Zum Prioritätsbuch machen (noch %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Klicke erneut, um hier ein Prioritätsbuch einzusetzen",

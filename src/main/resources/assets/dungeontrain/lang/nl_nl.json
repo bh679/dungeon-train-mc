@@ -4655,7 +4655,7 @@
   "gui.dungeontrain.priority_book.sign.one": "Gebruik een Voorrangsboek (nog %s over)",
   "gui.dungeontrain.priority_book.sign.other": "Gebruik een Voorrangsboek (nog %s over)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Een bedankje voor je donatie. Je boek duikt veel vaker op in de treinen van andere spelers.",
-  "gui.dungeontrain.priority_book.sign_note": "Als bedankje voor je donatie wordt dit boek een Voorrangsboek! Het bereikt andere spelers dan vaker.",
+  "gui.dungeontrain.priority_book.sign_note": "Als bedankje voor je donatie wordt dit boek een Voorrangsboek! Het bereikt andere spelers vaker.",
   "gui.dungeontrain.priority_book.make.one": "Maak hier een Voorrangsboek van (nog %s over)",
   "gui.dungeontrain.priority_book.make.other": "Maak hier een Voorrangsboek van (nog %s over)",
   "gui.dungeontrain.priority_book.make_confirm": "Klik nogmaals om hier een Voorrangsboek te gebruiken",
