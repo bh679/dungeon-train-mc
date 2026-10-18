@@ -14,8 +14,7 @@ import org.slf4j.Logger;
 
 /**
  * Stops <b>Distant Horizons</b> drawing wherever its own copy of the world would contradict the one
- * Dungeon Train is showing. Two places do that, for the same underlying reason and independently
- * switchable.
+ * Dungeon Train is showing. Three places do that, each independently switchable.
  *
  * <p><b>The upside-down band.</b> The band is not a world-data flip: the blocks stay the way they
  * generated and DT inverts them at mesh time, in both chunk-meshing pipelines
@@ -34,6 +33,11 @@ import org.slf4j.Logger;
  * room's sky arrives with the surface world's horizon behind it. A {@code CHUNK_DIMENSION} room is
  * the worst of it: the room <em>is</em> a sampled slice of terrain, and DH draws the unrelated
  * surface behind that slice.</p>
+ *
+ * <p><b>The spheres band.</b> Open void scattered with floating spheres of terrain, which DT carves
+ * out of normal overworld chunks. DH's horizon there does not match the void the player is riding
+ * through, so DH is hidden across the band's entry fade and core, plus an approach margin
+ * ({@link ClientVoidBand#isSpheresZoneWithin}).</p>
  *
  * <p><b>What a cancelled frame still needs.</b> Under a shader pack, Iris keeps reading DH's frame
  * textures on frames DH never drew, so {@link DistantHorizonsFrameClear} empties them whenever a
@@ -68,11 +72,11 @@ public final class DistantHorizonsSuppression {
             // class, so the binding above never sees it. Under Iris every frame defers water/glass
             // LODs to it, and without this they kept drawing inside rooms under a pack.
             DhApiEventRegister.on(DhApiBeforeDeferredRenderEvent.class, new DeferredRenderSuppressor());
-            LOGGER.info("[DungeonTrain] Distant Horizons will stop drawing in the upside-down band "
-                    + "and inside dimensional carriages");
+            LOGGER.info("[DungeonTrain] Distant Horizons will stop drawing in the upside-down band, "
+                    + "the spheres band and inside dimensional carriages");
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not bind the Distant Horizons render hook; "
-                    + "distant terrain may render through the upside-down band and portal rooms: {}",
+                    + "distant terrain may render through the upside-down band, the spheres band and portal rooms: {}",
                     t.toString());
         }
     }
@@ -95,8 +99,14 @@ public final class DistantHorizonsSuppression {
             return true;
         }
 
+        int x = (int) Math.floor(pos.x);
+        if (ClientDisplayConfig.SPHERES_HIDE_DISTANT_HORIZONS.get()
+                && ClientVoidBand.isSpheresZoneWithin(x, ClientDisplayConfig.SPHERES_DISTANT_HORIZONS_MARGIN.get())) {
+            return true;
+        }
+
         return ClientDisplayConfig.UPSIDE_DOWN_HIDE_DISTANT_HORIZONS.get()
-                && ClientUpsideDownBand.isFlipZoneWithin((int) Math.floor(pos.x),
+                && ClientUpsideDownBand.isFlipZoneWithin(x,
                         ClientDisplayConfig.UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN.get());
     }
 

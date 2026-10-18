@@ -211,6 +211,16 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_HIDE_DISTANT_HORIZONS;
 
+    /**
+     * Whether Distant Horizons stops drawing while the camera is in (or approaching) the spheres band —
+     * the open void scattered with floating spheres of terrain. On by default; set false to let DH draw
+     * there anyway.
+     */
+    public static final ModConfigSpec.BooleanValue SPHERES_HIDE_DISTANT_HORIZONS;
+
+    /** How many blocks either side of the spheres band DH stays hidden — the approach, and past its far edge. */
+    public static final ModConfigSpec.IntValue SPHERES_DISTANT_HORIZONS_MARGIN;
+
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     /** Open the pause menu when AFK is detected. See {@link #isAfkPauseEnabled()}. */
@@ -398,6 +408,8 @@ public final class ClientDisplayConfig {
         UPSIDE_DOWN_HIDE_DISTANT_HORIZONS = pair.getLeft().upsideDownHideDistantHorizons;
         UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN = pair.getLeft().upsideDownDistantHorizonsMargin;
         PORTAL_ROOM_HIDE_DISTANT_HORIZONS = pair.getLeft().portalRoomHideDistantHorizons;
+        SPHERES_HIDE_DISTANT_HORIZONS = pair.getLeft().spheresHideDistantHorizons;
+        SPHERES_DISTANT_HORIZONS_MARGIN = pair.getLeft().spheresDistantHorizonsMargin;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         AFK_PAUSE_ENABLED = pair.getLeft().afkPauseEnabled;
@@ -544,6 +556,13 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalRoomHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are inside a dimensional carriage - a portal room, or the corridor leading into one. A room is stamped in twin space at the coordinates of the carriage it stands in for, and DH draws its own LODs of the overworld around exactly those coordinates, so the room's sky comes with the surface world's horizon behind it. Worst in a Chunk Dimension room, which is itself a sampled slice of terrain that DH then contradicts. Set false to let DH draw inside rooms anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInPortalRooms", true);
+        ModConfigSpec.BooleanValue spheresHideDistantHorizons = b
+                .comment("Stop Distant Horizons drawing while you are in, or approaching, the spheres section of the track - the open void scattered with floating spheres of terrain. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
+                .define("hideInSpheres", true);
+        ModConfigSpec.IntValue spheresDistantHorizonsMargin = b
+                .comment("How many blocks either side of the spheres section DH stays hidden. The section comes into DH's draw distance well before you reach it, so this covers the way in (and the same distance past its far end). Raise it if you run a very large DH render distance; 0 cuts DH out exactly at the section's edges.")
+                .defineInRange("spheresHideMarginBlocks", DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN,
+                        MIN_DISTANT_HORIZONS_HIDE_MARGIN, MAX_DISTANT_HORIZONS_HIDE_MARGIN);
         b.pop();
 
         b.push("framerateThrottle");
@@ -885,6 +904,7 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
+                spheresHideDistantHorizons, spheresDistantHorizonsMargin,
                 framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
@@ -2097,6 +2117,8 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue upsideDownHideDistantHorizons,
             ModConfigSpec.IntValue upsideDownDistantHorizonsMargin,
             ModConfigSpec.BooleanValue portalRoomHideDistantHorizons,
+            ModConfigSpec.BooleanValue spheresHideDistantHorizons,
+            ModConfigSpec.IntValue spheresDistantHorizonsMargin,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue afkPauseEnabled,

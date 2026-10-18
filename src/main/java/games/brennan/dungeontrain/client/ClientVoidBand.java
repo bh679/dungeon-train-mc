@@ -83,6 +83,32 @@ public final class ClientVoidBand {
                 SpheresProgressionConfig.exitVoidBlocks());
     }
 
+    /** Sample spacing for {@link #isSpheresZoneWithin}; the entry fade alone is far wider than this. */
+    private static final int SPHERES_ZONE_SAMPLE_STEP = 64;
+
+    /**
+     * True if any world-X within {@code margin} blocks of {@code worldX} lies in the spheres band's entry
+     * fade or core. Used to decide when Distant Horizons must stop drawing (see
+     * {@code DistantHorizonsSuppression}); the margin covers the approach, since the band sits inside DH's
+     * draw distance well before the camera reaches it. Immediate {@code false} when the band is off or
+     * this world has no train, so it is cheap enough for a per-frame call.
+     */
+    public static boolean isSpheresZoneWithin(int worldX, int margin) {
+        if (!startsWithTrain || !DungeonTrainCommonConfig.isSpheresEnabled()) return false;
+        return spheresZoneWithin(WorldGenCycle.fromConfig(), worldX, margin);
+    }
+
+    /** Pure core of {@link #isSpheresZoneWithin}: same 64-block sampling as the upside-down flip zone. */
+    static boolean spheresZoneWithin(WorldGenCycle cycle, int worldX, int margin) {
+        if (cycle.spheresLen() <= 0L) return false;
+        int span = Math.max(0, margin);
+        for (int x = worldX - span; x < worldX + span; x += SPHERES_ZONE_SAMPLE_STEP) {
+            if (cycle.spheresVoidRamp(x) > 0.0) return true;
+        }
+        // The step can overshoot the far end, so the last block of the window is always tested.
+        return cycle.spheresVoidRamp(worldX + span) > 0.0;
+    }
+
     /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */
     public static final double MUSIC_CROSSOVER = 0.5;
 
