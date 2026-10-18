@@ -8,7 +8,11 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import games.brennan.dungeontrain.compat.CreakingHeartSettings;
 import games.brennan.dungeontrain.compat.CreakingHeartSettingsHolder;
+import games.brennan.dungeontrain.editor.BlockVariantPlot;
+import games.brennan.dungeontrain.editor.EditorPlotSnapshots;
 import games.brennan.dungeontrain.editor.StageStore;
+import games.brennan.dungeontrain.train.CarriageDims;
+import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.template.TemplateGate;
 import games.brennan.dungeontrain.worldgen.TrainPhase;
 import net.minecraft.commands.CommandSourceStack;
@@ -109,6 +113,19 @@ public final class CreakingHeartCommand {
             return 0;
         }
         holder.dungeontrain$setSettings(op.apply(holder.dungeontrain$settings()));
+        markPlotEdited(c.getSource(), pos);
         return 1;
+    }
+
+    /**
+     * A heart's settings live on its block entity, which the editor's block-state dirty scan cannot
+     * see, so the plot holding it is marked edited explicitly: the Save icon, Save All and the
+     * unsaved-check then treat it like any other change until the plot is saved or re-stamped.
+     */
+    private static void markPlotEdited(CommandSourceStack source, BlockPos pos) {
+        CarriageDims dims = DungeonTrainWorldData.get(source.getServer().overworld()).dims();
+        BlockVariantPlot plot = BlockVariantPlot.resolveAtPos(source.getLevel(), pos, dims);
+        if (plot == null) return;
+        EditorPlotSnapshots.markBlockSettingsEdit(plot.dirtySnapshotKey(), pos.subtract(plot.origin()), "creaking heart");
     }
 }

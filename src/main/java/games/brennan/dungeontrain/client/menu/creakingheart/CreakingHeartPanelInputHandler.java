@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.menu.ClientStages;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.CommandRunner;
+import games.brennan.dungeontrain.client.menu.EditorSaveStatus;
 import games.brennan.dungeontrain.client.menu.MenuClickModifiers;
 import games.brennan.dungeontrain.client.menu.MenuLang;
 import games.brennan.dungeontrain.client.menu.blockvariant.BlockVariantMenu;
@@ -44,6 +45,9 @@ public final class CreakingHeartPanelInputHandler {
     private static boolean pressArmed;
     private static boolean pressShift;
     private static int pressButton;
+    /** Ticks until the editor's unsaved list is asked for again after an edit; 0 when none is pending. */
+    private static int saveStatusRefreshTicks;
+    private static final int SAVE_STATUS_REFRESH_DELAY = 10;
 
     private CreakingHeartPanelInputHandler() {}
 
@@ -90,6 +94,8 @@ public final class CreakingHeartPanelInputHandler {
     /** Closes the panel when the player walks away, the heart is gone, or the world unloads. */
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
+        // An edit marks its plot unsaved on the server; ask once it has run so the Save icon catches up.
+        if (saveStatusRefreshTicks > 0 && --saveStatusRefreshTicks == 0) EditorSaveStatus.request();
         if (!CreakingHeartPanel.isActive()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null
@@ -128,8 +134,8 @@ public final class CreakingHeartPanelInputHandler {
         TemplateGate g = s.gate();
         switch (hit.kind()) {
             case CLOSE -> CreakingHeartPanel.close();
-            case DAY -> CommandRunner.run(p + " day " + (s.day() ? "off" : "on"));
-            case NIGHT -> CommandRunner.run(p + " night " + (s.night() ? "off" : "on"));
+            case DAY -> run(p + " day " + (s.day() ? "off" : "on"));
+            case NIGHT -> run(p + " night " + (s.night() ? "off" : "on"));
             case COUNT -> clickNumber(NumberField.ofCommand(MenuLang.t("creaking_heart.count_title"), p + " count",
                 s.count(), CreakingHeartSettings.MIN_COUNT, CreakingHeartSettings.MAX_COUNT, false), button, shift);
             case MIN -> clickNumber(NumberField.ofCommand(NumberTitle.of("min_level"), p + " minlevel",
@@ -143,9 +149,9 @@ public final class CreakingHeartPanelInputHandler {
                 List<ClientStages.Info> stages = ClientStages.all();
                 int i = hit.index();
                 if (i == 0) {
-                    CommandRunner.run(p + " stage custom");
+                    run(p + " stage custom");
                 } else if (i - 1 < stages.size()) {
-                    CommandRunner.run(p + " stage " + stages.get(i - 1).id());
+                    run(p + " stage " + stages.get(i - 1).id());
                 }
                 CreakingHeartPanel.setPopup(CreakingHeartPanel.Popup.NONE);
             }
@@ -154,14 +160,21 @@ public final class CreakingHeartPanelInputHandler {
                 if (hit.index() < 0 || hit.index() >= phases.length) return;
                 TrainPhase phase = phases[hit.index()];
                 String op = shift ? "others" : (g.phases().contains(phase) ? "off" : "on");
-                CommandRunner.run(p + " phase " + phase.token() + " " + op);
+                run(p + " phase " + phase.token() + " " + op);
             }
             default -> { }
         }
     }
 
+    /** Runs one heart edit and schedules the Save-status refresh. */
+    private static void run(String command) {
+        CommandRunner.run(command);
+        saveStatusRefreshTicks = SAVE_STATUS_REFRESH_DELAY;
+    }
+
     /** The world-space panel stays up behind the number pad, so the pad returns to the world. */
     private static void clickNumber(NumberField field, int button, boolean shift) {
         NumberStepper.click(field, button, shift, MenuClickModifiers.cmdDown(), NumberPad.returningTo(null));
+        saveStatusRefreshTicks = SAVE_STATUS_REFRESH_DELAY;
     }
 }

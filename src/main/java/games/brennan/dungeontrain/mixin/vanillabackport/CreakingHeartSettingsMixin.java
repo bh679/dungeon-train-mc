@@ -13,9 +13,6 @@ import games.brennan.dungeontrain.compat.CreakingHeartTicking;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.NbtUtils;
-import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.level.Level;
@@ -30,7 +27,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,15 +41,11 @@ import java.util.UUID;
  *       the heart's own "awake now" ({@link CreakingHeartSettings#awake}), which is also false when
  *       the stamp-time Level / Stage / Band gate turned the heart off.</li>
  *   <li><b>Number of Creaking</b>: the extras beyond VanillaBackport's one
- *       ({@link CreakingHeartExtras}), saved with the settings and recognised as the heart's own by
- *       {@code isProtector}.</li>
+ *       ({@link CreakingHeartExtras}), recognised as the heart's own by {@code isProtector}.</li>
  * </ul>
  */
 @Mixin(value = CreakingHeartBlockEntity.class, remap = false)
 public abstract class CreakingHeartSettingsMixin implements CreakingHeartSettingsHolder, CreakingHeartTicking {
-
-    @Unique
-    private static final String EXTRAS_TAG = "extras";
 
     @Unique
     private CreakingHeartSettings dungeontrain$settings = CreakingHeartSettings.DEFAULT;
@@ -83,23 +75,15 @@ public abstract class CreakingHeartSettingsMixin implements CreakingHeartSetting
 
     @Inject(method = "saveAdditional", at = @At("TAIL"))
     private void dungeontrain$saveSettings(CompoundTag tag, HolderLookup.Provider provider, CallbackInfo ci) {
-        CompoundTag own = dungeontrain$settings.save();
-        if (!dungeontrain$extras.isEmpty()) {
-            ListTag ids = new ListTag();
-            for (UUID id : dungeontrain$extras) ids.add(NbtUtils.createUUID(id));
-            own.put(EXTRAS_TAG, ids);
-        }
-        tag.put(CreakingHeartSettings.TAG, own);
+        // The extra Creaking are not saved: their ids would be baked into every template captured
+        // from this heart. After a reload the old ones find no protector and die, and the heart
+        // tops back up — the same as VanillaBackport's own Creaking once its id grace runs out.
+        tag.put(CreakingHeartSettings.TAG, dungeontrain$settings.save());
     }
 
     @Inject(method = "loadAdditional", at = @At("TAIL"))
     private void dungeontrain$loadSettings(CompoundTag tag, HolderLookup.Provider provider, CallbackInfo ci) {
-        CompoundTag own = tag.getCompound(CreakingHeartSettings.TAG);
-        dungeontrain$settings = CreakingHeartSettings.load(own);
-        List<UUID> ids = new ArrayList<>();
-        for (Tag t : own.getList(EXTRAS_TAG, Tag.TAG_INT_ARRAY)) ids.add(NbtUtils.loadUUID(t));
-        dungeontrain$extras = List.copyOf(ids);
-        dungeontrain$age = 0;
+        dungeontrain$settings = CreakingHeartSettings.load(tag.getCompound(CreakingHeartSettings.TAG));
     }
 
     // ---- Day / Night ----

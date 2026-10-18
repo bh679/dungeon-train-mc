@@ -78,6 +78,8 @@ public final class EditorPlotSnapshots {
      * and be told there was nothing to save — the same gap decoration used to have.</p>
      */
     private static final Map<String, Set<BlockPos>> SIDECAR_EDITS = new HashMap<>();
+    /** What a {@link #markBlockSettingsEdit} cell changed, for the drill-down; key → cell → label. */
+    private static final Map<String, Map<BlockPos, String>> EDIT_LABELS = new HashMap<>();
 
     private EditorPlotSnapshots() {}
 
@@ -105,6 +107,7 @@ public final class EditorPlotSnapshots {
             entitiesObservable(level, origin, length, width),
             () -> decorFingerprint(level, origin, length, height, width));
         SIDECAR_EDITS.remove(key);
+        EDIT_LABELS.remove(key);
         // Every stamp and every save lands here, and after either the sidecar on disk is the plot's
         // baseline again — see EditorSidecarBaseline.
         EditorSidecarBaseline.forget(key);
@@ -118,6 +121,24 @@ public final class EditorPlotSnapshots {
         if (key == null) return;
         Set<BlockPos> cells = SIDECAR_EDITS.computeIfAbsent(key, k -> new LinkedHashSet<>());
         if (localPos != null) cells.add(localPos.immutable());
+    }
+
+    /**
+     * Record that a block's own settings changed at {@code localPos} — data that lives on the block
+     * entity rather than in its state, such as a creaking heart's, which the block-state scan cannot
+     * see. Reads as unsaved exactly like a sidecar edit (and is cleared the same way, by the next
+     * {@link #capture}); {@code label} names it in the changes drill-down.
+     */
+    public static synchronized void markBlockSettingsEdit(@Nullable String key, BlockPos localPos, String label) {
+        if (key == null) return;
+        markSidecarEdit(key, localPos);
+        EDIT_LABELS.computeIfAbsent(key, k -> new HashMap<>()).put(localPos.immutable(), label);
+    }
+
+    /** The {@link #markBlockSettingsEdit} label for {@code cell} of {@code key}, or null for a variant edit. */
+    public static synchronized @Nullable String editLabel(String key, BlockPos cell) {
+        Map<BlockPos, String> labels = EDIT_LABELS.get(key);
+        return labels == null ? null : labels.get(cell);
     }
 
     /** Whether {@code key}'s variant sidecar changed since its baseline was taken. */
@@ -251,6 +272,7 @@ public final class EditorPlotSnapshots {
         SNAPSHOTS.remove(key);
         DECOR.clear(key);
         SIDECAR_EDITS.remove(key);
+        EDIT_LABELS.remove(key);
         EditorSidecarBaseline.forget(key);
     }
 
@@ -259,6 +281,7 @@ public final class EditorPlotSnapshots {
         SNAPSHOTS.clear();
         DECOR.clearAll();
         SIDECAR_EDITS.clear();
+        EDIT_LABELS.clear();
         EditorSidecarBaseline.clearAll();
     }
 
