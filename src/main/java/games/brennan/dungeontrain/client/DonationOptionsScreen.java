@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
+import games.brennan.dungeontrain.client.support.PaymentConfirmScreen;
 import games.brennan.dungeontrain.client.support.PaymentLinks;
 import games.brennan.dungeontrain.client.support.SupportTier;
 import net.minecraft.Util;
@@ -211,12 +212,15 @@ public final class DonationOptionsScreen extends Screen {
         Minecraft.getInstance().setScreen(parent);
     }
 
-    /** Open {@code url} through the confirm screen, tracking the click + follow-through, then return here. */
+    /** Open {@code url} through the payment confirm, tracking the click + follow-through, then return here. */
     private void openLink(String url, String analyticsTarget) {
         // See SupportScreen.openLink — a relay-served base can go away under a built button, and an
         // NPE in front of a would-be donor is the worst possible way to handle that.
         if (url == null) return;
         UiAnalytics.click(UiAnalytics.SURFACE_DEATH_SCREEN, analyticsTarget);
+        // Every button on this window is a payment link, so this is the path taken in practice; the
+        // vanilla screen below is the fallback for a target the copy resolver does not know.
+        if (PaymentConfirmScreen.tryOpen(this, UiAnalytics.SURFACE_DEATH_SCREEN, analyticsTarget, url)) return;
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
             UiAnalytics.confirm(UiAnalytics.SURFACE_DEATH_SCREEN, analyticsTarget, yes);
             if (yes) Util.getPlatform().openUri(URI.create(url));
