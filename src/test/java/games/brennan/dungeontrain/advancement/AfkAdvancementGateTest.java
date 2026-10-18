@@ -31,9 +31,20 @@ final class AfkAdvancementGateTest {
     }
 
     @Test
-    @DisplayName("Sound Check is exempt: its volume sliders all sit on pause screens")
-    void soundCheckIsExempt() {
-        assertTrue(AfkAdvancementGate.isExempt(rl("dungeon_train/changed_engine_volume")));
+    @DisplayName("advancements that arrive on their own are exempt")
+    void passiveAdvancementsAreExempt() {
+        assertTrue(AfkAdvancementGate.isExempt(rl("dungeon_train/the_creator_answers")));
+        assertTrue(AfkAdvancementGate.isExempt(rl("enchiridion/called_it")));
+        assertTrue(AfkAdvancementGate.isExempt(rl("enchiridion/candid")));
+    }
+
+    @Test
+    @DisplayName("screen-earned advancements need no exemption: the activity tracker sees the player")
+    void screenEarnedAdvancementsAreNotExempt() {
+        assertFalse(AfkAdvancementGate.isExempt(rl("dungeon_train/changed_engine_volume")));
+        assertFalse(AfkAdvancementGate.isExempt(rl("dungeon_train/the_enchiridion")));
+        assertFalse(AfkAdvancementGate.isExempt(rl("dungeon_train/signed_shared_book")));
+        assertFalse(AfkAdvancementGate.isExempt(rl("enchiridion/found_footage")));
     }
 
     @Test
