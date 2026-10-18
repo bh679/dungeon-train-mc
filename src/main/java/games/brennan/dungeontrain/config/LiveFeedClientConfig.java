@@ -27,6 +27,7 @@ public final class LiveFeedClientConfig {
     public static final ModConfigSpec.IntValue CAPTURE_WIDTH;
     public static final ModConfigSpec.IntValue CAPTURE_FPS;
     public static final ModConfigSpec.IntValue BITRATE_KBPS;
+    public static final ModConfigSpec.BooleanValue SAVE_BANDWIDTH;
     public static final ModConfigSpec.IntValue SEGMENT_SECONDS;
     public static final ModConfigSpec.BooleanValue VIEWING_ENABLED;
     public static final ModConfigSpec.IntValue VIEWER_WIDTH;
@@ -92,6 +93,9 @@ public final class LiveFeedClientConfig {
         BITRATE_KBPS = b
             .comment("Video bitrate in kbit/s. 2500 is clean 720p; viewers download this much.")
             .defineInRange("bitrateKbps", 2500, 500, 8000);
+        SAVE_BANDWIDTH = b
+            .comment("Compress the stream harder on your own computer: a slower x264 preset at about half of bitrateKbps, for roughly the same picture with less upload. Costs CPU and so frame rate. Off by default; takes effect from your next stream.")
+            .define("saveBandwidth", false);
         SEGMENT_SECONDS = b
             .comment("Seconds of video per uploaded segment. Viewers run 1-2 segments behind. Longer = fewer uploads (cheaper), more delay.")
             .defineInRange("segmentSeconds", 10, 2, 30);
@@ -163,6 +167,15 @@ public final class LiveFeedClientConfig {
 
     /** Whether the stream carries in-game sounds (never the microphone). On unless the player turns it off. */
     public static boolean streamAudio() { return !loaded() || STREAM_AUDIO.get(); }
+
+    /** Whether the encoder trades CPU for upload (slower preset, lower bitrate). Off unless the player turns it on. */
+    public static boolean saveBandwidth() { return loaded() && SAVE_BANDWIDTH.get(); }
+
+    public static void setSaveBandwidth(boolean value) {
+        if (!loaded() || SAVE_BANDWIDTH.get() == value) return;
+        SAVE_BANDWIDTH.set(value);
+        SAVE_BANDWIDTH.save();
+    }
 
     public static void setStreamAudio(boolean value) {
         if (!loaded() || STREAM_AUDIO.get() == value) return;
