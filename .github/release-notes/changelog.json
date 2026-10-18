@@ -27732,9 +27732,9 @@
       "highlights": [],
       "pr": 2119,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1362.0",
+      "released_at": "2026-10-18T16:09:20Z"
     },
     {
       "id": "crates2-trees-tnt-cargo",
@@ -27750,9 +27750,9 @@
       "highlights": [],
       "pr": 2121,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1362.0",
+      "released_at": "2026-10-18T16:09:20Z"
     },
     {
       "id": "editor-if-popup-late-icons",
@@ -27768,9 +27768,9 @@
       "highlights": [],
       "pr": 2121,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1362.0",
+      "released_at": "2026-10-18T16:09:20Z"
     },
     {
       "id": "photo-band-transitions",
@@ -27785,9 +27785,9 @@
       "highlights": [],
       "pr": 2120,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1362.0",
+      "released_at": "2026-10-18T16:09:20Z"
     },
     {
       "id": "priority-books-delivered",
@@ -27808,9 +27808,9 @@
       ],
       "pr": 2122,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1362.0",
+      "released_at": "2026-10-18T16:09:20Z"
     },
     {
       "id": "stream-save-upload-bandwidth",
@@ -27830,9 +27830,9 @@
       ],
       "pr": 2124,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1362.0",
+      "released_at": "2026-10-18T16:09:20Z"
     }
   ]
 }
