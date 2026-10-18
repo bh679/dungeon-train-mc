@@ -27605,6 +27605,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "protect-own-pets",
+      "version": "0.1354.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Your pets are safe from you",
+      "summary": "Your own punches, sweeps and arrows no longer hurt your tamed animals, so a fight beside your dog won't cost you your dog. TNT you light still counts. Other players and mobs can still hurt them. Turn it off in Options, General, Protect My Pets.",
+      "highlights": [],
+      "pr": 2115,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
