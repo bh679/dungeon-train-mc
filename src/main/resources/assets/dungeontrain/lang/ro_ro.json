@@ -3436,7 +3436,7 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Afișează o linie în chat cu autorul de fiecare dată când arde o carte Dungeon Train.",
   "gui.dungeontrain.options.protect_own_pets": "Protejează-mi animalele",
   "gui.dungeontrain.options.protect_own_pets.hint": "Loviturile tale îți ocolesc animalele",
-  "gui.dungeontrain.options.protect_own_pets.tip": "Te împiedică să-ți rănești propriile animale îmblânzite. Pumnii, loviturile circulare, săgețile și exploziile pe care le provoci le ocolesc. Alți jucători și mobii le pot răni în continuare.",
+  "gui.dungeontrain.options.protect_own_pets.tip": "Te împiedică să-ți rănești propriile animale îmblânzite. Pumnii, loviturile circulare și săgețile le ocolesc. Exploziile le rănesc în continuare, la fel ca alți jucători și mobii.",
   "gui.dungeontrain.options.update_notice_chat": "Chat versiune nouă",
   "gui.dungeontrain.options.update_notice_chat.hint": "Linie în chat când apare o versiune",
   "gui.dungeontrain.options.update_notice_chat.tip": "Afișează o linie în chat când apare o versiune nouă Dungeon Train.",

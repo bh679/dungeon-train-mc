@@ -5205,7 +5205,7 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Выводить строку в чат с автором каждый раз, когда горит книга Dungeon Train.",
   "gui.dungeontrain.options.protect_own_pets": "Защита моих питомцев",
   "gui.dungeontrain.options.protect_own_pets.hint": "Ваши удары не задевают питомцев",
-  "gui.dungeontrain.options.protect_own_pets.tip": "Не даёт вам ранить своих приручённых животных. Удары, размашистые атаки, стрелы и взрывы, которые вы вызвали, их не задевают. Другие игроки и мобы по-прежнему могут их ранить.",
+  "gui.dungeontrain.options.protect_own_pets.tip": "Не даёт вам ранить своих приручённых животных. Удары, размашистые атаки и стрелы их не задевают. Взрывы по-прежнему их ранят, как и другие игроки и мобы.",
   "gui.dungeontrain.options.update_notice_chat": "Чат о новой версии",
   "gui.dungeontrain.options.update_notice_chat.hint": "Строка в чате при выходе версии",
   "gui.dungeontrain.options.update_notice_chat.tip": "Выводить строку в чат при выходе новой версии Dungeon Train.",

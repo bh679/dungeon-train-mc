@@ -5148,7 +5148,7 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Mostrar una línea de chat con el autor cada vez que arde un libro de Dungeon Train.",
   "gui.dungeontrain.options.protect_own_pets": "Proteger mis mascotas",
   "gui.dungeontrain.options.protect_own_pets.hint": "Tus golpes no dañan a tus mascotas",
-  "gui.dungeontrain.options.protect_own_pets.tip": "Evita que hieras a tus propios animales domesticados. Los puñetazos, barridos, flechas y explosiones que causes no les afectan. Otros jugadores y criaturas aún pueden herirlos.",
+  "gui.dungeontrain.options.protect_own_pets.tip": "Evita que hieras a tus propios animales domesticados. Los puñetazos, barridos y flechas no les afectan. Las explosiones sí les hacen daño, igual que otros jugadores y criaturas.",
   "gui.dungeontrain.options.update_notice_chat": "Chat de nueva versión",
   "gui.dungeontrain.options.update_notice_chat.hint": "Línea de chat al salir una versión",
   "gui.dungeontrain.options.update_notice_chat.tip": "Mostrar una línea de chat cuando sale una nueva versión de Dungeon Train.",

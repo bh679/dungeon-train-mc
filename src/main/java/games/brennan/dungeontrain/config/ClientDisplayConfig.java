@@ -842,8 +842,8 @@ public final class ClientDisplayConfig {
         b.push("pets");
         ModConfigSpec.BooleanValue protectOwnPets = b
                 .comment("Stop yourself hurting your own tamed animals (wolves, cats, parrots, horses and the like):",
-                         "punches, sweeps, arrows and explosions you cause pass them by. Other players and mobs",
-                         "can still hurt them. Toggle in-game via Options > Dungeon Train > General. On by default.")
+                         "punches, sweeps and arrows pass them by. Explosions (TNT you lit) still hurt them, and",
+                         "other players and mobs can still hurt them. Toggle in-game via Options > Dungeon Train > General. On by default.")
                 .define("protectOwnPets", true);
         b.pop();
 

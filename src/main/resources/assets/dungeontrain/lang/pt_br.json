@@ -5148,7 +5148,7 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Mostrar uma linha no chat com o autor sempre que um livro do Dungeon Train queima.",
   "gui.dungeontrain.options.protect_own_pets": "Proteger meus pets",
   "gui.dungeontrain.options.protect_own_pets.hint": "Seus golpes não atingem seus pets",
-  "gui.dungeontrain.options.protect_own_pets.tip": "Impede que você machuque seus próprios animais domesticados. Socos, golpes de varredura, flechas e explosões que você causar não os atingem. Outros jogadores e criaturas ainda podem machucá-los.",
+  "gui.dungeontrain.options.protect_own_pets.tip": "Impede que você machuque seus próprios animais domesticados. Socos, golpes de varredura e flechas não os atingem. Explosões ainda os machucam, assim como outros jogadores e criaturas.",
   "gui.dungeontrain.options.update_notice_chat": "Chat de nova versão",
   "gui.dungeontrain.options.update_notice_chat.hint": "Linha no chat quando sai uma versão",
   "gui.dungeontrain.options.update_notice_chat.tip": "Mostrar uma linha no chat quando sai uma nova versão do Dungeon Train.",

@@ -5148,7 +5148,7 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Afficher une ligne de chat avec l'auteur chaque fois qu'un livre Dungeon Train brûle.",
   "gui.dungeontrain.options.protect_own_pets": "Protéger mes animaux",
   "gui.dungeontrain.options.protect_own_pets.hint": "Vos coups épargnent vos animaux",
-  "gui.dungeontrain.options.protect_own_pets.tip": "Vous empêche de blesser vos propres animaux apprivoisés. Les coups, balayages, flèches et explosions que vous causez les épargnent. Les autres joueurs et les monstres peuvent toujours les blesser.",
+  "gui.dungeontrain.options.protect_own_pets.tip": "Vous empêche de blesser vos propres animaux apprivoisés. Les coups, balayages et flèches les épargnent. Les explosions les blessent toujours, tout comme les autres joueurs et les monstres.",
   "gui.dungeontrain.options.update_notice_chat": "Chat nouvelle version",
   "gui.dungeontrain.options.update_notice_chat.hint": "Ligne de chat à chaque sortie",
   "gui.dungeontrain.options.update_notice_chat.tip": "Afficher une ligne de chat quand une nouvelle version de Dungeon Train sort.",

@@ -5105,7 +5105,7 @@
   "gui.dungeontrain.options.book_author_chat.tip": "每当一本 Dungeon Train 书籍燃烧时，在聊天中显示作者。",
   "gui.dungeontrain.options.protect_own_pets": "保护我的宠物",
   "gui.dungeontrain.options.protect_own_pets.hint": "你的攻击不会伤到你的宠物",
-  "gui.dungeontrain.options.protect_own_pets.tip": "防止你伤害自己驯服的动物。你造成的拳击、横扫、箭矢和爆炸都会避开它们。其他玩家和生物仍然可以伤害它们。",
+  "gui.dungeontrain.options.protect_own_pets.tip": "防止你伤害自己驯服的动物。拳击、横扫和箭矢都会避开它们。爆炸仍会伤害它们，其他玩家和生物也可以。",
   "gui.dungeontrain.options.update_notice_chat": "新版本聊天提醒",
   "gui.dungeontrain.options.update_notice_chat.hint": "新版本发布时的聊天提示",
   "gui.dungeontrain.options.update_notice_chat.tip": "Dungeon Train 发布新版本时在聊天中提示。",

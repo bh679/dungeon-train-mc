@@ -5091,7 +5091,7 @@
   "gui.dungeontrain.options.book_author_chat.tip": "Mag-print ng chat line na nagpapangalan sa may-akda tuwing nasusunog ang aklat ng Dungeon Train.",
   "gui.dungeontrain.options.protect_own_pets": "Protektahan ang Aking mga Alaga",
   "gui.dungeontrain.options.protect_own_pets.hint": "Hindi tatamaan ng iyong atake ang iyong mga alaga",
-  "gui.dungeontrain.options.protect_own_pets.tip": "Pinipigilan kang masaktan ang sarili mong mga pinaamong hayop. Hindi sila tatamaan ng mga suntok, sweep, palaso at pagsabog na dulot mo. Kaya pa rin silang saktan ng ibang manlalaro at mga mob.",
+  "gui.dungeontrain.options.protect_own_pets.tip": "Pinipigilan kang masaktan ang sarili mong mga pinaamong hayop. Hindi sila tatamaan ng mga suntok, sweep at palaso. Masasaktan pa rin sila ng mga pagsabog, pati ng ibang manlalaro at mga mob.",
   "gui.dungeontrain.options.update_notice_chat": "Chat sa Bagong Bersyon",
   "gui.dungeontrain.options.update_notice_chat.hint": "Chat line kapag may bagong bersyon",
   "gui.dungeontrain.options.update_notice_chat.tip": "Mag-print ng chat line kapag may bagong bersyon ng Dungeon Train.",
