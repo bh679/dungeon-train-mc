@@ -27459,8 +27459,8 @@
         "performance",
         "train"
       ],
-      "title": "Less lag while you explore a dimensional carriage",
-      "summary": "Exploring a dimensional carriage no longer keeps the whole train working in the background. While you are inside one and nobody else is near the train, the game runs noticeably lighter, and the train is ready the moment you step back out.",
+      "title": "Smoother performance",
+      "summary": "The game now runs lighter while you are off exploring.",
       "highlights": [],
       "addresses": [
         "lag"
