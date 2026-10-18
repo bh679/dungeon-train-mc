@@ -93,6 +93,7 @@ previous line.
 | `entities` / `onCarriages` | loaded entities in the level, and how many non-player entities are inside a resident carriage's world box (inflated 1 block, 2 above — the box the contents despawn sweep uses): carriage contents mobs plus anything standing on the train |
 | `tickMaxMs` | longest single server tick in the last 40 (all dimensions) |
 | `stepDeferred` | block changes a collision callback made inside Sable's native physics step (a carriage breaking glass, ice or leaves), deferred until the step returned (`ColliderBatch#callForced`). Before that deferral each one could freeze the server thread for good. Non-zero is normal — it says the path fired and was handled |
+| `secluded` | carriages tracked only by players inside a dimensional carriage (in a portal room and on no train). The freeze counts them as untracked, so they park like any unwatched carriage; `activeTracked` no longer includes them. Toggle the rule with `/dungeontrain debug physicsfreeze rooms <on\|off>` |
 
 `gcMs`, `chunkWait*` and `physMs` are process-wide counters drained by whichever `[mspt]` line
 fires first; with trains in two dimensions they split between the lines. Reading a slow window:
