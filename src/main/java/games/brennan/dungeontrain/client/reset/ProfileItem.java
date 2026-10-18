@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.client.reset;
 
+import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.GlobalAchievementStore;
 import games.brennan.dungeontrain.advancement.GlobalBookBurnStats;
 import games.brennan.dungeontrain.advancement.GlobalNarrativeProgress;
@@ -76,8 +77,12 @@ public enum ProfileItem {
      */
     public boolean delete(UUID uuid) throws Exception {
         return switch (this) {
-            case ADVANCEMENTS -> GlobalAchievementStore.deleteFor(uuid);
-            case STATS -> GlobalPlayerStats.deleteFor(uuid);
+            case ADVANCEMENTS -> {
+                // The burrito starts again with the advancements, so its play-time clock does too.
+                BurritoClock.resetAll(uuid);
+                yield GlobalAchievementStore.deleteFor(uuid);
+            }
+            case STATS -> GlobalPlayerStats.deleteFor(uuid) | BurritoClock.deleteFor(uuid);
             case BOOKS_BURNED -> GlobalBookBurnStats.deleteFor(uuid);
             case NARRATIVE -> GlobalNarrativeProgress.deleteAll();
             case PLAYER_MARKER -> PlayerPlayedMarker.deleteFor(uuid);
