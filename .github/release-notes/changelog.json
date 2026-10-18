@@ -27452,6 +27452,26 @@
       "released_at": "2026-10-18T08:51:05Z"
     },
     {
+      "id": "park-train-in-dimensional-carriage",
+      "version": "0.1348.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Smoother performance",
+      "summary": "The game now runs lighter while you are off exploring.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2107,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "live-eye-backpack-check",
       "version": "0.1348.0",
       "type": "fix",

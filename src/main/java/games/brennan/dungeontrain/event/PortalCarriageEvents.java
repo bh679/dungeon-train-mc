@@ -660,6 +660,7 @@ public final class PortalCarriageEvents {
         games.brennan.dungeontrain.narrative.PortalBuilderGreeter.clear();
         ACTIVE_PAIRS.clear();
         PortalSwapDrift.clear();
+        PortalTrainFreeze.clear();
         LAST_FOG.clear();
         games.brennan.dungeontrain.portal.PlayerSkyRegions.clearAll();
         LAST_CROSSING.clear();
@@ -2187,6 +2188,13 @@ public final class PortalCarriageEvents {
             // a player who deliberately walked back to it has asked for.
             if (move.toFrame() == PortalFrames.FRAME_CARRIAGE) {
                 PortalExitBindings.bind(player.getUUID(), pairKey, tile);
+                // Back to being somebody who can see the train. While they were in the room their
+                // carriages may have been parked (PhysicsFreezeController counts a secluded tracker
+                // as nobody); wake the one they are stepping onto now rather than on the next
+                // reconcile, and stop counting them as secluded so that reconcile agrees.
+                PortalTrainFreeze.noteLeftRoom(player);
+                games.brennan.dungeontrain.ship.sable.PhysicsFreezeController.thaw(
+                    PortalPairResidency.groupFor(pairKey));
                 // How far this way out is from the way in — measured from where they are standing
                 // NOW, before the teleport, because that is the exit corridor's position rather than
                 // the carriage's. Empty for a player whose way in we never saw (logged in inside a

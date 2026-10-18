@@ -93,4 +93,31 @@ final class PhysicsFreezeControllerTest {
         org.junit.jupiter.api.Assertions.assertEquals(java.util.Set.of(0, -3, -6, -9, -12, -15),
             PhysicsFreezeController.anchorsToKeepTicking(java.util.Set.of(-15), all));
     }
+
+    private static final java.util.UUID RIDER = java.util.UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final java.util.UUID IN_ROOM = java.util.UUID.fromString("00000000-0000-0000-0000-000000000002");
+
+    @Test
+    @DisplayName("anyWatcher: nobody tracking is nobody watching")
+    void anyWatcherEmpty() {
+        assertEquals(false, PhysicsFreezeController.anyWatcher(java.util.List.of(), u -> false));
+    }
+
+    @Test
+    @DisplayName("anyWatcher: a carriage tracked only from inside a dimensional carriage is unwatched")
+    void anyWatcherOnlySecluded() {
+        assertEquals(false, PhysicsFreezeController.anyWatcher(java.util.List.of(IN_ROOM), IN_ROOM::equals));
+    }
+
+    @Test
+    @DisplayName("anyWatcher: one player outside a room keeps it watched (multiplayer)")
+    void anyWatcherMixed() {
+        assertTrue(PhysicsFreezeController.anyWatcher(java.util.List.of(IN_ROOM, RIDER), IN_ROOM::equals));
+    }
+
+    @Test
+    @DisplayName("anyWatcher: with the room rule off every tracker watches")
+    void anyWatcherRuleOff() {
+        assertTrue(PhysicsFreezeController.anyWatcher(java.util.List.of(IN_ROOM), u -> false));
+    }
 }
