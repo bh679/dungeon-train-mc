@@ -84,9 +84,9 @@ final class SpanPopupLayout {
         return rows;
     }
 
-    /** Hit {@code secondary} for a button: {@code section * 10 + option}. */
+    /** Hit {@code secondary} for a button — the Grow popup's encoding, so one decoder serves both. */
     static int encode(int section, int option) {
-        return section * 10 + option;
+        return GrowthPopupLayout.encode(section, option);
     }
 
     /** The span after clicking {@code option} in {@code section}, starting from {@code current}. */

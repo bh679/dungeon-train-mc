@@ -34,6 +34,10 @@ public interface BookEditScreenAccessor {
     @Accessor("isSigning")
     boolean dungeontrain$isSigning();
 
+    /** Vanilla's Sign and Close button — the Priority Book star sits beside it (PriorityBookSignToggle). */
+    @Accessor("finalizeButton")
+    net.minecraft.client.gui.components.Button dungeontrain$getFinalizeButton();
+
     // The Live Eye text filter (client/live/LiveTextCensorClient) rewrites the page or title being
     // typed: which page is open, the title, and the two cursors to park at the end afterwards.
 

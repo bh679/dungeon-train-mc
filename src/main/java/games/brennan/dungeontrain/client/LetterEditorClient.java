@@ -54,6 +54,11 @@ public final class LetterEditorClient {
         Minecraft.getInstance().setScreen(new BookEditScreen(player, book, hand));
     }
 
+    /** Whether the open book screen is a lectern letter (never a shared book, so no Priority Book). */
+    public static boolean isLetterOpen() {
+        return pendingLecternPos != null;
+    }
+
     /** Called by the sign mixin when the player clicks Sign &amp; Close (a "publish" save). */
     public static void markSigned() {
         signed = true;

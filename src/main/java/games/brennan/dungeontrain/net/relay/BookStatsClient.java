@@ -52,11 +52,22 @@ public final class BookStatsClient {
      * endpoint is already author-gated. Absent is NOT the same as {@code "approved"}: the mod stamps
      * nothing on absent, so a book already carrying a state from the author's-own-shelf pool path
      * keeps it. {@code isPrivate} is the author's own withdrawal, false unless the relay says so.
+     * {@code priority} is whether the author spent a Priority Book on it, likewise false unless said.
      */
     public record Stats(boolean isAuthor, int held, int completers, int opens,
                         long longestReadMs, long longestPageMs, int longestPageIndex,
                         int pageTurns, int rereads, int votesUp, int votesDown,
-                        String status, boolean isPrivate) {}
+                        String status, boolean isPrivate, boolean priority) {
+
+        /** The pre-Priority-Book shape: {@code priority} false. */
+        public Stats(boolean isAuthor, int held, int completers, int opens,
+                     long longestReadMs, long longestPageMs, int longestPageIndex,
+                     int pageTurns, int rereads, int votesUp, int votesDown,
+                     String status, boolean isPrivate) {
+            this(isAuthor, held, completers, opens, longestReadMs, longestPageMs, longestPageIndex,
+                    pageTurns, rereads, votesUp, votesDown, status, isPrivate, false);
+        }
+    }
 
     /**
      * Fetch stats for {@code bookId} off-thread and hand the parsed result to {@code callback} (invoked
@@ -115,7 +126,7 @@ public final class BookStatsClient {
                 optLong(o, "longestReadMs"), optLong(o, "longestPageMs"), optInt(o, "longestPageIndex"),
                 optInt(o, "pageTurns"), optInt(o, "rereads"),
                 optInt(o, "votesUp"), optInt(o, "votesDown"),
-                optStr(o, "status"), optBool(o, "private"));
+                optStr(o, "status"), optBool(o, "private"), optBool(o, "priority"));
     }
 
     private static int optInt(JsonObject o, String k) {

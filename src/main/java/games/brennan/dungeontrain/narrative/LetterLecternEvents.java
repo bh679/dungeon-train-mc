@@ -217,6 +217,7 @@ public final class LetterLecternEvents {
     public static void onLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         PENDING_LECTERN.remove(event.getEntity().getUUID());
         EditorBookAuthorPending.clear(event.getEntity().getUUID());
+        PriorityBookPending.clear(event.getEntity().getUUID());
     }
 
     /** Raw page strings of a book &amp; quill, in order. Empty when the stack carries no writable content. */

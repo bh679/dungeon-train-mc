@@ -6,6 +6,8 @@ import games.brennan.dungeontrain.train.CarriageDims;
 import games.brennan.dungeontrain.worldgen.SpheresSky;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 
+import java.util.function.IntPredicate;
+
 /**
  * Client-side cache of the per-world data needed to evaluate the disintegration
  * band's "void intensity" at a world-X, so the sky/fog can fade toward the End
@@ -81,6 +83,57 @@ public final class ClientVoidBand {
         return SpheresSky.endSky(cycle, SpheresProgressionConfig.segments(), worldX,
                 DungeonTrainCommonConfig.getSpheresEndSkyFadeBlocks(), SpheresProgressionConfig.endSkyExitFadeBlocks(),
                 SpheresProgressionConfig.exitVoidBlocks());
+    }
+
+    /** Sample spacing for the Distant Horizons zone checks; every band's entry fade alone is far wider. */
+    private static final int DH_ZONE_SAMPLE_STEP = 64;
+
+    /*
+     * Distant Horizons zone checks — used by {@code DistantHorizonsSuppression} to decide when DH must stop
+     * drawing. Each is true if any world-X within {@code margin} blocks of {@code worldX} is part of that
+     * band's look (entry fade, core, and any exit fade or crossfade); the margin covers the approach, since
+     * a band sits inside DH's draw distance well before the camera reaches it. Each is an immediate
+     * {@code false} when its band is off or this world has no train, so they are cheap enough per frame.
+     */
+
+    /** The spheres band: its void ramp is non-zero across the entry fade and the core. */
+    public static boolean isSpheresZoneWithin(int worldX, int margin) {
+        if (!startsWithTrain || !DungeonTrainCommonConfig.isSpheresEnabled()) return false;
+        return spheresZoneWithin(WorldGenCycle.fromConfig(), worldX, margin);
+    }
+
+    /** The chuncks band: keep-density drops below 1 across its fade, core, the stacks crossfade and exit fade. */
+    public static boolean isChuncksZoneWithin(int worldX, int margin) {
+        if (!startsWithTrain || !DungeonTrainCommonConfig.isChuncksEnabled()) return false;
+        return chuncksZoneWithin(WorldGenCycle.fromConfig(), worldX, margin);
+    }
+
+    /** The stacks band: its void ramp is non-zero across the entry fade, the core and the exit fade. */
+    public static boolean isStacksZoneWithin(int worldX, int margin) {
+        if (!startsWithTrain || !DungeonTrainCommonConfig.isStacksEnabled()) return false;
+        return stacksZoneWithin(WorldGenCycle.fromConfig(), worldX, margin);
+    }
+
+    static boolean spheresZoneWithin(WorldGenCycle cycle, int worldX, int margin) {
+        return cycle.spheresLen() > 0L && zoneWithin(x -> cycle.spheresVoidRamp(x) > 0.0, worldX, margin);
+    }
+
+    static boolean chuncksZoneWithin(WorldGenCycle cycle, int worldX, int margin) {
+        return cycle.chuncksLen() > 0L && zoneWithin(x -> cycle.chuncksKeepDensityAt(x) < 1.0, worldX, margin);
+    }
+
+    static boolean stacksZoneWithin(WorldGenCycle cycle, int worldX, int margin) {
+        return cycle.stacksLen() > 0L && zoneWithin(x -> cycle.stacksVoidRampAt(x) > 0.0, worldX, margin);
+    }
+
+    /** Samples {@code [worldX - margin, worldX + margin]} every 64 blocks, same as the upside-down flip zone. */
+    private static boolean zoneWithin(IntPredicate inZone, int worldX, int margin) {
+        int span = Math.max(0, margin);
+        for (int x = worldX - span; x < worldX + span; x += DH_ZONE_SAMPLE_STEP) {
+            if (inZone.test(x)) return true;
+        }
+        // The step can overshoot the far end, so the last block of the window is always tested.
+        return inZone.test(worldX + span);
     }
 
     /** End-sky intensity {@code t} crosses this point: below it the Overworld track plays, above it the End track. */
