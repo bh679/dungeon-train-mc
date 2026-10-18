@@ -46,6 +46,15 @@ public final class PriorityBookSignToggle {
     private static final int SIZE = 20;                  // square icon button
     private static final int GAP = 4;                    // between the star and Sign and Close
 
+    // The book art inside vanilla's 192×192 image, which sits at ((width-192)/2, signY - 194):
+    // measured from the screen, the visible leather spans x+20..x+166 and y+1..y+181.
+    private static final int BOOK_IMAGE = 192;
+    private static final int BOOK_TOP_ABOVE_SIGN = 194;
+    private static final int ART_LEFT = 20, ART_RIGHT = 166, ART_TOP = 1, ART_BOTTOM = 181;
+    private static final int FRAME_BAND = 2;             // bright gold band hugging the book
+    private static final int FRAME_GOLD = 0xFFFFC21A;
+    private static final int FRAME_RIM = 0xFF8A5F00;     // 1 px darker rim outside the band
+
     // Yellow face, Minecraft-button bevel. Off is a softer yellow so ticking it visibly lights it up.
     private static final int FACE_ON = 0xFFFFC21A;
     private static final int FACE_OFF = 0xFFE3C35C;
@@ -137,6 +146,33 @@ public final class PriorityBookSignToggle {
                         PriorityBookMessage.signTooltip().copy().withStyle(ChatFormatting.GRAY))));
             }
         }
+    }
+
+    /**
+     * While the star is ticked, a gold frame round the whole book — the selected state, readable from
+     * across the screen. Drawn only OUTSIDE the book art, so nothing written on the page is covered.
+     * Located from the live Sign and Close button, like the star, so it follows a re-centred book.
+     */
+    @SubscribeEvent
+    public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
+        if (!(event.getScreen() instanceof BookEditScreen screen) || owner.get() != screen) return;
+        if (!ticked || !applies(screen)) return;
+        Button sign = ((BookEditScreenAccessor) screen).dungeontrain$getFinalizeButton();
+        if (sign == null) return;
+        int bx = (screen.width - BOOK_IMAGE) / 2;
+        int by = sign.getY() - BOOK_TOP_ABOVE_SIGN;
+        int l = bx + ART_LEFT, r = bx + ART_RIGHT, t = by + ART_TOP, b = by + ART_BOTTOM;
+        GuiGraphics g = event.getGuiGraphics();
+        frame(g, l - FRAME_BAND - 1, t - FRAME_BAND - 1, r + FRAME_BAND + 1, b + FRAME_BAND + 1, 1, FRAME_RIM);
+        frame(g, l - FRAME_BAND, t - FRAME_BAND, r + FRAME_BAND, b + FRAME_BAND, FRAME_BAND, FRAME_GOLD);
+    }
+
+    /** A hollow rectangle {@code w} pixels thick, drawn inward from the given outer bounds. */
+    private static void frame(GuiGraphics g, int x0, int y0, int x1, int y1, int w, int color) {
+        g.fill(x0, y0, x1, y0 + w, color);
+        g.fill(x0, y1 - w, x1, y1, color);
+        g.fill(x0, y0 + w, x0 + w, y1 - w, color);
+        g.fill(x1 - w, y0 + w, x1, y1 - w, color);
     }
 
     /**
