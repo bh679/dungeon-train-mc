@@ -277,7 +277,26 @@
     },
     {
       "id": "creekingroom",
-      "weight": 1
+      "weight": 2,
+      "minLevel": 3,
+      "phases": [
+        "OVERWORLD",
+        "UPSIDE_DOWN",
+        "CHUNCKS",
+        "SPHERES",
+        "STACKS",
+        "BETA",
+        "ALPHA",
+        "SKYLANDS",
+        "INFDEV",
+        "FLOATING",
+        "FAR_LANDS",
+        "CLASSIC",
+        "CAVES_OF_CHAOS",
+        "LARGE_BIOMES",
+        "AMPLIFIED",
+        "LOST_CITY"
+      ]
     }
   ]
 }
