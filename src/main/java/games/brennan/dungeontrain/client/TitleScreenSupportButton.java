@@ -6,6 +6,7 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PatreonIconButton;
+import games.brennan.dungeontrain.client.support.PaymentConfirmScreen;
 import games.brennan.dungeontrain.client.support.PaymentLinks;
 import games.brennan.dungeontrain.client.support.SupportScreen;
 import net.minecraft.Util;
@@ -36,8 +37,9 @@ import java.net.URI;
  * The Realms button is located by matching its label
  * ({@code Component.translatable("menu.online")}), removed via
  * {@link ScreenEvent.Init#removeListener}, and the two replacements are added in
- * its place. Both the Support button and the Patreon icon open through vanilla's
- * {@link ConfirmLinkScreen} where a URL is involved.</p>
+ * its place. The Patreon icon opens through {@link PaymentConfirmScreen} (a
+ * provider-named confirm with no URL); vanilla's {@link ConfirmLinkScreen} remains
+ * only as the fallback for a target that screen does not recognise.</p>
  *
  * <p>Independent of {@link TitleScreenLayoutHandler} (which reshuffles the
  * Mods/Options/Quit row and never touches Realms). If the Realms button can't be
@@ -113,6 +115,7 @@ public final class TitleScreenSupportButton {
         UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_PATREON);
         // Read at click time so a relay-served rotation still applies after the menu was built.
         String patreonUrl = OfficialLinks.patreon();
+        if (PaymentConfirmScreen.tryOpen(parent, UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_PATREON, patreonUrl)) return;
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
             UiAnalytics.confirm(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_PATREON, yes);
             if (yes) {
