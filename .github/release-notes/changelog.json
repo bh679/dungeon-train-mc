@@ -27337,6 +27337,48 @@
       "released": true,
       "released_in": "v0.1342.0",
       "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "resume-freeze-surplus-carriages",
+      "version": "0.1343.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "train"
+      ],
+      "title": "No more freeze after unpausing",
+      "summary": "Coming back from the pause menu could freeze the game for many seconds, especially after you had walked a long way back along the train. That freeze is gone, and the extra carriages that pile up while the train catches up to you are now let go much sooner, so the game stays smooth.",
+      "highlights": [
+        "Unpausing no longer freezes the game.",
+        "Less lag after walking back along the train or catching up to it."
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2096,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "advancement-hidden-gap-dots",
+      "version": "0.1343.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Dots mark hidden advancements",
+      "summary": "On the advancements screen, three dots now mark a link that skips two or more advancements you haven't uncovered yet, so you can see there is more to find there.",
+      "highlights": [],
+      "pr": 2097,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

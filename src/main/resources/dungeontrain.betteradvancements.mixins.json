@@ -8,6 +8,7 @@
   "mixins": [],
   "client": [
     "betteradvancements.BetterAdvancementWidgetCompatMixin",
+    "betteradvancements.BetterAdvancementWidgetGapMixin",
     "betteradvancements.BetterAdvancementsCriteriaMixin",
     "betteradvancements.BetterAdvancementTabScrollMixin",
     "betteradvancements.BetterAdvancementsScreenEditorTabMixin",

@@ -1,6 +1,8 @@
 package games.brennan.dungeontrain.mixin.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.HiddenGap;
+import games.brennan.dungeontrain.client.AdvancementGapsClient;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.TreeNodePosition;
 import net.minecraft.client.multiplayer.ClientAdvancements;
@@ -39,6 +41,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * (re)built from this tree both on screen-open ({@code AdvancementTree.setListener}
  * replays the nodes) and live, so the compacted coordinates are what the
  * {@code AdvancementWidget}s read.</p>
+ *
+ * <p>A link that skips {@link HiddenGap#MIN_HIDDEN_FOR_MARKER} or more hidden advancements gets one
+ * extra empty column, so its connector has room for the "…" drawn across it
+ * ({@code AdvancementWidgetGapMixin}); counts come from {@link AdvancementGapsClient}.</p>
  */
 @Mixin(ClientAdvancements.class)
 public abstract class AdvancementsCompactLayoutMixin {
@@ -56,12 +62,17 @@ public abstract class AdvancementsCompactLayoutMixin {
     @Inject(method = "update", at = @At("TAIL"))
     private void dungeontrain$compactVisibleLayout(CallbackInfo ci) {
         ClientAdvancements self = (ClientAdvancements) (Object) this;
+        AdvancementGapsClient.retainOnly(id -> self.getTree().get(id) != null);
         for (AdvancementNode root : self.getTree().roots()) {
             if (!DungeonTrain.MOD_ID.equals(root.holder().id().getNamespace())) continue;
             // TreeNodePosition.run throws on a display-less root; DT roots always
             // have display, but guard anyway for safety.
             if (root.advancement().display().isEmpty()) continue;
             TreeNodePosition.run(root);
+            HiddenGap.shiftColumns(root, AdvancementNode::children,
+                n -> AdvancementGapsClient.isMarked(n.holder().id()),
+                n -> n.advancement().display().map(d -> d.getX()).orElse(0F),
+                (n, x) -> n.advancement().display().ifPresent(d -> d.setLocation(x, d.getY())));
             dungeontrain$spreadColumns(root);
         }
     }
