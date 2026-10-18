@@ -37,18 +37,14 @@ import java.lang.ref.WeakReference;
  * ({@code BookEditScreenSignMixin}), ahead of vanilla's sign packet, exactly like the book-language pick.
  * The relay does the charging and the server reports back in chat what happened.</p>
  *
- * <p>A star on a yellow face, just outside the book's left edge (the language dropdown sits on the
- * right): outline when off, filled when ticked, the count left as a corner badge, the words in its
- * tooltip.</p>
+ * <p>A star on a yellow face just left of Sign and Close, on its row: outline when off, filled when
+ * ticked, the count left as a corner badge, the words in its tooltip.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PriorityBookSignToggle {
 
     private static final int SIZE = 20;                  // square icon button
-    private static final int BOOK_HALF = 96;
-    private static final int GAP = 6;
-    private static final int SIDE_Y = 40;                // level with the title area
-    private static final int PAGE_Y = 172;               // fallback: centred at the book's foot
+    private static final int GAP = 4;                    // between the star and Sign and Close
 
     // Yellow face, Minecraft-button bevel. Off is a softer yellow so ticking it visibly lights it up.
     private static final int FACE_ON = 0xFFFFC21A;
@@ -119,12 +115,8 @@ public final class PriorityBookSignToggle {
             ticked = false;
             BookCredits.refresh(null);
         }
-        // Just outside the book's left edge when there is room (almost always: it is 20 px), else
-        // centred at the book's foot above the sign buttons.
-        boolean side = screen.width / 2 - BOOK_HALF - GAP - SIZE >= 0;
-        int x = side ? screen.width / 2 - BOOK_HALF - GAP - SIZE : (screen.width - SIZE) / 2;
-        int y = side ? SIDE_Y : PAGE_Y;
-        event.addListener(new Toggle(x, y, b -> ticked = !ticked));
+        // Positioned beside Sign and Close every frame (see placeBesideSign); 0,0 until the first one.
+        event.addListener(new Toggle(0, 0, b -> ticked = !ticked));
     }
 
     @SubscribeEvent
@@ -135,6 +127,7 @@ public final class PriorityBookSignToggle {
         for (GuiEventListener child : screen.children()) {
             if (child instanceof Toggle toggle) {
                 toggle.visible = show;
+                placeBesideSign(screen, toggle);
                 Component text = label(BookCredits.current());
                 Component shown = ticked ? Component.literal("✔ ").append(text).withStyle(ChatFormatting.GOLD) : text;
                 // The message is what narration reads; the tooltip carries the words a sighted reader needs.
@@ -144,6 +137,17 @@ public final class PriorityBookSignToggle {
                         PriorityBookMessage.signTooltip().copy().withStyle(ChatFormatting.GRAY))));
             }
         }
+    }
+
+    /**
+     * Just left of Sign and Close, on its row. Read from the live button each frame, so the star
+     * follows it wherever vanilla, a resize, or a re-centring mod (Scribble) has put it.
+     */
+    private static void placeBesideSign(BookEditScreen screen, Toggle toggle) {
+        Button sign = ((BookEditScreenAccessor) screen).dungeontrain$getFinalizeButton();
+        if (sign == null) return;
+        toggle.setX(sign.getX() - GAP - SIZE);
+        toggle.setY(sign.getY() + (sign.getHeight() - SIZE) / 2);
     }
 
     /**
