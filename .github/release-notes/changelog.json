@@ -27811,6 +27811,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "first-ever-ignores-free-play",
+      "version": "0.1362.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "advancements"
+      ],
+      "title": "First ever records only count real runs",
+      "summary": "The \"first passenger ever\" announcement now only goes to someone who earned the advancement in a normal run. Advancements earned in Free Play can no longer take the record, and a few records that had been taken that way are open again.",
+      "highlights": [],
+      "pr": 2125,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
