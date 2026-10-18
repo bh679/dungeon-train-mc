@@ -13,7 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class PhotoSubjectsTest {
 
     private static PhotoSubjects.Facts where(Set<String> types, String dimension, String band) {
-        return new PhotoSubjects.Facts(types, false, false, false, false, false, false, false, false, false, false, false, dimension, band);
+        return new PhotoSubjects.Facts(types, false, false, false, false, false, false, false, false, false, false, false, dimension, band, Set.of());
     }
 
     @Test
@@ -33,10 +33,10 @@ final class PhotoSubjectsTest {
     @DisplayName("passengers: any, a friend, an Echo — yours or someone else's")
     void passengers() {
         Set<String> plain = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), true, false, false, false, false,
-                false, false, false, false, false, false, null, null));
+                false, false, false, false, false, false, null, null, Set.of()));
         assertEquals(Set.of("playermob"), plain);
         Set<String> all = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), true, true, true, true, true,
-                false, false, false, false, false, false, null, null));
+                false, false, false, false, false, false, null, null, Set.of()));
         assertTrue(all.containsAll(Set.of("playermob", "friend_playermob", "echo", "echo_own", "echo_other")));
     }
 
@@ -44,7 +44,7 @@ final class PhotoSubjectsTest {
     @DisplayName("specials, cave, dimension and band keys")
     void places() {
         Set<String> keys = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, false, false, false,
-                true, true, true, true, true, false, "minecraft:overworld", "reached_spheres"));
+                true, true, true, true, true, false, "minecraft:overworld", "reached_spheres", Set.of()));
         assertTrue(keys.containsAll(Set.of("pigman_villager", "killer_bunny", "technoblade_pig", "cave",
                 "dim:minecraft:overworld", "band:reached_spheres")));
         assertFalse(keys.contains(PhotoSubjects.NETHER));
@@ -61,7 +61,7 @@ final class PhotoSubjectsTest {
 
     private static PhotoSubjects.Facts cave(boolean inCave, boolean inOverworldBand) {
         return new PhotoSubjects.Facts(Set.of(), false, false, false, false, false, false, false, false,
-                inCave, inOverworldBand, false, "minecraft:overworld", null);
+                inCave, inOverworldBand, false, "minecraft:overworld", null, Set.of());
     }
 
     @Test
@@ -73,6 +73,19 @@ final class PhotoSubjectsTest {
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_end_islands")).contains("end"));
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:overworld", "reached_better_end")).contains("end"));
         assertTrue(PhotoSubjects.keys(where(Set.of(), "minecraft:the_end", null)).contains("end"));
+    }
+
+    @Test
+    @DisplayName("a photo in a band's transition counts for the bands it joins, but never as the Nether or the End")
+    void transitions() {
+        Set<String> keys = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, false, false, false,
+                false, false, false, false, false, false, "minecraft:overworld", null,
+                Set.of("the_upside_down", "reassembly_required")));
+        assertTrue(keys.containsAll(Set.of("band:the_upside_down", "band:reassembly_required")));
+        Set<String> end = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of(), false, false, false, false, false,
+                false, false, false, false, false, false, "minecraft:overworld", null, Set.of("reached_better_end")));
+        assertTrue(end.contains("band:reached_better_end"));
+        assertFalse(end.contains(PhotoSubjects.END));
     }
 
     @Test
@@ -103,7 +116,7 @@ final class PhotoSubjectsTest {
     @DisplayName("a selfie-mode shot carries selfie; a normal one doesn't")
     void selfie() {
         Set<String> selfie = PhotoSubjects.keys(new PhotoSubjects.Facts(Set.of("minecraft:warden"), false, false, false,
-                false, false, false, false, false, false, false, true, null, null));
+                false, false, false, false, false, false, false, true, null, null, Set.of()));
         assertEquals(Set.of("selfie", "entity:minecraft:warden"), selfie);
         assertFalse(PhotoSubjects.keys(where(Set.of("minecraft:warden"), null, null)).contains("selfie"));
     }
