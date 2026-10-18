@@ -91,6 +91,8 @@ public enum ClientOptionsTab {
         /** Chinese-language clients only — absent, not merely inert, everywhere else. */
         POLITICAL_FILTER("gui.dungeontrain.political_filter.option"),
         BOOK_AUTHOR_CHAT("gui.dungeontrain.options.book_author_chat"),
+        /** Your own pets can't be hurt by you — see {@code OwnPetProtectionEvents}. */
+        PROTECT_OWN_PETS("gui.dungeontrain.options.protect_own_pets"),
         /** "Dungeon Train X is out" chat line when a release lands mid-session. */
         UPDATE_NOTICE_CHAT("gui.dungeontrain.options.update_notice_chat"),
         /** Once-a-session "give Minecraft more memory" boot card + chat line — see {@code LowMemoryNotice}. */
@@ -275,6 +277,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.BOOK_AUTHOR_CHAT);
                 rows.add(Row.UPDATE_NOTICE_CHAT);
                 rows.add(Row.OTHER_ADVANCEMENT_TABS);
+                rows.add(Row.PROTECT_OWN_PETS);
                 rows.add(Row.CINEMATIC_HOTKEY);
                 // Release builds never draw the dev HUD, so the row is absent there, not inert.
                 if (devBuild) {
