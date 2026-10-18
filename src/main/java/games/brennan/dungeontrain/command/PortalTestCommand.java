@@ -374,15 +374,24 @@ public final class PortalTestCommand {
         int doorHeightOffset = PortalRoomLayout.clampDoorHeightOffset(
             dims, roomSize.getY(), settings.doorHeightOffset().value());
 
+        int roomSalt = reroll == null ? saltFor(worldData, overworld, freshRoll)
+            : reroll.room() ? freshSalt(overworld) : keptSalt;
+        // Where the exit stands, by the rule play uses (PortalCarriageBuilder.planStructure) — a
+        // test that always left it opposite the entry never showed a moved exit, and the copy tiler
+        // then laid an extra corridor on the tile the exit should have moved to. Salted with the
+        // room so a reseed re-rolls it, alongside the copies it is chosen from.
+        PortalRoomTiling.Tile exitTile = games.brennan.dungeontrain.portal.PortalExitSites.relocatedExitTile(
+            settings.effectiveExits(),
+            games.brennan.dungeontrain.portal.PortalExitSites.seedFor(
+                overworld.getSeed(), PortalTestSession.PAIR_KEY, roomName, roomSalt),
+            PortalRoomTiling.MAX_RADIUS);
         PortalStructure structure = new PortalStructure(
             originFor(player, overworld, doorHeightOffset), roomName, roomSize, settings,
             // Starts at the base tile and grows from there: PortalTestTicker drives the real
             // PortalRoomTiler around the player, so an endless room repeats here exactly as it does
             // on the train, block variants and all.
             PortalRoomTiling.base(), games.brennan.dungeontrain.portal.PortalExitCopies.NONE,
-            PortalRoomTiling.Tile.BASE, PortalCorridorKind.DEFAULT,
-            reroll == null ? saltFor(worldData, overworld, freshRoll)
-                : reroll.room() ? freshSalt(overworld) : keptSalt);
+            exitTile, PortalCorridorKind.DEFAULT, roomSalt);
         // The frame's roll: re-rolled when asked for, kept when not, and on every other press
         // rolled with the room.
         if (reroll == null || reroll.frame()) {
