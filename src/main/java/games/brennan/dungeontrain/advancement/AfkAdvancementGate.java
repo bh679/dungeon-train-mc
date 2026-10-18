@@ -18,7 +18,10 @@ import java.util.stream.Stream;
  * {@code PlayerAdvancements.award}, the one call every grant goes through — vanilla triggers, Dungeon
  * Train's own triggers and the code-driven awards alike.
  *
- * <p>"AFK" is {@link PlayerActivityTracker#isAfk}: paused, mouse idle or input idle. A refused
+ * <p>"AFK" is {@link PlayerActivityTracker#isAfk}, the same rule that stops time on the train:
+ * paused (unless recently clicking or typing on that screen, within a cap), mouse idle, input idle,
+ * or not getting anywhere (fewer than three carriages in ten minutes, outside dimensional
+ * carriages). A refused
  * criterion is simply not granted — no event, no toast, no relay post. Event-style triggers fired
  * while away are lost; threshold triggers (distance, train time, biomes visited, ...) fire again and
  * grant once the player is back.</p>
@@ -30,10 +33,10 @@ import java.util.stream.Stream;
  *   <li>Advancements with no display — recipe unlocks and technical nodes. They are not on the
  *       advancements screen (the same line {@link AdvancementProfiles}' persist policy draws), and
  *       refusing them would silently lose recipes for items picked up while idle.</li>
- *   <li>{@link #EXEMPT} — one-shot advancements earned from inside a pause screen, or that arrive
- *       on their own whatever the player is doing. Every pause screen counts as AFK, and the
- *       client reports the screen closing a tick after the packet that earns these, so without
- *       the exemption they could never be earned at all.</li>
+ *   <li>{@link #EXEMPT} — one-shot advancements that arrive on their own, whatever the player is
+ *       doing at that moment. Ones earned on a pause screen need no entry: the click that earns
+ *       them marks the player present, and the client reports a screen closing before anything
+ *       sent as it closes.</li>
  * </ul>
  */
 public final class AfkAdvancementGate {
@@ -45,23 +48,10 @@ public final class AfkAdvancementGate {
      * (scans, thresholds) recovers on its own once the player is back, which is the rule working.
      */
     static final Set<ResourceLocation> EXEMPT = Stream.of(
-        // Earned on a pause screen, so always PAUSED when the grant lands.
-        "dungeon_train/changed_engine_volume",   // Sound Check: the volume sliders are all in pause menus
-        "dungeon_train/the_enchiridion",         // sent as the held-book screen closes
-        "dungeon_train/signed_shared_book",      // Sign button on the book-and-quill screen
-        "dungeon_train/submitted_death_note",    // same signing path
-        "dungeon_train/submitted_love_note",
-        "dungeon_train/deathnote_self_target",
-        "dungeon_train/lovenote_self_target",
-        "dungeon_train/burned_leaderboard_book", // sent as the starting book closes; the book burns
-        "dungeon_train/burned_stat_book",
-        "dungeon_train/contained_loop",          // judged at death, incl. Abandon run from the pause menu
-        // Arrive on their own, whenever they arrive.
         "dungeon_train/the_creator_answers",     // the developer's reply lands on the relay's schedule
         "enchiridion/called_it",                 // takeover vote result, usually while watching the stream
-        "enchiridion/part_of_the_community",     // typed while watching a TV: the mouse sits still for the whole line
-        "enchiridion/candid",                  // picking up a photo a PlayerMob tossed you
-        "enchiridion/found_footage"              // photo viewer's close packet beats the Esc key report
+        "enchiridion/part_of_the_community",     // typed while watching a TV: standing still, mouse idle for the whole line
+        "enchiridion/candid"                     // picking up a photo a PlayerMob tossed you
     ).map(path -> ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, path))
         .collect(Collectors.toUnmodifiableSet());
 

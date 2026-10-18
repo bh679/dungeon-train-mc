@@ -2,10 +2,10 @@
   "schemaVersion": 10,
   "mirror": { "x": true, "y": false, "z": true, "v": true },
   "variants": {
-    "2,1,7": { "lockId": 1, "roll": "vary", "scope": "copies", "states": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:zombie"}] },
-    "2,1,1": { "lockId": 1, "roll": "vary", "states": ["minecraft:command_block[conditional=false,facing=south]", {"entity": "minecraft:zombie"}] },
-    "6,1,7": { "lockId": 1, "roll": "vary", "scope": "copies", "states": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:zombie"}] },
-    "6,1,1": { "lockId": 1, "roll": "vary", "states": ["minecraft:command_block[conditional=false,facing=south]", {"entity": "minecraft:zombie"}] },
-    "4,1,4": { "lockId": 1, "roll": "vary", "states": ["minecraft:command_block[conditional=false,facing=north]", {"entity": "minecraft:zombie"}] }
+    "2,1,7": { "lockId": 1, "roll": "vary", "scope": "copies", "states": [{"state": "dungeontrain:variant_placeholder", "weight": 4}, {"entity": "minecraft:zombie"}] },
+    "2,1,1": { "lockId": 1, "roll": "vary", "states": [{"state": "dungeontrain:variant_placeholder", "weight": 4}, {"entity": "minecraft:zombie"}] },
+    "6,1,7": { "lockId": 1, "roll": "vary", "scope": "copies", "states": [{"state": "dungeontrain:variant_placeholder", "weight": 4}, {"entity": "minecraft:zombie"}] },
+    "6,1,1": { "lockId": 1, "roll": "vary", "states": [{"state": "dungeontrain:variant_placeholder", "weight": 4}, {"entity": "minecraft:zombie"}] },
+    "4,1,4": { "lockId": 1, "roll": "vary", "scope": "copies", "states": [{"state": "dungeontrain:variant_placeholder", "weight": 4}, {"entity": "minecraft:zombie"}] }
   }
 }

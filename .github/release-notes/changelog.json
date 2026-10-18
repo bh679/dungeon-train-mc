@@ -27562,6 +27562,85 @@
       "released": true,
       "released_in": "v0.1351.0",
       "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "test-carriage-moved-exit",
+      "version": "0.1352.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Test the Carriage shows moved exits",
+      "summary": "When a dimensional carriage is set to move its exit, Test the Carriage now puts the exit where players will find it, instead of always straight ahead. Reseeding the test can move it again.",
+      "highlights": [
+        "No more extra doorway standing where the moved exit should be",
+        "Several dimensional carriages now scatter extra exits through their rooms, and some hide the way onward"
+      ],
+      "pr": 2112,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fastest-everything-burrito",
+      "version": "0.1353.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "Fastest Everything Burrito leaderboard",
+      "summary": "Earning Everything Burrito now records how much time aboard it took you, and a new Fastest Everything Burrito leaderboard ranks the quickest.",
+      "highlights": [
+        "Your time counts from your very first ride, so the hours you have already played go toward your first one.",
+        "Starting your advancements again starts the clock again, and your best time is the one that ranks.",
+        "Find the new board in the leaderboard books and on the website."
+      ],
+      "pr": 2113,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "afk-rule-progress-and-menus",
+      "version": "0.1354.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Tweaks",
+      "summary": "Minor improvements.",
+      "highlights": [],
+      "pr": 2111,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dh-queue-spin-pause",
+      "version": "0.1354.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Distant Horizons uses less CPU",
+      "summary": "Distant Horizons kept part of your CPU busy for nothing while you played. That was a Distant Horizons issue, not the train, and Dungeon Train now works around it.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2114,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
