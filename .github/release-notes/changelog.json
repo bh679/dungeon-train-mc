@@ -27611,17 +27611,11 @@
       "version": "0.1354.0",
       "type": "feat",
       "tags": [
-        "feature",
-        "advancements",
-        "ui"
+        "feature"
       ],
-      "title": "Keep moving to keep earning",
-      "summary": "Advancements and the automatic pause now follow the same rule as your time on the train. If you have not moved through at least three carriages in ten minutes, the game pauses and advancements wait until you get going again. Time in a dimensional carriage still counts as moving. Clicking or typing in a menu, a book or a photo now counts as being at the keyboard for a while, so advancements earned there are no longer missed.",
-      "highlights": [
-        "Standing still on the train for ten minutes now pauses the game",
-        "Dimensional carriages never trigger this pause",
-        "Menus, books and photos count as being here for a few minutes"
-      ],
+      "title": "Tweaks",
+      "summary": "Minor improvements.",
+      "highlights": [],
       "pr": 2111,
       "date": "2026-10-18",
       "released": false,
