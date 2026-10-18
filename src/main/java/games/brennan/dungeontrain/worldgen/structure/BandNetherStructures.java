@@ -96,6 +96,11 @@ public final class BandNetherStructures {
                 chunkPos.getMinBlockX() - footprintRadius, chunkPos.getMaxBlockX() + footprintRadius)) {
             return null;
         }
+        // A Deeper Dark core is the Otherside, not a Nether: no fortresses, bastions, fossils or ruined portals.
+        if (games.brennan.dungeontrain.worldgen.NetherBand.isOthersideAt(ctx.cycle(), chunkPos.getMinBlockX() - footprintRadius)
+                || games.brennan.dungeontrain.worldgen.NetherBand.isOthersideAt(ctx.cycle(), chunkPos.getMaxBlockX() + footprintRadius)) {
+            return null;
+        }
 
         // The core terrain, bounded by the world's floor rather than the level's — a structure has to site
         // itself against the same range NetherTransitionFeature stamped the core over.

@@ -54,6 +54,18 @@ public final class ClientNetherBand {
         return cycle.netherRamp(worldX);
     }
 
+    /**
+     * True when the Nether band at {@code worldX} is a Deeper Dark pass (its core is the Otherside). Read from
+     * this client's own copy of the cycle, like the rest of the band's atmosphere.
+     */
+    public static boolean isOthersideAt(double worldX) {
+        if (!startsWithTrain || !DungeonTrainCommonConfig.isNetherTransitionEnabled()) return false;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        int x = (int) Math.floor(worldX);
+        return cycle.netherHeightRamp(x) > 0.0
+                && cycle.netherLookAt(x) == games.brennan.dungeontrain.worldgen.CycleLayout.Style.OTHERSIDE;
+    }
+
     /** Nether intensity {@code n} crosses this point: below it the Overworld track plays, above it the Nether track. */
     public static final double MUSIC_CROSSOVER = 0.5;
 

@@ -90,6 +90,40 @@ public final class NetherBand {
     }
 
     /**
+     * True when the Nether band at {@code worldX} is a <b>Deeper Dark</b> pass — its core is Deeper Darker's
+     * Otherside, not a Nether ({@code nether:otherside}) — on a server that has the Otherside. False everywhere
+     * else, including a Deeper Dark pass that fell back to a vanilla Nether core. Nether-only behaviour
+     * (ghasts, evaporating water, Nether portals, the Nether's fog and music) checks this and stands aside.
+     */
+    public static boolean isOthersideAt(ServerLevel overworld, int worldX) {
+        return isOthersideAt(overworld, worldX, MixBand.NO_Z);
+    }
+
+    /** {@link #isOthersideAt(ServerLevel, int)} for the chunk holding {@code (worldX, worldZ)} — its mix-zone pick included. */
+    public static boolean isOthersideAt(ServerLevel overworld, int worldX, int worldZ) {
+        if (startX(overworld) == OFF) return false;
+        return isOthersideAt(MixBand.cycleAtColumn(overworld, worldX, worldZ), worldX);
+    }
+
+    /** {@link #isOthersideAt(ServerLevel, int)} against a pre-resolved cycle (caller has checked {@link #startX}). */
+    public static boolean isOthersideAt(WorldGenCycle cycle, int worldX) {
+        games.brennan.dungeontrain.worldgen.density.NetherBandContext ctx =
+                games.brennan.dungeontrain.worldgen.density.NetherBandContext.current();
+        if (ctx == null || ctx.netherCoreBiomes() == null) return false;
+        // netherLookAt answers "the last pass started" between bands too; only a column in the band counts.
+        if (cycle.netherHeightRamp(worldX) <= 0.0) return false;
+        return ctx.netherCoreBiomes().isOtherside(cycle.netherLookAt(worldX));
+    }
+
+    /**
+     * {@link #isInNetherBiome(ServerLevel, int)} for the <b>real</b> Nether only — a Deeper Dark core reads as
+     * no Nether at all. For what belongs to the Nether itself (its advancements, photos, return books).
+     */
+    public static boolean isInRealNetherBiome(ServerLevel overworld, int worldX) {
+        return isInNetherBiome(overworld, worldX) && !isOthersideAt(overworld, worldX);
+    }
+
+    /**
      * Nether intensity at/above which the band reads as the Nether core (netherrack + real
      * Nether). Mirrors {@code NetherMobSpawner.SPAWN_INTENSITY_THRESHOLD} so "where Nether mobs
      * belong" is one shared notion.

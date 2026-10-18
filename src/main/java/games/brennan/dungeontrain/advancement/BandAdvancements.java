@@ -370,7 +370,7 @@ public final class BandAdvancements {
 
     private static List<Trigger> buildTriggers() {
         List<Trigger> t = new ArrayList<>();
-        t.add(entry(NETHER, NetherBand::isInNetherBiome));
+        t.add(entry(NETHER, NetherBand::isInRealNetherBiome));   // the Deeper Dark is not the Nether
         t.add(entry(VOID, (l, x) -> DisintegrationBand.zoneAt(l, x) == Disintegration.Zone.VOID));
         t.add(entry(END_ISLANDS, BandAdvancements::isInEndIslands));
         t.add(entry(UPSIDE_DOWN, UpsideDownBand::isInBand));

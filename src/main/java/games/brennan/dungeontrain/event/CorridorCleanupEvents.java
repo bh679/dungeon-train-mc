@@ -509,7 +509,13 @@ public final class CorridorCleanupEvents {
         if (state.is(BlockTags.BASE_STONE_NETHER)) return true;        // netherrack, basalt, blackstone
         if (state.is(BlockTags.NYLIUM)) return true;                   // crimson/warped nylium
         if (state.is(BlockTags.WART_BLOCKS)) return true;              // nether/warped wart blocks
-        return false;
+        // The Deeper Dark core's Otherside decoration (sculk-stone columns, echo trees, gleam, vines) and the
+        // sculk it spreads. Its sculk grime is a fluid and stays, like every fluid here.
+        if (!state.getFluidState().isEmpty()) return false;
+        if (state.is(Blocks.SCULK) || state.is(Blocks.SCULK_VEIN) || state.is(Blocks.SCULK_CATALYST)
+                || state.is(Blocks.SCULK_SENSOR) || state.is(Blocks.SCULK_SHRIEKER)) return true;
+        return net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()).getNamespace()
+                .equals(games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE);
     }
 
     /**

@@ -66,7 +66,11 @@ public final class NetherPortalJump {
 
     /** The core a portal at {@code fromX} leads to, per the class rules; empty when there is none. */
     static Optional<Segment> destinationCore(WorldGenCycle cycle, IntFunction<String> label, int fromX, long bound) {
-        if (NetherBand.isInNetherBand(cycle, fromX)) return previousBandCore(cycle, label, fromX, bound);
+        // A Deeper Dark pass is no Nether: a portal lit there leads back to the previous real Nether, like
+        // one lit in the overworld.
+        if (NetherBand.isInNetherBand(cycle, fromX) && cycle.netherLookAt(fromX) != CycleLayout.Style.OTHERSIDE) {
+            return previousBandCore(cycle, label, fromX, bound);
+        }
 
         Optional<Segment> first = netherCore(cycle, 0);
         if (first.isEmpty()) return Optional.empty();
@@ -98,6 +102,7 @@ public final class NetherPortalJump {
      * inside its slot. Empty when the pass does not exist, lies beyond int world-X, or has no core.
      */
     static Optional<Segment> netherCore(WorldGenCycle cycle, int pass) {
+        if (cycle.netherStyleOfPass(pass) == CycleLayout.Style.OTHERSIDE) return Optional.empty();   // the Deeper Dark
         long[] range = cycle.netherPassRange(pass);
         if (range == null || range[0] > Integer.MAX_VALUE) return Optional.empty();
         long end = Math.min(range[1], Integer.MAX_VALUE);

@@ -43,6 +43,8 @@ record DtpTarget(String token, String displayName, ColumnTest test) {
         for (TrainPhase phase : TrainPhase.values()) out.add(ofPhase(phase.token(), phase));
         out.add(new DtpTarget("better_nether", "Better Nether", (l, x) -> NetherBand.isInNetherBand(l, x)
                 && WorldGenCycle.fromConfig().isBetterNetherAt(x)));
+        out.add(new DtpTarget("deeper_dark", "Deeper Dark", (l, x) -> NetherBand.isInNetherBand(l, x)
+                && WorldGenCycle.fromConfig().netherLookAt(x) == games.brennan.dungeontrain.worldgen.CycleLayout.Style.OTHERSIDE));
         out.add(new DtpTarget("better_end", "Better End", (l, x) -> TrainPhase.phaseAt(l, x) == TrainPhase.END
                 && WorldGenCycle.fromConfig().isBetterEndAt(x)));
         out.add(new DtpTarget("bop_nether", "Biomes O' Plenty Nether", (l, x) -> NetherBand.isInNetherBand(l, x)
