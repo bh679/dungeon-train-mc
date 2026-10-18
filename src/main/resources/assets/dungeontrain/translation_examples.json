@@ -16793,5 +16793,87 @@
         "Nether Depths"
       ]
     }
+  },
+  "chat.dungeontrain.editor_bar.variant_check.header": {
+    "1": {
+      "label": "the template's id",
+      "examples": [
+        "creekingroom",
+        "forrest"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_check.missing_group": {
+    "1": {
+      "label": "a variant cell's position in the template",
+      "examples": [
+        "6,1,4",
+        "0,3,0"
+      ]
+    },
+    "2": {
+      "label": "the lock group it checks",
+      "examples": [
+        "3",
+        "5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_check.detached": {
+    "1": {
+      "label": "a variant cell's position in the template",
+      "examples": [
+        "6,1,4",
+        "0,3,0"
+      ]
+    },
+    "2": {
+      "label": "the lock group it checks",
+      "examples": [
+        "3",
+        "5"
+      ]
+    },
+    "3": {
+      "label": "the lock group it touches",
+      "examples": [
+        "3",
+        "5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_check.ungated": {
+    "1": {
+      "label": "a variant cell's position in the template",
+      "examples": [
+        "6,1,4",
+        "0,3,0"
+      ]
+    },
+    "2": {
+      "label": "the lock group whose column it sits in",
+      "examples": [
+        "3",
+        "5"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_check.loop": {
+    "1": {
+      "label": "the looping cells, in order",
+      "examples": [
+        "6,1,4 > 6,3,4",
+        "0,1,0 > 0,3,0 > 0,1,0"
+      ]
+    }
+  },
+  "chat.dungeontrain.editor_bar.variant_check.more": {
+    "1": {
+      "label": "how many more problems were found",
+      "examples": [
+        "2",
+        "11"
+      ]
+    }
   }
 }

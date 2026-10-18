@@ -1085,6 +1085,8 @@ public final class BlockVariantMenuController {
         int current = plot.lockIdAt(localPos);
         int next = current > 0 ? 0 : plot.nextFreeLockId();
         plot.setLockId(localPos, next);
+        // Conditional cells beside it follow the group they now touch (a re-locked column keeps them).
+        VariantConditionRetarget.around(plot, localPos);
         try {
             plot.save();
         } catch (IOException e) {
