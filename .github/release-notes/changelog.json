@@ -27467,9 +27467,9 @@
       ],
       "pr": 2107,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
     },
     {
       "id": "book-pause-save-throttle",
@@ -27486,9 +27486,9 @@
       ],
       "pr": 2106,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
     },
     {
       "id": "variant-if-kind-mode",
@@ -27507,9 +27507,9 @@
       ],
       "pr": 2108,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
     },
     {
       "id": "live-eye-backpack-check",
@@ -27524,9 +27524,9 @@
       "highlights": [],
       "pr": 2105,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
     },
     {
       "id": "contents-reroll-carriage-remembered",
@@ -27541,9 +27541,9 @@
       "highlights": [],
       "pr": 2109,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
     },
     {
       "id": "advancement-reinsert-revealed",
@@ -27559,9 +27559,9 @@
       "highlights": [],
       "pr": 2110,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
     }
   ]
 }
