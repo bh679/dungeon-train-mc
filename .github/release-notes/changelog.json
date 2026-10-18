@@ -27358,9 +27358,9 @@
       ],
       "pr": 2096,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
     },
     {
       "id": "advancement-hidden-gap-dots",
@@ -27376,9 +27376,9 @@
       "highlights": [],
       "pr": 2097,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
     },
     {
       "id": "afk-rule-menu-advancements",
@@ -27393,13 +27393,33 @@
       "highlights": [],
       "pr": 2098,
       "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
+    },
+    {
+      "id": "payment-confirm-screen",
+      "version": "0.1345.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Clearer confirm before a donation link opens",
+      "summary": "Pressing a support button now asks a plain question, naming where your browser is going and the amount, instead of showing a long web address. Open, or cancel and stay on the page. A small link icon in the corner copies the address if you need it.",
+      "highlights": [
+        "Support page, death-screen Contribute window and the title-screen Patreon icon all use it",
+        "Discord and other non-payment links are unchanged"
+      ],
+      "pr": 2100,
+      "date": "2026-10-18",
       "released": false,
       "released_in": null,
       "released_at": null
     },
     {
       "id": "live-eyes-gifted-leaderboard",
-      "version": "0.1345.0",
+      "version": "0.1346.0",
       "type": "feat",
       "tags": [
         "feature",
