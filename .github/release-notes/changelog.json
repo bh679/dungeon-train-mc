@@ -27510,6 +27510,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-eye-backpack-check",
+      "version": "0.1349.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Live Eye fix",
+      "summary": "Fixed an issue with Live Eyes.",
+      "highlights": [],
+      "pr": 2105,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

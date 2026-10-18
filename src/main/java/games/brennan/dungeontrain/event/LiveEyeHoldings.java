@@ -7,6 +7,8 @@ import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.component.ItemContainerContents;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +16,7 @@ import java.util.function.Supplier;
 
 /**
  * Real Live Eyes a player holds, looking inside carried containers too: a Live Eye packed in a
- * shulker box (or a bundle) in the inventory or ender chest still counts. {@link #cap} walks the same
+ * shulker box (or a bundle) in the inventory, ender chest or Edible Backpack still counts. {@link #cap} walks the same
  * places and turns every Live Eye past the allowance into a TV, wherever it sits.
  */
 public final class LiveEyeHoldings {
@@ -41,6 +43,13 @@ public final class LiveEyeHoldings {
         return n;
     }
 
+    /** Real Live Eyes in every slot of {@code handler} (the Edible Backpack), locked slots included. */
+    public static int count(IItemHandler handler) {
+        int n = 0;
+        for (int i = 0; i < handler.getSlots(); i++) n += count(handler.getStackInSlot(i));
+        return n;
+    }
+
     private static int count(ItemStack stack, int depth) {
         if (stack.isEmpty() || depth > MAX_DEPTH) return 0;
         int n = isRealEye(stack) ? 1 : 0;
@@ -61,6 +70,15 @@ public final class LiveEyeHoldings {
         int[] converted = {0};
         ItemStack capped = cap(stack, allowance, tv, converted, 0);
         if (capped != stack) container.setItem(slot, capped);
+        return converted[0];
+    }
+
+    /** As {@link #cap(Container, int, int[], Supplier)}, for slot {@code slot} of {@code handler}. */
+    public static int cap(IItemHandlerModifiable handler, int slot, int[] allowance, Supplier<ItemStack> tv) {
+        ItemStack stack = handler.getStackInSlot(slot);
+        int[] converted = {0};
+        ItemStack capped = cap(stack, allowance, tv, converted, 0);
+        if (capped != stack) handler.setStackInSlot(slot, capped);
         return converted[0];
     }
 
