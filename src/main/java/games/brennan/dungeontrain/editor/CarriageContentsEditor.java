@@ -677,6 +677,9 @@ public final class CarriageContentsEditor {
             interiorSnapshotSize.getX(), interiorSnapshotSize.getY(), interiorSnapshotSize.getZ()
         );
 
+        CarriageContentsVariantBlocks variants = CarriageContentsVariantBlocks.loadFor(contents, interiorSnapshotSize);
+        VariantConditionWarnings.afterSave(player, contents.id(), variants.entries(), variants::lockIdAt);
+
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "saved_contents_variant");
         // …and, when they have opted in, to the player's relay profile. Hooked here rather than at
@@ -961,6 +964,8 @@ public final class CarriageContentsEditor {
             CarriageContentsStore.delete(currentCustom);
             CarriageContentsVariantBlocks.invalidate(oldId);
             TemplateSizeStore.CONTENTS.forget(oldId);
+            ContentsShellOverrides.copy(oldId, renamed.id());
+            ContentsShellOverrides.forget(oldId);
             LOGGER.info("[DungeonTrain] Contents editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
                 player.getName().getString(), oldId, renamed.id());
         } else if (current instanceof CarriageContents.Builtin builtin) {
@@ -972,6 +977,7 @@ public final class CarriageContentsEditor {
             CarriageContentsVariantBlocks.rename(oldId, renamed.id());
             CarriageContentsStore.delete(builtin);
             CarriageContentsVariantBlocks.invalidate(oldId);
+            ContentsShellOverrides.copy(oldId, renamed.id());
             LOGGER.info("[DungeonTrain] Contents editor saveAs (builtin→custom): {} saved edits of '{}' as new custom '{}', built-in reverts to fallback",
                 player.getName().getString(), oldId, renamed.id());
         } else {

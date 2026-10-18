@@ -39,8 +39,13 @@ public final class FirstEverAdvancements {
         return DungeonTrain.MOD_ID.equals(id.getNamespace()) && !id.getPath().startsWith("editor/");
     }
 
-    /** Server thread, from a genuine (non-replay) earn. Cheap when the earn cannot be a first. */
-    public static void onEarn(ServerPlayer player, AdvancementHolder advancement) {
+    /**
+     * Server thread, from a genuine (non-replay) earn. Cheap when the earn cannot be a first.
+     *
+     * @param burrito the Everything Burrito's recorded play time when this earn is the burrito, else null —
+     *                sent on the claim for the relay's fastest-burrito board
+     */
+    public static void onEarn(ServerPlayer player, AdvancementHolder advancement, BurritoClock.Completion burrito) {
         ResourceLocation id = advancement.id();
         if (!eligible(id)) return;
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;   // the relay is what knows; no relay, no firsts
@@ -51,7 +56,7 @@ public final class FirstEverAdvancements {
         // The real vanilla difficulty, isolation on or off: the relay's per-difficulty stats ride
         // on this claim, and a Hard earn is a Hard earn whether or not the profiles are split.
         String difficulty = DifficultyPartition.keyFor(player.level());
-        AdvancementFirstClient.claim(player.getUUID(), name, id.toString(), difficulty, answer -> {
+        AdvancementFirstClient.claim(player.getUUID(), name, id.toString(), difficulty, burrito, answer -> {
             if (!answer.first()) return;
             server.execute(() -> celebrate(server, player, advancement));
         });

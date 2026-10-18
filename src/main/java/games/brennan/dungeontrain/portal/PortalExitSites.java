@@ -81,6 +81,19 @@ public final class PortalExitSites {
     }
 
     /**
+     * {@link #seedFor(long, int, String)} with a structure's {@link PortalStructure#seedSalt} folded
+     * in — Test the Carriage's reseed, which has to re-roll where the exit moves to and the copies
+     * together, because the moved exit is chosen from the copies' own sites.
+     *
+     * <p>{@link PortalStructure#NO_SALT} returns the unsalted seed exactly. Every pair in play
+     * carries it, so a live world's exits and copies stand where they always have.</p>
+     */
+    public static long seedFor(long worldSeed, int pairKey, String roomName, int salt) {
+        long seed = seedFor(worldSeed, pairKey, roomName);
+        return salt == PortalStructure.NO_SALT ? seed : mix(seed ^ salt * PRIME_X);
+    }
+
+    /**
      * The corridors {@code tile} owes, or an empty list when it owes none.
      *
      * <p>Never the base tile: that is where the pair's own two corridors already stand, and a copy

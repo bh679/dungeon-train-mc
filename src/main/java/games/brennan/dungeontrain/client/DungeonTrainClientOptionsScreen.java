@@ -790,6 +790,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case BOOK_AUTHOR_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isBookAuthorBurnChatEnabled(),
                     ClientDisplayConfig::setBookAuthorBurnChat), key + ".tip");
 
+            // Your own hits pass your pets by.
+            case PROTECT_OWN_PETS -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isProtectOwnPetsEnabled(),
+                    ClientDisplayConfig::setProtectOwnPets), key + ".tip");
+
             // "Dungeon Train X is out" when a real release lands mid-session.
             case UPDATE_NOTICE_CHAT -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isUpdateNoticeChatEnabled(),
                     ClientDisplayConfig::setUpdateNoticeChat), key + ".tip");

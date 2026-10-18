@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "146";
+    public static final String PROTOCOL_VERSION = "150";
 
     private DungeonTrainNet() {}
 
@@ -363,6 +363,8 @@ public final class DungeonTrainNet {
         registrar.playToServer(ReadingLanguagesSyncPacket.TYPE, ReadingLanguagesSyncPacket.STREAM_CODEC, ReadingLanguagesSyncPacket::handle);
         registrar.playToServer(BookLanguagePacket.TYPE, BookLanguagePacket.STREAM_CODEC, BookLanguagePacket::handle);
         registrar.playToServer(BookAuthorChatSyncPacket.TYPE, BookAuthorChatSyncPacket.STREAM_CODEC, BookAuthorChatSyncPacket::handle);
+        // Whether the player's own pets are safe from them (PetProtectionMirror; OwnPetProtectionEvents).
+        registrar.playToServer(PetProtectionSyncPacket.TYPE, PetProtectionSyncPacket.STREAM_CODEC, PetProtectionSyncPacket::handle);
 
         // Community shared-book read history: client → server login sync (+ per-read top-ups) of the
         // player's GLOBAL client-side read set, the fallback source for the loot selector's unread-first
@@ -406,6 +408,9 @@ public final class DungeonTrainNet {
         registrar.playToServer(TvHeldTogglePacket.TYPE, TvHeldTogglePacket.STREAM_CODEC, TvHeldTogglePacket::handle);
         // /dt flyspeed: the local player's creative sprint-fly multiplier. See player/SprintFlyBoost.
         registrar.playToClient(SprintFlyBoostPacket.TYPE, SprintFlyBoostPacket.STREAM_CODEC, SprintFlyBoostPacket::handle);
+        // How many hidden advancements sit between two linked ones, for the "…" on the advancements
+        // screen. Sent just before the vanilla advancements packet it describes. See advancement/HiddenGap.
+        registrar.playToClient(AdvancementGapsPacket.TYPE, AdvancementGapsPacket.STREAM_CODEC, AdvancementGapsPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */

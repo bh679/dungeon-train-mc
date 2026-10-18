@@ -112,6 +112,7 @@ public final class EditorHelpPanelInputHandler {
         if (EditorHelpPanelRenderer.firstNavMenu() == null) return false;
         if (CommandMenuState.isOpen()) return false;
         if (PartPositionMenu.claimsPointer()) return false;
+        if (games.brennan.dungeontrain.client.menu.creakingheart.CreakingHeartPanel.claimsPointer()) return false;
         return true;
     }
 

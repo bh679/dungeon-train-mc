@@ -27337,6 +27337,436 @@
       "released": true,
       "released_in": "v0.1342.0",
       "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "resume-freeze-surplus-carriages",
+      "version": "0.1343.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "train"
+      ],
+      "title": "No more freeze after unpausing",
+      "summary": "Coming back from the pause menu could freeze the game for many seconds, especially after you had walked a long way back along the train. That freeze is gone, and the extra carriages that pile up while the train catches up to you are now let go much sooner, so the game stays smooth.",
+      "highlights": [
+        "Unpausing no longer freezes the game.",
+        "Less lag after walking back along the train or catching up to it."
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2096,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
+    },
+    {
+      "id": "advancement-hidden-gap-dots",
+      "version": "0.1343.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Dots mark hidden advancements",
+      "summary": "On the advancements screen, three dots now mark a link that skips two or more advancements you haven't uncovered yet, so you can see there is more to find there.",
+      "highlights": [],
+      "pr": 2097,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
+    },
+    {
+      "id": "afk-rule-menu-advancements",
+      "version": "0.1344.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Some advancements can be earned again",
+      "summary": "A few advancements earned from a menu, or that arrive while you are not moving, could not be earned after the recent change to how idle time counts. They can be earned again.",
+      "highlights": [],
+      "pr": 2098,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
+    },
+    {
+      "id": "payment-confirm-screen",
+      "version": "0.1345.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Clearer confirm before a donation link opens",
+      "summary": "Pressing a support button now asks a plain question, naming where your browser is going and the amount, instead of showing a long web address. Open, or cancel and stay on the page. A small link icon in the corner copies the address if you need it.",
+      "highlights": [
+        "Support page, death-screen Contribute window and the title-screen Patreon icon all use it",
+        "Discord and other non-payment links are unchanged"
+      ],
+      "pr": 2100,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
+    },
+    {
+      "id": "distance-totals-reliability",
+      "version": "0.1345.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Fairer distance totals",
+      "summary": "Distance totals and the distance leaderboards are more reliable.",
+      "highlights": [],
+      "pr": 2101,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
+    },
+    {
+      "id": "live-eyes-gifted-leaderboard",
+      "version": "0.1345.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Most Live Eyes Gifted leaderboard",
+      "summary": "A new leaderboard ranks the players who have given away the most Live Eyes. A gift counts once the person you gave it to goes live with it.",
+      "highlights": [],
+      "pr": 2102,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
+    },
+    {
+      "id": "park-train-in-dimensional-carriage",
+      "version": "0.1348.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Smoother performance",
+      "summary": "The game now runs lighter while you are off exploring.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2107,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "book-pause-save-throttle",
+      "version": "0.1349.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Smoother book reading",
+      "summary": "Reading books in singleplayer is now smoother.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2106,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "variant-if-kind-mode",
+      "version": "0.1349.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Solid, Empty or Any block conditions in the editor",
+      "summary": "Block variants can now check what kind of block sits next to them, not just which exact block. Pick Kind in a variant's If popup and tick Solid, Empty or Any block, so a slab can appear only on solid ground without listing every block it might sit on.",
+      "highlights": [
+        "New Kind option in the If popup, beside Touch and Group",
+        "Solid, Empty and Any block can be ticked together"
+      ],
+      "pr": 2108,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "live-eye-backpack-check",
+      "version": "0.1349.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Live Eye fix",
+      "summary": "Fixed an issue with Live Eyes.",
+      "highlights": [],
+      "pr": 2105,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "contents-reroll-carriage-remembered",
+      "version": "0.1351.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Rerolled carriages are remembered in the editor",
+      "summary": "When you reroll the carriage a contents template stands in, the editor now keeps that choice. Next time you open the editor, the template is still in the carriage you picked.",
+      "highlights": [],
+      "pr": 2109,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "advancement-reinsert-revealed",
+      "version": "0.1351.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Revealed advancements slot into their chain",
+      "summary": "When an advancement you skipped past is uncovered, it now sits in its place in the chain on the advancements screen instead of hanging off to one side.",
+      "highlights": [],
+      "pr": 2110,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "test-carriage-moved-exit",
+      "version": "0.1352.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Test the Carriage shows moved exits",
+      "summary": "When a dimensional carriage is set to move its exit, Test the Carriage now puts the exit where players will find it, instead of always straight ahead. Reseeding the test can move it again.",
+      "highlights": [
+        "No more extra doorway standing where the moved exit should be",
+        "Several dimensional carriages now scatter extra exits through their rooms, and some hide the way onward"
+      ],
+      "pr": 2112,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
+    },
+    {
+      "id": "fastest-everything-burrito",
+      "version": "0.1353.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "Fastest Everything Burrito leaderboard",
+      "summary": "Earning Everything Burrito now records how much time aboard it took you, and a new Fastest Everything Burrito leaderboard ranks the quickest.",
+      "highlights": [
+        "Your time counts from your very first ride, so the hours you have already played go toward your first one.",
+        "Starting your advancements again starts the clock again, and your best time is the one that ranks.",
+        "Find the new board in the leaderboard books and on the website."
+      ],
+      "pr": 2113,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
+    },
+    {
+      "id": "afk-rule-progress-and-menus",
+      "version": "0.1354.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Tweaks",
+      "summary": "Minor improvements.",
+      "highlights": [],
+      "pr": 2111,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
+    },
+    {
+      "id": "dh-queue-spin-pause",
+      "version": "0.1354.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Distant Horizons uses less CPU",
+      "summary": "Distant Horizons kept part of your CPU busy for nothing while you played. That was a Distant Horizons issue, not the train, and Dungeon Train now works around it.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2114,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
+    },
+    {
+      "id": "tall-plant-cells-bottom-only",
+      "version": "0.1355.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "No more floating grass in carriages",
+      "summary": "Grass and flowers that share a spot with tall grass now always grow from the floor, instead of sometimes appearing in the air above it.",
+      "highlights": [],
+      "pr": 2116,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
+    },
+    {
+      "id": "protect-own-pets",
+      "version": "0.1356.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "mobs"
+      ],
+      "title": "Your pets are safe from you",
+      "summary": "Your own punches, sweeps and arrows no longer hurt your tamed animals, so a fight beside your dog won't cost you your dog. TNT you light still counts. Other players and mobs can still hurt them. Turn it off in Options, General, Protect My Pets.",
+      "highlights": [],
+      "pr": 2115,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
+    },
+    {
+      "id": "live-eye-tv-chat-hidden-advancement-2117",
+      "version": "0.1355.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "One more hidden advancement",
+      "summary": "A new hidden advancement is waiting in the Dark Room tab for the people watching a Live Eye stream.",
+      "highlights": [],
+      "pr": 2117,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
+    },
+    {
+      "id": "pale-carriages",
+      "version": "0.1357.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "mobs"
+      ],
+      "title": "Something stirs in the pale carriages",
+      "summary": "Pale trees have taken root in a few carriages, and their hearts keep watch on the move. Whatever they wake stays in the carriage with you.",
+      "highlights": [
+        "New pale carriages among the train's enemies",
+        "Creaking hearts now work on the train",
+        "Builders can set when and how often a heart wakes"
+      ],
+      "pr": 2118,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
+    },
+    {
+      "id": "dh-hidden-strange-stretch",
+      "version": "0.1358.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Distant Horizons fits in better",
+      "summary": "Distant Horizons steps aside in a few more places where its view didn't fit.",
+      "highlights": [],
+      "pr": 2119,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "crates2-trees-tnt-cargo",
+      "version": "0.1359.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "New cargo: crates, trees and a TNT boxcar",
+      "summary": "More cargo can turn up in the carriages: a second crate stack, a load of trees and a boxcar packed with TNT. The bigger crate stacks hide pots and a chest worth searching, and they come with guards.",
+      "highlights": [],
+      "pr": 2121,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-if-popup-late-icons",
+      "version": "0.1359.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor: If conditions stick on long block lists",
+      "summary": "In the Block Variants menu, choosing a block from the 11th icon onward in an If condition no longer wipes the condition. You can now pick any block a group can roll, including nothing.",
+      "highlights": [],
+      "pr": 2121,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

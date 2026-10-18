@@ -5,7 +5,11 @@
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
-    "vanillabackport.CreakingHeartAlwaysNightMixin"
+    "vanillabackport.CreakingHeartBlockEntityInvoker",
+    "vanillabackport.CreakingHeartBlockEntityMixin",
+    "vanillabackport.CreakingHeartBlockMixin",
+    "vanillabackport.CreakingHeartSettingsMixin",
+    "vanillabackport.CreakingHomeNodeEvaluatorMixin"
   ],
   "client": [],
   "server": [],

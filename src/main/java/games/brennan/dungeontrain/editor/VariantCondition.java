@@ -20,16 +20,20 @@ import java.util.Locale;
  * ({@link #groupId} &gt; 0), which passes when that group rolled a listed block. The <b>values</b>
  * are block ids, OR'd together, and match on block type alone: a rolled rotation, half or open flag
  * can never fail the condition. {@code minecraft:air} stands for "empty" and also matches the
- * variant placeholder.</p>
+ * variant placeholder. Three more values stand for a kind of block rather than one block —
+ * {@link #SOLID_ID} (any {@link BlockState#isSolid solid} block), {@link #EMPTY_ID} (air or the
+ * placeholder) and {@link #ANY_ID} (anything not empty). A touching condition holding any of them is
+ * in <b>Kind</b> mode ({@link #isKindMode}), the If popup's Solid / Empty / Any block checkboxes.</p>
  *
  * <p>A condition with no values is no condition ({@link #isDefault}); the target is kept anyway so
  * an author can pick it before adding the first value. A failed condition drops its entry from the
  * roll — see {@link VariantConditions#eligible}.</p>
  *
- * <p>Sidecar token: {@code "down+north=minecraft:oak_planks,minecraft:stone"} or {@code "group3=…"}.
- * Omitted from JSON when default.</p>
+ * <p>Sidecar token: {@code "down+north=minecraft:oak_planks,minecraft:stone"} (any listed side),
+ * {@code "down&up=…"} (every listed side — {@link #all}) or {@code "group3=…"}. Omitted from JSON
+ * when default.</p>
  */
-public record VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks) {
+public record VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks, boolean all) {
 
     /** Most-asked-for target ("only on top of …"), and where a fresh condition starts. */
     public static final Direction DEFAULT_DIRECTION = Direction.DOWN;
@@ -39,6 +43,14 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
     public static final int MAX_VALUES = 12;
 
     private static final ResourceLocation AIR_ID = ResourceLocation.withDefaultNamespace("air");
+    /** Kind value: the target is empty (air or the variant placeholder). */
+    public static final ResourceLocation EMPTY_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "empty");
+    /** Kind value: the target is a solid block. */
+    public static final ResourceLocation SOLID_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "solid");
+    /** Kind value: the target is any block at all, liquids included — anything but empty. */
+    public static final ResourceLocation ANY_ID = ResourceLocation.fromNamespaceAndPath("dungeontrain", "any_block");
+    /** The kind values in checkbox order: Solid, Empty, Any block. */
+    public static final List<ResourceLocation> KINDS = List.of(SOLID_ID, EMPTY_ID, ANY_ID);
     private static final String GROUP_PREFIX = "group";
 
     public VariantCondition {
@@ -47,6 +59,18 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (groupId > 0) sideMask = 0;
         else if (sideMask == 0) sideMask = ALL_SIDES;
         blocks = blocks == null ? List.of() : List.copyOf(blocks);
+        // "Every side" only means something with two or more sides to look at.
+        if (groupId > 0 || Integer.bitCount(sideMask) < 2) all = false;
+    }
+
+    /** A condition that holds on <i>any</i> listed side. */
+    public VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks) {
+        this(sideMask, groupId, blocks, false);
+    }
+
+    /** Copy matching on every listed side ({@code true}) or any one of them. */
+    public VariantCondition withAll(boolean every) {
+        return new VariantCondition(sideMask, groupId, blocks, every);
     }
 
     public static int bit(Direction d) {
@@ -74,7 +98,45 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
 
     /** True when {@code state} — the block that ends up at a target — is one of the values. */
     public boolean matches(@Nullable BlockState state) {
-        return blocks.contains(idOf(state));
+        ResourceLocation id = idOf(state);
+        if (blocks.contains(id)) return true;
+        boolean empty = id.equals(AIR_ID);
+        if (empty) return blocks.contains(EMPTY_ID);
+        if (blocks.contains(ANY_ID)) return true;
+        return blocks.contains(SOLID_ID) && state.isSolid();
+    }
+
+    /** True for a touching condition that holds a kind value — the If popup's Kind mode. */
+    public boolean isKindMode() {
+        if (isGroupTarget()) return false;
+        for (ResourceLocation id : blocks) if (isKind(id)) return true;
+        return false;
+    }
+
+    /** Kind mode on the same sides: the kind values kept, specific blocks dropped; Solid if none. */
+    public VariantCondition toKindMode() {
+        List<ResourceLocation> kinds = new ArrayList<>(KINDS.size());
+        for (ResourceLocation id : blocks) if (isKind(id)) kinds.add(id);
+        if (kinds.isEmpty()) kinds.add(SOLID_ID);
+        return new VariantCondition(isGroupTarget() ? bit(DEFAULT_DIRECTION) : sideMask, 0, kinds, all);
+    }
+
+    /** Copy without the kind values — leaving Kind mode for Touching or Group. */
+    public VariantCondition withoutKinds() {
+        List<ResourceLocation> kept = blockValues();
+        return kept.size() == blocks.size() ? this : new VariantCondition(sideMask, groupId, kept, all);
+    }
+
+    /** True for a kind value — {@link #SOLID_ID}, {@link #EMPTY_ID} or {@link #ANY_ID}. */
+    public static boolean isKind(ResourceLocation id) {
+        return KINDS.contains(id);
+    }
+
+    /** The values that name one block, in order: {@link #blocks} without the kind values. */
+    public List<ResourceLocation> blockValues() {
+        List<ResourceLocation> out = new ArrayList<>(blocks.size());
+        for (ResourceLocation id : blocks) if (!isKind(id)) out.add(id);
+        return out;
     }
 
     /** Block id used for matching; the variant placeholder and {@code null} both count as air. */
@@ -95,7 +157,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
 
     /** Touching mode with {@code mask} selected (empty ⇒ every side). */
     public VariantCondition withSides(int mask) {
-        return new VariantCondition(mask, 0, blocks);
+        return new VariantCondition(mask, 0, blocks, all);
     }
 
     /** Flip one side — the band picker's plain click. From group mode this starts at that side. */
@@ -121,7 +183,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (id == null || blocks.contains(id) || blocks.size() >= MAX_VALUES) return this;
         List<ResourceLocation> out = new ArrayList<>(blocks);
         out.add(id);
-        return new VariantCondition(sideMask, groupId, out);
+        return new VariantCondition(sideMask, groupId, out, all);
     }
 
     /** Copy without the value at {@code index}; unchanged when out of range. */
@@ -129,7 +191,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (index < 0 || index >= blocks.size()) return this;
         List<ResourceLocation> out = new ArrayList<>(blocks);
         out.remove(index);
-        return new VariantCondition(sideMask, groupId, out);
+        return new VariantCondition(sideMask, groupId, out, all);
     }
 
     /** Copy with {@code id} removed if present, added otherwise. */
@@ -143,7 +205,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (isDefault() || isGroupTarget() || rotation == Rotation.NONE) return this;
         int out = 0;
         for (Direction d : sides()) out |= bit(rotation.rotate(d));
-        return new VariantCondition(out, 0, blocks);
+        return new VariantCondition(out, 0, blocks, all);
     }
 
     /** Reflect the touching sides across the flipped axes. Group targets have no geometry. */
@@ -158,7 +220,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
             };
             out |= bit(flip ? d.getOpposite() : d);
         }
-        return out == sideMask ? this : new VariantCondition(out, 0, blocks);
+        return out == sideMask ? this : new VariantCondition(out, 0, blocks, all);
     }
 
     /** Short target label for the editor: side letters ({@code ND}, {@code *} for all) or {@code G3}. */
@@ -166,7 +228,10 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (isGroupTarget()) return "G" + groupId;
         if (sideMask == ALL_SIDES) return "*";
         StringBuilder sb = new StringBuilder();
-        for (Direction d : sides()) sb.append(letter(d));
+        for (Direction d : sides()) {
+            if (all && sb.length() > 0) sb.append('&');
+            sb.append(letter(d));
+        }
         return sb.toString();
     }
 
@@ -182,12 +247,12 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         };
     }
 
-    /** The target half of the token: side names joined by {@code +}, or {@code group<N>}. */
+    /** The target half of the token: side names joined by {@code +} (any) or {@code &} (all), or {@code group<N>}. */
     public String targetToken() {
         if (isGroupTarget()) return GROUP_PREFIX + groupId;
         StringBuilder sb = new StringBuilder();
         for (Direction d : sides()) {
-            if (sb.length() > 0) sb.append('+');
+            if (sb.length() > 0) sb.append(all ? '&' : '+');
             sb.append(d.getSerializedName());
         }
         return sb.toString();
@@ -225,9 +290,9 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         return out;
     }
 
-    /** True for air or a registered block — what a value may name. */
+    /** True for air, a kind value or a registered block — what a value may name. */
     public static boolean isKnownValue(ResourceLocation id) {
-        return id.equals(AIR_ID) || BuiltInRegistries.BLOCK.containsKey(id);
+        return isKind(id) || BuiltInRegistries.BLOCK.containsKey(id);
     }
 
     /** Parse just a target token ({@code down}, {@code down+north}, {@code group3}); {@code null} when malformed. */
@@ -241,12 +306,13 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
                 return null;
             }
         }
+        boolean every = target.contains("&");
         int mask = 0;
-        for (String name : target.split("\\+")) {
+        for (String name : target.split("[+&]")) {
             Direction d = Direction.byName(name.trim());
             if (d == null) return null;
             mask |= bit(d);
         }
-        return mask == 0 ? null : new VariantCondition(mask, 0, List.of());
+        return mask == 0 ? null : new VariantCondition(mask, 0, List.of(), every);
     }
 }

@@ -204,7 +204,7 @@ public final class BlockVariantMenuInputHandler {
         if (BlockVariantMenu.screen() != BlockVariantMenu.Screen.ROOT) return false;
         return switch (hit.kind()) {
             case ENTRY_WEIGHT, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
-            case GROWTH_OPTION -> hit.secondary() >= 0 && GrowthPopupLayout.isNumber(hit.secondary() / 10);
+            case GROWTH_OPTION -> hit.secondary() >= 0 && GrowthPopupLayout.isNumber(GrowthPopupLayout.section(hit.secondary()));
             default -> false;
         };
     }
@@ -269,7 +269,7 @@ public final class BlockVariantMenuInputHandler {
                 BlockState parsed = BlockVariantMenu.parseState(e.stateString());
                 if (parsed == null) return;
                 int row = hit.index();
-                int section = code / 10;
+                int section = GrowthPopupLayout.section(code);
                 VariantGrowth current = VariantGrowth.fromInt(e.growth());
                 if (GrowthPopupLayout.isNumber(section)) {
                     int value = GrowthPopupLayout.length(current, section);
@@ -283,7 +283,7 @@ public final class BlockVariantMenuInputHandler {
                         button, shift, MenuClickModifiers.cmdDown(), pad());
                     return;
                 }
-                VariantGrowth next = GrowthPopupLayout.apply(current, parsed, section, code % 10);
+                VariantGrowth next = GrowthPopupLayout.apply(current, parsed, section, GrowthPopupLayout.option(code));
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_GROWTH, variantId, local, row, "", next.toInt()));
             }
@@ -296,10 +296,10 @@ public final class BlockVariantMenuInputHandler {
                     return;
                 }
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
-                if (code / 10 != PaintingPopupLayout.SECTION_ON && code % 10 == PaintingPopupLayout.STEPPER_VALUE) return;
+                if (GrowthPopupLayout.section(code) != PaintingPopupLayout.SECTION_ON && GrowthPopupLayout.option(code) == PaintingPopupLayout.STEPPER_VALUE) return;
                 games.brennan.dungeontrain.editor.VariantPainting current = BlockVariantMenu.painting(e);
                 games.brennan.dungeontrain.editor.VariantPainting next = PaintingPopupLayout.apply(
-                    current, BlockVariantMenu.pictures(), code / 10, code % 10);
+                    current, BlockVariantMenu.pictures(), GrowthPopupLayout.section(code), GrowthPopupLayout.option(code));
                 if (next.equals(current)) return;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_PAINTING, variantId, local, hit.index(),
@@ -315,7 +315,7 @@ public final class BlockVariantMenuInputHandler {
                     return;
                 }
                 games.brennan.dungeontrain.editor.VariantSpan next = SpanPopupLayout.apply(
-                    BlockVariantMenu.resolvedSpan(), code / 10, code % 10);
+                    BlockVariantMenu.resolvedSpan(), GrowthPopupLayout.section(code), GrowthPopupLayout.option(code));
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_SPAN_MODE, variantId, local, -1, "", next.toByte()));
             }
@@ -497,24 +497,34 @@ public final class BlockVariantMenuInputHandler {
             BlockVariantMenu.closeCondPopup();
             return;
         }
-        int section = code / 10;
-        int option = code % 10;
+        int section = GrowthPopupLayout.section(code);
+        int option = GrowthPopupLayout.option(code);
         String token = BlockVariantMenu.entries().get(row).condition();
-        boolean groupMode = ConditionPopupLayout.isGroupMode(token);
+        int mode = ConditionPopupLayout.mode(token);
+        boolean addable = mode == ConditionPopupLayout.MODE_TOUCHING;
         BlockVariantEditPacket packet;
         if (section == ConditionPopupLayout.SECTION_MODE) {
-            // Switching mode keeps the block list; Group picks the first other lock group.
-            boolean toGroup = option == ConditionPopupLayout.MODE_GROUP;
-            if (toGroup == groupMode) return;
+            // Touching <-> Group keeps the block list; Group picks the first other lock group. Kind
+            // swaps the blocks for Solid, or back.
+            if (option == mode) return;
+            String target = switch (option) {
+                case ConditionPopupLayout.MODE_GROUP -> games.brennan.dungeontrain.editor.VariantConditionEdits.GROUP_NEXT;
+                case ConditionPopupLayout.MODE_KIND -> games.brennan.dungeontrain.editor.VariantConditionEdits.MODE_KIND;
+                default -> games.brennan.dungeontrain.editor.VariantConditionEdits.MODE_TOUCHING;
+            };
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
-                toGroup ? games.brennan.dungeontrain.editor.VariantConditionEdits.GROUP_NEXT
-                    : games.brennan.dungeontrain.editor.VariantCondition.DEFAULT_DIRECTION.getSerializedName(), 0);
+                target, 0);
         } else if (section == ConditionPopupLayout.SECTION_TOUCHING) {
             // Same clicks as the band picker: plain toggles this side, shift toggles all but this side.
             String side = ConditionPopupLayout.touching(option).getSerializedName();
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 (shift ? games.brennan.dungeontrain.editor.VariantConditionEdits.OTHERS_PREFIX
                     : games.brennan.dungeontrain.editor.VariantConditionEdits.TOGGLE_PREFIX) + side, 0);
+        } else if (section == ConditionPopupLayout.SECTION_MATCH) {
+            // Any | All: one listed side is enough, or every listed side must hold a value.
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
+                games.brennan.dungeontrain.editor.VariantConditionEdits.MATCH_PREFIX
+                    + (option == ConditionPopupLayout.MATCH_ALL ? "all" : "any"), 0);
         } else if (section == ConditionPopupLayout.SECTION_GROUP) {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 ConditionPopupLayout.groupToken(option), 0);
@@ -523,15 +533,16 @@ public final class BlockVariantMenuInputHandler {
                 ConditionPopupLayout.strip(BlockVariantMenu.entries().get(row));
             // The "–" placeholder of an empty strip does nothing.
             if (option >= strip.size()) return;
-            // Group mode switches one of the group's blocks on or off; Touching mode drops the value.
-            packet = groupMode
-                ? new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
-                    strip.get(option).toString(), 0)
-                : new BlockVariantEditPacket(BlockVariantEditPacket.Op.REMOVE_COND_VALUE, variantId, local, row,
-                    "", option);
+            // Both modes switch one of the offered blocks on or off.
+            // By id, not index: the strip leaves out the kind values, so its slots are not list indices.
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
+                strip.get(option).toString(), 0);
+        } else if (section == ConditionPopupLayout.SECTION_KIND) {
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
+                ConditionPopupLayout.kind(option).toString(), 0);
         } else if (section == ConditionPopupLayout.SECTION_ACTIONS) {
-            // Group mode's action row is Clear alone.
-            boolean add = !groupMode && option == ConditionPopupLayout.ACTION_ADD;
+            // Group and Kind modes' action row is Clear alone.
+            boolean add = addable && option == ConditionPopupLayout.ACTION_ADD;
             packet = new BlockVariantEditPacket(add
                 ? BlockVariantEditPacket.Op.ADD_COND_VALUE : BlockVariantEditPacket.Op.CLEAR_COND,
                 variantId, local, row, "", 0);

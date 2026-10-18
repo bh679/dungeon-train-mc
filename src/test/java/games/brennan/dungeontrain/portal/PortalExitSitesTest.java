@@ -164,6 +164,15 @@ class PortalExitSitesTest {
     }
 
     @Test
+    @DisplayName("No salt is the play seed exactly; a Test the Carriage salt re-rolls the sites")
+    void saltReRollsOnlyWhenSet() {
+        long play = PortalExitSites.seedFor(1234567L, 47, "labrynth");
+        assertEquals(play, PortalExitSites.seedFor(1234567L, 47, "labrynth", PortalStructure.NO_SALT));
+        long salted = PortalExitSites.seedFor(1234567L, 47, "labrynth", 0x1234567);
+        assertTrue(differsSomewhere(play, salted), "a salted test rolled the same site map as play");
+    }
+
+    @Test
     @DisplayName("Two worlds, and two rooms, scatter differently too")
     void seedAndNameBothMatter() {
         long here = PortalExitSites.seedFor(1234567L, 47, "labrynth");

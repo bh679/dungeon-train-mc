@@ -40,6 +40,8 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
      * worker threads read it.
      */
     private volatile VariantGroupRefs.Graph graphCache;
+    /** Roll order for conditions — see {@link #rankOf}. Dropped with the graph by {@link #invalidate}. */
+    private volatile Map<BlockPos, Integer> rankCache;
 
     public VariantGroupResolver(Map<BlockPos, List<VariantState>> entries,
                                 Map<BlockPos, Integer> lockIds) {
@@ -67,6 +69,7 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
     /** Drop the cached graph. Call from every mutator that touches entries or lock-ids. */
     public void invalidate() {
         graphCache = null;
+        rankCache = null;
         rememberCellGroups();
     }
 
@@ -252,6 +255,23 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
         return best;
     }
 
+    /**
+     * Where {@code localPos} sits in this sidecar's roll order, for {@link VariantConditions}: plain
+     * cells first, then conditional cells in dependency order (a cell after everything its
+     * conditions read), a cycle broken by position — lowest y, then z, then x — so a column resolves
+     * bottom-up. Re-derived after every change to the sidecar (so on every load and save). Cells
+     * not in the sidecar rank first.
+     */
+    public int rankOf(BlockPos localPos) {
+        Map<BlockPos, Integer> ranks = rankCache;
+        if (ranks == null) {
+            ranks = VariantRollOrder.rank(entries, this::lockIdAt);
+            rankCache = ranks;
+        }
+        Integer r = ranks.get(localPos);
+        return r == null ? -1 : r;
+    }
+
     /** Cached analysis of this sidecar's reference graph, resolved in subset order. */
     public VariantGroupRefs.Graph graph() {
         VariantGroupRefs.Graph cached = graphCache;
@@ -281,6 +301,21 @@ public final class VariantGroupResolver implements VariantGroupRefs.LockGroupVie
     public VariantState resolve(BlockPos localPos, int lockId, List<VariantState> states,
                                 long worldSeed, int index) {
         if (states == null || states.isEmpty()) return null;
+        // One answer per cell per pass: a cell already decided is read back, not re-rolled.
+        VariantConditions.Scope scope = VariantConditions.current();
+        if (scope != null) {
+            VariantState known = scope.memo(localPos, worldSeed, index);
+            if (known != null) return known;
+        }
+        boolean ungated = VariantConditions.isResolving(localPos);
+        VariantState picked = resolveFresh(localPos, lockId, states, worldSeed, index);
+        if (scope != null && !ungated && picked != null) scope.remember(localPos, worldSeed, index, picked);
+        return picked;
+    }
+
+    @Nullable
+    private VariantState resolveFresh(BlockPos localPos, int lockId, List<VariantState> states,
+                                      long worldSeed, int index) {
         if (VariantConditions.anyConditional(states)) {
             // Gate first: a failed condition drops its entry and the rest roll by weight. Every entry
             // gated out leaves the cell empty rather than falling back to the template block.

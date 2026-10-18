@@ -21,6 +21,11 @@ public final class VariantConditionEdits {
     /** {@code toggle:<side>} flips one side; {@code others:<side>} flips every other side. */
     public static final String TOGGLE_PREFIX = "toggle:";
     public static final String OTHERS_PREFIX = "others:";
+    /** {@code match:all} / {@code match:any}: every listed side, or any one of them. */
+    public static final String MATCH_PREFIX = "match:";
+    /** Mode tokens: Touching (specific blocks on the sides) and Kind (Solid / Empty / Any on the sides). */
+    public static final String MODE_TOUCHING = "mode:touching";
+    public static final String MODE_KIND = "mode:kind";
 
     private VariantConditionEdits() {}
 
@@ -37,6 +42,22 @@ public final class VariantConditionEdits {
      */
     public static Result setTarget(VariantCondition current, String token, Set<Integer> lockIdsInUse,
                                    int ownLockId) {
+        return setTarget(current, token, lockIdsInUse, ownLockId, 0);
+    }
+
+    /**
+     * {@link #setTarget(VariantCondition, String, Set, int)}, where switching from Group to Touch
+     * lights {@code variantSides} — every side with a variant cell — rather than the default side.
+     */
+    public static Result setTarget(VariantCondition current, String token, Set<Integer> lockIdsInUse,
+                                   int ownLockId, int variantSides) {
+        if (MODE_KIND.equals(token)) return Result.ok(current.toKindMode());
+        if (MODE_TOUCHING.equals(token)) {
+            VariantCondition plain = current.withoutKinds();
+            if (!plain.isGroupTarget()) return Result.ok(plain);
+            return Result.ok(variantSides != 0
+                ? plain.withSides(variantSides) : plain.withDirection(VariantCondition.DEFAULT_DIRECTION));
+        }
         if (GROUP_NEXT.equals(token) || GROUP_PREV.equals(token)) {
             TreeSet<Integer> groups = new TreeSet<>(lockIdsInUse);
             groups.remove(ownLockId);
@@ -47,7 +68,11 @@ public final class VariantConditionEdits {
                 ? (next ? groups.higher(current.groupId()) : groups.lower(current.groupId()))
                 : null;
             if (step == null) step = next ? groups.first() : groups.last();
-            return Result.ok(current.withGroup(step));
+            return Result.ok(current.withoutKinds().withGroup(step));
+        }
+        if (token.startsWith(MATCH_PREFIX)) {
+            if (current.isGroupTarget()) return Result.refused(null);
+            return Result.ok(current.withAll("all".equals(token.substring(MATCH_PREFIX.length()))));
         }
         if (token.startsWith(TOGGLE_PREFIX) || token.startsWith(OTHERS_PREFIX)) {
             boolean others = token.startsWith(OTHERS_PREFIX);
@@ -67,6 +92,8 @@ public final class VariantConditionEdits {
         if (id == null || !VariantCondition.isKnownValue(id)) return Result.refused(null);
         VariantCondition next = current.withValueToggled(id);
         if (next == current) return Result.refused("chat.dungeontrain.editor_bar.variant_menu.condition_full");
+        // Unticking the last kind box would drop the row out of Kind mode; Clear is the way out.
+        if (current.isKindMode() && !next.isKindMode()) return Result.refused(null);
         return Result.ok(next);
     }
 
@@ -106,6 +133,39 @@ public final class VariantConditionEdits {
             return Result.refused("chat.dungeontrain.editor_bar.variant_menu.condition_full");
         }
         return Result.ok(current.withValueAdded(id));
+    }
+
+    /** Bitmask of the sides of {@code localPos} that have a variant cell next to them. */
+    public static int variantSides(BlockVariantPlot plot, net.minecraft.core.BlockPos localPos) {
+        int mask = 0;
+        for (net.minecraft.core.Direction d : VariantConditions.TOUCHING) {
+            if (plot.statesAt(localPos.relative(d)) != null) mask |= VariantCondition.bit(d);
+        }
+        return mask;
+    }
+
+    /**
+     * Touching mode's togglable values: every block a neighbouring variant cell can roll, sides in
+     * N S E W U D order, each block once. Mobs and empty rows read as air, as in {@link #groupValues}.
+     */
+    public static java.util.List<net.minecraft.resources.ResourceLocation> neighbourValues(
+            BlockVariantPlot plot, net.minecraft.core.BlockPos localPos) {
+        java.util.LinkedHashSet<net.minecraft.resources.ResourceLocation> out = new java.util.LinkedHashSet<>();
+        for (net.minecraft.core.Direction d : VariantConditions.TOUCHING) {
+            out.addAll(groupValues(plot.statesAt(localPos.relative(d))));
+        }
+        return java.util.List.copyOf(out);
+    }
+
+    /**
+     * An unset Touching condition about to get its first value takes {@code variantSides} — the
+     * sides with a variant cell — as its sides, so the author doesn't have to pick them first.
+     */
+    public static VariantCondition withDefaultSides(VariantCondition current, int variantSides) {
+        if (current.isGroupTarget() || !current.isDefault() || variantSides == 0) return current;
+        // Sides the author already picked by hand stay; only the untouched default is replaced.
+        if (current.sideMask() != VariantCondition.bit(VariantCondition.DEFAULT_DIRECTION)) return current;
+        return current.withSides(variantSides);
     }
 
     /** True when a group-targeted condition still has a group to look at. */

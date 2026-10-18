@@ -15,10 +15,13 @@ import java.util.List;
  * Geometry + labels of the Z menu's If popup for one row, drawn and hit-tested through the Grow
  * popup's {@link GrowthPopupLayout.Row} shape so the renderer and raycaster share one layout.
  *
- * <p>Top to bottom: the <b>mode</b> ({@code Touching | Group}), that mode's picker ({@code N S E W U D}
- * multi-select, or {@code ◂ G3 ▸}), the <b>block list</b> as a horizontal strip of icons (OR'd) —
- * in Touching mode the blocks added from the hand (click one to drop it), in Group mode every block
- * the group can roll, each toggled on or off — then <b>+ Held</b> (Touching only) and <b>Clear</b>.</p>
+ * <p>Top to bottom: the <b>mode</b> ({@code Touch | Group | Kind}), that mode's picker
+ * ({@code N S E W U D} multi-select for Touch and Kind, plus {@code Any | All} once two sides are
+ * lit, or {@code ◂ G3 ▸}), then what the target must be, OR'd: in Kind mode the
+ * {@code Solid Empty Any block} checkboxes; otherwise the <b>block list</b> as a horizontal strip of
+ * icons — every block the neighbouring variant cells (Touch) or the group (Group) can roll, each
+ * toggled on or off — then <b>+ Held</b> (Touch only, for a block no neighbour offers) and
+ * <b>Clear</b>.</p>
  */
 final class ConditionPopupLayout {
 
@@ -27,9 +30,15 @@ final class ConditionPopupLayout {
     static final int SECTION_GROUP = 2;
     static final int SECTION_BLOCKS = 3;
     static final int SECTION_ACTIONS = 4;
+    static final int SECTION_KIND = 5;
+    /** Any | All: whether one listed side or every listed side must hold a value (two or more sides). */
+    static final int SECTION_MATCH = 6;
+    static final int MATCH_ANY = 0;
+    static final int MATCH_ALL = 1;
 
     static final int MODE_TOUCHING = 0;
     static final int MODE_GROUP = 1;
+    static final int MODE_KIND = 2;
     static final int ACTION_ADD = 0;
     static final int GROUP_PREV = 0;
 
@@ -43,23 +52,35 @@ final class ConditionPopupLayout {
      */
     static List<GrowthPopupLayout.Row> rows(BlockVariantSyncPacket.Entry entry, double panelW, double halfH) {
         VariantCondition c = VariantCondition.parse(entry.condition());
-        List<Object[]> spec = new ArrayList<>(4);
+        List<Object[]> spec = new ArrayList<>(5);
         spec.add(new Object[] {SECTION_MODE, MenuLang.t("block_variant.condition"),
-            new String[] {MenuLang.t("block_variant.condition_touching"), MenuLang.t("block_variant.condition_group")},
-            c.isGroupTarget() ? MODE_GROUP : MODE_TOUCHING});
+            new String[] {MenuLang.t("block_variant.condition_touching"), MenuLang.t("block_variant.condition_group"),
+                MenuLang.t("block_variant.condition_kind")},
+            mode(c)});
         if (c.isGroupTarget()) {
             spec.add(new Object[] {SECTION_GROUP, "", new String[] {"◂", "G" + c.groupId(), "▸"}, -1});
         } else {
             // Multi-select: which sides are lit comes from isSelected, not this row's single index.
             spec.add(new Object[] {SECTION_TOUCHING, "", TOUCHING_LABELS.clone(), -1});
+            if (c.sides().size() >= 2) {
+                spec.add(new Object[] {SECTION_MATCH, MenuLang.t("block_variant.condition_match"),
+                    new String[] {MenuLang.t("block_variant.condition_match_any"), MenuLang.t("block_variant.condition_match_all")},
+                    c.all() ? MATCH_ALL : MATCH_ANY});
+            }
         }
-        // One icon slot per block; the labels stay blank because the renderer draws the icons.
-        int n = strip(entry).size();
-        String[] slots = n == 0 ? new String[] {"–"} : new String[n];
-        for (int i = 0; i < n; i++) slots[i] = "";
-        spec.add(new Object[] {SECTION_BLOCKS, MenuLang.t("block_variant.condition_is"), slots, -1});
-        // Group mode picks from the group's own blocks, so there is nothing to add from the hand.
-        spec.add(new Object[] {SECTION_ACTIONS, "", c.isGroupTarget()
+        if (c.isKindMode()) {
+            spec.add(new Object[] {SECTION_KIND, MenuLang.t("block_variant.condition_is"), new String[] {
+                MenuLang.t("block_variant.condition_solid"), MenuLang.t("block_variant.condition_empty"),
+                MenuLang.t("block_variant.condition_any")}, -1});
+        } else {
+            // One icon slot per block; the labels stay blank because the renderer draws the icons.
+            int n = strip(entry).size();
+            String[] slots = n == 0 ? new String[] {"–"} : new String[n];
+            for (int i = 0; i < n; i++) slots[i] = "";
+            spec.add(new Object[] {SECTION_BLOCKS, MenuLang.t("block_variant.condition_is"), slots, -1});
+        }
+        // Group and Kind modes pick from fixed options, so there is nothing to add from the hand.
+        spec.add(new Object[] {SECTION_ACTIONS, "", c.isGroupTarget() || c.isKindMode()
             ? new String[] {MenuLang.t("block_variant.condition_clear")}
             : new String[] {MenuLang.t("block_variant.condition_add_held"), MenuLang.t("block_variant.condition_clear")}, -1});
 
@@ -77,16 +98,21 @@ final class ConditionPopupLayout {
     }
 
     /**
-     * The blocks the {@link #SECTION_BLOCKS} strip shows, in slot order: the chosen values in
-     * Touching mode, every block the target group can roll in Group mode.
+     * The blocks the {@link #SECTION_BLOCKS} strip shows, in slot order: every block the
+     * neighbouring variant cells can roll (Touch, plus any chosen value none of them offers) or the
+     * target group can roll (Group). Kind mode has no strip.
      */
     static List<ResourceLocation> strip(BlockVariantSyncPacket.Entry entry) {
         VariantCondition c = VariantCondition.parse(entry.condition());
-        if (!c.isGroupTarget()) return c.blocks();
         List<ResourceLocation> out = new ArrayList<>();
         for (String raw : entry.conditionGroupValues().split(",")) {
             ResourceLocation id = raw.isBlank() ? null : ResourceLocation.tryParse(raw.trim());
-            if (id != null) out.add(id);
+            if (id != null && !out.contains(id)) out.add(id);
+        }
+        // Touching mode offers the neighbouring variants' blocks; a value chosen by hand that no
+        // neighbour offers stays in the strip so it can still be switched off.
+        if (!c.isGroupTarget()) {
+            for (ResourceLocation id : c.blockValues()) if (!out.contains(id)) out.add(id);
         }
         return out;
     }
@@ -98,11 +124,23 @@ final class ConditionPopupLayout {
     static boolean isSelected(BlockVariantSyncPacket.Entry entry, GrowthPopupLayout.Row row, int i) {
         VariantCondition c = VariantCondition.parse(entry.condition());
         if (row.section() == SECTION_TOUCHING) return c.hasSide(touching(i));
-        if (row.section() == SECTION_BLOCKS && c.isGroupTarget()) {
+        if (row.section() == SECTION_KIND) return c.blocks().contains(kind(i));
+        if (row.section() == SECTION_BLOCKS) {
             List<ResourceLocation> strip = strip(entry);
             return i < strip.size() && c.blocks().contains(strip.get(i));
         }
         return i == row.selected();
+    }
+
+    /** Which mode button is lit for {@code c}. */
+    static int mode(VariantCondition c) {
+        if (c.isGroupTarget()) return MODE_GROUP;
+        return c.isKindMode() ? MODE_KIND : MODE_TOUCHING;
+    }
+
+    /** Which mode button is lit for a condition token. */
+    static int mode(String token) {
+        return mode(VariantCondition.parse(token));
     }
 
     /** True when the row's condition targets a group (Group mode). */
@@ -113,6 +151,11 @@ final class ConditionPopupLayout {
     /** The touching target a button in {@link #SECTION_TOUCHING} sets. */
     static Direction touching(int option) {
         return VariantConditions.TOUCHING[Math.max(0, Math.min(VariantConditions.TOUCHING.length - 1, option))];
+    }
+
+    /** The kind value a checkbox in {@link #SECTION_KIND} toggles. */
+    static ResourceLocation kind(int option) {
+        return VariantCondition.KINDS.get(Math.max(0, Math.min(VariantCondition.KINDS.size() - 1, option)));
     }
 
     /** The group-stepper token for a button in {@link #SECTION_GROUP}; the middle steps forward too. */

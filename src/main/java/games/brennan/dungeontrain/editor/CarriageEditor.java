@@ -494,6 +494,7 @@ public final class CarriageEditor {
         // session). Empty maps are written as a deleted file so removing every
         // entry doesn't leave a stale sidecar on disk.
         sidecar.save(variant);
+        VariantConditionWarnings.afterSave(player, variant.id(), sidecar.entries(), sidecar::lockIdAt);
 
         // Contents store: persist any in-session loot-prefab link changes
         // accumulated since enter (PrefabUseHandler defers its writes until

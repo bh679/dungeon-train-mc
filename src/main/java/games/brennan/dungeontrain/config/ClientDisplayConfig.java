@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.config;
 
 import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
+import games.brennan.dungeontrain.client.PetProtectionSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.minecraft.world.Difficulty;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -211,6 +212,18 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue PORTAL_ROOM_HIDE_DISTANT_HORIZONS;
 
+    /**
+     * Whether Distant Horizons stops drawing while the camera is in (or approaching) each void band — the
+     * chuncks, the spheres and the stacks. DT carves those out of normal overworld chunks, and DH's horizon
+     * does not match the void around the train. On by default; set any false to let DH draw there anyway.
+     */
+    public static final ModConfigSpec.BooleanValue CHUNCKS_HIDE_DISTANT_HORIZONS;
+    public static final ModConfigSpec.BooleanValue SPHERES_HIDE_DISTANT_HORIZONS;
+    public static final ModConfigSpec.BooleanValue STACKS_HIDE_DISTANT_HORIZONS;
+
+    /** How many blocks either side of a void band DH stays hidden — the approach, and past its far edge. */
+    public static final ModConfigSpec.IntValue VOID_BANDS_DISTANT_HORIZONS_MARGIN;
+
     public static final ModConfigSpec.BooleanValue FRAMERATE_THROTTLE_ENABLED;
     public static final ModConfigSpec.IntValue FRAMERATE_THROTTLE_FPS;
     /** Open the pause menu when AFK is detected. See {@link #isAfkPauseEnabled()}. */
@@ -295,6 +308,8 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
+    /** Your own pets can't be hurt by you — see {@code OwnPetProtectionEvents}. */
+    public static final ModConfigSpec.BooleanValue PROTECT_OWN_PETS;
     /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
@@ -398,6 +413,10 @@ public final class ClientDisplayConfig {
         UPSIDE_DOWN_HIDE_DISTANT_HORIZONS = pair.getLeft().upsideDownHideDistantHorizons;
         UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN = pair.getLeft().upsideDownDistantHorizonsMargin;
         PORTAL_ROOM_HIDE_DISTANT_HORIZONS = pair.getLeft().portalRoomHideDistantHorizons;
+        CHUNCKS_HIDE_DISTANT_HORIZONS = pair.getLeft().chuncksHideDistantHorizons;
+        SPHERES_HIDE_DISTANT_HORIZONS = pair.getLeft().spheresHideDistantHorizons;
+        STACKS_HIDE_DISTANT_HORIZONS = pair.getLeft().stacksHideDistantHorizons;
+        VOID_BANDS_DISTANT_HORIZONS_MARGIN = pair.getLeft().voidBandsDistantHorizonsMargin;
         FRAMERATE_THROTTLE_ENABLED = pair.getLeft().framerateThrottleEnabled;
         FRAMERATE_THROTTLE_FPS = pair.getLeft().framerateThrottleFps;
         AFK_PAUSE_ENABLED = pair.getLeft().afkPauseEnabled;
@@ -438,6 +457,7 @@ public final class ClientDisplayConfig {
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
+        PROTECT_OWN_PETS = pair.getLeft().protectOwnPets;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         DEV_HUD = pair.getLeft().devHud;
@@ -544,6 +564,19 @@ public final class ClientDisplayConfig {
         ModConfigSpec.BooleanValue portalRoomHideDistantHorizons = b
                 .comment("Stop Distant Horizons drawing while you are inside a dimensional carriage - a portal room, or the corridor leading into one. A room is stamped in twin space at the coordinates of the carriage it stands in for, and DH draws its own LODs of the overworld around exactly those coordinates, so the room's sky comes with the surface world's horizon behind it. Worst in a Chunk Dimension room, which is itself a sampled slice of terrain that DH then contradicts. Set false to let DH draw inside rooms anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
                 .define("hideInPortalRooms", true);
+        ModConfigSpec.BooleanValue chuncksHideDistantHorizons = b
+                .comment("Stop Distant Horizons drawing while you are in, or approaching, the section of the track where the world breaks into scattered chunks. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
+                .define("hideInChuncks", true);
+        ModConfigSpec.BooleanValue spheresHideDistantHorizons = b
+                .comment("Stop Distant Horizons drawing while you are in, or approaching, the spheres section of the track - the open void scattered with floating spheres of terrain. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
+                .define("hideInSpheres", true);
+        ModConfigSpec.BooleanValue stacksHideDistantHorizons = b
+                .comment("Stop Distant Horizons drawing while you are in, or approaching, the stacks section of the track - the void standing with towers of terrain. Set false to let DH draw there anyway. Does nothing if Distant Horizons is not installed, and never touches DH's own settings or its stored LOD data.")
+                .define("hideInStacks", true);
+        ModConfigSpec.IntValue voidBandsDistantHorizonsMargin = b
+                .comment("How many blocks either side of the chunks, spheres and stacks sections DH stays hidden. A section comes into DH's draw distance well before you reach it, so this covers the way in (and the same distance past its far end). Raise it if you run a very large DH render distance; 0 cuts DH out exactly at the sections' edges.")
+                .defineInRange("strangeBandsHideMarginBlocks", DEFAULT_DISTANT_HORIZONS_HIDE_MARGIN,
+                        MIN_DISTANT_HORIZONS_HIDE_MARGIN, MAX_DISTANT_HORIZONS_HIDE_MARGIN);
         b.pop();
 
         b.push("framerateThrottle");
@@ -835,6 +868,14 @@ public final class ClientDisplayConfig {
                 .define("authorBurnChat", false);
         b.pop();
 
+        b.push("pets");
+        ModConfigSpec.BooleanValue protectOwnPets = b
+                .comment("Stop yourself hurting your own tamed animals (wolves, cats, parrots, horses and the like):",
+                         "punches, sweeps and arrows pass them by. Explosions (TNT you lit) still hurt them, and",
+                         "other players and mobs can still hurt them. Toggle in-game via Options > Dungeon Train > General. On by default.")
+                .define("protectOwnPets", true);
+        b.pop();
+
         b.push("updates");
         ModConfigSpec.BooleanValue updateNoticeChat = b
                 .comment("Print a chat line when a new Dungeon Train version is released while you are playing,",
@@ -885,6 +926,8 @@ public final class ClientDisplayConfig {
                 rideSnapshotMaxResolution,
                 upsideDownHideDistantHorizons, upsideDownDistantHorizonsMargin,
                 portalRoomHideDistantHorizons,
+                chuncksHideDistantHorizons, spheresHideDistantHorizons, stacksHideDistantHorizons,
+                voidBandsDistantHorizonsMargin,
                 framerateThrottleEnabled, framerateThrottleFps, afkPauseEnabled, trainEngineVolume, skyboxPunchEnabled, skyboxBlocksOn, portalCrossingFade, portalRoomSurfaceCoordinates, portalTwinSealCulling, shaderCrossingLift, shaderCrossfade, scribbleColorPickerVisible, scribbleFileButtonsVisible, scribbleInsertPageButtonVisible, betterXSuppressStartupScreens, cinematicHotkeyEnabled, creativeShiftClickToHotbar,
                 creativeModBlockTabs, creativeModBlocksInSearch, deleteWorldOnReboard,
                 builderTilesPerRow,
@@ -894,7 +937,7 @@ public final class ClientDisplayConfig {
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, protectOwnPets, updateNoticeChat,
                 lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
@@ -1305,6 +1348,25 @@ public final class ClientDisplayConfig {
     }
 
     /** Whether a new-release chat line may print mid-session. On by default. */
+    /**
+     * Are this player's own pets safe from their hits? On by default. Toggled from
+     * Options &gt; Dungeon Train &gt; General.
+     *
+     * <p>The hit is decided server-side, so the setter also pushes the new value over
+     * {@link games.brennan.dungeontrain.net.PetProtectionSyncPacket} — see
+     * {@link PetProtectionSyncClient}. Unloaded reads as on, matching the server's default.</p>
+     */
+    public static boolean isProtectOwnPetsEnabled() {
+        return !isLoaded() || PROTECT_OWN_PETS.get();
+    }
+
+    public static void setProtectOwnPets(boolean value) {
+        if (!isLoaded()) return;
+        PROTECT_OWN_PETS.set(value);
+        PROTECT_OWN_PETS.save();
+        PetProtectionSyncClient.syncNow();
+    }
+
     public static boolean isUpdateNoticeChatEnabled() {
         return isLoaded() && UPDATE_NOTICE_CHAT.get();
     }
@@ -2097,6 +2159,10 @@ public final class ClientDisplayConfig {
             ModConfigSpec.BooleanValue upsideDownHideDistantHorizons,
             ModConfigSpec.IntValue upsideDownDistantHorizonsMargin,
             ModConfigSpec.BooleanValue portalRoomHideDistantHorizons,
+            ModConfigSpec.BooleanValue chuncksHideDistantHorizons,
+            ModConfigSpec.BooleanValue spheresHideDistantHorizons,
+            ModConfigSpec.BooleanValue stacksHideDistantHorizons,
+            ModConfigSpec.IntValue voidBandsDistantHorizonsMargin,
             ModConfigSpec.BooleanValue framerateThrottleEnabled,
             ModConfigSpec.IntValue framerateThrottleFps,
             ModConfigSpec.BooleanValue afkPauseEnabled,
@@ -2134,6 +2200,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
             ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
+            ModConfigSpec.BooleanValue protectOwnPets,
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.BooleanValue devHud,

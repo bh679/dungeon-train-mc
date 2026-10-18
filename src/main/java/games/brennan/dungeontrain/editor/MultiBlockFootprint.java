@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.editor;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -98,6 +99,29 @@ public final class MultiBlockFootprint {
             if (isMultiEntry(v)) return partnerOffset(v.state());
         }
         return null;
+    }
+
+    /**
+     * True when {@code state} is half of a tall plant (tall grass, large fern, sunflower, pitcher
+     * plant, small dripleaf, tall seagrass …): a {@code DOUBLE_BLOCK_HALF} block that is not a door.
+     * Its upper space stands on nothing but its lower one.
+     */
+    public static boolean isTallPlant(@Nullable BlockState state) {
+        return state != null
+            && state.hasProperty(BlockStateProperties.DOUBLE_BLOCK_HALF)
+            && !(state.getBlock() instanceof DoorBlock);
+    }
+
+    /**
+     * True when the cell's footprint comes from a tall plant (its first multi-space entry is one).
+     * A single block in such a cell only ever goes in the bottom space — the top one has nothing
+     * under it — so the cell's {@link VariantSpan} does not apply.
+     */
+    public static boolean cellIsTallPlant(List<VariantState> states) {
+        for (VariantState v : states) {
+            if (isMultiEntry(v)) return isTallPlant(v.state());
+        }
+        return false;
     }
 
     /**

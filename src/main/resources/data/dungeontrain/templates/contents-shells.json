@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "shells": {
+    "basitan": "cargo",
+    "tntfull": "boxcar",
+    "trees": "cargo"
+  }
+}

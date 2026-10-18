@@ -364,6 +364,19 @@ public final class SableShipyard implements Shipyard {
     }
 
     @Override
+    public boolean saveSubLevelsNow() {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
+            container.getHoldingChunkMap();
+        if (holding == null) return false;
+        // Sable's own per-level save (what the world save calls for each level): mints a
+        // serialization pointer for every live sub-level, writes held data, flushes storage.
+        holding.saveAll();
+        return true;
+    }
+
+    @Override
     public boolean reloadFromHolding(java.util.UUID subLevelId) {
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return false;

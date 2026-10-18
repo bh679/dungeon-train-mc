@@ -151,6 +151,7 @@ public final class EditorPlotPanelInputHandler {
         // we'd otherwise double-fire with.
         if (CommandMenuState.isOpen()) return false;
         if (PartPositionMenu.claimsPointer()) return false;
+        if (games.brennan.dungeontrain.client.menu.creakingheart.CreakingHeartPanel.claimsPointer()) return false;
         return true;
     }
 

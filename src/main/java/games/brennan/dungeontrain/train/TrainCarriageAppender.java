@@ -31,8 +31,10 @@ import games.brennan.dungeontrain.worldgen.SilentBlockOps;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.server.level.TicketType;
@@ -1717,6 +1719,7 @@ public final class TrainCarriageAppender {
         // train-wipe path (TrainAssembler.deleteExistingTrains), which has a
         // level handle; here we only drop our in-memory mirror.
         FORCELOADED_BY_TRAIN.clear();
+        LAST_EARLY_SAVE_TICK.clear();
         RESUME_GRACE_UNTIL_TICK.clear();
         RESUME_STARTED_TICK.clear();
         SPAWN_GEN_WAIT_FORWARD.clear();
@@ -3594,7 +3597,59 @@ public final class TrainCarriageAppender {
             }
         }
 
-        reconcileForceLoads(level, trainId, target, byId);
+        int unsavedSurplus = reconcileForceLoads(level, trainId, target, byId);
+        maybeRequestEarlySave(level, unsavedSurplus);
+    }
+
+    /**
+     * Groups held outside the window <em>only</em> because they have never been saved, at or above
+     * which an early sub-level save is worth its hitch. A backward catch-up that bridges to a
+     * player far down the line spawns dozens of fresh groups; {@link #reconcileForceLoads} keeps
+     * every one force-loaded until a save mints its serialization pointer, which used to mean
+     * the next autosave — minutes of ~3× the usual resident groups (player log 17 Oct 2026: 99
+     * groups, 76 frozen, ~9.7k chunks loaded). Two catch-up groups' worth is ordinary churn.
+     */
+    static final int EARLY_SAVE_SURPLUS_GROUPS = 6;
+
+    /** Minimum ticks between early sub-level saves on one level (30 s); each is a ~0.5 s hitch. */
+    static final long EARLY_SAVE_COOLDOWN_TICKS = 600L;
+
+    /** Game tick of the last early sub-level save, per level. */
+    private static final Map<ResourceKey<Level>, Long> LAST_EARLY_SAVE_TICK = new ConcurrentHashMap<>();
+
+    /** Grace the early save's train hold keeps — parity with the world-save hold. */
+    private static final int EARLY_SAVE_HOLD_GRACE_TICKS = 60;
+
+    /**
+     * Pure core: should this tick trigger an early sub-level save?
+     *
+     * @param unsavedSurplus  groups held outside the window only for want of a serialization pointer
+     * @param ticksSinceLast  ticks since this level's last early save ({@code Long.MAX_VALUE} if none)
+     */
+    static boolean shouldRequestEarlySave(int unsavedSurplus, long ticksSinceLast) {
+        return unsavedSurplus >= EARLY_SAVE_SURPLUS_GROUPS && ticksSinceLast >= EARLY_SAVE_COOLDOWN_TICKS;
+    }
+
+    /**
+     * Save this level's sub-levels now when enough never-saved groups are pinned outside the
+     * window, so the next {@link #reconcileForceLoads} can release them instead of waiting for
+     * the autosave. Holds every loaded train first, exactly as {@code MinecraftServerSaveMixin}
+     * does for a world save, so the save hitch can't cull a group from under a flung rider.
+     */
+    private static void maybeRequestEarlySave(ServerLevel level, int unsavedSurplus) {
+        if (unsavedSurplus <= 0) return;
+        long now = level.getGameTime();
+        Long last = LAST_EARLY_SAVE_TICK.get(level.dimension());
+        long sinceLast = (last == null) ? Long.MAX_VALUE : now - last;
+        if (!shouldRequestEarlySave(unsavedSurplus, sinceLast)) return;
+        LAST_EARLY_SAVE_TICK.put(level.dimension(), now);
+        holdAllLoadedTrains(level.getServer(), EARLY_SAVE_HOLD_GRACE_TICKS);
+        long startNs = System.nanoTime();
+        boolean saved = Shipyards.of(level).saveSubLevelsNow();
+        if (saved) {
+            LOGGER.info("[DungeonTrain] Early sub-level save: {} unsaved group(s) held outside the window — saved {} in {} ms so they can be released",
+                unsavedSurplus, level.dimension().location(), (System.nanoTime() - startNs) / 1_000_000L);
+        }
     }
 
     /**
@@ -3610,19 +3665,20 @@ public final class TrainCarriageAppender {
      * straggler is cleaned by the bootstrap {@code releaseAllForceLoads()}
      * sweep.</p>
      */
-    private static void reconcileForceLoads(
+    private static int reconcileForceLoads(
         ServerLevel level, UUID trainId, Set<UUID> target,
         Map<UUID, Trains.Carriage> byId
     ) {
         Set<UUID> current = FORCELOADED_BY_TRAIN.get(trainId);
         if (current == null) {
-            if (target.isEmpty()) return;
+            if (target.isEmpty()) return 0;
             current = new HashSet<>();
             FORCELOADED_BY_TRAIN.put(trainId, current);
         }
         Shipyard shipyard = Shipyards.of(level);
 
         int released = 0;
+        int unsavedSurplus = 0;
         for (Iterator<UUID> it = current.iterator(); it.hasNext(); ) {
             UUID id = it.next();
             if (target.contains(id)) continue;
@@ -3640,7 +3696,10 @@ public final class TrainCarriageAppender {
             // revived (snatchAndLoad needs the pointer), so it becomes an
             // unrecoverable ghost that silently dead-ends backward generation.
             // Holding until reloadable guarantees every cull is recoverable.
-            if (!c.ship().hasSerializationPointer()) continue;
+            if (!c.ship().hasSerializationPointer()) {
+                unsavedSurplus++;
+                continue;
+            }
             shipyard.releaseForceLoad(c.ship());
             it.remove();
             released++;
@@ -3662,6 +3721,7 @@ public final class TrainCarriageAppender {
         if (current.isEmpty()) {
             FORCELOADED_BY_TRAIN.remove(trainId);
         }
+        return unsavedSurplus;
     }
 
     /**
@@ -3878,9 +3938,14 @@ public final class TrainCarriageAppender {
     private static boolean isNearAnyPlayer(Trains.Carriage c, List<ServerPlayer> players) {
         AABBdc aabb = c.ship().worldAABB();
         for (ServerPlayer p : players) {
-            if (aabbDistSq(aabb, p.getX(), p.getY(), p.getZ()) <= NEAR_RADIUS_SQ) return true;
+            if (isWithinNearRadius(aabb, p.getX(), p.getY(), p.getZ())) return true;
         }
         return false;
+    }
+
+    /** Pure core of {@link #isNearAnyPlayer}: is the point within {@link #NEAR_RADIUS} of {@code aabb}? */
+    static boolean isWithinNearRadius(AABBdc aabb, double px, double py, double pz) {
+        return aabbDistSq(aabb, px, py, pz) <= NEAR_RADIUS_SQ;
     }
 
     /** Squared distance from a point to an AABB ({@code 0} = inside). */
@@ -3908,10 +3973,7 @@ public final class TrainCarriageAppender {
      * @return the number of loaded trains held this call.
      */
     public static int holdAllLoadedTrains(MinecraftServer server, int graceTicks) {
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
-        if (!data.startsWithTrain()) return 0;
-        StartingDimension startingDim = data.startingDimension();
-        ServerLevel trainLevel = server.getLevel(startingDim.levelKey());
+        ServerLevel trainLevel = trainLevelOf(server);
         if (trainLevel == null) return 0;
         Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(trainLevel);
         if (trains.isEmpty()) return 0;
@@ -3921,6 +3983,35 @@ public final class TrainCarriageAppender {
             holdWholeTrainForResume(trainLevel, entry.getKey(), entry.getValue());
         }
         return trains.size();
+    }
+
+    /**
+     * Is any player in the train level within {@link #NEAR_RADIUS} of a loaded carriage? That is
+     * the same "near" {@link #holdWholeTrainForResume} uses. {@code ResumeWatchdog} skips its hold
+     * when this is false: nobody can be flung off a train they aren't on, and the far groups the hold
+     * would still pin (never-serialized ones) are already kept by {@link #reconcileForceLoads}. A
+     * player reading books in a portal room's Stat Room is the common case.
+     */
+    public static boolean anyPlayerNearLoadedTrain(MinecraftServer server) {
+        ServerLevel trainLevel = trainLevelOf(server);
+        if (trainLevel == null) return false;
+        List<ServerPlayer> players = trainLevel.players();
+        if (players.isEmpty()) return false;
+        for (List<Trains.Carriage> train : Trains.byTrainId(trainLevel).values()) {
+            for (Trains.Carriage c : train) {
+                if (isNearAnyPlayer(c, players)) return true;
+            }
+        }
+        return false;
+    }
+
+    /** The level this world's train runs in, or {@code null} when there is no train or it isn't loaded. */
+    @Nullable
+    private static ServerLevel trainLevelOf(MinecraftServer server) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+        if (!data.startsWithTrain()) return null;
+        StartingDimension startingDim = data.startingDimension();
+        return server.getLevel(startingDim.levelKey());
     }
 
     /**
