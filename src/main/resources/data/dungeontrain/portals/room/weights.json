@@ -347,7 +347,7 @@
   },
   "paths": {
     "weight": 1,
-    "mode": "endless_repetition/dynamic"
+    "mode": "endless_repetition/dynamic/off/random:2:10"
   },
   "pathsforever": {
     "weight": 1,
