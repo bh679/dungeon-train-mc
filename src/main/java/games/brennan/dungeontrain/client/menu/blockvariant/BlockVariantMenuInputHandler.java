@@ -524,11 +524,12 @@ public final class BlockVariantMenuInputHandler {
             // The "–" placeholder of an empty strip does nothing.
             if (option >= strip.size()) return;
             // Group mode switches one of the group's blocks on or off; Touching mode drops the value.
-            packet = groupMode
-                ? new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
-                    strip.get(option).toString(), 0)
-                : new BlockVariantEditPacket(BlockVariantEditPacket.Op.REMOVE_COND_VALUE, variantId, local, row,
-                    "", option);
+            // By id, not index: the strip leaves out the kind values, so its slots are not list indices.
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
+                strip.get(option).toString(), 0);
+        } else if (section == ConditionPopupLayout.SECTION_KIND) {
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
+                ConditionPopupLayout.kind(option).toString(), 0);
         } else if (section == ConditionPopupLayout.SECTION_ACTIONS) {
             // Group mode's action row is Clear alone.
             boolean add = !groupMode && option == ConditionPopupLayout.ACTION_ADD;

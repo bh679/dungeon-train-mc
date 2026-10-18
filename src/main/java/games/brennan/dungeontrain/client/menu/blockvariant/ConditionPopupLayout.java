@@ -16,7 +16,8 @@ import java.util.List;
  * popup's {@link GrowthPopupLayout.Row} shape so the renderer and raycaster share one layout.
  *
  * <p>Top to bottom: the <b>mode</b> ({@code Touching | Group}), that mode's picker ({@code N S E W U D}
- * multi-select, or {@code ◂ G3 ▸}), the <b>block list</b> as a horizontal strip of icons (OR'd) —
+ * multi-select, or {@code ◂ G3 ▸}), the <b>kind</b> checkboxes ({@code Solid Empty Any block},
+ * multi-select), the <b>block list</b> as a horizontal strip of icons (OR'd) —
  * in Touching mode the blocks added from the hand (click one to drop it), in Group mode every block
  * the group can roll, each toggled on or off — then <b>+ Held</b> (Touching only) and <b>Clear</b>.</p>
  */
@@ -27,6 +28,7 @@ final class ConditionPopupLayout {
     static final int SECTION_GROUP = 2;
     static final int SECTION_BLOCKS = 3;
     static final int SECTION_ACTIONS = 4;
+    static final int SECTION_KIND = 5;
 
     static final int MODE_TOUCHING = 0;
     static final int MODE_GROUP = 1;
@@ -43,7 +45,7 @@ final class ConditionPopupLayout {
      */
     static List<GrowthPopupLayout.Row> rows(BlockVariantSyncPacket.Entry entry, double panelW, double halfH) {
         VariantCondition c = VariantCondition.parse(entry.condition());
-        List<Object[]> spec = new ArrayList<>(4);
+        List<Object[]> spec = new ArrayList<>(5);
         spec.add(new Object[] {SECTION_MODE, MenuLang.t("block_variant.condition"),
             new String[] {MenuLang.t("block_variant.condition_touching"), MenuLang.t("block_variant.condition_group")},
             c.isGroupTarget() ? MODE_GROUP : MODE_TOUCHING});
@@ -53,11 +55,14 @@ final class ConditionPopupLayout {
             // Multi-select: which sides are lit comes from isSelected, not this row's single index.
             spec.add(new Object[] {SECTION_TOUCHING, "", TOUCHING_LABELS.clone(), -1});
         }
+        spec.add(new Object[] {SECTION_KIND, MenuLang.t("block_variant.condition_is"), new String[] {
+            MenuLang.t("block_variant.condition_solid"), MenuLang.t("block_variant.condition_empty"),
+            MenuLang.t("block_variant.condition_any")}, -1});
         // One icon slot per block; the labels stay blank because the renderer draws the icons.
         int n = strip(entry).size();
         String[] slots = n == 0 ? new String[] {"–"} : new String[n];
         for (int i = 0; i < n; i++) slots[i] = "";
-        spec.add(new Object[] {SECTION_BLOCKS, MenuLang.t("block_variant.condition_is"), slots, -1});
+        spec.add(new Object[] {SECTION_BLOCKS, MenuLang.t("block_variant.condition_or"), slots, -1});
         // Group mode picks from the group's own blocks, so there is nothing to add from the hand.
         spec.add(new Object[] {SECTION_ACTIONS, "", c.isGroupTarget()
             ? new String[] {MenuLang.t("block_variant.condition_clear")}
@@ -78,11 +83,12 @@ final class ConditionPopupLayout {
 
     /**
      * The blocks the {@link #SECTION_BLOCKS} strip shows, in slot order: the chosen values in
-     * Touching mode, every block the target group can roll in Group mode.
+     * Touching mode (the kind checkboxes show the rest), every block the target group can roll in
+     * Group mode.
      */
     static List<ResourceLocation> strip(BlockVariantSyncPacket.Entry entry) {
         VariantCondition c = VariantCondition.parse(entry.condition());
-        if (!c.isGroupTarget()) return c.blocks();
+        if (!c.isGroupTarget()) return c.blockValues();
         List<ResourceLocation> out = new ArrayList<>();
         for (String raw : entry.conditionGroupValues().split(",")) {
             ResourceLocation id = raw.isBlank() ? null : ResourceLocation.tryParse(raw.trim());
@@ -98,6 +104,7 @@ final class ConditionPopupLayout {
     static boolean isSelected(BlockVariantSyncPacket.Entry entry, GrowthPopupLayout.Row row, int i) {
         VariantCondition c = VariantCondition.parse(entry.condition());
         if (row.section() == SECTION_TOUCHING) return c.hasSide(touching(i));
+        if (row.section() == SECTION_KIND) return c.blocks().contains(kind(i));
         if (row.section() == SECTION_BLOCKS && c.isGroupTarget()) {
             List<ResourceLocation> strip = strip(entry);
             return i < strip.size() && c.blocks().contains(strip.get(i));
@@ -113,6 +120,11 @@ final class ConditionPopupLayout {
     /** The touching target a button in {@link #SECTION_TOUCHING} sets. */
     static Direction touching(int option) {
         return VariantConditions.TOUCHING[Math.max(0, Math.min(VariantConditions.TOUCHING.length - 1, option))];
+    }
+
+    /** The kind value a checkbox in {@link #SECTION_KIND} toggles. */
+    static ResourceLocation kind(int option) {
+        return VariantCondition.KINDS.get(Math.max(0, Math.min(VariantCondition.KINDS.size() - 1, option)));
     }
 
     /** The group-stepper token for a button in {@link #SECTION_GROUP}; the middle steps forward too. */

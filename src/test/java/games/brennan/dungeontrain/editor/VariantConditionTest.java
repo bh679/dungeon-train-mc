@@ -190,4 +190,40 @@ final class VariantConditionTest {
         assertTrue(VariantConditionEdits.isLive(VariantCondition.NONE.withGroup(2), groups, 1));
         assertFalse(VariantConditionEdits.isLive(VariantCondition.NONE.withGroup(9), groups, 1));
     }
+
+    @Test
+    @DisplayName("Solid / Empty / Any block kinds: match by kind, round-trip, and stay out of the block values")
+    void kindValues() {
+        VariantCondition solid = VariantConditionEdits.toggleValue(VariantCondition.NONE,
+            VariantCondition.SOLID_ID.toString()).condition();
+        assertNotNull(solid);
+        assertEquals("down=dungeontrain:solid", solid.id());
+        assertEquals(solid, VariantCondition.parse(solid.id()));
+        assertTrue(solid.matches(Blocks.STONE.defaultBlockState()));
+        assertTrue(solid.matches(Blocks.OAK_PLANKS.defaultBlockState()));
+        assertFalse(solid.matches(Blocks.AIR.defaultBlockState()));
+        assertFalse(solid.matches(CarriageVariantBlocks.emptyPlaceholder()));
+        assertFalse(solid.matches(Blocks.WATER.defaultBlockState()));
+        assertFalse(solid.matches(Blocks.TORCH.defaultBlockState()));
+
+        VariantCondition any = VariantCondition.NONE.withValueAdded(VariantCondition.ANY_ID);
+        assertEquals(any, VariantCondition.parse(any.id()));
+        assertTrue(any.matches(Blocks.STONE.defaultBlockState()));
+        assertTrue(any.matches(Blocks.WATER.defaultBlockState()));
+        assertTrue(any.matches(Blocks.TORCH.defaultBlockState()));
+        assertFalse(any.matches(Blocks.AIR.defaultBlockState()));
+        assertFalse(any.matches(CarriageVariantBlocks.emptyPlaceholder()));
+
+        VariantCondition empty = VariantCondition.NONE.withValueAdded(VariantCondition.EMPTY_ID);
+        assertTrue(empty.matches(CarriageVariantBlocks.emptyPlaceholder()));
+        assertFalse(empty.matches(Blocks.STONE.defaultBlockState()));
+
+        // Kinds OR with listed blocks, and the icon strip only sees the blocks.
+        VariantCondition mixed = solid.withValueAdded(OAK).withValueAdded(VariantCondition.EMPTY_ID);
+        assertEquals(List.of(OAK), mixed.blockValues());
+        assertTrue(mixed.matches(Blocks.AIR.defaultBlockState()));
+        assertTrue(mixed.matches(Blocks.STONE.defaultBlockState()));
+        assertTrue(VariantConditionEdits.toggleValue(mixed, VariantCondition.SOLID_ID.toString())
+            .condition().blocks().equals(List.of(OAK, VariantCondition.EMPTY_ID)));
+    }
 }
