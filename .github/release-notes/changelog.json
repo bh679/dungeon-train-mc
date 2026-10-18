@@ -27702,7 +27702,7 @@
         "editor",
         "mobs"
       ],
-      "title": "Something stirs in the pale carriages",
+      "title": "The Creaking joins the Train",
       "summary": "Pale trees have taken root in a few carriages, and their hearts keep watch on the move. Whatever they wake stays in the carriage with you.",
       "highlights": [
         "New pale carriages among the train's enemies",
@@ -27713,7 +27713,11 @@
       "date": "2026-10-18",
       "released": true,
       "released_in": "v0.1357.0",
-      "released_at": "2026-10-18T14:54:22Z"
+      "released_at": "2026-10-18T14:54:22Z",
+      "major": true,
+      "notable": true,
+      "description": "The Creaking has boarded the train.\n\nPale trees have taken root in a few carriages, and their hearts keep watch while the train rolls on. Keep your eyes on it. Look away and it moves. Whatever wakes stays in the carriage with you.\n\n## Other significant updates\n\n- A new Fastest Everything Burrito leaderboard ranks how quickly you earned it\n- Your own hits and arrows no longer hurt your tamed pets\n- One more hidden advancement for Live Eye viewers\n- Distant Horizons uses less CPU\n- Builders: set when a creaking heart wakes and how many Creaking it calls\n- Builders: Test the Carriage shows moved exits where players will find them\n- Bug fixes",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/creaking-joins-the-train.jpg"
     },
     {
       "id": "dh-hidden-strange-stretch",
