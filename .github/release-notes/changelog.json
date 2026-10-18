@@ -27529,8 +27529,25 @@
       "released_at": null
     },
     {
+      "id": "contents-reroll-carriage-remembered",
+      "version": "0.1351.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Rerolled carriages are remembered in the editor",
+      "summary": "When you reroll the carriage a contents template stands in, the editor now keeps that choice. Next time you open the editor, the template is still in the carriage you picked.",
+      "highlights": [],
+      "pr": 2109,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "advancement-reinsert-revealed",
-      "version": "0.1350.0",
+      "version": "0.1351.0",
       "type": "fix",
       "tags": [
         "fix",
@@ -27540,11 +27557,11 @@
       "title": "Revealed advancements slot into their chain",
       "summary": "When an advancement you skipped past is uncovered, it now sits in its place in the chain on the advancements screen instead of hanging off to one side.",
       "highlights": [],
+      "pr": 2110,
       "date": "2026-10-18",
       "released": false,
       "released_in": null,
-      "released_at": null,
-      "pr": 2110
+      "released_at": null
     }
   ]
 }
