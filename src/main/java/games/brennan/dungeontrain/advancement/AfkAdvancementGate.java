@@ -59,7 +59,8 @@ public final class AfkAdvancementGate {
         // Arrive on their own, whenever they arrive.
         "dungeon_train/the_creator_answers",     // the developer's reply lands on the relay's schedule
         "enchiridion/called_it",                 // takeover vote result, usually while watching the stream
-        "enchiridion/candid",                    // picking up a photo a PlayerMob tossed you
+        "enchiridion/part_of_the_community",     // typed while watching a TV: the mouse sits still for the whole line
+        "enchiridion/candid",                  // picking up a photo a PlayerMob tossed you
         "enchiridion/found_footage"              // photo viewer's close packet beats the Esc key report
     ).map(path -> ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, path))
         .collect(Collectors.toUnmodifiableSet());
