@@ -6,6 +6,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 import games.brennan.dungeontrain.compat.CreakingHeartPositions;
+import games.brennan.dungeontrain.compat.CreakingHeartSpawnSpot;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.entity.player.Player;
@@ -69,6 +70,17 @@ public abstract class CreakingHeartBlockEntityMixin {
     private Vec3 dungeontrain$particleTrailFromWorld(Vec3i vec, Operation<Vec3> original) {
         BlockEntity self = (BlockEntity) (Object) this;
         return CreakingHeartPositions.worldPoint(self.getLevel(), self.getBlockPos(), 0, 0, 0);
+    }
+
+    /** Spawn in the heart's own space, not on the carriage roof — see {@link CreakingHeartSpawnSpot}. */
+    @WrapOperation(method = "spawnProtector", at = @At(value = "INVOKE",
+            target = "Lcom/blackgear/vanillabackport/core/util/SpawnExtras;trySpawnMob(Lnet/minecraft/world/entity/EntityType;Lnet/minecraft/world/entity/MobSpawnType;Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/core/BlockPos;IIILnet/minecraft/util/SpawnUtil$Strategy;Z)Ljava/util/Optional;"))
+    private static <T extends net.minecraft.world.entity.Mob> Optional<T> dungeontrain$spawnInside(
+            net.minecraft.world.entity.EntityType<T> type, net.minecraft.world.entity.MobSpawnType spawnType,
+            net.minecraft.server.level.ServerLevel level, BlockPos pos, int attempts, int spread, int yOffset,
+            net.minecraft.util.SpawnUtil.Strategy strategy, boolean checkCollisions,
+            Operation<Optional<T>> original) {
+        return CreakingHeartSpawnSpot.trySpawn(type, spawnType, level, pos);
     }
 
     @Inject(method = "distanceToCreaking", at = @At("HEAD"), cancellable = true)
