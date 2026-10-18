@@ -42,6 +42,14 @@ public final class LiveEncoder implements AutoCloseable {
     static final int KEYFRAME_SECONDS = 2;
     /** libx264 defaults to ~1.5 threads per core (sliced under zerolatency) and competes with the game; 720p20 veryfast needs under one core. */
     static final int ENCODER_THREADS = 2;
+    /** Save bandwidth: a slower preset finds the same picture in fewer bits, at several times veryfast's CPU. */
+    static final String SAVE_BANDWIDTH_PRESET = "medium";
+    /** medium needs more than veryfast's two threads to keep up at 720p20; still short of every core. */
+    static final int SAVE_BANDWIDTH_THREADS = 4;
+    /** Save bandwidth sends this share of {@code bitrateKbps}: medium without zerolatency looks about the same at it. */
+    static final double SAVE_BANDWIDTH_BITRATE_FACTOR = 0.55;
+    /** The lowest bitrate save-bandwidth mode goes to, matching the config's own floor. */
+    static final int MIN_BITRATE_KBPS = 500;
     /** Stream audio bitrate: AAC stereo, plenty for game sound. */
     static final int AUDIO_KBPS = 96;
     /** Input queue for each input when there are two, so neither blocks ffmpeg's reader on the other. */
@@ -55,16 +63,22 @@ public final class LiveEncoder implements AutoCloseable {
     private final Process process;
     private final Thread writer;
     private final int fps;
+    private final boolean saveBandwidth;
     private volatile boolean running = true;
     private volatile boolean died;
     private final AtomicLong framesWritten = new AtomicLong();
 
-    /** {@code audioPort} 0 = no sound (as before); otherwise the loopback port ffmpeg reads the sound from. */
+    /**
+     * {@code audioPort} 0 = no sound (as before); otherwise the loopback port ffmpeg reads the sound from.
+     * {@code saveBandwidth} = compress harder (see {@link #args}).
+     */
     public LiveEncoder(FFmpeg ffmpeg, LiveFrameGrabber grabber, Path dir, int fps, int bitrateKbps, int segmentSeconds,
-                       int audioPort) throws IOException {
+                       int audioPort, boolean saveBandwidth) throws IOException {
         this.grabber = grabber;
         this.fps = fps;
-        this.process = ffmpeg.runFFmpeg(args(grabber.width(), grabber.height(), fps, bitrateKbps, segmentSeconds, dir, audioPort));
+        this.saveBandwidth = saveBandwidth;
+        this.process = ffmpeg.runFFmpeg(args(grabber.width(), grabber.height(), fps, bitrateKbps, segmentSeconds, dir,
+            audioPort, saveBandwidth));
         FfmpegSupport.drain(process.getErrorStream(), "encoder");
         FfmpegSupport.drain(process.getInputStream(), "encoder-out");
         this.writer = new Thread(this::writeLoop, "dt-live-encoder");
@@ -77,6 +91,19 @@ public final class LiveEncoder implements AutoCloseable {
     }
 
     static String[] args(int w, int h, int fps, int bitrateKbps, int segmentSeconds, Path dir, int audioPort) {
+        return args(w, h, fps, bitrateKbps, segmentSeconds, dir, audioPort, false);
+    }
+
+    /**
+     * With {@code saveBandwidth} the picture costs less upload for more CPU: {@value #SAVE_BANDWIDTH_PRESET}
+     * instead of veryfast, no {@code zerolatency} (B-frames and lookahead are most of the saving; a 10 s
+     * segment stream doesn't miss the latency), {@value #SAVE_BANDWIDTH_THREADS} threads and
+     * {@link #effectiveBitrateKbps} of the bitrate. Keyframes, segments and the codec are unchanged, so
+     * Twitch's {@code -c:v copy} and the TVs' decoder take it as before.
+     */
+    static String[] args(int w, int h, int fps, int bitrateKbps, int segmentSeconds, Path dir, int audioPort,
+                         boolean saveBandwidth) {
+        int kbps = effectiveBitrateKbps(bitrateKbps, saveBandwidth);
         int gop = fps * KEYFRAME_SECONDS;
         boolean audio = audioPort > 0;
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin"));
@@ -89,9 +116,13 @@ public final class LiveEncoder implements AutoCloseable {
         }
         a.addAll(List.of(
             "-vf", "vflip",
-            "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-pix_fmt", "yuv420p",
-            "-threads", String.valueOf(ENCODER_THREADS),
-            "-b:v", bitrateKbps + "k", "-maxrate", bitrateKbps + "k", "-bufsize", (bitrateKbps * 2) + "k",
+            "-c:v", "libx264"));
+        if (saveBandwidth) a.addAll(List.of("-preset", SAVE_BANDWIDTH_PRESET));
+        else a.addAll(List.of("-preset", "veryfast", "-tune", "zerolatency"));
+        a.addAll(List.of(
+            "-pix_fmt", "yuv420p",
+            "-threads", String.valueOf(saveBandwidth ? SAVE_BANDWIDTH_THREADS : ENCODER_THREADS),
+            "-b:v", kbps + "k", "-maxrate", kbps + "k", "-bufsize", (kbps * 2) + "k",
             "-g", String.valueOf(gop), "-keyint_min", String.valueOf(gop), "-sc_threshold", "0",
             "-force_key_frames", "expr:gte(t,n_forced*" + KEYFRAME_SECONDS + ")"));
         if (audio) a.addAll(List.of("-c:a", "aac", "-b:a", AUDIO_KBPS + "k", "-ar", "48000", "-ac", "2"));
@@ -101,6 +132,17 @@ public final class LiveEncoder implements AutoCloseable {
             "-hls_segment_filename", dir.resolve("seg%05d.ts").toString(),
             dir.resolve(LivePlaylist.FILE_NAME).toString()));
         return a.toArray(new String[0]);
+    }
+
+    /** The video bitrate actually sent: {@code bitrateKbps}, or its save-bandwidth share (never under {@value #MIN_BITRATE_KBPS}). */
+    static int effectiveBitrateKbps(int bitrateKbps, boolean saveBandwidth) {
+        if (!saveBandwidth) return bitrateKbps;
+        return Math.max(MIN_BITRATE_KBPS, (int) Math.round(bitrateKbps * SAVE_BANDWIDTH_BITRATE_FACTOR));
+    }
+
+    /** Whether this encoder runs in save-bandwidth mode; a restart keeps the mode it started in. */
+    public boolean saveBandwidth() {
+        return saveBandwidth;
     }
 
     /** The ffmpeg process, for the {@code [live]} perf line's CPU sample. */

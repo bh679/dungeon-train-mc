@@ -55,4 +55,32 @@ class LiveEncoderArgsTest {
         tail.subList(codec, codec + 8).clear();
         assertEquals(video.subList(video.indexOf("-vf"), video.size()), tail);
     }
+
+    @Test
+    void saveBandwidthCompressesHarderButKeepsKeyframesAndSegments() {
+        Path dir = Path.of("/tmp/live/abc");
+        List<String> off = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, dir, 0, false));
+        List<String> a = Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, dir, 0, true));
+        assertEquals(Arrays.asList(LiveEncoder.args(1280, 720, 20, 2500, 10, dir)), off, "off is today's encoder");
+        assertEquals("medium", a.get(a.indexOf("-preset") + 1));
+        assertFalse(a.contains("-tune"), "no zerolatency: B-frames and lookahead are most of the saving");
+        assertEquals("4", a.get(a.indexOf("-threads") + 1));
+        assertEquals("1375k", a.get(a.indexOf("-b:v") + 1), "55% of the configured bitrate");
+        assertEquals("1375k", a.get(a.indexOf("-maxrate") + 1));
+        assertEquals("2750k", a.get(a.indexOf("-bufsize") + 1));
+        for (String opt : List.of("-g", "-keyint_min", "-sc_threshold", "-force_key_frames", "-hls_time", "-hls_flags",
+                "-hls_segment_filename", "-pix_fmt", "-c:v")) {
+            assertEquals(off.get(off.lastIndexOf(opt) + 1), a.get(a.lastIndexOf(opt) + 1),
+                    opt + " unchanged: Twitch copies the video and viewers join on segment boundaries");
+        }
+        assertEquals(off.get(off.size() - 1), a.get(a.size() - 1));
+    }
+
+    @Test
+    void saveBandwidthBitrateHasAFloor() {
+        assertEquals(2500, LiveEncoder.effectiveBitrateKbps(2500, false));
+        assertEquals(1375, LiveEncoder.effectiveBitrateKbps(2500, true));
+        assertEquals(500, LiveEncoder.effectiveBitrateKbps(600, true));
+        assertEquals(4400, LiveEncoder.effectiveBitrateKbps(8000, true));
+    }
 }

@@ -591,11 +591,12 @@ public final class LiveStreamController {
             int fps = LiveFeedClientConfig.captureFps();
             int bitrate = LiveFeedClientConfig.bitrateKbps();
             int segment = LiveFeedClientConfig.segmentSeconds();
+            boolean save = LiveFeedClientConfig.saveBandwidth();
             // Off, not possible here, or an unapproved mod loaded (it could play anything):
             // the stream goes out without sound, as before.
             audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(aac) : null;
             int audioPort = audio == null ? 0 : audio.port();
-            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort), STARTER)
+            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort, save), STARTER)
                 .whenCompleteAsync((enc, err) -> adoptEncoder(gen, enc, err, fps), mc);
         } catch (Exception e) {
             failStart(e);
@@ -621,9 +622,9 @@ public final class LiveStreamController {
         streamStartedMs = System.currentTimeMillis();
         state = State.STREAMING;
         LiveLifeEvents.stintStarted(LiveFeedClientConfig.segmentSeconds());
-        LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}, playlist {}", c.session(),
+        LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}{}, playlist {}", c.session(),
             grabber == null ? 0 : grabber.width(), grabber == null ? 0 : grabber.height(),
-            fps, audio != null ? " with sound" : "", c.playlistUrl());
+            fps, audio != null ? " with sound" : "", enc.saveBandwidth() ? ", saving bandwidth" : "", c.playlistUrl());
         announcedLive = false;
         if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
     }
@@ -640,9 +641,9 @@ public final class LiveStreamController {
 
     /** {@link #STARTER} thread: spawning ffmpeg can take a while, so never on the render thread. */
     private static LiveEncoder spawnEncoder(FFmpeg ffmpeg, LiveFrameGrabber grab, Path d, int fps, int bitrate,
-                                            int segment, int audioPort) {
+                                            int segment, int audioPort, boolean saveBandwidth) {
         try {
-            return new LiveEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort);
+            return new LiveEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort, saveBandwidth);
         } catch (IOException e) {
             throw new CompletionException(e);
         }
@@ -678,10 +679,11 @@ public final class LiveStreamController {
         int fps = LiveFeedClientConfig.captureFps();
         int bitrate = LiveFeedClientConfig.bitrateKbps();
         int segment = LiveFeedClientConfig.segmentSeconds();
+        boolean save = old.saveBandwidth();
         CompletableFuture.supplyAsync(() -> {
             snd.close();
             old.close();
-            return spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, 0);
+            return spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, 0, save);
         }, STARTER).whenCompleteAsync((enc, err) -> {
             if (gen != generation || state != State.STREAMING) {
                 if (enc != null) closeEncoderAsync(enc);
