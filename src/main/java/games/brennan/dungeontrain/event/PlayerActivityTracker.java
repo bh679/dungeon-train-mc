@@ -37,7 +37,7 @@ import java.util.UUID;
  *
  * <p>Four triggers stop it:</p>
  * <ul>
- *   <li>Mouse has not moved for {@link #LOOK_IDLE_TICKS} (30 s)</li>
+ *   <li>Mouse has not moved or clicked for {@link #LOOK_IDLE_TICKS} (30 s)</li>
  *   <li>No <em>non-look</em> input for {@link #INPUT_IDLE_TICKS} (5 min)</li>
  *   <li>Pause screen open ({@link games.brennan.dungeontrain.net.PlayerPausedPacket})</li>
  *   <li>Fewer than {@link #MIN_CARRIAGES_PER_WINDOW} carriages traversed in the last
@@ -66,7 +66,11 @@ import java.util.UUID;
  *
  * <p>The same signal decides whether a player can earn advancements: {@link #isAfk} (paused, mouse
  * idle or input idle — but not {@link Reason#NO_PROGRESS}, which is a player at the keyboard) makes
- * {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion.</p>
+ * {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion. One
+ * difference from the clocks: a paused player who clicked or typed on their screen in the last
+ * {@link #MENU_PRESENCE_MS} is not AFK. Nearly every screen is a pause screen — books, the photo
+ * viewer, the pause menu's sliders and Abandon button — and the packet a click there sends is proof
+ * someone is at the keyboard. Their train time still stops; only the advancement rule relents.</p>
  *
  * <p>All state is transient and keyed by UUID — dropped on logout, seeded on login and respawn. A
  * player the tracker has never seen counts as active, so a missed login can only over-count, never
@@ -82,6 +86,12 @@ public final class PlayerActivityTracker {
 
     /** No non-look input for this many ticks (5 min) and both counters stop. */
     public static final long INPUT_IDLE_TICKS = 6000L;
+
+    /**
+     * A click or key press on a pause screen within this long (wall clock — game time stands still
+     * behind a single-player pause menu) means the player is at the keyboard, for {@link #isAfk}.
+     */
+    public static final long MENU_PRESENCE_MS = 10_000L;
 
     /** Carriage-progress window (10 min). */
     public static final long PROGRESS_WINDOW_TICKS = 12000L;
@@ -133,6 +143,9 @@ public final class PlayerActivityTracker {
     /** Player → last sampled input state, the baseline for change detection. */
     private static final Map<UUID, InputState> LAST_INPUT_STATE = new HashMap<>();
 
+    /** Player → wall-clock ms of their last click or key press inside a screen. */
+    private static final Map<UUID, Long> LAST_MENU_INPUT_MS = new HashMap<>();
+
     /** Players whose client currently reports a pause screen open. */
     private static final Set<UUID> PAUSED = new HashSet<>();
 
@@ -175,9 +188,17 @@ public final class PlayerActivityTracker {
         return reason == Reason.PAUSED || reason == Reason.MOUSE_IDLE || reason == Reason.INPUT_IDLE;
     }
 
-    /** Is this player away from the keyboard? Gates advancement earning. */
+    /**
+     * Is this player away from the keyboard? Gates advancement earning. As {@link #isAfk(Reason)},
+     * except a paused player who is using their screen is present.
+     */
     public static boolean isAfk(ServerPlayer player) {
-        return isAfk(reason(player));
+        Reason reason = reason(player);
+        if (reason == Reason.PAUSED
+                && menuPresent(LAST_MENU_INPUT_MS.get(player.getUUID()), System.currentTimeMillis())) {
+            return false;
+        }
+        return isAfk(reason);
     }
 
     /**
@@ -233,6 +254,14 @@ public final class PlayerActivityTracker {
     }
 
     /**
+     * Did the player click or type on a screen within {@link #MENU_PRESENCE_MS}? {@code null} means
+     * not since they logged in.
+     */
+    public static boolean menuPresent(@Nullable Long lastMenuInputMs, long nowMs) {
+        return lastMenuInputMs != null && nowMs - lastMenuInputMs < MENU_PRESENCE_MS;
+    }
+
+    /**
      * Was the player inside a dimensional carriage within the progress window? {@code null} means
      * never — a player who has not been in one is judged on carriages alone.
      */
@@ -285,6 +314,15 @@ public final class PlayerActivityTracker {
      */
     public static void markLook(UUID uuid, long nowTick) {
         LAST_LOOK_TICK.put(uuid, nowTick);
+    }
+
+    /**
+     * Stamp {@code uuid} as having clicked or typed inside a screen, from
+     * {@link games.brennan.dungeontrain.net.ClientInputPacket}. Feeds {@link #isAfk}'s exception
+     * for a player using their pause screen.
+     */
+    public static void markMenuInput(UUID uuid, long nowMs) {
+        LAST_MENU_INPUT_MS.put(uuid, nowMs);
     }
 
     /** Stamp {@code uuid} as having provided non-look input, crediting {@code trigger}. */
@@ -472,15 +510,22 @@ public final class PlayerActivityTracker {
         FIRST_BOARDED_TICK.remove(uuid);
         LAST_ROOM_TICK.remove(uuid);
         LAST_TRIGGER.remove(uuid);
+        LAST_MENU_INPUT_MS.remove(uuid);
         REPORTED_REASON.remove(uuid);
         LAST_SENT.remove(uuid);
         PAUSED.remove(uuid);
     }
 
-    /** Stamp a server player as having provided non-look input. No-op off the server. */
+    /**
+     * Stamp a server player as having provided input. No-op off the server. It counts for the mouse
+     * clock as well: every event routed here is a click, chat aside, and a player holding a steady
+     * aim for a shot or a swing has a hand on the mouse whether or not the view moved.
+     */
     private static void mark(net.minecraft.world.entity.player.Player player, String trigger) {
         if (!(player instanceof ServerPlayer serverPlayer)) return;
-        markInput(serverPlayer.getUUID(), serverPlayer.level().getGameTime(), trigger);
+        long now = serverPlayer.level().getGameTime();
+        markLook(serverPlayer.getUUID(), now);
+        markInput(serverPlayer.getUUID(), now, trigger);
     }
 
     /** Start both clocks fresh — a player who just arrived is at the keyboard. */

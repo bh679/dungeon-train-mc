@@ -176,4 +176,14 @@ class PlayerActivityTrackerTest {
         assertEquals(3, Reason.INPUT_IDLE.ordinal());
         assertEquals(4, Reason.NO_PROGRESS.ordinal());
     }
+
+    @Test
+    @DisplayName("a click on a pause screen counts as present for 10 s, then lapses")
+    void menuPresenceWindow() {
+        long window = PlayerActivityTracker.MENU_PRESENCE_MS;
+        assertFalse(PlayerActivityTracker.menuPresent(null, 50_000L));
+        assertTrue(PlayerActivityTracker.menuPresent(50_000L, 50_000L));
+        assertTrue(PlayerActivityTracker.menuPresent(50_000L, 50_000L + window - 1));
+        assertFalse(PlayerActivityTracker.menuPresent(50_000L, 50_000L + window));
+    }
 }

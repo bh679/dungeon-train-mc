@@ -52,6 +52,7 @@ public record ClientInputPacket(boolean nonLook) implements CustomPacketPayload 
             PlayerActivityTracker.markLook(player.getUUID(), now);
             if (packet.nonLook) {
                 PlayerActivityTracker.markInput(player.getUUID(), now, "menu input");
+                PlayerActivityTracker.markMenuInput(player.getUUID(), System.currentTimeMillis());
             }
         });
     }
