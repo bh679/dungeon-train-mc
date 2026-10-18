@@ -17,8 +17,8 @@ import java.util.List;
  *
  * <p>Top to bottom: the <b>mode</b> ({@code Touching | Group}), that mode's picker ({@code N S E W U D}
  * multi-select, plus {@code Any | All} once two sides are lit, or {@code ◂ G3 ▸}), the <b>block list</b> as a horizontal strip of icons (OR'd) —
- * in Touching mode the blocks added from the hand (click one to drop it), in Group mode every block
- * the group can roll, each toggled on or off — then <b>+ Held</b> (Touching only) and <b>Clear</b>.</p>
+ * every block the neighbouring variant cells (Touching) or the group (Group) can roll, each toggled
+ * on or off — then <b>+ Held</b> (Touching only, for a block no neighbour offers) and <b>Clear</b>.</p>
  */
 final class ConditionPopupLayout {
 
@@ -91,11 +91,15 @@ final class ConditionPopupLayout {
      */
     static List<ResourceLocation> strip(BlockVariantSyncPacket.Entry entry) {
         VariantCondition c = VariantCondition.parse(entry.condition());
-        if (!c.isGroupTarget()) return c.blocks();
         List<ResourceLocation> out = new ArrayList<>();
         for (String raw : entry.conditionGroupValues().split(",")) {
             ResourceLocation id = raw.isBlank() ? null : ResourceLocation.tryParse(raw.trim());
-            if (id != null) out.add(id);
+            if (id != null && !out.contains(id)) out.add(id);
+        }
+        // Touching mode offers the neighbouring variants' blocks; a value chosen by hand that no
+        // neighbour offers stays in the strip so it can still be switched off.
+        if (!c.isGroupTarget()) {
+            for (ResourceLocation id : c.blocks()) if (!out.contains(id)) out.add(id);
         }
         return out;
     }
@@ -107,7 +111,7 @@ final class ConditionPopupLayout {
     static boolean isSelected(BlockVariantSyncPacket.Entry entry, GrowthPopupLayout.Row row, int i) {
         VariantCondition c = VariantCondition.parse(entry.condition());
         if (row.section() == SECTION_TOUCHING) return c.hasSide(touching(i));
-        if (row.section() == SECTION_BLOCKS && c.isGroupTarget()) {
+        if (row.section() == SECTION_BLOCKS) {
             List<ResourceLocation> strip = strip(entry);
             return i < strip.size() && c.blocks().contains(strip.get(i));
         }

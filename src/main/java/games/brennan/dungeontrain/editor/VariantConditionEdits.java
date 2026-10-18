@@ -39,6 +39,20 @@ public final class VariantConditionEdits {
      */
     public static Result setTarget(VariantCondition current, String token, Set<Integer> lockIdsInUse,
                                    int ownLockId) {
+        return setTarget(current, token, lockIdsInUse, ownLockId, 0);
+    }
+
+    /**
+     * {@link #setTarget(VariantCondition, String, Set, int)}, where switching from Group to Touching
+     * lights {@code variantSides} — every side with a variant cell — rather than the default side.
+     */
+    public static Result setTarget(VariantCondition current, String token, Set<Integer> lockIdsInUse,
+                                   int ownLockId, int variantSides) {
+        VariantCondition fromGroup = VariantCondition.parseTarget(token);
+        if (current.isGroupTarget() && variantSides != 0 && fromGroup != null && !fromGroup.isGroupTarget()
+                && !token.startsWith(TOGGLE_PREFIX) && !token.startsWith(OTHERS_PREFIX)) {
+            return Result.ok(current.withSides(variantSides));
+        }
         if (GROUP_NEXT.equals(token) || GROUP_PREV.equals(token)) {
             TreeSet<Integer> groups = new TreeSet<>(lockIdsInUse);
             groups.remove(ownLockId);
@@ -112,6 +126,39 @@ public final class VariantConditionEdits {
             return Result.refused("chat.dungeontrain.editor_bar.variant_menu.condition_full");
         }
         return Result.ok(current.withValueAdded(id));
+    }
+
+    /** Bitmask of the sides of {@code localPos} that have a variant cell next to them. */
+    public static int variantSides(BlockVariantPlot plot, net.minecraft.core.BlockPos localPos) {
+        int mask = 0;
+        for (net.minecraft.core.Direction d : VariantConditions.TOUCHING) {
+            if (plot.statesAt(localPos.relative(d)) != null) mask |= VariantCondition.bit(d);
+        }
+        return mask;
+    }
+
+    /**
+     * Touching mode's togglable values: every block a neighbouring variant cell can roll, sides in
+     * N S E W U D order, each block once. Mobs and empty rows read as air, as in {@link #groupValues}.
+     */
+    public static java.util.List<net.minecraft.resources.ResourceLocation> neighbourValues(
+            BlockVariantPlot plot, net.minecraft.core.BlockPos localPos) {
+        java.util.LinkedHashSet<net.minecraft.resources.ResourceLocation> out = new java.util.LinkedHashSet<>();
+        for (net.minecraft.core.Direction d : VariantConditions.TOUCHING) {
+            out.addAll(groupValues(plot.statesAt(localPos.relative(d))));
+        }
+        return java.util.List.copyOf(out);
+    }
+
+    /**
+     * An unset Touching condition about to get its first value takes {@code variantSides} — the
+     * sides with a variant cell — as its sides, so the author doesn't have to pick them first.
+     */
+    public static VariantCondition withDefaultSides(VariantCondition current, int variantSides) {
+        if (current.isGroupTarget() || !current.isDefault() || variantSides == 0) return current;
+        // Sides the author already picked by hand stay; only the untouched default is replaced.
+        if (current.sideMask() != VariantCondition.bit(VariantCondition.DEFAULT_DIRECTION)) return current;
+        return current.withSides(variantSides);
     }
 
     /** True when a group-targeted condition still has a group to look at. */

@@ -528,12 +528,9 @@ public final class BlockVariantMenuInputHandler {
                 ConditionPopupLayout.strip(BlockVariantMenu.entries().get(row));
             // The "–" placeholder of an empty strip does nothing.
             if (option >= strip.size()) return;
-            // Group mode switches one of the group's blocks on or off; Touching mode drops the value.
-            packet = groupMode
-                ? new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
-                    strip.get(option).toString(), 0)
-                : new BlockVariantEditPacket(BlockVariantEditPacket.Op.REMOVE_COND_VALUE, variantId, local, row,
-                    "", option);
+            // Both modes switch one of the offered blocks on or off.
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.TOGGLE_COND_VALUE, variantId, local, row,
+                strip.get(option).toString(), 0);
         } else if (section == ConditionPopupLayout.SECTION_ACTIONS) {
             // Group mode's action row is Clear alone.
             boolean add = !groupMode && option == ConditionPopupLayout.ACTION_ADD;
