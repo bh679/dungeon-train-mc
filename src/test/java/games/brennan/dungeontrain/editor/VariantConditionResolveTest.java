@@ -184,4 +184,77 @@ final class VariantConditionResolveTest {
         assertTrue(differs);
         assertNotEquals(VariantConditions.EMPTY_PICK, gated.resolve(BELOW, 0, 0));
     }
+
+    // ---- "a heart only between two logs" ----
+
+    /**
+     * Brennan's centre tree: lock group 1 at y0 and y4 rolls a log or air; y1-y3 each offer a heart
+     * (glowstone here) when the log is both below <i>and</i> above, else follow the group.
+     */
+    private static CarriageVariantBlocks heartColumn() {
+        CarriageVariantBlocks sc = CarriageVariantBlocks.empty();
+        VariantState air = VariantState.of(CarriageVariantBlocks.emptyPlaceholder());
+        for (int y : new int[] {0, 4}) {
+            BlockPos p = new BlockPos(0, y, 0);
+            sc.put(p, List.of(of(Blocks.OAK_LOG).withWeight(4), air));
+            sc.setLockId(p, 1);
+        }
+        VariantCondition logsAround = VariantCondition.parse("down&up=minecraft:oak_log");
+        VariantCondition groupLog = VariantCondition.parse("group1=minecraft:oak_log");
+        VariantCondition groupAir = VariantCondition.parse("group1=minecraft:air");
+        for (int y = 1; y <= 3; y++) {
+            sc.put(new BlockPos(0, y, 0), List.of(
+                of(Blocks.GLOWSTONE).withCondition(logsAround),
+                of(Blocks.OAK_LOG).withCondition(groupLog),
+                air.withCondition(groupAir)));
+        }
+        return sc;
+    }
+
+    private static Block[] rollColumn(CarriageVariantBlocks sc, int seed, int idx, boolean topDown) {
+        Block[] out = new Block[5];
+        try (VariantConditions.Scope ignored = VariantConditions.open(p -> Blocks.AIR.defaultBlockState())) {
+            for (int i = 0; i < 5; i++) {
+                int y = topDown ? 4 - i : i;
+                out[y] = blockOf(sc.resolve(new BlockPos(0, y, 0), seed, idx));
+            }
+        }
+        return out;
+    }
+
+    @Test
+    @DisplayName("all-sides tokens round-trip and need every listed side")
+    void allSidesToken() {
+        VariantCondition c = VariantCondition.parse("down&up=minecraft:oak_log");
+        assertTrue(c.all());
+        assertEquals("down&up=minecraft:oak_log", c.id());
+        assertTrue(!VariantCondition.parse("down+up=minecraft:oak_log").all());
+    }
+
+    @Test
+    @DisplayName("a heart only ever sits between two logs, never touches another, whatever order cells roll in")
+    void heartsNeverTouch() {
+        CarriageVariantBlocks sc = heartColumn();
+        int hearts = 0;
+        for (int seed = 0; seed < 64; seed++) {
+            for (int idx = 0; idx < 64; idx++) {
+                Block[] up = rollColumn(sc, seed, idx, false);
+                Block[] down = rollColumn(sc, seed, idx, true);
+                assertArrayEqualsColumn(up, down, seed, idx);
+                for (int y = 1; y <= 3; y++) {
+                    if (up[y] != Blocks.GLOWSTONE) continue;
+                    hearts++;
+                    assertEquals(Blocks.OAK_LOG, up[y - 1], "heart without a log below, seed " + seed + " idx " + idx);
+                    assertEquals(Blocks.OAK_LOG, up[y + 1], "heart without a log above, seed " + seed + " idx " + idx);
+                }
+            }
+        }
+        assertTrue(hearts > 0, "no heart ever rolled");
+    }
+
+    private static void assertArrayEqualsColumn(Block[] a, Block[] b, int seed, int idx) {
+        for (int y = 0; y < 5; y++) {
+            assertEquals(a[y], b[y], "order changed y" + y + " at seed " + seed + " idx " + idx);
+        }
+    }
 }

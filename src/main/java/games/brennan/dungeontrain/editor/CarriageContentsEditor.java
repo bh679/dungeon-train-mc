@@ -677,6 +677,9 @@ public final class CarriageContentsEditor {
             interiorSnapshotSize.getX(), interiorSnapshotSize.getY(), interiorSnapshotSize.getZ()
         );
 
+        CarriageContentsVariantBlocks variants = CarriageContentsVariantBlocks.loadFor(contents, interiorSnapshotSize);
+        VariantConditionWarnings.afterSave(player, contents.id(), variants.entries(), variants::lockIdAt);
+
         games.brennan.dungeontrain.advancement.ModAdvancementTriggers.EDITOR_ACTION.get()
             .trigger(player, "saved_contents_variant");
         // …and, when they have opted in, to the player's relay profile. Hooked here rather than at

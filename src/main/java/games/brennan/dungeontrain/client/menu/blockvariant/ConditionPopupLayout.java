@@ -15,12 +15,13 @@ import java.util.List;
  * Geometry + labels of the Z menu's If popup for one row, drawn and hit-tested through the Grow
  * popup's {@link GrowthPopupLayout.Row} shape so the renderer and raycaster share one layout.
  *
- * <p>Top to bottom: the <b>mode</b> ({@code Touching | Group | Kind}), that mode's picker
- * ({@code N S E W U D} multi-select for Touching and Kind, or {@code ◂ G3 ▸}), then what the target
- * must be, OR'd: in Kind mode the {@code Solid Empty Any block} checkboxes; otherwise the <b>block
- * list</b> as a horizontal strip of icons — in Touching mode the blocks added from the hand (click
- * one to drop it), in Group mode every block the group can roll, each toggled on or off — then
- * <b>+ Held</b> (Touching only) and <b>Clear</b>.</p>
+ * <p>Top to bottom: the <b>mode</b> ({@code Touch | Group | Kind}), that mode's picker
+ * ({@code N S E W U D} multi-select for Touch and Kind, plus {@code Any | All} once two sides are
+ * lit, or {@code ◂ G3 ▸}), then what the target must be, OR'd: in Kind mode the
+ * {@code Solid Empty Any block} checkboxes; otherwise the <b>block list</b> as a horizontal strip of
+ * icons — every block the neighbouring variant cells (Touch) or the group (Group) can roll, each
+ * toggled on or off — then <b>+ Held</b> (Touch only, for a block no neighbour offers) and
+ * <b>Clear</b>.</p>
  */
 final class ConditionPopupLayout {
 
@@ -30,6 +31,10 @@ final class ConditionPopupLayout {
     static final int SECTION_BLOCKS = 3;
     static final int SECTION_ACTIONS = 4;
     static final int SECTION_KIND = 5;
+    /** Any | All: whether one listed side or every listed side must hold a value (two or more sides). */
+    static final int SECTION_MATCH = 6;
+    static final int MATCH_ANY = 0;
+    static final int MATCH_ALL = 1;
 
     static final int MODE_TOUCHING = 0;
     static final int MODE_GROUP = 1;
@@ -57,6 +62,11 @@ final class ConditionPopupLayout {
         } else {
             // Multi-select: which sides are lit comes from isSelected, not this row's single index.
             spec.add(new Object[] {SECTION_TOUCHING, "", TOUCHING_LABELS.clone(), -1});
+            if (c.sides().size() >= 2) {
+                spec.add(new Object[] {SECTION_MATCH, MenuLang.t("block_variant.condition_match"),
+                    new String[] {MenuLang.t("block_variant.condition_match_any"), MenuLang.t("block_variant.condition_match_all")},
+                    c.all() ? MATCH_ALL : MATCH_ANY});
+            }
         }
         if (c.isKindMode()) {
             spec.add(new Object[] {SECTION_KIND, MenuLang.t("block_variant.condition_is"), new String[] {
@@ -88,16 +98,21 @@ final class ConditionPopupLayout {
     }
 
     /**
-     * The blocks the {@link #SECTION_BLOCKS} strip shows, in slot order: the chosen values in
-     * Touching mode, every block the target group can roll in Group mode. Kind mode has no strip.
+     * The blocks the {@link #SECTION_BLOCKS} strip shows, in slot order: every block the
+     * neighbouring variant cells can roll (Touch, plus any chosen value none of them offers) or the
+     * target group can roll (Group). Kind mode has no strip.
      */
     static List<ResourceLocation> strip(BlockVariantSyncPacket.Entry entry) {
         VariantCondition c = VariantCondition.parse(entry.condition());
-        if (!c.isGroupTarget()) return c.blockValues();
         List<ResourceLocation> out = new ArrayList<>();
         for (String raw : entry.conditionGroupValues().split(",")) {
             ResourceLocation id = raw.isBlank() ? null : ResourceLocation.tryParse(raw.trim());
-            if (id != null) out.add(id);
+            if (id != null && !out.contains(id)) out.add(id);
+        }
+        // Touching mode offers the neighbouring variants' blocks; a value chosen by hand that no
+        // neighbour offers stays in the strip so it can still be switched off.
+        if (!c.isGroupTarget()) {
+            for (ResourceLocation id : c.blockValues()) if (!out.contains(id)) out.add(id);
         }
         return out;
     }
@@ -110,7 +125,7 @@ final class ConditionPopupLayout {
         VariantCondition c = VariantCondition.parse(entry.condition());
         if (row.section() == SECTION_TOUCHING) return c.hasSide(touching(i));
         if (row.section() == SECTION_KIND) return c.blocks().contains(kind(i));
-        if (row.section() == SECTION_BLOCKS && c.isGroupTarget()) {
+        if (row.section() == SECTION_BLOCKS) {
             List<ResourceLocation> strip = strip(entry);
             return i < strip.size() && c.blocks().contains(strip.get(i));
         }

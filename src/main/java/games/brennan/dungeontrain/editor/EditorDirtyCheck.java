@@ -463,7 +463,8 @@ public final class EditorDirtyCheck {
                 out.add(new DiffEntry(BlockPos.ZERO, "variant settings", "edited"));
             }
             for (BlockPos cell : cells) {
-                out.add(new DiffEntry(cell, "variants", "edited"));
+                String label = EditorPlotSnapshots.editLabel(key, cell);
+                out.add(new DiffEntry(cell, label == null ? "variants" : label, "edited"));
             }
         }
         return out;

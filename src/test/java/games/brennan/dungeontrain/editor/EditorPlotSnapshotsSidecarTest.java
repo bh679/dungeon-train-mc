@@ -52,6 +52,26 @@ final class EditorPlotSnapshotsSidecarTest {
     }
 
     @Test
+    @DisplayName("a block-settings edit reads as edited, names its cell and carries its label")
+    void blockSettingsEditIsEditedAndLabelled() {
+        BlockPos cell = new BlockPos(4, 1, 2);
+        EditorPlotSnapshots.markBlockSettingsEdit(KEY, cell, "creaking heart");
+        assertTrue(EditorPlotSnapshots.sidecarEdited(KEY));
+        assertEquals(Set.of(cell), EditorPlotSnapshots.sidecarEdits(KEY));
+        assertEquals("creaking heart", EditorPlotSnapshots.editLabel(KEY, cell));
+    }
+
+    @Test
+    @DisplayName("resetting the baseline drops block-settings edits and their labels")
+    void blockSettingsEditClearedWithBaseline() {
+        BlockPos cell = new BlockPos(4, 1, 2);
+        EditorPlotSnapshots.markBlockSettingsEdit(KEY, cell, "creaking heart");
+        EditorPlotSnapshots.clear(KEY);
+        assertFalse(EditorPlotSnapshots.sidecarEdited(KEY));
+        assertEquals(null, EditorPlotSnapshots.editLabel(KEY, cell));
+    }
+
+    @Test
     @DisplayName("a plot with no scan row (null key) is ignored")
     void nullKeyIgnored() {
         EditorPlotSnapshots.markSidecarEdit(null, new BlockPos(1, 1, 1));
