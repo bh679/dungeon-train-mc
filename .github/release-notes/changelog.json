@@ -27562,6 +27562,23 @@
       "released": true,
       "released_in": "v0.1351.0",
       "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "afk-rule-sees-menu-input",
+      "version": "0.1352.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Menus and clicks count as being here",
+      "summary": "Clicking or typing in a menu, closing a book or photo, and clicking in the world while holding your aim steady now all count as being at the keyboard, so advancements earned that way are no longer missed.",
+      "highlights": [],
+      "pr": 2111,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
