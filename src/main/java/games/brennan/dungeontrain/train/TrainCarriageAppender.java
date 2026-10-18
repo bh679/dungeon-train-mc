@@ -3938,9 +3938,14 @@ public final class TrainCarriageAppender {
     private static boolean isNearAnyPlayer(Trains.Carriage c, List<ServerPlayer> players) {
         AABBdc aabb = c.ship().worldAABB();
         for (ServerPlayer p : players) {
-            if (aabbDistSq(aabb, p.getX(), p.getY(), p.getZ()) <= NEAR_RADIUS_SQ) return true;
+            if (isWithinNearRadius(aabb, p.getX(), p.getY(), p.getZ())) return true;
         }
         return false;
+    }
+
+    /** Pure core of {@link #isNearAnyPlayer}: is the point within {@link #NEAR_RADIUS} of {@code aabb}? */
+    static boolean isWithinNearRadius(AABBdc aabb, double px, double py, double pz) {
+        return aabbDistSq(aabb, px, py, pz) <= NEAR_RADIUS_SQ;
     }
 
     /** Squared distance from a point to an AABB ({@code 0} = inside). */
@@ -3968,10 +3973,7 @@ public final class TrainCarriageAppender {
      * @return the number of loaded trains held this call.
      */
     public static int holdAllLoadedTrains(MinecraftServer server, int graceTicks) {
-        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
-        if (!data.startsWithTrain()) return 0;
-        StartingDimension startingDim = data.startingDimension();
-        ServerLevel trainLevel = server.getLevel(startingDim.levelKey());
+        ServerLevel trainLevel = trainLevelOf(server);
         if (trainLevel == null) return 0;
         Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(trainLevel);
         if (trains.isEmpty()) return 0;
@@ -3981,6 +3983,35 @@ public final class TrainCarriageAppender {
             holdWholeTrainForResume(trainLevel, entry.getKey(), entry.getValue());
         }
         return trains.size();
+    }
+
+    /**
+     * Is any player in the train level within {@link #NEAR_RADIUS} of a loaded carriage? That is
+     * the same "near" {@link #holdWholeTrainForResume} uses. {@code ResumeWatchdog} skips its hold
+     * when this is false: nobody can be flung off a train they aren't on, and the far groups the hold
+     * would still pin (never-serialized ones) are already kept by {@link #reconcileForceLoads}. A
+     * player reading books in a portal room's Stat Room is the common case.
+     */
+    public static boolean anyPlayerNearLoadedTrain(MinecraftServer server) {
+        ServerLevel trainLevel = trainLevelOf(server);
+        if (trainLevel == null) return false;
+        List<ServerPlayer> players = trainLevel.players();
+        if (players.isEmpty()) return false;
+        for (List<Trains.Carriage> train : Trains.byTrainId(trainLevel).values()) {
+            for (Trains.Carriage c : train) {
+                if (isNearAnyPlayer(c, players)) return true;
+            }
+        }
+        return false;
+    }
+
+    /** The level this world's train runs in, or {@code null} when there is no train or it isn't loaded. */
+    @Nullable
+    private static ServerLevel trainLevelOf(MinecraftServer server) {
+        DungeonTrainWorldData data = DungeonTrainWorldData.get(server.overworld());
+        if (!data.startsWithTrain()) return null;
+        StartingDimension startingDim = data.startingDimension();
+        return server.getLevel(startingDim.levelKey());
     }
 
     /**

@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import games.brennan.dungeontrain.train.TrainCarriageAppender.TrailingId;
 import net.minecraft.core.BlockPos;
 import org.joml.Vector3d;
+import org.joml.primitives.AABBd;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -1357,5 +1358,30 @@ final class TrainCarriageAppenderTest {
         long cooldown = TrainCarriageAppender.EARLY_SAVE_COOLDOWN_TICKS;
         assertFalse(TrainCarriageAppender.shouldRequestEarlySave(surplus, cooldown - 1));
         assertTrue(TrainCarriageAppender.shouldRequestEarlySave(surplus, cooldown));
+    }
+
+    // isWithinNearRadius gates ResumeWatchdog's hold: no player within NEAR_RADIUS (128) of any
+    // carriage (a Stat Room reader, say) means no rider to fling, so the resume hold is skipped.
+
+    @Test
+    @DisplayName("isWithinNearRadius: point inside the carriage box → near")
+    void nearRadiusInside() {
+        AABBd box = new AABBd(0, 60, 0, 30, 70, 7);
+        assertTrue(TrainCarriageAppender.isWithinNearRadius(box, 10, 64, 3));
+    }
+
+    @Test
+    @DisplayName("isWithinNearRadius: exactly 128 blocks off the end → near; 129 → not")
+    void nearRadiusEdge() {
+        AABBd box = new AABBd(0, 60, 0, 30, 70, 7);
+        assertTrue(TrainCarriageAppender.isWithinNearRadius(box, 30 + 128, 64, 3));
+        assertFalse(TrainCarriageAppender.isWithinNearRadius(box, 30 + 129, 64, 3));
+    }
+
+    @Test
+    @DisplayName("isWithinNearRadius: far diagonal (portal room site) → not near")
+    void nearRadiusFar() {
+        AABBd box = new AABBd(0, 60, 0, 30, 70, 7);
+        assertFalse(TrainCarriageAppender.isWithinNearRadius(box, 2_000, 64, 5_000));
     }
 }
