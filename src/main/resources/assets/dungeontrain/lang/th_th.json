@@ -4598,7 +4598,7 @@
   "gui.dungeontrain.priority_book.sign_tooltip": "ของขอบคุณสำหรับการบริจาค หนังสือของคุณจะไปปรากฏในขบวนรถไฟของผู้เล่นคนอื่นบ่อยขึ้นมาก",
   "gui.dungeontrain.priority_book.make.other": "ทำให้เล่มนี้เป็นหนังสือสิทธิพิเศษ (เหลือ %s เล่ม)",
   "gui.dungeontrain.priority_book.make_confirm": "คลิกอีกครั้งเพื่อใช้หนังสือสิทธิพิเศษกับเล่มนี้",
-  "gui.dungeontrain.priority_book.is_priority": "หนังสือสิทธิพิเศษ พบได้ในขบวนรถไฟอื่นบ่อยขึ้นมาก",
+  "gui.dungeontrain.priority_book.is_priority": "หนังสือสิทธิพิเศษ",
   "chat.dungeontrain.book_suspended.duplicate": "ขบวนรถเคยอ่านหนังสือเล่มนี้มาแล้ว — เป็นของคุณ อีก %s มันจะไม่รับเพิ่ม",
   "chat.dungeontrain.book_suspended.blocked": "อีก %s ขบวนรถจะไม่รับหนังสือจากคุณ เล่มนี้อยู่ในมือคุณต่อไป",
   "chat.dungeontrain.book_suspended.letter": "จดหมายของคุณลุกไหม้ แต่อีก %s ขบวนรถจะไม่พาอะไรของคุณไปด้วย",

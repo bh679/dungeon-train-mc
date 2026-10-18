@@ -34,22 +34,20 @@ import java.lang.ref.WeakReference;
  * ({@code BookEditScreenSignMixin}), ahead of vanilla's sign packet, exactly like the book-language pick.
  * The relay does the charging and the server reports back in chat what happened.</p>
  *
- * <p>Placed to the LEFT of the book, mirroring the language dropdown on the right; on a GUI too narrow
- * for that it sits on the page just above the sign buttons.</p>
+ * <p>Placed to the LEFT of the book, mirroring the language dropdown on the right, when its whole label
+ * fits there; otherwise it spans the foot of the book just above the sign buttons.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PriorityBookSignToggle {
 
     private static final int MIN_WIDTH = 110;
-    private static final int MAX_WIDTH = 170;
+    private static final int MAX_WIDTH = 230;
     private static final int TEXT_PAD = 24;
     private static final int HEIGHT = 20;
     private static final int EDGE = 1;
     private static final int BOOK_HALF = 96;
     private static final int GAP = 6;
     private static final int SIDE_Y = 40;
-    private static final int PAGE_X_FROM_BOOK = 36;
-    private static final int PAGE_W = 114;
     private static final int PAGE_Y = 172;
 
     /** The sign screen this toggle's state belongs to; a new screen starts unticked. */
@@ -83,10 +81,13 @@ public final class PriorityBookSignToggle {
             BookCredits.refresh(null);
         }
         Minecraft mc = Minecraft.getInstance();
+        // Sized for the TICKED label ("✔ " + text), so ticking it never clips "(N left)".
         int width = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH,
-                mc.font.width(label(Math.max(1, BookCredits.current()))) + TEXT_PAD));
+                mc.font.width(Component.literal("✔ ").append(label(Math.max(1, BookCredits.current()))))
+                        + TEXT_PAD));
         int sideRoom = screen.width / 2 - BOOK_HALF - GAP - EDGE;
-        boolean side = sideRoom >= MIN_WIDTH;
+        // Beside the book only when the whole label fits there; otherwise across the book's foot.
+        boolean side = sideRoom >= width;
         int x;
         int y;
         if (side) {
@@ -94,8 +95,8 @@ public final class PriorityBookSignToggle {
             x = screen.width / 2 - BOOK_HALF - GAP - width;
             y = SIDE_Y;
         } else {
-            width = Math.min(width, PAGE_W);
-            x = (screen.width - 2 * BOOK_HALF) / 2 + PAGE_X_FROM_BOOK + (PAGE_W - width) / 2;
+            width = Math.min(width, 2 * BOOK_HALF - 2 * GAP);
+            x = (screen.width - width) / 2;
             y = PAGE_Y;
         }
         Toggle toggle = new Toggle(x, y, width, b -> ticked = !ticked);

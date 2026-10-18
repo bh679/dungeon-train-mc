@@ -4718,7 +4718,7 @@
   "gui.dungeontrain.priority_book.make.few": "Zrób z tego Książkę Priorytetową (zostały %s)",
   "gui.dungeontrain.priority_book.make.many": "Zrób z tego Książkę Priorytetową (zostało %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Kliknij ponownie, aby użyć tu Książki Priorytetowej",
-  "gui.dungeontrain.priority_book.is_priority": "Książka Priorytetowa. Znacznie częściej spotykana w innych pociągach.",
+  "gui.dungeontrain.priority_book.is_priority": "Książka Priorytetowa.",
   "chat.dungeontrain.book_suspended.duplicate": "Pociąg czytał już tę książkę — była twoja. Przez %s nie weźmie kolejnych.",
   "chat.dungeontrain.book_suspended.blocked": "Pociąg nie przyjmuje od ciebie książek jeszcze przez %s. Ta zostaje w twoich rękach.",
   "chat.dungeontrain.book_suspended.letter": "Twój list płonie, ale pociąg jeszcze przez %s nie wiezie niczego twojego.",

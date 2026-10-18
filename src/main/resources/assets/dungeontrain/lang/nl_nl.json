@@ -4658,7 +4658,7 @@
   "gui.dungeontrain.priority_book.make.one": "Maak hier een Voorrangsboek van (nog %s over)",
   "gui.dungeontrain.priority_book.make.other": "Maak hier een Voorrangsboek van (nog %s over)",
   "gui.dungeontrain.priority_book.make_confirm": "Klik nogmaals om hier een Voorrangsboek te gebruiken",
-  "gui.dungeontrain.priority_book.is_priority": "Voorrangsboek. Veel vaker te vinden in andere treinen.",
+  "gui.dungeontrain.priority_book.is_priority": "Voorrangsboek.",
   "chat.dungeontrain.book_suspended.duplicate": "De trein heeft dit boek al eens gelezen — het was van jou. Hij neemt er %s lang geen meer aan.",
   "chat.dungeontrain.book_suspended.blocked": "De trein neemt nog %s lang geen boeken van je aan. Deze blijft in je handen.",
   "chat.dungeontrain.book_suspended.letter": "Je brief verbrandt, maar de trein draagt nog %s lang niets van jou mee.",

@@ -4598,7 +4598,7 @@
   "gui.dungeontrain.priority_book.sign_tooltip": "후원에 대한 감사의 선물이에요. 당신의 책이 다른 플레이어의 열차에 훨씬 더 자주 나타나요.",
   "gui.dungeontrain.priority_book.make.other": "이 책을 우선권 책으로 만들기 (%s권 남음)",
   "gui.dungeontrain.priority_book.make_confirm": "한 번 더 클릭하면 여기에 우선권 책을 사용해요",
-  "gui.dungeontrain.priority_book.is_priority": "우선권 책. 다른 열차에서 훨씬 더 자주 발견돼요.",
+  "gui.dungeontrain.priority_book.is_priority": "우선권 책.",
   "chat.dungeontrain.book_suspended.duplicate": "열차는 이 책을 전에도 읽었다 — 당신의 것이었다. %s 동안은 더 받지 않는다.",
   "chat.dungeontrain.book_suspended.blocked": "열차는 앞으로 %s 동안 당신에게서 책을 받지 않는다. 이 책은 당신 손에 남는다.",
   "chat.dungeontrain.book_suspended.letter": "당신의 편지는 타오르지만, 열차는 앞으로 %s 동안 당신의 것을 아무것도 싣지 않는다.",

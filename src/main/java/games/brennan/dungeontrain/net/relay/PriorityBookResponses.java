@@ -102,8 +102,8 @@ public final class PriorityBookResponses {
                     ServerPlayer player = server.getPlayerList().getPlayer(o.player());
                     if (player == null) return;
                     if (o.spent()) stampCopies(player, o.bookId());
-                    String locale = WorldInfoReporter.clientLanguage(player);
-                    player.sendSystemMessage(lineFor(o, locale));
+                    Component line = lineFor(o, WorldInfoReporter.clientLanguage(player));
+                    if (line != null) player.sendSystemMessage(line);
                 } catch (Throwable t) {
                     LOGGER.debug("[DungeonTrain] priority-book notice failed: {}", t.toString());
                 }
@@ -113,12 +113,12 @@ public final class PriorityBookResponses {
         }
     }
 
-    /** The chat line for an outcome. Package-private for tests. */
+    /** The chat line for an outcome, or null when there is nothing new to say. Package-private for tests. */
     static Component lineFor(Outcome o, String locale) {
         if (!o.spent()) return PriorityBookMessage.unused();
         if (o.held()) return PriorityBookMessage.held();
-        // -1: a re-sent spend whose balance the relay did not repeat. Say it is done without a count.
-        if (o.balance() < 0) return PriorityBookMessage.isPriority();
+        // -1: an outbox re-send of a spend that already landed. The player heard about it then.
+        if (o.balance() < 0) return null;
         return PriorityBookMessage.spent(locale, o.balance());
     }
 

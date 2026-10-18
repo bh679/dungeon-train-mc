@@ -98,7 +98,7 @@ public final class BookVoteClientEvents {
     private static final int LABELS_DY = BUTTONS_DY + BUTTON_SIZE + 6;
     private static final int REPORT_DY = LABELS_DY + 12; // its own row under the (Y)es/(N)o labels
     private static final int REPORT_TEXT_DY = REPORT_DY + BUTTON_SIZE + 3; // confirmation line, when shown
-    private static final int PRIORITY_DY = 70;           // own approved book: under the status, above the tallies
+    private static final int PRIORITY_MIN_DY = 62;       // own approved book: under the status, above the thumbs row
     private static final int LINE_H = 9;
     private static final int COLOR_PRIORITY = 0x8A5A00;  // the Priority Book line: a thank-you, so gold not ink
     // Vanilla nails both page-turn buttons to this y in createPageControlButtons(), which is what
@@ -166,6 +166,7 @@ public final class BookVoteClientEvents {
     private static boolean protested = false;            // seeded from the stack's tag — one-way
     private static boolean isPriority = false;           // seeded from the stack's tag — set once the relay confirms
     private static boolean priorityArmed = false;        // first click armed the spend; a second commits
+    private static int statusBottom = 0;                 // screen y just under the status text, set each frame
     // How this book is polling, when it is one of the reader's own. -1 = the relay never told us, and
     // is NOT the same as 0: zero votes is a real answer worth showing, an absent tally is not.
     private static int votesUp = -1;
@@ -263,6 +264,7 @@ public final class BookVoteClientEvents {
                 gfx.drawString(font, line, centerX - font.width(line) / 2, sy, statusColor, false);
                 sy += 9;
             }
+            statusBottom = sy;
         } else {
             // "The train asks," + this book's question, both centered in the page column.
             Component prefix = Component.translatable("gui.dungeontrain.book_vote.ask_prefix");
@@ -304,14 +306,24 @@ public final class BookVoteClientEvents {
     private static void renderPriority(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
         Component text = priorityText();
         if (text == null) return;
-        boolean lit = !isPriority && inPriority(font, mouseX, mouseY);
+        boolean lit = !isPriority && !priorityArmed && inPriority(font, mouseX, mouseY);
         int color = isPriority ? COLOR_TEXT : priorityArmed ? COLOR_REPORT_ARMED : COLOR_PRIORITY;
         int y = priorityY();
-        for (FormattedCharSequence line : font.split(lit ? text.copy().withStyle(ChatFormatting.UNDERLINE) : text, TEXT_WIDTH)) {
+        List<FormattedCharSequence> lines =
+            font.split(lit ? text.copy().withStyle(ChatFormatting.UNDERLINE) : text, TEXT_WIDTH);
+        int rows = Math.min(lines.size(), priorityRows());
+        for (int i = 0; i < rows; i++) {
+            FormattedCharSequence line = lines.get(i);
             gfx.drawString(font, line, centerX - font.width(line) / 2, y, color, false);
             y += LINE_H;
         }
-        if (lit && !priorityArmed) gfx.renderTooltip(font, PriorityBookMessage.signTooltip(), mouseX, mouseY);
+        // Hover explains it; a translation too long for the rows it has is read in full here too.
+        boolean hover = inPriority(font, mouseX, mouseY);
+        if (hover && !priorityArmed) {
+            gfx.renderTooltip(font, isPriority || rows < lines.size()
+                ? text.copy().append(" ").append(PriorityBookMessage.signTooltip())
+                : PriorityBookMessage.signTooltip(), mouseX, mouseY);
+        }
     }
 
     /** What the Priority Book line says right now, or null when it is not shown. */
@@ -327,15 +339,20 @@ public final class BookVoteClientEvents {
     private static boolean inPriority(Font font, int x, int y) {
         Component text = priorityText();
         if (text == null) return false;
-        int rows = Math.max(1, font.split(text, TEXT_WIDTH).size());
+        int rows = Math.max(1, Math.min(font.split(text, TEXT_WIDTH).size(), priorityRows()));
         int left = bookLeft() + TEXT_X_OFFSET;
         return x >= left && x < left + TEXT_WIDTH && y >= priorityY() && y < priorityY() + rows * LINE_H;
     }
 
-    /** Send the spend. The mark appears once the relay confirms (the server stamps the copy). */
+    /**
+     * Send the spend, and show the mark at once (optimistic, like {@link #applyPrivate}). The server
+     * stamps the copy when the relay confirms; if it refuses, the chat line says no book was used and
+     * the next open reads the stack's real state.
+     */
     private static void applyPriority() {
         if (!active) return;
         priorityArmed = false;
+        isPriority = true;
         DungeonTrainNet.sendToServer(new BookPriorityPacket(bookType, bookId));
         BookCredits.spentOne();
     }
@@ -749,9 +766,17 @@ public final class BookVoteClientEvents {
         return bookTop() + REPORT_DY;
     }
 
-    /** The Priority Book line on the reader's own released book. */
+    /**
+     * The Priority Book line on the reader's own released book: just under the status text (however
+     * many lines a translation wraps it to), and never higher than {@link #PRIORITY_MIN_DY}.
+     */
     private static int priorityY() {
-        return bookTop() + PRIORITY_DY;
+        return Math.max(bookTop() + PRIORITY_MIN_DY, statusBottom + 4);
+    }
+
+    /** How many rows fit between the line's top and the thumbs row — at least one. */
+    private static int priorityRows() {
+        return Math.max(1, (buttonsY() - 2 - priorityY()) / LINE_H);
     }
 
     /** Its confirmation or status line, when there is one. */
@@ -822,6 +847,7 @@ public final class BookVoteClientEvents {
         protested = false;
         isPriority = false;
         priorityArmed = false;
+        statusBottom = 0;
         votesUp = -1;
         votesDown = -1;
     }

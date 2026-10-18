@@ -4252,6 +4252,7 @@
       "dungeontrain.leaderboard.deathnotes_people.header",
       "gui.dungeontrain.editor_menu.size.full",
       "gui.dungeontrain.editor_menu.type_name.full",
+      "gui.dungeontrain.priority_book.is_priority",
       "gui.dungeontrain.builder.profile.empty",
       "gui.dungeontrain.builder.profile.pick",
       "gui.dungeontrain.builder.profile.withheld",

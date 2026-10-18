@@ -4598,7 +4598,7 @@
   "gui.dungeontrain.priority_book.sign_tooltip": "寄付へのお礼です。あなたの本が他のプレイヤーの列車にずっと多く現れるようになります。",
   "gui.dungeontrain.priority_book.make.other": "この本を優先本にする(残り%s冊)",
   "gui.dungeontrain.priority_book.make_confirm": "もう一度クリックすると、ここで優先本を使います",
-  "gui.dungeontrain.priority_book.is_priority": "優先本。他の列車でずっと多く見つかります。",
+  "gui.dungeontrain.priority_book.is_priority": "優先本。",
   "chat.dungeontrain.book_suspended.duplicate": "列車はこの本を前にも読んでいる — あなたのものだった。あと%sのあいだ、これ以上は受け取らない。",
   "chat.dungeontrain.book_suspended.blocked": "列車はあと%sのあいだ、あなたから本を受け取らない。これはあなたの手に残る。",
   "chat.dungeontrain.book_suspended.letter": "あなたの手紙は燃えるが、列車はあと%sのあいだ、あなたのものを何も運ばない。",

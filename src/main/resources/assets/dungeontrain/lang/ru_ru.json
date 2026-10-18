@@ -4718,7 +4718,7 @@
   "gui.dungeontrain.priority_book.make.few": "Сделать её Приоритетной книгой (осталось %s)",
   "gui.dungeontrain.priority_book.make.many": "Сделать её Приоритетной книгой (осталось %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Нажмите ещё раз, чтобы использовать здесь Приоритетную книгу",
-  "gui.dungeontrain.priority_book.is_priority": "Приоритетная книга. Попадается в других поездах гораздо чаще.",
+  "gui.dungeontrain.priority_book.is_priority": "Приоритетная книга.",
   "chat.dungeontrain.book_suspended.duplicate": "Поезд уже видел эту книгу, она ваша. Приходите не раньше, чем через %s.",
   "chat.dungeontrain.book_suspended.blocked": "Поезд не возьмёт у вас книги ещё %s. Пусть эта побудет у вас.",
   "chat.dungeontrain.book_suspended.letter": "Ваше письмо сгорает, однако поезд и видеть не хочет его ещё %s.",

@@ -4612,7 +4612,7 @@
   "gui.dungeontrain.priority_book.sign_tooltip": "这是对你捐助的谢礼。你的书会更频繁地出现在其他玩家的列车上。",
   "gui.dungeontrain.priority_book.make.other": "将这本书设为优先之书（剩余 %s 本）",
   "gui.dungeontrain.priority_book.make_confirm": "再次点击，在这里使用一本优先之书",
-  "gui.dungeontrain.priority_book.is_priority": "优先之书。在其他列车上出现得更加频繁。",
+  "gui.dungeontrain.priority_book.is_priority": "优先之书。",
   "chat.dungeontrain.book_suspended.duplicate": "列车读过这本书——那是你的。接下来 %s 内它不再收取。",
   "chat.dungeontrain.book_suspended.blocked": "接下来 %s 内列车不再收你的书。这一本留在你手里。",
   "chat.dungeontrain.book_suspended.letter": "你的信烧起来了，但接下来 %s 内列车不会捎带你的任何东西。",

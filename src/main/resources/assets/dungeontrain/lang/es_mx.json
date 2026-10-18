@@ -4658,7 +4658,7 @@
   "gui.dungeontrain.priority_book.make.one": "Convertir en Libro Prioritario (te queda %s)",
   "gui.dungeontrain.priority_book.make.other": "Convertir en Libro Prioritario (te quedan %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Haz clic otra vez para usar aquí un Libro Prioritario",
-  "gui.dungeontrain.priority_book.is_priority": "Libro Prioritario. Aparece mucho más seguido en otros trenes.",
+  "gui.dungeontrain.priority_book.is_priority": "Libro Prioritario.",
   "chat.dungeontrain.book_suspended.duplicate": "El tren ya leyó este libro antes: era tuyo. No acepta más durante %s.",
   "chat.dungeontrain.book_suspended.blocked": "El tren no acepta libros tuyos durante %s más. Este se queda en tus manos.",
   "chat.dungeontrain.book_suspended.letter": "Tu carta arde, pero el tren no lleva nada tuyo durante %s más.",

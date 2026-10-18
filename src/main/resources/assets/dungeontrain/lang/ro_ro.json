@@ -971,7 +971,7 @@
   "gui.dungeontrain.priority_book.make.few": "Fă din asta o Carte Prioritară (au mai rămas %s)",
   "gui.dungeontrain.priority_book.make.other": "Fă din asta o Carte Prioritară (au mai rămas %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Apasă din nou ca să folosești aici o Carte Prioritară",
-  "gui.dungeontrain.priority_book.is_priority": "Carte Prioritară. Apare mult mai des în alte trenuri.",
+  "gui.dungeontrain.priority_book.is_priority": "Carte Prioritară.",
   "chat.dungeontrain.unsigned_book.1": "Ai lăsat cartea asta nesemnată. Trenul o ignoră.",
   "chat.dungeontrain.unsigned_book.2": "Nesemnată. Trenul îți respinge cartea.",
   "chat.dungeontrain.unsigned_book.3": "Nicio semnătură pe paginile astea. Trenul nu le duce mai departe.",

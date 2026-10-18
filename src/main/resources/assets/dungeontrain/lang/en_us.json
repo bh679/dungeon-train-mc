@@ -935,7 +935,7 @@
   "gui.dungeontrain.priority_book.make.one": "Make this a Priority Book (%s left)",
   "gui.dungeontrain.priority_book.make.other": "Make this a Priority Book (%s left)",
   "gui.dungeontrain.priority_book.make_confirm": "Click again to use a Priority Book here",
-  "gui.dungeontrain.priority_book.is_priority": "Priority Book. Found far more often in other trains.",
+  "gui.dungeontrain.priority_book.is_priority": "Priority Book.",
   "chat.dungeontrain.unsigned_book.1": "You left this book unsigned. The train ignores it.",
   "chat.dungeontrain.unsigned_book.2": "Unsigned. The train rejects your book.",
   "chat.dungeontrain.unsigned_book.3": "No signature on these pages. The train won't pass them on.",

@@ -4658,7 +4658,7 @@
   "gui.dungeontrain.priority_book.make.one": "Rendilo un Libro Prioritario (ne resta %s)",
   "gui.dungeontrain.priority_book.make.other": "Rendilo un Libro Prioritario (ne restano %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Clicca di nuovo per usare qui un Libro Prioritario",
-  "gui.dungeontrain.priority_book.is_priority": "Libro Prioritario. Si trova molto più spesso negli altri treni.",
+  "gui.dungeontrain.priority_book.is_priority": "Libro Prioritario.",
   "chat.dungeontrain.book_suspended.duplicate": "Il treno ha già letto questo libro: era tuo. Non ne prende altri per %s.",
   "chat.dungeontrain.book_suspended.blocked": "Il treno non prende tuoi libri per altri %s. Questo resta nelle tue mani.",
   "chat.dungeontrain.book_suspended.letter": "La tua lettera brucia, ma il treno non porta nulla di tuo per altri %s.",

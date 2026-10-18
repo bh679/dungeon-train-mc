@@ -971,7 +971,7 @@
   "gui.dungeontrain.priority_book.make.few": "Зробити її Пріоритетною книгою (залишилося %s)",
   "gui.dungeontrain.priority_book.make.many": "Зробити її Пріоритетною книгою (залишилося %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Натисни ще раз, щоб використати тут Пріоритетну книгу",
-  "gui.dungeontrain.priority_book.is_priority": "Пріоритетна книга. Трапляється в інших потягах набагато частіше.",
+  "gui.dungeontrain.priority_book.is_priority": "Пріоритетна книга.",
   "chat.dungeontrain.unsigned_book.1": "Ти залишив цю книгу без підпису. Потяг її не помічає.",
   "chat.dungeontrain.unsigned_book.2": "Без підпису. Потяг відкидає твою книгу.",
   "chat.dungeontrain.unsigned_book.3": "На цих сторінках нема підпису. Потяг не передасть їх далі.",
