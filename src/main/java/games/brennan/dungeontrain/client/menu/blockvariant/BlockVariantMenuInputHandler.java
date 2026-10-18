@@ -204,7 +204,7 @@ public final class BlockVariantMenuInputHandler {
         if (BlockVariantMenu.screen() != BlockVariantMenu.Screen.ROOT) return false;
         return switch (hit.kind()) {
             case ENTRY_WEIGHT, ENTRY_DIFF_MIN, ENTRY_DIFF_MAX -> true;
-            case GROWTH_OPTION -> hit.secondary() >= 0 && GrowthPopupLayout.isNumber(hit.secondary() / 10);
+            case GROWTH_OPTION -> hit.secondary() >= 0 && GrowthPopupLayout.isNumber(GrowthPopupLayout.section(hit.secondary()));
             default -> false;
         };
     }
@@ -269,7 +269,7 @@ public final class BlockVariantMenuInputHandler {
                 BlockState parsed = BlockVariantMenu.parseState(e.stateString());
                 if (parsed == null) return;
                 int row = hit.index();
-                int section = code / 10;
+                int section = GrowthPopupLayout.section(code);
                 VariantGrowth current = VariantGrowth.fromInt(e.growth());
                 if (GrowthPopupLayout.isNumber(section)) {
                     int value = GrowthPopupLayout.length(current, section);
@@ -283,7 +283,7 @@ public final class BlockVariantMenuInputHandler {
                         button, shift, MenuClickModifiers.cmdDown(), pad());
                     return;
                 }
-                VariantGrowth next = GrowthPopupLayout.apply(current, parsed, section, code % 10);
+                VariantGrowth next = GrowthPopupLayout.apply(current, parsed, section, GrowthPopupLayout.option(code));
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_GROWTH, variantId, local, row, "", next.toInt()));
             }
@@ -296,10 +296,10 @@ public final class BlockVariantMenuInputHandler {
                     return;
                 }
                 BlockVariantSyncPacket.Entry e = BlockVariantMenu.entries().get(hit.index());
-                if (code / 10 != PaintingPopupLayout.SECTION_ON && code % 10 == PaintingPopupLayout.STEPPER_VALUE) return;
+                if (GrowthPopupLayout.section(code) != PaintingPopupLayout.SECTION_ON && GrowthPopupLayout.option(code) == PaintingPopupLayout.STEPPER_VALUE) return;
                 games.brennan.dungeontrain.editor.VariantPainting current = BlockVariantMenu.painting(e);
                 games.brennan.dungeontrain.editor.VariantPainting next = PaintingPopupLayout.apply(
-                    current, BlockVariantMenu.pictures(), code / 10, code % 10);
+                    current, BlockVariantMenu.pictures(), GrowthPopupLayout.section(code), GrowthPopupLayout.option(code));
                 if (next.equals(current)) return;
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_PAINTING, variantId, local, hit.index(),
@@ -315,7 +315,7 @@ public final class BlockVariantMenuInputHandler {
                     return;
                 }
                 games.brennan.dungeontrain.editor.VariantSpan next = SpanPopupLayout.apply(
-                    BlockVariantMenu.resolvedSpan(), code / 10, code % 10);
+                    BlockVariantMenu.resolvedSpan(), GrowthPopupLayout.section(code), GrowthPopupLayout.option(code));
                 DungeonTrainNet.sendToServer(new BlockVariantEditPacket(
                     BlockVariantEditPacket.Op.SET_SPAN_MODE, variantId, local, -1, "", next.toByte()));
             }
@@ -497,8 +497,8 @@ public final class BlockVariantMenuInputHandler {
             BlockVariantMenu.closeCondPopup();
             return;
         }
-        int section = code / 10;
-        int option = code % 10;
+        int section = GrowthPopupLayout.section(code);
+        int option = GrowthPopupLayout.option(code);
         String token = BlockVariantMenu.entries().get(row).condition();
         int mode = ConditionPopupLayout.mode(token);
         boolean addable = mode == ConditionPopupLayout.MODE_TOUCHING;

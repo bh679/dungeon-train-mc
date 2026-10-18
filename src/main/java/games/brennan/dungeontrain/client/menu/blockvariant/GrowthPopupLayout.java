@@ -93,9 +93,25 @@ final class GrowthPopupLayout {
         return rows;
     }
 
-    /** Hit {@code secondary} for a button: {@code section * 10 + option}. */
+    /**
+     * Gap between sections in a popup hit code. A Group-mode If strip has one slot per block the
+     * group can roll, so options run well past 9; a stride of 10 let slot 17 decode as section + 1.
+     */
+    static final int CODE_STRIDE = 1000;
+
+    /** Hit {@code secondary} for a button: {@code section * CODE_STRIDE + option}. */
     static int encode(int section, int option) {
-        return section * 10 + option;
+        return section * CODE_STRIDE + option;
+    }
+
+    /** The section half of an {@link #encode} hit code. */
+    static int section(int code) {
+        return code / CODE_STRIDE;
+    }
+
+    /** The option half of an {@link #encode} hit code. */
+    static int option(int code) {
+        return code % CODE_STRIDE;
     }
 
     /**
