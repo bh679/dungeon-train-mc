@@ -96,6 +96,15 @@ logoFile="logo.png"
     ordering="AFTER"
     side="BOTH"
 
+# Deeper Darker — REQUIRED. Its Otherside dimension is the core of the Deeper Dark pass on Lap 2; the level,
+# its blocks and its mobs have to exist on both sides.
+[[dependencies.${mod_id}]]
+    modId="deeperdarker"
+    type="required"
+    versionRange="[${deeperdarker_min_version},)"
+    ordering="AFTER"
+    side="BOTH"
+
 # VanillaBackport (+ its Platform library) — REQUIRED. Its sulfur caves join the caves on the way out of
 # every Nether pass; its blocks and network channels have to exist on both sides.
 [[dependencies.${mod_id}]]
