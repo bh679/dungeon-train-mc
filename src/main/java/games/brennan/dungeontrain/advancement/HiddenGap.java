@@ -23,11 +23,11 @@ public final class HiddenGap {
     /** Fewest hidden advancements between two visible ones that earns a "…". One hidden draws a plain line. */
     public static final int MIN_HIDDEN_FOR_MARKER = 2;
 
-    /** Pixels between dot centres. */
-    public static final int DOT_SPACING = 3;
+    /** Pixels between dot centres: each dot's 3px black outline then stands apart from the next. */
+    public static final int DOT_SPACING = 4;
 
-    /** Pixels of line left out either side of the middle dot. */
-    public static final int GAP_HALF_WIDTH = 5;
+    /** Pixels of line left out either side of the middle dot, so the line stops short of the outer outlines. */
+    public static final int GAP_HALF_WIDTH = 7;
 
     /**
      * How far a connector's child-side end sits from the child tile's left edge: the line ends at the

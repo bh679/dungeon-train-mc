@@ -79,10 +79,10 @@ class HiddenGapTest {
     void splitsLine() {
         // Child centre at 83, elbow at 30: open stretch 30..73, middle 51.
         HiddenGap.Split split = HiddenGap.split(83, 30, 83);
-        assertArrayEquals(new int[] {48, 51, 54}, split.dots());
+        assertArrayEquals(new int[] {47, 51, 55}, split.dots());
         assertEquals(2, split.segments().size());
-        assertArrayEquals(new int[] {30, 46}, split.segments().get(0));
-        assertArrayEquals(new int[] {56, 83}, split.segments().get(1));
+        assertArrayEquals(new int[] {30, 44}, split.segments().get(0));
+        assertArrayEquals(new int[] {58, 83}, split.segments().get(1));
     }
 
     @Test
