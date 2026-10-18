@@ -4124,7 +4124,7 @@
   "gui.dungeontrain.editor_menu.block_variant.active_off": "Off",
   "gui.dungeontrain.editor_menu.block_variant.grow": "Grow",
   "gui.dungeontrain.editor_menu.block_variant.condition": "If",
-  "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Touching",
+  "gui.dungeontrain.editor_menu.block_variant.condition_touching": "Touch",
   "gui.dungeontrain.editor_menu.block_variant.condition_group": "Group",
   "gui.dungeontrain.editor_menu.block_variant.condition_is": "Is",
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": "+ Held",

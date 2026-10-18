@@ -3487,7 +3487,7 @@
   "gui.dungeontrain.editor_menu.block_variant.active_off": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "ca7981b46ecf2c17"},
   "gui.dungeontrain.editor_menu.block_variant.grow": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "b97dc5270c1705f5"},
   "gui.dungeontrain.editor_menu.block_variant.condition": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "1e3abf61a37e3cad"},
-  "gui.dungeontrain.editor_menu.block_variant.condition_touching": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "dbd9a9d75173f8be"},
+  "gui.dungeontrain.editor_menu.block_variant.condition_touching": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "69f6895099870541"},
   "gui.dungeontrain.editor_menu.block_variant.condition_group": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "34ca0e76608842ff"},
   "gui.dungeontrain.editor_menu.block_variant.condition_is": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "f5985de1fd3a3b13"},
   "gui.dungeontrain.editor_menu.block_variant.condition_add_held": {"author": "Opus 5 (Claude)", "reviewer": "", "source_hash": "bb0163bd26d11eb0"},
