@@ -48,9 +48,10 @@ public final class CycleLayout {
      * Which look an occurrence wears. A label the band's own code reads
      * ({@code WorldGenCycle#netherStyleAt} etc.); the layout itself is style-agnostic. {@code SUNK} is an
      * overworld gap generated at the sunk Amplified band's height ({@code worldgen.SunkZone}), so the
-     * approach to that band is already low.
+     * approach to that band is already low. {@code OTHERSIDE} is a Nether slot whose core is Deeper Darker's
+     * Otherside dimension instead of a Nether ({@code nether:otherside}); it is meaningless on any other slot.
      */
-    public enum Style { VANILLA, WWOO, BOP, BETTER, SUNK }
+    public enum Style { VANILLA, WWOO, BOP, BETTER, SUNK, OTHERSIDE }
 
     /**
      * One parsed slot. {@code core} is the band's full-strength length; {@code extra} is the
@@ -105,8 +106,10 @@ public final class CycleLayout {
      *   <li>Lap 1: overworld → Nether (on the first cycle 1000 core blocks of vanilla, then Biomes O' Plenty;
      *       all Biomes O' Plenty after: {@code vanilla=1000~400+bop>bop} — 1000 vanilla, 400 mixed, 1350 BoP) → WWOO overworld → one End band whose first 1200 blocks are vanilla and last 2000
      *       Biomes O' Plenty (two joined End slots) → upside-down + Reassembly.</li>
-     *   <li>Lap 2: BoP overworld → BetterNether → Lost City (its own legacy run, wearing WWOO decoration; its
-     *       buildings start on the Nether's exit mountains — {@link #legacyLeadIn}) → BetterEnd.</li>
+     *   <li>Lap 2: BoP overworld → BetterNether → Deeper Dark (Deeper Darker's Otherside; two joined Nether slots,
+     *       so one unbroken range of deep-dark mountains runs between the two cores — {@link #netherJoinedBefore})
+     *       → Lost City (its own legacy run, wearing WWOO decoration; its buildings start on the Deeper Dark's
+     *       exit mountains — {@link #legacyLeadIn}) → BetterEnd.</li>
      *   <li>Then spheres, the sunk approach, the rest of the legacy eras, chuncks, mix and stacks.</li>
      * </ul>
      */
@@ -228,6 +231,13 @@ public final class CycleLayout {
                 splitAt = -1;
                 splitBlend = 0;
                 splitStyle = null;
+            }
+            if (type != Type.NETHER && (style == Style.OTHERSIDE || later == Style.OTHERSIDE
+                    || splitStyle == Style.OTHERSIDE)) {
+                warn.accept("style 'otherside' on '" + token + "' only applies to Nether slots; ignored");
+                if (style == Style.OTHERSIDE) style = Style.VANILLA;
+                if (later == Style.OTHERSIDE) later = null;
+                if (splitStyle == Style.OTHERSIDE) splitStyle = null;
             }
             Style afterRun0 = later != null ? later : splitStyle != null ? splitStyle : style;
             slots.add(new Slot(type, style, core, extra, afterRun0, splitAt, splitBlend, splitStyle));
@@ -367,6 +377,7 @@ public final class CycleLayout {
             case "bop" -> Style.BOP;
             case "better" -> Style.BETTER;
             case "sunk" -> Style.SUNK;
+            case "otherside", "deeper_dark", "deeperdark" -> Style.OTHERSIDE;
             default -> null;
         };
     }
@@ -540,6 +551,34 @@ public final class CycleLayout {
         long len = 0L;
         for (int j = endGroupFirst(i); isEnd(j); j++) len += lens[j];
         return len;
+    }
+
+    // ---- joined Nether bands ---------------------------------------------------------------
+
+    /**
+     * True when Nether slot {@code i} directly follows another Nether slot. The two are one range: neither
+     * falls to its beach between them — the slot before keeps its exit mountains at full height through its
+     * fall, and this one starts on the plateau instead of rising from the sea
+     * ({@code WorldGenCycle#netherShapeOffset}). Each slot keeps its whole length and its own core, so the
+     * seam is a long mega plateau ({@code fall + rise} blocks of it).
+     */
+    public boolean netherJoinedBefore(int i) {
+        return isNether(i) && isNether(i - 1);
+    }
+
+    /** True when Nether slot {@code i} is directly followed by another Nether slot — see {@link #netherJoinedBefore}. */
+    public boolean netherJoinedAfter(int i) {
+        return isNether(i) && isNether(i + 1);
+    }
+
+    /** First slot of the joined Nether range slot {@code i} belongs to ({@code i} itself for a lone Nether). */
+    public int netherGroupFirst(int i) {
+        while (netherJoinedBefore(i)) i--;
+        return i;
+    }
+
+    private boolean isNether(int i) {
+        return i >= 0 && i < slots.length && slots[i].type() == Type.NETHER;
     }
 
     /** A legacy run's exit fade, and the fallback for an era with no fade of its own. */

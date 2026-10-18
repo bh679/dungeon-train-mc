@@ -151,7 +151,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                     // way in, mostly deep dark after the core). Un-waved X for the pre/post split — core
                     // columns are never HIGHLAND, so the ±9 wave can't matter.
                     if (BandBiomeDecision.isCave(column.caveTop(), blockY)) {
-                        return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, ctx.cycle().netherPastCore(blockX));
+                        return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, ctx.cycle().netherDeepDarkSide(blockX));
                     }
                     // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                     return column.look() == SecondLapOverworld.Stretch.BOP
@@ -232,7 +232,7 @@ public abstract class MultiNoiseBiomeSourceMixin implements OverworldBiomeSource
                 // never HIGHLAND, so the ±9 wave can't matter.
                 if (BandBiomeDecision.isCave(BandBiomeDecision.caveWindowTop(cycle, ctx.generationSeed(), ctx.seaLevel(),
                         ctx.worldCeiling(), ctx.netherTop(), ctx.baseRelief(), blockX, blockZ), blockY)) {
-                    return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, cycle.netherPastCore(blockX));
+                    return ctx.highlandBiomes().caveBiomeFor(ctx, blockX, blockZ, cycle.netherDeepDarkSide(blockX));
                 }
                 // Mountain stages bordering the BoP stretch climb through BoP's forests and snow instead.
                 return SecondLapOverworld.lookAt(cycle, blockX) == SecondLapOverworld.Stretch.BOP

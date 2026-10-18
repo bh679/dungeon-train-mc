@@ -283,7 +283,7 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                     // Before the crossfade skin + seams so those land on top of it.
                     if (!inBeachSpan) {
                         changed |= deepslateColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, seed,
-                                cycle.netherCoreGap(wx), DeepslateFront.half(cycle.netherApproachLength()));
+                                cycle.netherDeepslateGap(wx), DeepslateFront.half(cycle.netherApproachLength()));
                     }
                     // Pure mountain-stage columns (n == 0, not the beach) are built entirely by the terrain-noise
                     // density wrapper — nothing to post-process here (so grass/trees/structures survive), EXCEPT

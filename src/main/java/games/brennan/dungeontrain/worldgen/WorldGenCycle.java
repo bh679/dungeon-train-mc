@@ -1077,6 +1077,39 @@ public record WorldGenCycle(long startX, int owGap,
         return spanLocal(CycleLayout.Type.NETHER, worldX);
     }
 
+    /**
+     * {@link #netherOffset} as the mountain <em>shape</em> sees it. Where this Nether slot joins another
+     * ({@link CycleLayout#netherJoinedBefore} / {@link CycleLayout#netherJoinedAfter}) its beach + rise (or
+     * fall) on that side is pinned to the plateau's edge, so the range stays at full height between the two
+     * cores instead of falling to the sea and climbing again. Only the shape functions read it — the
+     * height ramp, stage multiplier, edge feather and beach span; the core, crossfade and past-core
+     * offsets keep the real one. Equal to {@link #netherOffset} everywhere else.
+     */
+    private long netherShapeOffset(int worldX) {
+        long ln = netherOffset(worldX);
+        if (ln < 0L || layout == null) return ln;
+        int i = slotAt(worldX);
+        long edge = riseLen();
+        if (layout.netherJoinedBefore(i) && ln < edge) ln = edge;
+        if (layout.netherJoinedAfter(i)) ln = Math.min(ln, netherLenAt(worldX) - edge - 1L);
+        return ln;
+    }
+
+    /**
+     * True on the deep-dark side of a Nether band: past the core ({@link #netherPastCore}), or anywhere on
+     * the way in to a Nether slot that joins the one before it — the whole range between two joined cores
+     * wears the exit-side caves (deep dark, sulfur), not the entry side's lush/dripstone ones.
+     */
+    public boolean netherDeepDarkSide(int worldX) {
+        if (netherPastCore(worldX)) return true;
+        if (layout == null) return false;
+        int i = slotAt(worldX);
+        if (i < 0 || !layout.netherJoinedBefore(i)) return false;
+        long ln = netherOffset(worldX);
+        return ln >= 0L && ln < (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade)
+                && !isNetherCore(worldX);
+    }
+
     /** Length of the Nether occurrence at {@code worldX} (classic: {@link #netherLen}). */
     private long netherLenAt(int worldX) {
         return NetherTransition.bandLength(riseLen(), megaHold, coreFade, spanCore(CycleLayout.Type.NETHER, worldX));
@@ -1084,7 +1117,7 @@ public record WorldGenCycle(long startX, int owGap,
 
     /** Nether band-presence ramp (0 outside the nether segment) — drives in-band gating. */
     public double netherHeightRamp(int worldX) {
-        long ln = netherOffset(worldX);
+        long ln = netherShapeOffset(worldX);
         if (ln < 0L) return 0.0;
         return NetherTransition.heightRamp((int) ln, 0L, riseLen(), megaHold, coreFade, spanCore(CycleLayout.Type.NETHER, worldX), 0);
     }
@@ -1156,6 +1189,23 @@ public record WorldGenCycle(long startX, int owGap,
     }
 
     /**
+     * {@link #netherCoreGap} for the stone → deepslate front ({@code feature/DeepslateFront}): {@code 0} across
+     * the range between two joined Nether cores ({@link CycleLayout#netherJoinedBefore}), so those deep-dark
+     * mountains are deepslate the whole way instead of turning back to stone in the middle. The real gap
+     * everywhere else.
+     */
+    public int netherDeepslateGap(int worldX) {
+        int gap = netherCoreGap(worldX);
+        if (gap == 0 || gap == Integer.MAX_VALUE || layout == null) return gap;
+        int i = slotAt(worldX);
+        long ln = netherOffset(worldX);
+        long coreStart = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+        boolean before = ln < coreStart;
+        if (before ? layout.netherJoinedBefore(i) : layout.netherJoinedAfter(i)) return 0;
+        return gap;
+    }
+
+    /**
      * True on the <b>exit</b> side of the Nether band — past the last real-Nether core column (the
      * crossfade-out and the falling mountain). {@code false} in the core, on the way in, and outside the
      * segment. Same layout offsets as {@link #netherCoreDepth}. Drives the cave-biome palette split
@@ -1178,7 +1228,7 @@ public record WorldGenCycle(long startX, int owGap,
      * mirrored on the exit.
      */
     public double netherMountainMultiplier(int worldX) {
-        long ln = netherOffset(worldX);
+        long ln = netherShapeOffset(worldX);
         if (ln < 0L) return 1.0;
         long band = netherLenAt(worldX);
         int rise = riseLen();
@@ -1224,7 +1274,7 @@ public record WorldGenCycle(long startX, int owGap,
      * reach full height. Pure (deterministic, seed-independent) like the rest of this class.</p>
      */
     public double netherMountainFeather(int worldX) {
-        long ln = netherOffset(worldX);
+        long ln = netherShapeOffset(worldX);
         if (ln < 0L) return 1.0;                                    // outside the nether segment
         int fade = Math.max(0, stageBlocks);                        // ease in over the first stage
         if (fade == 0) return 1.0;
@@ -1238,7 +1288,7 @@ public record WorldGenCycle(long startX, int owGap,
 
     /** True if {@code worldX} lies in the leading beach span of a nether band (the ocean-entry stretch). */
     public boolean isNetherBeachStage(int worldX) {
-        long ln = netherOffset(worldX);
+        long ln = netherShapeOffset(worldX);
         return ln >= 0 && ln < Math.max(0, beachBlocks);
     }
 
@@ -1251,7 +1301,7 @@ public record WorldGenCycle(long startX, int owGap,
     public double netherBeachProgress(int worldX) {
         int beach = Math.max(0, beachBlocks);
         if (beach == 0) return 0.0;
-        long ln = netherOffset(worldX);
+        long ln = netherShapeOffset(worldX);
         if (ln <= 0L) return 0.0;
         double p = (double) ln / beach;
         return p < 0.0 ? 0.0 : (p > 1.0 ? 1.0 : p);
@@ -1265,7 +1315,8 @@ public record WorldGenCycle(long startX, int owGap,
             // The Nether slot at or before u in this run; before the run's first, the run start stands in.
             long entrance = 0L;
             for (int i = 0; i < layout.count() && layout.start(i) <= u; i++) {
-                if (layout.slot(i).type() == CycleLayout.Type.NETHER) entrance = layout.start(i);
+                // a Nether joined to the one before has no beach of its own: the range's first slot is the entrance
+                if (layout.slot(i).type() == CycleLayout.Type.NETHER) entrance = layout.start(layout.netherGroupFirst(i));
             }
             return worldOf(worldX, entrance);
         }
