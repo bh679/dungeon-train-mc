@@ -9,11 +9,14 @@ import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PriorityBookIntentPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -34,21 +37,34 @@ import java.lang.ref.WeakReference;
  * ({@code BookEditScreenSignMixin}), ahead of vanilla's sign packet, exactly like the book-language pick.
  * The relay does the charging and the server reports back in chat what happened.</p>
  *
- * <p>Placed to the LEFT of the book, mirroring the language dropdown on the right, when its whole label
- * fits there; otherwise it spans the foot of the book just above the sign buttons.</p>
+ * <p>A star on a yellow face, just outside the book's left edge (the language dropdown sits on the
+ * right): outline when off, filled when ticked, the count left as a corner badge, the words in its
+ * tooltip.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class PriorityBookSignToggle {
 
-    private static final int MIN_WIDTH = 110;
-    private static final int MAX_WIDTH = 230;
-    private static final int TEXT_PAD = 24;
-    private static final int HEIGHT = 20;
-    private static final int EDGE = 1;
+    private static final int SIZE = 20;                  // square icon button
     private static final int BOOK_HALF = 96;
     private static final int GAP = 6;
-    private static final int SIDE_Y = 40;
-    private static final int PAGE_Y = 172;
+    private static final int SIDE_Y = 40;                // level with the title area
+    private static final int PAGE_Y = 172;               // fallback: centred at the book's foot
+
+    // Yellow face, Minecraft-button bevel. Off is a softer yellow so ticking it visibly lights it up.
+    private static final int FACE_ON = 0xFFFFC21A;
+    private static final int FACE_OFF = 0xFFE3C35C;
+    private static final int FACE_HOVER_LIFT = 0x00141414;
+    private static final int LIGHT_EDGE = 0xFFFFE89A;
+    private static final int DARK_EDGE = 0xFF8A5F00;
+    private static final int OUTLINE = 0xFF000000;
+    private static final int OUTLINE_ON = 0xFF5A3A00;
+    /** The star is tinted dark amber so it reads on yellow; filled when ticked, outline when not. */
+    private static final float[] STAR_TINT = {0.36F, 0.22F, 0.0F};
+
+    private static final ResourceLocation STAR =
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star");
+    private static final ResourceLocation STAR_FILLED =
+            ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "widget/star_filled");
 
     /** The sign screen this toggle's state belongs to; a new screen starts unticked. */
     private static WeakReference<BookEditScreen> owner = new WeakReference<>(null);
@@ -56,10 +72,33 @@ public final class PriorityBookSignToggle {
 
     private PriorityBookSignToggle() {}
 
-    /** Marker subclass, so the render pass can find our button among the screen's children. */
+    /**
+     * A 20×20 star on a yellow face. The words live in the tooltip and the narration message; the
+     * Priority Books left sit as a corner badge, the way an item stack shows its count.
+     */
     private static final class Toggle extends Button {
-        Toggle(int x, int y, int width, OnPress onPress) {
-            super(x, y, width, HEIGHT, Component.empty(), onPress, DEFAULT_NARRATION);
+        Toggle(int x, int y, OnPress onPress) {
+            super(x, y, SIZE, SIZE, Component.empty(), onPress, DEFAULT_NARRATION);
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+            int x = getX();
+            int y = getY();
+            int face = (ticked ? FACE_ON : FACE_OFF) + (isHoveredOrFocused() ? FACE_HOVER_LIFT : 0);
+            g.fill(x, y, x + SIZE, y + SIZE, ticked ? OUTLINE_ON : OUTLINE);
+            g.fill(x + 1, y + 1, x + SIZE - 1, y + SIZE - 1, DARK_EDGE);
+            g.fill(x + 1, y + 1, x + SIZE - 2, y + SIZE - 2, LIGHT_EDGE);
+            g.fill(x + 2, y + 2, x + SIZE - 2, y + SIZE - 2, face);
+            g.setColor(STAR_TINT[0], STAR_TINT[1], STAR_TINT[2], 1.0F);
+            g.blitSprite(ticked ? STAR_FILLED : STAR, x + 1, y + 1, 18, 18);
+            g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+            String count = Integer.toString(BookCredits.current());
+            Font font = Minecraft.getInstance().font;
+            g.pose().pushPose();
+            g.pose().translate(0.0F, 0.0F, 200.0F);
+            g.drawString(font, count, x + SIZE - font.width(count), y + SIZE - font.lineHeight + 1, 0xFFFFFFFF, true);
+            g.pose().popPose();
         }
     }
 
@@ -80,28 +119,12 @@ public final class PriorityBookSignToggle {
             ticked = false;
             BookCredits.refresh(null);
         }
-        Minecraft mc = Minecraft.getInstance();
-        // Sized for the TICKED label ("✔ " + text), so ticking it never clips "(N left)".
-        int width = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH,
-                mc.font.width(Component.literal("✔ ").append(label(Math.max(1, BookCredits.current()))))
-                        + TEXT_PAD));
-        int sideRoom = screen.width / 2 - BOOK_HALF - GAP - EDGE;
-        // Beside the book only when the whole label fits there; otherwise across the book's foot.
-        boolean side = sideRoom >= width;
-        int x;
-        int y;
-        if (side) {
-            width = Math.min(width, sideRoom);
-            x = screen.width / 2 - BOOK_HALF - GAP - width;
-            y = SIDE_Y;
-        } else {
-            width = Math.min(width, 2 * BOOK_HALF - 2 * GAP);
-            x = (screen.width - width) / 2;
-            y = PAGE_Y;
-        }
-        Toggle toggle = new Toggle(x, y, width, b -> ticked = !ticked);
-        toggle.setTooltip(Tooltip.create(PriorityBookMessage.signTooltip()));
-        event.addListener(toggle);
+        // Just outside the book's left edge when there is room (almost always: it is 20 px), else
+        // centred at the book's foot above the sign buttons.
+        boolean side = screen.width / 2 - BOOK_HALF - GAP - SIZE >= 0;
+        int x = side ? screen.width / 2 - BOOK_HALF - GAP - SIZE : (screen.width - SIZE) / 2;
+        int y = side ? SIDE_Y : PAGE_Y;
+        event.addListener(new Toggle(x, y, b -> ticked = !ticked));
     }
 
     @SubscribeEvent
@@ -113,9 +136,12 @@ public final class PriorityBookSignToggle {
             if (child instanceof Toggle toggle) {
                 toggle.visible = show;
                 Component text = label(BookCredits.current());
-                toggle.setMessage(ticked
-                        ? Component.literal("✔ ").append(text).withStyle(ChatFormatting.GOLD)
-                        : text);
+                Component shown = ticked ? Component.literal("✔ ").append(text).withStyle(ChatFormatting.GOLD) : text;
+                // The message is what narration reads; the tooltip carries the words a sighted reader needs.
+                if (shown.getString().equals(toggle.getMessage().getString())) continue;
+                toggle.setMessage(shown);
+                toggle.setTooltip(Tooltip.create(shown.copy().append("\n").append(
+                        PriorityBookMessage.signTooltip().copy().withStyle(ChatFormatting.GRAY))));
             }
         }
     }
