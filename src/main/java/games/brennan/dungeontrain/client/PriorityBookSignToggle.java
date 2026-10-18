@@ -46,14 +46,15 @@ public final class PriorityBookSignToggle {
     private static final int SIZE = 20;                  // square icon button
     private static final int GAP = 4;                    // between the star and Sign and Close
 
-    // The book art inside vanilla's 192×192 image, which sits at ((width-192)/2, signY - 194):
+    // The book art inside vanilla's 192×192 image, which renderBackground blits at ((width-192)/2, 2):
     // measured from the screen, the visible leather spans x+20..x+166 and y+1..y+181.
     private static final int BOOK_IMAGE = 192;
-    private static final int BOOK_TOP_ABOVE_SIGN = 194;
+    private static final int BOOK_BLIT_Y = 2;
     private static final int ART_LEFT = 20, ART_RIGHT = 166, ART_TOP = 1, ART_BOTTOM = 181;
-    private static final int FRAME_BAND = 2;             // bright gold band hugging the book
+    private static final int FRAME_OUT = 3;              // how far the gold reaches past the book art
+    private static final int FRAME_RADIUS = 5;           // rounded corners on the gold, like the book's own
     private static final int FRAME_GOLD = 0xFFFFC21A;
-    private static final int FRAME_RIM = 0xFF8A5F00;     // 1 px darker rim outside the band
+    private static final int FRAME_RIM = 0xFF8A5F00;     // 1 px darker rim round the gold
 
     // Yellow face, Minecraft-button bevel. Off is a softer yellow so ticking it visibly lights it up.
     private static final int FACE_ON = 0xFFFFC21A;
@@ -149,30 +150,33 @@ public final class PriorityBookSignToggle {
     }
 
     /**
-     * While the star is ticked, a gold frame round the whole book — the selected state, readable from
-     * across the screen. Drawn only OUTSIDE the book art, so nothing written on the page is covered.
-     * Located from the live Sign and Close button, like the star, so it follows a re-centred book.
+     * While the star is ticked, a gold glow BEHIND the whole book — the selected state, readable from
+     * across the screen. Called by {@code BookEditScreenPriorityGlowMixin} immediately before vanilla's
+     * {@code renderBackground} blits the book (vanilla never calls {@code super.renderBackground}, so
+     * NeoForge's {@code BackgroundRendered} event does not fire here). The book then lands on top, and the
+     * gold shows round its edges and through its rounded corners; nothing on the page is ever covered.
+     * Drawn at the book blit's own coordinates and under the same pose, so a mod that moves the book
+     * moves the glow with it.
      */
-    @SubscribeEvent
-    public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
-        if (!(event.getScreen() instanceof BookEditScreen screen) || owner.get() != screen) return;
-        if (!ticked || !applies(screen)) return;
-        Button sign = ((BookEditScreenAccessor) screen).dungeontrain$getFinalizeButton();
-        if (sign == null) return;
+    public static void drawGlow(BookEditScreen screen, GuiGraphics g) {
+        if (owner.get() != screen || !ticked || !applies(screen)) return;
         int bx = (screen.width - BOOK_IMAGE) / 2;
-        int by = sign.getY() - BOOK_TOP_ABOVE_SIGN;
-        int l = bx + ART_LEFT, r = bx + ART_RIGHT, t = by + ART_TOP, b = by + ART_BOTTOM;
-        GuiGraphics g = event.getGuiGraphics();
-        frame(g, l - FRAME_BAND - 1, t - FRAME_BAND - 1, r + FRAME_BAND + 1, b + FRAME_BAND + 1, 1, FRAME_RIM);
-        frame(g, l - FRAME_BAND, t - FRAME_BAND, r + FRAME_BAND, b + FRAME_BAND, FRAME_BAND, FRAME_GOLD);
+        int by = BOOK_BLIT_Y;
+        int l = bx + ART_LEFT - FRAME_OUT, r = bx + ART_RIGHT + FRAME_OUT;
+        int t = by + ART_TOP - FRAME_OUT, b = by + ART_BOTTOM + FRAME_OUT;
+        roundedRect(g, l - 1, t - 1, r + 1, b + 1, FRAME_RADIUS + 1, FRAME_RIM);
+        roundedRect(g, l, t, r, b, FRAME_RADIUS, FRAME_GOLD);
     }
 
-    /** A hollow rectangle {@code w} pixels thick, drawn inward from the given outer bounds. */
-    private static void frame(GuiGraphics g, int x0, int y0, int x1, int y1, int w, int color) {
-        g.fill(x0, y0, x1, y0 + w, color);
-        g.fill(x0, y1 - w, x1, y1, color);
-        g.fill(x0, y0 + w, x0 + w, y1 - w, color);
-        g.fill(x1 - w, y0 + w, x1, y1 - w, color);
+    /** A filled rectangle with corners rounded to {@code radius}, one fill per corner row. */
+    private static void roundedRect(GuiGraphics g, int x0, int y0, int x1, int y1, int radius, int color) {
+        g.fill(x0, y0 + radius, x1, y1 - radius, color);
+        for (int i = 0; i < radius; i++) {
+            double dy = radius - i - 0.5;
+            int inset = (int) Math.round(radius - Math.sqrt(radius * radius - dy * dy));
+            g.fill(x0 + inset, y0 + i, x1 - inset, y0 + i + 1, color);
+            g.fill(x0 + inset, y1 - i - 1, x1 - inset, y1 - i, color);
+        }
     }
 
     /**

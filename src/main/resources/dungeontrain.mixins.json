@@ -149,6 +149,7 @@
     "client.TooltipAccessor",
     "client.BookEditScreenAccessor",
     "client.BookEditScreenAuthorMixin",
+    "client.BookEditScreenPriorityGlowMixin",
     "client.BookEditScreenSignMixin",
     "client.BookEditScreenSuspensionMixin",
     "CreateWorldScreenAccessor",
