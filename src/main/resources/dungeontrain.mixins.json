@@ -111,6 +111,7 @@
     "SubLevelPhysicsBlockChangeBatchMixin",
     "SubLevelPhysicsStepColliderDeferMixin",
     "PhysicsChunkTicketManagerAccessor",
+    "PhysicsChunkTicketManagerNoSyncLoadMixin",
     "MergedMassTrackerPivotFreezeMixin",
     "SubLevelHoldingChunkFileMixin",
     "SubLevelHoldingChunkAutoLoadVetoMixin",

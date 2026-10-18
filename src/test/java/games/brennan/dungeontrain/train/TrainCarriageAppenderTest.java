@@ -1332,4 +1332,30 @@ final class TrainCarriageAppenderTest {
         assertFalse(TrainCarriageAppender.mayReissueReload(last, last + 10_000L, max));
         assertFalse(TrainCarriageAppender.mayReissueReload(last, last + 10_000L, max + 1));
     }
+
+    // shouldRequestEarlySave: a backward catch-up bridging to a player far down the line left ~85
+    // never-saved groups pinned until the next autosave (player log 17 Oct 2026, 99 groups resident).
+
+    @Test
+    @DisplayName("shouldRequestEarlySave: surplus at threshold, never saved before → save")
+    void earlySave_atThreshold_firstTime() {
+        assertTrue(TrainCarriageAppender.shouldRequestEarlySave(
+            TrainCarriageAppender.EARLY_SAVE_SURPLUS_GROUPS, Long.MAX_VALUE));
+    }
+
+    @Test
+    @DisplayName("shouldRequestEarlySave: ordinary churn below threshold → no save")
+    void earlySave_belowThreshold_noSave() {
+        assertFalse(TrainCarriageAppender.shouldRequestEarlySave(
+            TrainCarriageAppender.EARLY_SAVE_SURPLUS_GROUPS - 1, Long.MAX_VALUE));
+    }
+
+    @Test
+    @DisplayName("shouldRequestEarlySave: within cooldown → no save; at cooldown → save")
+    void earlySave_cooldown() {
+        int surplus = 40;
+        long cooldown = TrainCarriageAppender.EARLY_SAVE_COOLDOWN_TICKS;
+        assertFalse(TrainCarriageAppender.shouldRequestEarlySave(surplus, cooldown - 1));
+        assertTrue(TrainCarriageAppender.shouldRequestEarlySave(surplus, cooldown));
+    }
 }
