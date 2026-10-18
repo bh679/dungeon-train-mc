@@ -27337,6 +27337,24 @@
       "released": true,
       "released_in": "v0.1342.0",
       "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "advancement-hidden-gap-dots",
+      "version": "0.1343.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Dots mark hidden advancements",
+      "summary": "On the advancements screen, three dots now mark a link that skips two or more advancements you haven't uncovered yet, so you can see there is more to find there.",
+      "highlights": [],
+      "pr": 2097,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
