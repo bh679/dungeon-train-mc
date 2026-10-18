@@ -110,6 +110,8 @@ public enum ClientOptionsTab {
         BOOK_FILE_BUTTONS("gui.dungeontrain.options.book_file_buttons"),
         /** Scribble's insert-page button on the book screen — off by default. */
         BOOK_INSERT_PAGE_BUTTON("gui.dungeontrain.options.book_insert_page_button"),
+        /** Supporter perk: Copy on the book-reading screen. Locked (greyed) below $10 AUD given — see {@code BookCopyButton}. */
+        BOOK_COPY_BUTTON("gui.dungeontrain.options.book_copy_button"),
         /** Opens the AI Policy page. Unconditional — every client can reach it. */
         AI_POLICY("gui.dungeontrain.options.ai_policy"),
         /** Only when {@code TranslationTarget.resolveForClient()} names a language to edit. */
@@ -287,6 +289,7 @@ public enum ClientOptionsTab {
                 rows.add(Row.BACKPACK_AUTO_COLLECT);
                 rows.add(Row.BOOK_FILE_BUTTONS);
                 rows.add(Row.BOOK_INSERT_PAGE_BUTTON);
+                rows.add(Row.BOOK_COPY_BUTTON);
                 // The two rows that open a page rather than change a setting, led by the
                 // unconditional one so they pair on a line of their own — put TRANSLATE in the
                 // lead and the pair breaks apart on the release en_us clients where it is absent.
