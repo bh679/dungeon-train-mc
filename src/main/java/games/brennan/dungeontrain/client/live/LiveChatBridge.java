@@ -8,6 +8,8 @@ import games.brennan.dungeontrain.compat.vista.TvItems;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.config.LiveFeedClientConfig;
 import games.brennan.dungeontrain.logrequest.LogRequestClient;
+import games.brennan.dungeontrain.net.ClientActionPacket;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatLine;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.ChatPage;
@@ -71,6 +73,8 @@ public final class LiveChatBridge {
     private static volatile long lastPollMs;
     private static volatile long lastSendMs;
     private static volatile boolean sendFailureLogged;
+    /** Part Of the Community's action went to the server this session; one is enough, the grant is one-shot. */
+    private static volatile boolean tvChatReported;
     private static final AtomicBoolean inFlight = new AtomicBoolean();
     private static final LiveChatSignatures signatures = new LiveChatSignatures();
 
@@ -150,12 +154,23 @@ public final class LiveChatBridge {
         if (mc.getUser() == null) return;
         UUID me = mc.getUser().getProfileId();
         String name = mc.getUser().getName();
-        LiveFeedClient.chatSend(base(LiveStreamController.get().streaming()), me, name, content).thenAccept(r -> {
-            if (!r.ok() && !sendFailureLogged) {
+        boolean streaming = LiveStreamController.get().streaming();
+        boolean fromTv = !streaming && mc.player != null && TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD));
+        LiveFeedClient.chatSend(base(streaming), me, name, content).thenAccept(r -> {
+            if (r.ok()) {
+                if (fromTv) mc.execute(LiveChatBridge::reportTvChat);
+            } else if (!sendFailureLogged) {
                 sendFailureLogged = true;
                 LOGGER.warn("[DungeonTrain] live chat send failed (status {}); further failures this session are silent", r.status());
             }
         });
+    }
+
+    /** The relay took a line typed under a worn TV: Part Of the Community, once a session. */
+    private static void reportTvChat() {
+        if (tvChatReported || Minecraft.getInstance().getConnection() == null) return;
+        tvChatReported = true;
+        DungeonTrainNet.sendToServer(new ClientActionPacket("live_chat_from_tv"));
     }
 
     /** Connected, the player is being heard: DiscordPresence's "into the void" whispers would say otherwise. */
@@ -193,6 +208,7 @@ public final class LiveChatBridge {
         disconnect();
         lastPollMs = 0;
         sendFailureLogged = false;
+        tvChatReported = false;
     }
 
     private static void deliver(Minecraft mc, ChatPage page, GiftNotices gifts) {
