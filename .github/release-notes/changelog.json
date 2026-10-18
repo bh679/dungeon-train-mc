@@ -27811,6 +27811,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "stream-save-upload-bandwidth",
+      "version": "0.1362.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Save upload bandwidth while streaming",
+      "summary": "A new Stream setting, Save upload bandwidth, makes your computer work harder to squeeze your Live Eye stream down to about half the upload for a picture that looks nearly the same. It costs some frame rate, so it starts off; turn it on if your internet is slow or capped.",
+      "highlights": [
+        "Options, Stream (and Performance): Save upload bandwidth, off by default",
+        "About half the upload for nearly the same picture, at some frame rate",
+        "Takes effect from your next stream"
+      ],
+      "pr": 2124,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
