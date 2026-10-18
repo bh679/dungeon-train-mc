@@ -27731,6 +27731,42 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "crates2-trees-tnt-cargo",
+      "version": "0.1359.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "train",
+        "loot"
+      ],
+      "title": "New cargo: crates, trees and a TNT boxcar",
+      "summary": "More cargo can turn up in the carriages: a second crate stack, a load of trees and a boxcar packed with TNT. The bigger crate stacks hide pots and a chest worth searching, and they come with guards.",
+      "highlights": [],
+      "pr": 2121,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "editor-if-popup-late-icons",
+      "version": "0.1359.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "ui"
+      ],
+      "title": "Editor: If conditions stick on long block lists",
+      "summary": "In the Block Variants menu, choosing a block from the 11th icon onward in an If condition no longer wipes the condition. You can now pick any block a group can roll, including nothing.",
+      "highlights": [],
+      "pr": 2121,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
