@@ -12,7 +12,7 @@ import java.util.Set;
 
 /**
  * One creaking heart's DT settings, edited from the Creative right-click menu
- * ({@code client/menu/CreakingHeartScreen}) and saved on the heart's block entity under
+ * ({@code client/menu/creakingheart/CreakingHeartPanel}) and saved on the heart's block entity under
  * {@link #TAG}, so they travel inside a contents template's {@code .nbt} and onto every train it
  * is stamped onto.
  *

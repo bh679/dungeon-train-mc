@@ -3855,7 +3855,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Creaking Heart",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Works by Day",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Works at Night",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Creaking (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Number of Creaking",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Stage: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Custom",

@@ -3260,7 +3260,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Coração de rangedor",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Funciona de dia",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Funciona à noite",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Rangedores (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Número de rangedores",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Etapa: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Personalizada",

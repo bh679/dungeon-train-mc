@@ -3260,7 +3260,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Krakershart",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Werkt overdag",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Werkt 's nachts",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Krakers (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Aantal krakers",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Etappe: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Aangepast",

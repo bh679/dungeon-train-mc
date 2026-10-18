@@ -3208,7 +3208,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Trái tim Kẽo Kẹt",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Hoạt động ban ngày",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Hoạt động ban đêm",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Kẽo Kẹt (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Số Kẽo Kẹt",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Chặng: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Tùy chỉnh",

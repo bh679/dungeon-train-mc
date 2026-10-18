@@ -99,6 +99,7 @@ public final class StagePanelMenuInputHandler {
         // Defer to the other world-space menus while they own the crosshair.
         if (BlockVariantMenu.isActive()) return false;
         if (PartPositionMenu.claimsPointer()) return false;
+        if (games.brennan.dungeontrain.client.menu.creakingheart.CreakingHeartPanel.claimsPointer()) return false;
         // Disjoint billboards ⇒ at most one non-NONE hover; guard anyway.
         if (EditorTypeMenuRenderer.hovered().cell() != EditorTypeMenuRenderer.CellKind.NONE) return false;
         return true;

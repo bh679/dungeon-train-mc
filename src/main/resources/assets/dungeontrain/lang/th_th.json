@@ -3208,7 +3208,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "หัวใจครีกกิ้ง",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "ทำงานตอนกลางวัน",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "ทำงานตอนกลางคืน",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "ครีกกิ้ง (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "จำนวนครีกกิ้ง",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "สเตจ: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "กำหนดเอง",

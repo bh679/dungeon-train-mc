@@ -3208,7 +3208,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "きしむ心臓",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "昼に活動",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "夜に活動",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "きしむもの (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "きしむものの数",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "ステージ: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "カスタム",

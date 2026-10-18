@@ -3222,7 +3222,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "嘎枝之心",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "白天運作",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "夜晚運作",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "嘎枝（%s）",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "嘎枝數量",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "路段：%s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "自訂",

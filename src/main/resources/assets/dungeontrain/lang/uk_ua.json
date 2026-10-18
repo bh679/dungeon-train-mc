@@ -3905,7 +3905,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Скрипуче серце",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Працює вдень",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Працює вночі",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Скрипуни (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Кількість скрипунів",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Етап: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Власний",

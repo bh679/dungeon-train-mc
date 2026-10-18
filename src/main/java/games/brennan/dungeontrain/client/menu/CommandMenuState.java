@@ -60,11 +60,6 @@ public final class CommandMenuState {
     private static Vec3 anchorRight = new Vec3(1, 0, 0);
     private static Vec3 anchorUp = new Vec3(0, 1, 0);
     private static Vec3 anchorNormal = new Vec3(0, 0, 1);
-    /**
-     * True while the panel is pinned to a block face ({@link #openOnBlockFace}) rather than
-     * floating in front of the player: the anchor is not re-derived from the eye each tick/frame.
-     */
-    private static boolean pinned;
 
     private static final List<MenuScreen> stack = new ArrayList<>();
     private static List<CommandMenuEntry> entries = List.of();
@@ -119,7 +114,7 @@ public final class CommandMenuState {
      * by up to one tick (~50 ms) behind the camera while the player moves.
      */
     public static void refreshAnchorForFrame(float partialTick) {
-        if (!open || pinned) return;
+        if (!open) return;
         LocalPlayer p = Minecraft.getInstance().player;
         if (p == null) return;
         anchorPos = p.getEyePosition(partialTick).add(anchorOffset);
@@ -210,56 +205,15 @@ public final class CommandMenuState {
      * {@link #open()}.</p>
      */
     public static void openAt(MenuScreen rootScreen) {
-        openInternal(List.of(rootScreen), ClientDisplayConfig.getCommandMenuSpace());
-    }
-
-    /**
-     * Open {@code rootScreen} in world space, pinned to {@code face} of the block at {@code pos} the
-     * way the Z (block-variant) menu hangs off its cell: anchored on the face centre, facing out of
-     * it, staying put while the player moves. Always world space, whatever the Command Menu Space
-     * setting. A face too far from the eye to read (a block on a moving Sable carriage reports its
-     * plot-space position) falls back to the usual panel floating in front of the player.
-     */
-    public static void openOnBlockFace(MenuScreen rootScreen, net.minecraft.core.BlockPos pos,
-                                       net.minecraft.core.Direction face) {
-        LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null) return;
-        Vec3 normal = new Vec3(face.getStepX(), face.getStepY(), face.getStepZ());
-        Vec3 anchor = pos.getCenter().add(normal.scale(0.5 + 0.02));
-        if (player.getEyePosition().distanceToSqr(anchor) > AUTO_CLOSE_DISTANCE_SQ) {
-            openInternal(List.of(rootScreen), EditorMenuSpace.WORLDSPACE);
-            return;
-        }
-        openInternal(List.of(rootScreen), EditorMenuSpace.WORLDSPACE);
-        Vec3 up;
-        if (face.getAxis().isHorizontal()) {
-            up = new Vec3(0, 1, 0);
-        } else {
-            // A top or bottom face lies flat: "up" on the panel points away from the player.
-            Vec3 look = player.getLookAngle();
-            up = new Vec3(look.x, 0, look.z);
-            if (up.lengthSqr() < 1.0e-4) up = new Vec3(0, 0, 1);
-            up = up.normalize();
-        }
-        pinned = true;
-        anchorPos = anchor;
-        anchorOffset = Vec3.ZERO;
-        anchorNormal = normal;
-        anchorUp = up;
-        anchorRight = up.cross(normal).normalize();
+        openInternal(List.of(rootScreen));
     }
 
     private static void openInternal(List<MenuScreen> initialStack) {
-        openInternal(initialStack, ClientDisplayConfig.getCommandMenuSpace());
-    }
-
-    private static void openInternal(List<MenuScreen> initialStack, EditorMenuSpace openSpace) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) return;
 
-        space = openSpace;
-        pinned = false;
+        space = ClientDisplayConfig.getCommandMenuSpace();
 
         if (space.isWorldspace()) {
             Vec3 eye = player.getEyePosition();
@@ -339,7 +293,6 @@ public final class CommandMenuState {
         typingOriginRowIdx = -1;
         typingOriginSubIdx = 0;
         anchorOffset = Vec3.ZERO;
-        pinned = false;
         stack.clear();
         entries = List.of();
         dismissMenuScreen();
@@ -552,7 +505,7 @@ public final class CommandMenuState {
         LocalPlayer p = Minecraft.getInstance().player;
         if (p == null) { close(); return; }
         Vec3 eye = p.getEyePosition();
-        if (!pinned) anchorPos = eye.add(anchorOffset);
+        anchorPos = eye.add(anchorOffset);
         if (eye.distanceToSqr(anchorPos) > AUTO_CLOSE_DISTANCE_SQ) {
             LOGGER.info("Command menu auto-closed (player wandered out of range)");
             close();

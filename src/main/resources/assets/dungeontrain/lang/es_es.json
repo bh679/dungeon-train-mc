@@ -3260,7 +3260,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Corazón de crujidor",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Funciona de día",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Funciona de noche",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Crujidores (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Número de crujidores",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Etapa: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Personalizado",

@@ -3208,7 +3208,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Jantung Creaking",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Aktif pada Siang",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Aktif pada Malam",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Creaking (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Bilangan Creaking",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Peringkat: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Tersuai",

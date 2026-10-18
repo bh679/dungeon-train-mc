@@ -3208,7 +3208,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "삐걱이 심장",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "낮에 작동",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "밤에 작동",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "삐걱이 (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "삐걱이 수",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "스테이지: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "커스텀",

@@ -3260,7 +3260,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Cuore di scricchiolante",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Attivo di giorno",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Attivo di notte",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Scricchiolanti (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Numero di scricchiolanti",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Tratto: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Personalizzato",

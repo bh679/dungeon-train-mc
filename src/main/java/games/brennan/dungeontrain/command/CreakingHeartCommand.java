@@ -22,7 +22,7 @@ import java.util.function.UnaryOperator;
 /**
  * {@code /dungeontrain editor creakingheart <pos> …}: edits one creaking heart's
  * {@link CreakingHeartSettings}. Run by the rows of the heart's Creative right-click menu
- * ({@code client/menu/CreakingHeartScreen}).
+ * ({@code client/menu/creakingheart/CreakingHeartPanel}).
  *
  * <pre>
  * day|night on|off

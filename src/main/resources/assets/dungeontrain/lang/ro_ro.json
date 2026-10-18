@@ -3908,7 +3908,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Inimă de scârțâitor",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Activă ziua",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Activă noaptea",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Scârțâitori (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Număr de scârțâitori",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Etapă: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Personalizat",

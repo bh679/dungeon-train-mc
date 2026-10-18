@@ -3260,7 +3260,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Cœur de grinçant",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Actif le jour",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Actif la nuit",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Grinçants (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Nombre de grinçants",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Tronçon : %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Personnalisé",

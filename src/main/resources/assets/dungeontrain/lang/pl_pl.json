@@ -3312,7 +3312,6 @@
   "gui.dungeontrain.editor_menu.creaking_heart.title": "Serce skrzypienia",
   "gui.dungeontrain.editor_menu.creaking_heart.day": "Działa w dzień",
   "gui.dungeontrain.editor_menu.creaking_heart.night": "Działa w nocy",
-  "gui.dungeontrain.editor_menu.creaking_heart.count": "Skrzypienie (%s)",
   "gui.dungeontrain.editor_menu.creaking_heart.count_title": "Liczba skrzypień",
   "gui.dungeontrain.editor_menu.creaking_heart.stage": "Etap: %s",
   "gui.dungeontrain.editor_menu.creaking_heart.custom": "Własny",
