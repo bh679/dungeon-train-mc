@@ -27379,26 +27379,6 @@
       "released": false,
       "released_in": null,
       "released_at": null
-    },
-    {
-      "id": "disable-picture-tape-recipe",
-      "version": "0.1344.0",
-      "type": "feat",
-      "tags": [
-        "feature",
-        "compatibility"
-      ],
-      "title": "Picture Tape removed from crafting",
-      "summary": "Picture Tapes can no longer be crafted. A tape holds maps and photos and plays them as a slideshow on a Television, but in Dungeon Train a Television only shows the Live Feed.",
-      "highlights": [
-        "The recipe (8 dried kelp around an iron ingot) is gone from the crafting table and the recipe book",
-        "Picture Tapes you already have keep working"
-      ],
-      "pr": 2099,
-      "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
     }
   ]
 }
