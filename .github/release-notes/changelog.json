@@ -27658,6 +27658,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dh-hidden-strange-stretch",
+      "version": "0.1356.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Distant Horizons steps aside in more places",
+      "summary": "Distant Horizons now hides its far terrain in another of the stranger stretches of the journey, where its horizon didn't match the world around the train.",
+      "highlights": [],
+      "pr": 2119,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
