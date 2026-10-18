@@ -53,6 +53,9 @@ public abstract class CreakingHeartSettingsMixin implements CreakingHeartSetting
     private List<UUID> dungeontrain$extras = List.of();
     @Unique
     private long dungeontrain$age;
+    /** The stamped carriage interior, relative to the heart — see {@link games.brennan.dungeontrain.compat.CreakingHeartBounds}. */
+    @Unique
+    private net.minecraft.world.level.levelgen.structure.BoundingBox dungeontrain$bounds;
     /**
      * The count a heart never stamped onto a carriage (an editor plot, a hand-placed heart) picked
      * the first time it needed one; {@link CreakingHeartSettings#NOT_ROLLED} until then. Kept in
@@ -78,6 +81,17 @@ public abstract class CreakingHeartSettingsMixin implements CreakingHeartSetting
         }
     }
 
+    @Override
+    public net.minecraft.world.level.levelgen.structure.BoundingBox dungeontrain$bounds() {
+        return dungeontrain$bounds;
+    }
+
+    @Override
+    public void dungeontrain$setBounds(net.minecraft.world.level.levelgen.structure.BoundingBox relative) {
+        dungeontrain$bounds = relative;
+        ((BlockEntity) (Object) this).setChanged();
+    }
+
     // ---- persistence ----
 
     @Inject(method = "saveAdditional", at = @At("TAIL"))
@@ -86,11 +100,13 @@ public abstract class CreakingHeartSettingsMixin implements CreakingHeartSetting
         // from this heart. After a reload the old ones find no protector and die, and the heart
         // tops back up — the same as VanillaBackport's own Creaking once its id grace runs out.
         tag.put(CreakingHeartSettings.TAG, dungeontrain$settings.save());
+        games.brennan.dungeontrain.compat.CreakingHeartBounds.save(tag, dungeontrain$bounds);
     }
 
     @Inject(method = "loadAdditional", at = @At("TAIL"))
     private void dungeontrain$loadSettings(CompoundTag tag, HolderLookup.Provider provider, CallbackInfo ci) {
         dungeontrain$settings = CreakingHeartSettings.load(tag.getCompound(CreakingHeartSettings.TAG));
+        dungeontrain$bounds = games.brennan.dungeontrain.compat.CreakingHeartBounds.load(tag);
     }
 
     // ---- Day / Night ----

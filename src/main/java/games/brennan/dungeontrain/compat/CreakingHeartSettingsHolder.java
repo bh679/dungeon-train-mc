@@ -13,6 +13,12 @@ public interface CreakingHeartSettingsHolder {
 
     void dungeontrain$setSettings(CreakingHeartSettings settings);
 
+    /** The carriage interior this heart was stamped into, relative to it; null when it never was. */
+    @org.jetbrains.annotations.Nullable
+    net.minecraft.world.level.levelgen.structure.BoundingBox dungeontrain$bounds();
+
+    void dungeontrain$setBounds(@org.jetbrains.annotations.Nullable net.minecraft.world.level.levelgen.structure.BoundingBox relative);
+
     /** The heart's settings at {@code pos}, or {@link CreakingHeartSettings#DEFAULT} if there is no heart. */
     static CreakingHeartSettings at(BlockGetter level, BlockPos pos) {
         return level.getBlockEntity(pos) instanceof CreakingHeartSettingsHolder holder

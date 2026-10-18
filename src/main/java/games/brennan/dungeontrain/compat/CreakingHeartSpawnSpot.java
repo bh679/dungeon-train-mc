@@ -11,6 +11,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayDeque;
@@ -44,8 +46,9 @@ public final class CreakingHeartSpawnSpot {
 
     /** Spawns one {@code type} for the heart at {@code heart}, or empty when its space has no room. */
     public static <T extends Mob> Optional<T> trySpawn(EntityType<T> type, MobSpawnType spawnType,
-                                                       ServerLevel level, BlockPos heart) {
-        List<BlockPos> spots = new ArrayList<>(candidates(level, heart));
+                                                       ServerLevel level, BlockPos heart,
+                                                       @Nullable BoundingBox room) {
+        List<BlockPos> spots = new ArrayList<>(candidates(level, heart, room));
         Collections.shuffle(spots, new java.util.Random(level.random.nextLong()));
         for (BlockPos spot : spots) {
             if (!level.noCollision(type.getSpawnAABB(spot.getX() + 0.5, spot.getY(), spot.getZ() + 0.5))) continue;
@@ -54,8 +57,8 @@ public final class CreakingHeartSpawnSpot {
             if (mob.checkSpawnRules(level, spawnType) && mob.checkSpawnObstruction(level)) {
                 level.addFreshEntityWithPassengers(mob);
                 mob.playAmbientSound();
-                LOGGER.debug("[DungeonTrain] creaking heart {} spawned {} at {} ({} spots)",
-                    heart.toShortString(), type.getDescriptionId(), spot.toShortString(), spots.size());
+                LOGGER.debug("[DungeonTrain] creaking heart {} spawned {} at {} ({} spots, room {})",
+                    heart.toShortString(), type.getDescriptionId(), spot.toShortString(), spots.size(), room);
                 return Optional.of(mob);
             }
             mob.discard();
@@ -65,8 +68,11 @@ public final class CreakingHeartSpawnSpot {
         return Optional.empty();
     }
 
-    /** Floor cells reachable from the heart without passing through a wall, floor or roof. */
-    static List<BlockPos> candidates(ServerLevel level, BlockPos heart) {
+    /**
+     * Floor cells reachable from the heart without passing through a wall, floor or roof — and,
+     * when the heart's {@code room} is known, inside it with head room for the whole Creaking.
+     */
+    static List<BlockPos> candidates(ServerLevel level, BlockPos heart, @Nullable BoundingBox room) {
         List<BlockPos> out = new ArrayList<>();
         Set<BlockPos> seen = new HashSet<>();
         ArrayDeque<BlockPos> queue = new ArrayDeque<>();
@@ -76,15 +82,20 @@ public final class CreakingHeartSpawnSpot {
             BlockPos cell = queue.poll();
             for (Direction d : Direction.values()) {
                 BlockPos next = cell.relative(d);
-                if (!withinRadius(heart, next) || !seen.add(next)) continue;
+                if (!withinRadius(heart, next) || (room != null && !room.isInside(next)) || !seen.add(next)) continue;
                 BlockState state = level.getBlockState(next);
                 boolean open = state.getCollisionShape(level, next).isEmpty();
                 if (!open && !isTree(state)) continue;
                 queue.add(next);
-                if (open && standsOn(level, next.below())) out.add(next);
+                if (open && standsOn(level, next.below()) && fits(room, next)) out.add(next);
             }
         }
         return out;
+    }
+
+    /** Whether a Creaking standing at {@code feet} stays inside {@code room} (about 2.7 tall: three cells). */
+    static boolean fits(@Nullable BoundingBox room, BlockPos feet) {
+        return room == null || (room.isInside(feet) && feet.getY() + 2 <= room.maxY());
     }
 
     private static boolean withinRadius(BlockPos heart, BlockPos p) {

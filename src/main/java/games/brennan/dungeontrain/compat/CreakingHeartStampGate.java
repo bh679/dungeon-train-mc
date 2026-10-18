@@ -35,6 +35,8 @@ public final class CreakingHeartStampGate {
             int rolled = settings.pickCount(roll(level, carriageIndex, pos.subtract(origin)));
             CreakingHeartSettings next = settings.withGatedOff(off).withRolledCount(rolled);
             if (!next.equals(settings)) holder.dungeontrain$setSettings(next);
+            // The interior it was stamped into: its Creaking spawn inside it, never on the roof.
+            holder.dungeontrain$setBounds(CreakingHeartBounds.relative(pos, origin, size));
         }
     }
 

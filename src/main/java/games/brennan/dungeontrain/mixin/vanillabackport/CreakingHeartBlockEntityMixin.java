@@ -79,8 +79,11 @@ public abstract class CreakingHeartBlockEntityMixin {
             net.minecraft.world.entity.EntityType<T> type, net.minecraft.world.entity.MobSpawnType spawnType,
             net.minecraft.server.level.ServerLevel level, BlockPos pos, int attempts, int spread, int yOffset,
             net.minecraft.util.SpawnUtil.Strategy strategy, boolean checkCollisions,
-            Operation<Optional<T>> original) {
-        return CreakingHeartSpawnSpot.trySpawn(type, spawnType, level, pos);
+            Operation<Optional<T>> original,
+            @Local(argsOnly = true) CreakingHeartBlockEntity heart) {
+        var room = games.brennan.dungeontrain.compat.CreakingHeartBounds.of(level, pos,
+            ((games.brennan.dungeontrain.compat.CreakingHeartSettingsHolder) heart).dungeontrain$bounds());
+        return CreakingHeartSpawnSpot.trySpawn(type, spawnType, level, pos, room);
     }
 
     @Inject(method = "distanceToCreaking", at = @At("HEAD"), cancellable = true)
