@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.net.ActivityStatePacket;
+import games.brennan.dungeontrain.net.ClientInputPacket;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -64,13 +65,16 @@ import java.util.UUID;
  * turning, so sampled yaw sits still however much the mouse moves. The client reports that case
  * directly — see {@link games.brennan.dungeontrain.net.ClientInputPacket}.</p>
  *
- * <p>The same signal decides whether a player can earn advancements: {@link #isAfk} (paused, mouse
- * idle or input idle — but not {@link Reason#NO_PROGRESS}, which is a player at the keyboard) makes
- * {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion. One
- * difference from the clocks: a paused player who clicked or typed on their screen in the last
- * {@link #MENU_PRESENCE_MS} is not AFK. Nearly every screen is a pause screen — books, the photo
- * viewer, the pause menu's sliders and Abandon button — and the packet a click there sends is proof
- * someone is at the keyboard. Their train time still stops; only the advancement rule relents.</p>
+ * <p>The same rule is the AFK rule: {@link #isAfk} — any reason but {@link Reason#TRACKING} — makes
+ * {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion, and the
+ * client's {@code AfkAutoPause} opens the pause menu on the way in. One difference from the clocks:
+ * a paused player who clicked or typed on their screen in the last {@link #MENU_PRESENCE_MS} is not
+ * AFK, provided they are still getting somewhere. Nearly every screen is a pause screen — books,
+ * the photo viewer, the pause menu's sliders and Abandon button — and the packet a click there
+ * sends is proof someone is at the keyboard. That proof runs out: input more than
+ * {@link #MENU_PRESENCE_CAP_GAME_MENU_MS} into the pause menu, or
+ * {@link #MENU_PRESENCE_CAP_SCREEN_MS} into any other screen, no longer counts, so a macro on an
+ * open screen cannot keep a player present. Train time stops while paused regardless.</p>
  *
  * <p>All state is transient and keyed by UUID — dropped on logout, seeded on login and respawn. A
  * player the tracker has never seen counts as active, so a missed login can only over-count, never
@@ -92,6 +96,12 @@ public final class PlayerActivityTracker {
      * behind a single-player pause menu) means the player is at the keyboard, for {@link #isAfk}.
      */
     public static final long MENU_PRESENCE_MS = 10_000L;
+
+    /** Screen input stops proving presence this long (2 min) into the pause menu and its settings. */
+    public static final long MENU_PRESENCE_CAP_GAME_MENU_MS = 120_000L;
+
+    /** Screen input stops proving presence this long (5 min) into any other screen — books, photos. */
+    public static final long MENU_PRESENCE_CAP_SCREEN_MS = 300_000L;
 
     /** Carriage-progress window (10 min). */
     public static final long PROGRESS_WINDOW_TICKS = 12000L;
@@ -181,22 +191,24 @@ public final class PlayerActivityTracker {
     }
 
     /**
-     * Is a player with this reason away from the keyboard? Paused, mouse idle and input idle are;
-     * {@link Reason#NO_PROGRESS} is not — that player is playing, just not walking the train.
+     * Is a player with this reason AFK? Every reason that stops the train clock does — paused, mouse
+     * idle, input idle and not getting anywhere are one rule.
      */
     public static boolean isAfk(Reason reason) {
-        return reason == Reason.PAUSED || reason == Reason.MOUSE_IDLE || reason == Reason.INPUT_IDLE;
+        return reason != Reason.TRACKING;
     }
 
     /**
-     * Is this player away from the keyboard? Gates advancement earning. As {@link #isAfk(Reason)},
-     * except a paused player who is using their screen is present.
+     * Is this player AFK? Gates advancement earning. As {@link #isAfk(Reason)}, except a paused
+     * player who is using their screen is present — as long as they are getting somewhere, which
+     * the pause outranks in {@link #reason}.
      */
     public static boolean isAfk(ServerPlayer player) {
         Reason reason = reason(player);
+        UUID uuid = player.getUUID();
         if (reason == Reason.PAUSED
-                && menuPresent(LAST_MENU_INPUT_MS.get(player.getUUID()), System.currentTimeMillis())) {
-            return false;
+                && menuPresent(LAST_MENU_INPUT_MS.get(uuid), System.currentTimeMillis())) {
+            return !hasCarriageProgress(uuid, player.level().getGameTime());
         }
         return isAfk(reason);
     }
@@ -229,7 +241,7 @@ public final class PlayerActivityTracker {
      * True while the rule cannot yet judge: before they have ever boarded, and for one full window
      * after they first did — otherwise every fresh spawn would start frozen.
      */
-    private static boolean hasCarriageProgress(UUID uuid, long now) {
+    static boolean hasCarriageProgress(UUID uuid, long now) {
         Long firstBoarded = FIRST_BOARDED_TICK.get(uuid);
         if (firstBoarded == null) return true;
         if (now - firstBoarded < PROGRESS_WINDOW_TICKS) return true;
@@ -259,6 +271,21 @@ public final class PlayerActivityTracker {
      */
     public static boolean menuPresent(@Nullable Long lastMenuInputMs, long nowMs) {
         return lastMenuInputMs != null && nowMs - lastMenuInputMs < MENU_PRESENCE_MS;
+    }
+
+    /**
+     * Does screen input sent {@code pausedForMs} into a pause of this kind still prove the player is
+     * there? Not past {@link #MENU_PRESENCE_CAP_GAME_MENU_MS} on the pause menu or
+     * {@link #MENU_PRESENCE_CAP_SCREEN_MS} on any other screen, and not at all without a pause —
+     * input on an inventory or container is not what this exception is for.
+     */
+    public static boolean countsAsMenuPresence(byte pauseKind, int pausedForMs) {
+        long cap = switch (pauseKind) {
+            case ClientInputPacket.PAUSE_GAME_MENU -> MENU_PRESENCE_CAP_GAME_MENU_MS;
+            case ClientInputPacket.PAUSE_SCREEN -> MENU_PRESENCE_CAP_SCREEN_MS;
+            default -> -1L;
+        };
+        return pausedForMs >= 0 && pausedForMs <= cap;
     }
 
     /**

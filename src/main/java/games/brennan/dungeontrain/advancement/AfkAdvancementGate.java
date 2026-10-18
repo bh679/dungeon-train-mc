@@ -18,8 +18,10 @@ import java.util.stream.Stream;
  * {@code PlayerAdvancements.award}, the one call every grant goes through — vanilla triggers, Dungeon
  * Train's own triggers and the code-driven awards alike.
  *
- * <p>"AFK" is {@link PlayerActivityTracker#isAfk}: paused (unless clicking or typing on that
- * screen), mouse idle or input idle. A refused
+ * <p>"AFK" is {@link PlayerActivityTracker#isAfk}, the same rule that stops time on the train:
+ * paused (unless recently clicking or typing on that screen, within a cap), mouse idle, input idle,
+ * or not getting anywhere (fewer than three carriages in ten minutes, outside dimensional
+ * carriages). A refused
  * criterion is simply not granted — no event, no toast, no relay post. Event-style triggers fired
  * while away are lost; threshold triggers (distance, train time, biomes visited, ...) fire again and
  * grant once the player is back.</p>

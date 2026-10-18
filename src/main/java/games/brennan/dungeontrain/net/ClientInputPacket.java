@@ -19,10 +19,30 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * sorting player idle. Rate-limited to one packet per kind per second by
  * {@link games.brennan.dungeontrain.client.ClientActivityReporter}.</p>
  *
+ * <p>A click or key press also says which pause it happened in, and how far into it:
+ * {@code pauseKind} is {@link #PAUSE_NONE}, {@link #PAUSE_GAME_MENU} (the pause menu and the settings
+ * screens reached from it) or {@link #PAUSE_SCREEN} (books, photos, every other pause screen), and
+ * {@code pausedForMs} is how long the client has been paused. The server decides from those whether
+ * the input proves the player is there ({@link PlayerActivityTracker#countsAsMenuPresence}).
+ * Measured on the client because a single-player server can hold packets until the pause ends, so
+ * any server-side timing would read zero.</p>
+ *
  * <p>Not a trust concern: a spoofed packet only keeps the sender's own clock alive, and the
  * carriage-progress rule still gates time on the train independently.</p>
  */
-public record ClientInputPacket(boolean nonLook) implements CustomPacketPayload {
+public record ClientInputPacket(boolean nonLook, byte pauseKind, int pausedForMs) implements CustomPacketPayload {
+
+    /** Not paused — no pause screen open. */
+    public static final byte PAUSE_NONE = 0;
+    /** The pause menu, or a settings screen opened from it. */
+    public static final byte PAUSE_GAME_MENU = 1;
+    /** Any other pause screen: books, the photo viewer, DT popups. */
+    public static final byte PAUSE_SCREEN = 2;
+
+    /** Cursor movement, or input with no pause screen up. */
+    public static ClientInputPacket unpaused(boolean nonLook) {
+        return new ClientInputPacket(nonLook, PAUSE_NONE, 0);
+    }
 
     public static final Type<ClientInputPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "client_input"));
@@ -32,10 +52,12 @@ public record ClientInputPacket(boolean nonLook) implements CustomPacketPayload 
 
     private static void encode(FriendlyByteBuf buf, ClientInputPacket p) {
         buf.writeBoolean(p.nonLook);
+        buf.writeByte(p.pauseKind);
+        buf.writeVarInt(p.pausedForMs);
     }
 
     private static ClientInputPacket decode(FriendlyByteBuf buf) {
-        return new ClientInputPacket(buf.readBoolean());
+        return new ClientInputPacket(buf.readBoolean(), buf.readByte(), buf.readVarInt());
     }
 
     @Override
@@ -52,7 +74,9 @@ public record ClientInputPacket(boolean nonLook) implements CustomPacketPayload 
             PlayerActivityTracker.markLook(player.getUUID(), now);
             if (packet.nonLook) {
                 PlayerActivityTracker.markInput(player.getUUID(), now, "menu input");
-                PlayerActivityTracker.markMenuInput(player.getUUID(), System.currentTimeMillis());
+                if (PlayerActivityTracker.countsAsMenuPresence(packet.pauseKind, packet.pausedForMs)) {
+                    PlayerActivityTracker.markMenuInput(player.getUUID(), System.currentTimeMillis());
+                }
             }
         });
     }

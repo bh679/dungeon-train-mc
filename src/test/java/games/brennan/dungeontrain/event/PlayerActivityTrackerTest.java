@@ -1,11 +1,13 @@
 package games.brennan.dungeontrain.event;
 
 import games.brennan.dungeontrain.event.PlayerActivityTracker.Reason;
+import games.brennan.dungeontrain.net.ClientInputPacket;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -158,12 +160,12 @@ class PlayerActivityTrackerTest {
     }
 
     @Test
-    @DisplayName("paused, mouse idle and input idle are AFK; not getting anywhere is not")
+    @DisplayName("every reason that stops the train clock is AFK")
     void afkReasonsBlockAdvancements() {
         assertTrue(PlayerActivityTracker.isAfk(Reason.PAUSED));
         assertTrue(PlayerActivityTracker.isAfk(Reason.MOUSE_IDLE));
         assertTrue(PlayerActivityTracker.isAfk(Reason.INPUT_IDLE));
-        assertFalse(PlayerActivityTracker.isAfk(Reason.NO_PROGRESS));
+        assertTrue(PlayerActivityTracker.isAfk(Reason.NO_PROGRESS));
         assertFalse(PlayerActivityTracker.isAfk(Reason.TRACKING));
     }
 
@@ -185,5 +187,33 @@ class PlayerActivityTrackerTest {
         assertTrue(PlayerActivityTracker.menuPresent(50_000L, 50_000L));
         assertTrue(PlayerActivityTracker.menuPresent(50_000L, 50_000L + window - 1));
         assertFalse(PlayerActivityTracker.menuPresent(50_000L, 50_000L + window));
+    }
+
+    @Test
+    @DisplayName("screen input proves presence for 2 min on the pause menu, 5 min elsewhere, never unpaused")
+    void menuPresenceCaps() {
+        byte menu = ClientInputPacket.PAUSE_GAME_MENU;
+        byte screen = ClientInputPacket.PAUSE_SCREEN;
+        assertTrue(PlayerActivityTracker.countsAsMenuPresence(menu, 0));
+        assertTrue(PlayerActivityTracker.countsAsMenuPresence(menu, 120_000));
+        assertFalse(PlayerActivityTracker.countsAsMenuPresence(menu, 120_001));
+        assertTrue(PlayerActivityTracker.countsAsMenuPresence(screen, 240_000));
+        assertTrue(PlayerActivityTracker.countsAsMenuPresence(screen, 300_000));
+        assertFalse(PlayerActivityTracker.countsAsMenuPresence(screen, 300_001));
+        assertFalse(PlayerActivityTracker.countsAsMenuPresence(ClientInputPacket.PAUSE_NONE, 0));
+        assertFalse(PlayerActivityTracker.countsAsMenuPresence(menu, -1));
+    }
+
+    @Test
+    @DisplayName("a dimensional carriage is progress while inside and one window after, so it never auto-pauses for NO_PROGRESS")
+    void roomPresenceIsProgress() {
+        UUID uuid = UUID.randomUUID();
+        long window = PlayerActivityTracker.PROGRESS_WINDOW_TICKS;
+        PlayerActivityTracker.recordCarriage(uuid, 5, 0L);
+        long inRoom = window + 8_000L;
+        PlayerActivityTracker.recordPortalRoom(uuid, inRoom);
+        assertTrue(PlayerActivityTracker.hasCarriageProgress(uuid, inRoom));
+        assertTrue(PlayerActivityTracker.hasCarriageProgress(uuid, inRoom + window));
+        assertFalse(PlayerActivityTracker.hasCarriageProgress(uuid, inRoom + window + 1));
     }
 }

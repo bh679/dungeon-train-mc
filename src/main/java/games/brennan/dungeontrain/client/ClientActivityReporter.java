@@ -5,6 +5,7 @@ import games.brennan.dungeontrain.net.ClientInputPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PlayerPausedPacket;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
@@ -50,6 +51,15 @@ public final class ClientActivityReporter {
     private static boolean reportedPaused = false;
 
     /**
+     * When the current pause began (wall clock) and what began it — the pause menu or another
+     * screen. Fixed for the whole spell, so browsing from the pause menu into Options and the sound
+     * sliders is still the pause menu. Sent with screen input so the server can cap how long it
+     * counts as proof of presence.
+     */
+    private static long pausedSinceMs = 0L;
+    private static byte pauseKind = ClientInputPacket.PAUSE_NONE;
+
+    /**
      * The screen an {@code Opening} event is replacing the current one with, kept for the
      * {@code Closing} event that {@code Minecraft.setScreen} fires straight after it. Null when the
      * screen is closing to the world.
@@ -78,6 +88,7 @@ public final class ClientActivityReporter {
         if (mc.level == null || mc.player == null || mc.getConnection() == null) {
             // Left the world — the server drops our state on logout; start clean on the next join.
             reportedPaused = false;
+            pauseKind = ClientInputPacket.PAUSE_NONE;
             pendingOpening = null;
             lastCursorX = Double.NaN;
             lastCursorY = Double.NaN;
@@ -90,7 +101,7 @@ public final class ClientActivityReporter {
 
         // Fallback only: the screen events below normally report the change before anything else
         // the screen sends, and this finds nothing left to say.
-        reportPaused(mc.screen != null && mc.screen.isPauseScreen());
+        reportPaused(mc.screen);
 
         // Only meaningful with a screen open. Without one the camera turns with the mouse and the
         // server samples that directly — no need to say anything.
@@ -108,7 +119,7 @@ public final class ClientActivityReporter {
         lastCursorY = y;
         if (moved && due(lastLookReportTick)) {
             lastLookReportTick = clientTick;
-            DungeonTrainNet.sendToServer(new ClientInputPacket(false));
+            DungeonTrainNet.sendToServer(ClientInputPacket.unpaused(false));
         }
     }
 
@@ -121,7 +132,7 @@ public final class ClientActivityReporter {
         Screen next = event.getNewScreen();
         // setScreen fires Closing for the outgoing screen next — only if there is one.
         pendingOpening = event.getCurrentScreen() != null ? next : null;
-        reportPaused(next != null && next.isPauseScreen());
+        reportPaused(next);
     }
 
     /**
@@ -132,7 +143,7 @@ public final class ClientActivityReporter {
     public static void onScreenClosing(ScreenEvent.Closing event) {
         Screen next = nextScreen(pendingOpening, event.getScreen());
         pendingOpening = null;
-        reportPaused(next != null && next.isPauseScreen());
+        reportPaused(next);
     }
 
     /**
@@ -145,12 +156,23 @@ public final class ClientActivityReporter {
         return pendingOpening != null && pendingOpening != closing ? pendingOpening : null;
     }
 
-    /** Tell the server the pause state, only when it differs from what it last heard. */
-    private static void reportPaused(boolean paused) {
+    /**
+     * Tell the server whether {@code screen} — the one now showing, or about to — pauses, only when
+     * that differs from what it last heard.
+     */
+    private static void reportPaused(@Nullable Screen screen) {
+        boolean paused = screen != null && screen.isPauseScreen();
         if (paused == reportedPaused) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null || mc.getConnection() == null) return;
         reportedPaused = paused;
+        if (paused) {
+            pausedSinceMs = System.currentTimeMillis();
+            pauseKind = screen instanceof PauseScreen
+                ? ClientInputPacket.PAUSE_GAME_MENU : ClientInputPacket.PAUSE_SCREEN;
+        } else {
+            pauseKind = ClientInputPacket.PAUSE_NONE;
+        }
         DungeonTrainNet.sendToServer(new PlayerPausedPacket(paused));
     }
 
@@ -171,7 +193,14 @@ public final class ClientActivityReporter {
         if (mc.level == null || mc.player == null || mc.getConnection() == null) return;
         if (!due(lastInputReportTick)) return;
         lastInputReportTick = clientTick;
-        DungeonTrainNet.sendToServer(new ClientInputPacket(true));
+        DungeonTrainNet.sendToServer(reportedPaused
+            ? new ClientInputPacket(true, pauseKind, pausedForMs(System.currentTimeMillis(), pausedSinceMs))
+            : ClientInputPacket.unpaused(true));
+    }
+
+    /** How long the pause has lasted, clamped to an int and never negative (clock steps back). */
+    static int pausedForMs(long nowMs, long sinceMs) {
+        return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, nowMs - sinceMs));
     }
 
     private static boolean due(int lastSentTick) {
