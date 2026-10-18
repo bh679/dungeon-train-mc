@@ -5,6 +5,10 @@
     {
       "id": "crates",
       "weight": 1
+    },
+    {
+      "id": "crates2",
+      "weight": 1
     }
   ]
 }
