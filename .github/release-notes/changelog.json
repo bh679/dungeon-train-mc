@@ -27731,6 +27731,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-band-transitions",
+      "version": "0.1359.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Photo goals count in the in-between",
+      "summary": "Photos you need from a particular part of the journey now also count when you take them in the stretch where one world fades into the next. The Nether still wants the real thing.",
+      "highlights": [],
+      "pr": 2120,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
