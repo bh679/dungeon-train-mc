@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.train;
 import games.brennan.dungeontrain.train.TrainCarriageAppender.TrailingId;
 import net.minecraft.core.BlockPos;
 import org.joml.Vector3d;
+import org.joml.primitives.AABBd;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -1331,5 +1332,56 @@ final class TrainCarriageAppenderTest {
         assertTrue(TrainCarriageAppender.mayReissueReload(last, last + 10_000L, max - 1));
         assertFalse(TrainCarriageAppender.mayReissueReload(last, last + 10_000L, max));
         assertFalse(TrainCarriageAppender.mayReissueReload(last, last + 10_000L, max + 1));
+    }
+
+    // shouldRequestEarlySave: a backward catch-up bridging to a player far down the line left ~85
+    // never-saved groups pinned until the next autosave (player log 17 Oct 2026, 99 groups resident).
+
+    @Test
+    @DisplayName("shouldRequestEarlySave: surplus at threshold, never saved before → save")
+    void earlySave_atThreshold_firstTime() {
+        assertTrue(TrainCarriageAppender.shouldRequestEarlySave(
+            TrainCarriageAppender.EARLY_SAVE_SURPLUS_GROUPS, Long.MAX_VALUE));
+    }
+
+    @Test
+    @DisplayName("shouldRequestEarlySave: ordinary churn below threshold → no save")
+    void earlySave_belowThreshold_noSave() {
+        assertFalse(TrainCarriageAppender.shouldRequestEarlySave(
+            TrainCarriageAppender.EARLY_SAVE_SURPLUS_GROUPS - 1, Long.MAX_VALUE));
+    }
+
+    @Test
+    @DisplayName("shouldRequestEarlySave: within cooldown → no save; at cooldown → save")
+    void earlySave_cooldown() {
+        int surplus = 40;
+        long cooldown = TrainCarriageAppender.EARLY_SAVE_COOLDOWN_TICKS;
+        assertFalse(TrainCarriageAppender.shouldRequestEarlySave(surplus, cooldown - 1));
+        assertTrue(TrainCarriageAppender.shouldRequestEarlySave(surplus, cooldown));
+    }
+
+    // isWithinNearRadius gates ResumeWatchdog's hold: no player within NEAR_RADIUS (128) of any
+    // carriage (a Stat Room reader, say) means no rider to fling, so the resume hold is skipped.
+
+    @Test
+    @DisplayName("isWithinNearRadius: point inside the carriage box → near")
+    void nearRadiusInside() {
+        AABBd box = new AABBd(0, 60, 0, 30, 70, 7);
+        assertTrue(TrainCarriageAppender.isWithinNearRadius(box, 10, 64, 3));
+    }
+
+    @Test
+    @DisplayName("isWithinNearRadius: exactly 128 blocks off the end → near; 129 → not")
+    void nearRadiusEdge() {
+        AABBd box = new AABBd(0, 60, 0, 30, 70, 7);
+        assertTrue(TrainCarriageAppender.isWithinNearRadius(box, 30 + 128, 64, 3));
+        assertFalse(TrainCarriageAppender.isWithinNearRadius(box, 30 + 129, 64, 3));
+    }
+
+    @Test
+    @DisplayName("isWithinNearRadius: far diagonal (portal room site) → not near")
+    void nearRadiusFar() {
+        AABBd box = new AABBd(0, 60, 0, 30, 70, 7);
+        assertFalse(TrainCarriageAppender.isWithinNearRadius(box, 2_000, 64, 5_000));
     }
 }

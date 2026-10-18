@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -237,5 +238,57 @@ final class PortalSealPlaneTest {
         // Outside the slot the lid isn't there, so the same height is just sky.
         PortalSealPlane.Cut offSlot = PortalSealPlane.cutForAmplified(AMP_FLOOR_Y, AMP_LID_Y, false, AMP_LID_Y + 40);
         assertFalse(offSlot.hides(AMP_LID_Y - 32, AMP_LID_Y - 16));
+    }
+
+    // ---- a camera inside a carriage's structure box, whatever band its column is in ----
+
+    private static final int NO_LID = Integer.MAX_VALUE;
+
+    @Test
+    @DisplayName("a basement carriage hides the bedrock row and everything over it, in any band")
+    void basementCarriageIsSealedAnywhere() {
+        PortalSealPlane.Cut cut = PortalSealPlane.cutForTwin(-60, BEDROCK_Y - 4, BEDROCK_Y, ROOF_Y, AMP_LID_Y);
+
+        assertTrue(cut.hides(BEDROCK_Y, BEDROCK_Y + 1));
+        assertTrue(cut.hides(78, 82));
+        assertFalse(cut.hides(BEDROCK_Y - 16, BEDROCK_Y));
+    }
+
+    @Test
+    @DisplayName("a carriage over the sunk lid, carried out of the zone, still hides the world below it")
+    void sunkAtticCarriageOutOfItsZone() {
+        // The upside-down lid is off in this world; only the sunk band's barrier lid exists.
+        PortalSealPlane.Cut cut = PortalSealPlane.cutForTwin(AMP_LID_Y + 2, AMP_LID_Y + 40, BEDROCK_Y,
+            NO_LID, AMP_LID_Y);
+
+        assertTrue(cut.sealed());
+        // The world under the room, and the lid row it would otherwise stand on.
+        assertTrue(cut.hides(64, 128));
+        assertTrue(cut.hidesBlock(AMP_LID_Y));
+        // The room itself stays.
+        assertFalse(cut.hides(AMP_LID_Y + 2, AMP_LID_Y + 10));
+    }
+
+    @Test
+    @DisplayName("with both lids known, a carriage is sealed over the one under its own floor")
+    void picksTheLidUnderTheCarriage() {
+        // Over the lower (upside-down) lid: the higher sunk lid is above the room, not under it.
+        PortalSealPlane.Cut lower = PortalSealPlane.cutForTwin(ROOF_Y + 2, ROOF_Y + 60, BEDROCK_Y,
+            ROOF_Y, AMP_LID_Y);
+        assertTrue(lower.hidesBlock(ROOF_Y));
+        assertFalse(lower.hides(ROOF_Y + 2, ROOF_Y + 10));
+
+        // Over the higher (sunk) lid: everything down past the upside-down lid goes too.
+        PortalSealPlane.Cut higher = PortalSealPlane.cutForTwin(AMP_LID_Y + 2, AMP_LID_Y + 20, BEDROCK_Y,
+            ROOF_Y, AMP_LID_Y);
+        assertTrue(higher.hides(ROOF_Y + 2, ROOF_Y + 10));
+        assertTrue(higher.hidesBlock(AMP_LID_Y));
+    }
+
+    @Test
+    @DisplayName("a box over no known lid leaves the column tests to answer")
+    void noLidUnderTheBox() {
+        assertNull(PortalSealPlane.cutForTwin(60, 90, BEDROCK_Y, NO_LID, NO_LID));
+        assertNull(PortalSealPlane.cutForTwin(60, 90, BEDROCK_Y, ROOF_Y, AMP_LID_Y));
     }
 }

@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.client.VersionInfo;
 import org.slf4j.Logger;
 
@@ -45,11 +46,12 @@ public final class AdvancementFirstClient {
      * @param difficulty the vanilla difficulty partition key the earn happened on
      *                   ({@code DifficultyPartition.keyFor}) — the relay keeps advancement stats per
      *                   difficulty off this claim, since every clean earn sends one
+     * @param burrito    the Everything Burrito's recorded play time when this is that earn, else null
      */
     public static void claim(UUID player, String name, String advancementId, String difficulty,
-                             Consumer<Answer> callback) {
+                             BurritoClock.Completion burrito, Consumer<Answer> callback) {
         try {
-            JsonObject body = body(player, name, advancementId, difficulty);
+            JsonObject body = body(player, name, advancementId, difficulty, burrito);
             HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/advancements/first-claim"))
                     .timeout(REQUEST_TIMEOUT)
                     .header("Content-Type", "application/json")
@@ -78,8 +80,12 @@ public final class AdvancementFirstClient {
         }
     }
 
-    /** The claim's JSON body. */
-    static JsonObject body(UUID player, String name, String advancementId, String difficulty) {
+    /**
+     * The claim's JSON body. A burrito earn also carries {@code burritoTicks} (ticks aboard since first
+     * played or the last reset) and {@code burritoAttempt} — the relay's fastest-burrito board.
+     */
+    static JsonObject body(UUID player, String name, String advancementId, String difficulty,
+                           BurritoClock.Completion burrito) {
         JsonObject body = new JsonObject();
         body.addProperty("id", advancementId);
         body.addProperty("uuid", player.toString().replace("-", ""));
@@ -87,6 +93,10 @@ public final class AdvancementFirstClient {
         body.addProperty("modVersion", VersionInfo.VERSION);
         if (difficulty != null && !difficulty.isEmpty()) {
             body.addProperty("difficulty", difficulty);
+        }
+        if (burrito != null) {
+            body.addProperty("burritoTicks", burrito.ticks());
+            body.addProperty("burritoAttempt", burrito.attempt());
         }
         return body;
     }

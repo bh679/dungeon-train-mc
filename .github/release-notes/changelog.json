@@ -26991,9 +26991,9 @@
       "highlights": [],
       "pr": 2071,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "live-eye-gift-safe-handover",
@@ -27008,9 +27008,9 @@
       "highlights": [],
       "pr": 2072,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "creaking-hearts-work-by-day",
@@ -27026,9 +27026,9 @@
       "highlights": [],
       "pr": 2075,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "backpack-emerald-tributes",
@@ -27042,9 +27042,9 @@
       "highlights": [],
       "pr": 2074,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "live-eye-death-pages",
@@ -27065,9 +27065,9 @@
       ],
       "pr": 2073,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "death-photo-page-stats",
@@ -27082,9 +27082,9 @@
       "highlights": [],
       "pr": 2076,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "dimensional-carriage-centred-coordinates",
@@ -27103,9 +27103,9 @@
       ],
       "pr": 2078,
       "date": "2026-10-17",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
     },
     {
       "id": "dimensional-carriages-link-after-autosave",
@@ -27120,6 +27120,524 @@
       "highlights": [],
       "pr": 2079,
       "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "train-nether-portal-return",
+      "version": "0.1329.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Nether portal fix",
+      "summary": "Fixed a case where a Nether portal could leave you stranded.",
+      "highlights": [],
+      "pr": 2080,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "journey-advancement-unearnable",
+      "version": "0.1330.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Advancement fix.",
+      "highlights": [],
+      "pr": 2077,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "disable-mod-enchantments",
+      "version": "0.1331.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "loot",
+        "balance"
+      ],
+      "title": "Enchantment tidy-up",
+      "summary": "Tidied up the enchantment pool.",
+      "highlights": [],
+      "pr": 2081,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "dimensional-carriage-seal-every-band",
+      "version": "0.1332.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Dimensional carriage visual fix",
+      "summary": "Fixed a visual glitch in some dimensional carriages.",
+      "highlights": [],
+      "pr": 2082,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "nether-vines-stay-on-trees",
+      "version": "0.1333.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance"
+      ],
+      "title": "Less lag in the Nether",
+      "summary": "Thousands of dropped vines were piling up as the land loaded in and slowing the game. They no longer drop.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "empty-chests-dont-count",
+      "version": "0.1335.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot",
+        "advancements"
+      ],
+      "title": "Empty chests no longer count",
+      "summary": "A challenge about opening chests now only counts chests that have loot in them. Opening an empty one no longer moves you closer.",
+      "highlights": [],
+      "pr": 2088,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "live-eye-ffmpeg-download-wait",
+      "version": "0.1336.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "compatibility",
+        "ui"
+      ],
+      "title": "The Live Eye no longer sits on a black box while its video tools download",
+      "summary": "Putting the Live Eye on before the video tools have finished downloading used to leave a blank dark box on screen with no way out. The box now says what it is waiting for, and if the download goes nowhere for a minute and a half the broadcast calls it off, tells you why, and hands the Live Eye back so you can try again once the TVs are playing.",
+      "highlights": [
+        "The pinned box says it is getting the video tools, with a percentage when one is known",
+        "A download that stalls hands the Live Eye back instead of waiting forever"
+      ],
+      "pr": 2089,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "afk-auto-pause",
+      "version": "0.1337.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Pauses when you step away",
+      "summary": "The game now pauses itself when you are away from the keyboard.",
+      "pr": 2090,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "nether-enemy-pace",
+      "version": "0.1338.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs",
+        "balance"
+      ],
+      "title": "Nether newcomers keep a fair pace",
+      "summary": "Some of the new enemies in the Nether were sprinting at you far faster than they should. They now move like the rest of their kind, so you can outrun them again.",
+      "highlights": [
+        "No more impossible chases through the Nether carriages"
+      ],
+      "pr": 2091,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "no-advancements-while-afk",
+      "version": "0.1339.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Tweaks",
+      "summary": "Minor improvements.",
+      "highlights": [],
+      "pr": 2087,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "hide-unearnable-advancement",
+      "version": "0.1341.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "An advancement you could never earn is gone",
+      "summary": "One advancement could never actually be earned, yet it sat in your advancement tree and counted toward completing the full set. It's now hidden from everyone who doesn't already have it, and finishing the set no longer needs it. If you already earned it, you keep it.",
+      "highlights": [],
+      "pr": 2093,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "cave-photo-overworld-band",
+      "version": "0.1342.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "One advancement now checks its conditions more carefully.",
+      "highlights": [],
+      "pr": 2092,
+      "date": "2026-10-17",
+      "released": true,
+      "released_in": "v0.1342.0",
+      "released_at": "2026-10-17T14:05:46Z"
+    },
+    {
+      "id": "resume-freeze-surplus-carriages",
+      "version": "0.1343.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "performance",
+        "train"
+      ],
+      "title": "No more freeze after unpausing",
+      "summary": "Coming back from the pause menu could freeze the game for many seconds, especially after you had walked a long way back along the train. That freeze is gone, and the extra carriages that pile up while the train catches up to you are now let go much sooner, so the game stays smooth.",
+      "highlights": [
+        "Unpausing no longer freezes the game.",
+        "Less lag after walking back along the train or catching up to it."
+      ],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2096,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
+    },
+    {
+      "id": "advancement-hidden-gap-dots",
+      "version": "0.1343.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "ui"
+      ],
+      "title": "Dots mark hidden advancements",
+      "summary": "On the advancements screen, three dots now mark a link that skips two or more advancements you haven't uncovered yet, so you can see there is more to find there.",
+      "highlights": [],
+      "pr": 2097,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
+    },
+    {
+      "id": "afk-rule-menu-advancements",
+      "version": "0.1344.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Some advancements can be earned again",
+      "summary": "A few advancements earned from a menu, or that arrive while you are not moving, could not be earned after the recent change to how idle time counts. They can be earned again.",
+      "highlights": [],
+      "pr": 2098,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
+    },
+    {
+      "id": "payment-confirm-screen",
+      "version": "0.1345.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "Clearer confirm before a donation link opens",
+      "summary": "Pressing a support button now asks a plain question, naming where your browser is going and the amount, instead of showing a long web address. Open, or cancel and stay on the page. A small link icon in the corner copies the address if you need it.",
+      "highlights": [
+        "Support page, death-screen Contribute window and the title-screen Patreon icon all use it",
+        "Discord and other non-payment links are unchanged"
+      ],
+      "pr": 2100,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
+    },
+    {
+      "id": "distance-totals-reliability",
+      "version": "0.1345.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community"
+      ],
+      "title": "Fairer distance totals",
+      "summary": "Distance totals and the distance leaderboards are more reliable.",
+      "highlights": [],
+      "pr": 2101,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
+    },
+    {
+      "id": "live-eyes-gifted-leaderboard",
+      "version": "0.1345.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Most Live Eyes Gifted leaderboard",
+      "summary": "A new leaderboard ranks the players who have given away the most Live Eyes. A gift counts once the person you gave it to goes live with it.",
+      "highlights": [],
+      "pr": 2102,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
+    },
+    {
+      "id": "park-train-in-dimensional-carriage",
+      "version": "0.1348.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "train"
+      ],
+      "title": "Smoother performance",
+      "summary": "The game now runs lighter while you are off exploring.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2107,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "book-pause-save-throttle",
+      "version": "0.1349.0",
+      "type": "perf",
+      "tags": [
+        "performance"
+      ],
+      "title": "Smoother book reading",
+      "summary": "Reading books in singleplayer is now smoother.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2106,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "variant-if-kind-mode",
+      "version": "0.1349.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Solid, Empty or Any block conditions in the editor",
+      "summary": "Block variants can now check what kind of block sits next to them, not just which exact block. Pick Kind in a variant's If popup and tick Solid, Empty or Any block, so a slab can appear only on solid ground without listing every block it might sit on.",
+      "highlights": [
+        "New Kind option in the If popup, beside Touch and Group",
+        "Solid, Empty and Any block can be ticked together"
+      ],
+      "pr": 2108,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "live-eye-backpack-check",
+      "version": "0.1349.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "loot"
+      ],
+      "title": "Live Eye fix",
+      "summary": "Fixed an issue with Live Eyes.",
+      "highlights": [],
+      "pr": 2105,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "contents-reroll-carriage-remembered",
+      "version": "0.1351.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor"
+      ],
+      "title": "Rerolled carriages are remembered in the editor",
+      "summary": "When you reroll the carriage a contents template stands in, the editor now keeps that choice. Next time you open the editor, the template is still in the carriage you picked.",
+      "highlights": [],
+      "pr": 2109,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "advancement-reinsert-revealed",
+      "version": "0.1351.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Revealed advancements slot into their chain",
+      "summary": "When an advancement you skipped past is uncovered, it now sits in its place in the chain on the advancements screen instead of hanging off to one side.",
+      "highlights": [],
+      "pr": 2110,
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1351.0",
+      "released_at": "2026-10-18T10:50:43Z"
+    },
+    {
+      "id": "test-carriage-moved-exit",
+      "version": "0.1352.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor",
+        "train"
+      ],
+      "title": "Test the Carriage shows moved exits",
+      "summary": "When a dimensional carriage is set to move its exit, Test the Carriage now puts the exit where players will find it, instead of always straight ahead. Reseeding the test can move it again.",
+      "highlights": [
+        "No more extra doorway standing where the moved exit should be",
+        "Several dimensional carriages now scatter extra exits through their rooms, and some hide the way onward"
+      ],
+      "pr": 2112,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "fastest-everything-burrito",
+      "version": "0.1353.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "advancements"
+      ],
+      "title": "Fastest Everything Burrito leaderboard",
+      "summary": "Earning Everything Burrito now records how much time aboard it took you, and a new Fastest Everything Burrito leaderboard ranks the quickest.",
+      "highlights": [
+        "Your time counts from your very first ride, so the hours you have already played go toward your first one.",
+        "Starting your advancements again starts the clock again, and your best time is the one that ranks.",
+        "Find the new board in the leaderboard books and on the website."
+      ],
+      "pr": 2113,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "afk-rule-progress-and-menus",
+      "version": "0.1354.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Tweaks",
+      "summary": "Minor improvements.",
+      "highlights": [],
+      "pr": 2111,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "dh-queue-spin-pause",
+      "version": "0.1354.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Distant Horizons uses less CPU",
+      "summary": "Distant Horizons kept part of your CPU busy for nothing while you played. That was a Distant Horizons issue, not the train, and Dungeon Train now works around it.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2114,
+      "date": "2026-10-18",
       "released": false,
       "released_in": null,
       "released_at": null

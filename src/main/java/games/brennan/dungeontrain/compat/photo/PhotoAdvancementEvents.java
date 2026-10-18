@@ -37,6 +37,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PhotoBiomesPacket;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
+import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import org.slf4j.Logger;
 
 import java.util.HashSet;
@@ -159,7 +160,7 @@ public final class PhotoAdvancementEvents {
         String dimension = data.get(Frame.DIMENSION).map(ResourceLocation::toString)
                 .orElse(player.level().dimension().location().toString());
         return new PhotoSubjects.Facts(types, playerMob, friend, echo, ownEcho, otherEcho, pigman, killerBunny,
-                techno, data.getOrDefault(Frame.IN_CAVE, false) || inCave(player),
+                techno, data.getOrDefault(Frame.IN_CAVE, false) || inCave(player), inOverworldBand(player),
                 data.getOrDefault(Frame.SELFIE, false), dimension, bandAt(player));
     }
 
@@ -173,6 +174,16 @@ public final class PhotoAdvancementEvents {
         BlockPos pos = player.blockPosition();
         if (level.getBiome(pos).is(Tags.Biomes.IS_UNDERGROUND)) return true;
         return level.getBrightness(LightLayer.SKY, pos) == 0 && !level.canSeeSky(pos);
+    }
+
+    /**
+     * In one of the train's Overworld bands (plain, WWOO, Biomes O' Plenty): an overworld slot of the
+     * cycle layout. A world without a layout is all plain overworld.
+     */
+    private static boolean inOverworldBand(ServerPlayer player) {
+        if (player.level().dimension() != Level.OVERWORLD) return false;
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        return !cycle.hasLayout() || cycle.overworldStyleAt(player.getBlockX()) != null;
     }
 
     /** The dimensional band the photographer stands in — the bands are overworld X ranges. */

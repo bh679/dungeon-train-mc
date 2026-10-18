@@ -23,6 +23,9 @@ public final class VariantConditionEdits {
     public static final String OTHERS_PREFIX = "others:";
     /** {@code match:all} / {@code match:any}: every listed side, or any one of them. */
     public static final String MATCH_PREFIX = "match:";
+    /** Mode tokens: Touching (specific blocks on the sides) and Kind (Solid / Empty / Any on the sides). */
+    public static final String MODE_TOUCHING = "mode:touching";
+    public static final String MODE_KIND = "mode:kind";
 
     private VariantConditionEdits() {}
 
@@ -43,15 +46,17 @@ public final class VariantConditionEdits {
     }
 
     /**
-     * {@link #setTarget(VariantCondition, String, Set, int)}, where switching from Group to Touching
+     * {@link #setTarget(VariantCondition, String, Set, int)}, where switching from Group to Touch
      * lights {@code variantSides} — every side with a variant cell — rather than the default side.
      */
     public static Result setTarget(VariantCondition current, String token, Set<Integer> lockIdsInUse,
                                    int ownLockId, int variantSides) {
-        VariantCondition fromGroup = VariantCondition.parseTarget(token);
-        if (current.isGroupTarget() && variantSides != 0 && fromGroup != null && !fromGroup.isGroupTarget()
-                && !token.startsWith(TOGGLE_PREFIX) && !token.startsWith(OTHERS_PREFIX)) {
-            return Result.ok(current.withSides(variantSides));
+        if (MODE_KIND.equals(token)) return Result.ok(current.toKindMode());
+        if (MODE_TOUCHING.equals(token)) {
+            VariantCondition plain = current.withoutKinds();
+            if (!plain.isGroupTarget()) return Result.ok(plain);
+            return Result.ok(variantSides != 0
+                ? plain.withSides(variantSides) : plain.withDirection(VariantCondition.DEFAULT_DIRECTION));
         }
         if (GROUP_NEXT.equals(token) || GROUP_PREV.equals(token)) {
             TreeSet<Integer> groups = new TreeSet<>(lockIdsInUse);
@@ -63,7 +68,7 @@ public final class VariantConditionEdits {
                 ? (next ? groups.higher(current.groupId()) : groups.lower(current.groupId()))
                 : null;
             if (step == null) step = next ? groups.first() : groups.last();
-            return Result.ok(current.withGroup(step));
+            return Result.ok(current.withoutKinds().withGroup(step));
         }
         if (token.startsWith(MATCH_PREFIX)) {
             if (current.isGroupTarget()) return Result.refused(null);
@@ -87,6 +92,8 @@ public final class VariantConditionEdits {
         if (id == null || !VariantCondition.isKnownValue(id)) return Result.refused(null);
         VariantCondition next = current.withValueToggled(id);
         if (next == current) return Result.refused("chat.dungeontrain.editor_bar.variant_menu.condition_full");
+        // Unticking the last kind box would drop the row out of Kind mode; Clear is the way out.
+        if (current.isKindMode() && !next.isKindMode()) return Result.refused(null);
         return Result.ok(next);
     }
 

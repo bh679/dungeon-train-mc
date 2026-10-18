@@ -1,10 +1,18 @@
 package games.brennan.dungeontrain.compat;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -117,6 +125,15 @@ final class DisabledModContentTest {
     }
 
     @Test
+    @DisplayName("Vista's picture tape recipe is turned off by id; its other recipes stay")
+    void pictureTapeRecipeDisabled() {
+        assertTrue(DisabledModContent.isDisabledRecipe(id("vista:picture_tape")));
+        assertFalse(DisabledModContent.isDisabledRecipe(id("vista:mirror")));
+        assertFalse(DisabledModContent.isDisabledRecipe(id("vista:television")));
+        assertFalse(DisabledModContent.isDisabledRecipe(null));
+    }
+
+    @Test
     @DisplayName("the reloadable instant camera is hidden; the disposable camera on the same item is kept")
     void plainInstantCameraHidden() {
         assertTrue(DisabledModContent.isPlainInstantCamera(id("exposure_polaroid:instant_camera"), false));
@@ -167,5 +184,41 @@ final class DisabledModContentTest {
     void creativeSettingsDefaultOff() {
         assertFalse(games.brennan.dungeontrain.config.ClientDisplayConfig.DEFAULT_CREATIVE_MOD_BLOCK_TABS);
         assertFalse(games.brennan.dungeontrain.config.ClientDisplayConfig.DEFAULT_CREATIVE_MOD_BLOCKS_IN_SEARCH);
+    }
+
+    /** Every non-vanilla enchantment in the jars DT builds against (BetterNether + BetterEnd). */
+    private static final List<String> MOD_ENCHANTMENTS = List.of(
+        "betterend:resonance", "betterend:end_veil", "betternether:obsidian_breaker", "betternether:ruby_fire");
+
+    @Test
+    @DisplayName("every mod enchantment is disabled; vanilla ones are kept")
+    void modEnchantmentsDisabled() {
+        for (String e : MOD_ENCHANTMENTS) {
+            assertTrue(DisabledModContent.isDisabledEnchantment(id(e)), e);
+        }
+        assertTrue(DisabledModContent.isDisabledEnchantment(id("biomesoplenty:some_future_enchantment")));
+        assertFalse(DisabledModContent.isDisabledEnchantment(id("minecraft:sharpness")));
+        assertFalse(DisabledModContent.isDisabledEnchantment(id("minecraft:binding_curse")));
+        assertFalse(DisabledModContent.isDisabledEnchantment(null));
+    }
+
+    @Test
+    @DisplayName("the enchanting table and villager tags remove every mod enchantment, optionally")
+    void enchantmentTagsRemoveModEnchantments() throws Exception {
+        for (String tag : List.of("in_enchanting_table", "tradeable")) {
+            String path = "/data/minecraft/tags/enchantment/" + tag + ".json";
+            try (InputStream in = DisabledModContentTest.class.getResourceAsStream(path)) {
+                assertTrue(in != null, path);
+                JsonObject json = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8)).getAsJsonObject();
+                assertFalse(json.get("replace").getAsBoolean(), tag + " must not replace vanilla's list");
+                Set<String> removed = new HashSet<>();
+                for (JsonElement entry : json.getAsJsonArray("remove")) {
+                    JsonObject o = entry.getAsJsonObject();
+                    assertFalse(o.get("required").getAsBoolean(), tag + ": a missing mod must not break the tag");
+                    removed.add(o.get("id").getAsString());
+                }
+                assertEquals(Set.copyOf(MOD_ENCHANTMENTS), removed, tag);
+            }
+        }
     }
 }

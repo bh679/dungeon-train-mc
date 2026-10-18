@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.advancement.TabGateways;
@@ -48,11 +49,16 @@ import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.Container;
 import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.EnderChestBlock;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.network.chat.Component;
 import net.neoforged.bus.api.EventPriority;
@@ -82,8 +88,8 @@ import java.util.UUID;
  *
  * <p>Hooks:
  * <ul>
- *   <li>{@link PlayerInteractEvent.RightClickBlock} (chest/trapped/barrel) →
- *       update {@link PlayerRunState#uniqueChests}, fire
+ *   <li>{@link PlayerInteractEvent.RightClickBlock} (chest/trapped/barrel with loot in it, or
+ *       one already in the streak) → update {@link PlayerRunState#uniqueChests}, fire
  *       {@link ModAdvancementTriggers#UNIQUE_CHESTS_OPENED}.</li>
  *   <li>{@link PlayerInteractEvent.RightClickBlock} (chest/barrel) → break the
  *       "no container opened" streak by stamping
@@ -225,6 +231,10 @@ public final class AchievementEvents {
         // from this carriage reading onward. Decorated pots never reach here —
         // vases are allowed (their breaks feed containersOpened from RunStatsEvents).
         resetContainerStreak(player, run);
+        // "Respect The Rules" only counts chests with loot in them: an empty chest that is not
+        // already in the streak is ignored outright. One already counted still resets the streak
+        // when reopened, emptied or not.
+        if (!run.uniqueChests().contains(pos) && !hasLoot(event.getLevel(), pos, state)) return;
         boolean added = run.addChestPos(pos);
         if (!added) {
             // Streak broken — duplicate open. Reset and start fresh from this chest.
@@ -235,6 +245,29 @@ public final class AchievementEvents {
             LifeDisqualification.notifyStreakReset(player, LifeDisqualification.CHEST_STREAK);
         }
         ModAdvancementTriggers.UNIQUE_CHESTS_OPENED.get().trigger(player, run.chestStreak());
+    }
+
+    /**
+     * Whether the chest/barrel at {@code pos} holds loot: items, or a loot table not yet rolled.
+     * For a double chest the other half counts too, since the loot may sit in the half not clicked.
+     */
+    static boolean hasLoot(Level level, BlockPos pos, BlockState state) {
+        if (hasLoot(level.getBlockEntity(pos))) return true;
+        if (state.getBlock() instanceof ChestBlock && state.getValue(ChestBlock.TYPE) != ChestType.SINGLE) {
+            return hasLoot(level.getBlockEntity(pos.relative(ChestBlock.getConnectedDirection(state))));
+        }
+        return false;
+    }
+
+    /**
+     * The loot table is checked before {@link Container#isEmpty()} so a pending table is never
+     * unpacked here, outside the opener's loot context.
+     */
+    static boolean hasLoot(BlockEntity be) {
+        if (be instanceof RandomizableContainerBlockEntity randomizable && randomizable.getLootTable() != null) {
+            return true;
+        }
+        return be instanceof Container container && !container.isEmpty();
     }
 
     // ---------------- Block breaks ----------------
@@ -1122,6 +1155,8 @@ public final class AchievementEvents {
         // Earning it: clear only what the capstone is made of, not everything (see StartAgainAdvancement#wipe).
         event.setCanceled(true);
         int cleared = StartAgainAdvancement.wipe(player);
+        // The burrito starts again, so its play-time clock does too.
+        BurritoClock.reset(player);
         event.getParseResults().getContext().getSource().sendSuccess(() -> Component.translatable(
                 "commands.advancement.revoke.many.to.one.success", cleared, player.getDisplayName()), true);
     }
@@ -1169,7 +1204,10 @@ public final class AchievementEvents {
             MilestoneAdvancementReporter.maybePost(player, advancement);
             // Any clean DT earn may be the first ever — the relay decides, and a confirmed first is
             // told in chat and announced the same way (a pending milestone post is retitled, not doubled).
-            FirstEverAdvancements.onEarn(player, advancement);
+            // The burrito's play time (since first played or the last reset) is recorded here and rides
+            // the relay claim below, for the fastest-burrito board.
+            BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
+            FirstEverAdvancements.onEarn(player, advancement, burrito);
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the

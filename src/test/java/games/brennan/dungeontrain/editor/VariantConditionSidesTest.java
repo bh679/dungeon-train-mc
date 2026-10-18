@@ -43,7 +43,7 @@ final class VariantConditionSidesTest {
     @Test
     void groupToTouchingLightsTheVariantSides() {
         VariantCondition group = VariantCondition.NONE.withGroup(2).withValueAdded(LOG);
-        VariantCondition touching = VariantConditionEdits.setTarget(group, "down", Set.of(2), 0, UP_DOWN).condition();
+        VariantCondition touching = VariantConditionEdits.setTarget(group, VariantConditionEdits.MODE_TOUCHING, Set.of(2), 0, UP_DOWN).condition();
         assertEquals(UP_DOWN, touching.sideMask());
         assertEquals(group.blocks(), touching.blocks());
     }
@@ -51,7 +51,7 @@ final class VariantConditionSidesTest {
     @Test
     void groupToTouchingWithNoVariantNeighboursUsesTheDefaultSide() {
         VariantCondition group = VariantCondition.NONE.withGroup(2);
-        VariantCondition touching = VariantConditionEdits.setTarget(group, "down", Set.of(2), 0, 0).condition();
+        VariantCondition touching = VariantConditionEdits.setTarget(group, VariantConditionEdits.MODE_TOUCHING, Set.of(2), 0, 0).condition();
         assertEquals(VariantCondition.bit(Direction.DOWN), touching.sideMask());
     }
 }

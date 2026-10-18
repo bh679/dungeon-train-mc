@@ -161,7 +161,8 @@ public final class PortalExitCopyTiler {
                                   Set<Tile> centres, int radius,
                                   Collection<PortalStructure> neighbours, int pairKey) {
         PortalExitCopies standing = structure.exitCopies();
-        long seed = PortalExitSites.seedFor(level.getSeed(), pairKey, structure.roomName());
+        long seed = PortalExitSites.seedFor(level.getSeed(), pairKey, structure.roomName(),
+            structure.seedSalt());
         Site best = null;
         for (Tile tile : structure.tiling().tiles()) {
             for (Site site : PortalExitSites.owedAt(structure.exits(), tile, seed)) {

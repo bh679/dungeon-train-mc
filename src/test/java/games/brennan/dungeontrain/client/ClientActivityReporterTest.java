@@ -3,7 +3,10 @@ package games.brennan.dungeontrain.client;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -35,5 +38,24 @@ class ClientActivityReporterTest {
     @DisplayName("MIN_VALUE as the seed overflows and reports nothing — the bug this pins")
     void minValueSeedOverflows() {
         assertFalse(ClientActivityReporter.due(5, Integer.MIN_VALUE, COOLDOWN));
+    }
+
+    @Test
+    @DisplayName("closing to the world, or to the screen that replaced it")
+    void nextScreenAfterClosing() {
+        Object closing = new Object();
+        Object replacement = new Object();
+        assertNull(ClientActivityReporter.nextScreen(null, closing));
+        assertSame(replacement, ClientActivityReporter.nextScreen(replacement, closing));
+        // Left over from when the closing screen itself opened, over the world.
+        assertNull(ClientActivityReporter.nextScreen(closing, closing));
+    }
+
+    @Test
+    @DisplayName("pause length never goes negative or overflows")
+    void pausedForMsClamps() {
+        assertEquals(1500, ClientActivityReporter.pausedForMs(11_500L, 10_000L));
+        assertEquals(0, ClientActivityReporter.pausedForMs(9_000L, 10_000L));
+        assertEquals(Integer.MAX_VALUE, ClientActivityReporter.pausedForMs(Long.MAX_VALUE, 0L));
     }
 }

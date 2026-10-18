@@ -63,4 +63,13 @@ public final class ClientPortalRoomDepth {
     public static boolean isInsideStructure(double x, double y, double z) {
         return region.contains(x, y, z);
     }
+
+    /**
+     * The structure box around {@code (x, y, z)}, or {@code null} outside it — for a caller that
+     * needs to know where the carriage stands, not only whether the camera is in one.
+     */
+    public static PortalRoomDepthPacket structureAt(double x, double y, double z) {
+        PortalRoomDepthPacket r = region;
+        return r.contains(x, y, z) ? r : null;
+    }
 }

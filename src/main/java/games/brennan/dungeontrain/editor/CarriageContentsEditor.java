@@ -964,6 +964,8 @@ public final class CarriageContentsEditor {
             CarriageContentsStore.delete(currentCustom);
             CarriageContentsVariantBlocks.invalidate(oldId);
             TemplateSizeStore.CONTENTS.forget(oldId);
+            ContentsShellOverrides.copy(oldId, renamed.id());
+            ContentsShellOverrides.forget(oldId);
             LOGGER.info("[DungeonTrain] Contents editor saveAs (custom→custom): {} renamed '{}' -> '{}'",
                 player.getName().getString(), oldId, renamed.id());
         } else if (current instanceof CarriageContents.Builtin builtin) {
@@ -975,6 +977,7 @@ public final class CarriageContentsEditor {
             CarriageContentsVariantBlocks.rename(oldId, renamed.id());
             CarriageContentsStore.delete(builtin);
             CarriageContentsVariantBlocks.invalidate(oldId);
+            ContentsShellOverrides.copy(oldId, renamed.id());
             LOGGER.info("[DungeonTrain] Contents editor saveAs (builtin→custom): {} saved edits of '{}' as new custom '{}', built-in reverts to fallback",
                 player.getName().getString(), oldId, renamed.id());
         } else {

@@ -16785,6 +16785,15 @@
       ]
     }
   },
+  "gui.dungeontrain.support.confirm.title.stripe": {
+    "1": {
+      "label": "the price point's amount with its currency",
+      "examples": [
+        "$10 AUD",
+        "$70 AUD"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_menu.creaking_heart.stage": {
     "1": {
       "label": "the linked stage's name, or Custom",

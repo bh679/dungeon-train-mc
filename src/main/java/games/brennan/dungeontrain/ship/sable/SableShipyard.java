@@ -166,6 +166,15 @@ public final class SableShipyard implements Shipyard {
         return out;
     }
 
+    /**
+     * Whether {@code pos} lies anywhere in {@code level}'s sub-level plot grid — a pure coordinate test,
+     * true even where no sub-level currently stands (a culled carriage's plot, an empty one).
+     */
+    public static boolean inPlotGrid(ServerLevel level, BlockPos pos) {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        return container != null && container.inBounds(pos);
+    }
+
     @Override
     @Nullable
     public ManagedShip findAt(BlockPos pos) {
@@ -352,6 +361,19 @@ public final class SableShipyard implements Shipyard {
         dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
             container.getHoldingChunkMap();
         return holding != null && holding.getHoldingSubLevel(subLevelId) != null;
+    }
+
+    @Override
+    public boolean saveSubLevelsNow() {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return false;
+        dev.ryanhcode.sable.sublevel.storage.holding.SubLevelHoldingChunkMap holding =
+            container.getHoldingChunkMap();
+        if (holding == null) return false;
+        // Sable's own per-level save (what the world save calls for each level): mints a
+        // serialization pointer for every live sub-level, writes held data, flushes storage.
+        holding.saveAll();
+        return true;
     }
 
     @Override

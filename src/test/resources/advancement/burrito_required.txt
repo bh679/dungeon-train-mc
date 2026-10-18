@@ -72,7 +72,6 @@ dungeontrain:dungeon_train/reached_end_islands
 dungeontrain:dungeon_train/reached_far_lands
 dungeontrain:dungeon_train/reached_floating
 dungeontrain:dungeon_train/reached_infdev
-dungeontrain:dungeon_train/reached_large_biomes
 dungeontrain:dungeon_train/reached_lost_city
 dungeontrain:dungeon_train/reached_nether
 dungeontrain:dungeon_train/reached_overworld_again

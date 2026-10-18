@@ -334,7 +334,10 @@ public final class TrainTickEvents {
         // teleport — so physics cost scales with watched carriages, not train length. Runs every tick
         // so it reacts promptly to players/mobs crossing the freeze boundary. Stacks with the substep
         // tuner above. See PhysicsFreezeController.
-        PhysicsFreezeController.reconcile(level, trainsById);
+        // A player inside a dimensional carriage still tracks the carriages overhead but cannot see
+        // them; PortalTrainFreeze worked out who those are on this level's portal pass.
+        PhysicsFreezeController.reconcile(level, trainsById,
+            player -> games.brennan.dungeontrain.portal.PortalTrainFreeze.isSecluded(level, player));
 
         // Distance gate for DESPAWNING carriage contents mobs — the mirror of the spawn gate in
         // TrainCarriageAppender. Sweeps the mobs of any carriage group no player has been near for a
@@ -390,6 +393,8 @@ public final class TrainTickEvents {
             // reading. See ServerLoadSampler and scripts/perf/README.md.
             ServerLoadSampler.Window load = ServerLoadSampler.drain(level, trainsById, MSPT_LOG_PERIOD_TICKS);
             double avgTickMs = level.getServer().getAverageTickTimeNanos() / 1_000_000.0;
+            // secluded: carriages tracked only by players inside a dimensional carriage, which the
+            // freeze counts as untracked (player log of 17 Oct 2026).
             // activeTracked/activeEntity/activeSettling, maxBodyLag and reanchors: why each
             // resident carriage is still being stepped, how far the parked ones sit behind
             // their poses, and how many carriages re-anchored in the window — the fields
@@ -397,7 +402,7 @@ public final class TrainTickEvents {
             // (player logs of 28 Sep 2026: 45–205 ms at near=0). See PhysicsFreezeController.
             PERF_LOGGER.debug("[mspt] dim={} avgTickMs={} carriages={} near={} trains={} physMs={} substeps={} blockChanges={} activeTracked={} activeEntity={} activeSettling={} frozen={} maxBodyLag={} reparks={} reanchors={} colliderRebuilds={} batchedBlockChanges={} blockChangeMs={}"
                     + " gcMs={} gcN={} heapUsedMb={} heapMaxMb={} chunkWaitMs={} chunkWaits={} chunksLoaded={} pendingChunkTasks={} entities={} onCarriages={} tickMaxMs={}"
-                    + " stepDeferred={}",
+                    + " stepDeferred={} secluded={}",
                 level.dimension().location(), String.format("%.2f", avgTickMs), carriages,
                 countNearCarriages(level, trainsById), trainsById.size(),
                 String.format("%.2f", physics.avgStepMs(MSPT_LOG_PERIOD_TICKS)),
@@ -412,7 +417,7 @@ public final class TrainTickEvents {
                 String.format("%.2f", load.chunkWaitMs()), load.chunkWaits(),
                 load.chunksLoaded(), load.pendingChunkTasks(), load.entities(), load.onCarriages(),
                 String.format("%.2f", load.tickMaxMs()),
-                physics.stepDeferredBlockChanges());
+                physics.stepDeferredBlockChanges(), PhysicsFreezeController.lastSecluded());
         }
 
         // Kill-ahead runs once per train, against the lead carriage's

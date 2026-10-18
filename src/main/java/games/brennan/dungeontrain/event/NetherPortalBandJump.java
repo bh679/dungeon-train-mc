@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalLoadScreenPacket;
+import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.world.NetherPortalLinks;
@@ -32,7 +33,8 @@ import java.util.OptionalLong;
  * Nether; from the Nether → the band before it), {@link #SIDE_OFFSET} blocks off to the side of the track
  * so it never sits on the rails or in a tunnel. Everything else is vanilla: the normal time standing in
  * the portal, the exit portal found or built by {@code PortalForcer}, the portal sound and chunk ticket,
- * no train respawn, no chat. Called from {@code mixin/NetherPortalBlockBandJumpMixin} at the head of
+ * no train respawn, no chat. A frame built on a carriage stands in the ship plot grid, so it is never
+ * paired and no trip ever lands there ({@link #chooseExit}). Called from {@code mixin/NetherPortalBlockBandJumpMixin} at the head of
  * {@code NetherPortalBlock#getPortalDestination}, which hands the returned same-level transition to
  * vanilla's own {@code Entity#handlePortal} → {@code changeDimension}.
  *
@@ -78,22 +80,31 @@ public final class NetherPortalBandJump {
         String who = player.getName().getString();
         int fromX = player.getBlockX();
         NetherPortalLinks links = NetherPortalLinks.get(level);
+        // A frame built on a carriage sits in the ship plot grid, millions of blocks out: its position is
+        // never a place to send anyone, and it moves with the train anyway, so it is never paired.
+        boolean onCarriage = Shipyards.isInPlotGrid(level, portalPos);
         BlockPos origin = NetherPortalLinks.frameKey(level, portalPos);
         BlockPos partner = links.partnerOf(level, origin);
+        ExitChoice choice = chooseExit(partner != null, onCarriage,
+            partner != null && Shipyards.isInPlotGrid(level, partner));
+        if (choice == ExitChoice.UNLINK_AND_JUMP) {
+            LOGGER.warn("[DungeonTrain] nether portal at x={} by {}: dropped link {} ↔ {} — a frame on a carriage is never paired",
+                fromX, who, origin, partner);
+            links.unlink(origin);
+        }
 
         BlockPos exit;
         String why;
-        if (partner != null) {
+        if (choice == ExitChoice.LINKED) {
             exit = partner;
             why = "linked portal";
         } else {
-            OptionalLong target = NetherPortalJump.targetX(WorldGenCycle.fromConfig(), x -> BandLabel.bandAt(level, x), fromX);
-            if (target.isEmpty()) {
+            exit = bandJumpExit(level, data, player, fromX);
+            if (exit == null) {
                 LOGGER.info("[DungeonTrain] nether portal at x={} by {}: no band to go to — vanilla portal", fromX, who);
                 return Outcome.VANILLA;
             }
-            exit = level.getWorldBorder().clampToBounds(target.getAsLong(), player.getY(), sideOfTrack(data, player.getZ()));
-            why = "to " + BandLabel.bandAt(level, (int) target.getAsLong()) + " core";
+            why = "to " + BandLabel.bandAt(level, exit.getX()) + " core";
         }
 
         DimensionTransition transition = finder.find(level, player, portalPos, exit, false, level.getWorldBorder());
@@ -102,15 +113,50 @@ public final class NetherPortalBandJump {
             return new Outcome(true, null);
         }
         BlockPos arrived = NetherPortalLinks.frameKey(level, BlockPos.containing(transition.pos()));
-        if (partner == null) links.link(origin, arrived);
+        if (Shipyards.isInPlotGrid(level, arrived)) {
+            // Never land anyone in the plot grid: there is no ground there, only a fall that never ends.
+            LOGGER.warn("[DungeonTrain] nether portal at x={} by {}: exit {} is in the ship plot grid — refused",
+                fromX, who, arrived);
+            if (choice == ExitChoice.LINKED) links.unlink(origin);
+            return new Outcome(true, null);
+        }
+        if (choice != ExitChoice.LINKED && !onCarriage) links.link(origin, arrived);
         // The band counts as the real Nether: fire the criterion vanilla fires on a dimension change, so
         // "We Need to Go Deeper" and the Nether tab open just as they would through a real portal.
         NetherPortalAdvancements.crossing(NetherBand.isInNetherBand(level, fromX), NetherBand.isInNetherBand(level, arrived.getX()))
             .ifPresent(c -> CriteriaTriggers.CHANGED_DIMENSION.trigger(player, c.from(), c.to()));
-        LOGGER.info("[DungeonTrain] nether portal: {} x={} ({}) → {} ({}), frames {} ↔ {}",
-            who, fromX, BandLabel.bandAt(level, fromX), exit, why, origin, arrived);
+        LOGGER.info("[DungeonTrain] nether portal: {} x={} ({}) → {} ({}), frames {} ↔ {}{}",
+            who, fromX, BandLabel.bandAt(level, fromX), exit, why, origin, arrived, onCarriage ? " onCarriage=true" : "");
         DungeonTrainNet.sendTo(player, new PortalLoadScreenPacket());
         return new Outcome(true, transition);
+    }
+
+    /** How a portal trip picks its exit. */
+    enum ExitChoice {
+        /** Back to the frame's recorded partner. */
+        LINKED,
+        /** A new exit portal in the destination band's core. */
+        BAND_JUMP,
+        /** As {@link #BAND_JUMP}, after forgetting a link that should never have been made. */
+        UNLINK_AND_JUMP
+    }
+
+    /**
+     * The exit rule: a recorded partner is followed unless either end is a frame on a carriage (a ship-plot
+     * position) — such a link is dropped and the trip band-jumps instead, as it does with no partner.
+     */
+    static ExitChoice chooseExit(boolean hasPartner, boolean originOnCarriage, boolean partnerOnCarriage) {
+        if (!hasPartner) return ExitChoice.BAND_JUMP;
+        if (originOnCarriage || partnerOnCarriage) return ExitChoice.UNLINK_AND_JUMP;
+        return ExitChoice.LINKED;
+    }
+
+    /** Where a new exit portal is asked for in the destination band's core, or null when there is no band to go to. */
+    @Nullable
+    private static BlockPos bandJumpExit(ServerLevel level, DungeonTrainWorldData data, ServerPlayer player, int fromX) {
+        OptionalLong target = NetherPortalJump.targetX(WorldGenCycle.fromConfig(), x -> BandLabel.bandAt(level, x), fromX);
+        if (target.isEmpty()) return null;
+        return level.getWorldBorder().clampToBounds(target.getAsLong(), player.getY(), sideOfTrack(data, player.getZ()));
     }
 
     /** Z for a new exit portal: {@link #SIDE_OFFSET} blocks from the track centre, on the player's side of it. */

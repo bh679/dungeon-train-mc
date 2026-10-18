@@ -19,6 +19,7 @@
     "AdvancementVisibilityEvaluatorMixin",
     "AdvancementTreeOrderMixin",
     "PlayerAdvancementsRehomeMixin",
+    "PlayerAdvancementsAfkGateMixin",
     "ServerAdvancementManagerRequirementsMixin",
     "BedBlockMixin",
     "EnderChestBlockLabelMixin",
@@ -110,6 +111,7 @@
     "SubLevelPhysicsBlockChangeBatchMixin",
     "SubLevelPhysicsStepColliderDeferMixin",
     "PhysicsChunkTicketManagerAccessor",
+    "PhysicsChunkTicketManagerNoSyncLoadMixin",
     "MergedMassTrackerPivotFreezeMixin",
     "SubLevelHoldingChunkFileMixin",
     "SubLevelHoldingChunkAutoLoadVetoMixin",
@@ -131,6 +133,7 @@
     "PlayerEnderChestContainerSizeMixin"
   ],
   "client": [
+    "client.IntegratedServerPauseSaveThrottleMixin",
     "client.audio.ChannelMirrorMixin",
     "client.audio.SoundBufferMirrorMixin",
     "client.audio.ListenerMirrorMixin",
@@ -181,6 +184,8 @@
     "client.ClientAdvancementsAccessor",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",
+    "client.AdvancementWidgetGapMixin",
+    "client.AdvancementNodeAccessor",
     "client.DeathScreenMoveTextMixin",
     "client.ClientPacketListenerInstantRespawnMixin",
     "client.SoundOptionsScreenTrainVolumeMixin",
