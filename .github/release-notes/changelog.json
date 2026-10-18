@@ -27379,6 +27379,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "afk-rule-menu-advancements",
+      "version": "0.1344.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Some advancements can be earned again",
+      "summary": "A few advancements earned from a menu, or that arrive while you are not moving, could not be earned after the recent change to how idle time counts. They can be earned again.",
+      "highlights": [],
+      "pr": 2098,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
