@@ -27767,6 +27767,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "photo-band-transitions",
+      "version": "0.1360.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "Photo goal tweak",
+      "summary": "Some photo goals are now a little easier to complete.",
+      "highlights": [],
+      "pr": 2120,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
