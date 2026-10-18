@@ -2377,6 +2377,8 @@ public final class TrainCarriageAppender {
             if (!remote) {
                 UUID uuid = player.getUUID();
                 seenThisTick.add(uuid);
+                // Feeds the rider's pace and the train's lead for timed transition flatbeds.
+                TransitionFlatbeds.observe(trainId, uuid, pIdx, player.getX(), tickNow);
                 Integer lastSent = LAST_SENT_PIDX.get(uuid);
                 if (lastSent == null || lastSent != pIdx) {
                     DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));

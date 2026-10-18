@@ -19,7 +19,8 @@ public enum InfdevVersion {
     /** Share of the band (entry fade → exit fade) where each older version takes over. */
     private static final double V420_FROM = 0.2D;
     private static final double V415_FROM = 0.4D;
-    private static final double V227_FROM = 0.6D;
+    /** Public: where Infdev 227's brick pyramids start — the "Pyramid" transition flatbed is timed to it. */
+    public static final double V227_FROM = 0.6D;
 
     /**
      * The version at {@code progress} ({@code 0..1}) through the band. Out-of-range values clamp, so the
