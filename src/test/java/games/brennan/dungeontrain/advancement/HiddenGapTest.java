@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.advancement;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -92,5 +93,71 @@ class HiddenGapTest {
         assertFalse(split.hasDots());
         assertEquals(1, split.segments().size());
         assertArrayEquals(new int[] {43, 30}, split.segments().get(0));
+    }
+
+    @Test
+    @DisplayName("A revealed parent re-links the child that skipped it, with the new count")
+    void revealedParentRelinks() {
+        // d was sent hanging from a (b and c hidden); now b is revealed.
+        Map<String, String> sent = Map.of("d", "a");
+        List<HiddenGap.Relink<String>> relinks = HiddenGap.changedLinks(List.of("d"), n -> n, PARENT::get,
+            Set.of("root", "a", "b", "d")::contains, sent);
+        assertEquals(List.of(new HiddenGap.Relink<>("d", "b", 1)), relinks);
+    }
+
+    @Test
+    @DisplayName("Nothing changes while the same ancestor is still the nearest visible one")
+    void unchangedLinkNotRelinked() {
+        List<HiddenGap.Relink<String>> relinks = HiddenGap.changedLinks(List.of("d"), n -> n, PARENT::get,
+            Set.of("root", "a", "d")::contains, Map.of("d", "a"));
+        assertTrue(relinks.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Advancements never sent with a parent are not checked")
+    void unsentNotChecked() {
+        List<HiddenGap.Relink<String>> relinks = HiddenGap.changedLinks(List.of("d"), n -> n, PARENT::get,
+            Set.of("root", "a", "b", "d")::contains, Map.of());
+        assertTrue(relinks.isEmpty());
+    }
+
+    /** A mutable fake tree for {@link HiddenGap#moveUnder}. */
+    private static final class FakeTree implements HiddenGap.Links<String> {
+        final Map<String, String> parent = new HashMap<>(PARENT);
+        final Map<String, List<String>> children = new HashMap<>();
+
+        FakeTree() {
+            CHILDREN.forEach((k, v) -> children.put(k, new ArrayList<>(v)));
+        }
+
+        @Override public String parentOf(String node) { return parent.get(node); }
+        @Override public void setParent(String node, String p) { parent.put(node, p); }
+        @Override public void removeChild(String p, String child) { children.get(p).remove(child); }
+        @Override public void addChild(String p, String child) { children.get(p).add(child); }
+    }
+
+    @Test
+    @DisplayName("Moving a child under a revealed parent takes it off the old one")
+    void moveUnderRelinks() {
+        FakeTree t = new FakeTree();
+        // Client view: d sits under a; b was just revealed under a.
+        t.parent.put("d", "a");
+        t.children.get("a").add("d");
+        t.children.get("b").remove("c");
+        t.children.get("c").remove("d");
+        assertTrue(HiddenGap.moveUnder("d", "b", t));
+        assertEquals("b", t.parent.get("d"));
+        assertEquals(List.of("b"), t.children.get("a"));
+        assertEquals(List.of("d"), t.children.get("b"));
+    }
+
+    @Test
+    @DisplayName("A move that would loop the tree, or change nothing, is refused")
+    void moveUnderRefusesLoopsAndNoOps() {
+        FakeTree t = new FakeTree();
+        assertFalse(HiddenGap.moveUnder("a", "c", t));
+        assertFalse(HiddenGap.moveUnder("a", "a", t));
+        assertFalse(HiddenGap.moveUnder("d", "c", t));
+        assertEquals("root", t.parent.get("a"));
     }
 }

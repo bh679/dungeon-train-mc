@@ -27,6 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -63,6 +64,11 @@ import java.util.Set;
  * <p>The walk also counts the hidden advancements it passes. Those counts go to the client in an
  * {@link AdvancementGapsPacket} sent just before this packet, so a link that skips
  * {@link HiddenGap#MIN_HIDDEN_FOR_MARKER} or more is drawn with a "…" across it.</p>
+ *
+ * <p>A link is only written when its advancement is sent, so the parent each frontier advancement was
+ * sent with is remembered per player. When a later flush reveals a skipped parent, the advancements now
+ * hanging from the wrong ancestor are listed as re-links in that same {@link AdvancementGapsPacket}, and the
+ * client moves them in place instead of leaving the revealed parent as a side branch.</p>
  */
 @Mixin(PlayerAdvancements.class)
 public abstract class PlayerAdvancementsRehomeMixin {
@@ -85,13 +91,47 @@ public abstract class PlayerAdvancementsRehomeMixin {
         Set<ResourceLocation> removed,
         Map<ResourceLocation, AdvancementProgress> progress
     ) {
+        if (reset) dungeontrain$sentParent.clear();
+        removed.forEach(dungeontrain$sentParent::remove);
         List<AdvancementHolder> rehomed = new ArrayList<>(added.size());
         Map<ResourceLocation, Integer> gaps = new HashMap<>();
+        Set<ResourceLocation> addedIds = new HashSet<>();
         for (AdvancementHolder holder : added) {
+            addedIds.add(holder.id());
             rehomed.add(dungeontrain$rehome(holder, gaps));
         }
-        dungeontrain$pendingGaps = (reset || !gaps.isEmpty()) ? new AdvancementGapsPacket(reset, gaps) : null;
+        Map<ResourceLocation, ResourceLocation> relinks = reset ? Map.of() : dungeontrain$relinks(addedIds, gaps);
+        dungeontrain$pendingGaps = (reset || !gaps.isEmpty() || !relinks.isEmpty())
+            ? new AdvancementGapsPacket(reset, gaps, relinks) : null;
         return new ClientboundUpdateAdvancementsPacket(reset, rehomed, removed, progress);
+    }
+
+    /** The parent each frontier advancement was last sent to this player with (absent: none, or a tab head). */
+    @Unique
+    private final Map<ResourceLocation, ResourceLocation> dungeontrain$sentParent = new HashMap<>();
+
+    /**
+     * Advancements already on the client whose nearest visible ancestor changed this flush — a skipped
+     * parent was just revealed. Records their new counts in {@code gaps} and their new parents as sent.
+     */
+    @Unique
+    private Map<ResourceLocation, ResourceLocation> dungeontrain$relinks(Set<ResourceLocation> addedIds,
+                                                                          Map<ResourceLocation, Integer> gaps) {
+        if (dungeontrain$sentParent.isEmpty()) return Map.of();
+        List<AdvancementNode> onClient = new ArrayList<>();
+        for (AdvancementHolder holder : this.visible) {
+            if (addedIds.contains(holder.id()) || !dungeontrain$sentParent.containsKey(holder.id())) continue;
+            AdvancementNode node = this.tree.get(holder.id());
+            if (node != null) onClient.add(node);
+        }
+        Map<ResourceLocation, ResourceLocation> relinks = new HashMap<>();
+        for (HiddenGap.Relink<ResourceLocation> r : HiddenGap.changedLinks(onClient, n -> n.holder().id(),
+                AdvancementNode::parent, n -> this.visible.contains(n.holder()), dungeontrain$sentParent)) {
+            relinks.put(r.child(), r.newParent());
+            gaps.put(r.child(), r.skipped());
+            dungeontrain$sentParent.put(r.child(), r.newParent());
+        }
+        return relinks;
     }
 
     /** Built alongside the vanilla packet in {@link #dungeontrain$rehomeChainNodes}; sent just before it. */
@@ -130,6 +170,11 @@ public abstract class PlayerAdvancementsRehomeMixin {
         HiddenGap.Walk<AdvancementNode> walk =
             HiddenGap.walk(node, AdvancementNode::parent, n -> this.visible.contains(n.holder()));
         gaps.put(id, walk.skipped());
+        if (walk.ancestor() == null) {
+            dungeontrain$sentParent.remove(id);
+        } else {
+            dungeontrain$sentParent.put(id, walk.ancestor().holder().id());
+        }
         if (walk.ancestor() == node.parent()) {
             return holder;
         }
