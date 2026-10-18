@@ -27605,6 +27605,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "dh-queue-spin-pause",
+      "version": "0.1353.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "compatibility"
+      ],
+      "title": "Lighter on your CPU with Distant Horizons",
+      "summary": "With Distant Horizons installed, riding the train no longer keeps part of your CPU busy for nothing.",
+      "highlights": [],
+      "addresses": [
+        "lag"
+      ],
+      "pr": 2114,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
