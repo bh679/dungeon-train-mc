@@ -137,6 +137,58 @@ class MultiBlockVariantsTest {
     }
 
     @Test
+    @DisplayName("Tall-plant cell: a single block always takes the bottom space, whatever the span")
+    void tallPlantSinglesStayOnTheBottom() {
+        VariantState tallGrass = VariantState.of(Blocks.TALL_GRASS.defaultBlockState());
+        VariantState shortGrass = VariantState.of(Blocks.SHORT_GRASS.defaultBlockState());
+        List<VariantState> cell = List.of(tallGrass, shortGrass);
+        List<VariantSpan> spans = List.of(
+            VariantSpan.NONE,
+            span(ONE, VariantSpan.Position.FIRST, VariantSpan.Fill.SAME),
+            span(ONE, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME),
+            span(ONE, VariantSpan.Position.RANDOM, VariantSpan.Fill.SAME),
+            span(TWO, VariantSpan.Position.FIRST, VariantSpan.Fill.SAME),
+            span(TWO, VariantSpan.Position.FIRST, VariantSpan.Fill.RANDOM),
+            span(VariantSpan.Count.RANDOM, VariantSpan.Position.RANDOM, VariantSpan.Fill.RANDOM));
+        for (VariantSpan s : spans) {
+            for (int index = 0; index < 32; index++) {
+                List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(cell, s, shortGrass, CELL, SEED, index, AS_AUTHORED);
+                assertEquals(2, w.size(), "span " + s);
+                assertEquals(CELL, w.get(0).localPos());
+                assertEquals(shortGrass.state(), w.get(0).state(), "span " + s);
+                assertEquals(ABOVE, w.get(1).localPos());
+                assertTrue(w.get(1).isAir(), "span " + s);
+            }
+        }
+    }
+
+    @Test
+    @DisplayName("Tall-plant cell: the tall plant itself still places both halves")
+    void tallPlantPickPlacesBothHalves() {
+        VariantState tallGrass = VariantState.of(Blocks.TALL_GRASS.defaultBlockState());
+        List<VariantState> cell = List.of(tallGrass, VariantState.of(Blocks.SHORT_GRASS.defaultBlockState()));
+        List<MultiBlockVariants.Write> w = MultiBlockVariants.expand(cell,
+            span(TWO, VariantSpan.Position.SECOND, VariantSpan.Fill.SAME), tallGrass, CELL, SEED, 0, AS_AUTHORED);
+        assertEquals(2, w.size());
+        assertEquals(DoubleBlockHalf.LOWER, w.get(0).state().getValue(DoorBlock.HALF));
+        assertEquals(ABOVE, w.get(1).localPos());
+        assertEquals(DoubleBlockHalf.UPPER, w.get(1).state().getValue(DoorBlock.HALF));
+    }
+
+    @Test
+    @DisplayName("Tall plants are plants; doors and beds are not")
+    void tallPlantDetection() {
+        assertTrue(MultiBlockFootprint.isTallPlant(Blocks.TALL_GRASS.defaultBlockState()));
+        assertTrue(MultiBlockFootprint.isTallPlant(Blocks.LARGE_FERN.defaultBlockState()));
+        assertFalse(MultiBlockFootprint.isTallPlant(Blocks.OAK_DOOR.defaultBlockState()));
+        assertFalse(MultiBlockFootprint.isTallPlant(Blocks.RED_BED.defaultBlockState()));
+        assertFalse(MultiBlockFootprint.isTallPlant(Blocks.SHORT_GRASS.defaultBlockState()));
+        assertTrue(MultiBlockFootprint.cellIsTallPlant(List.of(
+            VariantState.of(Blocks.GRASS_BLOCK.defaultBlockState()), VariantState.of(Blocks.TALL_GRASS.defaultBlockState()))));
+        assertFalse(MultiBlockFootprint.cellIsTallPlant(List.of(door(), VariantState.of(Blocks.TALL_GRASS.defaultBlockState()))));
+    }
+
+    @Test
     @DisplayName("The cell span applies to whichever single block is rolled")
     void spanIsCellWide() {
         VariantState stone = VariantState.of(Blocks.STONE.defaultBlockState());

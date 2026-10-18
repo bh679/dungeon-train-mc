@@ -53,6 +53,7 @@ final class ClientOptionsIcons {
             case DEV_CHAT -> Icon.item(Items.WRITABLE_BOOK);
             case POLITICAL_FILTER -> Icon.item(Items.BARRIER);
             case BOOK_AUTHOR_CHAT -> Icon.item(Items.BOOK);
+            case PROTECT_OWN_PETS -> Icon.item(Items.BONE);
             case UPDATE_NOTICE_CHAT -> NEWS;
             case LOW_MEMORY_NOTICE_CHAT -> Icon.item(Items.REDSTONE);
             case OTHER_ADVANCEMENT_TABS -> Icon.item(Items.EXPERIENCE_BOTTLE);

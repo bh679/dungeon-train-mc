@@ -50,6 +50,7 @@ public final class AfkAdvancementGate {
     static final Set<ResourceLocation> EXEMPT = Stream.of(
         "dungeon_train/the_creator_answers",     // the developer's reply lands on the relay's schedule
         "enchiridion/called_it",                 // takeover vote result, usually while watching the stream
+        "enchiridion/part_of_the_community",     // typed while watching a TV: standing still, mouse idle for the whole line
         "enchiridion/candid"                     // picking up a photo a PlayerMob tossed you
     ).map(path -> ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, path))
         .collect(Collectors.toUnmodifiableSet());
