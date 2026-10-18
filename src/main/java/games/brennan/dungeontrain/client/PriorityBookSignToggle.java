@@ -89,7 +89,7 @@ public final class PriorityBookSignToggle {
             g.setColor(STAR_TINT[0], STAR_TINT[1], STAR_TINT[2], 1.0F);
             g.blitSprite(ticked ? STAR_FILLED : STAR, x + 1, y + 1, 18, 18);
             g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
-            String count = Integer.toString(BookCredits.current());
+            String count = Integer.toString(shownCount());
             Font font = Minecraft.getInstance().font;
             g.pose().pushPose();
             g.pose().translate(0.0F, 0.0F, 200.0F);
@@ -128,7 +128,7 @@ public final class PriorityBookSignToggle {
             if (child instanceof Toggle toggle) {
                 toggle.visible = show;
                 placeBesideSign(screen, toggle);
-                Component text = label(BookCredits.current());
+                Component text = label(shownCount());
                 Component shown = ticked ? Component.literal("✔ ").append(text).withStyle(ChatFormatting.GOLD) : text;
                 // The message is what narration reads; the tooltip carries the words a sighted reader needs.
                 if (shown.getString().equals(toggle.getMessage().getString())) continue;
@@ -159,6 +159,15 @@ public final class PriorityBookSignToggle {
         ticked = false;
         DungeonTrainNet.sendToServer(PriorityBookIntentPacket.INSTANCE);
         BookCredits.spentOne();
+    }
+
+    /**
+     * The Priority Books left AFTER this sign: ticking the star takes one, so the badge and the
+     * "(N left)" go down by one the moment it is pressed and come back if it is pressed again.
+     */
+    private static int shownCount() {
+        int now = BookCredits.current();
+        return ticked ? Math.max(0, now - 1) : now;
     }
 
     private static Component label(int left) {
