@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.event;
 import com.mojang.logging.LogUtils;
 import games.brennan.discordpresence.discord.DiscordService;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.advancement.BurritoClock;
 import games.brennan.dungeontrain.advancement.CompletionistAdvancement;
 import games.brennan.dungeontrain.advancement.StartAgainAdvancement;
 import games.brennan.dungeontrain.advancement.TabGateways;
@@ -1154,6 +1155,8 @@ public final class AchievementEvents {
         // Earning it: clear only what the capstone is made of, not everything (see StartAgainAdvancement#wipe).
         event.setCanceled(true);
         int cleared = StartAgainAdvancement.wipe(player);
+        // The burrito starts again, so its play-time clock does too.
+        BurritoClock.reset(player);
         event.getParseResults().getContext().getSource().sendSuccess(() -> Component.translatable(
                 "commands.advancement.revoke.many.to.one.success", cleared, player.getDisplayName()), true);
     }
@@ -1201,7 +1204,10 @@ public final class AchievementEvents {
             MilestoneAdvancementReporter.maybePost(player, advancement);
             // Any clean DT earn may be the first ever — the relay decides, and a confirmed first is
             // told in chat and announced the same way (a pending milestone post is retitled, not doubled).
-            FirstEverAdvancements.onEarn(player, advancement);
+            // The burrito's play time (since first played or the last reset) is recorded here and rides
+            // the relay claim below, for the fastest-burrito board.
+            BurritoClock.Completion burrito = id.equals(CompletionistAdvancement.ID) ? BurritoClock.recordEarn(player) : null;
+            FirstEverAdvancements.onEarn(player, advancement, burrito);
             // Re-evaluate the "Everything Burrito" capstone (every non-editor
             // advancement earned). Skip its own earn: the award inside
             // checkAndGrant re-fires this event, and the id guard avoids the
