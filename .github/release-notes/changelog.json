@@ -27358,9 +27358,9 @@
       ],
       "pr": 2096,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
     },
     {
       "id": "advancement-hidden-gap-dots",
@@ -27376,9 +27376,9 @@
       "highlights": [],
       "pr": 2097,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
     },
     {
       "id": "afk-rule-menu-advancements",
@@ -27393,9 +27393,9 @@
       "highlights": [],
       "pr": 2098,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1344.0",
+      "released_at": "2026-10-18T08:14:06Z"
     }
   ]
 }
