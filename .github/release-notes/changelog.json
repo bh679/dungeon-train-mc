@@ -27833,6 +27833,26 @@
       "released": true,
       "released_in": "v0.1362.0",
       "released_at": "2026-10-18T16:09:20Z"
+    },
+    {
+      "id": "supporter-copy-book-button",
+      "version": "0.1363.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "books",
+        "ui"
+      ],
+      "title": "Copy a book's text, a thank-you for supporters",
+      "summary": "Supporters who have given $10 AUD or more can now turn on a Copy button when reading a book. It copies the title, the author and every page to your clipboard as plain text. It is off by default: switch it on in Options, Dungeon Train, General. Everyone else sees the setting greyed out with a note on how to unlock it.",
+      "highlights": [
+        "New Copy Book Button setting for supporters ($10 AUD or more), off by default",
+        "Copy sits beside Done on any book you read, lecterns included"
+      ],
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
