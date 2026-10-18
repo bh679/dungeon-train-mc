@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.advancement;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -17,6 +18,11 @@ import java.util.function.Predicate;
  * <p>Pure over generic node types so each step can be tested without a game: the server-side walk
  * ({@link #walk}), the client-side column shift ({@link #shiftColumns}) and the line split for the dots
  * ({@link #split}).</p>
+ *
+ * <p>A link is only fixed when its advancement is sent, so when a skipped parent is revealed later the
+ * client would keep the child on the old ancestor and show the revealed one as a side branch. The server
+ * spots those with {@link #changedLinks} and the client moves the child in place with {@link #moveUnder},
+ * leaving its progress alone so nothing re-announces it.</p>
  */
 public final class HiddenGap {
 
@@ -111,5 +117,57 @@ public final class HiddenGap {
         segments.add(new int[] {lo, mid - GAP_HALF_WIDTH});
         segments.add(new int[] {mid + GAP_HALF_WIDTH, hi});
         return new Split(List.copyOf(segments), new int[] {mid - DOT_SPACING, mid, mid + DOT_SPACING});
+    }
+
+    /** An advancement already on the client whose nearest visible ancestor is no longer the one it hangs from. */
+    public record Relink<K>(K child, K newParent, int skipped) {}
+
+    /**
+     * Finds the advancements whose nearest visible ancestor changed since they were sent.
+     *
+     * @param nodes      the advancements to check: visible, already on the client
+     * @param sentParent the parent each was last sent with; advancements not in it are skipped
+     * @return one entry per changed link; an advancement with no visible ancestor is left as it is
+     */
+    public static <N, K> List<Relink<K>> changedLinks(Iterable<N> nodes, Function<N, K> idOf, Function<N, N> parentOf,
+                                                       Predicate<N> isVisible, Map<K, K> sentParent) {
+        List<Relink<K>> out = new ArrayList<>();
+        for (N node : nodes) {
+            K id = idOf.apply(node);
+            K sent = sentParent.get(id);
+            if (sent == null) continue;
+            Walk<N> walk = walk(node, parentOf, isVisible);
+            if (walk.ancestor() == null) continue;
+            K now = idOf.apply(walk.ancestor());
+            if (!now.equals(sent)) out.add(new Relink<>(id, now, walk.skipped()));
+        }
+        return List.copyOf(out);
+    }
+
+    /** The parent and child-list operations {@link #moveUnder} needs on a tree it cannot see into. */
+    public interface Links<N> {
+        N parentOf(N node);
+        void setParent(N node, N parent);
+        void removeChild(N parent, N child);
+        void addChild(N parent, N child);
+    }
+
+    /**
+     * Moves {@code child} (with its subtree) under {@code newParent}. Refused when that would loop the
+     * tree ({@code newParent} is {@code child} or sits under it) or when nothing would change.
+     *
+     * @return whether it moved
+     */
+    public static <N> boolean moveUnder(N child, N newParent, Links<N> links) {
+        if (child == null || newParent == null) return false;
+        N old = links.parentOf(child);
+        if (old == newParent) return false;
+        for (N n = newParent; n != null; n = links.parentOf(n)) {
+            if (n == child) return false;
+        }
+        if (old != null) links.removeChild(old, child);
+        links.setParent(child, newParent);
+        links.addChild(newParent, child);
+        return true;
     }
 }

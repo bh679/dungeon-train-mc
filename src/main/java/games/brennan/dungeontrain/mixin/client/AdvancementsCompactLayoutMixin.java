@@ -44,7 +44,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  *
  * <p>A link that skips {@link HiddenGap#MIN_HIDDEN_FOR_MARKER} or more hidden advancements gets one
  * extra empty column, so its connector has room for the "…" drawn across it
- * ({@code AdvancementWidgetGapMixin}); counts come from {@link AdvancementGapsClient}.</p>
+ * ({@code AdvancementWidgetGapMixin}); counts come from {@link AdvancementGapsClient}. Before the layout,
+ * advancements whose skipped parent was just revealed are moved under it
+ * ({@link AdvancementGapsClient#applyRelinks}), and an open advancements screen is rebuilt if any moved.</p>
  */
 @Mixin(ClientAdvancements.class)
 public abstract class AdvancementsCompactLayoutMixin {
@@ -62,6 +64,7 @@ public abstract class AdvancementsCompactLayoutMixin {
     @Inject(method = "update", at = @At("TAIL"))
     private void dungeontrain$compactVisibleLayout(CallbackInfo ci) {
         ClientAdvancements self = (ClientAdvancements) (Object) this;
+        boolean relinked = AdvancementGapsClient.applyRelinks(self.getTree());
         AdvancementGapsClient.retainOnly(id -> self.getTree().get(id) != null);
         for (AdvancementNode root : self.getTree().roots()) {
             if (!DungeonTrain.MOD_ID.equals(root.holder().id().getNamespace())) continue;
@@ -75,6 +78,7 @@ public abstract class AdvancementsCompactLayoutMixin {
                 (n, x) -> n.advancement().display().ifPresent(d -> d.setLocation(x, d.getY())));
             dungeontrain$spreadColumns(root);
         }
+        if (relinked) AdvancementGapsClient.refreshOpenScreen();
     }
 
     /**

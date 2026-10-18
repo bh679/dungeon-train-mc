@@ -185,6 +185,7 @@
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",
     "client.AdvancementWidgetGapMixin",
+    "client.AdvancementNodeAccessor",
     "client.DeathScreenMoveTextMixin",
     "client.ClientPacketListenerInstantRespawnMixin",
     "client.SoundOptionsScreenTrainVolumeMixin",
