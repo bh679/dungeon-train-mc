@@ -27413,9 +27413,9 @@
       ],
       "pr": 2100,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
     },
     {
       "id": "distance-totals-reliability",
@@ -27430,9 +27430,9 @@
       "highlights": [],
       "pr": 2101,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
     },
     {
       "id": "live-eyes-gifted-leaderboard",
@@ -27447,9 +27447,9 @@
       "highlights": [],
       "pr": 2102,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1347.0",
+      "released_at": "2026-10-18T08:51:05Z"
     }
   ]
 }
