@@ -142,4 +142,14 @@ public interface Shipyard {
     default boolean reloadFromHolding(java.util.UUID subLevelId) {
         return false;
     }
+
+    /**
+     * Write every live sub-level of this level to the physics mod's storage now, so each gets a
+     * serialization pointer and becomes reloadable after a cull. The same save the world's
+     * autosave runs for this level, triggered early. Returns {@code true} iff a save ran; default
+     * {@code false} for implementations without a holding store.
+     */
+    default boolean saveSubLevelsNow() {
+        return false;
+    }
 }
