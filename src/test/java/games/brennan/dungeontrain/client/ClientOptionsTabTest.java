@@ -63,7 +63,8 @@ final class ClientOptionsTabTest {
     void noDuplicateRows() {
         // Stream is their home; Performance repeats them for players who came there to stop lag.
         Set<ClientOptionsTab.Row> sharedWithPerformance = Set.of(ClientOptionsTab.Row.LIVE_FEED_VIEWING,
-                ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG);
+                ClientOptionsTab.Row.LIVESTREAM, ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
+                ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG);
         for (boolean chinese : BOOLS) {
             for (boolean translate : BOOLS) {
                 List<ClientOptionsTab.Row> seen = new ArrayList<>();
@@ -94,11 +95,11 @@ final class ClientOptionsTabTest {
     // ---- The conditional rows ----
 
     @Test
-    @DisplayName("Plain client: fifty-four rows (four repeated on Performance), none of the conditional rows present")
+    @DisplayName("Plain client: fifty-six rows (five repeated on Performance), none of the conditional rows present")
     void plainClient() {
         List<ClientOptionsTab.Row> rows = allRows(false, false, false);
 
-        assertEquals(54, rows.size());
+        assertEquals(56, rows.size());
         assertFalse(rows.contains(ClientOptionsTab.Row.POLITICAL_FILTER));
         assertFalse(rows.contains(ClientOptionsTab.Row.TRANSLATE));
         assertFalse(rows.contains(ClientOptionsTab.Row.CATCH_UP_BURST));
@@ -158,8 +159,8 @@ final class ClientOptionsTabTest {
     void lowMemoryNoticeLeadsPerformance() {
         assertEquals(List.of(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT,
                         ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.LIVESTREAM,
-                        ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG,
-                        ClientOptionsTab.Row.PERFORMANCE_TIPS),
+                        ClientOptionsTab.Row.STREAM_SIZE, ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
+                        ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.PERFORMANCE_TIPS),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.PERFORMANCE, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, true, true, true)
                 .contains(ClientOptionsTab.Row.LOW_MEMORY_NOTICE_CHAT));
@@ -216,8 +217,8 @@ final class ClientOptionsTabTest {
             rows.addAll(ClientOptionsTab.rowsFor(tab, true, true, true, true));
         }
 
-        // 54 rows, four of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
-        assertEquals(58, rows.size());
+        // 55 rows, five of them (the Live Feed's frame-rate costs) listed on Performance as well as Stream.
+        assertEquals(60, rows.size());
         assertEquals(EnumSet.allOf(ClientOptionsTab.Row.class), EnumSet.copyOf(rows),
                 "every Row constant must appear in some tab when all conditions hold");
     }
@@ -230,6 +231,7 @@ final class ClientOptionsTabTest {
                         ClientOptionsTab.Row.STREAM_POPUPS_OVER_TAG, ClientOptionsTab.Row.LIVE_CHAT,
                         ClientOptionsTab.Row.LIVE_MOMENT_ADVANCEMENTS, ClientOptionsTab.Row.LIVE_MOMENT_PHOTOS,
                         ClientOptionsTab.Row.LIVE_MOMENT_BOOKS, ClientOptionsTab.Row.TWITCH_HINT, ClientOptionsTab.Row.LIVE_FEED_VIEWING, ClientOptionsTab.Row.STREAM_SIZE,
+                        ClientOptionsTab.Row.STREAM_SAVE_BANDWIDTH,
                         ClientOptionsTab.Row.HEAD_VIEWER_SIZE),
                 ClientOptionsTab.rowsFor(ClientOptionsTab.STREAM, false, false, true));
         assertFalse(ClientOptionsTab.rowsFor(ClientOptionsTab.GENERAL, false, false, true)

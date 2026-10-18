@@ -699,6 +699,10 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
             case STREAM_AUDIO -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.streamAudio(),
                     LiveFeedClientConfig::setStreamAudio), key + ".tip");
 
+            // Slower x264 at a lower bitrate; read when the next stream starts. On Performance too, as a frame-rate cost.
+            case STREAM_SAVE_BANDWIDTH -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.saveBandwidth(),
+                    LiveFeedClientConfig::setSaveBandwidth), key + ".tip");
+
             // Decoding live feeds onto TVs and the pinned viewer; off = static, and the idle
             // watchdog stops the decoder. On the Performance tab too, as a frame-rate cost.
             case LIVE_FEED_VIEWING -> Setting.of(onOff(Component.translatable(key), LiveFeedClientConfig.viewingEnabled(),
