@@ -27458,12 +27458,9 @@
       "tags": [
         "performance"
       ],
-      "title": "Reading books no longer stutters the game",
-      "summary": "In singleplayer, opening a book used to save the whole world every time, so flicking through a shelf of books meant a hitch on every one. Now the game saves at most once a minute when you pause, so browsing a library or stat room stays smooth.",
-      "highlights": [
-        "Opening book after book no longer freezes the game for a moment each time",
-        "Pausing still saves your world if it has not been saved in the last minute"
-      ],
+      "title": "Smoother book reading",
+      "summary": "Reading books in singleplayer is now smoother.",
+      "highlights": [],
       "addresses": [
         "lag"
       ],
