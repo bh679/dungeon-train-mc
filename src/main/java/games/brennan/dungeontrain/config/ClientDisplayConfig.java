@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.config;
 
 import games.brennan.dungeontrain.narrative.ReadingLanguages;
 import games.brennan.dungeontrain.client.BookAuthorChatSyncClient;
+import games.brennan.dungeontrain.client.PetProtectionSyncClient;
 import games.brennan.dungeontrain.client.FramerateThrottle;
 import net.minecraft.world.Difficulty;
 import net.neoforged.neoforge.common.ModConfigSpec;
@@ -295,6 +296,8 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
+    /** Your own pets can't be hurt by you — see {@code OwnPetProtectionEvents}. */
+    public static final ModConfigSpec.BooleanValue PROTECT_OWN_PETS;
     /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
     public static final ModConfigSpec.BooleanValue UPDATE_NOTICE_CHAT;
     /** Once-a-session boot card + chat line when the game has too little memory — see {@code LowMemoryNotice}. */
@@ -438,6 +441,7 @@ public final class ClientDisplayConfig {
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
+        PROTECT_OWN_PETS = pair.getLeft().protectOwnPets;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
         DEV_HUD = pair.getLeft().devHud;
@@ -835,6 +839,14 @@ public final class ClientDisplayConfig {
                 .define("authorBurnChat", false);
         b.pop();
 
+        b.push("pets");
+        ModConfigSpec.BooleanValue protectOwnPets = b
+                .comment("Stop yourself hurting your own tamed animals (wolves, cats, parrots, horses and the like):",
+                         "punches, sweeps, arrows and explosions you cause pass them by. Other players and mobs",
+                         "can still hurt them. Toggle in-game via Options > Dungeon Train > General. On by default.")
+                .define("protectOwnPets", true);
+        b.pop();
+
         b.push("updates");
         ModConfigSpec.BooleanValue updateNoticeChat = b
                 .comment("Print a chat line when a new Dungeon Train version is released while you are playing,",
@@ -894,7 +906,7 @@ public final class ClientDisplayConfig {
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, updateNoticeChat,
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, protectOwnPets, updateNoticeChat,
                 lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
@@ -1305,6 +1317,25 @@ public final class ClientDisplayConfig {
     }
 
     /** Whether a new-release chat line may print mid-session. On by default. */
+    /**
+     * Are this player's own pets safe from their hits? On by default. Toggled from
+     * Options &gt; Dungeon Train &gt; General.
+     *
+     * <p>The hit is decided server-side, so the setter also pushes the new value over
+     * {@link games.brennan.dungeontrain.net.PetProtectionSyncPacket} — see
+     * {@link PetProtectionSyncClient}. Unloaded reads as on, matching the server's default.</p>
+     */
+    public static boolean isProtectOwnPetsEnabled() {
+        return !isLoaded() || PROTECT_OWN_PETS.get();
+    }
+
+    public static void setProtectOwnPets(boolean value) {
+        if (!isLoaded()) return;
+        PROTECT_OWN_PETS.set(value);
+        PROTECT_OWN_PETS.save();
+        PetProtectionSyncClient.syncNow();
+    }
+
     public static boolean isUpdateNoticeChatEnabled() {
         return isLoaded() && UPDATE_NOTICE_CHAT.get();
     }
@@ -2134,6 +2165,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
             ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
+            ModConfigSpec.BooleanValue protectOwnPets,
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,
             ModConfigSpec.BooleanValue devHud,

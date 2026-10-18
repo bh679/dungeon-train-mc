@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "147";
+    public static final String PROTOCOL_VERSION = "148";
 
     private DungeonTrainNet() {}
 
@@ -359,6 +359,8 @@ public final class DungeonTrainNet {
         registrar.playToServer(ReadingLanguagesSyncPacket.TYPE, ReadingLanguagesSyncPacket.STREAM_CODEC, ReadingLanguagesSyncPacket::handle);
         registrar.playToServer(BookLanguagePacket.TYPE, BookLanguagePacket.STREAM_CODEC, BookLanguagePacket::handle);
         registrar.playToServer(BookAuthorChatSyncPacket.TYPE, BookAuthorChatSyncPacket.STREAM_CODEC, BookAuthorChatSyncPacket::handle);
+        // Whether the player's own pets are safe from them (PetProtectionMirror; OwnPetProtectionEvents).
+        registrar.playToServer(PetProtectionSyncPacket.TYPE, PetProtectionSyncPacket.STREAM_CODEC, PetProtectionSyncPacket::handle);
 
         // Community shared-book read history: client → server login sync (+ per-read top-ups) of the
         // player's GLOBAL client-side read set, the fallback source for the loot selector's unread-first
