@@ -16,7 +16,8 @@ import java.util.Set;
  * happens entirely in client-side settings or in a relay reply only the client
  * sees — changing the train engine volume, which lives in the client config
  * ({@code ClientDisplayConfig.setTrainEngineVolume}), and the Live Eye's gift and
- * takeover-vote replies ({@code LiveGiftClient}, {@code LiveTakeoverChat}). The server turns the
+ * takeover-vote replies ({@code LiveGiftClient}, {@code LiveTakeoverChat}), and a line the relay took
+ * from a TV wearer ({@code LiveChatBridge}). The server turns the
  * reported id into a {@link ModAdvancementTriggers#GAMEPLAY_ACTION} fire.
  *
  * <p><b>The allowlist is the security story.</b> A client asserting an action id
@@ -31,7 +32,8 @@ public record ClientActionPacket(String actionId) implements CustomPacketPayload
 
     /** Action ids this packet may fire. Deliberately tiny — see the class note. */
     private static final Set<String> ALLOWED = Set.of(
-        "changed_engine_volume", "gifted_live_eye", "voted_live_takeover", "voted_live_takeover_winner");
+        "changed_engine_volume", "gifted_live_eye", "voted_live_takeover", "voted_live_takeover_winner",
+        "live_chat_from_tv");
 
     /** Defensive cap on the string decoded off the wire. */
     private static final int MAX_ID_LENGTH = 64;
