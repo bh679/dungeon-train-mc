@@ -2,8 +2,8 @@
   "locale": "ru_ru",
   "name": "ИИ без проверки человеком",
   "human_reviewed": false,
-  "total_keys": 5211,
-  "ai_authored": 4252,
-  "ai_unreviewed": 4219,
-  "counted_keys": 3352
+  "total_keys": 5214,
+  "ai_authored": 4255,
+  "ai_unreviewed": 4222,
+  "counted_keys": 3355
 }

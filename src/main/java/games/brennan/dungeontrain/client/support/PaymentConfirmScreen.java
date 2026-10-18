@@ -1,10 +1,12 @@
 package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
+import games.brennan.dungeontrain.client.menu.CopyLinkIconButton;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -51,6 +53,7 @@ public final class PaymentConfirmScreen extends Screen {
     private static final int BODY_BUTTON_GAP = 10;
     private static final int BUTTON_H = 20;
     private static final int BUTTON_GAP = 6;
+    private static final int COPY_ICON = 7;
 
     private final Screen parent;
     private final String surface;
@@ -80,7 +83,7 @@ public final class PaymentConfirmScreen extends Screen {
      * {@link ConfirmLinkScreen}. The caller has already recorded the {@code click}.
      */
     public static boolean tryOpen(Screen parent, String surface, String target, String url) {
-        PaymentConfirmCopy copy = PaymentConfirmCopy.forTarget(target);
+        PaymentConfirmCopy copy = PaymentConfirmCopy.forTarget(target, url);
         if (copy == null || url == null) return false;
         Component title = copy.amountKey() == null
                 ? Component.translatable(copy.titleKey())
@@ -113,6 +116,17 @@ public final class PaymentConfirmScreen extends Screen {
                 .bounds(panelX + PADDING, panelY + buttonRelY, buttonW, BUTTON_H).build());
         addRenderableWidget(Button.builder(Component.translatable(PaymentConfirmCopy.CANCEL), b -> respond(false))
                 .bounds(panelX + PADDING + buttonW + BUTTON_GAP, panelY + buttonRelY, buttonW, BUTTON_H).build());
+
+        // The destination stays one click away for anyone who can't open a browser from here: a
+        // quiet glyph in the corner, not a third choice beside Open and Cancel.
+        CopyLinkIconButton copyLink = new CopyLinkIconButton(
+                panelX + panelW - 4 - COPY_ICON, panelY + 4, COPY_ICON,
+                Component.translatable(PaymentConfirmCopy.COPY_LINK), b -> {
+                    Minecraft.getInstance().keyboardHandler.setClipboard(url);
+                    b.setTooltip(Tooltip.create(Component.translatable(PaymentConfirmCopy.COPIED)));
+                });
+        copyLink.setTooltip(Tooltip.create(Component.translatable(PaymentConfirmCopy.COPY_LINK)));
+        addRenderableWidget(copyLink);
     }
 
     private void respond(boolean open) {

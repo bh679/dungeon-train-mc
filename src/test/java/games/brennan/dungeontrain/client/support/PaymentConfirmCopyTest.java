@@ -32,6 +32,20 @@ class PaymentConfirmCopyTest {
     }
 
     @Test
+    void stripeBodyNamesTheRelayOnlyWhenTheLinkGoesThere() {
+        String relay = "https://brennan.games/api/dp-relay/live/pay/cn?displayname=Steve&qty=3";
+        String raw = "https://buy.stripe.com/abc123?client_reference_id=Steve";
+        assertEquals(PaymentConfirmCopy.BODY_STRIPE, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_HELP_DEV, relay).bodyKey());
+        assertEquals(PaymentConfirmCopy.BODY_STRIPE_DIRECT, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_CN, raw).bodyKey());
+        // Title and amount survive the swap; a null URL keeps the relay wording; other providers are untouched.
+        assertEquals(SupportTier.HELP_DEV.amountKey(), PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_HELP_DEV, raw).amountKey());
+        assertEquals(PaymentConfirmCopy.BODY_STRIPE, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DONATE_HELP_DEV, null).bodyKey());
+        assertEquals(PaymentConfirmCopy.BODY_PATREON, PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_PATREON, raw).bodyKey());
+        assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DISCORD, raw));
+        assertEquals(false, PaymentConfirmCopy.onRelay("not a url"));
+    }
+
+    @Test
     void nonPaymentTargetsKeepVanillaConfirm() {
         assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_DISCORD));
         assertNull(PaymentConfirmCopy.forTarget(UiAnalytics.TARGET_AFFILIATE));

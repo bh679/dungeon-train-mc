@@ -30,10 +30,18 @@ public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountK
     static final String TITLE_PATREON = PREFIX + "title.patreon";
     static final String TITLE_REVOLUT = PREFIX + "title.revolut";
     static final String BODY_STRIPE = PREFIX + "body.stripe";
+    // The raw Stripe Payment Link, used only when the relay serves no checkout route: it opens on
+    // Stripe's own domain, so the "at brennan.games" line would be wrong there.
+    static final String BODY_STRIPE_DIRECT = PREFIX + "body.stripe_direct";
     static final String BODY_PATREON = PREFIX + "body.patreon";
     static final String BODY_REVOLUT = PREFIX + "body.revolut";
     static final String OPEN = PREFIX + "open";
     static final String CANCEL = PREFIX + "cancel";
+    static final String COPY_LINK = PREFIX + "copy_link";
+    static final String COPIED = PREFIX + "copied";
+
+    /** The host the relay's checkout route lives on; anything else is a provider's own page. */
+    private static final String RELAY_HOST = "brennan.games";
 
     /**
      * The copy for {@code analyticsTarget}, or null when it is not a payment link (Discord,
@@ -41,6 +49,31 @@ public record PaymentConfirmCopy(String titleKey, String bodyKey, String amountK
      * confirm screen.
      */
     public static PaymentConfirmCopy forTarget(String analyticsTarget) {
+        return forTarget(analyticsTarget, null);
+    }
+
+    /**
+     * As {@link #forTarget(String)}, but with the URL about to open, so a Stripe link that does not
+     * go through the relay (no {@code brennan.games} host) gets the line that says so instead of
+     * one promising a page it will not land on. A null URL keeps the relay wording.
+     */
+    public static PaymentConfirmCopy forTarget(String analyticsTarget, String url) {
+        PaymentConfirmCopy copy = resolve(analyticsTarget);
+        if (copy == null || !BODY_STRIPE.equals(copy.bodyKey()) || url == null || onRelay(url)) return copy;
+        return new PaymentConfirmCopy(copy.titleKey(), BODY_STRIPE_DIRECT, copy.amountKey());
+    }
+
+    /** Whether {@code url}'s host is the relay's (or a subdomain of it). */
+    static boolean onRelay(String url) {
+        try {
+            String host = java.net.URI.create(url).getHost();
+            return host != null && (host.equals(RELAY_HOST) || host.endsWith("." + RELAY_HOST));
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    private static PaymentConfirmCopy resolve(String analyticsTarget) {
         if (analyticsTarget == null) return null;
         for (SupportTier tier : SupportTier.values()) {
             if (tier.analyticsTarget().equals(analyticsTarget)) {
