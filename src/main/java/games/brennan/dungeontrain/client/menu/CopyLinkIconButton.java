@@ -17,8 +17,9 @@ import net.neoforged.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public final class CopyLinkIconButton extends Button {
 
-    private static final int REST = 0xFF8A8A8A;
-    private static final int HOVER = 0xFFE0E0E0;
+    // Rests at the confirm panel's body-text colour so it reads as part of the panel; white on hover.
+    private static final int REST = 0xFFC7BDA7;
+    private static final int HOVER = 0xFFFFFFFF;
 
     public CopyLinkIconButton(int x, int y, int size, Component narration, OnPress onPress) {
         super(x, y, size, size, narration, onPress, DEFAULT_NARRATION);
