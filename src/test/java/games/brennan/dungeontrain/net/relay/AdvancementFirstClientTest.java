@@ -10,7 +10,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-/** The first-claim body: the burrito's play time rides it, nothing else gains fields. */
+/** The first-claim body: the burrito's play time rides it, nothing else gains fields. And the Free Play report's body. */
 class AdvancementFirstClientTest {
 
     private static final UUID PLAYER = UUID.fromString("00000000-0000-0000-0000-0000000000ab");
@@ -31,5 +31,16 @@ class AdvancementFirstClientTest {
         assertFalse(body.has("burritoTicks"));
         assertFalse(body.has("burritoAttempt"));
         assertEquals("normal", body.get("difficulty").getAsString());
+    }
+
+    @Test
+    @DisplayName("a Free Play report names the advancement and the bare uuid, and nothing a claim carries")
+    void freePlayReport() {
+        JsonObject body = AdvancementFirstClient.freePlayBody(PLAYER, "dungeontrain:dungeon_train/start_again");
+        assertEquals("dungeontrain:dungeon_train/start_again", body.get("id").getAsString());
+        assertEquals("000000000000000000000000000000ab", body.get("uuid").getAsString());
+        assertFalse(body.has("name"));
+        assertFalse(body.has("difficulty"));
+        assertFalse(body.has("burritoTicks"));
     }
 }
