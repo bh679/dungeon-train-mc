@@ -27641,6 +27641,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "pale-carriages",
+      "version": "0.1354.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "mobs"
+      ],
+      "title": "Something stirs in the pale carriages",
+      "summary": "Pale trees have taken root in a few carriages, and their hearts keep watch on the move. Whatever they wake stays in the carriage with you.",
+      "highlights": [
+        "New pale carriages among the train's enemies",
+        "Creaking hearts now work on the train",
+        "Builders can set when and how often a heart wakes"
+      ],
+      "pr": 2118,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
