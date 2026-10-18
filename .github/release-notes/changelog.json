@@ -27580,9 +27580,9 @@
       ],
       "pr": 2112,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
     },
     {
       "id": "fastest-everything-burrito",
@@ -27602,9 +27602,9 @@
       ],
       "pr": 2113,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
     },
     {
       "id": "afk-rule-progress-and-menus",
@@ -27618,9 +27618,9 @@
       "highlights": [],
       "pr": 2111,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
     },
     {
       "id": "dh-queue-spin-pause",
@@ -27638,9 +27638,9 @@
       ],
       "pr": 2114,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
     },
     {
       "id": "tall-plant-cells-bottom-only",
@@ -27655,9 +27655,9 @@
       "highlights": [],
       "pr": 2116,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
     },
     {
       "id": "protect-own-pets",
@@ -27672,9 +27672,9 @@
       "highlights": [],
       "pr": 2115,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
     },
     {
       "id": "live-eye-tv-chat-hidden-advancement-2117",
@@ -27689,9 +27689,9 @@
       "highlights": [],
       "pr": 2117,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
     },
     {
       "id": "pale-carriages",
@@ -27711,9 +27711,9 @@
       ],
       "pr": 2118,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1357.0",
+      "released_at": "2026-10-18T14:54:22Z"
     }
   ]
 }
