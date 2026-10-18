@@ -282,6 +282,7 @@ public final class CarriageContentsPlacer {
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 seed, carriageIndex, mask, flip);
             joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
+            gateCreakingHearts(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
     }
 
@@ -294,6 +295,18 @@ public final class CarriageContentsPlacer {
         if (carriageIndex == EDITOR_SENTINEL_PIDX) return;
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         TvTemplateJoin.rejoin(level, origin, size);
+    }
+
+    /**
+     * Decides each stamped creaking heart's Level / Stage / Band gate — see
+     * {@link games.brennan.dungeontrain.compat.CreakingHeartStampGate}. Not in the editor: a plot's
+     * heart keeps its settings untouched so the author sees them, and a template saved from it never
+     * carries a verdict.
+     */
+    private static void gateCreakingHearts(ServerLevel level, BlockPos origin, Vec3i size, int carriageIndex) {
+        if (carriageIndex == EDITOR_SENTINEL_PIDX) return;
+        if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
+        games.brennan.dungeontrain.compat.CreakingHeartStampGate.apply(level, origin, size, carriageIndex);
     }
 
     /**
@@ -377,6 +390,7 @@ public final class CarriageContentsPlacer {
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 seed, carriageIndex, mask, flip);
             joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
+            gateCreakingHearts(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
     }
 
@@ -417,6 +431,7 @@ public final class CarriageContentsPlacer {
             applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
             applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
             joinTvs(level, anchor, box, carriageIndex);
+            gateCreakingHearts(level, anchor, box, carriageIndex);
         });
         LOGGER.info("[DungeonTrain] Placed contents {} at {} source=stored box={}x{}x{} target=portal_room",
             contents.id(), anchor, box.getX(), box.getY(), box.getZ());

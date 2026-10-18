@@ -581,8 +581,9 @@ public final class BlockVariantMenuRenderer {
             List<GrowthPopupLayout.Row> condRows = ConditionPopupLayout.rows(condEntry, panelW, halfH);
             drawPopupRows(ps, buffer, font, condRows, BlockVariantMenu.CellKind.COND_OPTION, hovered,
                 (row, i) -> ConditionPopupLayout.isSelected(condEntry, row, i));
+            // Both modes toggle their offered blocks, so no click removes one outright.
             drawConditionBlockStrip(ps, buffer, font, condRows, ConditionPopupLayout.strip(condEntry),
-                !ConditionPopupLayout.isGroupMode(condEntry.condition()), hovered, icons);
+                false, hovered, icons);
         }
 
         // OPTIONS popup is drawn last so it shadows the row underneath.

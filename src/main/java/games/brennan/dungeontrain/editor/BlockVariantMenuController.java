@@ -371,7 +371,7 @@ public final class BlockVariantMenuController {
                 // Sent even with no values so the popup keeps the target the author picked.
                 s.condition().id(),
                 VariantConditionEdits.isLive(s.condition(), lockIdsInUse, cellLockId),
-                groupValuesToken(plot, s.condition())));
+                conditionValuesToken(plot, localPos, s.condition())));
         }
         return new BlockVariantSyncPacket(plot.key(), localPos, entries, lockId, anchor, right, up,
             (byte) plot.copyRollAt(localPos).ordinal(), plot.supportsCopySettings(),
@@ -380,11 +380,16 @@ public final class BlockVariantMenuController {
             plot.supportsConnectMode(), plot.supportsGrowth());
     }
 
-    /** Group mode's togglable values — the target group's distinct blocks, comma-joined; blank otherwise. */
-    private static String groupValuesToken(BlockVariantPlot plot, VariantCondition c) {
-        if (!c.isGroupTarget()) return "";
+    /**
+     * The If popup's togglable values, comma-joined: in Group mode the target group's distinct
+     * blocks, in Touching mode every block a neighbouring variant cell can roll.
+     */
+    private static String conditionValuesToken(BlockVariantPlot plot, BlockPos localPos, VariantCondition c) {
+        java.util.List<net.minecraft.resources.ResourceLocation> ids = c.isGroupTarget()
+            ? VariantConditionEdits.groupValues(plot.groupRefs().statesForLockId(c.groupId()))
+            : VariantConditionEdits.neighbourValues(plot, localPos);
         StringBuilder sb = new StringBuilder();
-        for (var id : VariantConditionEdits.groupValues(plot.groupRefs().statesForLockId(c.groupId()))) {
+        for (var id : ids) {
             if (sb.length() > 0) sb.append(',');
             sb.append(id);
         }
@@ -960,9 +965,14 @@ public final class BlockVariantMenuController {
                 VariantState entry = mutated.get(idx);
                 VariantConditionEdits.Result result = switch (packet.op()) {
                     case SET_COND_TARGET -> VariantConditionEdits.setTarget(entry.condition(),
-                        packet.stateString(), plot.groupRefs().lockIdsInUse(), plot.lockIdAt(localPos));
-                    case ADD_COND_VALUE -> VariantConditionEdits.addHeld(entry.condition(), player.getMainHandItem());
-                    case TOGGLE_COND_VALUE -> VariantConditionEdits.toggleValue(entry.condition(), packet.stateString());
+                        packet.stateString(), plot.groupRefs().lockIdsInUse(), plot.lockIdAt(localPos),
+                        VariantConditionEdits.variantSides(plot, localPos));
+                    case ADD_COND_VALUE -> VariantConditionEdits.addHeld(
+                        VariantConditionEdits.withDefaultSides(entry.condition(), VariantConditionEdits.variantSides(plot, localPos)),
+                        player.getMainHandItem());
+                    case TOGGLE_COND_VALUE -> VariantConditionEdits.toggleValue(
+                        VariantConditionEdits.withDefaultSides(entry.condition(), VariantConditionEdits.variantSides(plot, localPos)),
+                        packet.stateString());
                     case REMOVE_COND_VALUE -> new VariantConditionEdits.Result(
                         entry.condition().withValueRemoved(packet.delta()), null);
                     default -> new VariantConditionEdits.Result(VariantCondition.NONE, null);
@@ -1085,6 +1095,8 @@ public final class BlockVariantMenuController {
         int current = plot.lockIdAt(localPos);
         int next = current > 0 ? 0 : plot.nextFreeLockId();
         plot.setLockId(localPos, next);
+        // Conditional cells beside it follow the group they now touch (a re-locked column keeps them).
+        VariantConditionRetarget.around(plot, localPos);
         try {
             plot.save();
         } catch (IOException e) {
