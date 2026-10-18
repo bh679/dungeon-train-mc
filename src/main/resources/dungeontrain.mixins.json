@@ -133,6 +133,7 @@
     "PlayerEnderChestContainerSizeMixin"
   ],
   "client": [
+    "client.IntegratedServerPauseSaveThrottleMixin",
     "client.audio.ChannelMirrorMixin",
     "client.audio.SoundBufferMirrorMixin",
     "client.audio.ListenerMirrorMixin",

@@ -1,5 +1,6 @@
 package games.brennan.dungeontrain.mixin;
 
+import games.brennan.dungeontrain.event.PauseSaveThrottle;
 import games.brennan.dungeontrain.train.TrainCarriageAppender;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -44,6 +45,7 @@ public abstract class MinecraftServerSaveMixin {
     @Inject(method = "saveEverything", at = @At("HEAD"))
     private void dungeontrain$holdTrainAcrossSave(
         boolean suppressLog, boolean flush, boolean forced, CallbackInfoReturnable<Boolean> cir) {
+        PauseSaveThrottle.noteSave(System.nanoTime()); // any save restarts the pause-save cooldown
         TrainCarriageAppender.holdAllLoadedTrains(
             (MinecraftServer) (Object) this, DUNGEONTRAIN$SAVE_HOLD_GRACE_TICKS);
     }

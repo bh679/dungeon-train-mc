@@ -190,4 +190,72 @@ final class VariantConditionTest {
         assertTrue(VariantConditionEdits.isLive(VariantCondition.NONE.withGroup(2), groups, 1));
         assertFalse(VariantConditionEdits.isLive(VariantCondition.NONE.withGroup(9), groups, 1));
     }
+
+    @Test
+    @DisplayName("Solid / Empty / Any block kinds: match by kind, round-trip, and stay out of the block values")
+    void kindValues() {
+        VariantCondition solid = VariantCondition.NONE.withValueAdded(VariantCondition.SOLID_ID);
+        assertEquals("down=dungeontrain:solid", solid.id());
+        assertEquals(solid, VariantCondition.parse(solid.id()));
+        assertTrue(solid.matches(Blocks.STONE.defaultBlockState()));
+        assertTrue(solid.matches(Blocks.OAK_PLANKS.defaultBlockState()));
+        assertFalse(solid.matches(Blocks.AIR.defaultBlockState()));
+        assertFalse(solid.matches(CarriageVariantBlocks.emptyPlaceholder()));
+        assertFalse(solid.matches(Blocks.WATER.defaultBlockState()));
+        assertFalse(solid.matches(Blocks.TORCH.defaultBlockState()));
+
+        VariantCondition any = VariantCondition.NONE.withValueAdded(VariantCondition.ANY_ID);
+        assertEquals(any, VariantCondition.parse(any.id()));
+        assertTrue(any.matches(Blocks.STONE.defaultBlockState()));
+        assertTrue(any.matches(Blocks.WATER.defaultBlockState()));
+        assertTrue(any.matches(Blocks.TORCH.defaultBlockState()));
+        assertFalse(any.matches(Blocks.AIR.defaultBlockState()));
+        assertFalse(any.matches(CarriageVariantBlocks.emptyPlaceholder()));
+
+        VariantCondition empty = VariantCondition.NONE.withValueAdded(VariantCondition.EMPTY_ID);
+        assertEquals(empty, VariantCondition.parse(empty.id()));
+        assertTrue(empty.matches(Blocks.AIR.defaultBlockState()));
+        assertTrue(empty.matches(CarriageVariantBlocks.emptyPlaceholder()));
+        assertFalse(empty.matches(Blocks.STONE.defaultBlockState()));
+
+        // Kinds OR together; the block strip never sees them.
+        VariantCondition both = solid.withValueAdded(VariantCondition.EMPTY_ID);
+        assertTrue(both.matches(Blocks.AIR.defaultBlockState()));
+        assertTrue(both.matches(Blocks.STONE.defaultBlockState()));
+        assertFalse(both.matches(Blocks.WATER.defaultBlockState()));
+        assertEquals(List.of(OAK), both.withValueAdded(OAK).blockValues());
+    }
+
+    @Test
+    @DisplayName("Kind is a third mode: entering keeps sides and starts on Solid, leaving drops the kinds")
+    void kindMode() {
+        VariantCondition touching = VariantCondition.NONE.toggleSide(Direction.NORTH).withValueAdded(OAK);
+        assertFalse(touching.isKindMode());
+        // Air from an empty hand is a Touching value, not the Empty kind.
+        assertFalse(VariantCondition.NONE.withValueAdded(VariantCondition.valueFor(null)).isKindMode());
+
+        VariantCondition kind = VariantConditionEdits.setTarget(touching, VariantConditionEdits.MODE_KIND,
+            Set.of(), 0).condition();
+        assertNotNull(kind);
+        assertTrue(kind.isKindMode());
+        assertEquals(touching.sideMask(), kind.sideMask());
+        assertEquals(List.of(VariantCondition.SOLID_ID), kind.blocks());
+
+        VariantCondition ticked = VariantConditionEdits.toggleValue(kind, VariantCondition.ANY_ID.toString()).condition();
+        assertEquals(List.of(VariantCondition.SOLID_ID, VariantCondition.ANY_ID), ticked.blocks());
+        // The last box can't be unticked: that would silently drop the row out of Kind mode.
+        assertNull(VariantConditionEdits.toggleValue(kind, VariantCondition.SOLID_ID.toString()).condition());
+
+        VariantCondition back = VariantConditionEdits.setTarget(ticked, VariantConditionEdits.MODE_TOUCHING,
+            Set.of(), 0).condition();
+        assertFalse(back.isKindMode());
+        assertTrue(back.isDefault());
+        assertEquals(touching.sideMask(), back.sideMask());
+
+        VariantCondition group = VariantConditionEdits.setTarget(ticked, VariantConditionEdits.GROUP_NEXT,
+            Set.of(2), 1).condition();
+        assertTrue(group.isGroupTarget());
+        assertFalse(group.isKindMode());
+        assertTrue(group.blocks().isEmpty());
+    }
 }
