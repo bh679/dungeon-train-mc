@@ -3087,6 +3087,7 @@
   "item.dungeontrain.random_leaderboard_book": "Livro de classificação aleatório",
   "dungeontrain.leaderboard.advancements.header": "Quem conquistou mais progressos?",
   "dungeontrain.leaderboard.builder_time.header": "Quem passou mais tempo construindo?",
+  "dungeontrain.leaderboard.burrito_fastest.header": "Quem conquistou o Burrito de Tudo com menos tempo a bordo?",
   "dungeontrain.leaderboard.live_stream_time.header": "Quem usou a filmadora de transmissão por mais tempo?",
   "dungeontrain.leaderboard.live_view_time.header": "Quem assistiu transmissões na TV por mais tempo?",
   "dungeontrain.leaderboard.builds_approved.header": "As construções de quem entraram em mais trens?",

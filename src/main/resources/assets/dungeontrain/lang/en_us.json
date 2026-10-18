@@ -3682,6 +3682,7 @@
   "dungeontrain.requirement.days.plural": "%s days",
   "dungeontrain.leaderboard.advancements.header": "Who has earned the most advancements?",
   "dungeontrain.leaderboard.builder_time.header": "Who has spent the longest building?",
+  "dungeontrain.leaderboard.burrito_fastest.header": "Who earned Everything Burrito in the least time aboard?",
   "dungeontrain.leaderboard.live_stream_time.header": "Who's worn the Live Eye longest?",
   "dungeontrain.leaderboard.live_view_time.header": "The longest TV stream viewer?",
   "dungeontrain.leaderboard.builds_approved.header": "Whose builds have made it onto the most trains?",

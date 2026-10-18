@@ -3732,6 +3732,7 @@
   "dungeontrain.requirement.days.plural": "%s днів",
   "dungeontrain.leaderboard.advancements.header": "Хто здобув найбільше досягнень?",
   "dungeontrain.leaderboard.builder_time.header": "Хто найдовше будував?",
+  "dungeontrain.leaderboard.burrito_fastest.header": "Хто здобув «Буріто з усім», провівши на борту найменше часу?",
   "dungeontrain.leaderboard.live_stream_time.header": "Хто найдовше носив трансляційну відеокамеру?",
   "dungeontrain.leaderboard.live_view_time.header": "Хто найдовше дивився трансляції по телевізору?",
   "dungeontrain.leaderboard.builds_approved.header": "Чиї будівлі потрапили на найбільше потягів?",

@@ -128,7 +128,11 @@ public enum LeaderboardCategory {
     LIVE_STREAM_TIME("live_stream_time", "live_stream_time", "Longest Stream", Scope.TOTAL, Format.DURATION),
     LIVE_STREAM_RUN("live_stream_run", "live_stream_time", "Longest Stream", Scope.RUN, Format.DURATION),
     LIVE_VIEW_TIME("live_view_time", "live_view_time", "Longest Viewer", Scope.TOTAL, Format.DURATION),
-    LIVE_VIEW_RUN("live_view_run", "live_view_time", "Longest Viewer", Scope.RUN, Format.DURATION);
+    LIVE_VIEW_RUN("live_view_run", "live_view_time", "Longest Viewer", Scope.RUN, Format.DURATION),
+    // The least time aboard a player took to earn Everything Burrito, since first played or their last
+    // reset (BurritoClock). The one board where LOWER wins: the relay sends it fastest first, and the
+    // book renders rows in the order given. Scope.NONE because an attempt spans many lives.
+    BURRITO_FASTEST("burrito_fastest", "burrito_fastest", "Fastest Everything Burrito", Scope.NONE, Format.DURATION);
 
     /**
      * Which span of play a board measures — the flag that turns a pair of boards into one subject

@@ -3144,6 +3144,7 @@
   "item.dungeontrain.random_leaderboard_book": "Случайная книга рейтинга",
   "dungeontrain.leaderboard.advancements.header": "Кто добился больше всего достижений?",
   "dungeontrain.leaderboard.builder_time.header": "Кто потратил больше всего времени на строительство?",
+  "dungeontrain.leaderboard.burrito_fastest.header": "Кто получил «Шаурму со всем», проведя в поезде меньше всего времени?",
   "dungeontrain.leaderboard.live_stream_time.header": "Кто дольше всех носил вещательную видеокамеру?",
   "dungeontrain.leaderboard.live_view_time.header": "Кто дольше всех смотрел трансляции по телевизору?",
   "dungeontrain.leaderboard.builds_approved.header": "Чьи постройки больше всех появляются на поездах?",
