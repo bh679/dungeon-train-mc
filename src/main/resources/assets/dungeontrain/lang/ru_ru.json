@@ -3146,6 +3146,7 @@
   "dungeontrain.leaderboard.builder_time.header": "Кто потратил больше всего времени на строительство?",
   "dungeontrain.leaderboard.live_stream_time.header": "Кто дольше всех носил вещательную видеокамеру?",
   "dungeontrain.leaderboard.live_view_time.header": "Кто дольше всех смотрел трансляции по телевизору?",
+  "dungeontrain.leaderboard.live_gifts.header": "Кто чаще всех дарил вещательную видеокамеру?",
   "dungeontrain.leaderboard.builds_approved.header": "Чьи постройки больше всех появляются на поездах?",
   "dungeontrain.leaderboard.templates_built.header": "Чьи постройки едут в каждом поезде?",
   "dungeontrain.leaderboard.books_praised.header": "Чьи книги поезд любит больше всего?",

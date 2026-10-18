@@ -3734,6 +3734,7 @@
   "dungeontrain.leaderboard.builder_time.header": "Хто найдовше будував?",
   "dungeontrain.leaderboard.live_stream_time.header": "Хто найдовше носив трансляційну відеокамеру?",
   "dungeontrain.leaderboard.live_view_time.header": "Хто найдовше дивився трансляції по телевізору?",
+  "dungeontrain.leaderboard.live_gifts.header": "Хто найчастіше дарував трансляційну відеокамеру?",
   "dungeontrain.leaderboard.builds_approved.header": "Чиї будівлі потрапили на найбільше потягів?",
   "dungeontrain.leaderboard.templates_built.header": "Чиї будівлі їдуть із кожним потягом?",
   "dungeontrain.leaderboard.books_praised.header": "Чиї книги потяг любить найбільше?",

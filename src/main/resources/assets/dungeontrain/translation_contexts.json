@@ -8743,6 +8743,9 @@
  "dungeontrain.leaderboard.live_view_time.header": [
   "book"
  ],
+ "dungeontrain.leaderboard.live_gifts.header": [
+  "book"
+ ],
  "dungeontrain.leaderboard.builds_approved.header": [
   "book"
  ],
