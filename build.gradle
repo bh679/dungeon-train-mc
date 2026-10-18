@@ -295,6 +295,11 @@ neoForge {
             if (project.hasProperty('dhFrameClear')) {
                 systemProperty 'dungeontrain.dh_frame_clear', project.property('dhFrameClear').toString()
             }
+            // -PdhQueuePause=false lets Distant Horizons' chunk-update queue thread spin as shipped, so its
+            // CPU cost can be measured against the fix on one build. See client/DistantHorizonsQueuePause.
+            if (project.hasProperty('dhQueuePause')) {
+                systemProperty 'dungeontrain.dh_queue_pause', project.property('dhQueuePause').toString()
+            }
             // -PshaderPreview="<world folder name>" runs the same harness for the Shaders menu's
             // preview frame instead: one site, the train stopped, no diagnostics panel, written to
             // run/screenshots/preview-<pack>.png. One launch per pack, same world and same camera —

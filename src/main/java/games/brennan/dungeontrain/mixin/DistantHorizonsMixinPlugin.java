@@ -33,6 +33,9 @@ import java.util.Set;
  * during early class transformation, before {@code ModList.get()} is populated. {@link #postApply}
  * logs which {@code GLState} got patched, so a DH update that moves the class shows up as a missing
  * line rather than as the native crashes returning.</p>
+ *
+ * <p>The same gate covers {@code DhChunkUpdateQueueSpinMixin} (DH's chunk-update queue thread), which
+ * logs its own line, so a DH update that moves {@code ChunkUpdateQueueManager} is just as visible.</p>
  */
 public final class DistantHorizonsMixinPlugin implements IMixinConfigPlugin {
 
@@ -106,6 +109,13 @@ public final class DistantHorizonsMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public void postApply(String targetClassName, ClassNode targetClass, String mixinClassName, IMixinInfo mixinInfo) {
-        LOGGER.info("[DungeonTrain] Distant Horizons GL_POLYGON_MODE overflow guard applied to {}", targetClassName);
+        LOGGER.info("[DungeonTrain] Distant Horizons {} applied to {}", describe(mixinClassName), targetClassName);
+    }
+
+    /** What a mixin in this config does, for the {@link #postApply} log line. */
+    static String describe(String mixinClassName) {
+        return mixinClassName.endsWith(".DhChunkUpdateQueueSpinMixin")
+                ? "chunk-update queue spin pause"
+                : "GL_POLYGON_MODE overflow guard";
     }
 }
