@@ -1,10 +1,10 @@
 {
   "schemaVersion": 3,
-  "selfWeight": 1,
+  "selfWeight": 2,
   "variants": [
     {
       "id": "enemiesgroup2",
-      "weight": 1,
+      "weight": 2,
       "minLevel": 3,
       "phases": [
         "OVERWORLD",
@@ -29,7 +29,7 @@
     },
     {
       "id": "betternether",
-      "weight": 8,
+      "weight": 10,
       "minLevel": 5,
       "phases": [
         "NETHER",
@@ -41,7 +41,7 @@
     },
     {
       "id": "basitan",
-      "weight": 7,
+      "weight": 8,
       "minLevel": 1,
       "phases": [
         "NETHER",
@@ -53,7 +53,7 @@
     },
     {
       "id": "forrest",
-      "weight": 1,
+      "weight": 2,
       "phases": [
         "OVERWORLD",
         "VOID",

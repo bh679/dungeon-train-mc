@@ -274,6 +274,10 @@
         "STACKS",
         "FLOATING"
       ]
+    },
+    {
+      "id": "creekingroom",
+      "weight": 1
     }
   ]
 }
