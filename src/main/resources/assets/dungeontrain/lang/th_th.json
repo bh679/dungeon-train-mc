@@ -3052,6 +3052,7 @@
   "dungeontrain.leaderboard.builder_time.header": "ใครใช้เวลาสร้างนานที่สุด",
   "dungeontrain.leaderboard.live_stream_time.header": "ใครสวมกล้องวิดีโอถ่ายทอดนานที่สุด",
   "dungeontrain.leaderboard.live_view_time.header": "ใครดูถ่ายทอดสดทางทีวีนานที่สุด",
+  "dungeontrain.leaderboard.live_gifts.header": "ใครส่งต่อกล้องวิดีโอถ่ายทอดบ่อยที่สุด",
   "dungeontrain.leaderboard.builds_approved.header": "สิ่งก่อสร้างของใครขึ้นขบวนรถได้มากที่สุด",
   "dungeontrain.leaderboard.templates_built.header": "สิ่งก่อสร้างของใครที่เดินทางไปกับรถไฟทุกขบวน?",
   "dungeontrain.leaderboard.books_praised.header": "หนังสือของใครที่รถไฟรักที่สุด?",

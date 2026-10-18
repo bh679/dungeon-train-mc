@@ -3104,6 +3104,7 @@
   "dungeontrain.leaderboard.builder_time.header": "Qui a passé le plus de temps à construire ?",
   "dungeontrain.leaderboard.live_stream_time.header": "Qui a porté le caméscope de diffusion le plus longtemps ?",
   "dungeontrain.leaderboard.live_view_time.header": "Qui a regardé des diffusions à la télé le plus longtemps ?",
+  "dungeontrain.leaderboard.live_gifts.header": "Qui a offert le caméscope de diffusion le plus souvent ?",
   "dungeontrain.leaderboard.builds_approved.header": "Les constructions de qui sont montées à bord du plus de trains ?",
   "dungeontrain.leaderboard.templates_built.header": "À qui sont les constructions qui voyagent à bord de chaque train ?",
   "dungeontrain.leaderboard.books_praised.header": "Quels livres le train aime-t-il le plus ?",
