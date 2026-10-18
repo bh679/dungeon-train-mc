@@ -27527,6 +27527,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-reinsert-revealed",
+      "version": "0.1350.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements",
+        "ui"
+      ],
+      "title": "Revealed advancements slot into their chain",
+      "summary": "When an advancement you skipped past is uncovered, it now sits in its place in the chain on the advancements screen instead of hanging off to one side.",
+      "highlights": [],
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null,
+      "pr": 2110
     }
   ]
 }
