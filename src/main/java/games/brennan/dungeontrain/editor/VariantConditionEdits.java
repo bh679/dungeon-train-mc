@@ -21,6 +21,8 @@ public final class VariantConditionEdits {
     /** {@code toggle:<side>} flips one side; {@code others:<side>} flips every other side. */
     public static final String TOGGLE_PREFIX = "toggle:";
     public static final String OTHERS_PREFIX = "others:";
+    /** {@code match:all} / {@code match:any}: every listed side, or any one of them. */
+    public static final String MATCH_PREFIX = "match:";
 
     private VariantConditionEdits() {}
 
@@ -48,6 +50,10 @@ public final class VariantConditionEdits {
                 : null;
             if (step == null) step = next ? groups.first() : groups.last();
             return Result.ok(current.withGroup(step));
+        }
+        if (token.startsWith(MATCH_PREFIX)) {
+            if (current.isGroupTarget()) return Result.refused(null);
+            return Result.ok(current.withAll("all".equals(token.substring(MATCH_PREFIX.length()))));
         }
         if (token.startsWith(TOGGLE_PREFIX) || token.startsWith(OTHERS_PREFIX)) {
             boolean others = token.startsWith(OTHERS_PREFIX);

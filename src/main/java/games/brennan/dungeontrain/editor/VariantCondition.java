@@ -26,10 +26,11 @@ import java.util.Locale;
  * an author can pick it before adding the first value. A failed condition drops its entry from the
  * roll — see {@link VariantConditions#eligible}.</p>
  *
- * <p>Sidecar token: {@code "down+north=minecraft:oak_planks,minecraft:stone"} or {@code "group3=…"}.
- * Omitted from JSON when default.</p>
+ * <p>Sidecar token: {@code "down+north=minecraft:oak_planks,minecraft:stone"} (any listed side),
+ * {@code "down&up=…"} (every listed side — {@link #all}) or {@code "group3=…"}. Omitted from JSON
+ * when default.</p>
  */
-public record VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks) {
+public record VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks, boolean all) {
 
     /** Most-asked-for target ("only on top of …"), and where a fresh condition starts. */
     public static final Direction DEFAULT_DIRECTION = Direction.DOWN;
@@ -47,6 +48,18 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (groupId > 0) sideMask = 0;
         else if (sideMask == 0) sideMask = ALL_SIDES;
         blocks = blocks == null ? List.of() : List.copyOf(blocks);
+        // "Every side" only means something with two or more sides to look at.
+        if (groupId > 0 || Integer.bitCount(sideMask) < 2) all = false;
+    }
+
+    /** A condition that holds on <i>any</i> listed side. */
+    public VariantCondition(int sideMask, int groupId, List<ResourceLocation> blocks) {
+        this(sideMask, groupId, blocks, false);
+    }
+
+    /** Copy matching on every listed side ({@code true}) or any one of them. */
+    public VariantCondition withAll(boolean every) {
+        return new VariantCondition(sideMask, groupId, blocks, every);
     }
 
     public static int bit(Direction d) {
@@ -95,7 +108,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
 
     /** Touching mode with {@code mask} selected (empty ⇒ every side). */
     public VariantCondition withSides(int mask) {
-        return new VariantCondition(mask, 0, blocks);
+        return new VariantCondition(mask, 0, blocks, all);
     }
 
     /** Flip one side — the band picker's plain click. From group mode this starts at that side. */
@@ -121,7 +134,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (id == null || blocks.contains(id) || blocks.size() >= MAX_VALUES) return this;
         List<ResourceLocation> out = new ArrayList<>(blocks);
         out.add(id);
-        return new VariantCondition(sideMask, groupId, out);
+        return new VariantCondition(sideMask, groupId, out, all);
     }
 
     /** Copy without the value at {@code index}; unchanged when out of range. */
@@ -129,7 +142,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (index < 0 || index >= blocks.size()) return this;
         List<ResourceLocation> out = new ArrayList<>(blocks);
         out.remove(index);
-        return new VariantCondition(sideMask, groupId, out);
+        return new VariantCondition(sideMask, groupId, out, all);
     }
 
     /** Copy with {@code id} removed if present, added otherwise. */
@@ -143,7 +156,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (isDefault() || isGroupTarget() || rotation == Rotation.NONE) return this;
         int out = 0;
         for (Direction d : sides()) out |= bit(rotation.rotate(d));
-        return new VariantCondition(out, 0, blocks);
+        return new VariantCondition(out, 0, blocks, all);
     }
 
     /** Reflect the touching sides across the flipped axes. Group targets have no geometry. */
@@ -158,7 +171,7 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
             };
             out |= bit(flip ? d.getOpposite() : d);
         }
-        return out == sideMask ? this : new VariantCondition(out, 0, blocks);
+        return out == sideMask ? this : new VariantCondition(out, 0, blocks, all);
     }
 
     /** Short target label for the editor: side letters ({@code ND}, {@code *} for all) or {@code G3}. */
@@ -166,7 +179,10 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         if (isGroupTarget()) return "G" + groupId;
         if (sideMask == ALL_SIDES) return "*";
         StringBuilder sb = new StringBuilder();
-        for (Direction d : sides()) sb.append(letter(d));
+        for (Direction d : sides()) {
+            if (all && sb.length() > 0) sb.append('&');
+            sb.append(letter(d));
+        }
         return sb.toString();
     }
 
@@ -182,12 +198,12 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
         };
     }
 
-    /** The target half of the token: side names joined by {@code +}, or {@code group<N>}. */
+    /** The target half of the token: side names joined by {@code +} (any) or {@code &} (all), or {@code group<N>}. */
     public String targetToken() {
         if (isGroupTarget()) return GROUP_PREFIX + groupId;
         StringBuilder sb = new StringBuilder();
         for (Direction d : sides()) {
-            if (sb.length() > 0) sb.append('+');
+            if (sb.length() > 0) sb.append(all ? '&' : '+');
             sb.append(d.getSerializedName());
         }
         return sb.toString();
@@ -241,12 +257,13 @@ public record VariantCondition(int sideMask, int groupId, List<ResourceLocation>
                 return null;
             }
         }
+        boolean every = target.contains("&");
         int mask = 0;
-        for (String name : target.split("\\+")) {
+        for (String name : target.split("[+&]")) {
             Direction d = Direction.byName(name.trim());
             if (d == null) return null;
             mask |= bit(d);
         }
-        return mask == 0 ? null : new VariantCondition(mask, 0, List.of());
+        return mask == 0 ? null : new VariantCondition(mask, 0, List.of(), every);
     }
 }

@@ -515,6 +515,11 @@ public final class BlockVariantMenuInputHandler {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 (shift ? games.brennan.dungeontrain.editor.VariantConditionEdits.OTHERS_PREFIX
                     : games.brennan.dungeontrain.editor.VariantConditionEdits.TOGGLE_PREFIX) + side, 0);
+        } else if (section == ConditionPopupLayout.SECTION_MATCH) {
+            // Any | All: one listed side is enough, or every listed side must hold a value.
+            packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
+                games.brennan.dungeontrain.editor.VariantConditionEdits.MATCH_PREFIX
+                    + (option == ConditionPopupLayout.MATCH_ALL ? "all" : "any"), 0);
         } else if (section == ConditionPopupLayout.SECTION_GROUP) {
             packet = new BlockVariantEditPacket(BlockVariantEditPacket.Op.SET_COND_TARGET, variantId, local, row,
                 ConditionPopupLayout.groupToken(option), 0);

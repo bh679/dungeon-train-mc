@@ -16,7 +16,7 @@ import java.util.List;
  * popup's {@link GrowthPopupLayout.Row} shape so the renderer and raycaster share one layout.
  *
  * <p>Top to bottom: the <b>mode</b> ({@code Touching | Group}), that mode's picker ({@code N S E W U D}
- * multi-select, or {@code ◂ G3 ▸}), the <b>block list</b> as a horizontal strip of icons (OR'd) —
+ * multi-select, plus {@code Any | All} once two sides are lit, or {@code ◂ G3 ▸}), the <b>block list</b> as a horizontal strip of icons (OR'd) —
  * in Touching mode the blocks added from the hand (click one to drop it), in Group mode every block
  * the group can roll, each toggled on or off — then <b>+ Held</b> (Touching only) and <b>Clear</b>.</p>
  */
@@ -27,6 +27,10 @@ final class ConditionPopupLayout {
     static final int SECTION_GROUP = 2;
     static final int SECTION_BLOCKS = 3;
     static final int SECTION_ACTIONS = 4;
+    /** Any | All: whether one listed side or every listed side must hold a value (two or more sides). */
+    static final int SECTION_MATCH = 5;
+    static final int MATCH_ANY = 0;
+    static final int MATCH_ALL = 1;
 
     static final int MODE_TOUCHING = 0;
     static final int MODE_GROUP = 1;
@@ -52,6 +56,11 @@ final class ConditionPopupLayout {
         } else {
             // Multi-select: which sides are lit comes from isSelected, not this row's single index.
             spec.add(new Object[] {SECTION_TOUCHING, "", TOUCHING_LABELS.clone(), -1});
+            if (c.sides().size() >= 2) {
+                spec.add(new Object[] {SECTION_MATCH, MenuLang.t("block_variant.condition_match"),
+                    new String[] {MenuLang.t("block_variant.condition_any"), MenuLang.t("block_variant.condition_all")},
+                    c.all() ? MATCH_ALL : MATCH_ANY});
+            }
         }
         // One icon slot per block; the labels stay blank because the renderer draws the icons.
         int n = strip(entry).size();
