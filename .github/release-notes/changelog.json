@@ -27398,15 +27398,15 @@
       "released_at": null
     },
     {
-      "id": "glitched-death-distance-not-counted",
+      "id": "distance-totals-reliability",
       "version": "0.1345.0",
       "type": "fix",
       "tags": [
         "fix",
         "community"
       ],
-      "title": "Glitched deaths no longer inflate your distance",
-      "summary": "If a glitch ever throws you somewhere the train could not have taken you, that life's distance no longer counts toward your total or the distance leaderboards.",
+      "title": "Fairer distance totals",
+      "summary": "Distance totals and the distance leaderboards are more reliable.",
       "highlights": [],
       "pr": 2101,
       "date": "2026-10-18",
