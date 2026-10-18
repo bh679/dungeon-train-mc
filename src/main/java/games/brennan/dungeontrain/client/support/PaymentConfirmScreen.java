@@ -146,9 +146,16 @@ public final class PaymentConfirmScreen extends Screen {
     }
 
     @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // The frame belongs to the background pass: widgets are drawn after it by super.render, so
+        // the copy-link glyph (plain fills, unlike the sprite-batched buttons) is not painted over.
+        super.renderBackground(g, mouseX, mouseY, partialTick);
+        drawFrame(g, panelX, panelY, panelX + panelW, panelY + panelH);
+    }
+
+    @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        drawFrame(g, panelX, panelY, panelX + panelW, panelY + panelH);
         int cx = panelX + panelW / 2;
         int lh = this.font.lineHeight;
         int y = panelY + titleRelY;
