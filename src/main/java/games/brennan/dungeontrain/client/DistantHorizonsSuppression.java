@@ -34,10 +34,10 @@ import org.slf4j.Logger;
  * the worst of it: the room <em>is</em> a sampled slice of terrain, and DH draws the unrelated
  * surface behind that slice.</p>
  *
- * <p><b>The spheres band.</b> Open void scattered with floating spheres of terrain, which DT carves
- * out of normal overworld chunks. DH's horizon there does not match the void the player is riding
- * through, so DH is hidden across the band's entry fade and core, plus an approach margin
- * ({@link ClientVoidBand#isSpheresZoneWithin}).</p>
+ * <p><b>The void bands.</b> The chuncks (scattered floating chunks), the spheres (floating spheres of
+ * terrain) and the stacks (towers in the void): DT carves each out of normal overworld chunks, so DH's
+ * horizon there does not match the void the player is riding through. DH is hidden across each band's
+ * fades and core, plus an approach margin ({@link ClientVoidBand#isChuncksZoneWithin} and siblings).</p>
  *
  * <p><b>What a cancelled frame still needs.</b> Under a shader pack, Iris keeps reading DH's frame
  * textures on frames DH never drew, so {@link DistantHorizonsFrameClear} empties them whenever a
@@ -73,10 +73,10 @@ public final class DistantHorizonsSuppression {
             // LODs to it, and without this they kept drawing inside rooms under a pack.
             DhApiEventRegister.on(DhApiBeforeDeferredRenderEvent.class, new DeferredRenderSuppressor());
             LOGGER.info("[DungeonTrain] Distant Horizons will stop drawing in the upside-down band, "
-                    + "the spheres band and inside dimensional carriages");
+                    + "the chuncks/spheres/stacks bands and inside dimensional carriages");
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] Could not bind the Distant Horizons render hook; "
-                    + "distant terrain may render through the upside-down band, the spheres band and portal rooms: {}",
+                    + "distant terrain may render through the upside-down band, the void bands and portal rooms: {}",
                     t.toString());
         }
     }
@@ -100,14 +100,19 @@ public final class DistantHorizonsSuppression {
         }
 
         int x = (int) Math.floor(pos.x);
-        if (ClientDisplayConfig.SPHERES_HIDE_DISTANT_HORIZONS.get()
-                && ClientVoidBand.isSpheresZoneWithin(x, ClientDisplayConfig.SPHERES_DISTANT_HORIZONS_MARGIN.get())) {
-            return true;
-        }
+        if (inHiddenVoidBand(x)) return true;
 
         return ClientDisplayConfig.UPSIDE_DOWN_HIDE_DISTANT_HORIZONS.get()
                 && ClientUpsideDownBand.isFlipZoneWithin(x,
                         ClientDisplayConfig.UPSIDE_DOWN_DISTANT_HORIZONS_MARGIN.get());
+    }
+
+    /** Whether the camera is within the shared margin of a void band whose DH toggle is on. */
+    private static boolean inHiddenVoidBand(int x) {
+        int margin = ClientDisplayConfig.VOID_BANDS_DISTANT_HORIZONS_MARGIN.get();
+        return (ClientDisplayConfig.CHUNCKS_HIDE_DISTANT_HORIZONS.get() && ClientVoidBand.isChuncksZoneWithin(x, margin))
+                || (ClientDisplayConfig.SPHERES_HIDE_DISTANT_HORIZONS.get() && ClientVoidBand.isSpheresZoneWithin(x, margin))
+                || (ClientDisplayConfig.STACKS_HIDE_DISTANT_HORIZONS.get() && ClientVoidBand.isStacksZoneWithin(x, margin));
     }
 
     /**
