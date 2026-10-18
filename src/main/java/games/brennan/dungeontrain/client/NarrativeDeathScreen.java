@@ -2679,7 +2679,8 @@ public final class NarrativeDeathScreen extends Screen {
         resolveDonateAssignment(DonationSummaryCache.get());
         Minecraft mc = Minecraft.getInstance();
         String name = mc.getUser() != null ? mc.getUser().getName() : null;
-        DonationSummaryClient.fetch(name, summary ->
+        java.util.UUID playerId = mc.getUser() != null ? mc.getUser().getProfileId() : null;
+        DonationSummaryClient.fetch(name, playerId, summary ->
                 Minecraft.getInstance().execute(() -> {
                     DonationSummaryCache.set(summary);
                     // A cold cache — a first death before the prefetch landed. Label what is left

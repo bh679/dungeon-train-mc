@@ -37,15 +37,18 @@ public final class SharedBookReporter {
      * @param pages    the book pages in order (raw signed page text)
      * @param lang     the author's client language code (e.g. {@code "en_us"}); {@code null}/blank when
      *                 the client hasn't synced one — emitted as an empty string
+     * @param priority whether the player ticked "Use a Priority Book" on the sign page — the relay
+     *                 then spends one of their book credits on this upload (see {@code buildPayload})
      */
-    public static void submit(UUID playerId, String author, String title, List<String> pages, String lang) {
+    public static void submit(UUID playerId, String author, String title, List<String> pages, String lang,
+                              boolean priority) {
         try {
             if (playerId == null) return;
             String uuid = playerId.toString().replace("-", "");
             // One idempotency handle per SIGNING, minted here and carried in the body the outbox
             // persists — so every at-least-once re-send of this upload carries the same key.
             JsonObject payload = buildPayload(uuid, author, title, pages, lang,
-                    UUID.randomUUID().toString().replace("-", ""));
+                    UUID.randomUUID().toString().replace("-", ""), priority);
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.debug("[DungeonTrain] shared-book submit failed to build: {}", t.toString());
@@ -64,9 +67,21 @@ public final class SharedBookReporter {
      * the persisted BODY, every one of those re-sends carries the same value, and the relay can tell
      * the retry apart from a real re-upload instead of suspending a writer for its own hiccup. A blank
      * key is simply omitted — an older relay ignores the field either way.</p>
+     *
+     * <p>{@code priority} is sent only when true: the relay spends one of the uploader's book credits on
+     * the stored book and answers with a {@code priority} block (read by
+     * {@link games.brennan.dungeontrain.net.relay.PriorityBookResponses}). Because it lives in the
+     * persisted body beside {@code key}, an outbox re-send asks again and the relay answers "spent"
+     * without charging twice.</p>
      */
     static JsonObject buildPayload(String uuid, String author, String title, List<String> pages, String lang,
                                    String key) {
+        return buildPayload(uuid, author, title, pages, lang, key, false);
+    }
+
+    /** {@link #buildPayload(String, String, String, List, String, String)} plus the Priority Book choice. */
+    static JsonObject buildPayload(String uuid, String author, String title, List<String> pages, String lang,
+                                   String key, boolean priority) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         body.addProperty("author", author == null ? "" : author);
@@ -81,6 +96,9 @@ public final class SharedBookReporter {
         body.addProperty("lang", lang == null ? "" : lang);
         if (key != null && !key.isBlank()) {
             body.addProperty("key", key);
+        }
+        if (priority) {
+            body.addProperty("priority", true);
         }
         return body;
     }

@@ -114,7 +114,15 @@ public final class SharedBookPool {
 
     public record PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
                            boolean kidSafe, boolean political, String status, boolean isPrivate,
-                           int votesUp, int votesDown) {
+                           int votesUp, int votesDown, boolean priority) {
+
+        /** The pre-Priority-Book shape: {@code priority} false. */
+        public PoolBook(int id, String title, String author, List<String> pages, String lang, int weight,
+                        boolean kidSafe, boolean political, String status, boolean isPrivate,
+                        int votesUp, int votesDown) {
+            this(id, title, author, pages, lang, weight, kidSafe, political, status, isPrivate,
+                    votesUp, votesDown, false);
+        }
 
         /**
          * Whether the relay declined to call this book released — i.e. anything but a literal
@@ -237,6 +245,7 @@ public final class SharedBookPool {
             // told us about this book" signal, so it is the one to gate on.
             BookPrivateTag.stamp(stack, book.isPrivate());
             BookVoteCountsTag.stamp(stack, book.votesUp(), book.votesDown());
+            BookPriorityTag.stamp(stack, book.priority());
         }
         return stack;
     }
@@ -484,8 +493,11 @@ public final class SharedBookPool {
         // them lands on 0/0, and the page shows no counters at all rather than claiming nobody cared.
         int votesUp = optInt(o, "votesUp");
         int votesDown = optInt(o, "votesDown");
+        // `priority` — the writer spent a Priority Book on it. Own shelf only, omitted when false.
+        boolean priority = o.has("priority") && !o.get("priority").isJsonNull()
+                && o.get("priority").isJsonPrimitive() && o.get("priority").getAsBoolean();
         return new PoolBook(id, title, author, pages, lang, weight, kidSafe, political, status, isPrivate,
-            votesUp, votesDown);
+            votesUp, votesDown, priority);
     }
 
     /**
