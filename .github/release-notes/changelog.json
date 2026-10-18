@@ -27379,6 +27379,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "disable-picture-tape-recipe",
+      "version": "0.1344.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Picture Tape can no longer be crafted",
+      "summary": "The Picture Tape crafting recipe has been removed. Tapes you already have, or find, still work as before.",
+      "highlights": [],
+      "pr": 2099,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
