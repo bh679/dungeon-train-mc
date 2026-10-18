@@ -40,7 +40,6 @@ final class AfkAutoPauseTest {
     void nonAfkNeverPauses() {
         assertFalse(shouldPause(TRACKING, TRACKING, true, false, false, false));
         assertFalse(shouldPause(TRACKING, PAUSED, true, false, false, false));
-        assertFalse(shouldPause(TRACKING, NO_PROGRESS, true, false, false, false));
     }
 
     @Test
@@ -51,5 +50,16 @@ final class AfkAutoPauseTest {
         assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, false, true, false));
         assertFalse(shouldPause(TRACKING, INPUT_IDLE, true, false, true, false));
         assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, false, false, true));
+    }
+
+    @Test
+    @DisplayName("not getting anywhere pauses from tracking only, so Back to Game sticks")
+    void noProgressPausesFromTrackingOnly() {
+        assertTrue(shouldPause(TRACKING, NO_PROGRESS, true, false, false, false));
+        // Resuming leaves the player as stuck as before: no second pause.
+        assertFalse(shouldPause(PAUSED, NO_PROGRESS, true, false, false, false));
+        assertFalse(shouldPause(MOUSE_IDLE, NO_PROGRESS, true, false, false, false));
+        assertFalse(shouldPause(NONE, NO_PROGRESS, true, false, false, false));
+        assertFalse(shouldPause(TRACKING, NO_PROGRESS, true, false, true, false));
     }
 }

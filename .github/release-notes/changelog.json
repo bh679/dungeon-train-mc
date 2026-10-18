@@ -27605,6 +27605,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "afk-rule-progress-and-menus",
+      "version": "0.1354.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Tweaks",
+      "summary": "Minor improvements.",
+      "highlights": [],
+      "pr": 2111,
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
