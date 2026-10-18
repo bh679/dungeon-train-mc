@@ -3104,6 +3104,7 @@
   "dungeontrain.leaderboard.builder_time.header": "¿Quién ha pasado más tiempo construyendo?",
   "dungeontrain.leaderboard.live_stream_time.header": "¿Quién ha llevado la videocámara de emisión más tiempo?",
   "dungeontrain.leaderboard.live_view_time.header": "¿Quién ha visto emisiones en la tele más tiempo?",
+  "dungeontrain.leaderboard.live_gifts.header": "¿Quién ha regalado la videocámara de emisión más veces?",
   "dungeontrain.leaderboard.builds_approved.header": "¿De quién son las construcciones que han subido a más trenes?",
   "dungeontrain.leaderboard.templates_built.header": "¿De quién son las construcciones que viajan en cada tren?",
   "dungeontrain.leaderboard.books_praised.header": "¿Qué libros ama más el tren?",

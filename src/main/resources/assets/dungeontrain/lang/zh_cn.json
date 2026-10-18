@@ -3066,6 +3066,7 @@
   "dungeontrain.leaderboard.builder_time.header": "谁花在建造上的时间最长？",
   "dungeontrain.leaderboard.live_stream_time.header": "谁戴直播摄像机的时间最长？",
   "dungeontrain.leaderboard.live_view_time.header": "谁用电视看直播的时间最长？",
+  "dungeontrain.leaderboard.live_gifts.header": "谁转赠直播摄像机的次数最多？",
   "dungeontrain.leaderboard.builds_approved.header": "谁的建筑登上了最多的列车？",
   "dungeontrain.leaderboard.templates_built.header": "谁的建筑随每趟列车同行？",
   "dungeontrain.leaderboard.books_praised.header": "列车最爱谁的书？",

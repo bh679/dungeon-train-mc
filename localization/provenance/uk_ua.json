@@ -3749,6 +3749,7 @@
   "dungeontrain.leaderboard.builder_time.header": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "44bbb32d550cf328"},
   "dungeontrain.leaderboard.live_stream_time.header": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "89661e8faa816490"},
   "dungeontrain.leaderboard.live_view_time.header": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "837212bae2ebfa7f"},
+  "dungeontrain.leaderboard.live_gifts.header": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7ff8496d89eebebc"},
   "dungeontrain.leaderboard.builds_approved.header": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "3ad1df1a919690f5"},
   "dungeontrain.leaderboard.templates_built.header": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "d63dab275c26a400"},
   "dungeontrain.leaderboard.books_praised.header": {"author": "Fable 5.1 (Claude)", "reviewer": "", "source_hash": "4192ac05148bfa71"},
