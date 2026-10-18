@@ -26,7 +26,8 @@ import java.util.regex.Pattern;
  * BetterNether. DT keeps their biomes and blocks but not their parallel gear progression, which would
  * bypass DT's own loot and difficulty balance. Also Exposure's original camera, film and lightroom
  * ({@link #HIDDEN_ITEMS}), replaced by the Polaroid add-on's instant camera, and Vista's Viewfinder, Wave Gate and
- * cassettes — DT's Television shows only the Live Feed. And every non-vanilla enchantment
+ * cassettes — DT's Television shows only the Live Feed — plus Vista's Picture Tape recipe ({@link #DISABLED_RECIPES}),
+ * though the tape itself is kept. And every non-vanilla enchantment
  * ({@link #isDisabledEnchantment}) — today BetterNether's Obsidian Breaker and Ruby Fire and BetterEnd's
  * Resonance and End Veil — kept out of the enchanting table and villager books by the {@code remove} lists in
  * {@code data/minecraft/tags/enchantment/}, and stripped from loot and creative here.
@@ -75,8 +76,9 @@ public final class DisabledModContent {
      *
      * <p>And Vista's Viewfinder, Wave Gate, pre-recorded Cassette and Hollow Cassette: a Television's only job in
      * DT is the Live Feed, which it tunes to by itself. Hiding the two cassettes also strips Vista's own chest and
-     * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Mirrors, Picture
-     * Tape and the music disc are left as Vista ships them.</p>
+     * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Mirrors and the
+     * music disc are left as Vista ships them; Picture Tape is too, except that it can't be crafted
+     * ({@link #DISABLED_RECIPES}).</p>
      */
     static final Set<String> HIDDEN_ITEMS = Set.of(
         "exposure:camera",
@@ -99,7 +101,18 @@ public final class DisabledModContent {
 
     static final String INSTANT_CAMERA = "exposure_polaroid:instant_camera";
 
+    /**
+     * Recipes dropped by id while the item they make is kept — it stays in creative, loot and anywhere else it
+     * already turns up. Vista's Picture Tape: players can no longer craft one.
+     */
+    static final Set<String> DISABLED_RECIPES = Set.of("vista:picture_tape");
+
     private DisabledModContent() {}
+
+    /** A recipe turned off by id ({@link #DISABLED_RECIPES}), whatever it makes. */
+    public static boolean isDisabledRecipe(ResourceLocation recipeId) {
+        return recipeId != null && DISABLED_RECIPES.contains(recipeId.toString());
+    }
 
     /** A disabled mod's ore placed feature — vetoed at decoration time. */
     public static boolean isDisabledOreFeature(ResourceLocation placedFeature) {
