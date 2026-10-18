@@ -28,7 +28,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class DungeonTrainNet {
 
-    public static final String PROTOCOL_VERSION = "145";
+    public static final String PROTOCOL_VERSION = "146";
 
     private DungeonTrainNet() {}
 
@@ -402,6 +402,9 @@ public final class DungeonTrainNet {
         registrar.playToServer(TvHeldTogglePacket.TYPE, TvHeldTogglePacket.STREAM_CODEC, TvHeldTogglePacket::handle);
         // /dt flyspeed: the local player's creative sprint-fly multiplier. See player/SprintFlyBoost.
         registrar.playToClient(SprintFlyBoostPacket.TYPE, SprintFlyBoostPacket.STREAM_CODEC, SprintFlyBoostPacket::handle);
+        // How many hidden advancements sit between two linked ones, for the "…" on the advancements
+        // screen. Sent just before the vanilla advancements packet it describes. See advancement/HiddenGap.
+        registrar.playToClient(AdvancementGapsPacket.TYPE, AdvancementGapsPacket.STREAM_CODEC, AdvancementGapsPacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */
