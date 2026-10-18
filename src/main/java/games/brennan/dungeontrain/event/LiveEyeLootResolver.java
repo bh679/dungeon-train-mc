@@ -4,12 +4,14 @@ import games.brennan.dungeontrain.item.LiveHeadpiecePendingTag;
 import games.brennan.dungeontrain.player.ServerLiveStatus;
 import games.brennan.dungeontrain.registry.ModDataAttachments;
 import games.brennan.dungeontrain.registry.ModItems;
+import games.brennan.ediblebackpacks.registry.ModAttachments;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.items.ItemStackHandler;
 
 /**
  * Decides what a loot-rolled Live Eye becomes for the player who first sees it.
@@ -120,14 +122,20 @@ public final class LiveEyeLootResolver {
         return false;
     }
 
-    /** A real (resolved) Live Eye in the inventory — worn included — or the ender chest, shulkers in either included. */
+    /** A real (resolved) Live Eye in the inventory (worn included), ender chest or backpack, shulkers in any included. */
     public static boolean holdsLiveEye(ServerPlayer player) {
         return heldLiveEyes(player) > 0;
     }
 
-    /** Every real Live Eye {@code player} holds: inventory (worn included) and ender chest, packed ones too. */
+    /** Every real Live Eye {@code player} holds: inventory (worn included), ender chest and backpack, packed ones too. */
     public static int heldLiveEyes(ServerPlayer player) {
-        return countRealLiveEyes(player.getInventory()) + countRealLiveEyes(player.getEnderChestInventory());
+        return countRealLiveEyes(player.getInventory()) + countRealLiveEyes(player.getEnderChestInventory())
+            + LiveEyeHoldings.count(backpack(player));
+    }
+
+    /** The player's Edible Backpack slots (a jarJar'd sibling, so always present). */
+    static ItemStackHandler backpack(ServerPlayer player) {
+        return player.getData(ModAttachments.BACKPACK).items();
     }
 
     /**

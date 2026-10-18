@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.editor.pool;
 import games.brennan.dungeontrain.editor.CarriageContentsEditor;
 import games.brennan.dungeontrain.editor.CarriageContentsStore;
 import games.brennan.dungeontrain.editor.CarriageEditor;
+import games.brennan.dungeontrain.editor.ContentsShellOverrides;
 import games.brennan.dungeontrain.editor.CarriageGroupTemplateStore;
 import games.brennan.dungeontrain.editor.CarriageTemplateStore;
 import games.brennan.dungeontrain.editor.EditorCategory;
@@ -112,6 +113,7 @@ public final class PoolDeletes {
         if (wasCustom) {
             CarriageContentsRegistry.unregister(contents.id());
             TemplateSizeStore.CONTENTS.forget(contents.id());
+            ContentsShellOverrides.forget(contents.id());
             if (oldSlot >= 0) {
                 CarriageStampGuard.run(() ->
                     CarriageContentsEditor.restampRowAfterDeletion(overworld, rowSize, oldSlot, standing, dims));

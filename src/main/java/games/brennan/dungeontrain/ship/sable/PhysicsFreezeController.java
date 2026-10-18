@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.ship.sable;
 
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
+import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.util.DtLogging;
@@ -14,11 +15,13 @@ import org.joml.primitives.AABBdc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Issue #646 (soft-freeze) — each tick, keeps a carriage's physics active only while a client is
@@ -32,6 +35,14 @@ import java.util.UUID;
  * live-entity scan (run only for <em>untracked</em> candidates) keeps the body under a mob/item in
  * world space so it never drops through. Carriage-<em>contents</em> entities live at shipyard coords
  * and don't ride the body, so they don't block freezing.</p>
+ *
+ * <p><b>A tracker inside a dimensional carriage is not a watcher.</b> A portal room is stamped in
+ * its carriage's own chunk columns, so a player standing in it stays within Sable's tracking radius
+ * of every carriage overhead while being unable to see any of them. A carriage whose every tracker
+ * is in a room (and on no train — see {@code PortalTrainFreeze#isSecluded}) counts as untracked.
+ * Player log of 17 Oct 2026: three minutes in a room with {@code frozen=0 activeTracked=7} over a
+ * train that had already stopped. The swap back onto the train thaws the destination group at once
+ * ({@link #thaw}).</p>
  *
  * <p><b>Hysteresis: eager unfreeze, lazy freeze.</b> A carriage becomes active → unfrozen the same
  * tick (ready before it can be seen); it must be continuously inactive for {@link #FREEZE_GRACE_TICKS}
@@ -75,6 +86,13 @@ public final class PhysicsFreezeController {
      */
     public static volatile boolean ENABLED = true;
 
+    /**
+     * Whether a tracker inside a dimensional carriage is discounted (see the class javadoc). Flip via
+     * {@code /dungeontrain debug physicsfreeze rooms <on|off>} for the Gate 2 A/B; off restores the
+     * plain "any tracker keeps it live" rule.
+     */
+    public static volatile boolean ROOM_PARK_ENABLED = true;
+
     /** Consecutive inactive ticks required before freezing (lazy freeze; unfreeze is immediate). */
     static final int FREEZE_GRACE_TICKS = 40;
 
@@ -91,6 +109,8 @@ public final class PhysicsFreezeController {
     private static volatile int lastActiveTracked;
     private static volatile int lastActiveEntity;
     private static volatile int lastActiveSettling;
+    /** Carriages tracked only by players inside a dimensional carriage, so not counted as tracked. */
+    private static volatile int lastSecluded;
     private static volatile double lastMaxBodyLagBlocks;
     /** Re-parks since the last {@link #drainReparks} — one {@code [mspt]} window. */
     private static final java.util.concurrent.atomic.LongAdder REPARKS = new java.util.concurrent.atomic.LongAdder();
@@ -122,17 +142,43 @@ public final class PhysicsFreezeController {
     }
 
     /**
+     * Pure core of the tracked test: true if any tracker is somebody who can actually see the
+     * carriage. {@code cannotSee} names the players inside a dimensional carriage.
+     */
+    static boolean anyWatcher(Collection<UUID> trackers, Predicate<UUID> cannotSee) {
+        for (UUID tracker : trackers) {
+            if (!cannotSee.test(tracker)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Wake a parked carriage now, ahead of the next reconcile — for a player swapping back onto it
+     * from its room. Resetting the idle counter gives it a fresh grace window, the same as
+     * {@code TrainCarriageAppender#thawForPlacement}. A null or non-Sable ship is left alone.
+     */
+    public static void thaw(ManagedShip ship) {
+        if (!(ship instanceof SableManagedShip sable)) return;
+        ServerSubLevel sl = sable.subLevel();
+        if (sl == null || sl.isRemoved()) return;
+        if (PhysicsFreeze.isFrozen(sl)) PhysicsFreeze.unfreeze(sl);
+        PhysicsFreeze.setInactiveTicks(sl, 0);
+    }
+
+    /**
      * Reconcile every resident carriage's physics-active state. Called each tick from
      * {@link games.brennan.dungeontrain.event.TrainTickEvents} while a train is present. Runs in
      * {@code LevelTickEvent.Post} (after the physics tick, single-threaded), so the frozen flags it
      * writes are stable for the next physics tick's readers.
      */
-    public static void reconcile(ServerLevel level, Map<UUID, List<Trains.Carriage>> trainsById) {
+    public static void reconcile(ServerLevel level, Map<UUID, List<Trains.Carriage>> trainsById,
+                                 Predicate<UUID> cannotSee) {
+        Predicate<UUID> secluded = ROOM_PARK_ENABLED ? cannotSee : player -> false;
         SubLevelPhysicsSystem system = SubLevelPhysicsSystem.get(level);
         if (system == null) return;
 
         int resident = 0, active = 0, frozen = 0;
-        int activeTracked = 0, activeEntity = 0, activeSettling = 0, reparks = 0;
+        int activeTracked = 0, activeEntity = 0, activeSettling = 0, secludedOnly = 0, reparks = 0;
         double maxBodyLag = 0.0;
         for (List<Trains.Carriage> train : trainsById.values()) {
             Set<Integer> settlingAnchors = settlingAnchors(train);
@@ -153,7 +199,9 @@ public final class PhysicsFreezeController {
                 // Short-circuits: the set lookup is cheap, and the (bounded) entity scan runs only
                 // for untracked candidates.
                 boolean settling = settlingAnchors.contains(c.provider().getPIdx());
-                boolean tracked = !settling && !sl.getTrackingPlayers().isEmpty();
+                Collection<UUID> trackers = settling ? List.of() : sl.getTrackingPlayers();
+                boolean tracked = anyWatcher(trackers, secluded);
+                if (!tracked && !trackers.isEmpty()) secludedOnly++;
                 boolean entityAboard = !settling && !tracked && hasLiveEntityAboard(level, ship);
                 boolean activeNow = settling || tracked || entityAboard;
                 if (activeNow) {
@@ -203,6 +251,7 @@ public final class PhysicsFreezeController {
         lastActiveTracked = activeTracked;
         lastActiveEntity = activeEntity;
         lastActiveSettling = activeSettling;
+        lastSecluded = secludedOnly;
         lastMaxBodyLagBlocks = maxBodyLag;
         REPARKS.add(reparks);
 
@@ -293,6 +342,8 @@ public final class PhysicsFreezeController {
     public static int lastActiveEntity() { return lastActiveEntity; }
     /** Active because its train has an unsettled group (see {@link #anchorsToKeepTicking}). */
     public static int lastActiveSettling() { return lastActiveSettling; }
+    /** Tracked only by players inside a dimensional carriage, so treated as untracked. */
+    public static int lastSecluded() { return lastSecluded; }
     /** Largest distance a parked body currently sits behind its pose, in blocks (after re-parking). */
     public static double lastMaxBodyLagBlocks() { return lastMaxBodyLagBlocks; }
     /** Parked bodies re-parked onto their poses since the last call — drained once per {@code [mspt]} window. */

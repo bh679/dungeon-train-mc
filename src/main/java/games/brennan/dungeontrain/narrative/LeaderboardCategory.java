@@ -129,6 +129,9 @@ public enum LeaderboardCategory {
     LIVE_STREAM_RUN("live_stream_run", "live_stream_time", "Longest Stream", Scope.RUN, Format.DURATION),
     LIVE_VIEW_TIME("live_view_time", "live_view_time", "Longest Viewer", Scope.TOTAL, Format.DURATION),
     LIVE_VIEW_RUN("live_view_run", "live_view_time", "Longest Viewer", Scope.RUN, Format.DURATION),
+    // Live Eyes a player has given away: gifts whose recipient went on to take the channel. The relay
+    // counts each completed hand-over (livegifts.js). All lives only, so the cover says nothing of span.
+    LIVE_GIFTS("live_gifts", "live_gifts", "Most Live Eyes Gifted", Scope.TOTAL, Format.COUNT),
     // The least time aboard a player took to earn Everything Burrito, since first played or their last
     // reset (BurritoClock). The one board where LOWER wins: the relay sends it fastest first, and the
     // book renders rows in the order given. Scope.NONE because an attempt spans many lives.
