@@ -270,8 +270,12 @@ public final class BlockVariantMenu {
 
     /** True when the cell holds a door / bed / tall plant — the only cells the Span setting applies to. */
     public static boolean spanButtonShown() {
+        // The first multi row sets the footprint; a tall plant's has nothing to choose (single
+        // blocks always take the bottom space — MultiBlockFootprint#cellIsTallPlant).
         for (BlockVariantSyncPacket.Entry e : entries) {
-            if (isMultiRow(e)) return true;
+            if (isMultiRow(e)) {
+                return !games.brennan.dungeontrain.editor.MultiBlockFootprint.isTallPlant(parseState(e.stateString()));
+            }
         }
         return false;
     }

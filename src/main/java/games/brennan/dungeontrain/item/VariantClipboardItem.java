@@ -305,6 +305,9 @@ public final class VariantClipboardItem extends Item {
             }
         }
 
+        // A pasted conditional cell reads the group it now touches, not the one it was copied beside.
+        games.brennan.dungeontrain.editor.VariantConditionRetarget.around(plot, localPos);
+
         // Mirror the pasted variant pool (+ reflected base block) to the
         // symmetric cells when the plot's "V" toggle is on — parity with the
         // shift-click add and break paths, which otherwise leaves a paste

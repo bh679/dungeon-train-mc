@@ -24,7 +24,9 @@ import java.util.Random;
  *       somewhere other than the cell's footprint space, the footprint space
  *       is cleared so a template half left there doesn't float.</li>
  *   <li><b>Single-space pick</b> — the two footprint spaces filled per the
- *       cell's {@link VariantSpan} (one setting for the whole cell).</li>
+ *       cell's {@link VariantSpan} (one setting for the whole cell). A tall-plant
+ *       cell ignores the span: the block always takes the bottom space, since the
+ *       top one would leave it floating.</li>
  *   <li><b>Empty placeholder / mob</b> — both spaces cleared.</li>
  * </ul>
  *
@@ -112,7 +114,14 @@ public final class MultiBlockVariants {
         if (footprint == null) return List.of(here);
 
         BlockPos second = localPos.offset(footprint);
-        VariantSpan s = (span == null ? VariantSpan.NONE : span)
+        if (MultiBlockFootprint.cellIsTallPlant(cell)) {
+            // A tall plant's top space stands on nothing but its bottom one, so a single block goes
+            // in the bottom space whatever the span says; anything put on top would float.
+            return footprint.getY() > 0
+                ? List.of(here, Write.air(second))
+                : List.of(Write.air(localPos), new Write(second, picked, rotated));
+        }
+        VariantSpan s =(span == null ? VariantSpan.NONE : span)
             .resolve(MultiBlockFootprint.firstEntryIsMulti(cell));
         boolean both = switch (s.count()) {
             case ONE -> false;
