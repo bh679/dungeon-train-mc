@@ -101,6 +101,7 @@ public final class DonationSummaryClient {
     /**
      * The parsed ledger. {@code monthlyCostUsd}/{@code percentCovered} are -1 when the relay has no
      * cost snapshot yet; {@code hasYou} is false when the player hasn't consented / isn't a donor.
+     * {@code youBookCredits} is the Priority Books waiting for this player (0 when none, or unnamed).
      * {@code goals} is empty (and {@code activeGoalId} null) against a relay that predates the
      * ladder, or when there is no cost snapshot to build the first rung from — the screen falls
      * back to {@code percentCovered} then.
@@ -110,7 +111,20 @@ public final class DonationSummaryClient {
                           List<Entry> monthly, List<Entry> allTime,
                           boolean hasYou, int youMonthlyUsd, int youTotalUsd,
                           List<Goal> goals, String activeGoalId, Updates updates,
-                          Activity activity, Experiment experiment) {}
+                          Activity activity, Experiment experiment, int youBookCredits) {
+
+        /** The pre-Priority-Book shape: no books waiting. */
+        public Summary(int monthlyRaisedUsd, int totalRaisedUsd, int monthlyCostUsd,
+                       int percentCovered, int patronCount, int patronMonthlyUsd,
+                       List<Entry> monthly, List<Entry> allTime,
+                       boolean hasYou, int youMonthlyUsd, int youTotalUsd,
+                       List<Goal> goals, String activeGoalId, Updates updates,
+                       Activity activity, Experiment experiment) {
+            this(monthlyRaisedUsd, totalRaisedUsd, monthlyCostUsd, percentCovered, patronCount,
+                    patronMonthlyUsd, monthly, allTime, hasYou, youMonthlyUsd, youTotalUsd, goals,
+                    activeGoalId, updates, activity, experiment, 0);
+        }
+    }
 
     /**
      * Fetch the donation summary off-thread and hand the parsed result to {@code callback} (invoked
@@ -119,11 +133,21 @@ public final class DonationSummaryClient {
      * No-throw: a failed / slow / malformed / non-2xx fetch never calls back.
      */
     public static void fetch(String playerName, Consumer<Summary> callback) {
+        fetch(playerName, null, callback);
+    }
+
+    /**
+     * {@link #fetch(String, Consumer)} that also sends the player's uuid beside their name, under the
+     * same consent gate. The uuid is what opens a Priority Book wallet once it has been spent from
+     * (the relay binds it then), so without it a renamed giver would see no books waiting.
+     */
+    public static void fetch(String playerName, java.util.UUID playerId, Consumer<Summary> callback) {
         try {
             String url = DungeonTrain.relayBaseUrl() + "/donations/summary";
             // "Your contribution" needs the player's name → only send it with network consent.
             if (playerName != null && !playerName.isBlank() && DiscordPresenceClientConfig.isGranted()) {
                 url += "?name=" + URLEncoder.encode(playerName, StandardCharsets.UTF_8);
+                if (playerId != null) url += "&uuid=" + playerId.toString().replace("-", "");
             }
             HttpRequest req = HttpRequest.newBuilder(URI.create(url))
                     .timeout(REQUEST_TIMEOUT)
@@ -185,7 +209,8 @@ public final class DonationSummaryClient {
                         ? o.get("activeGoalId").getAsString() : null,
                 parseUpdates(o),
                 parseActivity(o),
-                parseExperiment(o));
+                parseExperiment(o),
+                you != null ? optInt(you, "bookCredits", 0) : 0);
     }
 
     /**

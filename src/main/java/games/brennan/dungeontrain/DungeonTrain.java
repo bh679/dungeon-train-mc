@@ -482,6 +482,7 @@ public class DungeonTrain {
         // is refused and pauses their uploads, and the writer is told in chat (see
         // SharedBookSubmitResponses). Registration only — no network, no game state.
         games.brennan.dungeontrain.net.relay.SharedBookSubmitResponses.register();
+        games.brennan.dungeontrain.net.relay.PriorityBookResponses.register();
         // Live Eye text filter: the relay's verdict on a reported strike (warn / Live Eye burns / ban).
         games.brennan.dungeontrain.event.LiveModeration.register();
         games.brennan.dungeontrain.compat.photo.SharedPhotos.registerResponses();

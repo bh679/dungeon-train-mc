@@ -98,6 +98,8 @@ public final class FamiliarBookGreeter {
         // and the padlock draws the state it reads. Getting this wrong would offer an author
         // "withdraw" on a book already withdrawn, and re-publish it on the next click.
         BookPrivateTag.stamp(stack, stats.isPrivate());
+        // Same both-ways rule: a book refunded by a rejection must stop showing the mark.
+        BookPriorityTag.stamp(stack, stats.priority());
     }
 
     private static boolean isGreeted(ItemStack stack) {

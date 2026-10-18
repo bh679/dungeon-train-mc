@@ -21,6 +21,7 @@ import games.brennan.dungeontrain.narrative.BookUploadSuspensions;
 import games.brennan.dungeontrain.narrative.DeathNoteSigning;
 import games.brennan.dungeontrain.narrative.DeathNoteTitleLocalization;
 import games.brennan.dungeontrain.narrative.EditorBookAuthorPending;
+import games.brennan.dungeontrain.narrative.PriorityBookPending;
 import games.brennan.dungeontrain.narrative.EditorAuthoredBookTag;
 import games.brennan.dungeontrain.narrative.NoteKind;
 import games.brennan.dungeontrain.narrative.LetterLecternEvents;
@@ -136,6 +137,12 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
      */
     private String dungeontrain$bookLanguage;
 
+    /**
+     * Whether the sign page's "Use a Priority Book" was ticked, taken at HEAD from
+     * {@link PriorityBookPending}. Consumed on every sign, applied only to a community shared book.
+     */
+    private boolean dungeontrain$priorityBook;
+
     @Inject(method = "signBook", at = @At("HEAD"), cancellable = true)
     private void dungeontrain$interceptSignBook(FilteredText title, List<FilteredText> pages, int slot,
                                                 CallbackInfo ci) {
@@ -152,6 +159,8 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
         this.dungeontrain$bookLanguage = earlyPlayer != null
                 ? ReadingLanguagesMirror.takeBookLanguage(earlyPlayer)
                 : null;
+        // Consume-once, like the author above: a tick on one sign page must never spend on a later book.
+        this.dungeontrain$priorityBook = earlyPlayer != null && PriorityBookPending.take(earlyPlayer.getUUID());
         this.dungeontrain$censoredTitle = null;
         this.dungeontrain$censoredPages = null;
         try {
@@ -251,7 +260,8 @@ public abstract class ServerGamePacketListenerImplSignBookMixin {
             String lang = this.dungeontrain$bookLanguage != null
                     ? this.dungeontrain$bookLanguage
                     : WorldInfoReporter.clientLanguage(serverPlayer);
-            SharedBookReporter.submit(serverPlayer.getUUID(), author, titleStr, pageStrs, lang);
+            SharedBookReporter.submit(serverPlayer.getUUID(), author, titleStr, pageStrs, lang,
+                    this.dungeontrain$priorityBook);
 
             // Remove one writable book from the player's slot — they keep nothing.
             writable.shrink(1);

@@ -6,12 +6,16 @@ import games.brennan.dungeontrain.narrative.BookCopy;
 import games.brennan.dungeontrain.narrative.BookModerationState;
 import games.brennan.dungeontrain.narrative.BookModerationTag;
 import games.brennan.dungeontrain.narrative.BookPrivateTag;
+import games.brennan.dungeontrain.narrative.BookPriorityTag;
+import games.brennan.dungeontrain.narrative.PriorityBookMessage;
 import games.brennan.dungeontrain.narrative.BookProtestTag;
 import games.brennan.dungeontrain.narrative.BookVoteCountsTag;
 import games.brennan.dungeontrain.narrative.BookReportTag;
 import games.brennan.dungeontrain.narrative.BookVoteTag;
 import games.brennan.dungeontrain.narrative.UnapprovedBookMessage;
 import games.brennan.dungeontrain.net.BookPrivatePacket;
+import games.brennan.dungeontrain.net.BookPriorityPacket;
+import games.brennan.dungeontrain.client.support.BookCredits;
 import games.brennan.dungeontrain.net.BookProtestPacket;
 import games.brennan.dungeontrain.net.BookReportPacket;
 import games.brennan.dungeontrain.net.BookVotePacket;
@@ -94,6 +98,9 @@ public final class BookVoteClientEvents {
     private static final int LABELS_DY = BUTTONS_DY + BUTTON_SIZE + 6;
     private static final int REPORT_DY = LABELS_DY + 12; // its own row under the (Y)es/(N)o labels
     private static final int REPORT_TEXT_DY = REPORT_DY + BUTTON_SIZE + 3; // confirmation line, when shown
+    private static final int PRIORITY_DY = 70;           // own approved book: under the status, above the tallies
+    private static final int LINE_H = 9;
+    private static final int COLOR_PRIORITY = 0x8A5A00;  // the Priority Book line: a thank-you, so gold not ink
     // Vanilla nails both page-turn buttons to this y in createPageControlButtons(), which is what
     // makes the back button usable as a probe for how far the book has been moved. See bookTop().
     private static final int VANILLA_PAGE_BUTTON_Y = 159;
@@ -157,6 +164,8 @@ public final class BookVoteClientEvents {
     private static BookModerationState moderation = BookModerationState.PUBLIC;
     private static boolean isPrivate = false;            // seeded from the stack's tag — reversible
     private static boolean protested = false;            // seeded from the stack's tag — one-way
+    private static boolean isPriority = false;           // seeded from the stack's tag — set once the relay confirms
+    private static boolean priorityArmed = false;        // first click armed the spend; a second commits
     // How this book is polling, when it is one of the reader's own. -1 = the relay never told us, and
     // is NOT the same as 0: zero votes is a real answer worth showing, an absent tally is not.
     private static int votesUp = -1;
@@ -194,9 +203,12 @@ public final class BookVoteClientEvents {
         moderation = BookModerationTag.read(stack);
         isPrivate = BookPrivateTag.isPrivate(stack);
         protested = BookProtestTag.isProtested(stack);
+        isPriority = BookPriorityTag.isPriority(stack);
         boolean hasVotes = BookVoteCountsTag.has(stack);
         votesUp = hasVotes ? BookVoteCountsTag.up(stack) : -1;
         votesDown = hasVotes ? BookVoteCountsTag.down(stack) : -1;
+        // How many Priority Books this reader has to spend, for the line on their own released books.
+        BookCredits.refresh(null);
         // The train always asks a book the same question: stable per (bookType, bookId).
         promptIndex = Math.floorMod((bookType + ":" + bookId).hashCode(), PROMPT_COUNT) + 1;
         screen = book;
@@ -221,6 +233,7 @@ public final class BookVoteClientEvents {
         if (!active || event.getScreen() != screen) return;
         if (!onVotePage()) {
             reportArmed = false; // turning off the page abandons a half-made report
+            priorityArmed = false;
             return;
         }
         adoptOwnStateIfItArrived();
@@ -280,6 +293,59 @@ public final class BookVoteClientEvents {
         }
 
         renderAction(gfx, font, centerX, mouseX, mouseY);
+        renderPriority(gfx, font, centerX, mouseX, mouseY);
+    }
+
+    /**
+     * The Priority Book line, on the reader's OWN released book only: "Make this a Priority Book (N
+     * left)" while they have one to spend, the passive mark once it is one, nothing otherwise. Spending
+     * is final, so it takes two taps on the line, like a report.
+     */
+    private static void renderPriority(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
+        Component text = priorityText();
+        if (text == null) return;
+        boolean lit = !isPriority && inPriority(font, mouseX, mouseY);
+        int color = isPriority ? COLOR_TEXT : priorityArmed ? COLOR_REPORT_ARMED : COLOR_PRIORITY;
+        int y = priorityY();
+        for (FormattedCharSequence line : font.split(lit ? text.copy().withStyle(ChatFormatting.UNDERLINE) : text, TEXT_WIDTH)) {
+            gfx.drawString(font, line, centerX - font.width(line) / 2, y, color, false);
+            y += LINE_H;
+        }
+        if (lit && !priorityArmed) gfx.renderTooltip(font, PriorityBookMessage.signTooltip(), mouseX, mouseY);
+    }
+
+    /** What the Priority Book line says right now, or null when it is not shown. */
+    private static Component priorityText() {
+        if (moderation != BookModerationState.APPROVED || !"shared".equals(bookType)) return null;
+        if (isPriority) return PriorityBookMessage.isPriority();
+        int left = BookCredits.current();
+        if (left <= 0) return null;
+        return priorityArmed ? PriorityBookMessage.makeConfirm() : PriorityBookMessage.make(locale(), left);
+    }
+
+    /** The line's hit box: the page column, as many rows as the text wraps to. */
+    private static boolean inPriority(Font font, int x, int y) {
+        Component text = priorityText();
+        if (text == null) return false;
+        int rows = Math.max(1, font.split(text, TEXT_WIDTH).size());
+        int left = bookLeft() + TEXT_X_OFFSET;
+        return x >= left && x < left + TEXT_WIDTH && y >= priorityY() && y < priorityY() + rows * LINE_H;
+    }
+
+    /** Send the spend. The mark appears once the relay confirms (the server stamps the copy). */
+    private static void applyPriority() {
+        if (!active) return;
+        priorityArmed = false;
+        DungeonTrainNet.sendToServer(new BookPriorityPacket(bookType, bookId));
+        BookCredits.spentOne();
+    }
+
+    private static String locale() {
+        try {
+            return Minecraft.getInstance().getLanguageManager().getSelected();
+        } catch (Throwable t) {
+            return "";
+        }
     }
 
     /**
@@ -438,6 +504,7 @@ public final class BookVoteClientEvents {
         moderation = arrived;
         isPrivate = BookPrivateTag.isPrivate(stack);
         protested = BookProtestTag.isProtested(stack);
+        isPriority = BookPriorityTag.isPriority(stack);
         boolean hasVotes = BookVoteCountsTag.has(stack);
         votesUp = hasVotes ? BookVoteCountsTag.up(stack) : -1;
         votesDown = hasVotes ? BookVoteCountsTag.down(stack) : -1;
@@ -460,6 +527,15 @@ public final class BookVoteClientEvents {
         if (event.getButton() != GLFW.GLFW_MOUSE_BUTTON_LEFT) return;
         int mx = (int) event.getMouseX();
         int my = (int) event.getMouseY();
+        // The Priority Book line on your own released book: two taps, since a spend cannot be undone.
+        if (!isPriority && inPriority(Minecraft.getInstance().font, mx, my)) {
+            event.setCanceled(true);
+            clickSound();
+            reportArmed = false;
+            if (priorityArmed) applyPriority(); else priorityArmed = true;
+            return;
+        }
+        priorityArmed = false;
         // The thumbs are not drawn on your own book, so they must not be clickable either — an
         // invisible hitbox that still votes is worse than the button being there.
         if (!moderation.isOwn() && inUpButton(mx, my)) {
@@ -673,6 +749,11 @@ public final class BookVoteClientEvents {
         return bookTop() + REPORT_DY;
     }
 
+    /** The Priority Book line on the reader's own released book. */
+    private static int priorityY() {
+        return bookTop() + PRIORITY_DY;
+    }
+
     /** Its confirmation or status line, when there is one. */
     private static int reportTextY() {
         return bookTop() + REPORT_TEXT_DY;
@@ -739,6 +820,8 @@ public final class BookVoteClientEvents {
         moderation = BookModerationState.PUBLIC;
         isPrivate = false;
         protested = false;
+        isPriority = false;
+        priorityArmed = false;
         votesUp = -1;
         votesDown = -1;
     }

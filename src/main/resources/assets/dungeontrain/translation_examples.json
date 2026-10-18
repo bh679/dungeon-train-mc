@@ -16784,5 +16784,77 @@
         "7"
       ]
     }
+  },
+  "gui.dungeontrain.priority_book.waiting.one": {
+    "1": {
+      "label": "Priority Books the player has waiting to spend",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.priority_book.waiting.other": {
+    "1": {
+      "label": "Priority Books the player has waiting to spend",
+      "examples": [
+        "0",
+        "3",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.priority_book.sign.one": {
+    "1": {
+      "label": "Priority Books the player has left to spend",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.priority_book.sign.other": {
+    "1": {
+      "label": "Priority Books the player has left to spend",
+      "examples": [
+        "0",
+        "3",
+        "7"
+      ]
+    }
+  },
+  "gui.dungeontrain.priority_book.make.one": {
+    "1": {
+      "label": "Priority Books the player has left to spend",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "gui.dungeontrain.priority_book.make.other": {
+    "1": {
+      "label": "Priority Books the player has left to spend",
+      "examples": [
+        "0",
+        "3",
+        "7"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.spent.one": {
+    "1": {
+      "label": "Priority Books left after this one was spent",
+      "examples": [
+        "1"
+      ]
+    }
+  },
+  "chat.dungeontrain.priority_book.spent.other": {
+    "1": {
+      "label": "Priority Books left after this one was spent",
+      "examples": [
+        "0",
+        "3",
+        "7"
+      ]
+    }
   }
 }

@@ -3,8 +3,10 @@ package games.brennan.dungeontrain.client;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
+import games.brennan.dungeontrain.client.support.BookCredits;
 import games.brennan.dungeontrain.client.support.PaymentLinks;
 import games.brennan.dungeontrain.client.support.SupportTier;
+import games.brennan.dungeontrain.narrative.PriorityBookMessage;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -43,6 +45,7 @@ public final class DonationOptionsScreen extends Screen {
     private static final int OVERLAY = 0xF2070C1E;
     private static final int TITLE   = 0xFFE0B56A;
     private static final int NARR    = 0xFFC7BDA7;
+    private static final int YOU     = 0xFF8FE08A; // the "you" line: this player's own thank-you
     private static final float[] TINT_GREEN  = {0.30F, 0.80F, 0.35F}; // direct donation
     private static final float[] TINT_ORANGE = {1.00F, 0.47F, 0.38F}; // Patreon
     private static final float[] TINT_BLUE   = {0.35F, 0.62F, 1.00F}; // China payment — distinct from the green direct-donation button
@@ -56,6 +59,9 @@ public final class DonationOptionsScreen extends Screen {
     private int leftColCenter;
     private int rightColCenter;
     private List<FormattedCharSequence> subtitleLines = List.of();
+    // "N Priority Books waiting", under the subtitle, only when the relay says this player has some.
+    private List<FormattedCharSequence> youLines = List.of();
+    private int youTop;
     private List<FormattedCharSequence> revolutDescLines = List.of();
     private List<FormattedCharSequence> patreonDescLines = List.of();
 
@@ -75,6 +81,14 @@ public final class DonationOptionsScreen extends Screen {
         int wrapW = Math.min(360, this.width - 80);
         subtitleLines = this.font.split(
                 Component.translatable("gui.dungeontrain.death.narr.donate_options_sub"), wrapW);
+        // Re-read the wallet (consent-gated, cached a minute) and lay out again if the count moved.
+        BookCredits.refresh(() -> {
+            if (this.minecraft != null && this.minecraft.screen == this) rebuildWidgets();
+        });
+        int books = BookCredits.current();
+        youLines = books > 0
+                ? this.font.split(PriorityBookMessage.waiting(locale(), books), wrapW)
+                : List.of();
 
         int rowW = Math.min(340, this.width - 60);
         int gap = 10;
@@ -112,14 +126,16 @@ public final class DonationOptionsScreen extends Screen {
         // descriptions, so it adds its own height plus a gap.
         int tierRowH = tiers ? bh + gap : 0;
         int subH = subtitleLines.size() * lineH;
+        int youH = youLines.isEmpty() ? 0 : youLines.size() * lineH + 6;
         int descH = descRows * lineH;
         int modeRowH = showModes ? descH + 4 + modeBh : 0;
-        int blockH = lineH + 6 + subH + 12 + tierRowH + modeRowH + 12 + 20;
+        int blockH = lineH + 6 + subH + youH + 12 + tierRowH + modeRowH + 12 + 20;
         int top = Math.max(20, (this.height - blockH) / 2);
 
         titleY = top;
         subtitleTop = titleY + lineH + 6;
-        int y = subtitleTop + subH + 12;
+        youTop = subtitleTop + subH + 6;
+        int y = subtitleTop + subH + youH + 12;
 
         if (tiers) {
             int tierEach = (rowW - gap * (SupportTier.values().length - 1)) / SupportTier.values().length;
@@ -187,9 +203,23 @@ public final class DonationOptionsScreen extends Screen {
             g.drawString(this.font, line, cx - this.font.width(line) / 2, y, NARR, false);
             y += lineH;
         }
+        y = youTop;
+        for (FormattedCharSequence line : youLines) {
+            g.drawString(this.font, line, cx - this.font.width(line) / 2, y, YOU, false);
+            y += lineH;
+        }
         // Per-column descriptions, sitting directly above their button.
         drawColumnDesc(g, revolutDescLines, leftColCenter, lineH);
         drawColumnDesc(g, patreonDescLines, rightColCenter, lineH);
+    }
+
+    /** This client's own language, for the plural form of the "you" line (see PluralRules). */
+    private static String locale() {
+        try {
+            return Minecraft.getInstance().getLanguageManager().getSelected();
+        } catch (Throwable t) {
+            return "";
+        }
     }
 
     /** Draw a wrapped description block centred on {@code centerX}, anchored at {@link #descTop}. */
