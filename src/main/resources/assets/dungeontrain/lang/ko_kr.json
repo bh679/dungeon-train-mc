@@ -3050,6 +3050,7 @@
   "item.dungeontrain.random_leaderboard_book": "무작위 순위표 책",
   "dungeontrain.leaderboard.advancements.header": "가장 많은 발전 과제를 이룬 사람은 누구인가.",
   "dungeontrain.leaderboard.builder_time.header": "가장 오래 건축한 사람은 누구인가.",
+  "dungeontrain.leaderboard.burrito_fastest.header": "가장 짧은 탑승 시간으로 모든 것을 담은 부리토를 달성한 사람은 누구인가.",
   "dungeontrain.leaderboard.live_stream_time.header": "방송 캠코더를 가장 오래 쓴 사람은 누구인가.",
   "dungeontrain.leaderboard.live_view_time.header": "TV로 방송을 가장 오래 본 사람은 누구인가.",
   "dungeontrain.leaderboard.live_gifts.header": "방송 캠코더를 가장 많이 물려준 사람은 누구인가.",
