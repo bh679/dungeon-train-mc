@@ -48,9 +48,10 @@ import java.util.OptionalDouble;
  *       machine-translated and no human has worked through yet. See {@link #translateTarget()}.</li>
  * </ol>
  *
- * <p>Both the coloured buttons and the inline "Discord" links open their URL
- * through vanilla's {@link ConfirmLinkScreen} — the standard "open external
- * link?" confirmation. Confirming or cancelling returns to <em>this</em> hub
+ * <p>The payment buttons open their URL through {@link PaymentConfirmScreen}, a
+ * confirm that names the provider and amount and shows no URL; the inline
+ * "Discord" and affiliate links keep vanilla's {@link ConfirmLinkScreen}, the
+ * standard "open external link?" confirmation. Either way, confirming or cancelling returns to <em>this</em> hub
  * (not the title screen) so the player can follow several links in one visit.
  * Inline links are hit-tested in {@link #mouseClicked} against the wrapped
  * description lines.</p>
@@ -477,8 +478,8 @@ public final class SupportScreen extends Screen {
     }
 
     /**
-     * Open {@code url} through the vanilla confirm screen, recording the click and whether the
-     * player followed through. {@code analyticsTarget} is one of the {@link UiAnalytics} target
+     * Open {@code url} through a confirm screen ({@link PaymentConfirmScreen} for payment targets,
+     * vanilla's for the rest), recording the click and whether the player followed through. {@code analyticsTarget} is one of the {@link UiAnalytics} target
      * names, or null to open untracked (an inline URL we don't recognise).
      */
     private void openLink(String url, String analyticsTarget) {
@@ -489,6 +490,9 @@ public final class SupportScreen extends Screen {
         if (analyticsTarget != null) {
             UiAnalytics.click(UiAnalytics.SURFACE_SUPPORT_PAGE, analyticsTarget);
         }
+        // Payment links get Dungeon Train's own confirm (provider + amount, no URL); everything
+        // else keeps vanilla's, which is what a plain Discord or affiliate link should show.
+        if (PaymentConfirmScreen.tryOpen(this, UiAnalytics.SURFACE_SUPPORT_PAGE, analyticsTarget, url)) return;
         Minecraft.getInstance().setScreen(new ConfirmLinkScreen(yes -> {
             if (analyticsTarget != null) {
                 UiAnalytics.confirm(UiAnalytics.SURFACE_SUPPORT_PAGE, analyticsTarget, yes);

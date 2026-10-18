@@ -6,9 +6,12 @@ import games.brennan.dungeontrain.train.TrainMotionFreeze;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.Trains;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 import org.joml.primitives.AABBdc;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +64,40 @@ public final class PortalTrainFreeze {
      */
     public static final double NEAR_TRAIN_RANGE = 96.0;
 
+    /**
+     * Per level, the players this tick who are inside a portal structure and not on any train — the
+     * ones who cannot see a carriage however close Sable thinks they are.
+     *
+     * <p>Read by {@code PhysicsFreezeController}: a room stands in its carriage's own columns, so a
+     * player in it stays inside Sable's tracking radius of every carriage overhead, and "tracked"
+     * stopped meaning "watched". Player log of 17 Oct 2026: three minutes in a room with all seven
+     * carriages stepping in Rapier above a train this class had already stopped. Kept here so the
+     * train stopping and its bodies parking answer the same question the same way.</p>
+     */
+    private static final Map<ResourceKey<Level>, Set<UUID>> SECLUDED = new HashMap<>();
+
     private PortalTrainFreeze() {}
+
+    /** True when this player was, as of the last {@link #tick}, in a room and off every train. */
+    public static boolean isSecluded(ServerLevel level, UUID player) {
+        Set<UUID> secluded = SECLUDED.get(level.dimension());
+        return secluded != null && secluded.contains(player);
+    }
+
+    /**
+     * {@code player} has just swapped back onto the train: stop counting them as secluded now rather
+     * than at the next {@link #tick}, so the physics reconcile that runs this same tick — before or
+     * after the portal pass, depending on handler order — already counts them as watching.
+     */
+    public static void noteLeftRoom(ServerPlayer player) {
+        Set<UUID> secluded = SECLUDED.get(player.level().dimension());
+        if (secluded != null) secluded.remove(player.getUUID());
+    }
+
+    /** Forget everything, for a server stop. */
+    public static void clear() {
+        SECLUDED.clear();
+    }
 
     /**
      * Decide, for every train in the level, whether it should be standing still, and tell
@@ -78,8 +114,10 @@ public final class PortalTrainFreeze {
                             Set<Integer> occupiedPairs,
                             BiPredicate<CarriageDims, ServerPlayer> inStructure) {
         Set<UUID> trainsWithOccupiedRooms = trainsOf(occupiedPairs);
+        Map<UUID, List<Trains.Carriage>> trains = Trains.byTrainId(level);
+        SECLUDED.put(level.dimension(), secludedPlayers(trains, players, dims, inStructure));
 
-        for (Map.Entry<UUID, List<Trains.Carriage>> train : Trains.byTrainId(level).entrySet()) {
+        for (Map.Entry<UUID, List<Trains.Carriage>> train : trains.entrySet()) {
             UUID trainId = train.getKey();
             boolean freeze = trainsWithOccupiedRooms.contains(trainId)
                 && !anyoneWatching(train.getValue(), players, dims, inStructure);
@@ -88,6 +126,30 @@ public final class PortalTrainFreeze {
 
         // After the verdicts, so a train frozen this tick starts counting this tick.
         TrainMotionFreeze.tickFrozen();
+    }
+
+    /**
+     * Players inside a portal structure and on no train's footprint. The footprint outranks the room
+     * box here for the same reason it does in {@link #anyoneWatching}: a box that overreaches upward
+     * must not read a rider on the deck as hidden away below it.
+     */
+    private static Set<UUID> secludedPlayers(Map<UUID, List<Trains.Carriage>> trains,
+                                             List<ServerPlayer> players, CarriageDims dims,
+                                             BiPredicate<CarriageDims, ServerPlayer> inStructure) {
+        Set<UUID> secluded = new HashSet<>();
+        for (ServerPlayer player : players) {
+            if (!inStructure.test(dims, player)) continue;
+            if (onAnyTrain(trains, player)) continue;
+            secluded.add(player.getUUID());
+        }
+        return secluded;
+    }
+
+    private static boolean onAnyTrain(Map<UUID, List<Trains.Carriage>> trains, ServerPlayer player) {
+        for (List<Trains.Carriage> carriages : trains.values()) {
+            if (CarriageDeck.isOnTrainFootprint(carriages, player)) return true;
+        }
+        return false;
     }
 
     /**

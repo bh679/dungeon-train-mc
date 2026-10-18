@@ -125,6 +125,15 @@ final class DisabledModContentTest {
     }
 
     @Test
+    @DisplayName("Vista's picture tape recipe is turned off by id; its other recipes stay")
+    void pictureTapeRecipeDisabled() {
+        assertTrue(DisabledModContent.isDisabledRecipe(id("vista:picture_tape")));
+        assertFalse(DisabledModContent.isDisabledRecipe(id("vista:mirror")));
+        assertFalse(DisabledModContent.isDisabledRecipe(id("vista:television")));
+        assertFalse(DisabledModContent.isDisabledRecipe(null));
+    }
+
+    @Test
     @DisplayName("the reloadable instant camera is hidden; the disposable camera on the same item is kept")
     void plainInstantCameraHidden() {
         assertTrue(DisabledModContent.isPlainInstantCamera(id("exposure_polaroid:instant_camera"), false));
