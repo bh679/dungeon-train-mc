@@ -4596,6 +4596,7 @@
   "gui.dungeontrain.priority_book.waiting.other": "%s Aklat na Priyoridad ang naghihintay. Gamitin ang isa kapag pumirma ka ng aklat.",
   "gui.dungeontrain.priority_book.sign.other": "Gumamit ng Aklat na Priyoridad (%s pa ang natitira)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Pasasalamat sa iyong donasyon. Mas madalas na lilitaw ang iyong aklat sa mga tren ng ibang manlalaro.",
+  "gui.dungeontrain.priority_book.sign_note": "Bilang pasasalamat sa iyong donasyon, magiging Aklat na Priyoridad ang aklat na ito! Mas madalas itong makakarating sa ibang manlalaro.",
   "gui.dungeontrain.priority_book.make.other": "Gawing Aklat na Priyoridad (%s pa ang natitira)",
   "gui.dungeontrain.priority_book.make_confirm": "I-click muli para gumamit ng Aklat na Priyoridad dito",
   "gui.dungeontrain.priority_book.is_priority": "Aklat na Priyoridad.",

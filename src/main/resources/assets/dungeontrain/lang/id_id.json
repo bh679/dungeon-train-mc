@@ -4596,6 +4596,7 @@
   "gui.dungeontrain.priority_book.waiting.other": "%s Buku Prioritas menunggu. Gunakan satu saat kamu menandatangani buku.",
   "gui.dungeontrain.priority_book.sign.other": "Gunakan Buku Prioritas (sisa %s)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Ucapan terima kasih atas donasimu. Bukumu akan jauh lebih sering muncul di kereta pemain lain.",
+  "gui.dungeontrain.priority_book.sign_note": "Sebagai terima kasih atas donasimu, buku ini akan menjadi Buku Prioritas! Buku ini akan lebih sering sampai ke pemain lain.",
   "gui.dungeontrain.priority_book.make.other": "Jadikan Buku Prioritas (sisa %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Klik lagi untuk menggunakan Buku Prioritas di sini",
   "gui.dungeontrain.priority_book.is_priority": "Buku Prioritas.",

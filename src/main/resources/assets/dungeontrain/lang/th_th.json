@@ -4596,6 +4596,7 @@
   "gui.dungeontrain.priority_book.waiting.other": "มีหนังสือสิทธิพิเศษรออยู่ %s เล่ม ใช้ได้ตอนที่คุณลงชื่อในหนังสือ",
   "gui.dungeontrain.priority_book.sign.other": "ใช้หนังสือสิทธิพิเศษ (เหลือ %s เล่ม)",
   "gui.dungeontrain.priority_book.sign_tooltip": "ของขอบคุณสำหรับการบริจาค หนังสือของคุณจะไปปรากฏในขบวนรถไฟของผู้เล่นคนอื่นบ่อยขึ้นมาก",
+  "gui.dungeontrain.priority_book.sign_note": "ขอบคุณสำหรับการบริจาค หนังสือเล่มนี้จะเป็นหนังสือสิทธิพิเศษ! จึงจะไปถึงผู้เล่นคนอื่นได้บ่อยขึ้น",
   "gui.dungeontrain.priority_book.make.other": "ทำให้เล่มนี้เป็นหนังสือสิทธิพิเศษ (เหลือ %s เล่ม)",
   "gui.dungeontrain.priority_book.make_confirm": "คลิกอีกครั้งเพื่อใช้หนังสือสิทธิพิเศษกับเล่มนี้",
   "gui.dungeontrain.priority_book.is_priority": "หนังสือสิทธิพิเศษ",

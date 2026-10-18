@@ -4655,6 +4655,7 @@
   "gui.dungeontrain.priority_book.sign.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "519c0aa7c69b96d2"},
   "gui.dungeontrain.priority_book.sign.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "519c0aa7c69b96d2"},
   "gui.dungeontrain.priority_book.sign_tooltip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "11ecad58d8105efa"},
+  "gui.dungeontrain.priority_book.sign_note": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "44450743045a2065"},
   "gui.dungeontrain.priority_book.make.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4109d827336fd3c3"},
   "gui.dungeontrain.priority_book.make.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "4109d827336fd3c3"},
   "gui.dungeontrain.priority_book.make_confirm": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "01860d5df01f08f7"},

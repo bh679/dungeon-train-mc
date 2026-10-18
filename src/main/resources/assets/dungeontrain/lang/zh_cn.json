@@ -4610,6 +4610,7 @@
   "gui.dungeontrain.priority_book.waiting.other": "你有 %s 本优先之书待用。署名一本书时即可使用。",
   "gui.dungeontrain.priority_book.sign.other": "使用一本优先之书（剩余 %s 本）",
   "gui.dungeontrain.priority_book.sign_tooltip": "这是对你捐助的谢礼。你的书会更频繁地出现在其他玩家的列车上。",
+  "gui.dungeontrain.priority_book.sign_note": "感谢你的捐助，这本书将成为优先之书！它会更常送到其他玩家手中。",
   "gui.dungeontrain.priority_book.make.other": "将这本书设为优先之书（剩余 %s 本）",
   "gui.dungeontrain.priority_book.make_confirm": "再次点击，在这里使用一本优先之书",
   "gui.dungeontrain.priority_book.is_priority": "优先之书。",

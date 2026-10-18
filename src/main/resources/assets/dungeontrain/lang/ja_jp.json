@@ -4596,6 +4596,7 @@
   "gui.dungeontrain.priority_book.waiting.other": "優先本が%s冊待っています。本に署名するときに使えます。",
   "gui.dungeontrain.priority_book.sign.other": "優先本を使う(残り%s冊)",
   "gui.dungeontrain.priority_book.sign_tooltip": "寄付へのお礼です。あなたの本が他のプレイヤーの列車にずっと多く現れるようになります。",
+  "gui.dungeontrain.priority_book.sign_note": "寄付へのお礼として、この本は優先本になります！他のプレイヤーに届くことが多くなります。",
   "gui.dungeontrain.priority_book.make.other": "この本を優先本にする(残り%s冊)",
   "gui.dungeontrain.priority_book.make_confirm": "もう一度クリックすると、ここで優先本を使います",
   "gui.dungeontrain.priority_book.is_priority": "優先本。",

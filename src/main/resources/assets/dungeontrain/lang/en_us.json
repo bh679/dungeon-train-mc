@@ -932,6 +932,7 @@
   "gui.dungeontrain.priority_book.sign.one": "Use a Priority Book (%s left)",
   "gui.dungeontrain.priority_book.sign.other": "Use a Priority Book (%s left)",
   "gui.dungeontrain.priority_book.sign_tooltip": "A thank-you for donating. Your book turns up far more often in other players' trains.",
+  "gui.dungeontrain.priority_book.sign_note": "As a thanks for your donation, this book will be a Priority Book! That means it will reach other players more often.",
   "gui.dungeontrain.priority_book.make.one": "Make this a Priority Book (%s left)",
   "gui.dungeontrain.priority_book.make.other": "Make this a Priority Book (%s left)",
   "gui.dungeontrain.priority_book.make_confirm": "Click again to use a Priority Book here",

@@ -4655,6 +4655,7 @@
   "gui.dungeontrain.priority_book.sign.one": "Utiliser un Livre Prioritaire (%s restant)",
   "gui.dungeontrain.priority_book.sign.other": "Utiliser un Livre Prioritaire (%s restants)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Un remerciement pour ton don. Ton livre apparaît bien plus souvent dans les trains des autres joueurs.",
+  "gui.dungeontrain.priority_book.sign_note": "Pour te remercier de ton don, ce livre sera un Livre Prioritaire ! Il atteindra plus souvent les autres joueurs.",
   "gui.dungeontrain.priority_book.make.one": "En faire un Livre Prioritaire (%s restant)",
   "gui.dungeontrain.priority_book.make.other": "En faire un Livre Prioritaire (%s restants)",
   "gui.dungeontrain.priority_book.make_confirm": "Clique à nouveau pour utiliser un Livre Prioritaire ici",

@@ -17,12 +17,14 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.inventory.BookEditScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FormattedCharSequence;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import java.lang.ref.WeakReference;
+import java.util.List;
 
 /**
  * The "Use a Priority Book (N left)" toggle on the book-and-quill sign screen: the moment a giver
@@ -55,6 +57,14 @@ public final class PriorityBookSignToggle {
     private static final int FRAME_RADIUS = 5;           // rounded corners on the gold, like the book's own
     private static final int FRAME_GOLD = 0xFFFFC21A;
     private static final int FRAME_RIM = 0xFF8A5F00;     // 1 px darker rim round the gold
+
+    // The page column vanilla's sign layout writes in, relative to the book image, and the thank-you note.
+    private static final int SIGN_BELOW_BOOK = 194;      // Sign and Close sits at bookY + 194 (y 196)
+    private static final int PAGE_X = 36, PAGE_W = 114;
+    private static final int WARNING_Y = 82;             // vanilla's "Note! When you sign..." warning
+    private static final int PAGE_BOTTOM = 170;          // last row of writable page
+    private static final int NOTE_INK = 0xFF8A5F00;      // dark gold, the same gold as the frame's rim
+    private static final float MIN_NOTE_SCALE = 0.5F;
 
     // Yellow face, Minecraft-button bevel. Off is a softer yellow so ticking it visibly lights it up.
     private static final int FACE_ON = 0xFFFFC21A;
@@ -166,6 +176,42 @@ public final class PriorityBookSignToggle {
         int t = by + ART_TOP - FRAME_OUT, b = by + ART_BOTTOM + FRAME_OUT;
         roundedRect(g, l - 1, t - 1, r + 1, b + 1, FRAME_RADIUS + 1, FRAME_RIM);
         roundedRect(g, l, t, r, b, FRAME_RADIUS, FRAME_GOLD);
+    }
+
+    /**
+     * While the star is ticked, the thank-you note on the page, under vanilla's "Note! When you sign the
+     * book..." warning: same column, same left alignment, dark gold ink. A translation too long for the
+     * space left above the page bottom is drawn scaled down until it fits. Located from the live Sign
+     * and Close button (vanilla puts it 194 below the book image), so it follows a moved book.
+     */
+    @SubscribeEvent
+    public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
+        if (!(event.getScreen() instanceof BookEditScreen screen) || owner.get() != screen) return;
+        if (!ticked || !applies(screen)) return;
+        Button sign = ((BookEditScreenAccessor) screen).dungeontrain$getFinalizeButton();
+        if (sign == null) return;
+        Font font = Minecraft.getInstance().font;
+        int x = (screen.width - BOOK_IMAGE) / 2 + PAGE_X;
+        int bookY = sign.getY() - SIGN_BELOW_BOOK;
+        int warningLines = font.split(Component.translatable("book.finalizeWarning"), PAGE_W).size();
+        int top = bookY + WARNING_Y + (warningLines + 1) * font.lineHeight;
+        int room = bookY + PAGE_BOTTOM - top;
+        float scale = 1.0F;
+        List<FormattedCharSequence> lines = font.split(PriorityBookMessage.signNote(), PAGE_W);
+        while (lines.size() * font.lineHeight * scale > room && scale > MIN_NOTE_SCALE) {
+            scale -= 0.05F;
+            lines = font.split(PriorityBookMessage.signNote(), (int) (PAGE_W / scale));
+        }
+        GuiGraphics g = event.getGuiGraphics();
+        g.pose().pushPose();
+        g.pose().translate(x, top, 0.0F);
+        g.pose().scale(scale, scale, 1.0F);
+        int y = 0;
+        for (FormattedCharSequence line : lines) {
+            g.drawString(font, line, 0, y, NOTE_INK, false);
+            y += font.lineHeight;
+        }
+        g.pose().popPose();
     }
 
     /** A filled rectangle with corners rounded to {@code radius}, one fill per corner row. */

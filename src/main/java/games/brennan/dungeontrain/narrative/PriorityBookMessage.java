@@ -49,6 +49,11 @@ public final class PriorityBookMessage {
         return Component.translatable(GUI + "sign_tooltip");
     }
 
+    /** The note on the sign page, under vanilla's warning, while the star is selected. */
+    public static Component signNote() {
+        return Component.translatable(GUI + "sign_note");
+    }
+
     /** The vote page control on the author's own approved book: "Make this a Priority Book (N left)". */
     public static Component make(String locale, long n) {
         return PluralRules.clause(locale, GUI + "make", n);

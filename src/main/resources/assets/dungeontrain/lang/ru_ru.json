@@ -4714,6 +4714,7 @@
   "gui.dungeontrain.priority_book.sign.few": "Использовать Приоритетную книгу (осталось %s)",
   "gui.dungeontrain.priority_book.sign.many": "Использовать Приоритетную книгу (осталось %s)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Благодарность за пожертвование. Ваша книга будет попадаться в поездах других игроков гораздо чаще.",
+  "gui.dungeontrain.priority_book.sign_note": "В благодарность за пожертвование эта книга станет Приоритетной книгой! Она будет чаще попадать к другим игрокам.",
   "gui.dungeontrain.priority_book.make.one": "Сделать её Приоритетной книгой (осталась %s)",
   "gui.dungeontrain.priority_book.make.few": "Сделать её Приоритетной книгой (осталось %s)",
   "gui.dungeontrain.priority_book.make.many": "Сделать её Приоритетной книгой (осталось %s)",

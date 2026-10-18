@@ -4596,6 +4596,7 @@
   "gui.dungeontrain.priority_book.waiting.other": "Bạn có %s Sách Ưu Tiên đang chờ. Hãy dùng khi ký tên một cuốn sách.",
   "gui.dungeontrain.priority_book.sign.other": "Dùng một Sách Ưu Tiên (còn %s)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Lời cảm ơn vì bạn đã quyên góp. Cuốn sách của bạn sẽ xuất hiện trên đoàn tàu của người chơi khác thường xuyên hơn nhiều.",
+  "gui.dungeontrain.priority_book.sign_note": "Cảm ơn bạn đã quyên góp, cuốn sách này sẽ là Sách Ưu Tiên! Nó sẽ đến với người chơi khác thường xuyên hơn.",
   "gui.dungeontrain.priority_book.make.other": "Biến cuốn này thành Sách Ưu Tiên (còn %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Nhấp lần nữa để dùng một Sách Ưu Tiên cho cuốn này",
   "gui.dungeontrain.priority_book.is_priority": "Sách Ưu Tiên.",

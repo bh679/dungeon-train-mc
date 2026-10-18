@@ -4596,6 +4596,7 @@
   "gui.dungeontrain.priority_book.waiting.other": "%s Buku Keutamaan sedang menunggu. Gunakan satu apabila anda menandatangani buku.",
   "gui.dungeontrain.priority_book.sign.other": "Gunakan Buku Keutamaan (tinggal %s)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Tanda terima kasih kerana menderma. Buku anda muncul jauh lebih kerap dalam kereta api pemain lain.",
+  "gui.dungeontrain.priority_book.sign_note": "Sebagai tanda terima kasih atas derma anda, buku ini akan menjadi Buku Keutamaan! Ia akan sampai kepada pemain lain dengan lebih kerap.",
   "gui.dungeontrain.priority_book.make.other": "Jadikan ini Buku Keutamaan (tinggal %s)",
   "gui.dungeontrain.priority_book.make_confirm": "Klik sekali lagi untuk menggunakan Buku Keutamaan di sini",
   "gui.dungeontrain.priority_book.is_priority": "Buku Keutamaan.",
