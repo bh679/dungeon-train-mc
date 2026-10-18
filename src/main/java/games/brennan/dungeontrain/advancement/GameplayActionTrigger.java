@@ -61,6 +61,7 @@ import java.util.Optional;
  *   <li>{@code gifted_live_eye} — offered their Live Eye to a viewer who never had one ({@code LiveGiftClient})</li>
  *   <li>{@code voted_live_takeover} / {@code voted_live_takeover_winner} — cast a counted vote in a Live Eye
  *       takeover; voted for the side that won ({@code LiveTakeoverChat})</li>
+ *   <li>{@code live_chat_from_tv} — sent a line to a stream's live chat while wearing a TV ({@code LiveChatBridge})</li>
  *   <li>{@code wore_tv} / {@code wore_tv_15_min} — put a TV on as a hat; kept it on for
  *       {@code threshold} minutes ({@code LiveTvAdvancements})</li>
  * </ul>
