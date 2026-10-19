@@ -27867,6 +27867,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "curseforge-jar-without-detect-addons",
+      "version": "0.1365.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "Leaner CurseForge download",
+      "summary": "The CurseForge version of Dungeon Train no longer carries Stream Detect and DPI Bypass Detect inside it. The CurseForge app installs both as their own mods, as it already did, so nothing changes in game. Modrinth and GitHub downloads still include them.",
+      "highlights": [],
+      "pr": 2129,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
