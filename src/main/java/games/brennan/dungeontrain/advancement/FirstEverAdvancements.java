@@ -24,7 +24,12 @@ import org.slf4j.Logger;
  *
  * <p>All-time and relay-decided: a local store cannot know about other players, and the relay seeds
  * its record book from everything already earned before this existed, so only a true first is ever
- * announced. Relay unreachable → nothing (never a false first). Free Play → nothing.</p>
+ * announced. Relay unreachable → nothing (never a false first).</p>
+ *
+ * <p>Free Play → never claimed, never celebrated, but <em>reported</em>
+ * ({@link AdvancementFirstClient#reportFreePlay}). Discord posts every earn, Free Play included, and
+ * the relay infers records for earns nobody claimed from those posts; the report is what stops a
+ * granted advancement from becoming the record (Roseodil's "It's Not That Simple", 2026-09-06).</p>
  */
 public final class FirstEverAdvancements {
 
@@ -49,7 +54,10 @@ public final class FirstEverAdvancements {
         ResourceLocation id = advancement.id();
         if (!eligible(id)) return;
         if (!DungeonTrainConfig.isWorldInfoToRelay()) return;   // the relay is what knows; no relay, no firsts
-        if (RunIntegrity.isCheated(player)) return;            // Free Play earns are not feats
+        if (RunIntegrity.isCheated(player)) {                  // Free Play earns are not feats
+            AdvancementFirstClient.reportFreePlay(player.getUUID(), id.toString());
+            return;
+        }
         MinecraftServer server = player.getServer();
         if (server == null) return;
         String name = player.getGameProfile().getName();
