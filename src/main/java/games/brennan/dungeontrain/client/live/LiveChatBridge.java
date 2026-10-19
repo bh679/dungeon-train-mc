@@ -75,6 +75,8 @@ public final class LiveChatBridge {
     private static volatile boolean sendFailureLogged;
     /** Part Of the Community's action went to the server this session; one is enough, the grant is one-shot. */
     private static volatile boolean tvChatReported;
+    /** Joined through a TV: the relay's join list is memory only, so a relay restart needs the join again. */
+    private static volatile boolean joinedViaTv;
     private static final AtomicBoolean inFlight = new AtomicBoolean();
     private static final LiveChatSignatures signatures = new LiveChatSignatures();
 
@@ -108,7 +110,7 @@ public final class LiveChatBridge {
         }
         if (!connected) connect(mc, wearingTv);
         long now = System.currentTimeMillis();
-        if (now - lastPollMs < POLL_MS || !inFlight.compareAndSet(false, true)) return;
+        if (now - lastPollMs < LiveRelayRestart.chatPollMs(now, POLL_MS) || !inFlight.compareAndSet(false, true)) return;
         lastPollMs = now;
         LiveFeedClient.chat(base(streaming), cursor).thenAcceptAsync(r -> {
             inFlight.set(false);
@@ -183,16 +185,20 @@ public final class LiveChatBridge {
 
     private static void connect(Minecraft mc, boolean viaTv) {
         connected = true;
+        joinedViaTv = viaTv;
         cursor = -1;
         lastPollMs = 0;
         signatures.clear();
         mc.gui.getChat().addMessage(Component.translatable(LiveChatRules.CONNECTED_KEY,
             LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY));
-        if (viaTv && mc.getUser() != null) {
-            // Only a viewer who can take a Live Eye may be offered one (LiveGiftClient#canReceive).
-            LiveFeedClient.chatJoin(base(false), mc.getUser().getProfileId(), mc.getUser().getName(),
-                LiveGiftClient.canReceive(mc));
-        }
+        if (viaTv) join(mc);
+    }
+
+    private static void join(Minecraft mc) {
+        if (mc.getUser() == null) return;
+        // Only a viewer who can take a Live Eye may be offered one (LiveGiftClient#canReceive).
+        LiveFeedClient.chatJoin(base(false), mc.getUser().getProfileId(), mc.getUser().getName(),
+            LiveGiftClient.canReceive(mc));
     }
 
     private static void disconnect() {
@@ -209,6 +215,8 @@ public final class LiveChatBridge {
         lastPollMs = 0;
         sendFailureLogged = false;
         tvChatReported = false;
+        joinedViaTv = false;
+        LiveRelayRestart.reset();
     }
 
     private static void deliver(Minecraft mc, ChatPage page, GiftNotices gifts) {
@@ -220,9 +228,16 @@ public final class LiveChatBridge {
         if (LiveChatRules.restarted(cursor, page.seq())) {
             // The relay was redeployed: its ring starts again at 1 while the stream carries on. Follow
             // the new head or every later poll asks for seqs that will never come and chat goes silent.
-            cursor = page.seq();
             signatures.clear();
             ChatReactionTracker.forgetLive();
+            if (joinedViaTv) join(mc); // the restart forgot this viewer was in the room
+            if (LiveRelayRestart.inWindow(System.currentTimeMillis())) {
+                // An announced restart: the new ring holds only what was said since the boot (the "back"
+                // line among it), so read it from the start next poll rather than skip to its head.
+                cursor = 0;
+                return;
+            }
+            cursor = page.seq();
         }
         if (mc.player == null || mc.level == null) return;
         UUID me = mc.getUser() != null ? mc.getUser().getProfileId() : null;
@@ -242,7 +257,14 @@ public final class LiveChatBridge {
         boolean streaming = LiveStreamController.get().streaming();
         // This life's "the crowd" death page: who said what in the room while this player was on air.
         if (streaming) LiveLifeChat.onLines(page.lines(), me != null ? me.toString().replace("-", "") : null);
+        long received = System.currentTimeMillis();
         for (ChatLine line : page.lines()) {
+            if (line.restart() != null) {
+                // The relay restarting (LiveRelayRestart): shown in this player's language, not the relay's English.
+                LiveRelayRestart.note(line.restart(), line.ts(), received);
+                chat.addMessage(LiveRelayRestart.line(line.restart(), line.ts()), signatures.sign(line.seq()), tag);
+                continue;
+            }
             if (line.poll() != null) {
                 Component shown = LiveTakeoverChat.onPollLine(line.poll(), me);
                 if (shown != null) chat.addMessage(shown, signatures.sign(line.seq()), tag);
