@@ -133,7 +133,8 @@ public final class PortalSealPlane {
      * {@link #cutFor}. From the world there is only a floor cut, at the <em>sunk</em> floor — the
      * stock floor would cull every valley under it. There is deliberately no cut above the lid: the
      * band's fades mix in ordinary chunks whose peaks can pass the lid height, and a plane there would
-     * shear their tops off. The twins over the lid are left to sit above the clouds instead.</p>
+     * shear their tops off. The twins over the lid are hidden from below by a sky plane on the lid
+     * instead ({@code client.skybox.SunkLidSkyPlane}), which covers only the zone's own columns.</p>
      *
      * @param atticHere whether the camera's column is in the band's slot, where the lid is stamped
      */

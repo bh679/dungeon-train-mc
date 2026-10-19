@@ -14,8 +14,6 @@ public enum PingType {
     OWN_TRIBUTE("own_tribute"),
     /** Someone paid Tribute to a photo they took. */
     PHOTO_TRIBUTED("photo_tributed"),
-    /** A PlayerMob took a photo of them. */
-    MOB_PHOTO("mob_photo"),
     /** A milestone advancement of theirs, with its screenshot. */
     MILESTONE("milestone"),
     /** The review thread opened when a translation they submitted needs a look. */

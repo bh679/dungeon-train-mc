@@ -16432,6 +16432,27 @@
         "Steve",
         "brennan_hatton"
       ]
+    },
+    "2": {
+      "label": "how long the viewers decide, as a duration",
+      "examples": [
+        "20 minutes"
+      ]
+    }
+  },
+  "screen.dungeontrain.live_takeover.note.vote_locked": {
+    "1": {
+      "label": "the player streaming now",
+      "examples": [
+        "Steve",
+        "brennan_hatton"
+      ]
+    },
+    "2": {
+      "label": "how long the viewers decide, as a duration",
+      "examples": [
+        "20 minutes"
+      ]
     }
   },
   "screen.dungeontrain.live_takeover.note.decide": {

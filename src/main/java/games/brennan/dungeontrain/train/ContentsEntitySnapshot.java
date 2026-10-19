@@ -1,8 +1,10 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.ship.ManagedShip;
 import games.brennan.dungeontrain.ship.sable.PhysicsFreeze;
+import games.brennan.dungeontrain.ship.sable.SableEntityCarry;
 import games.brennan.dungeontrain.ship.sable.SableManagedShip;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -242,8 +244,11 @@ public record ContentsEntitySnapshot(
     /**
      * Contents mobs currently aboard {@code ship} that the gate is allowed to sweep.
      *
-     * <p>The AABB is the same inflated {@link ManagedShip#worldAABB} box
-     * {@code PhysicsFreezeController.hasLiveEntityAboard} uses. Note this is deliberately <b>not</b>
+     * <p>The query AABB is the same inflated {@link ManagedShip#worldAABB} box
+     * {@code PhysicsFreezeController.hasLiveEntityAboard} uses; each hit must then actually be
+     * aboard ({@link ContentsDespawnController#isAboard}), so a tagged mob that walked off onto the
+     * ground beside or under the carriage is left in the world rather than frozen into a snapshot
+     * nobody restores. Note this is deliberately <b>not</b>
      * {@link CarriageContentsPlacer#discardEntitiesAt}, which queries a shipyard-coordinate box —
      * correct at placement time, before Sable has re-anchored the entities, and wrong for anything
      * live.</p>
@@ -253,11 +258,21 @@ public record ContentsEntitySnapshot(
         AABB box = new AABB(
             b.minX() - 1, b.minY() - 1, b.minZ() - 1,
             b.maxX() + 1, b.maxY() + 2, b.maxZ() + 1);
+        UUID subLevelId = ship.subLevelId();
         return level.getEntitiesOfClass(Mob.class, box, mob -> mob.isAlive()
             && ContentsDespawnController.isSweepable(
                 BuiltInRegistries.ENTITY_TYPE.getKey(mob.getType()).toString(),
                 mob.getTags(),
-                mob.getPersistentData().getAllKeys()));
+                mob.getPersistentData().getAllKeys())
+            && ContentsDespawnController.isAboard(isCarriedBy(mob, subLevelId),
+                mob.getX(), mob.getY(), mob.getZ(),
+                b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ()));
+    }
+
+    /** Sable is carrying {@code mob} on the sub-level {@code subLevelId}. */
+    private static boolean isCarriedBy(Mob mob, UUID subLevelId) {
+        SubLevel carrier = SableEntityCarry.carrier(mob);
+        return carrier != null && !carrier.isRemoved() && carrier.getUniqueId().equals(subLevelId);
     }
 
     private static Vec3 readShipPos(CompoundTag nbt, ManagedShip ship) {

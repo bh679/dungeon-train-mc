@@ -83,9 +83,30 @@ class LiveTakeoverClientTest {
         assertEquals("aa", opening.holderUuid());
         assertEquals(2, opening.holderWeight());
         assertEquals(-1, opening.yes());
+        assertFalse(opening.holderLocked(), "an old relay sends no holderLocked: the holder votes");
         PollLine closed = p.lines().get(1).poll();
         assertFalse(closed.open());
         assertNull(closed.holderUuid());
         assertEquals(3, closed.no());
+    }
+
+    @Test
+    @DisplayName("past their voting minutes the holder is locked out: the 409 says when, the poll line says so")
+    void holderLocked() {
+        Holder h = LiveTakeoverClient.parseBlocked(result(409,
+            "{\"error\":\"too_soon\",\"holder\":\"Alice\",\"tenureMs\":590000,\"takeoverMinMs\":1200000,\"holderVoteMs\":600000,\"streamCount\":1}"));
+        assertEquals(600_000, h.holderVoteMs());
+        assertFalse(h.holderLockedAfter(9_999));
+        assertTrue(h.holderLockedAfter(10_000));
+        assertTrue(h.voteNeededAfter(600_000), "still a vote until the 20 minutes are up");
+        Holder old = LiveTakeoverClient.parseBlocked(result(409,
+            "{\"error\":\"too_soon\",\"holder\":\"Alice\",\"tenureMs\":1,\"takeoverMinMs\":600000}"));
+        assertEquals(Holder.DEFAULT_HOLDER_VOTE_MS, old.holderVoteMs(), "an old relay: the holder votes for its whole window");
+        ChatPage p = LiveFeedClient.parseChat(result(200, """
+            {"live":true,"seq":1,"messages":[
+              {"seq":1,"author":"Dungeon Train","content":"Bob wants to take over","source":"poll",
+               "poll":{"id":"p1","requester":"Bob","holder":"Alice","holderUuid":"aa","endsTs":99,"holderWeight":0,"holderLocked":true,"state":"open"}}
+            ]}"""));
+        assertTrue(p.lines().get(0).poll().holderLocked());
     }
 }

@@ -15,8 +15,9 @@ import java.util.List;
  * ({@link DungeonTrain#manifestWebhookOverride()}) — credited to the mob by name.
  *
  * <p>Posted in the photographed player's name (the webhook identity), with the mob as the
- * photographer in the title. No @-mention: an everyday moment, not a milestone. Best-effort — Discord
- * can never disturb the photo.</p>
+ * photographer in the title. The @-mention rides the player's "Photos tributed" ping toggle
+ * ({@link PingType#PHOTO_TRIBUTED}) on purpose: a toggle of its own would spoil the mechanic, which is
+ * a hidden advancement. Best-effort — Discord can never disturb the photo.</p>
  */
 public final class PlayerMobPhotoReporter {
 
@@ -42,7 +43,7 @@ public final class PlayerMobPhotoReporter {
             LOGGER.info("[DungeonTrain] {} photographed {} — posting it to the passenger log.", photographer, name);
             DiscordService.get().postReportTopLevel(subject, title(photographer, name), description(photographer, name),
                     List.of(), png, PHOTO_FILENAME, EMBED_COLOR,
-                    DiscordPings.forPlayer(DungeonTrain.manifestWebhookOverride(), subject.getUUID(), PingType.MOB_PHOTO));
+                    DiscordPings.forPlayer(DungeonTrain.manifestWebhookOverride(), subject.getUUID(), PingType.PHOTO_TRIBUTED));
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] PlayerMob photo post failed: {}", t.toString());
         }

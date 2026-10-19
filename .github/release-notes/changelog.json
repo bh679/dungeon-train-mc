@@ -28131,9 +28131,9 @@
       "highlights": [],
       "pr": 2153,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "log-request-upload-feedback",
@@ -28148,9 +28148,9 @@
       "highlights": [],
       "pr": 2151,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "quicker-streams-live-delay",
@@ -28169,9 +28169,9 @@
       ],
       "pr": 2154,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "editor-clear-long-contents",
@@ -28186,9 +28186,9 @@
       "highlights": [],
       "pr": 2155,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "enderchest-photos-keep-pictures",
@@ -28205,9 +28205,9 @@
       ],
       "pr": 2156,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "nether-core-write-gate",
@@ -28221,9 +28221,9 @@
       "summary": "Some of the heavier terrain the train rides through now generates with less work per chunk, so the server has more breathing room while new ground is being laid down. Nothing looks different.",
       "highlights": [],
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "advancement-fix-2159",
@@ -28238,9 +28238,9 @@
       "highlights": [],
       "pr": 2159,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "live-relay-restart-notice",
@@ -28259,9 +28259,9 @@
       ],
       "pr": 2161,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "advancement-profile-upkeep",
@@ -28275,13 +28275,202 @@
       "highlights": [],
       "pr": 2160,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "balance-tweak",
+      "version": "0.1387.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Balance tweak",
+      "summary": "Balance tweak.",
+      "highlights": [],
+      "pr": 2162,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "options-hint-hover-tooltip",
+      "version": "0.1388.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Settings descriptions on hover",
+      "summary": "Hover any setting in the Dungeon Train options to read its full description, even when it is too long to fit on the row.",
+      "highlights": [],
+      "pr": 2163,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "discord-ping-settings-tidy",
+      "version": "0.1388.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Ping settings tidy",
+      "summary": "The Discord ping list in Account settings is a little shorter.",
+      "highlights": [],
+      "pr": 2164,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "random-photo-frames",
+      "version": "0.1390.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Photos on the walls",
+      "summary": "Some carriages now hang framed photos taken by other players, and a different set turns up on every train.",
+      "highlights": [
+        "New carriages with photo frames on the walls.",
+        "Picture frames in mirrored carriages now hang on the right wall.",
+        "Fixed old photos staying behind in a frame, and frames dropping as items."
+      ],
+      "pr": 2166,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
+    },
+    {
+      "id": "takeover-vote-twenty-minutes",
+      "version": "0.1391.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Longer takeover votes",
+      "summary": "Taking over someone's Live Eye stream now needs a vote from the viewers for their first 20 minutes on air. For the first 10 the streamer votes too; after that, the viewers decide on their own.",
+      "highlights": [],
+      "pr": 2168,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
+    },
+    {
+      "id": "live-page-update",
+      "version": "0.1390.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live page update",
+      "summary": "A small improvement to the Live page.",
+      "highlights": [],
+      "pr": 2167,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
+    },
+    {
+      "id": "train-sound-unmute-restart",
+      "version": "0.1393.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Train sound comes back after unmuting",
+      "summary": "Turning your game sound, ambient sound or the train engine volume down to zero and back up now brings the train's rumble straight back at its normal volume, instead of leaving it silent until you rejoined the world.",
+      "highlights": [],
+      "pr": 2169,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
+    },
+    {
+      "id": "sky-fix",
+      "version": "0.1390.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "pr": 2165,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
+    },
+    {
+      "id": "leaf-litter-stays-put",
+      "version": "0.1394.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Leaf fix",
+      "summary": "Fallen leaves and small plants no longer crumble away and drop in some of the stranger places the line runs through.",
+      "highlights": [],
+      "pr": 2170,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
+    },
+    {
+      "id": "sky-fix-2",
+      "version": "0.1396.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
+    },
+    {
+      "id": "walked-off-mobs-stay",
+      "version": "0.1397.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs that step off the train stay put",
+      "summary": "Animals and monsters that wander off a carriage onto the ground beside the track no longer vanish. They stay where they stepped off, just like ones you knock off.",
+      "highlights": [],
+      "pr": 2174,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
     },
     {
       "id": "contribute-currency-setting",
-      "version": "0.1387.0",
+      "version": "0.1398.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -28301,18 +28490,19 @@
     },
     {
       "id": "contribute-screen-rewards",
-      "version": "0.1387.0",
+      "version": "0.1398.0",
       "type": "feat",
       "tags": [
         "feature",
         "ui"
       ],
       "title": "A new Contribute screen",
-      "summary": "Support the solo-dev now opens one Contribute screen, the same one the engine room shows. Give to the dev, or see Community Rewards: monthly gifts that switch something on for everyone.",
+      "summary": "Support the solo-dev now opens one Contribute screen, the same one the engine room shows. Give to the dev, or give a Community Reward: a month of something switched on for everyone.",
       "highlights": [
         "Support the solo-dev opens Contribute from the title screen, the pause menu and Credits",
-        "A new rewards page: Community Rewards for everyone, coming soon, and Personal Rewards showing what each gift brings you",
-        "Every gift puts your name aboard and brings Priority Books",
+        "Quicker Streams can now be given: for a month, everyone watches streams about 6 seconds behind instead of 30. More Community Rewards are coming",
+        "A new rewards page: Community Rewards for everyone, and Personal Rewards showing what each gift brings you",
+        "Every gift puts your name aboard, and gifts to the dev also bring Priority Books",
         "Copying the books you read is now a thank-you for gifts of $30 or more"
       ],
       "pr": 2146,
