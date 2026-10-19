@@ -9,6 +9,7 @@
     "NetherPortalBlockBandJumpMixin",
     "NetherPortalBlockInvoker",
     "PhotographFrameItemPlaceMixin",
+    "WitherRoseBlockCreditMixin",
     "RecipeManagerDisableMixin",
     "PlayerFudgeSpawnMixin",
     "PlayerSprintFlyMixin",
