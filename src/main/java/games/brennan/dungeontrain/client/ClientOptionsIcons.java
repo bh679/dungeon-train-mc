@@ -63,6 +63,7 @@ final class ClientOptionsIcons {
             case BACKPACK_AUTO_COLLECT -> Icon.item(Items.HOPPER);
             case BOOK_FILE_BUTTONS -> Icon.item(Items.KNOWLEDGE_BOOK);
             case BOOK_INSERT_PAGE_BUTTON -> Icon.item(Items.PAPER);
+            case BOOK_COPY_BUTTON -> Icon.item(Items.WRITABLE_BOOK);
             case AI_POLICY -> Icon.item(Items.PAPER); // the same paper AiPolicyIconButton carries
             case TRANSLATE -> LANGUAGE;
             case BOOK_LANGUAGES -> Icon.item(Items.BOOKSHELF);

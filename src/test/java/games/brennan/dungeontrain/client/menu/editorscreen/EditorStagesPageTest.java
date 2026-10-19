@@ -31,6 +31,66 @@ final class EditorStagesPageTest {
         return new EditorRosterPacket.StageEntry(v, blocks, unique, List.of("floor:a", "walls:b"));
     }
 
+    private static EditorRosterPacket.StageEntry grouped(String id, int min, int max, String group) {
+        EditorRosterPacket.StageEntry s = stage(id, min, max, 1, 0);
+        return new EditorRosterPacket.StageEntry(s.stage(), s.blocks(), s.totalUnique(), s.parts(), s.palette(), group);
+    }
+
+    private static List<EditorRosterPacket.StageEntry> withWood() {
+        return List.of(stage("stone", 0, -1, 1, 0), grouped("spruce", 436, 465, "wood"),
+            stage("desert", 10, 40, 1, 0), grouped("acacia", 176, 205, "wood"), grouped("birch", 161, 175, "wood"));
+    }
+
+    @Test
+    @DisplayName("a family folds to one row: it shows its first member, spans every band, and lists the rest")
+    void familyFolds() {
+        List<String> picked = new ArrayList<>();
+        List<String> opened = new ArrayList<>();
+        List<EditorStagesPage.Row> rows = EditorStagesPage.groupedRows(withWood(), EditorStagesPage.Sort.DEFAULT,
+            picked::add, g -> null, opened::add);
+        assertEquals(List.of("desert", "stone", "acacia"), rows.stream().map(EditorStagesPage.Row::stageId).toList(),
+            "Wood sorts by its own name, after stone");
+        EditorStagesPage.Row wood = rows.get(2);
+        assertTrue(wood.isGroup());
+        assertEquals("wood", wood.group());
+        assertEquals(List.of("acacia", "birch", "spruce"), wood.memberIds());
+        assertTrue(wood.stands("birch"), "a member being shown marks the family chosen");
+        assertFalse(rows.get(0).stands("birch"));
+        CommandMenuEntry[] cells = MenuRowPainter.cellsOf(wood.entry());
+        CommandMenuEntry.ClientAction name = assertInstanceOf(CommandMenuEntry.ClientAction.class, cells[EditorStagesPage.NAME_CELL]);
+        assertEquals("Wood: acacia" + EditorStagesPage.DROPDOWN, name.label());
+        assertEquals("161 → 465", ((CommandMenuEntry.Label) cells[EditorStagesPage.LEVEL_CELL]).text());
+        name.action().run();
+        assertEquals(List.of("acacia"), picked);
+        assertEquals(List.of("wood"), opened);
+    }
+
+    @Test
+    @DisplayName("a family shows its remembered pick; by level it sits at its lowest band")
+    void familyPickAndLevelSort() {
+        EditorStagesPage.Sort byLevel = EditorStagesPage.Sort.DEFAULT.toggled(EditorStagesPage.Column.LEVEL);
+        List<EditorStagesPage.Row> rows = EditorStagesPage.groupedRows(withWood(), byLevel, s -> { },
+            g -> "spruce", g -> { });
+        assertEquals(List.of("stone", "desert", "spruce"), rows.stream().map(EditorStagesPage.Row::stageId).toList());
+        assertEquals(List.of("birch", "acacia", "spruce"), rows.get(2).memberIds(), "members keep the level order");
+        assertEquals("Wood: spruce" + EditorStagesPage.DROPDOWN,
+            ((CommandMenuEntry.ClientAction) MenuRowPainter.cellsOf(rows.get(2).entry())[EditorStagesPage.NAME_CELL]).label());
+        List<EditorStagesPage.Row> unknown = EditorStagesPage.groupedRows(withWood(), byLevel, s -> { },
+            g -> "nether", g -> { });
+        assertEquals("birch", unknown.get(2).stageId(), "a pick that is not a member falls back to the first");
+    }
+
+    @Test
+    @DisplayName("an open-topped member leaves the family's band open")
+    void familyOpenTop() {
+        List<EditorStagesPage.Row> rows = EditorStagesPage.groupedRows(
+            List.of(grouped("a", 5, 10, "wood"), grouped("b", 20, -1, "wood")), EditorStagesPage.Sort.DEFAULT,
+            s -> { }, g -> null, g -> { });
+        assertEquals(1, rows.size());
+        assertEquals("5 → " + EditorStagesPage.OPEN_MAX,
+            ((CommandMenuEntry.Label) MenuRowPainter.cellsOf(rows.get(0).entry())[EditorStagesPage.LEVEL_CELL]).text());
+    }
+
     @Test
     @DisplayName("one row per stage: the title selects it, the level cell reads min → max")
     void rows() {

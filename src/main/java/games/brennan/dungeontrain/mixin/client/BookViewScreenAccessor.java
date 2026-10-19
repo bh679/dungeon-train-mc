@@ -11,10 +11,14 @@ import org.spongepowered.asm.mixin.gen.Accessor;
  * <ul>
  *   <li>{@code currentPage}, so the book-read telemetry
  *       ({@link games.brennan.dungeontrain.client.BookReadClientEvents}) can sample which page the
- *       player is on each client tick;</li>
+ *       player is on each client tick, and so
+ *       {@link games.brennan.dungeontrain.client.ClientActivityReporter} can renew a reader's
+ *       presence on each new page;</li>
  *   <li>{@code backButton}, so the vote page
  *       ({@link games.brennan.dungeontrain.client.BookVoteClientEvents}) can find out where the book
- *       is <em>actually</em> being drawn — see that class's {@code bookTop()}.</li>
+ *       is <em>actually</em> being drawn — see that class's {@code bookTop()};</li>
+ *   <li>{@code bookAccess}, so the supporters' Copy button
+ *       ({@link games.brennan.dungeontrain.client.BookCopyButton}) copies the pages as shown.</li>
  * </ul>
  *
  * <p>Applies to {@code LecternScreen} too (it extends {@code BookViewScreen}), though the telemetry
@@ -33,4 +37,8 @@ public interface BookViewScreenAccessor {
      */
     @Accessor("backButton")
     PageButton dungeontrain$getBackButton();
+
+    /** The pages the screen is showing, including any DT has appended (the vote page). */
+    @Accessor("bookAccess")
+    BookViewScreen.BookAccess dungeontrain$getBookAccess();
 }

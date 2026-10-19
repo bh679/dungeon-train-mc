@@ -308,6 +308,8 @@ public final class ClientDisplayConfig {
      */
     public static final ModConfigSpec.BooleanValue DPI_BYPASS_WARNING_OPTED_OUT;
     public static final ModConfigSpec.BooleanValue BOOK_AUTHOR_BURN_CHAT;
+    /** Supporter perk: a Copy button on the book-reading screen. See {@link #isBookCopyButtonEnabled()}. */
+    public static final ModConfigSpec.BooleanValue BOOK_COPY_BUTTON;
     /** Your own pets can't be hurt by you — see {@code OwnPetProtectionEvents}. */
     public static final ModConfigSpec.BooleanValue PROTECT_OWN_PETS;
     /** Chat line when a new Dungeon Train release lands mid-session — see {@code LiveUpdateNotice}. */
@@ -457,6 +459,7 @@ public final class ClientDisplayConfig {
         CONFIG_DEVIATION_ACKNOWLEDGED = pair.getLeft().configDeviationAcknowledged;
         DPI_BYPASS_WARNING_OPTED_OUT = pair.getLeft().dpiBypassWarningOptedOut;
         BOOK_AUTHOR_BURN_CHAT = pair.getLeft().bookAuthorBurnChat;
+        BOOK_COPY_BUTTON = pair.getLeft().bookCopyButton;
         PROTECT_OWN_PETS = pair.getLeft().protectOwnPets;
         UPDATE_NOTICE_CHAT = pair.getLeft().updateNoticeChat;
         LOW_MEMORY_NOTICE_CHAT = pair.getLeft().lowMemoryNoticeChat;
@@ -591,7 +594,7 @@ public final class ClientDisplayConfig {
 
         b.push("afkPause");
         ModConfigSpec.BooleanValue afkPauseEnabled = b
-                .comment("Open the pause menu when you go AFK: the mouse has not moved for 30 seconds, or there has been no other input for 5 minutes (the same rules that stop your time on the train). Never in Free Play. In singleplayer this freezes the world, so the train does not carry you into danger while you are away. In multiplayer it only opens the menu. Set false to never pause automatically.")
+                .comment("Open the pause menu when you go AFK: no key, click or mouse movement for 2 minutes, or 5 minutes with a screen open (a book, a chest, the inventory). Your time on the train stops sooner, after 30 seconds of a still mouse, whether or not the menu opens. Never in Free Play. In singleplayer this freezes the world, so the train does not carry you into danger while you are away. In multiplayer it only opens the menu. Set false to never pause automatically.")
                 .define("enabled", true);
         b.pop();
 
@@ -866,6 +869,12 @@ public final class ClientDisplayConfig {
                          "catch fire, and this is the only place their writer is named after the fact.",
                          "Toggle in-game via Options > Dungeon Train, or the X menu -> Options. Off by default.")
                 .define("authorBurnChat", false);
+        ModConfigSpec.BooleanValue bookCopyButton = b
+                .comment("Show a Copy button on the book-reading screen that puts the whole book (title, author",
+                         "and every page) on the clipboard. A thank-you for supporters: it only appears for",
+                         "players who have given $10 AUD or more, and only while this is on.",
+                         "Toggle in-game via Options > Dungeon Train. Off by default.")
+                .define("copyButton", false);
         b.pop();
 
         b.push("pets");
@@ -937,7 +946,7 @@ public final class ClientDisplayConfig {
                 deathScreenLastNps, deathFormAnsweredIds, deathFormMutedIds,
                 politicalFilter, contentMode, devChatEnabled, customContentPreference,
                 customContentLastAnswer,
-                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, protectOwnPets, updateNoticeChat,
+                configDeviationAcknowledged, dpiBypassWarningOptedOut, bookAuthorBurnChat, bookCopyButton, protectOwnPets, updateNoticeChat,
                 lowMemoryNoticeChat, devHud, hideOtherAdvancementTabs,
                 commandMenuSpace, templateBlocksMenuSpace, containerContentsMenuSpace,
                 blockVariantMenuSpace,
@@ -1338,6 +1347,23 @@ public final class ClientDisplayConfig {
      */
     public static boolean isBookAuthorBurnChatEnabled() {
         return isLoaded() && BOOK_AUTHOR_BURN_CHAT.get();
+    }
+
+    /**
+     * Has the player switched on the book screen's Copy button? Defaults to {@code false}. Only half the
+     * gate: {@link games.brennan.dungeontrain.client.BookCopyButton} also needs
+     * {@link games.brennan.dungeontrain.client.support.SupporterStatus#isSupporter()}.
+     */
+    public static boolean isBookCopyButtonEnabled() {
+        return isLoaded() && BOOK_COPY_BUTTON.get();
+    }
+
+    /** Persist the Copy-button toggle. Idempotent: skips the TOML write when unchanged. */
+    public static void setBookCopyButton(boolean value) {
+        if (!isLoaded()) return;
+        if (BOOK_COPY_BUTTON.get() == value) return;
+        BOOK_COPY_BUTTON.set(value);
+        BOOK_COPY_BUTTON.save();
     }
 
     public static void setBookAuthorBurnChat(boolean value) {
@@ -2200,6 +2226,7 @@ public final class ClientDisplayConfig {
             ModConfigSpec.ConfigValue<String> configDeviationAcknowledged,
             ModConfigSpec.BooleanValue dpiBypassWarningOptedOut,
             ModConfigSpec.BooleanValue bookAuthorBurnChat,
+            ModConfigSpec.BooleanValue bookCopyButton,
             ModConfigSpec.BooleanValue protectOwnPets,
             ModConfigSpec.BooleanValue updateNoticeChat,
             ModConfigSpec.BooleanValue lowMemoryNoticeChat,

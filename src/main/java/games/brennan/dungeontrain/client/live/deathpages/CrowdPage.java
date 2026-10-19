@@ -206,7 +206,7 @@ public final class CrowdPage {
      */
     private int drawRow(GuiGraphics g, String narration, Ranked r, int left, int w, int y, boolean source, int figureH) {
         Font font = chrome.font();
-        String uuid = "game".equals(r.source()) ? r.uuid() : null;
+        String uuid = r.uuid(); // a website watcher has one when their Discord is linked to a game account
         int figW = figureWidth(figureH);
         int h = rowHeight(font, narration, r, w, source, figureH);
         int figCx = left + ROW_INDENT + figW / 2;

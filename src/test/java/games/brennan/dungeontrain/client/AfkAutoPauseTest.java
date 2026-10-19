@@ -1,65 +1,87 @@
 package games.brennan.dungeontrain.client;
 
-import games.brennan.dungeontrain.event.PlayerActivityTracker.Reason;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static games.brennan.dungeontrain.client.AfkAutoPause.IDLE_PAUSE_MS;
+import static games.brennan.dungeontrain.client.AfkAutoPause.IDLE_PAUSE_SCREEN_MS;
+import static games.brennan.dungeontrain.client.AfkAutoPause.lookMoved;
 import static games.brennan.dungeontrain.client.AfkAutoPause.shouldPause;
+import static games.brennan.dungeontrain.client.AfkAutoPause.thresholdMs;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Pure-logic coverage for {@link AfkAutoPause#shouldPause}. */
+/** Pure-logic coverage for {@link AfkAutoPause}. */
 final class AfkAutoPauseTest {
 
-    private static final int NONE = -1;
-    private static final int TRACKING = Reason.TRACKING.ordinal();
-    private static final int PAUSED = Reason.PAUSED.ordinal();
-    private static final int MOUSE_IDLE = Reason.MOUSE_IDLE.ordinal();
-    private static final int INPUT_IDLE = Reason.INPUT_IDLE.ordinal();
-    private static final int NO_PROGRESS = Reason.NO_PROGRESS.ordinal();
+    private static final long SECOND = 1_000L;
 
-    @Test
-    @DisplayName("pauses on the edge into either AFK reason")
-    void pausesOnEdgeIntoAfk() {
-        assertTrue(shouldPause(TRACKING, MOUSE_IDLE, true, false, false, false));
-        assertTrue(shouldPause(TRACKING, INPUT_IDLE, true, false, false, false));
-        assertTrue(shouldPause(NO_PROGRESS, MOUSE_IDLE, true, false, false, false));
-        assertTrue(shouldPause(NONE, MOUSE_IDLE, true, false, false, false));
+    /** In the world, no screen, setting on, nothing suppressing it. */
+    private static boolean inWorld(long idleMs) {
+        return shouldPause(idleMs, false, false, false, true, false, false);
+    }
+
+    /** A book, chest, inventory or photo open. */
+    private static boolean onScreen(long idleMs) {
+        return shouldPause(idleMs, true, false, false, true, false, false);
     }
 
     @Test
-    @DisplayName("does not re-pause while AFK persists or moves between AFK reasons")
-    void edgeOnly() {
-        assertFalse(shouldPause(MOUSE_IDLE, MOUSE_IDLE, true, false, false, false));
-        assertFalse(shouldPause(MOUSE_IDLE, INPUT_IDLE, true, false, false, false));
-        assertFalse(shouldPause(INPUT_IDLE, MOUSE_IDLE, true, false, false, false));
+    @DisplayName("thresholds are 2 minutes in the world and 5 minutes on a screen")
+    void thresholds() {
+        assertEquals(120 * SECOND, IDLE_PAUSE_MS);
+        assertEquals(300 * SECOND, IDLE_PAUSE_SCREEN_MS);
+        assertEquals(IDLE_PAUSE_MS, thresholdMs(false));
+        assertEquals(IDLE_PAUSE_SCREEN_MS, thresholdMs(true));
     }
 
     @Test
-    @DisplayName("non-AFK reasons never pause")
-    void nonAfkNeverPauses() {
-        assertFalse(shouldPause(TRACKING, TRACKING, true, false, false, false));
-        assertFalse(shouldPause(TRACKING, PAUSED, true, false, false, false));
+    @DisplayName("in the world: no pause before 2 minutes idle, pause at 2 minutes")
+    void inWorldWaitsTwoMinutes() {
+        assertFalse(inWorld(30 * SECOND));
+        assertFalse(inWorld(119 * SECOND));
+        assertTrue(inWorld(120 * SECOND));
+        assertTrue(inWorld(600 * SECOND));
     }
 
     @Test
-    @DisplayName("disabled, screen open, Free Play, or VR suppresses the pause")
+    @DisplayName("on a screen: no pause before 5 minutes idle, pause at 5 minutes")
+    void onScreenWaitsFiveMinutes() {
+        assertFalse(onScreen(120 * SECOND));
+        assertFalse(onScreen(299 * SECOND));
+        assertTrue(onScreen(300 * SECOND));
+    }
+
+    @Test
+    @DisplayName("once per idle spell")
+    void oncePerSpell() {
+        assertFalse(shouldPause(600 * SECOND, false, false, true, true, false, false));
+        assertFalse(shouldPause(600 * SECOND, true, false, true, true, false, false));
+    }
+
+    @Test
+    @DisplayName("never over the pause menu or its settings")
+    void notOverPauseMenu() {
+        assertFalse(shouldPause(600 * SECOND, true, true, false, true, false, false));
+    }
+
+    @Test
+    @DisplayName("disabled, Free Play, or VR suppresses the pause")
     void suppressed() {
-        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, false, false, false, false));
-        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, true, false, false));
-        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, false, true, false));
-        assertFalse(shouldPause(TRACKING, INPUT_IDLE, true, false, true, false));
-        assertFalse(shouldPause(TRACKING, MOUSE_IDLE, true, false, false, true));
+        assertFalse(shouldPause(600 * SECOND, false, false, false, false, false, false));
+        assertFalse(shouldPause(600 * SECOND, false, false, false, true, true, false));
+        assertFalse(shouldPause(600 * SECOND, false, false, false, true, false, true));
     }
 
     @Test
-    @DisplayName("not getting anywhere pauses from tracking only, so Back to Game sticks")
-    void noProgressPausesFromTrackingOnly() {
-        assertTrue(shouldPause(TRACKING, NO_PROGRESS, true, false, false, false));
-        // Resuming leaves the player as stuck as before: no second pause.
-        assertFalse(shouldPause(PAUSED, NO_PROGRESS, true, false, false, false));
-        assertFalse(shouldPause(MOUSE_IDLE, NO_PROGRESS, true, false, false, false));
-        assertFalse(shouldPause(NONE, NO_PROGRESS, true, false, false, false));
-        assertFalse(shouldPause(TRACKING, NO_PROGRESS, true, false, true, false));
+    @DisplayName("camera turns past half a degree count as the mouse, on the shortest arc")
+    void lookMovement() {
+        assertFalse(lookMoved(Float.NaN, Float.NaN, 10f, 0f));
+        assertFalse(lookMoved(10f, 0f, 10.4f, 0.4f));
+        assertTrue(lookMoved(10f, 0f, 11f, 0f));
+        assertTrue(lookMoved(10f, 0f, 10f, -1f));
+        assertFalse(lookMoved(359.8f, 0f, 0.1f, 0f));
+        assertTrue(lookMoved(359f, 0f, 1f, 0f));
     }
 }

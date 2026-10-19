@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.client.AfkAutoPause;
 import games.brennan.dungeontrain.client.VersionHudOverlay;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -58,7 +57,6 @@ public record ActivityStatePacket(boolean countingTrain, int reason,
     public static void handle(ActivityStatePacket packet, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
             VersionHudOverlay.setActivityState(packet);
-            AfkAutoPause.onActivityState(packet);
         });
     }
 }

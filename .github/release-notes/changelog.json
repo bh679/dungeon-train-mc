@@ -27848,6 +27848,216 @@
       "highlights": [],
       "pr": 2125,
       "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "supporter-copy-book-button",
+      "version": "0.1363.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "A small thank-you for supporters",
+      "summary": "Supporters have something new to find in Options.",
+      "highlights": [],
+      "date": "2026-10-18",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "curseforge-jar-without-detect-addons",
+      "version": "0.1365.0",
+      "type": "chore",
+      "tags": [
+        "compatibility",
+        "internal"
+      ],
+      "title": "Leaner CurseForge download",
+      "summary": "The CurseForge version of Dungeon Train no longer carries Stream Detect and DPI Bypass Detect inside it. The CurseForge app installs both as their own mods, as it already did, so nothing changes in game. Modrinth and GitHub downloads still include them.",
+      "highlights": [],
+      "pr": 2129,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "patient-autopause-long-reads",
+      "version": "0.1366.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Take your time",
+      "summary": "Slower, quieter play is treated more kindly.",
+      "highlights": [],
+      "pr": 2131,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "flower-fix",
+      "version": "0.1368.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Flower fix",
+      "summary": "Flower fix.",
+      "highlights": [],
+      "pr": 2132,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "camera-hidden-challenge-hints",
+      "version": "0.1369.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "The camera tells you when a shot almost counted",
+      "summary": "Chasing one of the hidden photo challenges? If your shot nearly made it, a line in chat now says what was off, like a subject standing too far away or one whose eyes didn't make the frame.",
+      "highlights": [],
+      "pr": 2136,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "mobs-survive-carriage-impacts",
+      "version": "0.1370.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs no longer die to passing carriages",
+      "summary": "Mobs riding with you, and the ones you meet along the way, no longer drop dead from \"kinetic energy\" when a carriage clips them.",
+      "highlights": [
+        "Mobs no longer die from being clipped by a carriage"
+      ],
+      "pr": 2139,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "modded-wood-stages",
+      "version": "0.1371.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Many new woods down the line",
+      "summary": "Ride far enough and the carriages start wearing timber you have never seen on the train, one new wood after another, each with its own colours, before the familiar spruce takes over again.",
+      "highlights": [
+        "Carriages deep into a run are built from many new kinds of wood.",
+        "Every wood brings its own colour scheme."
+      ],
+      "pr": 2140,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "upside-down-reassembly-chests",
+      "version": "0.1372.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A tidier journey",
+      "summary": "Some places along the line look a little more settled.",
+      "highlights": [],
+      "pr": 2138,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "dtp-lands-clear-of-portals",
+      "version": "0.1373.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "internal"
+      ],
+      "title": "Dev command improvement",
+      "summary": "Improved a developer command.",
+      "highlights": [],
+      "pr": 2142,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "editor-wood-stages-dropdown",
+      "version": "0.1374.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Wood stages grouped in the editor",
+      "summary": "The editor's Stages tab now shows every wood stage as one Wood entry. Click it to choose which wood stage to view from a list beside it.",
+      "highlights": [
+        "Each wood stage shows its own planks as its icon, so they are easy to tell apart."
+      ],
+      "pr": 2143,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "linked-web-watcher-skins",
+      "version": "0.1375.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Website watchers wear their own skin",
+      "summary": "Viewers watching your stream from the website now appear in their own Minecraft skin on the crowd page when their Discord is linked to their game account.",
+      "highlights": [],
+      "pr": 2144,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "bobby-fair-play",
+      "version": "0.1376.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Bobby is now an approved mod",
+      "summary": "Playing with Bobby no longer turns your run into Free Play. Bobby keeps the land you have already ridden past on screen beyond a server's view distance, so it now sits on the approved mod list next to Distant Horizons. On NeoForge, use the Bobby ReNeoForged port.",
+      "highlights": [],
+      "pr": 2147,
+      "date": "2026-10-19",
       "released": false,
       "released_in": null,
       "released_at": null
