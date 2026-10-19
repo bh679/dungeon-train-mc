@@ -94,11 +94,11 @@ public final class TitleScreenSupportButton {
         int iconW = h;
         int supportW = showPatreon ? w - iconW - GAP : w;
 
-        event.addListener(new DarkTintedButton(x, y, supportW, h, SUPPORT_LABEL, b -> {
+        event.addListener(ContributeScreen.withSupportTooltip(new DarkTintedButton(x, y, supportW, h, SUPPORT_LABEL, b -> {
             // The headline funnel metric: how many players tap "Support the Mod" at all.
             UiAnalytics.click(UiAnalytics.SURFACE_TITLE_SCREEN, UiAnalytics.TARGET_SUPPORT);
             Minecraft.getInstance().setScreen(new ContributeScreen(titleScreen));
-        }));
+        })));
 
         if (showPatreon) {
             PatreonIconButton patreon = new PatreonIconButton(x + supportW + GAP, y, iconW,

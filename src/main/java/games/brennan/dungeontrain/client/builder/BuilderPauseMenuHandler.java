@@ -175,11 +175,11 @@ public final class BuilderPauseMenuHandler {
         y = BuilderPauseMenuLayout.rowY(firstRowY, slotH, 2);
         event.addListener(new DarkTintedButton(slotX, y, halfW, slotH, DISCORD,
                 b -> openDiscord(screen)));
-        event.addListener(new DarkTintedButton(rightX, y, rightW, slotH, SUPPORT,
+        event.addListener(ContributeScreen.withSupportTooltip(new DarkTintedButton(rightX, y, rightW, slotH, SUPPORT,
                 b -> {
                     UiAnalytics.click(UiAnalytics.SURFACE_PAUSE_MENU, UiAnalytics.TARGET_SUPPORT);
                     Minecraft.getInstance().setScreen(new ContributeScreen(screen));
-                }));
+                })));
 
         // Row 3: Mods | Feedback. Feedback runs the mod's own bug-report survey, which
         // BugLogReporter attaches gzipped log tails to — a builder reporting a problem should

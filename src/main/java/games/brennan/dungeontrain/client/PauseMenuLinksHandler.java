@@ -91,12 +91,12 @@ public final class PauseMenuLinksHandler {
         event.removeListener(feedback);
         event.removeListener(reportBugs);
 
-        event.addListener(new DarkTintedButton(x, y, w, h, SUPPORT_LABEL, b -> {
+        event.addListener(ContributeScreen.withSupportTooltip(new DarkTintedButton(x, y, w, h, SUPPORT_LABEL, b -> {
             // The headline funnel metric, same as on the title screen: how many players
             // tap "Support the Mod" at all — here, mid-run rather than from the menu.
             UiAnalytics.click(UiAnalytics.SURFACE_PAUSE_MENU, UiAnalytics.TARGET_SUPPORT);
             Minecraft.getInstance().setScreen(new ContributeScreen(pauseScreen));
-        }));
+        })));
 
         if (!loggedSwap) {
             loggedSwap = true;

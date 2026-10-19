@@ -41,6 +41,13 @@ public final class ContributeScreen extends Screen implements games.brennan.dung
     private int subtitleTop;
     private List<FormattedCharSequence> subtitleLines = List.of();
 
+    /** The hover text every "Support the solo-dev" button carries ("Support Brennan"); returns {@code button}. */
+    public static <T extends net.minecraft.client.gui.components.AbstractWidget> T withSupportTooltip(T button) {
+        button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                Component.translatable("gui.dungeontrain.support.button.tooltip")));
+        return button;
+    }
+
     public ContributeScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.contribute.title"));
         this.parent = parent;
