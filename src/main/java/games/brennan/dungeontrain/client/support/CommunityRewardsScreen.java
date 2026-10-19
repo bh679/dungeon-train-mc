@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * Community Rewards: the whole shelf, opened by the Contribute panel's See All Rewards, by
  * {@code /dungeontrain-rewards} (the thank-you chat line's link) and later by the Live Eye death
- * pages. Five cards (two per row on a narrow window), each: group, name, "$94 AUD keeps it on a
+ * pages. Five cards, three per row (two on a narrow window), each: group, name, "$94 AUD keeps it on a
  * month", status, its one line and a Give button; the reward Contribute features is outlined so the
  * player lands where they were. Below, "This month's thanks". Back returns to the parent.
  *
@@ -34,7 +34,8 @@ public final class CommunityRewardsScreen extends Screen {
 
     private static final int MAX_COL_W = 720;
     private static final int SIDE_MARGIN = 40;
-    private static final int FIVE_ACROSS_MIN = 560;
+    /** Below this column width the cards go two per row; at or above it, three. */
+    private static final int THREE_ACROSS_MIN = 330;
     private static final int GAP = 6;
     private static final int PAD = 6;
     private static final int PANEL_PAD = 10;
@@ -116,7 +117,7 @@ public final class CommunityRewardsScreen extends Screen {
         }
         y += 8;
 
-        int perRow = colW >= FIVE_ACROSS_MIN ? 5 : 2;
+        int perRow = colW >= THREE_ACROSS_MIN ? 3 : 2;
         int cardW = (colW - GAP * (perRow - 1)) / perRow;
         CommunityRewards.Reward[] all = CommunityRewards.Reward.values();
         for (int start = 0; start < all.length; start += perRow) {

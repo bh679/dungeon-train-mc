@@ -210,7 +210,7 @@ public final class ContributePanel {
 
     /**
      * The featured community reward: group label, name, its one line, an "ON until" line when it is
-     * on, and a purple Give button with "keeps it on a month" under it on the right.
+     * on, and a purple Give button with "For everyone" under it on the right.
      */
     private int rewardCard(Font font, int x, int y, int w, boolean commit, Consumer<AbstractWidget> add) {
         y = label(font, Component.translatable("gui.dungeontrain.contribute.group.everyone"), x, y, w, commit);
@@ -258,11 +258,10 @@ public final class ContributePanel {
             int gx = x + w - sideW - CARD_PAD;
             int gy = y + (h - sideH) / 2;
             add.accept(giveButton(reward, on, state, now, gx, gy, sideW, GIVE_H, this, true));
-            if (CommunityRewards.givingOpen()) {
-                for (FormattedCharSequence note : font.split(noteText, sideW)) {
-                    texts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
-                    break; // one line; a language whose note does not fit is cut, never spills out of the card
-                }
+            // "For everyone", under the button even while it reads Soon: it says what the reward is.
+            for (FormattedCharSequence note : font.split(noteText, sideW)) {
+                texts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
+                break; // one line; a language whose note does not fit is cut, never spills out of the card
             }
         }
         return y + h + GAP;

@@ -14,36 +14,35 @@ import java.util.List;
 
 /**
  * Contribute: what every "Support the Mod" button opens (title screen, pause menu, builder pause
- * menu, Credits). Three gift tiers, one featured community reward and See All Rewards, then the
- * open-ended options as a line of links: the shared {@link ContributePanel} on the support screens'
- * panel style.
+ * menu, Credits). Deliberately the same screen as the death screen's Contribute window
+ * ({@code DonationOptionsScreen}): the engine room's dark blue, gold title, the shared
+ * {@link ContributePanel} in its {@link ContributePanel.Style#DEATH} look, and Back. Brennan chose
+ * that look for both, so a player sees one Contribute wherever they open it.
  *
- * <p>Reports on the {@code support_page} surface ({@code pageOpen} here, {@code pageTime} on close),
- * the surface the old Ways to Help page used, so the Support funnel stays comparable across the
- * change. The currency selector (its own session) goes top right.</p>
+ * <p>Only the analytics differ: this one reports on the {@code support_page} surface
+ * ({@code pageOpen} here, {@code pageTime} on close), the surface the old Ways to Help page used, so
+ * the Support funnel stays comparable across the change.</p>
  */
 public final class ContributeScreen extends Screen {
 
-    private static final int MAX_COL_W = 360;
-    private static final int SIDE_MARGIN = 40;
-    private static final int PANEL_PAD = 10;
-    private static final int TOP_MIN = 10;
-    private static final int COLOUR_PANEL = 0xC0101010;
-    private static final int COLOUR_TITLE = 0xFFFFFFFF;
-    private static final int COLOUR_SUB = 0xFF9A9A9A;
+    // The death screen's Contribute window (DonationOptionsScreen), matched exactly.
+    private static final int OVERLAY = 0xF2070C1E;
+    private static final int TITLE = 0xFFE0B56A;
+    private static final int NARR = 0xFFC7BDA7;
 
     private final Screen parent;
     private final ContributePanel panel;
     private final long openedAtMs = System.currentTimeMillis();
     private boolean timeReported;
 
-    private int colX, colW, top, bottom, titleY, subY;
-    private List<FormattedCharSequence> subLines = List.of();
+    private int titleY;
+    private int subtitleTop;
+    private List<FormattedCharSequence> subtitleLines = List.of();
 
     public ContributeScreen(Screen parent) {
         super(Component.translatable("gui.dungeontrain.contribute.title"));
         this.parent = parent;
-        this.panel = new ContributePanel(this, UiAnalytics.SURFACE_SUPPORT_PAGE, ContributePanel.Style.PAGE,
+        this.panel = new ContributePanel(this, UiAnalytics.SURFACE_SUPPORT_PAGE, ContributePanel.Style.DEATH,
                 this::rebuildWidgets);
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_SUPPORT_PAGE);
         OfficialLinks.ensureFetched();
@@ -52,42 +51,38 @@ public final class ContributeScreen extends Screen {
 
     @Override
     protected void init() {
-        colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
-        colX = (this.width - colW) / 2;
-        int lh = this.font.lineHeight;
-        subLines = this.font.split(Component.translatable("gui.dungeontrain.contribute.subtitle"), colW);
+        int cx = this.width / 2;
+        int lineH = this.font.lineHeight + 2;
+        int rowW = Math.min(340, this.width - 60);
+        subtitleLines = this.font.split(Component.translatable("gui.dungeontrain.contribute.subtitle"), rowW);
 
-        int panelH = panel.measure(this.font, colW);
-        int doneH = 8 + 20;
-        // On a short window the subtitle goes first, so the gifts and Done always stay on screen.
-        if (lh + 4 + subLines.size() * (lh + 1) + 8 + panelH + doneH + 2 * TOP_MIN + PANEL_PAD > this.height) subLines = List.of();
-        int headH = lh + 4 + subLines.size() * (lh + 1) + 8;
-        int total = headH + panelH + doneH;
-        top = Math.max(TOP_MIN + PANEL_PAD, (this.height - total) / 2);
+        int panelH = panel.measure(this.font, rowW);
+        // A short window (240 px in the smallest GUI scale) cannot fit everything: the subtitle goes
+        // first, so the gifts and Back always stay on screen.
+        if (lineH + 6 + subtitleLines.size() * lineH + 8 + panelH + 8 + 20 + 6 > this.height) subtitleLines = List.of();
+        int subH = subtitleLines.size() * lineH;
+        int blockH = lineH + 6 + subH + 8 + panelH + 8 + 20;
+        int top = Math.max(6, (this.height - blockH) / 2);
 
         titleY = top;
-        subY = titleY + lh + 4;
-        int y = top + headH;
-        y += panel.layout(this.font, colX, y, colW, this::addRenderableWidget);
-        bottom = y;
-        addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, b -> onClose())
-                .bounds(this.width / 2 - 100, y + 8, 200, 20).build());
-    }
+        subtitleTop = titleY + lineH + 6;
+        int y = subtitleTop + subH + 8;
+        y += panel.layout(this.font, cx - rowW / 2, y, rowW, this::addRenderableWidget);
 
-    @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        super.renderBackground(g, mouseX, mouseY, partialTick);
-        g.fill(colX - PANEL_PAD, top - PANEL_PAD, colX + colW + PANEL_PAD, bottom + PANEL_PAD, COLOUR_PANEL);
+        addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
+                .bounds(cx - 100, y + 8, 200, 20).build());
     }
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         super.render(g, mouseX, mouseY, partialTick);
-        g.drawCenteredString(this.font, this.title, this.width / 2, titleY, COLOUR_TITLE);
-        int y = subY;
-        for (FormattedCharSequence l : subLines) {
-            g.drawString(this.font, l, this.width / 2 - this.font.width(l) / 2, y, COLOUR_SUB, false);
-            y += this.font.lineHeight + 1;
+        int cx = this.width / 2;
+        int lineH = this.font.lineHeight + 2;
+        g.drawCenteredString(this.font, this.title, cx, titleY, TITLE);
+        int y = subtitleTop;
+        for (FormattedCharSequence line : subtitleLines) {
+            g.drawString(this.font, line, cx - this.font.width(line) / 2, y, NARR, false);
+            y += lineH;
         }
         panel.render(g, this.font);
     }
@@ -96,6 +91,11 @@ public final class ContributeScreen extends Screen {
     public boolean mouseClicked(double mx, double my, int button) {
         if (button == 0 && panel.mouseClicked(this.font, mx, my)) return true;
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        g.fill(0, 0, this.width, this.height, OVERLAY);
     }
 
     @Override
