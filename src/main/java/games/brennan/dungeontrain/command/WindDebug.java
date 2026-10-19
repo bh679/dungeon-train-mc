@@ -150,11 +150,15 @@ final class WindDebug {
         return 1;
     }
 
-    /** Band edges as blocks past the Upside-down end, for the tuner's band strip. */
+    /**
+     * Band edges as blocks past the Upside-down end, for the tuner's band strip — every band from spawn, so the
+     * bands before the wind starts show as negative distances.
+     */
     private static int export(CommandSourceStack source) {
-        WindServer.State s = WindServer.state();
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        if (s.startX() == Long.MIN_VALUE || !cycle.hasLayout()) {
+        // The real Upside-down end, not a `debug wind start` override, so the band strip lines up with the game.
+        long udEnd = cycle.upsideDownEndX();
+        if (udEnd == Long.MIN_VALUE || !cycle.hasLayout()) {
             send(source, "[DungeonTrain] wind export: needs an ordered cycle layout with an Upside-down band",
                     ChatFormatting.YELLOW);
             return 0;
@@ -163,23 +167,24 @@ final class WindDebug {
         JsonArray bands = new JsonArray();
         for (int k = 0; k < EXPORT_RUNS; k++) {
             for (int i = 0; i < layout.count(); i++) {
-                long from = cycle.worldXOfBase(k, layout.start(i)) - s.startX();
-                long to = cycle.worldXOfBase(k, layout.start(i) + layout.length(i)) - s.startX();
-                if (to <= 0) continue;
+                long from = cycle.worldXOfBase(k, layout.start(i)) - udEnd;
+                long to = cycle.worldXOfBase(k, layout.start(i) + layout.length(i)) - udEnd;
                 CycleLayout.Slot slot = layout.slot(i);
                 CycleLayout.Style style = slot.styleOnRun(k);
                 JsonObject b = new JsonObject();
                 b.addProperty("label", slot.type().name().toLowerCase()
                         + (style == CycleLayout.Style.VANILLA ? "" : " " + style.name().toLowerCase()));
-                b.addProperty("from", Math.max(0, from));
+                b.addProperty("from", from);
                 b.addProperty("to", to);
                 b.addProperty("run", k);
                 bands.add(b);
             }
         }
         JsonObject out = new JsonObject();
-        out.addProperty("udEndX", s.startX());
-        out.addProperty("note", "from/to are blocks past the end of the first Upside-down band");
+        out.addProperty("udEndX", udEnd);
+        out.addProperty("startX", cycle.startX());
+        out.addProperty("note", "from/to are blocks past the end of the first Upside-down band (negative = before it,"
+                + " from spawn on); the wind is calm before 0");
         out.add("bands", bands);
         String json = new GsonBuilder().setPrettyPrinting().create().toJson(out) + "\n";
         try {

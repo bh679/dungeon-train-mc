@@ -23,6 +23,8 @@ const $ = (id) => document.getElementById(id);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const seed = () => (parseInt($("seed").value, 10) | 0);
 const range = () => Math.max(10000, parseFloat($("range").value) || 300000);
+/** Where the graphs start: spawn (the first band's start, negative), so the calm run-up to the wind shows. */
+const minD = () => (bands.length ? Math.min(0, ...bands.map((b) => b.from)) : 0);
 
 // ---------- data ----------
 async function getJson(url) {
@@ -81,6 +83,7 @@ function buildForm() {
     `<label>${m} × <input type="number" step="0.1" data-mult="${m}" value="${profile.multipliers[m]}"></label>`).join("");
   buildCurves();
   $("dRange").max = range();
+  $("dRange").min = minD();
   $("d").value = selected;
   $("dRange").value = selected;
 }
@@ -132,7 +135,7 @@ for (const k of ["headingDeg", "sneakFactor", "airFactor", "visualLeadTicks"]) {
     if (Number.isFinite(v)) withProfile({ [k]: v });
   });
 }
-const pick = (v) => { selected = Math.max(0, v); $("d").value = Math.round(selected); $("dRange").value = selected; redraw(); };
+const pick = (v) => { selected = Math.max(minD(), v); $("d").value = Math.round(selected); $("dRange").value = selected; redraw(); };
 $("d").addEventListener("input", (e) => pick(parseFloat(e.target.value) || 0));
 $("dRange").addEventListener("input", (e) => pick(parseFloat(e.target.value)));
 for (const id of ["win", "ride", "speed", "seed", "range"]) $(id).addEventListener("input", () => {
@@ -197,16 +200,34 @@ function niceMax(v) {
   return 10 * p;
 }
 
-const kLabel = (d) => (d >= 1e6 ? `${(d / 1e6).toFixed(d % 1e6 ? 1 : 0)}M` : `${Math.round(d / 1000)}k`);
+const kLabel = (d) => {
+  const a = Math.abs(d);
+  const s = a >= 1e6 ? `${(a / 1e6).toFixed(a % 1e6 ? 1 : 0)}M` : `${Math.round(a / 1000)}k`;
+  return d < 0 ? `-${s}` : s;
+};
 
+const ZERO = { base: 0, flutter: 0, gustsPerMin: 0, gustStrength: 0, gustTicks: 0, gustVeer: 0, wander: 0, wanderSeconds: 0 };
+
+/** Samples from spawn to the range; everything is zero before the Upside-down end (d < 0): no wind there. */
 function distanceSeries(N) {
+  const lo = minD();
   const maxD = range();
   const out = [];
   for (let i = 0; i <= N; i++) {
-    const d = (maxD * i) / N;
-    out.push({ d, s: stageAt(profile, d) });
+    const d = lo + ((maxD - lo) * i) / N;
+    out.push({ d, s: d < 0 ? { ...ZERO, at: d } : stageAt(profile, d) });
   }
-  return { maxD, out };
+  return { lo, maxD, out };
+}
+
+/** The Upside-down end: a labelled line where the wind begins. */
+function windStart(g, box, X) {
+  if (minD() >= 0) return;
+  g.strokeStyle = css("--gust"); g.lineWidth = 1; g.setLineDash([2, 3]);
+  g.beginPath(); g.moveTo(X(0), box.y); g.lineTo(X(0), box.y + box.h); g.stroke();
+  g.setLineDash([]);
+  g.fillStyle = css("--muted"); g.textAlign = "left";
+  g.fillText("wind starts (Upside-down end)", X(0) + 4, box.y + 12);
 }
 
 function marker(g, box, X) {
@@ -214,25 +235,25 @@ function marker(g, box, X) {
   g.beginPath(); g.moveTo(X(selected), box.y); g.lineTo(X(selected), box.y + box.h); g.stroke();
 }
 
-function clickToPick(canvas, box, maxD) {
+function clickToPick(canvas, box, lo, maxD) {
   canvas.onclick = (e) => {
     const r = canvas.getBoundingClientRect();
-    pick(((e.clientX - r.left - box.x) / box.w) * maxD);
+    pick(lo + ((e.clientX - r.left - box.x) / box.w) * (maxD - lo));
   };
 }
 
 function drawLine() {
   const { g, w, h } = setup($("line"));
-  const { maxD, out } = distanceSeries(400);
+  const { lo, maxD, out } = distanceSeries(400);
   const strip = 22;
   const box = { x: 54, y: strip + 10, w: w - 54 - 12, h: h - strip - 34 };
   const peak = out.map(({ s }) => s.base * (1 + s.flutter) + s.gustStrength);
   const yMax = niceMax(Math.max(...peak, 0.001));
-  const X = (d) => box.x + (d / maxD) * box.w;
+  const X = (d) => box.x + ((d - lo) / (maxD - lo)) * box.w;
   const Y = (v) => box.y + box.h - (v / yMax) * box.h;
 
   bands.forEach((b, i) => {
-    const a = Math.max(0, b.from), z = Math.min(maxD, b.to);
+    const a = Math.max(lo, b.from), z = Math.min(maxD, b.to);
     if (z <= a) return;
     g.fillStyle = BAND_COLORS[i % BAND_COLORS.length];
     g.fillRect(X(a), 4, X(z) - X(a), strip);
@@ -243,8 +264,9 @@ function drawLine() {
   if (!bands.length) { g.fillStyle = css("--muted"); g.textAlign = "left"; g.fillText("no bands.json — run /dungeontrain debug wind export", box.x, 18); }
 
   const xl = [];
-  for (let i = 0; i <= 6; i++) { const d = (maxD * i) / 6; xl.push([X(d), kLabel(d)]); }
+  for (let i = 0; i <= 6; i++) { const d = lo + ((maxD - lo) * i) / 6; xl.push([X(d), kLabel(d)]); }
   axes(g, box, yMax, (v) => v.toFixed(3), xl);
+  windStart(g, box, X);
 
   g.fillStyle = css("--band");
   g.beginPath();
@@ -255,24 +277,25 @@ function drawLine() {
   path(g, xs, peak.map(Y), css("--gust"));
   path(g, xs, out.map(({ s }) => Y(s.base)), css("--steady"), 2);
   marker(g, box, X);
-  clickToPick($("line"), box, maxD);
+  clickToPick($("line"), box, lo, maxD);
 }
 
 function drawCapped(id, values, cap, color, fmt) {
   const { g, w, h } = setup($(id));
-  const { maxD, out } = distanceSeries(300);
+  const { lo, maxD, out } = distanceSeries(300);
   const box = { x: 40, y: 8, w: w - 40 - 10, h: h - 30 };
-  const X = (d) => box.x + (d / maxD) * box.w;
+  const X = (d) => box.x + ((d - lo) / (maxD - lo)) * box.w;
   const Y = (v) => box.y + box.h - (v / cap) * box.h;
   const xl = [];
-  for (let i = 0; i <= 4; i++) { const d = (maxD * i) / 4; xl.push([X(d), kLabel(d)]); }
+  for (let i = 0; i <= 4; i++) { const d = lo + ((maxD - lo) * i) / 4; xl.push([X(d), kLabel(d)]); }
   axes(g, box, cap, fmt, xl);
+  windStart(g, box, X);
   g.setLineDash([4, 3]);
   path(g, [box.x, box.x + box.w], [Y(cap), Y(cap)], css("--muted"), 1);
   g.setLineDash([]);
   path(g, out.map(({ d }) => X(d)), out.map(({ s }) => Y(values(s))), css(color), 2);
   marker(g, box, X);
-  clickToPick($(id), box, maxD);
+  clickToPick($(id), box, lo, maxD);
 }
 
 function drawFeel() {
@@ -298,7 +321,7 @@ function drawFeel() {
     peak = Math.max(peak, w.strength);
   }
   const mean = total.reduce((a, b) => a + b, 0) / ticks;
-  const here = stageAt(profile, selected);
+  const here = selected < 0 ? ZERO : stageAt(profile, selected);
   $("feelStats").textContent =
     `here: steady ${here.base.toFixed(4)} · ${here.gustsPerMin.toFixed(1)} gusts/min asked · gusts 0.1–${(here.gustTicks / 20).toFixed(1)} s · ` +
     `measured: mean ${mean.toFixed(4)} · peak ${peak.toFixed(4)} · ${onsets} gusts (${(onsets / (winS / 60)).toFixed(1)}/min) · gusting ${(100 * gustTicks / ticks).toFixed(0)}% of the time` +
