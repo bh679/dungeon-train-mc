@@ -41,9 +41,14 @@ LATEST_TAG=$(jq -r '.[0].tag_name' "$RELEASES_JSON")
 LATEST_NAME=$(jq -r '.[0].name // .[0].tag_name' "$RELEASES_JSON")
 LATEST_DATE=$(jq -r '.[0].published_at[0:10]' "$RELEASES_JSON")
 LATEST_URL=$(jq -r '.[0].html_url' "$RELEASES_JSON")
-LATEST_ASSET_NAME=$(jq -r '.[0].assets[0].name // empty' "$RELEASES_JSON")
-LATEST_ASSET_URL=$(jq -r '.[0].assets[0].browser_download_url // empty' "$RELEASES_JSON")
-LATEST_ASSET_SIZE=$(jq -r '.[0].assets[0].size // 0' "$RELEASES_JSON")
+# The mod jar of a release. Since PR #2129 a release also carries dungeontrain-<v>-curseforge.jar
+# (the CurseForge build), which sorts first by name and GitHub doesn't order assets anyway, so pick
+# by name rather than assets[0]. Older single-jar releases fall back to their only asset.
+MOD_JAR='(([.assets[] | select((.name | endswith(".jar")) and ((.name | endswith("-curseforge.jar")) or (.name | endswith("-sources.jar")) | not))][0]) // .assets[0])'
+
+LATEST_ASSET_NAME=$(jq -r ".[0] | $MOD_JAR | .name // empty" "$RELEASES_JSON")
+LATEST_ASSET_URL=$(jq -r ".[0] | $MOD_JAR | .browser_download_url // empty" "$RELEASES_JSON")
+LATEST_ASSET_SIZE=$(jq -r ".[0] | $MOD_JAR | .size // 0" "$RELEASES_JSON")
 
 if [ -z "$LATEST_ASSET_URL" ]; then
   echo "::warning::Latest release $LATEST_TAG has no assets; skipping wiki update."
@@ -101,7 +106,7 @@ cat > "$ARCH_FILE" <<EOF
 |---|---|---|---|
 EOF
 
-jq -r '.[] | [.tag_name, (.published_at[0:10]), (.assets[0].name // ""), (.assets[0].browser_download_url // ""), (.assets[0].size // 0), .html_url] | @tsv' "$RELEASES_JSON" \
+jq -r ".[] | ($MOD_JAR) as \$jar | [.tag_name, (.published_at[0:10]), (\$jar.name // \"\"), (\$jar.browser_download_url // \"\"), (\$jar.size // 0), .html_url] | @tsv" "$RELEASES_JSON" \
   | while IFS=$'\t' read -r tag date asset_name asset_url asset_size html_url; do
       if [ -n "$asset_url" ]; then
         size_human=$(human_size "$asset_size")
