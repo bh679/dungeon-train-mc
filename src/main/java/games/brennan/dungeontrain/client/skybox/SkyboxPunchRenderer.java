@@ -164,21 +164,25 @@ public final class SkyboxPunchRenderer {
 
         // The author's switch, except inside a test: Test the Carriage shows the room as a player
         // meets it, and a sky wall that is not drawn there is the test lying about the build.
-        if (!ClientDisplayConfig.areSkyboxBlocksOn()
-            && !games.brennan.dungeontrain.client.PortalTestSessionState.active()) return;
+        // The sunk zone's sky plane is not a skybox block and has its own switch (seal culling), so
+        // it punches even when the author has skybox blocks turned off.
+        boolean blocksOn = ClientDisplayConfig.areSkyboxBlocksOn()
+            || games.brennan.dungeontrain.client.PortalTestSessionState.active();
+        boolean lidPlane = SunkLidSkyPlane.planeY(cam, SunkLidSkyPlane.reach()) != Integer.MIN_VALUE;
+        if (!blocksOn && !lidPlane) return;
         if (!ClientDisplayConfig.isSkyboxPunchEnabled()) return;
 
         // Read before the shader gate — it is a volatile field read, and taking it here is what
         // lets the diagnostics panel tell "no skybox blocks near the camera" apart from "blocks
         // are right here and the pack has the effect switched off".
-        SkyboxBlockIndex.Snapshot snapshot = SkyboxBlockIndex.snapshot();
+        SkyboxBlockIndex.Snapshot snapshot = blocksOn ? SkyboxBlockIndex.snapshot() : SkyboxBlockIndex.Snapshot.EMPTY;
         if (afterSky && ShaderDiagnostics.recording()) {
             ShaderDiagnostics.recordSkybox(countCubes(snapshot), describeVariants(snapshot),
                 SkyboxStencil.isAvailable(), false);
         }
 
         if (!ShaderCompat.allows(ShaderCompat.Feature.SKYBOX_BLOCKS)) return;
-        if (snapshot.isEmpty()) return;
+        if (snapshot.isEmpty() && !lidPlane) return;
 
         Matrix4f frustumMatrix = event.getModelViewMatrix();
         Frustum frustum = event.getFrustum();
@@ -482,6 +486,8 @@ public final class SkyboxPunchRenderer {
 
         int quads = emitMainWorld(builder, frustumMatrix, frustum, cam, snapshot.main().get(sky));
         quads += emitSubLevels(builder, frustumMatrix, frustum, cam, snapshot, subLevels, sky, partialTick);
+        // The sunk zone's lid reveals the live sky over the attic; it gates itself per frame.
+        if (sky == SkyboxSky.LIVE) quads += SunkLidSkyPlane.emit(builder, frustumMatrix, frustum, cam);
 
         // Always build: it is what closes the Tesselator's building state. Returns null when
         // nothing was emitted, in which case there is nothing to draw or to close.
