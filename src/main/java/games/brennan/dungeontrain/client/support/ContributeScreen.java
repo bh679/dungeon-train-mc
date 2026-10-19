@@ -57,9 +57,11 @@ public final class ContributeScreen extends Screen {
         int lh = this.font.lineHeight;
         subLines = this.font.split(Component.translatable("gui.dungeontrain.contribute.subtitle"), colW);
 
-        int headH = lh + 4 + subLines.size() * (lh + 1) + 8;
         int panelH = panel.measure(this.font, colW);
         int doneH = 8 + 20;
+        // On a short window the subtitle goes first, so the gifts and Done always stay on screen.
+        if (lh + 4 + subLines.size() * (lh + 1) + 8 + panelH + doneH + 2 * TOP_MIN + PANEL_PAD > this.height) subLines = List.of();
+        int headH = lh + 4 + subLines.size() * (lh + 1) + 8;
         int total = headH + panelH + doneH;
         top = Math.max(TOP_MIN + PANEL_PAD, (this.height - total) / 2);
 

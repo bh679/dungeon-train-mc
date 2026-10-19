@@ -16,8 +16,6 @@ import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 
 import javax.annotation.Nullable;
-import java.time.ZoneId;
-import java.time.format.TextStyle;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -182,9 +180,9 @@ public final class CommunityRewardsScreen extends Screen {
             ty = wrap(Component.translatable("gui.dungeontrain.rewards.status.kept_by", live.by()), tx, ty, tw, COLOUR_ON);
             long from = live.activeUntilMs();
             for (String who : live.queuedBy()) {
-                String month = java.time.Instant.ofEpochMilli(from).atZone(ZoneId.systemDefault())
-                        .getMonth().getDisplayName(TextStyle.SHORT, ContributePanel.javaLocale());
-                ty = wrap(Component.translatable("gui.dungeontrain.rewards.status.queued", month, who), tx, ty, tw, COLOUR_ON);
+                // Labelled by the day it starts: "14 Nov: Moth" (a month name alone reads as overlapping).
+                ty = wrap(Component.translatable("gui.dungeontrain.rewards.status.queued",
+                        ContributePanel.shortDate(from), who), tx, ty, tw, COLOUR_ON);
                 from += CommunityRewards.MONTH_MS;
             }
         } else {
@@ -219,11 +217,10 @@ public final class CommunityRewardsScreen extends Screen {
             }
             long from = live.activeUntilMs();
             for (String who : live.queuedBy()) {
-                String month = java.time.Instant.ofEpochMilli(from).atZone(ZoneId.systemDefault())
-                        .getMonth().getDisplayName(TextStyle.SHORT, ContributePanel.javaLocale());
                 if (!who.isEmpty()) {
                     byGiver.computeIfAbsent(who, k -> new ArrayList<>()).add(Component.translatable(
-                            "gui.dungeontrain.rewards.thanks.later", Component.translatable(r.nameKey()), month));
+                            "gui.dungeontrain.rewards.thanks.later", Component.translatable(r.nameKey()),
+                            ContributePanel.shortDate(from)));
                 }
                 from += CommunityRewards.MONTH_MS;
             }

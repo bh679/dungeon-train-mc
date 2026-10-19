@@ -17024,10 +17024,10 @@
   },
   "gui.dungeontrain.rewards.status.queued": {
     "1": {
-      "label": "the short month the queued gift starts",
+      "label": "the day and short month the queued gift starts",
       "examples": [
-        "Dec",
-        "Jan"
+        "14 Nov",
+        "3 Dec"
       ]
     },
     "2": {
@@ -17065,10 +17065,10 @@
       ]
     },
     "2": {
-      "label": "the short month that gift starts",
+      "label": "the day and short month that gift starts",
       "examples": [
-        "Dec",
-        "Jan"
+        "14 Nov",
+        "3 Dec"
       ]
     }
   }

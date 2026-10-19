@@ -54,8 +54,11 @@ public final class DonationOptionsScreen extends Screen {
         int rowW = Math.min(340, this.width - 60);
         subtitleLines = this.font.split(Component.translatable("gui.dungeontrain.contribute.subtitle"), rowW);
 
-        int subH = subtitleLines.size() * lineH;
         int panelH = panel.measure(this.font, rowW);
+        // A short window (240 px in the smallest GUI scale) cannot fit everything: the subtitle goes
+        // first, so the gifts and Back always stay on screen.
+        if (lineH + 6 + subtitleLines.size() * lineH + 8 + panelH + 8 + 20 + 6 > this.height) subtitleLines = List.of();
+        int subH = subtitleLines.size() * lineH;
         int blockH = lineH + 6 + subH + 8 + panelH + 8 + 20;
         int top = Math.max(6, (this.height - blockH) / 2);
 
