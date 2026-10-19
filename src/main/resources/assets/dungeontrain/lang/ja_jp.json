@@ -1429,8 +1429,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "自分の写真に貢ぎ物を捧げて投稿されたときにメンションする。",
   "gui.dungeontrain.options.account.pings.photo_tributed": "貢がれた写真",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "自分が撮った写真に誰かが貢ぎ物を捧げたときにメンションする。",
-  "gui.dungeontrain.options.account.pings.mob_photo": "モブの写真",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "カメラを渡した乗客が自分の写真を撮ったときにメンションする。",
   "gui.dungeontrain.options.account.pings.milestone": "マイルストーン",
   "gui.dungeontrain.options.account.pings.milestone.tip": "自分のマイルストーン進捗が投稿されたときにメンションする。",
   "gui.dungeontrain.options.account.pings.translation_review": "翻訳レビュー",

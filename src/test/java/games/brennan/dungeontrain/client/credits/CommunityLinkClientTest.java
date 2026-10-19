@@ -69,9 +69,9 @@ final class CommunityLinkClientTest {
     @DisplayName("per-kind pings: read from types, missing kinds stay on, and the master switch wins")
     void pingKinds() {
         Status s = CommunityLinkClient.parseStatus(200,
-                "{\"ok\":true,\"linked\":true,\"pings\":true,\"types\":{\"death\":false,\"milestone\":true,\"bogus\":false,\"mob_photo\":\"no\"}}");
+                "{\"ok\":true,\"linked\":true,\"pings\":true,\"types\":{\"death\":false,\"milestone\":true,\"bogus\":false,\"photo_tributed\":\"no\",\"mob_photo\":false}}");
         assertEquals(false, s.types().get(PingType.DEATH));
-        assertEquals(true, s.types().get(PingType.MOB_PHOTO));
+        assertEquals(true, s.types().get(PingType.PHOTO_TRIBUTED));
         assertEquals(true, s.types().get(PingType.OWN_TRIBUTE));
         assertEquals(PingType.values().length, s.types().size());
         assertEquals(false, s.pings(PingType.DEATH));

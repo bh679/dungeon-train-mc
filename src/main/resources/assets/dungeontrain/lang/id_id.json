@@ -1429,8 +1429,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Ping aku saat aku membayar persembahan untuk fotoku sendiri dan fotonya diposting.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Foto yang dipersembahkan",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Ping aku saat seseorang membayar persembahan untuk foto yang kuambil.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Foto mob",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Ping aku saat penumpang yang kuberi kamera memotretku.",
   "gui.dungeontrain.options.account.pings.milestone": "Pencapaian",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Ping aku saat salah satu kemajuan pencapaianku diposting.",
   "gui.dungeontrain.options.account.pings.translation_review": "Tinjauan terjemahan",
