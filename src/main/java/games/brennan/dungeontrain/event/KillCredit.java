@@ -56,11 +56,14 @@ public final class KillCredit {
 
     /**
      * The entity credited with {@code victim}'s death from {@code source}: the source's causing
-     * entity when it has one, else the last recent striker, else vanilla's kill credit.
+     * entity when it has one, else the player whose wither rose withered it
+     * ({@link WitherRoseCredit}), else the last recent striker, else vanilla's kill credit.
      */
     public static Optional<Entity> resolveKiller(LivingEntity victim, DamageSource source) {
         Entity direct = source.getEntity();
         if (direct != null) return Optional.of(direct);
+        Optional<Entity> rosePlacer = WitherRoseCredit.creditFor(victim, source);
+        if (rosePlacer.isPresent()) return rosePlacer;
         Strike strike = LAST_STRIKES.get(victim.getUUID());
         if (strike != null && withinWindow(strike.tick(), victim.level().getGameTime())) {
             Entity striker = findEntity(victim.getServer(), strike.attackerUuid());
