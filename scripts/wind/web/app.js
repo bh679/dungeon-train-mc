@@ -197,15 +197,16 @@ function drawLine() {
   const strip = 22;
   const box = { x: 54, y: strip + 10, w: w - 54 - 46, h: h - strip - 34 };
   const N = 400;
-  const ds = [], base = [], lo = [], hi = [], peak = [], rate = [], wander = [];
+  const ds = [], base = [], lo = [], hi = [], peak = [], rate = [], wander = [], gustSec = [];
   for (let i = 0; i <= N; i++) {
     const d = (maxD * i) / N;
     const s = stageAtSorted(st, d);
     ds.push(d); base.push(s.base); lo.push(s.base * (1 - s.flutter)); hi.push(s.base * (1 + s.flutter));
     peak.push(s.base * (1 + s.flutter) + s.gustStrength); rate.push(s.gustsPerMin); wander.push(s.wander / 10);
+    gustSec.push(s.gustStrength > 0 ? s.gustTicks / 20 : 0);
   }
   const yMax = niceMax(Math.max(...peak, 0.001));
-  const rMax = niceMax(Math.max(...rate, ...wander, 1));
+  const rMax = niceMax(Math.max(...rate, ...wander, ...gustSec, 1));
   const X = (d) => box.x + (d / maxD) * box.w;
   const Y = (v) => box.y + box.h - (v / yMax) * box.h;
   const R = (v) => box.y + box.h - (v / rMax) * box.h;
@@ -240,6 +241,8 @@ function drawLine() {
   g.setLineDash([4, 3]);
   path(g, xs, rate.map(R), css("--rate"));
   path(g, xs, wander.map(R), css("--heading"));
+  g.setLineDash([1, 3]);
+  path(g, xs, gustSec.map(R), css("--gust"), 2);
   g.setLineDash([]);
   // stage ticks
   g.fillStyle = css("--muted");
