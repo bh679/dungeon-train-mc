@@ -695,6 +695,7 @@
   "chat.dungeontrain.live_chat.connected": "Nakakonekta ang live chat sa Discord. I-off ito sa %s",
   "chat.dungeontrain.live_chat.path": "Options / Dungeon Train / Stream / Live chat",
   "chat.dungeontrain.live_chat.restart.notice": "Nagre-restart ang server. Babalik ang chat at stream sa mga %s min",
+  "chat.dungeontrain.live_chat.restart.local": "Halos hindi maaapektuhan ang laro mo. Lokal na mase-save ang data.",
   "chat.dungeontrain.live_chat.restart.countdown": "Magre-restart sa %s",
   "chat.dungeontrain.live_chat.restart.resumed": "Bumalik na ang chat at stream.",
   "chat.dungeontrain.live_gift.prompt": "Sumali si %s sa pamamagitan ng TV, at hindi pa siya nagkaka-Camcorder ng Broadcast.",

@@ -727,6 +727,7 @@
   "chat.dungeontrain.live_chat.connected": "Chat em direto ligado ao Discord. Desliga-o em %s",
   "chat.dungeontrain.live_chat.path": "Opções / Dungeon Train / Stream / Chat em direto",
   "chat.dungeontrain.live_chat.restart.notice": "O servidor está a reiniciar. O chat e a transmissão voltam dentro de cerca de %s min",
+  "chat.dungeontrain.live_chat.restart.local": "O teu jogo quase não será afetado. Os dados serão guardados localmente.",
   "chat.dungeontrain.live_chat.restart.countdown": "A reiniciar em %s",
   "chat.dungeontrain.live_chat.restart.resumed": "O chat e a transmissão voltaram.",
   "chat.dungeontrain.live_gift.prompt": "%s juntou-se através de uma TV e nunca teve uma câmara de filmar de emissão.",

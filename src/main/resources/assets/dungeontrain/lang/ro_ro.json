@@ -815,6 +815,7 @@
   "chat.dungeontrain.live_chat.connected": "Chatul live este conectat la Discord. Dezactivează-l în %s",
   "chat.dungeontrain.live_chat.path": "Opțiuni / Dungeon Train / Stream / Chat live",
   "chat.dungeontrain.live_chat.restart.notice": "Serverul repornește. Chatul și transmisiunea revin în aproximativ %s min",
+  "chat.dungeontrain.live_chat.restart.local": "Jocul tău va fi aproape neafectat. Datele vor fi salvate local.",
   "chat.dungeontrain.live_chat.restart.countdown": "Repornire în %s",
   "chat.dungeontrain.live_chat.restart.resumed": "Chatul și transmisiunea au revenit.",
   "chat.dungeontrain.live_gift.prompt": "%s se alătură printr-un televizor și n-a avut niciodată o cameră video de transmisie.",

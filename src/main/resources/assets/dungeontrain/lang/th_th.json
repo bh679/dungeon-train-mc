@@ -695,6 +695,7 @@
   "chat.dungeontrain.live_chat.connected": "เชื่อมต่อแชทไลฟ์กับ Discord แล้ว ปิดได้ที่ %s",
   "chat.dungeontrain.live_chat.path": "ตัวเลือก / Dungeon Train / สตรีม / แชทไลฟ์",
   "chat.dungeontrain.live_chat.restart.notice": "เซิร์ฟเวอร์กำลังรีสตาร์ท แชทและสตรีมจะกลับมาในอีกประมาณ %s นาที",
+  "chat.dungeontrain.live_chat.restart.local": "เกมของคุณแทบไม่ได้รับผลกระทบ ข้อมูลจะถูกบันทึกไว้ในเครื่อง",
   "chat.dungeontrain.live_chat.restart.countdown": "รีสตาร์ทใน %s",
   "chat.dungeontrain.live_chat.restart.resumed": "แชทและสตรีมกลับมาแล้ว",
   "chat.dungeontrain.live_gift.prompt": "%s เข้ามาดูผ่านทีวี และยังไม่เคยมีกล้องวิดีโอถ่ายทอดเลย",

@@ -727,6 +727,7 @@
   "chat.dungeontrain.live_chat.connected": "Livechat verbonden met Discord. Zet hem uit in %s",
   "chat.dungeontrain.live_chat.path": "Opties / Dungeon Train / Stream / Livechat",
   "chat.dungeontrain.live_chat.restart.notice": "De server wordt opnieuw opgestart. Chat en stream zijn over ongeveer %s min terug",
+  "chat.dungeontrain.live_chat.restart.local": "Je spel merkt er weinig van. Gegevens worden lokaal opgeslagen.",
   "chat.dungeontrain.live_chat.restart.countdown": "Herstart over %s",
   "chat.dungeontrain.live_chat.restart.resumed": "Chat en stream zijn terug.",
   "chat.dungeontrain.live_gift.prompt": "%s kijkt mee via een tv en heeft nog nooit een uitzendcamcorder gehad.",

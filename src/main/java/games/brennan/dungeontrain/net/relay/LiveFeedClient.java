@@ -193,9 +193,10 @@ public final class LiveFeedClient {
     /**
      * The relay is restarting, or just has (live-restart.js): {@code resumeBy} the relay's estimate of
      * when chat and stream are back (relay clock, 0 when absent), {@code countdown} 3, 2, 1 (0 when
-     * absent), {@code resumed} the line saying they are back.
+     * absent), {@code local} the line saying the game carries on and saves locally, {@code resumed} the
+     * line saying they are back.
      */
-    public record RestartNotice(long resumeBy, int countdown, boolean resumed) {}
+    public record RestartNotice(long resumeBy, int countdown, boolean local, boolean resumed) {}
 
     @Nullable
     static RestartNotice parseRestart(JsonObject m) {
@@ -203,11 +204,15 @@ public final class LiveFeedClient {
         JsonObject o = m.getAsJsonObject("restart");
         long resumeBy = num(o, "resumeBy");
         long countdown = num(o, "countdown");
-        boolean resumed = o.has("resumed") && o.get("resumed").isJsonPrimitive()
-            && o.get("resumed").getAsJsonPrimitive().isBoolean() && o.get("resumed").getAsBoolean();
+        boolean local = flag(o, "local");
+        boolean resumed = flag(o, "resumed");
         int count = countdown > 0 && countdown < 100 ? (int) countdown : 0;
-        if (resumeBy <= 0 && count == 0 && !resumed) return null;
-        return new RestartNotice(Math.max(0L, resumeBy), count, resumed);
+        if (resumeBy <= 0 && count == 0 && !local && !resumed) return null;
+        return new RestartNotice(Math.max(0L, resumeBy), count, local, resumed);
+    }
+
+    private static boolean flag(JsonObject o, String key) {
+        return o.has(key) && o.get(key).isJsonPrimitive() && o.get(key).getAsJsonPrimitive().isBoolean() && o.get(key).getAsBoolean();
     }
 
     private static long num(JsonObject o, String key) {

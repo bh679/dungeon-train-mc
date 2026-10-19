@@ -695,6 +695,7 @@
   "chat.dungeontrain.live_chat.connected": "直播聊天已連線到 Discord。可在 %s 關閉",
   "chat.dungeontrain.live_chat.path": "選項 / Dungeon Train / 直播 / 直播聊天",
   "chat.dungeontrain.live_chat.restart.notice": "伺服器正在重新啟動。聊天和直播將在大約 %s 分鐘後恢復",
+  "chat.dungeontrain.live_chat.restart.local": "你的遊戲基本上不受影響。資料將儲存在本機。",
   "chat.dungeontrain.live_chat.restart.countdown": "%s 秒後重新啟動",
   "chat.dungeontrain.live_chat.restart.resumed": "聊天和直播已恢復。",
   "chat.dungeontrain.live_gift.prompt": "%s 透過電視加入了，他們還從沒擁有過直播攝影機。",

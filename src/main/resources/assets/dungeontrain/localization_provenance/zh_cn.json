@@ -333,6 +333,7 @@
       "chat.dungeontrain.live_chat.connected",
       "chat.dungeontrain.live_chat.path",
       "chat.dungeontrain.live_chat.restart.notice",
+      "chat.dungeontrain.live_chat.restart.local",
       "chat.dungeontrain.live_chat.restart.countdown",
       "chat.dungeontrain.live_chat.restart.resumed",
       "chat.dungeontrain.live_gift.prompt",
