@@ -122,7 +122,7 @@ public final class ContributePanel {
     private static final long SLIDE_MS = 180;
     private static final int ICON = 16;
     private static final int ICON_GAP = 5;
-    private net.minecraft.world.item.ItemStack cardIcon = net.minecraft.world.item.ItemStack.EMPTY;
+    @javax.annotation.Nullable private CommunityRewards.Reward cardIcon;
     private int cardIconX, cardIconY;
     /** The middle tier's bounds, outlined green like the website's featured tier; w 0 = none. */
     private int featX, featY, featW, featH;
@@ -152,6 +152,7 @@ public final class ContributePanel {
         if (commit) {
             texts.clear();
             cardTexts.clear();
+            cardIcon = null;
             giveOnCard = null;
             footerLines.clear();
             featW = 0;
@@ -260,7 +261,7 @@ public final class ContributePanel {
 
         if (commit) {
             cardTexts.addAll(lines.lines());
-            cardIcon = RewardIcons.of(reward);
+            cardIcon = reward;
             cardIconX = iconLeft;
             cardIconY = y + CARD_PAD + Math.max(0, (lines.bottom() - ICON) / 2);
             cardX = x;
@@ -428,7 +429,7 @@ public final class ContributePanel {
                 int x = (tx.centred() ? tx.x() - font.width(tx.line()) / 2 : tx.x()) + offset;
                 g.drawString(font, tx.line(), x, tx.y(), tx.colour(), false);
             }
-            if (!cardIcon.isEmpty()) g.renderItem(cardIcon, cardIconX + offset, cardIconY);
+            if (cardIcon != null) RewardIcons.render(g, cardIcon, cardIconX + offset, cardIconY);
             g.disableScissor();
         }
         for (Text t : texts) {

@@ -17013,40 +17013,6 @@
       ]
     }
   },
-  "gui.dungeontrain.rewards.status.on_until": {
-    "1": {
-      "label": "the day and short month the reward ends",
-      "examples": [
-        "12 Nov",
-        "3 Dec"
-      ]
-    }
-  },
-  "gui.dungeontrain.rewards.status.kept_by": {
-    "1": {
-      "label": "the name of the player who gave",
-      "examples": [
-        "Kestrel",
-        "Moth"
-      ]
-    }
-  },
-  "gui.dungeontrain.rewards.status.queued": {
-    "1": {
-      "label": "the day and short month the queued gift starts",
-      "examples": [
-        "14 Nov",
-        "3 Dec"
-      ]
-    },
-    "2": {
-      "label": "the name of the player who gave",
-      "examples": [
-        "Kestrel",
-        "Moth"
-      ]
-    }
-  },
   "gui.dungeontrain.rewards.give.month": {
     "1": {
       "label": "a month name, short or full",

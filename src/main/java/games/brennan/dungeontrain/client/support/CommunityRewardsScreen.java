@@ -55,8 +55,6 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     private static final int COLOUR_GROUP = 0xFF8A7C60;
     private static final int COLOUR_NAME = 0xFFFFFFFF;
     private static final int COLOUR_AMOUNT = 0xFFF0B35A;
-    private static final int COLOUR_ON = 0xFF8FE08A;
-    private static final int COLOUR_OFF = 0xFF9A9A9A;
     private static final int COLOUR_LINE = 0xFFBDBDBD;
     private static final int COLOUR_HEADER = 0xFFFFD05A;
 
@@ -70,7 +68,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     private record Text(FormattedCharSequence line, int x, int canvasY, int colour) {}
     private record Card(int x, int canvasY, int w, int h, boolean featured) {}
     private record Placed(Button button, int canvasY) {}
-    private record Icon(net.minecraft.world.item.ItemStack stack, int x, int canvasY) {}
+    private record Icon(CommunityRewards.Reward reward, int x, int canvasY) {}
     private final List<Icon> icons = new ArrayList<>();
     private static final int ICON = 16;
     private static final int ICON_GAP = 4;
@@ -192,28 +190,13 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         // Icon left of the name; the name wraps beside it. 3 px of air so the icon clears the label.
         ty += 3;
         int iconTop = ty - 4;
-        icons.add(new Icon(RewardIcons.of(r), tx, iconTop));
+        icons.add(new Icon(r, tx, iconTop));
         ty = wrap(Component.translatable(r.nameKey()), tx + ICON + ICON_GAP, ty, tw - ICON - ICON_GAP, COLOUR_NAME);
         ty = Math.max(ty, iconTop + ICON + 1);
         ty = wrap(Component.translatable("gui.dungeontrain.rewards.amount_line",
                         CurrencyFormat.amount(r.costAud(), r.amountKey())),
                 tx, ty, tw, COLOUR_AMOUNT);
         ty += 2;
-        if (CommunityRewards.active(state, r, now)) {
-            LiveRewards.Reward live = state.find(r.id());
-            ty = wrap(Component.translatable("gui.dungeontrain.rewards.status.on_until",
-                    ContributePanel.shortDate(live.activeUntilMs())), tx, ty, tw, COLOUR_ON);
-            ty = wrap(Component.translatable("gui.dungeontrain.rewards.status.kept_by", live.by()), tx, ty, tw, COLOUR_ON);
-            long from = live.activeUntilMs();
-            for (String who : live.queuedBy()) {
-                // Labelled by the day it starts: "14 Nov: Moth" (a month name alone reads as overlapping).
-                ty = wrap(Component.translatable("gui.dungeontrain.rewards.status.queued",
-                        ContributePanel.shortDate(from), who), tx, ty, tw, COLOUR_ON);
-                from += CommunityRewards.MONTH_MS;
-            }
-        } else {
-            ty = wrap(Component.translatable("gui.dungeontrain.rewards.status.off"), tx, ty, tw, COLOUR_OFF);
-        }
         ty += 2;
         ty = wrap(Component.translatable(r.lineKey()), tx, ty, tw, COLOUR_LINE);
         return ty - y + 4 + GIVE_H + PAD;
@@ -288,7 +271,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             g.renderOutline(c.x(), cy, c.w(), c.h(), c.featured() ? COLOUR_FEATURED_EDGE : COLOUR_CARD_EDGE);
         }
         for (Text t : texts) g.drawString(this.font, t.line(), t.x(), t.canvasY() + off, t.colour(), false);
-        for (Icon i : icons) g.renderItem(i.stack(), i.x(), i.canvasY() + off);
+        for (Icon i : icons) RewardIcons.render(g, i.reward(), i.x(), i.canvasY() + off);
         for (Placed p : buttons) if (p.button().visible) p.button().render(g, mouseX, mouseY, partialTick);
         g.disableScissor();
         if (currency.button() != null) currency.button().render(g, mouseX, mouseY, partialTick);
