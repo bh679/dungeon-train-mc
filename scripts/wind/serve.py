@@ -42,10 +42,6 @@ MAX_BODY = 256 * 1024
 #: assets: never committed, read at request time from the Minecraft asset cache gradle already downloaded.
 SOUNDS = {
     "elytra_loop": "minecraft/sounds/item/elytra/elytra_loop.ogg",
-    "idle_air1": "minecraft/sounds/mob/breeze/idle_air1.ogg",
-    "idle_air2": "minecraft/sounds/mob/breeze/idle_air2.ogg",
-    "idle_air3": "minecraft/sounds/mob/breeze/idle_air3.ogg",
-    "idle_air4": "minecraft/sounds/mob/breeze/idle_air4.ogg",
 }
 ASSET_ROOTS = [Path.home() / ".gradle/caches/neoformruntime/assets", Path.home() / ".minecraft/assets"]
 #: Asset index of Minecraft 1.21.1 first, then whatever else is there.
