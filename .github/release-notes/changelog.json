@@ -27884,6 +27884,29 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "patient-autopause-long-reads",
+      "version": "0.1366.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "books",
+        "advancements",
+        "ui"
+      ],
+      "title": "More patience for players who take their time",
+      "summary": "The game now gives you longer before it decides you have stepped away. The pause menu waits a while before opening on its own, and longer still while you have a book or a chest open. Reading a long book no longer stops advancements from counting while you keep turning the pages.",
+      "highlights": [
+        "The pause menu waits longer before opening on its own.",
+        "Books and chests get extra time before the game pauses.",
+        "Long reads no longer stop advancements from counting."
+      ],
+      "pr": 2131,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
