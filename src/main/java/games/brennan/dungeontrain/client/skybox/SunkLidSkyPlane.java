@@ -27,7 +27,7 @@ import java.util.function.IntPredicate;
  * twin's bottom rows, which share the lid's section, and shear real peaks just outside the zone. The
  * upside-down band has no such problem because its lid is bedrock.</p>
  *
- * <p><b>How.</b> One horizontal quad per run of sunk columns, on the top face of the lid row, fed to
+ * <p><b>How.</b> One horizontal quad per run of sunk columns, under the lid row (below the rooms' lock skin), fed to
  * {@link SkyboxPunchRenderer} as a {@code LIVE} skybox face: the punch writes its depth before any
  * terrain, so everything beyond it — the attic and its twins — fails the depth test and the sky
  * already painted there shows through. Clouds sit below the lid and still draw. Drawn only for a
@@ -77,7 +77,9 @@ public final class SunkLidSkyPlane {
         if (level == null || !level.dimension().equals(Level.OVERWORLD)) return Integer.MIN_VALUE;
         AmplifiedDrop drop = ClientUpsideDownBand.amplifiedDrop();
         if (drop == null || !drop.active()) return Integer.MIN_VALUE;
-        int planeY = drop.lidY() + 1;
+        // The lid row's underside: the attic rooms' lock skin fills the row above it, so a plane on
+        // the lid's top face shared the skin's depth and z-fought it. Terrain is capped at the lid.
+        int planeY = drop.lidY();
         if (cam.y >= planeY) return Integer.MIN_VALUE;
         if (!ClientUpsideDownBand.isSunkZoneWithin(Mth.floor(cam.x), reach)) return Integer.MIN_VALUE;
         return planeY;
