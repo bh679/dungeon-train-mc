@@ -290,6 +290,20 @@ public final class BandAdvancements {
         return out.stream().map(BandAdvancements::reverseId).toList();
     }
 
+    /**
+     * The advancement {@code reverseId} must follow on The Secrete Menu — its {@code parent} as
+     * {@link BandAdvancementChainRewriter} writes it: the previous entry of {@link #reverseChain}, or
+     * {@link #REVERSE_ANCHOR} for the first. {@link #TFARCENIM} follows the first Nether's. A reverse
+     * advancement is only granted once this one is earned. {@code null} for an id off the chain.
+     */
+    public static String reversePredecessor(CycleLayout layout, String reverseId) {
+        if (TFARCENIM.equals(reverseId)) return reverseId(NETHER);
+        List<String> chain = reverseChain(layout);
+        int i = chain.indexOf(reverseId);
+        if (i < 0) return null;
+        return i == 0 ? REVERSE_ANCHOR : chain.get(i - 1);
+    }
+
     private static void addReverseSlot(Set<String> out, CycleLayout layout, int i) {
         CycleLayout.Slot slot = layout.slot(i);
         boolean better = slot.style() == CycleLayout.Style.BETTER;
@@ -391,7 +405,8 @@ public final class BandAdvancements {
     private static final List<Trigger> REVERSE_TRIGGERS = buildReverseTriggers();
 
     /**
-     * Every reverse trigger, in {@link #REVERSE_ALL} order. Immutable. The caller gates them to
+     * Every reverse trigger, in {@link #REVERSE_ALL} order. Immutable. The caller
+     * ({@link games.brennan.dungeontrain.event.ReverseJourneyAdvancements}) gates them to
      * {@link WorldGenCycle#isMirroredAt behind spawn} and measures {@code depth} towards +X — walking
      * back, the player enters each band from its spawn side.
      */
