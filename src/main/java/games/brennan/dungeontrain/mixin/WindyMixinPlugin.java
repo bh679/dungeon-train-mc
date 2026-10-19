@@ -48,6 +48,7 @@ public final class WindyMixinPlugin implements IMixinConfigPlugin {
                         + "particles instead of Windy's streaks", String.join(", ", misses));
                 return false;
             }
+            LOGGER.info("[DungeonTrain] Windy: Configurable found; train wind steers its streaks");
             return true;
         } catch (Throwable t) {
             // The original (Modrinth) Windy has no LivingWindCompat: the class read throws and lands here.
