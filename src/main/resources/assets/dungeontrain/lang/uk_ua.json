@@ -1481,7 +1481,7 @@
   "gui.dungeontrain.contribute.title": "Підтримати",
   "gui.dungeontrain.contribute.subtitle": "Кожен подарунок тримає рейки освітленими, а потяг у дорозі.",
   "gui.dungeontrain.contribute.group.dev": "ПОДАРУНОК РОЗРОБНИКУ · ТВОЄ ІМ'Я НА БОРТУ",
-  "gui.dungeontrain.contribute.group.everyone": "НАГОРОДИ СПІЛЬНОТИ · ПОДАРУНОК ДЛЯ ВСІХ",
+  "gui.dungeontrain.contribute.group.everyone": "ПОДАРУНОК ДЛЯ ВСІХ",
   "gui.dungeontrain.contribute.keeps_on": "Для всіх",
   "gui.dungeontrain.contribute.see_all": "Усі нагороди",
   "gui.dungeontrain.contribute.own_way": "Як тобі зручно: %s · %s.",

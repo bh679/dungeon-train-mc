@@ -1233,7 +1233,7 @@
   "gui.dungeontrain.contribute.title": "貢獻",
   "gui.dungeontrain.contribute.subtitle": "每一份心意，都讓鐵軌長明、列車不停。",
   "gui.dungeontrain.contribute.group.dev": "贊助作者 · 你的名字登上列車",
-  "gui.dungeontrain.contribute.group.everyone": "社群福利 · 送給所有人的心意",
+  "gui.dungeontrain.contribute.group.everyone": "送給所有人的心意",
   "gui.dungeontrain.contribute.keeps_on": "所有人可用",
   "gui.dungeontrain.contribute.see_all": "查看全部福利",
   "gui.dungeontrain.contribute.own_way": "其他方式：%s · %s。",

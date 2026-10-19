@@ -79,6 +79,7 @@ public final class ContributePanel {
     private static final int COLOUR_WHITE = 0xFFFFFFFF;
     private static final int COLOUR_YOU = 0xFF8FE08A;
     private static final int COLOUR_ON = 0xFF8FE08A;
+    private static final int COLOUR_REWARDS_TITLE = 0xB99BF0;
     private static final int COLOUR_GIVE_NOTE = 0xFFF0B35A;
     private static final int COLOUR_CARD = 0x306D4B9C;
     private static final int COLOUR_CARD_EDGE = 0xFF4A3F66;
@@ -231,7 +232,12 @@ public final class ContributePanel {
      * on, and a purple Give button with "For everyone" under it on the right.
      */
     private int rewardCard(Font font, int x, int y, int w, boolean commit, Consumer<AbstractWidget> add) {
-        y = label(font, Component.translatable("gui.dungeontrain.contribute.group.everyone"), x, y, w, commit);
+        // "COMMUNITY REWARDS" in bold purple, then " · A GIFT TO EVERYONE" in the label grey.
+        Component title = Component.literal(Component.translatable("gui.dungeontrain.rewards.title").getString()
+                        .toUpperCase(javaLocale()))
+                .withStyle(st -> st.withBold(true).withColor(COLOUR_REWARDS_TITLE));
+        y = label(font, Component.empty().append(title).append(" · ")
+                .append(Component.translatable("gui.dungeontrain.contribute.group.everyone")), x, y, w, commit);
         long now = System.currentTimeMillis();
         LiveRewards state = LiveRewards.latest();
         List<CommunityRewards.Reward> order = CommunityRewards.FEATURE_ORDER;

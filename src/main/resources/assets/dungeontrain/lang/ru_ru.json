@@ -1328,7 +1328,7 @@
   "gui.dungeontrain.contribute.title": "Внести вклад",
   "gui.dungeontrain.contribute.subtitle": "Каждый подарок держит рельсы в огнях, а поезд в пути.",
   "gui.dungeontrain.contribute.group.dev": "ПОДАРОК РАЗРАБОТЧИКУ · ВАШЕ ИМЯ НА БОРТУ",
-  "gui.dungeontrain.contribute.group.everyone": "НАГРАДЫ СООБЩЕСТВА · ПОДАРОК ДЛЯ ВСЕХ",
+  "gui.dungeontrain.contribute.group.everyone": "ПОДАРОК ДЛЯ ВСЕХ",
   "gui.dungeontrain.contribute.keeps_on": "Для всех",
   "gui.dungeontrain.contribute.see_all": "Все награды",
   "gui.dungeontrain.contribute.own_way": "Как вам удобно: %s · %s.",

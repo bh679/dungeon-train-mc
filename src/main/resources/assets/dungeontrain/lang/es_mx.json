@@ -1278,7 +1278,7 @@
   "gui.dungeontrain.contribute.title": "Contribuir",
   "gui.dungeontrain.contribute.subtitle": "Cada regalo mantiene las vías encendidas y el tren en marcha.",
   "gui.dungeontrain.contribute.group.dev": "UN REGALO PARA EL DEV · TU NOMBRE A BORDO",
-  "gui.dungeontrain.contribute.group.everyone": "RECOMPENSAS DE LA COMUNIDAD · UN REGALO PARA TODOS",
+  "gui.dungeontrain.contribute.group.everyone": "UN REGALO PARA TODOS",
   "gui.dungeontrain.contribute.keeps_on": "Para todos",
   "gui.dungeontrain.contribute.see_all": "Ver todas las recompensas",
   "gui.dungeontrain.contribute.own_way": "A tu manera: %s · %s.",

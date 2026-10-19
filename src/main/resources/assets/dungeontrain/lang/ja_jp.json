@@ -1233,7 +1233,7 @@
   "gui.dungeontrain.contribute.title": "貢献する",
   "gui.dungeontrain.contribute.subtitle": "ひとつひとつの寄付が、レールを照らし列車を走らせ続けます。",
   "gui.dungeontrain.contribute.group.dev": "開発者への寄付 · 列車にあなたの名前を",
-  "gui.dungeontrain.contribute.group.everyone": "コミュニティ特典 · 全員への贈り物",
+  "gui.dungeontrain.contribute.group.everyone": "全員への贈り物",
   "gui.dungeontrain.contribute.keeps_on": "全員のために",
   "gui.dungeontrain.contribute.see_all": "すべての特典を見る",
   "gui.dungeontrain.contribute.own_way": "自分のやり方で: %s · %s。",
