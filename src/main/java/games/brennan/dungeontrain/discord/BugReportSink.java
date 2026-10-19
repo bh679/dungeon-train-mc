@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -19,7 +20,7 @@ import java.util.stream.Collectors;
  * lists the attached files, and references the server archive path. For a "Lag" report it also folds
  * the client-collected system-spec summary into the message as an inline code block (allocated game
  * memory, CPU/GPU, OS, launcher) so it's readable at a glance without downloading anything.
- * Best-effort throughout.
+ * Best-effort throughout; {@link #accept} hands back whether the Discord post actually landed.
  */
 public final class BugReportSink {
 
@@ -29,12 +30,16 @@ public final class BugReportSink {
 
     private BugReportSink() {}
 
-    public static void accept(ServerPlayer player, String optionLabel, String systemInfo,
-                              List<LogBlob> files) {
+    /**
+     * Archive and post one report. The future completes {@code true} only once Discord confirmed the
+     * files post, {@code false} when there was nothing to post or the upload failed. Never fails.
+     */
+    public static CompletableFuture<Boolean> accept(ServerPlayer player, String optionLabel, String systemInfo,
+                                                    List<LogBlob> files) {
         boolean hasFiles = files != null && !files.isEmpty();
         boolean hasSpec = systemInfo != null && !systemInfo.isBlank();
         if (!hasFiles && !hasSpec) {
-            return;
+            return CompletableFuture.completedFuture(false);
         }
         String name = player.getGameProfile().getName();
 
@@ -62,11 +67,18 @@ public final class BugReportSink {
         if (hasSpec) {
             content.append("\nSystem info:\n").append(specBlock(systemInfo));
         }
-        DiscordService.get().postFeedbackAttachments(player, content.toString(), attachments);
+        CompletableFuture<Boolean> posted;
+        try {
+            posted = DiscordService.get().postFeedbackAttachmentsAsync(player, content.toString(), attachments);
+        } catch (Throwable t) {
+            LOGGER.warn("[DungeonTrain] bug-report post failed to start: {}", t.toString());
+            posted = CompletableFuture.completedFuture(false);
+        }
 
         LOGGER.info("[DungeonTrain] Bug report from {} ({}): {} file(s){} archived to {}",
                 name, optionLabel, hasFiles ? files.size() : 0,
                 hasSpec ? " + system info" : "", pathNote == null ? "(no archive)" : pathNote);
+        return posted;
     }
 
     /** Wrap the spec in a fenced code block, neutralising stray fences and truncating to fit Discord. */
