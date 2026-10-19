@@ -6,6 +6,7 @@ import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
 import games.brennan.dungeontrain.ship.CarriageDeck;
+import games.brennan.dungeontrain.wind.TrainExposure;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -17,8 +18,9 @@ import org.joml.Vector3d;
  * carriage or a tunnel still sees the wind blowing past outside, and no streak drifts through their room.
  *
  * <ul>
- *   <li><b>Inside a carriage</b>: carriage blocks both above and below the point within {@link #CARRIAGE_SCAN}
- *       (a roof and a floor). Above a roof or under the train is open air.</li>
+ *   <li><b>Inside a carriage</b>: a carriage floor below the point within {@link #CARRIAGE_SCAN}, and either a
+ *       roof above or the carriage's side walls around it (an open-roofed room still counts). Above a roof or
+ *       under the train is open air.</li>
  *   <li><b>In a tunnel</b>: solid terrain within {@link #TERRAIN_SCAN} blocks overhead (same rule as the push,
  *       {@code TrainExposure#underTerrain}).</li>
  * </ul>
@@ -77,7 +79,8 @@ final class WindVisualShelter {
             Pose3dc pose = sub.logicalPose();
             Vector3d local = pose.transformPositionInverse(new Vector3d(x, y, z));
             BlockPos cell = BlockPos.containing(local.x, local.y, local.z);
-            if (solidWithin(plot, cell, 1) && solidWithin(plot, cell, -1)) return true;
+            boolean floor = solidWithin(plot, cell, -1);
+            if (floor && (solidWithin(plot, cell, 1) || TrainExposure.walledIn(plot, local))) return true;
         }
         return false;
     }

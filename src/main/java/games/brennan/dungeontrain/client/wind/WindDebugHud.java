@@ -149,17 +149,18 @@ public final class WindDebugHud {
         return out;
     }
 
-    /** The band's effect at the player: End sky (no wind), Nether sky (half, orange), deep dark (half, blue). */
+    /** The band's effect at the player: no wind under End or Nether skies or in the caves leaving the Nether. */
     private static String zoneLine() {
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return "Zone: -";
         double x = mc.player.getX();
         double end = games.brennan.dungeontrain.wind.WindZones.endSkyAt(x);
         double nether = games.brennan.dungeontrain.wind.WindZones.netherAt(x);
-        boolean deep = games.brennan.dungeontrain.wind.WindZones.isDeepDark(mc.level, mc.player.blockPosition());
-        double factor = games.brennan.dungeontrain.wind.WindZones.bandFactor(x) * (deep ? 0.5 : 1.0);
-        return String.format(Locale.ROOT, "Zone: End sky %.0f%%  Nether sky %.0f%%  deep dark %s  -> wind x%.2f",
-                end * 100, nether * 100, deep ? "yes" : "no", factor);
+        boolean cave = games.brennan.dungeontrain.wind.WindZones.isCave(mc.level, mc.player.blockPosition());
+        double factor = games.brennan.dungeontrain.wind.WindZones.bandFactor(x)
+                * games.brennan.dungeontrain.wind.WindZones.deepDarkFactor(mc.level, mc.player.blockPosition());
+        return String.format(Locale.ROOT, "Zone: End sky %.0f%%  Nether sky %.0f%%  Nether caves %s  -> wind x%.2f",
+                end * 100, nether * 100, cave ? "yes" : "no", factor);
     }
 
     private static String describe(TrainExposure.Result r) {

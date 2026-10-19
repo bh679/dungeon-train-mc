@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.wind;
 
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.SpheresProgressionConfig;
+import games.brennan.dungeontrain.worldgen.NetherBandBiomes;
 import games.brennan.dungeontrain.worldgen.SpheresSky;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
@@ -14,10 +15,10 @@ import net.minecraft.world.level.biome.Biomes;
  * <ul>
  *   <li><b>Under an End sky</b> (the End band and its void, and the spheres band's End-sky window) — no wind;
  *       it fades out as the sky turns and back in as it returns.</li>
- *   <li><b>Under a Nether sky</b> — half the wind, scaled with how far into the Nether look you are; the
- *       streaks turn orange.</li>
- *   <li><b>In the deep dark</b> (the {@code minecraft:deep_dark} biome) — half the wind; the streaks turn dark
- *       blue.</li>
+ *   <li><b>Under a Nether sky</b> — no wind ({@link #NETHER_FACTOR}), fading with the sky; where any is left
+ *       the streaks turn orange.</li>
+ *   <li><b>In the caves leaving the Nether</b> (deep dark, lush, dripstone and sulfur caves) — no wind
+ *       ({@link #CAVE_FACTOR}); deep dark streaks would be dark blue if it is ever turned back on.</li>
  * </ul>
  * Dimensional carriages (portal twin space) have no wind at all; that check lives with each side's own twin
  * space test ({@code PortalTwinSpace#isInside} / {@code ClientUpsideDownBand#isInPortalTwinSpace}).
@@ -27,12 +28,14 @@ import net.minecraft.world.level.biome.Biomes;
  */
 public final class WindZones {
 
-    static final double NETHER_FACTOR = 0.5;
-    static final double DEEP_DARK_FACTOR = 0.5;
+    /** Wind left under a full Nether sky (0 = none; fades with the sky). */
+    static final double NETHER_FACTOR = 0.0;
+    /** Wind left in the caves on the way out of the Nether (0 = none). */
+    static final double CAVE_FACTOR = 0.0;
 
     private WindZones() {}
 
-    /** Wind multiplier from the band at {@code worldX}: 0 under a full End sky, 0.5 under a full Nether sky. */
+    /** Wind multiplier from the band at {@code worldX}: 0 under a full End sky or a full Nether sky, fading between. */
     public static double bandFactor(double worldX) {
         int x = (int) Math.floor(worldX);
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
@@ -55,9 +58,18 @@ public final class WindZones {
         return level.getBiome(pos).is(Biomes.DEEP_DARK);
     }
 
-    /** {@link #DEEP_DARK_FACTOR} in the deep dark, else 1. */
+    /** One of the cave biomes the train runs through leaving the Nether (deep dark, lush, dripstone, sulfur). */
+    public static boolean isCave(Level level, BlockPos pos) {
+        var biome = level.getBiome(pos);
+        for (var key : NetherBandBiomes.CAVE_POST) {
+            if (biome.is(key)) return true;
+        }
+        return false;
+    }
+
+    /** {@link #CAVE_FACTOR} in those caves, else 1. */
     public static double deepDarkFactor(Level level, BlockPos pos) {
-        return isDeepDark(level, pos) ? DEEP_DARK_FACTOR : 1.0;
+        return isCave(level, pos) ? CAVE_FACTOR : 1.0;
     }
 
     private static double nether(WorldGenCycle cycle, int x) {

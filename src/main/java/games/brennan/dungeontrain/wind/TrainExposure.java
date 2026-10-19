@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
  *       footprint — a roof, a flatbed or a coupling pad. Once clear of the edge it stops being pushed and falls.</li>
  *   <li><b>Not in a tunnel</b>: no solid terrain within {@link #TERRAIN_COVER_SCAN} blocks overhead
  *       ({@link #underTerrain}) — tunnels, bridges and overhangs stop the wind.</li>
+ *   <li><b>Not between the walls</b>: inside a carriage counts even under an open roof ({@link #walledIn}).</li>
  *   <li><b>Not under cover</b>: nothing solid within {@link #COVER_SCAN} cells above the head, so anyone
  *       inside an enclosed carriage is sheltered.</li>
  *   <li><b>Not in a lee</b>: nothing solid within {@link #LEE_SCAN} blocks upwind at foot or eye height, so
@@ -37,6 +38,10 @@ public final class TrainExposure {
     static final int DECK_SCAN = 6;
     static final int COVER_SCAN = 8;
     static final int LEE_SCAN = 4;
+    /** How far across the carriage to look for each side wall. */
+    static final int WALL_SCAN = 8;
+    /** Heights above the feet the side walls must be at (foot and head level). */
+    private static final double[] WALL_ROWS = {0.3, 2.0};
     /**
      * How far above the head terrain still shelters you. A DT tunnel's ceiling sits 3 blocks above the
      * carriage roof ({@code TunnelGeometry}), so 12 covers it with room for bridges and overhangs, while a tall
@@ -75,6 +80,7 @@ public final class TrainExposure {
 
         if (!overDeck(plot, feet, e.getBbWidth() / 2.0)) return Result.NOT_ON_TRAIN;
         if (underTerrain(e)) return Result.IN_TUNNEL;
+        if (walledIn(plot, feet)) return Result.UNDER_COVER;
 
         double eye = Math.max(0.2, e.getEyeHeight());
         BlockPos head = BlockPos.containing(feet.x, feet.y + eye, feet.z);
@@ -120,6 +126,27 @@ public final class TrainExposure {
      * can actually be blown off rather than parked on the lip. (Corner offsets are taken in the carriage frame;
      * a yawed carriage turns the footprint a little, which only matters at the edge.)
      */
+    /**
+     * Between the carriage's two side walls at both foot and head height — inside a carriage even when its
+     * roof is open (open-roof and sunroof templates), so nothing in a room is blown about. The train runs along
+     * local X, so the walls are across local Z. A roof's 1-block railing doesn't reach head height, and a
+     * flatbed or coupling pad has no walls, so those stay exposed.
+     */
+    public static boolean walledIn(LevelPlot plot, Vector3d feet) {
+        for (double rise : WALL_ROWS) {
+            double y = feet.y + rise;
+            if (!wallToward(plot, feet.x, y, feet.z, 1) || !wallToward(plot, feet.x, y, feet.z, -1)) return false;
+        }
+        return true;
+    }
+
+    private static boolean wallToward(LevelPlot plot, double x, double y, double z, int dir) {
+        for (int step = 0; step <= WALL_SCAN; step++) {
+            if (solid(plot, BlockPos.containing(x, y, z + dir * step))) return true;
+        }
+        return false;
+    }
+
     /**
      * Solid <b>world</b> blocks within {@link #TERRAIN_COVER_SCAN} above the head — a tunnel ceiling, a bridge,
      * an overhang. Reads the host level, where carriage blocks never appear (they live in Sable's plot), so the
