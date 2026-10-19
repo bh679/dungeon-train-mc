@@ -21,12 +21,13 @@ import java.util.concurrent.atomic.AtomicLong;
  * <p>A writer thread paces at exactly {@code fps}: every tick it sends the newest frame the
  * {@link LiveFrameGrabber} produced, or the previous one again if the game rendered nothing new,
  * so ffmpeg's raw-video input is genuinely constant-rate however the frame rate wobbles. A keyframe
- * every {@value #KEYFRAME_SECONDS} s ({@code -g fps*2}, five per 10 s segment) is what Twitch's RTMP
+ * every {@value #KEYFRAME_SECONDS} s by default ({@code -g fps*2}, five per 10 s segment; the relay may set another per stream,
+ * {@link Cadence}: 3 s for 3 s Quicker Streams segments) is what Twitch's RTMP
  * ingest requires of a stream the relay forwards with {@code -c:v copy}; because the segment length is
  * a multiple of it, every segment still opens on a keyframe and a viewer can join at any boundary.</p>
  *
  * <p>Output: {@code seg00000.ts, seg00001.ts, …} and {@code live.m3u8} in {@code dir}; ffmpeg
- * deletes segments that fall out of the 6-entry window itself, writes each segment to a temp name
+ * deletes segments that fall out of the window ({@link #listSizeFor}: ~60 s of stream) itself, writes each segment to a temp name
  * until complete, and rewrites the playlist only when a segment is whole — so the uploader can
  * trust the playlist as its manifest of finished files.</p>
  *
@@ -37,9 +38,15 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class LiveEncoder implements AutoCloseable {
 
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final int LIST_SIZE = 6;
+    /** Seconds of stream the playlist window holds whatever the segment length: Twitch pushers and the
+     *  relay's renditions worker read the window, and late uploads would starve them on a shorter one. */
+    static final int WINDOW_SECONDS = 60;
+    /** The window never drops below the 10 s stream's 6 entries. */
+    static final int MIN_LIST_SIZE = 6;
     /** Keyframe cadence in seconds. Twitch accepts at most 4 s; 2 s is its recommendation. */
     static final int KEYFRAME_SECONDS = 2;
+    /** Twitch's RTMP ingest refuses keyframes further apart than this. */
+    static final int MAX_KEYFRAME_SECONDS = 4;
     /** libx264 defaults to ~1.5 threads per core (sliced under zerolatency) and competes with the game; 720p20 veryfast needs under one core. */
     static final int ENCODER_THREADS = 2;
     /** Save bandwidth: a slower preset finds the same picture in fewer bits, at several times veryfast's CPU. */
@@ -72,12 +79,12 @@ public final class LiveEncoder implements AutoCloseable {
      * {@code audioPort} 0 = no sound (as before); otherwise the loopback port ffmpeg reads the sound from.
      * {@code saveBandwidth} = compress harder (see {@link #args}).
      */
-    public LiveEncoder(FFmpeg ffmpeg, LiveFrameGrabber grabber, Path dir, int fps, int bitrateKbps, int segmentSeconds,
+    public LiveEncoder(FFmpeg ffmpeg, LiveFrameGrabber grabber, Path dir, int fps, int bitrateKbps, Cadence cadence,
                        int audioPort, boolean saveBandwidth) throws IOException {
         this.grabber = grabber;
         this.fps = fps;
         this.saveBandwidth = saveBandwidth;
-        this.process = ffmpeg.runFFmpeg(args(grabber.width(), grabber.height(), fps, bitrateKbps, segmentSeconds, dir,
+        this.process = ffmpeg.runFFmpeg(args(grabber.width(), grabber.height(), fps, bitrateKbps, cadence, dir,
             audioPort, saveBandwidth));
         FfmpegSupport.drain(process.getErrorStream(), "encoder");
         FfmpegSupport.drain(process.getInputStream(), "encoder-out");
@@ -91,7 +98,43 @@ public final class LiveEncoder implements AutoCloseable {
     }
 
     static String[] args(int w, int h, int fps, int bitrateKbps, int segmentSeconds, Path dir, int audioPort) {
-        return args(w, h, fps, bitrateKbps, segmentSeconds, dir, audioPort, false);
+        return args(w, h, fps, bitrateKbps, Cadence.of(segmentSeconds), dir, audioPort, false);
+    }
+
+    /**
+     * A stream's HLS cadence: segment length, playlist window and keyframe interval, fixed for the
+     * stream. The relay may set all three on the claim (Quicker Streams); {@link #of} fills what it did
+     * not, and a keyframe interval that would not open every segment on a keyframe is replaced.
+     */
+    public record Cadence(int segmentSeconds, int listSize, int keyframeSeconds) {
+        public static Cadence of(int segmentSeconds) {
+            return of(segmentSeconds, 0, 0);
+        }
+
+        /** {@code listSize}/{@code keyframeSeconds} 0 = unset: ~60 s of window, {@link #keyframeFor}'s fallback. */
+        public static Cadence of(int segmentSeconds, int listSize, int keyframeSeconds) {
+            int seg = Math.max(1, segmentSeconds);
+            return new Cadence(seg, listSize > 0 ? listSize : listSizeFor(seg), keyframeFor(seg, keyframeSeconds));
+        }
+    }
+
+    /**
+     * The keyframe interval for {@code segmentSeconds}: {@code requested} when it is 1..{@value #MAX_KEYFRAME_SECONDS}
+     * and divides the segment (every segment then opens on a keyframe, and ffmpeg cuts where asked); else
+     * {@value #KEYFRAME_SECONDS} for an even segment, the segment itself up to {@value #MAX_KEYFRAME_SECONDS} (3 s → 3),
+     * else 1. The relay applies the same rule (live-shared.js keyframeFor).
+     */
+    public static int keyframeFor(int segmentSeconds, int requested) {
+        int seg = Math.max(1, segmentSeconds);
+        if (requested >= 1 && requested <= MAX_KEYFRAME_SECONDS && seg % requested == 0) return requested;
+        if (seg % KEYFRAME_SECONDS == 0) return KEYFRAME_SECONDS;
+        return seg <= MAX_KEYFRAME_SECONDS ? seg : 1;
+    }
+
+    /** Playlist entries for a segment length: 6 at 10 s, 20 at 3 s (the relay's live-shared listSizeFor). */
+    public static int listSizeFor(int segmentSeconds) {
+        int s = Math.max(1, segmentSeconds);
+        return Math.max(MIN_LIST_SIZE, (WINDOW_SECONDS + s - 1) / s);
     }
 
     /**
@@ -101,10 +144,10 @@ public final class LiveEncoder implements AutoCloseable {
      * {@link #effectiveBitrateKbps} of the bitrate. Keyframes, segments and the codec are unchanged, so
      * Twitch's {@code -c:v copy} and the TVs' decoder take it as before.
      */
-    static String[] args(int w, int h, int fps, int bitrateKbps, int segmentSeconds, Path dir, int audioPort,
+    static String[] args(int w, int h, int fps, int bitrateKbps, Cadence cadence, Path dir, int audioPort,
                          boolean saveBandwidth) {
         int kbps = effectiveBitrateKbps(bitrateKbps, saveBandwidth);
-        int gop = fps * KEYFRAME_SECONDS;
+        int gop = fps * cadence.keyframeSeconds();
         boolean audio = audioPort > 0;
         List<String> a = new ArrayList<>(List.of("-hide_banner", "-loglevel", "error", "-nostdin"));
         if (audio) a.addAll(List.of("-thread_queue_size", String.valueOf(INPUT_QUEUE)));
@@ -124,11 +167,13 @@ public final class LiveEncoder implements AutoCloseable {
             "-threads", String.valueOf(saveBandwidth ? SAVE_BANDWIDTH_THREADS : ENCODER_THREADS),
             "-b:v", kbps + "k", "-maxrate", kbps + "k", "-bufsize", (kbps * 2) + "k",
             "-g", String.valueOf(gop), "-keyint_min", String.valueOf(gop), "-sc_threshold", "0",
-            "-force_key_frames", "expr:gte(t,n_forced*" + KEYFRAME_SECONDS + ")"));
+            "-force_key_frames", "expr:gte(t,n_forced*" + cadence.keyframeSeconds() + ")"));
         if (audio) a.addAll(List.of("-c:a", "aac", "-b:a", AUDIO_KBPS + "k", "-ar", "48000", "-ac", "2"));
         a.addAll(List.of(
-            "-f", "hls", "-hls_time", String.valueOf(segmentSeconds), "-hls_list_size", String.valueOf(LIST_SIZE),
-            "-hls_flags", "delete_segments+independent_segments+temp_file",
+            "-f", "hls", "-hls_time", String.valueOf(cadence.segmentSeconds()), "-hls_list_size", String.valueOf(cadence.listSize()),
+            // program_date_time: each segment carries its wall-clock start, so a player can tell how far
+            // behind the streamer it is (hls.js playingDate). Every reader ignores the tag otherwise.
+            "-hls_flags", "delete_segments+independent_segments+temp_file+program_date_time",
             "-hls_segment_filename", dir.resolve("seg%05d.ts").toString(),
             dir.resolve(LivePlaylist.FILE_NAME).toString()));
         return a.toArray(new String[0]);

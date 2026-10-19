@@ -8,7 +8,7 @@ package games.brennan.dungeontrain.client.live;
  * happens, then it has to go up and be listed, and each viewer's decoder joined at the newest listed
  * segment and plays at real speed — so a viewer can be up to about a segment behind the newest one
  * on storage, more with ffmpeg's playlist reload. The offer therefore waits until the uploader has
- * published the segment {@value #VIEWER_SLACK_SEGMENTS} past the one holding the death plus
+ * published the segment {@link #slackSegments} past the one holding the death plus
  * {@value #BEAT_S} s (the fall and the death screen coming up, not just the killing blow). If uploads
  * stall it goes out after {@value #FALLBACK_MS} ms anyway, so a death is never left unoffered; the
  * relay's window only opens when the offer arrives.</p>
@@ -21,6 +21,12 @@ final class LiveDeathHandover {
     static final double BEAT_S = 2.0;
     /** Segments a viewer can trail the newest published one by. */
     static final int VIEWER_SLACK_SEGMENTS = 2;
+    /**
+     * ...and never less than this many seconds: short segments (2 s, Quicker Streams) leave the
+     * viewers' fixed lags (the edge-cached playlist, ffmpeg's reload, hls.js's own segment of buffer)
+     * no longer covered by two segments.
+     */
+    static final int VIEWER_SLACK_MIN_S = 6;
     /** The longest the offer waits on uploads. */
     static final long FALLBACK_MS = 60_000;
 
@@ -35,7 +41,13 @@ final class LiveDeathHandover {
 
     /** The segment whose publication means every viewer has seen the death. */
     static long targetSegment(double deathS, int segmentS) {
-        return (long) Math.floor((Math.max(0, deathS) + BEAT_S) / Math.max(1, segmentS)) + VIEWER_SLACK_SEGMENTS;
+        return (long) Math.floor((Math.max(0, deathS) + BEAT_S) / Math.max(1, segmentS)) + slackSegments(segmentS);
+    }
+
+    /** Viewer slack in segments: {@value #VIEWER_SLACK_SEGMENTS} (10 s → 2), at least {@value #VIEWER_SLACK_MIN_S} s (2 s → 3). */
+    static int slackSegments(int segmentS) {
+        int s = Math.max(1, segmentS);
+        return Math.max(VIEWER_SLACK_SEGMENTS, (VIEWER_SLACK_MIN_S + s - 1) / s);
     }
 
     long targetSegment() {

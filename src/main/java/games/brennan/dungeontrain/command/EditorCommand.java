@@ -3997,8 +3997,9 @@ public final class EditorCommand {
                 // Interior-only erase — preserves the carriage shell stamped
                 // around it as visual context. CarriageContentsPlacer.eraseAt
                 // operates on interiorOrigin/interiorSize, so the floor/walls/
-                // ceiling stay put for the author to keep building inside.
-                CarriageContentsPlacer.eraseAt(overworld, origin, dims);
+                // ceiling stay put for the author to keep building inside. Erased at the
+                // contents' own box: a Half/Full plot is a whole group long, not one carriage.
+                CarriageContentsPlacer.eraseAt(overworld, origin, CarriageContentsEditor.plotDims(contents, dims));
                 Vec3i interiorSize = CarriageContentsPlacer.interiorSizeFor(contents, dims);
                 CarriageContentsVariantBlocks contentsSidecar =
                     CarriageContentsVariantBlocks.loadFor(contents, interiorSize);
