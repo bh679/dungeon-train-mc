@@ -116,12 +116,22 @@ public final class CommunityRewards {
      * next free month comes soonest (ties in {@link #FEATURE_ORDER}).
      */
     static Reward featured(LiveRewards state, long now) {
-        for (Reward r : FEATURE_ORDER) {
+        return featured(state, now, CommunityRewards::givingOpen);
+    }
+
+    /**
+     * {@link #featured(LiveRewards, long)} among the rewards {@code open} accepts gifts for, so the
+     * card leads with one a giver can actually give; all five when none are open yet.
+     */
+    static Reward featured(LiveRewards state, long now, java.util.function.Predicate<Reward> open) {
+        List<Reward> order = FEATURE_ORDER.stream().filter(open).toList();
+        if (order.isEmpty()) order = FEATURE_ORDER;
+        for (Reward r : order) {
             if (!active(state, r, now)) return r;
         }
         Reward best = null;
         long soonest = Long.MAX_VALUE;
-        for (Reward r : FEATURE_ORDER) {
+        for (Reward r : order) {
             long next = nextFreeMs(state, r, now);
             if (next < soonest) { soonest = next; best = r; }
         }
@@ -148,11 +158,13 @@ public final class CommunityRewards {
     // ---- links ------------------------------------------------------------------------------------
 
     /**
-     * Whether gifts to rewards can be made yet: the relay serves the {@code rewards_pay} checkout
-     * route only once each reward has a Stripe price. Until then every Give button reads "Soon".
+     * Whether a gift to {@code reward} can be made now: the relay serves the {@code rewards_pay}
+     * checkout route and lists the reward as open (only rewards whose effect is built are). Otherwise
+     * its Give button reads "Soon".
      */
-    public static boolean givingOpen() {
-        return devForceGive || games.brennan.dungeontrain.client.links.OfficialLinks.rewardsPay() != null;
+    public static boolean givingOpen(Reward reward) {
+        return devForceGive || (games.brennan.dungeontrain.client.links.OfficialLinks.rewardsPay() != null
+                && LiveRewards.open(reward.id()));
     }
 
     /** The checkout URL for a gift to {@code reward}, or null when giving is not open. */

@@ -321,7 +321,7 @@ public final class ContributePanel {
      */
     static Button giveButton(CommunityRewards.Reward reward, boolean on, LiveRewards state, long now,
                              int x, int y, int w, int h, ContributePanel opener, boolean shortForm) {
-        boolean open = CommunityRewards.givingOpen();
+        boolean open = CommunityRewards.givingOpen(reward);
         Component label;
         if (!open) {
             label = Component.translatable("gui.dungeontrain.rewards.give.soon");

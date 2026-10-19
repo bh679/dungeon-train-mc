@@ -28,4 +28,13 @@ class LiveRewardsStreamDelayTest {
     void theDefaultMatchesTheRelaysDefault() {
         assertEquals(new LiveRewards.StreamDelay(30, 6), LiveRewards.StreamDelay.DEFAULT_DELAY);
     }
+
+    @Test
+    void openRewardsAreReadFromTheSummaryAndNoneWithoutAList() {
+        assertEquals(java.util.Set.of("quicker_streams"),
+                LiveRewards.parseOpen("{\"rewardsOpen\":[\"quicker_streams\"]}"));
+        assertEquals(java.util.Set.of(), LiveRewards.parseOpen("{\"ok\":true,\"rewards\":[]}"));
+        assertEquals(java.util.Set.of(), LiveRewards.parseOpen("{\"rewardsOpen\":\"all\"}"));
+        assertEquals(java.util.Set.of(), LiveRewards.parseOpen("not json"));
+    }
 }

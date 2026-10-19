@@ -57,6 +57,34 @@ public record LiveRewards(List<Reward> rewards) {
         latest = parseBody(body);
         StreamDelay d = StreamDelay.parseBody(body);
         if (d != null) streamDelay = d;
+        openIds = parseOpen(body);
+    }
+
+    private static volatile java.util.Set<String> openIds = java.util.Set.of();
+
+    /**
+     * Whether reward {@code id} can be given today: the relay lists only rewards whose effect is built
+     * (summary {@code rewardsOpen}). A relay that sends no list opens none.
+     */
+    public static boolean open(String id) {
+        return openIds.contains(id);
+    }
+
+    /** The {@code rewardsOpen} ids of a summary body; empty when absent or malformed. */
+    static java.util.Set<String> parseOpen(String body) {
+        try {
+            JsonElement root = JsonParser.parseString(body);
+            if (!root.isJsonObject()) return java.util.Set.of();
+            JsonObject o = root.getAsJsonObject();
+            if (!o.has("rewardsOpen") || !o.get("rewardsOpen").isJsonArray()) return java.util.Set.of();
+            java.util.Set<String> out = new java.util.HashSet<>();
+            for (JsonElement e : o.getAsJsonArray("rewardsOpen")) {
+                if (e.isJsonPrimitive()) out.add(e.getAsString());
+            }
+            return java.util.Set.copyOf(out);
+        } catch (RuntimeException e) {
+            return java.util.Set.of();
+        }
     }
 
     /**

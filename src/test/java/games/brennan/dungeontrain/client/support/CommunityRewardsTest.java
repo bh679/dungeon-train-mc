@@ -83,4 +83,15 @@ class CommunityRewardsTest {
         assertEquals("https://brennan.games/api/dp-relay/rewards/pay?displayname=Steve&reward=hd_streams",
                 PaymentLinks.withRewardId("https://brennan.games/api/dp-relay/rewards/pay?displayname=Steve", "hd_streams"));
     }
+
+    @Test
+    void theFeaturedRewardIsOneThatCanBeGivenWhenAnyCan() {
+        java.util.function.Predicate<CommunityRewards.Reward> onlyQuicker = r -> r == CommunityRewards.Reward.QUICKER_STREAMS;
+        LiveRewards quickerOn = new LiveRewards(List.of(on(LiveRewards.QUICKER_STREAMS, 3 * DAY, "Kestrel")));
+        // Quicker Streams is the only open reward, so it stays featured (as "Give <next month>") while on.
+        assertEquals(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.featured(quickerOn, NOW, onlyQuicker));
+        assertEquals(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.featured(LiveRewards.NONE, NOW, onlyQuicker));
+        // None open yet: Brennan's whole order, as before.
+        assertEquals(CommunityRewards.Reward.VOICE_ON_STREAM, CommunityRewards.featured(quickerOn, NOW, r -> false));
+    }
 }
