@@ -79,7 +79,6 @@ public final class ContributePanel {
     private static final int COLOUR_WHITE = 0xFFFFFFFF;
     private static final int COLOUR_YOU = 0xFF8FE08A;
     private static final int COLOUR_ON = 0xFF8FE08A;
-    private static final int COLOUR_GROUP = 0xFFA99BD0;
     private static final int COLOUR_GIVE_NOTE = 0xFFF0B35A;
     private static final int COLOUR_CARD = 0x306D4B9C;
     private static final int COLOUR_CARD_EDGE = 0xFF4A3F66;
@@ -280,9 +279,6 @@ public final class ContributePanel {
         int lh = font.lineHeight;
         int ty = top;
         List<Text> out = new ArrayList<>();
-        out.add(new Text(Component.translatable("gui.dungeontrain.contribute.reward_label").getVisualOrderText(),
-                textX, ty, COLOUR_GROUP, false));
-        ty += lh + 1;
         out.add(new Text(Component.translatable(reward.nameKey()).getVisualOrderText(), textX, ty, COLOUR_WHITE, false));
         ty += lh + 2;
         for (FormattedCharSequence l : font.split(Component.translatable(reward.lineKey()), textW)) {
