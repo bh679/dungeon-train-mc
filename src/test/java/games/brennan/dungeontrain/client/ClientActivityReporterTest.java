@@ -58,4 +58,20 @@ class ClientActivityReporterTest {
         assertEquals(0, ClientActivityReporter.pausedForMs(9_000L, 10_000L));
         assertEquals(Integer.MAX_VALUE, ClientActivityReporter.pausedForMs(Long.MAX_VALUE, 0L));
     }
+
+    @Test
+    @DisplayName("a new book page moves presence to now, inside the opening's 60 minutes")
+    void newPageRenewsPresence() {
+        assertEquals(400_000L, ClientActivityReporter.renewedPresenceSince(10_000L, 10_000L, 400_000L));
+        long justInside = 10_000L + ClientActivityReporter.BOOK_PRESENCE_MAX_MS - 1L;
+        assertEquals(justInside, ClientActivityReporter.renewedPresenceSince(10_000L, 10_000L, justInside));
+    }
+
+    @Test
+    @DisplayName("past 60 minutes into one opening, new pages stop renewing presence")
+    void renewalCappedPerOpening() {
+        long atCap = 10_000L + ClientActivityReporter.BOOK_PRESENCE_MAX_MS;
+        assertEquals(2_000_000L, ClientActivityReporter.renewedPresenceSince(2_000_000L, 10_000L, atCap));
+    }
 }
+

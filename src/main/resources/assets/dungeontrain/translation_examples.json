@@ -167,6 +167,14 @@
       ]
     }
   },
+  "chat.dungeontrain.selfie_hint.not_selfie": {
+    "1": {
+      "label": "the key the player has bound to Toggle Perspective, which flips the camera into selfie mode",
+      "examples": [
+        "F5"
+      ]
+    }
+  },
   "gui.dungeontrain.editor_screen.stages.block_tip": {
     "1": {
       "label": "how many times the block is used across the stage's parts",

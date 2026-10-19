@@ -68,6 +68,181 @@
     {
       "name": "mudbricks_wood",
       "weight": 1,
+      "stage": "pale_oak"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "fir"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "pine"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "redwood"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "mahogany"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "jacaranda"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "palm"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "willow"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "dead"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "magic"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "maple"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "umbran"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "hellbark"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "empyreal"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "anchor_tree"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "gloomwood"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "gloomwood_dark"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "mushroom_fir"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "nether_mushroom"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "nether_reed"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "nether_sakura"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "rubeus"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "stalagnate"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "wart"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "nether_willow"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "dragon_tree"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "helix_tree"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "lacugrove"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "lucernia"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "pythadendron"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "tenanea"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "end_lotus"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "jellyshroom"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "mossy_glowshroom"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "stage": "umbrella_tree"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
       "stage": "acacia"
     },
     {
@@ -308,6 +483,426 @@
       "weight": 1,
       "sideMode": "either",
       "stage": "spruce"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "pale_oak"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "pale_oak"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "fir"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "fir"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "pine"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "pine"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "redwood"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "redwood"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mahogany"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mahogany"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "jacaranda"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "jacaranda"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "palm"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "palm"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "willow"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "willow"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "dead"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "dead"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "magic"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "magic"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "maple"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "maple"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "umbran"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "umbran"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "hellbark"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "hellbark"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "empyreal"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "empyreal"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "anchor_tree"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "anchor_tree"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "gloomwood"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "gloomwood"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "gloomwood_dark"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "gloomwood_dark"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mushroom_fir"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mushroom_fir"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "nether_mushroom"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "nether_mushroom"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "nether_reed"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "nether_reed"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "nether_sakura"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "nether_sakura"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "rubeus"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "rubeus"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "stalagnate"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "stalagnate"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "wart"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "wart"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "nether_willow"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "nether_willow"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "dragon_tree"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "dragon_tree"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "helix_tree"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "helix_tree"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "lacugrove"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "lacugrove"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "lucernia"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "lucernia"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "pythadendron"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "pythadendron"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "tenanea"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "tenanea"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "end_lotus"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "end_lotus"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "jellyshroom"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "jellyshroom"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mossy_glowshroom"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "mossy_glowshroom"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "umbrella_tree"
+    },
+    {
+      "name": "mudbricks_wood",
+      "weight": 1,
+      "sideMode": "either",
+      "stage": "umbrella_tree"
     },
     {
       "name": "mudopen_wood",
@@ -581,6 +1176,356 @@
     {
       "name": "mud_wood",
       "weight": 1,
+      "stage": "pale_oak"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "pale_oak"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "fir"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "fir"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "pine"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "pine"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "redwood"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "redwood"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mahogany"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "mahogany"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "jacaranda"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "jacaranda"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "palm"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "palm"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "willow"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "willow"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "dead"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "dead"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "magic"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "magic"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "maple"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "maple"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "umbran"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "umbran"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "hellbark"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "hellbark"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "empyreal"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "empyreal"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "anchor_tree"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "anchor_tree"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "gloomwood"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "gloomwood"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "gloomwood_dark"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "gloomwood_dark"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mushroom_fir"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "mushroom_fir"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "nether_mushroom"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "nether_mushroom"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "nether_reed"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "nether_reed"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "nether_sakura"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "nether_sakura"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "rubeus"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "rubeus"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "stalagnate"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "stalagnate"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "wart"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "wart"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "nether_willow"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "nether_willow"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "dragon_tree"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "dragon_tree"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "helix_tree"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "helix_tree"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "lacugrove"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "lacugrove"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "lucernia"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "lucernia"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "pythadendron"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "pythadendron"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "tenanea"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "tenanea"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "end_lotus"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "end_lotus"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "jellyshroom"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "jellyshroom"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mossy_glowshroom"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "mossy_glowshroom"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "umbrella_tree"
+    },
+    {
+      "name": "mudopen_wood",
+      "weight": 1,
+      "stage": "umbrella_tree"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
       "stage": "acacia"
     },
     {
@@ -797,6 +1742,181 @@
       "name": "mud_wood",
       "weight": 1,
       "stage": "spruce"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "pale_oak"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "fir"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "pine"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "redwood"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mahogany"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "jacaranda"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "palm"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "willow"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "dead"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "magic"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "maple"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "umbran"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "hellbark"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "empyreal"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "anchor_tree"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "gloomwood"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "gloomwood_dark"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mushroom_fir"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "nether_mushroom"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "nether_reed"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "nether_sakura"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "rubeus"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "stalagnate"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "wart"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "nether_willow"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "dragon_tree"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "helix_tree"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "lacugrove"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "lucernia"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "pythadendron"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "tenanea"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "end_lotus"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "jellyshroom"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "mossy_glowshroom"
+    },
+    {
+      "name": "mud_wood",
+      "weight": 1,
+      "stage": "umbrella_tree"
     },
     {
       "name": "mud_wood",

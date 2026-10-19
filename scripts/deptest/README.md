@@ -26,6 +26,10 @@ the DT jar (Modrinth + manual installs) *and* declared required + shipped as Inc
 CurseForge, where the CF app installs them as their own jars. NeoForge's JarSelector drops the
 nested copy when a top-level one is present; Cases A and G cover both layouts.
 
+`./gradlew build` also makes a **CurseForge-only jar** (`dungeontrain-<v>-curseforge.jar`, token `dtcf`):
+the main jar minus the jarJar'd StreamDetect and DpiBypassDetect (`gradle/curseforge-jar.gradle`;
+`checkCurseforgeJar` asserts the difference). Every case uses the main jar (`dt`) except S and T.
+
 ## Running
 
 ```bash
@@ -63,6 +67,8 @@ The NeoForge version follows `neo_version` for the same reason.
 | **P** | WATUT without CoroUtil | Fails — names `coroutil`, requested by `watut`, with its `[1.21.0-1.3.7,)` floor |
 | **Q** | minus Exposure + its Polaroid add-on (the only case without them) | Fails — names `exposure` and `exposure_polaroid` with their `[x,)` floors |
 | **R** | Case A minus TerraBlender (the only case without it) | Fails — names `terrablender` with DT's own `[x,)` floor (Biomes O' Plenty asks for it too) |
+| **S** | **CurseForge jar** + Case L's set (CurseForge-app layout: top-level StreamDetect/DpiBypassDetect, no Sable Pathfinder) | Server starts cleanly; the two add-ons load from `mods/` (nothing nested to skip) |
+| **T** | **CurseForge jar**, Case S minus StreamDetect + DpiBypassDetect (manual CurseForge download that skipped them) | Server starts cleanly (both `optional`); `streamdetect` / `dpibypassdetect` absent from the mod list |
 
 **A is the positive control.** If it fails, every other "failed" result is meaningless — fix A
 before reading anything else.

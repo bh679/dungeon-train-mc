@@ -154,6 +154,8 @@ public final class LiveDeathPagesPreview {
     /** Two stints: 10 minutes long ago, then one from {@code secondStart} still running. */
     private static final String MOTH = "069a79f444e94726a5befca90e38aaf5";
     private static final String ROOK = "853c80ef3c3749fdaa49938b674adae6";
+    /** A website watcher whose Discord is linked to a game account. */
+    private static final String KESTREL = "4566e69fc90748ee8d71d7ba5aa00d20";
     private static final LiveLifeStats.Author GAME_MOTH = new LiveLifeStats.Author("game", MOTH);
     private static final LiveLifeStats.Author GAME_ROOK = new LiveLifeStats.Author("game", ROOK);
     private static final LiveLifeStats.Author WEB = new LiveLifeStats.Author("web", null);
@@ -170,7 +172,7 @@ public final class LiveDeathPagesPreview {
             .chat(now - 40_000, "Moth", "noooo the bridge", GAME_MOTH).chat(now - 20_000, "Kestrel", "gg, that was a long one", WEB)
             .reacted(101, 5).reacted(102, 4).voteClosed("p1", true)
             .crowd(List.of(new Watcher("Moth", MOTH, "game", 4140),
-                new Watcher("Kestrel", null, "web", 3120),
+                new Watcher("Kestrel", KESTREL, "web", 3120),
                 new Watcher(null, null, "web", 2820),
                 new Watcher("Rook", ROOK, "game", 2600)));
     }

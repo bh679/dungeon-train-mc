@@ -78,7 +78,7 @@ public final class EditorRoster {
         for (games.brennan.dungeontrain.template.Stage stage : StageStore.allStages()) {
             EditorTypeMenusPacket.Variant row = EditorTypeMenus.stageRow(stage);
             if (overworld == null) {
-                out.add(new EditorRosterPacket.StageEntry(row, List.of(), 0, List.of()));
+                out.add(new EditorRosterPacket.StageEntry(row, List.of(), 0, List.of(), null, stage.group()));
                 continue;
             }
             StageBlockIndex.StageBlocks blocks = StageBlockIndex.blocksForStage(overworld, stage.id());
@@ -92,7 +92,8 @@ public final class EditorRoster {
             for (StageBlockIndex.PartBlocks part : blocks.parts()) {
                 parts.add(part.part().kind().id() + ":" + part.part().name());
             }
-            out.add(new EditorRosterPacket.StageEntry(row, counts, blocks.aggregated().size(), parts, paletteOf(stage.id())));
+            out.add(new EditorRosterPacket.StageEntry(row, counts, blocks.aggregated().size(), parts, paletteOf(stage.id()),
+                stage.group()));
         }
         return out;
     }
