@@ -6,7 +6,7 @@ import games.brennan.dungeontrain.worldgen.TransitionLandmarks;
  * The pure maths behind {@link TransitionFlatbeds}: which carriage index a transition landmark's flatbed
  * goes to. No Minecraft types, so it unit-tests directly.
  *
- * <p><b>Timed landmarks.</b> The train moves +X at {@code v} blocks/s and the lead player walks forward
+ * <p>Every landmark is timed. The train moves +X at {@code v} blocks/s and the lead player walks forward
  * through it at {@code w} carriages/s — {@code w·pitch} blocks/s on top of the train. Standing in carriage
  * {@code p0} at world X {@code x0}, they reach the landmark at {@code X} after
  * {@code Δt = (X − x0) / (v + w·pitch)} seconds, by which time they have walked {@code w·Δt} carriages: the
@@ -16,11 +16,8 @@ import games.brennan.dungeontrain.worldgen.TransitionLandmarks;
  * <p>Carriages ahead are only spawned as the player walks forward, so the decision is made when the
  * group holding the predicted index is spawned. If the prediction has already slid behind that group
  * (the player sped up) the flatbed lands on the first carriage still to be built — a little late rather
- * than skipped — unless it would be more than {@link #LATE_SLACK_CARRIAGES} late.</p>
- *
- * <p><b>First-carriage landmarks</b> go to the first carriage whose own placed world X is at or past the
- * landmark (the frame its shell/contents stage is gated in), provided that carriage was spawned close to
- * it — a world loaded long after the landmark went by claims nothing.</p>
+ * than skipped — unless it would be more than {@link #LATE_SLACK_CARRIAGES} late. That slack is also what
+ * carries a target that fell in a portal group (which takes no claim) on to the next group.</p>
  */
 public final class TransitionFlatbedPlan {
 
@@ -61,23 +58,12 @@ public final class TransitionFlatbedPlan {
      * is about to spawn, or {@code null} when it is not this group's to decide (not reached yet, already
      * passed, missed). The claim can reach past the group (three in a row) — later groups honour it.
      *
-     * @param groupAnchorWorldX world X of the group's first enclosed carriage
-     * @param length            one carriage's length
      * @param stride            one whole group's length along X (pads and seam gap included)
      */
     public static int[] claimFor(TransitionLandmarks.Landmark lm, Lead lead, double speed,
-                                 int anchor, int groupSize, int groupAnchorWorldX, int length, double stride) {
+                                 int anchor, int groupSize, double stride) {
         int count = Math.max(1, lm.count());
         int groupEnd = anchor + groupSize - 1;
-        if (lm.timing() == TransitionLandmarks.Timing.FIRST_CARRIAGE) {
-            for (int s = 0; s < groupSize; s++) {
-                long slotX = (long) groupAnchorWorldX + (long) s * length;
-                if (slotX < lm.worldX()) continue;
-                // Spawned close behind the line — not a world joined long after it went by.
-                return slotX < lm.worldX() + 2.0 * stride ? run(anchor + s, count) : null;
-            }
-            return null;
-        }
         if (lead == null || lead.worldX() >= lm.worldX()) return null;
         double pitch = stride / Math.max(1, groupSize);
         int target = predictTarget(lead.pIdx(), lead.worldX(), lm.worldX(), speed, lead.pace(), pitch);

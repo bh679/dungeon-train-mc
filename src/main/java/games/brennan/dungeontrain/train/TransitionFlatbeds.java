@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.train;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
+import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.worldgen.TransitionLandmarks;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
@@ -11,6 +13,9 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -31,11 +36,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * index, so a group respawned after a cull, or rebuilt by backward generation, comes back as the same
  * flatbed; a landmark is only ever claimed once per train.</p>
  *
- * <p>Portal groups are left alone: a portal stamps over the slot regardless, so no claim is made in one.</p>
+ * <p>Portal groups are left alone: a portal stamps over the slot regardless, so no claim is made in one —
+ * a target that lands in one slides to the next group ({@link TransitionFlatbedPlan#LATE_SLACK_CARRIAGES}).</p>
  */
+@EventBusSubscriber(modid = DungeonTrain.MOD_ID)
 public final class TransitionFlatbeds {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** The pace window, in Diff-Levels: the rider's average over at most this many levels' worth of carriages. */
+    private static final int PACE_WINDOW_LEVELS = 4;
 
     /** An observation older than this no longer counts as the train's lead (two seconds). */
     private static final long LEAD_STALE_TICKS = 40L;
@@ -50,7 +60,7 @@ public final class TransitionFlatbeds {
         long tick;
 
         Rider(double seedPace) {
-            this.pace = new PlayerCarriagePace(seedPace);
+            this.pace = new PlayerCarriagePace(seedPace, PACE_WINDOW_LEVELS * DungeonTrainConfig.getCarriagesPerTier());
         }
     }
 
@@ -78,6 +88,20 @@ public final class TransitionFlatbeds {
         return best == null ? null : new TransitionFlatbedPlan.Lead(best.pIdx, best.worldX, best.pace.pace());
     }
 
+    /** A new life: the player's pace starts again from the seed on every train. */
+    public static void resetRider(UUID player) {
+        for (Map<UUID, Rider> riders : RIDERS.values()) {
+            Rider r = riders.get(player);
+            if (r != null) r.pace.reset();
+        }
+    }
+
+    @SubscribeEvent
+    public static void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if (event.isEndConquered()) return; // End → overworld portal, not a death.
+        resetRider(event.getEntity().getUUID());
+    }
+
     /** Forget all riders (server stop). Claims live in {@link Data} and survive. */
     public static void clearRuntime() {
         RIDERS.clear();
@@ -88,19 +112,21 @@ public final class TransitionFlatbeds {
      * new claims first when the group is ahead of the lead rider; a group behind them (backward generation,
      * a respawn) only reads claims already recorded. Returns {@code null} when no slot is forced.
      *
-     * @param groupAnchorWorldX world X of the group's first enclosed carriage (the gate frame)
      * @param speed             train speed, blocks/s
      * @param stride            one whole group's length along X, pads and seam gap included
      */
     public static boolean[] forcedSlots(ServerLevel level, UUID trainId, int anchorPIdx, int groupSize,
-                                        int groupAnchorWorldX, int length, double speed, double stride) {
+                                        double speed, double stride) {
         if (trainId == null || groupSize < 1 || !DungeonTrainCommonConfig.isTransitionFlatbedsEnabled()) return null;
         ServerLevel overworld = level.getServer().overworld();
-        if (PortalCarriageSelection.isPortalGroup(overworld, anchorPIdx)) return null;
         Data data = Data.get(overworld);
         TransitionFlatbedPlan.Lead lead = lead(trainId, overworld.getGameTime());
+        if (PortalCarriageSelection.isPortalGroup(overworld, anchorPIdx)) {
+            logPortalDeferral(data, trainId, lead, anchorPIdx, groupSize, speed, stride);
+            return null;
+        }
         if (lead != null && anchorPIdx > lead.pIdx()) {
-            claimAhead(data, trainId, lead, anchorPIdx, groupSize, groupAnchorWorldX, length, speed, stride);
+            claimAhead(data, trainId, lead, anchorPIdx, groupSize, speed, stride);
         }
         boolean[] forced = null;
         for (int s = 0; s < groupSize; s++) {
@@ -111,21 +137,41 @@ public final class TransitionFlatbeds {
         return forced;
     }
 
-    private static void claimAhead(Data data, UUID trainId, TransitionFlatbedPlan.Lead lead, int anchorPIdx,
-                                   int groupSize, int groupAnchorWorldX, int length, double speed, double stride) {
+    /** Say so when a portal group holds a pending landmark's predicted carriage — the next group takes it. */
+    private static void logPortalDeferral(Data data, UUID trainId, TransitionFlatbedPlan.Lead lead, int anchorPIdx,
+                                          int groupSize, double speed, double stride) {
+        if (lead == null || anchorPIdx <= lead.pIdx()) return;
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
         if (!cycle.hasLayout()) return;
+        double pitch = stride / Math.max(1, groupSize);
+        for (TransitionLandmarks.Landmark lm : upcoming(cycle, lead)) {
+            if (data.isClaimed(trainId, lm.id()) || lead.worldX() >= lm.worldX()) continue;
+            int target = TransitionFlatbedPlan.predictTarget(lead.pIdx(), lead.worldX(), lm.worldX(), speed, lead.pace(), pitch);
+            if (target < anchorPIdx || target >= anchorPIdx + groupSize) continue;
+            LOGGER.info("[DungeonTrain][transition-flatbed] portal group {} holds {} (predicted pIdx {}) — deferring to the next group",
+                anchorPIdx, lm.id(), target);
+        }
+    }
+
+    /** The landmarks of the lead rider's run and the next. */
+    private static List<TransitionLandmarks.Landmark> upcoming(WorldGenCycle cycle, TransitionFlatbedPlan.Lead lead) {
         int run = cycle.runIndexAt((int) Math.max(Integer.MIN_VALUE, Math.min(Integer.MAX_VALUE, lead.worldX())));
         List<TransitionLandmarks.Landmark> landmarks = new ArrayList<>(TransitionLandmarks.forRun(cycle, run));
         landmarks.addAll(TransitionLandmarks.forRun(cycle, run + 1));
-        for (TransitionLandmarks.Landmark lm : landmarks) {
+        return landmarks;
+    }
+
+    private static void claimAhead(Data data, UUID trainId, TransitionFlatbedPlan.Lead lead, int anchorPIdx,
+                                   int groupSize, double speed, double stride) {
+        WorldGenCycle cycle = WorldGenCycle.fromConfig();
+        if (!cycle.hasLayout()) return;
+        for (TransitionLandmarks.Landmark lm : upcoming(cycle, lead)) {
             if (data.isClaimed(trainId, lm.id())) continue;
-            int[] claim = TransitionFlatbedPlan.claimFor(lm, lead, speed, anchorPIdx, groupSize,
-                groupAnchorWorldX, length, stride);
+            int[] claim = TransitionFlatbedPlan.claimFor(lm, lead, speed, anchorPIdx, groupSize, stride);
             if (claim == null) continue;
             data.claim(trainId, lm.id(), claim);
-            LOGGER.info("[DungeonTrain][transition-flatbed] {} (x={}, {}) → carriage(s) {} — lead pIdx={} x={} pace={} c/s, speed={} b/s",
-                lm.id(), lm.worldX(), lm.timing(), java.util.Arrays.toString(claim), lead.pIdx(),
+            LOGGER.info("[DungeonTrain][transition-flatbed] {} (x={}) → carriage(s) {} — lead pIdx={} x={} pace={} c/s, speed={} b/s",
+                lm.id(), lm.worldX(), java.util.Arrays.toString(claim), lead.pIdx(),
                 String.format("%.1f", lead.worldX()), String.format("%.3f", lead.pace()), speed);
         }
     }

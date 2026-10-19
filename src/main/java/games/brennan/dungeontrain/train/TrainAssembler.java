@@ -502,7 +502,7 @@ public final class TrainAssembler {
         // flatbed (open deck) whatever the rolls say. Claims ahead of the lead rider are made here, timed
         // to the train speed and their pace; respawns read the recorded claim. See TransitionFlatbeds.
         final boolean[] transitionFlatbed = TransitionFlatbeds.forcedSlots(level, trainId, anchorPIdx, groupSize,
-            groupAnchorWorldX, length, velocity == null ? 0.0 : velocity.x(),
+            velocity == null ? 0.0 : velocity.x(),
             subLevelLength + TrainCarriageAppender.TARGET_GAP_BLOCKS);
         final boolean anyTransitionFlatbed = transitionFlatbed != null;
 

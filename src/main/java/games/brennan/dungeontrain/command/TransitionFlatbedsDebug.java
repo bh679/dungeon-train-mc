@@ -23,7 +23,7 @@ import java.util.UUID;
 
 /**
  * {@code /dungeontrain debug transition-flatbeds} — every transition landmark of the lead rider's run and
- * the next, with its world X, how it is timed, and the carriage(s) it claimed — or, while still pending, the
+ * the next, with its world X and the carriage(s) it claimed — or, while still pending, the
  * carriage the lead rider is predicted to be standing in when they reach it. Logged at INFO as well.
  */
 final class TransitionFlatbedsDebug {
@@ -71,7 +71,7 @@ final class TransitionFlatbedsDebug {
                 } else if (lead != null && lead.worldX() >= lm.worldX()) {
                     state = "passed";
                     colour = ChatFormatting.DARK_GRAY;
-                } else if (lead != null && lm.timing() == TransitionLandmarks.Timing.TIMED) {
+                } else if (lead != null) {
                     int target = TransitionFlatbedPlan.predictTarget(lead.pIdx(), lead.worldX(), lm.worldX(), speed, lead.pace(), pitch);
                     state = "pending, predicted pIdx " + (target == TransitionFlatbedPlan.UNREACHABLE ? "never" : target);
                     colour = ChatFormatting.WHITE;
@@ -79,8 +79,7 @@ final class TransitionFlatbedsDebug {
                     state = "pending";
                     colour = ChatFormatting.WHITE;
                 }
-                send(source, String.format("    %-18s X %-9d %-14s x%d  %s", lm.id(), lm.worldX(),
-                        lm.timing().name().toLowerCase(), lm.count(), state), colour);
+                send(source, String.format("    %-18s X %-9d x%d  %s", lm.id(), lm.worldX(), lm.count(), state), colour);
             }
         }
         return 1;

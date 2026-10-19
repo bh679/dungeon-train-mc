@@ -1,7 +1,6 @@
 package games.brennan.dungeontrain.worldgen;
 
 import games.brennan.dungeontrain.worldgen.TransitionLandmarks.Landmark;
-import games.brennan.dungeontrain.worldgen.TransitionLandmarks.Timing;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -66,18 +65,6 @@ final class TransitionLandmarksTest {
         assertEquals(infdevCore - 480L + 1776L, lm.get("pyramid").worldX());
         assertEquals(l.start(l.firstIndexOf(CycleLayout.Type.CHUNCKS)), lm.get("chuncks").worldX());
         assertEquals(l.start(l.firstIndexOf(CycleLayout.Type.STACKS)), lm.get("stacks").worldX());
-    }
-
-    @Test
-    @DisplayName("timings: the Nether core, Far Lands exit, Chunk Error and Stacks take the first carriage")
-    void timings() {
-        Map<String, Landmark> lm = byName(run(0));
-        for (String first : List.of("nether_core_0", "nether_core_1", "far_lands_exit", "chuncks", "stacks")) {
-            assertEquals(Timing.FIRST_CARRIAGE, lm.get(first).timing(), first);
-        }
-        for (String timed : List.of("nether_rise", "end_void_0", "upside_down", "far_lands", "pyramid", "superflat")) {
-            assertEquals(Timing.TIMED, lm.get(timed).timing(), timed);
-        }
     }
 
     @Test

@@ -2,7 +2,6 @@ package games.brennan.dungeontrain.train;
 
 import games.brennan.dungeontrain.train.TransitionFlatbedPlan.Lead;
 import games.brennan.dungeontrain.worldgen.TransitionLandmarks.Landmark;
-import games.brennan.dungeontrain.worldgen.TransitionLandmarks.Timing;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -15,13 +14,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 final class TransitionFlatbedPlanTest {
 
     /** Default train: 9-long carriages, groups of 3 with 5-block pads, 0.4 seam → stride 37.4, pitch ~12.47. */
-    static final int LEN = 9;
     static final int G = 3;
     static final double STRIDE = 3 * 9 + 2 * 5 + 0.4;
     static final double PITCH = STRIDE / G;
 
     static Landmark timed(long x, int count) {
-        return new Landmark("t@r0", "t", x, Timing.TIMED, count);
+        return new Landmark("t@r0", "t", x, count);
     }
 
     @Test
@@ -53,8 +51,8 @@ final class TransitionFlatbedPlanTest {
         Landmark lm = timed(1000L, 1);
         int target = TransitionFlatbedPlan.predictTarget(0, 0.0, 1000L, 2.0, 0.25, PITCH);
         int groupAnchor = Math.floorDiv(target, G) * G;
-        assertNull(TransitionFlatbedPlan.claimFor(lm, lead, 2.0, groupAnchor - G, G, 0, LEN, STRIDE));
-        assertArrayEquals(new int[]{target}, TransitionFlatbedPlan.claimFor(lm, lead, 2.0, groupAnchor, G, 0, LEN, STRIDE));
+        assertNull(TransitionFlatbedPlan.claimFor(lm, lead, 2.0, groupAnchor - G, G, STRIDE));
+        assertArrayEquals(new int[]{target}, TransitionFlatbedPlan.claimFor(lm, lead, 2.0, groupAnchor, G, STRIDE));
     }
 
     @Test
@@ -64,7 +62,7 @@ final class TransitionFlatbedPlanTest {
         Landmark lm = timed(1000L, 3);
         int target = TransitionFlatbedPlan.predictTarget(0, 0.0, 1000L, 2.0, 0.25, PITCH);
         int anchor = Math.floorDiv(target, G) * G;
-        int[] claim = TransitionFlatbedPlan.claimFor(lm, lead, 2.0, anchor, G, 0, LEN, STRIDE);
+        int[] claim = TransitionFlatbedPlan.claimFor(lm, lead, 2.0, anchor, G, STRIDE);
         int first = Math.max(anchor, target - 2);
         assertArrayEquals(new int[]{first, first + 1, first + 2}, claim);
     }
@@ -74,41 +72,80 @@ final class TransitionFlatbedPlanTest {
     void late() {
         Lead lead = new Lead(0, 990.0, 0.25);     // 10 blocks out: target ≈ pIdx 0
         Landmark lm = timed(1000L, 1);
-        assertArrayEquals(new int[]{6}, TransitionFlatbedPlan.claimFor(lm, lead, 2.0, 6, G, 0, LEN, STRIDE));
-        assertNull(TransitionFlatbedPlan.claimFor(lm, lead, 2.0, 12, G, 0, LEN, STRIDE));
+        assertArrayEquals(new int[]{6}, TransitionFlatbedPlan.claimFor(lm, lead, 2.0, 6, G, STRIDE));
+        assertNull(TransitionFlatbedPlan.claimFor(lm, lead, 2.0, 12, G, STRIDE));
         // Already past the landmark: nothing.
-        assertNull(TransitionFlatbedPlan.claimFor(lm, new Lead(0, 1001.0, 0.25), 2.0, 3, G, 0, LEN, STRIDE));
-        assertNull(TransitionFlatbedPlan.claimFor(lm, null, 2.0, 3, G, 0, LEN, STRIDE));
+        assertNull(TransitionFlatbedPlan.claimFor(lm, new Lead(0, 1001.0, 0.25), 2.0, 3, G, STRIDE));
+        assertNull(TransitionFlatbedPlan.claimFor(lm, null, 2.0, 3, G, STRIDE));
     }
 
     @Test
-    @DisplayName("first-carriage landmarks take the first slot at or past the line, if spawned near it")
-    void firstCarriage() {
-        Landmark lm = new Landmark("f@r0", "f", 1000L, Timing.FIRST_CARRIAGE, 1);
-        // Group's first enclosed carriage at X 985: slots at 985, 994, 1003 → the third.
-        assertArrayEquals(new int[]{32}, TransitionFlatbedPlan.claimFor(lm, null, 2.0, 30, G, 985, LEN, STRIDE));
-        // Whole group before the line: not yet.
-        assertNull(TransitionFlatbedPlan.claimFor(lm, null, 2.0, 27, G, 940, LEN, STRIDE));
-        // Spawned long after the line went by: nothing.
-        assertNull(TransitionFlatbedPlan.claimFor(lm, null, 2.0, 300, G, 5000, LEN, STRIDE));
+    @DisplayName("a target inside a portal group (no claim there) slides on to the next group")
+    void timedTargetInPortalGroupSlidesToNextGroup() {
+        Lead lead = new Lead(0, 0.0, 0.25);
+        Landmark lm = timed(1000L, 1);
+        int target = TransitionFlatbedPlan.predictTarget(0, 0.0, 1000L, 2.0, 0.25, PITCH);
+        int portalAnchor = Math.floorDiv(target, G) * G;
+        // forcedSlots never asks the portal group; the next group is the first to decide, and takes its anchor.
+        assertArrayEquals(new int[]{portalAnchor + G},
+                TransitionFlatbedPlan.claimFor(lm, lead, 2.0, portalAnchor + G, G, STRIDE));
+    }
+
+    static final int WINDOW = 80;
+
+    /** Feed one carriage every {@code ticksPer} ticks for {@code carriages} carriages; returns the next tick. */
+    static long walk(PlayerCarriagePace p, int[] pIdx, long tick, int carriages, int ticksPer) {
+        for (int c = 0; c < carriages; c++) {
+            for (int t = 0; t < ticksPer; t++) p.observe(pIdx[0], tick++);
+            pIdx[0]++;
+        }
+        p.observe(pIdx[0], tick);
+        return tick;
     }
 
     @Test
-    @DisplayName("pace: an EMA of forward carriages per second, backward steps count as still")
+    @DisplayName("pace: starts at the seed and tracks forward carriages per second over the window")
     void pace() {
-        PlayerCarriagePace p = new PlayerCarriagePace(0.0);
-        // one carriage every 2 s (40 ticks) for ten minutes
-        int pIdx = 0;
-        for (long tick = 0; tick <= 12_000; tick++) {
-            if (tick > 0 && tick % 40 == 0) pIdx++;
-            p.observe(pIdx, tick);
-        }
-        assertEquals(0.5, p.pace(), 0.03);
-        // walking backward reads as standing: the average decays, never goes negative
-        for (long tick = 12_001; tick <= 24_000; tick++) {
-            if (tick % 40 == 0) pIdx--;
-            p.observe(pIdx, tick);
-        }
-        assertTrue(p.pace() >= 0.0 && p.pace() < 0.01);
+        PlayerCarriagePace p = new PlayerCarriagePace(0.25, WINDOW);
+        assertEquals(0.25, p.pace(), 1e-9);
+        int[] pIdx = {0};
+        // one carriage every 2 s for 200 carriages: well past the window, the prior is a small share
+        walk(p, pIdx, 0, 200, 40);
+        double expected = (WINDOW + 0.25 * PlayerCarriagePace.PRIOR_SECONDS) / (WINDOW * 2.0 + PlayerCarriagePace.PRIOR_SECONDS);
+        assertEquals(expected, p.pace(), 0.01);
+    }
+
+    @Test
+    @DisplayName("pace: pauses slow it, backward steps count as still, long gaps are not riding time")
+    void pacePausesAndGaps() {
+        PlayerCarriagePace p = new PlayerCarriagePace(0.25, WINDOW);
+        int[] pIdx = {0};
+        long tick = walk(p, pIdx, 0, 40, 20);   // 1 c/s
+        double walking = p.pace();
+        // stand still a minute: the average falls
+        for (int t = 0; t < 1200; t++) p.observe(pIdx[0], tick++);
+        double paused = p.pace();
+        assertTrue(paused < walking * 0.6, paused + " vs " + walking);
+        // walk backward a while: still never negative, and no faster
+        for (int t = 0; t < 400; t++) { if (t % 20 == 0) pIdx[0]--; p.observe(pIdx[0], tick++); }
+        assertTrue(p.pace() >= 0.0 && p.pace() <= paused);
+        // ten minutes off the train (one observation gap) is not counted
+        double before = p.pace();
+        tick += 12_000;
+        p.observe(pIdx[0], tick);
+        assertEquals(before, p.pace(), 1e-9);
+    }
+
+    @Test
+    @DisplayName("pace: a fast burst older than the window no longer counts; reset returns to the seed")
+    void paceWindowAndReset() {
+        PlayerCarriagePace p = new PlayerCarriagePace(0.25, WINDOW);
+        int[] pIdx = {0};
+        long tick = walk(p, pIdx, 0, 100, 2);      // 10 c/s burst (flying)
+        assertTrue(p.pace() > 2.0, "burst " + p.pace());
+        walk(p, pIdx, tick, WINDOW + 5, 40);       // then a full window at 0.5 c/s
+        assertEquals(0.5, p.pace(), 0.05);
+        p.reset();
+        assertEquals(0.25, p.pace(), 1e-9);
     }
 }
