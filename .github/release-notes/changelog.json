@@ -28311,6 +28311,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "amplified-sky-plane",
+      "version": "0.1389.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Clearer skies",
+      "summary": "Dimensional carriage rooms no longer show up hanging in the sky over some stretches of the journey.",
+      "highlights": [],
+      "pr": 2165,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
