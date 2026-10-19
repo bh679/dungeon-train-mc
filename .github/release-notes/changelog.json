@@ -28469,8 +28469,26 @@
       "released_at": "2026-10-19T19:16:33Z"
     },
     {
-      "id": "contribute-currency-setting",
+      "id": "mobs-hold-place-in-carriages",
       "version": "0.1398.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train",
+        "mobs"
+      ],
+      "title": "Mobs stay put in moving carriages",
+      "summary": "Animals, villagers and monsters standing inside a carriage no longer slowly slide toward the back of the train. The further you travelled, the faster they slid, up to several blocks a minute on long runs. Now they stay where they stand.",
+      "highlights": [],
+      "pr": 2175,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "contribute-currency-setting",
+      "version": "0.1399.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -28490,7 +28508,7 @@
     },
     {
       "id": "contribute-screen-rewards",
-      "version": "0.1398.0",
+      "version": "0.1399.0",
       "type": "feat",
       "tags": [
         "feature",
