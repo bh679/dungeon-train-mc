@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.worldgen;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.config.SpheresGravityConfig;
+import games.brennan.dungeontrain.mixin.ServerGamePacketListenerFloatAccessor;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.core.SectionPos;
@@ -69,6 +70,7 @@ public final class SphereGravityServer {
             if (player.isSpectator()) continue;
             WorldGenCycle cycle = MixBand.cycleAtBlock(level, player.getBlockX(), player.getBlockZ());
             if (!SpheresBand.nearBand(cycle, player.getX(), half)) continue;
+            keepAloft(level, player, reach);
             AABB box = player.getBoundingBox().inflate(half);
             for (Entity e : level.getEntities((Entity) null, box, SphereGravityServer::pullable)) {
                 if (seen == null) {
@@ -96,6 +98,19 @@ public final class SphereGravityServer {
         SphereGravity.Pull pull = SphereGravityPush.pullOn(e, spheres);
         if (pull.isZero()) return;
         SphereGravityPush.apply(e, pull, SphereGravityShelter.factor(e, SpheresGravityConfig.riderFactor()));
+    }
+
+    /**
+     * A player a sphere is pulling may hang over the void (under a sphere its pull nearly cancels gravity),
+     * which vanilla's flight check reads as flying and kicks. Clear the count while any sphere pulls them.
+     */
+    private static void keepAloft(ServerLevel level, ServerPlayer player, double reach) {
+        double midY = player.getY() + player.getBbHeight() * 0.5;
+        List<SphereField.Sphere> spheres = SpheresBand.spheresNear(level, player.getX(), midY, player.getZ(), reach);
+        if (spheres.isEmpty()) return;
+        if (SphereGravity.pull(spheres, player.getX(), midY, player.getZ(), 0, 0, 0,
+                SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii()).isZero()) return;
+        ((ServerGamePacketListenerFloatAccessor) player.connection).dungeontrain$setAboveGroundTickCount(0);
     }
 
     /** Mobs, items, XP, projectiles — not players (their client pulls them), decorations, riders or floaters. */
