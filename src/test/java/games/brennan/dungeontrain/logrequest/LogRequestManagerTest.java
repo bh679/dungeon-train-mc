@@ -50,6 +50,19 @@ class LogRequestManagerTest {
                 DeliveryFailureReport.line(null, Reason.DEV_CHAT_OFF));
         assertEquals("Message didn't land (Steve) — a log request was sent less than a minute ago",
                 DeliveryFailureReport.line("Steve", Reason.TOO_SOON));
+        assertEquals("Message didn't land (Steve) — they approved, but their logs didn't upload; ask them to try /bug again",
+                DeliveryFailureReport.line("Steve", Reason.UPLOAD_FAILED));
+    }
+
+    @Test
+    @DisplayName("an upload is taken only for an outstanding, unexpired SEND")
+    void consumable() {
+        LogRequestManager.Pending asked = new LogRequestManager.Pending(1, LogRequestManager.Origin.THREAD, 1_000L, false, null);
+        LogRequestManager.Pending sending = asked.sendingUntil(2_000L);
+        assertNull(LogRequestManager.consumable(null, 0L));
+        assertNull(LogRequestManager.consumable(asked, 500L));
+        assertNull(LogRequestManager.consumable(sending, 2_001L));
+        assertEquals(sending, LogRequestManager.consumable(sending, 2_000L));
     }
 
     @Test
