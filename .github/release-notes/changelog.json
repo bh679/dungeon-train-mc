@@ -27902,15 +27902,14 @@
       "released_at": null
     },
     {
-      "id": "wither-rose-kill-credit",
+      "id": "flower-fix",
       "version": "0.1368.0",
-      "type": "feat",
+      "type": "fix",
       "tags": [
-        "feature",
-        "mobs"
+        "fix"
       ],
-      "title": "Wither roses you plant earn you the kill",
-      "summary": "Plant a wither rose and anything that withers away in it counts as your kill, players included. It shows up in your kill tally, your Death Note and kill advancements.",
+      "title": "Flower fix",
+      "summary": "Flower fix.",
       "highlights": [],
       "pr": 2132,
       "date": "2026-10-19",
