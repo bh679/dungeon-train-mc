@@ -136,6 +136,6 @@ public final class PriorityBookMessage {
 
     /** The passive line once the reader has boosted this copy, {@code n} times. */
     public static Component youBoosted(String locale, long n) {
-        return PluralRules.clause(locale, GUI + "you_boosted", n);
+        return Component.translatable(GUI + "you_boosted", n);
     }
 }
