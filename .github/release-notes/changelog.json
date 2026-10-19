@@ -28058,9 +28058,9 @@
       "highlights": [],
       "pr": 2147,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1378.0",
+      "released_at": "2026-10-19T12:33:46Z"
     },
     {
       "id": "advancement-reveal-chat",
@@ -28078,9 +28078,46 @@
       ],
       "pr": 2149,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1378.0",
+      "released_at": "2026-10-19T12:33:46Z"
+    },
+    {
+      "id": "transition-flatbed-groups",
+      "version": "0.1376.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Open skies at every crossing",
+      "summary": "When the world changes around the train, you now ride through it on an open flatbed, out in the air to watch it happen.",
+      "highlights": [
+        "A flatbed group waits wherever the world shifts.",
+        "It lands where you will be, however fast you travel."
+      ],
+      "pr": 2150,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1378.0",
+      "released_at": "2026-10-19T12:33:46Z"
+    },
+    {
+      "id": "walled-enemy-rooms",
+      "version": "0.1376.0",
+      "type": "content",
+      "tags": [
+        "content",
+        "mobs"
+      ],
+      "title": "New walled enemy rooms",
+      "summary": "Long carriages can now hold walled rooms full of enemies.",
+      "highlights": [],
+      "pr": 2150,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1378.0",
+      "released_at": "2026-10-19T12:33:46Z"
     }
   ]
 }
