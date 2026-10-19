@@ -28311,6 +28311,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "random-photo-frames",
+      "version": "0.1389.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Photos on the walls",
+      "summary": "Some carriages now hang framed photos taken by other players, and a different set turns up on every train.",
+      "highlights": [
+        "New carriages with photo frames on the walls.",
+        "Picture frames in mirrored carriages now hang on the right wall.",
+        "Fixed old photos staying behind in a frame, and frames dropping as items."
+      ],
+      "pr": 2166,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
