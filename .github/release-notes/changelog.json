@@ -28131,9 +28131,9 @@
       "highlights": [],
       "pr": 2153,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "log-request-upload-feedback",
@@ -28148,9 +28148,9 @@
       "highlights": [],
       "pr": 2151,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "quicker-streams-live-delay",
@@ -28169,9 +28169,9 @@
       ],
       "pr": 2154,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "editor-clear-long-contents",
@@ -28186,9 +28186,9 @@
       "highlights": [],
       "pr": 2155,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "enderchest-photos-keep-pictures",
@@ -28204,6 +28204,200 @@
         "Photos that already went blank come back if the world they were taken in is still saved"
       ],
       "pr": 2156,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "nether-core-write-gate",
+      "version": "0.1383.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Lighter terrain generation",
+      "summary": "Some of the heavier terrain the train rides through now generates with less work per chunk, so the server has more breathing room while new ground is being laid down. Nothing looks different.",
+      "highlights": [],
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "advancement-fix-2159",
+      "version": "0.1379.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Advancement fix.",
+      "highlights": [],
+      "pr": 2159,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "live-relay-restart-notice",
+      "version": "0.1385.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Eye restart warnings",
+      "summary": "When the live stream's server restarts, everyone streaming or watching now gets a heads-up in Live chat, and the stream picks back up with the same streamer once it's back.",
+      "highlights": [
+        "A short countdown in Live chat before the server restarts, saying roughly how long it will take",
+        "Your Live Eye or TV stays with the same streamer through the restart instead of dropping out",
+        "Live chat stays connected and tells you when everything is back"
+      ],
+      "pr": 2161,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "advancement-profile-upkeep",
+      "version": "0.1386.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Advancement profile upkeep",
+      "summary": "Behind-the-scenes upkeep for advancement profiles.",
+      "highlights": [],
+      "pr": 2160,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "balance-tweak",
+      "version": "0.1387.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Balance tweak",
+      "summary": "Balance tweak.",
+      "highlights": [],
+      "pr": 2162,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "options-hint-hover-tooltip",
+      "version": "0.1388.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Settings descriptions on hover",
+      "summary": "Hover any setting in the Dungeon Train options to read its full description, even when it is too long to fit on the row.",
+      "highlights": [],
+      "pr": 2163,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "discord-ping-settings-tidy",
+      "version": "0.1388.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Ping settings tidy",
+      "summary": "The Discord ping list in Account settings is a little shorter.",
+      "highlights": [],
+      "pr": 2164,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "random-photo-frames",
+      "version": "0.1390.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "community"
+      ],
+      "title": "Photos on the walls",
+      "summary": "Some carriages now hang framed photos taken by other players, and a different set turns up on every train.",
+      "highlights": [
+        "New carriages with photo frames on the walls.",
+        "Picture frames in mirrored carriages now hang on the right wall.",
+        "Fixed old photos staying behind in a frame, and frames dropping as items."
+      ],
+      "pr": 2166,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "takeover-vote-twenty-minutes",
+      "version": "0.1391.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Longer takeover votes",
+      "summary": "Taking over someone's Live Eye stream now needs a vote from the viewers for their first 20 minutes on air. For the first 10 the streamer votes too; after that, the viewers decide on their own.",
+      "highlights": [],
+      "pr": 2168,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "live-page-update",
+      "version": "0.1390.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live page update",
+      "summary": "A small improvement to the Live page.",
+      "highlights": [],
+      "pr": 2167,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "train-sound-unmute-restart",
+      "version": "0.1393.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Train sound comes back after unmuting",
+      "summary": "Turning your game sound, ambient sound or the train engine volume down to zero and back up now brings the train's rumble straight back at its normal volume, instead of leaving it silent until you rejoined the world.",
+      "highlights": [],
+      "pr": 2169,
       "date": "2026-10-19",
       "released": false,
       "released_in": null,

@@ -33,6 +33,7 @@ import net.neoforged.neoforge.client.event.ClientChatReceivedEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import org.slf4j.Logger;
 
+import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -75,7 +76,13 @@ public final class LiveChatBridge {
     private static volatile boolean sendFailureLogged;
     /** Part Of the Community's action went to the server this session; one is enough, the grant is one-shot. */
     private static volatile boolean tvChatReported;
+    /** Joined through a TV: the relay's join list is memory only, so a relay restart needs the join again. */
+    private static volatile boolean joinedViaTv;
     private static final AtomicBoolean inFlight = new AtomicBoolean();
+    /** Relay-restart lines waiting their turn: printed at the relay's own gaps, not a poll's batch at once. */
+    private static final ArrayDeque<ChatLine> restartLines = new ArrayDeque<>();
+    private static long lastRestartTs;
+    private static long lastRestartPrintedMs;
     private static final LiveChatSignatures signatures = new LiveChatSignatures();
 
     private LiveChatBridge() {}
@@ -108,7 +115,8 @@ public final class LiveChatBridge {
         }
         if (!connected) connect(mc, wearingTv);
         long now = System.currentTimeMillis();
-        if (now - lastPollMs < POLL_MS || !inFlight.compareAndSet(false, true)) return;
+        printRestartLines(mc, now);
+        if (now - lastPollMs < LiveRelayRestart.chatPollMs(now, POLL_MS) || !inFlight.compareAndSet(false, true)) return;
         lastPollMs = now;
         LiveFeedClient.chat(base(streaming), cursor).thenAcceptAsync(r -> {
             inFlight.set(false);
@@ -183,20 +191,42 @@ public final class LiveChatBridge {
 
     private static void connect(Minecraft mc, boolean viaTv) {
         connected = true;
+        joinedViaTv = viaTv;
         cursor = -1;
         lastPollMs = 0;
         signatures.clear();
         mc.gui.getChat().addMessage(Component.translatable(LiveChatRules.CONNECTED_KEY,
             LiveOptionsCommand.pathLink(LiveChatRules.PATH_KEY)).withStyle(ChatFormatting.GRAY));
-        if (viaTv && mc.getUser() != null) {
-            // Only a viewer who can take a Live Eye may be offered one (LiveGiftClient#canReceive).
-            LiveFeedClient.chatJoin(base(false), mc.getUser().getProfileId(), mc.getUser().getName(),
-                LiveGiftClient.canReceive(mc));
+        if (viaTv) join(mc);
+    }
+
+    private static void join(Minecraft mc) {
+        if (mc.getUser() == null) return;
+        // Only a viewer who can take a Live Eye may be offered one (LiveGiftClient#canReceive).
+        LiveFeedClient.chatJoin(base(false), mc.getUser().getProfileId(), mc.getUser().getName(),
+            LiveGiftClient.canReceive(mc));
+    }
+
+    /**
+     * The relay restarting (LiveRelayRestart): each line in this player's language, not the relay's English,
+     * at the gap the relay left after the one before, so a poll that brought several still reads 3, 2, 1.
+     */
+    private static void printRestartLines(Minecraft mc, long now) {
+        while (!restartLines.isEmpty()) {
+            ChatLine line = restartLines.peek();
+            if (now < lastRestartPrintedMs + LiveRelayRestart.gapMs(lastRestartTs, line.ts())) return;
+            restartLines.poll();
+            lastRestartTs = line.ts();
+            lastRestartPrintedMs = now;
+            LiveRelayRestart.note(line.restart(), line.ts(), now);
+            GuiMessageTag tag = mc.isSingleplayer() ? GuiMessageTag.systemSinglePlayer() : GuiMessageTag.system();
+            mc.gui.getChat().addMessage(LiveRelayRestart.line(line.restart(), line.ts()), signatures.sign(line.seq()), tag);
         }
     }
 
     private static void disconnect() {
         connected = false;
+        restartLines.clear();
         LiveTakeoverChat.reset();
         cursor = -1;
         signatures.clear();
@@ -209,6 +239,10 @@ public final class LiveChatBridge {
         lastPollMs = 0;
         sendFailureLogged = false;
         tvChatReported = false;
+        joinedViaTv = false;
+        lastRestartTs = 0L;
+        lastRestartPrintedMs = 0L;
+        LiveRelayRestart.reset();
     }
 
     private static void deliver(Minecraft mc, ChatPage page, GiftNotices gifts) {
@@ -220,9 +254,16 @@ public final class LiveChatBridge {
         if (LiveChatRules.restarted(cursor, page.seq())) {
             // The relay was redeployed: its ring starts again at 1 while the stream carries on. Follow
             // the new head or every later poll asks for seqs that will never come and chat goes silent.
-            cursor = page.seq();
             signatures.clear();
             ChatReactionTracker.forgetLive();
+            if (joinedViaTv) join(mc); // the restart forgot this viewer was in the room
+            if (LiveRelayRestart.inWindow(System.currentTimeMillis())) {
+                // An announced restart: the new ring holds only what was said since the boot (the "back"
+                // line among it), so read it from the start next poll rather than skip to its head.
+                cursor = 0;
+                return;
+            }
+            cursor = page.seq();
         }
         if (mc.player == null || mc.level == null) return;
         UUID me = mc.getUser() != null ? mc.getUser().getProfileId() : null;
@@ -243,6 +284,10 @@ public final class LiveChatBridge {
         // This life's "the crowd" death page: who said what in the room while this player was on air.
         if (streaming) LiveLifeChat.onLines(page.lines(), me != null ? me.toString().replace("-", "") : null);
         for (ChatLine line : page.lines()) {
+            if (line.restart() != null) {
+                restartLines.add(line); // printed by printRestartLines, a second apart as the relay sent them
+                continue;
+            }
             if (line.poll() != null) {
                 Component shown = LiveTakeoverChat.onPollLine(line.poll(), me);
                 if (shown != null) chat.addMessage(shown, signatures.sign(line.seq()), tag);

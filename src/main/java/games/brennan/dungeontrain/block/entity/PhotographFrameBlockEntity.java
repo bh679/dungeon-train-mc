@@ -1,7 +1,9 @@
 package games.brennan.dungeontrain.block.entity;
 
 import games.brennan.dungeontrain.compat.photo.PhotoFrameLayout;
+import games.brennan.dungeontrain.compat.photo.TestFramePhoto;
 import games.brennan.dungeontrain.registry.ModBlockEntities;
+import games.brennan.dungeontrain.registry.ModItems;
 import io.github.mortuusars.exposure.Exposure;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -29,12 +31,21 @@ public class PhotographFrameBlockEntity extends BlockEntity {
     private static final String TAG_ITEM_ROTATION = "ItemRotation";
     private static final String TAG_GLOWING = "IsGlowing";
     private static final String TAG_SIZE = "Size";
+    private static final String TAG_PENDING_RANDOM = "DtPendingRandomPhoto";
 
     private ItemStack frameItem = ItemStack.EMPTY;
     private ItemStack photo = ItemStack.EMPTY;
     private int itemRotation;
     private boolean glowing;
     private int size;
+
+    /**
+     * Set when a train stamp met the {@code random_playerphoto} placeholder with no community photo
+     * to hand out yet; the server ticker fills the frame once the pool has one
+     * ({@code compat.photo.RandomFramePhotos}). Only the stamp pass sets it, so editor frames never
+     * resolve on their own.
+     */
+    private boolean pendingRandomPhoto;
 
     /**
      * Set by a creative-mode break just before the group is torn down, so the master's drops are
@@ -70,6 +81,23 @@ public class PhotographFrameBlockEntity extends BlockEntity {
         return size;
     }
 
+    /** True while the frame holds the editor's random-photo placeholder rather than a photo. */
+    public boolean hasRandomPlaceholder() {
+        return photo.is(ModItems.RANDOM_PLAYERPHOTO.get());
+    }
+
+    public boolean pendingRandomPhoto() {
+        return pendingRandomPhoto;
+    }
+
+    /** Empty the frame and wait for a community photo to fill it. */
+    public void markPendingRandomPhoto() {
+        this.photo = ItemStack.EMPTY;
+        this.itemRotation = 0;
+        this.pendingRandomPhoto = true;
+        changed();
+    }
+
     public boolean suppressDrops() {
         return suppressDrops;
     }
@@ -84,6 +112,7 @@ public class PhotographFrameBlockEntity extends BlockEntity {
     public void setPhoto(ItemStack photo) {
         this.photo = photo.copyWithCount(1);
         this.itemRotation = 0;
+        this.pendingRandomPhoto = false;
         changed();
     }
 
@@ -118,6 +147,15 @@ public class PhotographFrameBlockEntity extends BlockEntity {
         }
     }
 
+    /** A placeholder frame loaded from a saved plot: make sure the picture it shows exists. */
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && !level.isClientSide && hasRandomPlaceholder()) {
+            TestFramePhoto.ensureSaved(level.registryAccess());
+        }
+    }
+
     @Override
     protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
@@ -126,6 +164,7 @@ public class PhotographFrameBlockEntity extends BlockEntity {
         tag.putByte(TAG_ITEM_ROTATION, (byte) itemRotation);
         tag.putBoolean(TAG_GLOWING, glowing);
         tag.putByte(TAG_SIZE, (byte) size);
+        if (pendingRandomPhoto) tag.putBoolean(TAG_PENDING_RANDOM, true);
     }
 
     @Override
@@ -136,6 +175,7 @@ public class PhotographFrameBlockEntity extends BlockEntity {
         itemRotation = Math.floorMod(tag.getByte(TAG_ITEM_ROTATION), 4);
         glowing = tag.getBoolean(TAG_GLOWING);
         size = PhotoFrameLayout.clampSize(tag.getByte(TAG_SIZE));
+        pendingRandomPhoto = tag.getBoolean(TAG_PENDING_RANDOM);
     }
 
     @Override
