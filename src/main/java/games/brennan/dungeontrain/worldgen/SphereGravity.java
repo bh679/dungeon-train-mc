@@ -15,10 +15,12 @@ import java.util.List;
  *       strength 1 pulls as hard as the ground does while a small one only nudges.</li>
  *   <li><b>Outside</b> ({@code d ≥ r}): inverse-square, {@code g × (r/d)²}, smoothly faded to 0 over the
  *       outer half of the reach ({@code reachRadii × r}) so there's no edge you can feel.</li>
- *   <li><b>Inside</b> ({@code d < r}, e.g. the train's carved corridor or a dug tunnel): no pull — you've
- *       arrived, and the sphere's own blocks hold you.</li>
- *   <li><b>Standing on it</b>: on the ground within {@link #STAND_MARGIN} of the surface — no pull either,
- *       so walking about on a sphere feels like normal ground. Only that sphere lets go; others still pull.</li>
+ *   <li><b>Inside</b> ({@code d < r}): the full surface pull. A sphere's ground is usually well inside its
+ *       radius — an overworld sphere's top is the natural surface, about 0.3·r above the centre — so this is
+ *       what you feel when you jump off it.</li>
+ *   <li><b>Standing on it</b>: on the ground inside the sphere or within {@link #STAND_MARGIN} of its surface
+ *       (its top, a tunnel, the train's corridor) — no pull, so walking about feels like normal ground and
+ *       only a jump brings the pull back. Only that sphere lets go; others still pull.</li>
  * </ul>
  * Pulls from overlapping spheres add. A sphere stops pulling once the thing is already moving toward its
  * centre at {@link #MAX_SPEED_TOWARD} blocks/tick, so nothing builds runaway speed.
@@ -70,7 +72,7 @@ public final class SphereGravity {
     public static double pullAt(double d, int r, double strength, double reachRadii) {
         if (r <= 0 || strength <= 0) return 0.0;
         double g = surfacePull(r, strength);
-        if (d < r) return 0.0;
+        if (d < r) return g;
         double reach = Math.max(1.0, reachRadii) * r;
         if (d >= reach) return 0.0;
         double a = g * (r / d) * (r / d);
@@ -99,7 +101,7 @@ public final class SphereGravity {
         for (SphereField.Sphere s : spheres) {
             double dx = s.cx() + 0.5 - x, dy = s.cy() + 0.5 - y, dz = s.cz() + 0.5 - z;
             double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (d < s.r() || (onGround && d <= s.r() + STAND_MARGIN)) continue;
+            if (d < 1e-6 || (onGround && d <= s.r() + STAND_MARGIN)) continue;
             double ux = dx / d, uy = dy / d, uz = dz / d;
             if (vx * ux + vy * uy + vz * uz >= MAX_SPEED_TOWARD) continue;
             double a = pullAt(d, s.r(), strength, reachRadii);

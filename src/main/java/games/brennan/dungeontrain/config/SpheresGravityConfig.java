@@ -12,7 +12,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 public final class SpheresGravityConfig {
 
     public static final boolean DEFAULT_ENABLED = true;
-    public static final double DEFAULT_STRENGTH = 2.0;
+    public static final double DEFAULT_STRENGTH = 3.0;
     public static final double DEFAULT_REACH_RADII = 6.0;
     public static final double MIN_REACH_RADII = 1.0;
     public static final double MAX_REACH_RADII = 8.0;
@@ -29,12 +29,12 @@ public final class SpheresGravityConfig {
     static void define(ModConfigSpec.Builder b) {
         enabled = b
                 .comment("Spheres in the spheres band have gravity: each pulls players, mobs, dropped items, XP and",
-                        "projectiles toward its centre, on top of normal gravity. The pull stops once you are",
-                        "standing on a sphere or inside it. Default true.")
+                        "projectiles toward its centre, on top of normal gravity. The pull stops while you are",
+                        "standing on a sphere (or in a tunnel through one) and comes back when you jump. Default true.")
                 .define("spheresGravityEnabled", DEFAULT_ENABLED);
         strength = b
                 .comment("Pull at a sphere's surface as a multiple of normal gravity, for the largest sphere",
-                        "(radius 40); smaller spheres pull proportionally less. 0 = off. Default 2.0.")
+                        "(radius 40); smaller spheres pull proportionally less. 0 = off. Default 3.0.")
                 .defineInRange("spheresGravityStrength", DEFAULT_STRENGTH, 0.0, 10.0);
         reachRadii = b
                 .comment("How far a sphere's pull reaches, in multiples of its radius from its centre. It falls off",
