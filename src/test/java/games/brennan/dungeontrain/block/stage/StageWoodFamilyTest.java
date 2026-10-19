@@ -4,12 +4,15 @@ import games.brennan.dungeontrain.block.stage.StageWoodFamily.WoodKind;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** The wood-family table ported from {@code scripts/parts/clone-wood-stage.py}. */
+/** The wood-family table: the vanilla woods ported from {@code scripts/parts/clone-wood-stage.py}, plus the modded woods. */
 final class StageWoodFamilyTest {
 
     @Test
@@ -58,5 +61,42 @@ final class StageWoodFamilyTest {
         assertTrue(StageWoodFamily.owning("minecraft:stone").isEmpty());
         assertTrue(StageWoodFamily.owning(null).isEmpty());
         assertEquals(Optional.of(StageWoodFamily.DARK_OAK), StageWoodFamily.byId("Dark_Oak"));
+    }
+
+    @Test
+    @DisplayName("modded woods: namespaced ids, vanilla naming for BoP and pale oak, BCLib naming for the BetterX woods")
+    void modded() {
+        assertEquals("pale_oak", StageWoodFamily.PALE_OAK.id());
+        assertEquals("minecraft:stripped_pale_oak_wood", StageWoodFamily.PALE_OAK.block(WoodKind.STRIPPED_WOOD));
+        assertEquals("biomesoplenty:fir", StageWoodFamily.BOP_FIR.id());
+        assertEquals("biomesoplenty:stripped_fir_log", StageWoodFamily.BOP_FIR.block(WoodKind.STRIPPED_LOG));
+        assertEquals("biomesoplenty:red_maple_leaves", StageWoodFamily.BOP_MAPLE.block(WoodKind.LEAVES));
+        assertEquals("betternether:rubeus_stripped_log", StageWoodFamily.BN_RUBEUS.block(WoodKind.STRIPPED_LOG));
+        assertEquals("betternether:rubeus_bark", StageWoodFamily.BN_RUBEUS.block(WoodKind.WOOD));
+        assertEquals("betternether:rubeus_gate", StageWoodFamily.BN_RUBEUS.block(WoodKind.FENCE_GATE));
+        assertEquals("betterend:tenanea_plate", StageWoodFamily.BE_TENANEA.block(WoodKind.PRESSURE_PLATE));
+        assertEquals("betternether:nether_reed_stem", StageWoodFamily.BN_NETHER_REED.block(WoodKind.STRIPPED_WOOD));
+        assertEquals("betterend:umbrella_tree_membrane", StageWoodFamily.BE_UMBRELLA_TREE.block(WoodKind.LEAVES));
+        // The two willows stay apart.
+        assertEquals(Optional.of(StageWoodFamily.BOP_WILLOW), StageWoodFamily.byId("biomesoplenty:willow"));
+        assertEquals(Optional.of(StageWoodFamily.BN_WILLOW), StageWoodFamily.byId("BetterNether:Willow"));
+        assertEquals(Optional.of(StageWoodFamily.BN_RUBEUS), StageWoodFamily.owning("betternether:rubeus_planks"));
+        assertEquals(Optional.of(StageWoodFamily.BOP_FIR), StageWoodFamily.owning("biomesoplenty:fir_door"));
+    }
+
+    @Test
+    @DisplayName("every family answers all 14 kinds, ids are unique and fit the 32-char sync string")
+    void everyFamilyIsComplete() {
+        Set<String> ids = new HashSet<>();
+        for (StageWoodFamily f : StageWoodFamily.values()) {
+            assertTrue(ids.add(f.id()), "duplicate id " + f.id());
+            assertTrue(f.id().length() <= 32, f.id());
+            for (WoodKind kind : WoodKind.values()) {
+                String block = f.block(kind);
+                assertNotNull(block, f + " " + kind);
+                // Only leaves may be filled from another namespace (a wart or mushroom block).
+                if (kind != WoodKind.LEAVES) assertTrue(block.startsWith(f.namespace() + ":"), f + " " + kind + " " + block);
+            }
+        }
     }
 }
