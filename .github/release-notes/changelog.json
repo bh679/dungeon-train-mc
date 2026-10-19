@@ -28224,6 +28224,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-profile-upkeep",
+      "version": "0.1384.0",
+      "type": "chore",
+      "tags": [
+        "internal"
+      ],
+      "title": "Advancement profile upkeep",
+      "summary": "Behind-the-scenes upkeep for advancement profiles.",
+      "highlights": [],
+      "pr": 2160,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
