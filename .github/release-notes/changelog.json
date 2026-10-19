@@ -28058,9 +28058,9 @@
       "highlights": [],
       "pr": 2147,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1378.0",
+      "released_at": "2026-10-19T12:33:46Z"
     },
     {
       "id": "advancement-reveal-chat",
@@ -28078,9 +28078,9 @@
       ],
       "pr": 2149,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1378.0",
+      "released_at": "2026-10-19T12:33:46Z"
     },
     {
       "id": "transition-flatbed-groups",
@@ -28098,9 +28098,9 @@
       ],
       "pr": 2150,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1378.0",
+      "released_at": "2026-10-19T12:33:46Z"
     },
     {
       "id": "walled-enemy-rooms",
@@ -28115,9 +28115,9 @@
       "highlights": [],
       "pr": 2150,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1378.0",
+      "released_at": "2026-10-19T12:33:46Z"
     }
   ]
 }
