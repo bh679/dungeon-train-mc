@@ -591,7 +591,7 @@ public final class ClientDisplayConfig {
 
         b.push("afkPause");
         ModConfigSpec.BooleanValue afkPauseEnabled = b
-                .comment("Open the pause menu when you go AFK: the mouse has not moved for 30 seconds, or there has been no other input for 5 minutes (the same rules that stop your time on the train). Never in Free Play. In singleplayer this freezes the world, so the train does not carry you into danger while you are away. In multiplayer it only opens the menu. Set false to never pause automatically.")
+                .comment("Open the pause menu when you go AFK: no key, click or mouse movement for 2 minutes, or 5 minutes with a screen open (a book, a chest, the inventory). Your time on the train stops sooner, after 30 seconds of a still mouse, whether or not the menu opens. Never in Free Play. In singleplayer this freezes the world, so the train does not carry you into danger while you are away. In multiplayer it only opens the menu. Set false to never pause automatically.")
                 .define("enabled", true);
         b.pop();
 
