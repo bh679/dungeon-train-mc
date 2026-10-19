@@ -74,7 +74,7 @@ final class WindFieldTest {
     @DisplayName("gusts arrive at about the configured rate")
     void gustRate() {
         WindProfile.Stage s = new WindProfile.Stage(0, 0.0, 0.0, 6.0, 0.05, 20, 0, 0, 60);
-        WindProfile p = new WindProfile(true, 90, 1, 20, WindProfile.Multipliers.UNIT, java.util.List.of(s));
+        WindProfile p = new WindProfile(true, 90, 1, 1, 20, WindProfile.Multipliers.UNIT, java.util.List.of(s));
         int onsets = 0;
         boolean was = false;
         long ticks = 20L * 60 * 200; // 200 minutes

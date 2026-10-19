@@ -41,6 +41,11 @@ public final class ClientWind {
         return s.on() && s.profile().enabled() && s.startX() != Long.MIN_VALUE;
     }
 
+    /** World X where the wind starts, {@link Long#MIN_VALUE} for none. */
+    public static long startX() {
+        return snap.startX();
+    }
+
     public static WindProfile profile() {
         return snap.profile();
     }

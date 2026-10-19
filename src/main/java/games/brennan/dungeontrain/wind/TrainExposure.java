@@ -39,39 +39,53 @@ public final class TrainExposure {
 
     private TrainExposure() {}
 
+    /** Why an entity is or isn't in the wind (shown on the F3+8 wind panel). */
+    public enum Result {
+        NOT_ON_TRAIN, UNDER_COVER, IN_LEE, EXPOSED;
+
+        public boolean exposed() {
+            return this == EXPOSED;
+        }
+    }
+
     /**
      * True when {@code e} stands (or hangs) over {@code sub} in the open and nothing upwind shelters it.
      *
      * @param dirX,dirZ world-space direction the wind blows toward (unit)
      */
     public static boolean isExposed(SubLevel sub, Entity e, double dirX, double dirZ) {
-        if (sub == null || sub.isRemoved()) return false;
+        return classify(sub, e, dirX, dirZ).exposed();
+    }
+
+    /** {@link #isExposed} with the reason. */
+    public static Result classify(SubLevel sub, Entity e, double dirX, double dirZ) {
+        if (sub == null || sub.isRemoved()) return Result.NOT_ON_TRAIN;
         LevelPlot plot = sub.getPlot();
-        if (plot == null) return false;
+        if (plot == null) return Result.NOT_ON_TRAIN;
         Pose3dc pose = sub.logicalPose();
         Vector3d feet = pose.transformPositionInverse(new Vector3d(e.getX(), e.getY() + 0.05, e.getZ()));
 
-        if (!overDeck(plot, feet, e.getBbWidth() / 2.0)) return false;
+        if (!overDeck(plot, feet, e.getBbWidth() / 2.0)) return Result.NOT_ON_TRAIN;
 
         double eye = Math.max(0.2, e.getEyeHeight());
         BlockPos head = BlockPos.containing(feet.x, feet.y + eye, feet.z);
         for (int dy = 1; dy <= COVER_SCAN; dy++) {
-            if (solid(plot, head.above(dy))) return false;
+            if (solid(plot, head.above(dy))) return Result.UNDER_COVER;
         }
 
         // Upwind = against the wind, rotated into the carriage frame (trains only yaw, but don't assume it).
         Vector3d up = pose.transformNormalInverse(new Vector3d(-dirX, 0.0, -dirZ));
         double len = Math.sqrt(up.x * up.x + up.z * up.z);
-        if (len < 1e-6) return true;
+        if (len < 1e-6) return Result.EXPOSED;
         double ux = up.x / len;
         double uz = up.z / len;
         for (int step = 1; step <= LEE_SCAN; step++) {
             double x = feet.x + ux * step;
             double z = feet.z + uz * step;
-            if (solid(plot, BlockPos.containing(x, feet.y + FOOT_PROBE, z))) return false;
-            if (solid(plot, BlockPos.containing(x, feet.y + eye, z))) return false;
+            if (solid(plot, BlockPos.containing(x, feet.y + FOOT_PROBE, z))) return Result.IN_LEE;
+            if (solid(plot, BlockPos.containing(x, feet.y + eye, z))) return Result.IN_LEE;
         }
-        return true;
+        return Result.EXPOSED;
     }
 
     /**

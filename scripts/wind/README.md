@@ -24,5 +24,9 @@ opens `http://127.0.0.1:8796`, which shows:
 | `golden.json` | Vectors written by `WindFieldTest` (`UPDATE_WIND_GOLDEN=1 ./gradlew test --tests '*WindFieldTest*'`). The page badge goes red if the JS and Java drift. |
 | `bands.json` | Band edges relative to the Upside-down end, written by `/dungeontrain debug wind export` (copy it from `run/wind-bands.json`). |
 
+In game, **F3 + 8** opens the wind panel: start X, how far past it you are, the stage there, the wind now and
+the wind the streaks show (1 s ahead), whether you are exposed (or why not), and a 10 s graph of wind / shown /
+push applied. `airFactor` multiplies the push on players and mobs while they are off the ground.
+
 Units: push is blocks/tick² at multiplier 1. A grounded player settles at about 2.2× that in blocks/tick
 (walking is about 0.22), airborne about 11×.

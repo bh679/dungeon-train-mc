@@ -70,6 +70,7 @@ def validate_profile(profile: object) -> dict:
         "enabled": bool(profile.get("enabled", True)),
         "headingDeg": _number(profile, "headingDeg", "profile"),
         "sneakFactor": _number(profile, "sneakFactor", "profile"),
+        "airFactor": _number(profile, "airFactor", "profile") if "airFactor" in profile else 1.0,
         "visualLeadTicks": int(_number(profile, "visualLeadTicks", "profile")),
         "multipliers": {k: _number(mult, k, "multipliers") for k in MULT_FIELDS},
         "stages": clean_stages,

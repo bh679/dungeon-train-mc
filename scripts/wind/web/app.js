@@ -76,7 +76,7 @@ function withStage(i, key, value) {
 // ---------- form ----------
 function buildForm() {
   $("enabled").checked = !!profile.enabled;
-  for (const k of ["headingDeg", "sneakFactor", "visualLeadTicks"]) $(k).value = profile[k];
+  for (const k of ["headingDeg", "sneakFactor", "airFactor", "visualLeadTicks"]) $(k).value = profile[k] ?? 1;
   $("mults").innerHTML = MULTS.map((m) =>
     `<label>${m} × <input type="number" step="0.1" data-mult="${m}" value="${profile.multipliers[m]}"></label>`).join("");
   buildStages();
@@ -128,7 +128,7 @@ $("mults").addEventListener("input", (e) => {
   if (m && Number.isFinite(v)) withProfile({ multipliers: { ...profile.multipliers, [m]: v } });
 });
 $("enabled").addEventListener("change", (e) => withProfile({ enabled: e.target.checked }));
-for (const k of ["headingDeg", "sneakFactor", "visualLeadTicks"]) {
+for (const k of ["headingDeg", "sneakFactor", "airFactor", "visualLeadTicks"]) {
   $(k).addEventListener("input", (e) => {
     const v = parseFloat(e.target.value);
     if (Number.isFinite(v)) withProfile({ [k]: v });

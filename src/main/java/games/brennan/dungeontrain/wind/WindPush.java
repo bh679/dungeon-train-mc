@@ -37,15 +37,27 @@ public final class WindPush {
         return m.other();
     }
 
-    /** Push {@code e} by {@code w}; {@code extra} multiplies on top (e.g. the sneak factor). */
-    public static void apply(Entity e, WindSample w, WindProfile.Multipliers m, double extra) {
-        double a = w.strength() * multiplier(m, e) * extra;
+    /**
+     * The push {@code e} would get from {@code w} this tick (blocks/tick², 0 for none) — category multiplier,
+     * {@code extra} (e.g. the sneak factor), the profile's {@code airFactor} for a living thing off the ground,
+     * and knockback resistance.
+     */
+    public static double accel(Entity e, WindSample w, WindProfile profile, double extra) {
+        double a = w.strength() * multiplier(profile.multipliers(), e) * extra;
         if (e instanceof LivingEntity living) {
+            if (!living.onGround()) a *= profile.airFactor();
             a *= 1.0 - Math.min(1.0, Math.max(0.0, living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)));
         }
-        if (a <= 0.0) return;
+        return Math.max(0.0, a);
+    }
+
+    /** Push {@code e} by {@code w}; returns the acceleration applied (0 when capped or calm). */
+    public static double apply(Entity e, WindSample w, WindProfile profile, double extra) {
+        double a = accel(e, w, profile, extra);
+        if (a <= 0.0) return 0.0;
         Vec3 v = e.getDeltaMovement();
-        if (v.x * w.dirX() + v.z * w.dirZ() >= MAX_DOWNWIND_SPEED) return;
+        if (v.x * w.dirX() + v.z * w.dirZ() >= MAX_DOWNWIND_SPEED) return 0.0;
         e.setDeltaMovement(v.x + w.dirX() * a, v.y, v.z + w.dirZ() * a);
+        return a;
     }
 }

@@ -4,6 +4,7 @@
     "enabled": true,
     "headingDeg": 90.0,
     "sneakFactor": 0.35,
+    "airFactor": 2.5,
     "visualLeadTicks": 20,
     "multipliers": {
       "player": 1.0,

@@ -228,7 +228,7 @@ public final class WindServer {
             if (w.isCalm()) continue;
             if (!TrainExposure.isExposed(sub, e, w.dirX(), w.dirZ())) continue;
             done.add(e);
-            WindPush.apply(e, w, s.profile().multipliers(), 1.0);
+            WindPush.apply(e, w, s.profile(), 1.0);
         }
     }
 

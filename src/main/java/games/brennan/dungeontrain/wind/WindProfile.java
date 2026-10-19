@@ -23,18 +23,20 @@ import java.util.List;
  * @param enabled          master switch (the {@code /dungeontrain debug wind off} toggle is separate)
  * @param headingDeg       mean direction the wind blows TOWARD, degrees in the XZ plane: 0 = +X, 90 = +Z
  * @param sneakFactor      push multiplier while the local player is sneaking
+ * @param airFactor        push multiplier for a living thing off the ground (jumping, falling)
  * @param visualLeadTicks  how far ahead of the push the client draws the wind (20 = 1 second)
  * @param multipliers      push multiplier per entity category
  * @param stages           keyframes, sorted by {@link Stage#at}
  */
-public record WindProfile(boolean enabled, double headingDeg, double sneakFactor, int visualLeadTicks,
+public record WindProfile(boolean enabled, double headingDeg, double sneakFactor, double airFactor,
+                          int visualLeadTicks,
                           Multipliers multipliers, List<Stage> stages) {
 
     /** Bundled resource path (classpath) of the default profile. */
     public static final String RESOURCE_PATH = "/data/dungeontrain/wind/profile.json";
 
     /** A profile that never blows — used when the file is missing or malformed. */
-    public static final WindProfile CALM = new WindProfile(false, 90.0, 1.0, 20, Multipliers.UNIT, List.of());
+    public static final WindProfile CALM = new WindProfile(false, 90.0, 1.0, 1.0, 20, Multipliers.UNIT, List.of());
 
     public WindProfile {
         stages = stages.stream().sorted(Comparator.comparingDouble(Stage::at)).toList();
@@ -125,6 +127,7 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
                 !o.has("enabled") || o.get("enabled").getAsBoolean(),
                 num(o, "headingDeg", 90),
                 num(o, "sneakFactor", 0.35),
+                Math.max(0, num(o, "airFactor", 1.0)),
                 (int) Math.max(0, num(o, "visualLeadTicks", 20)),
                 mult, stages);
     }
@@ -135,6 +138,7 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
         o.addProperty("enabled", enabled);
         o.addProperty("headingDeg", headingDeg);
         o.addProperty("sneakFactor", sneakFactor);
+        o.addProperty("airFactor", airFactor);
         o.addProperty("visualLeadTicks", visualLeadTicks);
         JsonObject m = new JsonObject();
         m.addProperty("player", multipliers.player());

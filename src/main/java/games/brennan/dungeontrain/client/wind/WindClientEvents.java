@@ -48,30 +48,47 @@ public final class WindClientEvents {
         if (player == null || level == null || mc.isPaused()) return;
         if (level.dimension() != Level.OVERWORLD || !ClientWind.active()) {
             WindyDrive.release();
+            WindDebugState.clear(level.dimension() == Level.OVERWORLD ? "wind off" : "not in the Overworld");
             return;
         }
         long tick = level.getGameTime();
         WindProfile profile = ClientWind.profile();
         SubLevel sub = ClientWind.pastStart(player.getX()) ? TrainExposure.subLevelUnder(level, player) : null;
+        WindSample now = ClientWind.sampleAt(player.getX(), tick);
 
-        push(player, sub, profile, tick);
+        TrainExposure.Result exposure = now.isCalm() ? TrainExposure.Result.NOT_ON_TRAIN
+                : TrainExposure.classify(sub, player, now.dirX(), now.dirZ());
+        String skip = skipReason(player, sub);
+        double extra = player.isShiftKeyDown() ? profile.sneakFactor() : 1.0;
+        double applied = 0.0;
+        if (skip == null && exposure.exposed()) {
+            applied = WindPush.apply(player, now, profile, extra);
+        }
 
         WindSample ahead = ClientWind.sampleAt(player.getX(), tick + profile.visualLeadTicks());
         WindyDrive.set(true, ahead.strength(), ahead.headingRad());
-        if (!WindyPresence.directional() && sub != null && !ahead.isCalm()) {
+        boolean directional = WindyPresence.directional();
+        if (!directional && sub != null && !ahead.isCalm()) {
             fallbackStreaks(level, player, ahead);
         }
+
+        WindDebugState.record(new WindDebugState.Frame(
+                tick, player.getX() - ClientWind.startX(), ClientWind.startX(), profile.stageAt(player.getX() - ClientWind.startX()),
+                now, ahead, profile.visualLeadTicks(), sub != null, exposure, skip,
+                player.onGround(), player.isShiftKeyDown(), applied,
+                WindPush.accel(player, now, profile, extra),
+                player.getDeltaMovement().x, player.getDeltaMovement().z,
+                directional, WindyDrive.strength()));
     }
 
-    private static void push(LocalPlayer player, SubLevel sub, WindProfile profile, long tick) {
-        if (sub == null || player.isSpectator() || player.getAbilities().flying
-                || player.isPassenger() || player.isFallFlying()) {
-            return;
-        }
-        WindSample now = ClientWind.sampleAt(player.getX(), tick);
-        if (now.isCalm() || !TrainExposure.isExposed(sub, player, now.dirX(), now.dirZ())) return;
-        double extra = player.isShiftKeyDown() ? profile.sneakFactor() : 1.0;
-        WindPush.apply(player, now, profile.multipliers(), extra);
+    /** Why the local player isn't pushed at all, or {@code null} when they can be. */
+    private static String skipReason(LocalPlayer player, SubLevel sub) {
+        if (player.isSpectator()) return "spectator";
+        if (player.getAbilities().flying) return "flying";
+        if (player.isPassenger()) return "riding";
+        if (player.isFallFlying()) return "elytra";
+        if (sub == null) return "not over a carriage";
+        return null;
     }
 
     /** DT's own wind streaks for installs without Windy: Configurable's direction hook. */
