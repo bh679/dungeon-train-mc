@@ -120,9 +120,22 @@ public final class WindyDrive {
     public static void adopt(Particle particle) {
         if (!owns || !particle.getClass().getName().startsWith(WINDY_PARTICLE)) return;
         WindyParticleAccessor p = (WindyParticleAccessor) particle;
-        p.dungeontrain$setXd(p.dungeontrain$getXd() + trainVx);
-        p.dungeontrain$setZd(p.dungeontrain$getZd() + trainVz);
+        double relVx = p.dungeontrain$getXd();
+        double relVz = p.dungeontrain$getZd();
+        p.dungeontrain$setXd(relVx + trainVx);
+        p.dungeontrain$setZd(relVz + trainVz);
         p.dungeontrain$setFriction(1.0f);
         p.dungeontrain$setHasPhysics(false);
+        // Wind visuals only where wind goes: end the streak where its path first enters a carriage or tunnel.
+        net.minecraft.client.multiplayer.ClientLevel level = net.minecraft.client.Minecraft.getInstance().level;
+        if (level == null) return;
+        net.minecraft.world.phys.Vec3 pos = particle.getPos();
+        int open = WindVisualShelter.openTicks(level, pos.x, pos.y, pos.z, relVx, relVz, trainVx, trainVz,
+                particle.getLifetime());
+        if (open <= 0) {
+            particle.remove();
+        } else if (open < particle.getLifetime()) {
+            particle.setLifetime(open);
+        }
     }
 }

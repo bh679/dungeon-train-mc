@@ -77,12 +77,11 @@ public final class WindClientEvents {
 
         WindSample ahead = ClientWind.sampleAt(player.getX(), tick + profile.visualLeadTicks());
         double[] carriageVel = carriageVelocity(sub);
-        // Tunnels and overhead terrain still the streaks too, not just the push.
-        boolean tunnel = TrainExposure.underTerrain(player);
-        double shown = tunnel ? 0.0 : ahead.strength();
-        WindyDrive.set(shown, ahead.headingRad(), carriageVel[0], carriageVel[1]);
+        // Visuals follow the wind, not the player: they keep blowing outside while you shelter, and each streak
+        // is kept out of carriages and tunnels on its own (WindVisualShelter).
+        WindyDrive.set(ahead.strength(), ahead.headingRad(), carriageVel[0], carriageVel[1]);
         boolean directional = WindyPresence.directional();
-        if (!directional && sub != null && !tunnel && !ahead.isCalm()) {
+        if (!directional && sub != null && !ahead.isCalm()) {
             fallbackStreaks(level, player, ahead, carriageVel);
         }
 
@@ -148,6 +147,7 @@ public final class WindClientEvents {
             double x = player.getX() - dx * back - dz * side;
             double z = player.getZ() - dz * back + dx * side;
             double y = player.getY() + r.nextDouble() * 4.0 - 0.5;
+            if (WindVisualShelter.sheltered(level, x, y, z)) continue;
             level.addParticle(ParticleTypes.CLOUD, x, y, z,
                     dx * speed + carriageVel[0], 0.0, dz * speed + carriageVel[1]);
         }
