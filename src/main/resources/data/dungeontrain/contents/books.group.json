@@ -115,6 +115,14 @@
     {
       "id": "luggage",
       "weight": 1
+    },
+    {
+      "id": "pictureframe",
+      "weight": 1
+    },
+    {
+      "id": "pictureframe2",
+      "weight": 1
     }
   ]
 }
