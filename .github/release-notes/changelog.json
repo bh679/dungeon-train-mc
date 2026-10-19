@@ -27900,6 +27900,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "challenge-melons-by-difficulty",
+      "version": "0.1368.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements",
+        "balance"
+      ],
+      "title": "Challenge melons now depend on difficulty",
+      "summary": "The melon slices left on flatbeds for players attempting the full challenge now match the world difficulty. Hard leaves the most, Normal fewer, and Easy or Peaceful none at all.",
+      "highlights": [
+        "Hard: a melon on every 5th flatbed, as before",
+        "Normal: a melon on every 7th flatbed",
+        "Easy and Peaceful: no free melons"
+      ],
+      "pr": 2135,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
