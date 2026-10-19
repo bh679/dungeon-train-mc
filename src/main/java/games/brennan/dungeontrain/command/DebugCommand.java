@@ -202,6 +202,9 @@ public final class DebugCommand {
             // at your feet until one rolls a skeleton jockey; reports whether the rider is in the level
             // and carries the contents tag (regression probe for the ghost-passenger bug).
             .then(Commands.literal("spider-jockey").executes(ctx -> SpiderJockeyDebug.run(ctx.getSource())))
+            // /dungeontrain debug transition-flatbeds — each band transition's world X, timing and the
+            // carriage(s) its flatbed claimed (or the lead rider's predicted carriage while pending).
+            .then(Commands.literal("transition-flatbeds").executes(ctx -> TransitionFlatbedsDebug.report(ctx.getSource())))
             .then(Commands.literal("cycle-layout")
                 .executes(ctx -> CycleLayoutDebug.report(ctx.getSource(), 2))
                 .then(Commands.argument("runs", IntegerArgumentType.integer(1, 8))

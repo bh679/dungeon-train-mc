@@ -388,6 +388,20 @@ public final class DungeonTrainCommonConfig {
     public static final double MAX_BACKER_NAME_WEIGHT = 1000.0;
 
     /**
+     * Whether a full flatbed carriage marks each dimension/band transition (see
+     * {@code train.TransitionFlatbeds}). Default true.
+     */
+    public static final boolean DEFAULT_TRANSITION_FLATBEDS = true;
+
+    /**
+     * Pace (carriages per second) a timed transition flatbed assumes for a player it has not measured yet.
+     * Replaced by the player's own measured pace within a minute or so of walking.
+     */
+    public static final double DEFAULT_TRANSITION_FLATBED_PACE = 0.25;
+    public static final double MIN_TRANSITION_FLATBED_PACE = 0.0;
+    public static final double MAX_TRANSITION_FLATBED_PACE = 5.0;
+
+    /**
      * Whether echoes write a credit line into the description of gear they drop or give (see
      * {@code echo.EchoDropCredit}). Default true.
      */
@@ -635,6 +649,8 @@ public final class DungeonTrainCommonConfig {
     public static final ModConfigSpec.DoubleValue BACKER_NAME_WEIGHT;
     public static final ModConfigSpec.BooleanValue ECHO_DROP_CREDIT;
     public static final ModConfigSpec.EnumValue<CatchUpBurstMode> CATCH_UP_BURST_MODE;
+    public static final ModConfigSpec.BooleanValue TRANSITION_FLATBEDS;
+    public static final ModConfigSpec.DoubleValue TRANSITION_FLATBED_PACE;
 
     static {
         Pair<Holder, ModConfigSpec> pair = new ModConfigSpec.Builder()
@@ -713,6 +729,8 @@ public final class DungeonTrainCommonConfig {
         BACKER_NAME_WEIGHT = pair.getLeft().backerNameWeight;
         ECHO_DROP_CREDIT = pair.getLeft().echoDropCredit;
         CATCH_UP_BURST_MODE = pair.getLeft().catchUpBurstMode;
+        TRANSITION_FLATBEDS = pair.getLeft().transitionFlatbeds;
+        TRANSITION_FLATBED_PACE = pair.getLeft().transitionFlatbedPace;
     }
 
     private DungeonTrainCommonConfig() {}
@@ -776,6 +794,20 @@ public final class DungeonTrainCommonConfig {
         ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode = b
                 .comment("How fast the train may extend when a spawn lane has fallen BEHIND the carriages a player needs around them (fast speed, a reload, a chunk-gen wait). Normally each end adds one group per settle window, which is what keeps the seams between groups even — and also what lets a fast train run away from a standing player. FILL (default) = add however many groups that end is short, all in one tick, so it catches up instantly; costs one bigger server-tick spike as they appear. BURST_TWO = add two in one tick while an end is two or more groups short — a gentler catch-up that may not keep up at high speed. OFF = never add more than one group at a time. No mode changes the steady state, where an end is at most one group short. One global setting: it lives here rather than per-save, so it can be set from the title screen and applies to every world.")
                 .defineEnum("catchUpBurstMode", DEFAULT_CATCH_UP_BURST_MODE);
+        ModConfigSpec.BooleanValue transitionFlatbeds = b
+                .comment("Mark each dimension/band transition with a full flatbed carriage — the Nether's mountains and",
+                        "core, the End's void and islands, the upside-down core and Reassembly, the spheres' busiest",
+                        "stretch, the approach to Amplified, the Far Lands (three in a row), Infdev's pyramids,",
+                        "Superflat, Chunk Error and Stacks. Most are timed to land under the player as they cross the",
+                        "line, predicted from the train's speed and the player's own pace through the carriages.",
+                        "false = carriages are picked as usual everywhere. Default true.")
+                .define("transitionFlatbeds", DEFAULT_TRANSITION_FLATBEDS);
+        ModConfigSpec.DoubleValue transitionFlatbedPace = b
+                .comment("Carriages per second a timed transition flatbed assumes for a player it has not measured yet",
+                        "(a fresh join). Each player's own average pace — pauses included — takes over within about a",
+                        "minute of play. Default 0.25.")
+                .defineInRange("transitionFlatbedPace", DEFAULT_TRANSITION_FLATBED_PACE,
+                        MIN_TRANSITION_FLATBED_PACE, MAX_TRANSITION_FLATBED_PACE);
         b.pop();
 
         b.push("worldgen");
@@ -1215,7 +1247,8 @@ public final class DungeonTrainCommonConfig {
                 stacksEnabled, stacksHoldBlocks, stacksFadeBlocks, stacksLeadGapBlocks, stacksDensity,
                 mixEnabled, mixExclude,
                 worldgenCycleOrder,
-                breakBlocksOnContact, backerNameWeight, echoDropCredit, catchUpBurstMode);
+                breakBlocksOnContact, backerNameWeight, echoDropCredit, catchUpBurstMode,
+                transitionFlatbeds, transitionFlatbedPace);
     }
 
     /**
@@ -1255,6 +1288,16 @@ public final class DungeonTrainCommonConfig {
     /** Weight of a backer name/phrase in AIN naming; falls back to the hardcoded default pre-load. */
     public static double getBackerNameWeight() {
         return isLoaded() ? BACKER_NAME_WEIGHT.get() : DEFAULT_BACKER_NAME_WEIGHT;
+    }
+
+    /** Whether transition flatbeds are placed; falls back to the hardcoded default pre-load. */
+    public static boolean isTransitionFlatbedsEnabled() {
+        return isLoaded() ? TRANSITION_FLATBEDS.get() : DEFAULT_TRANSITION_FLATBEDS;
+    }
+
+    /** Seed pace (carriages/s) for an unmeasured player; falls back to the hardcoded default pre-load. */
+    public static double getTransitionFlatbedPace() {
+        return isLoaded() ? TRANSITION_FLATBED_PACE.get() : DEFAULT_TRANSITION_FLATBED_PACE;
     }
 
     /** Whether echo drops and gifts get a credit line; falls back to the hardcoded default pre-load. */
@@ -1910,5 +1953,7 @@ public final class DungeonTrainCommonConfig {
                           ModConfigSpec.BooleanValue breakBlocksOnContact,
                           ModConfigSpec.DoubleValue backerNameWeight,
                           ModConfigSpec.BooleanValue echoDropCredit,
-                          ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode) {}
+                          ModConfigSpec.EnumValue<CatchUpBurstMode> catchUpBurstMode,
+                          ModConfigSpec.BooleanValue transitionFlatbeds,
+                          ModConfigSpec.DoubleValue transitionFlatbedPace) {}
 }

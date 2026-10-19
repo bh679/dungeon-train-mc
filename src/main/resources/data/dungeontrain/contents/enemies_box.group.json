@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 3,
+  "selfWeight": 0,
+  "variants": [
+    {
+      "id": "enemies_path",
+      "weight": 0
+    },
+    {
+      "id": "enemies_walled",
+      "weight": 1
+    }
+  ]
+}
