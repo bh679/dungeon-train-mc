@@ -39,3 +39,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 "$HERE/run-case.sh" "Q - missing Exposure + Polaroid"                  dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch blc vb pf vista
 # TerraBlender has a `[x,)` floor of DT's own (DT compiles against it and mixes into it); R is the only case without it.
 "$HERE/run-case.sh" "R - missing TerraBlender"                         dt sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop glitch blc vb pf exp expp vista
+# The CurseForge-only jar leaves Stream Detect + DPI Bypass Detect out of jarJar (both stay `optional`).
+# S = the CurseForge-app layout (L's set, top-level sd/dbd); T = a manual CurseForge download without them.
+"$HERE/run-case.sh" "S - CurseForge jar, CurseForge-app layout"        dtcf sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch sd dmv dbd pv lctf eb dp blc vb pf exp expp vista
+"$HERE/run-case.sh" "T - CurseForge jar without Stream/DPI Detect"     dtcf sable ain ais pmob ecp te kt db sff fp moon bn bclib wover wunder be wwoo cristel bop tb glitch dmv pv lctf eb dp blc vb pf exp expp vista
