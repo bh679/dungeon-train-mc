@@ -1282,6 +1282,8 @@
   "gui.dungeontrain.contribute.reward_label": "RECOMPENSA DA COMUNIDADE",
   "gui.dungeontrain.contribute.keeps_on": "Para todos",
   "gui.dungeontrain.contribute.see_all": "Ver todas as recompensas",
+  "gui.dungeontrain.contribute.previous_reward": "Recompensa anterior",
+  "gui.dungeontrain.contribute.next_reward": "Recompensa seguinte",
   "gui.dungeontrain.contribute.own_way": "À tua maneira: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Qualquer valor",
   "gui.dungeontrain.contribute.monthly": "Mensal no Patreon",

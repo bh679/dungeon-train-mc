@@ -940,6 +940,8 @@
       "gui.dungeontrain.contribute.reward_label",
       "gui.dungeontrain.contribute.keeps_on",
       "gui.dungeontrain.contribute.see_all",
+      "gui.dungeontrain.contribute.previous_reward",
+      "gui.dungeontrain.contribute.next_reward",
       "gui.dungeontrain.contribute.own_way",
       "gui.dungeontrain.contribute.any_amount",
       "gui.dungeontrain.contribute.monthly",

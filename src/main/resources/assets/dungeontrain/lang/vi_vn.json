@@ -1237,6 +1237,8 @@
   "gui.dungeontrain.contribute.reward_label": "PHẦN THƯỞNG CỘNG ĐỒNG",
   "gui.dungeontrain.contribute.keeps_on": "Cho mọi người",
   "gui.dungeontrain.contribute.see_all": "Xem tất cả phần thưởng",
+  "gui.dungeontrain.contribute.previous_reward": "Phần thưởng trước",
+  "gui.dungeontrain.contribute.next_reward": "Phần thưởng tiếp theo",
   "gui.dungeontrain.contribute.own_way": "Theo cách của bạn: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Số tiền tùy ý",
   "gui.dungeontrain.contribute.monthly": "Hàng tháng trên Patreon",

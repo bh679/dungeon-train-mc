@@ -1436,6 +1436,8 @@
   "gui.dungeontrain.contribute.reward_label": "COMMUNITY REWARD",
   "gui.dungeontrain.contribute.keeps_on": "For everyone",
   "gui.dungeontrain.contribute.see_all": "See All Rewards",
+  "gui.dungeontrain.contribute.previous_reward": "Previous reward",
+  "gui.dungeontrain.contribute.next_reward": "Next reward",
   "gui.dungeontrain.contribute.own_way": "Your own way: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Any Amount",
   "gui.dungeontrain.contribute.monthly": "Monthly on Patreon",

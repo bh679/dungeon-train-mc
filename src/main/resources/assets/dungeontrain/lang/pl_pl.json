@@ -1327,6 +1327,8 @@
   "gui.dungeontrain.contribute.reward_label": "NAGRODA SPOŁECZNOŚCI",
   "gui.dungeontrain.contribute.keeps_on": "Dla wszystkich",
   "gui.dungeontrain.contribute.see_all": "Zobacz wszystkie nagrody",
+  "gui.dungeontrain.contribute.previous_reward": "Poprzednia nagroda",
+  "gui.dungeontrain.contribute.next_reward": "Następna nagroda",
   "gui.dungeontrain.contribute.own_way": "Po swojemu: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Dowolna kwota",
   "gui.dungeontrain.contribute.monthly": "Co miesiąc na Patreonie",

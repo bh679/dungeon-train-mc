@@ -103,6 +103,28 @@ public final class ContributePanel {
     private final List<FormattedCharSequence> footerLines = new ArrayList<>();
     private int footerX, footerY, footerW;
     private int cardX, cardY, cardW, cardH;
+    /** The card's own text, drawn clipped to the card so it can slide. */
+    private final List<Text> cardTexts = new ArrayList<>();
+    /** Index into {@link CommunityRewards#FEATURE_ORDER} the arrows moved to; -1 = the featured one. */
+    private int pick = -1;
+    /** Direction of the last arrow press (-1 left, 1 right) and when, for the slide. */
+    private int slideDir;
+    private long slideStartMs;
+    @javax.annotation.Nullable private Button giveOnCard;
+    private static final int ARROW_W = 12;
+    private static final int COMPACT_TIER_H = 20;
+    /** Set by a host whose window is too short: tiers shrink to a normal button's height. */
+    private boolean compact;
+
+    /** Shrink the tier buttons so the whole panel fits a short window; call before measure/layout. */
+    public void setCompact(boolean compact) {
+        this.compact = compact;
+    }
+
+    private int tierH() {
+        return compact ? COMPACT_TIER_H : style.tierH;
+    }
+    private static final long SLIDE_MS = 180;
     /** The middle tier's bounds, outlined green like the website's featured tier; w 0 = none. */
     private int featX, featY, featW, featH;
 
@@ -130,6 +152,8 @@ public final class ContributePanel {
         boolean commit = add != null;
         if (commit) {
             texts.clear();
+            cardTexts.clear();
+            giveOnCard = null;
             footerLines.clear();
             featW = 0;
         }
@@ -155,18 +179,18 @@ public final class ContributePanel {
                 SupportTier tier = all[i];
                 int bx = x + i * (each + GAP);
                 if (commit) {
-                    Button b = new ColorTintedButton(bx, y, each, style.tierH,
+                    Button b = new ColorTintedButton(bx, y, each, tierH(),
                             Component.translatable(tier.shortKey()),
                             TINT_BLUE[0], TINT_BLUE[1], TINT_BLUE[2],
                             p -> openLink(PaymentLinks.tierUrl(tier), tier.analyticsTarget()));
                     b.setTooltip(Tooltip.create(Component.translatable(tier.tooltipKey())));
                     add.accept(b);
                     FormattedCharSequence name = Component.translatable(tier.nameKey()).getVisualOrderText();
-                    texts.add(new Text(name, bx + each / 2, y + style.tierH + 3, style.text, true));
-                    if (i == all.length / 2) { featX = bx; featY = y; featW = each; featH = style.tierH; }
+                    texts.add(new Text(name, bx + each / 2, y + tierH() + 3, style.text, true));
+                    if (i == all.length / 2) { featX = bx; featY = y; featW = each; featH = tierH(); }
                 }
             }
-            y += style.tierH + 3 + lh + GAP + 2;
+            y += tierH() + 3 + lh + GAP + 2;
         } else {
             // No checkout route from the relay (offline, an old relay): the open-ended options become
             // the panel's main row, as the pre-tier layout always did.
@@ -216,55 +240,86 @@ public final class ContributePanel {
         y = label(font, Component.translatable("gui.dungeontrain.contribute.group.everyone"), x, y, w, commit);
         long now = System.currentTimeMillis();
         LiveRewards state = LiveRewards.latest();
-        CommunityRewards.Reward reward = CommunityRewards.featured(state, now);
+        List<CommunityRewards.Reward> order = CommunityRewards.FEATURE_ORDER;
+        CommunityRewards.Reward reward = pick >= 0 ? order.get(pick) : CommunityRewards.featured(state, now);
         int lh = font.lineHeight;
 
-        // The side column fits "keeps it on a month" in this language, never under the button's width.
+        // ◀ and ▶ sit inside the card's left and right edges; the text and the Give column between.
         Component noteText = Component.translatable("gui.dungeontrain.contribute.keeps_on");
         int sideW = Math.min(w / 3, Math.max(GIVE_W, font.width(noteText) + 2));
-        int textX = x + CARD_PAD;
-        int textW = w - sideW - CARD_PAD * 3;
-        int ty = y + CARD_PAD;
-        List<Text> card = new ArrayList<>();
-        card.add(new Text(Component.translatable("gui.dungeontrain.contribute.reward_label").getVisualOrderText(),
-                textX, ty, COLOUR_GROUP, false));
-        ty += lh + 1;
-        card.add(new Text(Component.translatable(reward.nameKey()).getVisualOrderText(), textX, ty, COLOUR_WHITE, false));
-        ty += lh + 2;
-        for (FormattedCharSequence l : font.split(Component.translatable(reward.lineKey()), textW)) {
-            card.add(new Text(l, textX, ty, style.text, false));
-            ty += lh + 1;
-        }
-        boolean on = CommunityRewards.active(state, reward, now);
-        if (on) {
-            Component status = Component.translatable("gui.dungeontrain.rewards.status.on_by",
-                    shortDate(state.find(reward.id()).activeUntilMs()),
-                    CommunityRewards.keptOnBy(state, reward, now));
-            for (FormattedCharSequence l : font.split(status, textW)) {
-                card.add(new Text(l, textX, ty, COLOUR_ON, false));
-                ty += lh + 1;
-            }
-        }
-        int textBottom = ty + CARD_PAD - 1;
+        int textX = x + ARROW_W + CARD_PAD;
+        int textW = w - sideW - ARROW_W * 2 - CARD_PAD * 3;
         int sideH = GIVE_H + 2 + lh;
-        int h = Math.max(textBottom - y, sideH + CARD_PAD * 2);
+        // Tallest of the five, so the card (and the page under it) never jumps while sliding.
+        int textH = 0;
+        for (CommunityRewards.Reward r : order) textH = Math.max(textH, cardLines(font, r, state, now, textX, 0, textW).bottom());
+        int h = Math.max(textH + CARD_PAD * 2 - 1, sideH + CARD_PAD * 2);
 
         if (commit) {
-            texts.addAll(card);
+            cardTexts.addAll(cardLines(font, reward, state, now, textX, y + CARD_PAD, textW).lines());
             cardX = x;
             cardY = y;
             cardW = w;
             cardH = h;
-            int gx = x + w - sideW - CARD_PAD;
+            int gx = x + w - ARROW_W - sideW - CARD_PAD;
             int gy = y + (h - sideH) / 2;
-            add.accept(giveButton(reward, on, state, now, gx, gy, sideW, GIVE_H, this, true));
+            giveOnCard = giveButton(reward, CommunityRewards.active(state, reward, now), state, now,
+                    gx, gy, sideW, GIVE_H, this, true);
+            add.accept(giveOnCard);
             // "For everyone", under the button even while it reads Soon: it says what the reward is.
             for (FormattedCharSequence note : font.split(noteText, sideW)) {
-                texts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
+                cardTexts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
                 break; // one line; a language whose note does not fit is cut, never spills out of the card
             }
+            int current = order.indexOf(reward);
+            add.accept(arrow(x + 1, y + 1, h - 2, "\u25C0", -1, current));
+            add.accept(arrow(x + w - ARROW_W - 1, y + 1, h - 2, "\u25B6", 1, current));
         }
         return y + h + GAP;
+    }
+
+    /** The card's text lines for {@code reward} from {@code top}, and the height they take. */
+    private record CardLines(List<Text> lines, int bottom) {}
+
+    private CardLines cardLines(Font font, CommunityRewards.Reward reward, LiveRewards state, long now,
+                                int textX, int top, int textW) {
+        int lh = font.lineHeight;
+        int ty = top;
+        List<Text> out = new ArrayList<>();
+        out.add(new Text(Component.translatable("gui.dungeontrain.contribute.reward_label").getVisualOrderText(),
+                textX, ty, COLOUR_GROUP, false));
+        ty += lh + 1;
+        out.add(new Text(Component.translatable(reward.nameKey()).getVisualOrderText(), textX, ty, COLOUR_WHITE, false));
+        ty += lh + 2;
+        for (FormattedCharSequence l : font.split(Component.translatable(reward.lineKey()), textW)) {
+            out.add(new Text(l, textX, ty, style.text, false));
+            ty += lh + 1;
+        }
+        if (CommunityRewards.active(state, reward, now)) {
+            Component status = Component.translatable("gui.dungeontrain.rewards.status.on_by",
+                    shortDate(state.find(reward.id()).activeUntilMs()),
+                    CommunityRewards.keptOnBy(state, reward, now));
+            for (FormattedCharSequence l : font.split(status, textW)) {
+                out.add(new Text(l, textX, ty, COLOUR_ON, false));
+                ty += lh + 1;
+            }
+        }
+        return new CardLines(out, ty - top);
+    }
+
+    /** A thin full-height arrow inside the card's edge: one step through the rewards, wrapping round. */
+    private Button arrow(int x, int y, int h, String glyph, int dir, int current) {
+        Button b = new games.brennan.dungeontrain.client.menu.DarkTintedButton(x, y, ARROW_W, h,
+                Component.literal(glyph), p -> {
+                    int n = CommunityRewards.FEATURE_ORDER.size();
+                    pick = ((current + dir) % n + n) % n;
+                    slideDir = dir;
+                    slideStartMs = System.currentTimeMillis();
+                    relayout.run();
+                });
+        b.setTooltip(Tooltip.create(Component.translatable(dir < 0
+                ? "gui.dungeontrain.contribute.previous_reward" : "gui.dungeontrain.contribute.next_reward")));
+        return b;
     }
 
     /**
@@ -338,6 +393,21 @@ public final class ContributePanel {
             g.renderOutline(cardX, cardY, cardW, cardH, COLOUR_CARD_EDGE);
         }
         if (featW > 0) g.renderOutline(featX - 1, featY - 1, featW + 2, featH + 2, COLOUR_FEATURED_EDGE);
+        if (!cardTexts.isEmpty()) {
+            // After an arrow press the new reward slides in from that side and settles; Give appears
+            // once it has, so a click never lands on a button that is still moving.
+            float t = slideDir == 0 ? 1f : Math.min(1f, (System.currentTimeMillis() - slideStartMs) / (float) SLIDE_MS);
+            float eased = 1f - (1f - t) * (1f - t) * (1f - t);
+            int offset = Math.round(slideDir * (1f - eased) * (cardW - ARROW_W * 2));
+            if (t >= 1f) slideDir = 0;
+            if (giveOnCard != null) giveOnCard.visible = offset == 0;
+            g.enableScissor(cardX + ARROW_W + 1, cardY + 1, cardX + cardW - ARROW_W - 1, cardY + cardH - 1);
+            for (Text tx : cardTexts) {
+                int x = (tx.centred() ? tx.x() - font.width(tx.line()) / 2 : tx.x()) + offset;
+                g.drawString(font, tx.line(), x, tx.y(), tx.colour(), false);
+            }
+            g.disableScissor();
+        }
         for (Text t : texts) {
             int x = t.centred() ? t.x() - font.width(t.line()) / 2 : t.x();
             g.drawString(font, t.line(), x, t.y(), t.colour(), false);

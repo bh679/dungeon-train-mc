@@ -1485,6 +1485,8 @@
   "gui.dungeontrain.contribute.reward_label": "RECOMPENSĂ COMUNITARĂ",
   "gui.dungeontrain.contribute.keeps_on": "Pentru toți",
   "gui.dungeontrain.contribute.see_all": "Vezi toate recompensele",
+  "gui.dungeontrain.contribute.previous_reward": "Recompensa anterioară",
+  "gui.dungeontrain.contribute.next_reward": "Recompensa următoare",
   "gui.dungeontrain.contribute.own_way": "În felul tău: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Orice sumă",
   "gui.dungeontrain.contribute.monthly": "Lunar pe Patreon",

@@ -1332,6 +1332,8 @@
   "gui.dungeontrain.contribute.reward_label": "НАГРАДА СООБЩЕСТВА",
   "gui.dungeontrain.contribute.keeps_on": "Для всех",
   "gui.dungeontrain.contribute.see_all": "Все награды",
+  "gui.dungeontrain.contribute.previous_reward": "Предыдущая награда",
+  "gui.dungeontrain.contribute.next_reward": "Следующая награда",
   "gui.dungeontrain.contribute.own_way": "Как вам удобно: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Любая сумма",
   "gui.dungeontrain.contribute.monthly": "Ежемесячно на Patreon",

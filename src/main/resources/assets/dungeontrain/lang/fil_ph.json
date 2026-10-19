@@ -1237,6 +1237,8 @@
   "gui.dungeontrain.contribute.reward_label": "GANTIMPALA NG KOMUNIDAD",
   "gui.dungeontrain.contribute.keeps_on": "Para sa lahat",
   "gui.dungeontrain.contribute.see_all": "Tingnan Lahat ng Gantimpala",
+  "gui.dungeontrain.contribute.previous_reward": "Nakaraang gantimpala",
+  "gui.dungeontrain.contribute.next_reward": "Susunod na gantimpala",
   "gui.dungeontrain.contribute.own_way": "Sa sarili mong paraan: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Anumang Halaga",
   "gui.dungeontrain.contribute.monthly": "Buwanan sa Patreon",

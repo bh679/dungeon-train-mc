@@ -1237,6 +1237,8 @@
   "gui.dungeontrain.contribute.reward_label": "รางวัลชุมชน",
   "gui.dungeontrain.contribute.keeps_on": "เพื่อทุกคน",
   "gui.dungeontrain.contribute.see_all": "ดูรางวัลทั้งหมด",
+  "gui.dungeontrain.contribute.previous_reward": "รางวัลก่อนหน้า",
+  "gui.dungeontrain.contribute.next_reward": "รางวัลถัดไป",
   "gui.dungeontrain.contribute.own_way": "ในแบบของคุณ: %s · %s",
   "gui.dungeontrain.contribute.any_amount": "จำนวนเท่าไรก็ได้",
   "gui.dungeontrain.contribute.monthly": "รายเดือนผ่าน Patreon",

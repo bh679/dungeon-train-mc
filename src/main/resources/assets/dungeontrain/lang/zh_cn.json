@@ -1237,6 +1237,8 @@
   "gui.dungeontrain.contribute.reward_label": "社区福利",
   "gui.dungeontrain.contribute.keeps_on": "所有人可用",
   "gui.dungeontrain.contribute.see_all": "查看全部福利",
+  "gui.dungeontrain.contribute.previous_reward": "上一个奖励",
+  "gui.dungeontrain.contribute.next_reward": "下一个奖励",
   "gui.dungeontrain.contribute.own_way": "其他方式：%s · %s。",
   "gui.dungeontrain.contribute.any_amount": "金额自定",
   "gui.dungeontrain.contribute.monthly": "在 Patreon 按月支持",
