@@ -18,7 +18,11 @@ class LiveDeathHandoverTest {
         assertEquals(6, LiveDeathHandover.targetSegment(38.0, 10));
         // Dying at once, and short segments.
         assertEquals(2, LiveDeathHandover.targetSegment(0.0, 10));
-        assertEquals(8, LiveDeathHandover.targetSegment(11.0, 2));
+        // 2 s segments (Quicker Streams): two segments is only 4 s, so the slack is 6 s = 3 segments.
+        assertEquals(9, LiveDeathHandover.targetSegment(11.0, 2));
+        assertEquals(2, LiveDeathHandover.slackSegments(10));
+        assertEquals(3, LiveDeathHandover.slackSegments(2));
+        assertEquals(2, LiveDeathHandover.slackSegments(3));
     }
 
     @Test

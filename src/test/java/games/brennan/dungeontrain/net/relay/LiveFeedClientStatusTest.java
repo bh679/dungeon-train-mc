@@ -109,6 +109,29 @@ class LiveFeedClientStatusTest {
     }
 
     @Test
+    void theClaimMaySetTheStreamsCadence() {
+        String base = "{\"ok\":true,\"session\":\"s1\",\"token\":\"t\",\"playlistUrl\":\"https://x/l.m3u8\"";
+        LiveFeedClient.Claim quick = claim(base + ",\"segmentSeconds\":2,\"listSize\":30}");
+        assertEquals(2, quick.segmentSeconds());
+        assertEquals(30, quick.listSize());
+        LiveFeedClient.Claim plain = claim(base + "}");
+        assertEquals(0, plain.segmentSeconds(), "absent: the client config decides");
+        assertEquals(0, plain.listSize());
+        for (String bad : new String[] {"1", "31", "2.5", "\"2\"", "null", "-2"}) {
+            assertEquals(0, claim(base + ",\"segmentSeconds\":" + bad + "}").segmentSeconds(), bad);
+        }
+        assertEquals(0, claim(base + ",\"segmentSeconds\":2,\"listSize\":500}").listSize(), "a window out of range reads as unset");
+        assertEquals(0, claim(base + ",\"listSize\":30}").listSize(), "a window without a segment length is ignored");
+        assertEquals(3, claim(base + ",\"segmentSeconds\":3,\"listSize\":20,\"keyframeSeconds\":3}").keyframeSeconds());
+        assertEquals(0, plain.keyframeSeconds(), "absent: the encoder's own rule");
+        assertEquals(0, claim(base + ",\"keyframeSeconds\":5}").keyframeSeconds(), "over Twitch's 4 s reads as unset");
+    }
+
+    private static LiveFeedClient.Claim claim(String json) {
+        return LiveFeedClient.parseClaim(new LiveFeedClient.Result(200, JsonParser.parseString(json).getAsJsonObject(), null));
+    }
+
+    @Test
     void aPlaylistUrlThatIsNotHttpsHlsReadsOffAir() {
         for (String bad : new String[] {"http://evil.example/main/s1/live.m3u8", "file:///etc/live.m3u8",
                 "https://x/main/s1/live.mp4", "ftp://x/live.m3u8", "https:///live.m3u8", "https://u@x/live.m3u8"}) {
