@@ -28044,6 +28044,23 @@
       "released": true,
       "released_in": "v0.1375.0",
       "released_at": "2026-10-19T11:46:32Z"
+    },
+    {
+      "id": "bobby-fair-play",
+      "version": "0.1376.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "compatibility"
+      ],
+      "title": "Bobby is now an approved mod",
+      "summary": "Playing with Bobby no longer turns your run into Free Play. Bobby keeps the land you have already ridden past on screen beyond a server's view distance, so it now sits on the approved mod list next to Distant Horizons. On NeoForge, use the Bobby ReNeoForged port.",
+      "highlights": [],
+      "pr": 2147,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
