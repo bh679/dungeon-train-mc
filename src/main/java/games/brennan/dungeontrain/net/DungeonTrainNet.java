@@ -411,6 +411,8 @@ public final class DungeonTrainNet {
         // How many hidden advancements sit between two linked ones, for the "…" on the advancements
         // screen. Sent just before the vanilla advancements packet it describes. See advancement/HiddenGap.
         registrar.playToClient(AdvancementGapsPacket.TYPE, AdvancementGapsPacket.STREAM_CODEC, AdvancementGapsPacket::handle);
+        // Train wind: profile + seed + start X, so the client computes the wind itself. See wind/WindServer.
+        registrar.playToClient(WindProfilePacket.TYPE, WindProfilePacket.STREAM_CODEC, WindProfilePacket::handle);
     }
 
     /** Convenience: send a payload to the server (client → server). */
