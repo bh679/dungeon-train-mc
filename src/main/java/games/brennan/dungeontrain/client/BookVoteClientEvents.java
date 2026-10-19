@@ -305,7 +305,7 @@ public final class BookVoteClientEvents {
 
     /**
      * Somebody else's book, and the reader has boosts to give (or already gave this copy one): the gold
-     * line under the question, then the star beside the thumbs. See {@link BookBoostControl}.
+     * line under the question, then the star to the left of the thumbs. See {@link BookBoostControl}.
      */
     private static void renderBoost(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
         BookBoostControl.beginFrame();
@@ -816,21 +816,21 @@ public final class BookVoteClientEvents {
         return bookTop() + REPORT_TEXT_DY;
     }
 
-    // With the Boost star the row holds three icons, re-centred on the page: 👍 👎 ★.
+    // With the Boost star the row holds three icons, re-centred on the page: ★ 👍 👎.
     private static int upX() {
         return boostShown()
-            ? bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE / 2 - BUTTON_GAP - BUTTON_SIZE
+            ? bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE / 2
             : bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE - BUTTON_GAP / 2;
     }
 
     private static int downX() {
         return boostShown()
-            ? bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE / 2
+            ? bookLeft() + PAGE_CENTER_X_OFFSET + BUTTON_SIZE / 2 + BUTTON_GAP
             : bookLeft() + PAGE_CENTER_X_OFFSET + BUTTON_GAP / 2;
     }
 
     private static int starX() {
-        return bookLeft() + PAGE_CENTER_X_OFFSET + BUTTON_SIZE / 2 + BUTTON_GAP;
+        return bookLeft() + PAGE_CENTER_X_OFFSET - BUTTON_SIZE / 2 - BUTTON_GAP - BUTTON_SIZE;
     }
 
     private static boolean inUpButton(int x, int y) {

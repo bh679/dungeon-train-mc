@@ -18,7 +18,7 @@ import net.minecraft.world.item.ItemStack;
 import java.util.List;
 
 /**
- * The Boost control on the vote page of SOMEBODY ELSE's community book: a star beside the thumbs and a
+ * The Boost control on the vote page of SOMEBODY ELSE's community book: a star to the left of the thumbs and a
  * gold "Boost this book (N boosts left)" line above them. Either one spends a boost, a tenth of one of
  * the reader's Priority Books, and lifts the book like a whole one in other players' trains.
  *
