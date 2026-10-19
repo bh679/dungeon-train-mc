@@ -34,6 +34,7 @@ BANDS = HERE / "bands.json"
 
 CURVE_NAMES = ("base", "flutter", "gustsPerMin", "gustStrength", "gustSeconds", "gustVeer", "wander",
                "wanderSeconds")
+WEIGHT_FIELDS = ("refMass", "exponent", "maxBoost", "grip")
 MULT_FIELDS = ("player", "mob", "item", "projectile", "xp", "other")
 MAX_BODY = 256 * 1024
 
@@ -84,6 +85,7 @@ def validate_profile(profile: object) -> dict:
         "airFactor": _number(profile, "airFactor", "profile") if "airFactor" in profile else 1.0,
         "visualLeadTicks": int(_number(profile, "visualLeadTicks", "profile")),
         "multipliers": {k: _number(mult, k, "multipliers") for k in MULT_FIELDS},
+        "weight": {k: _number(profile.get("weight") or {}, k, "weight") for k in WEIGHT_FIELDS},
         "curves": {name: _curve(curves.get(name), name) for name in CURVE_NAMES},
     }
 

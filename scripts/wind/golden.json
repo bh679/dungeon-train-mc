@@ -8,11 +8,17 @@
     "visualLeadTicks": 40,
     "multipliers": {
       "player": 1.0,
-      "mob": 0.8,
-      "item": 1.6,
-      "projectile": 0.6,
-      "xp": 1.6,
+      "mob": 1.0,
+      "item": 1.0,
+      "projectile": 0.5,
+      "xp": 1.0,
       "other": 1.0
+    },
+    "weight": {
+      "refMass": 0.65,
+      "exponent": 0.5,
+      "maxBoost": 4.0,
+      "grip": 0.006
     },
     "curves": {
       "base": {

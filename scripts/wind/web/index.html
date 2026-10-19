@@ -111,6 +111,12 @@
       <div class="row" id="mults"></div>
     </section>
     <section>
+      <h2>Weight</h2>
+      <p class="hint">Mass = bounding-box volume. Lighter things get × (ref / mass)^exponent (capped), and on the ground the wind must beat grip × mass before anything moves.</p>
+      <div class="row" id="weight"></div>
+      <div class="scroll"><table id="whoMoves"></table></div>
+    </section>
+    <section>
       <h2>Curves</h2>
       <p class="hint"><b>log</b>: scale × ln(1 + d / ref), rising forever. <b>approach</b>: closes half the gap from start to max every half-life blocks, never reaching it.</p>
       <div class="scroll"><table id="curves"></table></div>

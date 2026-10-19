@@ -27,10 +27,11 @@ import com.google.gson.JsonParser;
  * @param airFactor        push multiplier for a living thing off the ground (jumping, falling)
  * @param visualLeadTicks  how far ahead of the push the client draws the wind (20 = 1 second)
  * @param multipliers      push multiplier per entity category
+ * @param weight           how an entity's size (its stand-in for mass) changes the push — see {@link Weight}
  * @param curves           how each quantity grows with distance; {@code null} = no wind
  */
 public record WindProfile(boolean enabled, double headingDeg, double sneakFactor, double airFactor,
-                          int visualLeadTicks, Multipliers multipliers, Curves curves) {
+                          int visualLeadTicks, Multipliers multipliers, Weight weight, Curves curves) {
 
     /** Bundled resource path (classpath) of the default profile. */
     public static final String RESOURCE_PATH = "/data/dungeontrain/wind/profile.json";
@@ -39,7 +40,7 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
     public static final double MAX_GUSTS_PER_MIN = 60.0;
 
     /** A profile that never blows — used when the file is missing or malformed. */
-    public static final WindProfile CALM = new WindProfile(false, 90.0, 1.0, 1.0, 20, Multipliers.UNIT, null);
+    public static final WindProfile CALM = new WindProfile(false, 90.0, 1.0, 1.0, 20, Multipliers.UNIT, Weight.NONE, null);
 
     /**
      * The curves, one per quantity. Strengths are horizontal accelerations in blocks/tick² at multiplier 1.
@@ -73,6 +74,34 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
      */
     public record Stage(double at, double base, double flutter, double gustsPerMin, double gustStrength,
                         double gustTicks, double gustVeer, double wander, double wanderSeconds) {}
+
+    /**
+     * Lighter things move first and further. An entity's mass is its bounding-box volume (a player ≈ 0.65, a
+     * dropped item ≈ 0.016, an arrow ≈ 0.125, an iron golem ≈ 5.3).
+     * <ul>
+     *   <li><b>More push when lighter</b>: × {@code (refMass / mass)^exponent}, capped at {@code maxBoost}.</li>
+     *   <li><b>Later when heavier</b>: on the ground, the wind must beat {@code grip × mass} before it moves
+     *       anything — so items and arrows go first, then small mobs, then players, then the big ones, and as
+     *       the wind keeps rising the heavy ones join in. Off the ground there is no grip.</li>
+     * </ul>
+     */
+    public record Weight(double refMass, double exponent, double maxBoost, double grip) {
+        /** Size makes no difference. */
+        public static final Weight NONE = new Weight(1.0, 0.0, 1.0, 0.0);
+        /** Below this a bounding box counts as this heavy (keeps the boost finite). */
+        public static final double MIN_MASS = 0.002;
+
+        /** Push multiplier for {@code mass}. */
+        public double boost(double mass) {
+            double m = Math.max(MIN_MASS, mass);
+            return Math.min(maxBoost, Math.pow(refMass / m, exponent));
+        }
+
+        /** Wind needed before a grounded thing of {@code mass} starts to move. */
+        public double threshold(double mass) {
+            return grip * Math.max(MIN_MASS, mass);
+        }
+    }
 
     /** Push multiplier per entity category. */
     public record Multipliers(double player, double mob, double item, double projectile, double xp, double other) {
@@ -113,6 +142,12 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
                 num(m, "player", 1), num(m, "mob", 1), num(m, "item", 1),
                 num(m, "projectile", 1), num(m, "xp", 1), num(m, "other", 1));
 
+        JsonObject wo = o.has("weight") && o.get("weight").isJsonObject()
+                ? o.getAsJsonObject("weight") : new JsonObject();
+        Weight weight = new Weight(
+                Math.max(Weight.MIN_MASS, num(wo, "refMass", 1.0)), Math.max(0, num(wo, "exponent", 0.0)),
+                Math.max(1.0, num(wo, "maxBoost", 1.0)), Math.max(0, num(wo, "grip", 0.0)));
+
         if (!o.has("curves") || !o.get("curves").isJsonObject()) {
             throw new IllegalArgumentException("wind profile needs a 'curves' object");
         }
@@ -133,7 +168,7 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
                 num(o, "sneakFactor", 0.35),
                 Math.max(0, num(o, "airFactor", 1.0)),
                 (int) Math.max(0, num(o, "visualLeadTicks", 20)),
-                mult, curves);
+                mult, weight, curves);
     }
 
     /** Serialise back to the same shape {@link #parse} reads (used by the sync packet). */
@@ -152,6 +187,12 @@ public record WindProfile(boolean enabled, double headingDeg, double sneakFactor
         m.addProperty("xp", multipliers.xp());
         m.addProperty("other", multipliers.other());
         o.add("multipliers", m);
+        JsonObject w = new JsonObject();
+        w.addProperty("refMass", weight.refMass());
+        w.addProperty("exponent", weight.exponent());
+        w.addProperty("maxBoost", weight.maxBoost());
+        w.addProperty("grip", weight.grip());
+        o.add("weight", w);
         if (curves != null) {
             JsonObject c = new JsonObject();
             WindCurve[] all = curves.all();

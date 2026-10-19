@@ -4,7 +4,8 @@
   "sneakFactor": 0.35,
   "airFactor": 2.5,
   "visualLeadTicks": 40,
-  "multipliers": {"player": 1.0, "mob": 0.8, "item": 1.6, "projectile": 0.6, "xp": 1.6, "other": 1.0},
+  "multipliers": {"player": 1.0, "mob": 1.0, "item": 1.0, "projectile": 0.5, "xp": 1.0, "other": 1.0},
+  "weight": {"refMass": 0.65, "exponent": 0.5, "maxBoost": 4.0, "grip": 0.006},
   "curves": {
     "base": {"kind": "log", "scale": 0.0036, "ref": 4000.0},
     "flutter": {"kind": "approach", "start": 0.0, "max": 0.5, "halfLife": 40000.0},

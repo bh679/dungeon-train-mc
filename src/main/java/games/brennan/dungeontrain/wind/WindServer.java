@@ -199,17 +199,15 @@ public final class WindServer {
         State s = state;
         if (!s.active()) return;
         List<ServerPlayer> players = level.players().stream().filter(p -> !p.isSpectator()).toList();
-        if (players.isEmpty()) return;
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
         if (carriages.isEmpty()) return;
         long tick = level.getGameTime();
-        // Only near a player: WIND_ROOMS carriages either way. Nobody sees wind further out, so it isn't computed.
+        // Full detail within WIND_ROOMS carriages of a player; the simple far test (FarWind) everywhere else.
         double reach = WIND_ROOMS * carriages.get(0).provider().dims().length();
         // Neighbouring carriages' boxes overlap at the couplings: push each entity once per tick.
         Set<Entity> done = Collections.newSetFromMap(new IdentityHashMap<>());
         for (Trains.Carriage c : carriages) {
-            if (!nearAnyPlayer(c.ship().worldAABB(), players, reach)) continue;
-            pushAround(level, c.ship(), s, tick, done, players, reach);
+            pushAround(level, c, s, tick, done, players, reach, nearAnyPlayer(c.ship().worldAABB(), players, reach));
         }
         pushedSinceReport += done.size();
         if (tick % REPORT_PERIOD == 0) {
@@ -238,8 +236,14 @@ public final class WindServer {
         return false;
     }
 
-    private static void pushAround(ServerLevel level, ManagedShip ship, State s, long tick, Set<Entity> done,
-                                   List<ServerPlayer> players, double reach) {
+    /**
+     * Push what is around one carriage group. Within {@code reach} of a player: the full test per entity (its
+     * own wind sample, {@link TrainExposure} block scans for cover and lee). Further out nobody is watching, so
+     * {@link FarWind}: one wind sample for the whole group, and "inside a carriage with walls, yes or no".
+     */
+    private static void pushAround(ServerLevel level, Trains.Carriage carriage, State s, long tick, Set<Entity> done,
+                                   List<ServerPlayer> players, double reach, boolean groupNear) {
+        ManagedShip ship = carriage.ship();
         AABBdc bb = ship.worldAABB();
         if (bb.maxX() < s.startX()) return; // whole carriage still before the wind
         if (!(ship instanceof SableManagedShip sable)) return;
@@ -247,13 +251,20 @@ public final class WindServer {
         if (sub == null) return;
         AABB box = new AABB(bb.minX() - SIDE_REACH, bb.minY(), bb.minZ() - SIDE_REACH,
                 bb.maxX() + SIDE_REACH, bb.maxY() + ABOVE_REACH, bb.maxZ() + SIDE_REACH);
+        WindSample groupWind = null;
         for (Entity e : level.getEntities((Entity) null, box, WindServer::pushable)) {
-            if (done.contains(e) || !withinReach(e, players, reach)) continue;
+            if (done.contains(e)) continue;
             // Only entities that will actually move this tick: a non-ticking one would just bank velocity.
             if (!level.isPositionEntityTicking(e.blockPosition())) continue;
-            WindSample w = s.sampleAt(e.getX(), tick);
-            if (w.isCalm()) continue;
-            if (!TrainExposure.isExposed(sub, e, w.dirX(), w.dirZ())) continue;
+            WindSample w;
+            if (groupNear && withinReach(e, players, reach)) {
+                w = s.sampleAt(e.getX(), tick);
+                if (w.isCalm() || !TrainExposure.isExposed(sub, e, w.dirX(), w.dirZ())) continue;
+            } else {
+                if (groupWind == null) groupWind = s.sampleAt((bb.minX() + bb.maxX()) / 2.0, tick);
+                w = groupWind;
+                if (w.isCalm() || !FarWind.exposed(carriage, e)) continue;
+            }
             done.add(e);
             WindPush.apply(e, w, s.profile(), 1.0);
         }

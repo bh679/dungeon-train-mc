@@ -37,15 +37,31 @@ public final class WindPush {
         return m.other();
     }
 
+    /** An entity's stand-in for mass: its bounding-box volume. */
+    public static double mass(Entity e) {
+        double w = e.getBbWidth();
+        return w * w * e.getBbHeight();
+    }
+
     /**
-     * The push {@code e} would get from {@code w} this tick (blocks/tick², 0 for none) — category multiplier,
-     * {@code extra} (e.g. the sneak factor), the profile's {@code airFactor} for a living thing off the ground,
-     * and knockback resistance.
+     * The push {@code e} would get from {@code w} this tick (blocks/tick², 0 for none):
+     * <ol>
+     *   <li>the wind ({@code extra} on top, e.g. the sneak factor; {@code airFactor} for a living thing off the
+     *       ground),</li>
+     *   <li>less the grip a grounded thing has for its weight ({@link WindProfile.Weight#threshold}) — the
+     *       wind has to beat that before it moves anything,</li>
+     *   <li>times the category multiplier, the light-things boost ({@link WindProfile.Weight#boost}) and
+     *       (1 − knockback resistance).</li>
+     * </ol>
      */
     public static double accel(Entity e, WindSample w, WindProfile profile, double extra) {
-        double a = w.strength() * multiplier(profile.multipliers(), e) * extra;
+        double wind = w.strength() * extra;
+        if (e instanceof LivingEntity living && !living.onGround()) wind *= profile.airFactor();
+        double mass = mass(e);
+        if (e.onGround()) wind -= profile.weight().threshold(mass);
+        if (wind <= 0.0) return 0.0;
+        double a = wind * multiplier(profile.multipliers(), e) * profile.weight().boost(mass);
         if (e instanceof LivingEntity living) {
-            if (!living.onGround()) a *= profile.airFactor();
             a *= 1.0 - Math.min(1.0, Math.max(0.0, living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE)));
         }
         return Math.max(0.0, a);

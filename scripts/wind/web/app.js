@@ -12,6 +12,13 @@ const CURVE_LABELS = {
 };
 const CAPS = { gustsPerMin: MAX_GUSTS_PER_MIN };
 const MULTS = ["player", "mob", "item", "projectile", "xp", "other"];
+const WEIGHTS = ["refMass", "exponent", "maxBoost", "grip"];
+/** Reference things for the "who moves first" table: [name, category, bbox width, bbox height]. */
+const THINGS = [
+  ["XP orb", "xp", 0.5, 0.5], ["dropped item", "item", 0.25, 0.25], ["ender pearl", "projectile", 0.25, 0.25],
+  ["arrow", "projectile", 0.5, 0.5], ["chicken", "mob", 0.4, 0.7], ["skeleton", "mob", 0.6, 1.99],
+  ["player", "player", 0.6, 1.8], ["spider", "mob", 1.4, 0.9], ["iron golem", "mob", 1.4, 2.7],
+];
 const BAND_COLORS = ["#8fb87a", "#c96a4a", "#6a9a5b", "#b7a4d8", "#d9c76a", "#7fb0c9", "#c99a6a", "#9a9a9a"];
 
 let saved = null;     // last loaded/saved profile (for Revert)
@@ -81,6 +88,8 @@ function buildForm() {
   for (const k of ["headingDeg", "sneakFactor", "airFactor", "visualLeadTicks"]) $(k).value = profile[k] ?? 1;
   $("mults").innerHTML = MULTS.map((m) =>
     `<label>${m} × <input type="number" step="0.1" data-mult="${m}" value="${profile.multipliers[m]}"></label>`).join("");
+  $("weight").innerHTML = WEIGHTS.map((k) =>
+    `<label>${k} <input type="number" step="${k === "grip" ? 0.001 : 0.1}" data-w="${k}" value="${(profile.weight || {})[k] ?? 0}"></label>`).join("");
   buildCurves();
   $("dRange").max = range();
   $("dRange").min = minD();
@@ -127,6 +136,11 @@ $("mults").addEventListener("input", (e) => {
   const m = e.target.dataset.mult;
   const v = parseFloat(e.target.value);
   if (m && Number.isFinite(v)) withProfile({ multipliers: { ...profile.multipliers, [m]: v } });
+});
+$("weight").addEventListener("input", (e) => {
+  const k = e.target.dataset.w;
+  const v = parseFloat(e.target.value);
+  if (k && Number.isFinite(v)) withProfile({ weight: { ...profile.weight, [k]: v } });
 });
 $("enabled").addEventListener("change", (e) => withProfile({ enabled: e.target.checked }));
 for (const k of ["headingDeg", "sneakFactor", "airFactor", "visualLeadTicks"]) {
@@ -371,6 +385,30 @@ function drawFeel() {
   }
 }
 
+/** Distance at which the wind first beats each thing's grip (steady wind, and the strongest gust). */
+function whoMoves() {
+  const w = profile.weight || { refMass: 1, exponent: 0, maxBoost: 1, grip: 0 };
+  const boost = (m) => Math.min(w.maxBoost, Math.pow(w.refMass / Math.max(0.002, m), w.exponent));
+  const threshold = (m) => w.grip * Math.max(0.002, m);
+  const firstAt = (needed, value) => {
+    let lo = 0, hi = 1;
+    while (value(hi) <= needed && hi < 1e12) hi *= 2;
+    if (value(hi) <= needed) return Infinity;
+    for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (value(mid) > needed) hi = mid; else lo = mid; }
+    return hi;
+  };
+  const fmt = (d) => (d === Infinity ? "never" : d < 1000 ? `${Math.round(d)}` : kLabel(d));
+  const rows = THINGS.map(([name, cat, bw, bh]) => {
+    const m = bw * bw * bh;
+    const need = threshold(m);
+    const steady = firstAt(need, (d) => stageAt(profile, d).base);
+    const gust = firstAt(need, (d) => { const s = stageAt(profile, d); return s.gustsPerMin > 0.05 ? s.base + s.gustStrength : s.base; });
+    const push = boost(m) * (profile.multipliers[cat] ?? 1);
+    return `<tr><td>${name}</td><td>${m.toFixed(3)}</td><td>×${push.toFixed(2)}</td><td>${need.toFixed(4)}</td><td>${fmt(gust)}</td><td>${fmt(steady)}</td></tr>`;
+  }).join("");
+  $("whoMoves").innerHTML = `<tr><th>on the ground</th><th>mass</th><th>push ×</th><th>wind to move it</th><th>gusts move it from</th><th>steady wind moves it from</th></tr>${rows}`;
+}
+
 let pending = 0;
 function redraw() {
   cancelAnimationFrame(pending);
@@ -379,6 +417,7 @@ function redraw() {
     drawCapped("rate", (s) => s.gustsPerMin, MAX_GUSTS_PER_MIN, "--rate", (v) => v.toFixed(0));
     drawCapped("glen", (s) => s.gustTicks / 20, 5, "--heading", (v) => `${v.toFixed(1)}s`);
     drawFeel();
+    whoMoves();
   });
 }
 window.addEventListener("resize", redraw);

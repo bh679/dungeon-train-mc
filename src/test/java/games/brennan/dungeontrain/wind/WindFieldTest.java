@@ -98,7 +98,7 @@ final class WindFieldTest {
     @Test
     @DisplayName("each gust lasts between 0.1 s and the longest allowed there")
     void gustLengthsWithinRange() {
-        WindProfile p = new WindProfile(true, 90, 1, 1, 20, WindProfile.Multipliers.UNIT, new WindProfile.Curves(
+        WindProfile p = new WindProfile(true, 90, 1, 1, 20, WindProfile.Multipliers.UNIT, WindProfile.Weight.NONE, new WindProfile.Curves(
                 WindCurve.constant(0), WindCurve.constant(0), WindCurve.constant(1), WindCurve.constant(0.05),
                 WindCurve.constant(3.0), WindCurve.constant(0), WindCurve.constant(0), WindCurve.constant(60)));
         int run = 0;
@@ -120,6 +120,39 @@ final class WindFieldTest {
     }
 
     @Test
+    @DisplayName("lighter things are pushed harder and start moving at lower wind")
+    void lighterFirst() throws IOException {
+        WindProfile.Weight w = shipped().weight();
+        double item = 0.25 * 0.25 * 0.25;
+        double arrow = 0.5 * 0.5 * 0.5;
+        double chicken = 0.4 * 0.4 * 0.7;
+        double player = 0.6 * 0.6 * 1.8;
+        double golem = 1.4 * 1.4 * 2.7;
+        double[] byWeight = {item, chicken, arrow, player, golem};
+        for (int i = 1; i < byWeight.length; i++) {
+            assertTrue(w.boost(byWeight[i - 1]) >= w.boost(byWeight[i]), "boost falls with mass at " + i);
+            assertTrue(w.threshold(byWeight[i - 1]) < w.threshold(byWeight[i]), "threshold rises with mass at " + i);
+        }
+        assertTrue(w.boost(item) <= w.maxBoost(), "boost is capped");
+        // The order the wind picks them up in: the distance the steady wind first beats each one's grip.
+        WindProfile p = shipped();
+        double last = -1;
+        for (double m : byWeight) {
+            double need = w.threshold(m);
+            double lo = 0;
+            double hi = 1;
+            while (p.stageAt(hi).base() <= need && hi < 1e12) hi *= 2;
+            for (int i = 0; i < 80; i++) {
+                double mid = (lo + hi) / 2;
+                if (p.stageAt(mid).base() > need) hi = mid; else lo = mid;
+            }
+            double d = hi;
+            assertTrue(d > last, "heavier starts later (mass " + m + " at " + d + ")");
+            last = d;
+        }
+    }
+
+    @Test
     @DisplayName("same inputs, same wind")
     void deterministic() throws IOException {
         WindProfile p = shipped();
@@ -133,7 +166,7 @@ final class WindFieldTest {
     @Test
     @DisplayName("gusts arrive at about the configured rate")
     void gustRate() {
-        WindProfile p = new WindProfile(true, 90, 1, 1, 20, WindProfile.Multipliers.UNIT, new WindProfile.Curves(
+        WindProfile p = new WindProfile(true, 90, 1, 1, 20, WindProfile.Multipliers.UNIT, WindProfile.Weight.NONE, new WindProfile.Curves(
                 WindCurve.constant(0), WindCurve.constant(0), WindCurve.constant(6), WindCurve.constant(0.05),
                 WindCurve.constant(1.0), WindCurve.constant(0), WindCurve.constant(0), WindCurve.constant(60)));
         int onsets = 0;
