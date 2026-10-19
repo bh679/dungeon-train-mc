@@ -1,6 +1,7 @@
 package games.brennan.dungeontrain.block.entity;
 
 import games.brennan.dungeontrain.compat.photo.PhotoFrameLayout;
+import games.brennan.dungeontrain.compat.photo.TestFramePhoto;
 import games.brennan.dungeontrain.registry.ModBlockEntities;
 import games.brennan.dungeontrain.registry.ModItems;
 import io.github.mortuusars.exposure.Exposure;
@@ -143,6 +144,15 @@ public class PhotographFrameBlockEntity extends BlockEntity {
         if (level != null && !level.isClientSide) {
             BlockState state = getBlockState();
             level.sendBlockUpdated(worldPosition, state, state, Block.UPDATE_CLIENTS);
+        }
+    }
+
+    /** A placeholder frame loaded from a saved plot: make sure the picture it shows exists. */
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && !level.isClientSide && hasRandomPlaceholder()) {
+            TestFramePhoto.ensureSaved(level.registryAccess());
         }
     }
 

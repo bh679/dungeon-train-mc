@@ -19,7 +19,9 @@ import org.slf4j.Logger;
  * photo to show (dev relay empty, discovery off, pool not fetched yet): a small drawn landscape, so
  * the author can still see the frame filled. Never placed on a real train.
  *
- * <p>Drawn once per world into Exposure's store under {@link #EXPOSURE_ID}, then reused.</p>
+ * <p>Drawn once per world into Exposure's store under {@link #EXPOSURE_ID}, then reused. The editor
+ * shows the same picture in a frame holding the placeholder, so what the author sees there is what
+ * the test hangs.</p>
  */
 public final class TestFramePhoto {
 
@@ -38,6 +40,14 @@ public final class TestFramePhoto {
 
     /** A photograph of the test picture, or {@link ItemStack#EMPTY} if Exposure's store is unavailable. */
     public static ItemStack create(RegistryAccess registries) {
+        return ensureSaved(registries) ? photograph() : ItemStack.EMPTY;
+    }
+
+    /**
+     * Draw the picture into the server's Exposure store if it isn't there yet. Also called when the
+     * placeholder goes into a frame, so the editor can show the same picture (clients fetch it by id).
+     */
+    public static boolean ensureSaved(RegistryAccess registries) {
         try {
             ExposureRepository repository = ExposureServer.exposureRepository();
             if (repository.load(EXPOSURE_ID).getData().isEmpty()) {
@@ -45,15 +55,20 @@ public final class TestFramePhoto {
                 repository.save(EXPOSURE_ID, new ExposureData(SIZE, SIZE, draw(palette), ColorPalettes.DEFAULT.location(),
                     ExposureData.Tag.EMPTY));
             }
-            Frame frame = Frame.create().setIdentifier(ExposureIdentifier.id(EXPOSURE_ID)).toImmutable();
-            ItemStack stack = new ItemStack(Exposure.Items.PHOTOGRAPH.get());
-            stack.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
-            stack.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.type());
-            return stack;
+            return true;
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Could not make the test frame photo: {}", e.toString());
-            return ItemStack.EMPTY;
+            return false;
         }
+    }
+
+    /** A photograph pointing at the test picture; safe on either side (it only names the exposure). */
+    public static ItemStack photograph() {
+        Frame frame = Frame.create().setIdentifier(ExposureIdentifier.id(EXPOSURE_ID)).toImmutable();
+        ItemStack stack = new ItemStack(Exposure.Items.PHOTOGRAPH.get());
+        stack.set(Exposure.DataComponents.PHOTOGRAPH_FRAME, frame);
+        stack.set(Exposure.DataComponents.PHOTOGRAPH_TYPE, frame.type());
+        return stack;
     }
 
     private static byte[] draw(ColorPalette palette) {

@@ -4,6 +4,7 @@ import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.block.entity.PhotographFrameBlockEntity;
 import games.brennan.dungeontrain.compat.photo.PhotoFrameLayout;
 import games.brennan.dungeontrain.compat.photo.RandomFramePhotos;
+import games.brennan.dungeontrain.compat.photo.TestFramePhoto;
 import games.brennan.dungeontrain.registry.ModBlockEntities;
 import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
@@ -252,6 +253,7 @@ public class PhotographFrameBlock extends Block implements EntityBlock {
         if ((stack.getItem() instanceof PhotographItem || stack.is(ModItems.RANDOM_PLAYERPHOTO.get()))
                 && !be.hasPhoto()) {
             if (!level.isClientSide) {
+                if (stack.is(ModItems.RANDOM_PLAYERPHOTO.get())) TestFramePhoto.ensureSaved(level.registryAccess());
                 be.setPhoto(stack);
                 stack.consume(1, player);
                 playSound(level, pos, Exposure.SoundEvents.PHOTOGRAPH_FRAME_ADD_ITEM.get());
