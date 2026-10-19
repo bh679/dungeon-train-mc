@@ -11,7 +11,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 
 /**
- * The sound of the train wind, from vanilla sounds (Windy ships none), on the Ambient volume slider:
+ * The sound of the train wind, from vanilla sounds (Windy ships none), scaled by the Wind volume slider
+ * ({@link WindVolumeOption}) and played on the Ambient category:
  * <ul>
  *   <li><b>Breeze</b> — the elytra's rushing-air loop, louder and higher as the wind rises.</li>
  *   <li><b>Gust</b> — the same wind doubled: a second copy of the loop at the same pitch that swells in with
@@ -47,7 +48,8 @@ final class WindSound {
         float pitch = (float) ((0.55 + 0.6 * level) * (muffle < 1.0 ? 0.8 : 1.0));
         breeze = ensure(breeze, pitch);
         gust = ensure(gust, pitch);
-        double loud = Math.sqrt(level) * muffle;
+        double loud = Math.sqrt(level) * muffle
+                * games.brennan.dungeontrain.config.ClientDisplayConfig.getWindVolume();
         breeze.target((float) (loud * (BREEZE_MAX_VOLUME + BREEZE_GUST_BOOST * gustShare)), pitch);
         gust.target((float) (loud * GUST_MAX_VOLUME * gustShare), pitch);
     }
