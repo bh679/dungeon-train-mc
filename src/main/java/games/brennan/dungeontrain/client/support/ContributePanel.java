@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
 import games.brennan.dungeontrain.client.live.life.LiveRewards;
 import games.brennan.dungeontrain.client.menu.ColorTintedButton;
+import games.brennan.dungeontrain.client.support.currency.CurrencyFormat;
 import games.brennan.dungeontrain.narrative.PriorityBookMessage;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -156,7 +157,7 @@ public final class ContributePanel {
                 int bx = x + i * (each + GAP);
                 if (commit) {
                     Button b = new ColorTintedButton(bx, y, each, style.tierH,
-                            Component.translatable(tier.shortKey()),
+                            CurrencyFormat.amount(tier.audAmount(), tier.shortKey()),
                             TINT_BLUE[0], TINT_BLUE[1], TINT_BLUE[2],
                             p -> openLink(PaymentLinks.tierUrl(tier), tier.analyticsTarget()));
                     b.setTooltip(Tooltip.create(Component.translatable(tier.tooltipKey())));
@@ -283,7 +284,8 @@ public final class ContributePanel {
                     .getMonth().getDisplayName(shortForm ? TextStyle.SHORT : TextStyle.FULL, javaLocale());
             label = Component.translatable("gui.dungeontrain.rewards.give.month", month);
         } else if (shortForm) {
-            label = Component.translatable("gui.dungeontrain.rewards.give.amount", Component.translatable(reward.amountShortKey()));
+            label = Component.translatable("gui.dungeontrain.rewards.give.amount",
+                    CurrencyFormat.amount(reward.costAud(), reward.amountShortKey()));
         } else {
             label = Component.translatable("gui.dungeontrain.rewards.give.this_month");
         }
@@ -319,7 +321,8 @@ public final class ContributePanel {
                     link("gui.dungeontrain.contribute.any_amount", LINK_DONATE),
                     link("gui.dungeontrain.contribute.monthly", LINK_PATREON))).append(" ");
         }
-        out.append(Component.translatable("gui.dungeontrain.contribute.aud_note"));
+        // "Amounts in Australian dollars.", or the approximate-currency line while converted.
+        out.append(CurrencyFormat.note());
         if (style.affiliate) {
             out.append(" ").append(Component.translatable("gui.dungeontrain.contribute.affiliate",
                     link("gui.dungeontrain.support.financial.affiliate_link", LINK_AFFILIATE)));

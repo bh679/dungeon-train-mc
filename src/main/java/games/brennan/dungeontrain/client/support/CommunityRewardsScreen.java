@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.client.support;
 
+import games.brennan.dungeontrain.client.support.currency.CurrencyFormat;
+import games.brennan.dungeontrain.client.support.currency.CurrencyPicker;
 import games.brennan.dungeontrain.client.DonationSummaryCache;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
@@ -61,6 +63,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     private final Screen parent;
     /** Only for Give's link handling (confirm + analytics); never laid out. */
     private final ContributePanel links;
+    private final CurrencyPicker currency = new CurrencyPicker(UiAnalytics.SURFACE_REWARDS_PAGE, this::rebuildWidgets);
     private final long openedAtMs = System.currentTimeMillis();
     private boolean timeReported;
 
@@ -151,6 +154,15 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             y += lh + 1;
         }
 
+        // Converted amounts above: say they are approximate and that the gift is made in AUD.
+        if (CurrencyFormat.converted()) {
+            y += 4;
+            for (FormattedCharSequence l : this.font.split(CurrencyFormat.note(), colW)) {
+                texts.add(new Text(l, colX, y, COLOUR_SUB));
+                y += lh + 1;
+            }
+        }
+
         int contentH = y;
         int rowY = this.height - BOTTOM_ROW_H;
         viewportTop = TOP;
@@ -158,6 +170,8 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         maxScroll = Math.max(0, contentH - (viewportBottom - viewportTop));
         scrollY = Mth.clamp(scrollY, 0, maxScroll);
 
+        // Top right of the column, level with the title; drawn by render() above the scrolling cards.
+        currency.layout(this.font, colX + colW, viewportTop - 3, this.height, this::addWidget);
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(this.width / 2 - 100, rowY, 200, 20).build());
     }
@@ -171,7 +185,8 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         texts.add(new Text(Component.translatable(r.group().labelKey()).getVisualOrderText(), tx, ty, COLOUR_GROUP));
         ty += lh + 1;
         ty = wrap(Component.translatable(r.nameKey()), tx, ty, tw, COLOUR_NAME);
-        ty = wrap(Component.translatable("gui.dungeontrain.rewards.amount_line", Component.translatable(r.amountKey())),
+        ty = wrap(Component.translatable("gui.dungeontrain.rewards.amount_line",
+                        CurrencyFormat.amount(r.costAud(), r.amountKey())),
                 tx, ty, tw, COLOUR_AMOUNT);
         ty += 2;
         if (CommunityRewards.active(state, r, now)) {
@@ -265,10 +280,23 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         for (Text t : texts) g.drawString(this.font, t.line(), t.x(), t.canvasY() + off, t.colour(), false);
         for (Placed p : buttons) if (p.button().visible) p.button().render(g, mouseX, mouseY, partialTick);
         g.disableScissor();
+        if (currency.button() != null) currency.button().render(g, mouseX, mouseY, partialTick);
+        currency.render(g, this.font, mouseX, mouseY);
+    }
+
+    @Override
+    public boolean mouseClicked(double mx, double my, int button) {
+        return currency.mouseClicked(mx, my, button) || super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        return currency.keyPressed(keyCode) || super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override
     public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        if (currency.mouseScrolled(mx, my, dy)) return true;
         if (maxScroll > 0) {
             scrollY = Mth.clamp(scrollY - (int) Math.round(dy * SCROLL_STEP), 0, maxScroll);
             return true;
