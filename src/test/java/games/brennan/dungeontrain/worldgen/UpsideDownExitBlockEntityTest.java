@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** Which native block entities the exit crossfade leaves in place — beds never, so none float. */
+/** Which native block entities the exit crossfade leaves in place — never beds or containers, so none float. */
 final class UpsideDownExitBlockEntityTest {
 
     @BeforeAll
@@ -32,9 +32,19 @@ final class UpsideDownExitBlockEntityTest {
     }
 
     @Test
-    @DisplayName("chests, lecterns and bells keep today's behaviour")
+    @DisplayName("containers are dropped — they float and never render flipped")
+    void containersDropped() {
+        assertFalse(UpsideDownMirror.keepsNativeBlockEntity(Blocks.CHEST.defaultBlockState()));
+        assertFalse(UpsideDownMirror.keepsNativeBlockEntity(Blocks.TRAPPED_CHEST.defaultBlockState()));
+        assertFalse(UpsideDownMirror.keepsNativeBlockEntity(Blocks.ENDER_CHEST.defaultBlockState()));
+        assertFalse(UpsideDownMirror.keepsNativeBlockEntity(Blocks.BARREL.defaultBlockState()));
+        assertFalse(UpsideDownMirror.keepsNativeBlockEntity(Blocks.SHULKER_BOX.defaultBlockState()));
+        assertFalse(UpsideDownMirror.keepsNativeBlockEntity(Blocks.RED_SHULKER_BOX.defaultBlockState()));
+    }
+
+    @Test
+    @DisplayName("lecterns and bells keep today's behaviour")
     void otherBlockEntitiesKept() {
-        assertTrue(UpsideDownMirror.keepsNativeBlockEntity(Blocks.CHEST.defaultBlockState()));
         assertTrue(UpsideDownMirror.keepsNativeBlockEntity(Blocks.LECTERN.defaultBlockState()));
         assertTrue(UpsideDownMirror.keepsNativeBlockEntity(Blocks.BELL.defaultBlockState()));
     }

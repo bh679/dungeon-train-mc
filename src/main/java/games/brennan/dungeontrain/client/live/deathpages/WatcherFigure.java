@@ -24,8 +24,8 @@ import java.util.UUID;
  * The crowd page's first place, drawn as the whole player in their skin rather than a face: a
  * throwaway client-side {@link RemotePlayer} (never added to the level, never ticked) rendered with
  * vanilla's inventory-entity transform minus the scissor, like the deeds page portrait. It faces the
- * viewer and turns its head slowly. A website, Twitch or Discord viewer has no skin and stands in the
- * default one.
+ * viewer and turns its head slowly. A website viewer whose Discord is linked to a game account wears
+ * that account's skin; any other website, Twitch or Discord viewer stands in the default one.
  *
  * <p>Per-screen state: call {@link #clear()} from the owning screen's {@code removed()} so the cached
  * entity cannot pin a stale level.</p>

@@ -50,6 +50,17 @@ class CrowdRankingTest {
     }
 
     @Test
+    void aLinkedWebsiteViewerKeepsTheirUuidAndMergesTheirChatByName() {
+        List<Ranked> top = CrowdRanking.rank(
+            List.of(new Watcher("Kestrel", MOTH, "web", 600)),
+            Map.of("Kestrel", 3), Map.of("Kestrel", new Author("web", null)), 3);
+        assertEquals(1, top.size());
+        assertEquals(MOTH, top.get(0).uuid());
+        assertEquals("web", top.get(0).source());
+        assertEquals(3, top.get(0).messages());
+    }
+
+    @Test
     void twitchAndDiscordChattersRankWithNoWatchTime() {
         List<Ranked> top = CrowdRanking.rank(List.of(),
             Map.of("twitchfan", 4, "discordpal", 1),

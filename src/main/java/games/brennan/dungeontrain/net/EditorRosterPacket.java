@@ -122,13 +122,22 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
      * @param totalUnique the real distinct-block count, so a capped list can still say "+K"
      * @param parts       the carriage parts that link to the stage, as {@code <kind id>:<name>}
      *                    (the key the part commands take), in the index's stable order
+     * @param group       the stage's family ({@code Stage.group()}), {@code ""} when it stands alone —
+     *                    the Stages tab folds a family into one entry with a member dropdown
      */
     public record StageEntry(EditorTypeMenusPacket.Variant stage, List<StageBlocksSyncPacket.BlockCount> blocks,
-                             int totalUnique, List<String> parts, Palette palette) {
+                             int totalUnique, List<String> parts, Palette palette, String group) {
         public StageEntry {
             blocks = blocks == null ? List.of() : List.copyOf(blocks);
             parts = parts == null ? List.of() : List.copyOf(parts);
             palette = palette == null ? Palette.NONE : palette;
+            group = group == null ? "" : group;
+        }
+
+        /** Ungrouped. */
+        public StageEntry(EditorTypeMenusPacket.Variant stage, List<StageBlocksSyncPacket.BlockCount> blocks,
+                          int totalUnique, List<String> parts, Palette palette) {
+            this(stage, blocks, totalUnique, parts, palette, "");
         }
 
         /** The pre-palette shape. */
@@ -344,6 +353,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
             buf.writeUtf(pal.stone(), 32);
             buf.writeBoolean(pal.woodLocked());
             buf.writeBoolean(pal.stoneLocked());
+            buf.writeUtf(s.group(), 32);
         }
         buf.writeVarInt(tunnelGroups.ungroupedWeight());
         List<String> ids = tunnelGroups.ids();
@@ -410,7 +420,7 @@ public record EditorRosterPacket(List<Group> groups, String stampedCategoryId, T
                 entries.add(new StagePaletteSyncPacket.Entry(buf.readUtf(64), buf.readUtf(256), buf.readBoolean()));
             }
             Palette palette = new Palette(entries, buf.readUtf(32), buf.readUtf(32), buf.readBoolean(), buf.readBoolean());
-            stages.add(new StageEntry(stage, blocks, totalUnique, parts, palette));
+            stages.add(new StageEntry(stage, blocks, totalUnique, parts, palette, buf.readUtf(32)));
         }
         int ungroupedWeight = buf.readVarInt();
         int ng = buf.readVarInt();

@@ -35,4 +35,30 @@ final class UpsideDownSpawnerStructuresTest {
         assertFalse(UpsideDownSpawnerStructures.excludesFeature(mc("fossil_upper")));
         assertFalse(UpsideDownSpawnerStructures.excludesFeature(null));
     }
+
+    /** A stretch covering world-X [1000, 5000). */
+    private static boolean inStretch(int x) {
+        return x >= 1000 && x < 5000;
+    }
+
+    @Test
+    @DisplayName("chunks inside the stretch are vetoed")
+    void insideCovered() {
+        assertTrue(UpsideDownSpawnerStructures.coversChunk(UpsideDownSpawnerStructuresTest::inStretch, 3008));
+        assertTrue(UpsideDownSpawnerStructures.coversChunk(UpsideDownSpawnerStructuresTest::inStretch, 992),
+            "a chunk straddling the edge");
+    }
+
+    @Test
+    @DisplayName("the veto reaches MARGIN_BLOCKS past either end, and no further")
+    void marginBothEnds() {
+        int m = UpsideDownSpawnerStructures.MARGIN_BLOCKS;
+        // After the end (the Reassembly side on the forward run).
+        assertTrue(UpsideDownSpawnerStructures.coversChunk(UpsideDownSpawnerStructuresTest::inStretch, 5000 + m - 16));
+        assertTrue(UpsideDownSpawnerStructures.coversChunk(UpsideDownSpawnerStructuresTest::inStretch, 4992 + m));
+        assertFalse(UpsideDownSpawnerStructures.coversChunk(UpsideDownSpawnerStructuresTest::inStretch, 5008 + m));
+        // Before the start (the Reassembly side on the reversed run).
+        assertTrue(UpsideDownSpawnerStructures.coversChunk(UpsideDownSpawnerStructuresTest::inStretch, 1000 - m));
+        assertFalse(UpsideDownSpawnerStructures.coversChunk(UpsideDownSpawnerStructuresTest::inStretch, 1000 - m - 32));
+    }
 }

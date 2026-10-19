@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -50,6 +51,15 @@ final class BundledStagesTest {
         // The shipped presets authored in-game — pin so an accidental wipe of stages.json is caught.
         for (String expected : new String[] {"desert", "nether", "stone"}) {
             assertTrue(parsed.containsKey(expected), "bundled stages.json should contain '" + expected + "'");
+        }
+        // The editor's Stages tab folds the wood stages into one "Wood" entry. A wood stage is one built
+        // on plain stone (every vanilla and modded wood); the themed stages (copper, desert, …) stand alone.
+        for (Stage s : parsed.values()) {
+            boolean wood = !s.id().equals("stone") && s.palette() != null && "stone".equals(s.palette().stone());
+            assertEquals(wood ? "wood" : "", s.group(), "stage '" + s.id() + "' group in bundled stages.json");
+        }
+        for (String expected : new String[] {"acacia", "spruce", "wood_oak", "pale_oak", "fir"}) {
+            assertEquals("wood", parsed.get(expected).group(), "'" + expected + "' is a wood stage");
         }
         // id is normalised (lower-case) + non-null gate (no NPEs on the worldgen gate path).
         for (Stage s : parsed.values()) {
