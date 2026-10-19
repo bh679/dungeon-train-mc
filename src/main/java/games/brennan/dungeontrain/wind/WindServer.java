@@ -75,6 +75,13 @@ public final class WindServer {
     }
 
     private static volatile State state = new State(WindProfile.CALM, 0, Long.MIN_VALUE, false);
+    private static volatile Long startOverride = null;
+    /** DEBUG-log cadence for the push counter (headless Gate 2 evidence in debug.log). */
+    private static final long REPORT_PERIOD = 200L;
+    private static long pushedSinceReport = 0L;
+    /** {@code debug wind drop} probes: entity → tick it was dropped. Logged every second for 10 s. */
+    private static final java.util.Map<Entity, Long> PROBES = new java.util.WeakHashMap<>();
+    private static final long PROBE_TICKS = 200L;
 
     private WindServer() {}
 
@@ -92,6 +99,7 @@ public final class WindServer {
     @SubscribeEvent
     public static void onServerStopped(ServerStoppedEvent event) {
         state = new State(WindProfile.CALM, 0, Long.MIN_VALUE, false);
+        startOverride = null;
     }
 
     /** Re-read the profile and wind start, then resend to every player. Returns a one-line summary. */
@@ -99,11 +107,13 @@ public final class WindServer {
         ServerLevel overworld = server.overworld();
         WindProfile profile = loadProfile();
         int seed = WindField.foldSeed(overworld.getSeed());
-        long startX = windStartX(overworld);
+        Long override = startOverride;
+        long startX = override != null ? override : windStartX(overworld);
         state = new State(profile, seed, startX, state.forcedOff());
         broadcast(server);
         String summary = "wind: " + profile.stages().size() + " stages, start X "
                 + (startX == Long.MIN_VALUE ? "none (no Upside-down band)" : Long.toString(startX))
+                + (override != null ? " (debug override)" : "")
                 + (profile.enabled() ? "" : ", profile disabled");
         LOGGER.info("[DungeonTrain] {}", summary);
         return summary;
@@ -114,6 +124,19 @@ public final class WindServer {
         State s = state;
         state = new State(s.profile(), s.seed(), s.startX(), off);
         broadcast(server);
+    }
+
+    /**
+     * The {@code debug wind start} override: move where the wind starts (e.g. to just behind the train at spawn,
+     * to test without riding 20k+ blocks). {@code null} restores the real start. Not saved.
+     */
+    public static void overrideStart(MinecraftServer server, Long startX) {
+        startOverride = startX;
+        reload(server);
+    }
+
+    public static boolean startOverridden() {
+        return startOverride != null;
     }
 
     /** World X where the first Upside-down stretch ends, or {@link Long#MIN_VALUE} when there is none. */
@@ -170,6 +193,7 @@ public final class WindServer {
     @SubscribeEvent
     public static void onLevelTick(LevelTickEvent.Post event) {
         if (!(event.getLevel() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD) return;
+        logProbes(level);
         State s = state;
         if (!s.active()) return;
         List<Trains.Carriage> carriages = Trains.allCarriages(level);
@@ -179,6 +203,12 @@ public final class WindServer {
         Set<Entity> done = Collections.newSetFromMap(new IdentityHashMap<>());
         for (Trains.Carriage c : carriages) {
             pushAround(level, c.ship(), s, tick, done);
+        }
+        pushedSinceReport += done.size();
+        if (tick % REPORT_PERIOD == 0) {
+            LOGGER.debug("[DungeonTrain] wind: pushed {} entity-ticks over the last {} ticks; now {} at train",
+                    pushedSinceReport, REPORT_PERIOD, done.size());
+            pushedSinceReport = 0;
         }
     }
 
@@ -192,11 +222,46 @@ public final class WindServer {
                 bb.maxX() + SIDE_REACH, bb.maxY() + ABOVE_REACH, bb.maxZ() + SIDE_REACH);
         for (Entity e : level.getEntities((Entity) null, box, WindServer::pushable)) {
             if (done.contains(e)) continue;
+            // Only entities that will actually move this tick: a non-ticking one would just bank velocity.
+            if (!level.isPositionEntityTicking(e.blockPosition())) continue;
             WindSample w = s.sampleAt(e.getX(), tick);
             if (w.isCalm()) continue;
             if (!TrainExposure.isExposed(sub, e, w.dirX(), w.dirZ())) continue;
             done.add(e);
             WindPush.apply(e, w, s.profile().multipliers(), 1.0);
+        }
+    }
+
+    /** Track a {@code debug wind drop} probe: its position is logged at INFO every second for 10 s. */
+    public static void trackProbe(Entity e, long tick) {
+        synchronized (PROBES) {
+            PROBES.put(e, tick);
+        }
+    }
+
+    private static void logProbes(ServerLevel level) {
+        long tick = level.getGameTime();
+        synchronized (PROBES) {
+            if (PROBES.isEmpty()) return;
+            var it = PROBES.entrySet().iterator();
+            while (it.hasNext()) {
+                var entry = it.next();
+                Entity e = entry.getKey();
+                long age = tick - entry.getValue();
+                if (!e.isAlive() || age > PROBE_TICKS) {
+                    it.remove();
+                    continue;
+                }
+                if (age % 20L == 0L) {
+                    WindSample w = state.sampleAt(e.getX(), tick);
+                    LOGGER.info("[DungeonTrain] wind probe {} t+{}s at X {} Y {} Z {} vel ({}, {}) wind {} toward {}°",
+                            e.getType().toShortString(), age / 20L,
+                            String.format("%.2f", e.getX()), String.format("%.2f", e.getY()),
+                            String.format("%.2f", e.getZ()),
+                            String.format("%.3f", e.getDeltaMovement().x), String.format("%.3f", e.getDeltaMovement().z),
+                            String.format("%.4f", w.strength()), String.format("%.0f", Math.toDegrees(w.headingRad())));
+                }
+            }
         }
     }
 

@@ -22,8 +22,8 @@ import javax.annotation.Nullable;
  * the plot, not in the host level, so {@code level.getBlockState} would read air (see
  * {@link CarriageDeck#blockAt}). Three tests, all cheap block lookups:</p>
  * <ol>
- *   <li><b>Over the train</b>: a solid carriage block within {@link #DECK_SCAN} cells under the feet — a roof,
- *       a flatbed or a coupling pad. Something that has blown past the edge stops being pushed and falls.</li>
+ *   <li><b>Over the train</b>: a solid carriage block within {@link #DECK_SCAN} cells under any part of the
+ *       footprint — a roof, a flatbed or a coupling pad. Once clear of the edge it stops being pushed and falls.</li>
  *   <li><b>Not under cover</b>: nothing solid within {@link #COVER_SCAN} cells above the head, so anyone
  *       inside an enclosed carriage is sheltered.</li>
  *   <li><b>Not in a lee</b>: nothing solid within {@link #LEE_SCAN} blocks upwind at foot or eye height, so
@@ -51,8 +51,7 @@ public final class TrainExposure {
         Pose3dc pose = sub.logicalPose();
         Vector3d feet = pose.transformPositionInverse(new Vector3d(e.getX(), e.getY() + 0.05, e.getZ()));
 
-        BlockPos feetCell = BlockPos.containing(feet.x, feet.y, feet.z);
-        if (!overDeck(plot, feetCell)) return false;
+        if (!overDeck(plot, feet, e.getBbWidth() / 2.0)) return false;
 
         double eye = Math.max(0.2, e.getEyeHeight());
         BlockPos head = BlockPos.containing(feet.x, feet.y + eye, feet.z);
@@ -92,9 +91,19 @@ public final class TrainExposure {
         return null;
     }
 
-    private static boolean overDeck(LevelPlot plot, BlockPos feet) {
-        for (int dy = 0; dy <= DECK_SCAN; dy++) {
-            if (solid(plot, feet.below(dy))) return true;
+    /**
+     * Any part of the entity's footprint still over the carriage: its centre or one of its four corners. Using
+     * the corners keeps the wind pushing something that overhangs the edge until it is clear of the train, so it
+     * can actually be blown off rather than parked on the lip. (Corner offsets are taken in the carriage frame;
+     * a yawed carriage turns the footprint a little, which only matters at the edge.)
+     */
+    private static boolean overDeck(LevelPlot plot, Vector3d feet, double half) {
+        double[][] probes = {{0, 0}, {-half, -half}, {-half, half}, {half, -half}, {half, half}};
+        for (double[] o : probes) {
+            BlockPos column = BlockPos.containing(feet.x + o[0], feet.y, feet.z + o[1]);
+            for (int dy = 0; dy <= DECK_SCAN; dy++) {
+                if (solid(plot, column.below(dy))) return true;
+            }
         }
         return false;
     }

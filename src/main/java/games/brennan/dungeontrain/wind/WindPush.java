@@ -19,6 +19,12 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class WindPush {
 
+    /**
+     * Downwind speed (blocks/tick) past which the wind stops adding. Without a cap an entity that isn't moving
+     * (a frozen or non-ticking one) would bank velocity every tick and be launched when it next moves.
+     */
+    static final double MAX_DOWNWIND_SPEED = 0.6;
+
     private WindPush() {}
 
     /** The profile multiplier for {@code e}'s category. */
@@ -39,6 +45,7 @@ public final class WindPush {
         }
         if (a <= 0.0) return;
         Vec3 v = e.getDeltaMovement();
+        if (v.x * w.dirX() + v.z * w.dirZ() >= MAX_DOWNWIND_SPEED) return;
         e.setDeltaMovement(v.x + w.dirX() * a, v.y, v.z + w.dirZ() * a);
     }
 }

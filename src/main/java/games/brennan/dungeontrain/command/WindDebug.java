@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.command;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
@@ -31,7 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * {@code /dungeontrain debug wind [reload|export|on|off]} — the train wind at your feet, live reload of the
+ * {@code /dungeontrain debug wind [reload|export|on|off|start here|auto|<x>]} — the train wind at your feet, live reload of the
  * tuned profile, and the band edges the tuner ({@code scripts/wind/}) draws. Also logged at INFO for RCON runs.
  */
 final class WindDebug {
@@ -49,7 +50,14 @@ final class WindDebug {
                 .then(Commands.literal("reload").executes(ctx -> reload(ctx.getSource())))
                 .then(Commands.literal("export").executes(ctx -> export(ctx.getSource())))
                 .then(Commands.literal("on").executes(ctx -> toggle(ctx.getSource(), false)))
-                .then(Commands.literal("off").executes(ctx -> toggle(ctx.getSource(), true)));
+                .then(Commands.literal("off").executes(ctx -> toggle(ctx.getSource(), true)))
+                .then(Commands.literal("drop").executes(ctx -> drop(ctx.getSource())))
+                .then(Commands.literal("start")
+                        .then(Commands.literal("here").executes(ctx -> start(ctx.getSource(),
+                                (long) Math.floor(ctx.getSource().getPosition().x))))
+                        .then(Commands.literal("auto").executes(ctx -> start(ctx.getSource(), null)))
+                        .then(Commands.argument("x", LongArgumentType.longArg())
+                                .executes(ctx -> start(ctx.getSource(), LongArgumentType.getLong(ctx, "x")))));
     }
 
     private static int here(CommandSourceStack source) {
@@ -98,6 +106,47 @@ final class WindDebug {
     private static int toggle(CommandSourceStack source, boolean off) {
         WindServer.setForcedOff(source.getServer(), off);
         send(source, "[DungeonTrain] wind " + (off ? "OFF until restart or 'on'" : "ON"), ChatFormatting.GREEN);
+        return 1;
+    }
+
+    /**
+     * Drop a marker item and an armor stand on the lead carriage's roof (centre, one block up) and log their drift every
+     * second for 10 s — a no-client check that the server push works, and a quick visual one in game.
+     */
+    private static int drop(CommandSourceStack source) {
+        ServerLevel level = source.getServer().overworld();
+        java.util.List<Trains.Carriage> train = Trains.allCarriages(level);
+        if (train.isEmpty()) {
+            send(source, "[DungeonTrain] wind drop: no train loaded", ChatFormatting.YELLOW);
+            return 0;
+        }
+        Trains.Carriage lead = Trains.lead(train);
+        AABBdc bb = lead.ship().worldAABB();
+        double x = (bb.minX() + bb.maxX()) / 2.0;
+        double z = (bb.minZ() + bb.maxZ()) / 2.0;
+        double y = bb.maxY() + 0.5;
+        long tick = level.getGameTime();
+        net.minecraft.world.entity.item.ItemEntity item = new net.minecraft.world.entity.item.ItemEntity(
+                level, x, y, z, new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.FEATHER));
+        item.setPickUpDelay(400);
+        item.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
+        level.addFreshEntity(item);
+        WindServer.trackProbe(item, tick);
+        // An armor stand, not a no-AI mob: it is a LivingEntity that still runs physics (a no-AI mob doesn't move).
+        net.minecraft.world.entity.decoration.ArmorStand stand =
+                new net.minecraft.world.entity.decoration.ArmorStand(level, x + 1.0, y, z);
+        level.addFreshEntity(stand);
+        WindServer.trackProbe(stand, tick);
+        send(source, String.format("[DungeonTrain] wind drop: feather + armor stand on carriage %d at X %.1f Y %.1f Z %.1f; "
+                + "drift logged for 10 s", lead.provider().getPIdx(), x, y, z), ChatFormatting.GREEN);
+        return 1;
+    }
+
+    /** Move the wind start for testing ({@code null} = back to the real Upside-down end). */
+    private static int start(CommandSourceStack source, Long x) {
+        WindServer.overrideStart(source.getServer(), x);
+        send(source, "[DungeonTrain] wind start " + (x == null ? "back to the Upside-down end" : "moved to X " + x
+                + " (debug, until restart or 'start auto')") + "; " + WindServer.state().startX(), ChatFormatting.GREEN);
         return 1;
     }
 

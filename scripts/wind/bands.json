@@ -1,0 +1,174 @@
+{
+  "udEndX": 21194,
+  "note": "from/to are blocks past the end of the first Upside-down band",
+  "bands": [
+    {
+      "label": "overworld bop",
+      "from": 0,
+      "to": 4500,
+      "run": 0
+    },
+    {
+      "label": "nether better",
+      "from": 4500,
+      "to": 10064,
+      "run": 0
+    },
+    {
+      "label": "legacy_run wwoo",
+      "from": 10064,
+      "to": 14294,
+      "run": 0
+    },
+    {
+      "label": "end better",
+      "from": 14294,
+      "to": 20774,
+      "run": 0
+    },
+    {
+      "label": "spheres",
+      "from": 20774,
+      "to": 28074,
+      "run": 0
+    },
+    {
+      "label": "overworld sunk",
+      "from": 28074,
+      "to": 28574,
+      "run": 0
+    },
+    {
+      "label": "legacy_run",
+      "from": 28574,
+      "to": 61854,
+      "run": 0
+    },
+    {
+      "label": "overworld",
+      "from": 61854,
+      "to": 62504,
+      "run": 0
+    },
+    {
+      "label": "chuncks",
+      "from": 62504,
+      "to": 66004,
+      "run": 0
+    },
+    {
+      "label": "mix",
+      "from": 66004,
+      "to": 70004,
+      "run": 0
+    },
+    {
+      "label": "stacks",
+      "from": 70004,
+      "to": 76504,
+      "run": 0
+    },
+    {
+      "label": "overworld",
+      "from": 76504,
+      "to": 82004,
+      "run": 1
+    },
+    {
+      "label": "nether bop",
+      "from": 82004,
+      "to": 89632,
+      "run": 1
+    },
+    {
+      "label": "overworld wwoo",
+      "from": 89632,
+      "to": 96132,
+      "run": 1
+    },
+    {
+      "label": "end",
+      "from": 96132,
+      "to": 100012,
+      "run": 1
+    },
+    {
+      "label": "end bop",
+      "from": 100012,
+      "to": 105492,
+      "run": 1
+    },
+    {
+      "label": "upside_down",
+      "from": 105492,
+      "to": 118892,
+      "run": 1
+    },
+    {
+      "label": "overworld bop",
+      "from": 118892,
+      "to": 127892,
+      "run": 1
+    },
+    {
+      "label": "nether better",
+      "from": 127892,
+      "to": 139020,
+      "run": 1
+    },
+    {
+      "label": "legacy_run wwoo",
+      "from": 139020,
+      "to": 147480,
+      "run": 1
+    },
+    {
+      "label": "end better",
+      "from": 147480,
+      "to": 160440,
+      "run": 1
+    },
+    {
+      "label": "spheres",
+      "from": 160440,
+      "to": 175040,
+      "run": 1
+    },
+    {
+      "label": "overworld sunk",
+      "from": 175040,
+      "to": 176040,
+      "run": 1
+    },
+    {
+      "label": "legacy_run",
+      "from": 176040,
+      "to": 242600,
+      "run": 1
+    },
+    {
+      "label": "overworld",
+      "from": 242600,
+      "to": 243900,
+      "run": 1
+    },
+    {
+      "label": "chuncks",
+      "from": 243900,
+      "to": 250900,
+      "run": 1
+    },
+    {
+      "label": "mix",
+      "from": 250900,
+      "to": 258900,
+      "run": 1
+    },
+    {
+      "label": "stacks",
+      "from": 258900,
+      "to": 271900,
+      "run": 1
+    }
+  ]
+}
