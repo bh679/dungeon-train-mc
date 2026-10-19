@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * After an earn, tells the player in chat what it opened up, {@link #DELAY_TICKS} later: a gold line
+ * After an earn, tells the player in chat what it opened up, {@link #DELAY_TICKS} later: an aqua line
  * for each advancement tab that just appeared, then a {@code Revealed: [A], [B]} line for the
  * advancements now visible on tabs they already had.
  *
@@ -93,9 +93,9 @@ public final class AdvancementRevealClient {
         }
     }
 
-    /** The gold chat line pointing at the L key. */
+    /** The aqua chat line pointing at the L key. */
     private static void announceTab(LocalPlayer player, Component tab) {
-        Component name = tab.copy().withStyle(ChatFormatting.YELLOW);
+        Component name = tab.copy().withStyle(ChatFormatting.WHITE);
         Component key = Minecraft.getInstance().options.keyAdvancements.getTranslatedKeyMessage();
         player.displayClientMessage(AdvancementReveal.tabUnlocked(name, key), false);
     }
