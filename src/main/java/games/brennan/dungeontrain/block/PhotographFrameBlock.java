@@ -3,6 +3,9 @@ package games.brennan.dungeontrain.block;
 import com.mojang.serialization.MapCodec;
 import games.brennan.dungeontrain.block.entity.PhotographFrameBlockEntity;
 import games.brennan.dungeontrain.compat.photo.PhotoFrameLayout;
+import games.brennan.dungeontrain.compat.photo.RandomFramePhotos;
+import games.brennan.dungeontrain.registry.ModBlockEntities;
+import games.brennan.dungeontrain.registry.ModItems;
 import games.brennan.dungeontrain.train.CarriageStampGuard;
 import io.github.mortuusars.exposure.Exposure;
 import io.github.mortuusars.exposure.world.item.PhotographItem;
@@ -27,6 +30,8 @@ import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -193,6 +198,16 @@ public class PhotographFrameBlock extends Block implements EntityBlock {
         return isMaster(state) ? new PhotographFrameBlockEntity(pos, state) : null;
     }
 
+    /** Server-side only: fills a stamped frame still waiting on a community photo. */
+    @Nullable
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
+                                                                  BlockEntityType<T> type) {
+        if (level.isClientSide || !isMaster(state) || type != ModBlockEntities.PHOTOGRAPH_FRAME.get()) return null;
+        return (BlockEntityTicker<T>) (BlockEntityTicker<PhotographFrameBlockEntity>) RandomFramePhotos::tickPending;
+    }
+
     @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         if (!isMaster(state)) return List.of();
@@ -233,7 +248,9 @@ public class PhotographFrameBlock extends Block implements EntityBlock {
                                               Player player, InteractionHand hand, BlockHitResult hit) {
         PhotographFrameBlockEntity be = masterEntity(level, pos, state);
         if (be == null) return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        if (stack.getItem() instanceof PhotographItem && !be.hasPhoto()) {
+        // The random-photo placeholder hangs like a photo, for template authors; a train stamp swaps it.
+        if ((stack.getItem() instanceof PhotographItem || stack.is(ModItems.RANDOM_PLAYERPHOTO.get()))
+                && !be.hasPhoto()) {
             if (!level.isClientSide) {
                 be.setPhoto(stack);
                 stack.consume(1, player);

@@ -22,6 +22,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.AABB;
 
 /**
@@ -40,6 +41,8 @@ public class PhotographFrameBlockRenderer implements BlockEntityRenderer<Photogr
     private static final float PHOTO_Z = 0.48F;
     private static final float PHOTO_Z_NO_FRAME = 0.497F;
     private static final int FULL_BRIGHT = LightTexture.FULL_BRIGHT;
+    /** The placeholder icon's size within the photo area (a FIXED item is half a block across). */
+    private static final float PLACEHOLDER_SCALE = 1.6F;
 
     private final BlockRenderDispatcher blockRenderer;
 
@@ -82,7 +85,27 @@ public class PhotographFrameBlockRenderer implements BlockEntityRenderer<Photogr
         pose.scale(scale, scale, 1.0F);
         int photoLight = be.glowing() ? FULL_BRIGHT : light;
         int b = be.glowing() ? 255 : brightness(be.getLevel(), be.getBlockPos(), facing);
-        ExposureClient.photographRenderer().render(be.photo(), false, false, pose, buffers, photoLight, b, b, b, 255);
+        if (be.hasRandomPlaceholder()) {
+            renderPlaceholder(be, pose, buffers, photoLight);
+        } else {
+            ExposureClient.photographRenderer().render(be.photo(), false, false, pose, buffers, photoLight, b, b, b, 255);
+        }
+        pose.popPose();
+    }
+
+    /**
+     * The editor's random-photo placeholder isn't a photograph, so Exposure can't draw it: show its
+     * item icon flat in the frame instead, so an author can see which frames will take a random photo.
+     */
+    private static void renderPlaceholder(PhotographFrameBlockEntity be, PoseStack pose, MultiBufferSource buffers,
+                                          int light) {
+        pose.pushPose();
+        pose.translate(0.5F, 0.5F, 0.0F);
+        pose.mulPose(Axis.ZP.rotationDegrees(180.0F));
+        pose.mulPose(Axis.YP.rotationDegrees(180.0F));
+        pose.scale(PLACEHOLDER_SCALE, PLACEHOLDER_SCALE, PLACEHOLDER_SCALE);
+        Minecraft.getInstance().getItemRenderer().renderStatic(be.photo(), ItemDisplayContext.FIXED, light,
+            OverlayTexture.NO_OVERLAY, pose, buffers, be.getLevel(), (int) be.getBlockPos().asLong());
         pose.popPose();
     }
 

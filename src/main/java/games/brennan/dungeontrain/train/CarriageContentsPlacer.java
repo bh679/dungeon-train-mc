@@ -281,6 +281,8 @@ public final class CarriageContentsPlacer {
                 contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 seed, carriageIndex, mask, flip);
+            games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, interiorOrigin(carriageOrigin),
+                interiorSizeFor(contents, dims), seed, carriageIndex, mask, flip);
             joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
             gateCreakingHearts(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
@@ -389,6 +391,8 @@ public final class CarriageContentsPlacer {
                 contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 seed, carriageIndex, mask, flip);
+            games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, interiorOrigin(carriageOrigin),
+                interiorSizeFor(contents, dims), seed, carriageIndex, mask, flip);
             joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
             gateCreakingHearts(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
@@ -430,6 +434,8 @@ public final class CarriageContentsPlacer {
             clearBakedNarrativeLecternBooks(level, anchor, box);
             applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
             applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+            games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, anchor, box, seed, carriageIndex,
+                safeMask, flip);
             joinTvs(level, anchor, box, carriageIndex);
             gateCreakingHearts(level, anchor, box, carriageIndex);
         });
