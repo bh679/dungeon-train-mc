@@ -1474,8 +1474,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Erwähne mich, wenn ich meinem eigenen Foto Tribut entrichte und es gepostet wird.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Getributete Fotos",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Erwähne mich, wenn jemand einem von mir aufgenommenen Foto Tribut entrichtet.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Mob-Fotos",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Erwähne mich, wenn ein Passagier, dem ich eine Kamera gegeben habe, ein Foto von mir macht.",
   "gui.dungeontrain.options.account.pings.milestone": "Meilensteine",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Erwähne mich, wenn einer meiner Meilenstein-Fortschritte gepostet wird.",
   "gui.dungeontrain.options.account.pings.translation_review": "Übersetzungsprüfungen",

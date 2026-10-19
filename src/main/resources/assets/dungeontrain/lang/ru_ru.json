@@ -1524,8 +1524,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Упоминать меня, когда я делаю подношение своему фото и оно публикуется.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Фото с подношением",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Упоминать меня, когда кто-то делает подношение фото, которое снял я.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Фото от мобов",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Упоминать меня, когда пассажир, которому я дал камеру, фотографирует меня.",
   "gui.dungeontrain.options.account.pings.milestone": "Вехи",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Упоминать меня, когда публикуется одно из моих достижений-вех.",
   "gui.dungeontrain.options.account.pings.translation_review": "Проверка переводов",

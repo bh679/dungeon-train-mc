@@ -1429,8 +1429,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "I-ping ako kapag nag-alay ako sa sarili kong larawan at na-post ito.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Mga larawang inalayan",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "I-ping ako kapag may nag-alay sa isang larawang kinunan ko.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Mga larawan ng mob",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "I-ping ako kapag kinunan ako ng larawan ng isang pasaherong binigyan ko ng camera.",
   "gui.dungeontrain.options.account.pings.milestone": "Mga milestone",
   "gui.dungeontrain.options.account.pings.milestone.tip": "I-ping ako kapag na-post ang isa sa aking mga milestone na advancement.",
   "gui.dungeontrain.options.account.pings.translation_review": "Pagsusuri ng salin",

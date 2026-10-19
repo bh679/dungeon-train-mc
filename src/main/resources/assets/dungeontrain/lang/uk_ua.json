@@ -1682,8 +1682,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Згадувати мене, коли я сплачую данину власному фото і його публікують.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Фото з даниною",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Згадувати мене, коли хтось сплачує данину фото, яке зняв я.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Фото від мобів",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Згадувати мене, коли пасажир, якому я дав камеру, фотографує мене.",
   "gui.dungeontrain.options.account.pings.milestone": "Віхи",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Згадувати мене, коли публікується одне з моїх досягнень-віх.",
   "gui.dungeontrain.options.account.pings.translation_review": "Перевірка перекладів",
