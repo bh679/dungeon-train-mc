@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.client.support;
 
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.links.OfficialLinks;
+import games.brennan.dungeontrain.client.support.currency.CurrencyPicker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -32,6 +33,7 @@ public final class ContributeScreen extends Screen implements games.brennan.dung
 
     private final Screen parent;
     private final ContributePanel panel;
+    private final CurrencyPicker currency;
     private final long openedAtMs = System.currentTimeMillis();
     private boolean timeReported;
 
@@ -44,6 +46,7 @@ public final class ContributeScreen extends Screen implements games.brennan.dung
         this.parent = parent;
         this.panel = new ContributePanel(this, UiAnalytics.SURFACE_SUPPORT_PAGE, ContributePanel.Style.DEATH,
                 this::rebuildWidgets);
+        this.currency = new CurrencyPicker(UiAnalytics.SURFACE_SUPPORT_PAGE, this::rebuildWidgets);
         UiAnalytics.pageOpen(UiAnalytics.SURFACE_SUPPORT_PAGE);
         OfficialLinks.ensureFetched();
         CommunityRewardsScreen.refreshSummary(this);
@@ -65,6 +68,8 @@ public final class ContributeScreen extends Screen implements games.brennan.dung
         int top = Math.max(6, (this.height - blockH) / 2);
 
         titleY = top;
+        // The currency button sits at the column's top right, level with the title.
+        currency.layout(this.font, cx + rowW / 2, titleY - 3, this.height, this::addRenderableWidget);
         subtitleTop = titleY + lineH + 6;
         int y = subtitleTop + subH + 8;
         y += panel.layout(this.font, cx - rowW / 2, y, rowW, this::addRenderableWidget);
@@ -85,12 +90,24 @@ public final class ContributeScreen extends Screen implements games.brennan.dung
             y += lineH;
         }
         panel.render(g, this.font);
+        currency.render(g, this.font, mouseX, mouseY);
     }
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        if (currency.mouseClicked(mx, my, button)) return true;
         if (button == 0 && panel.mouseClicked(this.font, mx, my)) return true;
         return super.mouseClicked(mx, my, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        return currency.mouseScrolled(mx, my, dy) || super.mouseScrolled(mx, my, dx, dy);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        return currency.keyPressed(keyCode) || super.keyPressed(keyCode, scanCode, modifiers);
     }
 
     @Override

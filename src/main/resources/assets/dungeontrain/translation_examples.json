@@ -16979,6 +16979,15 @@
       ]
     }
   },
+  "gui.dungeontrain.currency.approx": {
+    "1": {
+      "label": "the name of the currency amounts are shown in",
+      "examples": [
+        "US dollars",
+        "Euros"
+      ]
+    }
+  },
   "gui.dungeontrain.rewards.amount_line": {
     "1": {
       "label": "the gift amount with its currency",
