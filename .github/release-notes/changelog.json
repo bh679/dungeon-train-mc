@@ -28348,9 +28348,9 @@
       ],
       "pr": 2166,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
     },
     {
       "id": "takeover-vote-twenty-minutes",
@@ -28365,9 +28365,9 @@
       "highlights": [],
       "pr": 2168,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
     },
     {
       "id": "live-page-update",
@@ -28382,9 +28382,9 @@
       "highlights": [],
       "pr": 2167,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
     },
     {
       "id": "train-sound-unmute-restart",
@@ -28398,6 +28398,54 @@
       "summary": "Turning your game sound, ambient sound or the train engine volume down to zero and back up now brings the train's rumble straight back at its normal volume, instead of leaving it silent until you rejoined the world.",
       "highlights": [],
       "pr": 2169,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
+    },
+    {
+      "id": "sky-fix",
+      "version": "0.1390.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "pr": 2165,
+      "date": "2026-10-19",
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
+    },
+    {
+      "id": "leaf-litter-stays-put",
+      "version": "0.1394.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "Leaf fix",
+      "summary": "Fallen leaves and small plants no longer crumble away and drop in some of the stranger places the line runs through.",
+      "highlights": [],
+      "pr": 2170,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "sky-fix-2",
+      "version": "0.1396.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
       "date": "2026-10-19",
       "released": false,
       "released_in": null,
