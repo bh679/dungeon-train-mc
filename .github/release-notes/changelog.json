@@ -27848,9 +27848,9 @@
       "highlights": [],
       "pr": 2125,
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "supporter-copy-book-button",
@@ -27864,9 +27864,9 @@
       "summary": "Supporters have something new to find in Options.",
       "highlights": [],
       "date": "2026-10-18",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "curseforge-jar-without-detect-addons",
@@ -27881,9 +27881,9 @@
       "highlights": [],
       "pr": 2129,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "patient-autopause-long-reads",
@@ -27897,9 +27897,9 @@
       "highlights": [],
       "pr": 2131,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "flower-fix",
@@ -27913,9 +27913,9 @@
       "highlights": [],
       "pr": 2132,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "camera-hidden-challenge-hints",
@@ -27930,9 +27930,9 @@
       "highlights": [],
       "pr": 2136,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "mobs-survive-carriage-impacts",
@@ -27949,9 +27949,9 @@
       ],
       "pr": 2139,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "modded-wood-stages",
@@ -27969,9 +27969,9 @@
       ],
       "pr": 2140,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "upside-down-reassembly-chests",
@@ -27986,9 +27986,9 @@
       "highlights": [],
       "pr": 2138,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "dtp-lands-clear-of-portals",
@@ -28003,9 +28003,9 @@
       "highlights": [],
       "pr": 2142,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "editor-wood-stages-dropdown",
@@ -28023,9 +28023,9 @@
       ],
       "pr": 2143,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     },
     {
       "id": "linked-web-watcher-skins",
@@ -28041,9 +28041,9 @@
       "highlights": [],
       "pr": 2144,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1375.0",
+      "released_at": "2026-10-19T11:46:32Z"
     }
   ]
 }
