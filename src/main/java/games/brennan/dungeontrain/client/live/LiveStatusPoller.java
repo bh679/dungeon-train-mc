@@ -3,6 +3,8 @@ package games.brennan.dungeontrain.client.live;
 import games.brennan.discordpresence.config.DiscordPresenceClientConfig;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient;
 import games.brennan.dungeontrain.client.VersionInfo;
+import games.brennan.dungeontrain.compat.vista.TvItems;
+import games.brennan.dungeontrain.config.ClientDisplayConfig;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Channel;
 import games.brennan.dungeontrain.net.relay.LiveFeedClient.Status;
 import games.brennan.dungeontrain.net.LiveWatchedPacket;
@@ -10,6 +12,7 @@ import games.brennan.dungeontrain.player.LiveWatchTally;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.EquipmentSlot;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -65,13 +68,14 @@ public final class LiveStatusPoller {
         if (now - lastPollMs >= interval && inFlight.compareAndSet(false, true)) {
             lastPollMs = now;
             UUID me = mc.getUser() != null ? mc.getUser().getProfileId() : null;
+            boolean headTv = wearingTv(mc);
             CompletableFuture<Status> devLive = fp
-                ? poll(null, Channel.DEV, false)
+                ? poll(null, Channel.DEV, false, false)
                 : CompletableFuture.completedFuture(Status.OFFLINE);
             devLive.thenCompose(dev -> {
                     // Unanswered through a relay restart: keep showing the channel already shown.
                     Channel ch = dev == null ? channel : LiveFeedClient.viewerChannel(fp, dev.live());
-                    return poll(me, ch, true).thenApply(status -> new Polled(status, ch));
+                    return poll(me, ch, true, headTv).thenApply(status -> new Polled(status, ch));
                 })
                 .whenComplete((polled, t) -> {
                     // A reply begun before Free Play flipped must not land on the other side. No status
@@ -85,6 +89,15 @@ public final class LiveStatusPoller {
                 });
         }
         return current;
+    }
+
+    /**
+     * A Vista TV on the player's head, not streaming, not in kid mode: a named poll then lists them
+     * among the Live page's TV wearers. Read on the client thread, when the poll starts.
+     */
+    private static boolean wearingTv(Minecraft mc) {
+        return mc.player != null && !ClientDisplayConfig.isKidMode() && !LiveStreamController.get().streaming()
+            && TvItems.isTv(mc.player.getItemBySlot(EquipmentSlot.HEAD));
     }
 
     /** When the last ranked poll found the feed live; 0 after a dark one. */
@@ -112,13 +125,14 @@ public final class LiveStatusPoller {
      * One status poll; a failed request reads as offline, except inside an announced relay restart
      * ({@link LiveRelayRestart#inWindow}), where it is null: nothing new learned, keep the last status. {@code offers}: this is the channel the
      * world's TVs show, so a dead streamer's takeover offer in it goes to {@link LiveTakeoverOffer}.
+     * {@code headTv}: the player wears a TV ({@link #wearingTv}); a named poll says so.
      */
-    private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel, boolean offers) {
+    private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel, boolean offers, boolean headTv) {
         // Watching counts toward the "Longest Viewer" boards only behind the master internet consent.
         LiveFeedClient.Life ranked = DiscordPresenceClientConfig.isGranted()
             ? new LiveFeedClient.Life(LiveLife.current(), freePlay, VersionInfo.VERSION) : null;
         String name = ranked != null && Minecraft.getInstance().getUser() != null ? Minecraft.getInstance().getUser().getName() : null;
-        return LiveFeedClient.status(viewer, channel, ranked, name)
+        return LiveFeedClient.status(viewer, channel, ranked, name, headTv)
             .handle((r, t) -> {
                 if ((r == null || !r.ok()) && LiveRelayRestart.inWindow(System.currentTimeMillis())) return null;
                 if (r == null) return Status.OFFLINE;

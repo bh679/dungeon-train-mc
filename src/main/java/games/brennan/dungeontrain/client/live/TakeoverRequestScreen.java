@@ -92,8 +92,11 @@ public final class TakeoverRequestScreen extends Screen {
     /** The holder line, then what the main button will do. */
     private Component body() {
         Component line = LiveTakeoverText.holderLine(holder.holder(), holder.tenureMs() + elapsedMs(), holder.streamCount());
-        String note = holder.voteNeededAfter(elapsedMs()) ? "note.vote" : "note.decide";
-        return Component.empty().append(line).append("\n\n").append(Component.translatable(KEY + note, holder.holder()));
+        long elapsed = elapsedMs();
+        Component note = !holder.voteNeededAfter(elapsed) ? Component.translatable(KEY + "note.decide", holder.holder())
+            : Component.translatable(KEY + (holder.holderLockedAfter(elapsed) ? "note.vote_locked" : "note.vote"),
+                holder.holder(), LiveTakeoverText.duration(holder.takeoverMinMs()));
+        return Component.empty().append(line).append("\n\n").append(note);
     }
 
     @Override
