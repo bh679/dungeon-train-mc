@@ -70,6 +70,10 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     private record Text(FormattedCharSequence line, int x, int canvasY, int colour) {}
     private record Card(int x, int canvasY, int w, int h, boolean featured) {}
     private record Placed(Button button, int canvasY) {}
+    private record Icon(net.minecraft.world.item.ItemStack stack, int x, int canvasY) {}
+    private final List<Icon> icons = new ArrayList<>();
+    private static final int ICON = 16;
+    private static final int ICON_GAP = 4;
 
     private final List<Text> texts = new ArrayList<>();
     private final List<Card> cards = new ArrayList<>();
@@ -102,6 +106,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     @Override
     protected void init() {
         texts.clear();
+        icons.clear();
         cards.clear();
         buttons.clear();
         colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
@@ -184,7 +189,12 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         int ty = y + PAD;
         texts.add(new Text(Component.translatable(r.group().labelKey()).getVisualOrderText(), tx, ty, COLOUR_GROUP));
         ty += lh + 1;
-        ty = wrap(Component.translatable(r.nameKey()), tx, ty, tw, COLOUR_NAME);
+        // Icon left of the name; the name wraps beside it. 3 px of air so the icon clears the label.
+        ty += 3;
+        int iconTop = ty - 4;
+        icons.add(new Icon(RewardIcons.of(r), tx, iconTop));
+        ty = wrap(Component.translatable(r.nameKey()), tx + ICON + ICON_GAP, ty, tw - ICON - ICON_GAP, COLOUR_NAME);
+        ty = Math.max(ty, iconTop + ICON + 1);
         ty = wrap(Component.translatable("gui.dungeontrain.rewards.amount_line",
                         CurrencyFormat.amount(r.costAud(), r.amountKey())),
                 tx, ty, tw, COLOUR_AMOUNT);
@@ -278,6 +288,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             g.renderOutline(c.x(), cy, c.w(), c.h(), c.featured() ? COLOUR_FEATURED_EDGE : COLOUR_CARD_EDGE);
         }
         for (Text t : texts) g.drawString(this.font, t.line(), t.x(), t.canvasY() + off, t.colour(), false);
+        for (Icon i : icons) g.renderItem(i.stack(), i.x(), i.canvasY() + off);
         for (Placed p : buttons) if (p.button().visible) p.button().render(g, mouseX, mouseY, partialTick);
         g.disableScissor();
         if (currency.button() != null) currency.button().render(g, mouseX, mouseY, partialTick);

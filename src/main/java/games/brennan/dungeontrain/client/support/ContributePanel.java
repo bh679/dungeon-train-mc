@@ -120,6 +120,10 @@ public final class ContributePanel {
     private static final int COLOUR_ARROW_HOVER = 0xFFFFFFFF;
     private int arrowY, leftArrowX, rightArrowX, arrowCurrent;
     private static final long SLIDE_MS = 180;
+    private static final int ICON = 16;
+    private static final int ICON_GAP = 5;
+    private net.minecraft.world.item.ItemStack cardIcon = net.minecraft.world.item.ItemStack.EMPTY;
+    private int cardIconX, cardIconY;
     /** The middle tier's bounds, outlined green like the website's featured tier; w 0 = none. */
     private int featX, featY, featW, featH;
 
@@ -246,14 +250,19 @@ public final class ContributePanel {
 
         Component noteText = Component.translatable("gui.dungeontrain.contribute.keeps_on");
         int sideW = Math.min(w / 3, Math.max(GIVE_W, font.width(noteText) + 2));
-        int textX = x + CARD_PAD;
-        int textW = w - sideW - CARD_PAD * 3;
+        // The reward's icon sits left of its name and line; the text starts after it.
+        int iconLeft = x + CARD_PAD;
+        int textX = iconLeft + ICON + ICON_GAP;
+        int textW = w - sideW - CARD_PAD * 3 - ICON - ICON_GAP;
         int sideH = GIVE_H + 2 + lh;
         CardLines lines = cardLines(font, reward, state, now, textX, y + CARD_PAD, textW);
         int h = Math.max(lines.bottom() + CARD_PAD * 2 - 1, sideH + CARD_PAD * 2);
 
         if (commit) {
             cardTexts.addAll(lines.lines());
+            cardIcon = RewardIcons.of(reward);
+            cardIconX = iconLeft;
+            cardIconY = y + CARD_PAD + Math.max(0, (lines.bottom() - ICON) / 2);
             cardX = x;
             cardY = y;
             cardW = w;
@@ -419,6 +428,7 @@ public final class ContributePanel {
                 int x = (tx.centred() ? tx.x() - font.width(tx.line()) / 2 : tx.x()) + offset;
                 g.drawString(font, tx.line(), x, tx.y(), tx.colour(), false);
             }
+            if (!cardIcon.isEmpty()) g.renderItem(cardIcon, cardIconX + offset, cardIconY);
             g.disableScissor();
         }
         for (Text t : texts) {
