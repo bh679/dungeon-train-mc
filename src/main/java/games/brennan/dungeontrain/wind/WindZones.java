@@ -59,10 +59,10 @@ public final class WindZones {
 
     /**
      * The sky-island eras right after Far Lands, with open void under them (Caves of Chaos, Skylands, Floating):
-     * half the gusts at half the strength, a steady wind that swings three times as far and at least ±150% (so
-     * its low end is calm: wind-free gaps), and slower changes of strength (4x) and direction (3x).
+     * half the gusts at half the strength, a steady wind that swings three times as far and at least ±180% (so
+     * its low end is calm: wind-free gaps of about 15 s), and slower changes of strength (18x) and direction (3x).
      */
-    public static final WindField.Style SKY_STYLE = new WindField.Style(0.5, 0.5, 3.0, 4.0, 3.0, 1.5);
+    public static final WindField.Style SKY_STYLE = new WindField.Style(0.5, 0.5, 3.0, 18.0, 3.0, 1.8);
 
     /** How the band at {@code worldX} reshapes the wind ({@link #SKY_STYLE} over the sky islands). */
     public static WindField.Style styleAt(double worldX) {

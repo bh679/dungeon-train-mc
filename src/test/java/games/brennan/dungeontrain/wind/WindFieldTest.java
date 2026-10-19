@@ -156,21 +156,27 @@ final class WindFieldTest {
     @DisplayName("sky islands: fewer, weaker gusts and longer calm gaps in the steady wind")
     void skyStyle() throws IOException {
         WindProfile p = shipped();
-        WindField.Style sky = new WindField.Style(0.5, 0.5, 3.0, 4.0, 3.0, 1.5);
+        WindField.Style sky = new WindField.Style(0.5, 0.5, 3.0, 18.0, 3.0, 1.8);
         double d = 40000;
         int calmNormal = 0;
         int calmSky = 0;
         int gustNormal = 0;
         int gustSky = 0;
+        int gaps = 0;
+        boolean wasCalm = false;
         for (long t = 0; t < 20L * 60 * 60; t++) {
             WindSample n = WindField.sample(p, d, t, SEED);
             WindSample k = WindField.sample(p, d, t, SEED, sky);
             if (n.isCalm()) calmNormal++;
             if (k.isCalm()) calmSky++;
+            if (k.isCalm() && !wasCalm) gaps++;
+            wasCalm = k.isCalm();
             if (n.gust01() > 0.05) gustNormal++;
             if (k.gust01() > 0.05) gustSky++;
         }
         assertTrue(calmSky > calmNormal + 1000, "sky has calm gaps: " + calmSky + " vs " + calmNormal);
+        double avgGapSeconds = calmSky / 20.0 / Math.max(1, gaps);
+        assertTrue(avgGapSeconds > 10.0 && avgGapSeconds < 25.0, "calm gaps last about 15 s: " + avgGapSeconds);
         assertTrue(gustSky < gustNormal * 0.7, "sky has fewer gusts: " + gustSky + " vs " + gustNormal);
         assertEquals(WindField.sample(p, d, 1234, SEED), WindField.sample(p, d, 1234, SEED, WindField.Style.NORMAL),
                 "the normal style changes nothing");

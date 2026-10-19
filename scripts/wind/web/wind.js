@@ -27,7 +27,7 @@ export const CALM = Object.freeze({ strength: 0, headingRad: 0, gust01: 0 });
 
 /** WindField.Style: how a band reshapes the wind. NORMAL changes nothing; SKY = WindZones.SKY_STYLE. */
 export const NORMAL_STYLE = Object.freeze({ gustRate: 1.0, gustStrength: 1.0, flutter: 1.0, flutterSlow: 1.0, wanderSlow: 1.0, minFlutter: 0.0 });
-export const SKY_STYLE = Object.freeze({ gustRate: 0.5, gustStrength: 0.5, flutter: 3.0, flutterSlow: 4.0, wanderSlow: 3.0, minFlutter: 1.5 });
+export const SKY_STYLE = Object.freeze({ gustRate: 0.5, gustStrength: 0.5, flutter: 3.0, flutterSlow: 18.0, wanderSlow: 3.0, minFlutter: 1.8 });
 
 export function curveAt(c, d) {
   const x = Math.max(0.0, d);
