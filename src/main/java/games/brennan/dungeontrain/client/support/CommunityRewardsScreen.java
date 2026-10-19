@@ -46,7 +46,6 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     private static final int GIVE_H = 20;
     private static final int SCROLL_STEP = 12;
 
-    private static final int COLOUR_PANEL = 0xC0101010;
     private static final int COLOUR_TITLE = 0xFFFFFFFF;
     private static final int COLOUR_SUB = 0xFF9A9A9A;
     private static final int COLOUR_CARD = 0x0AFFFFFF;
@@ -71,21 +70,24 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     private record Icon(CommunityRewards.Reward reward, int x, int canvasY) {}
     private record PersonalIcon(SupportTier tier, int x, int canvasY) {}
     private final List<PersonalIcon> personalIcons = new ArrayList<>();
-    private static final int COLOUR_PERSONAL_TITLE = 0x7FB2FF;
+    private static final int COLOUR_PERSONAL_TITLE = 0x8FE08A;
     private static final int COLOUR_PERSONAL_FEATURED_EDGE = 0xFF8FE08A;
     private final List<Icon> icons = new ArrayList<>();
     private static final int ICON = 16;
     private static final int ICON_GAP = 4;
 
     /** A background card behind one section, in canvas coordinates. */
-    private record Panel(int top, int bottom) {}
+    private record Panel(int top, int bottom, int colour) {}
+    /** The community card is purple, the personal card green. */
+    private static final int COLOUR_PANEL_COMMUNITY = 0xC8201530;
+    private static final int COLOUR_PANEL_PERSONAL = 0xC8102418;
     private final List<Panel> panels = new ArrayList<>();
     private static final int PANEL_GAP = 6;
 
     /** One icon in "What each reward does": where it is and which entry it selects. */
     private record ExplainIcon(int index, int x, int canvasY) {}
     private final List<ExplainIcon> explainIcons = new ArrayList<>();
-    /** The entry whose explanation shows; the first (Quicker Streams) until one is clicked. */
+    /** The entry whose explanation shows; the first (your name aboard) until one is clicked. */
     private int explainSelected = 0;
     private static final int EXPLAIN_CELL = 20;
     private static final int COLOUR_SELECTED_EDGE = 0xFFFFFFFF;
@@ -189,15 +191,12 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         }
 
         // Three cards on the page: community rewards, personal rewards, and what each reward does.
-        panels.add(new Panel(-PANEL_PAD, y + PANEL_PAD));
+        panels.add(new Panel(-PANEL_PAD, y + PANEL_PAD, COLOUR_PANEL_COMMUNITY));
         y += PANEL_PAD + PANEL_GAP + PANEL_PAD;
         int personalTop = y;
-        y = personalSection(y, perRow, cardW) - GAP;
-        panels.add(new Panel(personalTop - PANEL_PAD, y + PANEL_PAD));
-        y += PANEL_PAD + PANEL_GAP + PANEL_PAD;
-        int explainTop = y;
-        y = explainer(y);
-        panels.add(new Panel(explainTop - PANEL_PAD, y + PANEL_PAD));
+        y = personalSection(y, perRow, cardW);
+        y = explainer(y + 4);
+        panels.add(new Panel(personalTop - PANEL_PAD, y + PANEL_PAD, COLOUR_PANEL_PERSONAL));
         y += PANEL_PAD;
 
         int contentH = y;
@@ -213,32 +212,19 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
                 .bounds(this.width / 2 - 100, rowY, 200, 20).build());
     }
 
-    /** The eight entries of "What each reward does": five community rewards, then three personal thank-yous. */
+    /** "What each reward does": the three personal thank-yous. */
     private static final String[] PERSONAL_EXPLAIN = {"name_aboard", "priority_books", "copy"};
 
-    private static int explainCount() {
-        return CommunityRewards.FEATURE_ORDER.size() + PERSONAL_EXPLAIN.length;
-    }
-
     private static Component explainName(int i) {
-        List<CommunityRewards.Reward> order = CommunityRewards.FEATURE_ORDER;
-        if (i < order.size()) return Component.translatable(order.get(i).nameKey());
-        return Component.translatable("gui.dungeontrain.rewards.explain." + PERSONAL_EXPLAIN[i - order.size()] + ".name");
+        return Component.translatable("gui.dungeontrain.rewards.explain." + PERSONAL_EXPLAIN[i] + ".name");
     }
 
     private static Component explainText(int i) {
-        List<CommunityRewards.Reward> order = CommunityRewards.FEATURE_ORDER;
-        String id = i < order.size() ? order.get(i).id() : PERSONAL_EXPLAIN[i - order.size()];
-        return Component.translatable("gui.dungeontrain.rewards.explain." + id);
+        return Component.translatable("gui.dungeontrain.rewards.explain." + PERSONAL_EXPLAIN[i]);
     }
 
     private void renderExplainIcon(GuiGraphics g, int i, int x, int y) {
-        List<CommunityRewards.Reward> order = CommunityRewards.FEATURE_ORDER;
-        if (i < order.size()) {
-            RewardIcons.render(g, order.get(i), x, y);
-            return;
-        }
-        net.minecraft.world.item.Item item = switch (PERSONAL_EXPLAIN[i - order.size()]) {
+        net.minecraft.world.item.Item item = switch (PERSONAL_EXPLAIN[i]) {
             case "name_aboard" -> net.minecraft.world.item.Items.NAME_TAG;
             case "priority_books" -> net.minecraft.world.item.Items.WRITABLE_BOOK;
             default -> net.minecraft.world.item.Items.PAPER;
@@ -247,8 +233,8 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     }
 
     /**
-     * "What each reward does": community rewards on the first row of icons, personal thank-yous on
-     * the second; clicking one shows its name and a short explanation to the right.
+     * "What each reward does", inside the Personal Rewards card: one icon per personal thank-you,
+     * in a column; clicking one shows its name and a short explanation to the right.
      */
     private int explainer(int y) {
         int lh = this.font.lineHeight;
@@ -257,12 +243,9 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             y += lh + 1;
         }
         y += 6;
-        int community = CommunityRewards.FEATURE_ORDER.size();
-        int iconsW = community * EXPLAIN_CELL;
-        for (int i = 0; i < explainCount(); i++) {
-            int row = i < community ? 0 : 1;
-            int col = i < community ? i : i - community;
-            explainIcons.add(new ExplainIcon(i, colX + col * EXPLAIN_CELL, y + row * EXPLAIN_CELL));
+        int iconsW = PERSONAL_EXPLAIN.length * EXPLAIN_CELL;
+        for (int i = 0; i < PERSONAL_EXPLAIN.length; i++) {
+            explainIcons.add(new ExplainIcon(i, colX + i * EXPLAIN_CELL, y));
         }
         int textX = colX + iconsW + 10;
         int textW = colW - iconsW - 10;
@@ -274,7 +257,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             texts.add(new Text(l, textX, ty, COLOUR_LINE));
             ty += lh + 1;
         }
-        return Math.max(y + 2 * EXPLAIN_CELL, ty);
+        return Math.max(y + EXPLAIN_CELL, ty);
     }
 
     /**
@@ -312,7 +295,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
                 Button b = new games.brennan.dungeontrain.client.menu.ColorTintedButton(cx + PAD, giveY, cardW - PAD * 2, GIVE_H,
                         Component.translatable("gui.dungeontrain.rewards.give.amount",
                                 CurrencyFormat.amount(tier.audAmount(), tier.shortKey())),
-                        ContributePanel.TINT_BLUE[0], ContributePanel.TINT_BLUE[1], ContributePanel.TINT_BLUE[2],
+                        ContributePanel.TINT_GREEN[0], ContributePanel.TINT_GREEN[1], ContributePanel.TINT_GREEN[2],
                         p -> links.openLink(PaymentLinks.tierUrl(tier), tier.analyticsTarget()));
                 b.active = PaymentLinks.tiersAvailable();
                 buttons.add(new Placed(b, giveY));
@@ -427,7 +410,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         super.render(g, mouseX, mouseY, partialTick);
         g.enableScissor(colX - PANEL_PAD, viewportTop - PANEL_PAD, colX + colW + PANEL_PAD, viewportBottom + PANEL_PAD);
         for (Panel p : panels) {
-            g.fill(colX - PANEL_PAD, p.top() + off, colX + colW + PANEL_PAD, p.bottom() + off, COLOUR_PANEL);
+            g.fill(colX - PANEL_PAD, p.top() + off, colX + colW + PANEL_PAD, p.bottom() + off, p.colour());
         }
         for (ExplainIcon e : explainIcons) {
             int ex = e.x(), ey = e.canvasY() + off;
