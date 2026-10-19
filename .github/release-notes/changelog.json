@@ -28224,6 +28224,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-fix-2159",
+      "version": "0.1379.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "advancements"
+      ],
+      "title": "Advancement fix",
+      "summary": "Advancement fix.",
+      "highlights": [],
+      "pr": 2159,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
