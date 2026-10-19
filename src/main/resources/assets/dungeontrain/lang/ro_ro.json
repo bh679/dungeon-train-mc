@@ -695,6 +695,8 @@
   "chat.dungeontrain.advancements_hint.10": "Tuu-tuu! Apasă %s ca să vezi toate realizările tale Dungeon Train.",
   "chat.dungeontrain.advancements_hint.11": "Fluieră locomotiva - apasă %s ca să vezi fiecare realizare Dungeon Train.",
   "chat.dungeontrain.advancements_hint.12": "Atenție la spațiul dintre tren și peron - și apasă %s ca să vezi toate realizările tale Dungeon Train.",
+  "chat.dungeontrain.advancement_revealed": "Dezvăluit: %s",
+  "chat.dungeontrain.advancement_revealed_more": "+încă %s",
   "chat.dungeontrain.familiar_book.1": "O carte cunoscută. Parcă %1$s ținut-o, iar %2$s citit-o până la ultima pagină.",
   "chat.dungeontrain.familiar_book.2": "Cartea asta îți știe mâna — vreo %1$s ținut-o; %2$s dus-o până la ultima pagină.",
   "chat.dungeontrain.familiar_book.3": "O greutate cunoscută. Cam %1$s ținut-o, iar un cititor a rămas cu ea %2$s la rând.",

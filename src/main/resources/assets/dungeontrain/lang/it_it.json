@@ -616,6 +616,8 @@
   "chat.dungeontrain.advancements_hint.10": "Ciuff ciuff! Premi %s per vedere tutti i tuoi progressi del Dungeon Train.",
   "chat.dungeontrain.advancements_hint.11": "Suona il fischio: premi %s per vedere ogni progresso del Dungeon Train.",
   "chat.dungeontrain.advancements_hint.12": "Attento allo spazio tra treno e banchina… e premi %s per vedere tutti i tuoi progressi del Dungeon Train.",
+  "chat.dungeontrain.advancement_revealed": "Rivelato: %s",
+  "chat.dungeontrain.advancement_revealed_more": "+%s altri",
   "chat.dungeontrain.familiar_book.1": "Un libro familiare. Sembra che %1$s tenuto in mano, e %2$s letto fino all'ultima pagina.",
   "chat.dungeontrain.familiar_book.2": "Questo libro riconosce la tua mano: circa %1$s tenuto in mano; %2$s portato fino all'ultima pagina.",
   "chat.dungeontrain.familiar_book.3": "Un peso familiare. Circa %1$s tenuto in mano, e un lettore vi è rimasto %2$s di fila.",

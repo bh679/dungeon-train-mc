@@ -616,6 +616,8 @@
   "chat.dungeontrain.advancements_hint.10": "Piui piui! Pressione %s para ver todos os seus progressos do Dungeon Train.",
   "chat.dungeontrain.advancements_hint.11": "O apito soa - pressione %s para ver todos os progressos do Dungeon Train.",
   "chat.dungeontrain.advancements_hint.12": "Cuidado com o vão - e pressione %s para ver todos os seus progressos do Dungeon Train.",
+  "chat.dungeontrain.advancement_revealed": "Revelado: %s",
+  "chat.dungeontrain.advancement_revealed_more": "+%s a mais",
   "chat.dungeontrain.familiar_book.1": "Um livro familiar. Parece que %1$s o seguraram, e %2$s o leram até o fim.",
   "chat.dungeontrain.familiar_book.2": "Este livro conhece sua mão — %1$s o seguraram; %2$s o leram até a última página.",
   "chat.dungeontrain.familiar_book.3": "Um peso familiar. Cerca de %1$s o seguraram, e um leitor ficou com ele por %2$s seguidas.",

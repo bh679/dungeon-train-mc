@@ -593,6 +593,8 @@
   "chat.dungeontrain.advancements_hint.10": "Tu tu! Nhấn %s để xem tất cả tiến triển Dungeon Train của bạn.",
   "chat.dungeontrain.advancements_hint.11": "Tiếng còi vang lên - nhấn %s để xem mọi tiến triển Dungeon Train.",
   "chat.dungeontrain.advancements_hint.12": "Coi chừng khe hở - và nhấn %s để xem tất cả tiến triển Dungeon Train của bạn.",
+  "chat.dungeontrain.advancement_revealed": "Đã hé lộ: %s",
+  "chat.dungeontrain.advancement_revealed_more": "+%s nữa",
   "chat.dungeontrain.familiar_book.1": "Một cuốn sách quen thuộc. Cứ như %1$s đã cầm nó, và %2$s đọc nó tới tận cùng.",
   "chat.dungeontrain.familiar_book.2": "Cuốn sách này biết bàn tay bạn — chừng %1$s đã cầm nó; %2$s đọc trọn tới trang cuối.",
   "chat.dungeontrain.familiar_book.3": "Một sức nặng quen thuộc. Khoảng %1$s đã cầm nó, và một người đọc ở lại với nó suốt %2$s liền.",

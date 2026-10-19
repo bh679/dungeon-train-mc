@@ -16964,5 +16964,23 @@
         "11"
       ]
     }
+  },
+  "chat.dungeontrain.advancement_revealed": {
+    "1": {
+      "label": "the advancements just revealed, as a comma-separated list of their names",
+      "examples": [
+        "[Weather the Storm]",
+        "[Off the Rails], [Night Shift] +2 more"
+      ]
+    }
+  },
+  "chat.dungeontrain.advancement_revealed_more": {
+    "1": {
+      "label": "how many more revealed advancements were left off the list",
+      "examples": [
+        "2",
+        "11"
+      ]
+    }
   }
 }
