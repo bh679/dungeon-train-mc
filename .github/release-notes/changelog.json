@@ -28172,6 +28172,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-clear-long-contents",
+      "version": "0.1379.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "editor"
+      ],
+      "title": "Editor fix: Clear empties long carriages",
+      "summary": "Clearing all blocks in a long carriage's contents or a long carriage plot now empties the whole thing, not just the first carriage.",
+      "highlights": [],
+      "pr": 2155,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
