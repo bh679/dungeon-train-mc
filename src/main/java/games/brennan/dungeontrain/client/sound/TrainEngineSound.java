@@ -50,7 +50,8 @@ import org.slf4j.Logger;
  * positional audio that we're not setting.</p>
  *
  * <p>Lifecycle is owned by {@link TrainSoundManager}: it spawns one instance
- * per {@link ClientLevel} and re-spawns after world quit/rejoin. The sound
+ * per {@link ClientLevel}, re-spawns after world quit/rejoin, and replaces an
+ * instance the sound engine dropped during a mute (see {@link TrainEngineLifecycle}). The sound
  * stops itself if the client level becomes {@code null} (server disconnect).</p>
  */
 public final class TrainEngineSound extends AbstractTickableSoundInstance {
@@ -66,7 +67,8 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
      *
      * <p>Anchored to the engine's own start — the first tick the curve reports a real volume,
      * i.e. the moment the player is aboard/in range — not to anything on screen. One ramp per
-     * client level: {@link TrainSoundManager} builds a fresh instance per world, so walking back
+     * client level: {@link TrainSoundManager} builds a fresh instance per world and hands the clock on
+     * when it respawns one after a mute, so unmuting or walking back
      * into range later plays at full strength.</p>
      */
     private static final long FADE_IN_NANOS = 30L * 1_000_000_000L;
@@ -109,6 +111,16 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
     private static final double SABLE_BYPASS_Z = -1.0e7;
 
     public TrainEngineSound() {
+        this(-1L);
+    }
+
+    /**
+     * @param inheritedFadeInStartNanos the fade-in clock of the instance this one replaces in the
+     *     same world, or {@code -1} for a fresh ramp. {@link TrainSoundManager} passes it when it
+     *     respawns the engine after a mute, so the engine comes back at its normal volume instead of
+     *     ramping from silence for another {@link #FADE_IN_NANOS}.
+     */
+    public TrainEngineSound(long inheritedFadeInStartNanos) {
         super(ModSounds.TRAIN_ENGINE.get(), SoundSource.AMBIENT, RandomSource.create());
         this.looping = true;
         this.delay = 0;
@@ -124,6 +136,7 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
         this.x = 0.0;
         this.y = 0.0;
         this.z = SABLE_BYPASS_Z;
+        this.fadeInStartNanos = inheritedFadeInStartNanos;
         LOGGER.info("[DungeonTrain] TrainEngineSound created");
     }
 
@@ -160,12 +173,27 @@ public final class TrainEngineSound extends AbstractTickableSoundInstance {
         return true;
     }
 
+    /** When this instance's fade-in began, or {@code -1} if it has not — handed on to its replacement. */
+    public long fadeInStartNanos() {
+        return fadeInStartNanos;
+    }
+
+    /**
+     * Mark the instance finished. {@link TrainSoundManager} calls this when it releases or replaces
+     * the instance: vanilla can keep ticking a sound whose channel it dropped, and a stopped instance
+     * makes those ticks free.
+     */
+    public void retire() {
+        stop();
+    }
+
     private long tickCounter = 0;
     /** When the engine first had something to play — start of {@link #FADE_IN_NANOS}. -1 until then. */
     private long fadeInStartNanos = -1L;
 
     @Override
     public void tick() {
+        if (isStopped()) return;
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         LocalPlayer player = mc.player;
