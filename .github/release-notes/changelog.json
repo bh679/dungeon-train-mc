@@ -28368,6 +28368,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-sound-unmute-restart",
+      "version": "0.1392.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "train"
+      ],
+      "title": "Train sound comes back after unmuting",
+      "summary": "Turning your game sound, ambient sound or the train engine volume down to zero and back up now brings the train's rumble straight back at its normal volume, instead of leaving it silent until you rejoined the world.",
+      "highlights": [],
+      "pr": 2169,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
