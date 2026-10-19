@@ -1279,7 +1279,7 @@
   "gui.dungeontrain.rewards.group.streams": "STREAMS",
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
   "gui.dungeontrain.rewards.quicker_streams.name": "Mas Mabilis na Stream",
-  "gui.dungeontrain.rewards.quicker_streams.line": "Bawasan ang delay mula 30s hanggang 5s nang 1 buwan",
+  "gui.dungeontrain.rewards.quicker_streams.line": "Bawasan ang delay mula %1$ss hanggang %2$ss nang 1 buwan",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
   "gui.dungeontrain.rewards.quicker_streams.amount_short": "$94",
   "gui.dungeontrain.rewards.two_streams.name": "Dalawang Stream",

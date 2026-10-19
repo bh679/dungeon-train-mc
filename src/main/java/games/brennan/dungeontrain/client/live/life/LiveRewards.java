@@ -55,6 +55,44 @@ public record LiveRewards(List<Reward> rewards) {
     /** Keep the rewards block of a summary body; a body without one clears it back to none. */
     public static void remember(String body) {
         latest = parseBody(body);
+        StreamDelay d = StreamDelay.parseBody(body);
+        if (d != null) streamDelay = d;
+    }
+
+    /**
+     * Seconds viewers sit behind the streamer, without and with Quicker Streams, as the relay states
+     * them (summary {@code streamDelay}: it owns the segment length, so the numbers follow it). The
+     * rewards screens print these. {@link #DEFAULT_DELAY} until a relay that sends them answers.
+     */
+    public record StreamDelay(int normal, int quick) {
+
+        /** Two segments of buffer at the relay's default 3 s Quicker Streams segments; ~30 s otherwise. */
+        public static final StreamDelay DEFAULT_DELAY = new StreamDelay(30, 6);
+
+        /** The {@code streamDelay} block of a summary body, or null when absent or unusable. */
+        @Nullable
+        static StreamDelay parseBody(String body) {
+            try {
+                JsonElement root = JsonParser.parseString(body);
+                if (!root.isJsonObject()) return null;
+                JsonObject o = root.getAsJsonObject();
+                if (!o.has("streamDelay") || !o.get("streamDelay").isJsonObject()) return null;
+                JsonObject d = o.getAsJsonObject("streamDelay");
+                int normal = d.has("normal") && d.get("normal").isJsonPrimitive() ? d.get("normal").getAsInt() : 0;
+                int quick = d.has("quick") && d.get("quick").isJsonPrimitive() ? d.get("quick").getAsInt() : 0;
+                if (normal <= 0 || quick <= 0 || quick > normal || normal > 600) return null;
+                return new StreamDelay(normal, quick);
+            } catch (RuntimeException e) {
+                return null;
+            }
+        }
+    }
+
+    private static volatile StreamDelay streamDelay = StreamDelay.DEFAULT_DELAY;
+
+    /** The stream delay the relay last stated, or the default before it has. */
+    public static StreamDelay streamDelay() {
+        return streamDelay;
     }
 
     /** Dev preview only: show {@code rewards} until cleared with null, whatever the relay says. */

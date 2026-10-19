@@ -297,7 +297,7 @@ public final class ContributePanel {
         List<Text> out = new ArrayList<>();
         out.add(new Text(Component.translatable(reward.nameKey()).getVisualOrderText(), textX, ty, COLOUR_WHITE, false));
         ty += lh + 2;
-        for (FormattedCharSequence l : font.split(Component.translatable(reward.lineKey()), textW)) {
+        for (FormattedCharSequence l : font.split(lineOf(reward), textW)) {
             out.add(new Text(l, textX, ty, style.text, false));
             ty += lh + 1;
         }
@@ -486,6 +486,18 @@ public final class ContributePanel {
             if (yes) Util.getPlatform().openUri(URI.create(url));
             Minecraft.getInstance().setScreen(host);
         }, url, true));
+    }
+
+    /**
+     * A reward's one line. Quicker Streams states its numbers from the relay ("Reduce delay from 30s
+     * to 6s"): the relay owns the segment length, so the promise always matches what streams do.
+     */
+    static Component lineOf(CommunityRewards.Reward reward) {
+        if (reward == CommunityRewards.Reward.QUICKER_STREAMS) {
+            LiveRewards.StreamDelay d = LiveRewards.streamDelay();
+            return Component.translatable(reward.lineKey(), d.normal(), d.quick());
+        }
+        return Component.translatable(reward.lineKey());
     }
 
     static String shortDate(long ms) {

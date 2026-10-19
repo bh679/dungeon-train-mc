@@ -346,7 +346,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         ty = wrap(Component.translatable("gui.dungeontrain.contribute.keeps_on"), tx, ty, tw, COLOUR_AMOUNT);
         ty += 2;
         ty += 2;
-        ty = wrap(Component.translatable(r.lineKey()), tx, ty, tw, COLOUR_LINE);
+        ty = wrap(ContributePanel.lineOf(r), tx, ty, tw, COLOUR_LINE);
         return ty - y + 4 + GIVE_H + PAD;
     }
 

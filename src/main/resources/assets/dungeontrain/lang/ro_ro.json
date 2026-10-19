@@ -1529,7 +1529,7 @@
   "gui.dungeontrain.rewards.group.streams": "STREAMURI",
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
   "gui.dungeontrain.rewards.quicker_streams.name": "Streamuri mai rapide",
-  "gui.dungeontrain.rewards.quicker_streams.line": "Întârziere redusă de la 30s la 5s timp de 1 lună",
+  "gui.dungeontrain.rewards.quicker_streams.line": "Întârziere redusă de la %1$ss la %2$ss timp de 1 lună",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
   "gui.dungeontrain.rewards.quicker_streams.amount_short": "$94",
   "gui.dungeontrain.rewards.two_streams.name": "Două streamuri",

@@ -1279,7 +1279,7 @@
   "gui.dungeontrain.rewards.group.streams": "STRIM",
   "gui.dungeontrain.rewards.group.extra": "TAMBAHAN",
   "gui.dungeontrain.rewards.quicker_streams.name": "Strim Lebih Pantas",
-  "gui.dungeontrain.rewards.quicker_streams.line": "Kurangkan kelewatan dari 30s ke 5s selama 1 bulan",
+  "gui.dungeontrain.rewards.quicker_streams.line": "Kurangkan kelewatan dari %1$ss ke %2$ss selama 1 bulan",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
   "gui.dungeontrain.rewards.quicker_streams.amount_short": "$94",
   "gui.dungeontrain.rewards.two_streams.name": "Dua Strim",

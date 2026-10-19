@@ -17045,5 +17045,21 @@
         "3 Dec"
       ]
     }
+  },
+  "gui.dungeontrain.rewards.quicker_streams.line": {
+    "1": {
+      "label": "seconds viewers are behind the streamer normally",
+      "examples": [
+        "30",
+        "28"
+      ]
+    },
+    "2": {
+      "label": "seconds behind with Quicker Streams on",
+      "examples": [
+        "6",
+        "4"
+      ]
+    }
   }
 }

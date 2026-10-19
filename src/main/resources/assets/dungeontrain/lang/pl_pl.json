@@ -1369,7 +1369,7 @@
   "gui.dungeontrain.rewards.group.streams": "TRANSMISJE",
   "gui.dungeontrain.rewards.group.extra": "DODATKI",
   "gui.dungeontrain.rewards.quicker_streams.name": "Szybsze transmisje",
-  "gui.dungeontrain.rewards.quicker_streams.line": "Opóźnienie z 30s do 5s na 1 miesiąc",
+  "gui.dungeontrain.rewards.quicker_streams.line": "Opóźnienie z %1$ss do %2$ss na 1 miesiąc",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
   "gui.dungeontrain.rewards.quicker_streams.amount_short": "$94",
   "gui.dungeontrain.rewards.two_streams.name": "Dwie transmisje",

@@ -1324,7 +1324,7 @@
   "gui.dungeontrain.rewards.group.streams": "STREAMS",
   "gui.dungeontrain.rewards.group.extra": "EXTRA",
   "gui.dungeontrain.rewards.quicker_streams.name": "Streams plus rapides",
-  "gui.dungeontrain.rewards.quicker_streams.line": "Réduit le délai de 30s à 5s pendant 1 mois",
+  "gui.dungeontrain.rewards.quicker_streams.line": "Réduit le délai de %1$ss à %2$ss pendant 1 mois",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
   "gui.dungeontrain.rewards.quicker_streams.amount_short": "$94",
   "gui.dungeontrain.rewards.two_streams.name": "Deux streams",

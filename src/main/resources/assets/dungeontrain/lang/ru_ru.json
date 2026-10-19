@@ -1374,7 +1374,7 @@
   "gui.dungeontrain.rewards.group.streams": "ТРАНСЛЯЦИИ",
   "gui.dungeontrain.rewards.group.extra": "ДОПОЛНИТЕЛЬНО",
   "gui.dungeontrain.rewards.quicker_streams.name": "Быстрые трансляции",
-  "gui.dungeontrain.rewards.quicker_streams.line": "Задержка с 30 с до 5 с на 1 месяц",
+  "gui.dungeontrain.rewards.quicker_streams.line": "Задержка с %1$s с до %2$s с на 1 месяц",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
   "gui.dungeontrain.rewards.quicker_streams.amount_short": "$94",
   "gui.dungeontrain.rewards.two_streams.name": "Две трансляции",

@@ -1529,7 +1529,7 @@
   "gui.dungeontrain.rewards.group.streams": "ТРАНСЛЯЦІЇ",
   "gui.dungeontrain.rewards.group.extra": "ДОДАТКОВО",
   "gui.dungeontrain.rewards.quicker_streams.name": "Швидші трансляції",
-  "gui.dungeontrain.rewards.quicker_streams.line": "Затримка з 30 с до 5 с на 1 місяць",
+  "gui.dungeontrain.rewards.quicker_streams.line": "Затримка з %1$s с до %2$s с на 1 місяць",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
   "gui.dungeontrain.rewards.quicker_streams.amount_short": "$94",
   "gui.dungeontrain.rewards.two_streams.name": "Дві трансляції",

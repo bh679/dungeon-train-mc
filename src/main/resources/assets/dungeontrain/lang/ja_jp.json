@@ -1279,7 +1279,7 @@
   "gui.dungeontrain.rewards.group.streams": "配信",
   "gui.dungeontrain.rewards.group.extra": "その他",
   "gui.dungeontrain.rewards.quicker_streams.name": "配信の高速化",
-  "gui.dungeontrain.rewards.quicker_streams.line": "遅延を30秒から5秒に短縮、1か月間",
+  "gui.dungeontrain.rewards.quicker_streams.line": "遅延を%1$s秒から%2$s秒に短縮、1か月間",
   "gui.dungeontrain.rewards.quicker_streams.amount": "$94 AUD",
   "gui.dungeontrain.rewards.quicker_streams.amount_short": "$94",
   "gui.dungeontrain.rewards.two_streams.name": "2人同時配信",
