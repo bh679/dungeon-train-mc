@@ -106,9 +106,15 @@ public final class ContributePreviewCommand {
         if (!DungeonTrain.isDevBuild()) return;
         Minecraft mc = Minecraft.getInstance();
         if (queue.isEmpty()) {
-            if (!(mc.screen instanceof TitleScreen)) return;
             Path flag = mc.gameDirectory.toPath().resolve(FLAG_FILE);
             if (!Files.isRegularFile(flag)) return;
+            // A dev jar is always "behind" the newest release, so the update card can cover the title
+            // screen; a headless sweep closes it rather than waiting forever.
+            if (mc.screen instanceof games.brennan.dungeontrain.client.version.UpdatePromptScreen) {
+                mc.setScreen(new TitleScreen());
+                return;
+            }
+            if (!(mc.screen instanceof TitleScreen)) return;
             // Shoot what players see: wait (up to 15 s) for the relay's links, which carry the tiers.
             games.brennan.dungeontrain.client.links.OfficialLinks.ensureFetched();
             if (PaymentLinks.tiersAvailable() == false && ++waitTicks < 300) return;
