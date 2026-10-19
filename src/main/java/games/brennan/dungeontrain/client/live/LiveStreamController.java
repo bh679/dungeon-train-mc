@@ -202,6 +202,24 @@ public final class LiveStreamController {
         return state == State.STREAMING && c != null ? c.playlistUrl() : null;
     }
 
+    /**
+     * This stream's segment length: the claim's (3 s by default while the server's Quicker Streams reward was on when
+     * it was claimed), else the client config. Every consumer of the cadence (encoder, death hand-over and
+     * clip, the head viewer's countdown, the life tracker) reads this, never the config directly.
+     */
+    public int segmentSeconds() {
+        return segmentSecondsOf(claim);
+    }
+
+    static int segmentSecondsOf(@Nullable Claim c) {
+        return c != null && c.segmentSeconds() > 0 ? c.segmentSeconds() : LiveFeedClientConfig.segmentSeconds();
+    }
+
+    /** This stream's whole cadence: the claim's segment length, window and keyframes, defaults for what it left out. */
+    static LiveEncoder.Cadence cadenceOf(@Nullable Claim c) {
+        return LiveEncoder.Cadence.of(segmentSecondsOf(c), c == null ? 0 : c.listSize(), c == null ? 0 : c.keyframeSeconds());
+    }
+
     /** The stream's relay token (proves this client is the streamer, e.g. for a Live Eye gift), or null when not streaming. */
     @Nullable
     public String streamToken() {
@@ -247,7 +265,7 @@ public final class LiveStreamController {
         LiveFeedClient.markDied(c.token());
         LiveEncoder enc = encoder;
         double deathS = enc == null ? 0 : enc.framesWritten() / (double) Math.max(1, LiveFeedClientConfig.captureFps());
-        int segmentS = LiveFeedClientConfig.segmentSeconds();
+        int segmentS = segmentSecondsOf(c);
         handover = new LiveDeathHandover(deathS, segmentS, System.currentTimeMillis());
         LOGGER.info("[DungeonTrain] live: death at {} s into the stream; offering it once segment {} is up",
             String.format(Locale.ROOT, "%.1f", deathS), handover.targetSegment());
@@ -590,13 +608,13 @@ public final class LiveStreamController {
             grabber = grab;
             int fps = LiveFeedClientConfig.captureFps();
             int bitrate = LiveFeedClientConfig.bitrateKbps();
-            int segment = LiveFeedClientConfig.segmentSeconds();
+            LiveEncoder.Cadence cadence = cadenceOf(c);
             boolean save = LiveFeedClientConfig.saveBandwidth();
             // Off, not possible here, or an unapproved mod loaded (it could play anything):
             // the stream goes out without sound, as before.
             audio = LiveFeedClientConfig.streamAudio() && soundAllowedByMods(true) ? LiveAudioPump.open(aac) : null;
             int audioPort = audio == null ? 0 : audio.port();
-            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort, save), STARTER)
+            CompletableFuture.supplyAsync(() -> spawnEncoder(ffmpeg, grab, d, fps, bitrate, cadence, audioPort, save), STARTER)
                 .whenCompleteAsync((enc, err) -> adoptEncoder(gen, enc, err, fps), mc);
         } catch (Exception e) {
             failStart(e);
@@ -621,10 +639,12 @@ public final class LiveStreamController {
         uploader = new LiveUploader(d, c.token(), by -> mc.execute(() -> cutOff(by)));
         streamStartedMs = System.currentTimeMillis();
         state = State.STREAMING;
-        LiveLifeEvents.stintStarted(LiveFeedClientConfig.segmentSeconds());
-        LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}{}, playlist {}", c.session(),
-            grabber == null ? 0 : grabber.width(), grabber == null ? 0 : grabber.height(),
-            fps, audio != null ? " with sound" : "", enc.saveBandwidth() ? ", saving bandwidth" : "", c.playlistUrl());
+        LiveLifeEvents.stintStarted(segmentSecondsOf(c));
+        LiveEncoder.Cadence cadence = cadenceOf(c);
+        LOGGER.info("[DungeonTrain] live stream started: session {} {}x{} @ {} fps{}{}, {} s segments x{}, {} s keyframes, playlist {}",
+            c.session(), grabber == null ? 0 : grabber.width(), grabber == null ? 0 : grabber.height(),
+            fps, audio != null ? " with sound" : "", enc.saveBandwidth() ? ", saving bandwidth" : "",
+            cadence.segmentSeconds(), cadence.listSize(), cadence.keyframeSeconds(), c.playlistUrl());
         announcedLive = false;
         if (c.prevName() != null) say(Component.translatable("chat.dungeontrain.live.took_over", c.prevName()).withStyle(ChatFormatting.GRAY));
     }
@@ -641,9 +661,9 @@ public final class LiveStreamController {
 
     /** {@link #STARTER} thread: spawning ffmpeg can take a while, so never on the render thread. */
     private static LiveEncoder spawnEncoder(FFmpeg ffmpeg, LiveFrameGrabber grab, Path d, int fps, int bitrate,
-                                            int segment, int audioPort, boolean saveBandwidth) {
+                                            LiveEncoder.Cadence cadence, int audioPort, boolean saveBandwidth) {
         try {
-            return new LiveEncoder(ffmpeg, grab, d, fps, bitrate, segment, audioPort, saveBandwidth);
+            return new LiveEncoder(ffmpeg, grab, d, fps, bitrate, cadence, audioPort, saveBandwidth);
         } catch (IOException e) {
             throw new CompletionException(e);
         }
@@ -678,12 +698,12 @@ public final class LiveStreamController {
         int gen = generation;
         int fps = LiveFeedClientConfig.captureFps();
         int bitrate = LiveFeedClientConfig.bitrateKbps();
-        int segment = LiveFeedClientConfig.segmentSeconds();
+        LiveEncoder.Cadence cadence = cadenceOf(claim);
         boolean save = old.saveBandwidth();
         CompletableFuture.supplyAsync(() -> {
             snd.close();
             old.close();
-            return spawnEncoder(ffmpeg, grab, d, fps, bitrate, segment, 0, save);
+            return spawnEncoder(ffmpeg, grab, d, fps, bitrate, cadence, 0, save);
         }, STARTER).whenCompleteAsync((enc, err) -> {
             if (gen != generation || state != State.STREAMING) {
                 if (enc != null) closeEncoderAsync(enc);

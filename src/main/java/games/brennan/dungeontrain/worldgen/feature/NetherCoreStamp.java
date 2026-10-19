@@ -123,6 +123,9 @@ public final class NetherCoreStamp {
 
         NetherBandContext bandCtx = NetherBandContext.current();
         int chunkMinZ = cp.getMinBlockZ();
+        // One writer per chunk: its per-section block-entity palette gate is then computed once per section
+        // for the whole stamp instead of once per column.
+        ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         int columns = 0;
         for (int dx = 0; dx < 16; dx++) {
@@ -139,9 +142,9 @@ public final class NetherCoreStamp {
                 int sampleX = NetherCoreGeometry.sampleX(wx);
                 ResourceKey<Biome> coreBiome = coreBiomeKeyAt(bandCtx, worldX, worldZ);
                 long coreT0 = GenProfiler.t0();       // real-Nether router sampling — the confirmed DT hotspot
-                changed |= fillNetherColumn(chunk, dx, dz, worldX, worldZ, g, tg, sampleX, coreGeom, seed, coreBiome);
+                changed |= fillNetherColumn(w, dx, dz, worldX, worldZ, g, tg, sampleX, coreGeom, seed, coreBiome);
                 GenProfiler.add(GenProfiler.Bucket.CORE_REPLACE, coreT0);
-                changed |= coverCoreCaps(chunk, dx, dz, sampleX, worldZ, coreGeom);
+                changed |= coverCoreCaps(w, dx, dz, sampleX, worldZ, coreGeom);
                 columns++;
             }
         }
@@ -170,7 +173,7 @@ public final class NetherCoreStamp {
      * and rides pillars across the open lava lakes / caverns, exactly as it does over the End band's
      * islands/void.
      */
-    private static boolean fillNetherColumn(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ,
+    private static boolean fillNetherColumn(ColumnWriter w, int dx, int dz, int worldX, int worldZ,
                                             TrackGeometry g, TunnelGeometry tg, int sampleX,
                                             NetherCoreGeometry coreGeom, long seed, ResourceKey<Biome> coreBiome) {
         int yLo = coreGeom.minCoreY();
@@ -182,7 +185,6 @@ public final class NetherCoreStamp {
         // column instead of four times per block on the hottest path in Nether generation.
         NetherCoreGeometry.Column density = coreGeom.column(sampleX, worldZ);
 
-        ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         for (int y = yLo; y <= yHi; y++) {
             if (isTrackBlock(worldZ, y, g, tg)) continue;
@@ -234,10 +236,9 @@ public final class NetherCoreStamp {
      * overworld rock just beyond it shows through as a stone roof/floor. Repaint that single capping
      * block netherrack; the mountain further up/down stays as it is.
      */
-    private static boolean coverCoreCaps(ChunkAccess chunk, int dx, int dz, int sampleX, int worldZ,
+    private static boolean coverCoreCaps(ColumnWriter w, int dx, int dz, int sampleX, int worldZ,
                                          NetherCoreGeometry coreGeom) {
         NetherCoreGeometry.Column col = coreGeom.column(sampleX, worldZ);
-        ColumnWriter w = new ColumnWriter(chunk);
         boolean changed = false;
         int[][] caps = {{coreGeom.maxCoreY(), coreGeom.maxCoreY() + 1}, {coreGeom.minCoreY(), coreGeom.minCoreY() - 1}};
         for (int[] cap : caps) {

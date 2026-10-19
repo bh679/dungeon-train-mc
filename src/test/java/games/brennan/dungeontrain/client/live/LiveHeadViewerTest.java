@@ -16,6 +16,7 @@ class LiveHeadViewerTest {
         assertEquals(12, LiveHeadViewer.countdownSeconds(start, 10, start + 10_000));
         assertEquals(1, LiveHeadViewer.countdownSeconds(start, 10, start + 21_500));
         assertEquals(1, LiveHeadViewer.countdownSeconds(start, 10, start + 60_000), "a late feed holds at 1, never 0 or negative");
+        assertEquals(6, LiveHeadViewer.countdownSeconds(start, 2, start), "Quicker Streams: 2 × 2 s segments + 2 s slack");
     }
 
     @Test
