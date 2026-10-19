@@ -258,7 +258,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     /**
      * Personal Rewards: the three gift tiers and what each gives the giver back. Only thank-yous that
      * exist today: your name aboard (the boards and Credits), one Priority Book per $10, and the book
-     * screen's Copy button (an option, for anyone who has given $10 or more). The middle tier is
+     * screen's Copy button (an option, for anyone who has given $30 or more). The middle tier is
      * outlined green as on Contribute; Give goes through the same payment confirm.
      */
     private int personalSection(int y, int perRow, int cardW) {
@@ -316,9 +316,13 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         ty += 2;
         // The tier's thank-yous as inventory slots: name tag, Priority Books (stack = how many), copy.
         // Clicking one shows its explanation under the tiers.
+        int slot = 0;
         for (int i = 0; i < PERSONAL_EXPLAIN.length; i++) {
+            // Copy books is for supporters of $30 or more, so the $10 tier does not show it.
+            if ("copy".equals(PERSONAL_EXPLAIN[i]) && tier.audAmount() < SupporterStatus.MIN_TOTAL_AUD) continue;
             int count = "priority_books".equals(PERSONAL_EXPLAIN[i]) ? tier.quantity() : 1;
-            explainIcons.add(new ExplainIcon(i, count, tx + i * EXPLAIN_CELL, ty));
+            explainIcons.add(new ExplainIcon(i, count, tx + slot * EXPLAIN_CELL, ty));
+            slot++;
         }
         ty += EXPLAIN_CELL;
         return ty - y + 4 + GIVE_H + PAD;
