@@ -28329,6 +28329,22 @@
       "released": true,
       "released_in": "v0.1389.0",
       "released_at": "2026-10-19T16:32:51Z"
+    },
+    {
+      "id": "live-page-tv-wearer-names",
+      "version": "0.1390.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live page shows who's watching with a TV on",
+      "summary": "Watching the Live feed with a TV on your head now puts your name on the Live page's viewer list, so the stream's audience can see who's tuned in from inside the game. Only shown when you've allowed the game to go online, and never in kid mode.",
+      "highlights": [],
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
