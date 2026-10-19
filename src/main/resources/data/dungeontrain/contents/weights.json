@@ -6,7 +6,7 @@
   },
   "books": 11,
   "caggedzombs2": 1,
-  "cargocontents": 10,
+  "cargocontents": 15,
   "cows": 15,
   "craft": 7,
   "dangerous_1": {
@@ -45,8 +45,37 @@
   "enchant": 2,
   "ender": 1,
   "enemies": 8,
+  "enemies_box": {
+    "weight": 5,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "END",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "optIn": true
+  },
   "enemies_group": {
     "weight": 20,
+    "minLevel": 1,
+    "optIn": true
+  },
+  "enemies_path": {
+    "weight": 1,
     "minLevel": 1,
     "optIn": true
   },

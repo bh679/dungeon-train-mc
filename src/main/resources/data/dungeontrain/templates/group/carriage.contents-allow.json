@@ -5,6 +5,7 @@
     "default_full"
   ],
   "included": [
+    "enemies_box",
     "enemies_group"
   ]
 }
