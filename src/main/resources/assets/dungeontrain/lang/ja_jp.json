@@ -4643,6 +4643,8 @@
   "gui.dungeontrain.book.copy": "コピー",
   "gui.dungeontrain.book.copy.tip": "この本のタイトル、著者、全ページをクリップボードにコピーします",
   "gui.dungeontrain.book.copied": "コピーしました",
+  "gui.dungeontrain.book.paste_blocked": "コピーした本は貼り付けられません",
+  "gui.dungeontrain.book.paste_blocked.body": "コピーした本の文章は読むためのものです。自分の本を書いてください。",
   "gui.dungeontrain.priority_book.waiting.other": "優先本が%s冊待っています。本に署名するときに使えます。",
   "gui.dungeontrain.priority_book.sign.other": "優先本を使う(残り%s冊)",
   "gui.dungeontrain.priority_book.sign_tooltip": "寄付へのお礼です。あなたの本が他のプレイヤーの列車にずっと多く現れるようになります。",

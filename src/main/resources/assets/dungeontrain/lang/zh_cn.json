@@ -4657,6 +4657,8 @@
   "gui.dungeontrain.book.copy": "复制",
   "gui.dungeontrain.book.copy.tip": "将这本书的标题、作者和所有页面复制到剪贴板",
   "gui.dungeontrain.book.copied": "已复制",
+  "gui.dungeontrain.book.paste_blocked": "无法粘贴复制的书",
+  "gui.dungeontrain.book.paste_blocked.body": "复制的书本文字仅供阅读。请自己写一本书吧。",
   "gui.dungeontrain.priority_book.waiting.other": "你有 %s 本优先之书待用。署名一本书时即可使用。",
   "gui.dungeontrain.priority_book.sign.other": "使用一本优先之书（剩余 %s 本）",
   "gui.dungeontrain.priority_book.sign_tooltip": "这是对你捐助的谢礼。你的书会更频繁地出现在其他玩家的列车上。",

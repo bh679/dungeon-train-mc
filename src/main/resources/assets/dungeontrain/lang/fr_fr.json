@@ -4700,6 +4700,8 @@
   "gui.dungeontrain.book.copy": "Copier",
   "gui.dungeontrain.book.copy.tip": "Copier dans le presse-papiers le titre, l'auteur et toutes les pages de ce livre",
   "gui.dungeontrain.book.copied": "Copié",
+  "gui.dungeontrain.book.paste_blocked": "Impossible de coller un livre copié",
+  "gui.dungeontrain.book.paste_blocked.body": "Le texte copié d'un livre sert à le lire. Écris plutôt ton propre livre.",
   "gui.dungeontrain.priority_book.waiting.one": "%s Livre Prioritaire t'attend. Utilise-le quand tu signes un livre.",
   "gui.dungeontrain.priority_book.waiting.other": "%s Livres Prioritaires t'attendent. Utilises-en un quand tu signes un livre.",
   "gui.dungeontrain.priority_book.sign.one": "Utiliser un Livre Prioritaire (%s restant)",

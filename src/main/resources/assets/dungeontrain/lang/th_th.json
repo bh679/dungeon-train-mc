@@ -4643,6 +4643,8 @@
   "gui.dungeontrain.book.copy": "คัดลอก",
   "gui.dungeontrain.book.copy.tip": "คัดลอกชื่อเรื่อง ผู้เขียน และทุกหน้าของหนังสือเล่มนี้ไปยังคลิปบอร์ด",
   "gui.dungeontrain.book.copied": "คัดลอกแล้ว",
+  "gui.dungeontrain.book.paste_blocked": "วางหนังสือที่คัดลอกมาไม่ได้",
+  "gui.dungeontrain.book.paste_blocked.body": "ข้อความจากหนังสือที่คัดลอกมามีไว้สำหรับอ่าน ลองเขียนหนังสือของคุณเองดีกว่า",
   "gui.dungeontrain.priority_book.waiting.other": "มีหนังสือสิทธิพิเศษรออยู่ %s เล่ม ใช้ได้ตอนที่คุณลงชื่อในหนังสือ",
   "gui.dungeontrain.priority_book.sign.other": "ใช้หนังสือสิทธิพิเศษ (เหลือ %s เล่ม)",
   "gui.dungeontrain.priority_book.sign_tooltip": "ของขอบคุณสำหรับการบริจาค หนังสือของคุณจะไปปรากฏในขบวนรถไฟของผู้เล่นคนอื่นบ่อยขึ้นมาก",

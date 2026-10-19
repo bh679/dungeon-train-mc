@@ -4700,6 +4700,8 @@
   "gui.dungeontrain.book.copy": "Kopieren",
   "gui.dungeontrain.book.copy.tip": "Titel, Autor und alle Seiten dieses Buchs in die Zwischenablage kopieren",
   "gui.dungeontrain.book.copied": "Kopiert",
+  "gui.dungeontrain.book.paste_blocked": "Kopiertes Buch kann nicht eingefügt werden",
+  "gui.dungeontrain.book.paste_blocked.body": "Kopierter Buchtext ist zum Lesen da. Schreib lieber dein eigenes Buch.",
   "gui.dungeontrain.priority_book.waiting.one": "%s Prioritätsbuch wartet. Setze es ein, wenn du ein Buch signierst.",
   "gui.dungeontrain.priority_book.waiting.other": "%s Prioritätsbücher warten. Setze eines ein, wenn du ein Buch signierst.",
   "gui.dungeontrain.priority_book.sign.one": "Prioritätsbuch einsetzen (noch %s)",
