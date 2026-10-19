@@ -28189,6 +28189,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "nether-core-write-gate",
+      "version": "0.1382.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Lighter terrain generation",
+      "summary": "Some of the heavier terrain the train rides through now generates with less work per chunk, so the server has more breathing room while new ground is being laid down. Nothing looks different.",
+      "highlights": [],
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
