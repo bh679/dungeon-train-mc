@@ -28047,7 +28047,7 @@
     },
     {
       "id": "contribute-currency-setting",
-      "version": "0.1364.0",
+      "version": "0.1375.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -28060,6 +28060,28 @@
         "A currency picker on the website's support page too"
       ],
       "pr": 2134,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "contribute-screen-rewards",
+      "version": "0.1375.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "A new Contribute screen",
+      "summary": "Support the solo-dev now opens one Contribute screen, the same one the engine room shows. Give to the dev, or see Community Rewards: monthly gifts that switch something on for everyone.",
+      "highlights": [
+        "Support the solo-dev opens Contribute from the title screen, the pause menu and Credits",
+        "A new rewards page: Community Rewards for everyone, coming soon, and Personal Rewards showing what each gift brings you",
+        "Every gift puts your name aboard and brings Priority Books",
+        "Copying the books you read is now a thank-you for gifts of $30 or more"
+      ],
+      "pr": 2146,
       "date": "2026-10-19",
       "released": false,
       "released_in": null,
