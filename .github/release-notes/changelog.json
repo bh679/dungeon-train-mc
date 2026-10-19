@@ -28137,7 +28137,7 @@
     },
     {
       "id": "log-request-upload-feedback",
-      "version": "0.1380.0",
+      "version": "0.1379.0",
       "type": "fix",
       "tags": [
         "fix",
