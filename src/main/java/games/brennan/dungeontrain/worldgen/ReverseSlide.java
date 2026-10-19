@@ -4,6 +4,7 @@ import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.editor.EditorDevMode;
 import games.brennan.dungeontrain.event.BoardingProgressEvents;
 import games.brennan.dungeontrain.event.CinematicIntroService;
+import games.brennan.dungeontrain.event.ReverseJourneyAdvancements;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.ReverseSlideSyncPacket;
 import games.brennan.dungeontrain.portal.PortalTwinSpace;
@@ -128,13 +129,22 @@ public final class ReverseSlide {
                 earnedBy[i] = gain;
                 earned += gain;
             }
-            if ((p.onTrain() || p.slides()) && x < reach) {
+            if (countsForReach(p) && x < reach) {
                 reach = x;
                 reached = true;
             }
         }
         long s = Math.max(prev.slide(), roundUp(startX - reach - earned));
         return new Result(new State(o, reached ? reach : UNSET, earned, s), earnedBy);
+    }
+
+    /**
+     * True when the sample's position moves the reach: anyone on the train, or a sliding player off it.
+     * Exactly these players are the ones the slide has accounted for, so they are the only ones
+     * {@link ReverseJourneyAdvancements} tests against the reversed bands.
+     */
+    static boolean countsForReach(Sample p) {
+        return p.onTrain() || p.slides();
     }
 
     /** True when the player was on the train last scan too and stepped back no further than a walk. */
@@ -193,6 +203,13 @@ public final class ReverseSlide {
             else LAST_ON_TRAIN.remove(id);
         }
         syncHud(level, data, players, result.earnedBy());
+        // After the slide has moved, never before: a long jump back is tested against the bands as they
+        // now stand, and only by players the slide has made room for.
+        List<ServerPlayer> counted = new ArrayList<>();
+        for (int i = 0; i < samples.size(); i++) {
+            if (countsForReach(samples.get(i))) counted.add(players.get(i));
+        }
+        ReverseJourneyAdvancements.scan(level, cycle, counted);
     }
 
     /** Last packet sent to each player, so the HUD read-out only costs traffic when it changes. */

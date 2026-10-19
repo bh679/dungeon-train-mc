@@ -161,7 +161,9 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
             this.name = name;
             this.hint = hint;
             this.control = control;
-            this.tooltip = tooltip == null ? null : Tooltip.create(tooltip);
+            // No explanation of its own → the hint is the tooltip, so a hint cut with "…" can still be read whole.
+            Component shown = tooltip != null ? tooltip : hint;
+            this.tooltip = shown.getString().isBlank() ? null : Tooltip.create(shown);
             this.control.setWidth(CONTROL_W);
             this.control.setHeight(CONTROL_H);
         }
@@ -195,7 +197,8 @@ public final class SettingsRowList extends ContainerObjectSelectionList<Settings
 
         /**
          * {@code text} on one line, cut with an ellipsis when it would not fit — a hint that outgrows
-         * its room in some locale reads as cut, and the tooltip carries the whole of it.
+         * its room in some locale reads as cut, and the tooltip (the hint itself, for a row with no
+         * explanation of its own) carries the whole of it.
          */
         private FormattedCharSequence oneLine(Component text, int width) {
             if (font.width(text) <= width) {
