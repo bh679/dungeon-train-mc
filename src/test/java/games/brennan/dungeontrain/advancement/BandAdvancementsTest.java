@@ -162,6 +162,22 @@ final class BandAdvancementsTest {
     }
 
     @Test
+    @DisplayName("reverse: each advancement needs the one before it on the chain; the first needs the tab root")
+    void reversePredecessors() {
+        CycleLayout shipped = parse(CycleLayout.DEFAULT_ORDER);
+        assertEquals(BandAdvancements.REVERSE_ANCHOR, BandAdvancements.reversePredecessor(shipped, SHIPPED_REVERSE.get(0)));
+        for (int i = 1; i < SHIPPED_REVERSE.size(); i++) {
+            assertEquals(SHIPPED_REVERSE.get(i - 1), BandAdvancements.reversePredecessor(shipped, SHIPPED_REVERSE.get(i)));
+        }
+        assertEquals("reversed_nether", BandAdvancements.reversePredecessor(shipped, BandAdvancements.TFARCENIM));
+        assertEquals(null, BandAdvancements.reversePredecessor(shipped, "reached_nether"));
+
+        CycleLayout custom = parse("ow:1000, nether:4000, stacks:5000");
+        assertEquals(BandAdvancements.REVERSE_ANCHOR, BandAdvancements.reversePredecessor(custom, "reversed_stacks"));
+        assertEquals("reversed_stacks", BandAdvancements.reversePredecessor(custom, "reversed_nether"));
+    }
+
+    @Test
     @DisplayName("every reverse advancement has one trigger; isBackwards covers The Secrete Menu and nothing forward")
     void reverseTriggersMatchTable() {
         List<String> ids = BandAdvancements.reverseTriggers().stream().map(BandAdvancements.Trigger::id).toList();
