@@ -116,15 +116,17 @@ final class BookBoostControl {
     }
 
     /**
-     * The gold line, centred on {@code centerX} from {@code y}, wrapped to {@code width} and clipped to
-     * {@code maxRows}. Drawn only when at least one row fits; the star works alone otherwise.
+     * The gold line, centred on {@code centerX} from {@code y}, wrapped to {@code width}. Drawn only when
+     * every row fits in {@code maxRows}: a line cut off mid-phrase ("Boost this book (20") reads as
+     * broken, so under a long question the star works alone and its tooltip says the line instead.
      */
     static void renderLine(GuiGraphics gfx, Font font, int centerX, int left, int width, int y, int maxRows,
                            int mouseX, int mouseY) {
         Component text = lineText();
-        if (text == null || maxRows < 1) return;
+        if (text == null) return;
         List<FormattedCharSequence> lines = font.split(text, width);
-        int rows = Math.min(lines.size(), maxRows);
+        if (lines.isEmpty() || lines.size() > maxRows) return;
+        int rows = lines.size();
         lineX = left;
         lineY = y;
         lineW = width;
@@ -139,11 +141,7 @@ final class BookBoostControl {
             gfx.drawString(font, line, centerX - font.width(line) / 2, ly, color, false);
             ly += LINE_H;
         }
-        if (hover && !armed) {
-            gfx.renderTooltip(font, rows < lines.size()
-                ? text.copy().append(" ").append(PriorityBookMessage.boostTooltip())
-                : PriorityBookMessage.boostTooltip(), mouseX, mouseY);
-        }
+        if (hover && !armed) gfx.renderTooltip(font, PriorityBookMessage.boostTooltip(), mouseX, mouseY);
     }
 
     /**

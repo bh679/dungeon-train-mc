@@ -310,8 +310,11 @@ public final class BookVoteClientEvents {
     private static void renderBoost(GuiGraphics gfx, Font font, int centerX, int mouseX, int mouseY) {
         BookBoostControl.beginFrame();
         if (!boostShown()) return;
+        // Tucked right under the question (its rows already carry their own leading), so a question
+        // that wraps to two rows still leaves the line its two.
+        int y = Math.max(bookTop() + PRIORITY_MIN_DY, statusBottom + 1);
         BookBoostControl.renderLine(gfx, font, centerX, bookLeft() + TEXT_X_OFFSET, TEXT_WIDTH,
-            priorityY(), (buttonsY() - 2 - priorityY()) / LINE_H, mouseX, mouseY);
+            y, (buttonsY() - 1 - y) / LINE_H, mouseX, mouseY);
         BookBoostControl.renderStar(gfx, font, starX(), buttonsY(), labelsY(), mouseX, mouseY);
     }
 
