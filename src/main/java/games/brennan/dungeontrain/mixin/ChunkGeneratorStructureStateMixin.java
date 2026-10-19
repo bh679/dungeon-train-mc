@@ -59,7 +59,8 @@ public abstract class ChunkGeneratorStructureStateMixin {
         for (StructureSet.StructureSelectionEntry entry : structureSet.structures()) {
             Structure structure = entry.structure().value();
             if (ModStructureTypes.isBandStructure(structure.type())
-                    || BandNetherStructures.isBandEligible(structure)) {
+                    || BandNetherStructures.isBandEligible(structure)
+                    || games.brennan.dungeontrain.worldgen.structure.BandOthersideStructures.isBandEligible(structure)) {
                 return true;
             }
         }
@@ -74,8 +75,12 @@ public abstract class ChunkGeneratorStructureStateMixin {
     @Unique
     private static boolean dungeontrain$isOverworldBiomeSource(BiomeSource biomeSource) {
         try {
+            // The Otherside's source lists no Nether or End biome either — its own biomes give it away, so
+            // DT's temple set never doubles the temples the Otherside already has.
             return biomeSource.possibleBiomes().stream()
-                    .noneMatch(biome -> biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END));
+                    .noneMatch(biome -> biome.is(BiomeTags.IS_NETHER) || biome.is(BiomeTags.IS_END)
+                            || biome.unwrapKey().map(k -> games.brennan.dungeontrain.worldgen.OthersideCore.NAMESPACE
+                                    .equals(k.location().getNamespace())).orElse(false));
         } catch (Throwable t) {
             return false;
         }
