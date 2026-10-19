@@ -81,6 +81,37 @@ public final class AdvancementFirstClient {
     }
 
     /**
+     * Tell the relay this earn was made in a Free Play run ({@code POST /advancements/freeplay-earn}),
+     * so it never infers a first-ever record from it. Fire-and-forget: the answer is not read, and an
+     * older relay's 404 or any failure is simply dropped.
+     */
+    public static void reportFreePlay(UUID player, String advancementId) {
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(DungeonTrain.relayBaseUrl() + "/advancements/freeplay-earn"))
+                    .timeout(REQUEST_TIMEOUT)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(freePlayBody(player, advancementId).toString(), StandardCharsets.UTF_8))
+                    .build();
+            HTTP.sendAsync(req, HttpResponse.BodyHandlers.discarding())
+                    .whenComplete((resp, err) -> {
+                        if (err != null) LOGGER.debug("[DungeonTrain] freeplay-earn failed: {}", err.toString());
+                        else if (resp.statusCode() / 100 != 2) LOGGER.debug("[DungeonTrain] freeplay-earn -> HTTP {}", resp.statusCode());
+                    });
+        } catch (Throwable t) {
+            LOGGER.debug("[DungeonTrain] freeplay-earn request failed to start: {}", t.toString());
+        }
+    }
+
+    /** The Free Play report's JSON body. */
+    static JsonObject freePlayBody(UUID player, String advancementId) {
+        JsonObject body = new JsonObject();
+        body.addProperty("id", advancementId);
+        body.addProperty("uuid", player.toString().replace("-", ""));
+        body.addProperty("modVersion", VersionInfo.VERSION);
+        return body;
+    }
+
+    /**
      * The claim's JSON body. A burrito earn also carries {@code burritoTicks} (ticks aboard since first
      * played or the last reset) and {@code burritoAttempt} — the relay's fastest-burrito board.
      */
