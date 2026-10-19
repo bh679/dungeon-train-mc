@@ -963,6 +963,8 @@
   "gui.dungeontrain.book.copy": "Copiază",
   "gui.dungeontrain.book.copy.tip": "Copiază în clipboard titlul, autorul și toate paginile acestei cărți",
   "gui.dungeontrain.book.copied": "Copiat",
+  "gui.dungeontrain.book.paste_blocked": "Nu poți lipi o carte copiată",
+  "gui.dungeontrain.book.paste_blocked.body": "Textul copiat dintr-o carte e pentru citit. Scrie-ți mai bine propria carte.",
   "gui.dungeontrain.priority_book.waiting.one": "%s Carte Prioritară te așteaptă. Folosește-o când semnezi o carte.",
   "gui.dungeontrain.priority_book.waiting.few": "%s Cărți Prioritare te așteaptă. Folosește una când semnezi o carte.",
   "gui.dungeontrain.priority_book.waiting.other": "%s de Cărți Prioritare te așteaptă. Folosește una când semnezi o carte.",

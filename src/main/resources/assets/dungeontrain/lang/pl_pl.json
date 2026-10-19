@@ -4757,6 +4757,8 @@
   "gui.dungeontrain.book.copy": "Kopiuj",
   "gui.dungeontrain.book.copy.tip": "Skopiuj do schowka tytuł, autora i wszystkie strony tej książki",
   "gui.dungeontrain.book.copied": "Skopiowano",
+  "gui.dungeontrain.book.paste_blocked": "Nie można wkleić skopiowanej książki",
+  "gui.dungeontrain.book.paste_blocked.body": "Skopiowany tekst książki służy do czytania. Napisz własną książkę.",
   "gui.dungeontrain.priority_book.waiting.one": "%s Książka Priorytetowa czeka. Użyj jej, gdy podpiszesz książkę.",
   "gui.dungeontrain.priority_book.waiting.few": "%s Książki Priorytetowe czekają. Użyj jednej, gdy podpiszesz książkę.",
   "gui.dungeontrain.priority_book.waiting.many": "%s Książek Priorytetowych czeka. Użyj jednej, gdy podpiszesz książkę.",

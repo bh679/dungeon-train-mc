@@ -145,6 +145,8 @@ public final class BookCopyButton {
         String text = BookCopyText.format(title, byLine, pages);
         if (text.isBlank()) return;
         Minecraft.getInstance().keyboardHandler.setClipboard(text);
+        // A reading copy only: none of it pastes back into a Book & Quill.
+        CopiedBookGuard.remember(text, title, pages);
         copiedAt = System.currentTimeMillis();
     }
 
