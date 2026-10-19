@@ -53,7 +53,8 @@ public final class ContributePreviewCommand {
             new Step("contribute-give", "give", ContributeScreen::new),
             new Step("death-window-give", "give", DonationOptionsScreen::new),
             new Step("rewards-some", "some", CommunityRewardsScreen::new),
-            new Step("rewards-all-give", "give-all", CommunityRewardsScreen::new));
+            new Step("rewards-all-give", "give-all", CommunityRewardsScreen::new),
+            new Step("rewards-personal-bottom", "some", CommunityRewardsScreen::new));
 
     private static List<Step> queue = List.of();
     private static int ticks;
@@ -124,6 +125,7 @@ public final class ContributePreviewCommand {
         Step s = queue.get(0);
         apply(s.state());
         mc.setScreen(s.screen().apply(new TitleScreen()));
+        if (s.name().endsWith("-bottom") && mc.screen instanceof CommunityRewardsScreen rewards) rewards.scrollToEnd();
         ticks = 0;
     }
 

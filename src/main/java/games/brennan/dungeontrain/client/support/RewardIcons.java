@@ -24,6 +24,15 @@ public final class RewardIcons {
         };
     }
 
+    /** The item beside each gift tier in Personal Rewards. */
+    public static ItemStack of(SupportTier tier) {
+        return switch (tier) {
+            case HELP_DEV -> new ItemStack(Items.NAME_TAG);        // your name aboard
+            case BIG_FAN -> new ItemStack(Items.WRITABLE_BOOK);    // Priority Books
+            case SERVER_COSTS -> new ItemStack(Items.MINECART);    // keeps the train running
+        };
+    }
+
     /**
      * Draw {@code reward}'s icon in the 16 px square at ({@code x}, {@code y}). Two Streams draws two
      * Live Eyes, the back one up and right, the front one down and left, lifted so they layer cleanly.

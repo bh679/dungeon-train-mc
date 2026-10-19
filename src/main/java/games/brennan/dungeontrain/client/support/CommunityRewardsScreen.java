@@ -66,9 +66,13 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     private boolean timeReported;
 
     private record Text(FormattedCharSequence line, int x, int canvasY, int colour) {}
-    private record Card(int x, int canvasY, int w, int h, boolean featured) {}
+    private record Card(int x, int canvasY, int w, int h, int edge) {}
     private record Placed(Button button, int canvasY) {}
     private record Icon(CommunityRewards.Reward reward, int x, int canvasY) {}
+    private record PersonalIcon(SupportTier tier, int x, int canvasY) {}
+    private final List<PersonalIcon> personalIcons = new ArrayList<>();
+    private static final int COLOUR_PERSONAL_TITLE = 0x7FB2FF;
+    private static final int COLOUR_PERSONAL_FEATURED_EDGE = 0xFF8FE08A;
     private final List<Icon> icons = new ArrayList<>();
     private static final int ICON = 16;
     private static final int ICON_GAP = 4;
@@ -105,6 +109,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     protected void init() {
         texts.clear();
         icons.clear();
+        personalIcons.clear();
         cards.clear();
         buttons.clear();
         colW = Math.min(MAX_COL_W, this.width - SIDE_MARGIN);
@@ -134,7 +139,8 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             }
             // Equal heights in a row, Give buttons on one baseline.
             for (int i = start; i < end; i++) {
-                cards.add(new Card(colX + (i - start) * (cardW + GAP), y, cardW, rowH, all[i] == featured));
+                cards.add(new Card(colX + (i - start) * (cardW + GAP), y, cardW, rowH,
+                        all[i] == featured ? COLOUR_FEATURED_EDGE : COLOUR_CARD_EDGE));
             }
             int giveY = y + rowH - PAD - GIVE_H;
             for (int i = start; i < end; i++) {
@@ -157,6 +163,8 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             y += lh + 1;
         }
 
+        y = personalSection(y + 12, perRow, cardW);
+
         // Converted amounts above: say they are approximate and that the gift is made in AUD.
         if (CurrencyFormat.converted()) {
             y += 4;
@@ -177,6 +185,70 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         currency.layout(this.font, colX + colW, viewportTop - 3, this.height, this::addWidget);
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(this.width / 2 - 100, rowY, 200, 20).build());
+    }
+
+    /**
+     * Personal Rewards: the three gift tiers and what each gives the giver back. Only thank-yous that
+     * exist today: your name aboard (the boards and Credits), one Priority Book per $10, and the book
+     * screen's Copy button (an option, for anyone who has given $10 or more). The middle tier is
+     * outlined green as on Contribute; Give goes through the same payment confirm.
+     */
+    private int personalSection(int y, int perRow, int cardW) {
+        int lh = this.font.lineHeight;
+        Component title = Component.literal(Component.translatable("gui.dungeontrain.rewards.personal.title").getString()
+                        .toUpperCase(ContributePanel.javaLocale()))
+                .withStyle(st -> st.withBold(true).withColor(COLOUR_PERSONAL_TITLE));
+        Component heading = Component.empty().append(title).append(" · ")
+                .append(Component.translatable("gui.dungeontrain.rewards.personal.label"));
+        for (FormattedCharSequence l : this.font.split(heading, colW)) {
+            texts.add(new Text(l, colX, y, COLOUR_GROUP));
+            y += lh + 1;
+        }
+        y += 6;
+
+        SupportTier[] tiers = SupportTier.values();
+        for (int start = 0; start < tiers.length; start += perRow) {
+            int end = Math.min(tiers.length, start + perRow);
+            int rowH = 0;
+            for (int i = start; i < end; i++) {
+                rowH = Math.max(rowH, personalCard(tiers[i], colX + (i - start) * (cardW + GAP), y, cardW));
+            }
+            int giveY = y + rowH - PAD - GIVE_H;
+            for (int i = start; i < end; i++) {
+                SupportTier tier = tiers[i];
+                int cx = colX + (i - start) * (cardW + GAP);
+                cards.add(new Card(cx, y, cardW, rowH,
+                        i == tiers.length / 2 ? COLOUR_PERSONAL_FEATURED_EDGE : COLOUR_CARD_EDGE));
+                Button b = new games.brennan.dungeontrain.client.menu.ColorTintedButton(cx + PAD, giveY, cardW - PAD * 2, GIVE_H,
+                        Component.translatable("gui.dungeontrain.rewards.give.amount",
+                                CurrencyFormat.amount(tier.audAmount(), tier.shortKey())),
+                        ContributePanel.TINT_BLUE[0], ContributePanel.TINT_BLUE[1], ContributePanel.TINT_BLUE[2],
+                        p -> links.openLink(PaymentLinks.tierUrl(tier), tier.analyticsTarget()));
+                b.active = PaymentLinks.tiersAvailable();
+                buttons.add(new Placed(b, giveY));
+                addWidget(b);
+            }
+            y += rowH + GAP;
+        }
+        return y;
+    }
+
+    /** One tier's card: icon and name, its amount, then its thank-yous. */
+    private int personalCard(SupportTier tier, int x, int y, int w) {
+        int lh = this.font.lineHeight;
+        int tx = x + PAD;
+        int tw = w - PAD * 2;
+        int ty = y + PAD + 3;
+        int iconTop = ty - 4;
+        personalIcons.add(new PersonalIcon(tier, tx, iconTop));
+        ty = wrap(Component.translatable(tier.nameKey()), tx + ICON + ICON_GAP, ty, tw - ICON - ICON_GAP, COLOUR_NAME);
+        ty = Math.max(ty, iconTop + ICON + 1);
+        ty = wrap(CurrencyFormat.amount(tier.audAmount(), tier.amountKey()), tx, ty, tw, COLOUR_AMOUNT);
+        ty += 2;
+        ty = wrap(Component.translatable("gui.dungeontrain.rewards.personal.name_aboard"), tx, ty, tw, COLOUR_LINE);
+        ty = wrap(Component.translatable("gui.dungeontrain.rewards.personal.books", tier.quantity()), tx, ty, tw, COLOUR_LINE);
+        ty = wrap(Component.translatable("gui.dungeontrain.rewards.personal.copy"), tx, ty, tw, COLOUR_LINE);
+        return ty - y + 4 + GIVE_H + PAD;
     }
 
     /** Lay out one card's text; returns its height including room for the Give button. */
@@ -268,10 +340,11 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         for (Card c : cards) {
             int cy = c.canvasY() + off;
             g.fill(c.x(), cy, c.x() + c.w(), cy + c.h(), COLOUR_CARD);
-            g.renderOutline(c.x(), cy, c.w(), c.h(), c.featured() ? COLOUR_FEATURED_EDGE : COLOUR_CARD_EDGE);
+            g.renderOutline(c.x(), cy, c.w(), c.h(), c.edge());
         }
         for (Text t : texts) g.drawString(this.font, t.line(), t.x(), t.canvasY() + off, t.colour(), false);
         for (Icon i : icons) RewardIcons.render(g, i.reward(), i.x(), i.canvasY() + off);
+        for (PersonalIcon i : personalIcons) g.renderItem(RewardIcons.of(i.tier()), i.x(), i.canvasY() + off);
         for (Placed p : buttons) if (p.button().visible) p.button().render(g, mouseX, mouseY, partialTick);
         g.disableScissor();
         if (currency.button() != null) currency.button().render(g, mouseX, mouseY, partialTick);
@@ -286,6 +359,11 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         return currency.keyPressed(keyCode) || super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    /** Dev preview: scroll to the bottom (the Personal Rewards section). */
+    void scrollToEnd() {
+        scrollY = maxScroll;
     }
 
     @Override

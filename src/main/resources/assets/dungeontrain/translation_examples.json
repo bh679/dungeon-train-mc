@@ -17046,5 +17046,14 @@
         "3 Dec"
       ]
     }
+  },
+  "gui.dungeontrain.rewards.personal.books": {
+    "1": {
+      "label": "how many Priority Books the gift brings",
+      "examples": [
+        "1",
+        "7"
+      ]
+    }
   }
 }
