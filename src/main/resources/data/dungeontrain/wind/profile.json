@@ -1,0 +1,14 @@
+{
+  "enabled": true,
+  "headingDeg": 90.0,
+  "sneakFactor": 0.35,
+  "visualLeadTicks": 20,
+  "multipliers": { "player": 1.0, "mob": 0.8, "item": 1.6, "projectile": 0.6, "xp": 1.6, "other": 1.0 },
+  "stages": [
+    { "at": 0,     "base": 0.0,   "flutter": 0.0,  "gustsPerMin": 0.0, "gustStrength": 0.0,  "gustTicks": 40, "gustVeer": 0,  "wander": 20,  "wanderSeconds": 120 },
+    { "at": 3000,  "base": 0.002, "flutter": 0.2,  "gustsPerMin": 0.0, "gustStrength": 0.0,  "gustTicks": 40, "gustVeer": 0,  "wander": 25,  "wanderSeconds": 90 },
+    { "at": 12000, "base": 0.005, "flutter": 0.3,  "gustsPerMin": 1.0, "gustStrength": 0.02, "gustTicks": 40, "gustVeer": 10, "wander": 35,  "wanderSeconds": 60 },
+    { "at": 30000, "base": 0.009, "flutter": 0.35, "gustsPerMin": 3.0, "gustStrength": 0.04, "gustTicks": 30, "gustVeer": 20, "wander": 60,  "wanderSeconds": 45 },
+    { "at": 70000, "base": 0.014, "flutter": 0.4,  "gustsPerMin": 6.0, "gustStrength": 0.07, "gustTicks": 25, "gustVeer": 30, "wander": 110, "wanderSeconds": 30 }
+  ]
+}
