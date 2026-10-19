@@ -51,4 +51,16 @@ class LiveFeedClientCrowdTest {
         assertEquals("/live/status?viewer=" + id + "&lb=1",
             LiveFeedClient.statusPath(id, new LiveFeedClient.Life("", false, "0.1268.2"), null));
     }
+
+    @Test
+    void onlyANamedPollSaysTheViewerWearsATv() {
+        UUID id = UUID.fromString("01234567-89ab-cdef-0123-456789abcdef");
+        LiveFeedClient.Life ranked = new LiveFeedClient.Life("", false, "0.1268.2");
+        assertEquals("/live/status?viewer=" + id + "&lb=1&name=Moth&head=1",
+            LiveFeedClient.statusPath(id, ranked, "Moth", true));
+        assertEquals("/live/status?viewer=" + id + "&lb=1&name=Moth",
+            LiveFeedClient.statusPath(id, ranked, "Moth", false));
+        assertEquals("/live/status?viewer=" + id + "&lb=1", LiveFeedClient.statusPath(id, ranked, null, true));
+        assertEquals("/live/status?viewer=" + id, LiveFeedClient.statusPath(id, null, "Moth", true));
+    }
 }

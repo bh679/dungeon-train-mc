@@ -808,7 +808,13 @@ public final class LiveFeedClient {
      */
     public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
                                                    @Nullable String name) {
-        String path = statusPath(viewer, ranked, name);
+        return status(viewer, channel, ranked, name, false);
+    }
+
+    /** As above; {@code headTv}: the viewer wears a TV, so a named poll lists them on the Live page. */
+    public static CompletableFuture<Result> status(@Nullable UUID viewer, Channel channel, @Nullable Life ranked,
+                                                   @Nullable String name, boolean headTv) {
+        String path = statusPath(viewer, ranked, name, headTv);
         HttpRequest req = HttpRequest.newBuilder(URI.create(viewerBase(channel) + path))
             .timeout(RELAY_TIMEOUT).header("Accept", "application/json").GET().build();
         return send(RELAY, req);
@@ -824,9 +830,18 @@ public final class LiveFeedClient {
 
     /** {@link #statusPath(UUID, Life)}, plus {@code &name=} on a ranked poll (consent already given). */
     static String statusPath(@Nullable UUID viewer, @Nullable Life ranked, @Nullable String name) {
+        return statusPath(viewer, ranked, name, false);
+    }
+
+    /**
+     * {@link #statusPath(UUID, Life, String)}, plus {@code &head=1} on a named poll from a viewer
+     * wearing a TV: the public Live page lists their name among the TV wearers.
+     */
+    static String statusPath(@Nullable UUID viewer, @Nullable Life ranked, @Nullable String name, boolean headTv) {
         String path = statusPathBase(viewer, ranked);
         if (viewer == null || ranked == null || name == null || name.isBlank()) return path;
-        return path + "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8);
+        path += "&name=" + java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8);
+        return headTv ? path + "&head=1" : path;
     }
 
     private static String statusPathBase(@Nullable UUID viewer, @Nullable Life ranked) {
