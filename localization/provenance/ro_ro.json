@@ -1485,8 +1485,6 @@
   "gui.dungeontrain.contribute.reward_label": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7edc8e55a756ba5b"},
   "gui.dungeontrain.contribute.keeps_on": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "058a3adbad35913a"},
   "gui.dungeontrain.contribute.see_all": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "fb84e1c7502724ee"},
-  "gui.dungeontrain.contribute.previous_reward": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "514c33fb27d1aac5"},
-  "gui.dungeontrain.contribute.next_reward": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "03c488a3ac4d1790"},
   "gui.dungeontrain.contribute.own_way": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "7fa1803ea92bd30d"},
   "gui.dungeontrain.contribute.any_amount": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "85ee66c1f503f112"},
   "gui.dungeontrain.contribute.monthly": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e899ba48f2d1064b"},

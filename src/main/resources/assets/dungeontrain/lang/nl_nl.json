@@ -1282,8 +1282,6 @@
   "gui.dungeontrain.contribute.reward_label": "GEMEENSCHAPSBELONING",
   "gui.dungeontrain.contribute.keeps_on": "Voor iedereen",
   "gui.dungeontrain.contribute.see_all": "Alle beloningen bekijken",
-  "gui.dungeontrain.contribute.previous_reward": "Vorige beloning",
-  "gui.dungeontrain.contribute.next_reward": "Volgende beloning",
   "gui.dungeontrain.contribute.own_way": "Op jouw manier: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Elk bedrag",
   "gui.dungeontrain.contribute.monthly": "Maandelijks op Patreon",

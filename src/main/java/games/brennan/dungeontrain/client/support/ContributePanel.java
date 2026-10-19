@@ -112,19 +112,13 @@ public final class ContributePanel {
     private int slideDir;
     private long slideStartMs;
     @javax.annotation.Nullable private Button giveOnCard;
-    private static final int ARROW_W = 12;
-    private static final int COMPACT_TIER_H = 20;
-    /** Set by a host whose window is too short: tiers shrink to a normal button's height. */
-    private boolean compact;
-
-    /** Shrink the tier buttons so the whole panel fits a short window; call before measure/layout. */
-    public void setCompact(boolean compact) {
-        this.compact = compact;
-    }
-
-    private int tierH() {
-        return compact ? COMPACT_TIER_H : style.tierH;
-    }
+    private static final String LEFT = "\u25C0";
+    private static final String RIGHT = "\u25B6";
+    /** Gap between the card's edge and an arrow; the hit area pads the glyph by this much too. */
+    private static final int ARROW_GAP = 5;
+    private static final int COLOUR_ARROW = 0xFFB9A8E0;
+    private static final int COLOUR_ARROW_HOVER = 0xFFFFFFFF;
+    private int arrowY, leftArrowX, rightArrowX, arrowCurrent;
     private static final long SLIDE_MS = 180;
     /** The middle tier's bounds, outlined green like the website's featured tier; w 0 = none. */
     private int featX, featY, featW, featH;
@@ -180,18 +174,18 @@ public final class ContributePanel {
                 SupportTier tier = all[i];
                 int bx = x + i * (each + GAP);
                 if (commit) {
-                    Button b = new ColorTintedButton(bx, y, each, tierH(),
+                    Button b = new ColorTintedButton(bx, y, each, style.tierH,
                             CurrencyFormat.amount(tier.audAmount(), tier.shortKey()),
                             TINT_BLUE[0], TINT_BLUE[1], TINT_BLUE[2],
                             p -> openLink(PaymentLinks.tierUrl(tier), tier.analyticsTarget()));
                     b.setTooltip(Tooltip.create(Component.translatable(tier.tooltipKey())));
                     add.accept(b);
                     FormattedCharSequence name = Component.translatable(tier.nameKey()).getVisualOrderText();
-                    texts.add(new Text(name, bx + each / 2, y + tierH() + 3, style.text, true));
-                    if (i == all.length / 2) { featX = bx; featY = y; featW = each; featH = tierH(); }
+                    texts.add(new Text(name, bx + each / 2, y + style.tierH + 3, style.text, true));
+                    if (i == all.length / 2) { featX = bx; featY = y; featW = each; featH = style.tierH; }
                 }
             }
-            y += tierH() + 3 + lh + GAP + 2;
+            y += style.tierH + 3 + lh + GAP + 2;
         } else {
             // No checkout route from the relay (offline, an old relay): the open-ended options become
             // the panel's main row, as the pre-tier layout always did.
@@ -245,24 +239,21 @@ public final class ContributePanel {
         CommunityRewards.Reward reward = pick >= 0 ? order.get(pick) : CommunityRewards.featured(state, now);
         int lh = font.lineHeight;
 
-        // ◀ and ▶ sit inside the card's left and right edges; the text and the Give column between.
         Component noteText = Component.translatable("gui.dungeontrain.contribute.keeps_on");
         int sideW = Math.min(w / 3, Math.max(GIVE_W, font.width(noteText) + 2));
-        int textX = x + ARROW_W + CARD_PAD;
-        int textW = w - sideW - ARROW_W * 2 - CARD_PAD * 3;
+        int textX = x + CARD_PAD;
+        int textW = w - sideW - CARD_PAD * 3;
         int sideH = GIVE_H + 2 + lh;
-        // Tallest of the five, so the card (and the page under it) never jumps while sliding.
-        int textH = 0;
-        for (CommunityRewards.Reward r : order) textH = Math.max(textH, cardLines(font, r, state, now, textX, 0, textW).bottom());
-        int h = Math.max(textH + CARD_PAD * 2 - 1, sideH + CARD_PAD * 2);
+        CardLines lines = cardLines(font, reward, state, now, textX, y + CARD_PAD, textW);
+        int h = Math.max(lines.bottom() + CARD_PAD * 2 - 1, sideH + CARD_PAD * 2);
 
         if (commit) {
-            cardTexts.addAll(cardLines(font, reward, state, now, textX, y + CARD_PAD, textW).lines());
+            cardTexts.addAll(lines.lines());
             cardX = x;
             cardY = y;
             cardW = w;
             cardH = h;
-            int gx = x + w - ARROW_W - sideW - CARD_PAD;
+            int gx = x + w - sideW - CARD_PAD;
             int gy = y + (h - sideH) / 2;
             giveOnCard = giveButton(reward, CommunityRewards.active(state, reward, now), state, now,
                     gx, gy, sideW, GIVE_H, this, true);
@@ -272,9 +263,11 @@ public final class ContributePanel {
                 cardTexts.add(new Text(note, gx + sideW / 2, gy + GIVE_H + 2, COLOUR_GIVE_NOTE, true));
                 break; // one line; a language whose note does not fit is cut, never spills out of the card
             }
-            int current = order.indexOf(reward);
-            add.accept(arrow(x + 1, y + 1, h - 2, "\u25C0", -1, current));
-            add.accept(arrow(x + w - ARROW_W - 1, y + 1, h - 2, "\u25B6", 1, current));
+            arrowCurrent = order.indexOf(reward);
+            // Plain arrows just outside the card's left and right edges, centred on it.
+            arrowY = y + h / 2 - font.lineHeight / 2;
+            leftArrowX = x - ARROW_GAP - font.width(LEFT);
+            rightArrowX = x + w + ARROW_GAP;
         }
         return y + h + GAP;
     }
@@ -308,20 +301,6 @@ public final class ContributePanel {
         return new CardLines(out, ty - top);
     }
 
-    /** A thin full-height arrow inside the card's edge: one step through the rewards, wrapping round. */
-    private Button arrow(int x, int y, int h, String glyph, int dir, int current) {
-        Button b = new games.brennan.dungeontrain.client.menu.DarkTintedButton(x, y, ARROW_W, h,
-                Component.literal(glyph), p -> {
-                    int n = CommunityRewards.FEATURE_ORDER.size();
-                    pick = ((current + dir) % n + n) % n;
-                    slideDir = dir;
-                    slideStartMs = System.currentTimeMillis();
-                    relayout.run();
-                });
-        b.setTooltip(Tooltip.create(Component.translatable(dir < 0
-                ? "gui.dungeontrain.contribute.previous_reward" : "gui.dungeontrain.contribute.next_reward")));
-        return b;
-    }
 
     /**
      * A reward's purple Give button. Off: "Give $94" on the Contribute card ({@code shortForm}) or
@@ -390,7 +369,36 @@ public final class ContributePanel {
                 .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, marker)));
     }
 
-    public void render(GuiGraphics g, Font font) {
+    public void render(GuiGraphics g, Font font, int mouseX, int mouseY) {
+        render(g, font);
+        if (cardW > 0) {
+            boolean overLeft = overArrow(font, mouseX, mouseY, true);
+            boolean overRight = overArrow(font, mouseX, mouseY, false);
+            g.drawString(font, LEFT, leftArrowX, arrowY, overLeft ? COLOUR_ARROW_HOVER : COLOUR_ARROW, false);
+            g.drawString(font, RIGHT, rightArrowX, arrowY, overRight ? COLOUR_ARROW_HOVER : COLOUR_ARROW, false);
+        }
+    }
+
+    /** Whether the mouse is over an arrow (its glyph padded by {@link #ARROW_GAP} on every side). */
+    private boolean overArrow(Font font, double mx, double my, boolean left) {
+        int ax = left ? leftArrowX : rightArrowX;
+        int aw = font.width(left ? LEFT : RIGHT);
+        return mx >= ax - ARROW_GAP && mx <= ax + aw + ARROW_GAP
+                && my >= arrowY - ARROW_GAP && my <= arrowY + font.lineHeight + ARROW_GAP;
+    }
+
+    /** One step through the rewards in {@link CommunityRewards#FEATURE_ORDER}, wrapping round. */
+    private void step(int dir) {
+        int n = CommunityRewards.FEATURE_ORDER.size();
+        pick = ((arrowCurrent + dir) % n + n) % n;
+        slideDir = dir;
+        slideStartMs = System.currentTimeMillis();
+        Minecraft.getInstance().getSoundManager().play(
+                net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(net.minecraft.sounds.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+        relayout.run();
+    }
+
+    private void render(GuiGraphics g, Font font) {
         if (cardW > 0) {
             g.fill(cardX, cardY, cardX + cardW, cardY + cardH, COLOUR_CARD);
             g.renderOutline(cardX, cardY, cardW, cardH, COLOUR_CARD_EDGE);
@@ -401,10 +409,10 @@ public final class ContributePanel {
             // once it has, so a click never lands on a button that is still moving.
             float t = slideDir == 0 ? 1f : Math.min(1f, (System.currentTimeMillis() - slideStartMs) / (float) SLIDE_MS);
             float eased = 1f - (1f - t) * (1f - t) * (1f - t);
-            int offset = Math.round(slideDir * (1f - eased) * (cardW - ARROW_W * 2));
+            int offset = Math.round(slideDir * (1f - eased) * cardW);
             if (t >= 1f) slideDir = 0;
             if (giveOnCard != null) giveOnCard.visible = offset == 0;
-            g.enableScissor(cardX + ARROW_W + 1, cardY + 1, cardX + cardW - ARROW_W - 1, cardY + cardH - 1);
+            g.enableScissor(cardX + 1, cardY + 1, cardX + cardW - 1, cardY + cardH - 1);
             for (Text tx : cardTexts) {
                 int x = (tx.centred() ? tx.x() - font.width(tx.line()) / 2 : tx.x()) + offset;
                 g.drawString(font, tx.line(), x, tx.y(), tx.colour(), false);
@@ -424,6 +432,8 @@ public final class ContributePanel {
 
     /** Follow a footer link under the mouse; true when one was hit. */
     public boolean mouseClicked(Font font, double mx, double my) {
+        if (cardW > 0 && overArrow(font, mx, my, true)) { step(-1); return true; }
+        if (cardW > 0 && overArrow(font, mx, my, false)) { step(1); return true; }
         if (footerLines.isEmpty() || mx < footerX || mx > footerX + footerW) return false;
         int row = (int) ((my - footerY) / (font.lineHeight + 1));
         if (my < footerY || row < 0 || row >= footerLines.size()) return false;

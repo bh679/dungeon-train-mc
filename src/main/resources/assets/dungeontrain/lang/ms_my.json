@@ -1237,8 +1237,6 @@
   "gui.dungeontrain.contribute.reward_label": "GANJARAN KOMUNITI",
   "gui.dungeontrain.contribute.keeps_on": "Untuk semua",
   "gui.dungeontrain.contribute.see_all": "Lihat Semua Ganjaran",
-  "gui.dungeontrain.contribute.previous_reward": "Ganjaran sebelumnya",
-  "gui.dungeontrain.contribute.next_reward": "Ganjaran seterusnya",
   "gui.dungeontrain.contribute.own_way": "Cara anda sendiri: %s · %s.",
   "gui.dungeontrain.contribute.any_amount": "Sebarang Jumlah",
   "gui.dungeontrain.contribute.monthly": "Bulanan di Patreon",
