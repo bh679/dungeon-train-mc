@@ -28460,8 +28460,8 @@
         "train",
         "world"
       ],
-      "title": "The wind picks up",
-      "summary": "Further down the line the wind starts to blow. Light at first, then stronger and gustier the longer you ride. Stay out on the roof and it will push you around, along with anything else out in the open. Duck inside or behind a wall to get out of it.",
+      "title": "The Deep Train gets Windy",
+      "summary": "Deep down the line, the roof of the train and anywhere the walls don't protect you now face gusts of wind, forever growing stronger.",
       "highlights": [
         "Watch the streaks in the air: the wind shows itself just before it hits.",
         "Arrows, items and lighter creatures go first.",
@@ -28471,7 +28471,10 @@
       "date": "2026-10-19",
       "released": false,
       "released_in": null,
-      "released_at": null
+      "released_at": null,
+      "major": true,
+      "description": "Deep down the line, for the most brave, skilled and committed adventurers, lies a new challenge.\n\nThe carts might be full of buffed up monsters, but now the roof of the train, and anywhere the walls don't protect you, face gusts of wind! The taller places feel it more, and underground is safe from it. Forever growing stronger. The train continues to get harder.\n\nSpecial thanks to Lil Detective Crunch for the idea.\n\n*I will be taking feedback on the wind balancing, and I will be rebalancing monsters later too.*",
+      "image": "https://raw.githubusercontent.com/bh679/dungeon-train-mc/main/.github/release-notes/images/the-deep-train-gets-windy.jpg"
     }
   ]
 }
