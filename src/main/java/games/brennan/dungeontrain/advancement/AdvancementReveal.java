@@ -68,7 +68,7 @@ public final class AdvancementReveal {
         return list;
     }
 
-    /** "★ New advancement tab unlocked: [Tab]! Press L to explore it ★", in bold gold. */
+    /** "New advancement tab unlocked: [Tab]! Press L to explore it", in bold gold. */
     public static Component tabUnlocked(Component tabName, Component key) {
         return Component.translatable(KEY_TAB, tabName, key).withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
     }

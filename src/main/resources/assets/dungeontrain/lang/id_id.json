@@ -595,7 +595,7 @@
   "chat.dungeontrain.advancements_hint.12": "Awas celahnya - dan tekan %s untuk melihat semua kemajuan Dungeon Train-mu.",
   "chat.dungeontrain.advancement_revealed": "Terungkap: %s",
   "chat.dungeontrain.advancement_revealed_more": "+%s lainnya",
-  "chat.dungeontrain.advancement_tab_unlocked": "★ Tab kemajuan baru terbuka: %1$s! Tekan %2$s untuk menjelajahinya ★",
+  "chat.dungeontrain.advancement_tab_unlocked": "Tab kemajuan baru terbuka: %1$s! Tekan %2$s untuk menjelajahinya",
   "chat.dungeontrain.familiar_book.1": "Sebuah buku yang familiar. Terasa seperti %1$s menggenggamnya, dan %2$s membacanya sampai akhir.",
   "chat.dungeontrain.familiar_book.2": "Buku ini mengenali tanganmu — ada %1$s menggenggamnya; %2$s membacanya hingga halaman terakhir.",
   "chat.dungeontrain.familiar_book.3": "Bobot yang familiar. Sekitar %1$s menggenggamnya, dan seorang pembaca bertahan dengannya selama %2$s berturut-turut.",
