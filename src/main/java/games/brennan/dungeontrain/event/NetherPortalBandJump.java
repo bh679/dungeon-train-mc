@@ -1,13 +1,17 @@
 package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
+import games.brennan.dungeontrain.compat.mixinguard.MixinGuardReport;
+import games.brennan.dungeontrain.compat.mixinguard.ThirdPartyMixinTargets;
 import games.brennan.dungeontrain.config.DungeonTrainCommonConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PortalLoadScreenPacket;
 import games.brennan.dungeontrain.ship.Shipyards;
 import games.brennan.dungeontrain.track.TrackGeometry;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
+import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.world.NetherPortalLinks;
+import games.brennan.dungeontrain.world.OthersideExitPortal;
 import games.brennan.dungeontrain.worldgen.BandLabel;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.NetherPortalJump;
@@ -24,6 +28,8 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.OptionalLong;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * A Nether portal on the overworld ride is a portal <em>along the track</em>. A portal that already has a
@@ -75,7 +81,42 @@ public final class NetherPortalBandJump {
         static final Outcome VANILLA = new Outcome(false, null);
     }
 
+    /** The Otherside mixin, by the name {@link MixinGuardReport} and {@code /dungeontrain debug mixin-guards} use. */
+    static final String OTHERSIDE_MIXIN =
+            ThirdPartyMixinTargets.MIXIN_PACKAGE + "deeperdarker.OthersidePortalBlockBandJumpMixin";
+
+    private static final LogFirstN OTHERSIDE_LINK_FAILURE = new LogFirstN(1);
+
     private NetherPortalBandJump() {}
+
+    /**
+     * {@link #destination} for Deeper Darker's Otherside portal, from {@code mixin/deeperdarker/
+     * OthersidePortalBlockBandJumpMixin}. {@code OthersideExitPortal} calls Deeper Darker's own classes; a newer Deeper
+     * Darker build that moved one of them throws a {@link LinkageError} here instead of at boot (the mixin plugin only
+     * checks what {@code ThirdPartyMixinTargets} lists). That is caught, logged once, recorded as the mixin being off,
+     * and the trip is left to the mod: its own {@code getPortalDestination} runs and the player reaches the real
+     * Otherside.
+     */
+    public static Outcome othersideDestination(ServerLevel level, Entity entity, BlockPos portalPos) {
+        return guardedOtherside(() -> destination(level, entity, portalPos, Kind.OTHERSIDE, OthersideExitPortal::find),
+                MixinGuardReport::recordSkipped);
+    }
+
+    /**
+     * The catch rule of {@link #othersideDestination}: a {@link LinkageError} means vanilla, after {@code recordSkipped}
+     * is told the mixin is off; anything else propagates.
+     */
+    static Outcome guardedOtherside(Supplier<Outcome> trip, Consumer<String> recordSkipped) {
+        try {
+            return trip.get();
+        } catch (LinkageError e) {
+            recordSkipped.accept(OTHERSIDE_MIXIN);
+            OTHERSIDE_LINK_FAILURE.warn(LOGGER, "[DungeonTrain] Otherside portal band-jump is off: this Deeper Darker "
+                    + "build no longer has something DT's OthersidePortalBlockBandJumpMixin uses. Instead: Otherside "
+                    + "portals lead to Deeper Darker's real Otherside. Re-check the deeperdarker pin in gradle.properties", e);
+            return Outcome.VANILLA;
+        }
+    }
 
     /** Resolve {@code entity} entering the portal at {@code portalPos} in {@code level}. */
     public static Outcome destination(ServerLevel level, Entity entity, BlockPos portalPos, ExitPortalFinder finder) {

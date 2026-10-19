@@ -2,6 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "games.brennan.dungeontrain.mixin",
+  "plugin": "games.brennan.dungeontrain.mixin.ThirdPartyMixinPlugin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "dungeontrain.refmap.json",
   "mixins": [
@@ -10,6 +11,6 @@
   "client": [],
   "server": [],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   }
 }

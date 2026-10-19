@@ -28,6 +28,10 @@ import org.jetbrains.annotations.Nullable;
  * around it, that is the surface far above the track. The transition itself is still Deeper Darker's
  * ({@link OthersideTeleporter#getExitPortal}), which finds the frame just built — the nearest one — and keeps
  * the mod's own arrival sound and chunk ticket.</p>
+ *
+ * <p>Every Deeper Darker member used here is listed in {@code compat/mixinguard/ThirdPartyMixinTargets} and reached
+ * only through {@code NetherPortalBandJump#othersideDestination}, which turns a {@link LinkageError} from a newer
+ * Deeper Darker build into the mod's own portal behaviour.</p>
  */
 public final class OthersideExitPortal {
 
