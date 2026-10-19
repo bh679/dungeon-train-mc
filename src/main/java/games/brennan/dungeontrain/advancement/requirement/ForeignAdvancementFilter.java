@@ -12,7 +12,7 @@ import java.util.TreeMap;
 
 /**
  * Drops the advancement tabs of bundled third-party mods that aren't part of Dungeon Train's
- * progression — BetterNether, BetterEnd, Deeper Darker, Exposure and Exposure: Polaroid (DT has its own camera
+ * progression — BetterNether, BetterEnd, Exposure and Exposure: Polaroid (DT has its own camera
  * advancements on The Enchiridion tab) — from the raw datapack map before vanilla parses it.
  *
  * <p>An advancement absent from the map is never registered, never sent to a client, cannot be
@@ -29,7 +29,7 @@ public final class ForeignAdvancementFilter {
 
     /** Namespaces whose display advancements are removed. */
     public static final Set<String> BLOCKED_NAMESPACES =
-        Set.of("betternether", "betterend", "exposure", "exposure_polaroid", "deeperdarker");
+        Set.of("betternether", "betterend", "exposure", "exposure_polaroid");
 
     /** Paths under this prefix survive — recipe-unlock advancements, not tab entries. */
     public static final String KEPT_PATH_PREFIX = "recipes/";

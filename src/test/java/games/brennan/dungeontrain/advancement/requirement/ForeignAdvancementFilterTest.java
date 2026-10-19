@@ -66,17 +66,6 @@ final class ForeignAdvancementFilterTest {
     }
 
     @Test
-    @DisplayName("Deeper Darker's tab is removed, its recipe unlocks kept")
-    void removesDeeperDarkerTab() {
-        Map<ResourceLocation, JsonElement> out = ForeignAdvancementFilter.removeBlocked(mapOf(
-            "deeperdarker:main/root",
-            "deeperdarker:main/enter_otherside",
-            "deeperdarker:recipes/misc/echo_planks"));
-
-        assertEquals(List.of(rl("deeperdarker:recipes/misc/echo_planks")), List.copyOf(out.keySet()));
-    }
-
-    @Test
     @DisplayName("nothing blocked returns the same instance")
     void nothingBlockedIsIdentity() {
         Map<ResourceLocation, JsonElement> loaded = mapOf("minecraft:story/root", "betterend:recipes/x");
