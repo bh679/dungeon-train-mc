@@ -28435,6 +28435,21 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "sky-fix-2",
+      "version": "0.1396.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Sky fix",
+      "summary": "Sky fix.",
+      "highlights": [],
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
