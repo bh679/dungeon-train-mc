@@ -28241,6 +28241,25 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "respawn-statues-retired",
+      "version": "0.1385.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "balance"
+      ],
+      "title": "Respawn statues retired",
+      "summary": "Statues and obelisks found in the world no longer set your spawn point, and a few unused smithing blocks are gone.",
+      "highlights": [
+        "Spawn points already set at a statue or obelisk reset to world spawn."
+      ],
+      "pr": 2162,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
