@@ -1,0 +1,75 @@
+// The CurseForge-only jar: build/libs/dungeontrain-<v>-curseforge.jar.
+//
+// Identical to the main jar except that META-INF/jarjar/ leaves out Stream Detect and DPI Bypass
+// Detect. CurseForge's scanner flagged a DT release (ticket 397620) and whitelists flagged classes by
+// hash; the likely suspects are those two add-ons' process-name readers. On CurseForge both are required
+// siblings the app installs top-level (listings 1711267 / 1711272), so the nested copies were dead weight
+// there anyway. Modrinth and GitHub keep the main jar with both bundled. mods.toml is unchanged: the two
+// stay `type="optional"`, and compat/StreamDetectBridge + DpiBypassDetectBridge no-op without them.
+//
+// The `curseforgeJarJar` configuration + task are registered in build.gradle (the JarJar task class is
+// only visible there) and filled here from `jarJar`, so a new jarJar line lands in both jars by itself.
+
+def cfExcludedJarJar = ['streamdetect', 'dpibypassdetect']
+
+configurations.named('curseforgeJarJar').configure { cfg ->
+    cfg.withDependencies { deps ->
+        configurations.jarJar.dependencies
+                .findAll { !(it.name in cfExcludedJarJar) }
+                .each { deps.add(it.copy()) }
+    }
+}
+
+def mainJar = tasks.named('jar', Jar)
+
+def curseforgeJar = tasks.register('curseforgeJar', Jar) {
+    group = 'build'
+    description = 'The CurseForge jar: the main jar without the jarJar\'d Stream Detect + DPI Bypass Detect.'
+    archiveClassifier = 'curseforge'
+    dependsOn mainJar
+    from(zipTree(mainJar.flatMap { it.archiveFile })) {
+        exclude 'META-INF/jarjar/**'
+        exclude 'META-INF/MANIFEST.MF'
+    }
+    from(tasks.named('curseforgeJarJar'))
+    manifest.from(mainJar.get().manifest)
+}
+tasks.named('assemble') { dependsOn curseforgeJar }
+
+// Embedded jar names (path minus META-INF/jarjar/) from a mod jar's metadata.json.
+def jarJarPaths = { File jarFile ->
+    def zip = new java.util.zip.ZipFile(jarFile)
+    try {
+        def entry = zip.getEntry('META-INF/jarjar/metadata.json')
+        if (entry == null) throw new GradleException("${jarFile.name} has no META-INF/jarjar/metadata.json")
+        def meta = new groovy.json.JsonSlurper().parse(zip.getInputStream(entry))
+        return meta.jars.collect { it.path as String }.toSet()
+    } finally {
+        zip.close()
+    }
+}
+
+// Fails unless the CurseForge jar embeds exactly the main jar's set minus the two add-ons.
+def checkCurseforgeJar = tasks.register('checkCurseforgeJar') {
+    group = 'verification'
+    description = 'Assert the CurseForge jar drops exactly Stream Detect + DPI Bypass Detect from jarJar.'
+    dependsOn mainJar, curseforgeJar
+    def mainFile = mainJar.flatMap { it.archiveFile }
+    def cfFile = curseforgeJar.flatMap { it.archiveFile }
+    inputs.files(mainFile, cfFile)
+    doLast {
+        def isExcluded = { String path -> cfExcludedJarJar.any { path.startsWith("META-INF/jarjar/${it}-") } }
+        def mainPaths = jarJarPaths(mainFile.get().asFile)
+        def cfPaths = jarJarPaths(cfFile.get().asFile)
+        def dropped = mainPaths.findAll(isExcluded)
+        if (dropped.size() != cfExcludedJarJar.size()) {
+            throw new GradleException("Main jar should embed ${cfExcludedJarJar} once each; found ${dropped}")
+        }
+        def expected = mainPaths - dropped
+        if (cfPaths != expected) {
+            throw new GradleException("CurseForge jar jarJar mismatch.\n  missing: ${expected - cfPaths}\n  extra:   ${cfPaths - expected}")
+        }
+        logger.lifecycle("checkCurseforgeJar: OK (${cfPaths.size()} embedded, dropped ${dropped.sort()})")
+    }
+}
+tasks.named('check') { dependsOn checkCurseforgeJar }

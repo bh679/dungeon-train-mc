@@ -354,6 +354,12 @@ loads (Advancement Plaques needs Iceberg).
   only** + shipped as CurseForge modpack Includes (`curseforge_only: true` in `modpack.config.json`,
   which keeps them out of the `.mrpack`). When the CF app installs the top-level copy, NeoForge's
   JarSelector drops the nested one. No Modrinth listing/relation/`SiblingMod` entry by design.
+  **Exception — the CurseForge jar:** `./gradlew build` makes a second jar,
+  `dungeontrain-<v>-curseforge.jar` (`gradle/curseforge-jar.gradle`), with Stream Detect + DPI Bypass
+  Detect left out of jarJar; `release.yml` uploads it to CurseForge only (`curseforge-files`) and attaches it
+  to the GitHub Release so `reupload-curseforge.yml` can recover with it. CurseForge's scanner flagged DT
+  (ticket 397620) and whitelists classes by hash, so DT's CF files stop carrying those two add-ons' code.
+  Deptest Cases S/T cover it; `checkCurseforgeJar` (in `check`) asserts it drops exactly those two.
   Deptest Cases A (top-level present) and G (nested only) cover both layouts. Keep Trim is hybrid
   only because its Modrinth listing is still in review (it was fully external 0.863.0–0.908.0).
 - **Sibling-mod floors:** AIN/AIS/PMOB/ECP/TE (+ hybrid KT/DB/SFF) each have TWO versions in `gradle.properties`.

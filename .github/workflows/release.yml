@@ -101,6 +101,21 @@ jobs:
 
       - run: ./gradlew build --no-daemon
 
+      # `build` makes two jars (gradle/curseforge-jar.gradle): the main one for GitHub + Modrinth,
+      # and `-curseforge` (no jarJar'd Stream Detect / DPI Bypass Detect) for CurseForge. Name them
+      # exactly so no upload's glob can pick up the wrong one.
+      - name: Resolve release jars
+        id: jars
+        run: |
+          set -euo pipefail
+          MAIN="build/libs/dungeontrain-${RELEASE_TAG#v}.jar"
+          CF="build/libs/dungeontrain-${RELEASE_TAG#v}-curseforge.jar"
+          for f in "$MAIN" "$CF"; do
+            [ -f "$f" ] || { echo "::error::Missing $f after build."; ls -la build/libs; exit 1; }
+          done
+          echo "main=$MAIN" >> "$GITHUB_OUTPUT"
+          echo "curseforge=$CF" >> "$GITHUB_OUTPUT"
+
       # STEP ORDER: every player-facing output (GitHub, wiki, Modrinth, CurseForge upload, both
       # modpack dispatches, update.json, Discord) runs as early as it can. Anything that only
       # WAITS or is invisible to players (relay fingerprints, the CurseForge listing poll) sits
@@ -183,7 +198,11 @@ jobs:
           name: Dungeon Train ${{ env.RELEASE_TAG }}
           tag_name: ${{ env.RELEASE_TAG }}
           body_path: release-notes.md
-          files: build/libs/dungeontrain-*.jar
+          # The -curseforge jar rides along so reupload-curseforge.yml can recover a rejected
+          # CurseForge file with the exact artifact CurseForge got.
+          files: |
+            ${{ steps.jars.outputs.main }}
+            ${{ steps.jars.outputs.curseforge }}
           fail_on_unmatched_files: true
           prerelease: ${{ steps.release_type.outputs.prerelease == 'true' }}
 
@@ -238,7 +257,11 @@ jobs:
           modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
           curseforge-id: ${{ steps.publish_check.outputs.curseforge == 'true' && vars.CURSEFORGE_PROJECT_ID || '' }}
           curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-          files: build/libs/dungeontrain-*.jar
+          # Modrinth gets the main jar; CurseForge the one without the jarJar'd Stream Detect /
+          # DPI Bypass Detect (its scanner flags by class hash; the CF app installs both as
+          # required siblings anyway). Target-specific `<platform>-files` override `files`.
+          files: ${{ steps.jars.outputs.main }}
+          curseforge-files: ${{ steps.jars.outputs.curseforge }}
           name: Dungeon Train ${{ env.RELEASE_TAG }}
           version: ${{ env.RELEASE_TAG }}
           version-type: ${{ steps.release_type.outputs.type }}
@@ -295,7 +318,9 @@ jobs:
           # dungeon-train-mod-verification) are hybrid siblings: also jarJar'd in
           # the DT jar (Modrinth/manual installs), but declared required here so the CurseForge
           # app installs them from their own pages. NeoForge drops the nested copy when the
-          # top-level one is present. (No comments inside the list — check-relations.py parses it.)
+          # top-level one is present. Exception: the CurseForge jar does NOT nest stream-detect or
+          # dpi-bypass-detect at all, so on CurseForge they come only from these declarations.
+          # (No comments inside the list — check-relations.py parses it.)
           curseforge-dependencies: |
             sable(required)
             adventure-item-names(required)
