@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.compat.photo;
 import games.brennan.dungeontrain.block.entity.PhotographFrameBlockEntity;
 import games.brennan.dungeontrain.portal.PortalCorridorMask;
 import games.brennan.dungeontrain.train.CarriageContentsPlacer;
+import games.brennan.dungeontrain.train.CarriageTestSession;
 import games.brennan.dungeontrain.train.ContentsFlip;
 import games.brennan.dungeontrain.train.ContentsFlip.Flip;
 import net.minecraft.core.BlockPos;
@@ -24,6 +25,10 @@ import net.minecraft.world.level.block.state.BlockState;
  * <p>The pool is empty for the first moments of a server and whenever the relay is off. A frame
  * stamped then is left empty and marked pending, and {@link #tickPending} fills it once the pool has
  * a photo — the flag only ever comes from a stamp, so editor frames never resolve on their own.</p>
+ *
+ * <p>The editor's Test the Carriage stamps through here too ({@link CarriageTestSession#isTestStamp}).
+ * There it previews a pool photo without handing it out — a test re-stamps on every reroll — and
+ * with an empty pool it hangs {@link TestFramePhoto} rather than waiting.</p>
  */
 public final class RandomFramePhotos {
 
@@ -45,6 +50,7 @@ public final class RandomFramePhotos {
                                  PortalCorridorMask mask, Flip flip) {
         if (carriageIndex == CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) return;
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
+        boolean test = CarriageTestSession.isTestStamp(carriageIndex);
         for (int x = 0; x < size.getX(); x++) {
             for (int y = 0; y < size.getY(); y++) {
                 for (int z = 0; z < size.getZ(); z++) {
@@ -55,7 +61,9 @@ public final class RandomFramePhotos {
                     if (!frame.hasRandomPlaceholder()) continue;
                     // mapLocal is its own inverse: the authored cell, so the pick follows the frame.
                     BlockPos authored = ContentsFlip.mapLocal(localPos, size, flip);
-                    ItemStack found = SharedPhotos.rollFound(seedFor(seed, carriageIndex, authored));
+                    long cellSeed = seedFor(seed, carriageIndex, authored);
+                    ItemStack found = test ? SharedPhotos.previewFound(cellSeed) : SharedPhotos.rollFound(cellSeed);
+                    if (found.isEmpty() && test) found = TestFramePhoto.create(level.registryAccess());
                     if (found.isEmpty()) {
                         frame.markPendingRandomPhoto();
                     } else {
