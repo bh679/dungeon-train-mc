@@ -4,6 +4,8 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.config.ClientDisplayConfig;
+import games.brennan.dungeontrain.net.DungeonTrainNet;
+import games.brennan.dungeontrain.net.PlayerPausedPacket;
 import games.brennan.dungeontrain.registry.ModMobEffects;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
@@ -169,6 +171,9 @@ public final class AfkAutoPause {
             LOGGER.info("[DungeonTrain] Auto-pause: idle {} s{}", idleMs / 1000L,
                 screenOpen ? " on " + mc.screen.getClass().getSimpleName() : "");
             mc.pauseGame(false);
+            // After the ordinary pause report, so the server counts this pause as an auto-pause.
+            DungeonTrainNet.sendToServer(new PlayerPausedPacket(true, screenOpen
+                ? PlayerPausedPacket.CAUSE_AUTO_SCREEN : PlayerPausedPacket.CAUSE_AUTO_WORLD));
         }
     }
 

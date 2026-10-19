@@ -1,12 +1,14 @@
 package games.brennan.dungeontrain.client;
 
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.mixin.client.BookViewScreenAccessor;
 import games.brennan.dungeontrain.net.ClientInputPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.PlayerPausedPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -15,6 +17,8 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Reports the activity the server cannot see, for
@@ -33,6 +37,12 @@ import javax.annotation.Nullable;
  * go out from other {@code ScreenEvent.Closing} handlers; reporting a tick later let them reach the
  * server first, where they were judged as sent by a paused — so AFK — player. The tick check stays as
  * a fallback for any screen change that bypasses {@code setScreen}.</p>
+ *
+ * <p><b>Books.</b> Screen input proves presence only for so long into a pause (the server's cap,
+ * {@code PlayerActivityTracker#countsAsMenuPresence}), measured from {@link #presenceSinceMs}. On a
+ * book, turning to a page not yet seen in this opening restarts that measure, so a long read stays
+ * present one page at a time. Only unseen pages count, and only for {@link #BOOK_PRESENCE_MAX_MS}
+ * into the opening, so flipping back and forth or a macro on one book cannot hold presence forever.</p>
  *
  * <p>Everything here is edge- or rate-limited: the pause packet only on a state change, the
  * activity packets at most once a second. The server's clocks only care whether something happened
@@ -58,6 +68,20 @@ public final class ClientActivityReporter {
      */
     private static long pausedSinceMs = 0L;
     private static byte pauseKind = ClientInputPacket.PAUSE_NONE;
+
+    /**
+     * What screen input's proof of presence is measured from: the start of the pause, moved on each
+     * time a book shows a page not yet seen in this opening. See the class note.
+     */
+    private static long presenceSinceMs = 0L;
+
+    /** New book pages stop renewing presence this long (60 min) into one opening. */
+    static final long BOOK_PRESENCE_MAX_MS = 3_600_000L;
+
+    /** The book whose pages {@link #seenPages} holds; null when no book is open. */
+    @Nullable
+    private static BookViewScreen trackedBook = null;
+    private static final Set<Integer> seenPages = new HashSet<>();
 
     /**
      * The screen an {@code Opening} event is replacing the current one with, kept for the
@@ -90,6 +114,8 @@ public final class ClientActivityReporter {
             reportedPaused = false;
             pauseKind = ClientInputPacket.PAUSE_NONE;
             pendingOpening = null;
+            trackedBook = null;
+            seenPages.clear();
             lastCursorX = Double.NaN;
             lastCursorY = Double.NaN;
             clientTick = 0;
@@ -102,6 +128,7 @@ public final class ClientActivityReporter {
         // Fallback only: the screen events below normally report the change before anything else
         // the screen sends, and this finds nothing left to say.
         reportPaused(mc.screen);
+        trackBookPage(mc.screen);
 
         // Only meaningful with a screen open. Without one the camera turns with the mouse and the
         // server samples that directly — no need to say anything.
@@ -168,6 +195,7 @@ public final class ClientActivityReporter {
         reportedPaused = paused;
         if (paused) {
             pausedSinceMs = System.currentTimeMillis();
+            presenceSinceMs = pausedSinceMs;
             pauseKind = screen instanceof PauseScreen
                 ? ClientInputPacket.PAUSE_GAME_MENU : ClientInputPacket.PAUSE_SCREEN;
         } else {
@@ -194,8 +222,43 @@ public final class ClientActivityReporter {
         if (!due(lastInputReportTick)) return;
         lastInputReportTick = clientTick;
         DungeonTrainNet.sendToServer(reportedPaused
-            ? new ClientInputPacket(true, pauseKind, pausedForMs(System.currentTimeMillis(), pausedSinceMs))
+            ? new ClientInputPacket(true, pauseKind, pausedForMs(System.currentTimeMillis(), presenceSinceMs))
             : ClientInputPacket.unpaused(true));
+    }
+
+    /**
+     * Note the page an open book shows. The first page of an opening is only remembered; a page not
+     * yet seen renews presence ({@link #renewedPresenceSince}) and tells the server at once, past the
+     * cooldown: the turn's own click went out a moment earlier, measured before the renewal.
+     */
+    private static void trackBookPage(@Nullable Screen screen) {
+        if (!(screen instanceof BookViewScreen book)) {
+            trackedBook = null;
+            seenPages.clear();
+            return;
+        }
+        int page = ((BookViewScreenAccessor) (Object) book).dungeontrain$getCurrentPage();
+        if (book != trackedBook) {
+            trackedBook = book;
+            seenPages.clear();
+            seenPages.add(page);
+            return;
+        }
+        if (!seenPages.add(page) || !reportedPaused || pauseKind != ClientInputPacket.PAUSE_SCREEN) return;
+        long now = System.currentTimeMillis();
+        long renewed = renewedPresenceSince(presenceSinceMs, pausedSinceMs, now);
+        if (renewed == presenceSinceMs) return;
+        presenceSinceMs = renewed;
+        lastInputReportTick = clientTick;
+        DungeonTrainNet.sendToServer(new ClientInputPacket(true, pauseKind, pausedForMs(now, presenceSinceMs)));
+    }
+
+    /**
+     * Where presence is measured from after a book shows a new page at {@code nowMs}: now, unless the
+     * opening began {@link #BOOK_PRESENCE_MAX_MS} or more ago, when it stays where it was.
+     */
+    static long renewedPresenceSince(long presenceSinceMs, long pausedSinceMs, long nowMs) {
+        return nowMs - pausedSinceMs < BOOK_PRESENCE_MAX_MS ? nowMs : presenceSinceMs;
     }
 
     /**

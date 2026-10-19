@@ -1,5 +1,7 @@
 package games.brennan.dungeontrain.discord;
 
+import games.brennan.dungeontrain.event.PlayerActivityTracker.Reason;
+import games.brennan.dungeontrain.player.AfkLifeStats;
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -103,5 +105,20 @@ class RunSummaryReporterTest {
         assertFalse(unknown.has("lifeSec"));
         // the 8-arg overload every existing caller uses sends no life clock
         assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 900L, 12, 2400, NO_POS, false, "0.1197.1").has("lifeSec"));
+    }
+
+    @Test
+    void afkStatsRideAlongWhenGivenAndAreOmittedWhenNot() {
+        AfkLifeStats stats = new AfkLifeStats();
+        stats.addStopped(Reason.MOUSE_IDLE, 200L, true);
+        stats.addAutoPause(false);
+        JsonObject with = RunSummaryReporter.buildPayload(UUID, "x", 900L, 12, 2400, NO_POS, false, "0.1197.1",
+            1234L, stats.toJson());
+        JsonObject afk = with.getAsJsonObject("afk");
+        assertEquals(10L, afk.getAsJsonObject("stoppedSec").get("mouseIdle").getAsLong());
+        assertEquals(10L, afk.get("containerSec").getAsLong());
+        assertEquals(1, afk.getAsJsonObject("autoPauses").get("world").getAsInt());
+        assertFalse(RunSummaryReporter.buildPayload(UUID, "x", 900L, 12, 2400, NO_POS, false, "0.1197.1", 1234L)
+            .has("afk"));
     }
 }

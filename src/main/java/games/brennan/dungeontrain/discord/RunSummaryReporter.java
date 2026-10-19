@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DeathStatsPacket;
 import games.brennan.dungeontrain.net.relay.RelayOutbox;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.stats.Stats;
 import org.slf4j.Logger;
@@ -50,7 +51,8 @@ public final class RunSummaryReporter {
             int carriage = packet.cartsTravelled();
             int distanceBlocks = (int) Math.round(packet.distanceBlocks());
             JsonObject payload = buildPayload(uuid, name, runSec, carriage, distanceBlocks, pos, freePlay,
-                    WorldJoinReport.modVersion(), lifeSec(player));
+                    WorldJoinReport.modVersion(), lifeSec(player),
+                    player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).toJson());
             post(uuid, payload.toString());
         } catch (Throwable t) {
             LOGGER.warn("[DungeonTrain] run-summary relay report failed: {}", t.toString());
@@ -92,6 +94,17 @@ public final class RunSummaryReporter {
      */
     static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
                                    RunPosition pos, boolean freePlay, String modVersion, long lifeSec) {
+        return buildPayload(uuid, player, runSec, carriage, distanceBlocks, pos, freePlay, modVersion, lifeSec, null);
+    }
+
+    /**
+     * As above, with how the AFK rules treated this life ({@code AfkLifeStats#toJson}): seconds the
+     * train clock stood stopped per reason, how often, auto-pauses and refused advancements. It is
+     * what tells a slow, reading player apart from an absent one. Omitted when null.
+     */
+    static JsonObject buildPayload(String uuid, String player, long runSec, int carriage, int distanceBlocks,
+                                   RunPosition pos, boolean freePlay, String modVersion, long lifeSec,
+                                   JsonObject afk) {
         JsonObject body = new JsonObject();
         body.addProperty("uuid", uuid);
         if (player != null && !player.isEmpty()) {
@@ -109,6 +122,9 @@ public final class RunSummaryReporter {
         addModVersion(body, modVersion);
         if (lifeSec >= 0L) {
             body.addProperty("lifeSec", lifeSec);
+        }
+        if (afk != null) {
+            body.add("afk", afk);
         }
         return body;
     }

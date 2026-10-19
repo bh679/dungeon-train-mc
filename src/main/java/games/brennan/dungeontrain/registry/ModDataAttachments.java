@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.registry;
 
 import com.mojang.serialization.Codec;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.player.AfkLifeStats;
 import games.brennan.dungeontrain.player.PlayerBiomeProgress;
 import games.brennan.dungeontrain.player.PlayerRunState;
 import games.brennan.dungeontrain.worldgen.SampledCells;
@@ -54,6 +55,18 @@ public final class ModDataAttachments {
             // between AttachmentType.builder(Supplier) and builder(Function<IAttachmentHolder, T>).
             () -> AttachmentType.builder(() -> new PlayerBiomeProgress())
                 .serialize(PlayerBiomeProgress.CODEC)
+                .build()
+        );
+
+    /**
+     * Per-life record of how the AFK rules treated the player (clock stops by reason, auto-pauses,
+     * refused advancements), sent with the run summary at death. Persisted so a life spanning a quit
+     * keeps its counts; not {@code copyOnDeath}, and cleared on respawn by {@code AchievementEvents}.
+     */
+    public static final Supplier<AttachmentType<AfkLifeStats>> AFK_LIFE_STATS =
+        TYPES.register("afk_life_stats",
+            () -> AttachmentType.builder(() -> new AfkLifeStats())
+                .serialize(AfkLifeStats.CODEC)
                 .build()
         );
 
