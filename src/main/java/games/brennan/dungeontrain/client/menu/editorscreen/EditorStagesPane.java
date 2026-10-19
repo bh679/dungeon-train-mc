@@ -275,14 +275,31 @@ final class EditorStagesPane {
         return stage == null ? null : caption(row, stage) + " · " + EditorStagesPage.levelText(stage);
     }
 
-    /** The stage's most-used block as a small item icon — its usage list is ordered, so that is entry 0. */
+    /**
+     * The stage's icon, small enough to sit in a row: a family member's planks (what tells the wood
+     * stages apart — their most-used block is the same window glass), else the stage's most-used
+     * block (its usage list is ordered, so that is entry 0).
+     */
     private static void drawTopBlock(GuiGraphics g, EditorRosterPacket.StageEntry stage, int x, int y) {
-        if (stage == null || stage.blocks().isEmpty()) return;
+        String blockId = iconBlock(stage);
+        if (blockId == null) return;
         g.pose().pushPose();
         g.pose().translate(x, y, 0);
         g.pose().scale(ICON_SCALE, ICON_SCALE, 1f);
-        g.renderItem(games.brennan.dungeontrain.client.menu.MenuBlockIcons.iconStackFor(stage.blocks().get(0).blockId()), 0, 0);
+        g.renderItem(games.brennan.dungeontrain.client.menu.MenuBlockIcons.iconStackFor(blockId), 0, 0);
         g.pose().popPose();
+    }
+
+    /** The palette slot a family member's icon shows. */
+    static final String FAMILY_ICON_SLOT = "stage_planks";
+
+    static String iconBlock(EditorRosterPacket.StageEntry stage) {
+        if (stage == null) return null;
+        if (!stage.group().isEmpty()) {
+            var planks = stage.palette().entry(FAMILY_ICON_SLOT);
+            if (planks != null && !planks.blockId().isEmpty()) return planks.blockId();
+        }
+        return stage.blocks().isEmpty() ? null : stage.blocks().get(0).blockId();
     }
 
     /** No roster yet is "loading"; a roster with no stages is not. */
@@ -320,8 +337,9 @@ final class EditorStagesPane {
     }
 
     /**
-     * The open family's members under its row or tile (above it when there is more room there),
-     * each {@code icon · name · band}, the shown one tinted. Drawn after every pane so it covers them.
+     * The open family's members in a column beside its row or tile (right of it, or left when the
+     * screen has no room there), as tall as the screen allows, each {@code icon · name · band}, the
+     * shown one tinted. Drawn after every pane so it covers them.
      */
     void renderDropdown(GuiGraphics g, Font font, EditorRosterIndex index, int screenW, int screenH,
                         int mouseX, int mouseY) {
@@ -333,15 +351,15 @@ final class EditorStagesPane {
             if (m != null) widest = Math.max(widest, font.width(m.name()) + font.width(EditorStagesPage.levelText(m)));
         }
         int w = Math.min(screenW - 4, Math.max(Math.max(DROPDOWN_MIN_W, dropdownAnchor.w()), ICON_W + widest + 16));
-        int x = Math.max(2, Math.min(dropdownAnchor.x(), screenW - 2 - w));
-        int below = screenH - 2 - dropdownAnchor.bottom();
-        int above = dropdownAnchor.y() - 2;
+        int right = dropdownAnchor.right() + 2;
+        int x = right + w <= screenW - 2 ? right : dropdownAnchor.x() - 2 - w;
+        x = Math.max(2, Math.min(x, screenW - 2 - w));
         int n = dropdownMembers.size();
-        boolean down = below >= Math.min(n, 4) * ROW_H || below >= above;
-        dropdownVisible = Math.max(1, Math.min(n, (down ? below : above) / ROW_H));
+        dropdownVisible = Math.max(1, Math.min(n, (screenH - 4) / ROW_H));
         dropdownScroll = clamp(dropdownScroll, n, dropdownVisible);
         int h = dropdownVisible * ROW_H;
-        int y = down ? dropdownAnchor.bottom() : dropdownAnchor.y() - h;
+        // Level with the family's row, slid up as far as it must to fit — the whole height when it is long.
+        int y = Math.max(2, Math.min(dropdownAnchor.y(), screenH - 2 - h));
         dropdownRect = new InventoryEditorLayout.Rect(x, y, w, h);
         g.pose().pushPose();
         // Above the item icons and tile models of the panes underneath.
