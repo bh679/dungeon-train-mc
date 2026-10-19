@@ -28450,6 +28450,28 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "train-wind",
+      "version": "0.1397.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train",
+        "world"
+      ],
+      "title": "The wind picks up",
+      "summary": "Further down the line the wind starts to blow. Light at first, then stronger and gustier the longer you ride. Stay out on the roof and it will push you around, along with anything else out in the open. Duck inside or behind a wall to get out of it.",
+      "highlights": [
+        "Watch the streaks in the air: the wind shows itself just before it hits.",
+        "Arrows, items and lighter creatures go first.",
+        "New Wind volume slider in the sound options."
+      ],
+      "pr": 2173,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
