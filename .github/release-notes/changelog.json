@@ -27933,6 +27933,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "upside-down-reassembly-chests",
+      "version": "0.1370.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "No more stray chests out of place",
+      "summary": "In one of the stranger stretches of the journey, chests and mine carts no longer turn up standing the wrong way round or floating on their own.",
+      "highlights": [],
+      "pr": 2138,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
