@@ -27900,6 +27900,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "flower-fix",
+      "version": "0.1368.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Flower fix",
+      "summary": "Flower fix.",
+      "highlights": [],
+      "pr": 2132,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
