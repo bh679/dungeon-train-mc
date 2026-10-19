@@ -5,6 +5,10 @@
     { "id": "betterend:resonance", "required": false },
     { "id": "betterend:end_veil", "required": false },
     { "id": "betternether:obsidian_breaker", "required": false },
-    { "id": "betternether:ruby_fire", "required": false }
+    { "id": "betternether:ruby_fire", "required": false },
+    { "id": "deeperdarker:catalysis", "required": false },
+    { "id": "deeperdarker:reverberation", "required": false },
+    { "id": "deeperdarker:sculk_smite", "required": false },
+    { "id": "deeperdarker:volume", "required": false }
   ]
 }

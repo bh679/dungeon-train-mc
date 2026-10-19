@@ -188,7 +188,8 @@ final class DisabledModContentTest {
 
     /** Every non-vanilla enchantment in the jars DT builds against (BetterNether + BetterEnd). */
     private static final List<String> MOD_ENCHANTMENTS = List.of(
-        "betterend:resonance", "betterend:end_veil", "betternether:obsidian_breaker", "betternether:ruby_fire");
+        "betterend:resonance", "betterend:end_veil", "betternether:obsidian_breaker", "betternether:ruby_fire",
+        "deeperdarker:catalysis", "deeperdarker:reverberation", "deeperdarker:sculk_smite", "deeperdarker:volume");
 
     @Test
     @DisplayName("every mod enchantment is disabled; vanilla ones are kept")

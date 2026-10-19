@@ -308,9 +308,12 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                         boolean otherside = NetherCoreStamp.isOthersideColumn(bandCtx, worldX, worldZ);
                         colChanged = recolorCrossfadeColumn(chunk, dx, dz, worldX, worldZ, minY, worldTop, n, seed,
                                 otherside ? CrossfadeSkin.OTHERSIDE : CrossfadeSkin.NETHER);
-                        if (!otherside && coreGeom != null && NetherRockCover.isCoreWall(cycle::isNetherCore, wx)) {
-                            colChanged |= coverCoreFacingFace(chunk, dx, dz, worldX, worldZ, seed, cycle, coreGeom,
-                                    endBandActive);
+                        if (coreGeom != null && NetherRockCover.isCoreWall(cycle::isNetherCore, wx)) {
+                            colChanged |= otherside
+                                    ? coverOthersideFacingFace(chunk, dx, dz, worldX, worldZ, seed, cycle,
+                                            endBandActive, bandCtx, bedY, minY, worldTop)
+                                    : coverCoreFacingFace(chunk, dx, dz, worldX, worldZ, seed, cycle, coreGeom,
+                                            endBandActive);
                         }
                     } else {
                         colChanged = recolorShoreSkinColumn(chunk, dx, dz, worldX, worldZ, bedY, railY, zMin, zMax, tg,
@@ -919,6 +922,51 @@ public class NetherTransitionFeature extends Feature<NoneFeatureConfiguration> {
                 w.set(dx, y, dz, OBSIDIAN);
                 changed = true;
             }
+        }
+        return changed;
+    }
+
+    /**
+     * {@link #coverCoreFacingFace} for a Deeper Dark core: overworld rock facing the copied Otherside slab becomes
+     * <b>sculk stone</b>, and the rock one block behind it <b>deepslate</b>, so the wall into the Deeper Dark reads
+     * stone → deepslate → sculk stone, as the Nether's reads stone → obsidian → netherrack. Every slab row is core
+     * terrain (bedrock floor to bedrock roof), so a neighbouring Otherside core column is enough — no neighbour
+     * reads, the same seed-pure test the Nether face uses.
+     */
+    private boolean coverOthersideFacingFace(ChunkAccess chunk, int dx, int dz, int worldX, int worldZ, long seed,
+                                             WorldGenCycle cycle, boolean endBandActive, NetherBandContext bandCtx,
+                                             int bedY, int minY, int worldTop) {
+        boolean face = false;
+        boolean behind = false;
+        for (int[] side : SIDES) {
+            int nx = worldX + side[0];
+            int nz = worldZ + side[1];
+            int nwx = NetherMountainTerrain.wavyX(seed, nx, nz);
+            if (endBandActive && cycle.endMiddleRamp(nwx) > 0.0) continue;
+            if (cycle.isNetherCore(nwx)) {
+                face |= NetherCoreStamp.isOthersideColumn(bandCtx, nx, nz);
+                continue;
+            }
+            int nx2 = worldX + 2 * side[0];
+            int nz2 = worldZ + 2 * side[1];
+            int nwx2 = NetherMountainTerrain.wavyX(seed, nx2, nz2);
+            if (!cycle.isNetherCore(nwx2)) continue;
+            if (endBandActive && cycle.endMiddleRamp(nwx2) > 0.0) continue;
+            behind |= NetherCoreStamp.isOthersideColumn(bandCtx, nx2, nz2);
+        }
+        if (!face && !behind) return false;
+        ColumnWriter w = new ColumnWriter(chunk);
+        boolean changed = false;
+        int lo = Math.max(minY, OthersideCore.slabBottom(bedY));
+        int hi = Math.min(worldTop, OthersideCore.slabTop(bedY));
+        BlockState sculkStone = OthersideCore.sculkStone();
+        for (int y = lo; y <= hi; y++) {
+            BlockState cur = w.state(dx, y, dz);
+            if (!NetherRockCover.isOverworldRock(cur)) continue;
+            BlockState target = face ? sculkStone : DEEPSLATE;
+            if (cur.is(target.getBlock())) continue;
+            w.set(dx, y, dz, target);
+            changed = true;
         }
         return changed;
     }

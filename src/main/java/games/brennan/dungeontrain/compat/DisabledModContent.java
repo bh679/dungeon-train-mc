@@ -79,6 +79,8 @@ public final class DisabledModContent {
      * creeper tape drops ({@code vista:inject/*}), which arrive through the same loot tables. Mirrors and the
      * music disc are left as Vista ships them; Picture Tape is too, except that it can't be crafted
      * ({@link #DISABLED_RECIPES}).</p>
+     *
+     * <p>And Deeper Darker's Sonorous Staff and Sculk Transmitters (plain and all sixteen dyed): disabled for now.</p>
      */
     static final Set<String> HIDDEN_ITEMS = Set.of(
         "exposure:camera",
@@ -97,7 +99,25 @@ public final class DisabledModContent {
         "vista:viewfinder",
         "vista:wave_gate",
         "vista:cassette",
-        "vista:hollow_cassette");
+        "vista:hollow_cassette",
+        "deeperdarker:sonorous_staff",
+        "deeperdarker:sculk_transmitter",
+        "deeperdarker:white_sculk_transmitter",
+        "deeperdarker:orange_sculk_transmitter",
+        "deeperdarker:magenta_sculk_transmitter",
+        "deeperdarker:light_blue_sculk_transmitter",
+        "deeperdarker:yellow_sculk_transmitter",
+        "deeperdarker:lime_sculk_transmitter",
+        "deeperdarker:pink_sculk_transmitter",
+        "deeperdarker:gray_sculk_transmitter",
+        "deeperdarker:light_gray_sculk_transmitter",
+        "deeperdarker:cyan_sculk_transmitter",
+        "deeperdarker:purple_sculk_transmitter",
+        "deeperdarker:blue_sculk_transmitter",
+        "deeperdarker:brown_sculk_transmitter",
+        "deeperdarker:green_sculk_transmitter",
+        "deeperdarker:red_sculk_transmitter",
+        "deeperdarker:black_sculk_transmitter");
 
     static final String INSTANT_CAMERA = "exposure_polaroid:instant_camera";
 
