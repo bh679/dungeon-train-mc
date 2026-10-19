@@ -111,7 +111,7 @@ public final class WindServer {
         long startX = override != null ? override : windStartX(overworld);
         state = new State(profile, seed, startX, state.forcedOff());
         broadcast(server);
-        String summary = "wind: " + profile.stages().size() + " stages, start X "
+        String summary = "wind: " + (profile.curves() == null ? "no curves" : "curves loaded") + ", start X "
                 + (startX == Long.MIN_VALUE ? "none (no Upside-down band)" : Long.toString(startX))
                 + (override != null ? " (debug override)" : "")
                 + (profile.enabled() ? "" : ", profile disabled");

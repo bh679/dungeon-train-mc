@@ -60,6 +60,66 @@ final class WindFieldTest {
     }
 
     @Test
+    @DisplayName("strength keeps rising with no upper limit")
+    void strengthUnbounded() throws IOException {
+        WindProfile p = shipped();
+        double[] ds = {1e3, 1e4, 1e5, 1e6, 1e7, 1e8};
+        for (int i = 1; i < ds.length; i++) {
+            assertTrue(p.stageAt(ds[i]).base() > p.stageAt(ds[i - 1]).base(), "steady at " + ds[i]);
+            assertTrue(p.stageAt(ds[i]).gustStrength() > p.stageAt(ds[i - 1]).gustStrength(), "gust at " + ds[i]);
+        }
+        // Logarithmic: each 10x of distance adds the same amount.
+        double step1 = p.stageAt(1e6).base() - p.stageAt(1e5).base();
+        double step2 = p.stageAt(1e7).base() - p.stageAt(1e6).base();
+        assertEquals(step1, step2, step1 * 0.02);
+    }
+
+    @Test
+    @DisplayName("gust frequency and length close in on their caps forever without reaching them")
+    void gustCapsApproached() throws IOException {
+        WindProfile p = shipped();
+        double lastRate = -1;
+        double lastLen = -1;
+        for (double d = 0; d <= 4e6; d += 50000) {
+            WindProfile.Stage s = p.stageAt(d);
+            assertTrue(s.gustsPerMin() >= lastRate, "rate never drops at " + d);
+            assertTrue(s.gustTicks() >= lastLen, "length never drops at " + d);
+            // Never past the cap (far out the approach rounds to the cap itself in double precision).
+            assertTrue(s.gustsPerMin() <= 60.0, "at most 60/min at " + d);
+            assertTrue(s.gustTicks() <= 5.0 * 20, "at most 5 s at " + d);
+            lastRate = s.gustsPerMin();
+            lastLen = s.gustTicks();
+        }
+        assertTrue(p.stageAt(1e5).gustsPerMin() < 60.0 && p.stageAt(1e5).gustTicks() < 100.0, "still short of the caps");
+        assertTrue(p.stageAt(4e6).gustsPerMin() > 59.0, "near the cap far out");
+        assertTrue(p.stageAt(4e6).gustTicks() > 4.99 * 20, "near the cap far out");
+    }
+
+    @Test
+    @DisplayName("each gust lasts between 0.1 s and the longest allowed there")
+    void gustLengthsWithinRange() {
+        WindProfile p = new WindProfile(true, 90, 1, 1, 20, WindProfile.Multipliers.UNIT, new WindProfile.Curves(
+                WindCurve.constant(0), WindCurve.constant(0), WindCurve.constant(1), WindCurve.constant(0.05),
+                WindCurve.constant(3.0), WindCurve.constant(0), WindCurve.constant(0), WindCurve.constant(60)));
+        int run = 0;
+        int shortest = Integer.MAX_VALUE;
+        int longest = 0;
+        for (long t = 0; t < 20L * 60 * 300; t++) {
+            if (!WindField.sample(p, 10, t, SEED).isCalm()) {
+                run++;
+            } else if (run > 0) {
+                shortest = Math.min(shortest, run);
+                longest = Math.max(longest, run);
+                run = 0;
+            }
+        }
+        assertTrue(shortest <= 6, "some gusts are short: " + shortest);
+        // Two gusts landing back to back read as one run, so allow up to two maxima.
+        assertTrue(longest <= 2 * 3 * 20, "none past the max beyond a merge: " + longest);
+        assertTrue(longest >= 40, "some gusts run long: " + longest);
+    }
+
+    @Test
     @DisplayName("same inputs, same wind")
     void deterministic() throws IOException {
         WindProfile p = shipped();
@@ -73,8 +133,9 @@ final class WindFieldTest {
     @Test
     @DisplayName("gusts arrive at about the configured rate")
     void gustRate() {
-        WindProfile.Stage s = new WindProfile.Stage(0, 0.0, 0.0, 6.0, 0.05, 20, 0, 0, 60);
-        WindProfile p = new WindProfile(true, 90, 1, 1, 20, WindProfile.Multipliers.UNIT, java.util.List.of(s));
+        WindProfile p = new WindProfile(true, 90, 1, 1, 20, WindProfile.Multipliers.UNIT, new WindProfile.Curves(
+                WindCurve.constant(0), WindCurve.constant(0), WindCurve.constant(6), WindCurve.constant(0.05),
+                WindCurve.constant(1.0), WindCurve.constant(0), WindCurve.constant(0), WindCurve.constant(60)));
         int onsets = 0;
         boolean was = false;
         long ticks = 20L * 60 * 200; // 200 minutes

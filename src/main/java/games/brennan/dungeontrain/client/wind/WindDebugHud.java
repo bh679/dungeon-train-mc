@@ -111,9 +111,11 @@ public final class WindDebugHud {
         WindProfile.Stage s = f.stage();
         if (s != null) {
             out.add(new Line(String.format(Locale.ROOT,
-                    "Stage: steady %.4f ±%.0f%%  gusts %.1f/min peak %.3f (%.0ft) veer ±%.0f°",
-                    s.base(), s.flutter() * 100, s.gustsPerMin(), s.gustStrength(), s.gustTicks(), s.gustVeer()),
+                    "Here: steady %.4f ±%.0f%%  gusts %.1f/min (cap 60), 0.1-%.1fs long (cap 5)",
+                    s.base(), s.flutter() * 100, s.gustsPerMin(), s.gustTicks() / 20.0),
                     COLOR_IDLE));
+            out.add(new Line(String.format(Locale.ROOT, "      gust peak %.3f  veer ±%.0f°",
+                    s.gustStrength(), s.gustVeer()), COLOR_IDLE));
             out.add(new Line(String.format(Locale.ROOT, "       wander ±%.0f° over ~%.0fs",
                     s.wander(), s.wanderSeconds()), COLOR_IDLE));
         }

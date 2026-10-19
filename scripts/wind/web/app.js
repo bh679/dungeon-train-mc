@@ -1,16 +1,16 @@
-import { sample, sortedStages, checkGolden } from "./wind.js";
+import { sample, stageAt, curveAt, checkGolden, CURVE_NAMES, MAX_GUSTS_PER_MIN } from "./wind.js";
 
-const STAGE_COLS = [
-  ["at", "at (blocks)", 500],
-  ["base", "steady", 0.001],
-  ["flutter", "flutter ±", 0.05],
-  ["gustsPerMin", "gusts/min", 0.5],
-  ["gustStrength", "gust peak", 0.005],
-  ["gustTicks", "gust ticks", 5],
-  ["gustVeer", "gust veer°", 5],
-  ["wander", "wander ±°", 5],
-  ["wanderSeconds", "wander s", 5],
-];
+const CURVE_LABELS = {
+  base: "steady push",
+  flutter: "flutter ± (fraction)",
+  gustsPerMin: "gusts / min",
+  gustStrength: "gust peak",
+  gustSeconds: "longest gust (s)",
+  gustVeer: "gust veer °",
+  wander: "wander ± °",
+  wanderSeconds: "wander period (s)",
+};
+const CAPS = { gustsPerMin: MAX_GUSTS_PER_MIN };
 const MULTS = ["player", "mob", "item", "projectile", "xp", "other"];
 const BAND_COLORS = ["#8fb87a", "#c96a4a", "#6a9a5b", "#b7a4d8", "#d9c76a", "#7fb0c9", "#c99a6a", "#9a9a9a"];
 
@@ -22,6 +22,7 @@ let selected = 20000;
 const $ = (id) => document.getElementById(id);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const seed = () => (parseInt($("seed").value, 10) | 0);
+const range = () => Math.max(10000, parseFloat($("range").value) || 300000);
 
 // ---------- data ----------
 async function getJson(url) {
@@ -68,9 +69,8 @@ function withProfile(patch) {
   redraw();
 }
 
-function withStage(i, key, value) {
-  const stages = profile.stages.map((s, j) => (j === i ? { ...s, [key]: value } : s));
-  withProfile({ stages });
+function withCurve(name, patch) {
+  withProfile({ curves: { ...profile.curves, [name]: { ...profile.curves[name], ...patch } } });
 }
 
 // ---------- form ----------
@@ -79,48 +79,46 @@ function buildForm() {
   for (const k of ["headingDeg", "sneakFactor", "airFactor", "visualLeadTicks"]) $(k).value = profile[k] ?? 1;
   $("mults").innerHTML = MULTS.map((m) =>
     `<label>${m} × <input type="number" step="0.1" data-mult="${m}" value="${profile.multipliers[m]}"></label>`).join("");
-  buildStages();
+  buildCurves();
+  $("dRange").max = range();
   $("d").value = selected;
   $("dRange").value = selected;
 }
 
-function buildStages() {
-  const head = `<tr>${STAGE_COLS.map(([, label]) => `<th>${label}</th>`).join("")}<th></th></tr>`;
-  const rows = profile.stages.map((s, i) => `<tr data-i="${i}">${STAGE_COLS.map(([k, , step]) =>
-    `<td><input type="number" step="${step}" data-i="${i}" data-k="${k}" value="${s[k]}"></td>`).join("")}
-    <td><button data-del="${i}" title="remove">✕</button></td></tr>`).join("");
-  $("stages").innerHTML = head + rows;
-  markSelectedStage();
+function num(name, key, value, step) {
+  return `<label>${key} <input type="number" step="${step}" data-c="${name}" data-k="${key}" value="${value}"></label>`;
 }
 
-function markSelectedStage() {
-  const st = sortedStages(profile);
-  let idx = 0;
-  st.forEach((s, i) => { if (s.at <= selected) idx = i; });
-  const atSel = st[idx]?.at;
-  document.querySelectorAll("#stages tr[data-i]").forEach((tr) => {
-    const s = profile.stages[+tr.dataset.i];
-    tr.classList.toggle("sel", s && s.at === atSel);
-  });
+function buildCurves() {
+  const rows = CURVE_NAMES.map((name) => {
+    const c = profile.curves[name];
+    const kind = `<select data-c="${name}" data-kind><option value="log"${c.kind === "log" ? " selected" : ""}>log</option>` +
+      `<option value="approach"${c.kind === "approach" ? " selected" : ""}>approach</option></select>`;
+    const params = c.kind === "log"
+      ? num(name, "scale", c.scale, 0.0005) + num(name, "ref", c.ref, 1000)
+      : num(name, "start", c.start, 0.1) + num(name, "max", c.max, 0.1) + num(name, "halfLife", c.halfLife, 5000);
+    const cap = CAPS[name] ? `<span class="hint"> (hard cap ${CAPS[name]})</span>` : "";
+    return `<tr><th>${CURVE_LABELS[name]}${cap}</th><td>${kind}</td><td class="row">${params}</td></tr>`;
+  }).join("");
+  $("curves").innerHTML = rows;
 }
 
-$("stages").addEventListener("input", (e) => {
+$("curves").addEventListener("input", (e) => {
   const t = e.target;
-  if (!t.dataset.k) return;
+  if (!t.dataset.c || !t.dataset.k) return;
   const v = parseFloat(t.value);
-  if (Number.isFinite(v)) withStage(+t.dataset.i, t.dataset.k, v);
+  if (Number.isFinite(v)) withCurve(t.dataset.c, { [t.dataset.k]: v });
 });
-$("stages").addEventListener("click", (e) => {
-  const del = e.target.dataset?.del;
-  if (del === undefined || profile.stages.length <= 1) return;
-  withProfile({ stages: profile.stages.filter((_, i) => i !== +del) });
-  buildStages();
-});
-$("addStage").addEventListener("click", () => {
-  const st = sortedStages(profile);
-  const last = st[st.length - 1];
-  withProfile({ stages: [...profile.stages, { ...last, at: last.at + 20000 }] });
-  buildStages();
+$("curves").addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.dataset.kind === undefined) return;
+  const name = t.dataset.c;
+  const now = curveAt(profile.curves[name], range() / 2);
+  const next = t.value === "log"
+    ? { kind: "log", scale: now > 0 ? now / Math.log(1 + range() / 2 / 10000) : 0.01, ref: 10000 }
+    : { kind: "approach", start: 0, max: now * 2 || 1, halfLife: 100000 };
+  withProfile({ curves: { ...profile.curves, [name]: next } });
+  buildCurves();
 });
 $("mults").addEventListener("input", (e) => {
   const m = e.target.dataset.mult;
@@ -134,10 +132,13 @@ for (const k of ["headingDeg", "sneakFactor", "airFactor", "visualLeadTicks"]) {
     if (Number.isFinite(v)) withProfile({ [k]: v });
   });
 }
-const pick = (v) => { selected = Math.max(0, v); $("d").value = Math.round(selected); $("dRange").value = selected; markSelectedStage(); redraw(); };
+const pick = (v) => { selected = Math.max(0, v); $("d").value = Math.round(selected); $("dRange").value = selected; redraw(); };
 $("d").addEventListener("input", (e) => pick(parseFloat(e.target.value) || 0));
 $("dRange").addEventListener("input", (e) => pick(parseFloat(e.target.value)));
-for (const id of ["win", "ride", "speed", "seed"]) $(id).addEventListener("input", redraw);
+for (const id of ["win", "ride", "speed", "seed", "range"]) $(id).addEventListener("input", () => {
+  $("dRange").max = range();
+  redraw();
+});
 $("reroll").addEventListener("click", () => { $("seed").value = String((Math.random() * 2 ** 31) | 0); redraw(); });
 
 $("save").addEventListener("click", async () => {
@@ -190,28 +191,46 @@ function path(g, xs, ys, color, width = 1.5) {
   g.stroke();
 }
 
-function drawLine() {
-  const { g, w, h } = setup($("line"));
-  const st = sortedStages(profile);
-  const maxD = Math.max(selected * 1.1, st[st.length - 1].at * 1.25, 20000);
-  const strip = 22;
-  const box = { x: 54, y: strip + 10, w: w - 54 - 46, h: h - strip - 34 };
-  const N = 400;
-  const ds = [], base = [], lo = [], hi = [], peak = [], rate = [], wander = [], gustSec = [];
+function niceMax(v) {
+  const p = 10 ** Math.floor(Math.log10(v));
+  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p;
+  return 10 * p;
+}
+
+const kLabel = (d) => (d >= 1e6 ? `${(d / 1e6).toFixed(d % 1e6 ? 1 : 0)}M` : `${Math.round(d / 1000)}k`);
+
+function distanceSeries(N) {
+  const maxD = range();
+  const out = [];
   for (let i = 0; i <= N; i++) {
     const d = (maxD * i) / N;
-    const s = stageAtSorted(st, d);
-    ds.push(d); base.push(s.base); lo.push(s.base * (1 - s.flutter)); hi.push(s.base * (1 + s.flutter));
-    peak.push(s.base * (1 + s.flutter) + s.gustStrength); rate.push(s.gustsPerMin); wander.push(s.wander / 10);
-    gustSec.push(s.gustStrength > 0 ? s.gustTicks / 20 : 0);
+    out.push({ d, s: stageAt(profile, d) });
   }
+  return { maxD, out };
+}
+
+function marker(g, box, X) {
+  g.strokeStyle = css("--mark"); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(X(selected), box.y); g.lineTo(X(selected), box.y + box.h); g.stroke();
+}
+
+function clickToPick(canvas, box, maxD) {
+  canvas.onclick = (e) => {
+    const r = canvas.getBoundingClientRect();
+    pick(((e.clientX - r.left - box.x) / box.w) * maxD);
+  };
+}
+
+function drawLine() {
+  const { g, w, h } = setup($("line"));
+  const { maxD, out } = distanceSeries(400);
+  const strip = 22;
+  const box = { x: 54, y: strip + 10, w: w - 54 - 12, h: h - strip - 34 };
+  const peak = out.map(({ s }) => s.base * (1 + s.flutter) + s.gustStrength);
   const yMax = niceMax(Math.max(...peak, 0.001));
-  const rMax = niceMax(Math.max(...rate, ...wander, ...gustSec, 1));
   const X = (d) => box.x + (d / maxD) * box.w;
   const Y = (v) => box.y + box.h - (v / yMax) * box.h;
-  const R = (v) => box.y + box.h - (v / rMax) * box.h;
 
-  // band strip
   bands.forEach((b, i) => {
     const a = Math.max(0, b.from), z = Math.min(maxD, b.to);
     if (z <= a) return;
@@ -224,62 +243,39 @@ function drawLine() {
   if (!bands.length) { g.fillStyle = css("--muted"); g.textAlign = "left"; g.fillText("no bands.json — run /dungeontrain debug wind export", box.x, 18); }
 
   const xl = [];
-  for (let i = 0; i <= 6; i++) { const d = (maxD * i) / 6; xl.push([X(d), `${Math.round(d / 1000)}k`]); }
+  for (let i = 0; i <= 6; i++) { const d = (maxD * i) / 6; xl.push([X(d), kLabel(d)]); }
   axes(g, box, yMax, (v) => v.toFixed(3), xl);
-  g.textAlign = "left"; g.fillStyle = css("--muted");
-  for (let i = 0; i <= 4; i++) g.fillText(((rMax * i) / 4).toFixed(1), box.x + box.w + 6, box.y + box.h - (box.h * i) / 4 + 4);
 
-  // flutter band
   g.fillStyle = css("--band");
   g.beginPath();
-  ds.forEach((d, i) => (i ? g.lineTo(X(d), Y(hi[i])) : g.moveTo(X(d), Y(hi[i]))));
-  for (let i = ds.length - 1; i >= 0; i--) g.lineTo(X(ds[i]), Y(lo[i]));
+  out.forEach(({ d, s }, i) => { const y = Y(s.base * (1 + s.flutter)); i ? g.lineTo(X(d), y) : g.moveTo(X(d), y); });
+  for (let i = out.length - 1; i >= 0; i--) g.lineTo(X(out[i].d), Y(out[i].s.base * (1 - out[i].s.flutter)));
   g.fill();
-  const xs = ds.map(X);
+  const xs = out.map(({ d }) => X(d));
   path(g, xs, peak.map(Y), css("--gust"));
-  path(g, xs, base.map(Y), css("--steady"), 2);
+  path(g, xs, out.map(({ s }) => Y(s.base)), css("--steady"), 2);
+  marker(g, box, X);
+  clickToPick($("line"), box, maxD);
+}
+
+function drawCapped(id, values, cap, color, fmt) {
+  const { g, w, h } = setup($(id));
+  const { maxD, out } = distanceSeries(300);
+  const box = { x: 40, y: 8, w: w - 40 - 10, h: h - 30 };
+  const X = (d) => box.x + (d / maxD) * box.w;
+  const Y = (v) => box.y + box.h - (v / cap) * box.h;
+  const xl = [];
+  for (let i = 0; i <= 4; i++) { const d = (maxD * i) / 4; xl.push([X(d), kLabel(d)]); }
+  axes(g, box, cap, fmt, xl);
   g.setLineDash([4, 3]);
-  path(g, xs, rate.map(R), css("--rate"));
-  path(g, xs, wander.map(R), css("--heading"));
-  g.setLineDash([1, 3]);
-  path(g, xs, gustSec.map(R), css("--gust"), 2);
+  path(g, [box.x, box.x + box.w], [Y(cap), Y(cap)], css("--muted"), 1);
   g.setLineDash([]);
-  // stage ticks
-  g.fillStyle = css("--muted");
-  for (const s of st) if (s.at <= maxD) g.fillRect(X(s.at) - 0.5, box.y + box.h, 1, 5);
-  // selection
-  g.strokeStyle = css("--mark"); g.lineWidth = 1;
-  g.beginPath(); g.moveTo(X(selected), box.y); g.lineTo(X(selected), box.y + box.h); g.stroke();
-
-  $("line").onclick = (e) => {
-    const r = $("line").getBoundingClientRect();
-    pick(((e.clientX - r.left - box.x) / box.w) * maxD);
-  };
-}
-
-function stageAtSorted(st, d) {
-  // reuse wind.js interpolation via a calm-proof wrapper
-  if (d <= st[0].at) return st[0];
-  for (let i = 0; i < st.length - 1; i++) {
-    const a = st[i], b = st[i + 1];
-    if (d < b.at) {
-      const f = b.at - a.at <= 0 ? 1 : (d - a.at) / (b.at - a.at);
-      const o = {};
-      for (const k of Object.keys(a)) o[k] = a[k] + (b[k] - a[k]) * f;
-      return o;
-    }
-  }
-  return st[st.length - 1];
-}
-
-function niceMax(v) {
-  const p = 10 ** Math.floor(Math.log10(v));
-  for (const m of [1, 2, 2.5, 5, 10]) if (m * p >= v) return m * p;
-  return 10 * p;
+  path(g, out.map(({ d }) => X(d)), out.map(({ s }) => Y(values(s))), css(color), 2);
+  marker(g, box, X);
+  clickToPick($(id), box, maxD);
 }
 
 function drawFeel() {
-  const st = sortedStages(profile);
   const winS = Math.max(10, parseFloat($("win").value) || 120);
   const ticks = Math.round(winS * 20);
   const ride = $("ride").checked;
@@ -288,15 +284,13 @@ function drawFeel() {
   const t0 = 20 * 60 * 30; // start half an hour into the world so slots are not all near 0
   const steady = [], total = [], head = [];
   let gustTicks = 0, peak = 0, onsets = 0, was = false;
-  const steadyProfile = { ...profile, stages: st.map((s) => ({ ...s, gustStrength: 0 })) };
-  const steadyStages = sortedStages(steadyProfile);
+  const calmGusts = { ...profile, curves: { ...profile.curves, gustStrength: { kind: "log", scale: 0, ref: 1 } } };
   for (let i = 0; i < ticks; i++) {
     const d = ride ? selected + speed * i : selected;
-    const w = sample(profile, st, d, t0 + i, sd);
-    const s0 = sample(steadyProfile, steadyStages, d, t0 + i, sd);
+    const w = sample(profile, d, t0 + i, sd);
+    const s0 = sample(calmGusts, d, t0 + i, sd);
     steady.push(s0.strength); total.push(w.strength);
-    let deg = (w.headingRad * 180) / Math.PI;
-    head.push(w.strength > 0 ? deg : NaN);
+    head.push(w.strength > 0 ? (w.headingRad * 180) / Math.PI : NaN);
     const gusting = w.gust01 > 0.05;
     if (gusting) gustTicks++;
     if (gusting && !was) onsets++;
@@ -304,8 +298,10 @@ function drawFeel() {
     peak = Math.max(peak, w.strength);
   }
   const mean = total.reduce((a, b) => a + b, 0) / ticks;
+  const here = stageAt(profile, selected);
   $("feelStats").textContent =
-    `mean ${mean.toFixed(4)} · peak ${peak.toFixed(4)} · ${onsets} gusts (${(onsets / (winS / 60)).toFixed(1)}/min) · gusting ${(100 * gustTicks / ticks).toFixed(0)}% of the time` +
+    `here: steady ${here.base.toFixed(4)} · ${here.gustsPerMin.toFixed(1)} gusts/min asked · gusts 0.1–${(here.gustTicks / 20).toFixed(1)} s · ` +
+    `measured: mean ${mean.toFixed(4)} · peak ${peak.toFixed(4)} · ${onsets} gusts (${(onsets / (winS / 60)).toFixed(1)}/min) · gusting ${(100 * gustTicks / ticks).toFixed(0)}% of the time` +
     (ride ? ` · d ${Math.round(selected)} → ${Math.round(selected + speed * ticks)}` : "");
 
   {
@@ -355,7 +351,12 @@ function drawFeel() {
 let pending = 0;
 function redraw() {
   cancelAnimationFrame(pending);
-  pending = requestAnimationFrame(() => { drawLine(); drawFeel(); });
+  pending = requestAnimationFrame(() => {
+    drawLine();
+    drawCapped("rate", (s) => s.gustsPerMin, MAX_GUSTS_PER_MIN, "--rate", (v) => v.toFixed(0));
+    drawCapped("glen", (s) => s.gustTicks / 20, 5, "--heading", (v) => `${v.toFixed(1)}s`);
+    drawFeel();
+  });
 }
 window.addEventListener("resize", redraw);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);

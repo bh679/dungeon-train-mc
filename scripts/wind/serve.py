@@ -32,8 +32,8 @@ PROFILE = ROOT / "src/main/resources/data/dungeontrain/wind/profile.json"
 GOLDEN = HERE / "golden.json"
 BANDS = HERE / "bands.json"
 
-STAGE_FIELDS = ("at", "base", "flutter", "gustsPerMin", "gustStrength", "gustTicks",
-                "gustVeer", "wander", "wanderSeconds")
+CURVE_NAMES = ("base", "flutter", "gustsPerMin", "gustStrength", "gustSeconds", "gustVeer", "wander",
+               "wanderSeconds")
 MULT_FIELDS = ("player", "mob", "item", "projectile", "xp", "other")
 MAX_BODY = 256 * 1024
 
@@ -47,25 +47,36 @@ def _number(obj: dict, key: str, where: str) -> float:
     return float(value)
 
 
+def _curve(raw: object, name: str) -> dict:
+    """A clean curve: {"kind": "log", scale, ref} or {"kind": "approach", start, max, halfLife}."""
+    if not isinstance(raw, dict):
+        raise ValueError(f"curves.{name} must be an object")
+    kind = raw.get("kind")
+    where = f"curves.{name}"
+    if kind == "log":
+        ref = _number(raw, "ref", where)
+        if ref <= 0:
+            raise ValueError(f"{where}.ref must be > 0")
+        return {"kind": "log", "scale": _number(raw, "scale", where), "ref": ref}
+    if kind == "approach":
+        half = _number(raw, "halfLife", where)
+        if half <= 0:
+            raise ValueError(f"{where}.halfLife must be > 0")
+        return {"kind": "approach", "start": _number(raw, "start", where),
+                "max": _number(raw, "max", where), "halfLife": half}
+    raise ValueError(f'{where}.kind must be "log" or "approach"')
+
+
 def validate_profile(profile: object) -> dict:
     """Return a clean copy of the profile, or raise ValueError naming the first bad field."""
     if not isinstance(profile, dict):
         raise ValueError("profile must be an object")
-    stages = profile.get("stages")
-    if not isinstance(stages, list) or not stages:
-        raise ValueError("profile.stages must be a non-empty list")
+    curves = profile.get("curves")
+    if not isinstance(curves, dict):
+        raise ValueError("profile.curves must be an object")
     mult = profile.get("multipliers")
     if not isinstance(mult, dict):
         raise ValueError("profile.multipliers must be an object")
-    clean_stages = []
-    for i, stage in enumerate(stages):
-        if not isinstance(stage, dict):
-            raise ValueError(f"stages[{i}] must be an object")
-        clean = {k: _number(stage, k, f"stages[{i}]") for k in STAGE_FIELDS}
-        if any(clean[k] < 0 for k in STAGE_FIELDS if k != "at"):
-            raise ValueError(f"stages[{i}] values must not be negative")
-        clean_stages.append(clean)
-    clean_stages.sort(key=lambda s: s["at"])
     return {
         "enabled": bool(profile.get("enabled", True)),
         "headingDeg": _number(profile, "headingDeg", "profile"),
@@ -73,20 +84,20 @@ def validate_profile(profile: object) -> dict:
         "airFactor": _number(profile, "airFactor", "profile") if "airFactor" in profile else 1.0,
         "visualLeadTicks": int(_number(profile, "visualLeadTicks", "profile")),
         "multipliers": {k: _number(mult, k, "multipliers") for k in MULT_FIELDS},
-        "stages": clean_stages,
+        "curves": {name: _curve(curves.get(name), name) for name in CURVE_NAMES},
     }
 
 
 def render_profile(profile: dict) -> str:
-    """Same layout as the committed file: one line per stage so diffs stay readable."""
-    head = {k: v for k, v in profile.items() if k != "stages"}
+    """Same layout as the committed file: one line per curve so diffs stay readable."""
+    head = {k: v for k, v in profile.items() if k != "curves"}
     lines = ["{"]
     for key, value in head.items():
         lines.append(f'  "{key}": {json.dumps(value)},')
-    lines.append('  "stages": [')
-    rows = [f"    {json.dumps(stage)}" for stage in profile["stages"]]
+    lines.append('  "curves": {')
+    rows = [f'    "{name}": {json.dumps(curve)}' for name, curve in profile["curves"].items()]
     lines.append(",\n".join(rows))
-    lines.append("  ]")
+    lines.append("  }")
     lines.append("}")
     return "\n".join(lines) + "\n"
 

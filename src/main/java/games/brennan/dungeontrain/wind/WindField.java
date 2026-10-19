@@ -15,7 +15,8 @@ package games.brennan.dungeontrain.wind;
  * <ul>
  *   <li><b>Steady</b>: the stage's {@code base}, wobbling slowly by ±{@code flutter}.</li>
  *   <li><b>Gusts</b>: time is cut into 1-second slots; each slot fires a gust with probability
- *       {@code gustsPerMin / 60}, at a hashed offset, lasting {@code gustTicks} (quick rise, slow fall).
+ *       {@code gustsPerMin / 60}, at a hashed offset, lasting a hashed length between
+ *       {@link #MIN_GUST_SECONDS} and the stage's longest ({@code gustTicks}) (quick rise, slow fall).
  *       Overlapping gusts take the strongest.</li>
  *   <li><b>Heading</b>: {@code headingDeg} plus two-octave value noise of amplitude {@code wander} and
  *       period {@code wanderSeconds}, plus a gust's own veer at its peak.</li>
@@ -29,6 +30,9 @@ public final class WindField {
     static final double GUST_ATTACK = 0.25;
     /** Flutter noise period, ticks. */
     static final double FLUTTER_PERIOD = 40.0;
+    /** The shortest a gust can be, seconds; each gust rolls its length between this and the stage's longest. */
+    public static final double MIN_GUST_SECONDS = 0.1;
+    private static final double MIN_GUST_TICKS = MIN_GUST_SECONDS * 20.0;
     private static final double DEG = Math.PI / 180.0;
 
     private static final int SALT_WANDER = 0x1F3D5B79;
@@ -39,12 +43,13 @@ public final class WindField {
     private static final int SALT_POWER = 3;
     private static final int SALT_VEER = 4;
     private static final int SALT_NOISE = 7;
+    private static final int SALT_LENGTH = 5;
 
     private WindField() {}
 
     /** The wind {@code d} blocks past the Upside-down end at game tick {@code tick}. */
     public static WindSample sample(WindProfile profile, double d, long tick, int seed) {
-        if (!profile.enabled() || !(d >= 0.0)) return WindSample.CALM;
+        if (!profile.enabled() || !(d >= 0.0) || profile.curves() == null) return WindSample.CALM;
         WindProfile.Stage s = profile.stageAt(d);
         if (s == null) return WindSample.CALM;
         double t = (double) tick;
@@ -60,15 +65,16 @@ public final class WindField {
 
         // Gusts.
         double p = Math.min(1.0, s.gustsPerMin() * GUST_SLOT / 1200.0);
-        double dur = Math.max(1.0, s.gustTicks());
+        double longest = Math.max(MIN_GUST_TICKS, s.gustTicks());
         double gust = 0.0;
         double veer = 0.0;
         if (p > 0.0 && s.gustStrength() > 0.0) {
             long k = Math.floorDiv(tick, (long) GUST_SLOT);
-            long back = (long) Math.ceil(dur / GUST_SLOT) + 1L;
+            long back = (long) Math.ceil(longest / GUST_SLOT) + 1L;
             for (long j = k - back; j <= k; j++) {
                 if (hash01(seed, j, SALT_FIRE) >= p) continue;
                 double start = (double) j * GUST_SLOT + hash01(seed, j, SALT_OFFSET) * GUST_SLOT;
+                double dur = MIN_GUST_TICKS + hash01(seed, j, SALT_LENGTH) * (longest - MIN_GUST_TICKS);
                 double u = (t - start) / dur;
                 if (u < 0.0 || u >= 1.0) continue;
                 double env = u < GUST_ATTACK ? smooth(u / GUST_ATTACK) : smooth((1.0 - u) / (1.0 - GUST_ATTACK));

@@ -8,7 +8,7 @@
   :root {
     --bg: #f6f5f1; --panel: #ffffff; --ink: #1d1c1a; --muted: #6b6860; --line: #e2dfd6;
     --steady: #2f6db5; --gust: #d0582b; --band: #2f6db533; --heading: #7a4fb0; --rate: #3d8f5a;
-    --mark: #1d1c1a; --ok: #2f8a4c; --bad: #c0392b;
+    --mark: #1d1c1a; --muted-line: #b9b5aa; --ok: #2f8a4c; --bad: #c0392b;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -45,6 +45,9 @@
   #status { font-size: 12px; color: var(--muted); }
   .readout { font-variant-numeric: tabular-nums; font-size: 12px; color: var(--muted); }
   .scroll { overflow-x: auto; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } }
+  select { padding: 3px 4px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); color: var(--ink); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -59,15 +62,19 @@
   <div>
     <section>
       <h2>Along the line</h2>
-      <p class="hint">Blocks past the end of the first Upside-down band. Band strip from bands.json. Click to pick a spot.</p>
-      <canvas id="line" height="300"></canvas>
+      <p class="hint">Blocks past the end of the first Upside-down band. Band strip from bands.json. Click to pick a spot.
+        Show up to <input type="number" id="range" value="300000" step="50000" min="10000"> blocks.</p>
+      <canvas id="line" height="260"></canvas>
       <div class="legend">
-        <span><i style="background:var(--steady)"></i>steady push</span>
+        <span><i style="background:var(--steady)"></i>steady push (log, no limit)</span>
         <span><i style="background:var(--band);height:8px"></i>flutter range</span>
-        <span><i style="background:var(--gust)"></i>gust peak (steady + strongest gust)</span>
-        <span><i style="background:var(--rate)"></i>gusts / min (right axis)</span>
-        <span><i style="background:var(--heading)"></i>direction wander ± deg (right axis ÷10)</span>
-        <span><i style="background:var(--gust);height:2px"></i>gust length, seconds (right axis, dotted)</span>
+        <span><i style="background:var(--gust)"></i>gust peak on top of steady (log, no limit)</span>
+      </div>
+      <div class="pair">
+        <div><canvas id="rate" height="150"></canvas>
+          <div class="legend"><span><i style="background:var(--rate)"></i>gusts / min</span><span><i style="background:var(--muted)"></i>cap 60</span></div></div>
+        <div><canvas id="glen" height="150"></canvas>
+          <div class="legend"><span><i style="background:var(--heading)"></i>longest gust, s (each gust 0.1 s up to this)</span><span><i style="background:var(--muted)"></i>cap 5</span></div></div>
       </div>
     </section>
     <section>
@@ -104,10 +111,9 @@
       <div class="row" id="mults"></div>
     </section>
     <section>
-      <h2>Stages</h2>
-      <p class="hint">Keyframes by blocks past UD, linearly blended. The last one holds forever.</p>
-      <div class="scroll"><table id="stages"></table></div>
-      <div class="row"><button id="addStage">+ stage</button></div>
+      <h2>Curves</h2>
+      <p class="hint"><b>log</b>: scale × ln(1 + d / ref), rising forever. <b>approach</b>: closes half the gap from start to max every half-life blocks, never reaching it.</p>
+      <div class="scroll"><table id="curves"></table></div>
     </section>
   </div>
 </main>

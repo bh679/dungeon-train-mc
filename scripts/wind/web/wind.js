@@ -1,9 +1,12 @@
-// Line-for-line port of src/main/java/games/brennan/dungeontrain/wind/WindField.java + WindProfile#stageAt.
-// Keep the arithmetic identical (only + - * /, floor, 32-bit integer hashing) so the tuner graphs exactly
-// what the game does. golden.json (written by WindFieldTest) is checked on page load: a red badge means
-// this file and the Java have drifted.
+// Line-for-line port of src/main/java/games/brennan/dungeontrain/wind/{WindField,WindCurve}.java and
+// WindProfile#stageAt. Keep the arithmetic identical (+ - * /, floor, log, pow, 32-bit integer hashing) so the
+// tuner graphs exactly what the game does. golden.json (written by WindFieldTest) is checked on page load: a red
+// badge means this file and the Java have drifted.
 
 export const GUST_SLOT = 20;
+export const MIN_GUST_SECONDS = 0.1;
+export const MAX_GUSTS_PER_MIN = 60.0;
+const MIN_GUST_TICKS = MIN_GUST_SECONDS * 20.0;
 const GUST_ATTACK = 0.25;
 const FLUTTER_PERIOD = 40.0;
 const DEG = Math.PI / 180.0;
@@ -15,33 +18,33 @@ const SALT_FIRE = 1;
 const SALT_OFFSET = 2;
 const SALT_POWER = 3;
 const SALT_VEER = 4;
+const SALT_LENGTH = 5;
 const SALT_NOISE = 7;
 
-const FIELDS = ["at", "base", "flutter", "gustsPerMin", "gustStrength", "gustTicks", "gustVeer", "wander", "wanderSeconds"];
+export const CURVE_NAMES = ["base", "flutter", "gustsPerMin", "gustStrength", "gustSeconds", "gustVeer", "wander", "wanderSeconds"];
 
 export const CALM = Object.freeze({ strength: 0, headingRad: 0, gust01: 0 });
 
-export function sortedStages(profile) {
-  return [...profile.stages].sort((a, b) => a.at - b.at);
+export function curveAt(c, d) {
+  const x = Math.max(0.0, d);
+  if (c.kind === "log") return c.scale * Math.log(1.0 + x / c.ref);
+  return c.max - (c.max - c.start) * Math.pow(0.5, x / c.halfLife);
 }
 
-export function stageAt(stages, d) {
-  if (stages.length === 0) return null;
-  const first = stages[0];
-  if (d <= first.at) return first;
-  for (let i = 0; i < stages.length - 1; i++) {
-    const a = stages[i];
-    const b = stages[i + 1];
-    if (d < b.at) {
-      const span = b.at - a.at;
-      if (span <= 0) return b;
-      const f = (d - a.at) / span;
-      const out = {};
-      for (const k of FIELDS) out[k] = a[k] + (b[k] - a[k]) * f;
-      return out;
-    }
-  }
-  return stages[stages.length - 1];
+export function stageAt(profile, d) {
+  const c = profile.curves;
+  if (!c) return null;
+  return {
+    at: d,
+    base: Math.max(0.0, curveAt(c.base, d)),
+    flutter: Math.max(0.0, curveAt(c.flutter, d)),
+    gustsPerMin: Math.min(MAX_GUSTS_PER_MIN, Math.max(0.0, curveAt(c.gustsPerMin, d))),
+    gustStrength: Math.max(0.0, curveAt(c.gustStrength, d)),
+    gustTicks: Math.max(MIN_GUST_SECONDS, curveAt(c.gustSeconds, d)) * 20.0,
+    gustVeer: Math.max(0.0, curveAt(c.gustVeer, d)),
+    wander: Math.max(0.0, curveAt(c.wander, d)),
+    wanderSeconds: Math.max(1.0, curveAt(c.wanderSeconds, d)),
+  };
 }
 
 export function hash01(seed, cell, salt) {
@@ -66,11 +69,10 @@ export function noise(seed, x) {
   return a + (b - a) * smooth(f);
 }
 
-/** profile.stages must already be sorted (sortedStages). */
-export function sample(profile, stages, d, tick, seed) {
-  if (!profile.enabled || !(d >= 0.0)) return CALM;
-  const s = stageAt(stages, d);
-  if (s == null) return CALM;
+/** The wind d blocks past the Upside-down end at game tick `tick`. Pass a precomputed stage to skip curveAt. */
+export function sample(profile, d, tick, seed, stage) {
+  if (!profile.enabled || !(d >= 0.0) || !profile.curves) return CALM;
+  const s = stage || stageAt(profile, d);
   const t = tick;
 
   const period = Math.max(20.0, s.wanderSeconds * 20.0);
@@ -81,15 +83,16 @@ export function sample(profile, stages, d, tick, seed) {
   const steady = Math.max(0.0, s.base * (1.0 + s.flutter * fl));
 
   const p = Math.min(1.0, s.gustsPerMin * GUST_SLOT / 1200.0);
-  const dur = Math.max(1.0, s.gustTicks);
+  const longest = Math.max(MIN_GUST_TICKS, s.gustTicks);
   let gust = 0.0;
   let veer = 0.0;
   if (p > 0.0 && s.gustStrength > 0.0) {
     const k = Math.floor(tick / GUST_SLOT);
-    const back = Math.ceil(dur / GUST_SLOT) + 1;
+    const back = Math.ceil(longest / GUST_SLOT) + 1;
     for (let j = k - back; j <= k; j++) {
       if (hash01(seed, j, SALT_FIRE) >= p) continue;
       const start = j * GUST_SLOT + hash01(seed, j, SALT_OFFSET) * GUST_SLOT;
+      const dur = MIN_GUST_TICKS + hash01(seed, j, SALT_LENGTH) * (longest - MIN_GUST_TICKS);
       const u = (t - start) / dur;
       if (u < 0.0 || u >= 1.0) continue;
       const env = u < GUST_ATTACK ? smooth(u / GUST_ATTACK) : smooth((1.0 - u) / (1.0 - GUST_ATTACK));
@@ -108,10 +111,9 @@ export function sample(profile, stages, d, tick, seed) {
 
 /** Compare against golden.json rows; returns { ok, checked, worst }. */
 export function checkGolden(golden) {
-  const stages = sortedStages(golden.profile);
   let worst = 0;
   for (const r of golden.rows) {
-    const w = sample(golden.profile, stages, r.d, r.tick, golden.seed);
+    const w = sample(golden.profile, r.d, r.tick, golden.seed);
     worst = Math.max(worst, Math.abs(w.strength - r.strength), Math.abs(w.headingRad - r.headingRad),
       Math.abs(w.gust01 - r.gust01));
   }
