@@ -24,7 +24,7 @@ import java.util.List;
  * lose the open-ended options (Revolut and Patreon are walled there; the Stripe tiers work), and a
  * client whose relay never served a checkout route gets the open-ended options as its main row.</p>
  */
-public final class DonationOptionsScreen extends Screen {
+public final class DonationOptionsScreen extends Screen implements games.brennan.dungeontrain.client.links.RefreshOnLinks {
 
     // Match the death-screen backdrop (NarrativeDeathScreen.OVERLAY) for a seamless hand-off.
     private static final int OVERLAY = 0xF2070C1E;

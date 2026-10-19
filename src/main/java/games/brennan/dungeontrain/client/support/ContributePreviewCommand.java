@@ -57,6 +57,7 @@ public final class ContributePreviewCommand {
 
     private static List<Step> queue = List.of();
     private static int ticks;
+    private static int waitTicks;
     private static String grabName;
 
     private ContributePreviewCommand() {}
@@ -103,6 +104,9 @@ public final class ContributePreviewCommand {
             if (!(mc.screen instanceof TitleScreen)) return;
             Path flag = mc.gameDirectory.toPath().resolve(FLAG_FILE);
             if (!Files.isRegularFile(flag)) return;
+            // Shoot what players see: wait (up to 15 s) for the relay's links, which carry the tiers.
+            games.brennan.dungeontrain.client.links.OfficialLinks.ensureFetched();
+            if (PaymentLinks.tiersAvailable() == false && ++waitTicks < 300) return;
             try {
                 Files.deleteIfExists(flag);
             } catch (java.io.IOException e) {

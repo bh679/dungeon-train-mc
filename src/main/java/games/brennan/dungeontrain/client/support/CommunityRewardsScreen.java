@@ -30,7 +30,7 @@ import java.util.Map;
  *
  * <p>The cards scroll inside a clipped viewport like Ways to Help's sections; Back is pinned.</p>
  */
-public final class CommunityRewardsScreen extends Screen {
+public final class CommunityRewardsScreen extends Screen implements games.brennan.dungeontrain.client.links.RefreshOnLinks {
 
     private static final int MAX_COL_W = 720;
     private static final int SIDE_MARGIN = 40;

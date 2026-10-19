@@ -23,7 +23,7 @@ import java.util.List;
  * ({@code pageOpen} here, {@code pageTime} on close), the surface the old Ways to Help page used, so
  * the Support funnel stays comparable across the change.</p>
  */
-public final class ContributeScreen extends Screen {
+public final class ContributeScreen extends Screen implements games.brennan.dungeontrain.client.links.RefreshOnLinks {
 
     // The death screen's Contribute window (DonationOptionsScreen), matched exactly.
     private static final int OVERLAY = 0xF2070C1E;
