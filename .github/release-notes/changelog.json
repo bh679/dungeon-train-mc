@@ -28294,6 +28294,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "discord-ping-settings-tidy",
+      "version": "0.1388.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "community",
+        "ui"
+      ],
+      "title": "Ping settings tidy",
+      "summary": "The Discord ping list in Account settings is a little shorter.",
+      "highlights": [],
+      "pr": 2164,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
