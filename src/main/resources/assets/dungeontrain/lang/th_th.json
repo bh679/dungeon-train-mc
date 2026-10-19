@@ -1429,8 +1429,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "แท็กฉันเมื่อฉันถวายเครื่องบรรณาการให้รูปของตัวเองและรูปนั้นถูกโพสต์",
   "gui.dungeontrain.options.account.pings.photo_tributed": "รูปที่ได้รับบรรณาการ",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "แท็กฉันเมื่อมีคนถวายเครื่องบรรณาการให้รูปที่ฉันถ่าย",
-  "gui.dungeontrain.options.account.pings.mob_photo": "รูปจากม็อบ",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "แท็กฉันเมื่อผู้โดยสารที่ฉันให้กล้องไปถ่ายรูปฉัน",
   "gui.dungeontrain.options.account.pings.milestone": "หมุดหมาย",
   "gui.dungeontrain.options.account.pings.milestone.tip": "แท็กฉันเมื่อความก้าวหน้าหมุดหมายของฉันถูกโพสต์",
   "gui.dungeontrain.options.account.pings.translation_review": "การตรวจคำแปล",

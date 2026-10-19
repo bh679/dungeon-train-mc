@@ -1429,8 +1429,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "我向自己的照片献上供奉并被发布时提及我。",
   "gui.dungeontrain.options.account.pings.photo_tributed": "被供奉的照片",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "有人向我拍的照片献上供奉时提及我。",
-  "gui.dungeontrain.options.account.pings.mob_photo": "生物拍的照片",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "我给了相机的乘客给我拍照时提及我。",
   "gui.dungeontrain.options.account.pings.milestone": "里程碑",
   "gui.dungeontrain.options.account.pings.milestone.tip": "我的里程碑进度被发布时提及我。",
   "gui.dungeontrain.options.account.pings.translation_review": "翻译审核",

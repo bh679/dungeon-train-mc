@@ -1429,8 +1429,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Nhắc tên tôi khi tôi dâng cống phẩm cho ảnh của chính mình và ảnh được đăng.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Ảnh được dâng cống phẩm",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Nhắc tên tôi khi ai đó dâng cống phẩm cho ảnh tôi chụp.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Ảnh từ mob",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Nhắc tên tôi khi một hành khách tôi đưa máy ảnh chụp ảnh tôi.",
   "gui.dungeontrain.options.account.pings.milestone": "Cột mốc",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Nhắc tên tôi khi một tiến trình cột mốc của tôi được đăng.",
   "gui.dungeontrain.options.account.pings.translation_review": "Duyệt bản dịch",

@@ -1519,8 +1519,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Oznacz mnie, gdy złożę daninę swojemu zdjęciu i zostanie ono opublikowane.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Zdjęcia z daniną",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Oznacz mnie, gdy ktoś złoży daninę zdjęciu, które zrobiłem.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Zdjęcia od mobów",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Oznacz mnie, gdy pasażer, któremu dałem aparat, zrobi mi zdjęcie.",
   "gui.dungeontrain.options.account.pings.milestone": "Kamienie milowe",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Oznacz mnie, gdy zostanie opublikowane jedno z moich osiągnięć kamieni milowych.",
   "gui.dungeontrain.options.account.pings.translation_review": "Przeglądy tłumaczeń",
