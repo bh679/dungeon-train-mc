@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.util.LogFirstN;
 import games.brennan.dungeontrain.worldgen.CycleLayout;
 import games.brennan.dungeontrain.worldgen.NetherBand;
 import games.brennan.dungeontrain.worldgen.OthersideCore;
+import games.brennan.dungeontrain.worldgen.OthersideSettings;
 import games.brennan.dungeontrain.worldgen.density.NetherBandContext;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -33,7 +34,7 @@ import java.util.Optional;
  * structure set (the mod's spacing, its own salt).
  *
  * <p>The one translation is height. The temple rolls its {@code start_height} ({@code above_bottom 18..28})
- * against the Otherside's 0..128, and that Otherside y is moved onto the stamped slab with
+ * against the Otherside's 0..128 ({@link OthersideSettings#generator}), and that Otherside y is moved onto the stamped slab with
  * {@link OthersideCore#displayY}, exactly as the slab's terrain is — so it stands in the same rock it would in
  * the Otherside. It only sites where the whole footprint is Deeper Dark core and the column's Otherside biome
  * is one the temple allows (the deeplands).</p>
@@ -97,11 +98,10 @@ public final class BandOthersideStructures {
 
             // Rolled against the Otherside's own generator and height: the overworld generator's floor (DT's
             // sits above y 0) would lift every above_bottom anchor by that much.
-            net.minecraft.server.level.ServerLevel otherside = OthersideCore.level(
-                    net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer());
+            OthersideSettings otherside = ctx.otherside();
             if (otherside == null) return Optional.empty();
             int othersideY = config.dungeontrain$startHeight().sample(context.random(),
-                    new WorldGenerationContext(otherside.getChunkSource().getGenerator(), OTHERSIDE_HEIGHT));
+                    new WorldGenerationContext(otherside.generator(), OTHERSIDE_HEIGHT));
             int bedY = ctx.netherTop() - NetherBandContextEvents.NETHER_TOP_ABOVE_BED;
             BlockPos start = new BlockPos(chunkPos.getMinBlockX(), OthersideCore.displayY(othersideY, bedY),
                     chunkPos.getMinBlockZ());
