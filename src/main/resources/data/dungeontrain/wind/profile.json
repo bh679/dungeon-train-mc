@@ -11,7 +11,7 @@
     "flutter": {"kind": "approach", "start": 0.0, "max": 0.5, "halfLife": 40000.0},
     "gustsPerMin": {"kind": "approach", "start": 0.0, "max": 60.0, "halfLife": 400000.0},
     "gustStrength": {"kind": "log", "scale": 0.025, "ref": 10000.0},
-    "gustSeconds": {"kind": "approach", "start": 0.5, "max": 5.0, "halfLife": 50000.0},
+    "gustSeconds": {"kind": "approach", "start": 0.5, "max": 5.0, "halfLife": 100000.0},
     "gustVeer": {"kind": "approach", "start": 0.0, "max": 40.0, "halfLife": 60000.0},
     "wander": {"kind": "approach", "start": 20.0, "max": 150.0, "halfLife": 80000.0},
     "wanderSeconds": {"kind": "approach", "start": 120.0, "max": 20.0, "halfLife": 60000.0}
