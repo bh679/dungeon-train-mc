@@ -48,7 +48,7 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
 
     private static final int COLOUR_TITLE = 0xFFFFFFFF;
     private static final int COLOUR_SUB = 0xFF9A9A9A;
-    private static final int COLOUR_CARD = 0x0AFFFFFF;
+    private static final int COLOUR_CARD = 0x16FFFFFF;
     private static final int COLOUR_CARD_EDGE = 0xFF3A3A3A;
     private static final int COLOUR_FEATURED_EDGE = 0xFF8B6BD0;
     private static final int COLOUR_GROUP = 0xFF8A7C60;
@@ -79,13 +79,13 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
     /** A background card behind one section, in canvas coordinates. */
     private record Panel(int top, int bottom, int colour) {}
     /** The community card is purple, the personal card green. */
-    private static final int COLOUR_PANEL_COMMUNITY = 0xC8201530;
-    private static final int COLOUR_PANEL_PERSONAL = 0xC8102418;
+    private static final int COLOUR_PANEL_COMMUNITY = 0xEA0C0714;
+    private static final int COLOUR_PANEL_PERSONAL = 0xEA050E08;
     private final List<Panel> panels = new ArrayList<>();
     private static final int PANEL_GAP = 6;
 
     /** One icon in "What each reward does": where it is and which entry it selects. */
-    private record ExplainIcon(int index, int x, int canvasY) {}
+    private record ExplainIcon(int index, int count, int x, int canvasY) {}
     private final List<ExplainIcon> explainIcons = new ArrayList<>();
     /** The entry whose explanation shows; the first (your name aboard) until one is clicked. */
     private int explainSelected = 0;
@@ -223,18 +223,20 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         return Component.translatable("gui.dungeontrain.rewards.explain." + PERSONAL_EXPLAIN[i]);
     }
 
-    private void renderExplainIcon(GuiGraphics g, int i, int x, int y) {
+    private void renderExplainIcon(GuiGraphics g, int i, int count, int x, int y) {
         net.minecraft.world.item.Item item = switch (PERSONAL_EXPLAIN[i]) {
             case "name_aboard" -> net.minecraft.world.item.Items.NAME_TAG;
             case "priority_books" -> net.minecraft.world.item.Items.WRITABLE_BOOK;
             default -> net.minecraft.world.item.Items.PAPER;
         };
-        g.renderItem(new net.minecraft.world.item.ItemStack(item), x, y);
+        net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(item, count);
+        g.renderItem(stack, x, y);
+        g.renderItemDecorations(this.font, stack, x, y);
     }
 
     /**
-     * "What each reward does", inside the Personal Rewards card: one icon per personal thank-you,
-     * in a column; clicking one shows its name and a short explanation to the right.
+     * "What each reward does", inside the Personal Rewards card under the tiers: the name and a short
+     * explanation of whichever thank-you icon was clicked in a tier card.
      */
     private int explainer(int y) {
         int lh = this.font.lineHeight;
@@ -242,22 +244,15 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
             texts.add(new Text(l, colX, y, COLOUR_HEADER));
             y += lh + 1;
         }
-        y += 6;
-        int iconsW = PERSONAL_EXPLAIN.length * EXPLAIN_CELL;
-        for (int i = 0; i < PERSONAL_EXPLAIN.length; i++) {
-            explainIcons.add(new ExplainIcon(i, colX + i * EXPLAIN_CELL, y));
-        }
-        int textX = colX + iconsW + 10;
-        int textW = colW - iconsW - 10;
-        int ty = y + 2;
+        y += 4;
         texts.add(new Text(explainName(explainSelected).copy().withStyle(st -> st.withBold(true)).getVisualOrderText(),
-                textX, ty, COLOUR_NAME));
-        ty += lh + 3;
-        for (FormattedCharSequence l : this.font.split(explainText(explainSelected), textW)) {
-            texts.add(new Text(l, textX, ty, COLOUR_LINE));
-            ty += lh + 1;
+                colX, y, COLOUR_NAME));
+        y += lh + 3;
+        for (FormattedCharSequence l : this.font.split(explainText(explainSelected), colW)) {
+            texts.add(new Text(l, colX, y, COLOUR_LINE));
+            y += lh + 1;
         }
-        return Math.max(y + EXPLAIN_CELL, ty);
+        return y;
     }
 
     /**
@@ -318,9 +313,13 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         ty = Math.max(ty, iconTop + ICON + 1);
         ty = wrap(CurrencyFormat.amount(tier.audAmount(), tier.amountKey()), tx, ty, tw, COLOUR_AMOUNT);
         ty += 2;
-        ty = wrap(Component.translatable("gui.dungeontrain.rewards.personal.name_aboard"), tx, ty, tw, COLOUR_LINE);
-        ty = wrap(Component.translatable("gui.dungeontrain.rewards.personal.books", tier.quantity()), tx, ty, tw, COLOUR_LINE);
-        ty = wrap(Component.translatable("gui.dungeontrain.rewards.personal.copy"), tx, ty, tw, COLOUR_LINE);
+        // The tier's thank-yous as inventory slots: name tag, Priority Books (stack = how many), copy.
+        // Clicking one shows its explanation under the tiers.
+        for (int i = 0; i < PERSONAL_EXPLAIN.length; i++) {
+            int count = "priority_books".equals(PERSONAL_EXPLAIN[i]) ? tier.quantity() : 1;
+            explainIcons.add(new ExplainIcon(i, count, tx + i * EXPLAIN_CELL, ty));
+        }
+        ty += EXPLAIN_CELL;
         return ty - y + 4 + GIVE_H + PAD;
     }
 
@@ -412,19 +411,19 @@ public final class CommunityRewardsScreen extends Screen implements games.brenna
         for (Panel p : panels) {
             g.fill(colX - PANEL_PAD, p.top() + off, colX + colW + PANEL_PAD, p.bottom() + off, p.colour());
         }
-        for (ExplainIcon e : explainIcons) {
-            int ex = e.x(), ey = e.canvasY() + off;
-            boolean hover = mouseX >= ex && mouseX < ex + EXPLAIN_CELL - 2 && mouseY >= ey && mouseY < ey + EXPLAIN_CELL - 2;
-            if (e.index() == explainSelected) g.renderOutline(ex, ey, EXPLAIN_CELL - 2, EXPLAIN_CELL - 2, COLOUR_SELECTED_EDGE);
-            else if (hover) g.renderOutline(ex, ey, EXPLAIN_CELL - 2, EXPLAIN_CELL - 2, COLOUR_HOVER_EDGE);
-            renderExplainIcon(g, e.index(), ex + 1, ey + 1);
-        }
         for (Card c : cards) {
             int cy = c.canvasY() + off;
             g.fill(c.x(), cy, c.x() + c.w(), cy + c.h(), COLOUR_CARD);
             g.renderOutline(c.x(), cy, c.w(), c.h(), c.edge());
         }
         for (Text t : texts) g.drawString(this.font, t.line(), t.x(), t.canvasY() + off, t.colour(), false);
+        for (ExplainIcon e : explainIcons) {
+            int ex = e.x(), ey = e.canvasY() + off;
+            boolean hover = mouseX >= ex && mouseX < ex + EXPLAIN_CELL - 2 && mouseY >= ey && mouseY < ey + EXPLAIN_CELL - 2;
+            if (e.index() == explainSelected) g.renderOutline(ex, ey, EXPLAIN_CELL - 2, EXPLAIN_CELL - 2, COLOUR_SELECTED_EDGE);
+            else if (hover) g.renderOutline(ex, ey, EXPLAIN_CELL - 2, EXPLAIN_CELL - 2, COLOUR_HOVER_EDGE);
+            renderExplainIcon(g, e.index(), e.count(), ex + 1, ey + 1);
+        }
         for (Icon i : icons) RewardIcons.render(g, i.reward(), i.x(), i.canvasY() + off);
         for (PersonalIcon i : personalIcons) g.renderItem(RewardIcons.of(i.tier()), i.x(), i.canvasY() + off);
         for (Placed p : buttons) if (p.button().visible) p.button().render(g, mouseX, mouseY, partialTick);
