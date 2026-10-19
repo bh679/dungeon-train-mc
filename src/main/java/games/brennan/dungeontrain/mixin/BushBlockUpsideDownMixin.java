@@ -28,8 +28,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  *
  * <p>Only the support check is skipped: subclasses that override {@code updateShape} with their own
  * rules (e.g. {@code DoublePlantBlock}'s half pairing) still apply them before reaching
- * {@code super}. Server-side and gated on overworld + band/entry lead-in exactly like
- * {@link SnowLayerBlockUpsideDownMixin}, so every column outside the band keeps vanilla behaviour.</p>
+ * {@code super}. Server-side and gated on overworld + band, entry lead-in and exit fade (the exit's
+ * shrinking mirrored islands carry hanging plants too; same zone as {@link FlowingFluidUpsideDownMixin}),
+ * so every column outside the band keeps vanilla behaviour.</p>
  */
 @Mixin(BushBlock.class)
 public abstract class BushBlockUpsideDownMixin {
@@ -40,8 +41,8 @@ public abstract class BushBlockUpsideDownMixin {
             BlockPos currentPos, BlockPos facingPos, CallbackInfoReturnable<BlockState> cir) {
         if (!(level instanceof ServerLevel server)) return;
         if (!server.dimension().equals(Level.OVERWORLD)) return;
-        if (UpsideDownBand.isInBandOrEntryLead(server, currentPos.getX(), currentPos.getZ())) {
-            cir.setReturnValue(state); // in-band or lead-in: keep the plant, ignore missing support
+        if (UpsideDownBand.isInBandEntryLeadOrExit(server, currentPos.getX(), currentPos.getZ())) {
+            cir.setReturnValue(state); // band, lead-in or exit fade: keep the plant, ignore missing support
         }
     }
 }
