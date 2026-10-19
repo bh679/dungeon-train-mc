@@ -11,13 +11,17 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.block.AbstractChestBlock;
+import net.minecraft.world.level.block.BarrelBlock;
 import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BrushableBlock;
 import net.minecraft.world.level.block.Fallable;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.ShulkerBoxBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -514,9 +518,18 @@ public final class UpsideDownMirror {
      * around them is thinned away and its villagers are never placed in the zone
      * ({@link UpsideDownSpawnerStructures#dropsTemplateEntity}), so a kept bed only floats in the sky.
      * Both halves carry a block entity, so both go — never half a bed.
+     *
+     * <p>Containers (chests, trapped and ender chests, barrels, shulker boxes) don't either. They are kept
+     * whatever the island reveal does around them, so a village's or shipwreck's chest floats alone, and
+     * their renderer never sees the block-model flip — above the plane they stand upright among inverted
+     * blocks.</p>
      */
     static boolean keepsNativeBlockEntity(BlockState state) {
-        return !(state.getBlock() instanceof BedBlock);
+        Block block = state.getBlock();
+        return !(block instanceof BedBlock
+            || block instanceof AbstractChestBlock<?>
+            || block instanceof BarrelBlock
+            || block instanceof ShulkerBoxBlock);
     }
 
     /** Inline convenience: compute + apply in one call (the precompute-off / cache-miss fallback). */

@@ -27952,6 +27952,43 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "modded-wood-stages",
+      "version": "0.1371.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "train"
+      ],
+      "title": "Many new woods down the line",
+      "summary": "Ride far enough and the carriages start wearing timber you have never seen on the train, one new wood after another, each with its own colours, before the familiar spruce takes over again.",
+      "highlights": [
+        "Carriages deep into a run are built from many new kinds of wood.",
+        "Every wood brings its own colour scheme."
+      ],
+      "pr": 2140,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "upside-down-reassembly-chests",
+      "version": "0.1372.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "world"
+      ],
+      "title": "A tidier journey",
+      "summary": "Some places along the line look a little more settled.",
+      "highlights": [],
+      "pr": 2138,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

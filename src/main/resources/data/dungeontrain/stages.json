@@ -56,6 +56,63 @@
       "woodLocked": true
     }
   },
+  "anchor_tree": {
+    "name": "anchor_tree",
+    "group": "wood",
+    "minLevel": 660,
+    "maxLevel": 675,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:anchor_tree_planks",
+        "betternether:anchor_tree_bark",
+        "betternether:anchor_tree_stripped_bark",
+        "betternether:anchor_tree_log",
+        "betternether:anchor_tree_stripped_log"
+      ],
+      "stairs": [
+        "betternether:anchor_tree_stairs",
+        "betternether:anchor_tree_stairs"
+      ],
+      "slabs": [
+        "betternether:anchor_tree_slab",
+        "betternether:anchor_tree_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:anchor_tree",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:cyan_terracotta",
+        "minecraft:green_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:cyan_concrete",
+        "minecraft:green_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "bamboo": {
     "name": "bamboo",
     "group": "wood",
@@ -458,6 +515,63 @@
       "woodLocked": true
     }
   },
+  "dead": {
+    "name": "dead",
+    "group": "wood",
+    "minLevel": 564,
+    "maxLevel": 579,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:dead_planks",
+        "biomesoplenty:dead_wood",
+        "biomesoplenty:stripped_dead_wood",
+        "biomesoplenty:dead_log",
+        "biomesoplenty:stripped_dead_log"
+      ],
+      "stairs": [
+        "biomesoplenty:dead_stairs",
+        "biomesoplenty:dead_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:dead_slab",
+        "biomesoplenty:dead_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:dead",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:gray_terracotta",
+        "minecraft:light_gray_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:gray_concrete",
+        "minecraft:light_gray_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "deepdark": {
     "name": "deepdark",
     "minLevel": 87,
@@ -578,6 +692,576 @@
       ]
     }
   },
+  "dragon_tree": {
+    "name": "dragon_tree",
+    "group": "wood",
+    "minLevel": 836,
+    "maxLevel": 851,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:dragon_tree_planks",
+        "betterend:dragon_tree_bark",
+        "betterend:dragon_tree_stripped_bark",
+        "betterend:dragon_tree_log",
+        "betterend:dragon_tree_stripped_log"
+      ],
+      "stairs": [
+        "betterend:dragon_tree_stairs",
+        "betterend:dragon_tree_stairs"
+      ],
+      "slabs": [
+        "betterend:dragon_tree_slab",
+        "betterend:dragon_tree_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:dragon_tree",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:purple_terracotta",
+        "minecraft:magenta_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:purple_concrete",
+        "minecraft:magenta_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "empyreal": {
+    "name": "empyreal",
+    "group": "wood",
+    "minLevel": 644,
+    "maxLevel": 659,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:empyreal_planks",
+        "biomesoplenty:empyreal_wood",
+        "biomesoplenty:stripped_empyreal_wood",
+        "biomesoplenty:empyreal_log",
+        "biomesoplenty:stripped_empyreal_log"
+      ],
+      "stairs": [
+        "biomesoplenty:empyreal_stairs",
+        "biomesoplenty:empyreal_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:empyreal_slab",
+        "biomesoplenty:empyreal_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:empyreal",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:light_blue_terracotta",
+        "minecraft:white_terracotta",
+        "minecraft:yellow_terracotta"
+      ],
+      "concrete": [
+        "minecraft:light_blue_concrete",
+        "minecraft:white_concrete",
+        "minecraft:yellow_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "end_lotus": {
+    "name": "end_lotus",
+    "group": "wood",
+    "minLevel": 932,
+    "maxLevel": 947,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:end_lotus_planks",
+        "betterend:end_lotus_bark",
+        "betterend:end_lotus_stripped_bark",
+        "betterend:end_lotus_log",
+        "betterend:end_lotus_stripped_log"
+      ],
+      "stairs": [
+        "betterend:end_lotus_stairs",
+        "betterend:end_lotus_stairs"
+      ],
+      "slabs": [
+        "betterend:end_lotus_slab",
+        "betterend:end_lotus_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:end_lotus",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:light_blue_terracotta",
+        "minecraft:cyan_terracotta",
+        "minecraft:white_terracotta"
+      ],
+      "concrete": [
+        "minecraft:light_blue_concrete",
+        "minecraft:cyan_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "fir": {
+    "name": "fir",
+    "group": "wood",
+    "minLevel": 452,
+    "maxLevel": 467,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:fir_planks",
+        "biomesoplenty:fir_wood",
+        "biomesoplenty:stripped_fir_wood",
+        "biomesoplenty:fir_log",
+        "biomesoplenty:stripped_fir_log"
+      ],
+      "stairs": [
+        "biomesoplenty:fir_stairs",
+        "biomesoplenty:fir_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:fir_slab",
+        "biomesoplenty:fir_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:fir",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:green_terracotta",
+        "minecraft:brown_terracotta",
+        "minecraft:white_terracotta"
+      ],
+      "concrete": [
+        "minecraft:green_concrete",
+        "minecraft:white_concrete",
+        "minecraft:brown_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "gloomwood": {
+    "name": "gloomwood",
+    "group": "wood",
+    "minLevel": 676,
+    "maxLevel": 691,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:gloomwood_planks",
+        "betternether:gloomwood_bark",
+        "betternether:gloomwood_stripped_bark",
+        "betternether:gloomwood_log",
+        "betternether:gloomwood_stripped_log"
+      ],
+      "stairs": [
+        "betternether:gloomwood_stairs",
+        "betternether:gloomwood_stairs"
+      ],
+      "slabs": [
+        "betternether:gloomwood_slab",
+        "betternether:gloomwood_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:gloomwood",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:gray_terracotta",
+        "minecraft:cyan_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:gray_concrete",
+        "minecraft:cyan_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "gloomwood_dark": {
+    "name": "gloomwood_dark",
+    "group": "wood",
+    "minLevel": 692,
+    "maxLevel": 707,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:gloomwood_dark_planks",
+        "betternether:gloomwood_dark_bark",
+        "betternether:gloomwood_dark_stripped_bark",
+        "betternether:gloomwood_dark_log",
+        "betternether:gloomwood_dark_stripped_log"
+      ],
+      "stairs": [
+        "betternether:gloomwood_dark_stairs",
+        "betternether:gloomwood_dark_stairs"
+      ],
+      "slabs": [
+        "betternether:gloomwood_dark_slab",
+        "betternether:gloomwood_dark_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:gloomwood_dark",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:black_terracotta",
+        "minecraft:gray_terracotta",
+        "minecraft:purple_terracotta"
+      ],
+      "concrete": [
+        "minecraft:black_concrete",
+        "minecraft:gray_concrete",
+        "minecraft:purple_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "helix_tree": {
+    "name": "helix_tree",
+    "group": "wood",
+    "minLevel": 852,
+    "maxLevel": 867,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:helix_tree_planks",
+        "betterend:helix_tree_bark",
+        "betterend:helix_tree_stripped_bark",
+        "betterend:helix_tree_log",
+        "betterend:helix_tree_stripped_log"
+      ],
+      "stairs": [
+        "betterend:helix_tree_stairs",
+        "betterend:helix_tree_stairs"
+      ],
+      "slabs": [
+        "betterend:helix_tree_slab",
+        "betterend:helix_tree_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:helix_tree",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:orange_terracotta",
+        "minecraft:yellow_terracotta",
+        "minecraft:brown_terracotta"
+      ],
+      "concrete": [
+        "minecraft:orange_concrete",
+        "minecraft:yellow_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "hellbark": {
+    "name": "hellbark",
+    "group": "wood",
+    "minLevel": 628,
+    "maxLevel": 643,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:hellbark_planks",
+        "biomesoplenty:hellbark_wood",
+        "biomesoplenty:stripped_hellbark_wood",
+        "biomesoplenty:hellbark_log",
+        "biomesoplenty:stripped_hellbark_log"
+      ],
+      "stairs": [
+        "biomesoplenty:hellbark_stairs",
+        "biomesoplenty:hellbark_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:hellbark_slab",
+        "biomesoplenty:hellbark_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:hellbark",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:orange_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:orange_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "jacaranda": {
+    "name": "jacaranda",
+    "group": "wood",
+    "minLevel": 516,
+    "maxLevel": 531,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:jacaranda_planks",
+        "biomesoplenty:jacaranda_wood",
+        "biomesoplenty:stripped_jacaranda_wood",
+        "biomesoplenty:jacaranda_log",
+        "biomesoplenty:stripped_jacaranda_log"
+      ],
+      "stairs": [
+        "biomesoplenty:jacaranda_stairs",
+        "biomesoplenty:jacaranda_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:jacaranda_slab",
+        "biomesoplenty:jacaranda_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:jacaranda",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:purple_terracotta",
+        "minecraft:magenta_terracotta",
+        "minecraft:white_terracotta"
+      ],
+      "concrete": [
+        "minecraft:purple_concrete",
+        "minecraft:magenta_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "jellyshroom": {
+    "name": "jellyshroom",
+    "group": "wood",
+    "minLevel": 948,
+    "maxLevel": 963,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:jellyshroom_planks",
+        "betterend:jellyshroom_bark",
+        "betterend:jellyshroom_stripped_bark",
+        "betterend:jellyshroom_log",
+        "betterend:jellyshroom_stripped_log"
+      ],
+      "stairs": [
+        "betterend:jellyshroom_stairs",
+        "betterend:jellyshroom_stairs"
+      ],
+      "slabs": [
+        "betterend:jellyshroom_slab",
+        "betterend:jellyshroom_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:jellyshroom",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:purple_terracotta",
+        "minecraft:light_blue_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:purple_concrete",
+        "minecraft:light_blue_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "jungle": {
     "name": "jungle",
     "group": "wood",
@@ -631,6 +1315,234 @@
         "minecraft:green_concrete",
         "minecraft:brown_concrete",
         "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "lacugrove": {
+    "name": "lacugrove",
+    "group": "wood",
+    "minLevel": 868,
+    "maxLevel": 883,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:lacugrove_planks",
+        "betterend:lacugrove_bark",
+        "betterend:lacugrove_stripped_bark",
+        "betterend:lacugrove_log",
+        "betterend:lacugrove_stripped_log"
+      ],
+      "stairs": [
+        "betterend:lacugrove_stairs",
+        "betterend:lacugrove_stairs"
+      ],
+      "slabs": [
+        "betterend:lacugrove_slab",
+        "betterend:lacugrove_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:lacugrove",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:green_terracotta",
+        "minecraft:lime_terracotta",
+        "minecraft:cyan_terracotta"
+      ],
+      "concrete": [
+        "minecraft:green_concrete",
+        "minecraft:lime_concrete",
+        "minecraft:cyan_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "lucernia": {
+    "name": "lucernia",
+    "group": "wood",
+    "minLevel": 884,
+    "maxLevel": 899,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:lucernia_planks",
+        "betterend:lucernia_bark",
+        "betterend:lucernia_stripped_bark",
+        "betterend:lucernia_log",
+        "betterend:lucernia_stripped_log"
+      ],
+      "stairs": [
+        "betterend:lucernia_stairs",
+        "betterend:lucernia_stairs"
+      ],
+      "slabs": [
+        "betterend:lucernia_slab",
+        "betterend:lucernia_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:lucernia",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:orange_terracotta",
+        "minecraft:red_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:orange_concrete",
+        "minecraft:red_concrete",
+        "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "magic": {
+    "name": "magic",
+    "group": "wood",
+    "minLevel": 580,
+    "maxLevel": 595,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:magic_planks",
+        "biomesoplenty:magic_wood",
+        "biomesoplenty:stripped_magic_wood",
+        "biomesoplenty:magic_log",
+        "biomesoplenty:stripped_magic_log"
+      ],
+      "stairs": [
+        "biomesoplenty:magic_stairs",
+        "biomesoplenty:magic_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:magic_slab",
+        "biomesoplenty:magic_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:magic",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:blue_terracotta",
+        "minecraft:light_blue_terracotta",
+        "minecraft:cyan_terracotta"
+      ],
+      "concrete": [
+        "minecraft:blue_concrete",
+        "minecraft:light_blue_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "mahogany": {
+    "name": "mahogany",
+    "group": "wood",
+    "minLevel": 500,
+    "maxLevel": 515,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:mahogany_planks",
+        "biomesoplenty:mahogany_wood",
+        "biomesoplenty:stripped_mahogany_wood",
+        "biomesoplenty:mahogany_log",
+        "biomesoplenty:stripped_mahogany_log"
+      ],
+      "stairs": [
+        "biomesoplenty:mahogany_stairs",
+        "biomesoplenty:mahogany_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:mahogany_slab",
+        "biomesoplenty:mahogany_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:mahogany",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:brown_terracotta",
+        "minecraft:pink_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:brown_concrete",
+        "minecraft:white_concrete"
       ],
       "woodLocked": true
     }
@@ -692,6 +1604,120 @@
       "woodLocked": true
     }
   },
+  "maple": {
+    "name": "maple",
+    "group": "wood",
+    "minLevel": 596,
+    "maxLevel": 611,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:maple_planks",
+        "biomesoplenty:maple_wood",
+        "biomesoplenty:stripped_maple_wood",
+        "biomesoplenty:maple_log",
+        "biomesoplenty:stripped_maple_log"
+      ],
+      "stairs": [
+        "biomesoplenty:maple_stairs",
+        "biomesoplenty:maple_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:maple_slab",
+        "biomesoplenty:maple_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:maple",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:orange_terracotta",
+        "minecraft:yellow_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:orange_concrete",
+        "minecraft:brown_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "mossy_glowshroom": {
+    "name": "mossy_glowshroom",
+    "group": "wood",
+    "minLevel": 964,
+    "maxLevel": 979,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:mossy_glowshroom_planks",
+        "betterend:mossy_glowshroom_bark",
+        "betterend:mossy_glowshroom_stripped_bark",
+        "betterend:mossy_glowshroom_log",
+        "betterend:mossy_glowshroom_stripped_log"
+      ],
+      "stairs": [
+        "betterend:mossy_glowshroom_stairs",
+        "betterend:mossy_glowshroom_stairs"
+      ],
+      "slabs": [
+        "betterend:mossy_glowshroom_slab",
+        "betterend:mossy_glowshroom_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:mossy_glowshroom",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:light_blue_terracotta",
+        "minecraft:green_terracotta",
+        "minecraft:gray_terracotta"
+      ],
+      "concrete": [
+        "minecraft:light_blue_concrete",
+        "minecraft:green_concrete",
+        "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "mud": {
     "name": "mud",
     "minLevel": 121,
@@ -745,6 +1771,63 @@
       ]
     }
   },
+  "mushroom_fir": {
+    "name": "mushroom_fir",
+    "group": "wood",
+    "minLevel": 708,
+    "maxLevel": 723,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:mushroom_fir_planks",
+        "betternether:mushroom_fir_bark",
+        "betternether:mushroom_fir_stripped_bark",
+        "betternether:mushroom_fir_log",
+        "betternether:mushroom_fir_stripped_log"
+      ],
+      "stairs": [
+        "betternether:mushroom_fir_stairs",
+        "betternether:mushroom_fir_stairs"
+      ],
+      "slabs": [
+        "betternether:mushroom_fir_slab",
+        "betternether:mushroom_fir_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:mushroom_fir",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:brown_terracotta",
+        "minecraft:light_gray_terracotta",
+        "minecraft:red_terracotta"
+      ],
+      "concrete": [
+        "minecraft:brown_concrete",
+        "minecraft:red_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "nether": {
     "name": "nether",
     "phases": [
@@ -786,6 +1869,234 @@
         "minecraft:light_blue_concrete",
         "minecraft:black_concrete"
       ]
+    }
+  },
+  "nether_mushroom": {
+    "name": "nether_mushroom",
+    "group": "wood",
+    "minLevel": 724,
+    "maxLevel": 739,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:nether_mushroom_planks",
+        "betternether:nether_mushroom_stem",
+        "betternether:nether_mushroom_stem",
+        "betternether:nether_mushroom_stem",
+        "betternether:nether_mushroom_stem"
+      ],
+      "stairs": [
+        "betternether:nether_mushroom_stairs",
+        "betternether:nether_mushroom_stairs"
+      ],
+      "slabs": [
+        "betternether:nether_mushroom_slab",
+        "betternether:nether_mushroom_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:nether_mushroom",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:white_terracotta",
+        "minecraft:brown_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:white_concrete",
+        "minecraft:brown_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "nether_reed": {
+    "name": "nether_reed",
+    "group": "wood",
+    "minLevel": 740,
+    "maxLevel": 755,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:nether_reed_planks",
+        "betternether:nether_reed_stem",
+        "betternether:nether_reed_stem",
+        "betternether:nether_reed_stem",
+        "betternether:nether_reed_stem"
+      ],
+      "stairs": [
+        "betternether:nether_reed_stairs",
+        "betternether:nether_reed_stairs"
+      ],
+      "slabs": [
+        "betternether:nether_reed_slab",
+        "betternether:nether_reed_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:nether_reed",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:cyan_terracotta",
+        "minecraft:lime_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:cyan_concrete",
+        "minecraft:lime_concrete",
+        "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "nether_sakura": {
+    "name": "nether_sakura",
+    "group": "wood",
+    "minLevel": 756,
+    "maxLevel": 771,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:nether_sakura_planks",
+        "betternether:nether_sakura_bark",
+        "betternether:nether_sakura_stripped_bark",
+        "betternether:nether_sakura_log",
+        "betternether:nether_sakura_stripped_log"
+      ],
+      "stairs": [
+        "betternether:nether_sakura_stairs",
+        "betternether:nether_sakura_stairs"
+      ],
+      "slabs": [
+        "betternether:nether_sakura_slab",
+        "betternether:nether_sakura_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:nether_sakura",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:pink_terracotta",
+        "minecraft:magenta_terracotta",
+        "minecraft:white_terracotta"
+      ],
+      "concrete": [
+        "minecraft:pink_concrete",
+        "minecraft:magenta_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "nether_willow": {
+    "name": "nether_willow",
+    "group": "wood",
+    "minLevel": 820,
+    "maxLevel": 835,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:willow_planks",
+        "betternether:willow_bark",
+        "betternether:willow_stripped_bark",
+        "betternether:willow_log",
+        "betternether:willow_stripped_log"
+      ],
+      "stairs": [
+        "betternether:willow_stairs",
+        "betternether:willow_stairs"
+      ],
+      "slabs": [
+        "betternether:willow_slab",
+        "betternether:willow_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:willow",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:brown_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:brown_concrete",
+        "minecraft:red_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
     }
   },
   "obsidian": {
@@ -856,6 +2167,234 @@
       ]
     }
   },
+  "pale_oak": {
+    "name": "pale_oak",
+    "group": "wood",
+    "minLevel": 436,
+    "maxLevel": 451,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "minecraft:pale_oak_planks",
+        "minecraft:pale_oak_wood",
+        "minecraft:stripped_pale_oak_wood",
+        "minecraft:pale_oak_log",
+        "minecraft:stripped_pale_oak_log"
+      ],
+      "stairs": [
+        "minecraft:pale_oak_stairs",
+        "minecraft:pale_oak_stairs"
+      ],
+      "slabs": [
+        "minecraft:pale_oak_slab",
+        "minecraft:pale_oak_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "pale_oak",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:light_gray_terracotta",
+        "minecraft:white_terracotta",
+        "minecraft:gray_terracotta"
+      ],
+      "concrete": [
+        "minecraft:white_concrete",
+        "minecraft:light_gray_concrete",
+        "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "palm": {
+    "name": "palm",
+    "group": "wood",
+    "minLevel": 532,
+    "maxLevel": 547,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:palm_planks",
+        "biomesoplenty:palm_wood",
+        "biomesoplenty:stripped_palm_wood",
+        "biomesoplenty:palm_log",
+        "biomesoplenty:stripped_palm_log"
+      ],
+      "stairs": [
+        "biomesoplenty:palm_stairs",
+        "biomesoplenty:palm_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:palm_slab",
+        "biomesoplenty:palm_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:palm",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:yellow_terracotta",
+        "minecraft:orange_terracotta",
+        "minecraft:white_terracotta"
+      ],
+      "concrete": [
+        "minecraft:yellow_concrete",
+        "minecraft:light_blue_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "pine": {
+    "name": "pine",
+    "group": "wood",
+    "minLevel": 468,
+    "maxLevel": 483,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:pine_planks",
+        "biomesoplenty:pine_wood",
+        "biomesoplenty:stripped_pine_wood",
+        "biomesoplenty:pine_log",
+        "biomesoplenty:stripped_pine_log"
+      ],
+      "stairs": [
+        "biomesoplenty:pine_stairs",
+        "biomesoplenty:pine_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:pine_slab",
+        "biomesoplenty:pine_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:pine",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:brown_terracotta",
+        "minecraft:green_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:green_concrete",
+        "minecraft:brown_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "pythadendron": {
+    "name": "pythadendron",
+    "group": "wood",
+    "minLevel": 900,
+    "maxLevel": 915,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:pythadendron_planks",
+        "betterend:pythadendron_bark",
+        "betterend:pythadendron_stripped_bark",
+        "betterend:pythadendron_log",
+        "betterend:pythadendron_stripped_log"
+      ],
+      "stairs": [
+        "betterend:pythadendron_stairs",
+        "betterend:pythadendron_stairs"
+      ],
+      "slabs": [
+        "betterend:pythadendron_slab",
+        "betterend:pythadendron_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:pythadendron",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:purple_terracotta",
+        "minecraft:pink_terracotta",
+        "minecraft:white_terracotta"
+      ],
+      "concrete": [
+        "minecraft:purple_concrete",
+        "minecraft:pink_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "quartz": {
     "name": "quartz",
     "minLevel": 51,
@@ -923,10 +2462,124 @@
       ]
     }
   },
+  "redwood": {
+    "name": "redwood",
+    "group": "wood",
+    "minLevel": 484,
+    "maxLevel": 499,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:redwood_planks",
+        "biomesoplenty:redwood_wood",
+        "biomesoplenty:stripped_redwood_wood",
+        "biomesoplenty:redwood_log",
+        "biomesoplenty:stripped_redwood_log"
+      ],
+      "stairs": [
+        "biomesoplenty:redwood_stairs",
+        "biomesoplenty:redwood_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:redwood_slab",
+        "biomesoplenty:redwood_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:redwood",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:brown_terracotta",
+        "minecraft:orange_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:brown_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "rubeus": {
+    "name": "rubeus",
+    "group": "wood",
+    "minLevel": 772,
+    "maxLevel": 787,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:rubeus_planks",
+        "betternether:rubeus_bark",
+        "betternether:rubeus_stripped_bark",
+        "betternether:rubeus_log",
+        "betternether:rubeus_stripped_log"
+      ],
+      "stairs": [
+        "betternether:rubeus_stairs",
+        "betternether:rubeus_stairs"
+      ],
+      "slabs": [
+        "betternether:rubeus_slab",
+        "betternether:rubeus_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:rubeus",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:orange_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:orange_concrete",
+        "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "spruce": {
     "name": "spruce",
     "group": "wood",
-    "minLevel": 436,
+    "minLevel": 996,
     "phases": [
       "OVERWORLD",
       "VOID",
@@ -975,6 +2628,63 @@
         "minecraft:brown_concrete",
         "minecraft:black_concrete",
         "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "stalagnate": {
+    "name": "stalagnate",
+    "group": "wood",
+    "minLevel": 788,
+    "maxLevel": 803,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:stalagnate_planks",
+        "betternether:stalagnate_bark",
+        "betternether:stalagnate_stripped_bark",
+        "betternether:stalagnate_log",
+        "betternether:stalagnate_stripped_log"
+      ],
+      "stairs": [
+        "betternether:stalagnate_stairs",
+        "betternether:stalagnate_stairs"
+      ],
+      "slabs": [
+        "betternether:stalagnate_slab",
+        "betternether:stalagnate_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:stalagnate",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:lime_terracotta",
+        "minecraft:yellow_terracotta",
+        "minecraft:brown_terracotta"
+      ],
+      "concrete": [
+        "minecraft:lime_concrete",
+        "minecraft:yellow_concrete",
+        "minecraft:brown_concrete"
       ],
       "woodLocked": true
     }
@@ -1037,6 +2747,177 @@
       ]
     }
   },
+  "tenanea": {
+    "name": "tenanea",
+    "group": "wood",
+    "minLevel": 916,
+    "maxLevel": 931,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:tenanea_planks",
+        "betterend:tenanea_bark",
+        "betterend:tenanea_stripped_bark",
+        "betterend:tenanea_log",
+        "betterend:tenanea_stripped_log"
+      ],
+      "stairs": [
+        "betterend:tenanea_stairs",
+        "betterend:tenanea_stairs"
+      ],
+      "slabs": [
+        "betterend:tenanea_slab",
+        "betterend:tenanea_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:tenanea",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:pink_terracotta",
+        "minecraft:magenta_terracotta",
+        "minecraft:purple_terracotta"
+      ],
+      "concrete": [
+        "minecraft:pink_concrete",
+        "minecraft:magenta_concrete",
+        "minecraft:white_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "umbran": {
+    "name": "umbran",
+    "group": "wood",
+    "minLevel": 612,
+    "maxLevel": 627,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:umbran_planks",
+        "biomesoplenty:umbran_wood",
+        "biomesoplenty:stripped_umbran_wood",
+        "biomesoplenty:umbran_log",
+        "biomesoplenty:stripped_umbran_log"
+      ],
+      "stairs": [
+        "biomesoplenty:umbran_stairs",
+        "biomesoplenty:umbran_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:umbran_slab",
+        "biomesoplenty:umbran_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:umbran",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:blue_terracotta",
+        "minecraft:purple_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:blue_concrete",
+        "minecraft:purple_concrete",
+        "minecraft:black_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "umbrella_tree": {
+    "name": "umbrella_tree",
+    "group": "wood",
+    "minLevel": 980,
+    "maxLevel": 995,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betterend:umbrella_tree_planks",
+        "betterend:umbrella_tree_bark",
+        "betterend:umbrella_tree_stripped_bark",
+        "betterend:umbrella_tree_log",
+        "betterend:umbrella_tree_stripped_log"
+      ],
+      "stairs": [
+        "betterend:umbrella_tree_stairs",
+        "betterend:umbrella_tree_stairs"
+      ],
+      "slabs": [
+        "betterend:umbrella_tree_slab",
+        "betterend:umbrella_tree_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betterend:umbrella_tree",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:green_terracotta",
+        "minecraft:light_blue_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:green_concrete",
+        "minecraft:light_blue_concrete",
+        "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
   "warped": {
     "name": "warped",
     "group": "wood",
@@ -1090,6 +2971,120 @@
         "minecraft:cyan_concrete",
         "minecraft:light_blue_concrete",
         "minecraft:light_gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "wart": {
+    "name": "wart",
+    "group": "wood",
+    "minLevel": 804,
+    "maxLevel": 819,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "betternether:wart_planks",
+        "betternether:wart_bark",
+        "betternether:wart_stripped_bark",
+        "betternether:wart_log",
+        "betternether:wart_stripped_log"
+      ],
+      "stairs": [
+        "betternether:wart_stairs",
+        "betternether:wart_stairs"
+      ],
+      "slabs": [
+        "betternether:wart_slab",
+        "betternether:wart_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "betternether:wart",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:red_terracotta",
+        "minecraft:magenta_terracotta",
+        "minecraft:black_terracotta"
+      ],
+      "concrete": [
+        "minecraft:red_concrete",
+        "minecraft:black_concrete",
+        "minecraft:gray_concrete"
+      ],
+      "woodLocked": true
+    }
+  },
+  "willow": {
+    "name": "willow",
+    "group": "wood",
+    "minLevel": 548,
+    "maxLevel": 563,
+    "phases": [
+      "OVERWORLD",
+      "VOID",
+      "UPSIDE_DOWN",
+      "CHUNCKS",
+      "SPHERES",
+      "STACKS",
+      "BETA",
+      "ALPHA",
+      "SKYLANDS",
+      "INFDEV",
+      "FLOATING",
+      "FAR_LANDS",
+      "CLASSIC",
+      "CAVES_OF_CHAOS",
+      "LARGE_BIOMES",
+      "AMPLIFIED",
+      "LOST_CITY"
+    ],
+    "palette": {
+      "solid": [
+        "biomesoplenty:willow_planks",
+        "biomesoplenty:willow_wood",
+        "biomesoplenty:stripped_willow_wood",
+        "biomesoplenty:willow_log",
+        "biomesoplenty:stripped_willow_log"
+      ],
+      "stairs": [
+        "biomesoplenty:willow_stairs",
+        "biomesoplenty:willow_stairs"
+      ],
+      "slabs": [
+        "biomesoplenty:willow_slab",
+        "biomesoplenty:willow_slab"
+      ],
+      "button": "minecraft:stone_button",
+      "pressurePlate": "minecraft:stone_pressure_plate",
+      "wood": "biomesoplenty:willow",
+      "stone": "stone",
+      "terracotta": [
+        "minecraft:lime_terracotta",
+        "minecraft:green_terracotta",
+        "minecraft:brown_terracotta"
+      ],
+      "concrete": [
+        "minecraft:lime_concrete",
+        "minecraft:green_concrete",
+        "minecraft:gray_concrete"
       ],
       "woodLocked": true
     }
