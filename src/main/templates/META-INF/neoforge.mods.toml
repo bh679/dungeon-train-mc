@@ -437,6 +437,11 @@ logoFile="logo.png"
 [[mixins]]
     config="${mod_id}.vanillabackport.mixins.json"
 
+# Deeper Darker (required dep) — Otherside portals on the ride lead to a Deeper Dark core along the track, like
+# Nether portals do (see mixin/deeperdarker/OthersidePortalBlockBandJumpMixin).
+[[mixins]]
+    config="${mod_id}.deeperdarker.mixins.json"
+
 # Vista (required dep) — TVs toggle on a redstone pulse or an empty-hand click instead of
 # following a steady signal (see compat/vista/TvPowerToggle).
 [[mixins]]

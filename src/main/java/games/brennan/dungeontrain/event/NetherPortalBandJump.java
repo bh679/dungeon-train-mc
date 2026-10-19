@@ -61,6 +61,15 @@ public final class NetherPortalBandJump {
                                  boolean isNether, WorldBorder border);
     }
 
+    /** Which portal is being used: vanilla's Nether portal, or Deeper Darker's Otherside portal. */
+    public enum Kind {
+        NETHER, OTHERSIDE;
+
+        NetherPortalJump.Target target() {
+            return this == OTHERSIDE ? NetherPortalJump.Target.DEEPER_DARK : NetherPortalJump.Target.NETHER;
+        }
+    }
+
     /** {@code handled == false} → let vanilla run; otherwise {@code transition} (possibly null = nothing happens) is the answer. */
     public record Outcome(boolean handled, @Nullable DimensionTransition transition) {
         static final Outcome VANILLA = new Outcome(false, null);
@@ -70,6 +79,16 @@ public final class NetherPortalBandJump {
 
     /** Resolve {@code entity} entering the portal at {@code portalPos} in {@code level}. */
     public static Outcome destination(ServerLevel level, Entity entity, BlockPos portalPos, ExitPortalFinder finder) {
+        return destination(level, entity, portalPos, Kind.NETHER, finder);
+    }
+
+    /**
+     * {@link #destination(ServerLevel, Entity, BlockPos, ExitPortalFinder)} for a portal of kind {@code kind}. An
+     * Otherside portal leads to the Deeper Dark passes as a Nether portal leads to the Nether ones, with its own
+     * pairs ({@link NetherPortalLinks#getOtherside}).
+     */
+    public static Outcome destination(ServerLevel level, Entity entity, BlockPos portalPos, Kind kind,
+                                      ExitPortalFinder finder) {
         if (level.dimension() != Level.OVERWORLD) return Outcome.VANILLA;
         if (!(entity instanceof ServerPlayer player)) return Outcome.VANILLA;
         if (!DungeonTrainCommonConfig.isNetherPortalBandJumpEnabled()) return Outcome.VANILLA;
@@ -79,7 +98,7 @@ public final class NetherPortalBandJump {
 
         String who = player.getName().getString();
         int fromX = player.getBlockX();
-        NetherPortalLinks links = NetherPortalLinks.get(level);
+        NetherPortalLinks links = kind == Kind.OTHERSIDE ? NetherPortalLinks.getOtherside(level) : NetherPortalLinks.get(level);
         // A frame built on a carriage sits in the ship plot grid, millions of blocks out: its position is
         // never a place to send anyone, and it moves with the train anyway, so it is never paired.
         boolean onCarriage = Shipyards.isInPlotGrid(level, portalPos);
@@ -99,9 +118,9 @@ public final class NetherPortalBandJump {
             exit = partner;
             why = "linked portal";
         } else {
-            exit = bandJumpExit(level, data, player, fromX);
+            exit = bandJumpExit(level, data, player, fromX, kind);
             if (exit == null) {
-                LOGGER.info("[DungeonTrain] nether portal at x={} by {}: no band to go to — vanilla portal", fromX, who);
+                LOGGER.info("[DungeonTrain] {} portal at x={} by {}: no band to go to — vanilla portal", kind, fromX, who);
                 return Outcome.VANILLA;
             }
             why = "to " + BandLabel.bandAt(level, exit.getX()) + " core";
@@ -121,9 +140,13 @@ public final class NetherPortalBandJump {
             return new Outcome(true, null);
         }
         if (choice != ExitChoice.LINKED && !onCarriage) links.link(origin, arrived);
-        // The band counts as the real Nether: fire the criterion vanilla fires on a dimension change, so
-        // "We Need to Go Deeper" and the Nether tab open just as they would through a real portal.
-        NetherPortalAdvancements.crossing(NetherBand.isInNetherBand(level, fromX), NetherBand.isInNetherBand(level, arrived.getX()))
+        // The band counts as the real Nether (and a Deeper Dark core as the Otherside): fire the criterion vanilla
+        // fires on a dimension change, so "We Need to Go Deeper" and the Nether tab — or Deeper Darker's
+        // "enter the Otherside" — open just as they would through a real portal.
+        (kind == Kind.OTHERSIDE
+            ? NetherPortalAdvancements.othersideCrossing(NetherBand.isOthersideAt(level, fromX),
+                NetherBand.isOthersideAt(level, arrived.getX()))
+            : NetherPortalAdvancements.crossing(isRealNether(level, fromX), isRealNether(level, arrived.getX())))
             .ifPresent(c -> CriteriaTriggers.CHANGED_DIMENSION.trigger(player, c.from(), c.to()));
         LOGGER.info("[DungeonTrain] nether portal: {} x={} ({}) → {} ({}), frames {} ↔ {}{}",
             who, fromX, BandLabel.bandAt(level, fromX), exit, why, origin, arrived, onCarriage ? " onCarriage=true" : "");
@@ -153,10 +176,17 @@ public final class NetherPortalBandJump {
 
     /** Where a new exit portal is asked for in the destination band's core, or null when there is no band to go to. */
     @Nullable
-    private static BlockPos bandJumpExit(ServerLevel level, DungeonTrainWorldData data, ServerPlayer player, int fromX) {
-        OptionalLong target = NetherPortalJump.targetX(WorldGenCycle.fromConfig(), x -> BandLabel.bandAt(level, x), fromX);
+    private static BlockPos bandJumpExit(ServerLevel level, DungeonTrainWorldData data, ServerPlayer player, int fromX,
+                                         Kind kind) {
+        OptionalLong target = NetherPortalJump.targetX(WorldGenCycle.fromConfig(), x -> BandLabel.bandAt(level, x), fromX,
+            kind.target());
         if (target.isEmpty()) return null;
         return level.getWorldBorder().clampToBounds(target.getAsLong(), player.getY(), sideOfTrack(data, player.getZ()));
+    }
+
+    /** A Nether band column that is the real Nether, not a Deeper Dark. */
+    private static boolean isRealNether(ServerLevel level, int x) {
+        return NetherBand.isInNetherBand(level, x) && !NetherBand.isOthersideAt(level, x);
     }
 
     /** Z for a new exit portal: {@link #SIDE_OFFSET} blocks from the track centre, on the player's side of it. */
