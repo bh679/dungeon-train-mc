@@ -12,6 +12,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A {@code dungeontrain:random_playerphoto} hung in a photo frame in a template becomes a community
@@ -32,6 +37,8 @@ import net.minecraft.world.level.block.state.BlockState;
  */
 public final class RandomFramePhotos {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     /** Salt keeping this roll independent of every other deterministic roll on the same cell. */
     private static final long SALT_FRAME_PHOTO = 0xF4A3E9407051DEL;
 
@@ -51,6 +58,7 @@ public final class RandomFramePhotos {
         if (carriageIndex == CarriageContentsPlacer.EDITOR_SENTINEL_PIDX) return;
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         boolean test = CarriageTestSession.isTestStamp(carriageIndex);
+        List<String> seen = new ArrayList<>();
         for (int x = 0; x < size.getX(); x++) {
             for (int y = 0; y < size.getY(); y++) {
                 for (int z = 0; z < size.getZ(); z++) {
@@ -58,6 +66,8 @@ public final class RandomFramePhotos {
                     BlockPos worldPos = origin.offset(localPos);
                     if (mask.covers(worldPos)) continue;
                     if (!(level.getBlockEntity(worldPos) instanceof PhotographFrameBlockEntity frame)) continue;
+                    if (test) seen.add(localPos.toShortString() + " " + frame.getBlockState()
+                        .getValue(games.brennan.dungeontrain.block.PhotographFrameBlock.FACING) + " s" + frame.size());
                     if (!frame.hasRandomPlaceholder()) continue;
                     // mapLocal is its own inverse: the authored cell, so the pick follows the frame.
                     BlockPos authored = ContentsFlip.mapLocal(localPos, size, flip);
@@ -71,6 +81,10 @@ public final class RandomFramePhotos {
                     }
                 }
             }
+        }
+        if (test) {
+            LOGGER.debug("[DungeonTrain] test frames: flip={} masters(local, facing, size)={}",
+                ContentsFlip.label(flip), seen);
         }
     }
 

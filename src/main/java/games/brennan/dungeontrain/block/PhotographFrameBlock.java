@@ -209,6 +209,20 @@ public class PhotographFrameBlock extends Block implements EntityBlock {
         return (BlockEntityTicker<T>) (BlockEntityTicker<PhotographFrameBlockEntity>) RandomFramePhotos::tickPending;
     }
 
+    /**
+     * A cell that stops being its frame's master loses the master's block entity. Vanilla only drops a
+     * block entity when the <em>block</em> changes, so a stamp that turns a single frame's master into
+     * a cell of a bigger frame (a re-rolled or flipped template) would otherwise keep the old photo
+     * there — and the client would go on drawing it.
+     */
+    @Override
+    protected void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (newState.getBlock() instanceof PhotographFrameBlock && !isMaster(newState)) {
+            level.removeBlockEntity(pos);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
     @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder params) {
         if (!isMaster(state)) return List.of();

@@ -55,7 +55,9 @@ public class PhotographFrameBlockRenderer implements BlockEntityRenderer<Photogr
     public void render(PhotographFrameBlockEntity be, float partialTick, PoseStack pose, MultiBufferSource buffers,
                        int light, int overlay) {
         BlockState state = be.getBlockState();
-        if (!(state.getBlock() instanceof PhotographFrameBlock)) return;
+        // Only a master draws: the client keeps a block entity when its cell turns into another part
+        // of a frame (same block), and that stale one would draw an old picture there.
+        if (!(state.getBlock() instanceof PhotographFrameBlock) || !PhotographFrameBlock.isMaster(state)) return;
         Direction facing = state.getValue(PhotographFrameBlock.FACING);
         boolean glass = state.getValue(PhotographFrameBlock.GLASS);
         int size = be.size();
