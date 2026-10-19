@@ -1682,8 +1682,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Menționează-mă când plătesc tribut propriei fotografii și aceasta este publicată.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Fotografii cu tribut",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Menționează-mă când cineva plătește tribut unei fotografii făcute de mine.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Fotografii de la mobi",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Menționează-mă când un pasager căruia i-am dat un aparat foto mă fotografiază.",
   "gui.dungeontrain.options.account.pings.milestone": "Repere",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Menționează-mă când unul dintre progresele mele de reper este publicat.",
   "gui.dungeontrain.options.account.pings.translation_review": "Revizuiri de traduceri",

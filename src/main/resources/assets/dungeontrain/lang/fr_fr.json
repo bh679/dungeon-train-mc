@@ -1474,8 +1474,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Mentionne-moi quand je paie un tribut à ma propre photo et qu'elle est publiée.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Photos honorées",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Mentionne-moi quand quelqu'un paie un tribut à une photo que j'ai prise.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Photos de mobs",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Mentionne-moi quand un passager à qui j'ai donné un appareil photo me prend en photo.",
   "gui.dungeontrain.options.account.pings.milestone": "Étapes clés",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Mentionne-moi quand l'un de mes progrès d'étape clé est publié.",
   "gui.dungeontrain.options.account.pings.translation_review": "Révisions de traduction",

@@ -1429,8 +1429,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "17b049bc552dc2e1"},
   "gui.dungeontrain.options.account.pings.photo_tributed": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "28b6f2bac68bcecf"},
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "85729902746021c5"},
-  "gui.dungeontrain.options.account.pings.mob_photo": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "9372feae163050cf"},
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "bed8e6a417903201"},
   "gui.dungeontrain.options.account.pings.milestone": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "39c33dc2375ffc56"},
   "gui.dungeontrain.options.account.pings.milestone.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "92c77546c8d9685b"},
   "gui.dungeontrain.options.account.pings.translation_review": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8f5abf12130e0ea2"},

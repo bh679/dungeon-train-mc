@@ -1474,8 +1474,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Noem me wanneer ik tribuut betaal aan mijn eigen foto en die wordt geplaatst.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Foto's met tribuut",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Noem me wanneer iemand tribuut betaalt aan een foto die ik heb gemaakt.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Mobfoto's",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Noem me wanneer een passagier aan wie ik een camera gaf een foto van me maakt.",
   "gui.dungeontrain.options.account.pings.milestone": "Mijlpalen",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Noem me wanneer een van mijn mijlpaal-vorderingen wordt geplaatst.",
   "gui.dungeontrain.options.account.pings.translation_review": "Vertalingsbeoordelingen",

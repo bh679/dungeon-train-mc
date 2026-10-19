@@ -1429,8 +1429,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "내 사진에 공물을 바쳐 게시되면 멘션해 주세요.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "공물을 받은 사진",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "누군가 내가 찍은 사진에 공물을 바치면 멘션해 주세요.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "몹 사진",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "카메라를 준 승객이 내 사진을 찍으면 멘션해 주세요.",
   "gui.dungeontrain.options.account.pings.milestone": "이정표",
   "gui.dungeontrain.options.account.pings.milestone.tip": "내 이정표 발전 과제가 게시되면 멘션해 주세요.",
   "gui.dungeontrain.options.account.pings.translation_review": "번역 검토",

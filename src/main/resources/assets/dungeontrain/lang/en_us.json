@@ -1633,8 +1633,6 @@
   "gui.dungeontrain.options.account.pings.own_tribute.tip": "Ping me when I pay Tribute to my own photo and it's posted.",
   "gui.dungeontrain.options.account.pings.photo_tributed": "Photos tributed",
   "gui.dungeontrain.options.account.pings.photo_tributed.tip": "Ping me when someone pays Tribute to a photo I took.",
-  "gui.dungeontrain.options.account.pings.mob_photo": "Mob photos",
-  "gui.dungeontrain.options.account.pings.mob_photo.tip": "Ping me when a passenger I gave a camera takes a photo of me.",
   "gui.dungeontrain.options.account.pings.milestone": "Milestones",
   "gui.dungeontrain.options.account.pings.milestone.tip": "Ping me when one of my milestone advancements is posted.",
   "gui.dungeontrain.options.account.pings.translation_review": "Translation reviews",
