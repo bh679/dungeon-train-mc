@@ -438,7 +438,8 @@ logoFile="logo.png"
     config="${mod_id}.vanillabackport.mixins.json"
 
 # Deeper Darker (required dep) — Otherside portals on the ride lead to a Deeper Dark core along the track, like
-# Nether portals do (see mixin/deeperdarker/OthersidePortalBlockBandJumpMixin).
+# Nether portals do (see mixin/deeperdarker/OthersidePortalBlockBandJumpMixin). Gated by ThirdPartyMixinPlugin: a newer
+# Deeper Darker build that moved what it hooks skips the mixin with a WARN instead of stopping the boot.
 [[mixins]]
     config="${mod_id}.deeperdarker.mixins.json"
 
