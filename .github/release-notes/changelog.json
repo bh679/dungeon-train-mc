@@ -28450,6 +28450,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "walked-off-mobs-stay",
+      "version": "0.1397.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "mobs"
+      ],
+      "title": "Mobs that step off the train stay put",
+      "summary": "Animals and monsters that wander off a carriage onto the ground beside the track no longer vanish. They stay where they stepped off, just like ones you knock off.",
+      "highlights": [],
+      "pr": 2174,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
