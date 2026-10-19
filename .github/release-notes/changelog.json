@@ -28432,9 +28432,9 @@
       "highlights": [],
       "pr": 2170,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
     },
     {
       "id": "sky-fix-2",
@@ -28447,9 +28447,9 @@
       "summary": "Sky fix.",
       "highlights": [],
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
     },
     {
       "id": "walked-off-mobs-stay",
@@ -28464,9 +28464,9 @@
       "highlights": [],
       "pr": 2174,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1397.0",
+      "released_at": "2026-10-19T19:16:33Z"
     }
   ]
 }
