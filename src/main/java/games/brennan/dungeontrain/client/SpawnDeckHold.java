@@ -27,7 +27,11 @@ import org.slf4j.Logger;
  *
  * <p>Only the vertical axis is constrained — the player may still walk and the
  * train slides forward beneath them (a small backward drift onto the carriages
- * behind the front pad, which are continuous, so they stay on the train).</p>
+ * behind the front pad, which are continuous, so they stay on the train). The
+ * one exception: on a tick the clamp fires, Sable isn't carrying the player yet,
+ * so they are also moved forward by the packet's train speed ({@code /dtp} only;
+ * 0 elsewhere). Without it a client that hasn't received the ship's collision
+ * hovers in place while the whole train slides past (issue #2133).</p>
  *
  * <p>After the hold ends, a short {@link #VERIFY_TICKS} post-check logs whether
  * the player actually stayed on the deck (carry/server held them) or dropped —
@@ -49,6 +53,7 @@ public final class SpawnDeckHold {
 
     private static volatile boolean active = false;
     private static double deckTopY;
+    private static double trainBlocksPerTick;
     private static int remaining;
     private static int cleanStreak;
     private static int clampsFired;
@@ -61,8 +66,9 @@ public final class SpawnDeckHold {
      * hold normally releases earlier, as soon as carry engages. Called from
      * {@link SpawnDeckHoldPacket#handle}.
      */
-    public static void begin(double deckTopY, int durationTicks) {
+    public static void begin(double deckTopY, int durationTicks, double trainBlocksPerTick) {
         SpawnDeckHold.deckTopY = deckTopY;
+        SpawnDeckHold.trainBlocksPerTick = trainBlocksPerTick;
         SpawnDeckHold.remaining = Math.max(1, durationTicks);
         SpawnDeckHold.cleanStreak = 0;
         SpawnDeckHold.clampsFired = 0;
@@ -95,8 +101,9 @@ public final class SpawnDeckHold {
         if (active) {
             if (player.getY() < deckTopY) {
                 // Snap back up onto the deck and kill any downward velocity so the
-                // player rides instead of accelerating through the hollow slab.
-                player.setPos(player.getX(), deckTopY, player.getZ());
+                // player rides instead of accelerating through the hollow slab. A clamp
+                // means Sable isn't carrying them yet, so move them with the train too.
+                player.setPos(player.getX() + trainBlocksPerTick, deckTopY, player.getZ());
                 // Match the previous-tick Y so the renderer doesn't interpolate a dip.
                 player.yo = deckTopY;
                 player.setOnGround(true);
