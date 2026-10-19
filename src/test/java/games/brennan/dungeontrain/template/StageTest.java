@@ -66,4 +66,20 @@ final class StageTest {
         assertEquals(null, Stage.fromJson("desert", back.withBuilder(null).toJson()).builder());
         assertEquals(null, new Stage("plain", "plain", TemplateGate.DEFAULT).builder(), "three-arg shape credits nobody");
     }
+
+    @Test
+    @DisplayName("a stage's group is lower-cased, written only when set, and survives every copy")
+    void groupRoundTrip() {
+        Stage s = new Stage("spruce", "spruce", TemplateGate.DEFAULT).withGroup(" Wood ");
+        assertEquals("wood", s.group());
+        assertTrue(s.grouped());
+        assertEquals("wood", s.toJson().get("group").getAsString());
+        Stage back = Stage.fromJson("spruce", s.toJson());
+        assertEquals("wood", back.group());
+        assertEquals("wood", back.withName("Spruce").withGate(TemplateGate.DEFAULT).withBuilder(null).group());
+        Stage plain = new Stage("stone", "stone", TemplateGate.DEFAULT);
+        assertEquals("", plain.group());
+        assertTrue(!plain.toJson().has("group"), "an ungrouped stage writes no group");
+        assertEquals("", Stage.fromJson("stone", JsonParser.parseString("{\"group\": 3}")).group(), "a non-string group is ignored");
+    }
 }
