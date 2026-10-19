@@ -28294,6 +28294,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "options-hint-hover-tooltip",
+      "version": "0.1388.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "ui"
+      ],
+      "title": "Settings descriptions on hover",
+      "summary": "Hover any setting in the Dungeon Train options to read its full description, even when it is too long to fit on the row.",
+      "highlights": [],
+      "pr": 2163,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
