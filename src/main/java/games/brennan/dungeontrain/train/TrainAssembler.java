@@ -505,6 +505,11 @@ public final class TrainAssembler {
             velocity == null ? 0.0 : velocity.x(),
             subLevelLength + TrainCarriageAppender.TARGET_GAP_BLOCKS);
         final boolean anyTransitionFlatbed = transitionFlatbed != null;
+        // The whole group stands as the group-sized flatbed; only a world that can't build it falls back
+        // to single flatbed carriages in a run of rooms.
+        final FullCarriageSelection.FullPick transitionGroup = anyTransitionFlatbed
+            ? FullCarriageSelection.pickShell(level, TransitionFlatbeds.GROUP_SHELL, anchorPIdx, groupSize, dims) : null;
+        final boolean singleTransitionFlatbeds = anyTransitionFlatbed && transitionGroup == null;
 
         CarriageVariant[] enclosedBySlot = new CarriageVariant[groupSize];
         // Per-slot worldgen stage: gates which pooled carriages this slot may draw, and stamps a fresh
@@ -521,13 +526,14 @@ public final class TrainAssembler {
         GateContext anchorGate = GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, anchorPIdx, length);
         // How the group is filled: rooms, a Half pair or one Group carriage, drawn by the layout
         // weights. A layout whose pool has nothing for this group falls back to rooms.
-        // A group holding a transition flatbed is laid as rooms — no Group / Whole / Half run over the deck.
-        CarriageLayout layout = anyTransitionFlatbed
-            ? CarriageLayout.ROOMS : layoutFor(level, anchorPIdx, groupSize, genCfg.seed());
+        // A group holding a transition flatbed is the group flatbed (or, failing that, rooms) — never a
+        // drawn Group / Whole / Half run.
+        CarriageLayout layout = transitionGroup != null ? CarriageLayout.GROUP
+            : anyTransitionFlatbed ? CarriageLayout.ROOMS : layoutFor(level, anchorPIdx, groupSize, genCfg.seed());
         // A Group carriage: one group-long shell over the run, its Group contents laid after assembly
         // like any carriage's. Portal groups never take one — see FullCarriageSelection.
-        FullCarriageSelection.FullPick drawnFull = layout == CarriageLayout.GROUP
-            ? FullCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
+        FullCarriageSelection.FullPick drawnFull = transitionGroup != null ? transitionGroup
+            : layout == CarriageLayout.GROUP ? FullCarriageSelection.pick(level, anchorPIdx, groupSize, dims, genCfg.seed(), anchorGate) : null;
         // Drawing the Whole Group template makes the run a whole group, the way drawing `whole`
         // makes a slot a whole room; with none that fits, the template stands as the Group carriage.
         WholeGroupSelection.GroupPick groupPick = !anyTransitionFlatbed
@@ -551,7 +557,7 @@ public final class TrainAssembler {
             ? games.brennan.dungeontrain.template.StageResolver.stageIdFor(anchorGate) : null;
         final CarriageDims groupBox = fullGroup
             ? ContentsSize.FULL.shellDims(dims, groupSize).orElse(null) : null;
-        final boolean groupDrifts = groupBox != null
+        final boolean groupDrifts = groupBox != null && transitionGroup == null
             && SharedGroupDrift.drifts(anchorPIdx, groupSize, genCfg.seed(), fullStage);
         SharedGroupDrift.Pick groupLease = null;
         net.minecraft.nbt.ListTag groupLeaseEnts = null;
@@ -599,7 +605,7 @@ public final class TrainAssembler {
             // the group's ACTUAL placed world-X so it matches the contents / parts / track gates and
             // the band terrain (Diff-Level still derives from pIdx — see GateContext.forCarriageAtWorldX).
             GateContext gateCtx = GateContext.forCarriageAtWorldX(level, groupAnchorWorldX, carriagePIdx, length);
-            boolean forcedFlatbed = anyTransitionFlatbed && transitionFlatbed[slot];
+            boolean forcedFlatbed = singleTransitionFlatbeds && transitionFlatbed[slot];
             CarriageVariant variant = forcedFlatbed
                 ? CarriagePlacer.flatbedVariant()
                 : CarriagePlacer.enclosedVariantForIndex(carriagePIdx, genCfg, gateCtx);
@@ -642,9 +648,9 @@ public final class TrainAssembler {
             // currently know about, so both flags stay false.
             // A transition flatbed inside the run is the same open edge for the carriage beside it.
             boolean flatbedAtBack  = (wrapWithPads && slot == 0)
-                || (anyTransitionFlatbed && slot > 0 && transitionFlatbed[slot - 1]);
+                || (singleTransitionFlatbeds && slot > 0 && transitionFlatbed[slot - 1]);
             boolean flatbedAtFront = (wrapWithPads && slot == groupSize - 1)
-                || (anyTransitionFlatbed && slot < groupSize - 1 && transitionFlatbed[slot + 1]);
+                || (singleTransitionFlatbeds && slot < groupSize - 1 && transitionFlatbed[slot + 1]);
 
             // Shared-carriage RELAY path: if this shared slot draws a build (the community pool, or one
             // authored by a player here) AND a lease is buffered, stamp it VERBATIM (no parts/variants/

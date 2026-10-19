@@ -102,6 +102,26 @@ public final class FullCarriageSelection {
     }
 
     /**
+     * The named Full shell for this run, skipping the lottery (weights, gates, contents) — for a run that
+     * must be a particular group carriage, like a transition flatbed's {@code flatbedgroup}. Null when this
+     * world cannot build it (no such shell, an off-size group, or no template at this world's Full box).
+     */
+    public static FullPick pickShell(ServerLevel level, String shellId, int anchorPIdx, int groupSize, CarriageDims dims) {
+        Optional<CarriageDims> box = ContentsSize.FULL.shellDims(dims, groupSize);
+        if (box.isEmpty() || groupSize != DungeonTrainConfig.getGroupSize()) return null;
+        CarriageVariant shell = CarriageVariantRegistry.find(shellId).orElse(null);
+        if (shell == null) return null;
+        StructureTemplate template = CarriageTemplateStore.get(level, shell, box.get()).orElse(null);
+        if (template == null) {
+            LOGGER.warn("[DungeonTrain] full carriage anchorPIdx={} → forced shell '{}' has no {}-long template",
+                anchorPIdx, shellId, box.get().length());
+            return null;
+        }
+        LOGGER.info("[DungeonTrain] full carriage anchorPIdx={} → FORCED shell={}", anchorPIdx, shellId);
+        return new FullPick(shell, template);
+    }
+
+    /**
      * Stamp the shell over the whole run at {@code runOrigin} and lay its variant blocks, then return
      * the per-carriage footprint for the shipyard. The contents follow after assembly, at shipyard
      * coords, like every other carriage's ({@link CarriagePlacer#applyContentsBlocksAt}).

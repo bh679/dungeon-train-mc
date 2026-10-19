@@ -2374,11 +2374,12 @@ public final class TrainCarriageAppender {
                 remoteCount++;
             }
 
+            // Feeds the rider's pace and the train's lead for timed transition flatbeds — remote too, so a
+            // player who has outrun the generated train still drives the claims ahead of them.
+            TransitionFlatbeds.observe(trainId, player.getUUID(), pIdx, player.getX(), tickNow);
             if (!remote) {
                 UUID uuid = player.getUUID();
                 seenThisTick.add(uuid);
-                // Feeds the rider's pace and the train's lead for timed transition flatbeds.
-                TransitionFlatbeds.observe(trainId, uuid, pIdx, player.getX(), tickNow);
                 Integer lastSent = LAST_SENT_PIDX.get(uuid);
                 if (lastSent == null || lastSent != pIdx) {
                     DungeonTrainNet.sendTo(player, new CarriageIndexPacket(true, pIdx));

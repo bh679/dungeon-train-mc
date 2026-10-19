@@ -27,7 +27,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * <b>Transition flatbeds</b>: a full flatbed carriage — open deck, no walls — at each dimension/band
+ * <b>Transition flatbeds</b>: a whole group of open flatbed deck ({@link #GROUP_SHELL}) at each dimension/band
  * transition ({@link TransitionLandmarks}), so the player is out in the open as the world changes.
  *
  * <p>Timed landmarks follow the <em>lead</em> player — the one furthest forward, whose walking drives
@@ -43,6 +43,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TransitionFlatbeds {
 
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    /** The group-sized flatbed a group holding a transition flatbed stands as. */
+    public static final String GROUP_SHELL = "flatbedgroup";
 
     /** The pace window, in Diff-Levels: the rider's average over at most this many levels' worth of carriages. */
     private static final int PACE_WINDOW_LEVELS = 4;
@@ -66,7 +69,10 @@ public final class TransitionFlatbeds {
 
     private TransitionFlatbeds() {}
 
-    /** Called each tick from the appender for every player riding train {@code trainId} (not remote estimates). */
+    /**
+     * Called each tick from the appender for every player on train {@code trainId}'s line — riding it, or
+     * out ahead of / beside it with an estimated index (a creative flyer outrunning the generated train).
+     */
     public static void observe(UUID trainId, UUID player, int pIdx, double worldX, long tick) {
         Rider r = RIDERS.computeIfAbsent(trainId, k -> new ConcurrentHashMap<>())
             .computeIfAbsent(player, k -> new Rider(DungeonTrainCommonConfig.getTransitionFlatbedPace()));
