@@ -67,7 +67,8 @@ import java.util.UUID;
  *
  * <p>The same rule is the AFK rule: {@link #isAfk} — any reason but {@link Reason#TRACKING} — makes
  * {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion, and the
- * client's {@code AfkAutoPause} opens the pause menu on the way in. One difference from the clocks:
+ * client's {@code AfkAutoPause} keeps its own, slower clock for opening the pause menu (2 min idle,
+ * 5 min with a screen open). One difference from the clocks:
  * a paused player who clicked or typed on their screen in the last {@link #MENU_PRESENCE_MS} is not
  * AFK, provided they are still getting somewhere. Nearly every screen is a pause screen — books,
  * the photo viewer, the pause menu's sliders and Abandon button — and the packet a click there

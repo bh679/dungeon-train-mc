@@ -198,6 +198,14 @@ public final class ClientActivityReporter {
             : ClientInputPacket.unpaused(true));
     }
 
+    /**
+     * Is the current pause the pause menu, or a settings screen reached from it? {@link AfkAutoPause}
+     * never opens the pause menu over itself.
+     */
+    static boolean onGameMenu() {
+        return reportedPaused && pauseKind == ClientInputPacket.PAUSE_GAME_MENU;
+    }
+
     /** How long the pause has lasted, clamped to an int and never negative (clock steps back). */
     static int pausedForMs(long nowMs, long sinceMs) {
         return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, nowMs - sinceMs));
