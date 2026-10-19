@@ -52,6 +52,9 @@ final class WindDebug {
                 .then(Commands.literal("on").executes(ctx -> toggle(ctx.getSource(), false)))
                 .then(Commands.literal("off").executes(ctx -> toggle(ctx.getSource(), true)))
                 .then(Commands.literal("drop").executes(ctx -> drop(ctx.getSource())))
+                .then(Commands.literal("trace")
+                        .then(Commands.literal("on").executes(ctx -> trace(ctx.getSource(), true)))
+                        .then(Commands.literal("off").executes(ctx -> trace(ctx.getSource(), false))))
                 .then(Commands.literal("start")
                         .then(Commands.literal("here").executes(ctx -> start(ctx.getSource(),
                                 (long) Math.floor(ctx.getSource().getPosition().x))))
@@ -139,6 +142,13 @@ final class WindDebug {
         WindServer.trackProbe(stand, tick);
         send(source, String.format("[DungeonTrain] wind drop: feather + armor stand on carriage %d at X %.1f Y %.1f Z %.1f; "
                 + "drift logged for 10 s", lead.provider().getPIdx(), x, y, z), ChatFormatting.GREEN);
+        return 1;
+    }
+
+    private static int trace(CommandSourceStack source, boolean on) {
+        WindServer.setTrace(on);
+        send(source, "[DungeonTrain] wind trace " + (on ? "ON: every push is logged (latest.log, 'wind trace')" : "off"),
+                ChatFormatting.GREEN);
         return 1;
     }
 

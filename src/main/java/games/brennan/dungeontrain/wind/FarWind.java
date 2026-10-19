@@ -30,10 +30,19 @@ final class FarWind {
     private static final double ROOF_EPS = 0.6;
     private static final double FLOOR_TOLERANCE = 1.0;
     private static final int TUNNEL_SCAN = 4;
+    /** Slack past a group's own footprint before it stops being this group's business. */
+    private static final double EDGE = 1.0;
 
     private FarWind() {}
 
+    /** Out in the wind on this group, sheltered in it, or not on this group at all. */
+    enum Verdict { EXPOSED, SHELTERED, NOT_HERE }
+
     static boolean exposed(Trains.Carriage carriage, Entity e) {
+        return classify(carriage, e) == Verdict.EXPOSED;
+    }
+
+    static Verdict classify(Trains.Carriage carriage, Entity e) {
         TrainTransformProvider provider = carriage.provider();
         CarriageDims dims = provider.dims();
         int groupSize = provider.getGroupSize();
@@ -43,13 +52,36 @@ final class FarWind {
         Vector3d local = new Vector3d(e.getX(), e.getY(), e.getZ());
         carriage.ship().worldToShip(local);
         double roofTop = origin.getY() + dims.height();
-        if (local.y < origin.getY() - FLOOR_TOLERANCE) return false;
+        double groupLength = groupSize * (double) dims.length() + 2.0 * halfPadLen;
+        // Not over this group at all (a neighbour's box reaches it): let the group it is on decide.
+        if (local.x < origin.getX() - EDGE || local.x > origin.getX() + groupLength + EDGE) return Verdict.NOT_HERE;
+        if (local.z < origin.getZ() - EDGE || local.z > origin.getZ() + dims.width() + EDGE) return Verdict.NOT_HERE;
+        if (local.y < origin.getY() - FLOOR_TOLERANCE) return Verdict.NOT_HERE;
         if (local.y < roofTop - ROOF_EPS) {
             double enclosedMinX = origin.getX() + halfPadLen;
             int slot = (int) Math.floor((local.x - enclosedMinX) / dims.length());
-            if (slot >= 0 && slot < groupSize && walled(provider.getPIdx() + slot)) return false;
+            if (slot >= 0 && slot < groupSize && walled(provider.getPIdx() + slot)) return Verdict.SHELTERED;
         }
-        return !underTerrain(e.level(), e);
+        return underTerrain(e.level(), e) ? Verdict.SHELTERED : Verdict.EXPOSED;
+    }
+
+    /** Why {@link #classify} decided as it did, for {@code debug wind trace}. */
+    static String explain(Trains.Carriage carriage, Entity e) {
+        TrainTransformProvider provider = carriage.provider();
+        CarriageDims dims = provider.dims();
+        int groupSize = provider.getGroupSize();
+        int halfPadLen = groupSize > 1 ? CarriagePlacer.halfPadLen(dims) : 0;
+        BlockPos origin = provider.getShipyardOrigin();
+        Vector3d local = new Vector3d(e.getX(), e.getY(), e.getZ());
+        carriage.ship().worldToShip(local);
+        double rel = local.x - (origin.getX() + halfPadLen);
+        int slot = (int) Math.floor(rel / dims.length());
+        PlacedCarriageFacts.Facts facts = PlacedCarriageFacts.get(provider.getPIdx() + slot);
+        return String.format(java.util.Locale.ROOT,
+                "local(%.1f,%.1f,%.1f) origin(%d,%d,%d) dims(%dx%dx%d) group=%d pad=%d slot=%d pIdx=%d variant=%s",
+                local.x, local.y, local.z, origin.getX(), origin.getY(), origin.getZ(), dims.length(), dims.height(),
+                dims.width(), groupSize, halfPadLen, slot, provider.getPIdx() + slot,
+                facts == null ? "?" : facts.variantId());
     }
 
     /** A carriage index built with walls — anything but a flatbed. Unknown counts as walled (stays put). */

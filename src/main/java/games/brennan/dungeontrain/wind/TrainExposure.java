@@ -37,7 +37,8 @@ public final class TrainExposure {
 
     static final int DECK_SCAN = 6;
     static final int COVER_SCAN = 8;
-    static final int LEE_SCAN = 4;
+    /** How far downwind a solid block shelters — a wall covers the whole 9-block room behind it. */
+    static final int LEE_SCAN = 8;
     /** How far across the carriage to look for each side wall. */
     static final int WALL_SCAN = 8;
     /** Heights above the feet the side walls must be at (foot and head level). */

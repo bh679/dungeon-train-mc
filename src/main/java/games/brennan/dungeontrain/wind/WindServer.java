@@ -36,9 +36,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -205,10 +207,26 @@ public final class WindServer {
         long tick = level.getGameTime();
         // Full detail within WIND_ROOMS carriages of a player; the simple far test (FarWind) everywhere else.
         double reach = WIND_ROOMS * carriages.get(0).provider().dims().length();
-        // Neighbouring carriages' boxes overlap at the couplings: push each entity once per tick.
+        // Every carriage group each entity is near. Neighbouring groups' boxes overlap at the couplings, so one
+        // entity is often near two; it is judged against all of them and SHELTER WINS — a mob inside one
+        // carriage near its end wall must not be read against the next group's open coupling pad.
+        Map<Entity, List<Trains.Carriage>> candidates = new IdentityHashMap<>();
+        for (Trains.Carriage c : carriages) collect(level, c, s, candidates);
         Set<Entity> done = Collections.newSetFromMap(new IdentityHashMap<>());
-        for (Trains.Carriage c : carriages) {
-            pushAround(level, c, s, tick, done, players, reach, nearAnyPlayer(c.ship().worldAABB(), players, reach));
+        Map<Trains.Carriage, WindSample> groupWind = new IdentityHashMap<>();
+        for (Map.Entry<Entity, List<Trains.Carriage>> entry : candidates.entrySet()) {
+            Entity e = entry.getKey();
+            List<Trains.Carriage> near = entry.getValue();
+            boolean full = withinReach(e, players, reach);
+            WindSample w = full
+                    ? s.sampleAt(e.getX(), tick).scaled(WindZones.deepDarkFactor(level, e.blockPosition()))
+                    : groupWind.computeIfAbsent(near.get(0), c -> groupSample(level, c, s, tick));
+            if (w.isCalm()) continue;
+            String verdict = full ? nearVerdict(near, e, w) : farVerdict(near, e);
+            if (!"EXPOSED".equals(verdict)) continue;
+            done.add(e);
+            double a = WindPush.apply(e, w, s.profile(), 1.0);
+            if (trace) trace(e, full, near, w, a, tick);
         }
         pushedSinceReport += done.size();
         if (tick % REPORT_PERIOD == 0) {
@@ -216,16 +234,6 @@ public final class WindServer {
                     pushedSinceReport, REPORT_PERIOD, done.size());
             pushedSinceReport = 0;
         }
-    }
-
-    /** Horizontal distance from the carriage group's box to the nearest player is within {@code reach}. */
-    private static boolean nearAnyPlayer(AABBdc bb, List<ServerPlayer> players, double reach) {
-        for (ServerPlayer p : players) {
-            double dx = Math.max(0.0, Math.max(bb.minX() - p.getX(), p.getX() - bb.maxX()));
-            double dz = Math.max(0.0, Math.max(bb.minZ() - p.getZ(), p.getZ() - bb.maxZ()));
-            if (dx * dx + dz * dz <= reach * reach) return true;
-        }
-        return false;
     }
 
     private static boolean withinReach(Entity e, List<ServerPlayer> players, double reach) {
@@ -237,42 +245,86 @@ public final class WindServer {
         return false;
     }
 
-    /**
-     * Push what is around one carriage group. Within {@code reach} of a player: the full test per entity (its
-     * own wind sample, {@link TrainExposure} block scans for cover and lee). Further out nobody is watching, so
-     * {@link FarWind}: one wind sample for the whole group, and "inside a carriage with walls, yes or no".
-     */
-    private static void pushAround(ServerLevel level, Trains.Carriage carriage, State s, long tick, Set<Entity> done,
-                                   List<ServerPlayer> players, double reach, boolean groupNear) {
+    /** Note every pushable, ticking entity around one carriage group as near it. */
+    private static void collect(ServerLevel level, Trains.Carriage carriage, State s,
+                                Map<Entity, List<Trains.Carriage>> candidates) {
         ManagedShip ship = carriage.ship();
         AABBdc bb = ship.worldAABB();
         if (bb.maxX() < s.startX()) return; // whole carriage still before the wind
-        if (!(ship instanceof SableManagedShip sable)) return;
-        SubLevel sub = sable.subLevel();
-        if (sub == null) return;
+        if (!(ship instanceof SableManagedShip sable) || sable.subLevel() == null) return;
         AABB box = new AABB(bb.minX() - SIDE_REACH, bb.minY(), bb.minZ() - SIDE_REACH,
                 bb.maxX() + SIDE_REACH, bb.maxY() + ABOVE_REACH, bb.maxZ() + SIDE_REACH);
-        WindSample groupWind = null;
         for (Entity e : level.getEntities((Entity) null, box, WindServer::pushable)) {
-            if (done.contains(e)) continue;
             // Only entities that will actually move this tick: a non-ticking one would just bank velocity.
             if (!level.isPositionEntityTicking(e.blockPosition())) continue;
-            WindSample w;
-            if (groupNear && withinReach(e, players, reach)) {
-                w = s.sampleAt(e.getX(), tick).scaled(WindZones.deepDarkFactor(level, e.blockPosition()));
-                if (w.isCalm() || !TrainExposure.isExposed(sub, e, w.dirX(), w.dirZ())) continue;
-            } else {
-                if (groupWind == null) {
-                    double cx = (bb.minX() + bb.maxX()) / 2.0;
-                    groupWind = s.sampleAt(cx, tick).scaled(WindZones.deepDarkFactor(level,
-                            BlockPos.containing(cx, bb.maxY(), (bb.minZ() + bb.maxZ()) / 2.0)));
-                }
-                w = groupWind;
-                if (w.isCalm() || !FarWind.exposed(carriage, e)) continue;
-            }
-            done.add(e);
-            WindPush.apply(e, w, s.profile(), 1.0);
+            candidates.computeIfAbsent(e, k -> new ArrayList<>(2)).add(carriage);
         }
+    }
+
+    private static WindSample groupSample(ServerLevel level, Trains.Carriage c, State s, long tick) {
+        AABBdc bb = c.ship().worldAABB();
+        double cx = (bb.minX() + bb.maxX()) / 2.0;
+        return s.sampleAt(cx, tick).scaled(WindZones.deepDarkFactor(level,
+                BlockPos.containing(cx, bb.maxY(), (bb.minZ() + bb.maxZ()) / 2.0)));
+    }
+
+    /**
+     * Full test near a player ({@link TrainExposure}) against every nearby group: any shelter wins; otherwise
+     * exposed if at least one group has it out in the open. Returns the verdict name (for the trace).
+     */
+    private static String nearVerdict(List<Trains.Carriage> near, Entity e, WindSample w) {
+        // The carriage layout first: anything in the body of a walled carriage is indoors, whatever its roof or
+        // windows look like (an open roof, glassless windows and a long room otherwise fool the block scans).
+        for (Trains.Carriage c : near) {
+            if (FarWind.classify(c, e) == FarWind.Verdict.SHELTERED) return "SHELTERED";
+        }
+        boolean exposed = false;
+        for (Trains.Carriage c : near) {
+            if (!(c.ship() instanceof SableManagedShip sable) || sable.subLevel() == null) continue;
+            TrainExposure.Result r = TrainExposure.classify(sable.subLevel(), e, w.dirX(), w.dirZ());
+            if (r == TrainExposure.Result.EXPOSED) exposed = true;
+            else if (r != TrainExposure.Result.NOT_ON_TRAIN) return r.name();
+        }
+        return exposed ? "EXPOSED" : "NOT_ON_TRAIN";
+    }
+
+    /** The cheap far test ({@link FarWind}) with the same rule: shelter in any nearby group wins. */
+    private static String farVerdict(List<Trains.Carriage> near, Entity e) {
+        boolean exposed = false;
+        for (Trains.Carriage c : near) {
+            FarWind.Verdict v = FarWind.classify(c, e);
+            if (v == FarWind.Verdict.SHELTERED) return "SHELTERED";
+            if (v == FarWind.Verdict.EXPOSED) exposed = true;
+        }
+        return exposed ? "EXPOSED" : "NOT_ON_TRAIN";
+    }
+
+    // ---- trace ------------------------------------------------------------------------------------
+
+    private static volatile boolean trace = false;
+    private static final Map<Entity, Long> LAST_TRACE = new java.util.WeakHashMap<>();
+
+    /** {@code debug wind trace on|off}: log every push (once a second per entity) with why it was pushed. */
+    public static void setTrace(boolean on) {
+        trace = on;
+    }
+
+    private static void trace(Entity e, boolean full, List<Trains.Carriage> near, WindSample w, double a, long tick) {
+        Long last = LAST_TRACE.get(e);
+        if (last != null && tick - last < 20) return;
+        LAST_TRACE.put(e, tick);
+        StringBuilder groups = new StringBuilder();
+        for (Trains.Carriage c : near) {
+            String r = full && c.ship() instanceof SableManagedShip sable && sable.subLevel() != null
+                    ? FarWind.classify(c, e).name() + "/" + TrainExposure.classify(sable.subLevel(), e, w.dirX(),
+                            w.dirZ()).name()
+                    : FarWind.classify(c, e).name();
+            groups.append(" g").append(c.provider().getPIdx()).append('=').append(r)
+                    .append(" [").append(FarWind.explain(c, e)).append(']');
+        }
+        LOGGER.info("[DungeonTrain] wind trace: pushed {} at {} {} {} ({}) by {} | near groups:{}",
+                e.getType().toShortString(), String.format("%.1f", e.getX()), String.format("%.1f", e.getY()),
+                String.format("%.1f", e.getZ()), full ? "near player" : "far", String.format("%.4f", a), groups);
     }
 
     /** Track a {@code debug wind drop} probe: its position is logged at INFO every second for 10 s. */
