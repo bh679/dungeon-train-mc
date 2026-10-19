@@ -4,72 +4,72 @@
   "variants": [
     {
       "id": "seating",
-      "weight": 4
+      "weight": 8
     },
     {
       "id": "dining",
-      "weight": 4,
+      "weight": 8,
       "maxLevel": 0
     },
     {
       "id": "seating_thin",
-      "weight": 4,
+      "weight": 8,
       "maxLevel": 0
     },
     {
       "id": "center_dining",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "books2",
-      "weight": 4
+      "weight": 8
     },
     {
       "id": "center_dining2",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "dining_maze",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "dining_thin",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "dining_thin2",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "seating_face_in",
-      "weight": 2
+      "weight": 4
     },
     {
       "id": "cake",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "books2lanes",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "bookdoor",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "sandlib",
-      "weight": 1,
+      "weight": 2,
       "stage": "desert"
     },
     {
       "id": "sand_seat_thin",
-      "weight": 4,
+      "weight": 8,
       "maxLevel": 0,
       "stage": "desert"
     },
     {
       "id": "quartz_seat",
-      "weight": 4,
+      "weight": 8,
       "stages": [
         "obsidian",
         "quartz"
@@ -77,11 +77,11 @@
     },
     {
       "id": "bookslevel2",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "enderbooks",
-      "weight": 4,
+      "weight": 8,
       "phases": [
         "END",
         "UPSIDE_DOWN"
@@ -89,31 +89,43 @@
     },
     {
       "id": "seatingnew",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "booth",
-      "weight": 3
+      "weight": 6
     },
     {
       "id": "moreseats",
-      "weight": 1,
+      "weight": 2,
       "minLevel": 5
     },
     {
       "id": "double",
-      "weight": 3
+      "weight": 6
     },
     {
       "id": "books3",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "books4",
-      "weight": 1
+      "weight": 2
     },
     {
       "id": "luggage",
+      "weight": 2
+    },
+    {
+      "id": "pictureframe",
+      "weight": 1
+    },
+    {
+      "id": "pictureframe2",
+      "weight": 1
+    },
+    {
+      "id": "picturelarge",
       "weight": 1
     }
   ]

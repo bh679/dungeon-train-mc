@@ -281,6 +281,8 @@ public final class CarriageContentsPlacer {
                 contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 seed, carriageIndex, mask, flip);
+            games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, interiorOrigin(carriageOrigin),
+                interiorSizeFor(contents, dims), seed, carriageIndex, mask, flip);
             joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
             gateCreakingHearts(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
@@ -389,6 +391,8 @@ public final class CarriageContentsPlacer {
                 contents, seed, carriageIndex, mask, flip);
             applyHeadSkins(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims),
                 seed, carriageIndex, mask, flip);
+            games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, interiorOrigin(carriageOrigin),
+                interiorSizeFor(contents, dims), seed, carriageIndex, mask, flip);
             joinTvs(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
             gateCreakingHearts(level, interiorOrigin(carriageOrigin), interiorSizeFor(contents, dims), carriageIndex);
         });
@@ -430,6 +434,8 @@ public final class CarriageContentsPlacer {
             clearBakedNarrativeLecternBooks(level, anchor, box);
             applyVariantBlocks(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
             applyContentPools(level, anchor, box, contents, seed, carriageIndex, safeMask, flip);
+            games.brennan.dungeontrain.compat.photo.RandomFramePhotos.resolveIn(level, anchor, box, seed, carriageIndex,
+                safeMask, flip);
             joinTvs(level, anchor, box, carriageIndex);
             gateCreakingHearts(level, anchor, box, carriageIndex);
         });
@@ -1762,13 +1768,16 @@ public final class CarriageContentsPlacer {
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) return;
         BlockPos origin = interiorOrigin(carriageOrigin);
         BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = 0; dx < size.getX(); dx++) {
-            for (int dy = 0; dy < size.getY(); dy++) {
-                for (int dz = 0; dz < size.getZ(); dz++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+        // Guarded for the reason CarriagePlacer.eraseAt gives: a frame must not pop mid-clear.
+        CarriageStampGuard.run(() -> {
+            for (int dx = 0; dx < size.getX(); dx++) {
+                for (int dy = 0; dy < size.getY(); dy++) {
+                    for (int dz = 0; dz < size.getZ(); dz++) {
+                        level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                    }
                 }
             }
-        }
+        });
         discardEntitiesIn(level, origin, size);
     }
 
