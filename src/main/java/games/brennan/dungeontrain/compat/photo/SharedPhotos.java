@@ -797,6 +797,18 @@ public final class SharedPhotos {
      * A photographer's own tributed photo goes out first; each photo is handed out once.
      */
     public static ItemStack rollFound(long seed) {
+        return rollFound(seed, true);
+    }
+
+    /**
+     * {@link #rollFound(long)} without handing the photo out: it stays in the pool. For the editor's
+     * Test the Carriage, which re-stamps on every reroll and would otherwise drain the pool.
+     */
+    public static ItemStack previewFound(long seed) {
+        return rollFound(seed, false);
+    }
+
+    private static ItemStack rollFound(long seed, boolean spend) {
         List<PoolPhoto> photos = pool;
         if (photos.isEmpty() || !SharedBookGate.canDiscover()) return ItemStack.EMPTY;
         PoolPhoto photo = photos.stream().filter(p -> !p.tributedBy().isBlank()).findFirst()
@@ -832,7 +844,7 @@ public final class SharedPhotos {
                         Component.translatable("item.dungeontrain.shared_photo.by", photo.author())
                                 .withStyle(Style.EMPTY.withColor(ChatFormatting.GRAY).withItalic(false)))));
             }
-            markSpent(photo.id());
+            if (spend) markSpent(photo.id());
             return stack;
         } catch (RuntimeException e) {
             LOGGER.warn("[DungeonTrain] Could not place shared photo {}: {}", photo.id(), e.toString());

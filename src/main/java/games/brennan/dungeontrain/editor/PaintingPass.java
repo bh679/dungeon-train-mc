@@ -80,12 +80,12 @@ public final class PaintingPass {
     }
 
     /**
-     * {@code state.mirror(mirror)}, except that a painting's {@code facing} is mirrored too —
-     * Fast Paintings' block overrides no {@code mirror()}, so a mirrored carriage would otherwise
-     * hang the picture facing into the wall it should be on.
+     * {@code state.mirror(mirror)}, except that a painting's or photo frame's {@code facing} is
+     * mirrored too — neither Fast Paintings' block nor DT's photo frame overrides {@code mirror()},
+     * so a mirrored carriage would otherwise hang the picture facing into the wall it should be on.
      */
     public static BlockState mirror(BlockState state, Mirror mirror) {
-        if (mirror == Mirror.NONE || !isPainting(state)) return state.mirror(mirror);
+        if (mirror == Mirror.NONE || !PaintingTransformProcessor.isPaintingBlock(state)) return state.mirror(mirror);
         DirectionProperty facingProp = property(state, FACING, DirectionProperty.class);
         return facingProp == null ? state : state.setValue(facingProp, mirror.mirror(state.getValue(facingProp)));
     }

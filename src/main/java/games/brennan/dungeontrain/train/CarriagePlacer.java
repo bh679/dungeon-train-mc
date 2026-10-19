@@ -1751,13 +1751,17 @@ public final class CarriagePlacer {
      */
     public static void eraseAt(ServerLevel level, BlockPos origin, CarriageDims dims) {
         BlockState air = Blocks.AIR.defaultBlockState();
-        for (int dx = 0; dx < dims.length(); dx++) {
-            for (int dz = 0; dz < dims.width(); dz++) {
-                for (int dy = 0; dy < dims.height(); dy++) {
-                    level.setBlock(origin.offset(dx, dy, dz), air, 3);
+        // Guarded: clearing a cell at a time fires neighbour updates, and a photo frame or painting
+        // whose wall goes first would break and drop its items before its own cells are reached.
+        CarriageStampGuard.run(() -> {
+            for (int dx = 0; dx < dims.length(); dx++) {
+                for (int dz = 0; dz < dims.width(); dz++) {
+                    for (int dy = 0; dy < dims.height(); dy++) {
+                        level.setBlock(origin.offset(dx, dy, dz), air, 3);
+                    }
                 }
             }
-        }
+        });
     }
 
     /**
