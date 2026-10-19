@@ -28084,7 +28084,7 @@
     },
     {
       "id": "transition-flatbed-groups",
-      "version": "0.1378.0",
+      "version": "0.1376.0",
       "type": "feat",
       "tags": [
         "feature",
@@ -28104,7 +28104,7 @@
     },
     {
       "id": "walled-enemy-rooms",
-      "version": "0.1378.0",
+      "version": "0.1376.0",
       "type": "content",
       "tags": [
         "content",
