@@ -221,4 +221,41 @@ final class DisabledModContentTest {
             }
         }
     }
+
+    private static final List<String> DISABLED_BLOCKS = List.of(
+        "betternether:pig_statue_respawner", "betterend:respawn_obelisk", "betterend:infusion_pedestal",
+        "betterend:aeternium_anvil", "betterend:terminite_anvil", "betterend:thallasium_anvil",
+        "betterend:end_stone_smelter");
+
+    @Test
+    @DisplayName("respawn statues, the infusion pedestal, BetterEnd's anvils and smelter are off as blocks and items")
+    void disabledBlocks() {
+        for (String b : DISABLED_BLOCKS) {
+            assertTrue(DisabledModContent.isDisabledBlock(id(b)), b);
+            assertTrue(DisabledModContent.isDisabledItem(id(b), false), b);
+        }
+        for (String kept : List.of("betterend:purpur_pedestal", "betterend:flavolite_pedestal",
+                "betternether:cincinnasite_anvil", "betternether:cincinnasite_forge", "minecraft:anvil",
+                "minecraft:respawn_anchor")) {
+            assertFalse(DisabledModContent.isDisabledBlock(id(kept)), kept);
+            assertFalse(DisabledModContent.isDisabledItem(id(kept), false), kept);
+        }
+        assertFalse(DisabledModContent.isDisabledBlock(null));
+    }
+
+    @Test
+    @DisplayName("BetterEnd's elytras, smith hammers and assembly templates are off")
+    void betterEndElytrasHammersTemplates() {
+        for (String gear : List.of("betterend:elytra_armored", "betterend:elytra_crystalite",
+                "betterend:iron_hammer", "betterend:golden_hammer", "betterend:diamond_hammer",
+                "betterend:netherite_hammer")) {
+            assertTrue(DisabledModContent.isDisabledItem(id(gear), true), gear);
+        }
+        for (String t : List.of("betterend:plate_upgrade_smithing_template",
+                "betterend:handle_attachment_smithing_template",
+                "betterend:leather_handle_attachment_smithing_template",
+                "betterend:tool_assembly_smithing_template", "betterend:netherite_upgrade_smithing_template")) {
+            assertTrue(DisabledModContent.isDisabledItem(id(t), false), t);
+        }
+    }
 }

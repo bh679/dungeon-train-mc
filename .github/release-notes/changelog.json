@@ -28278,6 +28278,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "balance-tweak",
+      "version": "0.1387.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Balance tweak",
+      "summary": "Balance tweak.",
+      "highlights": [],
+      "pr": 2162,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

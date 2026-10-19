@@ -30,7 +30,8 @@ import java.util.regex.Pattern;
  * though the tape itself is kept. And every non-vanilla enchantment
  * ({@link #isDisabledEnchantment}) — today BetterNether's Obsidian Breaker and Ruby Fire and BetterEnd's
  * Resonance and End Veil — kept out of the enchanting table and villager books by the {@code remove} lists in
- * {@code data/minecraft/tags/enchantment/}, and stripped from loot and creative here.
+ * {@code data/minecraft/tags/enchantment/}, and stripped from loot and creative here. And a handful of the mods'
+ * blocks ({@link #DISABLED_BLOCKS}) — respawn statues, the ritual pedestal and the gear chain's anvils and smelter.
  *
  * <p>Single source of truth for five enforcement points: recipes ({@code RecipeManagerDisableMixin}),
  * loot ({@link StripDisabledItemsLootModifier}), ore placement ({@code ChunkGeneratorDecorationMixin})
@@ -99,6 +100,22 @@ public final class DisabledModContent {
         "vista:cassette",
         "vista:hollow_cassette");
 
+    /**
+     * Blocks turned off outright: BetterNether's Respawner Statue and BetterEnd's Respawn Obelisk (both set a
+     * respawn point, around DT's own death rules), BetterEnd's Infusion Pedestal (ritual crafting), its
+     * Thallasium/Terminite/Aeternium Anvils and End Stone Smelter (the dead gear chain). Their items share the
+     * block's id, so {@link #isDisabledItem} hides them; copies placed by the mods' own structures are kept
+     * from working by {@link DisabledBlockUseGate}.
+     */
+    static final Set<String> DISABLED_BLOCKS = Set.of(
+        "betternether:pig_statue_respawner",
+        "betterend:respawn_obelisk",
+        "betterend:infusion_pedestal",
+        "betterend:aeternium_anvil",
+        "betterend:terminite_anvil",
+        "betterend:thallasium_anvil",
+        "betterend:end_stone_smelter");
+
     static final String INSTANT_CAMERA = "exposure_polaroid:instant_camera";
 
     /**
@@ -112,6 +129,11 @@ public final class DisabledModContent {
     /** A recipe turned off by id ({@link #DISABLED_RECIPES}), whatever it makes. */
     public static boolean isDisabledRecipe(ResourceLocation recipeId) {
         return recipeId != null && DISABLED_RECIPES.contains(recipeId.toString());
+    }
+
+    /** A block turned off outright ({@link #DISABLED_BLOCKS}) — its right-click is vetoed. */
+    public static boolean isDisabledBlock(ResourceLocation blockId) {
+        return blockId != null && DISABLED_BLOCKS.contains(blockId.toString());
     }
 
     /** A disabled mod's ore placed feature — vetoed at decoration time. */
@@ -206,7 +228,7 @@ public final class DisabledModContent {
         if (id == null) {
             return false;
         }
-        if (HIDDEN_ITEMS.contains(id.toString())) {
+        if (HIDDEN_ITEMS.contains(id.toString()) || DISABLED_BLOCKS.contains(id.toString())) {
             return true;
         }
         if (!NAMESPACES.contains(id.getNamespace())) {
