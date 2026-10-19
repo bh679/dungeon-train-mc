@@ -56,11 +56,11 @@ final class SphereGravityDebug {
                     s.cx(), s.cy(), s.cz(), s.r(), s.source(), d, a, a / SphereGravity.VANILLA_G), ChatFormatting.WHITE);
         }
         List<SphereField.Sphere> inReach = SpheresBand.spheresNear(overworld, at.x, at.y, at.z, SphereGravityPush.lookupReach());
+        Entity self = source.getEntity();
         SphereGravity.Pull pull = SphereGravity.pull(inReach, at.x, at.y, at.z, 0, 0, 0,
-                SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii());
+                self != null && self.onGround(), SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii());
         String exposure = "";
-        Entity e = source.getEntity();
-        if (e != null) exposure = " exposure=" + SphereGravityShelter.classify(e);
+        if (self != null) exposure = " exposure=" + SphereGravityShelter.classify(self) + " onGround=" + self.onGround();
         send(source, String.format("  total pull (%.4f, %.4f, %.4f) |%.4f|%s",
                 pull.x(), pull.y(), pull.z(), pull.length(), exposure), ChatFormatting.GOLD);
         return 1;

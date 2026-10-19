@@ -13,7 +13,7 @@ public final class SpheresGravityConfig {
 
     public static final boolean DEFAULT_ENABLED = true;
     public static final double DEFAULT_STRENGTH = 1.0;
-    public static final double DEFAULT_REACH_RADII = 2.0;
+    public static final double DEFAULT_REACH_RADII = 4.0;
     public static final double MIN_REACH_RADII = 1.0;
     public static final double MAX_REACH_RADII = 8.0;
     public static final double DEFAULT_RIDER_FACTOR = 0.3;
@@ -29,7 +29,8 @@ public final class SpheresGravityConfig {
     static void define(ModConfigSpec.Builder b) {
         enabled = b
                 .comment("Spheres in the spheres band have gravity: each pulls players, mobs, dropped items, XP and",
-                        "projectiles toward its centre, on top of normal gravity. Default true.")
+                        "projectiles toward its centre, on top of normal gravity. The pull stops once you are",
+                        "standing on a sphere or inside it. Default true.")
                 .define("spheresGravityEnabled", DEFAULT_ENABLED);
         strength = b
                 .comment("Pull at a sphere's surface as a multiple of normal gravity, for the largest sphere",
@@ -37,7 +38,7 @@ public final class SpheresGravityConfig {
                 .defineInRange("spheresGravityStrength", DEFAULT_STRENGTH, 0.0, 10.0);
         reachRadii = b
                 .comment("How far a sphere's pull reaches, in multiples of its radius from its centre. It falls off",
-                        "with the square of the distance and fades to nothing at this edge. Default 2.0.")
+                        "with the square of the distance and fades to nothing at this edge. Default 4.0.")
                 .defineInRange("spheresGravityReachRadii", DEFAULT_REACH_RADII, MIN_REACH_RADII, MAX_REACH_RADII);
         riderFactor = b
                 .comment("Fraction of the pull felt by anyone out on the train (a roof, a flatbed). Inside a",

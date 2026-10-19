@@ -15,8 +15,10 @@ import java.util.List;
  *       strength 1 pulls as hard as the ground does while a small one only nudges.</li>
  *   <li><b>Outside</b> ({@code d ≥ r}): inverse-square, {@code g × (r/d)²}, smoothly faded to 0 over the
  *       outer half of the reach ({@code reachRadii × r}) so there's no edge you can feel.</li>
- *   <li><b>Inside</b> ({@code d < r}, e.g. the train's carved corridor): {@code g × d/r}, falling to 0 at
- *       the centre, like a solid ball.</li>
+ *   <li><b>Inside</b> ({@code d < r}, e.g. the train's carved corridor or a dug tunnel): no pull — you've
+ *       arrived, and the sphere's own blocks hold you.</li>
+ *   <li><b>Standing on it</b>: on the ground within {@link #STAND_MARGIN} of the surface — no pull either,
+ *       so walking about on a sphere feels like normal ground. Only that sphere lets go; others still pull.</li>
  * </ul>
  * Pulls from overlapping spheres add. A sphere stops pulling once the thing is already moving toward its
  * centre at {@link #MAX_SPEED_TOWARD} blocks/tick, so nothing builds runaway speed.
@@ -31,6 +33,11 @@ public final class SphereGravity {
     public static final double MIN_SIZE = 0.15;
     /** Speed toward a sphere's centre (blocks/tick) past which it stops adding pull. */
     public static final double MAX_SPEED_TOWARD = 0.6;
+    /**
+     * How far past a sphere's surface something on the ground still counts as standing on it. Generous: a
+     * sphere's surface is blocky terrain, and its upper part is open air above the cut surface.
+     */
+    public static final double STAND_MARGIN = 3.0;
     /** Fraction of the reach beyond the surface where the fade-out begins. */
     static final double FADE_START = 0.5;
 
@@ -63,7 +70,7 @@ public final class SphereGravity {
     public static double pullAt(double d, int r, double strength, double reachRadii) {
         if (r <= 0 || strength <= 0) return 0.0;
         double g = surfacePull(r, strength);
-        if (d < r) return g * Math.max(0.0, d) / r;
+        if (d < r) return 0.0;
         double reach = Math.max(1.0, reachRadii) * r;
         if (d >= reach) return 0.0;
         double a = g * (r / d) * (r / d);
@@ -81,16 +88,18 @@ public final class SphereGravity {
     }
 
     /**
-     * Summed pull of {@code spheres} on a point {@code (x, y, z)} moving at {@code (vx, vy, vz)}.
+     * Summed pull of {@code spheres} on a point {@code (x, y, z)} moving at {@code (vx, vy, vz)};
+     * {@code onGround} lets go of any sphere it is standing on.
      */
     public static Pull pull(List<SphereField.Sphere> spheres, double x, double y, double z,
-                            double vx, double vy, double vz, double strength, double reachRadii) {
+                            double vx, double vy, double vz, boolean onGround,
+                            double strength, double reachRadii) {
         if (spheres.isEmpty() || strength <= 0) return Pull.ZERO;
         double ax = 0, ay = 0, az = 0;
         for (SphereField.Sphere s : spheres) {
             double dx = s.cx() + 0.5 - x, dy = s.cy() + 0.5 - y, dz = s.cz() + 0.5 - z;
             double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            if (d < 1e-6) continue;
+            if (d < s.r() || (onGround && d <= s.r() + STAND_MARGIN)) continue;
             double ux = dx / d, uy = dy / d, uz = dz / d;
             if (vx * ux + vy * uy + vz * uz >= MAX_SPEED_TOWARD) continue;
             double a = pullAt(d, s.r(), strength, reachRadii);

@@ -23,7 +23,7 @@ final class SphereGravityTest {
     }
 
     @Test
-    @DisplayName("outside: inverse-square, fading to exactly 0 at the reach; inside: linear to 0 at the centre")
+    @DisplayName("outside: inverse-square, fading to exactly 0 at the reach; inside: no pull")
     void falloff() {
         int r = 20;
         double g = SphereGravity.surfacePull(r, 1.0);
@@ -32,8 +32,10 @@ final class SphereGravityTest {
         assertTrue(SphereGravity.pullAt(35, r, 1.0, 2.0) < g * (20.0 / 35) * (20.0 / 35), "fading");
         assertEquals(0.0, SphereGravity.pullAt(40, r, 1.0, 2.0), EPS);
         assertEquals(0.0, SphereGravity.pullAt(400, r, 1.0, 2.0), EPS);
-        assertEquals(g / 2, SphereGravity.pullAt(10, r, 1.0, 2.0), EPS);
+        assertEquals(0.0, SphereGravity.pullAt(10, r, 1.0, 2.0), EPS);
         assertEquals(0.0, SphereGravity.pullAt(0, r, 1.0, 2.0), EPS);
+        assertEquals(0.0, SphereGravity.pullAt(80, r, 1.0, 4.0), EPS, "4x reach ends at 4r");
+        assertTrue(SphereGravity.pullAt(60, r, 1.0, 4.0) > 0, "4x reach still pulls at 3r");
         double prev = Double.MAX_VALUE;
         for (double d = r; d <= 2 * r; d += 0.25) {
             double a = SphereGravity.pullAt(d, r, 1.0, 2.0);
@@ -46,20 +48,34 @@ final class SphereGravityTest {
     @DisplayName("pull points at the centre, sums across spheres, and stops once moving toward the centre fast enough")
     void pullVector() {
         SphereField.Sphere s = new SphereField.Sphere(100, 100, 100, 40, 0);
-        SphereGravity.Pull p = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, 0, 0, 1.0, 2.0);
+        SphereGravity.Pull p = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, 0, 0, false, 1.0, 2.0);
         assertEquals(0, p.x(), EPS);
         assertEquals(0, p.z(), EPS);
         assertTrue(p.y() < 0, "sphere is below → pulled down");
         assertEquals(SphereGravity.pullAt(50, 40, 1.0, 2.0), p.length(), EPS);
 
         SphereField.Sphere twin = new SphereField.Sphere(100, 200, 100, 40, 0);
-        SphereGravity.Pull both = SphereGravity.pull(List.of(s, twin), 100.5, 150.5, 100.5, 0, 0, 0, 1.0, 2.0);
+        SphereGravity.Pull both = SphereGravity.pull(List.of(s, twin), 100.5, 150.5, 100.5, 0, 0, 0, false, 1.0, 2.0);
         assertEquals(0, both.length(), EPS, "equal and opposite cancel");
 
-        SphereGravity.Pull capped = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, -0.7, 0, 1.0, 2.0);
+        SphereGravity.Pull capped = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, -0.7, 0, false, 1.0, 2.0);
         assertTrue(capped.isZero(), "already falling in fast");
-        SphereGravity.Pull away = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, 0.7, 0, 1.0, 2.0);
+        SphereGravity.Pull away = SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, 0.7, 0, false, 1.0, 2.0);
         assertEquals(p, away, "moving away is still pulled");
+    }
+
+    @Test
+    @DisplayName("standing on a sphere or being inside it stops that sphere's pull; others still pull")
+    void standingAndInside() {
+        SphereField.Sphere s = new SphereField.Sphere(100, 100, 100, 40, 0);
+        assertTrue(SphereGravity.pull(List.of(s), 100.5, 141.5, 100.5, 0, 0, 0, true, 1.0, 4.0).isZero(), "standing on top");
+        assertTrue(!SphereGravity.pull(List.of(s), 100.5, 141.5, 100.5, 0, 0, 0, false, 1.0, 4.0).isZero(), "airborne just above");
+        assertTrue(!SphereGravity.pull(List.of(s), 100.5, 150.5, 100.5, 0, 0, 0, true, 1.0, 4.0).isZero(),
+                "on other ground well clear of the sphere (a train roof) still pulled");
+        assertTrue(SphereGravity.pull(List.of(s), 100.5, 120.5, 100.5, 0, 0, 0, false, 1.0, 4.0).isZero(), "inside");
+        SphereField.Sphere other = new SphereField.Sphere(100, 100, 200, 40, 0);
+        SphereGravity.Pull p = SphereGravity.pull(List.of(s, other), 100.5, 141.5, 100.5, 0, 0, 0, true, 1.0, 4.0);
+        assertTrue(p.z() > 0, "the other sphere keeps pulling");
     }
 
     @Test

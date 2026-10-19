@@ -108,7 +108,7 @@ public final class SphereGravityServer {
         double midY = player.getY() + player.getBbHeight() * 0.5;
         List<SphereField.Sphere> spheres = SpheresBand.spheresNear(level, player.getX(), midY, player.getZ(), reach);
         if (spheres.isEmpty()) return;
-        if (SphereGravity.pull(spheres, player.getX(), midY, player.getZ(), 0, 0, 0,
+        if (SphereGravity.pull(spheres, player.getX(), midY, player.getZ(), 0, 0, 0, player.onGround(),
                 SpheresGravityConfig.strength(), SpheresGravityConfig.reachRadii()).isZero()) return;
         ((ServerGamePacketListenerFloatAccessor) player.connection).dungeontrain$setAboveGroundTickCount(0);
     }
