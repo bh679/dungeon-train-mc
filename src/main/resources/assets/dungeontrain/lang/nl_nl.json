@@ -4700,6 +4700,8 @@
   "gui.dungeontrain.book.copy": "Kopiëren",
   "gui.dungeontrain.book.copy.tip": "Titel, auteur en alle pagina's van dit boek naar het klembord kopiëren",
   "gui.dungeontrain.book.copied": "Gekopieerd",
+  "gui.dungeontrain.book.paste_blocked": "Een gekopieerd boek plakken kan niet",
+  "gui.dungeontrain.book.paste_blocked.body": "Gekopieerde boektekst is om te lezen. Schrijf liever je eigen boek.",
   "gui.dungeontrain.priority_book.waiting.one": "%s Voorrangsboek wacht op je. Gebruik het wanneer je een boek ondertekent.",
   "gui.dungeontrain.priority_book.waiting.other": "%s Voorrangsboeken wachten op je. Gebruik er een wanneer je een boek ondertekent.",
   "gui.dungeontrain.priority_book.sign.one": "Gebruik een Voorrangsboek (nog %s over)",

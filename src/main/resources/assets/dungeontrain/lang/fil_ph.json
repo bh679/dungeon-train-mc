@@ -4643,6 +4643,8 @@
   "gui.dungeontrain.book.copy": "Kopyahin",
   "gui.dungeontrain.book.copy.tip": "Kopyahin sa clipboard ang pamagat, may-akda at bawat pahina ng librong ito",
   "gui.dungeontrain.book.copied": "Nakopya",
+  "gui.dungeontrain.book.paste_blocked": "Hindi mai-paste ang kinopyang aklat",
+  "gui.dungeontrain.book.paste_blocked.body": "Pambasa lang ang kinopyang teksto ng aklat. Isulat mo na lang ang sarili mong aklat.",
   "gui.dungeontrain.priority_book.waiting.other": "%s Aklat na Priyoridad ang naghihintay. Gamitin ang isa kapag pumirma ka ng aklat.",
   "gui.dungeontrain.priority_book.sign.other": "Gumamit ng Aklat na Priyoridad (%s pa ang natitira)",
   "gui.dungeontrain.priority_book.sign_tooltip": "Pasasalamat sa iyong donasyon. Mas madalas na lilitaw ang iyong aklat sa mga tren ng ibang manlalaro.",

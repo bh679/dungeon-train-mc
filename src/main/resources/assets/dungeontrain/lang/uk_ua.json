@@ -963,6 +963,8 @@
   "gui.dungeontrain.book.copy": "Копіювати",
   "gui.dungeontrain.book.copy.tip": "Скопіювати в буфер обміну назву, автора та всі сторінки цієї книги",
   "gui.dungeontrain.book.copied": "Скопійовано",
+  "gui.dungeontrain.book.paste_blocked": "Скопійовану книгу не можна вставити",
+  "gui.dungeontrain.book.paste_blocked.body": "Скопійований текст книги призначений для читання. Напишіть власну книгу.",
   "gui.dungeontrain.priority_book.waiting.one": "%s Пріоритетна книга чекає на тебе. Використай її, коли підписуватимеш книгу.",
   "gui.dungeontrain.priority_book.waiting.few": "%s Пріоритетні книги чекають на тебе. Використай одну, коли підписуватимеш книгу.",
   "gui.dungeontrain.priority_book.waiting.many": "%s Пріоритетних книг чекають на тебе. Використай одну, коли підписуватимеш книгу.",

@@ -4700,6 +4700,8 @@
   "gui.dungeontrain.book.copy": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "e21f935f11d7e966"},
   "gui.dungeontrain.book.copy.tip": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "57aa1804dbf22c40"},
   "gui.dungeontrain.book.copied": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "8d525e5f158b9afe"},
+  "gui.dungeontrain.book.paste_blocked": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "f29aeefec52b3f29"},
+  "gui.dungeontrain.book.paste_blocked.body": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "252e2ffcd90868ec"},
   "gui.dungeontrain.priority_book.waiting.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "29ff5d9420fc3ce0"},
   "gui.dungeontrain.priority_book.waiting.other": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "d46d9beebb38422e"},
   "gui.dungeontrain.priority_book.sign.one": {"author": "Opus 5.5 (Claude)", "reviewer": "", "source_hash": "519c0aa7c69b96d2"},

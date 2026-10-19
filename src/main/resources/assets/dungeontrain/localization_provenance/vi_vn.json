@@ -4617,6 +4617,8 @@
       "gui.dungeontrain.book.copy",
       "gui.dungeontrain.book.copy.tip",
       "gui.dungeontrain.book.copied",
+      "gui.dungeontrain.book.paste_blocked",
+      "gui.dungeontrain.book.paste_blocked.body",
       "gui.dungeontrain.priority_book.waiting.other",
       "gui.dungeontrain.priority_book.sign.other",
       "gui.dungeontrain.priority_book.sign_tooltip",
