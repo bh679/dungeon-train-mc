@@ -5,7 +5,7 @@ import net.minecraft.network.chat.Component;
 /**
  * Gift amounts as shown on the Contribute screens. In AUD this is exactly the lang key's own text
  * ("$30"), so an AUD player sees what they always saw. In any other currency it is the AUD amount
- * converted at today's rate and rounded to whole units, behind a "~" ("~$20", "~€18"), with
+ * converted at today's rate and rounded to whole units ("$20", "€18"), with
  * {@link #note()} under it saying the gift itself is made in Australian dollars.
  */
 public final class CurrencyFormat {
@@ -24,9 +24,9 @@ public final class CurrencyFormat {
         return Component.literal(approx(aud, c, CurrencyRates.rate(c)));
     }
 
-    /** Pure: "~" + the converted whole amount with its symbol. */
+    /** Pure: the converted whole amount with its symbol. */
     static String approx(int aud, DisplayCurrency c, double rate) {
-        return "~" + c.format(Math.round(aud * rate));
+        return c.format(Math.round(aud * rate));
     }
 
     /**

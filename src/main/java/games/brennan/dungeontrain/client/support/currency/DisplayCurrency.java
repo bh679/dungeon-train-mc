@@ -6,7 +6,7 @@ import java.util.Locale;
 
 /**
  * The currencies a player may view gift amounts in. Display only: every gift is charged in AUD, and
- * a converted figure always carries a "~" and the "Gifts are made in Australian dollars" note.
+ * a converted figure always comes with the "approximate. Gifts are made in Australian dollars" note.
  *
  * <p>Must match the relay's {@code fx.js DISPLAY_CURRENCIES} (plus AUD), which fetches one rate per
  * code; a code the relay sends no rate for is simply not offered. Each has a 12x8 flag sprite at
