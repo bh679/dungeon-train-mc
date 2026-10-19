@@ -56,7 +56,7 @@
     "dungeontrain:dungeon_train/faulthursts_favourite": true,
     "dungeontrain:dungeon_train/friends": true,
     "dungeontrain:dungeon_train/going_the_distance": true,
-    "dungeontrain:dungeon_train/help_i_cant_get_off": true,
+    "dungeontrain:dungeon_train/help_i_cant_get_off": false,
     "dungeontrain:dungeon_train/i_live_here_now": true,
     "dungeontrain:dungeon_train/i_must_know": true,
     "dungeontrain:dungeon_train/last_melon": true,
@@ -214,7 +214,8 @@
     "dungeontrain:dungeon_train/completionist": "always",
     "dungeontrain:dungeon_train/all_out_of_secrets": "earned",
     "dungeontrain:dungeon_train/secrete_menu": "earned",
-    "dungeontrain:dungeon_train/reached_large_biomes": "earned"
+    "dungeontrain:dungeon_train/reached_large_biomes": "earned",
+    "dungeontrain:dungeon_train/help_i_cant_get_off": "earned"
   },
   "complete": {
     "dungeontrain:dungeon_train/train_explored": "dungeontrain:dungeon_train/tab_train_explorer",
