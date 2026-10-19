@@ -58,6 +58,7 @@ public final class WindClientEvents {
         if (player == null || level == null || mc.isPaused()) return;
         if (level.dimension() != Level.OVERWORLD || !ClientWind.active()) {
             WindyDrive.release();
+            WindSound.silence();
             WindDebugState.clear(level.dimension() == Level.OVERWORLD ? "wind off" : "not in the Overworld");
             return;
         }
@@ -74,6 +75,8 @@ public final class WindClientEvents {
         if (skip == null && exposure.exposed()) {
             applied = WindPush.apply(player, now, profile, extra);
         }
+
+        WindSound.update(player, now, exposure, TrainExposure.underTerrain(player));
 
         WindSample ahead = ClientWind.sampleAt(player.getX(), tick + profile.visualLeadTicks());
         double[] carriageVel = carriageVelocity(sub);
@@ -157,5 +160,6 @@ public final class WindClientEvents {
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         ClientWind.reset();
         WindyDrive.release();
+        WindSound.silence();
     }
 }

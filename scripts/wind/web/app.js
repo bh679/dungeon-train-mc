@@ -1,4 +1,5 @@
 import { sample, stageAt, curveAt, checkGolden, CURVE_NAMES, MAX_GUSTS_PER_MIN } from "./wind.js";
+import * as sound from "./sound.js";
 
 const CURVE_LABELS = {
   base: "steady push",
@@ -175,7 +176,9 @@ $("revert").addEventListener("click", () => { profile = structuredClone(saved); 
 function setup(canvas) {
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth;
-  const h = +canvas.getAttribute("height");
+  // The CSS height, remembered once: setting canvas.height below rewrites the height attribute.
+  if (!canvas.dataset.h) canvas.dataset.h = canvas.getAttribute("height");
+  const h = +canvas.dataset.h;
   canvas.width = w * dpr;
   canvas.height = h * dpr;
   canvas.style.height = `${h}px`;
@@ -422,5 +425,42 @@ function redraw() {
 }
 window.addEventListener("resize", redraw);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
+
+// ---------- sound preview ----------
+const meter = { breeze: [], gust: [], whoosh: [] };
+function soundState() {
+  return { profile, d: selected, seed: seed(), ride: $("ride").checked, speedPerTick: (parseFloat($("speed").value) || 0) / 20 };
+}
+function drawMeter() {
+  const { g, w, h } = setup($("soundMeter"));
+  const n = meter.breeze.length;
+  const X = (i) => (i / 200) * w;
+  const Y = (v) => h - 4 - v * (h - 8) / 0.75;
+  path(g, meter.breeze.map((_, i) => X(i)), meter.breeze.map(Y), css("--steady"), 2);
+  path(g, meter.gust.map((_, i) => X(i)), meter.gust.map(Y), css("--gust"), 2);
+  g.fillStyle = css("--heading");
+  meter.whoosh.forEach((on, i) => { if (on) g.fillRect(X(i) - 1, 2, 2, h - 4); });
+  if (!n) { g.fillStyle = css("--muted"); g.fillText("breeze (blue), gust layer (orange), whoosh (purple ticks) — last 10 s", 8, 16); }
+}
+$("soundPlay").addEventListener("click", async () => {
+  if (sound.playing()) {
+    sound.stop();
+    $("soundPlay").textContent = "Play";
+    $("soundStats").textContent = "stopped";
+    return;
+  }
+  $("soundPlay").textContent = "Stop";
+  meter.breeze = []; meter.gust = []; meter.whoosh = [];
+  await sound.start(soundState, (f) => {
+    if (f.error) { $("soundStats").textContent = f.error; $("soundPlay").textContent = "Play"; return; }
+    for (const [k, v] of [["breeze", f.breeze], ["gust", f.gust], ["whoosh", f.whooshed]]) {
+      meter[k].push(v);
+      if (meter[k].length > 200) meter[k].shift();
+    }
+    drawMeter();
+    $("soundStats").textContent = `at ${Math.round(f.d)} blocks past UD · wind ${f.w.strength.toFixed(4)} · gust ${(f.w.gust01 * 100).toFixed(0)}% · ` +
+      `breeze vol ${f.breeze.toFixed(2)} pitch ${f.breezePitch.toFixed(2)} · gust layer ${f.gust.toFixed(2)}`;
+  });
+});
 
 load();

@@ -97,6 +97,21 @@
       <canvas id="heading" height="150"></canvas>
       <div class="legend"><span><i style="background:var(--heading)"></i>heading the wind blows toward (deg; 0 = +X along the track, 90 = +Z)</span></div>
     </section>
+    <section>
+      <h2>Sound preview</h2>
+      <p class="hint">The game's wind sounds (vanilla elytra rush for the breeze and a higher layer for gusts, the Breeze mob's whoosh from upwind as a gust starts), driven by the wind at the spot above. Same rules as the game (WindSound.java); uses "ride the train" and the seed above. Heard facing along the track.</p>
+      <div class="row">
+        <button id="soundPlay" class="primary">Play</button>
+        <label>you are <select id="muffle">
+          <option value="open">out in the wind</option>
+          <option value="lee">in a lee</option>
+          <option value="cover">inside a carriage</option>
+          <option value="tunnel">in a tunnel</option>
+        </select></label>
+      </div>
+      <canvas id="soundMeter" height="70"></canvas>
+      <p class="readout" id="soundStats">stopped</p>
+    </section>
   </div>
   <div>
     <section>

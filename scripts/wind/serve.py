@@ -38,6 +38,41 @@ WEIGHT_FIELDS = ("refMass", "exponent", "maxBoost", "grip")
 MULT_FIELDS = ("player", "mob", "item", "projectile", "xp", "other")
 MAX_BODY = 256 * 1024
 
+#: Vanilla sounds the wind uses (client/wind/WindSound.java), for the tuner's sound preview. These are Mojang
+#: assets: never committed, read at request time from the Minecraft asset cache gradle already downloaded.
+SOUNDS = {
+    "elytra_loop": "minecraft/sounds/item/elytra/elytra_loop.ogg",
+    "idle_air1": "minecraft/sounds/mob/breeze/idle_air1.ogg",
+    "idle_air2": "minecraft/sounds/mob/breeze/idle_air2.ogg",
+    "idle_air3": "minecraft/sounds/mob/breeze/idle_air3.ogg",
+    "idle_air4": "minecraft/sounds/mob/breeze/idle_air4.ogg",
+}
+ASSET_ROOTS = [Path.home() / ".gradle/caches/neoformruntime/assets", Path.home() / ".minecraft/assets"]
+#: Asset index of Minecraft 1.21.1 first, then whatever else is there.
+PREFERRED_INDEX = "17.json"
+
+
+def sound_bytes(name: str) -> bytes | None:
+    """The .ogg for a wind sound from the local asset cache, or None when it isn't there."""
+    key = SOUNDS.get(name)
+    if key is None:
+        return None
+    for root in ASSET_ROOTS:
+        indexes = sorted((root / "indexes").glob("*.json"), key=lambda f: f.name != PREFERRED_INDEX)
+        for index in indexes:
+            try:
+                objects = json.loads(index.read_text(encoding="utf-8")).get("objects", {})
+            except (OSError, ValueError):
+                continue
+            entry = objects.get(key)
+            if not entry:
+                continue
+            h = entry["hash"]
+            path = root / "objects" / h[:2] / h
+            if path.is_file():
+                return path.read_bytes()
+    return None
+
 
 def _number(obj: dict, key: str, where: str) -> float:
     value = obj.get(key)
@@ -135,6 +170,12 @@ class Handler(BaseHTTPRequestHandler):
             self._file(GOLDEN)
         elif route == "/api/bands":
             self._file(BANDS)
+        elif route.startswith("/api/sound/"):
+            data = sound_bytes(route.rsplit("/", 1)[-1])
+            if data is None:
+                self._json(404, {"error": "sound not in the local Minecraft asset cache (run ./gradlew runClient once)"})
+            else:
+                self._send(200, data, "audio/ogg")
         else:
             name = "index.html" if route in ("/", "") else route.lstrip("/")
             target = (WEB_DIR / name).resolve()
