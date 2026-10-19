@@ -19,7 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Skin faces for the crowd page's podium. An in-game viewer's face comes from the tab list when they
  * share the server, otherwise from the same profile lookup player heads use (async: the default face
- * shows until it lands). Website viewers have no skin and always get the default face.
+ * shows until it lands). A website viewer whose Discord is linked to a game account comes with that
+ * account's uuid and is looked up the same way; any other website viewer gets the default face.
  */
 final class WatcherFaces {
 
@@ -28,7 +29,7 @@ final class WatcherFaces {
 
     private WatcherFaces() {}
 
-    /** Draw {@code uuid}'s face (null: a website viewer) at {@code size} px, at {@code alpha}. */
+    /** Draw {@code uuid}'s face (null: a viewer with no game account) at {@code size} px, at {@code alpha}. */
     static void draw(GuiGraphics g, @Nullable String uuid, int x, int y, int size, float alpha) {
         PlayerSkin skin = skinOf(parse(uuid));
         RenderSystem.enableBlend();

@@ -28026,6 +28026,24 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "linked-web-watcher-skins",
+      "version": "0.1375.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community",
+        "ui"
+      ],
+      "title": "Website watchers wear their own skin",
+      "summary": "Viewers watching your stream from the website now appear in their own Minecraft skin on the crowd page when their Discord is linked to their game account.",
+      "highlights": [],
+      "pr": 2144,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
