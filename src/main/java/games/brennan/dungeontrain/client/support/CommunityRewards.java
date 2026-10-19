@@ -16,8 +16,8 @@ import java.util.List;
  *
  * <p>A reward is a donation with a thank-you attached, not a product: the copy says "Give" and
  * "keeps it on a month", never buy or price. Amounts live in lang keys
- * ({@code gui.dungeontrain.rewards.<id>.amount}); {@link Reward#costAud} exists only so the panel can
- * order the shelf cheapest-first, and must match those keys.</p>
+ * ({@code gui.dungeontrain.rewards.<id>.amount}); {@link Reward#costAud} is a reference copy and must
+ * match those keys.</p>
  *
  * <p>Live state ({@code activeUntil}, who kept it on, queued months) comes from the relay's
  * {@code rewards[]} block, already parsed by {@link LiveRewards}. Pure apart from the lang-key and
@@ -55,7 +55,7 @@ public final class CommunityRewards {
 
         public String id() { return id; }
         public Group group() { return group; }
-        /** Whole AUD; ordering only. The shown figure is {@link #amountKey()}. */
+        /** Whole AUD, for reference only (the shown figure is {@link #amountKey()}); must match the lang keys. */
         public int costAud() { return costAud; }
 
         public String nameKey() { return KEY + id + ".name"; }
@@ -103,19 +103,25 @@ public final class CommunityRewards {
     }
 
     /**
-     * The reward the Contribute panel features: the cheapest one that is off now, so there is always
-     * something a giver can switch on today; when all five are on, the one whose next free month
-     * comes soonest. Ties go to shelf order.
+     * Brennan's order for the Contribute panel's featured reward (19 Oct 2026): the first one here
+     * that is off now is the one shown. Separate from the shelf's display order.
+     */
+    static final List<Reward> FEATURE_ORDER = List.of(
+            Reward.QUICKER_STREAMS, Reward.VOICE_ON_STREAM, Reward.TWO_STREAMS,
+            Reward.HD_STREAMS, Reward.REPLAYS_KEPT);
+
+    /**
+     * The reward the Contribute panel features: the first in {@link #FEATURE_ORDER} that is off now,
+     * so there is always something a giver can switch on today; when all five are on, the one whose
+     * next free month comes soonest (ties in {@link #FEATURE_ORDER}).
      */
     static Reward featured(LiveRewards state, long now) {
-        Reward best = null;
-        for (Reward r : Reward.values()) {
-            if (active(state, r, now)) continue;
-            if (best == null || r.costAud() < best.costAud()) best = r;
+        for (Reward r : FEATURE_ORDER) {
+            if (!active(state, r, now)) return r;
         }
-        if (best != null) return best;
+        Reward best = null;
         long soonest = Long.MAX_VALUE;
-        for (Reward r : Reward.values()) {
+        for (Reward r : FEATURE_ORDER) {
             long next = nextFreeMs(state, r, now);
             if (next < soonest) { soonest = next; best = r; }
         }

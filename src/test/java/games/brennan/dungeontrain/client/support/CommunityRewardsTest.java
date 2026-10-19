@@ -19,16 +19,20 @@ class CommunityRewardsTest {
     }
 
     @Test
-    void nothingOnFeaturesTheCheapestReward() {
-        assertEquals(CommunityRewards.Reward.REPLAYS_KEPT, CommunityRewards.featured(LiveRewards.NONE, NOW));
+    void nothingOnFeaturesQuickerStreams() {
+        assertEquals(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.featured(LiveRewards.NONE, NOW));
     }
 
     @Test
-    void theCheapestRewardThatIsOffIsFeatured() {
-        LiveRewards state = new LiveRewards(List.of(
-                on(LiveRewards.REPLAYS_KEPT, 3 * DAY, "Moth"),
-                on(LiveRewards.HD_STREAMS, 9 * DAY, "Ash")));
-        assertEquals(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.featured(state, NOW));
+    void theFirstRewardInBrennansOrderThatIsOffIsFeatured() {
+        // Order: Quicker Streams, Voice on Stream, Two Streams, HD Streams, Replays Kept.
+        LiveRewards quickerOn = new LiveRewards(List.of(on(LiveRewards.QUICKER_STREAMS, 3 * DAY, "Kestrel")));
+        assertEquals(CommunityRewards.Reward.VOICE_ON_STREAM, CommunityRewards.featured(quickerOn, NOW));
+        LiveRewards threeOn = new LiveRewards(List.of(
+                on(LiveRewards.QUICKER_STREAMS, 3 * DAY, "Kestrel"),
+                on(LiveRewards.VOICE_ON_STREAM, 9 * DAY, "Ash"),
+                on(LiveRewards.TWO_STREAMS, 9 * DAY, "Rook")));
+        assertEquals(CommunityRewards.Reward.HD_STREAMS, CommunityRewards.featured(threeOn, NOW));
     }
 
     @Test
@@ -53,10 +57,10 @@ class CommunityRewardsTest {
 
     @Test
     void anExpiredRewardIsOffAndFreeNow() {
-        LiveRewards state = new LiveRewards(List.of(on(LiveRewards.REPLAYS_KEPT, -DAY, "Moth", "Ash")));
-        assertEquals(NOW, CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.REPLAYS_KEPT, NOW));
-        assertEquals("", CommunityRewards.keptOnBy(state, CommunityRewards.Reward.REPLAYS_KEPT, NOW));
-        assertEquals(CommunityRewards.Reward.REPLAYS_KEPT, CommunityRewards.featured(state, NOW));
+        LiveRewards state = new LiveRewards(List.of(on(LiveRewards.QUICKER_STREAMS, -DAY, "Moth", "Ash")));
+        assertEquals(NOW, CommunityRewards.nextFreeMs(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
+        assertEquals("", CommunityRewards.keptOnBy(state, CommunityRewards.Reward.QUICKER_STREAMS, NOW));
+        assertEquals(CommunityRewards.Reward.QUICKER_STREAMS, CommunityRewards.featured(state, NOW));
     }
 
     @Test
