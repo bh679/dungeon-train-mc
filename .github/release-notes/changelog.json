@@ -28191,6 +28191,41 @@
       "released_at": null
     },
     {
+      "id": "enderchest-photos-keep-pictures",
+      "version": "0.1380.0",
+      "type": "fix",
+      "tags": [
+        "fix"
+      ],
+      "title": "Ender Chest photos keep their pictures",
+      "summary": "Photos you keep in your Ender Chest now still show their picture when you start a new run, instead of turning into blank paper.",
+      "highlights": [
+        "Photos and photo stacks in the Ender Chest keep their pictures from one run to the next",
+        "Photos that already went blank come back if the world they were taken in is still saved"
+      ],
+      "pr": 2156,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "nether-core-write-gate",
+      "version": "0.1383.0",
+      "type": "perf",
+      "tags": [
+        "performance",
+        "world"
+      ],
+      "title": "Lighter terrain generation",
+      "summary": "Some of the heavier terrain the train rides through now generates with less work per chunk, so the server has more breathing room while new ground is being laid down. Nothing looks different.",
+      "highlights": [],
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
       "id": "advancement-fix-2159",
       "version": "0.1379.0",
       "type": "fix",
