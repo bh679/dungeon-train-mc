@@ -15,7 +15,7 @@ import games.brennan.dungeontrain.client.menu.CategoryTemplatesScreen;
 import games.brennan.dungeontrain.client.menu.CommandMenuState;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.menu.PauseMenuActionButton;
-import games.brennan.dungeontrain.client.support.SupportScreen;
+import games.brennan.dungeontrain.client.support.ContributeScreen;
 import games.brennan.dungeontrain.net.BuilderDirtyRequestPacket;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import net.minecraft.Util;
@@ -178,7 +178,7 @@ public final class BuilderPauseMenuHandler {
         event.addListener(new DarkTintedButton(rightX, y, rightW, slotH, SUPPORT,
                 b -> {
                     UiAnalytics.click(UiAnalytics.SURFACE_PAUSE_MENU, UiAnalytics.TARGET_SUPPORT);
-                    Minecraft.getInstance().setScreen(new SupportScreen(screen));
+                    Minecraft.getInstance().setScreen(new ContributeScreen(screen));
                 }));
 
         // Row 3: Mods | Feedback. Feedback runs the mod's own bug-report survey, which

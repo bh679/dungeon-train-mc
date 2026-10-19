@@ -4,7 +4,7 @@ import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.analytics.UiAnalytics;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
-import games.brennan.dungeontrain.client.support.SupportScreen;
+import games.brennan.dungeontrain.client.support.ContributeScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -95,7 +95,7 @@ public final class PauseMenuLinksHandler {
             // The headline funnel metric, same as on the title screen: how many players
             // tap "Support the Mod" at all — here, mid-run rather than from the menu.
             UiAnalytics.click(UiAnalytics.SURFACE_PAUSE_MENU, UiAnalytics.TARGET_SUPPORT);
-            Minecraft.getInstance().setScreen(new SupportScreen(pauseScreen));
+            Minecraft.getInstance().setScreen(new ContributeScreen(pauseScreen));
         }));
 
         if (!loggedSwap) {

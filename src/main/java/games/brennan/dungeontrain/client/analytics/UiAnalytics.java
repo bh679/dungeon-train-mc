@@ -60,6 +60,8 @@ public final class UiAnalytics {
     // The main-menu Videos page (VideosScreen): each row opened is a TARGET_VIDEO_OPEN click, then
     // the confirm from vanilla's link screen. Whitelisted relay-side as `videos_page`.
     public static final String SURFACE_VIDEOS = "videos_page";
+    /** The Community Rewards page (the shelf "See All Rewards" opens). Relay ui-events.js SURFACES. */
+    public static final String SURFACE_REWARDS_PAGE = "rewards_page";
     // Targets
     public static final String TARGET_PAGE = "page";
     public static final String TARGET_SUPPORT = "support";
@@ -77,6 +79,12 @@ public final class UiAnalytics {
     public static final String TARGET_DONATE_HELP_DEV = "donate_help_dev";
     public static final String TARGET_DONATE_BIG_FAN = "donate_big_fan";
     public static final String TARGET_DONATE_SERVER_COSTS = "donate_server_costs";
+    /**
+     * The Contribute panel's "See All Rewards" button. Each reward's Give button reports its own
+     * target, {@code reward_<id>} ({@code CommunityRewards.Reward#analyticsTarget}); relay
+     * ui-events.js lists all six.
+     */
+    public static final String TARGET_REWARDS = "rewards";
     // The Adult / Kid answer on the first-launch consent card (and on any later re-ask). Lock-step
     // with the relay's ui-events.js TARGETS whitelist, or these 400 silently.
     public static final String TARGET_CONTENT_MODE_ADULT = "content_mode_adult";

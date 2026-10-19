@@ -15,7 +15,7 @@ import games.brennan.dungeontrain.template.BuilderCredit;
 import games.brennan.dungeontrain.client.menu.AiPolicyIconButton;
 import games.brennan.dungeontrain.client.menu.DarkTintedButton;
 import games.brennan.dungeontrain.client.policy.AiPolicyScreen;
-import games.brennan.dungeontrain.client.support.SupportScreen;
+import games.brennan.dungeontrain.client.support.ContributeScreen;
 import games.brennan.dungeontrain.client.ui.CardCanvas;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -231,8 +231,8 @@ public final class CreditsScreen extends Screen {
 
         // Shortcut to the "Ways to Help" hub; parent is this page so its Done returns here.
         addRenderableWidget(new DarkTintedButton(rowX, rowY, supportW, 20,
-                Component.translatable("gui.dungeontrain.credits.support_button"),
-                b -> Minecraft.getInstance().setScreen(new SupportScreen(this))));
+                Component.translatable("gui.dungeontrain.support.button"),
+                b -> Minecraft.getInstance().setScreen(new ContributeScreen(this))));
 
         // "Who made this" and "was any of it made by AI" are the same question, so the AI Policy
         // sits on the page that answers the first half. Also reachable from Dungeon Train Options.

@@ -66,6 +66,16 @@ public enum SupportTier {
         return LABEL_PREFIX + key + ".amount";
     }
 
+    /** The bare figure for a tier button that shows only the amount ("$30"); the name goes under it. */
+    public String shortKey() {
+        return LABEL_PREFIX + key + ".short";
+    }
+
+    /** The tier's name alone ("A Big Fan"), drawn under its amount-only button. */
+    public String nameKey() {
+        return LABEL_PREFIX + key + ".name";
+    }
+
     /** Hover copy spelling out what the tier is for — the label alone has no room for it. */
     public String tooltipKey() {
         return LABEL_PREFIX + key + ".tooltip";
