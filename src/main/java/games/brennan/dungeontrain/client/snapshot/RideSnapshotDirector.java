@@ -26,6 +26,7 @@ import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.DecoratedPotBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
@@ -440,7 +441,9 @@ public final class RideSnapshotDirector {
     @SubscribeEvent
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
         if (!event.getLevel().isClientSide() || !ClientDisplayConfig.isRideSnapshotsEnabled()) return;
-        if (event.getLevel().getBlockState(event.getPos()).getBlock() instanceof DecoratedPotBlock) potPending = true;
+        BlockState broken = event.getLevel().getBlockState(event.getPos());
+        if (broken.getBlock() instanceof DecoratedPotBlock
+            || games.brennan.dungeontrain.editor.ContainerContentsRoller.isGloomslatePot(broken)) potPending = true;
     }
 
     @SubscribeEvent
