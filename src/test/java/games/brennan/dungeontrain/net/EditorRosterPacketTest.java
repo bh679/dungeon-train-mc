@@ -69,7 +69,7 @@ final class EditorRosterPacketTest {
                     new StageBlocksSyncPacket.BlockCount("minecraft:sandstone", 120),
                     new StageBlocksSyncPacket.BlockCount("minecraft:cut_sandstone", 7)), 5,
                     List.of("floor:sand_1", "walls:sand_1", "roof:sand_2")),
-                new EditorRosterPacket.StageEntry(bare, List.of(), 0, List.of())));
+                new EditorRosterPacket.StageEntry(bare, List.of(), 0, List.of(), null, "wood")));
         EditorRosterPacket decoded = roundTrip(packet);
         assertEquals(2, decoded.stages().size());
         EditorRosterPacket.StageEntry d = decoded.stages().get(0);
@@ -88,6 +88,8 @@ final class EditorRosterPacketTest {
         assertTrue(b.blocks().isEmpty());
         assertEquals(EditorRosterPacket.Palette.NONE, b.palette());
         assertEquals(0, b.partCount());
+        assertEquals("wood", b.group(), "the stage's family survives");
+        assertEquals("", d.group(), "an ungrouped stage stays ungrouped");
     }
 
     @Test

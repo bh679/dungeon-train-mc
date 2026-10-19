@@ -14,6 +14,10 @@ import java.util.List;
  * The Stages tab on screen: {@link EditorStagesPage}'s titles row pinned at the top, its stage rows
  * under it with their own scroll, and the selected stage outlined. The same shape as the Settings
  * pane, plus the one fixed row.
+ *
+ * <p>A family of stages (the wood stages) is one row or tile; clicking it shows its current member
+ * and drops a list of the family under it to pick another. The dropdown is drawn last by the screen
+ * ({@link #renderDropdown}) so it sits over the detail pane, and takes the next click wherever it lands.</p>
  */
 final class EditorStagesPane {
 
@@ -40,6 +44,19 @@ final class EditorStagesPane {
     /** The tile view's scroll, in pixels. */
     private int tileScroll;
     private TemplateTileGridLayout grid;
+    /** The family whose dropdown is open, or null. */
+    private String openGroup;
+    /** Where the open family's row or tile was drawn this frame, and its members — null while it is out of sight. */
+    private InventoryEditorLayout.Rect dropdownAnchor;
+    private List<String> dropdownMembers = List.of();
+    /** The dropdown's own rectangle, its first shown member and how many fit, as last drawn. */
+    private InventoryEditorLayout.Rect dropdownRect;
+    private int dropdownScroll;
+    private int dropdownVisible;
+    /** Wider than a row's name cell needs, so a member's name and band both fit. */
+    static final int DROPDOWN_MIN_W = 120;
+    static final int DROPDOWN_FILL = 0xF0101418;
+    static final int DROPDOWN_BORDER = 0xFFB0B8C0;
 
     /** The whole pane: the left column, from the top of the search row (there is none here) to the grid's bottom. */
     static InventoryEditorLayout.Rect rect(InventoryEditorLayout layout) {
@@ -58,8 +75,24 @@ final class EditorStagesPane {
         return new InventoryEditorLayout.Rect(r.x(), r.y() + ROW_H, r.w(), Math.max(0, r.h() - ROW_H));
     }
 
-    static List<EditorStagesPage.Row> rows(EditorRosterIndex index) {
-        return EditorStagesPage.rows(index.stages(), EditorScreenState.stageSort(), EditorScreenState::selectStage);
+    /** The list with each family folded; a family row's click opens (or shuts) its dropdown. */
+    List<EditorStagesPage.Row> rows(EditorRosterIndex index) {
+        return EditorStagesPage.groupedRows(index.stages(), EditorScreenState.stageSort(), EditorScreenState::selectStage,
+            group -> EditorScreenState.stageGroupPick(index, group), this::toggleGroup);
+    }
+
+    /** Opens the family's dropdown, or shuts it when it is the one open. */
+    void toggleGroup(String group) {
+        openGroup = group != null && group.equals(openGroup) ? null : group;
+        dropdownScroll = 0;
+    }
+
+    boolean dropdownOpen() {
+        return openGroup != null && dropdownAnchor != null;
+    }
+
+    void closeDropdown() {
+        openGroup = null;
     }
 
     static CommandMenuEntry header() {
@@ -82,6 +115,8 @@ final class EditorStagesPane {
                 EditorRosterIndex index, int mouseX, int mouseY) {
         InventoryEditorLayout.Rect whole = rect(layout);
         g.fill(whole.x() - 1, whole.y() - 1, whole.right() + 1, whole.bottom() + 1, theme.subPanel());
+        // Found again below if the open family's row is still in sight; else the dropdown shuts.
+        dropdownAnchor = null;
         String note = emptyNote(index);
         if (note != null) {
             g.drawString(font, note, whole.x() + 4, whole.y() + 4, 0xFFFFFFFF, true);
@@ -98,6 +133,7 @@ final class EditorStagesPane {
         String shownId = shown == null ? "" : shown.id();
         if (EditorScreenState.stageGridView()) {
             renderTiles(g, font, layout, r, rows, index, shownId, mouseX, mouseY);
+            if (dropdownAnchor == null) openGroup = null;
             return;
         }
         int visible = visibleRows(r);
@@ -109,7 +145,8 @@ final class EditorStagesPane {
             int top = r.y() + k * ROW_H;
             boolean hov = idx == hoveredRow;
             int hoveredSub = hov ? MenuRowPainter.hitCell(row.entry(), mouseX, r.x() + ICON_W, r.right()) : -1;
-            boolean chosen = shownId.equalsIgnoreCase(row.stageId());
+            boolean chosen = row.stands(shownId);
+            if (row.isGroup() && row.group().equals(openGroup)) anchorAt(new InventoryEditorLayout.Rect(r.x(), top, r.w(), ROW_H - 1), row);
             // The shown stage reads as chosen, not merely outlined: a tint under the row and the
             // browser's selection border around it.
             if (chosen) g.fill(r.x(), top, r.right(), top + ROW_H - 1, SELECTED_FILL);
@@ -118,6 +155,12 @@ final class EditorStagesPane {
             if (chosen) g.renderOutline(r.x(), top, r.w(), ROW_H - 1, TemplateTilePainter.BORDER_SELECTED);
         }
         drawScrollbar(g, r, rows.size(), visible);
+        if (dropdownAnchor == null) openGroup = null;
+    }
+
+    private void anchorAt(InventoryEditorLayout.Rect at, EditorStagesPage.Row row) {
+        dropdownAnchor = at;
+        dropdownMembers = row.memberIds();
     }
 
     /** The view toggle cell: the glyph of the view it switches to. */
@@ -145,8 +188,9 @@ final class EditorStagesPane {
             if (y + grid.tile() < r.y() || y > r.bottom()) continue;
             EditorStagesPage.Row row = rows.get(i);
             EditorRosterPacket.StageEntry stage = index.stage(row.stageId());
-            drawTile(g, font, stage, carriage, tileSeed, x, y, grid.tile(),
-                shownId.equalsIgnoreCase(row.stageId()), i == hoveredTile, lastDrawn);
+            if (row.isGroup() && row.group().equals(openGroup)) anchorAt(new InventoryEditorLayout.Rect(x, y, grid.tile(), grid.tile()), row);
+            drawTile(g, font, stage, caption(row, stage), carriage, tileSeed, x, y, grid.tile(),
+                row.stands(shownId), i == hoveredTile, lastDrawn);
         }
         g.disableScissor();
         int content = grid.contentHeight(rows.size());
@@ -159,7 +203,7 @@ final class EditorStagesPane {
     }
 
     /** One stage's tile: its stamped carriage (asked for on first sight), its name, and the tile marks. */
-    private static void drawTile(GuiGraphics g, Font font, EditorRosterPacket.StageEntry stage, String carriage,
+    private static void drawTile(GuiGraphics g, Font font, EditorRosterPacket.StageEntry stage, String caption, String carriage,
                                  long seed, int x, int y, int size, boolean selected, boolean hovered,
                                  java.util.Map<String, StagePreviews.Key> lastDrawn) {
         g.fill(x, y, x + size, y + size, TemplateTilePainter.MODEL_BACKDROP);
@@ -180,7 +224,7 @@ final class EditorStagesPane {
                 }
             }
         }
-        String name = stage == null ? "" : stage.name();
+        String name = caption;
         if (!drawn) {
             g.fill(x, y, x + size, y + size, TemplateTilePainter.SLATE);
             String initials = name.length() > 3 ? name.substring(0, 3) : name;
@@ -196,6 +240,12 @@ final class EditorStagesPane {
         } else {
             g.renderOutline(x, y, size, size, hovered ? TemplateTilePainter.BORDER_HOVER : TemplateTilePainter.BORDER_IDLE);
         }
+    }
+
+    /** A tile's caption: the stage's name, or for a family {@code Wood: spruce ▾}. */
+    private static String caption(EditorStagesPage.Row row, EditorRosterPacket.StageEntry stage) {
+        String name = stage == null ? "" : stage.name();
+        return row.isGroup() ? EditorStagesPage.groupLabel(row.group(), name) : name;
     }
 
     /** The tile under the point, or -1. */
@@ -220,8 +270,9 @@ final class EditorStagesPane {
         List<EditorStagesPage.Row> rows = rows(index);
         int i = tileAt(mouseX, mouseY, rows.size());
         if (i < 0) return null;
-        EditorRosterPacket.StageEntry stage = index.stage(rows.get(i).stageId());
-        return stage == null ? null : stage.name() + " · " + EditorStagesPage.levelText(stage);
+        EditorStagesPage.Row row = rows.get(i);
+        EditorRosterPacket.StageEntry stage = index.stage(row.stageId());
+        return stage == null ? null : caption(row, stage) + " · " + EditorStagesPage.levelText(stage);
     }
 
     /** The stage's most-used block as a small item icon — its usage list is ordered, so that is entry 0. */
@@ -262,8 +313,85 @@ final class EditorStagesPane {
         int idx = EditorScreenState.stageGridView() ? tileAt(mouseX, mouseY, rows.size())
             : rowAt(mouseX, mouseY, r, rows.size(), visibleRows(r));
         if (idx < 0) return false;
-        EditorScreenState.selectStage(rows.get(idx).stageId());
+        EditorStagesPage.Row row = rows.get(idx);
+        EditorScreenState.selectStage(row.stageId());
+        if (row.isGroup()) toggleGroup(row.group());
         return true;
+    }
+
+    /**
+     * The open family's members under its row or tile (above it when there is more room there),
+     * each {@code icon · name · band}, the shown one tinted. Drawn after every pane so it covers them.
+     */
+    void renderDropdown(GuiGraphics g, Font font, EditorRosterIndex index, int screenW, int screenH,
+                        int mouseX, int mouseY) {
+        dropdownRect = null;
+        if (!dropdownOpen() || index == null || dropdownMembers.isEmpty()) return;
+        int widest = 0;
+        for (String id : dropdownMembers) {
+            EditorRosterPacket.StageEntry m = index.stage(id);
+            if (m != null) widest = Math.max(widest, font.width(m.name()) + font.width(EditorStagesPage.levelText(m)));
+        }
+        int w = Math.min(screenW - 4, Math.max(Math.max(DROPDOWN_MIN_W, dropdownAnchor.w()), ICON_W + widest + 16));
+        int x = Math.max(2, Math.min(dropdownAnchor.x(), screenW - 2 - w));
+        int below = screenH - 2 - dropdownAnchor.bottom();
+        int above = dropdownAnchor.y() - 2;
+        int n = dropdownMembers.size();
+        boolean down = below >= Math.min(n, 4) * ROW_H || below >= above;
+        dropdownVisible = Math.max(1, Math.min(n, (down ? below : above) / ROW_H));
+        dropdownScroll = clamp(dropdownScroll, n, dropdownVisible);
+        int h = dropdownVisible * ROW_H;
+        int y = down ? dropdownAnchor.bottom() : dropdownAnchor.y() - h;
+        dropdownRect = new InventoryEditorLayout.Rect(x, y, w, h);
+        g.pose().pushPose();
+        // Above the item icons and tile models of the panes underneath.
+        g.pose().translate(0, 0, 400);
+        g.fill(x - 1, y - 1, x + w + 1, y + h + 1, DROPDOWN_BORDER);
+        g.fill(x, y, x + w, y + h, DROPDOWN_FILL);
+        String shown = EditorScreenState.selectedStageId();
+        int hovered = dropdownAt(mouseX, mouseY);
+        for (int k = 0; k < dropdownVisible && dropdownScroll + k < n; k++) {
+            int idx = dropdownScroll + k;
+            EditorRosterPacket.StageEntry m = index.stage(dropdownMembers.get(idx));
+            if (m == null) continue;
+            int top = y + k * ROW_H;
+            if (m.id().equalsIgnoreCase(shown)) g.fill(x, top, x + w, top + ROW_H - 1, SELECTED_FILL);
+            if (idx == hovered) g.fill(x, top, x + w, top + ROW_H - 1, MenuRowPainter.CELL_HOVER);
+            drawTopBlock(g, m, x + 1, top + 1);
+            int text = idx == hovered ? MenuRowPainter.TEXT_ON_HOVER : 0xFFFFFFFF;
+            int ty = top + (ROW_H - 1 - font.lineHeight) / 2 + 1;
+            g.drawString(font, m.name(), x + ICON_W + 3, ty, text, false);
+            String level = EditorStagesPage.levelText(m);
+            g.drawString(font, level, x + w - 4 - font.width(level), ty, 0xFFB0B8C0, false);
+        }
+        drawScrollbar(g, dropdownRect, n, dropdownVisible, dropdownScroll);
+        g.pose().popPose();
+    }
+
+    /** The dropdown member under the point, or -1. */
+    private int dropdownAt(double mx, double my) {
+        if (dropdownRect == null || !dropdownRect.contains(mx, my)) return -1;
+        int idx = dropdownScroll + (int) ((my - dropdownRect.y()) / ROW_H);
+        return idx < dropdownMembers.size() ? idx : -1;
+    }
+
+    /**
+     * A click while the dropdown is open: on a member it picks that member; anywhere else it only
+     * shuts the dropdown (a click on the family's own row shuts it too, as a second press should).
+     */
+    void dropdownClicked(double mouseX, double mouseY) {
+        int idx = dropdownAt(mouseX, mouseY);
+        if (idx >= 0) EditorScreenState.pickStageInGroup(openGroup, dropdownMembers.get(idx));
+        closeDropdown();
+    }
+
+    boolean overDropdown(double mouseX, double mouseY) {
+        return dropdownRect != null && dropdownRect.contains(mouseX, mouseY);
+    }
+
+    /** Wheel over the dropdown: one member per notch. */
+    void scrollDropdown(int dir) {
+        dropdownScroll = clamp(dropdownScroll + dir, dropdownMembers.size(), dropdownVisible);
     }
 
     boolean over(InventoryEditorLayout layout, double mouseX, double mouseY) {
@@ -296,6 +424,10 @@ final class EditorStagesPane {
     }
 
     private void drawScrollbar(GuiGraphics g, InventoryEditorLayout.Rect r, int count, int visible) {
+        drawScrollbar(g, r, count, visible, scroll);
+    }
+
+    private static void drawScrollbar(GuiGraphics g, InventoryEditorLayout.Rect r, int count, int visible, int scroll) {
         if (count <= visible || visible <= 0) return;
         int thumbH = Math.max(6, r.h() * visible / count);
         int thumbY = r.y() + (r.h() - thumbH) * scroll / Math.max(1, count - visible);

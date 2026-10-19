@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -51,6 +52,12 @@ final class BundledStagesTest {
         for (String expected : new String[] {"desert", "nether", "stone"}) {
             assertTrue(parsed.containsKey(expected), "bundled stages.json should contain '" + expected + "'");
         }
+        // The editor's Stages tab folds the wood stages into one "Wood" entry; pin the family.
+        java.util.Set<String> wood = new java.util.TreeSet<>();
+        for (Stage s : parsed.values()) if ("wood".equals(s.group())) wood.add(s.id());
+        assertEquals(new java.util.TreeSet<>(java.util.List.of("acacia", "bamboo", "bamboo_mosaic", "birch", "cherry",
+            "crimson", "darkwood", "jungle", "mangrove", "spruce", "warped", "wood_oak")), wood,
+            "the wood family in bundled stages.json");
         // id is normalised (lower-case) + non-null gate (no NPEs on the worldgen gate path).
         for (Stage s : parsed.values()) {
             assertTrue(s.id().equals(s.id().toLowerCase(java.util.Locale.ROOT)), "stage id must be lower-case: " + s.id());

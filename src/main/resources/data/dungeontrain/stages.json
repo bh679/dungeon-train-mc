@@ -1,6 +1,7 @@
 {
   "acacia": {
     "name": "acacia",
+    "group": "wood",
     "minLevel": 176,
     "maxLevel": 205,
     "phases": [
@@ -57,6 +58,7 @@
   },
   "bamboo": {
     "name": "bamboo",
+    "group": "wood",
     "minLevel": 356,
     "maxLevel": 375,
     "phases": [
@@ -111,6 +113,7 @@
   },
   "bamboo_mosaic": {
     "name": "bamboo_mosaic",
+    "group": "wood",
     "minLevel": 416,
     "maxLevel": 435,
     "phases": [
@@ -165,6 +168,7 @@
   },
   "birch": {
     "name": "birch",
+    "group": "wood",
     "minLevel": 161,
     "maxLevel": 175,
     "phases": [
@@ -224,6 +228,7 @@
   },
   "cherry": {
     "name": "cherry",
+    "group": "wood",
     "minLevel": 266,
     "maxLevel": 285,
     "phases": [
@@ -341,6 +346,7 @@
   },
   "crimson": {
     "name": "crimson",
+    "group": "wood",
     "minLevel": 286,
     "maxLevel": 320,
     "phases": [
@@ -397,6 +403,7 @@
   },
   "darkwood": {
     "name": "darkwood",
+    "group": "wood",
     "minLevel": 376,
     "maxLevel": 415,
     "phases": [
@@ -573,6 +580,7 @@
   },
   "jungle": {
     "name": "jungle",
+    "group": "wood",
     "minLevel": 206,
     "maxLevel": 225,
     "phases": [
@@ -629,6 +637,7 @@
   },
   "mangrove": {
     "name": "mangrove",
+    "group": "wood",
     "minLevel": 226,
     "maxLevel": 265,
     "phases": [
@@ -916,6 +925,7 @@
   },
   "spruce": {
     "name": "spruce",
+    "group": "wood",
     "minLevel": 436,
     "phases": [
       "OVERWORLD",
@@ -1029,6 +1039,7 @@
   },
   "warped": {
     "name": "warped",
+    "group": "wood",
     "minLevel": 321,
     "maxLevel": 355,
     "phases": [
@@ -1085,6 +1096,7 @@
   },
   "wood_oak": {
     "name": "wood_oak",
+    "group": "wood",
     "minLevel": 131,
     "maxLevel": 160,
     "phases": [

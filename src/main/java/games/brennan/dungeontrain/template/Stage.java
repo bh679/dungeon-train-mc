@@ -27,16 +27,26 @@ import java.util.Locale;
  *                when this stage has not been baked yet — see {@code editor.StagePaletteBaker}.
  * @param builder who authored the stage, as a template's credit reads ({@code "builder": {uuid,
  *                name}} on disk, the same codec); null when nobody is credited.
+ * @param group   the family the editor's Stages tab folds this stage into ({@code "group": "wood"}
+ *                on disk), lowercased; {@code ""} stands alone. Display only — generation ignores it.
  */
-public record Stage(String id, String name, TemplateGate gate, StagePalette palette, BuilderCredit builder) {
+public record Stage(String id, String name, TemplateGate gate, StagePalette palette, BuilderCredit builder,
+                    String group) {
 
     public static final String K_NAME = "name";
     public static final String K_PALETTE = "palette";
+    public static final String K_GROUP = "group";
 
     public Stage {
         id = id == null ? "" : id.trim().toLowerCase(Locale.ROOT);
         if (name == null || name.isBlank()) name = id;
         if (gate == null) gate = TemplateGate.DEFAULT;
+        group = group == null ? "" : group.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /** Ungrouped — the shape every caller before stage groups used. */
+    public Stage(String id, String name, TemplateGate gate, StagePalette palette, BuilderCredit builder) {
+        this(id, name, gate, palette, builder, "");
     }
 
     /** Unbaked, uncredited — the pre-palette shape every existing caller and test uses. */
@@ -51,28 +61,38 @@ public record Stage(String id, String name, TemplateGate gate, StagePalette pale
 
     /** Copy with a new gate, keeping the rest. */
     public Stage withGate(TemplateGate newGate) {
-        return new Stage(id, name, newGate, palette, builder);
+        return new Stage(id, name, newGate, palette, builder, group);
     }
 
     /** Copy with a new display name, keeping the rest. */
     public Stage withName(String newName) {
-        return new Stage(id, newName, gate, palette, builder);
+        return new Stage(id, newName, gate, palette, builder, group);
     }
 
     /** Copy with a new baked palette, keeping the rest. */
     public Stage withPalette(StagePalette newPalette) {
-        return new Stage(id, name, gate, newPalette, builder);
+        return new Stage(id, name, gate, newPalette, builder, group);
     }
 
     /** Copy with a new credit (null clears it), keeping the rest. */
     public Stage withBuilder(BuilderCredit newBuilder) {
-        return new Stage(id, name, gate, palette, newBuilder);
+        return new Stage(id, name, gate, palette, newBuilder, group);
+    }
+
+    /** Copy in a new group ({@code ""} or null leaves it standing alone), keeping the rest. */
+    public Stage withGroup(String newGroup) {
+        return new Stage(id, name, gate, palette, builder, newGroup);
+    }
+
+    public boolean grouped() {
+        return !group.isEmpty();
     }
 
     /** Serialise this Stage's value (everything except the id, which is the map key). */
     public JsonObject toJson() {
         JsonObject o = new JsonObject();
         o.addProperty(K_NAME, name);
+        if (grouped()) o.addProperty(K_GROUP, group);
         TemplateWeightCodec.writeGateFields(o, gate);
         if (palette != null) o.add(K_PALETTE, palette.toJson());
         TemplateWeightCodec.writeBuilder(o, builder);
@@ -97,7 +117,12 @@ public record Stage(String id, String name, TemplateGate gate, StagePalette pale
             && !ne.getAsString().isBlank()) {
             name = ne.getAsString();
         }
+        String group = "";
+        JsonElement ge = o.get(K_GROUP);
+        if (ge != null && ge.isJsonPrimitive() && ge.getAsJsonPrimitive().isString()) {
+            group = ge.getAsString();
+        }
         return new Stage(key, name, TemplateWeightCodec.parseGate(o),
-            StagePalette.fromJson(o.get(K_PALETTE)), TemplateWeightCodec.parseBuilder(o));
+            StagePalette.fromJson(o.get(K_PALETTE)), TemplateWeightCodec.parseBuilder(o), group);
     }
 }
