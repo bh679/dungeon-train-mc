@@ -5,6 +5,8 @@ import games.brennan.dungeontrain.config.SpheresProgressionConfig;
 import games.brennan.dungeontrain.worldgen.NetherBandBiomes;
 import games.brennan.dungeontrain.worldgen.SpheresSky;
 import games.brennan.dungeontrain.worldgen.SunkZone;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBandKind;
+import games.brennan.dungeontrain.worldgen.legacy.LegacyBands;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
@@ -20,6 +22,8 @@ import net.minecraft.world.level.biome.Biomes;
  *       the streaks turn orange.</li>
  *   <li><b>Riding high</b> over the sunk approach to the Amplified band and the Amplified band itself — 1.5x
  *       wind ({@link #HIGH_UP_FACTOR}).</li>
+ *   <li><b>Over the sky islands</b> (Caves of Chaos, Skylands, Floating) — calmer, slower, gappier wind
+ *       ({@link #SKY_STYLE}).</li>
  *   <li><b>In the caves leaving the Nether</b> (deep dark, lush, dripstone and sulfur caves) — no wind
  *       ({@link #CAVE_FACTOR}); deep dark streaks would be dark blue if it is ever turned back on.</li>
  * </ul>
@@ -51,6 +55,28 @@ public final class WindZones {
         double nether = nether(cycle, x);
         double high = isHighUp(cycle, x) ? HIGH_UP_FACTOR : 1.0;
         return (1.0 - end) * (1.0 - (1.0 - NETHER_FACTOR) * nether) * high;
+    }
+
+    /**
+     * The sky-island eras right after Far Lands, with open void under them (Caves of Chaos, Skylands, Floating):
+     * half the gusts at half the strength, a steady wind that swings three times as far and at least ±150% (so
+     * its low end is calm: wind-free gaps), and slower changes of strength (4x) and direction (3x).
+     */
+    public static final WindField.Style SKY_STYLE = new WindField.Style(0.5, 0.5, 3.0, 4.0, 3.0, 1.5);
+
+    /** How the band at {@code worldX} reshapes the wind ({@link #SKY_STYLE} over the sky islands). */
+    public static WindField.Style styleAt(double worldX) {
+        return isSky(WorldGenCycle.fromConfig(), (int) Math.floor(worldX)) ? SKY_STYLE : WindField.Style.NORMAL;
+    }
+
+    public static boolean isSkyAt(double worldX) {
+        return isSky(WorldGenCycle.fromConfig(), (int) Math.floor(worldX));
+    }
+
+    private static boolean isSky(WorldGenCycle cycle, int x) {
+        return LegacyBands.isInSlot(cycle, LegacyBandKind.CAVES_OF_CHAOS, x)
+                || LegacyBands.isInSlot(cycle, LegacyBandKind.SKYLANDS, x)
+                || LegacyBands.isInSlot(cycle, LegacyBandKind.FLOATING, x);
     }
 
     /** The train rides high over sunk terrain here ({@link SunkZone}: the sunk approach and the Amplified band). */

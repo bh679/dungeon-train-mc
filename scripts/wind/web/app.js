@@ -1,4 +1,4 @@
-import { sample, stageAt, curveAt, checkGolden, CURVE_NAMES, MAX_GUSTS_PER_MIN } from "./wind.js";
+import { sample, stageAt, curveAt, checkGolden, CURVE_NAMES, MAX_GUSTS_PER_MIN, NORMAL_STYLE, SKY_STYLE } from "./wind.js";
 import * as sound from "./sound.js";
 
 const CURVE_LABELS = {
@@ -153,7 +153,7 @@ for (const k of ["headingDeg", "sneakFactor", "airFactor", "visualLeadTicks"]) {
 const pick = (v) => { selected = Math.max(minD(), v); $("d").value = Math.round(selected); $("dRange").value = selected; redraw(); };
 $("d").addEventListener("input", (e) => pick(parseFloat(e.target.value) || 0));
 $("dRange").addEventListener("input", (e) => pick(parseFloat(e.target.value)));
-for (const id of ["win", "ride", "speed", "seed", "range"]) $(id).addEventListener("input", () => {
+for (const id of ["win", "ride", "speed", "seed", "range", "sky"]) $(id).addEventListener("input", () => {
   $("dRange").max = range();
   redraw();
 });
@@ -327,8 +327,9 @@ function drawFeel() {
   const calmGusts = { ...profile, curves: { ...profile.curves, gustStrength: { kind: "log", scale: 0, ref: 1 } } };
   for (let i = 0; i < ticks; i++) {
     const d = ride ? selected + speed * i : selected;
-    const w = sample(profile, d, t0 + i, sd);
-    const s0 = sample(calmGusts, d, t0 + i, sd);
+    const style = $("sky").checked ? SKY_STYLE : NORMAL_STYLE;
+    const w = sample(profile, d, t0 + i, sd, null, style);
+    const s0 = sample(calmGusts, d, t0 + i, sd, null, style);
     steady.push(s0.strength); total.push(w.strength);
     head.push(w.strength > 0 ? (w.headingRad * 180) / Math.PI : NaN);
     const gusting = w.gust01 > 0.05;
@@ -429,7 +430,8 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
 // ---------- sound preview ----------
 const meter = { breeze: [], gust: [] };
 function soundState() {
-  return { profile, d: selected, seed: seed(), ride: $("ride").checked, speedPerTick: (parseFloat($("speed").value) || 0) / 20 };
+  return { profile, d: selected, seed: seed(), ride: $("ride").checked, speedPerTick: (parseFloat($("speed").value) || 0) / 20,
+    style: $("sky").checked ? SKY_STYLE : NORMAL_STYLE };
 }
 function drawMeter() {
   const { g, w, h } = setup($("soundMeter"));

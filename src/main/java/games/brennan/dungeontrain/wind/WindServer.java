@@ -71,7 +71,8 @@ public final class WindServer {
 
         public WindSample sampleAt(double worldX, long tick) {
             if (!active()) return WindSample.CALM;
-            return WindField.sample(profile, worldX - startX, tick, seed).scaled(WindZones.bandFactor(worldX));
+            return WindField.sample(profile, worldX - startX, tick, seed, WindZones.styleAt(worldX))
+                    .scaled(WindZones.bandFactor(worldX));
         }
 
         public WindProfilePacket packet() {

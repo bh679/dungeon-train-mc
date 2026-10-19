@@ -47,11 +47,35 @@ public final class WindField {
 
     private WindField() {}
 
+    /**
+     * How a band reshapes the wind's character (not just its strength) — multipliers on the stage at that spot.
+     *
+     * @param gustRate     × gusts per minute
+     * @param gustStrength × gust peak
+     * @param flutter      × how far the steady wind swings (past 1 it dips to nothing: calm gaps)
+     * @param flutterSlow  × how long one swing of the steady wind takes
+     * @param wanderSlow   × how long one swing of the heading takes
+     * @param minFlutter   the steady wind swings at least this far (past 1 its low end is calm: wind-free gaps)
+     */
+    public record Style(double gustRate, double gustStrength, double flutter, double flutterSlow, double wanderSlow,
+                        double minFlutter) {
+        public static final Style NORMAL = new Style(1.0, 1.0, 1.0, 1.0, 1.0, 0.0);
+    }
+
     /** The wind {@code d} blocks past the Upside-down end at game tick {@code tick}. */
     public static WindSample sample(WindProfile profile, double d, long tick, int seed) {
+        return sample(profile, d, tick, seed, Style.NORMAL);
+    }
+
+    /** {@link #sample} with a band's {@link Style}. */
+    public static WindSample sample(WindProfile profile, double d, long tick, int seed, Style style) {
         if (!profile.enabled() || !(d >= 0.0) || profile.curves() == null) return WindSample.CALM;
-        WindProfile.Stage s = profile.stageAt(d);
-        if (s == null) return WindSample.CALM;
+        WindProfile.Stage base = profile.stageAt(d);
+        if (base == null) return WindSample.CALM;
+        WindProfile.Stage s = new WindProfile.Stage(base.at(), base.base(),
+                Math.max(style.minFlutter(), base.flutter() * style.flutter()),
+                base.gustsPerMin() * style.gustRate(), base.gustStrength() * style.gustStrength(), base.gustTicks(),
+                base.gustVeer(), base.wander(), base.wanderSeconds() * style.wanderSlow());
         double t = (double) tick;
 
         // Heading drift.
@@ -60,7 +84,7 @@ public final class WindField {
         double headingDeg = profile.headingDeg() + s.wander() * (n / 1.35);
 
         // Steady push with flutter.
-        double fl = noise(seed ^ SALT_FLUTTER, t / FLUTTER_PERIOD);
+        double fl = noise(seed ^ SALT_FLUTTER, t / (FLUTTER_PERIOD * style.flutterSlow()));
         double steady = Math.max(0.0, s.base() * (1.0 + s.flutter() * fl));
 
         // Gusts.

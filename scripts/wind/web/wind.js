@@ -25,6 +25,10 @@ export const CURVE_NAMES = ["base", "flutter", "gustsPerMin", "gustStrength", "g
 
 export const CALM = Object.freeze({ strength: 0, headingRad: 0, gust01: 0 });
 
+/** WindField.Style: how a band reshapes the wind. NORMAL changes nothing; SKY = WindZones.SKY_STYLE. */
+export const NORMAL_STYLE = Object.freeze({ gustRate: 1.0, gustStrength: 1.0, flutter: 1.0, flutterSlow: 1.0, wanderSlow: 1.0, minFlutter: 0.0 });
+export const SKY_STYLE = Object.freeze({ gustRate: 0.5, gustStrength: 0.5, flutter: 3.0, flutterSlow: 4.0, wanderSlow: 3.0, minFlutter: 1.5 });
+
 export function curveAt(c, d) {
   const x = Math.max(0.0, d);
   if (c.kind === "log") return c.scale * Math.log(1.0 + x / c.ref);
@@ -70,16 +74,23 @@ export function noise(seed, x) {
 }
 
 /** The wind d blocks past the Upside-down end at game tick `tick`. Pass a precomputed stage to skip curveAt. */
-export function sample(profile, d, tick, seed, stage) {
+export function sample(profile, d, tick, seed, stage, style = NORMAL_STYLE) {
   if (!profile.enabled || !(d >= 0.0) || !profile.curves) return CALM;
-  const s = stage || stageAt(profile, d);
+  const b = stage || stageAt(profile, d);
+  const s = {
+    ...b,
+    flutter: Math.max(style.minFlutter, b.flutter * style.flutter),
+    gustsPerMin: b.gustsPerMin * style.gustRate,
+    gustStrength: b.gustStrength * style.gustStrength,
+    wanderSeconds: b.wanderSeconds * style.wanderSlow,
+  };
   const t = tick;
 
   const period = Math.max(20.0, s.wanderSeconds * 20.0);
   const n = noise(seed ^ SALT_WANDER, t / period) + 0.35 * noise(seed ^ SALT_WANDER2, t / (period / 3.0));
   const headingDeg = profile.headingDeg + s.wander * (n / 1.35);
 
-  const fl = noise(seed ^ SALT_FLUTTER, t / FLUTTER_PERIOD);
+  const fl = noise(seed ^ SALT_FLUTTER, t / (FLUTTER_PERIOD * style.flutterSlow));
   const steady = Math.max(0.0, s.base * (1.0 + s.flutter * fl));
 
   const p = Math.min(1.0, s.gustsPerMin * GUST_SLOT / 1200.0);

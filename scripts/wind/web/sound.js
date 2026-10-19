@@ -70,7 +70,7 @@ export async function start(state, onFrame) {
     const d = s.ride ? rideD : s.d;
     if (s.ride) rideD += s.speedPerTick;
     tick++;
-    const w = sample(s.profile, d, tick, s.seed);
+    const w = sample(s.profile, d, tick, s.seed, null, s.style);
     const muffle = MUFFLE[$("muffle").value] ?? 1.0;
     const level = Math.min(1.0, w.strength / FULL_PUSH);
     const pitch = (0.55 + 0.6 * level) * (muffle < 1.0 ? 0.8 : 1.0);
