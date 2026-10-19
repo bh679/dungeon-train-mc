@@ -27784,6 +27784,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "portal-mod-update-safety",
+      "version": "0.1361.0",
+      "type": "fix",
+      "tags": [
+        "fix",
+        "compatibility"
+      ],
+      "title": "Safer with mod updates",
+      "summary": "If one of the bundled mods updates ahead of the pack, its portals keep working and the game still starts.",
+      "highlights": [],
+      "pr": 2157,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
