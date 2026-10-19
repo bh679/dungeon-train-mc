@@ -25,7 +25,7 @@ opens `http://127.0.0.1:8796`, which shows:
 | `bands.json` | Band edges relative to the Upside-down end, written by `/dungeontrain debug wind export` (copy it from `run/wind-bands.json`). |
 
 In game, **F3 + 8** opens the wind panel: start X, how far past it you are, the stage there, the wind now and
-the wind the streaks show (1 s ahead), whether you are exposed (or why not), and a 10 s graph of wind / shown /
+the wind the streaks show (2 s ahead by default), whether you are exposed (or why not), and a 10 s graph of wind / shown /
 push applied. `airFactor` multiplies the push on players and mobs while they are off the ground.
 
 Units: push is blocks/tick² at multiplier 1. A grounded player settles at about 2.2× that in blocks/tick

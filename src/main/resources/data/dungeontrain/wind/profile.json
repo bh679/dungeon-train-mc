@@ -3,7 +3,7 @@
   "headingDeg": 90.0,
   "sneakFactor": 0.35,
   "airFactor": 2.5,
-  "visualLeadTicks": 20,
+  "visualLeadTicks": 40,
   "multipliers": { "player": 1.0, "mob": 0.8, "item": 1.6, "projectile": 0.6, "xp": 1.6, "other": 1.0 },
   "stages": [
     { "at": 0,     "base": 0.0,   "flutter": 0.0,  "gustsPerMin": 0.0, "gustStrength": 0.0,  "gustTicks": 40, "gustVeer": 0,  "wander": 20,  "wanderSeconds": 120 },
