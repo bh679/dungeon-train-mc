@@ -28,6 +28,35 @@ final class SphereFieldTest {
     }
 
     @Test
+    @DisplayName("spheresNear finds exactly the spheres within reach of their surface, and ignores the surface sampler")
+    void spheresNear() {
+        SphereField f = field(0.5);
+        SphereField flat = new SphereField(f.params(), (x, z) -> -999);
+        double reach = 30;
+        java.util.Random rng = new java.util.Random(7);
+        for (int i = 0; i < 200; i++) {
+            double x = rng.nextInt(2000) - 1000 + 0.5, y = rng.nextInt(260) - 30 + 0.5, z = rng.nextInt(2000) - 1000 + 0.5;
+            Set<Long> got = new HashSet<>();
+            for (SphereField.Sphere s : f.spheresNear(x, y, z, reach)) got.add(s.id());
+            Set<Long> want = new HashSet<>();
+            for (int cx = -20; cx < 20; cx++) {
+                for (int cz = -20; cz < 20; cz++) {
+                    for (int cy = 0; cy <= 3; cy++) {
+                        SphereField.Sphere s = f.sphereInCell(cx, cy, cz);
+                        if (s == null) continue;
+                        double dx = x - s.cx(), dy = y - s.cy(), dz = z - s.cz();
+                        if (Math.sqrt(dx * dx + dy * dy + dz * dz) <= s.r() + reach) want.add(s.id());
+                    }
+                }
+            }
+            assertEquals(want, got, "at " + x + "," + y + "," + z);
+            Set<Long> flatIds = new HashSet<>();
+            for (SphereField.Sphere s : flat.spheresNear(x, y, z, reach)) flatIds.add(s.id());
+            assertEquals(got, flatIds, "centre + radius never depend on the surface (client builds with a stub)");
+        }
+    }
+
+    @Test
     @DisplayName("rolls are deterministic in (seed, cell) and differ across seeds")
     void deterministic() {
         SphereField a = field(0.5);

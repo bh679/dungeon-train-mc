@@ -150,6 +150,41 @@ public final class SpheresBand {
     }
 
     /**
+     * Placed spheres whose surface is within {@code reach} blocks of {@code (x, y, z)} — sphere gravity's
+     * lookup. Empty out of band, with the band off, or in a world without a train. Shares the worldgen
+     * field (and its memo), and applies the same {@link #insideBand} filter, so it only sees spheres that
+     * were actually carved.
+     */
+    public static List<SphereField.Sphere> spheresNear(ServerLevel overworld, double x, double y, double z, double reach) {
+        if (!DungeonTrainCommonConfig.isSpheresEnabled()) return List.of();
+        WorldGenCycle cycle = MixBand.cycleAtBlock(overworld, (int) Math.floor(x), (int) Math.floor(z));
+        if (!nearBand(cycle, x, reach)) return List.of();
+        if (!DungeonTrainWorldData.get(overworld).startsWithTrain()) return List.of();
+        return insideBand(cycle, fieldFor(overworld).spheresNear(x, y, z, reach));
+    }
+
+    /**
+     * Cheap gate for {@link #spheresNear}: could any placed sphere reach world-X {@code x}? The ramp is non-zero
+     * on one contiguous fade + core run per repeat, far longer than a sphere, so three samples across the
+     * lookup span cover it.
+     */
+    public static boolean nearBand(WorldGenCycle cycle, double x, double reach) {
+        if (cycle.spheresLen() <= 0L) return false;
+        double span = DungeonTrainCommonConfig.getSpheresMaxRadius() + reach;
+        int ix = (int) Math.floor(x);
+        return cycle.spheresVoidRamp(ix) > 0.0
+                || cycle.spheresVoidRamp((int) Math.floor(x - span)) > 0.0
+                || cycle.spheresVoidRamp((int) Math.floor(x + span)) > 0.0;
+    }
+
+    /** Placed spheres of {@code field} near a point, for the client's own field (see {@link #spheresNear}). */
+    public static List<SphereField.Sphere> spheresNear(SphereField field, WorldGenCycle cycle,
+                                                       double x, double y, double z, double reach) {
+        if (!nearBand(cycle, x, reach)) return List.of();
+        return insideBand(cycle, field.spheresNear(x, y, z, reach));
+    }
+
+    /**
      * True if the chunk at {@code (chunkMinX, chunkMinZ)} generates as pure void: every column is in
      * the band <b>core</b> (ramp 1 — the fade keeps dissolving terrain) and no sphere touches it. The
      * gate the fill / surface / decoration skips and the portal site check share.
@@ -204,7 +239,8 @@ public final class SpheresBand {
         }
     }
 
-    private static SphereField.Params paramsFromConfig(long seed) {
+    /** The field's parameters from COMMON config — shared with the client's copy so both roll the same spheres. */
+    public static SphereField.Params paramsFromConfig(long seed) {
         return new SphereField.Params(seed,
                 DungeonTrainCommonConfig.getSpheresCellBlocks(),
                 DungeonTrainCommonConfig.getSpheresDensity(),
@@ -236,9 +272,24 @@ public final class SpheresBand {
      * surface; a column over the End void reports {@link SphereField#NO_SURFACE}.
      */
     private static SphereField.Mixer mixer(ServerLevel overworld) {
+        ServerLevel end = overworld.getServer().getLevel(Level.END);
+        return configMixer((x, z) -> {
+            if (end == null) return SphereField.NO_SURFACE;
+            var source = end.getChunkSource();
+            int y = source.getGenerator().getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, end,
+                    source.randomState());
+            return y <= end.getMinBuildHeight() ? SphereField.NO_SURFACE : y;
+        });
+    }
+
+    /**
+     * The config-driven mixer, with the End island surface injected. Sphere presence and radius depend on
+     * its taper, so the client builds its field through this too ({@code client.ClientSphereField}); the
+     * End surface only labels a sphere End vs Nether and never moves it.
+     */
+    public static SphereField.Mixer configMixer(SphereField.SurfaceSampler endSurface) {
         SpheresSegments seg = SpheresProgressionConfig.segments();
         WorldGenCycle cycle = WorldGenCycle.fromConfig();
-        ServerLevel end = overworld.getServer().getLevel(Level.END);
         return new SphereField.Mixer() {
             @Override
             public SphereSource sourceAt(int cx, double u) {
@@ -258,11 +309,7 @@ public final class SpheresBand {
 
             @Override
             public int endSurfaceY(int x, int z) {
-                if (end == null) return SphereField.NO_SURFACE;
-                var source = end.getChunkSource();
-                int y = source.getGenerator().getBaseHeight(x, z, Heightmap.Types.WORLD_SURFACE_WG, end,
-                        source.randomState());
-                return y <= end.getMinBuildHeight() ? SphereField.NO_SURFACE : y;
+                return endSurface.surfaceY(x, z);
             }
         };
     }

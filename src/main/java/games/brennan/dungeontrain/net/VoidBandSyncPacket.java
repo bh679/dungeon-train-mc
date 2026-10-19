@@ -2,6 +2,7 @@ package games.brennan.dungeontrain.net;
 
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.client.ClientNetherBand;
+import games.brennan.dungeontrain.client.ClientSphereField;
 import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.client.ClientVoidBand;
 import net.minecraft.network.FriendlyByteBuf;
@@ -20,10 +21,12 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * render Y-split; {@code bedrockY} is the world's terrain floor, which the client
  * cannot derive (it lives on the chunk generator) and which bounds the sealed space
  * portal twins are stamped into — the one part of an upside-down band that must
- * <em>not</em> render flipped. Sent once on login.
+ * <em>not</em> render flipped. {@code generationSeed} lets the client roll the spheres band's
+ * {@code SphereField} itself, so it can pull its own player toward the spheres (sphere gravity) without
+ * a per-tick sync. Sent once on login.
  */
 public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, int trainY,
-                                 int bedrockY) implements CustomPacketPayload {
+                                 int bedrockY, long generationSeed) implements CustomPacketPayload {
 
     public static final Type<VoidBandSyncPacket> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "void_band_sync"));
@@ -35,9 +38,10 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, in
                         buf.writeBoolean(packet.startsWithTrain);
                         buf.writeVarInt(packet.trainY);
                         buf.writeInt(packet.bedrockY);
+                        buf.writeLong(packet.generationSeed);
                     },
                     buf -> new VoidBandSyncPacket(
-                            buf.readVarInt(), buf.readBoolean(), buf.readVarInt(), buf.readInt())
+                            buf.readVarInt(), buf.readBoolean(), buf.readVarInt(), buf.readInt(), buf.readLong())
             );
 
     @Override
@@ -50,6 +54,7 @@ public record VoidBandSyncPacket(int carriageLength, boolean startsWithTrain, in
             ClientVoidBand.update(packet.carriageLength, packet.startsWithTrain);
             ClientNetherBand.update(packet.startsWithTrain);
             ClientUpsideDownBand.update(packet.startsWithTrain, packet.trainY, packet.bedrockY);
+            ClientSphereField.update(packet.generationSeed);
         });
     }
 }

@@ -202,6 +202,35 @@ public final class SphereField {
     }
 
     /**
+     * Every sphere whose surface lies within {@code reach} blocks of the point, i.e. centre within
+     * {@code r + reach}. Scans the placement cubes within {@code rMax + reach} on all three axes; same
+     * memoised rolls as {@link #candidatesFor}, so it agrees with what worldgen carved.
+     */
+    public List<Sphere> spheresNear(double x, double y, double z, double reach) {
+        int cell = Math.max(1, p.cell());
+        double span = Math.max(0, p.rMax()) + Math.max(0.0, reach);
+        int cx0 = Math.floorDiv((int) Math.floor(x - span), cell), cx1 = Math.floorDiv((int) Math.ceil(x + span), cell);
+        int cz0 = Math.floorDiv((int) Math.floor(z - span), cell), cz1 = Math.floorDiv((int) Math.ceil(z + span), cell);
+        int cy0 = Math.max(Math.floorDiv((int) Math.floor(y - span), cell), Math.floorDiv(p.centerMinY(), cell));
+        int cy1 = Math.min(Math.floorDiv((int) Math.ceil(y + span), cell), Math.floorDiv(p.centerMaxY(), cell));
+        List<Sphere> out = null;
+        for (int cx = cx0; cx <= cx1; cx++) {
+            for (int cz = cz0; cz <= cz1; cz++) {
+                for (int cy = cy0; cy <= cy1; cy++) {
+                    Sphere s = sphereInCell(cx, cy, cz);
+                    if (s == null) continue;
+                    double dx = x - s.cx(), dy = y - s.cy(), dz = z - s.cz();
+                    double lim = s.r() + reach;
+                    if (dx * dx + dy * dy + dz * dz > lim * lim) continue;
+                    if (out == null) out = new ArrayList<>(4);
+                    out.add(s);
+                }
+            }
+        }
+        return out == null ? Collections.emptyList() : Collections.unmodifiableList(out);
+    }
+
+    /**
      * Of {@code candidates}, the sphere that owns the block at {@code (x, y, z)} — the one whose
      * centre is nearest in units of its own radius — or {@code null} when the block is outside every
      * sphere. Deterministic where spheres overlap, so both sides of a chunk seam agree.
