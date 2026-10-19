@@ -28243,8 +28243,29 @@
       "released_at": null
     },
     {
-      "id": "balance-tweak",
+      "id": "live-relay-restart-notice",
       "version": "0.1385.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live Eye restart warnings",
+      "summary": "When the live stream's server restarts, everyone streaming or watching now gets a heads-up in Live chat, and the stream picks back up with the same streamer once it's back.",
+      "highlights": [
+        "A short countdown in Live chat before the server restarts, saying roughly how long it will take",
+        "Your Live Eye or TV stays with the same streamer through the restart instead of dropping out",
+        "Live chat stays connected and tells you when everything is back"
+      ],
+      "pr": 2161,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
+    },
+    {
+      "id": "balance-tweak",
+      "version": "0.1386.0",
       "type": "fix",
       "tags": [
         "fix"

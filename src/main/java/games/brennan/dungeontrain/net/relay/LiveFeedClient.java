@@ -137,7 +137,13 @@ public final class LiveFeedClient {
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
-                           @Nullable Moment moment) {
+                           @Nullable Moment moment, @Nullable RestartNotice restart) {
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, null);
+        }
+
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                         @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll) {
             this(seq, ts, author, uuid, content, source, logRequest, via, poll, null);
@@ -198,6 +204,36 @@ public final class LiveFeedClient {
 
     /** The moment on a chat-line object, or null when it carries none (or one this client doesn't know). */
     @Nullable
+    /**
+     * The relay is restarting, or just has (live-restart.js): {@code resumeBy} the relay's estimate of
+     * when chat and stream are back (relay clock, 0 when absent), {@code countdown} 3, 2, 1 (0 when
+     * absent), {@code local} the line saying the game carries on and saves locally, {@code resumed} the
+     * line saying they are back.
+     */
+    public record RestartNotice(long resumeBy, int countdown, boolean local, boolean resumed) {}
+
+    @Nullable
+    static RestartNotice parseRestart(JsonObject m) {
+        if (!m.has("restart") || !m.get("restart").isJsonObject()) return null;
+        JsonObject o = m.getAsJsonObject("restart");
+        long resumeBy = num(o, "resumeBy");
+        long countdown = num(o, "countdown");
+        boolean local = flag(o, "local");
+        boolean resumed = flag(o, "resumed");
+        int count = countdown > 0 && countdown < 100 ? (int) countdown : 0;
+        if (resumeBy <= 0 && count == 0 && !local && !resumed) return null;
+        return new RestartNotice(Math.max(0L, resumeBy), count, local, resumed);
+    }
+
+    private static boolean flag(JsonObject o, String key) {
+        return o.has(key) && o.get(key).isJsonPrimitive() && o.get(key).getAsJsonPrimitive().isBoolean() && o.get(key).getAsBoolean();
+    }
+
+    private static long num(JsonObject o, String key) {
+        if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.get(key).getAsJsonPrimitive().isNumber()) return 0L;
+        return o.get(key).getAsLong();
+    }
+
     static Moment parseMoment(JsonObject m) {
         if (!m.has("moment") || !m.get("moment").isJsonObject()) return null;
         JsonObject o = m.getAsJsonObject("moment");
@@ -642,7 +678,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();

@@ -69,16 +69,18 @@ public final class LiveStatusPoller {
                 ? poll(null, Channel.DEV, false)
                 : CompletableFuture.completedFuture(Status.OFFLINE);
             devLive.thenCompose(dev -> {
-                    Channel ch = LiveFeedClient.viewerChannel(fp, dev.live());
+                    // Unanswered through a relay restart: keep showing the channel already shown.
+                    Channel ch = dev == null ? channel : LiveFeedClient.viewerChannel(fp, dev.live());
                     return poll(me, ch, true).thenApply(status -> new Polled(status, ch));
                 })
                 .whenComplete((polled, t) -> {
-                    // A reply begun before Free Play flipped must not land on the other side.
-                    if (polled != null && fp == freePlay) {
+                    // A reply begun before Free Play flipped must not land on the other side. No status
+                    // (null) is the relay restarting (LiveRelayRestart): the last one, same streamer, stands.
+                    if (polled != null && polled.status() != null && fp == freePlay) {
                         current = polled.status();
                         channel = polled.channel();
                     }
-                    noteWatched(polled != null && polled.status().live(), System.currentTimeMillis());
+                    noteWatched(polled != null && polled.status() != null && polled.status().live(), System.currentTimeMillis());
                     inFlight.set(false);
                 });
         }
@@ -107,7 +109,8 @@ public final class LiveStatusPoller {
     }
 
     /**
-     * One status poll; a failed request reads as offline. {@code offers}: this is the channel the
+     * One status poll; a failed request reads as offline, except inside an announced relay restart
+     * ({@link LiveRelayRestart#inWindow}), where it is null: nothing new learned, keep the last status. {@code offers}: this is the channel the
      * world's TVs show, so a dead streamer's takeover offer in it goes to {@link LiveTakeoverOffer}.
      */
     private static CompletableFuture<Status> poll(@Nullable UUID viewer, Channel channel, boolean offers) {
@@ -117,6 +120,7 @@ public final class LiveStatusPoller {
         String name = ranked != null && Minecraft.getInstance().getUser() != null ? Minecraft.getInstance().getUser().getName() : null;
         return LiveFeedClient.status(viewer, channel, ranked, name)
             .handle((r, t) -> {
+                if ((r == null || !r.ok()) && LiveRelayRestart.inWindow(System.currentTimeMillis())) return null;
                 if (r == null) return Status.OFFLINE;
                 if (offers) {
                     LiveFeedClient.Takeover offer = LiveFeedClient.parseTakeover(r);
