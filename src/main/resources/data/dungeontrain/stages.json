@@ -511,6 +511,48 @@
       ]
     }
   },
+  "deeper_dark": {
+    "name": "deeper_dark",
+    "phases": [
+      "DEEPER_DARK"
+    ],
+    "palette": {
+      "solid": [
+        "deeperdarker:sculk_stone_bricks",
+        "deeperdarker:polished_sculk_stone",
+        "deeperdarker:cut_sculk_stone",
+        "deeperdarker:sculk_stone_tiles",
+        "minecraft:deepslate_bricks",
+        "deeperdarker:gloomslate_bricks",
+        "deeperdarker:polished_gloomslate",
+        "deeperdarker:echo_planks",
+        "minecraft:sculk",
+        "deeperdarker:chiseled_sculk_stone"
+      ],
+      "stairs": [
+        "deeperdarker:sculk_stone_brick_stairs",
+        "deeperdarker:polished_sculk_stone_stairs"
+      ],
+      "slabs": [
+        "deeperdarker:sculk_stone_brick_slab",
+        "deeperdarker:polished_sculk_stone_slab"
+      ],
+      "button": "deeperdarker:echo_button",
+      "pressurePlate": "deeperdarker:echo_pressure_plate",
+      "wood": "dark_oak",
+      "stone": "deepslate",
+      "terracotta": [
+        "minecraft:cyan_terracotta",
+        "minecraft:black_terracotta",
+        "minecraft:blue_terracotta"
+      ],
+      "concrete": [
+        "minecraft:cyan_concrete",
+        "minecraft:black_concrete",
+        "minecraft:blue_concrete"
+      ]
+    }
+  },
   "desert": {
     "name": "desert",
     "minLevel": 11,

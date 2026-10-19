@@ -3999,6 +3999,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Large Biomes",
   "gui.dungeontrain.editor_menu.phase.amplified": "Amplified",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Lost City",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Deeper Dark",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Caves of Chaos",
   "gui.dungeontrain.editor_menu.stage.title": "Stage: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Delete Stage",

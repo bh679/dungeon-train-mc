@@ -6,7 +6,7 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * The fifteen worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
+ * The twenty worldgen phases a column of the repeating {@link WorldGenCycle} can sit in, as a
  * single 15-value classification — unlike {@link Disintegration.Zone} (3 values, Nether-less).
  * Used by the per-template spawn gate
  * ({@link games.brennan.dungeontrain.template.TemplateGate}): a weighted template may restrict
@@ -54,8 +54,13 @@ public enum TrainPhase {
     LARGE_BIOMES,
     /** Vanilla's Amplified preset; see {@link games.brennan.dungeontrain.worldgen.legacy.preset.PresetTerrain}. */
     AMPLIFIED,
-    /** Modern overworld dense with ruined cities; see {@link LostCityStructures}. Last: phase masks are {@code 1 << ordinal}. */
-    LOST_CITY;
+    /** Modern overworld dense with ruined cities; see {@link LostCityStructures}. */
+    LOST_CITY,
+    /**
+     * A Deeper Dark pass — a Nether-band slot whose core is Deeper Darker's Otherside ({@code nether:otherside});
+     * see {@link NetherBand#isOthersideAt}. Last: phase masks are {@code 1 << ordinal}.
+     */
+    DEEPER_DARK;
 
     /** Bitmask with every phase set ({@code 1<<ordinal} per value) — the "all phases" wire value. */
     public static final int ALL_MASK = (1 << values().length) - 1;
@@ -83,7 +88,7 @@ public enum TrainPhase {
 
     /**
      * Single-letter label for compact phase pickers/indicators — the first letter of the constant
-     * name, so the eighteen phases read {@code O N V E U C S S B A S I F F C C L A}. A new phase is picked up automatically.
+     * name, so the twenty phases read {@code O N V E U C S S B A S I F F C C L A L D}. A new phase is picked up automatically.
      */
     public String letter() {
         return String.valueOf(name().charAt(0));
@@ -111,6 +116,7 @@ public enum TrainPhase {
             case LARGE_BIOMES -> "Large Biomes";
             case AMPLIFIED -> "Amplified";
             case LOST_CITY -> "Lost City";
+            case DEEPER_DARK -> "Deeper Dark";
         };
     }
 
@@ -135,6 +141,8 @@ public enum TrainPhase {
             m.put("chaos", CAVES_OF_CHAOS);
             m.put("cavesofchaos", CAVES_OF_CHAOS);
             m.put("lostcity", LOST_CITY);
+            m.put("deeperdark", DEEPER_DARK);
+            m.put("otherside", DEEPER_DARK);
             MAP = java.util.Collections.unmodifiableMap(m);
         }
     }
@@ -235,7 +243,8 @@ public enum TrainPhase {
         // template / Stage spawns across the visible Nether stretch — otherwise NETHER only triggers
         // ~coreFade/2 + the mountain-rise blocks deep into the band ("deep into the Nether").
         if (NetherBand.isInNetherBand(overworld, worldX)) {
-            return NETHER;
+            // A Deeper Dark pass is its own phase: sculk track, tunnels, stage and carriage contents.
+            return NetherBand.isOthersideAt(overworld, worldX) ? DEEPER_DARK : NETHER;
         }
         return switch (DisintegrationBand.zoneAt(overworld, worldX)) {
             case VOID -> VOID;

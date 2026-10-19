@@ -3348,6 +3348,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "大きなバイオーム",
   "gui.dungeontrain.editor_menu.phase.amplified": "アンプリファイド",
   "gui.dungeontrain.editor_menu.phase.lost_city": "失われた都市",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "より深き闇",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "混沌の洞窟",
   "gui.dungeontrain.editor_menu.stage.title": "ステージ: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "ステージを削除",

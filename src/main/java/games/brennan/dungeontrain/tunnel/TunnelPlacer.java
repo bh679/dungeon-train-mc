@@ -84,6 +84,8 @@ public final class TunnelPlacer {
     public static final TemplateGroup FADE_BASE_GROUP = TemplateGroup.of("stone");
     /** …dithering into this group's Nether look. */
     public static final TemplateGroup FADE_NETHER_GROUP = TemplateGroup.of("blackstone");
+    /** …or, in a Deeper Dark pass, this group's sculk look. */
+    public static final TemplateGroup FADE_DEEPER_DARK_GROUP = TemplateGroup.of("sculk");
 
     private TunnelPlacer() {}
 
@@ -229,8 +231,10 @@ public final class TunnelPlacer {
         applyTunnelSidecarWorldgen(level, origin, mirrorX, kind, owName, worldSeed, tileIndex, diffIndex);
 
         long genSeed = DungeonTrainWorldData.get(overworld).getGenerationSeed();
+        TrainPhase fadePhase = NetherFade.fadePhaseAt(overworld, origin.getX());
         String netherName = TrackVariantRegistry.pickName(kind, worldSeed, tileIndex,
-            new GateContext(baseCtx.level(), TrainPhase.NETHER), FADE_NETHER_GROUP);
+            new GateContext(baseCtx.level(), fadePhase),
+            fadePhase == TrainPhase.DEEPER_DARK ? FADE_DEEPER_DARK_GROUP : FADE_NETHER_GROUP);
         Optional<StructureTemplate> netherTemplate = TunnelTemplateStore.getFor(serverLevel, variant, netherName);
         if (netherTemplate.isPresent()) {
             stampTemplateWorldgen(level, stampOrigin, netherTemplate.get(), mirrorX,

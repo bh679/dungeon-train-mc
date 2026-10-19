@@ -3401,6 +3401,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Grands biomes",
   "gui.dungeontrain.editor_menu.phase.amplified": "Amplifié",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Cité perdue",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Ténèbres profondes",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Grottes du Chaos",
   "gui.dungeontrain.editor_menu.stage.title": "Tronçon : %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Supprimer le tronçon",

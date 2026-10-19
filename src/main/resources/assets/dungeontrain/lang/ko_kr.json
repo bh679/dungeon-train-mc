@@ -3348,6 +3348,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "큰 생물 군계",
   "gui.dungeontrain.editor_menu.phase.amplified": "증폭",
   "gui.dungeontrain.editor_menu.phase.lost_city": "잃어버린 도시",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "더 깊은 어둠",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "혼돈의 동굴",
   "gui.dungeontrain.editor_menu.stage.title": "스테이지: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "스테이지 삭제",

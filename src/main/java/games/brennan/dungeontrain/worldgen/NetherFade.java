@@ -67,6 +67,14 @@ public final class NetherFade {
     }
 
     /**
+     * The band phase a crossfade at {@code worldX} dithers into: {@link TrainPhase#DEEPER_DARK} in a Deeper Dark
+     * pass, {@link TrainPhase#NETHER} otherwise. Shared by the track and tunnel crossfades so they agree.
+     */
+    public static TrainPhase fadePhaseAt(ServerLevel overworld, int worldX) {
+        return NetherBand.isOthersideAt(overworld, worldX) ? TrainPhase.DEEPER_DARK : TrainPhase.NETHER;
+    }
+
+    /**
      * True if any column in the inclusive X-span {@code [xLo, xHi]} sits inside the Nether crossfade
      * ({@code 0 < ramp < 1}) — i.e. the feature stamped over that span is worth compositing rather
      * than stamping a single hard-phase variant. Spans are short (one tunnel section / track tile),

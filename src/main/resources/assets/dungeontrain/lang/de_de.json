@@ -3401,6 +3401,7 @@
   "gui.dungeontrain.editor_menu.phase.large_biomes": "Große Biome",
   "gui.dungeontrain.editor_menu.phase.amplified": "Verstärkt",
   "gui.dungeontrain.editor_menu.phase.lost_city": "Verlorene Stadt",
+  "gui.dungeontrain.editor_menu.phase.deeper_dark": "Tiefere Dunkelheit",
   "gui.dungeontrain.editor_menu.phase.caves_of_chaos": "Höhlen des Chaos",
   "gui.dungeontrain.editor_menu.stage.title": "Abschnitt: %s",
   "gui.dungeontrain.editor_menu.stage.delete": "Abschnitt löschen",

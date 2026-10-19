@@ -543,7 +543,7 @@ public final class TrackGenerator {
             String owName = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
                 new GateContext(baseCtx.level(), TrainPhase.OVERWORLD));
             String ntName = TrackVariantRegistry.pickName(TrackKind.TILE, worldSeed, idx,
-                new GateContext(baseCtx.level(), TrainPhase.NETHER));
+                new GateContext(baseCtx.level(), NetherFade.fadePhaseAt(overworld, tileX)));
             return new TilePaint(
                 TrackTemplateStore.getCellsFor(level, dims, owName),
                 TrackVariantBlocks.loadFor(TrackKind.TILE, owName, tileFootprint),

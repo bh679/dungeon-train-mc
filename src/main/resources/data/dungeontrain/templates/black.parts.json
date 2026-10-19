@@ -49,6 +49,11 @@
       "stage": "deepdark"
     },
     {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deeper_dark"
+    },
+    {
       "name": "mudbricks_wood",
       "weight": 1,
       "stage": "darkwood"
@@ -151,6 +156,11 @@
       "stage": "deepdark"
     },
     {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deeper_dark"
+    },
+    {
       "name": "mud_wood",
       "weight": 1,
       "stage": "darkwood"
@@ -251,6 +261,11 @@
       "name": "standard_deepdark",
       "weight": 1,
       "stage": "deepdark"
+    },
+    {
+      "name": "standard_deepdark",
+      "weight": 1,
+      "stage": "deeper_dark"
     },
     {
       "name": "mud_wood",
