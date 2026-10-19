@@ -27989,6 +27989,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "editor-wood-stages-dropdown",
+      "version": "0.1373.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "editor",
+        "ui"
+      ],
+      "title": "Wood stages grouped in the editor",
+      "summary": "The editor's Stages tab now shows every wood stage as one Wood entry. Click it to choose which wood stage to view from a list beside it.",
+      "highlights": [
+        "Each wood stage shows its own planks as its icon, so they are easy to tell apart."
+      ],
+      "pr": 2143,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
