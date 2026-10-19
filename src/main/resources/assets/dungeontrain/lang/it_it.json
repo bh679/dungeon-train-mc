@@ -619,7 +619,6 @@
   "chat.dungeontrain.advancement_revealed": "Rivelato: %s",
   "chat.dungeontrain.advancement_revealed_more": "+%s altri",
   "chat.dungeontrain.advancement_tab_unlocked": "★ Nuova scheda dei progressi sbloccata: %1$s! Premi %2$s per esplorarla ★",
-  "gui.dungeontrain.advancement_tab_unlocked.title": "Nuova scheda!",
   "chat.dungeontrain.familiar_book.1": "Un libro familiare. Sembra che %1$s tenuto in mano, e %2$s letto fino all'ultima pagina.",
   "chat.dungeontrain.familiar_book.2": "Questo libro riconosce la tua mano: circa %1$s tenuto in mano; %2$s portato fino all'ultima pagina.",
   "chat.dungeontrain.familiar_book.3": "Un peso familiare. Circa %1$s tenuto in mano, e un lettore vi è rimasto %2$s di fila.",

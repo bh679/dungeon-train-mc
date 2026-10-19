@@ -6,7 +6,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientAdvancements;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.AdvancementNode;
 import net.minecraft.advancements.AdvancementProgress;
@@ -14,7 +13,6 @@ import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundUpdateAdvancementsPacket;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -26,9 +24,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * After an earn, tells the player what it opened up, {@link #DELAY_TICKS} later: a loud announcement
- * (title, fanfare, gold chat line) for each advancement tab that just appeared, then a
- * {@code Revealed: [A], [B]} line for the advancements now visible on tabs they already had.
+ * After an earn, tells the player in chat what it opened up, {@link #DELAY_TICKS} later: a gold line
+ * for each advancement tab that just appeared, then a {@code Revealed: [A], [B]} line for the
+ * advancements now visible on tabs they already had.
  *
  * <p>Only tabs the advancements screen would show count — {@link AdvancementTabGate}, so by default
  * Dungeon Train's tabs and not Minecraft's or other mods' (Options → Dungeon Train). That setting is
@@ -95,15 +93,10 @@ public final class AdvancementRevealClient {
         }
     }
 
-    /** Title + subtitle on screen, the challenge fanfare, and a gold chat line pointing at the L key. */
+    /** The gold chat line pointing at the L key. */
     private static void announceTab(LocalPlayer player, Component tab) {
-        Minecraft mc = Minecraft.getInstance();
         Component name = tab.copy().withStyle(ChatFormatting.YELLOW);
-        mc.gui.setTimes(10, 70, 20);
-        mc.gui.setTitle(Component.translatable(AdvancementReveal.KEY_TAB_TITLE)
-            .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD));
-        mc.gui.setSubtitle(name);
-        mc.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0F, 1.0F));
-        player.displayClientMessage(AdvancementReveal.tabUnlocked(name, mc.options.keyAdvancements.getTranslatedKeyMessage()), false);
+        Component key = Minecraft.getInstance().options.keyAdvancements.getTranslatedKeyMessage();
+        player.displayClientMessage(AdvancementReveal.tabUnlocked(name, key), false);
     }
 }

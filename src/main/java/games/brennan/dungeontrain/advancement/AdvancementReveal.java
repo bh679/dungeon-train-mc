@@ -32,7 +32,6 @@ public final class AdvancementReveal {
     static final String KEY_LINE = "chat.dungeontrain.advancement_revealed";
     static final String KEY_MORE = "chat.dungeontrain.advancement_revealed_more";
     static final String KEY_TAB = "chat.dungeontrain.advancement_tab_unlocked";
-    public static final String KEY_TAB_TITLE = "gui.dungeontrain.advancement_tab_unlocked.title";
 
     private AdvancementReveal() {}
 

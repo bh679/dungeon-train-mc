@@ -642,7 +642,6 @@
   "chat.dungeontrain.advancement_revealed": "Odkryto: %s",
   "chat.dungeontrain.advancement_revealed_more": "+%s więcej",
   "chat.dungeontrain.advancement_tab_unlocked": "★ Odblokowano nową kartę postępów: %1$s! Naciśnij %2$s, aby ją odkryć ★",
-  "gui.dungeontrain.advancement_tab_unlocked.title": "Nowa karta!",
   "chat.dungeontrain.familiar_book.1": "Znajoma książka. Czujesz, że trzymało ją %1$s, a do samego końca przeczytano ją %2$s.",
   "chat.dungeontrain.familiar_book.2": "Ta książka zna twoją dłoń — trzymało ją jakieś %1$s; do ostatniej strony dobrnięto z nią %2$s.",
   "chat.dungeontrain.familiar_book.3": "Znajomy ciężar. Trzymało ją około %1$s, a jeden czytelnik został z nią przez %2$s bez przerwy.",

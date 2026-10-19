@@ -698,7 +698,6 @@
   "chat.dungeontrain.advancement_revealed": "Відкрито: %s",
   "chat.dungeontrain.advancement_revealed_more": "ще +%s",
   "chat.dungeontrain.advancement_tab_unlocked": "★ Відкрито нову вкладку досягнень: %1$s! Натисніть %2$s, щоб дослідити її ★",
-  "gui.dungeontrain.advancement_tab_unlocked.title": "Нова вкладка!",
   "chat.dungeontrain.familiar_book.1": "Знайома книга. Схоже що її тримали %1$s, і ще %2$s дочитали її до кінця.",
   "chat.dungeontrain.familiar_book.2": "Ця книга знає вашу руку — вона побувала в руках в %1$s; %2$s дочитали її до кінця",
   "chat.dungeontrain.familiar_book.3": "Знайома вага в руці. Десь %1$s тримали її, І один читач лишився з нею аж на %2$s.",

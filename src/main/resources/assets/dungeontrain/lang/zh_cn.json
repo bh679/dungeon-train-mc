@@ -596,7 +596,6 @@
   "chat.dungeontrain.advancement_revealed": "已揭示：%s",
   "chat.dungeontrain.advancement_revealed_more": "另有 %s 项",
   "chat.dungeontrain.advancement_tab_unlocked": "★ 新的进度标签页已解锁：%1$s！按 %2$s 前去探索 ★",
-  "gui.dungeontrain.advancement_tab_unlocked.title": "新标签页！",
   "chat.dungeontrain.familiar_book.1": "这是一本似曾相识的书。似乎已有%1$s将它拿起，其中%2$s读到了最后。",
   "chat.dungeontrain.familiar_book.2": "这本书认得你的笔迹——已有%1$s将它拿起，%2$s读完了最后一页。",
   "chat.dungeontrain.familiar_book.3": "掂在手里，是熟悉的分量。大约已有%1$s将它拿起，有位读者一口气读了%2$s。",

@@ -619,7 +619,6 @@
   "chat.dungeontrain.advancement_revealed": "Révélé : %s",
   "chat.dungeontrain.advancement_revealed_more": "+%s autres",
   "chat.dungeontrain.advancement_tab_unlocked": "★ Nouvel onglet de progrès débloqué : %1$s ! Appuie sur %2$s pour l'explorer ★",
-  "gui.dungeontrain.advancement_tab_unlocked.title": "Nouvel onglet !",
   "chat.dungeontrain.familiar_book.1": "Un livre familier. On dirait que %1$s tenu ce livre, et l'ont lu jusqu'au bout %2$s.",
   "chat.dungeontrain.familiar_book.2": "Ce livre reconnaît ta main — quelque %1$s tenu ; il fut mené jusqu'à la dernière page %2$s.",
   "chat.dungeontrain.familiar_book.3": "Un poids familier. Environ %1$s tenu, et un lecteur est resté avec pendant %2$s d'affilée.",
