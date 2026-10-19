@@ -717,6 +717,12 @@ dependencies {
 
 tasks.named('test', Test).configure {
     useJUnitPlatform()
+    // Deeper Darker's jar is a mod dependency, not on the plain JUnit classpath; OthersideSurfaceRuleShapeTest
+    // reads its Otherside noise settings from the jar to pin the surface rule DT reproduces by hand.
+    doFirst {
+        def dd = configurations.compileClasspath.files.find { it.name.startsWith('deeperdarker-') }
+        systemProperty 'dungeontrain.test.deeperdarkerJar', dd != null ? dd.absolutePath : ''
+    }
     // The JUnit launcher boots the full mod set; with BetterEnd + BCLib's registries on top, Gradle's
     // 512 MB default heap runs out partway through the suite (OutOfMemoryError in the test worker).
     maxHeapSize = '2g'

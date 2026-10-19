@@ -8,6 +8,7 @@ import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.EndIslandGeometry;
 import games.brennan.dungeontrain.worldgen.NetherCoreGeometry;
 import games.brennan.dungeontrain.worldgen.NetherBand;
+import games.brennan.dungeontrain.worldgen.OthersideSettings;
 import games.brennan.dungeontrain.worldgen.StrongholdRingGate;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.VanillaBiomeFeatures;
@@ -125,7 +126,10 @@ public final class NetherBandContextEvents {
             // nether_wastes if this world has no Nether.
             Holder<Biome> netherFallback = overworld.registryAccess()
                     .lookupOrThrow(Registries.BIOME).getOrThrow(Biomes.NETHER_WASTES);
-            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(server, netherFallback);
+            // Deeper Darker's Otherside rules, from the registries (never its level): the Deeper Dark core's
+            // terrain, skin and carvers generate in place from these, and its biome labels sample their source.
+            OthersideSettings otherside = OthersideSettings.resolve(server);
+            NetherCoreBiomes netherCoreBiomes = NetherCoreBiomes.resolve(server, netherFallback, otherside);
 
             // Same idea for the End band's core columns — samples the real End's biome source, swept
             // from the main island out into the outer noise field across successive End-band passes.
@@ -148,7 +152,7 @@ public final class NetherBandContextEvents {
             NetherBandContext.publish(new NetherBandContext(
                     enabled, data.getGenerationSeed(), seaLevel, worldCeiling, netherTop, baseRelief, cycle,
                     overworldBiomeSource, highlandBiomes, netherCoreBiomes, endCoreBiomes, endIslands,
-                    netherCore));
+                    netherCore, otherside));
             // Second-lap overworld stretches: BoP only in its stretch, vanilla elsewhere. Published
             // alongside the band context so it is live before the first chunk bakes too.
             long stretchT0 = System.nanoTime();
