@@ -2,9 +2,9 @@ package games.brennan.dungeontrain.event;
 
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
-import games.brennan.dungeontrain.config.DungeonTrainConfig;
 import games.brennan.dungeontrain.net.DungeonTrainNet;
 import games.brennan.dungeontrain.net.SpawnDeckHoldPacket;
+import games.brennan.dungeontrain.portal.PortalCarriageSelection;
 import games.brennan.dungeontrain.train.TrainTransformProvider;
 import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
@@ -37,16 +37,17 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li><b>WAITING</b>: a freshly-assembled Sable group's {@code canonicalPos} is null
  *       until its first physics tick (the same race {@link PlayerJoinEvents} handles on
  *       login), so this retries once per overworld tick until
- *       {@link PlayerJoinEvents#findNearestFlatbedTarget} resolves a settled deck. The
- *       player is pinned at the holding spot meanwhile. Under load (a cold region
+ *       {@link PlayerJoinEvents#findNearestFrontPadTarget} resolves a settled deck — a
+ *       front pad, never one in a portal group (landing beside a portal carriage swapped
+ *       the player straight into its room, issue #2133). The player is pinned at the holding spot meanwhile. Under load (a cold region
  *       generating, a heavy client) that first tick can take many seconds, so the wait
  *       is long while the new train exists and short only when no train turned up at all.</li>
- *   <li><b>LANDING</b>: the player is dropped on the deck, and then watched. A teleport
- *       onto a moving ship is not proof the player is on it: if the client has not yet
- *       received the ship's collision, the deck hold keeps them at deck height while the
- *       train can slide out from under them, and before the playable start there is no
- *       ground under the track. A player seen falling below the deck is put back on the
- *       current nearest pad, up to {@link #MAX_RELANDS} times (issue #2133).</li>
+ *   <li><b>LANDING</b>: the player is dropped on the deck, and then watched. Before the
+ *       playable start there is no ground under the track, so a player who comes off the
+ *       train there falls through the void. One seen below the world's floor is put back
+ *       on the current nearest pad, up to {@link #MAX_RELANDS} times. Anywhere above the
+ *       floor is left alone: a portal room (y≈-61), the track bed, or anything else the
+ *       player walked into is play, not a failed landing.</li>
  * </ol>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID)
@@ -62,9 +63,6 @@ public final class DtpPlacementService {
 
     /** How long a landing is watched. Outlasts the client deck hold plus its post-check. */
     static final int LANDING_WATCH_TICKS = SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS + 80;
-
-    /** A player this far below the deck top has fallen off or through the train. */
-    static final double FALL_MARGIN_BLOCKS = 3.0;
 
     /** Re-landings allowed per /dtp before giving up. */
     static final int MAX_RELANDS = 3;
@@ -218,7 +216,8 @@ public final class DtpPlacementService {
     /** @return the next state, or {@code null} once the request is finished. */
     private static PendingDtp tickLanding(ServerPlayer player, PendingDtp pending, DungeonTrainWorldData data) {
         int ticks = pending.ticks() + 1;
-        LandingStep step = decideLanding(player.getY(), deckTopY(data), ticks, pending.relands());
+        LandingStep step = decideLanding(
+            player.getY(), pending.trainLevel().getMinBuildHeight(), ticks, pending.relands());
         switch (step) {
             case KEEP_WATCHING:
                 return pending.withTicks(ticks);
@@ -242,21 +241,21 @@ public final class DtpPlacementService {
      * One LANDING tick's decision. Falling below the deck is checked first, so a player who
      * drops on the last watched tick is still caught.
      */
-    static LandingStep decideLanding(double playerY, double deckTopY, int ticksWatched, int relands) {
-        if (hasFallen(playerY, deckTopY)) {
+    static LandingStep decideLanding(double playerY, int minBuildHeight, int ticksWatched, int relands) {
+        if (hasFallenIntoVoid(playerY, minBuildHeight)) {
             return relands < MAX_RELANDS ? LandingStep.RELAND : LandingStep.GIVE_UP;
         }
         return ticksWatched >= LANDING_WATCH_TICKS ? LandingStep.LANDED : LandingStep.KEEP_WATCHING;
     }
 
-    /** Whether a player at {@code playerY} has fallen off or through a deck whose top is {@code deckTopY}. */
-    static boolean hasFallen(double playerY, double deckTopY) {
-        return playerY < deckTopY - FALL_MARGIN_BLOCKS;
+    /** Whether a player at {@code playerY} is below the world's floor, i.e. falling through the void. */
+    static boolean hasFallenIntoVoid(double playerY, int minBuildHeight) {
+        return playerY < minBuildHeight;
     }
 
     private static PendingDtp reland(ServerPlayer player, PendingDtp pending, DungeonTrainWorldData data) {
         int relands = pending.relands() + 1;
-        LOGGER.warn("[DungeonTrain] /dtp {} fell off the train at y={} — re-landing ({} of {})",
+        LOGGER.warn("[DungeonTrain] /dtp {} fell into the void at y={} — re-landing ({} of {})",
             player.getName().getString(), String.format("%.1f", player.getY()), relands, MAX_RELANDS);
         PendingDtp counted = new PendingDtp(pending.trainLevel(), pending.targetX(), pending.holdY(),
             pending.holdZ(), Phase.LANDING, 0, relands);
@@ -277,17 +276,16 @@ public final class DtpPlacementService {
 
     /** @return true once the player was put on a settled deck; false to retry next tick. */
     private static boolean placeOnDeck(ServerPlayer player, PendingDtp pending, DungeonTrainWorldData data) {
-        PlayerJoinEvents.FlatbedTarget flat = PlayerJoinEvents.findNearestFlatbedTarget(
-            pending.trainLevel(), data, pending.targetX());
-        if (flat == null) return false; // train not settled yet — retry next tick
+        ServerLevel level = pending.trainLevel();
+        PlayerJoinEvents.FlatbedTarget flat = PlayerJoinEvents.findNearestFrontPadTarget(
+            level, data, pending.targetX(), pIdx -> PortalCarriageSelection.isPortalGroup(level, pIdx));
+        if (flat == null) return false; // no non-portal group settled yet — retry next tick
 
         player.teleportTo(pending.trainLevel(), flat.x(), flat.y(), flat.z(), -90.0f, 0.0f);
         player.setDeltaMovement(Vec3.ZERO);
         player.resetFallDistance();
-        // The hold also carries the player forward with the train until Sable's collision reaches the client.
-        double trainBlocksPerTick = DungeonTrainConfig.getSpeed() / 20.0;
         DungeonTrainNet.sendTo(player, new SpawnDeckHoldPacket(
-            deckTopY(data), SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS, trainBlocksPerTick));
+            deckTopY(data), SpawnDeckHoldPacket.DEFAULT_HOLD_TICKS));
         player.setInvulnerable(false);
         player.sendSystemMessage(Component.literal(String.format(
             "Train ready — you're on the flatbed at (%.1f, %.1f, %.1f).", flat.x(), flat.y(), flat.z())));

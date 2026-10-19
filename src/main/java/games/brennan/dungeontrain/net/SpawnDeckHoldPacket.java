@@ -24,22 +24,11 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * <p>{@code deckTopY} is the world-Y of the deck surface ({@code trainY + 1});
  * Y is constant for the train's life (velocity is +X only), so a single value
  * is valid for the whole hold even as the train slides forward underneath.</p>
- *
- * <p>{@code trainBlocksPerTick} is the train's +X speed. While the clamp is
- * holding the player up (Sable's collision has not reached the client yet) the
- * client moves them forward by it each tick, so the train cannot slide out from
- * under them. {@code /dtp} sends it; the other on-train spawns send 0.</p>
  */
-public record SpawnDeckHoldPacket(double deckTopY, int durationTicks, double trainBlocksPerTick)
-    implements CustomPacketPayload {
+public record SpawnDeckHoldPacket(double deckTopY, int durationTicks) implements CustomPacketPayload {
 
     /** Default hold length (~6 s at 20 TPS) — comfortably outlasts the spawn-storm stall. */
     public static final int DEFAULT_HOLD_TICKS = 120;
-
-    /** A hold that only clamps Y (login, respawn, portal rescue). */
-    public SpawnDeckHoldPacket(double deckTopY, int durationTicks) {
-        this(deckTopY, durationTicks, 0.0);
-    }
 
     public static final Type<SpawnDeckHoldPacket> TYPE =
         new Type<>(ResourceLocation.fromNamespaceAndPath(DungeonTrain.MOD_ID, "spawn_deck_hold"));
@@ -53,14 +42,12 @@ public record SpawnDeckHoldPacket(double deckTopY, int durationTicks, double tra
     public void encode(FriendlyByteBuf buf) {
         buf.writeDouble(deckTopY);
         buf.writeVarInt(durationTicks);
-        buf.writeDouble(trainBlocksPerTick);
     }
 
     public static SpawnDeckHoldPacket decode(FriendlyByteBuf buf) {
         double y = buf.readDouble();
         int dur = buf.readVarInt();
-        double vx = buf.readDouble();
-        return new SpawnDeckHoldPacket(y, dur, vx);
+        return new SpawnDeckHoldPacket(y, dur);
     }
 
     @Override
@@ -74,7 +61,6 @@ public record SpawnDeckHoldPacket(double deckTopY, int durationTicks, double tra
      * (mirrors {@code CinematicIntroPacket.handle}).
      */
     public static void handle(SpawnDeckHoldPacket packet, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> SpawnDeckHold.begin(
-            packet.deckTopY(), packet.durationTicks(), packet.trainBlocksPerTick()));
+        ctx.enqueueWork(() -> SpawnDeckHold.begin(packet.deckTopY(), packet.durationTicks()));
     }
 }

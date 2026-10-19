@@ -9,12 +9,13 @@ import org.junit.jupiter.api.Test;
 
 /**
  * The rules behind {@code /dtp}'s wait and landing watch (issue #2133): under load the new
- * train's first physics tick can be many seconds away, and a teleport onto its deck is not proof
- * the player stays there.
+ * train's first physics tick can be many seconds away, and only a fall through the void (not a
+ * portal room, not the track bed) is a landing to redo.
  */
 class DtpPlacementServiceTest {
 
-    private static final double DECK = 81.0;
+    private static final double DECK = 79.0;
+    private static final int MIN_BUILD = -64;
 
     @Test
     void waitForAnExistingTrainIsLongerThanForNone() {
@@ -31,40 +32,49 @@ class DtpPlacementServiceTest {
     }
 
     @Test
-    void standingOnOrAboveTheDeckIsNotAFall() {
-        assertFalse(DtpPlacementService.hasFallen(DECK, DECK));
-        assertFalse(DtpPlacementService.hasFallen(DECK + 6.0, DECK)); // on a carriage roof
-        assertFalse(DtpPlacementService.hasFallen(DECK - DtpPlacementService.FALL_MARGIN_BLOCKS, DECK));
+    void standingOnTheTrainOrAnywhereAboveTheFloorIsNotAFall() {
+        assertFalse(DtpPlacementService.hasFallenIntoVoid(DECK, MIN_BUILD));
+        assertFalse(DtpPlacementService.hasFallenIntoVoid(DECK + 6.0, MIN_BUILD)); // a carriage roof
+        assertFalse(DtpPlacementService.hasFallenIntoVoid(MIN_BUILD, MIN_BUILD));
     }
 
     @Test
-    void droppingBelowTheMarginIsAFall() {
-        assertTrue(DtpPlacementService.hasFallen(DECK - DtpPlacementService.FALL_MARGIN_BLOCKS - 0.01, DECK));
-        assertTrue(DtpPlacementService.hasFallen(-61.0, DECK)); // the void drop from the benchmark
-    }
-
-    @Test
-    void onDeckKeepsWatchingThenLands() {
+    void aPortalRoomIsNotAFall() {
+        // The benchmark's "void drop": the player had been swapped into a portal room standing on
+        // its floor at y=-62. Pulling them back out would break the portal.
+        assertFalse(DtpPlacementService.hasFallenIntoVoid(-61.0, MIN_BUILD));
         assertEquals(DtpPlacementService.LandingStep.KEEP_WATCHING,
-            DtpPlacementService.decideLanding(DECK, DECK, 1, 0));
-        assertEquals(DtpPlacementService.LandingStep.LANDED,
-            DtpPlacementService.decideLanding(DECK, DECK, DtpPlacementService.LANDING_WATCH_TICKS, 0));
+            DtpPlacementService.decideLanding(-61.0, MIN_BUILD, 5, 0));
     }
 
     @Test
-    void aFallRelandsUntilTheCapThenGivesUp() {
-        double fell = DECK - 20.0;
+    void belowTheWorldFloorIsAFall() {
+        assertTrue(DtpPlacementService.hasFallenIntoVoid(MIN_BUILD - 0.01, MIN_BUILD));
+        assertTrue(DtpPlacementService.hasFallenIntoVoid(-361.0, MIN_BUILD)); // seen in the benchmark
+    }
+
+    @Test
+    void onTheTrainKeepsWatchingThenLands() {
+        assertEquals(DtpPlacementService.LandingStep.KEEP_WATCHING,
+            DtpPlacementService.decideLanding(DECK, MIN_BUILD, 1, 0));
+        assertEquals(DtpPlacementService.LandingStep.LANDED,
+            DtpPlacementService.decideLanding(DECK, MIN_BUILD, DtpPlacementService.LANDING_WATCH_TICKS, 0));
+    }
+
+    @Test
+    void aVoidFallRelandsUntilTheCapThenGivesUp() {
+        double falling = MIN_BUILD - 20.0;
         for (int relands = 0; relands < DtpPlacementService.MAX_RELANDS; relands++) {
             assertEquals(DtpPlacementService.LandingStep.RELAND,
-                DtpPlacementService.decideLanding(fell, DECK, 5, relands));
+                DtpPlacementService.decideLanding(falling, MIN_BUILD, 5, relands));
         }
         assertEquals(DtpPlacementService.LandingStep.GIVE_UP,
-            DtpPlacementService.decideLanding(fell, DECK, 5, DtpPlacementService.MAX_RELANDS));
+            DtpPlacementService.decideLanding(falling, MIN_BUILD, 5, DtpPlacementService.MAX_RELANDS));
     }
 
     @Test
     void aFallOnTheLastWatchedTickIsStillCaught() {
         assertEquals(DtpPlacementService.LandingStep.RELAND,
-            DtpPlacementService.decideLanding(DECK - 20.0, DECK, DtpPlacementService.LANDING_WATCH_TICKS, 0));
+            DtpPlacementService.decideLanding(MIN_BUILD - 20.0, MIN_BUILD, DtpPlacementService.LANDING_WATCH_TICKS, 0));
     }
 }
