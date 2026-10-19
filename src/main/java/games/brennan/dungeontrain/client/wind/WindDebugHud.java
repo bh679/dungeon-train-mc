@@ -159,8 +159,9 @@ public final class WindDebugHud {
         boolean cave = games.brennan.dungeontrain.wind.WindZones.isCave(mc.level, mc.player.blockPosition());
         double factor = games.brennan.dungeontrain.wind.WindZones.bandFactor(x)
                 * games.brennan.dungeontrain.wind.WindZones.deepDarkFactor(mc.level, mc.player.blockPosition());
-        return String.format(Locale.ROOT, "Zone: End sky %.0f%%  Nether sky %.0f%%  Nether caves %s  -> wind x%.2f",
-                end * 100, nether * 100, cave ? "yes" : "no", factor);
+        boolean high = games.brennan.dungeontrain.wind.WindZones.isHighUpAt(x);
+        return String.format(Locale.ROOT, "Zone: End sky %.0f%%  Nether sky %.0f%%  Nether caves %s  high up %s  -> wind x%.2f",
+                end * 100, nether * 100, cave ? "yes" : "no", high ? "yes" : "no", factor);
     }
 
     private static String describe(TrainExposure.Result r) {
