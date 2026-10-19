@@ -28368,6 +28368,23 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "live-page-update",
+      "version": "0.1390.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "community"
+      ],
+      "title": "Live page update",
+      "summary": "A small improvement to the Live page.",
+      "highlights": [],
+      "pr": 2167,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
