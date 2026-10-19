@@ -1104,6 +1104,12 @@ neoForge.ideSyncTask tasks.named('generateModRoster')
 // The baked Free Play whitelist: modpack + siblings + dependencies generated, the rest curated.
 apply from: 'gradle/approved-mods.gradle'
 
+// The CurseForge-only jar (dungeontrain-<v>-curseforge.jar): the main jar minus the jarJar'd Stream
+// Detect + DPI Bypass Detect. Registered here because the JarJar task class isn't visible to the
+// applied script; gradle/curseforge-jar.gradle fills it and builds the jar.
+net.neoforged.moddevgradle.tasks.JarJar.registerWithConfiguration(project, 'curseforgeJarJar')
+apply from: 'gradle/curseforge-jar.gradle'
+
 // `./gradlew pullTradeValues` — refresh the bundled community-approved Trade Everything item
 // values from the relay's item-values page. By hand only; never part of build.
 apply from: 'gradle/trade-values.gradle'

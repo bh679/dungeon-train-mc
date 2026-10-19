@@ -362,7 +362,9 @@ public final class EditorGuiScreen extends Screen {
             ctx.standing() == null ? null : EditorScreenPage.TEMPLATES,
             ctx.dirty(), hoveredTab, theme);
 
-        boolean covered = modal.isOpen() || search.isOpen();
+        boolean overlaid = modal.isOpen() || search.isOpen();
+        // Rows under an open stage dropdown don't light up through it.
+        boolean covered = overlaid || (onStages() && stagesPane.overDropdown(mouseX, mouseY));
         int mx = covered ? -1 : mouseX;
         int my = covered ? -1 : mouseY;
         if (filtering) {
@@ -421,6 +423,9 @@ public final class EditorGuiScreen extends Screen {
             g.drawString(this.font, empty, layout.grid().x() + 4, layout.grid().y() + 4, 0xFFFFFFFF, true);
         }
 
+        // A stage family's dropdown spills over the detail pane, so it goes on after every pane.
+        if (onStages()) stagesPane.renderDropdown(g, this.font, index, this.width, this.height,
+            overlaid ? -1 : mouseX, overlaid ? -1 : mouseY);
         inlineEdit.render(g, this.font);
         search.render(g, this.font, layout, theme, mouseX, mouseY);
         modal.render(g, this.font, this.width, this.height, mouseX, mouseY);
@@ -759,6 +764,8 @@ public final class EditorGuiScreen extends Screen {
     }
 
     private void drawTooltips(GuiGraphics g, int mouseX, int mouseY) {
+        // Nothing under an open stage dropdown speaks through it.
+        if (onStages() && stagesPane.overDropdown(mouseX, mouseY)) return;
         if (search.isOpen()) {
             // The one hover text the panel carries: which relay its light is showing.
             String lightTip = search.tooltipAt(mouseX, mouseY);
@@ -867,6 +874,12 @@ public final class EditorGuiScreen extends Screen {
             return super.mouseClicked(mouseX, mouseY, button);
         }
         if (layout == null) return super.mouseClicked(mouseX, mouseY, button);
+        // An open stage dropdown takes the next click, wherever it lands: a member picks, the rest shuts it.
+        if (onStages() && stagesPane.dropdownOpen()) {
+            click();
+            stagesPane.dropdownClicked(mouseX, mouseY);
+            return true;
+        }
 
         EditorTabBar.Tab tab = EditorTabBar.hit(tabs, layout.tabs(), mouseX, mouseY);
         if (tab != null) {
@@ -1524,6 +1537,10 @@ public final class EditorGuiScreen extends Screen {
             return groupsTab.scrollBy(mouseX, mouseY, dir);
         }
         if (onStages()) {
+            if (stagesPane.overDropdown(mouseX, mouseY)) {
+                stagesPane.scrollDropdown(dir);
+                return true;
+            }
             if (stagesPane.over(layout, mouseX, mouseY)) return stagesPane.scrollBy(dir);
             if (stageDetail.over(mouseX, mouseY) && stageDetail.scrollBy(dir)) return true;
         } else if (!onNav() && EditorCreatorBuilds.active() && creatorPane.overSheet(mouseX, mouseY)) {
@@ -1582,6 +1599,10 @@ public final class EditorGuiScreen extends Screen {
             return true;
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            if (onStages() && stagesPane.dropdownOpen()) {
+                stagesPane.closeDropdown();
+                return true;
+            }
             if (!modal.pop()) this.onClose();
             return true;
         }

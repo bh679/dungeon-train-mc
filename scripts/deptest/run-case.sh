@@ -5,6 +5,7 @@
 #
 # Mod keys:
 #   dt         the freshly built Dungeon Train jar (build/libs/)
+#   dtcf       the freshly built CurseForge-only jar (build/libs/*-curseforge.jar)
 #   sable      the pinned Sable build
 #   ain ais pmob ecp te  the five un-bundled sibling mods, at their pinned versions
 #   kt db sff  the three hybrid siblings (also jarJar'd in the DT jar), at their pinned versions
@@ -69,7 +70,9 @@ cached() { find "$GC/$1/$2" -name "*.jar" ! -name "*sources*" 2>/dev/null | head
 
 resolve() {
   case "$1" in
-    dt)       ls -t "$REPO"/build/libs/dungeontrain-*.jar 2>/dev/null | grep -v -- '-sources' | head -1 ;;
+    dt)       ls -t "$REPO"/build/libs/dungeontrain-*.jar 2>/dev/null | grep -v -- '-sources' | grep -v -- '-curseforge' | head -1 ;;
+    # The CurseForge-only jar: the main jar minus the jarJar'd Stream Detect + DPI Bypass Detect.
+    dtcf)     ls -t "$REPO"/build/libs/dungeontrain-*-curseforge.jar 2>/dev/null | head -1 ;;
     sable)    cached "maven.modrinth/sable"          "$(prop sable_version)" ;;
     ain)      cached "bh679/adventureitemnames"      "$(prop adventureitemnames_version)" ;;
     ais)      cached "bh679/adventureitemstats"      "$(prop adventureitemstats_version)" ;;

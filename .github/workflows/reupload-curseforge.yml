@@ -9,8 +9,9 @@ name: Re-upload to CurseForge
 #
 # Without this workflow the only recovery was to burn a whole new version number. This re-publishes
 # the EXISTING tag's artifact: the jar is downloaded from that tag's GitHub Release rather than
-# rebuilt, so what lands on CurseForge is byte-identical to what was already tested and to what
-# Modrinth and GitHub are serving.
+# rebuilt, so what lands on CurseForge is byte-identical to what was already tested. Since the
+# CurseForge-only jar, that is the release's `-curseforge` asset (no jarJar'd Stream Detect / DPI
+# Bypass Detect); older tags fall back to the one jar Modrinth and GitHub are serving.
 #
 # CurseForge-only by construction — no `modrinth-id` is passed, so re-running this can never
 # double-publish to Modrinth.
@@ -59,10 +60,15 @@ jobs:
           set -euo pipefail
           mkdir -p reupload
           # Deliberately NOT a rebuild: publishing the artifact the release already shipped is the
-          # whole point, so CurseForge cannot end up with a different jar from Modrinth/GitHub.
+          # whole point, so CurseForge gets exactly the jar the release built for it.
           gh release download "$RELEASE_TAG" --pattern '*.jar' --dir reupload
-          # A sources jar would be ambiguous; the mod jar is the one without a classifier.
-          JAR=$(find reupload -name '*.jar' ! -name '*-sources.jar' ! -name '*-slim.jar' | head -1)
+          # Releases since the CurseForge-only jar attach dungeontrain-<v>-curseforge.jar (no
+          # jarJar'd Stream Detect / DPI Bypass Detect) next to the main jar; CurseForge gets that one.
+          # Older releases have only the main jar, the one without a classifier.
+          JAR=$(find reupload -name '*-curseforge.jar' | head -1)
+          if [ -z "$JAR" ]; then
+            JAR=$(find reupload -name '*.jar' ! -name '*-sources.jar' ! -name '*-slim.jar' | head -1)
+          fi
           if [ -z "$JAR" ]; then
             echo "::error::No mod jar attached to release $RELEASE_TAG."
             exit 1

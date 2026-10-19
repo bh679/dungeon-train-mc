@@ -27,6 +27,8 @@ public final class EditorScreenState {
     private static VariantKey selection;
     /** The Stages tab's selected stage id, or null before any click — the pane then shows the first stage. */
     private static String selectedStageId;
+    /** Per stage family, the member last picked from its dropdown. Replaced, never mutated. */
+    private static java.util.Map<String, String> stageGroupPicks = java.util.Map.of();
     /** The Stages list's order — by name until a title is clicked. */
     private static EditorStagesPage.Sort stageSort = EditorStagesPage.Sort.DEFAULT;
     /** The Stages list as tiles of each stage's stamped carriage rather than rows. Tiles to start with. */
@@ -90,6 +92,26 @@ public final class EditorScreenState {
 
     public static void selectStage(String stageId) {
         selectedStageId = stageId == null || stageId.isEmpty() ? null : stageId;
+    }
+
+    /** A pick from a family's dropdown: the family remembers it, and the pane shows it. */
+    public static void pickStageInGroup(String group, String stageId) {
+        if (group != null && !group.isEmpty() && stageId != null && !stageId.isEmpty()) {
+            java.util.Map<String, String> next = new java.util.HashMap<>(stageGroupPicks);
+            next.put(group, stageId);
+            stageGroupPicks = java.util.Map.copyOf(next);
+        }
+        selectStage(stageId);
+    }
+
+    /**
+     * The member a family's row shows: the shown stage when it is one of the family, else the
+     * family's last pick, else null (its first member).
+     */
+    public static String stageGroupPick(EditorRosterIndex index, String group) {
+        games.brennan.dungeontrain.net.EditorRosterPacket.StageEntry shown = effectiveStage(index);
+        if (shown != null && group.equals(shown.group())) return shown.id();
+        return stageGroupPicks.get(group);
     }
 
     /**

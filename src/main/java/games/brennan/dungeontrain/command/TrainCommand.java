@@ -209,7 +209,7 @@ public final class TrainCommand {
             // Drops the player onto the nearest flatbed once the fresh group's physics
             // settle (canonicalPos is null the tick it's assembled) and clears the
             // invulnerability set above.
-            DtpPlacementService.enqueue(player, level, spawnX);
+            DtpPlacementService.enqueue(player, level, spawnX, holdY, holdZ);
             source.sendSuccess(() -> Component.translatable("chat.dungeontrain.train.spawned_fresh_train_track", origin.getX(), ship.id(), count, lengthBlocks, speed, forgotten), true);
             return 1;
         } catch (Throwable t) {

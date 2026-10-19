@@ -946,6 +946,7 @@ public final class AchievementEvents {
         // Exploration progress is per-life too — clear distinct biomes so the
         // count tiers (and "Terra Omnia") restart for the new run.
         player.getData(ModDataAttachments.PLAYER_BIOME_PROGRESS.get()).clear();
+        player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).clear();
         // Per-life container markers. Neither attachment is copyOnDeath, so the
         // respawn clone already starts clean — cleared explicitly for the same
         // defensive reason PlayerRunState is.

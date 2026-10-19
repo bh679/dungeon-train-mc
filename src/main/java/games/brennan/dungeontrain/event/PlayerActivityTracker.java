@@ -67,7 +67,8 @@ import java.util.UUID;
  *
  * <p>The same rule is the AFK rule: {@link #isAfk} — any reason but {@link Reason#TRACKING} — makes
  * {@link games.brennan.dungeontrain.advancement.AfkAdvancementGate} refuse every criterion, and the
- * client's {@code AfkAutoPause} opens the pause menu on the way in. One difference from the clocks:
+ * client's {@code AfkAutoPause} keeps its own, slower clock for opening the pause menu (2 min idle,
+ * 5 min with a screen open). One difference from the clocks:
  * a paused player who clicked or typed on their screen in the last {@link #MENU_PRESENCE_MS} is not
  * AFK, provided they are still getting somewhere. Nearly every screen is a pause screen — books,
  * the photo viewer, the pause menu's sliders and Abandon button — and the packet a click there
@@ -434,6 +435,7 @@ public final class PlayerActivityTracker {
             }
 
             reportTransition(player, now);
+            recordLifeStats(player);
             pushState(player, now);
         }
     }
@@ -454,6 +456,7 @@ public final class PlayerActivityTracker {
                 player.getName().getString(), now, previous,
                 LAST_TRIGGER.getOrDefault(uuid, "look"));
         } else {
+            player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).addStop(reason);
             LOGGER.info("[DungeonTrain] Activity: {} STOPPED counting at tick {} — {}{}",
                 player.getName().getString(), now, reason,
                 reason == Reason.NO_PROGRESS
@@ -461,6 +464,26 @@ public final class PlayerActivityTracker {
                         + MIN_CARRIAGES_PER_WINDOW + " carriages)"
                     : "");
         }
+    }
+
+    /**
+     * Add this scan's {@link #SAMPLE_PERIOD_TICKS} to the life's stopped time for the current reason,
+     * noting whether a container menu was open — the run summary reports both at death.
+     */
+    private static void recordLifeStats(ServerPlayer player) {
+        Reason reason = reason(player);
+        if (countsTrain(reason)) return;
+        boolean inContainer = player.containerMenu != player.inventoryMenu;
+        player.getData(ModDataAttachments.AFK_LIFE_STATS.get())
+            .addStopped(reason, SAMPLE_PERIOD_TICKS, inContainer);
+    }
+
+    /**
+     * The client's pause menu opened on its own ({@code AfkAutoPause}), in the world or over a screen.
+     * Counted for the run summary; the pause itself arrives as an ordinary {@link #setPaused}.
+     */
+    public static void recordAutoPause(ServerPlayer player, boolean overScreen) {
+        player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).addAutoPause(overScreen);
     }
 
     /** Push the dev-HUD read-out, but only when something on it would look different. */
