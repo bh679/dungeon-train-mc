@@ -3,6 +3,7 @@ package games.brennan.dungeontrain.advancement;
 import com.mojang.logging.LogUtils;
 import games.brennan.dungeontrain.DungeonTrain;
 import games.brennan.dungeontrain.event.PlayerActivityTracker;
+import games.brennan.dungeontrain.registry.ModDataAttachments;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -66,6 +67,7 @@ public final class AfkAdvancementGate {
         if (!PlayerActivityTracker.isAfk(player)) return false;
         LOGGER.debug("[DungeonTrain] Refused {} / {} for {}: AFK ({})", holder.id(), criterion,
             player.getName().getString(), PlayerActivityTracker.reason(player));
+        player.getData(ModDataAttachments.AFK_LIFE_STATS.get()).addRefused(holder.id());
         return true;
     }
 

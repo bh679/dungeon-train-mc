@@ -27884,6 +27884,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "patient-autopause-long-reads",
+      "version": "0.1366.0",
+      "type": "feat",
+      "tags": [
+        "feature"
+      ],
+      "title": "Take your time",
+      "summary": "Slower, quieter play is treated more kindly.",
+      "highlights": [],
+      "pr": 2131,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
