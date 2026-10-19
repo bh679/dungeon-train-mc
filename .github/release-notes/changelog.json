@@ -28348,9 +28348,9 @@
       ],
       "pr": 2166,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
     },
     {
       "id": "takeover-vote-twenty-minutes",
@@ -28365,9 +28365,9 @@
       "highlights": [],
       "pr": 2168,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
     },
     {
       "id": "live-page-update",
@@ -28382,9 +28382,9 @@
       "highlights": [],
       "pr": 2167,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
     },
     {
       "id": "train-sound-unmute-restart",
@@ -28399,9 +28399,9 @@
       "highlights": [],
       "pr": 2169,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
     },
     {
       "id": "sky-fix",
@@ -28415,9 +28415,9 @@
       "highlights": [],
       "pr": 2165,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1394.0",
+      "released_at": "2026-10-19T17:28:45Z"
     },
     {
       "id": "leaf-litter-stays-put",
