@@ -28131,9 +28131,9 @@
       "highlights": [],
       "pr": 2153,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "log-request-upload-feedback",
@@ -28148,9 +28148,9 @@
       "highlights": [],
       "pr": 2151,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "quicker-streams-live-delay",
@@ -28169,9 +28169,9 @@
       ],
       "pr": 2154,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "editor-clear-long-contents",
@@ -28186,9 +28186,9 @@
       "highlights": [],
       "pr": 2155,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "enderchest-photos-keep-pictures",
@@ -28205,9 +28205,9 @@
       ],
       "pr": 2156,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "nether-core-write-gate",
@@ -28221,9 +28221,9 @@
       "summary": "Some of the heavier terrain the train rides through now generates with less work per chunk, so the server has more breathing room while new ground is being laid down. Nothing looks different.",
       "highlights": [],
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "advancement-fix-2159",
@@ -28238,9 +28238,9 @@
       "highlights": [],
       "pr": 2159,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "live-relay-restart-notice",
@@ -28259,9 +28259,9 @@
       ],
       "pr": 2161,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "advancement-profile-upkeep",
@@ -28275,9 +28275,9 @@
       "highlights": [],
       "pr": 2160,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "balance-tweak",
@@ -28291,9 +28291,9 @@
       "highlights": [],
       "pr": 2162,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "options-hint-hover-tooltip",
@@ -28308,9 +28308,9 @@
       "highlights": [],
       "pr": 2163,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     },
     {
       "id": "discord-ping-settings-tidy",
@@ -28326,9 +28326,9 @@
       "highlights": [],
       "pr": 2164,
       "date": "2026-10-19",
-      "released": false,
-      "released_in": null,
-      "released_at": null
+      "released": true,
+      "released_in": "v0.1389.0",
+      "released_at": "2026-10-19T16:32:51Z"
     }
   ]
 }
