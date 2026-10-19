@@ -28061,6 +28061,26 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "advancement-reveal-chat",
+      "version": "0.1376.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "advancements"
+      ],
+      "title": "See what each advancement unlocks",
+      "summary": "After you earn an advancement, chat now tells you which new advancements it revealed, so you know what to chase next. When a whole new advancement tab opens up, you get its own line too.",
+      "highlights": [
+        "Hover a revealed advancement in chat to see what it asks of you",
+        "Only the advancement tabs you have switched on in Options count, so it stays quiet about other mods by default"
+      ],
+      "pr": 2149,
+      "date": "2026-10-19",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }
