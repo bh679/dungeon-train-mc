@@ -76,12 +76,26 @@ public final class LiveFeedClient {
      */
     public record Twitch(String login, String url, boolean restream, boolean setTitle) {}
 
-    /** What a claim gives the streamer. {@code twitch} is null when they have not linked a channel. */
-    public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch) {
+    /**
+     * What a claim gives the streamer. {@code twitch} is null when they have not linked a channel.
+     * {@code segmentSeconds}/{@code listSize}/{@code keyframeSeconds}: the stream's HLS cadence when the
+     * relay sets one (3 s segments, a 20-entry window and 3 s keyframes while the server's Quicker Streams
+     * reward is on, by default; the relay's env decides), 0 when it does not (the client config and the
+     * encoder's defaults then decide). Fixed for the session: a change lands on the next claim.
+     */
+    public record Claim(String session, String token, String playlistUrl, @Nullable String prevName, @Nullable Twitch twitch,
+                        int segmentSeconds, int listSize, int keyframeSeconds) {
         public Claim(String session, String token, String playlistUrl, @Nullable String prevName) {
-            this(session, token, playlistUrl, prevName, null);
+            this(session, token, playlistUrl, prevName, null, 0, 0, 0);
         }
     }
+
+    /** The segment lengths a claim may set; anything outside reads as unset. Matches the config's own range. */
+    static final int MIN_SEGMENT_SECONDS = 2, MAX_SEGMENT_SECONDS = 30;
+    /** Playlist window sizes a claim may set; anything outside reads as unset. */
+    static final int MIN_LIST_SIZE = 3, MAX_LIST_SIZE = 60;
+    /** Keyframe intervals a claim may set (Twitch caps them at 4 s); the encoder still checks it divides the segment. */
+    static final int MIN_KEYFRAME_SECONDS = 1, MAX_KEYFRAME_SECONDS = 4;
 
     /** Where a chat line was typed: the relay's {@code source} field. */
     public enum Source {
@@ -123,7 +137,13 @@ public final class LiveFeedClient {
      */
     public record ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                            @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
-                           @Nullable Moment moment) {
+                           @Nullable Moment moment, @Nullable RestartNotice restart) {
+        public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
+                        @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll,
+                        @Nullable Moment moment) {
+            this(seq, ts, author, uuid, content, source, logRequest, via, poll, moment, null);
+        }
+
         public ChatLine(long seq, long ts, String author, @Nullable String uuid, String content, Source source,
                         @Nullable LogRequest logRequest, @Nullable Via via, @Nullable LiveTakeoverClient.PollLine poll) {
             this(seq, ts, author, uuid, content, source, logRequest, via, poll, null);
@@ -184,6 +204,36 @@ public final class LiveFeedClient {
 
     /** The moment on a chat-line object, or null when it carries none (or one this client doesn't know). */
     @Nullable
+    /**
+     * The relay is restarting, or just has (live-restart.js): {@code resumeBy} the relay's estimate of
+     * when chat and stream are back (relay clock, 0 when absent), {@code countdown} 3, 2, 1 (0 when
+     * absent), {@code local} the line saying the game carries on and saves locally, {@code resumed} the
+     * line saying they are back.
+     */
+    public record RestartNotice(long resumeBy, int countdown, boolean local, boolean resumed) {}
+
+    @Nullable
+    static RestartNotice parseRestart(JsonObject m) {
+        if (!m.has("restart") || !m.get("restart").isJsonObject()) return null;
+        JsonObject o = m.getAsJsonObject("restart");
+        long resumeBy = num(o, "resumeBy");
+        long countdown = num(o, "countdown");
+        boolean local = flag(o, "local");
+        boolean resumed = flag(o, "resumed");
+        int count = countdown > 0 && countdown < 100 ? (int) countdown : 0;
+        if (resumeBy <= 0 && count == 0 && !local && !resumed) return null;
+        return new RestartNotice(Math.max(0L, resumeBy), count, local, resumed);
+    }
+
+    private static boolean flag(JsonObject o, String key) {
+        return o.has(key) && o.get(key).isJsonPrimitive() && o.get(key).getAsJsonPrimitive().isBoolean() && o.get(key).getAsBoolean();
+    }
+
+    private static long num(JsonObject o, String key) {
+        if (!o.has(key) || !o.get(key).isJsonPrimitive() || !o.get(key).getAsJsonPrimitive().isNumber()) return 0L;
+        return o.get(key).getAsLong();
+    }
+
     static Moment parseMoment(JsonObject m) {
         if (!m.has("moment") || !m.get("moment").isJsonObject()) return null;
         JsonObject o = m.getAsJsonObject("moment");
@@ -384,7 +434,17 @@ public final class LiveFeedClient {
         String session = r.str("session"), token = r.str("token"), url = r.str("playlistUrl");
         if (session.isEmpty() || token.isEmpty() || url.isEmpty()) return null;
         String prev = r.str("prevName");
-        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()));
+        int segment = intIn(r.body(), "segmentSeconds", MIN_SEGMENT_SECONDS, MAX_SEGMENT_SECONDS);
+        int list = segment == 0 ? 0 : intIn(r.body(), "listSize", MIN_LIST_SIZE, MAX_LIST_SIZE);
+        int keyframe = intIn(r.body(), "keyframeSeconds", MIN_KEYFRAME_SECONDS, MAX_KEYFRAME_SECONDS);
+        return new Claim(session, token, url, prev.isEmpty() ? null : prev, parseTwitch(r.body()), segment, list, keyframe);
+    }
+
+    /** A whole number field within {@code [min, max]}, else 0 (absent, malformed or out of range). */
+    static int intIn(@Nullable JsonObject body, String key, int min, int max) {
+        if (body == null || !body.has(key) || !body.get(key).isJsonPrimitive() || !body.getAsJsonPrimitive(key).isNumber()) return 0;
+        double v = body.get(key).getAsDouble();
+        return v == Math.rint(v) && v >= min && v <= max ? (int) v : 0;
     }
 
     /** The {@code twitch} object of a claim or status, or null when absent/malformed. The login is checked against Twitch's own alphabet. */
@@ -618,7 +678,7 @@ public final class LiveFeedClient {
                     Via via = Via.parse(m.has("via") && !m.get("via").isJsonNull() ? m.get("via").getAsString() : null);
                     lines.add(new ChatLine(m.get("seq").getAsLong(), m.has("ts") ? m.get("ts").getAsLong() : 0L,
                         author.isBlank() ? "Someone" : author, uuid, content, source, parseLogRequest(m), via,
-                        LiveTakeoverClient.parsePollLine(m), parseMoment(m)));
+                        LiveTakeoverClient.parsePollLine(m), parseMoment(m), parseRestart(m)));
                 }
             }
             List<Long> deleted = new ArrayList<>();

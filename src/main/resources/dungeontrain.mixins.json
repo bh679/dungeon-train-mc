@@ -185,6 +185,7 @@
     "client.AdvancementTabTypeDecorMixin",
     "client.AdvancementsScreenGoldWindowMixin",
     "client.ClientAdvancementsAccessor",
+    "client.ClientAdvancementsRevealMixin",
     "client.AdvancementWidgetHideDescMixin",
     "client.AdvancementsCompactLayoutMixin",
     "client.AdvancementWidgetGapMixin",

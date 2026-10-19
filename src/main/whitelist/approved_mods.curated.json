@@ -103,14 +103,20 @@
         "sodiumdynamiclights",
         "ryoamiclights",
         "dynamiclightsreforged",
-        "dynamiclights"
+        "dynamiclights",
+        "bobby"
       ],
       "note": [
         "Dynamic lights (lambdynlights, sodiumdynamiclights, ryoamiclights, dynamiclightsreforged,",
         "AtomicStryker's dynamiclights — light from held torches) is a genuine borderline call — it lets you",
         "see a little further into an unlit room. Approved because the alternative is a player",
         "holding a torch, and because DT's difficulty comes from the train, not from darkness.",
-        "Revoke it from the relay if that stops being true."
+        "Revoke it from the relay if that stops being true.",
+        "",
+        "Bobby (`bobby` — on NeoForge the unofficial Bobby ReNeoForged port) is the same kind of call: it",
+        "keeps chunks the client already received on screen past the server's view distance. Approved",
+        "because the player saw that terrain legitimately, Distant Horizons (approved via the modpack)",
+        "shows more, and it does nothing in singleplayer. Revoke it from the relay if that changes."
       ]
     },
     "audio": {

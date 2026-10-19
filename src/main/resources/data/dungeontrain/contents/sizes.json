@@ -3,6 +3,7 @@
   "sizes": {
     "cargocontents": "full",
     "default_full": "full",
+    "enemies_box": "full",
     "enemies_group": "full",
     "enemiesgroup2": "full",
     "mazelong": "full",

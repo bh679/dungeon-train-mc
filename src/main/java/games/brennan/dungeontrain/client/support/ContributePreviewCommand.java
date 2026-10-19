@@ -34,7 +34,8 @@ import java.util.function.Function;
  * <p>Headless runs drop a {@code contribute-preview.flag} file in the game directory: on the title
  * screen the client then walks every state across the Contribute page, the death screen's window
  * and the rewards page, saving one {@code Screenshot.grab} of the game's own framebuffer per step
- * to {@code screenshots/contribute-*.png}, and deletes the flag.</p>
+ * to {@code screenshots/contribute-*.png}, and deletes the flag. The last two steps show the relay's
+ * own state ({@code relay}), so a run against a local relay shows real gifts.</p>
  */
 @EventBusSubscriber(modid = DungeonTrain.MOD_ID, value = Dist.CLIENT)
 public final class ContributePreviewCommand {
@@ -54,7 +55,10 @@ public final class ContributePreviewCommand {
             new Step("death-window-give", "give", DonationOptionsScreen::new),
             new Step("rewards-some", "some", CommunityRewardsScreen::new),
             new Step("rewards-all-give", "give-all", CommunityRewardsScreen::new),
-            new Step("rewards-personal-bottom", "some", CommunityRewardsScreen::new));
+            new Step("rewards-personal-bottom", "some", CommunityRewardsScreen::new),
+            // The relay's real state last: against a local relay with test gifts, Give and ON as players see them.
+            new Step("contribute-relay", "relay", ContributeScreen::new),
+            new Step("rewards-relay", "relay", CommunityRewardsScreen::new));
 
     private static List<Step> queue = List.of();
     private static int ticks;
