@@ -108,8 +108,10 @@ final class BookBoostControl {
         if (hover && !lineDrawn() && text != null) {
             // No room for the line under a long question (it is drawn first, so this frame knows):
             // the tooltip carries what it would have said, the "click again" included.
-            tooltip(gfx, font, armed ? text
-                : text.copy().append(" ").append(PriorityBookMessage.boostTooltip()), mouseX, mouseY);
+            // The count on its own first line, the thank-you under it.
+            List<FormattedCharSequence> lines = new java.util.ArrayList<>(font.split(text, TOOLTIP_WIDTH));
+            if (!armed) lines.addAll(font.split(PriorityBookMessage.boostTooltip(), TOOLTIP_WIDTH));
+            gfx.renderTooltip(font, lines, mouseX, mouseY);
         } else if (hover && !armed) {
             tooltip(gfx, font, PriorityBookMessage.boostTooltip(), mouseX, mouseY);
         }
