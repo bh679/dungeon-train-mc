@@ -27979,14 +27979,11 @@
       "type": "fix",
       "tags": [
         "fix",
-        "train"
+        "internal"
       ],
-      "title": "/dtp lands you on an open flatbed",
-      "summary": "/dtp and /dungeontrain spawn now drop you onto an open flatbed instead of right beside a portal carriage, so you no longer get pulled into a portal room the moment you land. If you fall off into the void just after landing, you're put back on the train.",
-      "highlights": [
-        "/dtp no longer lands you next to a portal carriage",
-        "Falling into the void right after a /dtp puts you back on the train"
-      ],
+      "title": "Dev command improvement",
+      "summary": "Improved a developer command.",
+      "highlights": [],
       "pr": 2142,
       "date": "2026-10-19",
       "released": false,
