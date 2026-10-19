@@ -30,14 +30,14 @@ final class CurrencyDisplayTest {
     }
 
     @Test
-    @DisplayName("converted amounts round to whole units behind a ~, symbol before or after")
+    @DisplayName("converted amounts round to whole units, symbol before or after")
     void approxFormatting() {
-        assertEquals("~$20", CurrencyFormat.approx(30, DisplayCurrency.USD, 0.652));
-        assertEquals("~€18", CurrencyFormat.approx(30, DisplayCurrency.EUR, 0.594));
-        assertEquals("~77 zł", CurrencyFormat.approx(30, DisplayCurrency.PLN, 2.56));
-        assertEquals("~R$109", CurrencyFormat.approx(30, DisplayCurrency.BRL, 3.64));
-        assertEquals("~¥2,961", CurrencyFormat.approx(30, DisplayCurrency.JPY, 98.7));
-        assertEquals("~₩144,000", CurrencyFormat.approx(160, DisplayCurrency.KRW, 900));
+        assertEquals("$20", CurrencyFormat.approx(30, DisplayCurrency.USD, 0.652));
+        assertEquals("€18", CurrencyFormat.approx(30, DisplayCurrency.EUR, 0.594));
+        assertEquals("77 zł", CurrencyFormat.approx(30, DisplayCurrency.PLN, 2.56));
+        assertEquals("R$109", CurrencyFormat.approx(30, DisplayCurrency.BRL, 3.64));
+        assertEquals("¥2,961", CurrencyFormat.approx(30, DisplayCurrency.JPY, 98.7));
+        assertEquals("₩144,000", CurrencyFormat.approx(160, DisplayCurrency.KRW, 900));
     }
 
     @Test
