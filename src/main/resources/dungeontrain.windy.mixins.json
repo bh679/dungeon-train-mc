@@ -6,10 +6,13 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [],
   "client": [
-    "client.windy.WindyLivingWindCompatMixin"
+    "client.windy.WindyLivingWindCompatMixin",
+    "client.windy.WindyParticleAccessor",
+    "client.windy.ParticleEngineWindyMixin"
   ],
   "server": [],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "refmap": "dungeontrain.refmap.json"
 }

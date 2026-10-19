@@ -20,7 +20,7 @@ import java.util.Set;
  * the mixin is skipped and DT draws its own vanilla-particle wind instead ({@code client.wind.WindClientEvents}, which re-checks via {@code WindyPresence}).
  *
  * <p>Runs during early class transformation, so it asks {@link LoadingModList}, then reads the target class
- * bytes and checks the three static methods the mixin hooks are still there with the same descriptors — a
+ * bytes and checks the static methods the mixin hooks are still there with the same descriptors — a
  * renamed method in a future Windy skips the mixin with a WARN instead of failing the boot.</p>
  */
 public final class WindyMixinPlugin implements IMixinConfigPlugin {
@@ -40,9 +40,13 @@ public final class WindyMixinPlugin implements IMixinConfigPlugin {
             }
             ClassNode node = MixinService.getService().getBytecodeProvider().getClassNode(TARGET.replace('.', '/'));
             List<String> misses = MixinTargetCheck.missing(node, List.of(
+                    MixinTargetRequirement.method("isInstalled", "()Z"),
                     MixinTargetRequirement.method("isActive", "()Z"),
                     MixinTargetRequirement.method("strength", "()F"),
-                    MixinTargetRequirement.method("directionDegrees", "()F")));
+                    MixinTargetRequirement.method("directionDegrees", "()F"),
+                    MixinTargetRequirement.method("velocityX", "(Z)D"),
+                    MixinTargetRequirement.method("velocityZ", "(Z)D"),
+                    MixinTargetRequirement.method("spawnRateMultiplier", "(F)D")));
             if (!misses.isEmpty()) {
                 LOGGER.warn("[DungeonTrain] Windy's LivingWindCompat no longer has {}; train wind uses DT's own "
                         + "particles instead of Windy's streaks", String.join(", ", misses));

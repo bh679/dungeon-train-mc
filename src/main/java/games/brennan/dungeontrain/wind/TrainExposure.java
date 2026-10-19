@@ -24,6 +24,8 @@ import javax.annotation.Nullable;
  * <ol>
  *   <li><b>Over the train</b>: a solid carriage block within {@link #DECK_SCAN} cells under any part of the
  *       footprint — a roof, a flatbed or a coupling pad. Once clear of the edge it stops being pushed and falls.</li>
+ *   <li><b>Not in a tunnel</b>: no solid terrain within {@link #TERRAIN_COVER_SCAN} blocks overhead
+ *       ({@link #underTerrain}) — tunnels, bridges and overhangs stop the wind.</li>
  *   <li><b>Not under cover</b>: nothing solid within {@link #COVER_SCAN} cells above the head, so anyone
  *       inside an enclosed carriage is sheltered.</li>
  *   <li><b>Not in a lee</b>: nothing solid within {@link #LEE_SCAN} blocks upwind at foot or eye height, so
@@ -35,13 +37,19 @@ public final class TrainExposure {
     static final int DECK_SCAN = 6;
     static final int COVER_SCAN = 8;
     static final int LEE_SCAN = 4;
+    /**
+     * How far above the head terrain still shelters you. A DT tunnel's ceiling sits 3 blocks above the
+     * carriage roof ({@code TunnelGeometry}), so 12 covers it with room for bridges and overhangs, while a tall
+     * open space (a Nether band's high roof) stays windy.
+     */
+    static final int TERRAIN_COVER_SCAN = 12;
     private static final double FOOT_PROBE = 0.3;
 
     private TrainExposure() {}
 
     /** Why an entity is or isn't in the wind (shown on the F3+8 wind panel). */
     public enum Result {
-        NOT_ON_TRAIN, UNDER_COVER, IN_LEE, EXPOSED;
+        NOT_ON_TRAIN, IN_TUNNEL, UNDER_COVER, IN_LEE, EXPOSED;
 
         public boolean exposed() {
             return this == EXPOSED;
@@ -66,6 +74,7 @@ public final class TrainExposure {
         Vector3d feet = pose.transformPositionInverse(new Vector3d(e.getX(), e.getY() + 0.05, e.getZ()));
 
         if (!overDeck(plot, feet, e.getBbWidth() / 2.0)) return Result.NOT_ON_TRAIN;
+        if (underTerrain(e)) return Result.IN_TUNNEL;
 
         double eye = Math.max(0.2, e.getEyeHeight());
         BlockPos head = BlockPos.containing(feet.x, feet.y + eye, feet.z);
@@ -111,6 +120,22 @@ public final class TrainExposure {
      * can actually be blown off rather than parked on the lip. (Corner offsets are taken in the carriage frame;
      * a yawed carriage turns the footprint a little, which only matters at the edge.)
      */
+    /**
+     * Solid <b>world</b> blocks within {@link #TERRAIN_COVER_SCAN} above the head — a tunnel ceiling, a bridge,
+     * an overhang. Reads the host level, where carriage blocks never appear (they live in Sable's plot), so the
+     * train's own roof can't count here. Unloaded chunks read as air.
+     */
+    public static boolean underTerrain(Entity e) {
+        Level level = e.level();
+        BlockPos.MutableBlockPos pos = BlockPos.containing(e.getX(), e.getEyeY(), e.getZ()).mutable();
+        for (int dy = 1; dy <= TERRAIN_COVER_SCAN; dy++) {
+            pos.move(0, 1, 0);
+            BlockState s = level.getBlockState(pos);
+            if (!s.isAir() && s.blocksMotion()) return true;
+        }
+        return false;
+    }
+
     private static boolean overDeck(LevelPlot plot, Vector3d feet, double half) {
         double[][] probes = {{0, 0}, {-half, -half}, {-half, half}, {half, -half}, {half, half}};
         for (double[] o : probes) {

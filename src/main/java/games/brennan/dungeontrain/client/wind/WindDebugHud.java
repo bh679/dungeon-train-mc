@@ -124,6 +124,10 @@ public final class WindDebugHud {
                 f.windyHook() ? String.format(Locale.ROOT, "Windy %.2f%s", f.windyStrength(),
                         f.windyStrength() < 0.08f ? " (calm)" : f.windyStrength() >= 0.75f ? " (strong)" : "")
                         : "DT streaks (no Windy hook)"), COLOR_AHEAD));
+        out.add(new Line(String.format(Locale.ROOT,
+                "Streaks: %.1f b/s with the wind, density x%.1f, + carriage %.1f, %.1f b/s",
+                WindyDrive.streakSpeed() * 20, WindyDrive.density(),
+                WindyDrive.trainVx() * 20, WindyDrive.trainVz() * 20), COLOR_AHEAD));
 
         String you;
         int youColor;
@@ -145,6 +149,7 @@ public final class WindDebugHud {
     private static String describe(TrainExposure.Result r) {
         return switch (r) {
             case EXPOSED -> "EXPOSED";
+            case IN_TUNNEL -> "sheltered (tunnel / terrain overhead)";
             case UNDER_COVER -> "sheltered (under cover)";
             case IN_LEE -> "sheltered (in a lee)";
             case NOT_ON_TRAIN -> "not over the train";

@@ -1,24 +1,51 @@
 package games.brennan.dungeontrain.client.wind;
 
+import games.brennan.dungeontrain.mixin.client.windy.WindyParticleAccessor;
+import net.minecraft.client.particle.Particle;
+
 /**
- * The values DT hands Windy through its Living Wind hook ({@code WindyLivingWindCompatMixin}), refreshed once
- * per client tick by {@link WindClientEvents} from the wind {@code visualLeadTicks} ahead — so Windy's streaks
- * show each gust before it shoves.
+ * The wind DT hands Windy through its Living Wind hook ({@code WindyLivingWindCompatMixin}) and applies to each
+ * Windy streak as it spawns ({@code ParticleEngineWindyMixin}). Refreshed once per client tick by
+ * {@link WindClientEvents} from the wind {@code visualLeadTicks} ahead — so streaks show each gust before it
+ * shoves.
  *
- * <p>Units: Windy treats a Living Wind strength below 0.08 as calm, scales spawn density by
- * {@code strength / 0.5} (capped at 4×) and switches to its strong streak at 0.75. {@link #REFERENCE_PUSH}
- * maps DT's push onto that scale: very slight wind (0.002) sits just over Windy's floor, a late steady wind
- * (~0.014) just under the strong streak, and gusts cross it.</p>
+ * <h2>Scales</h2>
+ * <ul>
+ *   <li><b>Strength</b> (Windy's Living Wind scale): below 0.08 is calm, 0.75+ picks the strong streak.
+ *       {@link #REFERENCE_PUSH} maps DT's push onto it: very slight wind (0.002) sits just over the floor, a
+ *       late steady wind (~0.014) just under the strong streak, and gusts cross it.</li>
+ *   <li><b>Speed</b>: streaks fly at {@link #SPEED_BASE} + push × {@link #SPEED_PER_PUSH} blocks/tick (2.5 b/s
+ *       in a breath of wind, ~5 b/s in a late steady wind, 15+ b/s in a gust); strong streaks a bit faster.</li>
+ *   <li><b>Density</b>: push / {@link #DENSITY_PUSH} × Windy's base rate, capped at {@link #MAX_DENSITY}.</li>
+ * </ul>
+ *
+ * <h2>Train frame</h2>
+ * The push is felt relative to the carriage (Sable carries riders), so streaks are moved in the carriage's
+ * frame too: each one gets the carriage's velocity added and keeps its speed for its whole life. Seen from the
+ * train they then drift exactly the way the wind pushes you, instead of all streaming backwards.
  */
 public final class WindyDrive {
 
     /** DT push (blocks/tick²) that reads as Living Wind strength 1. */
     static final double REFERENCE_PUSH = 0.02;
     private static final float MAX_STRENGTH = 2.0f;
+    static final double SPEED_BASE = 0.1;
+    static final double SPEED_PER_PUSH = 10.0;
+    private static final double STRONG_SPEED = 1.3;
+    /** DT push that gives Windy's base spawn rate. */
+    static final double DENSITY_PUSH = 0.004;
+    static final double MAX_DENSITY = 12.0;
+    private static final String WINDY_PARTICLE = "xyz.bonfiremc.windy.particle.WindParticle";
 
     private static volatile boolean owns = false;
     private static volatile float strength = 0.0f;
     private static volatile float yaw = 0.0f;
+    private static volatile double dirX = 0.0;
+    private static volatile double dirZ = 1.0;
+    private static volatile double speed = SPEED_BASE;
+    private static volatile double density = 0.0;
+    private static volatile double trainVx = 0.0;
+    private static volatile double trainVz = 0.0;
 
     private WindyDrive() {}
 
@@ -36,15 +63,66 @@ public final class WindyDrive {
         return yaw;
     }
 
-    static void set(boolean ownsIn, double push, double headingRad) {
+    /** Streak velocity along X relative to the carriage (Windy also turns the sprite from this). */
+    public static double velocityX(boolean strong) {
+        return dirX * speed * (strong ? STRONG_SPEED : 1.0);
+    }
+
+    public static double velocityZ(boolean strong) {
+        return dirZ * speed * (strong ? STRONG_SPEED : 1.0);
+    }
+
+    /** Multiplier on Windy's base spawn chance. */
+    public static double spawnRate() {
+        return density;
+    }
+
+    /** Carriage velocity added to streaks (blocks/tick), for the debug panel. */
+    public static double trainVx() {
+        return trainVx;
+    }
+
+    public static double trainVz() {
+        return trainVz;
+    }
+
+    public static double streakSpeed() {
+        return speed;
+    }
+
+    public static double density() {
+        return density;
+    }
+
+    static void set(double push, double headingRad, double carriageVx, double carriageVz) {
         strength = (float) Math.min(MAX_STRENGTH, Math.max(0.0, push / REFERENCE_PUSH));
         // heading h: (cos h, sin h); yaw y: (-sin y, cos y)  =>  y = h - 90°
         yaw = (float) (Math.toDegrees(headingRad) - 90.0);
-        owns = ownsIn;
+        dirX = Math.cos(headingRad);
+        dirZ = Math.sin(headingRad);
+        speed = SPEED_BASE + Math.max(0.0, push) * SPEED_PER_PUSH;
+        density = Math.min(MAX_DENSITY, Math.max(0.0, push) / DENSITY_PUSH);
+        trainVx = carriageVx;
+        trainVz = carriageVz;
+        owns = true;
     }
 
     static void release() {
         owns = false;
         strength = 0.0f;
+        density = 0.0;
+    }
+
+    /**
+     * A particle is entering the engine: if it is one of Windy's streaks and DT owns the wind, move it in the
+     * carriage's frame and let it keep its speed.
+     */
+    public static void adopt(Particle particle) {
+        if (!owns || !particle.getClass().getName().startsWith(WINDY_PARTICLE)) return;
+        WindyParticleAccessor p = (WindyParticleAccessor) particle;
+        p.dungeontrain$setXd(p.dungeontrain$getXd() + trainVx);
+        p.dungeontrain$setZd(p.dungeontrain$getZd() + trainVz);
+        p.dungeontrain$setFriction(1.0f);
+        p.dungeontrain$setHasPhysics(false);
     }
 }
