@@ -100,4 +100,20 @@ final class JoinedNetherTest {
     void lostCityLeadIn() {
         assertEquals((long) RISE, LAYOUT.legacyLeadIn(3));
     }
+
+    @Test
+    @DisplayName("join sides: BetterNether's way out and the Deeper Dark's way in, not the cores or outer edges")
+    void joinSides() {
+        long bnCoreEnd = LAYOUT.start(1) + RISE + CORE_FADE + 4500;
+        long ddCoreStart = LAYOUT.netherCoreStart(2);
+        assertEquals(WorldGenCycle.JOIN_AFTER, C.netherJoinSide(x(bnCoreEnd)));
+        assertEquals(WorldGenCycle.JOIN_AFTER, C.netherJoinSide(x(LAYOUT.start(2) - 1)));
+        assertEquals(WorldGenCycle.JOIN_BEFORE, C.netherJoinSide(x(LAYOUT.start(2))));
+        assertEquals(WorldGenCycle.JOIN_BEFORE, C.netherJoinSide(x(ddCoreStart - 1)));
+        assertEquals(WorldGenCycle.JOIN_NONE, C.netherJoinSide(x(ddCoreStart)));             // the Deeper Dark core
+        assertEquals(WorldGenCycle.JOIN_NONE, C.netherJoinSide(x(bnCoreEnd - 1)));            // the BetterNether core
+        assertEquals(WorldGenCycle.JOIN_NONE, C.netherJoinSide(x(LAYOUT.start(1) + 10)));     // BetterNether's way in
+        assertEquals(WorldGenCycle.JOIN_NONE,
+                C.netherJoinSide(x(LAYOUT.start(2) + LAYOUT.length(2) - 10)));                  // the Deeper Dark's way out
+    }
 }

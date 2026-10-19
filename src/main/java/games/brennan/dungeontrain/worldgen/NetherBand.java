@@ -115,6 +115,12 @@ public final class NetherBand {
         return ctx.netherCoreBiomes().isOtherside(cycle.netherLookAt(worldX));
     }
 
+    /** {@link WorldGenCycle#netherJoinSide} at {@code worldX}; {@link WorldGenCycle#JOIN_NONE} with the band off. */
+    public static int joinSideAt(ServerLevel overworld, int worldX) {
+        if (startX(overworld) == OFF) return WorldGenCycle.JOIN_NONE;
+        return MixBand.cycleAtColumn(overworld, worldX, MixBand.NO_Z).netherJoinSide(worldX);
+    }
+
     /**
      * {@link #isInNetherBiome(ServerLevel, int)} for the <b>real</b> Nether only — a Deeper Dark core reads as
      * no Nether at all. For what belongs to the Nether itself (its advancements, photos, return books).

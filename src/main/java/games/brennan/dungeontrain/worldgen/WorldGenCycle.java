@@ -1095,6 +1095,30 @@ public record WorldGenCycle(long startX, int owGap,
         return ln;
     }
 
+    /** {@link #netherJoinSide}: not on a joined range. */
+    public static final int JOIN_NONE = 0;
+    /** {@link #netherJoinSide}: past the core of a Nether slot joined to the next one (BetterNether's way out). */
+    public static final int JOIN_AFTER = 1;
+    /** {@link #netherJoinSide}: before the core of a Nether slot joined to the one before (the Deeper Dark's way in). */
+    public static final int JOIN_BEFORE = -1;
+
+    /**
+     * Which side of a joined Nether range {@code worldX} is on ({@link CycleLayout#netherJoinedBefore}): the
+     * slot before's way out past its core ({@link #JOIN_AFTER}), the slot after's way in before its core
+     * ({@link #JOIN_BEFORE}), or neither ({@link #JOIN_NONE}) — any lone Nether, any core, anywhere else.
+     */
+    public int netherJoinSide(int worldX) {
+        if (layout == null) return JOIN_NONE;
+        long ln = netherOffset(worldX);
+        if (ln < 0L) return JOIN_NONE;
+        int i = slotAt(worldX);
+        long coreStart = (long) riseLen() + Math.max(0, megaHold) + Math.max(0, coreFade);
+        long coreEnd = coreStart + Math.max(0, spanCore(CycleLayout.Type.NETHER, worldX));
+        if (ln >= coreEnd && layout.netherJoinedAfter(i)) return JOIN_AFTER;
+        if (ln < coreStart && layout.netherJoinedBefore(i)) return JOIN_BEFORE;
+        return JOIN_NONE;
+    }
+
     /**
      * True on the deep-dark side of a Nether band: past the core ({@link #netherPastCore}), or anywhere on
      * the way in to a Nether slot that joins the one before it — the whole range between two joined cores

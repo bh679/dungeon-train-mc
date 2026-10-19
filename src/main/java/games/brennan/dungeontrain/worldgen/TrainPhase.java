@@ -242,6 +242,12 @@ public enum TrainPhase {
         // Use the wider "netherrack present" band (not the strict ≥0.5 biome core) so a NETHER-gated
         // template / Stage spawns across the visible Nether stretch — otherwise NETHER only triggers
         // ~coreFade/2 + the mountain-rise blocks deep into the band ("deep into the Nether").
+        // The deep-dark range between two joined Nether cores keeps the Nether's track, tunnels and carriages
+        // between their crossfades, so the ride stays Nether until it fades straight into the Deeper Dark.
+        if (NetherBand.joinSideAt(overworld, worldX) != WorldGenCycle.JOIN_NONE
+                && NetherBand.netherRampAt(overworld, worldX) <= 0.0) {
+            return NETHER;
+        }
         if (NetherBand.isInNetherBand(overworld, worldX)) {
             // A Deeper Dark pass is its own phase: sculk track, tunnels, stage and carriage contents.
             return NetherBand.isOthersideAt(overworld, worldX) ? DEEPER_DARK : NETHER;
