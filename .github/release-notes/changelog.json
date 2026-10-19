@@ -27851,6 +27851,22 @@
       "released": false,
       "released_in": null,
       "released_at": null
+    },
+    {
+      "id": "supporter-copy-book-button",
+      "version": "0.1363.0",
+      "type": "feat",
+      "tags": [
+        "feature",
+        "ui"
+      ],
+      "title": "A small thank-you for supporters",
+      "summary": "Supporters have something new to find in Options.",
+      "highlights": [],
+      "date": "2026-10-18",
+      "released": false,
+      "released_in": null,
+      "released_at": null
     }
   ]
 }

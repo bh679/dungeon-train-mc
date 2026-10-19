@@ -7,6 +7,7 @@ import games.brennan.dungeontrain.client.bugresponse.BugResponse;
 import games.brennan.dungeontrain.client.bugresponse.BugResponseCard;
 import games.brennan.dungeontrain.client.bugresponse.LagTips;
 import games.brennan.dungeontrain.client.credits.CommunityLinkClient;
+import games.brennan.dungeontrain.client.support.SupporterStatus;
 import games.brennan.dungeontrain.client.credits.DiscordAccountState;
 import games.brennan.dungeontrain.client.credits.DiscordLinkScreen;
 import games.brennan.dungeontrain.client.twitch.TwitchAccountState;
@@ -840,6 +841,20 @@ public final class DungeonTrainClientOptionsScreen extends OptionsSubScreen {
                     ClientDisplayConfig::setScribbleFileButtonsVisible), key + ".tip");
             case BOOK_INSERT_PAGE_BUTTON -> Setting.of(onOff(Component.translatable(key), ClientDisplayConfig.isScribbleInsertPageButtonVisible(),
                     ClientDisplayConfig::setScribbleInsertPageButtonVisible), key + ".tip");
+
+            // Supporter perk. Shown to everyone so the thank-you is visible, but only a supporter can
+            // switch it on; the relay's answer rebuilds the screen when it lands.
+            case BOOK_COPY_BUTTON -> {
+                SupporterStatus.refresh(this::rebuildIfShown);
+                boolean supporter = SupporterStatus.isSupporter();
+                CycleButton<Boolean> copy = onOff(Component.translatable(key),
+                        supporter && ClientDisplayConfig.isBookCopyButtonEnabled(), ClientDisplayConfig::setBookCopyButton);
+                copy.active = supporter;
+                yield supporter
+                        ? Setting.of(copy, key + ".tip")
+                        : new Setting(copy, Component.translatable(key + ".locked_tip"),
+                                Component.translatable(key + ".locked"));
+            }
 
             // "Was any of this made by AI?" answered in full. Unconditional, and deliberately a
             // page rather than a tooltip: the honest answer is longer than a row can carry. Also
