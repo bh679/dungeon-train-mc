@@ -59,6 +59,7 @@ public final class ClientWind {
     public static WindSample sampleAt(double worldX, long tick) {
         Snapshot s = snap;
         if (!active()) return WindSample.CALM;
-        return WindField.sample(s.profile(), worldX - s.startX(), tick, s.seed());
+        return WindField.sample(s.profile(), worldX - s.startX(), tick, s.seed())
+                .scaled(games.brennan.dungeontrain.wind.WindZones.bandFactor(worldX));
     }
 }

@@ -2,7 +2,9 @@ package games.brennan.dungeontrain.client.wind;
 
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import games.brennan.dungeontrain.DungeonTrain;
+import games.brennan.dungeontrain.client.ClientUpsideDownBand;
 import games.brennan.dungeontrain.wind.TrainExposure;
+import games.brennan.dungeontrain.wind.WindZones;
 import games.brennan.dungeontrain.wind.WindProfile;
 import games.brennan.dungeontrain.wind.WindPush;
 import games.brennan.dungeontrain.wind.WindSample;
@@ -62,10 +64,18 @@ public final class WindClientEvents {
             WindDebugState.clear(level.dimension() == Level.OVERWORLD ? "wind off" : "not in the Overworld");
             return;
         }
+        // A dimensional carriage is somewhere else entirely: no wind, no streaks, no sound.
+        if (ClientUpsideDownBand.isInPortalTwinSpace((int) Math.floor(player.getX()), (int) Math.floor(player.getY()))) {
+            WindyDrive.release();
+            WindSound.silence();
+            WindDebugState.clear("in a dimensional carriage: no wind");
+            return;
+        }
         long tick = level.getGameTime();
         WindProfile profile = ClientWind.profile();
         SubLevel sub = ClientWind.pastStart(player.getX()) ? TrainExposure.subLevelUnder(level, player) : null;
-        WindSample now = ClientWind.sampleAt(player.getX(), tick);
+        double deepDark = WindZones.deepDarkFactor(level, player.blockPosition());
+        WindSample now = ClientWind.sampleAt(player.getX(), tick).scaled(deepDark);
 
         TrainExposure.Result exposure = now.isCalm() ? TrainExposure.Result.NOT_ON_TRAIN
                 : TrainExposure.classify(sub, player, now.dirX(), now.dirZ());
@@ -78,7 +88,7 @@ public final class WindClientEvents {
 
         WindSound.update(player, now, exposure, TrainExposure.underTerrain(player));
 
-        WindSample ahead = ClientWind.sampleAt(player.getX(), tick + profile.visualLeadTicks());
+        WindSample ahead = ClientWind.sampleAt(player.getX(), tick + profile.visualLeadTicks()).scaled(deepDark);
         double[] carriageVel = carriageVelocity(sub);
         // Visuals follow the wind, not the player: they keep blowing outside while you shelter, and each streak
         // is kept out of carriages and tunnels on its own (WindVisualShelter).

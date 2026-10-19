@@ -11,6 +11,7 @@ import games.brennan.dungeontrain.train.Trains;
 import games.brennan.dungeontrain.world.DungeonTrainWorldData;
 import games.brennan.dungeontrain.worldgen.UpsideDownBand;
 import games.brennan.dungeontrain.worldgen.WorldGenCycle;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -68,7 +69,7 @@ public final class WindServer {
 
         public WindSample sampleAt(double worldX, long tick) {
             if (!active()) return WindSample.CALM;
-            return WindField.sample(profile, worldX - startX, tick, seed);
+            return WindField.sample(profile, worldX - startX, tick, seed).scaled(WindZones.bandFactor(worldX));
         }
 
         public WindProfilePacket packet() {
@@ -258,10 +259,14 @@ public final class WindServer {
             if (!level.isPositionEntityTicking(e.blockPosition())) continue;
             WindSample w;
             if (groupNear && withinReach(e, players, reach)) {
-                w = s.sampleAt(e.getX(), tick);
+                w = s.sampleAt(e.getX(), tick).scaled(WindZones.deepDarkFactor(level, e.blockPosition()));
                 if (w.isCalm() || !TrainExposure.isExposed(sub, e, w.dirX(), w.dirZ())) continue;
             } else {
-                if (groupWind == null) groupWind = s.sampleAt((bb.minX() + bb.maxX()) / 2.0, tick);
+                if (groupWind == null) {
+                    double cx = (bb.minX() + bb.maxX()) / 2.0;
+                    groupWind = s.sampleAt(cx, tick).scaled(WindZones.deepDarkFactor(level,
+                            BlockPos.containing(cx, bb.maxY(), (bb.minZ() + bb.maxZ()) / 2.0)));
+                }
                 w = groupWind;
                 if (w.isCalm() || !FarWind.exposed(carriage, e)) continue;
             }

@@ -113,6 +113,22 @@ public final class WindyDrive {
         density = 0.0;
     }
 
+    /** Nether-orange under a Nether sky (blended with how far in), dark blue in the deep dark. */
+    private static final float[] NETHER_TINT = {1.0f, 0.55f, 0.2f};
+    private static final float[] DEEP_DARK_TINT = {0.15f, 0.22f, 0.6f};
+
+    private static void tint(Particle particle, net.minecraft.client.multiplayer.ClientLevel level,
+                             net.minecraft.world.phys.Vec3 pos) {
+        if (games.brennan.dungeontrain.wind.WindZones.isDeepDark(level, net.minecraft.core.BlockPos.containing(pos))) {
+            particle.setColor(DEEP_DARK_TINT[0], DEEP_DARK_TINT[1], DEEP_DARK_TINT[2]);
+            return;
+        }
+        float n = (float) games.brennan.dungeontrain.wind.WindZones.netherAt(pos.x);
+        if (n <= 0.0f) return;
+        particle.setColor(1.0f + (NETHER_TINT[0] - 1.0f) * n, 1.0f + (NETHER_TINT[1] - 1.0f) * n,
+                1.0f + (NETHER_TINT[2] - 1.0f) * n);
+    }
+
     /**
      * A particle is entering the engine: if it is one of Windy's streaks and DT owns the wind, move it in the
      * carriage's frame and let it keep its speed.
@@ -130,6 +146,7 @@ public final class WindyDrive {
         net.minecraft.client.multiplayer.ClientLevel level = net.minecraft.client.Minecraft.getInstance().level;
         if (level == null) return;
         net.minecraft.world.phys.Vec3 pos = particle.getPos();
+        tint(particle, level, pos);
         int open = WindVisualShelter.openTicks(level, pos.x, pos.y, pos.z, relVx, relVz, trainVx, trainVz,
                 particle.getLifetime());
         if (open <= 0) {

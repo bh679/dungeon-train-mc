@@ -11,6 +11,13 @@ public record WindSample(double strength, double headingRad, double gust01) {
 
     public static final WindSample CALM = new WindSample(0.0, 0.0, 0.0);
 
+    /** This wind with its strength multiplied by {@code f} (calm at 0). */
+    public WindSample scaled(double f) {
+        if (f >= 1.0) return this;
+        double s = strength * Math.max(0.0, f);
+        return s <= 0.0 ? CALM : new WindSample(s, headingRad, gust01);
+    }
+
     public boolean isCalm() {
         return strength <= 0.0;
     }

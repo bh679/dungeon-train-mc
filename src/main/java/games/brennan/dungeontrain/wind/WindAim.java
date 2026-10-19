@@ -52,7 +52,8 @@ public final class WindAim {
         WindServer.State s = WindServer.state();
         if (!s.active()) return;
 
-        WindSample w = s.sampleAt(shooter.getX(), level.getGameTime());
+        WindSample w = s.sampleAt(shooter.getX(), level.getGameTime())
+                .scaled(WindZones.deepDarkFactor(level, shooter.blockPosition()));
         if (w.isCalm() || !shooterInWind(level, shooter)) return;
 
         Vec3 v = p.getDeltaMovement();

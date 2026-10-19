@@ -119,6 +119,7 @@ public final class WindDebugHud {
             out.add(new Line(String.format(Locale.ROOT, "       wander ±%.0f° over ~%.0fs",
                     s.wander(), s.wanderSeconds()), COLOR_IDLE));
         }
+        out.add(new Line(zoneLine(), COLOR_IDLE));
         out.add(new Line(String.format(Locale.ROOT, "Now:   %.4f toward %s  gust %.0f%%",
                 f.now().strength(), heading(f.now().headingRad()), f.now().gust01() * 100), COLOR_NOW));
         out.add(new Line(String.format(Locale.ROOT, "Shown: %.4f toward %s  (+%dt)   %s",
@@ -146,6 +147,19 @@ public final class WindDebugHud {
                 f.applied(), f.wouldBe(), f.velX(), f.velZ(),
                 Math.sqrt(f.velX() * f.velX() + f.velZ() * f.velZ()) * 20), COLOR_APPLIED));
         return out;
+    }
+
+    /** The band's effect at the player: End sky (no wind), Nether sky (half, orange), deep dark (half, blue). */
+    private static String zoneLine() {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.level == null) return "Zone: -";
+        double x = mc.player.getX();
+        double end = games.brennan.dungeontrain.wind.WindZones.endSkyAt(x);
+        double nether = games.brennan.dungeontrain.wind.WindZones.netherAt(x);
+        boolean deep = games.brennan.dungeontrain.wind.WindZones.isDeepDark(mc.level, mc.player.blockPosition());
+        double factor = games.brennan.dungeontrain.wind.WindZones.bandFactor(x) * (deep ? 0.5 : 1.0);
+        return String.format(Locale.ROOT, "Zone: End sky %.0f%%  Nether sky %.0f%%  deep dark %s  -> wind x%.2f",
+                end * 100, nether * 100, deep ? "yes" : "no", factor);
     }
 
     private static String describe(TrainExposure.Result r) {
