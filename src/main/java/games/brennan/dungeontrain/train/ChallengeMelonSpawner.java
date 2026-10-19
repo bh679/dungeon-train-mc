@@ -9,6 +9,7 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -23,8 +24,9 @@ import java.util.List;
  * the nothing-but-melon, no-chest, no-break rules make food otherwise hard to come by.
  *
  * <p>Once the player is {@link #MIN_TRAVELLED} carriages into the life, every
- * {@link #GROUP_INTERVAL}th flatbed gets one slice, dropped the moment the player is in a room next
- * to it. A flatbed is the FRONT half-pad of one group plus the BACK half-pad of the next; it is
+ * {@link #HARD_GROUP_INTERVAL}th flatbed gets one slice on Hard and every
+ * {@link #NORMAL_GROUP_INTERVAL}th on Normal (none on Easy or Peaceful), dropped the moment the
+ * player is in a room next to it. A flatbed is the FRONT half-pad of one group plus the BACK half-pad of the next; it is
  * keyed by the anchor pIdx of the group after it, and the slice lands on whichever half belongs to
  * the player's own group (already loaded and ticked). Each flatbed is remembered per life in
  * {@link ModDataAttachments#CHALLENGE_MELON_FLATBEDS_THIS_LIFE}, so a relog never drops a second one.</p>
@@ -37,18 +39,33 @@ public final class ChallengeMelonSpawner {
 
     /** Carriages travelled this life before the first melon. */
     static final int MIN_TRAVELLED = 10;
-    /** One melon flatbed every this many carriage groups. */
-    static final int GROUP_INTERVAL = 5;
+    /** One melon flatbed every this many carriage groups on Hard. */
+    static final int HARD_GROUP_INTERVAL = 5;
+    /** One melon flatbed every this many carriage groups on Normal. */
+    static final int NORMAL_GROUP_INTERVAL = 7;
 
     private ChallengeMelonSpawner() {}
 
     // ---- pure rules (unit-tested) ----
 
-    /** Does the flatbed in front of the group anchored at {@code anchor} carry a melon? */
-    static boolean isMelonFlatbed(int anchor, int groupSize) {
+    /** Carriage groups between melon flatbeds on {@code difficulty}, or 0 for no melons. */
+    static int groupInterval(Difficulty difficulty) {
+        return switch (difficulty) {
+            case HARD -> HARD_GROUP_INTERVAL;
+            case NORMAL -> NORMAL_GROUP_INTERVAL;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Does the flatbed in front of the group anchored at {@code anchor} carry a melon, at one melon
+     * flatbed every {@code interval} groups? Never when {@code interval} is 0.
+     */
+    static boolean isMelonFlatbed(int anchor, int groupSize, int interval) {
+        if (interval <= 0) return false;
         if (anchor == 0) return false; // the spawn group's back pad is the train's tail
         long groupIndex = Math.floorDiv((long) anchor, Math.max(1, groupSize));
-        return Math.floorMod(groupIndex, GROUP_INTERVAL) == 0;
+        return Math.floorMod(groupIndex, interval) == 0;
     }
 
     /**
@@ -65,6 +82,8 @@ public final class ChallengeMelonSpawner {
 
     /** Called every boarding scan for each boarded player. Cheap when the player is not eligible. */
     public static void tick(ServerLevel level, List<Trains.Carriage> carriages, ServerPlayer player) {
+        int interval = groupInterval(level.getDifficulty());
+        if (interval <= 0) return;
         if (!isEligible(player)) return;
 
         Trains.Carriage group = PlayerMobBehindSpawner.groupContaining(
@@ -76,7 +95,7 @@ public final class ChallengeMelonSpawner {
         if (groupSize <= 1) return; // no half-pads, so no flatbeds
 
         Integer flatbed = adjacentFlatbed(pIdxWithinGroup(group, player), anchor, groupSize);
-        if (flatbed == null || !isMelonFlatbed(flatbed, groupSize)) return;
+        if (flatbed == null || !isMelonFlatbed(flatbed, groupSize, interval)) return;
         if (PortalCarriageSelection.isPortalGroup(level, anchor)) return;
 
         List<Integer> done = player.getData(ModDataAttachments.CHALLENGE_MELON_FLATBEDS_THIS_LIFE.get());
